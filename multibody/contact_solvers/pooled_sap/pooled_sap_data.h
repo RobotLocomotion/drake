@@ -45,7 +45,7 @@ class PooledSapData {
       Av.resize(nv);
       gradient.resize(nv);
       spatial_velocities.Resize(num_bodies);
-      patch_constraints_data.Resize(num_velocities, patch_sizes);
+      patch_constraints_data.Resize(patch_sizes);
     }
 
     T momentum_cost{0};

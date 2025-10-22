@@ -14,6 +14,12 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
+/**
+ * Data pool for contact constraints. This data is updated at each solver
+ * iteration, as opposed to the PatchConstraintsPool, which defines the
+ * constraints themselves and is fixed for the lifetime of the optimization
+ * problem.
+ */
 template <typename T>
 class PatchConstraintsDataPool {
  public:
@@ -25,17 +31,15 @@ class PatchConstraintsDataPool {
   // The total number of contact pairs among all patches.
   int num_pairs() const { return num_pairs_; }
 
-  /* Default constructor for an empty pool. */
+  // Default constructor for an empty pool.
   PatchConstraintsDataPool() = default;
 
-  PatchConstraintsDataPool(int num_velocities,
-                           const std::vector<int>& patch_size) {
-    Resize(num_velocities, patch_size);
-  }
-
-  /* @param num_velocities Number of velocities for overall problem.
-     @param patch_size Number of contact pairs for the k-th patch. */
-  void Resize(int, const std::vector<int>& patch_size) {
+  /**
+   * Resize the data pool to hold constraints of the given sizes.
+   *
+   * @param patch_size Number of contact pairs for the k-th patch.
+   */
+  void Resize(const std::vector<int>& patch_size) {
     num_patches_ = ssize(patch_size);
     num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);
 
@@ -48,17 +52,25 @@ class PatchConstraintsDataPool {
     v_AcBc_W_.Resize(num_pairs_);
   }
 
+  // Hessian block per patch
   EigenPool<Matrix6<T>>& G_Bp_pool() { return G_Bp_pool_; }
   const EigenPool<Matrix6<T>>& G_Bp_pool() const { return G_Bp_pool_; }
+
+  // Contact velocities per pair
   EigenPool<Vector3<T>>& v_AcBc_W_pool() { return v_AcBc_W_; }
   const EigenPool<Vector3<T>>& v_AcBc_W_pool() const { return v_AcBc_W_; }
+
+  // Constraint impulse (gradient) per patch
   EigenPool<Vector6<T>>& Gamma_Bo_W_pool() { return Gamma_Bo_W_; }
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool() const { return Gamma_Bo_W_; }
 
-  const T& cost() const { return cost_; }
-  T& cost() { return cost_; }
+  // Cost per patch
   const std::vector<T>& cost_pool() const { return cost_pool_; }
   std::vector<T>& cost_pool() { return cost_pool_; }
+
+  // Total cost over all patches.
+  const T& cost() const { return cost_; }
+  T& cost() { return cost_; }
 
  private:
   int num_patches_{0};
