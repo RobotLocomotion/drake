@@ -269,28 +269,6 @@ def _build(*, out_dir, temp_dir, modules, quick):
     _postprocess_doxygen_log(lines, check_for_errors)
 
     extra_perl_statements = [
-        # The next stanza forms the second half of the handling for the Python
-        # "▶ Details" block (i.e., the @python_details_{begin,end} markup).
-        #
-        # Here's how it works:
-        #
-        # Our current version of Doxygen doesn't know that <details> is a valid
-        # HTML element, so if we try to put that element in a comment, it would
-        # get escaped rather than passed through. Instead, our Doxyfile macros
-        # for @python_details_begin and @python_details_end convert the markup
-        # to a <span>, which *is* passed through as raw HTML by Doxygen. Then,
-        # with the following regular expressions, we transform the two <span>s
-        # to <detail> and </detail>.
-        # TODO(tyler-yankee): investigate porting given "our current version"
-        # note above ...
-        (
-            r's#<p><span class="_python_details_begin"></span> </p>#'
-            r"<p><details><summary>Click to expand Python code...</summary>#;"
-        ),
-        (
-            r's#<p> <span class="_python_details_end"></span></p>$#'
-            r"</details></p>#;"
-        ),
         # Fix the formatting of deprecation text (see #15619 for an example).
         # (1) Remove quotes around the removal date.
         r's#(removed from Drake on or after) "(....-..-..)" *\.#\1 \2.#;',
