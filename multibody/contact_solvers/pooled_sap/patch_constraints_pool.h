@@ -43,17 +43,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
   void Clear();
 
   /**
-   * Reset to work with the given time step and cliques
-   *
-   * @param time_step The current time step dt.
-   * @param clique_start The starting index of each clique in the generalized
-   *                   velocity vector v.
-   * @param clique_size The number of DoFs in each clique.
-   */
-  void Reset(const T& time_step, const std::vector<int>& clique_start,
-             const std::vector<int>& clique_size);
-
-  /**
    * Resize to store the given patches and pairs.
    *
    * @param num_pairs_per_patch Number of contact pairs for each patch.
@@ -168,15 +157,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
   using ConstVectorXView = Eigen::VectorBlock<const VectorX<T>>;
   using VectorXView = Eigen::VectorBlock<VectorX<T>>;
 
-  ConstVectorXView clique_segment(int clique, const VectorX<T>& x) const {
-    return x.segment(clique_start_[clique], clique_size_[clique]);
-  }
-
-  VectorXView clique_segment(int clique, VectorX<T>* x) const {
-    DRAKE_ASSERT(x != nullptr);
-    return x->segment(clique_start_[clique], clique_size_[clique]);
-  }
-
   double stiction_tolerance_{1.0e-4};
   double vs2_{stiction_tolerance_ * stiction_tolerance_};
   double sigma_{1.0e-3};
@@ -211,12 +191,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
                                 EigenPool<Vector6<T>>* V_AbB_W_pool) const;
 
   const PooledSapModel<T>* model_{nullptr};  // The parent model.
-
-  T time_step_{0.0};
-
-  /* Per-clique data. Indexed by c < num_cliques()  */
-  std::vector<int> clique_start_;  // Velocity start index for the c-th clique.
-  std::vector<int> clique_size_;   // Num. velocities for the c-th clique.
 
   /* Data per patch. Indexed by patch index p < num_patches() */
   std::vector<int> num_pairs_;    // Number of pairs per patch.

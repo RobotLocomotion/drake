@@ -196,8 +196,6 @@ class PooledSapModel {
     gain_constraints_pool_.Clear();
     limit_constraints_pool_.Clear();
     patch_constraints_pool_.Clear();
-    patch_constraints_pool_.Reset(params_->time_step, clique_start_,
-                                  clique_sizes_);
 
     // Pre-compute spatial velocity for each body at the current state.
     V_WB0_.Resize(num_bodies_);

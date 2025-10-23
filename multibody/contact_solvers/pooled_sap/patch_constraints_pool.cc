@@ -177,17 +177,6 @@ void PooledSapModel<T>::PatchConstraintsPool::Clear() {
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::Reset(
-    const T& time_step, const std::vector<int>& clique_start,
-    const std::vector<int>& clique_size) {
-  // TODO(vincekurtz): add sanity checks
-  time_step_ = time_step;
-  clique_start_ = clique_start;
-  clique_size_ = clique_size;
-  Clear();
-}
-
-template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::Resize(
     const std::vector<int>& num_pairs_per_patch) {
   num_pairs_ = num_pairs_per_patch;
@@ -250,6 +239,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPair(
   DRAKE_ASSERT(patch_idx >= 0 && patch_idx < num_patches());
   DRAKE_ASSERT(pair_idx >= 0 && pair_idx < num_pairs_[patch_idx]);
   const int idx = patch_pair_index(patch_idx, pair_idx);
+  const T& dt = model().time_step();
 
   p_BC_W_[idx] = p_BoC_W;
   normal_W_[idx] = normal_W;
@@ -278,7 +268,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPair(
   const T& d = dissipation_[patch_idx];
   const T vn0 = v_AcBc_W.dot(normal_W);
   const T damping = max(0.0, 1.0 - d * vn0);
-  const T n0 = max(0.0, time_step_ * fn0) * damping;
+  const T n0 = max(0.0, dt * fn0) * damping;
   n0_[idx] = n0;
 
   // Coefficient of friction is determined based on previous velocity. This
@@ -324,6 +314,7 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
   const int pk = patch_pair_index(p, k);
   const T& vs = epsilon_soft_[pk];
   const Vector3<T>& normal_W = normal_W_[pk];
+  const T& dt = model().time_step();
 
   // Normal velocity. Positive when bodies move apart.
   const T vn = v_AcBc_W.dot(normal_W);
@@ -339,17 +330,16 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
   const T& fe0 = fn0_[pk];
 
   // Cost
-  const T N =
-      CalcDiscreteHuntCrossleyAntiderivative(time_step_, vn, fe0, stiffness, d);
+  const T N = CalcDiscreteHuntCrossleyAntiderivative(dt, vn, fe0, stiffness, d);
   const T cost = mu * vt_soft * n0 - N;
 
   // Impulse
   auto calc_hunt_crossley_impulse = [&]() -> T {
-    const T fe = fe0 - time_step_ * stiffness * vn;
+    const T fe = fe0 - dt * stiffness * vn;
     if (fe <= 0.0) return 0.0;
     const T damping = 1.0 - d * vn;
     if (damping <= 0.0) return 0.0;
-    const T gn = time_step_ * fe * damping;
+    const T gn = dt * fe * damping;
     return gn;
   };
   const T gn = calc_hunt_crossley_impulse();
@@ -358,7 +348,7 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
 
   // Hessian
   const T dn_dvn =
-      CalcDiscreteHuntCrossleyDerivative(time_step_, vn, fe0, stiffness, d);
+      CalcDiscreteHuntCrossleyDerivative(dt, vn, fe0, stiffness, d);
 
   // Pn is SPD projection matrix with eigenvalues {1, 0, 0}.
   const Matrix3<T> Pn = normal_W * normal_W.transpose();
