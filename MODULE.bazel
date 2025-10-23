@@ -240,9 +240,9 @@ bazel_dep(
 )
 archive_override(
     module_name = "ruff_prebuilt",
-    integrity = "sha256-if1EuMaZTepzAZ602iehkxgLNLhaErgtAeti1RVNoR0=",
-    strip_prefix = "ruff_prebuilt-0.13.0.1",
-    url = "https://github.com/RobotLocomotion/ruff_prebuilt/releases/download/0.13.0.1/ruff_prebuilt-0.13.0.1.tar.gz",  # noqa
+    integrity = "sha256-5z6k9SMm8E4Lgx5UDTHblU7TjA6HEnF7nQkWoSDuYzg=",
+    strip_prefix = "ruff_prebuilt-0.14.1.1",
+    url = "https://github.com/RobotLocomotion/ruff_prebuilt/releases/download/0.14.1.1/ruff_prebuilt-0.14.1.1.tar.gz",  # noqa
 )
 
 # Load dependencies which are "private", i.e., not available for use by
