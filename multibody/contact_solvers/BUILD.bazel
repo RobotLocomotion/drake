@@ -261,6 +261,7 @@ drake_cc_library(
         "block_sparse_lower_triangular_or_symmetric_matrix.h",
     ],
     deps = [
+        "//common:autodiff",
         "//common:essential",
         "//common:parallelism",
     ],

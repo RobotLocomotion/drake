@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -299,6 +300,17 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
     ASSERT_THROW(A_symmetric.SetBlockFlat(0, 2, non_symmetric_matrix),
                  std::exception);
   }
+}
+
+// Sanity check for linker errors. We don't need a functional test.
+GTEST_TEST(TriangularBlockSparseMatrixTest, Autodiff) {
+  const std::vector<int> diag;
+  const std::vector<std::vector<int>> sparsity;
+  const BlockSparsityPattern pattern(diag, sparsity);
+  const BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>, false>
+      triangular(pattern);
+  const BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>, true>
+      symmetric(pattern);
 }
 
 }  // namespace

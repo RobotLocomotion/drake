@@ -95,7 +95,8 @@ class BlockSparsityPattern {
  directly.
 
  @tparam MatrixType   The Eigen matrix type of each block in block sparse
-                      matrix, e.g. Matrix3<double> or MatrixX<double>.
+                      matrix. The only valid options are `Matrix3d`, `MatrixXd`,
+                      or `MatrixX<AutoDiffXd>`.
  @pre MatrixType::RowsAtCompileType == MatrixType::ColsAtCompileTime.
  @tparam is_symmetric Determines whether the matrix is symmetric or lower
                       triangular.
@@ -110,6 +111,8 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
       BlockSparseLowerTriangularOrSymmetricMatrix);
 
   static_assert(MatrixType::RowsAtCompileTime == MatrixType::ColsAtCompileTime);
+
+  using Scalar = typename MatrixType::Scalar;
 
   /* Constructs a BlockSparseLowerTriangularOrSymmetricMatrix with the given
    block sparsity pattern.
@@ -180,12 +183,12 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
 
   /* Makes a dense representation of the matrix. Useful for debugging purposes.
    */
-  MatrixX<double> MakeDenseMatrix() const;
+  MatrixX<Scalar> MakeDenseMatrix() const;
 
   /* Makes a dense representation of the bottom right `num_blocks` blocks of the
    matrix.
    @pre 0 <= num_blocks <= block_cols(). */
-  MatrixX<double> MakeDenseBottomRightCorner(int num_blocks) const;
+  MatrixX<Scalar> MakeDenseBottomRightCorner(int num_blocks) const;
 
   /* Returns true if the ij-th block in this block sparse matrix is non-zero. In
    particular, this returns false if the indices provided are out of range. */
