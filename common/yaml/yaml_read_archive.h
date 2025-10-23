@@ -229,6 +229,25 @@ class YamlReadArchive final {
     }
   }
 
+  // For Eigen::Array.
+  template <typename NVP, typename T, int Rows, int Cols, int Options = 0,
+            int MaxRows = Rows, int MaxCols = Cols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Array<T, Rows, Cols, Options, MaxRows, MaxCols>&,
+               int32_t) {
+    if constexpr (Cols == 1) {
+      if constexpr (Rows >= 0) {
+        this->VisitArray(nvp.name(), Rows, nvp.value()->data());
+      } else if constexpr (MaxRows >= 0) {
+        this->VisitVector(nvp, MaxRows);
+      } else {
+        this->VisitVector(nvp);
+      }
+    } else {
+      this->VisitMatrix(nvp.name(), nvp.value());
+    }
+  }
+
   // If no other DoVisit matched, we'll treat the value as a scalar.
   template <typename NVP, typename T>
   void DoVisit(const NVP& nvp, const T&, int64_t) {
