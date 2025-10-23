@@ -5,7 +5,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 
 namespace drake {

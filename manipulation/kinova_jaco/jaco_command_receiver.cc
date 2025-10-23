@@ -1,7 +1,6 @@
 #include "drake/manipulation/kinova_jaco/jaco_command_receiver.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/lcm_messages.h"
 

@@ -11,7 +11,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"

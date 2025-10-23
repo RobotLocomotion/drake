@@ -87,7 +87,9 @@ MODULE_SETTINGS = {
                 "VTK_USE_X",
             ],
         }),
-        "cmake_undefines": select({
+        "cmake_undefines": [
+            "VTK_HAVE_XCURSOR",
+        ] + select({
             ":osx": [
                 "VTK_USE_X",
             ],
@@ -99,7 +101,7 @@ MODULE_SETTINGS = {
         "deps_extra": select({
             ":osx": [],
             "//conditions:default": [
-                "@drake//tools/workspace/x11:hdrs",
+                "@drake//tools/workspace/vtk_internal:x11_hdrs",
             ],
         }),
     },

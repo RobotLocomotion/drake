@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"

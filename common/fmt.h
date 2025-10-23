@@ -2,6 +2,7 @@
 
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 #include <fmt/format.h>
 
@@ -32,9 +33,20 @@ inline auto fmt_runtime(std::string_view s) {
 
 /** Returns `fmt::to_string(x)` but always with at least one digit after the
 decimal point. Different versions of fmt disagree on whether to omit the
-trailing ".0" when formatting integer-valued floating-point numbers. */
+trailing ".0" when formatting integer-valued floating-point numbers.
+@tparam T must be either `float` or `double`. */
 template <typename T>
-std::string fmt_floating_point(T x) {
+std::string fmt_floating_point(T x)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>);
+
+template <typename T>
+[[deprecated(
+    "\nDRAKE DEPRECATED: The fmt_floating_point function now only allows "
+    "'float' and 'double' as template arguments; other types are deprecated.\n"
+    "The deprecated code will be removed from Drake on or after 2026-02-01.")]]
+std::string fmt_floating_point(T x)
+  requires(!(std::is_same_v<T, float> || std::is_same_v<T, double>))
+{
   std::string result = fmt::format("{:#}", x);
   if (result.back() == '.') {
     result.push_back('0');

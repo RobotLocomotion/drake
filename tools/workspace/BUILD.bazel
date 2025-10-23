@@ -226,7 +226,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "libjpeg_turbo_internal",
     "opencl",
     "spdlog",
-    "x11",
     "zlib",
     # Remove with resource_tool deprecation 2026-02-01.
     "gflags",

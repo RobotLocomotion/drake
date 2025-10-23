@@ -9,7 +9,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"

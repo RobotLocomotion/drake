@@ -6,7 +6,7 @@
 #include "drake/bindings/pydrake/autodiffutils/autodiffutils_py.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
