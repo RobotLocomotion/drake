@@ -258,7 +258,8 @@ class CurvilinearJoint final : public Joint<T> {
   }
 
   /** @returns A reference to the underlying trajectory. */
-  const PiecewiseConstantCurvatureTrajectory<double>& get_trajectory() const {
+  const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+  get_trajectory() const {
     return curvilinear_path_;
   }
 

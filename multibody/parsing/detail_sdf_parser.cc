@@ -1836,7 +1836,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     if (!ParseDrakeCurves(diagnostic, node, &breaks, &turning_rates)) {
       return false;
     }
-    PiecewiseConstantCurvatureTrajectory<double> trajectory(
+    trajectories::PiecewiseConstantCurvatureTrajectory<double> trajectory(
         breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
         is_periodic);
     plant->AddJoint(std::make_unique<CurvilinearJoint<double>>(
