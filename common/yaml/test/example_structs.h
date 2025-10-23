@@ -325,6 +325,49 @@ using EigenMatrix00Struct = EigenStruct<0, 0>;
 using EigenMatrixUpTo6Struct =
     EigenStruct<Eigen::Dynamic, Eigen::Dynamic, 6, 6>;
 
+template <int Rows, int Cols, int MaxRows = Rows, int MaxCols = Cols>
+struct EigenArrayStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  EigenArrayStruct() {
+    if ((value.size() == 0) && (Rows != 0) && (Cols != 0)) {
+      value.resize(1, 1);
+    }
+    value.setConstant(kNominalDouble);
+  }
+
+  explicit EigenArrayStruct(const Eigen::Array<double, Rows, Cols>& value_in)
+      : value(value_in) {}
+
+  // We'd like to test a non-default value for Options, but it's awkward to have
+  // to specify one as part of our template arguments.  Instead, we'll use our
+  // variation in values of existing template arguments to establish variation
+  // of Options as well.  The particular choice of Rows and DontAlign here is
+  // irrelevant -- we just need any kind of variation.
+  static constexpr int Options = (MaxRows != Rows) ? Eigen::DontAlign : 0;
+
+  Eigen::Array<double, Rows, Cols, Options, MaxRows, MaxCols> value;
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+template <int Rows, int Cols>
+bool operator==(const EigenArrayStruct<Rows, Cols>& a,
+                const EigenArrayStruct<Rows, Cols>& b) {
+  return a.value == b.value;
+}
+
+using EigenArrayXStruct = EigenArrayStruct<Eigen::Dynamic, 1>;
+using EigenArray3Struct = EigenArrayStruct<3, 1>;
+using EigenArrayUpTo3Struct = EigenArrayStruct<Eigen::Dynamic, 1, 3, 1>;
+using EigenArrayXXStruct = EigenArrayStruct<Eigen::Dynamic, Eigen::Dynamic>;
+using EigenArray34Struct = EigenArrayStruct<3, 4>;
+using EigenArray00Struct = EigenArrayStruct<0, 0>;
+using EigenArrayUpTo6Struct =
+    EigenArrayStruct<Eigen::Dynamic, Eigen::Dynamic, 6, 6>;
+
 using Variant4 =
     std::variant<std::string, double, DoubleStruct, EigenVecStruct>;
 

@@ -205,6 +205,22 @@ class YamlWriteArchive final {
     }
   }
 
+  // For Eigen::Array.
+  template <typename NVP, typename T, int Rows, int Cols, int Options = 0,
+            int MaxRows = Rows, int MaxCols = Cols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Array<T, Rows, Cols, Options, MaxRows, MaxCols>&,
+               int32_t) {
+    if constexpr (Cols == 1) {
+      auto& value = *nvp.value();
+      const bool empty = value.size() == 0;
+      this->VisitArrayLike<T>(nvp.name(), value.size(),
+                              empty ? nullptr : &value.coeffRef(0));
+    } else {
+      this->VisitEigenArray<T>(nvp.name(), nvp.value());
+    }
+  }
+
   // If no other DoVisit matched, we'll treat the value as a scalar.
   template <typename NVP, typename T>
   void DoVisit(const NVP& nvp, const T&, int64_t) {
@@ -365,6 +381,21 @@ class YamlWriteArchive final {
     auto sub_node = internal::Node::MakeSequence();
     for (int i = 0; i < matrix->rows(); ++i) {
       Eigen::Matrix<T, Cols, 1> row = matrix->row(i);
+      YamlWriteArchive sub_archive;
+      sub_archive.Visit(drake::MakeNameValue("i", &row));
+      sub_node.Add(std::move(sub_archive.root_.At("i")));
+    }
+    root_.Add(name, std::move(sub_node));
+  }
+
+  template <typename T, int Rows, int Cols, int Options = 0, int MaxRows = Rows,
+            int MaxCols = Cols>
+  void VisitEigenArray(
+      const char* name,
+      const Eigen::Array<T, Rows, Cols, Options, MaxRows, MaxCols>* array) {
+    auto sub_node = internal::Node::MakeSequence();
+    for (int i = 0; i < array->rows(); ++i) {
+      Eigen::Array<T, Cols, 1> row = array->row(i);
       YamlWriteArchive sub_archive;
       sub_archive.Visit(drake::MakeNameValue("i", &row));
       sub_node.Add(std::move(sub_archive.root_.At("i")));
