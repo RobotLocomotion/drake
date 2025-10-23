@@ -35,6 +35,10 @@ build --java_runtime_version=remotejdk_11
 build --cxxopt=-std=c++23
 build --host_cxxopt=-std=c++23
 
+# Suppress warnings from module externals.
+build --per_file_copt=external/libx11./.*@-w
+build --per_file_copt=external/libxcb./.*@-w
+
 # The legacy __init__.py causes runfiles test flakes with Bazel >= 7, and
 # in any case we don't want this feature in the first place. We should
 # create all __init__.py files ourselves by hand anywhere we need them.
