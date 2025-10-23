@@ -235,14 +235,9 @@ single_version_override(
 
 bazel_dep(
     name = "ruff_prebuilt",
+    version = "0.14.1.3",
     dev_dependency = True,
     repo_name = "ruff",
-)
-archive_override(
-    module_name = "ruff_prebuilt",
-    integrity = "sha256-5z6k9SMm8E4Lgx5UDTHblU7TjA6HEnF7nQkWoSDuYzg=",
-    strip_prefix = "ruff_prebuilt-0.14.1.1",
-    url = "https://github.com/RobotLocomotion/ruff_prebuilt/releases/download/0.14.1.1/ruff_prebuilt-0.14.1.1.tar.gz",  # noqa
 )
 
 # Load dependencies which are "private", i.e., not available for use by
