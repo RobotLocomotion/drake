@@ -50,8 +50,8 @@ ALIASES                = "default=@n @a Default:" \
                          "experimental=@warning This feature is considered to be **experimental** and may change or be removed at any time, without any deprecation notice ahead of time." \
                          "pydrake_mkdoc_identifier{1}=" \
                          "exclude_from_pydrake_mkdoc{1}=" \
-                         "python_details_begin=<p><span class='_python_details_begin'></span>" \
-                         "python_details_end=<span class='_python_details_end'></span></p>"
+                         "python_details_begin=<p><details><summary>Click to expand Python code...</summary>" \
+                         "python_details_end=</details></p>"
 OPTIMIZE_OUTPUT_FOR_C  = NO
 OPTIMIZE_OUTPUT_JAVA   = NO
 OPTIMIZE_FOR_FORTRAN   = NO
