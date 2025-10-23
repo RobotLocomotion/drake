@@ -39,6 +39,77 @@ Eigen::VectorBlock<VectorX<T>> PooledSapModel<T>::clique_segment(
 }
 
 template <typename T>
+void PooledSapModel<T>::ResetParameters(
+    std::unique_ptr<PooledSapParameters<T>> params) {
+  // Check validity of the new parameters
+  DRAKE_DEMAND(params != nullptr);
+  DRAKE_DEMAND(params->time_step > 0);
+  const int num_bodies = ssize(params->body_cliques);
+  DRAKE_DEMAND(num_bodies > 0);
+  DRAKE_DEMAND(ssize(params->body_is_floating) == num_bodies);
+  DRAKE_DEMAND(ssize(params->body_mass) == num_bodies);
+  DRAKE_DEMAND(params->body_cliques[0] < 0);  // Always for the world.
+  const int num_cliques = params->A.size();
+  DRAKE_DEMAND(ssize(params->clique_nu) == num_cliques);
+
+  DRAKE_DEMAND(params->J_WB.size() == num_bodies);
+  for (int b = 0; b < num_bodies; ++b) {
+    const int c = params->body_cliques[b];
+    DRAKE_DEMAND(c < num_cliques);
+    if (c >= 0) {
+      DRAKE_DEMAND(params->J_WB[b].cols() == params->A[c].rows());
+    }
+  }
+
+  // Pre-compute the size of each clique and its starting index in the
+  // full velocity vector.
+  clique_sizes_.clear();
+  clique_start_.clear();
+  clique_sizes_.reserve(num_cliques);
+  clique_start_.reserve(num_cliques + 1);
+  clique_start_.push_back(0);
+  int num_velocities = 0;
+
+  for (int c = 0; c < num_cliques; ++c) {
+    const int clique_nv = params->A[c].rows();
+    DRAKE_DEMAND(params->A[c].cols() == clique_nv);
+    DRAKE_DEMAND(params->clique_nu[c] <= clique_nv);
+
+    // Here we are pushing the start for the next clique, c+1.
+    clique_start_.push_back(clique_start_.back() + clique_nv);
+    clique_sizes_.push_back(clique_nv);
+
+    num_velocities += clique_nv;
+  }
+
+  DRAKE_DEMAND(params->r.size() == num_velocities);
+  DRAKE_DEMAND(params->v0.size() == num_velocities);
+  DRAKE_DEMAND(params->effort_limits.size() == num_velocities);
+
+  // All checks passed; set the new parameters.
+  params_ = std::move(params);
+  num_velocities_ = num_velocities;
+  num_bodies_ = num_bodies;
+
+  // Reset all constraint pools.
+  coupler_constraints_pool_.Clear();
+  gain_constraints_pool_.Clear();
+  limit_constraints_pool_.Clear();
+  patch_constraints_pool_.Clear();
+
+  // Pre-compute spatial velocity for each body at the current state.
+  V_WB0_.Resize(num_bodies_);
+  CalcBodySpatialVelocities(params_->v0, &V_WB0_);
+
+  // Set the diagonal approximation of the Delassus operator for constraints
+  // for which the Jacobian J is the identity matrix.
+  clique_delassus_.Resize(clique_sizes_, clique_sizes_);
+  for (int c = 0; c < params_->A.size(); ++c) {
+    clique_delassus_[c] = params_->A[c].diagonal().cwiseInverse();
+  }
+}
+
+template <typename T>
 void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
                                                  VectorX<T>* result) const {
   DRAKE_ASSERT(v.size() == num_velocities());

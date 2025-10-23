@@ -276,7 +276,6 @@ void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
   }
 
   model->ResetParameters(std::move(params));
-  model->set_stiction_tolerance(plant().stiction_tolerance());
 
   // Add contact constraints. We'll need to clear the patch constraints pool
   // here to avoid conflicting hydro and point contact constraints.
@@ -315,6 +314,11 @@ void PooledSapBuilder<T>::AllocatePatchConstraints(
   }
 
   patches.Resize(num_pairs_per_patch);
+
+  // Set the stiction tolerance (stiction velocity, in m/s). Unlike other
+  // contact parameters (stiffness, dissipation, friction coefficients, etc.),
+  // this regularization parameter is shared by all contacts.
+  patches.set_stiction_tolerance(plant().stiction_tolerance());
 }
 
 template <typename T>

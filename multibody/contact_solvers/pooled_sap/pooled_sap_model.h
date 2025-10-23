@@ -32,45 +32,9 @@ using internal::BlockSparsityPattern;
  *
  * These parameters are owned by the PooledSapModel, and are set externally by
  * a PooledSapBuilder.
- *
- * TODO(CENIC): Consider some restructuring here. It's not obvious to me (Vince)
- * that this struct is better than having these parameters as members of
- * PooledSapModel directly.
  */
 template <typename T>
 struct PooledSapParameters {
-  // Check some conditions that are required for a valid SAP problem.
-  void VerifyInvariants() const {
-    DRAKE_DEMAND(time_step > 0);
-    const int num_bodies = ssize(body_cliques);
-    DRAKE_DEMAND(ssize(body_is_floating) == num_bodies);
-    DRAKE_DEMAND(ssize(body_mass) == num_bodies);
-    DRAKE_DEMAND(num_bodies > 0);
-    DRAKE_DEMAND(body_cliques[0] < 0);  // Always for the world.
-
-    int num_velocities = 0;
-    const int num_cliques = A.size();
-    DRAKE_DEMAND(ssize(clique_nu) == num_cliques);
-    for (int c = 0; c < num_cliques; ++c) {
-      DRAKE_DEMAND(A[c].rows() == A[c].cols());
-      const int clique_nv = A[c].rows();
-      num_velocities += clique_nv;
-      DRAKE_DEMAND(clique_nu[c] <= clique_nv);
-    }
-    DRAKE_DEMAND(r.size() == num_velocities);
-    DRAKE_DEMAND(v0.size() == num_velocities);
-    DRAKE_DEMAND(effort_limits.size() == num_velocities);
-
-    DRAKE_DEMAND(J_WB.size() == num_bodies);
-    for (int b = 0; b < num_bodies; ++b) {
-      const int c = body_cliques[b];
-      DRAKE_DEMAND(c < num_cliques);
-      if (c >= 0) {
-        DRAKE_DEMAND(J_WB[b].cols() == A[c].rows());
-      }
-    }
-  }
-
   // The discrete time step δt.
   T time_step{0.0};
 
@@ -162,53 +126,6 @@ class PooledSapModel {
         limit_constraints_pool_(this),
         patch_constraints_pool_(this) {}
 
-  // Reset problem parameters. Verifies that the parameters are valid, then
-  // computes some auxiliary data that will be useful during the solve.
-  void ResetParameters(std::unique_ptr<PooledSapParameters<T>> params) {
-    DRAKE_DEMAND(params != nullptr);
-    params->VerifyInvariants();
-
-    params_ = std::move(params);
-    num_bodies_ = ssize(params_->body_cliques);
-
-    // Pre-compute the size of each clique and its starting index in the
-    // full velocity vector.
-    const int num_cliques = params_->A.size();
-    clique_sizes_.clear();
-    clique_start_.clear();
-    clique_sizes_.reserve(num_cliques);
-    clique_start_.reserve(num_cliques + 1);
-    clique_start_.push_back(0);
-    num_velocities_ = 0;
-    auto& A = params_->A;
-    // TODO(CENIC): this loop feels redundant with the loop in VerifyInvariants.
-    for (int c = 0; c < A.size(); ++c) {
-      const int clique_nv = A[c].rows();
-      num_velocities_ += clique_nv;
-      clique_sizes_.push_back(clique_nv);
-      // Here we are pushing the start for the next clique, c+1.
-      clique_start_.push_back(clique_start_.back() + clique_nv);
-    }
-    DRAKE_DEMAND(params_->r.size() == num_velocities_);
-
-    // Reset all constraint pools.
-    coupler_constraints_pool_.Clear();
-    gain_constraints_pool_.Clear();
-    limit_constraints_pool_.Clear();
-    patch_constraints_pool_.Clear();
-
-    // Pre-compute spatial velocity for each body at the current state.
-    V_WB0_.Resize(num_bodies_);
-    CalcBodySpatialVelocities(params_->v0, &V_WB0_);
-
-    // Set the diagonal approximation of the Delassus operator for constraints
-    // for which the Jacobian J is the identity matrix.
-    clique_delassus_.Resize(clique_sizes_, clique_sizes_);
-    for (int c = 0; c < A.size(); ++c) {
-      clique_delassus_[c] = A[c].diagonal().cwiseInverse();
-    }
-  }
-
   // Release ownership of parameters so that we can re-use memory.
   // The typical usage is something like:
   //
@@ -219,6 +136,10 @@ class PooledSapModel {
   std::unique_ptr<PooledSapParameters<T>> ReleaseParameters() {
     return std::move(params_);
   }
+
+  // Reset problem parameters. Verifies that the parameters are valid and
+  // computes some auxiliary data that will be useful during the solve.
+  void ResetParameters(std::unique_ptr<PooledSapParameters<T>> params);
 
   // Read-only access to parameters.
   const PooledSapParameters<T>& params() const {
@@ -335,11 +256,6 @@ class PooledSapModel {
   int num_constraints() const {
     return num_patch_constraints() + num_gain_constraints() +
            num_limit_constraints() + num_coupler_constraints();
-  }
-
-  // TODO(CENIC): set/parse this in a more reasonable place
-  void set_stiction_tolerance(double stiction_tolerance) {
-    patch_constraints_pool_.set_stiction_tolerance(stiction_tolerance);
   }
 
   CouplerConstraintsPool& coupler_constraints_pool() {
