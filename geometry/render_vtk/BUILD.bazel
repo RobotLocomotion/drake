@@ -8,12 +8,10 @@ load(
 )
 load(
     "//tools/skylark:drake_optional.bzl",
-    "drake_cc_optional_googletest",
     "drake_cc_optional_library",
     "drake_cc_variant_library",
-    "drake_genrule_optional",
-    "drake_sh_optional_test",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # This render_vtk package is only implemented when
@@ -172,7 +170,7 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
     data = [
@@ -190,7 +188,6 @@ drake_cc_optional_googletest(
         "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ],
-    opt_in_condition = ":enabled",
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_vtk",
@@ -208,7 +205,7 @@ drake_cc_optional_googletest(
 )
 
 # Re-run internal_render_engine_vtk_test, but with the GLX backend.
-drake_sh_optional_test(
+drake_sh_test(
     name = "internal_render_engine_vtk_glx_test",
     timeout = "moderate",
     srcs = ["internal_render_engine_vtk_test"],
@@ -225,11 +222,10 @@ drake_sh_optional_test(
         ":internal_render_engine_vtk_test",
     ],
     display = True,
-    opt_in_condition = ":enabled",
     tags = vtk_test_tags(),
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_render_engine_vtk_no_display_test",
     args = select({
         # This test only makes sense on Linux, because only Linux uses the
@@ -237,7 +233,6 @@ drake_cc_optional_googletest(
         ":osx": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
-    opt_in_condition = ":enabled",
     tags = vtk_test_tags(),
     deps = [
         ":factory",
@@ -245,9 +240,8 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_vtk_util_test",
-    opt_in_condition = ":enabled",
     deps = [
         ":internal_vtk_util",
         "@vtk_internal//:vtkCommonCore",
@@ -256,9 +250,8 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "render_engine_vtk_params_test",
-    opt_in_condition = ":enabled",
     deps = [
         ":render_engine_vtk_params",
         "//common/test_utilities:expect_throws_message",
@@ -269,12 +262,11 @@ drake_cc_optional_googletest(
 # The generated glTF file can be removed when we're no longer testing the glTF
 # parser patch (see :internal_vtk_gltf_parser_patch_test).
 
-drake_genrule_optional(
+genrule(
     name = "gltf_pyramid_no_color_texture",
     srcs = ["//geometry/render:test/meshes/fully_textured_pyramid.gltf"],
     outs = ["test/pyramid_no_color_texture.gltf"],
     cmd = "sed '/baseColorTexture/,/},/d' $< > $@",
-    opt_in_condition = ":enabled",
 )
 
 PYRAMID_RESOURCES = [
@@ -312,10 +304,9 @@ filegroup(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_vtk_gltf_parser_patch_test",
     data = [":patch_test_models"],
-    opt_in_condition = ":enabled",
     deps = [
         ":factory",
         "//common:find_resource",
