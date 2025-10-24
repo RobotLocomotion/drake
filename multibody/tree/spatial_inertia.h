@@ -896,6 +896,100 @@ class SpatialInertia {
     return F_Bo_E;
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Treating this as a unit spatial inertia (i.e., mass=1)
+  these methods return explicit columns of the unit spatial inertia where
+  the column number (0-5) is known at compile time. This is useful for
+  obscure internal computation reasons (see CalcMassMatrixInM()). Each
+  column costs only a single flop, and these methods will be inlined for
+  further optimization opportunities. The elements of a unit spatial inertia:
+
+      Gxx Gxy Gxz  0  -pz  py
+      Gxy Gyy Gyz  pz  0  -px
+      Gxz Gyz Gzz -py  px  0
+       0   pz -py  1   0   0
+      -pz  0   px  0   1   0
+       py -px  0   0   0   1
+
+  Compare this with the 6 explicit methods below. Incidentally, since a
+  spatial inertia is symmetric, these can also be considered rows. */
+
+  Vector6<T> unit_col0() const {
+    const UnitInertia<T>& G = G_SP_E_;
+    const Vector3<T>& p = p_PScm_E_;
+    Vector6<T> c0;
+    c0[0] = G.Ixx();
+    c0[1] = G.Ixy();
+    c0[2] = G.Ixz();
+    c0[3] = 0;
+    c0[4] = -p[2];  // -pz
+    c0[5] = p[1];   // py
+    return c0;
+  }
+
+  Vector6<T> unit_col1() const {
+    const UnitInertia<T>& G = G_SP_E_;
+    const Vector3<T>& p = p_PScm_E_;
+    Vector6<T> c1;
+    c1[0] = G.Ixy();
+    c1[1] = G.Iyy();
+    c1[2] = G.Iyz();
+    c1[3] = p[2];  // pz
+    c1[4] = 0;
+    c1[5] = -p[0];  // -px
+    return c1;
+  }
+
+  Vector6<T> unit_col2() const {
+    const UnitInertia<T>& G = G_SP_E_;
+    const Vector3<T>& p = p_PScm_E_;
+    Vector6<T> c2;
+    c2[0] = G.Ixz();
+    c2[1] = G.Iyz();
+    c2[2] = G.Izz();
+    c2[3] = -p[1];  // -py
+    c2[4] = p[0];   // px
+    c2[5] = 0;
+    return c2;
+  }
+
+  Vector6<T> unit_col3() const {
+    const Vector3<T>& p = p_PScm_E_;
+    Vector6<T> c3;
+    c3[0] = 0;
+    c3[1] = p[2];   // pz
+    c3[2] = -p[1];  // -py
+    c3[3] = 1;
+    c3[4] = 0;
+    c3[5] = 0;
+    return c3;
+  }
+
+  Vector6<T> unit_col4() const {
+    const Vector3<T>& p = p_PScm_E_;
+    Vector6<T> c4;
+    c4[0] = -p[2];  // -pz
+    c4[1] = 0;
+    c4[2] = p[0];  // px
+    c4[3] = 0;
+    c4[4] = 1;
+    c4[5] = 0;
+    return c4;
+  }
+
+  Vector6<T> unit_col5() const {
+    const Vector3<T>& p = p_PScm_E_;
+    Vector6<T> c5;
+    c5[0] = p[1];   // py
+    c5[1] = -p[0];  // -px
+    c5[2] = 0;
+    c5[3] = 0;
+    c5[4] = 0;
+    c5[5] = 1;
+    return c5;
+  }
+#endif
+
  private:
   // Constructs an all-NaN inertia.
   SpatialInertia() = default;

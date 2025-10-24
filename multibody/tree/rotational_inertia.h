@@ -771,6 +771,17 @@ class RotationalInertia {
   }
   ///@}
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Access to individual elements is needed for some
+  // obscure internal computations.
+  const T& Ixx() const { return I_SP_E_(0, 0); }
+  const T& Iyy() const { return I_SP_E_(1, 1); }
+  const T& Izz() const { return I_SP_E_(2, 2); }
+  const T& Ixy() const { return I_SP_E_(1, 0); }
+  const T& Ixz() const { return I_SP_E_(2, 0); }
+  const T& Iyz() const { return I_SP_E_(2, 1); }
+#endif
+
  protected:
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   /// No check is done to determine if the result is physically valid.
