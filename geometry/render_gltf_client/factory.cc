@@ -7,7 +7,8 @@ namespace drake {
 namespace geometry {
 
 // Definition of extern bool in factory.h. When we build against *this* .cc file
-// RenderEngineGl is available conditionally, based on DRAKE_ALLOW_NETWORK.
+// RenderEngineGltfClient is available conditionally (but still goverened by
+// DRAKE_ALLOW_NETWORK at runtime).
 const bool kHasRenderEngineGltfClient = true;
 
 std::unique_ptr<render::RenderEngine> MakeRenderEngineGltfClient(

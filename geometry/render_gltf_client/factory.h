@@ -68,8 +68,8 @@ extern const bool kHasRenderEngineGltfClient;
       // needs, you may now create threads if desired.
       @endcode
 
-   @throws std::exception if kHasRenderEngineGltfClient is false, or if
-   disabled via the environment variable DRAKE_ALLOW_NETWORK.
+ @throws std::exception if kHasRenderEngineGltfClient is false, or if disabled
+ via the environment variable DRAKE_ALLOW_NETWORK.
 
  [libcurl]: https://curl.se/libcurl/
  [libcurl_threadsafe]: https://curl.se/libcurl/c/threadsafe.html

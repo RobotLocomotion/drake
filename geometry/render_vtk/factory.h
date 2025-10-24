@@ -88,7 +88,7 @@ extern const bool kHasRenderEngineVtk;
  <!-- TODO(SeanCurtis-TRI): Change this policy to be more selective when other
       renderers with different properties are introduced. -->
 
- @throws std::runtime_error if kHasRenderEngineVtk is false.
+ @throws std::exception if kHasRenderEngineVtk is false.
  */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineVtk(
     const RenderEngineVtkParams& params);
