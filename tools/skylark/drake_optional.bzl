@@ -1,14 +1,6 @@
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load("//tools/lint:cpplint.bzl", "cpplint_extra")
-load(
-    ":drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
-)
-load(":drake_py.bzl", "drake_py_binary")
-load(":drake_sh.bzl", "drake_sh_test")
-load(":kwargs.bzl", "amend")
+load(":drake_cc.bzl", "drake_cc_googletest", "drake_cc_library")
 
 # This file contains macros that help abbreviate patterns to make 'optional'
 # build targets, meaning that in general, there is some condition (e.g., build
@@ -130,6 +122,7 @@ def drake_cc_optional_library(
         }),
         # N.B. 'internal' (passed below) adds this tag already.
         tags = [] if internal else ["exclude_from_package"],
+        visibility = visibility,
         copts = select({
             opt_in_condition: copts or [],
             "//conditions:default": [],
@@ -144,59 +137,10 @@ def drake_cc_optional_library(
         }),
         testonly = testonly,
         internal = internal,
-        visibility = visibility,
     )
     cpplint_extra(
         name = name + "_cpplint",
         srcs = hdrs + srcs,
-    )
-
-def drake_cc_optional_binary(
-        name,
-        *,
-        opt_in_condition,
-        srcs,
-        copts = None,
-        testonly = False,
-        visibility = ["//visibility:private"],
-        deps = None,
-        data = None):
-    """Declares a private binary (package-local, not installed) guarded by a
-    configuration setting. When the configuration is disabled, the binary is
-    totally empty (but still a valid binary label). This is used for helper
-    or utility code that's called by a fully-feataured back-end implementation.
-
-    The opt_in_condition specifies the configuration setting that chooses
-    which cc files to use.
-
-    This rule enables linting of all of the mentioned source files, even if
-    the compiler will not build them in the current configuration.
-    """
-
-    # Always generate a dummy file with an empty main() function so that the
-    # target can link when disabled (i.e., it has no srcs).
-    empty_main_file_name = name + "_empty_main.cc"
-    generate_file(
-        name = empty_main_file_name,
-        content = "int main() { return 0; }",
-    )
-    drake_cc_binary(
-        name = name,
-        srcs = select({
-            opt_in_condition: srcs,
-            "//conditions:default": [empty_main_file_name],
-        }),
-        copts = select({
-            opt_in_condition: copts or [],
-            "//conditions:default": [],
-        }),
-        deps = deps,  # TODO
-        testonly = testonly,
-        visibility = visibility,
-    )
-    cpplint_extra(
-        name = name + "_cpplint",
-        srcs = srcs,
     )
 
 def drake_cc_optional_googletest(
@@ -218,7 +162,8 @@ def drake_cc_optional_googletest(
     which cc files to use.
 
     This rule enables linting of all of the mentioned source files, even if
-    the compiler will not build them in the current configuration.
+    the compiler will not build them in the current configuration. We want all
+    files to be lint-free, even when the feature is disabled.
     """
     srcs = ["test/{}.cc".format(name)]
     if use_default_main:
@@ -244,75 +189,4 @@ def drake_cc_optional_googletest(
     cpplint_extra(
         name = name + "_cpplint",
         srcs = srcs,
-    )
-
-def drake_sh_optional_test(
-        name,
-        *,
-        opt_in_condition,
-        srcs,
-        data,
-        **kwargs):
-    """Declares a test that trivially passes under certain configurations.
-
-    This is intended only for additional testing of drake_cc_optional_googletest
-    targets, where a test executable is built with a trivial 'main' function
-    under certain configurations. As such, the configurations under which this
-    test is applied should match those under which the
-    drake_cc_optional_googletest is compiled.
-
-    The opt_in_condition specifies the configuration setting that chooses
-    whether to use the srcs specified.
-    """
-
-    # Generate a dummy script to use for 'srcs' in the opt-out case.
-    empty_sh_name = name + "_empty.sh"
-    generate_file(
-        name = name + "_empty.sh",
-        content = "",
-    )
-    drake_sh_test(
-        name = name,
-        srcs = select({
-            opt_in_condition: srcs,
-            "//conditions:default": [empty_sh_name],
-        }),
-        data = select({
-            opt_in_condition: data,
-            "//conditions:default": [],
-        }),
-        **kwargs
-    )
-
-def drake_genrule_optional(
-        name,
-        *,
-        opt_in_condition,
-        srcs,
-        outs,
-        cmd,
-        visibility = ["//visibility:private"]):
-    """Declares a genrule that doesn't run under certain configurations.
-
-    This is intended for genrules corresponding with build targets created by
-    the other macros in this file, for which it isn't necessary to generate the
-    output under the configurations where such targets aren't compiled or run.
-
-    The opt_in_condition specifies the configuration setting that chooses
-    whether to use the cmd specified to generate the otus from the srcs.
-    """
-    native.genrule(
-        name = name,
-        srcs = select({
-            opt_in_condition: srcs,
-            "//conditions:default": [],
-        }),
-        outs = outs,
-        cmd = select({
-            opt_in_condition: cmd,
-            # Create empty outputs, since the 'outs' of a genrule can't be
-            # conditional.
-            "//conditions:default": "touch $(OUTS)",
-        }),
-        visibility = visibility,
     )
