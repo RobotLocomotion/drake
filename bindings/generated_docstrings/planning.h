@@ -17,6 +17,7 @@
 // #include "drake/planning/collision_checker.h"
 // #include "drake/planning/collision_checker_context.h"
 // #include "drake/planning/collision_checker_params.h"
+// #include "drake/planning/counted_dynamic_bitset.h"
 // #include "drake/planning/distance_and_interpolation_provider.h"
 // #include "drake/planning/dof_mask.h"
 // #include "drake/planning/edge_measure.h"
