@@ -1,0 +1,20 @@
+Drake's solution to
+https://github.com/gazebosim/sdformat/issues/1592
+
+Note, this isn't a *complete* solution. The _warnIfDensityIsUnset parameter
+has merely been muted. It should actually be removed all the way up the call
+stack.
+
+--- src/Collision.cc
++++ src/Collision.cc
+@@ -275,6 +275,10 @@ void Collision::CalculateInertial(
+   sdf::ElementPtr _autoInertiaParams,
+   bool _warnIfDensityIsUnset)
+ {
++  // Using a default should never result in a warning message; so we stomp on
++  // the input.
++  _warnIfDensityIsUnset = false;
++
+   // Order of precedence for density:
+   double density;
+   // 1. Density explicitly set in this collision, either from the

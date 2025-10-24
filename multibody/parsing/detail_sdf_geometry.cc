@@ -180,6 +180,21 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       // parsing should handle the case of this missing.
       DRAKE_DEMAND(mesh_uri.has_value());
       if (!mesh_uri.has_value()) return nullptr;
+      // Note: if the sdf hasn't specified a URI for the <mesh> tag, SDFormat
+      // provides "__default__".
+      if (*mesh_uri == "__default__") {
+        // Note: this is tested in detail_sdf_parser_test.cc in the
+        // AutoInertiaForMeshBadData test.
+        std::optional<int> line_number_maybe = mesh_element->LineNumber();
+        diagnostic.Error(
+            mesh_element,
+            fmt::format(
+                "The <mesh> tag{} is missing the required 'uri' attribute.",
+                line_number_maybe
+                    ? fmt::format(" on line {}", *line_number_maybe)
+                    : std::string()));
+        return nullptr;
+      }
       const std::string file_name = resolve_filename(diagnostic, *mesh_uri);
       Vector3d scale(1, 1, 1);
       if (mesh_element->HasElement("scale")) {
