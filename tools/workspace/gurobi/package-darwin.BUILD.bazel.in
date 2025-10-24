@@ -9,7 +9,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: Gurobi 10.0 is not installed at {gurobi_home}' && false",  # noqa
+    cmd = "echo 'error: Gurobi 12.0 is not installed at {gurobi_home}' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
@@ -23,7 +23,7 @@ cc_library(
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_home}/lib",
-        "-lgurobi100",
+        "-lgurobi120",
         "-Wl,-rpath,{gurobi_home}/lib",
     ],
     visibility = ["//visibility:public"],
