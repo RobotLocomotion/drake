@@ -586,7 +586,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * t³, `this += other` will correspond to t³ + t².
    * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
-   * `this->get_segment_times().
+   * `this->get_segment_times()`.
    */
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 
@@ -597,7 +597,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * t³, `this -= other` will correspond to t² - t³.
    * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
-   * `this->get_segment_times().
+   * `this->get_segment_times()`.
    */
   PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
 
@@ -609,7 +609,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * correspond to t⁵.
    * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
-   * `this->get_segment_times().
+   * `this->get_segment_times()`.
    */
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
 
@@ -624,7 +624,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * t³, `this + other` will correspond to t³ + t².
    * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
-   * `this->get_segment_times().
+   * `this->get_segment_times()`.
    */
   const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
 
@@ -635,7 +635,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * t³, `this - other` will correspond to t² - t³.
    * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
-   * `this->get_segment_times().
+   * `this->get_segment_times()`.
    */
   const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
 
@@ -652,7 +652,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponds to t³, `this *= other` will correspond to t⁵.
    * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
-   * `this->get_segment_times()1.
+   * `this->get_segment_times()`.
    */
   const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
 

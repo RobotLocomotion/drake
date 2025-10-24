@@ -216,7 +216,7 @@ class CollisionChecker {
     }
   }
 
-  /** @returns a `const reference to the full model's plant. */
+  /** @returns a `const` reference to the full model's plant. */
   const multibody::MultibodyPlant<double>& plant() const {
     return model().plant();
   }

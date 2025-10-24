@@ -249,7 +249,7 @@ class ConstraintSolver {
   /// is:
   /// -# Call ConstructBaseDiscretizedTimeLcp()
   /// -# Select an integration step size, dt
-  /// -# Compute `kᴺ' and `kᴸ` in the problem data, accounting for dt as
+  /// -# Compute `kᴺ` and `kᴸ` in the problem data, accounting for dt as
   ///    necessary
   /// -# Call UpdateDiscretizedTimeLcp(), obtaining MM and qq that encode the
   ///    linear complementarity problem

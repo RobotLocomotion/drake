@@ -137,7 +137,7 @@ class FreeBody {
   /// -----------|-------------------------------------------------
   /// quat_NB    | Quaternion relating frame N to frame B: [e0, e1, e2, e3]
   ///            | Note: quat_NB is analogous to the rotation matrix R_NB.
-  /// quatDt     | Time-derivative of `quat_NB', i.e., [ė0, ė1, ė2, ė3].
+  /// quatDt     | Time-derivative of `quat_NB`, i.e., [ė0, ė1, ė2, ė3].
   /// w_NB_B     | B's angular velocity in N, expressed in B.
   /// alpha_NB_B | B's angular acceleration in N, expressed in B.
   ///

@@ -2503,11 +2503,12 @@ Parameter ``theta_lambda``:
 
 Parameter ``p``:
     position vector from frame A's origin to frame B's origin,
-    expressed in frame A. In monogram notation p is denoted ``p_AoBo_A
+    expressed in frame A. In monogram notation p is denoted
+    ``p_AoBo_A``.
 
 Raises:
     RuntimeError in debug builds if the rotation matrix that is built
-    from `theta_lambda`` is invalid.
+    from ``theta_lambda`` is invalid.
 
 See also:
     RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&))""";
@@ -5060,7 +5061,7 @@ The derivative vector for each AutoDiffScalar in the output contains
 the derivatives with respect to all components of the argument
 :math:`x`.
 
-The return type of this function is a matrix with the `best' possible
+The return type of this function is a matrix with the 'best' possible
 AutoDiffScalar scalar type, in the following sense: - If the number of
 derivatives can be determined at compile time, the AutoDiffScalar
 derivative vector will have that fixed size. - If the maximum number

@@ -133,7 +133,7 @@ materials can optionally provide defaults for missing properties.
 Raises:
     RuntimeError if ``dissipation`` is negative, ``point_stiffness``
     is not positive, of any of the contact material properties have
-    already been defined in ``properties`.
+    already been defined in ``properties``.
 
 Precondition:
     ``properties`` is not nullptr.)""";
@@ -7870,9 +7870,9 @@ returned, otherwise all geometries will be returned.
 
 Note:
     Specifying ``role`` *can* have the effect of filtering geometries
-    *from* the given geometry_set` -- if a GeometryId is an explicit
-    member of the geometry set but does not have the requested role,
-    it will not be contained in the output.
+    *from* the given ``geometry_set`` -- if a GeometryId is an
+    explicit member of the geometry set but does not have the
+    requested role, it will not be contained in the output.
 
 Parameter ``geometry_set``:
     The encoding of the set of geometries.
