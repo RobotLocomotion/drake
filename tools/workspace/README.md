@@ -116,8 +116,14 @@ external "foo"):
   bazel run //tools/workspace:new_release -- --lint --commit foo
 ```
 
-If the automated update doesn't succeed, then you'll need to make the edits
-manually.  Ask for help in drake developers slack channel for ``#build``.
+If the automated update doesn't succeed and the error message is
+"Reversed (or previously applied) patch detected!" and refers to a patch
+named /upstream/, try to remove the patch from Drake by deleting the patch
+file and removing its mention in the repository.bzl. If the update then works,
+the deletions can be amended into the commit for that external.
+
+If it still fails, or for any other errors, you'll need to make the edits
+manually. Ask for help in drake developers slack channel for ``#build``.
 
 If the automated update succeeded, check the output of ``new_release`` for any
 additional steps that need to be manually performed to complete the upgrade.
