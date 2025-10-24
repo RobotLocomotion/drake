@@ -1,17 +1,15 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
 load(
     "//tools/skylark:drake_optional.bzl",
-    "drake_cc_optional_binary",
-    "drake_cc_optional_googletest",
     "drake_cc_optional_library",
     "drake_cc_variant_library",
-    "drake_genrule_optional",
 )
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
@@ -172,10 +170,9 @@ drake_cc_optional_library(
 
 # === test/ ===
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "factory_test",
     allow_network = ["render_gltf_client"],
-    opt_in_condition = ":enabled",
     deps = [
         ":factory",
         ":internal_render_engine_gltf_client",
@@ -187,18 +184,16 @@ drake_cc_optional_googletest(
 # N.B. This test asserts that the factory throws because of DRAKE_ALLOW_NETWORK.
 # Separately, we'll test that the factory throws because it's disabled via
 # :enabled via the below :disabled_render_gltf_client_test.
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "factory_denied_test",
     allow_network = ["none"],
-    opt_in_condition = ":enabled",
     deps = [
         ":factory",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
-# N.B. This test should always be enabled, regardless of build configuration,
-# because the `no_factory.cc` used by :factory_disabled is always compiled.
+# N.B. This test asserts that the no_factory flavor throws unconditionally.
 drake_cc_googletest(
     name = "disabled_render_gltf_client_test",
     deps = [
@@ -209,18 +204,16 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "render_engine_gltf_client_params_test",
-    opt_in_condition = ":enabled",
     deps = [
         ":render_engine_gltf_client_params",
         "//common/yaml",
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_http_service_test",
-    opt_in_condition = ":enabled",
     deps = [
         ":internal_http_service",
         "//common:temp_directory",
@@ -229,9 +222,8 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_http_service_curl_test",
-    opt_in_condition = ":enabled",
     deps = [
         ":internal_http_service_curl",
         "//common:temp_directory",
@@ -253,9 +245,8 @@ filegroup(
     ],
 )
 
-drake_cc_optional_library(
+drake_cc_library(
     name = "internal_sample_image_data",
-    opt_in_condition = ":enabled",
     testonly = True,
     srcs = ["test/internal_sample_image_data.cc"],
     hdrs = ["test/internal_sample_image_data.h"],
@@ -265,12 +256,11 @@ drake_cc_optional_library(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_render_client_test",
     data = [
         ":test_resources",
     ],
-    opt_in_condition = ":enabled",
     deps = [
         ":internal_render_client",
         ":internal_sample_image_data",
@@ -281,13 +271,12 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_render_engine_gltf_client_test",
     data = [
         ":test_resources",
         "//geometry/render:test_models",
     ],
-    opt_in_condition = ":enabled",
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gltf_client",
@@ -312,11 +301,10 @@ drake_py_binary(
     ],
 )
 
-drake_cc_optional_binary(
+drake_cc_binary(
     name = "server_vtk_backend",
     testonly = True,
     srcs = ["test/server_vtk_backend.cc"],
-    opt_in_condition = ":enabled",
     deps = [
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:factory",
@@ -346,15 +334,14 @@ filegroup(
 
 # The integration test was written using OBJ-based model files, so even though
 # our nominal mesh format is glTF now, we'll still use OBJ for our testing.
-drake_genrule_optional(
+genrule(
     name = "gen_mustard_bottle",
     srcs = ["@drake_models//:ycb/006_mustard_bottle.sdf"],
     outs = ["test/006_mustard_bottle.sdf"],
     cmd = "sed -e 's#\\.gltf#.obj#g;' $< > $@",
-    opt_in_condition = ":enabled",
 )
 
-drake_cc_optional_binary(
+drake_cc_binary(
     name = "client_demo",
     testonly = True,
     srcs = ["test/client_demo.cc"],
@@ -362,7 +349,6 @@ drake_cc_optional_binary(
         ":gltf_client_test_models",
         "@drake_models//:ycb",
     ],
-    opt_in_condition = ":enabled",
     deps = [
         ":factory",
         "//geometry:drake_visualizer",
@@ -386,10 +372,6 @@ drake_cc_optional_binary(
 drake_py_unittest(
     name = "acceptance_test",
     allow_network = ["render_gltf_client"],
-    args = select({
-        ":enabled": [],
-        "//conditions:default": ["TODO.disabled"],
-    }),
     data = [
         ":client_demo",
         ":server_demo",
@@ -404,10 +386,6 @@ drake_py_unittest(
     name = "integration_test",
     size = "medium",
     allow_network = ["render_gltf_client"],
-    args = select({
-        ":enabled": [],
-        "//conditions:default": ["TODO.disabled"],
-    }),
     data = [
         ":client_demo",
         ":server_demo",
@@ -435,13 +413,12 @@ filegroup(
     visibility = ["//:__pkg__"],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_merge_gltf_test",
     data = [
         ":merge_resources",
         "//geometry/render:test_models",
     ],
-    opt_in_condition = ":enabled",
     deps = [
         ":internal_merge_gltf",
         "//common:find_resource",
@@ -463,10 +440,6 @@ filegroup(
 
 drake_py_unittest(
     name = "file_size_test",
-    args = select({
-        ":enabled": [],
-        "//conditions:default": ["TODO.disabled"],
-    }),
     data = [
         ":all_gltfs_and_images",
     ],
