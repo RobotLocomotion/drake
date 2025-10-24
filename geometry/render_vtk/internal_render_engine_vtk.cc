@@ -19,6 +19,7 @@
 #include <vtkImageReader2Factory.h>      // vtkIOImage
 #include <vtkLight.h>                    // vtkRenderingCore
 #include <vtkLightsPass.h>               // vtkRenderingOpenGL2
+#include <vtkMemoryResourceStream.h>     // vtkIOCore
 #include <vtkOpaquePass.h>               // vtkRenderingOpenGL2
 #include <vtkOpenGLFXAAPass.h>           // vtkRenderingOpenGL2
 #include <vtkOpenGLPolyDataMapper.h>     // vtkRenderingOpenGL2
@@ -1103,8 +1104,9 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
             },
             [reader = texture_reader.Get()](const MemoryFile& file) {
               const std::string& contents = file.contents();
-              reader->SetMemoryBuffer(contents.c_str());
-              reader->SetMemoryBufferLength(contents.size());
+              vtkNew<vtkMemoryResourceStream> stream;
+              stream->SetBuffer(contents.c_str(), contents.size());
+              reader->SetStream(stream);
               return file.filename_hint();
             }},
         material.diffuse_map);

@@ -1,6 +1,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "cc_nolink_library",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -11,6 +12,14 @@ exports_files(
     ] + glob([
         "gen/**",
     ]),
+)
+
+# TODO(jwnimmer-tri) This rule is somewhat wasteful. It actually compiles the
+# X11 source code and then ignores the emitted objects, only using the headers.
+cc_nolink_library(
+    name = "x11_hdrs",
+    visibility = ["@vtk_internal//:__pkg__"],
+    deps = ["@libx11"],
 )
 
 drake_cc_library(

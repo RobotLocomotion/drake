@@ -734,7 +734,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     }
     // Note: Using initial_position = [0, 0, 0], as origin in parent frame
     // already allows user to place start of trajectory.
-    PiecewiseConstantCurvatureTrajectory<double> trajectory(
+    trajectories::PiecewiseConstantCurvatureTrajectory<double> trajectory(
         breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
         is_periodic);
     const RigidTransformd& X_PF = X_PB;

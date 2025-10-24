@@ -40,7 +40,7 @@ def _gfortran_impl(repo_ctx):
 gfortran_internal_repository = repository_rule(
     doc = """
         Locate gfortran and alias it to `:compiler`; locate libgfortran
-        (and libquadmath when relevant) and alias them to `:runtime`.
+        and alias it to `:runtime`.
     """,
     local = True,
     configure = True,

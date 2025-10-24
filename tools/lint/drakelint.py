@@ -36,21 +36,33 @@ def _check_unguarded_openmp_uses(filename):
     return 0
 
 
-def _check_header_using_overloaded(filename):
-    """Returns 1 if the file is a header and (wrongly) includes overloaded.h.
-    Returns 0 otherwise."""
+def _check_header_disallowed_includes(filename):
+    """Returns 1 if the file is a header and (wrongly) includes something
+    that should only ever be used in `*.cc` files. Returns 0 otherwise.
+
+    The disallowed include paths are:
+    - drake/common/overloaded.h
+    - drake/common/text_logging.h
+
+    In the unusual case where the header file is really more like an `*.inc`
+    file and is not actually subject to inline regulations, you may add the
+    comment `// drakelint: ignore` to suppress the error."""
     forbidden_re = re.compile(
         # This expression approximates section 6.10.2 except 6.10.2.4 of
         # https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
-        r'\s*#\s*include\s*[<"]drake/common/overloaded.h\s*[>"]'
+        r'\s*#\s*include\s*[<"]drake/common/(overloaded|text_logging).h\s*[>"]'
     )
     if filename.endswith(".h"):
         with open(filename, mode="r", encoding="utf-8") as file:
             for line in file.readlines():
-                if forbidden_re.match(line):
+                matched = forbidden_re.match(line)
+                if matched is not None:
+                    if "// drakelint: ignore" in line:
+                        continue
+                    (basename,) = matched.groups()
                     print(
                         "ERROR:  Header files must not include "
-                        "drake/common/overloaded.h"
+                        f"drake/common/{basename}.h"
                     )
                     return 1
     return 0
@@ -276,7 +288,7 @@ def main():
             total_errors += _check_unguarded_openmp_uses(filename)
             total_errors += _check_iostream(filename)
             total_errors += _check_clang_format_toggles(filename)
-            total_errors += _check_header_using_overloaded(filename)
+            total_errors += _check_header_disallowed_includes(filename)
             total_errors += _check_header_doxygen_file_spelling(filename)
 
     if total_errors == 0:

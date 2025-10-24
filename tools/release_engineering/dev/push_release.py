@@ -2,7 +2,7 @@
 Uploads Drake release artifacts.
 
 This is intended for use by Drake maintainers (only).
-This program is only supported on Ubuntu Jammy 22.04.
+This program is only supported on Ubuntu Noble 24.04.
 """
 
 import argparse

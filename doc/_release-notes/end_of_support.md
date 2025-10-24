@@ -21,6 +21,9 @@ If you need to use these, you can use an old release of Drake.
 
 # macOS packages
 
+* macOS 14 (Sonoma)
+  * The last version with support for macOS 14 was
+    [v1.45.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.45.0).
 * macOS 13 (Ventura)
   * The last version with support for macOS 13 was
     [v1.33.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.33.0).

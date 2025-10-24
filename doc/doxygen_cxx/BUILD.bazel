@@ -39,8 +39,8 @@ filegroup(
         "doxygen_extra.css",
         "header.html.patch",
         "footer.html",
-        # We call this program directly as a shebang executable, without using
-        # the py_library target above.  This is easier than trying to get the
+        # We call this program directly as an executable, without using the
+        # py_library target above. This is easier than trying to get the
         # PYTHONPATH configuration correct for use as a library.
         "system_doxygen.py",
     ],

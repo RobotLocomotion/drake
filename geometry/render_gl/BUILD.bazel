@@ -90,7 +90,7 @@ drake_cc_library(
     ] + select({
         ":with_render_gl_or_vtk_and_linux": [
             "@vtk_internal//:vtkglad",
-            "@x11",
+            "@vtk_internal//:vtkx11",
         ],
         "//conditions:default": [],
     }),

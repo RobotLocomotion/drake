@@ -5,6 +5,7 @@
 #include <mutex>
 #include <thread>
 
+#include "drake/common/text_logging.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/system.h"
 

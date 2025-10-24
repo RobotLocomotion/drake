@@ -9,7 +9,6 @@
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -152,16 +151,15 @@ class MultibodyElement {
     return get_parent_tree().tree_system();
   }
 
-  /// Gives MultibodyElement-derived objects the opportunity to retrieve their
-  /// topology after MultibodyTree::Finalize() is invoked.
-  /// NVI to pure virtual method DoSetTopology().
-  void SetTopology(const internal::MultibodyTreeTopology& tree) {
-    DoSetTopology(tree);
-  }
+  /// (Internal use only) Gives MultibodyElement-derived objects the opportunity
+  /// to set data members that depend on topology and coordinate assignments
+  /// having been finalized. This is invoked at the end of
+  /// MultibodyTree::Finalize(). NVI to pure virtual method DoSetTopology().
+  void SetTopology() { DoSetTopology(); }
 
   /// Implementation of the NVI SetTopology(). For advanced use only for
   /// developers implementing new MultibodyTree components.
-  virtual void DoSetTopology(const internal::MultibodyTreeTopology& tree) = 0;
+  virtual void DoSetTopology() = 0;
 
   /// Implementation of the NVI DeclareParameters(). MultibodyElement-derived
   /// objects may override to declare their specific parameters.

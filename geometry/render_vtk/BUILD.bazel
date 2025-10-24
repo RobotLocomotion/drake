@@ -87,7 +87,6 @@ drake_cc_optional_library(
         "//geometry/render_gl:internal_loaders",
         "@vtk_internal//:vtkRenderingCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
-        "@vtk_internal//:vtkglad",
     ],
 )
 
@@ -119,6 +118,7 @@ drake_cc_optional_library(
         "@vtk_internal//:vtkCommonExecutionModel",
         "@vtk_internal//:vtkCommonTransforms",
         "@vtk_internal//:vtkFiltersSources",
+        "@vtk_internal//:vtkIOCore",
         "@vtk_internal//:vtkIOGeometry",
         "@vtk_internal//:vtkIOImage",
         "@vtk_internal//:vtkIOImport",

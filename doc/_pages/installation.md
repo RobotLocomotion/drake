@@ -45,7 +45,7 @@ that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, when installing via ``pip``
-on Ubuntu Python versions 3.10 through 3.13 (inclusive) are supported and
+on Ubuntu Python versions 3.10 through 3.14 (inclusive) are supported⁽⁶⁾ and
 on macOS Python versions 3.12 through 3.13 (inclusive) are supported.
 Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
 timeline for changing which Python versions are supported.
@@ -55,6 +55,9 @@ Refer to [OS Support](/stable.html#os-support) for details.
 
 ⁽⁵⁾ Tahoe support is in development; refer to
 [#23439](https://github.com/RobotLocomotion/drake/issues/23439) for details.
+
+⁽⁶⁾ Drake's published Python 3.14 wheels do not support MOSEK, because MOSEK
+itself doesn't yet support Python 3.14.
 
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
