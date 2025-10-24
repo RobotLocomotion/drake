@@ -596,28 +596,42 @@ endif()
 
 set(BAZEL_CONFIG)
 
-# Defines common options for open-source solver dependencies.
-# By default, these are all ON.
-# Passes the corresponding options to Bazel.
-function(open_solver_option SOLVER)
-  string(TOUPPER "WITH_${SOLVER}" OPTION_NAME)
-  string(TOLOWER "with_${SOLVER}" OPTION_BAZEL_ARG)
-  option("${OPTION_NAME}" "Build with support for ${SOLVER}" ON)
+# Defines options for opting out of certain features in Drake's build, and
+# finds the spelling to pass to Bazel. Options default to `ON` (i.e., opt-in).
+# This is currently used for the open-source solvers and render engines.
+function(define_with_feature_option feature)
+  cmake_parse_arguments(ARG "" "DISPLAY_NAME" "" ${ARGN})
+  string(TOUPPER "WITH_${feature}" OPTION_NAME)
+  string(TOLOWER "with_${feature}" OPTION_BAZEL_FLAG)
+  if(NOT ARG_DISPLAY_NAME)
+    set(ARG_DISPLAY_NAME "${feature}")
+  endif()
+  option("${OPTION_NAME}" "Build with support for ${ARG_DISPLAY_NAME}" ON)
   if(${OPTION_NAME})
-    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=True")
+    string(APPEND BAZEL_CONFIG
+      " --@drake//tools/flags:${OPTION_BAZEL_FLAG}=True")
   else()
-    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
+    string(APPEND BAZEL_CONFIG
+      " --@drake//tools/flags:${OPTION_BAZEL_FLAG}=False")
   endif()
   set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
 endfunction()
 
-open_solver_option("Clarabel")
-open_solver_option("CLP")
-open_solver_option("CSDP")
-open_solver_option("Ipopt")
-open_solver_option("NLopt")
-open_solver_option("OSQP")
-open_solver_option("SCS")
+if(NOT APPLE)
+  define_with_feature_option("RENDER_GL" DISPLAY_NAME "RenderEngineGl")
+endif()
+define_with_feature_option("RENDER_VTK"
+  DISPLAY_NAME "RenderEngineVtk")
+define_with_feature_option("RENDER_GLTF_CLIENT"
+  DISPLAY_NAME "RenderEngineGltfClient")
+
+define_with_feature_option("Clarabel")
+define_with_feature_option("CLP")
+define_with_feature_option("CSDP")
+define_with_feature_option("Ipopt")
+define_with_feature_option("NLopt")
+define_with_feature_option("OSQP")
+define_with_feature_option("SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
