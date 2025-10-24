@@ -132,7 +132,6 @@ drake_cc_optional_library(
     srcs = ["internal_render_engine_vtk_base.cc"],
     hdrs = ["internal_render_engine_vtk_base.h"],
     internal = True,
-    visibility = ["//visibility:private"],
     deps = [
         "//common:scope_exit",
         "//geometry:geometry_roles",
@@ -154,7 +153,6 @@ drake_cc_optional_library(
     srcs = ["internal_vtk_util.cc"],
     hdrs = ["internal_vtk_util.h"],
     internal = True,
-    visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
         "//math:geometric_transform",
@@ -316,8 +314,6 @@ drake_cc_googletest(
     ],
 )
 
-# N.B. This test should always be enabled, regardless of build configuration,
-# because the `no_factory.cc` used by :factory_disabled is always compiled.
 drake_cc_googletest(
     name = "disabled_render_vtk_test",
     deps = [
