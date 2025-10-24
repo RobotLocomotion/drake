@@ -9,10 +9,10 @@ set -euxo pipefail
 
 rm -f doxygen-*-*-x86_64.tar.gz doxygen-*-x86_64.tar.gz.sha256
 
-docker build --build-arg UBUNTU_CODENAME=focal --tag doxygen-focal "${BASH_SOURCE%/*}"
-trap 'docker rmi doxygen-focal' EXIT
-docker run --detach --name doxygen-focal-build --tty doxygen-focal
-trap 'docker rm -f doxygen-focal-build && docker rmi doxygen-focal' EXIT
-docker cp doxygen-focal-build:$(docker exec doxygen-focal-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-focal-x86_64.tar.gz') .
+docker build --build-arg UBUNTU_CODENAME=noble --tag doxygen-noble "${BASH_SOURCE%/*}"
+trap 'docker rmi doxygen-noble' EXIT
+docker run --detach --name doxygen-noble-build --tty doxygen-noble
+trap 'docker rm -f doxygen-noble-build && docker rmi doxygen-noble' EXIT
+docker cp doxygen-noble-build:$(docker exec doxygen-noble-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-noble-x86_64.tar.gz') .
 
-shasum --algorithm 256 doxygen-*-focal-x86_64.tar.gz | tee doxygen-focal-x86_64.tar.gz.sha256
+shasum --algorithm 256 doxygen-*-noble-x86_64.tar.gz | tee doxygen-noble-x86_64.tar.gz.sha256
