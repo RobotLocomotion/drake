@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -441,3 +442,5 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ],
 )
+
+add_lint_tests()
