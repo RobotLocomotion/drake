@@ -1,3 +1,8 @@
+"""Tests the public interfaces in `cpp_template.py` and
+`cpp_template_pybind.h`. See supporting bindings in
+`cpp_template_test_util_py.cc`.
+"""
+
 from types import ModuleType
 import unittest
 
@@ -5,6 +10,17 @@ import pydrake
 import pydrake.common.cpp_template as m
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+
+from pydrake.common.cpp_template_test_util import (
+    Callee,
+    DefaultInst,
+    SimpleFunction,
+    SimpleTemplate,
+    SimpleType,
+    simple_func,
+    TemplateWithDefault,
+    TemplateWithDefault_,
+)
 
 _TEST_MODULE = "cpp_template_test"
 
@@ -305,3 +321,43 @@ class TestCppTemplate(unittest.TestCase):
     def test_documentation_flag_sanity(self):
         # Only website builds should ever be setting this to true.
         self.assertFalse(pydrake._is_building_documentation())
+
+    def test_template_type_mappings(self):
+        expected_1 = ["int"]
+        expected_2 = ["int", "double"]
+        self.assertEqual(DefaultInst().GetNames(), expected_1)
+        self.assertEqual(SimpleTemplate[int]().GetNames(), expected_1)
+        self.assertEqual(SimpleTemplate[int, float]().GetNames(), expected_2)
+
+        self.assertEqual(TemplateWithDefault().GetName(), "double")
+        self.assertEqual(TemplateWithDefault_[float]().GetName(), "double")
+        self.assertEqual(TemplateWithDefault_[int]().GetName(), "int")
+
+        # Sanity test of the py::dynamic_attr().
+        self.assertEqual(
+            TemplateWithDefault().__dict__.setdefault("_foo", 1), 1
+        )
+
+        # Check error message if a function is called with the incorrect
+        # arguments.
+        with self.assertRaisesRegex(
+            TypeError,
+            r".*incompatible function arguments(?s:.)*\(arg0: "
+            r".*\.SimpleTemplate𝓣int𝓤\).*",
+        ):
+            simple_func("incorrect_value")
+
+        # Check __call__ pseudo-deduction:
+        # int - infer first (cls_1).
+        self.assertEqual(SimpleTemplate(0).GetNames(), expected_1)
+        # double - infer second (cls_2).
+        self.assertEqual(SimpleTemplate(0.0).GetNames(), expected_2)
+
+        self.assertEqual(SimpleFunction[int](), expected_1)
+        self.assertEqual(SimpleFunction[int, float](), expected_2)
+
+        self.assertEqual(Callee(0), "int")
+        self.assertEqual(Callee(0.0), "double")
+
+        self.assertEqual(SimpleType().SimpleMethod[int](), expected_1)
+        self.assertEqual(SimpleType().SimpleMethod[int, float](), expected_2)
