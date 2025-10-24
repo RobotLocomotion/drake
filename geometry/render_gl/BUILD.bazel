@@ -2,10 +2,13 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
-    "drake_cc_googletest_linux_only",
     "drake_cc_library",
-    "drake_cc_library_linux_only",
     "drake_cc_package_library",
+)
+load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
+    "drake_cc_optional_library",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -44,7 +47,7 @@ drake_cc_library(
         "//common:essential",
         "//common:unused",
     ] + select({
-        "@drake//tools/skylark:linux": [
+        "//tools/skylark:linux": [
             "@vtk_internal//:vtkglad",
             "@vtk_internal//:vtkx11",
         ],
@@ -52,8 +55,9 @@ drake_cc_library(
     }),
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_opengl_context",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = ["internal_opengl_context.cc"],
     hdrs = [
         "internal_opengl_context.h",
@@ -67,8 +71,10 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_opengl_geometry",
+    opt_in_condition = "//tools/skylark:linux",
+    srcs = [],
     hdrs = ["internal_opengl_geometry.h"],
     deps = [
         ":internal_opengl_context",
@@ -78,8 +84,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_render_engine_gl",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = [
         "internal_render_engine_gl.cc",
     ],
@@ -105,6 +112,7 @@ drake_cc_library_linux_only(
     ],
 )
 
+# TODO(jwnimmer-tri) Respell as drake_cc_variant_library.
 drake_cc_library(
     name = "factory",
     srcs = select({
@@ -135,6 +143,8 @@ drake_cc_library(
     }),
 )
 
+# TODO(jwnimmer-tri) Fold into the above using drake_cc_variant_library; be
+# sure that the code is still compiled on linux for sanity checking.
 drake_cc_library(
     name = "apple_only_no_factory",
     srcs = [
@@ -166,8 +176,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_shader_program",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = ["internal_shader_program.cc"],
     hdrs = [
         "internal_shader_program.h",
@@ -183,8 +194,10 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_shader_program_data",
+    opt_in_condition = "//tools/skylark:linux",
+    srcs = [],
     hdrs = ["internal_shader_program_data.h"],
     deps = [
         "//common:copyable_unique_ptr",
@@ -193,8 +206,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_shape_meshes",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = ["internal_shape_meshes.cc"],
     hdrs = ["internal_shape_meshes.h"],
     deps = [
@@ -207,8 +221,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_texture_library",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = ["internal_texture_library.cc"],
     hdrs = ["internal_texture_library.h"],
     deps = [
@@ -225,15 +240,17 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_buffer_dim_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":internal_render_engine_gl",
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_opengl_context_test",
+    opt_in_condition = "//tools/skylark:linux",
     display = True,
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
@@ -254,8 +271,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_opengl_geometry_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":internal_opengl_geometry",
         "//common/test_utilities:eigen_matrix_compare",
@@ -263,8 +281,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_render_engine_gl_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//examples/scene_graph:models",
         "//geometry:test_gltf_files",
@@ -304,8 +323,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_shape_meshes_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -318,8 +338,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_shader_program_test",
+    opt_in_condition = "//tools/skylark:linux",
     display = True,
     tags = vtk_test_tags(),
     deps = [
@@ -331,8 +352,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "thread_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -349,14 +371,15 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "multithread_safety_test",
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    # We'd prefer this to be enabled on all //tools/skylark:linux platforms.
+    opt_in_condition = "//tools:ubuntu_jammy",
     data = [
         "//geometry/render:test_models",
     ],
     display = True,
-    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
-    enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
@@ -373,8 +396,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_texture_library_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
