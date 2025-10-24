@@ -11,7 +11,11 @@ load(
     "drake_cc_optional_library",
     "drake_cc_variant_library",
 )
-load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
+)
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # This render_gltf_client package is only implemented when
