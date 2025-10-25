@@ -1,7 +1,6 @@
-"""Provides containers for tracking instantiations of C++ templates. """
+"""Provides containers for tracking instantiations of C++ templates."""
 
 import inspect
-import sys
 import types
 
 from pydrake import _is_building_documentation
@@ -16,8 +15,12 @@ def _get_module_from_stack(frame=2):
 
 
 def _is_pybind11_type_error(e):
-    return ("incompatible function arguments" in str(e)
-            or "incompatible constructor arguments" in str(e))
+    return any(
+        [
+            "incompatible function arguments" in str(e),
+            "incompatible constructor arguments" in str(e),
+        ]
+    )
 
 
 def get_or_init(scope, name, template_cls, *args, **kwargs):
@@ -56,6 +59,7 @@ class TemplateBase:
     """Provides a mechanism to map parameters (types or literals) to
     instantiations, following C++ mechanics.
     """
+
     def __init__(self, name, allow_default=True, scope=None):
         """
         Args:
@@ -105,14 +109,16 @@ class TemplateBase:
         """
         if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
-                ("{}: incompatible function arguments for template: Cannot "
-                 "call without arguments").format(self.name))
+                f"{self.name}: incompatible function arguments for template: "
+                "Cannot call without arguments"
+            )
         result = self._call_internal(*args, **kwargs)
         if result is not None:
             return result
         raise TypeError(
-            ("{}: incompatible function arguments for template: No "
-             "compatible instantiations").format(self.name))
+            f"{self.name}: incompatible function arguments for template: "
+            "No compatible instantiations"
+        )
 
     def _call_internal(self, *args, **kwargs):
         """The implementation of __call__, to allow easy overriding."""
@@ -180,11 +186,13 @@ class TemplateBase:
         if instantiation is TemplateBase._deferred:
             assert self._instantiation_func is not None
             instantiation = self._instantiation_func(param)
-            self._add_instantiation_internal(param, instantiation,
-                                             skip_rename=False)
+            self._add_instantiation_internal(
+                param, instantiation, skip_rename=False
+            )
         elif instantiation is None and throw_error:
-            raise RuntimeError("Invalid instantiation: {}".format(
-                self._instantiation_name(param)))
+            raise RuntimeError(
+                f"Invalid instantiation: {self._instantiation_name(param)}"
+            )
         deprecation = self._deprecation_map.get(param)
         if deprecation is not None:
             _warn_deprecated(deprecation.message, date=deprecation.date)
@@ -200,7 +208,8 @@ class TemplateBase:
         param = get_param_canonical(self._param_resolve(param))
         if param in self._instantiation_map:
             raise RuntimeError(
-                "Parameter instantiation already registered: {}".format(param))
+                f"Parameter instantiation already registered: {param}"
+            )
         # Register it.
         self.param_list.append(param)
         self._add_instantiation_internal(param, instantiation, skip_rename)
@@ -234,7 +243,8 @@ class TemplateBase:
         assert instantiation_func is not None
         if self._instantiation_func is not None:
             raise RuntimeError(
-                "`add_instantiations` cannot be called multiple times.")
+                "`add_instantiations` cannot be called multiple times."
+            )
         self._instantiation_func = instantiation_func
         for param in param_list:
             self.add_instantiation(param, TemplateBase._deferred)
@@ -260,7 +270,8 @@ class TemplateBase:
         if param in self._deprecation_map:
             raise RuntimeError(
                 f"Deprecation already registered: "
-                f"{self._instantiation_name(param)}")
+                f"{self._instantiation_name(param)}"
+            )
         instantiation, param = self.get_instantiation(param)
         self._deprecation_map[param] = _Deprecation(message=message, date=date)
         return (instantiation, param)
@@ -317,7 +328,7 @@ class TemplateBase:
             # way to ensure our website API reference displays correctly.
             mangle = False
         names = get_param_names(self._param_resolve(param), mangle=mangle)
-        result = '{}[{}]'.format(self.name, ','.join(names))
+        result = "{}[{}]".format(self.name, ",".join(names))
         if mangle:
             result = _MangledName.mangle(result)
         return result
@@ -377,6 +388,7 @@ class TemplateBase:
 
 class TemplateClass(TemplateBase):
     """Extension of `TemplateBase` for classes."""
+
     def __init__(self, name, *, scope=None, **kwargs):
         if scope is None:
             scope = _get_module_from_stack()
@@ -430,11 +442,15 @@ def _rename_callable(f, scope, name, cls=None):
     # If Python2, we have to wrap instancemethods + built-in functions to spoof
     # the metadata.
     type_requires_wrap = (
-        types.MethodType, types.BuiltinMethodType, types.BuiltinFunctionType,)
+        types.MethodType,
+        types.BuiltinMethodType,
+        types.BuiltinFunctionType,
+    )
     if isinstance(f, type_requires_wrap):
         orig = f
 
-        def f(*args, **kwargs): return orig(*args, **kwargs)
+        def f(*args, **kwargs):
+            return orig(*args, **kwargs)
 
         f.__module__ = module
         f.__name__ = name
@@ -449,6 +465,7 @@ def _rename_callable(f, scope, name, cls=None):
 
 class TemplateFunction(TemplateBase):
     """Extension of `TemplateBase` for functions."""
+
     def _on_add(self, param, func, skip_rename):
         assert skip_rename is False
         new_name = self._instantiation_name(param, mangle=True)
@@ -459,6 +476,7 @@ class TemplateFunction(TemplateBase):
 
 class TemplateMethod(TemplateBase):
     """Extension of `TemplateBase` for class methods."""
+
     def __init__(self, name, cls, scope=None, **kwargs):
         if scope is None:
             scope = _get_module_from_stack()
@@ -485,10 +503,10 @@ class TemplateMethod(TemplateBase):
         raise RuntimeError("Read-only property")
 
     def __str__(self):
-        return '<unbound TemplateMethod {}>'.format(self._full_name())
+        return f"<unbound TemplateMethod {self._full_name()}>"
 
     def _full_name(self):
-        return '{}.{}'.format(self._cls.__name__, self.name)
+        return "{}.{}".format(self._cls.__name__, self.name)
 
     class _Bound:
         def __init__(self, template, obj):
@@ -501,5 +519,6 @@ class TemplateMethod(TemplateBase):
             return bound
 
         def __str__(self):
-            return '<bound TemplateMethod {} of {}>'.format(
-                self._tpl._full_name(), self._obj)
+            return "<bound TemplateMethod {} of {}>".format(
+                self._tpl._full_name(), self._obj
+            )

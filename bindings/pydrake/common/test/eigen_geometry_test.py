@@ -22,7 +22,7 @@ class TestEigenGeometry(unittest.TestCase):
     def check_cast(self, template, T):
         value = template[T]()
         # Refer to docstrings for `CastUPack` in `default_scalars_pybind.h`.
-        if T == float:
+        if T is float:
             U_list = [float, AutoDiffXd, Expression]
         else:
             U_list = [T]
@@ -39,18 +39,20 @@ class TestEigenGeometry(unittest.TestCase):
     def test_quaternion(self, T):
         # Simple API.
         Quaternion = mut.Quaternion_[T]
-        cast = np.vectorize(T)
+        np.vectorize(T)
         q_identity = Quaternion()
         self.assertEqual(numpy_compare.resolve_type(q_identity.wxyz()), T)
-        numpy_compare.assert_float_equal(q_identity.wxyz(), [1., 0, 0, 0])
+        numpy_compare.assert_float_equal(q_identity.wxyz(), [1.0, 0, 0, 0])
         numpy_compare.assert_float_equal(
-                copy.copy(q_identity).wxyz(), [1., 0, 0, 0])
+            copy.copy(q_identity).wxyz(), [1.0, 0, 0, 0]
+        )
         numpy_compare.assert_equal(
-                q_identity.wxyz(), Quaternion.Identity().wxyz())
-        if T == float:
+            q_identity.wxyz(), Quaternion.Identity().wxyz()
+        )
+        if T is float:
             self.assertEqual(
-                str(q_identity),
-                "Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)")
+                str(q_identity), "Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)"
+            )
         else:
             self.assertIn("Quaternion_[", str(q_identity))
         self.check_cast(mut.Quaternion_, T)
@@ -70,15 +72,19 @@ class TestEigenGeometry(unittest.TestCase):
         q.set_wxyz(wxyz=q_wxyz_new)
         numpy_compare.assert_float_equal(q.wxyz(), q_wxyz_new)
         q.set_wxyz(
-            w=q_wxyz_new[0], x=q_wxyz_new[1], y=q_wxyz_new[2], z=q_wxyz_new[3])
+            w=q_wxyz_new[0], x=q_wxyz_new[1], y=q_wxyz_new[2], z=q_wxyz_new[3]
+        )
         numpy_compare.assert_float_equal(q.wxyz(), q_wxyz_new)
         # Alternative constructors.
         q_other = Quaternion(wxyz=q_wxyz)
         numpy_compare.assert_float_equal(q_other.wxyz(), q_wxyz)
-        R = np.array([
-            [0., 0, 1],
-            [1, 0, 0],
-            [0, 1, 0]])
+        R = np.array(
+            [
+                [0.0, 0, 1],  # BR
+                [1, 0, 0],
+                [0, 1, 0],
+            ]
+        )
         q_wxyz_expected = np.array([0.5, 0.5, 0.5, 0.5])
         q_other = Quaternion(q_wxyz_expected)
         numpy_compare.assert_float_equal(q_other.rotation(), R)
@@ -92,10 +98,10 @@ class TestEigenGeometry(unittest.TestCase):
         if T != Expression:
             q = Quaternion.Identity()
             # - wxyz
-            q_wxyz_bad = [1., 2, 3, 4]
+            q_wxyz_bad = [1.0, 2, 3, 4]
             with self.assertRaises(RuntimeError):
                 q.set_wxyz(q_wxyz_bad)
-            numpy_compare.assert_float_equal(q.wxyz(), [1., 0, 0, 0])
+            numpy_compare.assert_float_equal(q.wxyz(), [1.0, 0, 0, 0])
             # - Rotation.
             R_bad = np.copy(R)
             R_bad[0, 0] = 10
@@ -106,33 +112,35 @@ class TestEigenGeometry(unittest.TestCase):
         # Operations.
         q_AB = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         q_I = q_AB.inverse().multiply(q_AB)
-        numpy_compare.assert_float_equal(q_I.wxyz(), [1., 0, 0, 0])
+        numpy_compare.assert_float_equal(q_I.wxyz(), [1.0, 0, 0, 0])
         numpy_compare.assert_float_equal(
-            (q_AB.inverse() @ q_AB).wxyz(), [1., 0, 0, 0])
-        v_B = np.array([1., 2, 3])
-        v_A = np.array([3., 1, 2])
+            (q_AB.inverse() @ q_AB).wxyz(), [1.0, 0, 0, 0]
+        )
+        v_B = np.array([1.0, 2, 3])
+        v_A = np.array([3.0, 1, 2])
         numpy_compare.assert_float_allclose(q_AB.multiply(vector=v_B), v_A)
         vlist_B = np.array([v_B, v_B]).T
         vlist_A = np.array([v_A, v_A]).T
-        numpy_compare.assert_float_equal(
-            q_AB.multiply(vector=vlist_B), vlist_A)
+        numpy_compare.assert_float_equal(q_AB.multiply(vector=vlist_B), vlist_A)
 
         q_AB_conj = q_AB.conjugate()
         numpy_compare.assert_float_equal(
-                q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
+            q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5]
+        )
 
         numpy_compare.assert_float_equal(
-            q_I.slerp(t=0, other=q_I).wxyz(), [1., 0, 0, 0])
+            q_I.slerp(t=0, other=q_I).wxyz(), [1.0, 0, 0, 0]
+        )
 
         # - Test shaping (#13885).
-        v = np.array([0., 0., 0.])
-        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        v = np.array([0.0, 0.0, 0.0])
+        vs = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]).T
         self.assertEqual((q_AB @ v).shape, (3,))
         self.assertEqual((q_AB @ v.reshape((3, 1))).shape, (3, 1))
         self.assertEqual((q_AB @ vs).shape, (3, 2))
 
         # Test `type_caster`s.
-        if T == float:
+        if T is float:
             value = test_util.create_quaternion()
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
@@ -161,7 +169,7 @@ class TestEigenGeometry(unittest.TestCase):
         X_I_np = np.eye(4, 4)
         numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         numpy_compare.assert_float_equal(copy.copy(transform).matrix(), X_I_np)
-        if T == float:
+        if T is float:
             self.assertEqual(str(transform), str(X_I_np))
         # - Constructor with (X_I_np)
         transform = Isometry3(matrix=X_I_np)
@@ -173,11 +181,14 @@ class TestEigenGeometry(unittest.TestCase):
         transform = Isometry3.Identity()
         numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         # - Constructor with (R, p)
-        R_AB = np.array([
-            [0., 1, 0],
-            [-1, 0, 0],
-            [0, 0, 1]])
-        p_AB = np.array([1., 2, 3])
+        R_AB = np.array(
+            [
+                [0.0, 1, 0],  # BR
+                [-1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
+        p_AB = np.array([1.0, 2, 3])
         X_AB_np = np.eye(4)
         X_AB_np[:3, :3] = R_AB
         X_AB_np[:3, 3] = p_AB
@@ -197,7 +208,7 @@ class TestEigenGeometry(unittest.TestCase):
         if T != Expression:
             X_temp = Isometry3(rotation=R_AB, translation=p_AB)
             R_bad = np.copy(R_AB)
-            R_bad[0, 0] = 10.
+            R_bad[0, 0] = 10.0
             with self.assertRaises(RuntimeError):
                 X_temp.set_rotation(R_bad)
             numpy_compare.assert_float_equal(X_temp.rotation(), R_AB)
@@ -207,7 +218,7 @@ class TestEigenGeometry(unittest.TestCase):
                 X_temp.set_matrix(X_bad_np)
             numpy_compare.assert_float_equal(X_temp.matrix(), X_AB_np)
         # Test `type_caster`s.
-        if T == float:
+        if T is float:
             value = test_util.create_isometry()
             self.assertTrue(isinstance(value, mut.Isometry3))
             test_util.check_isometry(value)
@@ -216,18 +227,20 @@ class TestEigenGeometry(unittest.TestCase):
         X_I = X_AB.inverse().multiply(X_AB)
         numpy_compare.assert_float_equal(X_I.matrix(), X_I_np)
         p_BQ = [10, 20, 30]
-        p_AQ = [21., -8, 33]
+        p_AQ = [21.0, -8, 33]
         numpy_compare.assert_float_equal(X_AB.multiply(position=p_BQ), p_AQ)
         p_BQlist = np.array([p_BQ, p_BQ]).T
         p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
-            X_AB.multiply(position=p_BQlist), p_AQlist)
+            X_AB.multiply(position=p_BQlist), p_AQlist
+        )
         numpy_compare.assert_float_equal(
-            (X_AB.inverse() @ X_AB).matrix(), X_I_np)
+            (X_AB.inverse() @ X_AB).matrix(), X_I_np
+        )
         numpy_compare.assert_float_equal(X_AB @ p_BQ, p_AQ)
         # - Test shaping (#13885).
-        v = np.array([0., 0., 0.])
-        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        v = np.array([0.0, 0.0, 0.0])
+        vs = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]).T
         self.assertEqual((X_AB @ v).shape, (3,))
         self.assertEqual((X_AB @ v.reshape((3, 1))).shape, (3, 1))
         self.assertEqual((X_AB @ vs).shape, (3, 2))
@@ -239,22 +252,27 @@ class TestEigenGeometry(unittest.TestCase):
         AngleAxis = mut.AngleAxis_[T]
         value_identity = AngleAxis.Identity()
         self.assertEqual(numpy_compare.resolve_type(value_identity.angle()), T)
-        numpy_compare.assert_float_equal(value_identity.angle(), 0.)
-        numpy_compare.assert_float_equal(value_identity.axis(), [1., 0, 0])
+        numpy_compare.assert_float_equal(value_identity.angle(), 0.0)
+        numpy_compare.assert_float_equal(value_identity.axis(), [1.0, 0, 0])
 
         # Construct with rotation matrix.
-        R = np.array([
-            [0., 1, 0],
-            [-1, 0, 0],
-            [0, 0, 1]])
+        R = np.array(
+            [
+                [0.0, 1, 0],  # BR
+                [-1, 0, 0],
+                [0, 0, 1],
+            ]
+        )
         value = AngleAxis(rotation=R)
         numpy_compare.assert_float_allclose(value.rotation(), R)
         numpy_compare.assert_float_allclose(copy.copy(value).rotation(), R)
         numpy_compare.assert_float_allclose(value.inverse().rotation(), R.T)
         numpy_compare.assert_float_allclose(
-            value.multiply(value.inverse()).rotation(), np.eye(3))
+            value.multiply(value.inverse()).rotation(), np.eye(3)
+        )
         numpy_compare.assert_float_allclose(
-            (value @ value.inverse()).rotation(), np.eye(3))
+            (value @ value.inverse()).rotation(), np.eye(3)
+        )
         value.set_rotation(np.eye(3))
         numpy_compare.assert_float_equal(value.rotation(), np.eye(3))
 
@@ -263,10 +281,12 @@ class TestEigenGeometry(unittest.TestCase):
         q = Quaternion(R)
         value = AngleAxis(quaternion=q)
         numpy_compare.assert_float_allclose(
-            value.quaternion().wxyz(), numpy_compare.to_float(q.wxyz()))
+            value.quaternion().wxyz(), numpy_compare.to_float(q.wxyz())
+        )
         value.set_quaternion(Quaternion.Identity())
         numpy_compare.assert_float_equal(
-                value.quaternion().wxyz(), [1., 0, 0, 0])
+            value.quaternion().wxyz(), [1.0, 0, 0, 0]
+        )
 
         # Test setters.
         value = AngleAxis(value_identity)

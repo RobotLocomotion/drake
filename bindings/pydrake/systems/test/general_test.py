@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.systems.framework
-
 import copy
 import gc
 from textwrap import dedent
@@ -17,59 +15,83 @@ from pydrake.examples import PendulumPlant, RimlessWheel
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     GetIntegrationSchemes,
-    IntegratorBase, IntegratorBase_,
+    IntegratorBase,
+    IntegratorBase_,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
     RungeKutta2Integrator,
-    Simulator, Simulator_,
+    Simulator,
+    Simulator_,
 )
 from pydrake.systems.framework import (
-    BasicVector, BasicVector_,
-    CacheEntry,
+    BasicVector,
+    BasicVector_,
     ContextBase,
-    Context, Context_,
-    ContinuousState, ContinuousState_,
-    Diagram, Diagram_,
-    DiagramBuilder, DiagramBuilder_,
-    DiscreteUpdateEvent, DiscreteUpdateEvent_,
-    DiscreteValues, DiscreteValues_,
-    Event, Event_,
+    Context,
+    Context_,
+    ContinuousState,
+    ContinuousState_,
+    Diagram,
+    Diagram_,
+    DiagramBuilder,
+    DiagramBuilder_,
+    DiscreteUpdateEvent,
+    DiscreteUpdateEvent_,
+    DiscreteValues,
+    DiscreteValues_,
+    Event,
+    Event_,
     EventStatus,
-    InputPort, InputPort_,
+    InputPort,
+    InputPort_,
     InputPortIndex,
     kUseDefaultName,
-    LeafContext, LeafContext_,
-    LeafSystem, LeafSystem_,
-    OutputPort, OutputPort_,
+    LeafContext,
+    LeafContext_,
+    LeafSystem,
+    LeafSystem_,
+    OutputPort,
+    OutputPort_,
     OutputPortIndex,
-    Parameters, Parameters_,
+    Parameters,
+    Parameters_,
     PeriodicEventData,
-    PublishEvent, PublishEvent_,
-    State, State_,
-    Subvector, Subvector_,
-    Supervector, Supervector_,
-    System, System_,
+    PublishEvent,
+    PublishEvent_,
+    State,
+    State_,
+    Subvector,
+    Subvector_,
+    Supervector,
+    Supervector_,
+    System,
+    System_,
     SystemVisitor,
     SystemBase,
-    SystemOutput, SystemOutput_,
+    SystemOutput,
+    SystemOutput_,
     SystemScalarConverter,
-    VectorBase, VectorBase_,
+    VectorBase,
+    VectorBase_,
     TriggerType,
-    VectorSystem, VectorSystem_,
+    VectorSystem,
+    VectorSystem_,
     _ExternalSystemConstraint,
 )
 from pydrake.systems.primitives import (
-    Adder, Adder_,
+    Adder,
+    Adder_,
     ConstantValueSource,
-    ConstantVectorSource, ConstantVectorSource_,
+    ConstantVectorSource,
+    ConstantVectorSource_,
     Integrator,
     LinearSystem,
-    PassThrough, PassThrough_,
+    PassThrough,
+    PassThrough_,
     ZeroOrderHold,
 )
 from pydrake.systems.test.test_util import (
     MyVector2,
-    DummySystemA,
     MakeDummySystem,
 )
 from pydrake.systems.test_utilities import framework_test_util
@@ -81,7 +103,8 @@ from pydrake.systems.test_utilities import framework_test_util
 
 class TestGeneral(unittest.TestCase):
     def _check_instantiations(
-            self, template, default_cls, supports_symbolic=True):
+        self, template, default_cls, supports_symbolic=True
+    ):
         self.assertIs(template[None], default_cls)
         self.assertIs(template[float], default_cls)
         self.assertIsNot(template[AutoDiffXd], default_cls)
@@ -92,8 +115,7 @@ class TestGeneral(unittest.TestCase):
         # Compares two different scalar type instantiation instances of a
         # system.
         self.assertEqual(lhs.num_input_ports(), rhs.num_input_ports())
-        self.assertEqual(
-            lhs.num_output_ports(), rhs.num_output_ports())
+        self.assertEqual(lhs.num_output_ports(), rhs.num_output_ports())
         for i in range(lhs.num_input_ports()):
             lhs_port = lhs.get_input_port(i, warn_deprecated=False)
             rhs_port = rhs.get_input_port(i, warn_deprecated=False)
@@ -108,8 +130,8 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         self.assertIsInstance(system, SystemBase)
         self.assertEqual(
-            system.GetSystemType(),
-            "drake::systems::Adder<double>")
+            system.GetSystemType(), "drake::systems::Adder<double>"
+        )
         system.set_name(name="adder")
         self.assertEqual(system.get_name(), "adder")
         self.assertEqual(system.GetSystemName(), "adder")
@@ -160,28 +182,28 @@ class TestGeneral(unittest.TestCase):
     def test_context_api(self):
         system = Adder(3, 10)
         context = system.AllocateContext()
+        self.assertIsInstance(context.get_continuous_state(), ContinuousState)
         self.assertIsInstance(
-            context.get_continuous_state(), ContinuousState)
+            context.get_mutable_continuous_state(), ContinuousState
+        )
+        self.assertIsInstance(context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
-            context.get_mutable_continuous_state(), ContinuousState)
-        self.assertIsInstance(
-            context.get_continuous_state_vector(), VectorBase)
-        self.assertIsInstance(
-            context.get_mutable_continuous_state_vector(), VectorBase)
+            context.get_mutable_continuous_state_vector(), VectorBase
+        )
         system.SetDefaultContext(context=context)
 
         # Check random context method.
         system.SetRandomContext(context=context, generator=RandomGenerator())
 
         context = system.CreateDefaultContext()
+        self.assertIsInstance(context.get_continuous_state(), ContinuousState)
         self.assertIsInstance(
-            context.get_continuous_state(), ContinuousState)
+            context.get_mutable_continuous_state(), ContinuousState
+        )
+        self.assertIsInstance(context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
-            context.get_mutable_continuous_state(), ContinuousState)
-        self.assertIsInstance(
-            context.get_continuous_state_vector(), VectorBase)
-        self.assertIsInstance(
-            context.get_mutable_continuous_state_vector(), VectorBase)
+            context.get_mutable_continuous_state_vector(), VectorBase
+        )
         self.assertTrue(context.is_stateless())
         self.assertFalse(context.has_only_continuous_state())
         self.assertFalse(context.has_only_discrete_state())
@@ -198,7 +220,7 @@ class TestGeneral(unittest.TestCase):
                 contextU.SetTime(0.5)
                 contextT.SetStateAndParametersFrom(contextU)
                 contextT.SetTimeStateAndParametersFrom(contextU)
-                if T == float:
+                if T is float:
                     self.assertEqual(contextT.get_time(), 0.5)
                 elif T == AutoDiffXd:
                     self.assertEqual(contextT.get_time().value(), 0.5)
@@ -210,11 +232,13 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(context.num_numeric_parameter_groups(), 1)
         self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         self.assertTrue(
-            context.get_parameters().get_numeric_parameter(0) is
-            context.get_numeric_parameter(index=0))
+            context.get_parameters().get_numeric_parameter(0)
+            is context.get_numeric_parameter(index=0)
+        )
         self.assertTrue(
-            context.get_mutable_parameters().get_mutable_numeric_parameter(
-                0) is context.get_mutable_numeric_parameter(index=0))
+            context.get_mutable_parameters().get_mutable_numeric_parameter(0)
+            is context.get_mutable_numeric_parameter(index=0)
+        )
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         # TODO(russt): Bind _Declare*Parameter or find an example with an
@@ -224,13 +248,16 @@ class TestGeneral(unittest.TestCase):
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(
-            context.get_continuous_state().CopyToVector(), x)
+            context.get_continuous_state().CopyToVector(), x
+        )
         np.testing.assert_equal(
-            context.get_continuous_state_vector().CopyToVector(), x)
-        context.SetTimeAndContinuousState(0.3, 2*x)
+            context.get_continuous_state_vector().CopyToVector(), x
+        )
+        context.SetTimeAndContinuousState(0.3, 2 * x)
         np.testing.assert_equal(context.get_time(), 0.3)
         np.testing.assert_equal(
-            context.get_continuous_state_vector().CopyToVector(), 2*x)
+            context.get_continuous_state_vector().CopyToVector(), 2 * x
+        )
         self.assertNotEqual(pendulum.EvalPotentialEnergy(context=context), 0)
         self.assertNotEqual(pendulum.EvalKineticEnergy(context=context), 0)
 
@@ -241,28 +268,41 @@ class TestGeneral(unittest.TestCase):
         x = np.array([1.125])
         context.SetDiscreteState(xd=2 * x)
         np.testing.assert_equal(
-            context.get_discrete_state_vector().CopyToVector(), 2 * x)
+            context.get_discrete_state_vector().CopyToVector(), 2 * x
+        )
         context.SetDiscreteState(group_index=0, xd=3 * x)
         np.testing.assert_equal(
-            context.get_discrete_state_vector().CopyToVector(), 3 * x)
+            context.get_discrete_state_vector().CopyToVector(), 3 * x
+        )
         # Just verify that the third overload is present.
         context.SetDiscreteState(context.get_discrete_state())
 
         def check_abstract_value_zero(context, expected_value):
             # Check through Context, State, and AbstractValues APIs.
-            self.assertEqual(context.get_abstract_state(index=0).get_value(),
-                             expected_value)
-            self.assertEqual(context.get_abstract_state().get_value(
-                index=0).get_value(), expected_value)
-            self.assertEqual(context.get_state().get_abstract_state()
-                             .get_value(index=0).get_value(), expected_value)
+            self.assertEqual(
+                context.get_abstract_state(index=0).get_value(), expected_value
+            )
+            self.assertEqual(
+                context.get_abstract_state().get_value(index=0).get_value(),
+                expected_value,
+            )
+            self.assertEqual(
+                context.get_state()
+                .get_abstract_state()
+                .get_value(index=0)
+                .get_value(),
+                expected_value,
+            )
 
         context.SetAbstractState(index=0, value=True)
         check_abstract_value_zero(context, True)
         context.SetAbstractState(index=0, value=False)
         check_abstract_value_zero(context, False)
-        value = context.get_mutable_state().get_mutable_abstract_state()\
+        value = (
+            context.get_mutable_state()
+            .get_mutable_abstract_state()
             .get_mutable_value(index=0)
+        )
         value.set_value(True)
         check_abstract_value_zero(context, True)
 
@@ -280,22 +320,26 @@ class TestGeneral(unittest.TestCase):
         # TODO(eric.cousineau): Test other event types when it is useful to
         # expose them.
 
-        def callback(context, event): pass
+        def callback(context, event):
+            pass
 
         event = PublishEvent(callback=callback)
         self.assertIsInstance(event, Event)
         event = PublishEvent(
-            trigger_type=TriggerType.kInitialization, callback=callback)
+            trigger_type=TriggerType.kInitialization, callback=callback
+        )
         self.assertIsInstance(event, Event)
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
-        def system_callback(system, context, event): pass
+        def system_callback(system, context, event):
+            pass
 
         event = PublishEvent(system_callback=system_callback)
         self.assertIsInstance(event, Event)
         event = PublishEvent(
             trigger_type=TriggerType.kInitialization,
-            system_callback=system_callback)
+            system_callback=system_callback,
+        )
         self.assertIsInstance(event, Event)
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
@@ -313,8 +357,10 @@ class TestGeneral(unittest.TestCase):
         context = system1.CreateDefaultContext()
         system1.get_input_port(0).FixValue(context, 0.0)
         updated_discrete = system1.EvalUniquePeriodicDiscreteUpdate(context)
-        self.assertEqual(updated_discrete.num_groups(),
-                         context.get_discrete_state().num_groups())
+        self.assertEqual(
+            updated_discrete.num_groups(),
+            context.get_discrete_state().num_groups(),
+        )
 
         # Simple continuous-time system.
         system2 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.0)
@@ -341,8 +387,9 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(state.num_z(), 0)
         state = ContinuousState(state=BasicVector(2))
         self.assertEqual(state.size(), 2)
-        state = ContinuousState(state=BasicVector(np.arange(6)), num_q=3,
-                                num_v=2, num_z=1)
+        state = ContinuousState(
+            state=BasicVector(np.arange(6)), num_q=3, num_v=2, num_z=1
+        )
         state_clone = state.Clone()
         self.assertTrue(state_clone is not state)
         self.assertEqual(state.size(), 6)
@@ -350,8 +397,8 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(state.num_v(), 2)
         self.assertEqual(state.num_z(), 1)
         self.assertEqual(state[1], 1.0)
-        state[1] = 11.
-        self.assertEqual(state[1], 11.)
+        state[1] = 11.0
+        self.assertEqual(state[1], 11.0)
         self.assertEqual(state.get_vector().size(), 6)
         self.assertEqual(state.get_mutable_vector().size(), 6)
         self.assertEqual(state.get_generalized_position().size(), 3)
@@ -361,7 +408,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(state.get_misc_continuous_state().size(), 1)
         self.assertEqual(state.get_mutable_misc_continuous_state().size(), 1)
         state.SetFrom(ContinuousState(BasicVector(6), 3, 2, 1))
-        state.SetFromVector(value=3*np.arange(6))
+        state.SetFromVector(value=3 * np.arange(6))
         self.assertEqual(len(state.CopyToVector()), 6)
 
     @numpy_compare.check_all_types
@@ -376,9 +423,10 @@ class TestGeneral(unittest.TestCase):
         x = cast(np.array([1.23, 4.56]))
         discrete_values.set_value(1, x)
         numpy_compare.assert_equal(discrete_values.get_value(index=1), x)
-        if T == float:
+        if T is float:
             numpy_compare.assert_equal(
-                discrete_values.get_mutable_value(index=1), x)
+                discrete_values.get_mutable_value(index=1), x
+            )
         else:
             with self.assertRaises(RuntimeError):
                 discrete_values.get_mutable_value(index=1)
@@ -390,16 +438,15 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(len(discrete_values.get_data()), 1)
         self.assertEqual(discrete_values.get_vector(index=0).size(), 3)
         self.assertEqual(discrete_values.get_mutable_vector(index=0).size(), 3)
-        x = cast(np.array([1., 3., 4.]))
+        x = cast(np.array([1.0, 3.0, 4.0]))
         discrete_values.set_value(x)
         numpy_compare.assert_equal(discrete_values.value(index=0), x)
         numpy_compare.assert_equal(discrete_values.get_value(), x)
-        if T == float:
-            numpy_compare.assert_equal(
-                discrete_values.get_mutable_value(), x)
-        discrete_values[1] = 5.
-        numpy_compare.assert_equal(discrete_values[1], T(5.))
-        if T == float:
+        if T is float:
+            numpy_compare.assert_equal(discrete_values.get_mutable_value(), x)
+        discrete_values[1] = 5.0
+        numpy_compare.assert_equal(discrete_values[1], T(5.0))
+        if T is float:
             vector = discrete_values.get_mutable_value()
             vector[0] = 2.3
             self.assertEqual(discrete_values[0], 2.3)
@@ -442,59 +489,70 @@ class TestGeneral(unittest.TestCase):
     def test_scalar_type_conversion(self):
         float_system = Adder(1, 1)
         float_context = float_system.CreateDefaultContext()
-        float_system.get_input_port(0).FixValue(float_context, 1.)
+        float_system.get_input_port(0).FixValue(float_context, 1.0)
         for T in [float, AutoDiffXd, Expression]:
             system = Adder_[T](1, 1)
-            self.assertIsInstance(system.get_system_scalar_converter(),
-                                  SystemScalarConverter)
+            self.assertIsInstance(
+                system.get_system_scalar_converter(), SystemScalarConverter
+            )
             # N.B. Current scalar conversion does not permit conversion to and
             # from the same type.
-            if T != float:
-                methods = [Adder_[T].ToScalarType[float],
-                           Adder_[T].ToScalarTypeMaybe[float]]
+            if T is not float:
+                methods = [
+                    Adder_[T].ToScalarType[float],
+                    Adder_[T].ToScalarTypeMaybe[float],
+                ]
                 for method in methods:
                     system_float = method(system)
                     self.assertIsInstance(system_float, System_[float])
                     self._compare_system_instances(system, system_float)
             if T != AutoDiffXd:
-                methods = [Adder_[T].ToAutoDiffXd, Adder_[T].ToAutoDiffXdMaybe,
-                           Adder_[T].ToScalarType[AutoDiffXd],
-                           Adder_[T].ToScalarTypeMaybe[AutoDiffXd]]
+                methods = [
+                    Adder_[T].ToAutoDiffXd,
+                    Adder_[T].ToAutoDiffXdMaybe,
+                    Adder_[T].ToScalarType[AutoDiffXd],
+                    Adder_[T].ToScalarTypeMaybe[AutoDiffXd],
+                ]
                 for method in methods:
                     system_ad = method(system)
                     self.assertIsInstance(system_ad, System_[AutoDiffXd])
                     self._compare_system_instances(system, system_ad)
             if T != Expression:
-                methods = [Adder_[T].ToSymbolic, Adder_[T].ToSymbolicMaybe,
-                           Adder_[T].ToScalarType[Expression],
-                           Adder_[T].ToScalarTypeMaybe[Expression]]
+                methods = [
+                    Adder_[T].ToSymbolic,
+                    Adder_[T].ToSymbolicMaybe,
+                    Adder_[T].ToScalarType[Expression],
+                    Adder_[T].ToScalarTypeMaybe[Expression],
+                ]
                 for method in methods:
                     system_sym = method(system)
                     self.assertIsInstance(system_sym, System_[Expression])
                     self._compare_system_instances(system, system_sym)
             context = system.CreateDefaultContext()
-            system.FixInputPortsFrom(other_system=float_system,
-                                     other_context=float_context,
-                                     target_context=context)
+            system.FixInputPortsFrom(
+                other_system=float_system,
+                other_context=float_context,
+                target_context=context,
+            )
             u = system.get_input_port(0).Eval(context)
             self.assertEqual(len(u), 1)
-            if T == float:
-                self.assertEqual(u[0], 1.)
+            if T is float:
+                self.assertEqual(u[0], 1.0)
             elif T == AutoDiffXd:
-                self.assertEqual(u[0].value(), 1.)
+                self.assertEqual(u[0].value(), 1.0)
             else:
-                self.assertEqual(u[0].Evaluate(), 1.)
+                self.assertEqual(u[0].Evaluate(), 1.0)
 
     @numpy_compare.check_all_types
     def test_port_output(self, T):
         # TODO(eric.cousineau): Find better location for this testing.
-        system = ConstantVectorSource_[T]([1.])
+        system = ConstantVectorSource_[T]([1.0])
         context = system.CreateDefaultContext()
         # Check number of output ports and value for a given context.
         output = system.AllocateOutput()
         self.assertEqual(output.num_ports(), 1)
         system.CalcOutput(context=context, outputs=output)
-        if T == float:
+        if T is float:
             value = output.get_vector_data(0).get_value()
             self.assertTrue(np.allclose([1], value))
         elif T == AutoDiffXd:
@@ -502,7 +560,7 @@ class TestGeneral(unittest.TestCase):
             # TODO(eric.cousineau): Define `isfinite` ufunc, if
             # possible, to use for `np.allclose`.
             self.assertEqual(value.shape, (1,))
-            self.assertEqual(value[0], AutoDiffXd(1.))
+            self.assertEqual(value[0], AutoDiffXd(1.0))
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
@@ -559,16 +617,13 @@ class TestGeneral(unittest.TestCase):
         integrator = builder.AddSystem(Integrator(size))
         integrator.set_name("integrator")
 
+        self.assertEqual(builder.GetSystems(), [adder0, adder1, integrator])
         self.assertEqual(
-            builder.GetSystems(),
-            [adder0, adder1, integrator])
-        self.assertEqual(
-            builder.GetMutableSystems(),
-            [adder0, adder1, integrator])
+            builder.GetMutableSystems(), [adder0, adder1, integrator]
+        )
 
         builder.Connect(adder0.get_output_port(0), adder1.get_input_port(0))
-        builder.Connect(adder1.get_output_port(0),
-                        integrator.get_input_port(0))
+        builder.Connect(adder1.get_output_port(0), integrator.get_input_port(0))
 
         # Exercise naming variants.
         builder.ExportInput(adder0.get_input_port(0))
@@ -580,9 +635,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(adder0.get_name(), "adder0")
         self.assertTrue(diagram.HasSubsystemNamed("adder0"))
         self.assertEqual(diagram.GetSubsystemByName("adder0"), adder0)
-        self.assertEqual(
-            diagram.GetSystems(),
-            [adder0, adder1, integrator])
+        self.assertEqual(diagram.GetSystems(), [adder0, adder1, integrator])
         # TODO(eric.cousineau): Figure out unicode handling if needed.
         # See //systems/framework/test/diagram_test.cc:349 (sha: bc84e73)
         # for an example name.
@@ -605,7 +658,9 @@ class TestGeneral(unittest.TestCase):
         # Initialize integrator states.
         integrator_xc = (
             diagram.GetMutableSubsystemState(integrator, context)
-                   .get_mutable_continuous_state().get_vector())
+            .get_mutable_continuous_state()
+            .get_vector()
+        )
         integrator_xc.SetFromVector([0, 1, 2])
 
         simulator.Initialize()
@@ -630,8 +685,9 @@ class TestGeneral(unittest.TestCase):
             t = times[i]
             self.assertEqual(context_i.get_time(), t)
             xc = context_i.get_continuous_state_vector().CopyToVector()
-            xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial)
-                           + xc_initial)
+            xc_expected = (
+                float(i) / (n - 1) * (xc_final - xc_initial) + xc_initial
+            )
             self.assertTrue(np.allclose(xc, xc_expected))
 
     def test_simulator_context_manipulation(self):
@@ -682,7 +738,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(value_abs.get_value(), model_value.get_value())
 
     def test_vector_output_port_eval(self):
-        np_value = np.array([1., 2., 3.])
+        np_value = np.array([1.0, 2.0, 3.0])
         model_value = Value(BasicVector(np_value))
         source = ConstantVectorSource(np_value)
         context = source.CreateDefaultContext()
@@ -706,8 +762,9 @@ class TestGeneral(unittest.TestCase):
         model_value = Value("Hello World")
         system = PassThrough(copy.copy(model_value))
         context = system.CreateDefaultContext()
-        fixed = system.get_input_port(0).FixValue(context,
-                                                  copy.copy(model_value))
+        fixed = system.get_input_port(0).FixValue(
+            context, copy.copy(model_value)
+        )
         self.assertIsInstance(fixed.GetMutableData(), AbstractValue)
         input_port = system.get_input_port(0)
 
@@ -721,7 +778,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(value_abs.get_value(), model_value.get_value())
 
     def test_vector_input_port_eval(self):
-        np_value = np.array([1., 2., 3.])
+        np_value = np.array([1.0, 2.0, 3.0])
         model_value = Value(BasicVector(np_value))
         system = PassThrough(len(np_value))
         context = system.CreateDefaultContext()
@@ -771,7 +828,7 @@ class TestGeneral(unittest.TestCase):
             # overload for how to assign the argument into the erased storage.
             input_port.FixValue(context, 1)
         with self.assertRaises(TypeError):
-            input_port.FixValue(context, np.array([2.]))
+            input_port.FixValue(context, np.array([2.0]))
 
     def test_abstract_input_port_fix_object(self):
         # The port type is py::object, not any specific C++ type.
@@ -800,40 +857,40 @@ class TestGeneral(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_vector_input_port_fix(self, T):
-        np_zeros = np.array([0.])
+        np_zeros = np.array([0.0])
         system = PassThrough_[T](len(np_zeros))
         context = system.CreateDefaultContext()
         input_port = system.get_input_port(0)
 
         # Fix to a scalar.
-        input_port.FixValue(context, T(1.))
+        input_port.FixValue(context, T(1.0))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        numpy_compare.assert_equal(value, np.array([T(1.)]))
+        numpy_compare.assert_equal(value, np.array([T(1.0)]))
 
         # Fix to an ndarray.
-        input_port.FixValue(context, np.array([T(2.)]))
+        input_port.FixValue(context, np.array([T(2.0)]))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        numpy_compare.assert_equal(value, np.array([T(2.)]))
+        numpy_compare.assert_equal(value, np.array([T(2.0)]))
 
         # Fix to a BasicVector.
-        input_port.FixValue(context, BasicVector_[T]([3.]))
+        input_port.FixValue(context, BasicVector_[T]([3.0]))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        numpy_compare.assert_equal(value, np.array([T(3.)]))
+        numpy_compare.assert_equal(value, np.array([T(3.0)]))
 
         # Fix to a type-erased BasicVector.
-        input_port.FixValue(context, Value(BasicVector_[T]([4.])))
+        input_port.FixValue(context, Value(BasicVector_[T]([4.0])))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        numpy_compare.assert_equal(value, np.array([T(4.)]))
+        numpy_compare.assert_equal(value, np.array([T(4.0)]))
 
         # Fix to wrong-sized vector.
         with self.assertRaises(RuntimeError):
-            input_port.FixValue(context, np.array([0., 1.]))
+            input_port.FixValue(context, np.array([0.0, 1.0]))
         with self.assertRaises(RuntimeError):
-            input_port.FixValue(context, Value(BasicVector_[T]([0., 1.])))
+            input_port.FixValue(context, Value(BasicVector_[T]([0.0, 1.0])))
 
         # Fix to a non-vector.
         with self.assertRaises(TypeError):
@@ -880,11 +937,13 @@ class TestGeneral(unittest.TestCase):
         # Check API.
         self.assertIsInstance(status, EventStatus)
         self.assertEqual(
-            status.severity(), EventStatus.Severity.kReachedTermination)
+            status.severity(), EventStatus.Severity.kReachedTermination
+        )
         self.assertIs(status.system(), system)
         self.assertEqual(status.message(), "done")
         self.assertIsInstance(
-            status.KeepMoreSevere(candidate=status), EventStatus)
+            status.KeepMoreSevere(candidate=status), EventStatus
+        )
         status = EventStatus.Failed(system=system, message="failed")
         self.assertIsInstance(status, EventStatus)
 
@@ -910,12 +969,15 @@ class TestGeneral(unittest.TestCase):
         # names.
         builder.ConnectInput(in0_index, adder.get_input_port(2))
         builder.ConnectInput("in1", adder.get_input_port(3))
-        builder.ConnectInput(diagram_port_name="in0",
-                             input=adder.get_input_port(4))
-        builder.ConnectInput(diagram_port_index=in1_index,
-                             input=adder.get_input_port(5))
-        builder.ConnectToSame(exemplar=adder.get_input_port(2),
-                              dest=adder.get_input_port(6))
+        builder.ConnectInput(
+            diagram_port_name="in0", input=adder.get_input_port(4)
+        )
+        builder.ConnectInput(
+            diagram_port_index=in1_index, input=adder.get_input_port(5)
+        )
+        builder.ConnectToSame(
+            exemplar=adder.get_input_port(2), dest=adder.get_input_port(6)
+        )
         diagram = builder.Build()
 
         # Check the desired input topology is in the graph.
@@ -949,10 +1011,12 @@ class TestGeneral(unittest.TestCase):
             adder2 = builder.AddNamedSystem("adder2", Adder(1, 2))
             builder.Connect(adder1.get_output_port(), adder2.get_input_port())
             self.assertTrue(
-                builder.IsConnectedOrExported(port=adder2.get_input_port()))
+                builder.IsConnectedOrExported(port=adder2.get_input_port())
+            )
             builder.Connect(adder2.get_output_port(), adder1.get_input_port(0))
-            builder.Disconnect(source=adder2.get_output_port(),
-                               dest=adder1.get_input_port(0))
+            builder.Disconnect(
+                source=adder2.get_output_port(), dest=adder1.get_input_port(0)
+            )
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
@@ -968,19 +1032,26 @@ class TestGeneral(unittest.TestCase):
         adder1, adder2, diagram = make_diagram()
         connections = diagram.connection_map()
         self.assertIn((adder2, InputPortIndex(0)), connections)
-        self.assertEqual(connections[(adder2, InputPortIndex(0))],
-                         (adder1, OutputPortIndex(0)))
-        self.assertTrue(diagram.AreConnected(output=adder1.get_output_port(),
-                                             input=adder2.get_input_port()))
+        self.assertEqual(
+            connections[(adder2, InputPortIndex(0))],
+            (adder1, OutputPortIndex(0)),
+        )
+        self.assertTrue(
+            diagram.AreConnected(
+                output=adder1.get_output_port(), input=adder2.get_input_port()
+            )
+        )
         del adder1, adder2, diagram  # To test keep-alive logic
         gc.collect()
         self.assertEqual(list(connections.keys())[0][0].get_name(), "adder2")
 
         adder1, adder2, diagram = make_diagram()
         in0_locators = diagram.GetInputPortLocators(
-            port_index=InputPortIndex(0))
+            port_index=InputPortIndex(0)
+        )
         in1_locators = diagram.GetInputPortLocators(
-            port_index=InputPortIndex(1))
+            port_index=InputPortIndex(1)
+        )
         self.assertEqual(in0_locators, [(adder1, InputPortIndex(0))])
         self.assertEqual(in1_locators, [(adder1, InputPortIndex(1))])
         del adder1, adder2, diagram  # To test keep-alive logic
@@ -989,7 +1060,8 @@ class TestGeneral(unittest.TestCase):
 
         adder1, adder2, diagram = make_diagram()
         out_locators = diagram.get_output_port_locator(
-            port_index=OutputPortIndex(0))
+            port_index=OutputPortIndex(0)
+        )
         self.assertEqual(out_locators, (adder2, OutputPortIndex(0)))
         del adder1, adder2, diagram  # To test keep-alive logic
         gc.collect()

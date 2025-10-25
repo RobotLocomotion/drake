@@ -1,10 +1,7 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
-import copy
 import unittest
-
-import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 
@@ -20,12 +17,14 @@ class TestGeometryHydro(unittest.TestCase):
         res_hint = 0.175
         E = 1e8
         mut.AddRigidHydroelasticProperties(
-            resolution_hint=res_hint, properties=props)
+            resolution_hint=res_hint, properties=props
+        )
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
-        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
-                         res_hint)
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "resolution_hint"), res_hint
+        )
 
         props = mut.ProximityProperties()
         mut.AddRigidHydroelasticProperties(properties=props)
@@ -36,31 +35,40 @@ class TestGeometryHydro(unittest.TestCase):
         props = mut.ProximityProperties()
         res_hint = 0.275
         mut.AddCompliantHydroelasticProperties(
-            resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
+            resolution_hint=res_hint, hydroelastic_modulus=E, properties=props
+        )
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
-        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
-                         res_hint)
-        self.assertTrue(props.HasProperty("hydroelastic",
-                                          "hydroelastic_modulus"))
-        self.assertEqual(props.GetProperty("hydroelastic",
-                                           "hydroelastic_modulus"), E)
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "resolution_hint"), res_hint
+        )
+        self.assertTrue(
+            props.HasProperty("hydroelastic", "hydroelastic_modulus")
+        )
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "hydroelastic_modulus"), E
+        )
 
         props = mut.ProximityProperties()
         slab_thickness = 0.275
         mut.AddCompliantHydroelasticPropertiesForHalfSpace(
-            slab_thickness=slab_thickness, hydroelastic_modulus=E,
-            properties=props)
+            slab_thickness=slab_thickness,
+            hydroelastic_modulus=E,
+            properties=props,
+        )
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
-        self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
-                         slab_thickness)
-        self.assertTrue(props.HasProperty("hydroelastic",
-                                          "hydroelastic_modulus"))
-        self.assertEqual(props.GetProperty("hydroelastic",
-                                           "hydroelastic_modulus"), E)
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "slab_thickness"), slab_thickness
+        )
+        self.assertTrue(
+            props.HasProperty("hydroelastic", "hydroelastic_modulus")
+        )
+        self.assertEqual(
+            props.GetProperty("hydroelastic", "hydroelastic_modulus"), E
+        )
 
     def test_make_convex_hull(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")

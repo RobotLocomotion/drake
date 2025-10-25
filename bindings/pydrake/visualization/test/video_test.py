@@ -29,6 +29,7 @@ class TestVideoWriter(unittest.TestCase):
         """
         if _PLATFORM_SUPPORTS_CV2:
             import cv2
+
             return cv2
         else:
             return None
@@ -60,10 +61,16 @@ class TestVideoWriter(unittest.TestCase):
         # Add the video writer.
         fps = 16 if backend == "cv2" else 10
         sensor_pose = RigidTransform(
-            RollPitchYaw([-math.pi/2, 0, math.pi/2]), [2, 0, 0.75])
+            RollPitchYaw([-math.pi / 2, 0, math.pi / 2]), [2, 0, 0.75]
+        )
         writer = VideoWriter.AddToBuilder(
-            filename=filename, builder=builder, sensor_pose=sensor_pose,
-            fps=fps, kinds=kinds, backend=backend)
+            filename=filename,
+            builder=builder,
+            sensor_pose=sensor_pose,
+            fps=fps,
+            kinds=kinds,
+            backend=backend,
+        )
 
         # Simulate for one second (add torque to the plant to make it move).
         diagram = builder.Build()
@@ -71,7 +78,8 @@ class TestVideoWriter(unittest.TestCase):
         diagram_context = simulator.get_mutable_context()
         plant_context = plant.GetMyMutableContextFromRoot(diagram_context)
         plant.get_actuation_input_port().FixValue(
-            plant_context, [10] * plant.num_positions())
+            plant_context, [10] * plant.num_positions()
+        )
         simulator.AdvanceTo(1.0)
         writer.Save()
 
@@ -116,26 +124,36 @@ class TestVideoWriter(unittest.TestCase):
         filename = os.environ["TEST_UNDECLARED_OUTPUTS_DIR"] + "/bad.mp4"
         with self.assertRaisesRegex(ValueError, "wrong.*must be"):
             VideoWriter.AddToBuilder(
-                filename=filename, builder=builder,
-                sensor_pose=RigidTransform(), fps=16, backend="cv2",
-                fourcc="wrong")
+                filename=filename,
+                builder=builder,
+                sensor_pose=RigidTransform(),
+                fps=16,
+                backend="cv2",
+                fourcc="wrong",
+            )
 
-    def test_bad_backend(self):
+    def test_bad_backend_1(self):
         """Tests detection of a malformed backend setting."""
         builder = DiagramBuilder()
         AddMultibodyPlantSceneGraph(builder, time_step=0.0)
         with self.assertRaises(Exception) as cm:
             VideoWriter.AddToBuilder(
-                filename="file", builder=builder, sensor_pose=RigidTransform(),
-                backend="WRONG")
+                filename="file",
+                builder=builder,
+                sensor_pose=RigidTransform(),
+                backend="WRONG",
+            )
         self.assertIn("WRONG", str(cm.exception))
 
-    def test_bad_backend(self):
+    def test_bad_backend_2(self):
         """Tests detection of a malformed kinds setting."""
         builder = DiagramBuilder()
         AddMultibodyPlantSceneGraph(builder, time_step=0.0)
         with self.assertRaises(Exception) as cm:
             VideoWriter.AddToBuilder(
-                filename="file", builder=builder, sensor_pose=RigidTransform(),
-                kinds=("WRONG",))
+                filename="file",
+                builder=builder,
+                sensor_pose=RigidTransform(),
+                kinds=("WRONG",),
+            )
         self.assertIn("WRONG", str(cm.exception))

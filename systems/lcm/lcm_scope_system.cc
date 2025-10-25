@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/lcmt_scope.hpp"
 
 namespace drake {

@@ -12,17 +12,17 @@ import numpy as np
 
 from pydrake.systems.analysis import (
     Simulator,
-    )
+)
 from pydrake.systems.framework import (
     DiagramBuilder,
-    )
+)
 from pydrake.systems.primitives import (
     Adder,
-    )
+)
 from pydrake.systems.test.test_util import (
     DeleteListenerSystem,
     DeleteListenerVector,
-    )
+)
 
 
 class Info:
@@ -75,7 +75,7 @@ class TestLifetime(unittest.TestCase):
         # Add the system to a built diagram.
         builder_1 = DiagramBuilder()
         builder_1.AddSystem(system)
-        diagram_1 = builder_1.Build()
+        diagram_1 = builder_1.Build()  # noqa: F841 (unused-variable)
 
         # Add it again to another diagram. We don't care if the Add fails or
         # the Build fails, so long as one of them does.
@@ -113,6 +113,6 @@ class TestLifetime(unittest.TestCase):
         self.assertTrue(vector is not None)
         # Ensure that we do not get segfault behavior when accessing / mutating
         # the values.
-        self.assertTrue(np.allclose(vector.get_value(), [0.]))
-        vector.get_mutable_value()[:] = [10.]
-        self.assertTrue(np.allclose(vector.get_value(), [10.]))
+        self.assertTrue(np.allclose(vector.get_value(), [0.0]))
+        vector.get_mutable_value()[:] = [10.0]
+        self.assertTrue(np.allclose(vector.get_value(), [10.0]))

@@ -1,6 +1,5 @@
 import pydrake.planning as mut
 
-import logging
 import textwrap
 import unittest
 
@@ -53,9 +52,8 @@ class TestCollisionCheckerTrace(unittest.TestCase):
         # Prepare a checker with a box that can collide with the ground.
         robot, index = self._make_robot_diagram()
         dut = mut.SceneGraphCollisionChecker(
-            model=robot,
-            robot_model_instances=[index],
-            edge_step_size=0.125)
+            model=robot, robot_model_instances=[index], edge_step_size=0.125
+        )
 
         # Check an edge that has a box-ground collision.
         q1 = np.array([-0.5] * 7)

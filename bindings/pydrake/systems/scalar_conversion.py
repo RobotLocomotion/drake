@@ -1,6 +1,5 @@
 """Provides utilities to aid in scalar type conversion."""
 
-import copy
 from functools import partial
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -74,6 +73,7 @@ class TemplateSystem(TemplateClass):
       overriding ``__init__``. We use ``converter=None`` to imply it should be
       positional, since Python2 does not have keyword-only arguments.
     """
+
     # TODO(eric.cousineau): Figure out if there is a way to avoid needing to
     # pass around converters in user code, avoiding the need to have Python
     # users deal with `SystemScalarConverter`.
@@ -98,17 +98,20 @@ class TemplateSystem(TemplateClass):
             T_list = SystemScalarConverter.SupportedScalars
         for T in T_list:
             assert T in SystemScalarConverter.SupportedScalars, (
-                "Type {} is not a supported scalar type".format(T))
+                "Type {} is not a supported scalar type".format(T)
+            )
         if T_pairs is None:
             T_pairs = _get_conversion_pairs(T_list)
         for T_pair in T_pairs:
             T, U = T_pair
             assert T in T_list and U in T_list, (
-                "Conversion {} is not in the original parameter list"
-                .format(T_pair))
-            assert T_pair in \
-                SystemScalarConverter.SupportedConversionPairs, (
-                    "Conversion {} is not supported".format(T_pair))
+                "Conversion {} is not in the original parameter list".format(
+                    T_pair
+                )
+            )
+            assert T_pair in SystemScalarConverter.SupportedConversionPairs, (
+                "Conversion {} is not supported".format(T_pair)
+            )
 
         self._T_list = list(T_list)
         self._T_pairs = list(T_pairs)
@@ -116,7 +119,8 @@ class TemplateSystem(TemplateClass):
 
     @classmethod
     def define(
-            cls, name, T_list=None, T_pairs=None, *args, scope=None, **kwargs):
+        cls, name, T_list=None, T_pairs=None, *args, scope=None, **kwargs
+    ):
         """Provides a decorator which can be used define a scalar-type
         convertible System as a template.
 
@@ -138,9 +142,8 @@ class TemplateSystem(TemplateClass):
         param_list = [(T,) for T in template._T_list]
 
         def decorator(instantiation_func):
-
             def wrapped(param):
-                T, = param
+                (T,) = param
                 return instantiation_func(T)
 
             template.add_instantiations(wrapped, param_list)
@@ -150,14 +153,16 @@ class TemplateSystem(TemplateClass):
 
     def _on_add(self, param, cls, skip_rename):
         TemplateClass._on_add(self, param, cls, skip_rename)
-        T, = param
+        (T,) = param
 
         # Check that the user has not defined `__init__`, and has defined
         # `_construct` and `_construct_copy`.
         if not issubclass(cls, LeafSystem_[T]):
             raise RuntimeError(
                 "{} must inherit from {}".format(
-                    pretty_class_name(cls), LeafSystem_[T]))
+                    pretty_class_name(cls), LeafSystem_[T]
+                )
+            )
 
         # Use the immediate `__dict__`, rather than querying the attributes, so
         # that we don't get spillover from inheritance.
@@ -168,16 +173,20 @@ class TemplateSystem(TemplateClass):
         if not no_init:
             raise RuntimeError(
                 "{} defines `__init__`, but should not. Please implement "
-                "`_construct` and `_construct_copy` instead."
-                .format(pretty_class_name(cls)))
+                "`_construct` and `_construct_copy` instead.".format(
+                    pretty_class_name(cls)
+                )
+            )
         if not has_construct:
             raise RuntimeError(
                 "{} does not define `_construct`. Please ensure this is "
-                "defined.".format(pretty_class_name(cls)))
+                "defined.".format(pretty_class_name(cls))
+            )
         if not has_copy:
             raise RuntimeError(
                 "{} does not define `_construct_copy`. Please ensure this "
-                "is defined.".format(pretty_class_name(cls)))
+                "is defined.".format(pretty_class_name(cls))
+            )
 
         # Patch `__init__`.
         template = self
@@ -193,23 +202,24 @@ class TemplateSystem(TemplateClass):
                 other = args[0]
                 cls._construct_copy(self, other, converter=converter)
             else:
-                cls._construct(
-                    self, *args, converter=converter, **kwargs)
+                cls._construct(self, *args, converter=converter, **kwargs)
 
         cls.__init__ = system_init
 
         # Patch the scalar-conversion functions (only when called from Python,
         # not when called from C++) to return the Python type instead of the
         # WrappedSystem shim.
-        cls.ToScalarType = TemplateMethod(
-            cls=cls, name="ToScalarType")
+        cls.ToScalarType = TemplateMethod(cls=cls, name="ToScalarType")
         cls.ToScalarTypeMaybe = TemplateMethod(
-            cls=cls, name="ToScalarTypeMaybe")
+            cls=cls, name="ToScalarTypeMaybe"
+        )
         for U in SystemScalarConverter.SupportedScalars:
             new_method = template._make_new_to_scalar_type_method(
-                T=U, U=T, maybe=False)
+                T=U, U=T, maybe=False
+            )
             new_method_maybe = template._make_new_to_scalar_type_method(
-                T=U, U=T, maybe=True)
+                T=U, U=T, maybe=True
+            )
             if U == AutoDiffXd:
                 cls.ToAutoDiffXd = new_method
                 cls.ToAutoDiffXdMaybe = new_method_maybe
@@ -217,9 +227,13 @@ class TemplateSystem(TemplateClass):
                 cls.ToSymbolic = new_method
                 cls.ToSymbolicMaybe = new_method_maybe
             cls.ToScalarType.add_instantiation(
-                param=[U,], instantiation=new_method)
+                param=[U],
+                instantiation=new_method,
+            )
             cls.ToScalarTypeMaybe.add_instantiation(
-                param=[U,], instantiation=new_method_maybe)
+                param=[U],
+                instantiation=new_method_maybe,
+            )
 
         return cls
 
@@ -247,7 +261,7 @@ class TemplateSystem(TemplateClass):
         converter = SystemScalarConverter()
         # N.B. This does not directly instantiate the template; it is deferred
         # to when the conversion is called.
-        for (T, U) in self._T_pairs:
+        for T, U in self._T_pairs:
             conversion = partial(self._make, T, U)
             converter._AddConstructor[T, U](conversion)
         return converter
@@ -265,10 +279,12 @@ class TemplateSystem(TemplateClass):
                 raise RuntimeError(
                     f"System {system_U.GetSystemPathname()} "
                     f"of type {type(system_U)} "
-                    f"does not support scalar conversion to type {T}")
+                    f"does not support scalar conversion to type {T}"
+                )
             result = self._make(T=T, U=U, system_U=system_U)
             result._HandlePostConstructionScalarConversion[U](system_U)
             return result
+
         _to_scalar_type.T = T
         _to_scalar_type.U = U
         _to_scalar_type.maybe = maybe

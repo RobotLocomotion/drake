@@ -55,15 +55,10 @@ tags.
 """
 
 import argparse
-import logging
-import numpy as np
 import os
-from pathlib import Path
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.multibody import _inertia_fixer
-
-_logger = logging.getLogger("drake")
 
 
 def _main():
@@ -77,18 +72,26 @@ def _main():
 
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "input_file", type=str,
-        help="Filesystem path to an SDFormat or URDF file.")
+        "input_file",
+        type=str,
+        help="Filesystem path to an SDFormat or URDF file.",
+    )
     parser.add_argument(
-        "output_file", type=str, nargs='?',
+        "output_file",
+        type=str,
+        nargs="?",
         help="[Optional] Filesystem path to write output with repaired"
-        " inertias. If missing, output will go to stdout.")
+        " inertias. If missing, output will go to stdout.",
+    )
     parser.add_argument(
-        "--in_place", action="store_true",
+        "--in_place",
+        action="store_true",
         help="Modify the input file in-place. Any output_file argument"
-        " will be ignored.")
+        " will be ignored.",
+    )
     parser.add_argument(
         "--geom_inertia_role_order",
         type=str,
@@ -98,8 +101,8 @@ def _main():
     )
     args = parser.parse_args()
 
-    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
     geom_inertia_role_order = _inertia_fixer.str_list_to_role_list(
         args.geom_inertia_role_order

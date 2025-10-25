@@ -4,7 +4,6 @@ Python types as they relate to C++.
 """
 
 import ctypes
-import sys
 import typing
 
 import numpy as np
@@ -63,9 +62,11 @@ class _ParamAliases:
         # Re-sugars typing.Union[T, NoneType] into typing.Optional[T] in case
         # that's what the origin and arg names refer to. Otherwise, returns the
         # data unchanged.
-        if (origin_name == "typing.Union"
-                and len(arg_names) == 2
-                and arg_names[-1] == "NoneType"):
+        if (
+            origin_name == "typing.Union"
+            and len(arg_names) == 2
+            and arg_names[-1] == "NoneType"
+        ):
             origin_name = "typing.Optional"
             arg_names = arg_names[:1]
         return origin_name, arg_names
@@ -79,7 +80,8 @@ class _ParamAliases:
             origin_name = self.get_name(origin, mangle=mangle)
             arg_names = [self.get_name(x, mangle=mangle) for x in args]
             origin_name, arg_names = self._resugar_typing_shortcuts(
-                origin_name, arg_names)
+                origin_name, arg_names
+            )
             result = f"{origin_name}[{','.join(arg_names)}]"
             if mangle:
                 result = _MangledName.mangle(result)
@@ -123,6 +125,7 @@ class _Generic:
     same type classes as Python's built-in generics (e.g., `typing.Union`) but
     is careful to canonicalize any type aliases in params during instantiation.
     """
+
     def __init__(self, name, instantiator, num_params):
         self._name = name
         self._instantiator = instantiator
@@ -134,7 +137,8 @@ class _Generic:
         if self._num_params is not None and len(params) != self._num_params:
             raise RuntimeError(
                 f"{self._name}[] requires exactly "
-                f"{self._num_params} type parameter(s)")
+                f"{self._num_params} type parameter(s)"
+            )
         params_canonical = get_param_canonical(params)
         return self._instantiator(params_canonical)
 
@@ -142,18 +146,23 @@ class _Generic:
         return f"<Generic {self._name}>"
 
 
-def _dict_instantiator(params):
-    return dict[params]
+def _dict_instantiator(params: tuple):
+    (param_key, param_value) = params
+    return dict[param_key, param_value]
 
 
-def _list_instantiator(params):
-    return list[params]
+def _list_instantiator(params: tuple):
+    (param,) = params
+    return list[param]
 
 
-def _optional_instantiator(params):
-    # Unpack the tuple into the (single) argument required by typing.Optional.
+def _optional_instantiator(params: tuple):
     (param,) = params
     return typing.Optional[param]
+
+
+def _union_instantiator(params: tuple):
+    return typing.Union[params]
 
 
 # A generic type `dict[KT, VT]` for the C++ class std::map<KT, VT>.
@@ -167,4 +176,4 @@ List = _Generic("List", _list_instantiator, 1)
 Optional = _Generic("Optional", _optional_instantiator, 1)
 
 # A generic type `typing.Union[X, ...]` for the C++ class std::variant<X, ...>.
-Union = _Generic("Union", typing.Union.__getitem__, None)
+Union = _Generic("Union", _union_instantiator, None)

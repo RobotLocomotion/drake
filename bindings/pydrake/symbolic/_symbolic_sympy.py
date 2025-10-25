@@ -2,6 +2,7 @@
 `_symbolic_extra.py`. It is loaded is loaded lazily (on demand), so that Drake
 does not directly depend on SymPy.
 """
+
 import math
 import operator
 from typing import Dict, Union
@@ -35,9 +36,9 @@ def _handle_constant(x):
     return sympy.Float(x)
 
 
-def _make_sympy_if_then_else(cond: sympy.Expr,
-                             expr_then: sympy.Expr,
-                             expr_else: sympy.Expr):
+def _make_sympy_if_then_else(
+    cond: sympy.Expr, expr_then: sympy.Expr, expr_else: sympy.Expr
+):
     """Returns the SymPy spelling of `{then_expr} if {cond} else {expr_else}`,
     also known as the "ternary conditional" operator.
     """
@@ -81,7 +82,7 @@ _SYMPY_CONSTRUCTOR = {
     ExpressionKind.Sin: sympy.sin,
     ExpressionKind.Sinh: sympy.sinh,
     ExpressionKind.Sqrt: sympy.sqrt,
-    ExpressionKind.Tan:  sympy.tan,
+    ExpressionKind.Tan: sympy.tan,
     ExpressionKind.Tanh: sympy.tanh,
     FormulaKind.And: sympy.And,
     FormulaKind.Eq: sympy.Equality,
@@ -108,14 +109,15 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
     """
     sympy_var = memo.get(drake_var.get_id())
     if sympy_var is None:
-        drake_type = drake_var.get_type()
+        drake_type = drake_var.get_type()  # noqa: F841 (unused-variable)
         assumptions = {
             # TODO(jwnimmer-tri) Use drake_type to fill in the assumptions.
         }
         sympy_var = sympy.Dummy(
             name=drake_var.get_name(),
             dummy_index=drake_var.get_id(),
-            **assumptions)
+            **assumptions,
+        )
         memo[drake_var.get_id()] = sympy_var
         memo[sympy_var] = drake_var
     return sympy_var
@@ -132,14 +134,15 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
     drake_var = memo.get(sympy_var)
     if drake_var is None:
         raise NotImplementedError(
-            f"The SymPy variable {sympy_var} is missing from the `memo` dict.")
+            f"The SymPy variable {sympy_var} is missing from the `memo` dict."
+        )
     return drake_var
 
 
 def _to_sympy(
     x: Union[float, int, bool, Variable, Expression, Formula],
     *,
-    memo: Dict = None
+    memo: Dict = None,
 ) -> Union[float, int, bool, sympy.Expr]:
     """This is the private implementation of pydrake.symbolic.to_sympy().
     Refer to that module-level function for the full docstring.
@@ -152,16 +155,18 @@ def _to_sympy(
         return _var_to_sympy(drake_var=x, memo=memo)
     try:
         kind = x.get_kind()
-    except AttributeError as e:
+    except AttributeError:
         kind = None
     if kind is None:
         raise NotImplementedError(
-            f"Cannot create a SymPy object from the given object {x!r}")
+            f"Cannot create a SymPy object from the given object {x!r}"
+        )
     sympy_constructor = _SYMPY_CONSTRUCTOR.get(kind)
     if sympy_constructor is None:
         raise NotImplementedError(
             f"Cannot create a SymPy object from "
-            f"the given pydrake {kind} object {x!r}")
+            f"the given pydrake {kind} object {x!r}"
+        )
     _, drake_args = x.Unapply()
     sympy_args = [_to_sympy(arg, memo=memo) for arg in drake_args]
     return sympy_constructor(*sympy_args)
@@ -173,12 +178,14 @@ class _DrakePrinter(MpmathPrinter):
     """
 
     def __init__(self):
-        super().__init__({
-            "fully_qualified_modules": False,
-            "inline": True,
-            "allow_unknown_functions": True,
-            "user_functions": {},
-        })
+        super().__init__(
+            {
+                "fully_qualified_modules": False,
+                "inline": True,
+                "allow_unknown_functions": True,
+                "user_functions": {},
+            }
+        )
 
     def _print_drake_logical_op(self, expr, op):
         """Uses pydrake.symbolic.logical_{op} instead of the Python built-in
@@ -205,7 +212,8 @@ class _DrakePrinter(MpmathPrinter):
         if expr.args[-1].cond not in (True, sympy.true):
             raise NotImplementedError(
                 "Piecewise functions must always have a value; the final "
-                "condition must be the literal value `True`.")
+                "condition must be the literal value `True`."
+            )
         result = [self._print(expr.args[-1].expr)]
         for arg in reversed(expr.args[:-1]):
             arg_cond = self._print(arg.cond)
@@ -226,13 +234,12 @@ def _lambdify(*, expr, args):
         modules=pydrake.symbolic,
         printer=_DRAKE_PRINTER,
         use_imps=False,
-        docstring_limit=0)
+        docstring_limit=0,
+    )
 
 
 def _from_sympy(
-    x: Union[float, int, bool, sympy.Expr],
-    *,
-    memo: Dict = None
+    x: Union[float, int, bool, sympy.Expr], *, memo: Dict = None
 ) -> Union[float, int, bool, Variable, Expression, Formula]:
     """This is the private implementation of pydrake.symbolic.from_sympy().
     Refer to that module-level function for the full docstring.

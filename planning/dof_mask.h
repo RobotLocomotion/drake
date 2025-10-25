@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -234,6 +235,21 @@ class DofMask {
   @pre `output.size() == size()`. */
   void SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
                   drake::EigenPtr<Eigen::VectorXd> output) const;
+
+  /** If we have q_selected = dof_mask.GetFromArray(q_full), then this function
+   returns a mapping from q_selected index to q_full index, such that
+   q_selected[i] is the same as q_full[dof_mask.GetSelectedToFullIndex()[i]]. */
+  [[nodiscard]] std::vector<int> GetSelectedToFullIndex() const;
+
+  /** The inverse mapping of GetSelectedToFullIndex().
+   If we have q_selected = dof_mask.GetFromArray(q_full), the this function
+   returns the mapping from q_full index to q_selected index. Namely
+   if dof_mask[i] is true, namely q_full[i] is selected, then
+   q_selected[*dof_mask.GetFullToSelectedIndex()[i]] is the same as q_full[i];
+   if dof_mask[i] is false, then dof_mask.GetFullToSelectedIndex()[i] is
+   nullopt.
+   */
+  [[nodiscard]] std::vector<std::optional<int>> GetFullToSelectedIndex() const;
   //@}
 
  private:

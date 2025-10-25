@@ -18,6 +18,7 @@ def main():
 
     # Execute the imported main.
     from pydrake.visualization.meldis import _main
+
     _main()
 
 

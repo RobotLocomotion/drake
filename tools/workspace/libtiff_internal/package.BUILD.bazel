@@ -70,6 +70,8 @@ cmake_configure_files(
         "HAVE_UNISTD_H=1",
     ],
     undefines = [
+        # Drake only supports 64-bit, little-endian hardware.
+        "WORDS_BIGENDIAN",
         # Platform stuff that we don't have or don't want.
         "CXX_SUPPORT",
         "HAVE_IO_H",
@@ -84,7 +86,9 @@ cmake_configure_files(
         "THUNDER_SUPPORT",
         # Opt-out of compression algorithms that require external libraries.
         "HAVE_JBG_NEWLEN",
+        "HAVE_JPEGTURBO_DUAL_MODE_8_12",
         "JBIG_SUPPORT",
+        "LERC_STATIC",
         "LERC_SUPPORT",
         "LIBDEFLATE_SUPPORT",
         "LIBJPEG_12_PATH",
@@ -167,3 +171,5 @@ install(
     docs = ["LICENSE.md"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

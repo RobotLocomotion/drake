@@ -65,29 +65,41 @@ def AddFrameTriadIllustration(
     Returns:
       The newly-added geometry ids for (x, y, z) respectively.
     """
-    if sum([body is not None, frame is not None, frame_index is not None,
-            frame_id is not None]) != 1:
-        raise ValueError("Must provide exactly one of body=, frame=, "
-                         "frame_index=, or frame_id=")
+    if (
+        sum(
+            [
+                body is not None,
+                frame is not None,
+                frame_index is not None,
+                frame_id is not None,
+            ]
+        )
+        != 1
+    ):
+        raise ValueError(
+            "Must provide exactly one of body=, frame=, "
+            "frame_index=, or frame_id="
+        )
     if X_FT is None:
         X_FT = RigidTransform()
     resolved_plant_arg = "body="
     if frame_index is not None:
         if plant is None:
             raise ValueError(
-                "When using frame_index=, the plant cannot be None.")
+                "When using frame_index=, the plant cannot be None."
+            )
         frame = plant.get_frame(frame_index)
     if frame is not None:
         body = frame.body()
         X_FT = frame.GetFixedPoseInBodyFrame() @ X_FT
-        resolved_plant_arg = ("frame=" if frame_index is None
-                              else "frame_index=")
+        resolved_plant_arg = "frame=" if frame_index is None else "frame_index="
     if body is not None:
         if plant is not None:
             if plant is not body.GetParentPlant():
                 raise ValueError(
                     f"Mismatched {resolved_plant_arg} and plant=; remove the "
-                    f"plant= arg")
+                    f"plant= arg"
+                )
         else:
             plant = body.GetParentPlant()
         frame_id = plant.GetBodyFrameIdOrThrow(body.index())
@@ -108,11 +120,12 @@ def AddFrameTriadIllustration(
         # R_TG rotates the canonical cylinder (aligned with +z) to align with
         # the i'th axis instead. When i == 2, it spins the cylinder around the
         # z axis, but this is effectively a no-op.
-        R_TG = AngleAxis(angle=np.pi/2, axis=eye[1-i])
+        R_TG = AngleAxis(angle=np.pi / 2, axis=eye[1 - i])
         X_FG = X_FT @ RigidTransform(R_TG, p_TG)
         geom = GeometryInstance(X_FG, Cylinder(radius, length), geom_name)
-        phong = MakePhongIllustrationProperties(np.append(eye[i] * brightness,
-                                                [opacity]))
+        phong = MakePhongIllustrationProperties(
+            np.append(eye[i] * brightness, [opacity])
+        )
         geom.set_illustration_properties(phong)
         geometry_id = scene_graph.RegisterGeometry(source_id, frame_id, geom)
         result.append(geometry_id)

@@ -1,9 +1,7 @@
 import copy
 import inspect
-import os
 import subprocess
 import textwrap
-import time
 import unittest
 
 from pydrake.common import FindResourceOrThrow
@@ -22,7 +20,8 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
 
     def setUp(self):
         self.dut = FindResourceOrThrow(
-            "drake/bindings/pydrake/visualization/model_visualizer")
+            "drake/bindings/pydrake/visualization/model_visualizer"
+        )
 
     def model_file(self, *, model_url):
         """Get a model file from a URL."""
@@ -47,7 +46,7 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
                 args = [self.dut, filename, "--loop_once"]
                 # Smoke test coverage of optional command line options.
                 if i % 2 == 1:
-                    args.append(f"--compliance_type=compliant")
+                    args.append("--compliance_type=compliant")
                 subprocess.check_call(args)
 
     def test_model_with_invalid_dynamics(self):
@@ -59,12 +58,15 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
         # Model containing a free body with zero inertias.
         # Obviously, physics cannot be computed, and thus visualization of
         # contact forces is turned off.
-        result = subprocess.run([
-            self.dut,
-            "bindings/pydrake/visualization/test/massless_robot.urdf",
-            "--loop_once"],
+        result = subprocess.run(
+            [
+                self.dut,
+                "bindings/pydrake/visualization/test/massless_robot.urdf",
+                "--loop_once",
+            ],
             stderr=subprocess.PIPE,
-            text=True)
+            text=True,
+        )
 
         # If the model is handled as expected, the visualizer script prints a
         # WARNING message.
@@ -72,17 +74,28 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
 
     def test_package_url(self):
         """Test that a package URL works."""
-        subprocess.check_call([
-            self.dut,
-            "package://drake/multibody/benchmarks/acrobot/acrobot.sdf",
-            "--loop_once"])
+        subprocess.check_call(
+            [
+                self.dut,
+                "package://drake/multibody/benchmarks/acrobot/acrobot.sdf",
+                "--loop_once",
+            ]
+        )
 
     def test_pyplot(self):
         """Test that pyplot doesn't crash."""
-        model_url = ("package://drake_models/iiwa_description/sdf/"
-                     + "iiwa14_no_collision.sdf")
-        subprocess.check_call([self.dut, self.model_file(model_url=model_url),
-                               "--loop_once", "--pyplot"])
+        model_url = (
+            "package://drake_models/iiwa_description/sdf/"
+            + "iiwa14_no_collision.sdf"
+        )
+        subprocess.check_call(
+            [
+                self.dut,
+                self.model_file(model_url=model_url),
+                "--loop_once",
+                "--pyplot",
+            ]
+        )
 
     def test_set_position(self):
         """Test that the --position option doesn't crash."""
@@ -95,8 +108,9 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
         for model_url in model_urls:
             print(model_url)
             filename = self.model_file(model_url=model_url)
-            subprocess.check_call([self.dut, filename, "--loop_once",
-                                   "--position", "0.1", "0.2"])
+            subprocess.check_call(
+                [self.dut, filename, "--loop_once", "--position", "0.1", "0.2"]
+            )
 
 
 class TestModelVisualizer(unittest.TestCase):
@@ -178,7 +192,7 @@ class TestModelVisualizer(unittest.TestCase):
             + "simple_world_with_two_models.sdf",
             # glTF file.
             "package://drake_models/veggies/assets/"
-            + "yellow_bell_pepper_no_stem_low.gltf"
+            + "yellow_bell_pepper_no_stem_low.gltf",
         ]
         for i, model_url in enumerate(model_urls):
             with self.subTest(model=model_url):
@@ -198,8 +212,10 @@ class TestModelVisualizer(unittest.TestCase):
         dut.Run(loop_once=True)
 
     def test_model_from_gltf_url(self):
-        url = ("package://drake_models/veggies/assets/"
-               + "yellow_bell_pepper_no_stem_low.gltf")
+        url = (
+            "package://drake_models/veggies/assets/"
+            + "yellow_bell_pepper_no_stem_low.gltf"
+        )
         dut = mut.ModelVisualizer()
         dut.AddModels(url=url)
         dut.Run(loop_once=True)
@@ -221,8 +237,7 @@ class TestModelVisualizer(unittest.TestCase):
         # Check that models can be added multiple times without error.
         dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
 
-        sample2 = self.SAMPLE_OBJ.replace('name="cylinder"',
-                                          'name="cylinder2"')
+        sample2 = self.SAMPLE_OBJ.replace('name="cylinder"', 'name="cylinder2"')
         dut.parser().AddModelsFromString(sample2, "sdf")
 
         positions = [1, 0, 0, 0, 0, 0, 0] * 2  # Model is just doubled.
@@ -236,13 +251,23 @@ class TestModelVisualizer(unittest.TestCase):
         """
         meshcat = Meshcat()
         dut = mut.ModelVisualizer(compliance_type="compliant", meshcat=meshcat)
-        for model in ["planning/test_utilities/collision_ground_plane.sdf",
-                      "manipulation/util/test/simple_nested_model.sdf"]:
+        for model in [
+            "planning/test_utilities/collision_ground_plane.sdf",
+            "manipulation/util/test/simple_nested_model.sdf",
+        ]:
             dut.AddModels(url=f"package://drake/{model}")
         dut.Run(loop_once=True)
-        self.assertTrue(meshcat._GetPackedProperty(
-            path="contact_forces/hydroelastic/ground_plane_box+link/force_C_W",
-            property="visible"))
+        self.assertTrue(
+            meshcat._GetPackedProperty(
+                path="+".join(
+                    [
+                        "contact_forces/hydroelastic/ground_plane_box",
+                        "link/force_C_W",
+                    ]
+                ),
+                property="visible",
+            )
+        )
 
     def test_precondition_messages(self):
         dut = mut.ModelVisualizer()
@@ -300,9 +325,11 @@ class TestModelVisualizer(unittest.TestCase):
             self.assertEqual(actual[f"triad_{name}"], expected[name].default)
 
     def test_visualize_all_frames(self):
-        """ Confirm that *all* frames get added. """
+        """Confirm that *all* frames get added."""
         dut = mut.ModelVisualizer(visualize_frames=True)
-        dut.parser().AddModels(file_type=".urdf", file_contents="""
+        dut.parser().AddModels(
+            file_type=".urdf",
+            file_contents="""
 <?xml version="1.0"?>
 <robot name="test_model">
     <link name="box">
@@ -318,25 +345,47 @@ class TestModelVisualizer(unittest.TestCase):
     </link>
     <frame name="offset_frame" link="box" xyz="0.25 0 0" rpy="0 0 0"/>
 </robot>
-""")
+""",
+        )
         dut.Run(loop_once=True)
 
         meshcat = dut.meshcat()
         self.assertTrue(meshcat.HasPath("/drake/illustration/test_model"))
         # Body frame.
-        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
-                                        "/_frames/box(2)/x-axis"))
-        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
-                                        "/_frames/box(2)/y-axis"))
-        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
-                                        "/_frames/box(2)/z-axis"))
+        self.assertTrue(
+            meshcat.HasPath(
+                "/drake/illustration/test_model/box/_frames/box(2)/x-axis"
+            )
+        )
+        self.assertTrue(
+            meshcat.HasPath(
+                "/drake/illustration/test_model/box/_frames/box(2)/y-axis"
+            )
+        )
+        self.assertTrue(
+            meshcat.HasPath(
+                "/drake/illustration/test_model/box/_frames/box(2)/z-axis"
+            )
+        )
         # Offset frame.
-        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
-                                        "/_frames/offset_frame(2)/x-axis"))
-        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
-                                        "/_frames/offset_frame(2)/y-axis"))
-        self.assertTrue(meshcat.HasPath("/drake/illustration/test_model/box"
-                                        "/_frames/offset_frame(2)/z-axis"))
+        self.assertTrue(
+            meshcat.HasPath(
+                "/drake/illustration/test_model/box"
+                "/_frames/offset_frame(2)/x-axis"
+            )
+        )
+        self.assertTrue(
+            meshcat.HasPath(
+                "/drake/illustration/test_model/box"
+                "/_frames/offset_frame(2)/y-axis"
+            )
+        )
+        self.assertTrue(
+            meshcat.HasPath(
+                "/drake/illustration/test_model/box"
+                "/_frames/offset_frame(2)/z-axis"
+            )
+        )
 
     def test_visualize_all_frames_nested_models(self):
         """When parsing SDFormat with nested models, we can get multiple
@@ -345,7 +394,8 @@ class TestModelVisualizer(unittest.TestCase):
         """
         sdf_file = FindResourceOrThrow(
             "drake/multibody/parsing/test/sdf_parser_test/"
-            "model_with_directly_nested_models.sdf")
+            "model_with_directly_nested_models.sdf"
+        )
 
         dut = mut.ModelVisualizer(visualize_frames=True)
         dut.AddModels(filename=sdf_file)

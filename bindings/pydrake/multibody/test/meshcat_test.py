@@ -34,7 +34,6 @@ from pydrake.systems.framework import (
 
 
 class TestMeshcat(unittest.TestCase):
-
     @numpy_compare.check_nonsymbolic_types
     def test_contact_visualizer(self, T):
         meshcat = Meshcat()
@@ -59,23 +58,27 @@ class TestMeshcat(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
         plant.Finalize()
         ContactVisualizer_[T].AddToBuilder(
-            builder=builder, plant=plant, meshcat=meshcat, params=params)
+            builder=builder, plant=plant, meshcat=meshcat, params=params
+        )
         ContactVisualizer_[T].AddToBuilder(
             builder=builder,
             contact_results_port=plant.get_contact_results_output_port(),
             meshcat=meshcat,
-            params=params)
+            params=params,
+        )
         ContactVisualizer_[T].AddToBuilder(
             builder=builder,
             contact_results_port=plant.get_contact_results_output_port(),
             query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
-            params=params)
+            params=params,
+        )
 
     def test_joint_sliders(self):
         # Load up an acrobot.
         acrobot_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.urdf"
+        )
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant)
@@ -128,9 +131,9 @@ class TestMeshcat(unittest.TestCase):
         # The Run function doesn't crash.
         builder.AddSystem(dut)
         diagram = builder.Build()
-        q = dut.Run(diagram=diagram,
-                    timeout=1.0,
-                    stop_button_keycode="ArrowLeft")
+        q = dut.Run(
+            diagram=diagram, timeout=1.0, stop_button_keycode="ArrowLeft"
+        )
         np.testing.assert_equal(q, [0, 0])
 
         # The SetPositions function doesn't crash (Acrobot has two positions).
@@ -142,7 +145,7 @@ class TestMeshcat(unittest.TestCase):
         """
         meshcat = Meshcat()
         params = ContactVisualizerParams()
-        dut = _PointContactVisualizer(meshcat=meshcat, params=params)
+        _PointContactVisualizer(meshcat=meshcat, params=params)
 
     def test_internal_hydroelastic_contact_visualizer(self):
         """A very basic existence test, since this class is internal use only.
@@ -150,4 +153,4 @@ class TestMeshcat(unittest.TestCase):
         """
         meshcat = Meshcat()
         params = ContactVisualizerParams()
-        dut = _HydroelasticContactVisualizer(meshcat=meshcat, params=params)
+        _HydroelasticContactVisualizer(meshcat=meshcat, params=params)

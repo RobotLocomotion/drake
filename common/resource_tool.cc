@@ -1,3 +1,6 @@
+// DRAKE DEPRECATED: The resource_tool binary is deprecated and will be removed
+// from Drake on or after 2026-02-01.
+
 #include <iostream>
 
 #include <gflags/gflags.h>

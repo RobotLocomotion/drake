@@ -1,5 +1,4 @@
 import copy
-import gc
 import scipy.sparse
 import unittest
 import numpy as np
@@ -7,11 +6,11 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.framework import (
-    BasicVector, BasicVector_,
+    BasicVector,
+    BasicVector_,
     BusValue,
     DiagramBuilder,
     DiagramBuilder_,
@@ -24,52 +23,77 @@ from pydrake.systems.test.test_util import (
     MyVector2,
 )
 from pydrake.systems.primitives import (
-    Adder, Adder_,
+    Adder_,
     AddRandomInputs,
-    AffineSystem, AffineSystem_,
-    BusCreator, BusCreator_,
-    BusSelector, BusSelector_,
-    ConstantValueSource, ConstantValueSource_,
-    ConstantVectorSource, ConstantVectorSource_,
+    AffineSystem,
+    AffineSystem_,
+    BusCreator_,
+    BusSelector_,
+    ConstantValueSource,
+    ConstantValueSource_,
+    ConstantVectorSource,
+    ConstantVectorSource_,
     ControllabilityMatrix,
-    Demultiplexer, Demultiplexer_,
-    DiscreteDerivative, DiscreteDerivative_,
-    DiscreteTimeDelay, DiscreteTimeDelay_,
+    Demultiplexer,
+    Demultiplexer_,
+    DiscreteDerivative,
+    DiscreteDerivative_,
+    DiscreteTimeDelay,
+    DiscreteTimeDelay_,
     DiscreteTimeIntegrator_,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
-    Gain, Gain_,
-    Integrator, Integrator_,
+    Gain,
+    Gain_,
+    Integrator,
+    Integrator_,
     IsControllable,
     IsDetectable,
     IsObservable,
     IsStabilizable,
     Linearize,
-    LinearSystem, LinearSystem_,
-    LinearTransformDensity, LinearTransformDensity_,
+    LinearSystem,
+    LinearSystem_,
+    LinearTransformDensity_,
     LogVectorOutput,
     MatrixGain,
-    Multiplexer, Multiplexer_,
-    MultilayerPerceptron, MultilayerPerceptron_,
+    Multiplexer,
+    Multiplexer_,
+    MultilayerPerceptron,
+    MultilayerPerceptron_,
     ObservabilityMatrix,
-    PassThrough, PassThrough_,
+    PassThrough,
+    PassThrough_,
     PerceptronActivationType,
-    PortSwitch, PortSwitch_,
+    PortSwitch,
+    PortSwitch_,
     RandomSource,
-    Saturation, Saturation_,
-    Selector, Selector_, SelectorParams,
-    SharedPointerSystem, SharedPointerSystem_,
-    Sine, Sine_,
+    Saturation,
+    Saturation_,
+    Selector_,
+    SelectorParams,
+    SharedPointerSystem,
+    SharedPointerSystem_,
+    Sine,
+    Sine_,
     SparseMatrixGain_,
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
-    SymbolicVectorSystem, SymbolicVectorSystem_,
-    TrajectoryAffineSystem, TrajectoryAffineSystem_,
-    TrajectoryLinearSystem, TrajectoryLinearSystem_,
-    TrajectorySource, TrajectorySource_,
-    VectorLog, VectorLogSink, VectorLogSink_,
-    WrapToSystem, WrapToSystem_,
-    ZeroOrderHold, ZeroOrderHold_,
+    SymbolicVectorSystem,
+    SymbolicVectorSystem_,
+    TrajectoryAffineSystem,
+    TrajectoryAffineSystem_,
+    TrajectoryLinearSystem,
+    TrajectoryLinearSystem_,
+    TrajectorySource,
+    TrajectorySource_,
+    VectorLog,
+    VectorLogSink,
+    VectorLogSink_,
+    WrapToSystem,
+    WrapToSystem_,
+    ZeroOrderHold,
+    ZeroOrderHold_,
 )
 from pydrake.trajectories import PiecewisePolynomial
 
@@ -107,8 +131,9 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
         self._check_instantiations(LinearSystem_)
-        self._check_instantiations(LinearTransformDensity_,
-                                   supports_symbolic=False)
+        self._check_instantiations(
+            LinearTransformDensity_, supports_symbolic=False
+        )
         self._check_instantiations(Multiplexer_)
         self._check_instantiations(MultilayerPerceptron_)
         self._check_instantiations(PassThrough_)
@@ -119,10 +144,12 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
-        self._check_instantiations(TrajectoryAffineSystem_,
-                                   supports_symbolic=False)
-        self._check_instantiations(TrajectoryLinearSystem_,
-                                   supports_symbolic=False)
+        self._check_instantiations(
+            TrajectoryAffineSystem_, supports_symbolic=False
+        )
+        self._check_instantiations(
+            TrajectoryLinearSystem_, supports_symbolic=False
+        )
         self._check_instantiations(TrajectorySource_)
         self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
@@ -134,12 +161,15 @@ class TestGeneral(unittest.TestCase):
         integrator = DiscreteTimeIntegrator_[T](size=2, time_step=time_step)
         self.assertEqual(integrator.time_step(), time_step)
         context = integrator.CreateDefaultContext()
-        x = np.array([1., 2.])
+        x = np.array([1.0, 2.0])
         integrator.set_integral_value(context=context, value=x)
-        u = np.array([3., 4.])
+        u = np.array([3.0, 4.0])
         integrator.get_input_port(0).FixValue(context, u)
-        x_next = integrator.EvalUniquePeriodicDiscreteUpdate(
-            context).get_vector()._get_value_copy()
+        x_next = (
+            integrator.EvalUniquePeriodicDiscreteUpdate(context)
+            .get_vector()
+            ._get_value_copy()
+        )
         numpy_compare.assert_float_equal(x_next, x + time_step * u)
 
     def test_linear_affine_system(self):
@@ -153,8 +183,9 @@ class TestGeneral(unittest.TestCase):
         system = LinearSystem(A, B, C, D)
         context = system.CreateDefaultContext()
         self.assertEqual(system.get_input_port(0).size(), 1)
-        self.assertEqual(context
-                         .get_mutable_continuous_state_vector().size(), 2)
+        self.assertEqual(
+            context.get_mutable_continuous_state_vector().size(), 2
+        )
         self.assertEqual(system.get_output_port(0).size(), 1)
         self.assertTrue((system.A() == A).all())
         self.assertTrue((system.B() == B).all())
@@ -162,21 +193,24 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue((system.C() == C).all())
         self.assertEqual(system.D(), D)
         self.assertEqual(system.y0(), y0)
-        self.assertEqual(system.time_period(), 0.)
+        self.assertEqual(system.time_period(), 0.0)
 
         x0 = np.array([1, 2])
         system.configure_default_state(x0=x0)
         system.SetDefaultContext(context)
         np.testing.assert_equal(
-            context.get_continuous_state_vector().CopyToVector(), x0)
+            context.get_continuous_state_vector().CopyToVector(), x0
+        )
         generator = RandomGenerator()
         system.SetRandomContext(context, generator)
         np.testing.assert_equal(
-            context.get_continuous_state_vector().CopyToVector(), x0)
+            context.get_continuous_state_vector().CopyToVector(), x0
+        )
         system.configure_random_state(covariance=np.eye(2))
         system.SetRandomContext(context, generator)
         self.assertNotEqual(
-            context.get_continuous_state_vector().CopyToVector()[1], x0[1])
+            context.get_continuous_state_vector().CopyToVector()[1], x0[1]
+        )
 
         Co = ControllabilityMatrix(system)
         self.assertEqual(Co.shape, (2, 2))
@@ -190,7 +224,7 @@ class TestGeneral(unittest.TestCase):
         self.assertFalse(IsDetectable(sys=system))
         self.assertFalse(IsDetectable(sys=system, threshold=1e-6))
 
-        system = AffineSystem(A, B, f0, C, D, y0, .1)
+        system = AffineSystem(A, B, f0, C, D, y0, 0.1)
         self.assertEqual(system.get_input_port(0), system.get_input_port())
         self.assertEqual(system.get_output_port(0), system.get_output_port())
         context = system.CreateDefaultContext()
@@ -203,7 +237,7 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue((system.C() == C).all())
         self.assertEqual(system.D(), D)
         self.assertEqual(system.y0(), y0)
-        self.assertEqual(system.time_period(), .1)
+        self.assertEqual(system.time_period(), 0.1)
 
         system.get_input_port(0).FixValue(context, 0)
         linearized = Linearize(system, context)
@@ -237,42 +271,47 @@ class TestGeneral(unittest.TestCase):
             PiecewisePolynomial(C),
             PiecewisePolynomial(D),
             PiecewisePolynomial(y0),
-            .1)
+            0.1,
+        )
         self.assertEqual(system.get_input_port(0), system.get_input_port())
         self.assertEqual(system.get_output_port(0), system.get_output_port())
         context = system.CreateDefaultContext()
         self.assertEqual(system.get_input_port(0).size(), 1)
         self.assertEqual(context.get_discrete_state_vector().size(), 2)
         self.assertEqual(system.get_output_port(0).size(), 1)
-        for t in np.linspace(0., 1., 5):
+        for t in np.linspace(0.0, 1.0, 5):
             self.assertTrue((system.A(t) == A).all())
             self.assertTrue((system.B(t) == B).all())
             self.assertTrue((system.f0(t) == f0).all())
             self.assertTrue((system.C(t) == C).all())
             self.assertEqual(system.D(t), D)
             self.assertEqual(system.y0(t), y0)
-        self.assertEqual(system.time_period(), .1)
+        self.assertEqual(system.time_period(), 0.1)
         x0 = np.array([1, 2])
         system.configure_default_state(x0=x0)
         system.SetDefaultContext(context)
         np.testing.assert_equal(
-            context.get_discrete_state_vector().CopyToVector(), x0)
+            context.get_discrete_state_vector().CopyToVector(), x0
+        )
         generator = RandomGenerator()
         system.SetRandomContext(context, generator)
         np.testing.assert_equal(
-            context.get_discrete_state_vector().CopyToVector(), x0)
+            context.get_discrete_state_vector().CopyToVector(), x0
+        )
         system.configure_random_state(covariance=np.eye(2))
         system.SetRandomContext(context, generator)
         self.assertNotEqual(
-            context.get_discrete_state_vector().CopyToVector()[1], x0[1])
+            context.get_discrete_state_vector().CopyToVector()[1], x0[1]
+        )
 
         system = TrajectoryLinearSystem(
             A=PiecewisePolynomial(A),
             B=PiecewisePolynomial(B),
             C=PiecewisePolynomial(C),
             D=PiecewisePolynomial(D),
-            time_period=0.1)
-        self.assertEqual(system.time_period(), .1)
+            time_period=0.1,
+        )
+        self.assertEqual(system.time_period(), 0.1)
         system.configure_default_state(x0=np.array([1, 2]))
         system.configure_random_state(covariance=np.eye(2))
 
@@ -318,15 +357,17 @@ class TestGeneral(unittest.TestCase):
         dut = LinearTransformDensity_[T](
             distribution=RandomDistribution.kGaussian,
             input_size=3,
-            output_size=3)
+            output_size=3,
+        )
         w_in = np.array([T(0.5), T(0.1), T(1.5)])
         context = dut.CreateDefaultContext()
         dut.get_input_port_w_in().FixValue(context, w_in)
         self.assertEqual(dut.get_input_port_A().size(), 9)
         self.assertEqual(dut.get_input_port_b().size(), 3)
         self.assertEqual(dut.get_distribution(), RandomDistribution.kGaussian)
-        A = np.array([
-            [T(0.5), T(1), T(2)], [T(1), T(2), T(3)], [T(3), T(4), T(5)]])
+        A = np.array(
+            [[T(0.5), T(1), T(2)], [T(1), T(2), T(3)], [T(3), T(4), T(5)]]
+        )
         dut.FixConstantA(context=context, A=A)
         b = np.array([T(1), T(2), T(3)])
         dut.FixConstantB(context=context, b=b)
@@ -342,8 +383,9 @@ class TestGeneral(unittest.TestCase):
         dut.DeclareVectorInputPort(name="vec", size=2)
         dut.DeclareVectorInputPort(name=kUseDefaultName, size=2)
         dut.DeclareAbstractInputPort(name="abst", model_value=Value[str]())
-        dut.DeclareAbstractInputPort(name=kUseDefaultName,
-                                     model_value=Value[object]())
+        dut.DeclareAbstractInputPort(
+            name=kUseDefaultName, model_value=Value[object]()
+        )
         # Check exactly what types show up on the output bus.
         context = dut.CreateDefaultContext()
         dut.GetInputPort("vec").FixValue(context, value=np.ones(2))
@@ -362,8 +404,9 @@ class TestGeneral(unittest.TestCase):
         dut.DeclareVectorOutputPort(name="vec", size=2)
         dut.DeclareVectorOutputPort(name=kUseDefaultName, size=2)
         dut.DeclareAbstractOutputPort(name="abst", model_value=Value[str]())
-        dut.DeclareAbstractOutputPort(name=kUseDefaultName,
-                                      model_value=Value[object]())
+        dut.DeclareAbstractOutputPort(
+            name=kUseDefaultName, model_value=Value[object]()
+        )
         # Make sure we know exactly how to populate a bus-valued input port.
         input_bus = BusValue()
         vec = np.ones(2)
@@ -377,14 +420,16 @@ class TestGeneral(unittest.TestCase):
         context = dut.CreateDefaultContext()
         dut.get_input_port().FixValue(context, input_bus)
         numpy_compare.assert_float_equal(
-            dut.GetOutputPort("vec").Eval(context), vec)
+            dut.GetOutputPort("vec").Eval(context), vec
+        )
         numpy_compare.assert_float_equal(
-            dut.GetOutputPort("y1").Eval(context), y1)
+            dut.GetOutputPort("y1").Eval(context), y1
+        )
         self.assertEqual(dut.GetOutputPort("abst").Eval(context), abst)
         self.assertEqual(dut.GetOutputPort("y3").Eval(context), y3)
 
     def test_vector_pass_through(self):
-        model_value = BasicVector([1., 2, 3])
+        model_value = BasicVector([1.0, 2, 3])
         system = PassThrough(vector_size=model_value.size())
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
@@ -396,11 +441,12 @@ class TestGeneral(unittest.TestCase):
         compare_value(self, output_value, model_value)
 
     def test_default_vector_pass_through(self):
-        model_value = [1., 2, 3]
+        model_value = [1.0, 2, 3]
         system = PassThrough(value=model_value)
         context = system.CreateDefaultContext()
         np.testing.assert_array_equal(
-            model_value, system.get_output_port().Eval(context))
+            model_value, system.get_output_port().Eval(context)
+        )
 
     def test_abstract_pass_through(self):
         model_value = Value("Hello world")
@@ -428,17 +474,17 @@ class TestGeneral(unittest.TestCase):
 
         alpha = np.array([1, 2, 3])
         filter2 = FirstOrderLowPassFilter(time_constants=alpha)
-        np.testing.assert_array_equal(filter2.get_time_constants_vector(),
-                                      alpha)
+        np.testing.assert_array_equal(
+            filter2.get_time_constants_vector(), alpha
+        )
 
         context = filter2.CreateDefaultContext()
-        filter2.set_initial_output_value(context, [0., -0.2, 0.4])
+        filter2.set_initial_output_value(context, [0.0, -0.2, 0.4])
 
     def test_gain(self):
-        k = 42.
+        k = 42.0
         input_size = 10
-        systems = [Gain(k=k, size=input_size),
-                   Gain(k=k*np.ones(input_size))]
+        systems = [Gain(k=k, size=input_size), Gain(k=k * np.ones(input_size))]
 
         for system in systems:
             context = system.CreateDefaultContext()
@@ -447,11 +493,13 @@ class TestGeneral(unittest.TestCase):
             def mytest(input, expected):
                 system.get_input_port(0).FixValue(context, input)
                 system.CalcOutput(context, output)
-                self.assertTrue(np.allclose(output.get_vector_data(
-                    0).CopyToVector(), expected))
+                self.assertTrue(
+                    np.allclose(
+                        output.get_vector_data(0).CopyToVector(), expected
+                    )
+                )
 
-            test_input = np.arange(input_size)
-            mytest(np.arange(input_size), k*np.arange(input_size))
+            mytest(np.arange(input_size), k * np.arange(input_size))
 
     def test_integrator(self):
         n = 3
@@ -460,36 +508,50 @@ class TestGeneral(unittest.TestCase):
         value_integrator = Integrator(initial_value=initial_value)
         size_context = size_integrator.CreateDefaultContext()
         value_context = value_integrator.CreateDefaultContext()
-        self.assertTrue(np.array_equal(
-            size_integrator.get_output_port(0).Eval(size_context),
-            (0.0, 0.0, 0.0)))
-        self.assertTrue(np.array_equal(
-            value_integrator.get_output_port(0).Eval(value_context),
-            initial_value))
+        self.assertTrue(
+            np.array_equal(
+                size_integrator.get_output_port(0).Eval(size_context),
+                (0.0, 0.0, 0.0),
+            )
+        )
+        self.assertTrue(
+            np.array_equal(
+                value_integrator.get_output_port(0).Eval(value_context),
+                initial_value,
+            )
+        )
         value_integrator.set_default_integral_value(2 * initial_value)
         value_context2 = value_integrator.CreateDefaultContext()
-        self.assertTrue(np.array_equal(
-            value_integrator.get_output_port(0).Eval(value_context2),
-            2 * initial_value))
-        size_integrator.set_integral_value(context=size_context,
-                                           value=initial_value)
-        self.assertTrue(np.array_equal(
-            size_integrator.get_output_port(0).Eval(size_context),
-            initial_value))
+        self.assertTrue(
+            np.array_equal(
+                value_integrator.get_output_port(0).Eval(value_context2),
+                2 * initial_value,
+            )
+        )
+        size_integrator.set_integral_value(
+            context=size_context, value=initial_value
+        )
+        self.assertTrue(
+            np.array_equal(
+                size_integrator.get_output_port(0).Eval(size_context),
+                initial_value,
+            )
+        )
 
     def test_saturation(self):
-        system = Saturation((0., -1., 3.), (1., 2., 4.))
+        system = Saturation((0.0, -1.0, 3.0), (1.0, 2.0, 4.0))
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
 
         def mytest(input, expected):
             system.get_input_port(0).FixValue(context, input)
             system.CalcOutput(context, output)
-            self.assertTrue(np.allclose(output.get_vector_data(
-                0).CopyToVector(), expected))
+            self.assertTrue(
+                np.allclose(output.get_vector_data(0).CopyToVector(), expected)
+            )
 
-        mytest((-5., 5., 4.), (0., 2., 4.))
-        mytest((.4, 0., 3.5), (.4, 0., 3.5))
+        mytest((-5.0, 5.0, 4.0), (0.0, 2.0, 4.0))
+        mytest((0.4, 0.0, 3.5), (0.4, 0.0, 3.5))
 
     def _make_selector_params(self):
         def _select(i, j):
@@ -497,6 +559,7 @@ class TestGeneral(unittest.TestCase):
                 input_port_index=i,
                 input_offset=j,
             )
+
         return SelectorParams(
             inputs=[
                 SelectorParams.InputPortParams(name="x", size=3),
@@ -516,8 +579,7 @@ class TestGeneral(unittest.TestCase):
                 ),
                 # c = <y[1], z[0]>
                 SelectorParams.OutputPortParams(
-                    name="c",
-                    selections=[_select(1, 1), _select(2, 0)]
+                    name="c", selections=[_select(1, 1), _select(2, 0)]
                 ),
             ],
         )
@@ -543,7 +605,8 @@ class TestGeneral(unittest.TestCase):
             "OutputSelection(input_port_index=1, input_offset=0)]), "
             "OutputPortParams(name='c', selections=["
             "OutputSelection(input_port_index=1, input_offset=1), "
-            "OutputSelection(input_port_index=2, input_offset=0)])])")
+            "OutputSelection(input_port_index=2, input_offset=0)])])",
+        )
 
     @numpy_compare.check_all_types
     def test_selector(self, T):
@@ -552,25 +615,30 @@ class TestGeneral(unittest.TestCase):
 
     def test_trajectory_source(self):
         ppt = PiecewisePolynomial.FirstOrderHold(
-            [0., 1.], [[2., 3.], [2., 1.]])
-        system = TrajectorySource(trajectory=ppt,
-                                  output_derivative_order=0,
-                                  zero_derivatives_beyond_limits=True)
+            [0.0, 1.0], [[2.0, 3.0], [2.0, 1.0]]
+        )
+        system = TrajectorySource(
+            trajectory=ppt,
+            output_derivative_order=0,
+            zero_derivatives_beyond_limits=True,
+        )
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
 
         def mytest(input, expected):
             context.SetTime(input)
             system.CalcOutput(context, output)
-            self.assertTrue(np.allclose(output.get_vector_data(
-                0).CopyToVector(), expected))
+            self.assertTrue(
+                np.allclose(output.get_vector_data(0).CopyToVector(), expected)
+            )
 
         mytest(0.0, (2.0, 2.0))
         mytest(0.5, (2.5, 1.5))
         mytest(1.0, (3.0, 1.0))
 
         ppt2 = PiecewisePolynomial.FirstOrderHold(
-            [0., 1.], [[4., 6.], [4., 2.]])
+            [0.0, 1.0], [[4.0, 6.0], [4.0, 2.0]]
+        )
         system.UpdateTrajectory(trajectory=ppt2)
         mytest(0.0, (4.0, 4.0))
         mytest(0.5, (5.0, 3.0))
@@ -580,10 +648,14 @@ class TestGeneral(unittest.TestCase):
         t = Variable("t")
         x = [Variable("x0"), Variable("x1")]
         u = [Variable("u0"), Variable("u1")]
-        system = SymbolicVectorSystem(time=t, state=x, input=u,
-                                      dynamics=[x[0] + x[1], t],
-                                      output=[u[1]],
-                                      time_period=0.0)
+        system = SymbolicVectorSystem(
+            time=t,
+            state=x,
+            input=u,
+            dynamics=[x[0] + x[1], t],
+            output=[u[1]],
+            time_period=0.0,
+        )
         context = system.CreateDefaultContext()
 
         self.assertEqual(context.num_continuous_states(), 2)
@@ -592,21 +664,23 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.get_output_port(0).size(), 1)
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(context.num_numeric_parameter_groups(), 0)
-        self.assertTrue(system.dynamics_for_variable(x[0])
-                        .EqualTo(x[0] + x[1]))
-        self.assertTrue(system.dynamics_for_variable(x[1])
-                        .EqualTo(t))
+        self.assertTrue(system.dynamics_for_variable(x[0]).EqualTo(x[0] + x[1]))
+        self.assertTrue(system.dynamics_for_variable(x[1]).EqualTo(t))
 
     def test_symbolic_vector_system_parameters(self):
         t = Variable("t")
         x = [Variable("x0"), Variable("x1")]
         u = [Variable("u0"), Variable("u1")]
         p = [Variable("p0"), Variable("p1")]
-        system = SymbolicVectorSystem(time=t, state=x, input=u,
-                                      parameter=p,
-                                      dynamics=[p[0] * x[0] + x[1] + p[1], t],
-                                      output=[u[1]],
-                                      time_period=0.0)
+        system = SymbolicVectorSystem(
+            time=t,
+            state=x,
+            input=u,
+            parameter=p,
+            dynamics=[p[0] * x[0] + x[1] + p[1], t],
+            output=[u[1]],
+            time_period=0.0,
+        )
         context = system.CreateDefaultContext()
 
         self.assertEqual(context.num_continuous_states(), 2)
@@ -616,25 +690,28 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(context.num_numeric_parameter_groups(), 1)
         self.assertEqual(context.get_numeric_parameter(0).size(), 2)
-        self.assertTrue(system.dynamics_for_variable(x[0])
-                        .EqualTo(p[0] * x[0] + x[1] + p[1]))
-        self.assertTrue(system.dynamics_for_variable(x[1])
-                        .EqualTo(t))
+        self.assertTrue(
+            system.dynamics_for_variable(x[0]).EqualTo(
+                p[0] * x[0] + x[1] + p[1]
+            )
+        )
+        self.assertTrue(system.dynamics_for_variable(x[1]).EqualTo(t))
 
     def test_wrap_to_system(self):
         system = WrapToSystem(2)
-        system.set_interval(1, 1., 2.)
+        system.set_interval(1, 1.0, 2.0)
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
 
         def mytest(input, expected):
             system.get_input_port(0).FixValue(context, input)
             system.CalcOutput(context, output)
-            self.assertTrue(np.allclose(output.get_vector_data(
-                0).CopyToVector(), expected))
+            self.assertTrue(
+                np.allclose(output.get_vector_data(0).CopyToVector(), expected)
+            )
 
         mytest((-1.5, 0.5), (-1.5, 1.5))
-        mytest((.2, .3), (.2, 1.3))
+        mytest((0.2, 0.3), (0.2, 1.3))
 
     def test_demultiplexer(self):
         # Test demultiplexer with scalar outputs.
@@ -642,18 +719,17 @@ class TestGeneral(unittest.TestCase):
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 4)
-        numpy_compare.assert_equal(demux.get_output_ports_sizes(),
-                                   [1, 1, 1, 1])
+        numpy_compare.assert_equal(demux.get_output_ports_sizes(), [1, 1, 1, 1])
 
-        input_vec = np.array([1., 2., 3., 4.])
+        input_vec = np.array([1.0, 2.0, 3.0, 4.0])
         demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
         demux.CalcOutput(context, output)
 
         for i in range(4):
             self.assertTrue(
-                np.allclose(output.get_vector_data(i).get_value(),
-                            input_vec[i]))
+                np.allclose(output.get_vector_data(i).get_value(), input_vec[i])
+            )
 
         # Test demultiplexer with vector outputs.
         demux = Demultiplexer(size=4, output_ports_size=2)
@@ -668,19 +744,23 @@ class TestGeneral(unittest.TestCase):
 
         for i in range(2):
             self.assertTrue(
-                np.allclose(output.get_vector_data(i).get_value(),
-                            input_vec[2*i:2*i+2]))
+                np.allclose(
+                    output.get_vector_data(i).get_value(),
+                    input_vec[2 * i : 2 * i + 2],
+                )
+            )
 
         # Test demultiplexer with different output port sizes.
         output_ports_sizes = np.array([1, 2, 1])
         num_output_ports = output_ports_sizes.size
-        input_vec = np.array([1., 2., 3., 4.])
+        input_vec = np.array([1.0, 2.0, 3.0, 4.0])
         demux = Demultiplexer(output_ports_sizes=output_ports_sizes)
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), num_output_ports)
-        numpy_compare.assert_equal(demux.get_output_ports_sizes(),
-                                   output_ports_sizes)
+        numpy_compare.assert_equal(
+            demux.get_output_ports_sizes(), output_ports_sizes
+        )
 
         demux.get_input_port(0).FixValue(context, input_vec)
         output = demux.AllocateOutput()
@@ -690,70 +770,94 @@ class TestGeneral(unittest.TestCase):
         for i in range(num_output_ports):
             output_port_size = output.get_vector_data(i).size()
             self.assertTrue(
-                np.allclose(output.get_vector_data(i).get_value(),
-                            input_vec[output_port_start:
-                                      output_port_start+output_port_size]))
+                np.allclose(
+                    output.get_vector_data(i).get_value(),
+                    input_vec[
+                        output_port_start : output_port_start + output_port_size
+                    ],
+                )
+            )
             output_port_start += output_port_size
 
     def test_multiplexer(self):
-        my_vector = MyVector2(data=[1., 2.])
+        my_vector = MyVector2(data=[1.0, 2.0])
         test_cases = [
-            dict(has_vector=False, mux=Multiplexer(num_scalar_inputs=4),
-                 data=[[5.], [3.], [4.], [2.]]),
-            dict(has_vector=False, mux=Multiplexer(input_sizes=[2, 3]),
-                 data=[[8., 4.], [3., 6., 9.]]),
-            dict(has_vector=True, mux=Multiplexer(model_vector=my_vector),
-                 data=[[42.], [3.]]),
+            dict(
+                has_vector=False,
+                mux=Multiplexer(num_scalar_inputs=4),
+                data=[[5.0], [3.0], [4.0], [2.0]],
+            ),
+            dict(
+                has_vector=False,
+                mux=Multiplexer(input_sizes=[2, 3]),
+                data=[[8.0, 4.0], [3.0, 6.0, 9.0]],
+            ),
+            dict(
+                has_vector=True,
+                mux=Multiplexer(model_vector=my_vector),
+                data=[[42.0], [3.0]],
+            ),
         ]
         for case in test_cases:
-            mux = case['mux']
-            port_size = sum([len(vec) for vec in case['data']])
+            mux = case["mux"]
+            port_size = sum([len(vec) for vec in case["data"]])
             self.assertEqual(mux.get_output_port(0).size(), port_size)
             context = mux.CreateDefaultContext()
             output = mux.AllocateOutput()
-            num_ports = len(case['data'])
+            num_ports = len(case["data"])
             self.assertEqual(context.num_input_ports(), num_ports)
-            for j, vec in enumerate(case['data']):
+            for j, vec in enumerate(case["data"]):
                 mux.get_input_port(j).FixValue(context, vec)
             mux.CalcOutput(context, output)
             self.assertTrue(
-                np.allclose(output.get_vector_data(0).get_value(),
-                            [elem for vec in case['data'] for elem in vec]))
-            if case['has_vector']:
+                np.allclose(
+                    output.get_vector_data(0).get_value(),
+                    [elem for vec in case["data"] for elem in vec],
+                )
+            )
+            if case["has_vector"]:
                 # Check the type matches MyVector2.
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
 
     def test_multilayer_perceptron(self):
         mlp = MultilayerPerceptron(
-            layers=[1, 2, 3], activation_type=PerceptronActivationType.kReLU)
+            layers=[1, 2, 3], activation_type=PerceptronActivationType.kReLU
+        )
         self.assertEqual(mlp.get_input_port().size(), 1)
         self.assertEqual(mlp.get_output_port().size(), 3)
         context = mlp.CreateDefaultContext()
         params = np.zeros((mlp.num_parameters(), 1))
         self.assertEqual(mlp.num_parameters(), 13)
         self.assertEqual(mlp.layers(), [1, 2, 3])
-        self.assertEqual(mlp.activation_type(layer=0),
-                         PerceptronActivationType.kReLU)
-        self.assertEqual(len(mlp.GetParameters(context=context)),
-                         mlp.num_parameters())
+        self.assertEqual(
+            mlp.activation_type(layer=0), PerceptronActivationType.kReLU
+        )
+        self.assertEqual(
+            len(mlp.GetParameters(context=context)), mlp.num_parameters()
+        )
         mlp.SetWeights(context=context, layer=0, W=np.array([[1], [2]]))
         mlp.SetBiases(context=context, layer=0, b=[3, 4])
         np.testing.assert_array_equal(
-            mlp.GetWeights(context=context, layer=0), np.array([[1], [2]]))
+            mlp.GetWeights(context=context, layer=0), np.array([[1], [2]])
+        )
         np.testing.assert_array_equal(
-            mlp.GetBiases(context=context, layer=0), np.array([3, 4]))
+            mlp.GetBiases(context=context, layer=0), np.array([3, 4])
+        )
         params = np.zeros(mlp.num_parameters())
         mlp.SetWeights(params=params, layer=0, W=np.array([[1], [2]]))
         mlp.SetBiases(params=params, layer=0, b=[3, 4])
         np.testing.assert_array_equal(
-            mlp.GetWeights(params=params, layer=0), np.array([[1], [2]]))
+            mlp.GetWeights(params=params, layer=0), np.array([[1], [2]])
+        )
         np.testing.assert_array_equal(
-            mlp.GetBiases(params=params, layer=0), np.array([3, 4]))
+            mlp.GetBiases(params=params, layer=0), np.array([3, 4])
+        )
         mutable_params = mlp.GetMutableParameters(context=context)
         mutable_params[:] = 3.0
-        np.testing.assert_array_equal(mlp.GetParameters(context),
-                                      np.full(mlp.num_parameters(), 3.0))
+        np.testing.assert_array_equal(
+            mlp.GetParameters(context), np.full(mlp.num_parameters(), 3.0)
+        )
 
         global called_loss
         called_loss = False
@@ -770,19 +874,22 @@ class TestGeneral(unittest.TestCase):
         dloss_dparams = np.zeros((13,))
         generator = RandomGenerator(23)
         mlp.SetRandomContext(context, generator)
-        mlp.Backpropagation(context=context,
-                            X=np.array([1, 3, 4]).reshape((1, 3)),
-                            loss=silly_loss,
-                            dloss_dparams=dloss_dparams)
+        mlp.Backpropagation(
+            context=context,
+            X=np.array([1, 3, 4]).reshape((1, 3)),
+            loss=silly_loss,
+            dloss_dparams=dloss_dparams,
+        )
         self.assertTrue(called_loss)
         self.assertTrue(dloss_dparams.any())  # No longer all zero.
 
         dloss_dparams = np.zeros((13,))
-        mlp.BackpropagationMeanSquaredError(context=context,
-                                            X=np.array([1, 3, 4]).reshape(
-                                                (1, 3)),
-                                            Y_desired=np.eye(3),
-                                            dloss_dparams=dloss_dparams)
+        mlp.BackpropagationMeanSquaredError(
+            context=context,
+            X=np.array([1, 3, 4]).reshape((1, 3)),
+            Y_desired=np.eye(3),
+            dloss_dparams=dloss_dparams,
+        )
         self.assertTrue(dloss_dparams.any())  # No longer all zero.
 
         Y = np.asfortranarray(np.eye(3))
@@ -791,15 +898,19 @@ class TestGeneral(unittest.TestCase):
         Y2 = mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]))
         np.testing.assert_array_equal(Y, Y2)
 
-        mlp2 = MultilayerPerceptron(layers=[3, 2, 1],
-                                    activation_types=[
-                                        PerceptronActivationType.kReLU,
-                                        PerceptronActivationType.kTanh
-        ])
-        self.assertEqual(mlp2.activation_type(0),
-                         PerceptronActivationType.kReLU)
-        self.assertEqual(mlp2.activation_type(1),
-                         PerceptronActivationType.kTanh)
+        mlp2 = MultilayerPerceptron(
+            layers=[3, 2, 1],
+            activation_types=[
+                PerceptronActivationType.kReLU,
+                PerceptronActivationType.kTanh,
+            ],
+        )
+        self.assertEqual(
+            mlp2.activation_type(0), PerceptronActivationType.kReLU
+        )
+        self.assertEqual(
+            mlp2.activation_type(1), PerceptronActivationType.kTanh
+        )
         Y = np.asfortranarray(np.full((1, 3), 2.4))
         dYdX = np.asfortranarray(np.full((3, 3), 5.3))
         context2 = mlp2.CreateDefaultContext()
@@ -809,18 +920,23 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_array_almost_equal(Y, np.zeros((1, 3)))
         np.testing.assert_array_almost_equal(dYdX, np.zeros((3, 3)))
 
-        mlp = MultilayerPerceptron(use_sin_cos_for_input=[True, False],
-                                   remaining_layers=[3, 2],
-                                   activation_types=[
-                                       PerceptronActivationType.kReLU,
-                                       PerceptronActivationType.kTanh
-        ])
+        mlp = MultilayerPerceptron(
+            use_sin_cos_for_input=[True, False],
+            remaining_layers=[3, 2],
+            activation_types=[
+                PerceptronActivationType.kReLU,
+                PerceptronActivationType.kTanh,
+            ],
+        )
         self.assertEqual(mlp.get_input_port().size(), 2)
         np.testing.assert_array_equal(mlp.layers(), [3, 3, 2])
 
     def test_random_source(self):
-        source = RandomSource(distribution=RandomDistribution.kUniform,
-                              num_outputs=2, sampling_interval_sec=0.01)
+        source = RandomSource(
+            distribution=RandomDistribution.kUniform,
+            num_outputs=2,
+            sampling_interval_sec=0.01,
+        )
         self.assertEqual(source.get_output_port(0).size(), 2)
 
         builder = DiagramBuilder()
@@ -832,7 +948,7 @@ class TestGeneral(unittest.TestCase):
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder_ad)
 
     def test_constant_vector_source(self):
-        source = ConstantVectorSource(source_value=[1., 2.])
+        source = ConstantVectorSource(source_value=[1.0, 2.0])
         context = source.CreateDefaultContext()
         source.get_source_value(context)
         source.get_mutable_source_value(context)
@@ -844,12 +960,17 @@ class TestGeneral(unittest.TestCase):
         ConstantValueSource(Value("Hello world"))
         DiscreteTimeDelay(update_sec=0.1, delay_time_steps=5, vector_size=2)
         DiscreteTimeDelay(
-            update_sec=0.1, delay_time_steps=5,
-            abstract_model_value=Value("Hello world"))
+            update_sec=0.1,
+            delay_time_steps=5,
+            abstract_model_value=Value("Hello world"),
+        )
 
         ZeroOrderHold(period_sec=0.1, offset_sec=0.0, vector_size=2)
-        dut = ZeroOrderHold(period_sec=1.0, offset_sec=0.25,
-                            abstract_model_value=Value("Hello world"))
+        dut = ZeroOrderHold(
+            period_sec=1.0,
+            offset_sec=0.25,
+            abstract_model_value=Value("Hello world"),
+        )
         self.assertEqual(dut.period(), 1.0)
         self.assertEqual(dut.offset(), 0.25)
 
@@ -864,8 +985,10 @@ class TestGeneral(unittest.TestCase):
         builder = DiagramBuilder()
         self.assertListEqual(
             SharedPointerSystem.AddToBuilder(
-                builder=builder, value_to_hold=[1, 2, 3]),
-            [1, 2, 3])
+                builder=builder, value_to_hold=[1, 2, 3]
+            ),
+            [1, 2, 3],
+        )
         diagram = builder.Build()
         del builder
         readback = diagram.GetSystems()[0].get()
@@ -875,21 +998,27 @@ class TestGeneral(unittest.TestCase):
 
     def test_sine(self):
         # Test scalar output.
-        sine_source = Sine(amplitude=1, frequency=2, phase=3,
-                           size=1, is_time_based=True)
+        sine_source = Sine(
+            amplitude=1, frequency=2, phase=3, size=1, is_time_based=True
+        )
         self.assertEqual(sine_source.get_output_port(0).size(), 1)
         self.assertEqual(sine_source.get_output_port(1).size(), 1)
         self.assertEqual(sine_source.get_output_port(2).size(), 1)
 
         # Test vector output.
-        sine_source = Sine(amplitude=1, frequency=2, phase=3,
-                           size=3, is_time_based=True)
+        sine_source = Sine(
+            amplitude=1, frequency=2, phase=3, size=3, is_time_based=True
+        )
         self.assertEqual(sine_source.get_output_port(0).size(), 3)
         self.assertEqual(sine_source.get_output_port(1).size(), 3)
         self.assertEqual(sine_source.get_output_port(2).size(), 3)
 
-        sine_source = Sine(amplitudes=np.ones(2), frequencies=np.ones(2),
-                           phases=np.ones(2), is_time_based=True)
+        sine_source = Sine(
+            amplitudes=np.ones(2),
+            frequencies=np.ones(2),
+            phases=np.ones(2),
+            is_time_based=True,
+        )
         self.assertEqual(sine_source.get_output_port(0).size(), 2)
         self.assertEqual(sine_source.get_output_port(1).size(), 2)
         self.assertEqual(sine_source.get_output_port(2).size(), 2)
@@ -902,14 +1031,20 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(discrete_derivative.suppress_initial_transient())
 
         discrete_derivative = DiscreteDerivative(
-            num_inputs=5, time_step=0.5, suppress_initial_transient=False)
+            num_inputs=5, time_step=0.5, suppress_initial_transient=False
+        )
         self.assertFalse(discrete_derivative.suppress_initial_transient())
 
     @numpy_compare.check_all_types
     def test_sparse_matrix_gain(self, T):
         D = scipy.sparse.csc_matrix(
-            (np.array([2, 1., 3]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2, 3))
+            (
+                np.array([2, 1.0, 3]),
+                np.array([0, 1, 0]),
+                np.array([0, 2, 2, 3]),
+            ),
+            shape=(2, 3),
+        )
         dut = SparseMatrixGain_[T](D=D)
         context = dut.CreateDefaultContext()
         u = np.array([1, 2, 3])
@@ -919,8 +1054,9 @@ class TestGeneral(unittest.TestCase):
 
         numpy_compare.assert_float_equal(D.todense(), dut.D().todense())
         D2 = scipy.sparse.csc_matrix(
-            (np.array([1, 4, 6]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2, 3))
+            (np.array([1, 4, 6]), np.array([0, 1, 0]), np.array([0, 2, 2, 3])),
+            shape=(2, 3),
+        )
         dut.set_D(D=D2)
         numpy_compare.assert_float_equal(D2.todense(), dut.D().todense())
 
@@ -939,7 +1075,8 @@ class TestGeneral(unittest.TestCase):
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
-            num_positions=5, time_step=0.4)
+            num_positions=5, time_step=0.4
+        )
         self.assertEqual(state_interpolator.get_input_port(0).size(), 5)
         self.assertEqual(state_interpolator.get_output_port(0).size(), 10)
         self.assertTrue(state_interpolator.suppress_initial_transient())
@@ -947,27 +1084,30 @@ class TestGeneral(unittest.TestCase):
         # test set_initial_position using context
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
-            context=context, position=5*[1.1])
+            context=context, position=5 * [1.1]
+        )
         np.testing.assert_array_equal(
-            context.get_discrete_state(0).CopyToVector(),
-            np.array(5*[1.1]))
+            context.get_discrete_state(0).CopyToVector(), np.array(5 * [1.1])
+        )
         np.testing.assert_array_equal(
-            context.get_discrete_state(1).CopyToVector(),
-            np.array(5*[1.1]))
+            context.get_discrete_state(1).CopyToVector(), np.array(5 * [1.1])
+        )
 
         # test set_initial_position using state
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
-            state=context.get_state(), position=5*[1.3])
+            state=context.get_state(), position=5 * [1.3]
+        )
         np.testing.assert_array_equal(
-            context.get_discrete_state(0).CopyToVector(),
-            np.array(5*[1.3]))
+            context.get_discrete_state(0).CopyToVector(), np.array(5 * [1.3])
+        )
         np.testing.assert_array_equal(
-            context.get_discrete_state(1).CopyToVector(),
-            np.array(5*[1.3]))
+            context.get_discrete_state(1).CopyToVector(), np.array(5 * [1.3])
+        )
 
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
-            num_positions=5, time_step=0.4, suppress_initial_transient=True)
+            num_positions=5, time_step=0.4, suppress_initial_transient=True
+        )
         self.assertTrue(state_interpolator.suppress_initial_transient())
 
     @numpy_compare.check_nonsymbolic_types
@@ -982,23 +1122,38 @@ class TestGeneral(unittest.TestCase):
         loggers.append(LogVectorOutput(port, builder))
         loggers.append(LogVectorOutput(src=port, builder=builder))
         loggers.append(LogVectorOutput(port, builder, 0.125))
-        loggers.append(LogVectorOutput(
-            src=port, builder=builder, publish_period=0.125))
+        loggers.append(
+            LogVectorOutput(src=port, builder=builder, publish_period=0.125)
+        )
 
         loggers.append(LogVectorOutput(port, builder, {TriggerType.kForced}))
-        loggers.append(LogVectorOutput(
-            src=port, builder=builder, publish_triggers={TriggerType.kForced}))
-        loggers.append(LogVectorOutput(
-            port, builder, {TriggerType.kPeriodic}, 0.125))
-        loggers.append(LogVectorOutput(
-            src=port, builder=builder,
-            publish_triggers={TriggerType.kPeriodic}, publish_period=0.125))
+        loggers.append(
+            LogVectorOutput(
+                src=port,
+                builder=builder,
+                publish_triggers={TriggerType.kForced},
+            )
+        )
+        loggers.append(
+            LogVectorOutput(port, builder, {TriggerType.kPeriodic}, 0.125)
+        )
+        loggers.append(
+            LogVectorOutput(
+                src=port,
+                builder=builder,
+                publish_triggers={TriggerType.kPeriodic},
+                publish_period=0.125,
+            )
+        )
 
         # Check the returned loggers by calling some trivial methods.
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
-        self.assertTrue(all(logger.FindLog(context).num_samples() == 0
-                            for logger in loggers))
+        self.assertTrue(
+            all(
+                logger.FindLog(context).num_samples() == 0 for logger in loggers
+            )
+        )
 
     @numpy_compare.check_nonsymbolic_types
     def test_vector_log(self, T):
@@ -1023,42 +1178,68 @@ class TestGeneral(unittest.TestCase):
         kSize = 1
         constructors = [VectorLogSink_[T]]
         loggers = []
-        if T == float:
+        if T is float:
             constructors.append(VectorLogSink)
         for constructor in constructors:
             loggers.append(builder.AddSystem(constructor(kSize)))
             loggers.append(builder.AddSystem(constructor(input_size=kSize)))
             loggers.append(builder.AddSystem(constructor(kSize, 0.125)))
-            loggers.append(builder.AddSystem(
-                constructor(input_size=kSize, publish_period=0.125)))
-            loggers.append(builder.AddSystem(
-                constructor(kSize, {TriggerType.kForced})))
-            loggers.append(builder.AddSystem(
-                constructor(input_size=kSize,
-                            publish_triggers={TriggerType.kForced})))
-            loggers.append(builder.AddSystem(
-                constructor(kSize, {TriggerType.kPeriodic}, 0.125)))
-            loggers.append(builder.AddSystem(
-                constructor(input_size=kSize,
-                            publish_triggers={TriggerType.kPeriodic},
-                            publish_period=0.125)))
+            loggers.append(
+                builder.AddSystem(
+                    constructor(input_size=kSize, publish_period=0.125)
+                )
+            )
+            loggers.append(
+                builder.AddSystem(constructor(kSize, {TriggerType.kForced}))
+            )
+            loggers.append(
+                builder.AddSystem(
+                    constructor(
+                        input_size=kSize, publish_triggers={TriggerType.kForced}
+                    )
+                )
+            )
+            loggers.append(
+                builder.AddSystem(
+                    constructor(kSize, {TriggerType.kPeriodic}, 0.125)
+                )
+            )
+            loggers.append(
+                builder.AddSystem(
+                    constructor(
+                        input_size=kSize,
+                        publish_triggers={TriggerType.kPeriodic},
+                        publish_period=0.125,
+                    )
+                )
+            )
 
         # Exercise all of the log access methods.
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         # FindLog and FindMutableLog find the same object.
         self.assertTrue(
-            all(logger.FindLog(context) == logger.FindMutableLog(context)
-                for logger in loggers))
+            all(
+                logger.FindLog(context) == logger.FindMutableLog(context)
+                for logger in loggers
+            )
+        )
         # Build a list of pairs of loggers and their local contexts.
-        loggers_and_contexts = [(x, x.GetMyContextFromRoot(context))
-                                for x in loggers]
+        loggers_and_contexts = [
+            (x, x.GetMyContextFromRoot(context)) for x in loggers
+        ]
         # GetLog and GetMutableLog find the same object.
         self.assertTrue(
-            all(logger.GetLog(logger_context)
+            all(
+                logger.GetLog(logger_context)
                 == logger.GetMutableLog(logger_context)
-                for logger, logger_context in loggers_and_contexts))
+                for logger, logger_context in loggers_and_contexts
+            )
+        )
         # GetLog and FindLog find the same object, given the proper contexts.
         self.assertTrue(
-            all(logger.GetLog(logger_context) == logger.FindLog(context)
-                for logger, logger_context in loggers_and_contexts))
+            all(
+                logger.GetLog(logger_context) == logger.FindLog(context)
+                for logger, logger_context in loggers_and_contexts
+            )
+        )

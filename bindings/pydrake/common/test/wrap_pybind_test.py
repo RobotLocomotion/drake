@@ -1,4 +1,3 @@
-import copy
 import gc
 import unittest
 
@@ -20,19 +19,20 @@ class TestWrapPybind(unittest.TestCase):
         """Tests DefReadWriteKeepAlive."""
         c = MyContainerRawPtr()
         # Original value; we don't really care about its life.
-        c.member = MyValue(value=42.)
+        c.member = MyValue(value=42.0)
         # Ensure that setter keeps the new pointee alive.
-        member_b = MyValue(value=7.)
+        member_b = MyValue(value=7.0)
         c.member = member_b
         del member_b
         gc.collect()
         # Ensure that we have not lost our value.
-        self.assertTrue(c.member.value == 7.)
+        self.assertTrue(c.member.value == 7.0)
 
     def test_def_read_unique_ptr(self):
         """Tests DefReadUniquePtr."""
-        u = MyContainerUniquePtr(member=MyValue(value=42),
-                                 copyable_member=MyValue(value=9.7))
+        u = MyContainerUniquePtr(
+            member=MyValue(value=42), copyable_member=MyValue(value=9.7)
+        )
         # Ensure this is truly read-only.
         with self.assertRaises(AttributeError):
             u.member = None
@@ -57,8 +57,8 @@ class TestWrapPybind(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             MakeTypeConversionExampleBadRvp()
         self.assertEqual(
-            str(cm.exception),
-            "Can only pass TypeConversionExample by value.")
+            str(cm.exception), "Can only pass TypeConversionExample by value."
+        )
         self.assertTrue(CheckTypeConversionExample(obj=value))
 
     def test_wrap_callbacks(self):

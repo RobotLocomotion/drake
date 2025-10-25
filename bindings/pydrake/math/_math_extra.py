@@ -24,6 +24,8 @@ As an example::
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import functools
 import operator
 
@@ -117,7 +119,8 @@ def _roll_pitch_yaw_repr(rpy):
         f"{_pretty_class_name(type(rpy))}("
         f"roll={repr(rpy.roll_angle())}, "
         f"pitch={repr(rpy.pitch_angle())}, "
-        f"yaw={repr(rpy.yaw_angle())})")
+        f"yaw={repr(rpy.yaw_angle())})"
+    )
 
 
 def _rotation_matrix_repr(R):
@@ -127,7 +130,8 @@ def _rotation_matrix_repr(R):
         f"  {_indented_repr(M[0])},\n"
         f"  {_indented_repr(M[1])},\n"
         f"  {_indented_repr(M[2])},\n"
-        f"])")
+        f"])"
+    )
 
 
 def _rigid_transform_repr(X):
@@ -135,7 +139,8 @@ def _rigid_transform_repr(X):
         f"{_pretty_class_name(type(X))}(\n"
         f"  R={_indented_repr(X.rotation())},\n"
         f"  p={_indented_repr(X.translation().tolist())},\n"
-        f")")
+        f")"
+    )
 
 
 def _add_repr_functions():
@@ -153,4 +158,5 @@ def __getattr__(name):
     compatibility with unpickling.
     """
     return _MangledName.module_getattr(
-        module_name=__name__, module_globals=globals(), name=name)
+        module_name=__name__, module_globals=globals(), name=name
+    )

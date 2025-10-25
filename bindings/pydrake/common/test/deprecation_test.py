@@ -12,20 +12,25 @@ import unittest
 import warnings
 
 from pydrake.common.deprecation import (
-    DrakeDeprecationWarning, _forward_callables_as_deprecated)
+    DrakeDeprecationWarning,
+    _forward_callables_as_deprecated,
+)
 
 
 class TestDeprecation(unittest.TestCase):
-    """Tests module shim functionality. """
+    """Tests module shim functionality."""
+
     def tearDown(self):
         # Remove the module.
         import deprecation_example as mod
+
         del sys.modules[mod.__name__]
         self.assertEqual(sys.getrefcount(mod), 2)
 
     def test_module_nominal(self):
         # Test reading and writing as one would do with a normal module.
         import deprecation_example as mod
+
         self.assertEqual(mod.value, 1)
         mod.value += 10
         self.assertEqual(mod.value, 11)
@@ -33,11 +38,13 @@ class TestDeprecation(unittest.TestCase):
         self.assertEqual(mod.something_new, 10)
         self.assertEqual(mod.__all__, ["value", "sub_module"])
         self.assertTrue(
-            str(mod).startswith("<module 'deprecation_example' from"))
+            str(mod).startswith("<module 'deprecation_example' from")
+        )
 
     def test_module_import_direct(self):
         # Test an import with direct access.
         import deprecation_example as mod
+
         # Check submodule access as a non-import.
         self.assertTrue(isinstance(mod.sub_module, str))
 
@@ -46,14 +53,17 @@ class TestDeprecation(unittest.TestCase):
         # N.B. This is imported first because `from {mod} import {var}` could
         # end up resolving `{var}` as a module.
         # @ref https://docs.python.org/3/reference/simple_stmts.html#import
-        import deprecation_example
+        import deprecation_example  # noqa: F401 (unused-import)
+
         # Test submodule behavior.
         # `from_direct` should use the `getattr` overload.
         from deprecation_example import sub_module as sub
+
         self.assertTrue(isinstance(sub, str))
         # A nominal import should skip `getattr`, and only use the module
         # loader.
         import deprecation_example.sub_module as new_sub
+
         self.assertTrue(isinstance(new_sub, ModuleType))
 
     def test_module_import_from_all(self):
@@ -61,6 +71,7 @@ class TestDeprecation(unittest.TestCase):
         # well supported for `exec`.
         import deprecation_example.import_all
         import deprecation_example
+
         self.assertIsInstance(deprecation_example.sub_module, str)
 
     def test_module_import_exec(self):
@@ -91,14 +102,15 @@ class TestDeprecation(unittest.TestCase):
 
         def base_deprecation():
             warnings.warn(
-                "Non-drake warning", category=DeprecationWarning, stacklevel=2)
+                "Non-drake warning", category=DeprecationWarning, stacklevel=2
+            )
 
         # At this point, no other deprecations should have been thrown, so we
         # will test with the default `once` filter.
         with warnings.catch_warnings(record=True) as w:
             # Recreate warning environment.
-            warnings.simplefilter('ignore', DeprecationWarning)
-            warnings.simplefilter('once', DrakeDeprecationWarning)
+            warnings.simplefilter("ignore", DeprecationWarning)
+            warnings.simplefilter("once", DrakeDeprecationWarning)
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
@@ -161,10 +173,10 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
-                method = mut.ExampleClass.deprecated_method
-                method_extra = mut.ExampleClass.deprecated_method
-                prop = mut.ExampleClass.deprecated_prop
-                prop_extra = mut.ExampleClass.deprecated_prop
+                mut.ExampleClass.deprecated_method
+                mut.ExampleClass.deprecated_method
+                mut.ExampleClass.deprecated_prop
+                mut.ExampleClass.deprecated_prop
             # Manually set this back to `once`.
             warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
@@ -177,6 +189,7 @@ class TestDeprecation(unittest.TestCase):
         higher-level API.
         """
         import deprecation_example.cc_module as m_new
+
         # Spoof module name.
         var_dict = dict(__name__="fake_module")
         _forward_callables_as_deprecated(var_dict, m_new, date="2038-01-19")
@@ -186,6 +199,7 @@ class TestDeprecation(unittest.TestCase):
             self.assertIsInstance(obj, m_new.ExampleCppClass)
             message_expected = (
                 "Please use ``deprecation_example.cc_module.ExampleCppClass`` "
-                "instead of ``fake_module.ExampleCppClass``.")
+                "instead of ``fake_module.ExampleCppClass``."
+            )
             self.assertEqual(len(w), 1)
             self._check_warning(w[0], message_expected)

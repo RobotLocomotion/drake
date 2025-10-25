@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 import numpy as np
 
@@ -11,12 +10,12 @@ from pydrake.solvers import (
 
 
 class TestUnrevisedLemkeSolver(unittest.TestCase):
-
     def _make_prog(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(3)
         prog.AddLinearComplementarityConstraint(
-            M=np.eye(3), q=np.ones(3), vars=x)
+            M=np.eye(3), q=np.ones(3), vars=x
+        )
         x_expected = np.zeros(3)
         return prog, x, x_expected
 

@@ -10,7 +10,8 @@ from pydrake.common.value import Value
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
-    BasicVector, BasicVector_,
+    BasicVector,
+    BasicVector_,
     BusValue,
     Parameters,
     VectorBase,
@@ -19,6 +20,7 @@ from pydrake.systems.framework import (
 
 def pass_through(x):
     return x
+
 
 # TODO(eric.cousineau): Add negative (or positive) test cases for AutoDiffXd
 # and Symbolic once they are in the bindings.
@@ -35,7 +37,7 @@ class TestValue(unittest.TestCase):
                 expected_init = wrap([float(x) for x in range(n)])
                 expected_add = wrap([x + 1 for x in expected_init])
                 expected_set = wrap([x + 10 for x in expected_init])
-                expected_plus_eq = wrap([3*x for x in expected_set])
+                expected_plus_eq = wrap([3 * x for x in expected_set])
 
                 value_data = BasicVector(expected_init)
                 value = value_data.get_mutable_value()
@@ -46,20 +48,23 @@ class TestValue(unittest.TestCase):
                 # the pointer referred to by the buffer (e.g. `value.data`).
                 value[:] += 1
                 self.assertTrue(np.allclose(value, expected_add))
+                self.assertTrue(np.allclose(value_data.value(), expected_add))
                 self.assertTrue(
-                    np.allclose(value_data.value(), expected_add))
+                    np.allclose(value_data.get_value(), expected_add)
+                )
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), expected_add))
-                self.assertTrue(
-                    np.allclose(value_data.get_mutable_value(), expected_add))
+                    np.allclose(value_data.get_mutable_value(), expected_add)
+                )
 
                 # Set value from `BasicVector`.
                 value_data.SetFromVector(value=expected_set)
                 self.assertTrue(np.allclose(value, expected_set))
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), expected_set))
+                    np.allclose(value_data.get_value(), expected_set)
+                )
                 self.assertTrue(
-                    np.allclose(value_data.get_mutable_value(), expected_set))
+                    np.allclose(value_data.get_mutable_value(), expected_set)
+                )
 
                 # Set value to zero.
                 old_value = value_data.CopyToVector()
@@ -68,17 +73,21 @@ class TestValue(unittest.TestCase):
                     self.assertFalse(np.allclose(old_value, np.zeros(n)))
                 self.assertTrue(np.allclose(value, np.zeros(n)))
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), np.zeros(n)))
+                    np.allclose(value_data.get_value(), np.zeros(n))
+                )
                 self.assertTrue(
-                    np.allclose(value_data.get_mutable_value(), np.zeros(n)))
+                    np.allclose(value_data.get_mutable_value(), np.zeros(n))
+                )
 
                 # Set value from `BasicVector`.
                 value_data.set_value(expected_set)
                 self.assertTrue(np.allclose(value, expected_set))
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), expected_set))
+                    np.allclose(value_data.get_value(), expected_set)
+                )
                 self.assertTrue(
-                    np.allclose(value_data.get_mutable_value(), expected_set))
+                    np.allclose(value_data.get_mutable_value(), expected_set)
+                )
 
                 # Ensure we can construct from size.
                 old_value_data = value_data
@@ -86,11 +95,14 @@ class TestValue(unittest.TestCase):
                 self.assertEqual(value_data.size(), n)
                 value_data.SetFrom(value=old_value_data)
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), expected_set))
-                new_value_data = value_data.PlusEqScaled(scale=2,
-                                                         rhs=old_value_data)
+                    np.allclose(value_data.get_value(), expected_set)
+                )
+                new_value_data = value_data.PlusEqScaled(
+                    scale=2, rhs=old_value_data
+                )
                 self.assertTrue(
-                    np.allclose(value_data.get_value(), expected_plus_eq))
+                    np.allclose(new_value_data.get_value(), expected_plus_eq)
+                )
                 # Ensure we can clone.
                 value_copies = [
                     value_data.Clone(),
@@ -102,12 +114,12 @@ class TestValue(unittest.TestCase):
                     self.assertEqual(value_data.size(), n)
 
     def test_basic_vector_set_get(self):
-        value = BasicVector(np.arange(3., 5.))
-        self.assertEqual(value.GetAtIndex(index=1), 4.)
-        value.SetAtIndex(index=1, value=5.)
-        self.assertEqual(value[1], 5.)
-        value[1] = 6.
-        self.assertEqual(value[1], 6.)
+        value = BasicVector(np.arange(3.0, 5.0))
+        self.assertEqual(value.GetAtIndex(index=1), 4.0)
+        value.SetAtIndex(index=1, value=5.0)
+        self.assertEqual(value[1], 5.0)
+        value[1] = 6.0
+        self.assertEqual(value[1], 6.0)
 
     def assert_basic_vector_equal(self, a, b):
         self.assertIs(type(a), type(b))
@@ -117,7 +129,7 @@ class TestValue(unittest.TestCase):
     def test_str_and_repr(self):
         # T=float
         self.assertIs(BasicVector, BasicVector_[float])
-        vector_f = [1.]
+        vector_f = [1.0]
         value_f = BasicVector_[float](vector_f)
         self.assertEqual(str(value_f), "[1.0]")
         self.assertEqual(repr(value_f), "BasicVector([1.0])")
@@ -128,7 +140,7 @@ class TestValue(unittest.TestCase):
         self.assertEqual(str(value_f_empty), "[]")
         self.assertEqual(repr(value_f_empty), "BasicVector([])")
         # - Multiple values.
-        value_f_multi = BasicVector_[float]([1., 2.])
+        value_f_multi = BasicVector_[float]([1.0, 2.0])
         self.assertEqual(str(value_f_multi), "[1.0, 2.0]")
         self.assertEqual(repr(value_f_multi), "BasicVector([1.0, 2.0])")
         # TODO(eric.cousineau): Make repr() for AutoDiffXd and Expression be
@@ -138,13 +150,14 @@ class TestValue(unittest.TestCase):
         self.assertEqual(str(value_ad), "[<AutoDiffXd 1.0 nderiv=0>]")
         self.assertEqual(
             repr(value_ad),
-            "BasicVector_[AutoDiffXd]([<AutoDiffXd 1.0 nderiv=0>])")
+            "BasicVector_[AutoDiffXd]([<AutoDiffXd 1.0 nderiv=0>])",
+        )
         # T=Expression
         value_sym = BasicVector_[Expression](vector_f)
-        self.assertEqual(str(value_sym), "[<Expression \"1\">]")
+        self.assertEqual(str(value_sym), '[<Expression "1">]')
         self.assertEqual(
-            repr(value_sym),
-            "BasicVector_[Expression]([<Expression \"1\">])")
+            repr(value_sym), 'BasicVector_[Expression]([<Expression "1">])'
+        )
 
     @numpy_compare.check_all_types
     def test_value_registration(self, T):
@@ -152,20 +165,21 @@ class TestValue(unittest.TestCase):
         Value[BusValue]
 
     def test_parameters_api(self):
-
         def compare(actual, expected):
             self.assertEqual(type(actual), type(expected))
             if isinstance(actual, VectorBase):
                 self.assertTrue(
-                    np.allclose(actual.get_value(), expected.get_value()))
+                    np.allclose(actual.get_value(), expected.get_value())
+                )
             else:
                 self.assertEqual(actual.get_value(), expected.get_value())
 
-        model_numeric = BasicVector([0.])
+        model_numeric = BasicVector([0.0])
         model_abstract = Value("Hello")
 
         params = Parameters(
-            numeric=[model_numeric.Clone()], abstract=[model_abstract.Clone()])
+            numeric=[model_numeric.Clone()], abstract=[model_abstract.Clone()]
+        )
         self.assertEqual(params.num_numeric_parameter_groups(), 1)
         self.assertEqual(params.num_abstract_parameters(), 1)
         # Numeric.
@@ -177,22 +191,22 @@ class TestValue(unittest.TestCase):
         compare(params.get_abstract_parameter(index=0), model_abstract)
         compare(params.get_mutable_abstract_parameter(index=0), model_abstract)
         # WARNING: This will invalidate old references!
-        params.set_abstract_parameters(
-            params.get_abstract_parameters().Clone())
+        params.set_abstract_parameters(params.get_abstract_parameters().Clone())
         # WARNING: This may invalidate old references!
         params.SetFrom(copy.deepcopy(params))
 
         # Test alternative constructors.
-        ctor_test = [
+        [
             Parameters(),
             Parameters(numeric=[model_numeric.Clone()]),
             Parameters(abstract=[model_abstract.Clone()]),
             Parameters(
                 numeric=[model_numeric.Clone()],
-                abstract=[model_abstract.Clone()]),
+                abstract=[model_abstract.Clone()],
+            ),
             Parameters(vec=model_numeric.Clone()),
             Parameters(value=model_abstract.Clone()),
-            ]
+        ]
 
     def test_bus_value(self):
         dut = BusValue()
@@ -205,7 +219,7 @@ class TestValue(unittest.TestCase):
         # Iterating a non-empty BusValue.
         found_something = False
         for i, name in enumerate(dut):
-            found_something = True,
+            found_something = (True,)
             if i == 0:
                 self.assertEqual(name, "foo")
                 self.assertEqual(dut[name], "Hello")

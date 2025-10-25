@@ -81,6 +81,7 @@ _MOST_HDRS = [
     "include/gz/math/Matrix6.hh",
     "include/gz/math/MecanumDriveOdometry.hh",
     "include/gz/math/MovingWindowFilter.hh",
+    "include/gz/math/OccupancyGrid.hh",
     "include/gz/math/OrientedBox.hh",
     "include/gz/math/PID.hh",
     "include/gz/math/PiecewiseScalarField3.hh",
@@ -269,3 +270,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

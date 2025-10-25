@@ -2994,7 +2994,10 @@ Note:
 R"""(Returns ``fmt::to_string(x)`` but always with at least one digit after
 the decimal point. Different versions of fmt disagree on whether to
 omit the trailing ".0" when formatting integer-valued floating-point
-numbers.)""";
+numbers.
+
+Template parameter ``T``:
+    must be either ``float`` or ``double``.)""";
     } fmt_floating_point;
     // Symbol: drake::fmt_runtime
     struct /* fmt_runtime */ {
@@ -3145,11 +3148,11 @@ For example:
 .. code-block:: c++
 
     double* SanityCheck(double* data) {
-      if (!data) {
-        static const logging::Warn log_once("Bad data!");
-        return alternative_data();
-      }
-      return data;
+    if (!data) {
+    static const logging::Warn log_once("Bad data!");
+    return alternative_data();
+    }
+    return data;
     }
 
 .. raw:: html

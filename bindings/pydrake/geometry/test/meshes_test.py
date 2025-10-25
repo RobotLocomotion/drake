@@ -1,5 +1,4 @@
 import pydrake.geometry as mut
-import pydrake.geometry._testing as mut_testing
 from pydrake.common.test_utilities import numpy_compare
 
 import copy
@@ -61,15 +60,16 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertEqual(t_a.vertex(0), 3)
         self.assertEqual(t_b.vertex(1), 1)
 
-        v0 = (-1,  1, 0)
-        v1 = (1,  1, 0)
+        v0 = (-1, 1, 0)
+        v1 = (1, 1, 0)
         v2 = (-1, -1, 0)
         v3 = (1, -1, 0)
 
         self.assertListEqual(list(v0), [-1, 1, 0])
 
-        dut = mut.TriangleSurfaceMesh(triangles=(t_a, t_b),
-                                      vertices=(v0, v1, v2, v3))
+        dut = mut.TriangleSurfaceMesh(
+            triangles=(t_a, t_b), vertices=(v0, v1, v2, v3)
+        )
 
         # Sanity check every accessor.
         self.assertIsInstance(dut.element(e=0), mut.SurfaceTriangle)
@@ -87,18 +87,21 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertIsInstance(dut.CalcBoundingBox(), tuple)
         self.assertTrue(dut.Equal(mesh=dut))
         self.assertIsInstance(
-            dut.CalcCartesianFromBarycentric(element_index=1,
-                                             b_Q=[1/3.0, 1/3.0, 1/3.0]),
-            np.ndarray)
+            dut.CalcCartesianFromBarycentric(
+                element_index=1, b_Q=[1 / 3.0, 1 / 3.0, 1 / 3.0]
+            ),
+            np.ndarray,
+        )
         self.assertIsInstance(
-            dut.CalcBarycentric(p_MQ=[-1/3.0, 1/3.0, 0], t=1),
-            np.ndarray)
+            dut.CalcBarycentric(p_MQ=[-1 / 3.0, 1 / 3.0, 0], t=1), np.ndarray
+        )
 
         self.assertEqual(len(dut.triangles()), 2)
         self.assertEqual(len(dut.vertices()), 4)
         self.assertListEqual(list(dut.centroid()), [0, 0, 0])
-        self.assertListEqual(list(dut.element_centroid(t=1)),
-                             [-1/3.0, 1/3.0, 0])
+        self.assertListEqual(
+            list(dut.element_centroid(t=1)), [-1 / 3.0, 1 / 3.0, 0]
+        )
 
         # Now check the SurfaceTriangle bindings.
         triangle0 = dut.element(e=0)
@@ -126,16 +129,17 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertEqual(t_left.vertex(0), 2)
         self.assertEqual(t_right.vertex(1), 1)
 
-        v0 = (1, 0,  0)
-        v1 = (0, 0,  0)
-        v2 = (0, 1,  0)
+        v0 = (1, 0, 0)
+        v1 = (0, 0, 0)
+        v2 = (0, 1, 0)
         v3 = (0, 0, 1)
-        v4 = (-1, 0,  0)
+        v4 = (-1, 0, 0)
 
         self.assertListEqual(list(v0), [1, 0, 0])
 
-        dut = mut.VolumeMesh(elements=(t_left, t_right),
-                             vertices=(v0, v1, v2, v3, v4))
+        dut = mut.VolumeMesh(
+            elements=(t_left, t_right), vertices=(v0, v1, v2, v3, v4)
+        )
 
         # Sanity check every accessor.
         self.assertIsInstance(dut.element(e=0), mut.VolumeElement)
@@ -146,11 +150,13 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertIsInstance(dut.edge_vector(e=0, a=0, b=1), np.ndarray)
 
         # Sanity check some calculations
-        self.assertAlmostEqual(dut.CalcTetrahedronVolume(e=1), 1/6.0,
-                               delta=1e-15)
-        self.assertAlmostEqual(dut.CalcVolume(), 1/3.0, delta=1e-15)
+        self.assertAlmostEqual(
+            dut.CalcTetrahedronVolume(e=1), 1 / 6.0, delta=1e-15
+        )
+        self.assertAlmostEqual(dut.CalcVolume(), 1 / 3.0, delta=1e-15)
         self.assertIsInstance(
-            dut.CalcBarycentric(p_MQ=[-0.25, 0.25, 0.25], e=0), np.ndarray)
+            dut.CalcBarycentric(p_MQ=[-0.25, 0.25, 0.25], e=0), np.ndarray
+        )
         self.assertTrue(dut.Equal(mesh=dut))
 
         self.assertEqual(len(dut.tetrahedra()), 2)
@@ -158,13 +164,17 @@ class TestGeometryMeshes(unittest.TestCase):
         self.assertEqual(len(dut.vertices()), 5)
 
         numpy_compare.assert_float_equal(
-            dut.inward_normal(e=0, f=3), (-1., 0., 0.))
+            dut.inward_normal(e=0, f=3), (-1.0, 0.0, 0.0)
+        )
         numpy_compare.assert_float_equal(
-            dut.inward_normal(e=1, f=3), (1., 0., 0.))
+            dut.inward_normal(e=1, f=3), (1.0, 0.0, 0.0)
+        )
         numpy_compare.assert_float_equal(
-            dut.edge_vector(e=0, a=1, b=3), (-1., 0., 0.))
+            dut.edge_vector(e=0, a=1, b=3), (-1.0, 0.0, 0.0)
+        )
         numpy_compare.assert_float_equal(
-            dut.edge_vector(e=1, a=1, b=3), (1., 0., 0.))
+            dut.edge_vector(e=1, a=1, b=3), (1.0, 0.0, 0.0)
+        )
 
         # Now check the VolumeElement bindings.
         tetrahedron0 = dut.element(e=0)
@@ -176,14 +186,15 @@ class TestGeometryMeshes(unittest.TestCase):
         t_left = mut.VolumeElement(v0=1, v1=2, v2=3, v3=4)
         t_right = mut.VolumeElement(v0=1, v1=3, v2=2, v3=0)
 
-        v0 = (1, 0,  0)
-        v1 = (0, 0,  0)
-        v2 = (0, 1,  0)
+        v0 = (1, 0, 0)
+        v1 = (0, 0, 0)
+        v2 = (0, 1, 0)
         v3 = (0, 0, -1)
-        v4 = (-1, 0,  0)
+        v4 = (-1, 0, 0)
 
-        volume_mesh = mut.VolumeMesh(elements=(t_left, t_right),
-                                     vertices=(v0, v1, v2, v3, v4))
+        volume_mesh = mut.VolumeMesh(
+            elements=(t_left, t_right), vertices=(v0, v1, v2, v3, v4)
+        )
 
         surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
 
@@ -217,7 +228,8 @@ class TestGeometryMeshes(unittest.TestCase):
         v3 = (0, 0, 1)
         v4 = (0.25, 0.25, 0.25)
         mesh = mut.VolumeMesh(
-            elements=(t1, t2, t3, t4), vertices=(v0, v1, v2, v3, v4))
+            elements=(t1, t2, t3, t4), vertices=(v0, v1, v2, v3, v4)
+        )
 
         # Refine the mesh.
         refined_mesh = mut.RefineVolumeMesh(mesh=mesh)
@@ -228,11 +240,13 @@ class TestGeometryMeshes(unittest.TestCase):
     def test_refine_volume_mesh_to_string(self):
         # Get a path to a test mesh file.
         mesh_path = FindResourceOrThrow(
-            "drake/geometry/test/one_tetrahedron.vtk")
+            "drake/geometry/test/one_tetrahedron.vtk"
+        )
 
         # Get both the refined mesh and its bytes representation.
         vtk_string = mut.RefineVolumeMeshIntoVtkFileContents(
-            mesh_source=mut.MeshSource(mesh_path))
+            mesh_source=mut.MeshSource(mesh_path)
+        )
 
         # Verify the string contains key VTK elements.
         self.assertIn("# vtk DataFile Version 3.0", vtk_string)
@@ -250,12 +264,14 @@ class TestGeometryMeshes(unittest.TestCase):
                 mesh = mut.ReadObjToTriangleSurfaceMesh(filename=mesh_path)
                 scale = [1.0, 1.0, 1.0]
             elif isinstance(scale, float):
-                mesh = mut.ReadObjToTriangleSurfaceMesh(filename=mesh_path,
-                                                        scale=scale)
+                mesh = mut.ReadObjToTriangleSurfaceMesh(
+                    filename=mesh_path, scale=scale
+                )
                 scale = [scale, scale, scale]
             else:
-                mesh = mut.ReadObjToTriangleSurfaceMesh(filename=mesh_path,
-                                                        scale3=scale)
+                mesh = mut.ReadObjToTriangleSurfaceMesh(
+                    filename=mesh_path, scale3=scale
+                )
             vertices = mesh.vertices()
 
             # This test relies on the specific content of the file
@@ -263,15 +279,20 @@ class TestGeometryMeshes(unittest.TestCase):
             # quad_cube.obj.
             scale = np.array(scale)
             scale.shape = (1, 3)
-            expected_vertices = np.array([
-                [1.000000, -1.000000, -1.000000],
-                [1.000000, -1.000000,  1.000000],
-                [-1.000000, -1.000000,  1.000000],
-                [-1.000000, -1.000000, -1.000000],
-                [1.000000,  1.000000, -1.000000],
-                [1.000000,  1.000000,  1.000000],
-                [-1.000000,  1.000000,  1.000000],
-                [-1.000000,  1.000000, -1.000000],
-            ]) * scale
+            expected_vertices = (
+                np.array(
+                    [
+                        [1.000000, -1.000000, -1.000000],
+                        [1.000000, -1.000000, 1.000000],
+                        [-1.000000, -1.000000, 1.000000],
+                        [-1.000000, -1.000000, -1.000000],
+                        [1.000000, 1.000000, -1.000000],
+                        [1.000000, 1.000000, 1.000000],
+                        [-1.000000, 1.000000, 1.000000],
+                        [-1.000000, 1.000000, -1.000000],
+                    ]
+                )
+                * scale
+            )
             for i, expected in enumerate(expected_vertices):
                 np.testing.assert_array_equal(vertices[i], expected)

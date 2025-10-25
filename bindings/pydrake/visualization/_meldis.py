@@ -21,10 +21,7 @@ from drake import (
     lcmt_viewer_link_data,
     lcmt_viewer_load_robot,
 )
-from pydrake.common import (
-    configure_logging,
-    MemoryFile,
-)
+from pydrake.common import MemoryFile
 from pydrake.common.eigen_geometry import (
     Quaternion,
 )
@@ -72,8 +69,7 @@ _DEFAULT_MESHCAT_PARAMS = MeshcatParams(
 
 
 def _to_pose(position, quaternion):
-    """Given pose parts, parses it into a RigidTransform.
-    """
+    """Given pose parts, parses it into a RigidTransform."""
     return RigidTransform(Quaternion(wxyz=quaternion), p=position)
 
 
@@ -102,7 +98,7 @@ class _Slider:
         """
         assert self._exists, "Call realize() before calling read()"
         value = self._meshcat.GetSliderValue(self._name)
-        value_changed = (value != self._value)
+        value_changed = value != self._value
         self._value = value
         return value, value_changed
 
@@ -110,9 +106,11 @@ class _Slider:
 def _json_to_memory_file(json):
     """Converts a json representation of a MemoryFile to an instance of
     same."""
-    return MemoryFile(contents=base64.b64decode(json["contents"]),
-                      extension=json["extension"],
-                      filename_hint=json["filename_hint"])
+    return MemoryFile(
+        contents=base64.b64decode(json["contents"]),
+        extension=json["extension"],
+        filename_hint=json["filename_hint"],
+    )
 
 
 def _json_to_file_source(json):
@@ -134,8 +132,10 @@ def _make_mesh_source_from_json(json_str):
         _logger.warning(f"Received message with malformed json: {e}")
         return None
 
-    if ("in_memory_mesh" not in payload
-            or "mesh_file" not in payload["in_memory_mesh"]):
+    if (
+        "in_memory_mesh" not in payload
+        or "mesh_file" not in payload["in_memory_mesh"]
+    ):
         _logger.warning("Received Mesh with unexpected json content")
         return None
 
@@ -145,8 +145,11 @@ def _make_mesh_source_from_json(json_str):
         supporting_files[name] = _json_to_file_source(coded)
 
     return MeshSource(
-        InMemoryMesh(mesh_file=_json_to_memory_file(mesh_data["mesh_file"]),
-                     supporting_files=supporting_files))
+        InMemoryMesh(
+            mesh_file=_json_to_memory_file(mesh_data["mesh_file"]),
+            supporting_files=supporting_files,
+        )
+    )
 
 
 class _GeometryFileHasher:
@@ -188,12 +191,14 @@ class _GeometryFileHasher:
 
     def on_viewer_geometry_data(self, message: lcmt_viewer_geometry_data):
         assert isinstance(message, lcmt_viewer_geometry_data)
-        if (message.type == lcmt_viewer_geometry_data.MESH
-                and message.string_data):
+        if (
+            message.type == lcmt_viewer_geometry_data.MESH
+            and message.string_data
+        ):
             self.on_mesh(message.string_data)
 
     def on_mesh(self, string_data: str):
-        if string_data[0] == '{':
+        if string_data[0] == "{":
             self.on_mesh_in_memory(string_data)
         else:
             self.on_mesh_from_disk(Path(string_data))
@@ -226,22 +231,26 @@ class _GeometryFileHasher:
         elif path.suffix.lower() == ".gltf":
             self.on_gltf_from_disk(path, content)
         else:
-            _logger.warning(f"Unsupported mesh file: '{path}'\n"
-                            "Update Meldis's hasher to trigger reloads on "
-                            "this kind of file.")
+            _logger.warning(
+                f"Unsupported mesh file: '{path}'\n"
+                "Update Meldis's hasher to trigger reloads on this kind of "
+                "file."
+            )
 
     def on_obj_from_disk(self, path: Path, content: bytes):
         assert isinstance(path, Path)
-        for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
-                                    re.MULTILINE):
+        for mtl_names in re.findall(
+            rb"^\s*mtllib\s+(.*?)\s*$", content, re.MULTILINE
+        ):
             for mtl_name in mtl_names.decode("utf-8").split():
                 self.on_mtl_from_disk(path.parent / mtl_name)
 
     def on_mtl_from_disk(self, path: Path):
         assert isinstance(path, Path)
         content = self._read_file(path)
-        for tex_name in re.findall(rb"^\s*map_.*?\s+(\S+)\s*$", content,
-                                   re.MULTILINE):
+        for tex_name in re.findall(
+            rb"^\s*map_.*?\s+(\S+)\s*$", content, re.MULTILINE
+        ):
             self.on_texture_from_disk(path.parent / tex_name.decode("utf-8"))
 
     def on_texture_from_disk(self, path: Path):
@@ -267,9 +276,16 @@ class _GeometryFileHasher:
 class _ViewerApplet:
     """Displays lcmt_viewer_load_robot and lcmt_viewer_draw into MeshCat."""
 
-    def __init__(self, *, meshcat, path, alpha_slider_name,
-                 should_accept_link=None, start_visible=True,
-                 initial_alpha_value=1):
+    def __init__(
+        self,
+        *,
+        meshcat,
+        path,
+        alpha_slider_name,
+        should_accept_link=None,
+        start_visible=True,
+        initial_alpha_value=1,
+    ):
         """Constructs an applet.
 
         If should_accept_link is given, only links where
@@ -304,11 +320,14 @@ class _ViewerApplet:
         hasher.on_viewer_load_robot(message)
         mesh_checksum = hasher.value()
         if self._load_message is not None:
-            if (message.num_links == self._load_message.num_links
-                    and message.encode() == self._load_message.encode()
-                    and mesh_checksum == self._load_message_mesh_checksum):
-                _logger.info("Ignoring duplicate load message for "
-                             f"{self._applet_name}.")
+            if (
+                message.num_links == self._load_message.num_links
+                and message.encode() == self._load_message.encode()
+                and mesh_checksum == self._load_message_mesh_checksum
+            ):
+                _logger.info(
+                    f"Ignoring duplicate load message for {self._applet_name}."
+                )
                 return
 
         # The semantics of a load message is to reset the entire scene.
@@ -399,7 +418,8 @@ class _ViewerApplet:
             geom_path = f"{link_path}/{geom_name}"
             vertices, faces, rgba, pose = self._convert_deformable_geom(geom)
             self._meshcat.SetTriangleMesh(
-                path=geom_path, vertices=vertices, faces=faces, rgba=rgba)
+                path=geom_path, vertices=vertices, faces=faces, rgba=rgba
+            )
             self._meshcat.SetTransform(path=link_path, X_ParentPath=pose)
         if self._waiting_for_first_draw_message:
             self._waiting_for_first_draw_message = False
@@ -422,8 +442,8 @@ class _ViewerApplet:
         f_start_index = v_start_index + 3 * num_verts
         vertices = np.array(geom.float_data[v_start_index:f_start_index])
         faces = np.array(geom.float_data[f_start_index:]).astype(int)
-        vertices = np.reshape(vertices, (3, num_verts), order='F')
-        faces = np.reshape(faces, (3, num_faces), order='F')
+        vertices = np.reshape(vertices, (3, num_verts), order="F")
+        faces = np.reshape(faces, (3, num_faces), order="F")
         rgba = Rgba(*geom.color)
         pose = _to_pose(geom.position, geom.quaternion)
         return (vertices, faces, rgba, pose)
@@ -484,18 +504,18 @@ class _ViewerApplet:
         """
         V = int(data[0] if len(data) > 0 else -1)
         T = int(data[1] if len(data) > 1 else -1)
-        if len(data) != 2 + 3*V + 3*T:
+        if len(data) != 2 + 3 * V + 3 * T:
             _logger.warning("Ignoring mesh with malformed data length.")
             return None
         start = 2
         vertices = []
-        for i in range(start, start + 3*V, 3):
-            vertex = np.array(data[i:i+3])
+        for i in range(start, start + 3 * V, 3):
+            vertex = np.array(data[i : i + 3])
             vertices.append(vertex)
-        start = 2 + 3*V
+        start = 2 + 3 * V
         triangles = []
-        for i in range(start, start + 3*T, 3):
-            indices = [int(j) for j in data[i:i+3]]
+        for i in range(start, start + 3 * T, 3):
+            indices = [int(j) for j in data[i : i + 3]]
             triangle = SurfaceTriangle(*indices)
             triangles.append(triangle)
         return TriangleSurfaceMesh(triangles=triangles, vertices=vertices)
@@ -529,9 +549,13 @@ class _ContactApplet:
             for i in range(1, poly_i_num_vertices - 1):
                 vertex_1_global_index = poly_data[vertex_0_index + i]
                 vertex_2_global_index = poly_data[vertex_0_index + i + 1]
-                faces.append([vertex_0_global_index,
-                              vertex_1_global_index,
-                              vertex_2_global_index])
+                faces.append(
+                    [
+                        vertex_0_global_index,
+                        vertex_1_global_index,
+                        vertex_2_global_index,
+                    ]
+                )
             poly_index += poly_i_num_vertices + 1
         return np.array(faces).transpose()
 
@@ -569,33 +593,39 @@ class _ContactApplet:
 
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
-           hydroelastic contact force and moment vectors are shown; contact
-           surface and pressure are not shown.
+        hydroelastic contact force and moment vectors are shown; contact
+        surface and pressure are not shown.
         """
 
         # Handle point contact pairs
         viz_items = []
         for lcm_item in message.point_pair_contact_info:
-            viz_items.append(_PointContactVisualizerItem(
-                body_A=lcm_item.body1_name,
-                body_B=lcm_item.body2_name,
-                contact_force=lcm_item.contact_force,
-                contact_point=lcm_item.contact_point))
+            viz_items.append(
+                _PointContactVisualizerItem(
+                    body_A=lcm_item.body1_name,
+                    body_B=lcm_item.body2_name,
+                    contact_force=lcm_item.contact_force,
+                    contact_point=lcm_item.contact_point,
+                )
+            )
         self._point_helper.Update(0, viz_items)
 
         # Handle hydroelastic contact pairs
         viz_items = []
         for lcm_item in message.hydroelastic_contacts:
             (name1, name2) = self.get_full_names(lcm_item)
-            viz_items.append(_HydroelasticContactVisualizerItem(
-                body_A=name1,
-                body_B=name2,
-                centroid_W=lcm_item.centroid_W,
-                force_C_W=lcm_item.force_C_W,
-                moment_C_W=lcm_item.moment_C_W,
-                p_WV=self.convert_verts(lcm_item.p_WV),
-                faces=self.convert_faces(lcm_item.poly_data),
-                pressure=lcm_item.pressure))
+            viz_items.append(
+                _HydroelasticContactVisualizerItem(
+                    body_A=name1,
+                    body_B=name2,
+                    centroid_W=lcm_item.centroid_W,
+                    force_C_W=lcm_item.force_C_W,
+                    moment_C_W=lcm_item.moment_C_W,
+                    p_WV=self.convert_verts(lcm_item.p_WV),
+                    faces=self.convert_faces(lcm_item.poly_data),
+                    pressure=lcm_item.pressure,
+                )
+            )
         self._hydro_helper.Update(0, viz_items)
 
 
@@ -657,7 +687,7 @@ class _PointCloudApplet:
             return "/POINT_CLOUD/default"
         else:
             # E.g., `DRAKE_POINT_CLOUD_FOO` => `/POINT_CLOUD/FOO`.
-            suffix = channel[len("DRAKE_POINT_CLOUD_"):]
+            suffix = channel[len("DRAKE_POINT_CLOUD_") :]
             return f"/POINT_CLOUD/{suffix}"
 
     def on_point_cloud(self, channel, message):
@@ -671,8 +701,7 @@ class _PointCloudApplet:
             # Throttle warning messages to one per channel.
             if channel not in self._already_warned_channel_names:
                 self._already_warned_channel_names.add(channel)
-                _logger.warning(
-                    f"Unsupported point cloud data from {channel}.")
+                _logger.warning(f"Unsupported point cloud data from {channel}.")
             return
 
         # Transform the raw data into an N x num_fields array.
@@ -697,12 +726,13 @@ class _PointCloudApplet:
         self._meshcat.SetObject(
             path=self._channel_to_meshcat_path(channel),
             cloud=cloud,
-            point_size=0.01
+            point_size=0.01,
         )
 
 
 class _DrawFrameApplet:
     """Applet to visualize triads in meshcat"""
+
     def __init__(self, *, meshcat):
         """Constructs an applet."""
         self._meshcat = meshcat
@@ -715,7 +745,7 @@ class _DrawFrameApplet:
             return "/DRAKE_DRAW_FRAMES/default"
         else:
             # E.g., `DRAKE_DRAW_FRAMES_FOO` => `/DRAKE_DRAW_FRAMES/FOO`.
-            suffix = channel[len("DRAKE_DRAW_FRAMES_"):]
+            suffix = channel[len("DRAKE_DRAW_FRAMES_") :]
             return f"/DRAKE_DRAW_FRAMES/{suffix}"
 
     def _add_meshcat_triad(self, path, X_PT):
@@ -760,9 +790,10 @@ class _DrawFrameApplet:
         for i in range(message.num_links):
             link_name = message.link_name[i].replace("::", "/")
             link_path = f"{channel_path}/{link_name}"
-            self._add_meshcat_triad(path=link_path,
-                                    X_PT=_to_pose(message.position[i],
-                                                  message.quaternion[i]))
+            self._add_meshcat_triad(
+                path=link_path,
+                X_PT=_to_pose(message.position[i], message.quaternion[i]),
+            )
 
 
 class Meldis:
@@ -778,11 +809,14 @@ class Meldis:
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *,
-                 meshcat_host: str | None = None,
-                 meshcat_port: int | None = None,
-                 meshcat_params: MeshcatParams | None = None,
-                 environment_map: Path | None = None):
+    def __init__(
+        self,
+        *,
+        meshcat_host: str | None = None,
+        meshcat_port: int | None = None,
+        meshcat_params: MeshcatParams | None = None,
+        environment_map: Path | None = None,
+    ):
         """Constructs a new Meldis instance. The meshcat_host (when given)
         takes precedence over meshcat_params.host. The meshcat_post (when
         given) takes precedence over meshcat_params.port.
@@ -820,81 +854,117 @@ class Meldis:
         def is_not_inertia_link(link_name):
             return not is_inertia_link(link_name)
 
-        default_viewer = _ViewerApplet(meshcat=self.meshcat,
-                                       path="/DRAKE_VIEWER",
-                                       alpha_slider_name="Viewer",
-                                       should_accept_link=is_not_inertia_link)
-        self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
-                        message_type=lcmt_viewer_load_robot,
-                        handler=default_viewer.on_viewer_load)
-        self._subscribe(channel="DRAKE_VIEWER_DRAW",
-                        message_type=lcmt_viewer_draw,
-                        handler=default_viewer.on_viewer_draw)
-        self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE",
-                        message_type=lcmt_viewer_link_data,
-                        handler=default_viewer.on_viewer_draw_deformable)
+        default_viewer = _ViewerApplet(
+            meshcat=self.meshcat,
+            path="/DRAKE_VIEWER",
+            alpha_slider_name="Viewer",
+            should_accept_link=is_not_inertia_link,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_LOAD_ROBOT",
+            message_type=lcmt_viewer_load_robot,
+            handler=default_viewer.on_viewer_load,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DRAW",
+            message_type=lcmt_viewer_draw,
+            handler=default_viewer.on_viewer_draw,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DEFORMABLE",
+            message_type=lcmt_viewer_link_data,
+            handler=default_viewer.on_viewer_draw_deformable,
+        )
         self._poll(handler=default_viewer.on_poll)
 
-        inertia_viewer = _ViewerApplet(meshcat=self.meshcat,
-                                       path="/Inertia Visualizer",
-                                       alpha_slider_name="Inertia",
-                                       should_accept_link=is_inertia_link,
-                                       start_visible=False)
+        inertia_viewer = _ViewerApplet(
+            meshcat=self.meshcat,
+            path="/Inertia Visualizer",
+            alpha_slider_name="Inertia",
+            should_accept_link=is_inertia_link,
+            start_visible=False,
+        )
         inertia_viewer._alpha_slider._value = 0.5
-        self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
-                        message_type=lcmt_viewer_load_robot,
-                        handler=inertia_viewer.on_viewer_load)
-        self._subscribe(channel="DRAKE_VIEWER_DRAW",
-                        message_type=lcmt_viewer_draw,
-                        handler=inertia_viewer.on_viewer_draw)
+        self._subscribe(
+            channel="DRAKE_VIEWER_LOAD_ROBOT",
+            message_type=lcmt_viewer_load_robot,
+            handler=inertia_viewer.on_viewer_load,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DRAW",
+            message_type=lcmt_viewer_draw,
+            handler=inertia_viewer.on_viewer_draw,
+        )
         self._poll(handler=inertia_viewer.on_poll)
 
-        illustration_viewer = _ViewerApplet(meshcat=self.meshcat,
-                                            path="/Visual Geometry",
-                                            alpha_slider_name="Visual")
-        self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT_ILLUSTRATION",
-                        message_type=lcmt_viewer_load_robot,
-                        handler=illustration_viewer.on_viewer_load)
-        self._subscribe(channel="DRAKE_VIEWER_DRAW_ILLUSTRATION",
-                        message_type=lcmt_viewer_draw,
-                        handler=illustration_viewer.on_viewer_draw)
-        self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE_ILLUSTRATION",
-                        message_type=lcmt_viewer_link_data,
-                        handler=illustration_viewer.on_viewer_draw_deformable)
+        illustration_viewer = _ViewerApplet(
+            meshcat=self.meshcat,
+            path="/Visual Geometry",
+            alpha_slider_name="Visual",
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_LOAD_ROBOT_ILLUSTRATION",
+            message_type=lcmt_viewer_load_robot,
+            handler=illustration_viewer.on_viewer_load,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DRAW_ILLUSTRATION",
+            message_type=lcmt_viewer_draw,
+            handler=illustration_viewer.on_viewer_draw,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DEFORMABLE_ILLUSTRATION",
+            message_type=lcmt_viewer_link_data,
+            handler=illustration_viewer.on_viewer_draw_deformable,
+        )
         self._poll(handler=illustration_viewer.on_poll)
 
-        proximity_viewer = _ViewerApplet(meshcat=self.meshcat,
-                                         path="/Collision Geometry",
-                                         alpha_slider_name="Collision",
-                                         start_visible=False,
-                                         initial_alpha_value=0.5)
-        self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",
-                        message_type=lcmt_viewer_load_robot,
-                        handler=proximity_viewer.on_viewer_load)
-        self._subscribe(channel="DRAKE_VIEWER_DRAW_PROXIMITY",
-                        message_type=lcmt_viewer_draw,
-                        handler=proximity_viewer.on_viewer_draw)
-        self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE_PROXIMITY",
-                        message_type=lcmt_viewer_link_data,
-                        handler=proximity_viewer.on_viewer_draw_deformable)
+        proximity_viewer = _ViewerApplet(
+            meshcat=self.meshcat,
+            path="/Collision Geometry",
+            alpha_slider_name="Collision",
+            start_visible=False,
+            initial_alpha_value=0.5,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",
+            message_type=lcmt_viewer_load_robot,
+            handler=proximity_viewer.on_viewer_load,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DRAW_PROXIMITY",
+            message_type=lcmt_viewer_draw,
+            handler=proximity_viewer.on_viewer_draw,
+        )
+        self._subscribe(
+            channel="DRAKE_VIEWER_DEFORMABLE_PROXIMITY",
+            message_type=lcmt_viewer_link_data,
+            handler=proximity_viewer.on_viewer_draw_deformable,
+        )
         self._poll(handler=proximity_viewer.on_poll)
 
         contact = _ContactApplet(meshcat=self.meshcat)
-        self._subscribe(channel="CONTACT_RESULTS",
-                        message_type=lcmt_contact_results_for_viz,
-                        handler=contact.on_contact_results)
+        self._subscribe(
+            channel="CONTACT_RESULTS",
+            message_type=lcmt_contact_results_for_viz,
+            handler=contact.on_contact_results,
+        )
 
         # Subscribe to all the point-cloud-related channels.
         point_cloud = _PointCloudApplet(meshcat=self.meshcat)
-        self._subscribe_multichannel(regex="DRAKE_POINT_CLOUD.*",
-                                     message_type=lcmt_point_cloud,
-                                     handler=point_cloud.on_point_cloud)
+        self._subscribe_multichannel(
+            regex="DRAKE_POINT_CLOUD.*",
+            message_type=lcmt_point_cloud,
+            handler=point_cloud.on_point_cloud,
+        )
 
         # Subscribe to all the frame display channels.
         draw_frame = _DrawFrameApplet(meshcat=self.meshcat)
-        self._subscribe_multichannel(regex="DRAKE_DRAW_FRAMES.*",
-                                     message_type=lcmt_viewer_draw,
-                                     handler=draw_frame.on_frame_update)
+        self._subscribe_multichannel(
+            regex="DRAKE_DRAW_FRAMES.*",
+            message_type=lcmt_viewer_draw,
+            handler=draw_frame.on_frame_update,
+        )
 
         # Bookkeeping for automatic shutdown.
         self._last_poll = None
@@ -914,6 +984,7 @@ class Meldis:
         # actual handler.
         def _multi_handler(*, channel, message):
             handler(message)
+
         self._message_handlers.setdefault(channel, []).append(_multi_handler)
 
         # Subscribe using an internal function that implements "last one wins".
@@ -927,6 +998,7 @@ class Meldis:
         # pass it along to MeshCat using our `self._should_update()` timer.
         def _on_message(data):
             self._message_pending_data[channel] = data
+
         self._lcm.Subscribe(channel=channel, handler=_on_message)
 
     def _subscribe_multichannel(self, regex, message_type, handler):
@@ -934,11 +1006,13 @@ class Meldis:
         this function handles messages is the same as _subscribe() except that
         the channel name is only known when invoking the callback.
         """
+
         def _on_message(channel, data):
             if channel not in self._message_types:
                 self._message_types[channel] = message_type
                 self._message_handlers.setdefault(channel, []).append(handler)
             self._message_pending_data[channel] = data
+
         self._lcm.SubscribeMultichannel(regex=regex, handler=_on_message)
 
     def _poll(self, handler):
@@ -1010,6 +1084,8 @@ class Meldis:
 
         # In case we are idle for too long, exit automatically.
         if now > self._last_active + idle_timeout:
-            _logger.info("Meldis is exiting now; no browser was connected for"
-                         f" >{idle_timeout} seconds")
+            _logger.info(
+                "Meldis is exiting now; no browser was connected for"
+                f" >{idle_timeout} seconds"
+            )
             sys.exit(1)

@@ -4,14 +4,12 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -115,7 +113,7 @@ class JointActuator final : public MultibodyElement<T> {
       const VectorX<T>& u) const {
     DRAKE_THROW_UNLESS(this->has_parent_tree());
     DRAKE_DEMAND(u.size() == this->get_parent_tree().num_actuated_dofs());
-    return u.segment(topology_.actuator_dof_start, joint().num_velocities());
+    return u.segment(actuator_dof_start_, joint().num_velocities());
   }
 
   /// Given the actuation values `u_actuator` for `this` actuator, updates the
@@ -142,15 +140,16 @@ class JointActuator final : public MultibodyElement<T> {
 
   /// Returns the index to the first element for this joint actuator / within
   /// the vector of actuation inputs for the full multibody / system.
-  /// @throws std::exception if the MultibodyTree model is not finalized.
+  /// Returns -1 if this %JointActuator hasn't been added to a MultibodyPlant.
   int input_start() const;
 
-  /// Returns the number of inputs associated with this actuator.
-  /// @throws std::exception if the MultibodyTree model is not finalized.
+  /// Returns the number of inputs associated with this actuator. This is
+  /// always the number of degrees of freedom of the actuated joint.
   int num_inputs() const;
 
   // TODO(russt): This should be a vector (not a double), and we should have
-  // lower and upper limits (not require them to be symmetric).
+  //  lower and upper limits (not require them to be symmetric).
+
   /// Returns the actuator effort limit.
   double effort_limit() const { return effort_limit_; }
 
@@ -285,6 +284,7 @@ class JointActuator final : public MultibodyElement<T> {
   ///@{
 
   // TODO(amcastro-tri): Place gains in the context as parameters.
+
   /// Set controller gains for this joint actuator.
   /// This enables the modeling of a simple PD controller of the form:
   ///   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
@@ -336,6 +336,11 @@ class JointActuator final : public MultibodyElement<T> {
       const internal::MultibodyTree<ToScalar>& cloned_tree) const {
     return DoCloneToScalar(cloned_tree);
   }
+
+  void set_actuator_dof_start(int actuator_dof_start) {
+    DRAKE_DEMAND(actuator_dof_start >= 0);
+    actuator_dof_start_ = actuator_dof_start;
+  }
   /// @endcond
 
  private:
@@ -346,9 +351,11 @@ class JointActuator final : public MultibodyElement<T> {
 
   // Private constructor used for cloning.
   JointActuator(const std::string& name, JointIndex joint_index,
-                double effort_limit, double rotor_inertia, double gear_ratio)
+                int actuator_dof_start, double effort_limit,
+                double rotor_inertia, double gear_ratio)
       : name_(name),
         joint_index_(joint_index),
+        actuator_dof_start_(actuator_dof_start),
         effort_limit_(effort_limit),
         default_rotor_inertia_(rotor_inertia),
         default_gear_ratio_(gear_ratio) {}
@@ -367,9 +374,10 @@ class JointActuator final : public MultibodyElement<T> {
       const internal::MultibodyTree<symbolic::Expression>& tree_clone) const;
 
   // Implementation for MultibodyElement::DoSetTopology().
-  // At MultibodyTree::Finalize() time, each actuator retrieves its topology
-  // from the parent MultibodyTree.
-  void DoSetTopology(const internal::MultibodyTreeTopology&) final;
+  // This is called at the end of Finalize(). We just need to record
+  // that this actuator has been finalized because there are some
+  // checks we can't do until then.
+  void DoSetTopology() final { is_finalized_ = true; }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(
@@ -401,6 +409,11 @@ class JointActuator final : public MultibodyElement<T> {
   // The index of the joint on which this actuator acts.
   JointIndex joint_index_;
 
+  // This is the offset into the vector of actuated dofs at which this
+  // actuator's dofs start. The number of controlled dofs starting here is
+  // joint().num_velocities().
+  int actuator_dof_start_{-1};
+
   // Actuator effort limit. It must be greater than 0.
   double effort_limit_;
 
@@ -421,10 +434,9 @@ class JointActuator final : public MultibodyElement<T> {
   // context.
   systems::NumericParameterIndex gear_ratio_parameter_index_;
 
-  // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
-  internal::JointActuatorTopology topology_;
-
   std::optional<PdControllerGains> pd_controller_gains_{std::nullopt};
+
+  bool is_finalized_{false};
 };
 
 }  // namespace multibody

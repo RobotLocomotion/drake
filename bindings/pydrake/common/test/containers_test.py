@@ -47,7 +47,7 @@ class TestEqualToDict(unittest.TestCase):
         # `Polynomial` as a key in a dictionary.
         self.assertEqual(d[a], "a")
         with self.assertRaises(ValueError):
-            value = bool(a == b)
+            bool(a == b)
 
     def test_equal_to_dict(self):
         d = EqualToDict({a: "a", b: "b"})
@@ -83,8 +83,12 @@ def is_same_array(a, b):
     # Indicates that two arrays (of the same shape and type) are views into the
     # same memory.
     # See: https://stackoverflow.com/a/55660651/7829525
-    return (a.ctypes.data == b.ctypes.data and a.shape == b.shape
-            and a.dtype == b.dtype and (a == b).all())
+    return (
+        a.ctypes.data == b.ctypes.data
+        and a.shape == b.shape
+        and a.dtype == b.dtype
+        and (a == b).all()
+    )
 
 
 class TestNamedView(unittest.TestCase):
@@ -120,8 +124,9 @@ class TestNamedView(unittest.TestCase):
         view[:] = 3.0
         np.testing.assert_equal(value, [3.0, 3.0])
         self.assertEqual(str(view), "MyView(a=3.0, b=3.0)")
-        self.assertEqual(repr(view),
-                         f"<MyView(a={repr(view.a)}, b={repr(view.b)})>")
+        self.assertEqual(
+            repr(view), f"<MyView(a={repr(view.a)}, b={repr(view.b)})>"
+        )
         with self.assertRaisesRegex(AttributeError, ".*('a', 'b').*"):
             view.c = 42
 
@@ -133,10 +138,13 @@ class TestNamedView(unittest.TestCase):
         self.assertEqual(view.b, 0)
 
     def test_name_sanitation(self):
-        MyView = namedview("MyView",
-                           ["$xyz_base", "iiwa::iiwa", "no spaces", "2vär"])
-        self.assertEqual(MyView.get_fields(),
-                         ("_xyz_base", "iiwa_iiwa", "no_spaces", "_2vär"))
+        MyView = namedview(
+            "MyView", ["$xyz_base", "iiwa::iiwa", "no spaces", "2vär"]
+        )
+        self.assertEqual(
+            MyView.get_fields(),
+            ("_xyz_base", "iiwa_iiwa", "no_spaces", "_2vär"),
+        )
         view = MyView.Zero()
         view._xyz_base = 3
         view.iiwa_iiwa = 4
@@ -144,12 +152,13 @@ class TestNamedView(unittest.TestCase):
         view._2vär = 6
         np.testing.assert_equal(view[:], [3, 4, 5, 6])
 
-        MyView = namedview("MyView", ["$xyz_base", "iiwa::iiwa"],
-                           sanitize_field_names=False)
+        MyView = namedview(
+            "MyView", ["$xyz_base", "iiwa::iiwa"], sanitize_field_names=False
+        )
         self.assertEqual(MyView.get_fields(), ("$xyz_base", "iiwa::iiwa"))
 
     def test_uniqueness(self):
         with self.assertRaisesRegex(AssertionError, ".*must be unique.*"):
-            namedview("MyView", ['a', 'a'])
+            namedview("MyView", ["a", "a"])
         with self.assertRaisesRegex(AssertionError, ".*must be unique.*"):
-            namedview("MyView", ['a_a', 'a__a'])
+            namedview("MyView", ["a_a", "a__a"])

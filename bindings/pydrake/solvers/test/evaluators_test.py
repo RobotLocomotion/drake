@@ -4,7 +4,6 @@ import weakref
 
 import numpy as np
 import scipy.sparse
-import copy
 
 import pydrake.solvers as mp
 import pydrake.solvers._testing as mp_testing
@@ -14,13 +13,13 @@ from pydrake.autodiffutils import InitializeAutoDiff
 
 class TestCost(unittest.TestCase):
     def test_linear_cost(self):
-        a = np.array([1., 2.])
+        a = np.array([1.0, 2.0])
         b = 0.5
         cost = mp.LinearCost(a, b)
         np.testing.assert_allclose(cost.a(), a)
         self.assertEqual(cost.b(), b)
-        cost.UpdateCoefficients(new_a=[2, 3.], new_b=1)
-        np.testing.assert_allclose(cost.a(), [2, 3.])
+        cost.UpdateCoefficients(new_a=[2, 3.0], new_b=1)
+        np.testing.assert_allclose(cost.a(), [2, 3.0])
         self.assertEqual(cost.b(), 1)
 
         cost.update_coefficient_entry(i=0, val=4)
@@ -31,8 +30,8 @@ class TestCost(unittest.TestCase):
         self.assertEqual(cost.b(), 2)
 
     def test_quadratic_cost(self):
-        Q = np.array([[1., 2.], [2., 3.]])
-        b = np.array([3., 4.])
+        Q = np.array([[1.0, 2.0], [2.0, 3.0]])
+        b = np.array([3.0, 4.0])
         c = 0.4
         cost = mp.QuadraticCost(Q, b, c)
         np.testing.assert_allclose(cost.Q(), Q)
@@ -43,24 +42,24 @@ class TestCost(unittest.TestCase):
         cost = mp.QuadraticCost(Q, b, c, is_convex=False)
         self.assertFalse(cost.is_convex())
 
-        cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
+        cost = mp.QuadraticCost(np.array([[1.0, 2.0], [2.0, 6.0]]), b, c)
         self.assertTrue(cost.is_convex())
 
         cost.UpdateCoefficients(
-            new_Q=np.array([[1, 3], [3, 6.]]),
-            new_b=np.array([2, 4.]),
+            new_Q=np.array([[1, 3], [3, 6.0]]),
+            new_b=np.array([2, 4.0]),
             new_c=1,
-            is_convex=False
+            is_convex=False,
         )
         np.testing.assert_allclose(cost.Q(), np.array([[1, 3], [3, 6]]))
-        np.testing.assert_allclose(cost.b(), np.array([2, 4.]))
+        np.testing.assert_allclose(cost.b(), np.array([2, 4.0]))
         self.assertEqual(cost.c(), 1)
 
         cost.UpdateHessianEntry(i=0, j=1, val=1, is_hessian_psd=None)
         np.testing.assert_allclose(cost.Q(), np.array([[1, 1], [1, 6]]))
         self.assertTrue(cost.is_convex())
         cost.update_linear_coefficient_entry(i=1, val=5)
-        np.testing.assert_allclose(cost.b(), np.array([2, 5.]))
+        np.testing.assert_allclose(cost.b(), np.array([2, 5.0]))
         cost.update_constant_term(new_c=2)
         self.assertEqual(cost.c(), 2)
 
@@ -69,52 +68,52 @@ class TestCost(unittest.TestCase):
         self.assertTrue(cost.is_convex())
 
     def test_l1norm_cost(self):
-        A = np.array([[1., 2.], [-.4, .7]])
-        b = np.array([0.5, -.4])
+        A = np.array([[1.0, 2.0], [-0.4, 0.7]])
+        b = np.array([0.5, -0.4])
         cost = mp.L1NormCost(A=A, b=b)
         np.testing.assert_allclose(cost.A(), A)
         np.testing.assert_allclose(cost.b(), b)
-        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
-        np.testing.assert_allclose(cost.A(), 2*A)
-        np.testing.assert_allclose(cost.b(), 2*b)
+        cost.UpdateCoefficients(new_A=2 * A, new_b=2 * b)
+        np.testing.assert_allclose(cost.A(), 2 * A)
+        np.testing.assert_allclose(cost.b(), 2 * b)
         cost.update_A_entry(i=0, j=1, val=0.5)
         np.testing.assert_allclose(cost.A(), np.array([[2, 0.5], [-0.8, 1.4]]))
         cost.update_b_entry(i=0, val=1)
         np.testing.assert_allclose(cost.b(), np.array([1, -0.8]))
 
     def test_l2norm_cost(self):
-        A = np.array([[1., 2.], [-.4, .7]])
-        b = np.array([0.5, -.4])
+        A = np.array([[1.0, 2.0], [-0.4, 0.7]])
+        b = np.array([0.5, -0.4])
         cost = mp.L2NormCost(A=A, b=b)
         np.testing.assert_allclose(cost.get_sparse_A().todense(), A)
         np.testing.assert_allclose(cost.GetDenseA(), A)
         np.testing.assert_allclose(cost.b(), b)
-        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
-        np.testing.assert_allclose(cost.b(), 2*b)
+        cost.UpdateCoefficients(new_A=2 * A, new_b=2 * b)
+        np.testing.assert_allclose(cost.b(), 2 * b)
 
     def test_linfnorm_cost(self):
-        A = np.array([[1., 2.], [-.4, .7]])
-        b = np.array([0.5, -.4])
+        A = np.array([[1.0, 2.0], [-0.4, 0.7]])
+        b = np.array([0.5, -0.4])
         cost = mp.LInfNormCost(A=A, b=b)
         np.testing.assert_allclose(cost.A(), A)
         np.testing.assert_allclose(cost.b(), b)
-        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
-        np.testing.assert_allclose(cost.A(), 2*A)
-        np.testing.assert_allclose(cost.b(), 2*b)
+        cost.UpdateCoefficients(new_A=2 * A, new_b=2 * b)
+        np.testing.assert_allclose(cost.A(), 2 * A)
+        np.testing.assert_allclose(cost.b(), 2 * b)
         cost.update_A_entry(i=0, j=1, val=0.5)
         np.testing.assert_allclose(cost.A(), np.array([[2, 0.5], [-0.8, 1.4]]))
         cost.update_b_entry(i=0, val=1)
         np.testing.assert_allclose(cost.b(), np.array([1, -0.8]))
 
     def test_perspective_quadratic_cost(self):
-        A = np.array([[1., 2.], [-.4, .7]])
-        b = np.array([0.5, -.4])
+        A = np.array([[1.0, 2.0], [-0.4, 0.7]])
+        b = np.array([0.5, -0.4])
         cost = mp.PerspectiveQuadraticCost(A=A, b=b)
         np.testing.assert_allclose(cost.A(), A)
         np.testing.assert_allclose(cost.b(), b)
-        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
-        np.testing.assert_allclose(cost.A(), 2*A)
-        np.testing.assert_allclose(cost.b(), 2*b)
+        cost.UpdateCoefficients(new_A=2 * A, new_b=2 * b)
+        np.testing.assert_allclose(cost.A(), 2 * A)
+        np.testing.assert_allclose(cost.b(), 2 * b)
         cost.update_A_entry(i=0, j=1, val=0.5)
         np.testing.assert_allclose(cost.A(), np.array([[2, 0.5], [-0.8, 1.4]]))
         cost.update_b_entry(i=0, val=1)
@@ -153,8 +152,9 @@ class TestCost(unittest.TestCase):
         y = sym.Variable("y")
         e = np.sin(x) + y
         cost = mp.ExpressionCost(e=e)
-        self.assertEqual(cost.ToLatex(vars=cost.vars(), precision=1),
-                         "(y + \\sin{x})")
+        self.assertEqual(
+            cost.ToLatex(vars=cost.vars(), precision=1), "(y + \\sin{x})"
+        )
         binding = mp.Binding[mp.ExpressionCost](cost, cost.vars())
         self.assertEqual(binding.ToLatex(precision=1), "(y + \\sin{x})")
 
@@ -188,7 +188,7 @@ class TestCost(unittest.TestCase):
     def test_binding_hash(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
-        e = np.log(2*x) + y**2
+        e = np.log(2 * x) + y**2
         e2 = y
 
         cost1 = mp.ExpressionCost(e=e)
@@ -212,16 +212,20 @@ class TestCost(unittest.TestCase):
 class TestConstraints(unittest.TestCase):
     def test_bounding_box_constraint(self):
         constraint = mp.BoundingBoxConstraint(
-            lb=np.array([1., 2.]), ub=np.array([2., 3.]))
+            lb=np.array([1.0, 2.0]), ub=np.array([2.0, 3.0])
+        )
         np.testing.assert_array_equal(
-            constraint.lower_bound(), np.array([1., 2.]))
+            constraint.lower_bound(), np.array([1.0, 2.0])
+        )
         np.testing.assert_array_equal(
-            constraint.upper_bound(), np.array([2., 3.]))
+            constraint.upper_bound(), np.array([2.0, 3.0])
+        )
 
     def test_linear_constraint(self):
         A_sparse = scipy.sparse.csc_matrix(
-            (np.array([2, 1, 3]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2, 2))
+            (np.array([2, 1, 3]), np.array([0, 1, 0]), np.array([0, 2, 2, 3])),
+            shape=(2, 2),
+        )
         lb = -np.ones(2)
         ub = np.ones(2)
 
@@ -238,36 +242,43 @@ class TestConstraints(unittest.TestCase):
             new_A = np.ones_like(c.GetDenseA())
             new_A[1, 1] = 1e-20
 
-            c.UpdateCoefficients(new_A=new_A,
-                                 new_lb=np.ones(r),
-                                 new_ub=np.ones(r))
+            c.UpdateCoefficients(
+                new_A=new_A, new_lb=np.ones(r), new_ub=np.ones(r)
+            )
             c.RemoveTinyCoefficient(tol=1e-10)
             self.assertEqual(c.GetDenseA()[1, 1], 0)
-            c.UpdateCoefficients(new_A=c.get_sparse_A(),
-                                 new_lb=np.ones(r),
-                                 new_ub=np.ones(r))
+            c.UpdateCoefficients(
+                new_A=c.get_sparse_A(), new_lb=np.ones(r), new_ub=np.ones(r)
+            )
 
-            c.UpdateLowerBound(new_lb=-2*np.ones(r))
-            c.UpdateUpperBound(new_ub=2*np.ones(r))
-            c.set_bounds(new_lb=-3*np.ones(r), new_ub=3*np.ones(r))
+            c.UpdateLowerBound(new_lb=-2 * np.ones(r))
+            c.UpdateUpperBound(new_ub=2 * np.ones(r))
+            c.set_bounds(new_lb=-3 * np.ones(r), new_ub=3 * np.ones(r))
 
     def test_quadratic_constraint(self):
         hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
         constraint = mp.QuadraticConstraint(
-            Q0=np.eye(2), b=np.array([1, 2.]), lb=-np.inf, ub=1.,
-            hessian_type=hessian_type)
+            Q0=np.eye(2),
+            b=np.array([1, 2.0]),
+            lb=-np.inf,
+            ub=1.0,
+            hessian_type=hessian_type,
+        )
         np.testing.assert_array_equal(constraint.Q(), np.eye(2))
-        np.testing.assert_array_equal(constraint.b(), np.array([1, 2.]))
+        np.testing.assert_array_equal(constraint.b(), np.array([1, 2.0]))
         self.assertEqual(constraint.hessian_type(), hessian_type)
         self.assertTrue(constraint.is_convex())
         hessian_type = mp.QuadraticConstraint.HessianType.kNegativeSemidefinite
         constraint.UpdateCoefficients(
-            new_Q=-np.eye(2), new_b=np.array([1., -1.]),
-            hessian_type=hessian_type)
+            new_Q=-np.eye(2),
+            new_b=np.array([1.0, -1.0]),
+            hessian_type=hessian_type,
+        )
         self.assertEqual(constraint.hessian_type(), hessian_type)
         self.assertFalse(constraint.is_convex())
         constraint.UpdateCoefficients(
-            new_Q=np.array([[1, 0], [0, -1.]]), new_b=np.array([1., -1]))
+            new_Q=np.array([[1, 0], [0, -1.0]]), new_b=np.array([1.0, -1])
+        )
         hessian_type = mp.QuadraticConstraint.HessianType.kIndefinite
         self.assertEqual(constraint.hessian_type(), hessian_type)
 
@@ -278,7 +289,8 @@ class TestConstraints(unittest.TestCase):
     def test_linear_matrix_inequality_constraint(self):
         constraint = mp.LinearMatrixInequalityConstraint(
             F=[np.eye(3), 2 * np.eye(3), np.ones((3, 3))],
-            symmetry_tolerance=1E-12)
+            symmetry_tolerance=1e-12,
+        )
         self.assertEqual(constraint.matrix_rows(), 3)
 
     def test_expression_constraint(self):
@@ -291,29 +303,37 @@ class TestConstraints(unittest.TestCase):
         self.assertTrue(v[0].EqualTo(constraint.expressions()[0]))
         self.assertTrue(v[1].EqualTo(constraint.expressions()[1]))
         self.assertEqual(
-            sym.Variables(constraint.vars()), sym.Variables([x, y]))
+            sym.Variables(constraint.vars()), sym.Variables([x, y])
+        )
         np.testing.assert_array_equal(lb, constraint.lower_bound())
         np.testing.assert_array_equal(ub, constraint.upper_bound())
 
     def test_lorentz_cone_constraint(self):
-        A = np.array([[1, 2], [-1, -3], [2, 3.]])
-        b = np.array([2., 3., 4.])
+        A = np.array([[1, 2], [-1, -3], [2, 3.0]])
+        b = np.array([2.0, 3.0, 4.0])
         constraint = mp.LorentzConeConstraint(
-            A=A, b=b,
-            eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+            A=A, b=b, eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth
+        )
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
         self.assertEqual(
             constraint.eval_type(),
-            mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+            mp.LorentzConeConstraint.EvalType.kConvexSmooth,
+        )
         constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
         np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
         np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_rotated_lorentz_cone_constraint(self):
         A = np.array(
-            [[1., 2., 3.], [4., 5., 6.], [7., 8., 9.], [10., 11., 12.]])
-        b = np.array([1., 2., 3, 4])
+            [
+                [1.0, 2.0, 3.0],
+                [4.0, 5.0, 6.0],
+                [7.0, 8.0, 9.0],
+                [10.0, 11.0, 12.0],
+            ]
+        )
+        b = np.array([1.0, 2.0, 3, 4])
         constraint = mp.RotatedLorentzConeConstraint(A=A, b=b)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
@@ -361,15 +381,16 @@ class TestConstraints(unittest.TestCase):
             x = sym.Variable("x")
             y = sym.Variable("y")
             e = np.sin(x) + y
-            constraint = mp.ExpressionConstraint(v=np.array([e]),
-                                                 lb=np.array([1.0]),
-                                                 ub=np.array([2.0]))
+            constraint = mp.ExpressionConstraint(
+                v=np.array([e]), lb=np.array([1.0]), ub=np.array([2.0])
+            )
             # Sett up the types to ensure the cast constructor is used.
             constraint_binding = mp.Binding[mp.ExpressionConstraint](
                 constraint, constraint.vars()
             )
             cast_binding = mp_testing.AcceptBindingEvaluatorBase(
-                constraint_binding)
+                constraint_binding
+            )
             spies.append(weakref.finalize(constraint, lambda: None))
             return cast_binding, spies
 
@@ -388,9 +409,9 @@ class TestConstraints(unittest.TestCase):
             x = sym.Variable("x")
             y = sym.Variable("y")
             e = np.sin(x) + y
-            constraint = mp.ExpressionConstraint(v=np.array([e]),
-                                                 lb=np.array([1.0]),
-                                                 ub=np.array([2.0]))
+            constraint = mp.ExpressionConstraint(
+                v=np.array([e]), lb=np.array([1.0]), ub=np.array([2.0])
+            )
             constraint_binding = mp.Binding[mp.ExpressionConstraint](
                 constraint, constraint.vars()
             )
@@ -407,9 +428,9 @@ class TestConstraints(unittest.TestCase):
         e1 = np.sin(x) + y
         e2 = np.cos(x) + y
         e3 = np.sin(z) + y
-        constraint1 = mp.ExpressionConstraint(v=np.array([e1]),
-                                              lb=np.array([1.0]),
-                                              ub=np.array([2.0]))
+        constraint1 = mp.ExpressionConstraint(
+            v=np.array([e1]), lb=np.array([1.0]), ub=np.array([2.0])
+        )
         constraint1_binding1 = mp.Binding[mp.ExpressionConstraint](
             constraint1, constraint1.vars()
         )
@@ -417,16 +438,16 @@ class TestConstraints(unittest.TestCase):
             constraint1, constraint1.vars()
         )
 
-        constraint2 = mp.ExpressionConstraint(v=np.array([e2]),
-                                              lb=np.array([1.0]),
-                                              ub=np.array([2.0]))
+        constraint2 = mp.ExpressionConstraint(
+            v=np.array([e2]), lb=np.array([1.0]), ub=np.array([2.0])
+        )
         constraint2_binding = mp.Binding[mp.ExpressionConstraint](
             constraint2, constraint2.vars()
         )
 
-        constraint3 = mp.ExpressionConstraint(v=np.array([e3]),
-                                              lb=np.array([1.0]),
-                                              ub=np.array([2.0]))
+        constraint3 = mp.ExpressionConstraint(
+            v=np.array([e3]), lb=np.array([1.0]), ub=np.array([2.0])
+        )
         constraint3_binding = mp.Binding[mp.ExpressionConstraint](
             constraint3, constraint3.vars()
         )
@@ -443,68 +464,73 @@ class TestConstraints(unittest.TestCase):
     def test_binding_hash(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
-        e = np.log(2*x) + y**2
+        e = np.log(2 * x) + y**2
         e2 = y
-        constraint1 = mp.ExpressionConstraint(v=np.array([e]),
-                                              lb=np.array([1.0]),
-                                              ub=np.array([2.0]))
+        constraint1 = mp.ExpressionConstraint(
+            v=np.array([e]), lb=np.array([1.0]), ub=np.array([2.0])
+        )
         constraint1_binding1 = mp.Binding[mp.ExpressionConstraint](
             constraint1, constraint1.vars()
         )
         constraint1_binding2 = mp.Binding[mp.ExpressionConstraint](
             constraint1, constraint1.vars()
         )
-        constraint2 = mp.ExpressionConstraint(v=np.array([e2]),
-                                              lb=np.array([1.0]),
-                                              ub=np.array([2.0]))
-        constraint2_binding = mp.Binding[mp.ExpressionConstraint](
-            constraint2, constraint2.vars()
+        constraint2 = mp.ExpressionConstraint(
+            v=np.array([e2]), lb=np.array([1.0]), ub=np.array([2.0])
         )
-        self.assertEqual(hash(constraint1_binding1),
-                         hash(constraint1_binding2))
+        self.assertEqual(hash(constraint1_binding1), hash(constraint1_binding2))
         self.assertNotEqual(hash(constraint1_binding1), hash(constraint2))
 
 
 # A dummy value function for MinimumValue{Lower,Upper}BoundConstraint.
 def value_function(x: np.ndarray, v_influence: float) -> np.ndarray:
-    return np.array([x[0]**2, x[0]+1, 2*x[0]])
+    x0 = x[0]
+    return np.array([x0**2, x0 + 1, 2 * x0])
 
 
 class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
     def test_constructor(self):
         # Test the constructor with value_function_double explicitly specified.
         dut = mp.MinimumValueLowerBoundConstraint(
-            num_vars=1, minimum_value_lower=0.,
-            influence_value_offset=1., max_num_values=3,
+            num_vars=1,
+            minimum_value_lower=0.0,
+            influence_value_offset=1.0,
+            max_num_values=3,
             value_function=value_function,
-            value_function_double=value_function)
+            value_function_double=value_function,
+        )
         self.assertEqual(dut.num_vars(), 1)
         self.assertEqual(dut.num_constraints(), 1)
-        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
-        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
-        # Evaluate with autodiff.
-        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
-        self.assertEqual(dut.minimum_value_lower(), 0.)
-        self.assertEqual(dut.influence_value(), 1.)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.0])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.0])))
+        self.assertEqual(dut.minimum_value_lower(), 0.0)
+        self.assertEqual(dut.influence_value(), 1.0)
 
         # Test the constructor with default value_function_double.
         dut = mp.MinimumValueLowerBoundConstraint(
-            num_vars=1, minimum_value_lower=0.,
-            influence_value_offset=1., max_num_values=3,
-            value_function=value_function)
-        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
-        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+            num_vars=1,
+            minimum_value_lower=0.0,
+            influence_value_offset=1.0,
+            max_num_values=3,
+            value_function=value_function,
+        )
+        self.assertTrue(dut.CheckSatisfied(np.array([1.0])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.0])))
 
     def test_set_penalty_function(self):
         dut = mp.MinimumValueLowerBoundConstraint(
-            num_vars=1, minimum_value_lower=0.,
-            influence_value_offset=3., max_num_values=3,
+            num_vars=1,
+            minimum_value_lower=0.0,
+            influence_value_offset=3.0,
+            max_num_values=3,
             value_function=value_function,
-            value_function_double=value_function)
+            value_function_double=value_function,
+        )
 
         # Now set the new penalty function
-        def penalty(x: float, compute_grad: bool)\
-                -> typing.Tuple[float, typing.Optional[float]]:
+        def penalty(
+            x: float, compute_grad: bool
+        ) -> typing.Tuple[float, typing.Optional[float]]:
             if x < 0:
                 if compute_grad:
                     return x**2, 2 * x
@@ -512,54 +538,60 @@ class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
                     return x**2, None
             else:
                 if compute_grad:
-                    return 0., 0.
+                    return 0.0, 0.0
                 else:
-                    return 0., None
+                    return 0.0, None
 
         dut.set_penalty_function(new_penalty_function=penalty)
-        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
-        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
-        self.assertTrue(
-            dut.CheckSatisfied(InitializeAutoDiff(np.array([1.]))))
-        self.assertFalse(
-            dut.CheckSatisfied(InitializeAutoDiff(np.array([-2]))))
+        self.assertTrue(dut.CheckSatisfied(np.array([1.0])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.0])))
+        self.assertTrue(dut.CheckSatisfied(InitializeAutoDiff(np.array([1.0]))))
+        self.assertFalse(dut.CheckSatisfied(InitializeAutoDiff(np.array([-2]))))
 
 
 class TestMinimumValueUpperBoundConstraint(unittest.TestCase):
     def test_constructor(self):
         # Test the constructor with value_function_double explicitly specified.
         dut = mp.MinimumValueUpperBoundConstraint(
-            num_vars=1, minimum_value_upper=2.,
-            influence_value_offset=1., max_num_values=3,
+            num_vars=1,
+            minimum_value_upper=2.0,
+            influence_value_offset=1.0,
+            max_num_values=3,
             value_function=value_function,
-            value_function_double=value_function)
+            value_function_double=value_function,
+        )
         self.assertEqual(dut.num_vars(), 1)
         self.assertEqual(dut.num_constraints(), 1)
-        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
-        self.assertFalse(dut.CheckSatisfied(np.array([5.])))
-        # Evaluate with autodiff.
-        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
+        self.assertTrue(dut.CheckSatisfied(np.array([1.0])))
+        self.assertFalse(dut.CheckSatisfied(np.array([5.0])))
         self.assertEqual(dut.minimum_value_upper(), 2)
         self.assertEqual(dut.influence_value(), 3)
 
         # Test the constructor with default value_function_double.
         dut = mp.MinimumValueUpperBoundConstraint(
-            num_vars=1, minimum_value_upper=2.,
-            influence_value_offset=1., max_num_values=3,
-            value_function=value_function)
-        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
-        self.assertFalse(dut.CheckSatisfied(np.array([5.])))
+            num_vars=1,
+            minimum_value_upper=2.0,
+            influence_value_offset=1.0,
+            max_num_values=3,
+            value_function=value_function,
+        )
+        self.assertTrue(dut.CheckSatisfied(np.array([1.0])))
+        self.assertFalse(dut.CheckSatisfied(np.array([5.0])))
 
     def test_set_penalty_function(self):
         dut = mp.MinimumValueUpperBoundConstraint(
-            num_vars=1, minimum_value_upper=1.5,
-            influence_value_offset=3., max_num_values=3,
+            num_vars=1,
+            minimum_value_upper=1.5,
+            influence_value_offset=3.0,
+            max_num_values=3,
             value_function=value_function,
-            value_function_double=value_function)
+            value_function_double=value_function,
+        )
 
         # Now set the new penalty function
-        def penalty(x: float, compute_grad: bool)\
-                -> typing.Tuple[float, typing.Optional[float]]:
+        def penalty(
+            x: float, compute_grad: bool
+        ) -> typing.Tuple[float, typing.Optional[float]]:
             if x < 0:
                 if compute_grad:
                     return x**2, 2 * x
@@ -567,14 +599,14 @@ class TestMinimumValueUpperBoundConstraint(unittest.TestCase):
                     return x**2, None
             else:
                 if compute_grad:
-                    return 0., 0.
+                    return 0.0, 0.0
                 else:
-                    return 0., None
+                    return 0.0, None
 
         dut.set_penalty_function(new_penalty_function=penalty)
-        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
-        self.assertTrue(dut.CheckSatisfied(np.array([-5.])))
-        self.assertTrue(
-            dut.CheckSatisfied(InitializeAutoDiff(np.array([1.]))))
+        self.assertTrue(dut.CheckSatisfied(np.array([1.0])))
+        self.assertTrue(dut.CheckSatisfied(np.array([-5.0])))
+        self.assertTrue(dut.CheckSatisfied(InitializeAutoDiff(np.array([1.0]))))
         self.assertFalse(
-            dut.CheckSatisfied(InitializeAutoDiff(np.array([5.]))))
+            dut.CheckSatisfied(InitializeAutoDiff(np.array([5.0])))
+        )

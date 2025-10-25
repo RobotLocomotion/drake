@@ -105,6 +105,9 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
     case Ipopt::SolverReturn::CPUTIME_EXCEEDED: {
       return "CPU time exceeded";
     }
+    case Ipopt::SolverReturn::WALLTIME_EXCEEDED: {
+      return "Wall time exceeded";
+    }
     case Ipopt::SolverReturn::STOP_AT_TINY_STEP: {
       return "Stop at tiny step";
     }

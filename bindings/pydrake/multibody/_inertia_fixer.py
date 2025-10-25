@@ -12,21 +12,27 @@ Therefore, in Drake monogram notation, the inertia tensor is expressed in B,
 and the `<inertial>` tag includes the pose of C relative to B, X_BC.
 
 """
+
 from __future__ import annotations
 
 import abc
-import argparse
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable
 import xml.parsers.expat as expat
 
 import numpy as np
 
-from pydrake.geometry import (Role, SceneGraph)
+from pydrake.geometry import Role, SceneGraph
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.tree import (BodyIndex, CalcSpatialInertia, RigidBody,
-                                    SpatialInertia, UnitInertia)
+from pydrake.multibody.tree import (
+    BodyIndex,
+    CalcSpatialInertia,
+    RigidBody,
+    SpatialInertia,
+    UnitInertia,
+)
 
 
 @dataclass
@@ -99,8 +105,9 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def associate_plant_models(self, models: list, links: list,
-                               plant: MultibodyPlant) -> dict:
+    def associate_plant_models(
+        self, models: list, links: list, plant: MultibodyPlant
+    ) -> dict:
         """Returns a mapping of body_index to inertial ElementFacts.
 
         Args:
@@ -111,9 +118,15 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def format_inertia(self, input_bytes: bytes, inertial_facts: ElementFacts,
-                       pose: list, mass: float, moments: list,
-                       products: list) -> bytes:
+    def format_inertia(
+        self,
+        input_bytes: bytes,
+        inertial_facts: ElementFacts,
+        pose: list,
+        mass: float,
+        moments: list,
+        products: list,
+    ) -> bytes:
         """Returns formatted XML bytes for the repaired inertial tag.
 
         See above for definitions of the frames involved.
@@ -154,8 +167,7 @@ def make_synth_element(parent: ElementFacts, name: str) -> ElementFacts:
     """
     assert parent.children, parent
     kid0 = parent.children[0]
-    synth_el = ElementFacts(kid0.prior_data, name, {},
-                            kid0.depth, kid0.start)
+    synth_el = ElementFacts(kid0.prior_data, name, {}, kid0.depth, kid0.start)
     synth_el.end = synth_el.start
     return synth_el
 
@@ -190,8 +202,7 @@ def maybe_synthesize_children(parent: ElementFacts, names: list[str]):
     for needed_name in names:
         if needed_name in kid_names:
             continue
-        parent.children.insert(
-            0, make_synth_element(parent, needed_name))
+        parent.children.insert(0, make_synth_element(parent, needed_name))
 
 
 def adjusted_element_end_index(input_bytes: bytes, facts: ElementFacts) -> int:
@@ -206,21 +217,23 @@ def adjusted_element_end_index(input_bytes: bytes, facts: ElementFacts) -> int:
         # Empty, synthetic, "pseudo" element.
         return facts.end.index
 
-    if input_bytes[facts.end.index:].startswith(
-            f"</{facts.name}".encode('utf-8')):
+    if input_bytes[facts.end.index :].startswith(
+        f"</{facts.name}".encode("utf-8")
+    ):
         # Typical case:
         # `<inertial>...</inertial>`.
         #               ^                # Raw index points here.
         #                          ^     # Adjusted index points here.
-        return facts.end.index + input_bytes[facts.end.index:].find(b'>') + 1
+        return facts.end.index + input_bytes[facts.end.index :].find(b">") + 1
 
     # `<inertial/>` corner case.
     #             ^     # Raw index points here; good to go
     return facts.end.index
 
 
-def make_format_helpers(facts: ElementFacts) -> (
-        Callable[[int], str], Callable[[], str]):
+def make_format_helpers(
+    facts: ElementFacts,
+) -> (Callable[[int], str], Callable[[], str]):
     """Returns two callable functions that help format white space for output
     XML elements.
 
@@ -257,7 +270,7 @@ def make_format_helpers(facts: ElementFacts) -> (
     synth = facts.end.index == facts.start.index
 
     def coda():
-        return '\n' + d(0) if synth else ""
+        return "\n" + d(0) if synth else ""
 
     return (d, coda)
 
@@ -272,14 +285,15 @@ class UrdfDriver(FormatDriver):
         # TODO(rpoyner_tri): The 'drake_ignore' attribute is regrettable legacy
         # cruft that should be removed when the associated URDF parser cruft is
         # removed.
-        return ((facts.attributes.get("drake_ignore") == "true")
-                or (facts.attributes.get("name") == "world"))
+        return (facts.attributes.get("drake_ignore") == "true") or (
+            facts.attributes.get("name") == "world"
+        )
 
-    def associate_plant_models(self, models: list, links: list,
-                               plant: MultibodyPlant) -> dict:
+    def associate_plant_models(
+        self, models: list, links: list, plant: MultibodyPlant
+    ) -> dict:
         # This assertion is weakened for files that use 'drake_ignore'.
-        assert len(links) >= plant.num_bodies() - 1, (
-            links, plant.num_bodies())
+        assert len(links) >= plant.num_bodies() - 1, (links, plant.num_bodies())
         mapping = {}
         serial_number = 0
         for link in links:
@@ -293,20 +307,29 @@ class UrdfDriver(FormatDriver):
             assert serial_number < plant.num_bodies()
             bix = BodyIndex(serial_number)
             mapping[bix] = find_inertial_facts_for_link(link)
-            assert plant.get_body(bix).name() == link.attributes.get("name"), (
-                plant.get_body(bix).name(), bix, link.attributes.get("name"))
+            assert plant.get_body(bix).name() == link_name, (
+                plant.get_body(bix).name(),
+                bix,
+                link_name,
+            )
         return mapping
 
-    def format_inertia(self, input_bytes: bytes, inertial_facts: ElementFacts,
-                       pose: list, mass: float, moments: list,
-                       products: list) -> bytes:
+    def format_inertia(
+        self,
+        input_bytes: bytes,
+        inertial_facts: ElementFacts,
+        pose: list,
+        mass: float,
+        moments: list,
+        products: list,
+    ) -> bytes:
         end = adjusted_element_end_index(input_bytes, inertial_facts)
         inertia_output = f"""\
 <inertia ixx="{gfmt(moments[0])}" ixy="{gfmt(products[0])}"\
  ixz="{gfmt(products[1])}" iyy="{gfmt(moments[1])}"\
  iyz="{gfmt(products[2])}" izz="{gfmt(moments[2])}"/>"""
-        xyz_output = ' '.join([gfmt(x) for x in pose[:3]])
-        rpy_output = ' '.join([gfmt(x) for x in pose[3:]])
+        xyz_output = " ".join([gfmt(x) for x in pose[:3]])
+        rpy_output = " ".join([gfmt(x) for x in pose[3:]])
         # * self-closing or no inertial tag: pave it all.
         if end == inertial_facts.end.index:
             d, coda = make_format_helpers(inertial_facts)
@@ -315,25 +338,25 @@ class UrdfDriver(FormatDriver):
 {d(1)}{inertia_output}
 {d(1)}<mass value="{gfmt(mass)}"/>
 {d(1)}<origin rpy="{rpy_output}" xyz="{xyz_output}"/>
-{d(0)}</inertial>{coda()}""".encode('utf-8')
+{d(0)}</inertial>{coda()}""".encode("utf-8")
 
-        maybe_synthesize_children(
-            inertial_facts, ["origin", "mass", "inertia"])
+        maybe_synthesize_children(inertial_facts, ["origin", "mass", "inertia"])
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
         output = bytes()
         index = inertial_facts.start.index
         for facts in inertial_facts.children:
-            output += input_bytes[index:facts.start.index]
+            output += input_bytes[index : facts.start.index]
             d, coda = make_format_helpers(facts)
             if facts.name == "inertia":
-                output += f"{inertia_output}{coda()}".encode('utf-8')
+                output += f"{inertia_output}{coda()}".encode("utf-8")
             if facts.name == "mass":
                 output += f'<mass value="{gfmt(mass)}"/>{coda()}'.encode(
-                    'utf-8')
+                    "utf-8"
+                )
             if facts.name == "origin":
                 output += f"""\
-<origin rpy="{rpy_output}" xyz="{xyz_output}"/>{coda()}""".encode('utf-8')
+<origin rpy="{rpy_output}" xyz="{xyz_output}"/>{coda()}""".encode("utf-8")
             index = adjusted_element_end_index(input_bytes, facts)
         output += input_bytes[index:end]
         return output
@@ -345,8 +368,9 @@ class SdformatDriver(FormatDriver):
     def is_model_element(self, name: str) -> bool:
         return name == "model"
 
-    def associate_plant_models(self, models: list, links: list,
-                               plant: MultibodyPlant) -> dict:
+    def associate_plant_models(
+        self, models: list, links: list, plant: MultibodyPlant
+    ) -> dict:
         # Because SDFormat has both nested models and inclusions, we will have
         # to rummage around in the plant, finding body indices by using name
         # strings.
@@ -360,21 +384,31 @@ class SdformatDriver(FormatDriver):
                 model = model.parent_model
                 enclosing_models.append(model)
             enclosing_models.reverse()
-            model_name = '::'.join(
-                [m.attributes["name"] for m in enclosing_models])
+            model_name = "::".join(
+                [m.attributes["name"] for m in enclosing_models]
+            )
             model_instance = plant.GetModelInstanceByName(model_name)
             body = plant.GetBodyByName(link.attributes["name"], model_instance)
             bix = body.index()
             mapping[bix] = find_inertial_facts_for_link(link)
             assert plant.get_body(bix).name() == link.attributes.get("name"), (
-                plant.get_body(bix).name(), bix, link.attributes.get("name"))
+                plant.get_body(bix).name(),
+                bix,
+                link.attributes.get("name"),
+            )
         return mapping
 
-    def format_inertia(self, input_bytes: bytes, inertial_facts: ElementFacts,
-                       pose: list, mass: float, moments: list,
-                       products: list) -> bytes:
+    def format_inertia(
+        self,
+        input_bytes: bytes,
+        inertial_facts: ElementFacts,
+        pose: list,
+        mass: float,
+        moments: list,
+        products: list,
+    ) -> bytes:
         end = adjusted_element_end_index(input_bytes, inertial_facts)
-        pose_output = ' '.join([gfmt(x) for x in pose])
+        pose_output = " ".join([gfmt(x) for x in pose])
         # * self-closing or no inertial tag: pave it all.
         if end == inertial_facts.end.index:
             d, coda = make_format_helpers(inertial_facts)
@@ -390,16 +424,15 @@ class SdformatDriver(FormatDriver):
 {d(1)}</inertia>
 {d(1)}<mass>{gfmt(mass)}</mass>
 {d(1)}<pose>{pose_output}</pose>
-{d(0)}</inertial>{coda()}""".encode('utf-8')
+{d(0)}</inertial>{coda()}""".encode("utf-8")
 
-        maybe_synthesize_children(
-            inertial_facts, ["pose", "mass", "inertia"])
+        maybe_synthesize_children(inertial_facts, ["pose", "mass", "inertia"])
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
         output = bytes()
         index = inertial_facts.start.index
         for facts in inertial_facts.children:
-            output += input_bytes[index:facts.start.index]
+            output += input_bytes[index : facts.start.index]
             d, coda = make_format_helpers(facts)
             if facts.name == "inertia":
                 output += f"""\
@@ -410,11 +443,11 @@ class SdformatDriver(FormatDriver):
 {d(1)}<iyy>{gfmt(moments[1])}</iyy>
 {d(1)}<iyz>{gfmt(products[2])}</iyz>
 {d(1)}<izz>{gfmt(moments[2])}</izz>
-{d(0)}</inertia>{coda()}""".encode('utf-8')
+{d(0)}</inertia>{coda()}""".encode("utf-8")
             if facts.name == "mass":
-                output += f"<mass>{gfmt(mass)}</mass>{coda()}".encode('utf-8')
+                output += f"<mass>{gfmt(mass)}</mass>{coda()}".encode("utf-8")
             if facts.name == "pose":
-                output += f"<pose>{pose_output}</pose>{coda()}".encode('utf-8')
+                output += f"<pose>{pose_output}</pose>{coda()}".encode("utf-8")
             index = adjusted_element_end_index(input_bytes, facts)
         end = adjusted_element_end_index(input_bytes, inertial_facts)
         output += input_bytes[index:end]
@@ -433,7 +466,7 @@ class XmlInertiaMapper:
             input_text: the full contents of the input file
         """
         self._input_text = input_text
-        self._input_bytes = input_text.encode('utf-8')
+        self._input_bytes = input_text.encode("utf-8")
 
         # Configure the parser.
         self._parser = expat.ParserCreate()
@@ -454,12 +487,18 @@ class XmlInertiaMapper:
         self._mapping = {}
 
     def _make_location(self) -> SourceLocation:
-        return SourceLocation(self._parser.CurrentByteIndex,
-                              self._parser.CurrentLineNumber)
+        return SourceLocation(
+            self._parser.CurrentByteIndex, self._parser.CurrentLineNumber
+        )
 
     def _make_element_facts(self, name: str, attributes: dict) -> ElementFacts:
-        return ElementFacts(self._last_char_data, name, attributes,
-                            self._depth, self._make_location())
+        return ElementFacts(
+            self._last_char_data,
+            name,
+            attributes,
+            self._depth,
+            self._make_location(),
+        )
 
     def _handle_char_data(self, data: str):
         self._last_char_data = data
@@ -510,7 +549,8 @@ class XmlInertiaMapper:
         """
         assert self._format_driver is not None
         self._mapping = self._format_driver.associate_plant_models(
-            self._models, self._links, plant)
+            self._models, self._links, plant
+        )
 
     def mapping(self) -> dict:
         """Returns a mapping from body indices to inertial element facts."""
@@ -529,15 +569,22 @@ class XmlInertiaMapper:
         input_bytes_index = 0
         for body_index, new_inertia in sorted(new_inertias_mapping.items()):
             inertial_facts = self._mapping[body_index]
-            output += input_bytes[input_bytes_index:inertial_facts.start.index]
+            output += input_bytes[
+                input_bytes_index : inertial_facts.start.index
+            ]
             output += self._format_inertia(inertial_facts, *new_inertia)
             input_bytes_index = adjusted_element_end_index(
-                input_bytes, inertial_facts)
+                input_bytes, inertial_facts
+            )
         output += input_bytes[input_bytes_index:]
-        return output.decode('utf-8')
+        return output.decode("utf-8")
 
-    def _format_inertia(self, inertial_facts: ElementFacts,
-                        spatial_inertia: SpatialInertia, pose: list) -> str:
+    def _format_inertia(
+        self,
+        inertial_facts: ElementFacts,
+        spatial_inertia: SpatialInertia,
+        pose: list,
+    ) -> str:
         # Extract the mass properties.
         mass = spatial_inertia.get_mass()
         rot = spatial_inertia.CalcRotationalInertia()
@@ -545,13 +592,15 @@ class XmlInertiaMapper:
         prod = rot.get_products()
 
         return self._format_driver.format_inertia(
-            self._input_bytes, inertial_facts,
-            pose, mass, mom, prod)
+            self._input_bytes, inertial_facts, pose, mass, mom, prod
+        )
 
 
 # Roles avialable for ordering.
 GEOM_INERTIA_ROLE_AVAILABLE = [
-    Role.kProximity, Role.kIllustration, Role.kPerception
+    Role.kProximity,
+    Role.kIllustration,
+    Role.kPerception,
 ]
 # The default ordering happens to be the same as the available roles.
 GEOM_INERTIA_ROLE_ORDER_DEFAULT = GEOM_INERTIA_ROLE_AVAILABLE
@@ -562,18 +611,26 @@ class InertiaProcessor:
     in model files pre-processed by drake parsing and XmlInertiaMapper.
     """
 
-    def __init__(self, plant: MultibodyPlant, scene_graph: SceneGraph,
-                 mapper: XmlInertiaMapper,
-                 geom_inertia_role_order: list[Role]):
+    def __init__(
+        self,
+        plant: MultibodyPlant,
+        scene_graph: SceneGraph,
+        mapper: XmlInertiaMapper,
+        geom_inertia_role_order: list[Role],
+    ):
         self._plant = plant
         self._scene_graph = scene_graph
         self._mapper = mapper
         self._geom_inertia_role_order = geom_inertia_role_order
 
-    def _maybe_fix_inertia(
-            self, body_index: BodyIndex) -> [SpatialInertia, list] | None:
+    def _maybe_fix_inertia(self, body_index: BodyIndex) -> [
+        SpatialInertia,
+        list,
+    ] | None:
         assert int(body_index) < self._plant.num_bodies(), (
-            body_index, self._plant.num_bodies())
+            body_index,
+            self._plant.num_bodies(),
+        )
         body = self._plant.get_body(body_index)
         if not isinstance(body, RigidBody):
             # Only rigid bodies have constant inertia, for which model file
@@ -600,14 +657,16 @@ class InertiaProcessor:
         for geom in geoms:
             M_GG_G_one = CalcSpatialInertia(inspector.GetShape(geom), 1.0)
             X_BG = inspector.GetPoseInFrame(geom)
-            M_GBo_B_one = M_GG_G_one.ReExpress(
-                X_BG.rotation()).Shift(-X_BG.translation())
+            M_GBo_B_one = M_GG_G_one.ReExpress(X_BG.rotation()).Shift(
+                -X_BG.translation()
+            )
             M_BBo_B_one += M_GBo_B_one
 
             # Rebuild the final inertia using the mass found in the input.
             mass = old_inertia.get_mass()
-            M_BBo_B = SpatialInertia(mass, M_BBo_B_one.get_com(),
-                                     M_BBo_B_one.get_unit_inertia())
+            M_BBo_B = SpatialInertia(
+                mass, M_BBo_B_one.get_com(), M_BBo_B_one.get_unit_inertia()
+            )
 
         # TODO(rpoyner-tri): rotate to zero out products of inertia, and return
         # both inertia matrix and pose.
@@ -630,11 +689,11 @@ class InertiaProcessor:
 
 
 def fix_inertia_from_string(
-    input_text: str, file_type: str,
+    input_text: str,
+    file_type: str,
     geom_inertia_role_order: list[Role] = GEOM_INERTIA_ROLE_ORDER_DEFAULT,
 ) -> str:
-    """A pure string-processing wrapper for the tool, for testing.
-    """
+    """A pure string-processing wrapper for the tool, for testing."""
     # Parse with drake to build mbp and confirm sanity.
     plant = MultibodyPlant(time_step=0.0)
     scene_graph = SceneGraph()
@@ -681,8 +740,10 @@ class InertiaFixer:
     """Fixes specified inertias in a URDF or SDFormat input file, writing the
     new file contents to one of: stdout, a new file, or the original file.
     """
+
     def __init__(
-        self, *,
+        self,
+        *,
         input_file: Path,
         output_file: Path = None,
         in_place: bool = False,
@@ -725,7 +786,7 @@ class InertiaFixer:
         parser.AddModels(str(self.input_file))
 
         # Slurp input file for indexing and editing.
-        with open(self.input_file, encoding='utf-8') as fo:
+        with open(self.input_file, encoding="utf-8") as fo:
             input_text = fo.read()
 
         # Parse with expat to build index.
@@ -746,5 +807,5 @@ class InertiaFixer:
             output_file = "/dev/stdout"
         if self.in_place:
             output_file = self.input_file
-        with open(output_file, 'w', encoding='utf-8') as fo:
+        with open(output_file, "w", encoding="utf-8") as fo:
             fo.write(output_text)

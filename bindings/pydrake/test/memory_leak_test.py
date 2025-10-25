@@ -8,36 +8,30 @@ an internal verbose option.
 import dataclasses
 import functools
 import gc
-import platform
-import sys
 import textwrap
 import unittest
 import weakref
 
-from pydrake.planning import RobotDiagramBuilder
-from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder, LeafSystem
-from pydrake.systems.primitives import ConstantVectorSource
-
 from pydrake.common import RandomGenerator
 from pydrake.common.schema import Rotation, Transform
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count
+from pydrake.geometry import Meshcat, SceneGraphConfig
 from pydrake.lcm import DrakeLcmParams
-from pydrake.geometry import Meshcat
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
-from pydrake.geometry import SceneGraphConfig
 from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
 from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
 )
+from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     Simulator,
     SimulatorConfig,
 )
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.systems.lcm import ApplyLcmBusConfig
+from pydrake.systems.primitives import ConstantVectorSource
 from pydrake.systems.sensors import ApplyCameraConfig, CameraConfig
 from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 
@@ -60,6 +54,7 @@ class _Sentinel:
 
     See also: https://docs.python.org/3/library/weakref.html#weakref.finalize
     """
+
     finalizer: weakref.finalize
     name: str
 
@@ -75,15 +70,18 @@ def _make_sentinel(obj, name):
     def done(oid):
         if VERBOSE:
             print(f"sentinel: unmade {name} {hex(oid)}")
+
     return _Sentinel(finalizer=weakref.finalize(obj, done, id(obj)), name=name)
 
 
 def _make_sentinels_from_locals(dut_name, locals_dict):
     """Makes _Sentinels for all local variables of interest."""
     # Skip specific types not supported by weakref, as needed.
-    return {_make_sentinel(value, f"{dut_name}::{key}")
-            for key, value in locals_dict.items()
-            if not any(isinstance(value, typ) for typ in [list, str])}
+    return {
+        _make_sentinel(value, f"{dut_name}::{key}")
+        for key, value in locals_dict.items()
+        if not any(isinstance(value, typ) for typ in [list, str])
+    }
 
 
 def _report_sentinels(sentinels, message: str):
@@ -167,17 +165,20 @@ def _dut_full_example():
         scene_graph_config=SceneGraphConfig(),
         builder=builder,
     )
-    directives = LoadModelDirectivesFromString(textwrap.dedent("""  # noqa
+    directives = LoadModelDirectivesFromString(
+        textwrap.dedent("""
     directives:
     - add_model:
         name: amazon_table
-        file: package://drake_models/manipulation_station/amazon_table_simplified.sdf
+        file: |-
+          package://drake_models/manipulation_station/amazon_table_simplified.sdf
     - add_weld:
         parent: world
         child: amazon_table::amazon_table
     - add_model:
         name: iiwa
-        file: package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+        file: |-
+          package://drake_models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
         default_joint_positions:
           iiwa_joint_1: [-0.2]
           iiwa_joint_2: [0.79]
@@ -197,7 +198,8 @@ def _dut_full_example():
         child: iiwa::base
     - add_model:
         name: wsg
-        file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+        file: |-
+          package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
         default_joint_positions:
           left_finger_sliding_joint: [-0.02]
           right_finger_sliding_joint: [0.02]
@@ -212,12 +214,14 @@ def _dut_full_example():
         child: wsg::body
     - add_model:
         name: bell_pepper
-        file: package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
+        file: |-
+          package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf
         default_free_body_pose:
           flush_bottom_center__z_up:
             base_frame: amazon_table::amazon_table
             translation: [0, 0.10, 0.20]
-    """))
+    """)
+    )
     added_models = ProcessModelDirectives(
         plant=plant,
         directives=directives,
@@ -307,8 +311,7 @@ def _repeat(*, dut: callable, count: int):
         gc.collect()
         if VERBOSE:
             _report_sentinels(sentinels, "after collect")
-        leaks += any(
-            [sentinel.finalizer.alive for sentinel in sentinels])
+        leaks += any([sentinel.finalizer.alive for sentinel in sentinels])
     return leaks
 
 

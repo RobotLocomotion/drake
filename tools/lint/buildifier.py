@@ -5,7 +5,6 @@ Google tool, the default mode is "-mode=fix".  In "-mode=check", we promote
 lint errors to a non-zero exitcode.
 """
 
-
 import os
 import re
 import subprocess
@@ -39,7 +38,7 @@ def _help(command):
     lines = stdout.splitlines()
     # Edit the first line to allow "--all" as a disjunction from "files...",
     # and make one or the other required.
-    head = re.sub(r'\[(files\.\.\.)\]', r'<\1 | --all>', lines.pop(0))
+    head = re.sub(r"\[(files\.\.\.)\]", r"<\1 | --all>", lines.pop(0))
     for line in [head] + lines:
         print(line)
     print("")
@@ -72,7 +71,7 @@ def _passes_check_mode(args):
     """
     try:
         output = subprocess.check_output(args)
-        return (len(output) == 0)
+        return len(output) == 0
     except subprocess.CalledProcessError as e:
         # https://github.com/bazelbuild/buildtools/blob/1a7c0ec10697afcb87af8a09f12c3f9b9ca56fb2/buildifier/buildifier.go#L227
         REFORMAT_IS_NEEDED = 4
@@ -109,8 +108,7 @@ def main(workspace_name="drake"):
         if len(found) == 0:
             print("ERROR: '--all' could not find anything")
             return 1
-        print(f"This will reformat {len(found)} files "
-              f"within {workspace_dir}")
+        print(f"This will reformat {len(found)} files within {workspace_dir}")
         if input("Are you sure [y/N]? ") not in ["y", "Y"]:
             print("... canceled")
             sys.exit(1)
@@ -131,14 +129,19 @@ def main(workspace_name="drake"):
         print("ERROR: buildifier: the required formatting is incorrect")
         for one_file in files:
             if not _passes_check_mode(tool_cmds + switches + [one_file]):
-                print("ERROR: %s:1: error: %s" % (
-                    one_file, "the required formatting is incorrect"))
-                print("ERROR: %s:1: note: fix via %s %s" % (
-                    one_file, "bazel-bin/tools/lint/buildifier", one_file))
-                print(("ERROR: %s:1: note: if that program does not exist, "
-                       "you might need to compile it first: "
-                       "bazel build //tools/lint/...") %
-                      one_file)
+                print(
+                    f"ERROR: {one_file}:1: error: "
+                    "the required formatting is incorrect"
+                )
+                print(
+                    f"ERROR: {one_file}:1: note: fix via "
+                    f"bazel-bin/tools/lint/buildifier {one_file}"
+                )
+                print(
+                    f"ERROR: {one_file}:1: note: if that program does not "
+                    "exist, you might need to compile it first: "
+                    "bazel build //tools/lint/..."
+                )
         print("NOTE: see https://drake.mit.edu/bazel.html#buildifier")
         return 1
 

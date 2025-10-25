@@ -13,7 +13,7 @@ from IPython.display import display
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.multibody.tree import JointIndex
-from pydrake.systems.framework import BasicVector, PublishEvent, VectorSystem
+from pydrake.systems.framework import PublishEvent, VectorSystem
 
 
 class JointSliders(VectorSystem):
@@ -30,9 +30,16 @@ class JointSliders(VectorSystem):
         - positions
     """
 
-    def __init__(self, robot, lower_limit=-10., upper_limit=10.,
-                 resolution=0.01, length=200, update_period_sec=0.005):
-        """"
+    def __init__(
+        self,
+        robot,
+        lower_limit=-10.0,
+        upper_limit=10.0,
+        resolution=0.01,
+        length=200,
+        update_period_sec=0.005,
+    ):
+        """ "
         Args:
             robot:       A MultibodyPlant.
             lower_limit: A scalar or vector of length robot.num_positions().
@@ -49,8 +56,9 @@ class JointSliders(VectorSystem):
             update_period_sec: Specifies how often the window update() method
                          gets called.
         """
-        VectorSystem.__init__(self, 0, robot.num_positions(),
-                              direct_feedthrough=False)
+        VectorSystem.__init__(
+            self, 0, robot.num_positions(), direct_feedthrough=False
+        )
 
         # The widgets themselves have undeclared state.  For now, we accept it,
         # and simply disable caching on the output port.
@@ -66,8 +74,9 @@ class JointSliders(VectorSystem):
         resolution = _reshape(resolution, robot.num_positions())
 
         # Schedule window updates in either case (new or existing window):
-        self.DeclarePeriodicEvent(update_period_sec, 0.0,
-                                  PublishEvent(self._process_event_queue))
+        self.DeclarePeriodicEvent(
+            update_period_sec, 0.0, PublishEvent(self._process_event_queue)
+        )
 
         self._slider = []
         self._slider_position_start = []
@@ -86,14 +95,17 @@ class JointSliders(VectorSystem):
                     description += f"[{j}]"
                 self._slider_position_start.append(index)
                 self._slider.append(
-                    FloatSlider(value=self._default_position[index],
-                                min=max(low[j], lower_limit[k]),
-                                max=min(upp[j], upper_limit[k]),
-                                step=resolution[k],
-                                continuous_update=True,
-                                description=description,
-                                style={'description_width': 'initial'},
-                                layout=Layout(width=f"'{length}'")))
+                    FloatSlider(
+                        value=self._default_position[index],
+                        min=max(low[j], lower_limit[k]),
+                        max=min(upp[j], upper_limit[k]),
+                        step=resolution[k],
+                        continuous_update=True,
+                        description=description,
+                        style={"description_width": "initial"},
+                        layout=Layout(width=f"'{length}'"),
+                    )
+                )
                 display(self._slider[k])
                 k += 1
 
@@ -139,9 +151,16 @@ class JointSliders(VectorSystem):
 
 
 def MakeJointSlidersThatPublishOnCallback(
-    plant, publishing_system, root_context, my_callback=None,
-        lower_limit=-10., upper_limit=10., resolution=0.01, length=200,
-        continuous_update=True):
+    plant,
+    publishing_system,
+    root_context,
+    my_callback=None,
+    lower_limit=-10.0,
+    upper_limit=10.0,
+    resolution=0.01,
+    length=200,
+    continuous_update=True,
+):
     """
     Creates an ipywidget slider for each joint in the plant.  Unlike the
     JointSliders System, we do not expect this to be used in a Simulator.  It
@@ -231,10 +250,12 @@ def MakeJointSlidersThatPublishOnCallback(
                 step=resolution[slider_num],
                 continuous_update=continuous_update,
                 description=description,
-                style={'description_width': 'initial'},
-                layout=Layout(width=f"'{length}'"))
-            slider.observe(partial(_slider_callback, index=index),
-                           names='value')
+                style={"description_width": "initial"},
+                layout=Layout(width=f"'{length}'"),
+            )
+            slider.observe(
+                partial(_slider_callback, index=index), names="value"
+            )
             display(slider)
             slider_widgets.append(slider)
             slider_num += 1

@@ -33,8 +33,8 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.assertIs(SpatialVelocity, SpatialVelocity_[float])
 
     def check_spatial_vector(
-            self, *, T, cls, base_name,
-            coeffs_name, rotation_name, translation_name):
+        self, *, T, cls, base_name, coeffs_name, rotation_name, translation_name
+    ):
         vec = cls()
         # - Accessors.
         if T == Expression:
@@ -44,12 +44,14 @@ class TestMultibodyTreeMath(unittest.TestCase):
             self.assertEqual(vec.translational().shape, (3,))
         else:
             numpy_compare.assert_float_equal(
-                vec.rotational(), np.full(3, np.nan))
+                vec.rotational(), np.full(3, np.nan)
+            )
             numpy_compare.assert_float_equal(
-                vec.translational(), np.full(3, np.nan))
+                vec.translational(), np.full(3, np.nan)
+            )
         # - Fully-parameterized constructor.
         rotation_expected = [0.1, 0.3, 0.5]
-        translation_expected = [0., 1., 2.]
+        translation_expected = [0.0, 1.0, 2.0]
         vec_args = {
             rotation_name: rotation_expected,
             translation_name: translation_expected,
@@ -57,19 +59,21 @@ class TestMultibodyTreeMath(unittest.TestCase):
         vec1 = cls(**vec_args)
         numpy_compare.assert_float_equal(vec1.rotational(), rotation_expected)
         numpy_compare.assert_float_equal(
-                vec1.translational(), translation_expected)
+            vec1.translational(), translation_expected
+        )
         vec_zero = cls()
         vec_zero.SetZero()
         vec_zero_to_float = numpy_compare.to_float(vec_zero.get_coeffs())
         numpy_compare.assert_float_equal(
-                cls.Zero().get_coeffs(), vec_zero_to_float)
+            cls.Zero().get_coeffs(), vec_zero_to_float
+        )
         coeffs_expected = np.hstack((rotation_expected, translation_expected))
         coeffs_args = {coeffs_name: coeffs_expected}
         numpy_compare.assert_float_equal(
-                cls(**coeffs_args).get_coeffs(), coeffs_expected)
+            cls(**coeffs_args).get_coeffs(), coeffs_expected
+        )
         # Test operators.
-        numpy_compare.assert_float_equal(
-            (-vec1).get_coeffs(), -coeffs_expected)
+        numpy_compare.assert_float_equal((-vec1).get_coeffs(), -coeffs_expected)
         new = copy.copy(vec1)
         # - Ensure in-place ops do not return a new object.
         pre_inplace = new
@@ -77,26 +81,31 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.assertIs(pre_inplace, new)
         numpy_compare.assert_float_equal(new.get_coeffs(), 2 * coeffs_expected)
         numpy_compare.assert_float_equal(
-            (vec1 + vec1).get_coeffs(), 2 * coeffs_expected)
+            (vec1 + vec1).get_coeffs(), 2 * coeffs_expected
+        )
         new = copy.copy(vec1)
         pre_inplace = new
         new -= vec1
         self.assertIs(pre_inplace, new)
         numpy_compare.assert_float_equal(new.get_coeffs(), np.zeros(6))
         numpy_compare.assert_float_equal(
-            (vec1 - vec1).get_coeffs(), np.zeros(6))
+            (vec1 - vec1).get_coeffs(), np.zeros(6)
+        )
         new = copy.copy(vec1)
         pre_inplace = new
         new *= T(2)
         self.assertIs(pre_inplace, new)
         numpy_compare.assert_float_equal(new.get_coeffs(), 2 * coeffs_expected)
         numpy_compare.assert_float_equal(
-            (vec1 * T(2)).get_coeffs(), 2 * coeffs_expected)
+            (vec1 * T(2)).get_coeffs(), 2 * coeffs_expected
+        )
         numpy_compare.assert_float_equal(
-            (T(2) * vec1).get_coeffs(), 2 * coeffs_expected)
+            (T(2) * vec1).get_coeffs(), 2 * coeffs_expected
+        )
         R = RotationMatrix_[T]()
-        numpy_compare.assert_float_equal((
-            vec1.Rotate(R_FE=R)).get_coeffs(), coeffs_expected)
+        numpy_compare.assert_float_equal(
+            (vec1.Rotate(R_FE=R)).get_coeffs(), coeffs_expected
+        )
         # Test pickling.
         assert_pickle(self, vec1, cls.get_coeffs, T=T)
         # Repr.
@@ -113,30 +122,52 @@ class TestMultibodyTreeMath(unittest.TestCase):
                 {repr_cls_name}(
                   {rotation_name}=[{z}, {z}, {z}],
                   {translation_name}=[{z}, {z}, {z}],
-                )"""))
-        if T == float:
+                )"""),
+        )
+        if T is float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
             original = cls.Zero()
             roundtrip = eval(repr(original))
             self.assertIsInstance(roundtrip, cls)
             numpy_compare.assert_float_equal(
-                original.get_coeffs(), roundtrip.get_coeffs())
+                original.get_coeffs(), roundtrip.get_coeffs()
+            )
 
     @numpy_compare.check_all_types
     def test_spatial_vector_types(self, T):
         self.check_spatial_vector(
-            T=T, cls=SpatialVelocity_[T], base_name="SpatialVelocity",
-            coeffs_name="V", rotation_name="w", translation_name="v")
+            T=T,
+            cls=SpatialVelocity_[T],
+            base_name="SpatialVelocity",
+            coeffs_name="V",
+            rotation_name="w",
+            translation_name="v",
+        )
         self.check_spatial_vector(
-            T=T, cls=SpatialMomentum_[T], base_name="SpatialMomentum",
-            coeffs_name="L", rotation_name="h", translation_name="l")
+            T=T,
+            cls=SpatialMomentum_[T],
+            base_name="SpatialMomentum",
+            coeffs_name="L",
+            rotation_name="h",
+            translation_name="l",
+        )
         self.check_spatial_vector(
-            T=T, cls=SpatialAcceleration_[T], base_name="SpatialAcceleration",
-            coeffs_name="A", rotation_name="alpha", translation_name="a")
+            T=T,
+            cls=SpatialAcceleration_[T],
+            base_name="SpatialAcceleration",
+            coeffs_name="A",
+            rotation_name="alpha",
+            translation_name="a",
+        )
         self.check_spatial_vector(
-            T=T, cls=SpatialForce_[T], base_name="SpatialForce",
-            coeffs_name="F", rotation_name="tau", translation_name="f")
+            T=T,
+            cls=SpatialForce_[T],
+            base_name="SpatialForce",
+            coeffs_name="F",
+            rotation_name="tau",
+            translation_name="f",
+        )
 
     def test_legacy_unpickle(self):
         """Checks that data pickled as SpatialVelocity_[float] in Drake v1.12.0
@@ -173,9 +204,11 @@ class TestMultibodyTreeMath(unittest.TestCase):
         p = to_T(np.zeros(3))
         self.assertIsInstance(V.Shift(offset=p), SpatialVelocity_[T])
         self.assertIsInstance(
-            V.ComposeWithMovingFrameVelocity(position_of_moving_frame=p,
-                                             velocity_of_moving_frame=V),
-            SpatialVelocity_[T])
+            V.ComposeWithMovingFrameVelocity(
+                position_of_moving_frame=p, velocity_of_moving_frame=V
+            ),
+            SpatialVelocity_[T],
+        )
         F = SpatialForce_[T].Zero()
         self.assertIsInstance(V.dot(force=F), T)
         self.assertIsInstance(V @ F, T)
@@ -194,18 +227,21 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         dut = SpatialAcceleration_[T].Zero()
         self.assertIsInstance(
-            dut.ShiftWithZeroAngularVelocity(offset=z),
-            SpatialAcceleration_[T])
+            dut.ShiftWithZeroAngularVelocity(offset=z), SpatialAcceleration_[T]
+        )
         self.assertIsInstance(
             dut.Shift(offset=z, angular_velocity_of_this_frame=z),
-            SpatialAcceleration_[T])
+            SpatialAcceleration_[T],
+        )
         self.assertIsInstance(
             dut.ComposeWithMovingFrameAcceleration(
                 position_of_moving_frame=z,
                 angular_velocity_of_this_frame=z,
                 velocity_of_moving_frame=V,
-                acceleration_of_moving_frame=dut),
-            SpatialAcceleration_[T])
+                acceleration_of_moving_frame=dut,
+            ),
+            SpatialAcceleration_[T],
+        )
 
     @numpy_compare.check_all_types
     def test_spatial_force(self, T):

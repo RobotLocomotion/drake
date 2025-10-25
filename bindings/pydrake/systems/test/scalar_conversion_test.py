@@ -7,7 +7,6 @@ import unittest
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
-    DiagramBuilder,
     DiagramBuilder_,
     LeafSystem_,
     SystemScalarConverter,
@@ -18,7 +17,6 @@ from pydrake.common.cpp_template import TemplateClass
 
 @mut.TemplateSystem.define("Example_")
 def Example_(T):
-
     class Impl(LeafSystem_[T]):
         """Testing example."""
 
@@ -39,7 +37,6 @@ Example = Example_[None]
 
 @mut.TemplateSystem.define("NonsymbolicExample_", T_list=(float, AutoDiffXd))
 def NonsymbolicExample_(T):
-
     class Impl(LeafSystem_[T]):
         """Testing non-symbolic example."""
 
@@ -59,11 +56,13 @@ NonsymbolicExample = NonsymbolicExample_[None]
 class TestScalarConversion(unittest.TestCase):
     def test_converter_attributes(self):
         conversion_scalars = (
-            float, AutoDiffXd, Expression,
+            float,
+            AutoDiffXd,
+            Expression,
         )
         self.assertTupleEqual(
-            SystemScalarConverter.SupportedScalars,
-            conversion_scalars)
+            SystemScalarConverter.SupportedScalars, conversion_scalars
+        )
         conversion_pairs = (
             (AutoDiffXd, float),
             (Expression, float),
@@ -73,8 +72,8 @@ class TestScalarConversion(unittest.TestCase):
             (AutoDiffXd, Expression),
         )
         self.assertTupleEqual(
-            SystemScalarConverter.SupportedConversionPairs,
-            conversion_pairs)
+            SystemScalarConverter.SupportedConversionPairs, conversion_pairs
+        )
 
     def _check_scalar_converted_example(self, system_T, system_U, T):
         """Check that the ExampleSystem system_T is a correctly scalar-
@@ -89,8 +88,7 @@ class TestScalarConversion(unittest.TestCase):
         """Tests the Example_ system."""
         # Test template.
         self.assertIsInstance(Example_, TemplateClass)
-        self.assertEqual(
-            str(Example_), f"<TemplateSystem {__name__}.Example_>")
+        self.assertEqual(str(Example_), f"<TemplateSystem {__name__}.Example_>")
         self.assertIs(Example_[float], Example)
 
         # Test parameters.
@@ -100,22 +98,25 @@ class TestScalarConversion(unittest.TestCase):
         for T in SystemScalarConverter.SupportedScalars:
             system_T = Example_[T](0)
             self.assertEqual(
-                system_T.GetSystemType(),
-                f"{__name__}.Example_[{T.__name__}]")
+                system_T.GetSystemType(), f"{__name__}.Example_[{T.__name__}]"
+            )
 
         # Test private properties (do NOT use these in your code!).
         self.assertTupleEqual(
-            tuple(Example_._T_list), SystemScalarConverter.SupportedScalars)
+            tuple(Example_._T_list), SystemScalarConverter.SupportedScalars
+        )
         self.assertTupleEqual(
             tuple(Example_._T_pairs),
-            SystemScalarConverter.SupportedConversionPairs)
+            SystemScalarConverter.SupportedConversionPairs,
+        )
         converter = Example_._converter
         for T, U in SystemScalarConverter.SupportedConversionPairs:
             self.assertTrue(converter.IsConvertible[T, U]())
 
         # Test calls that we have available for scalar conversion.
         for (T, U), use_maybe_variation in itertools.product(
-                SystemScalarConverter.SupportedConversionPairs, [False, True]):
+            SystemScalarConverter.SupportedConversionPairs, [False, True]
+        ):
             system_U = Example_[U](100)
             system_T.set_name("example")
             system_U._AddExternalConstraint(_ExternalSystemConstraint())
@@ -142,7 +143,8 @@ class TestScalarConversion(unittest.TestCase):
         """Tests scalar conversion of a LeafSystem implemented in Python when
         placed inside of a C++ Diagram."""
         for (T, U), use_maybe_variation in itertools.product(
-                SystemScalarConverter.SupportedConversionPairs, [False, True]):
+            SystemScalarConverter.SupportedConversionPairs, [False, True]
+        ):
             system_U = Example_[U](100)
             system_U.set_name("example")
             system_U._AddExternalConstraint(_ExternalSystemConstraint())
@@ -176,7 +178,6 @@ class TestScalarConversion(unittest.TestCase):
         positive and negative tests."""
 
         def generic_instantiation_func(T):
-
             class GenericInstantiation(LeafSystem_[T]):
                 def _construct(self, converter=None):
                     LeafSystem_[T].__init__(self, converter)
@@ -194,7 +195,8 @@ class TestScalarConversion(unittest.TestCase):
             (float, AutoDiffXd),
         ]
         A = mut.TemplateSystem.define("A", T_list=T_list)(
-            generic_instantiation_func)
+            generic_instantiation_func
+        )
         self.assertListEqual(A._T_list, T_list)
         self.assertListEqual(A._T_pairs, T_pairs_full)
 
@@ -203,7 +205,8 @@ class TestScalarConversion(unittest.TestCase):
             (float, AutoDiffXd),
         ]
         B = mut.TemplateSystem.define("B", T_list=T_list, T_pairs=T_pairs)(
-            generic_instantiation_func)
+            generic_instantiation_func
+        )
         self.assertListEqual(B._T_list, T_list)
         self.assertListEqual(B._T_pairs, T_pairs)
 
@@ -217,8 +220,7 @@ class TestScalarConversion(unittest.TestCase):
             (float, Expression),
         ]
         with self.assertRaises(AssertionError):
-            mut.TemplateSystem.define(
-                "C", T_list=T_list, T_pairs=T_pairs_bad)
+            mut.TemplateSystem.define("C", T_list=T_list, T_pairs=T_pairs_bad)
         # - Unsupported conversion.
         T_pairs_unsupported = [
             (float, float),
@@ -234,7 +236,8 @@ class TestScalarConversion(unittest.TestCase):
 
         # Test calls that we have available for scalar conversion.
         for (T, U), use_maybe_variation in itertools.product(
-                SystemScalarConverter.SupportedConversionPairs, [False, True]):
+            SystemScalarConverter.SupportedConversionPairs, [False, True]
+        ):
             if U is Expression:
                 continue
             expected_is_convertible = T is not Expression
@@ -259,15 +262,13 @@ class TestScalarConversion(unittest.TestCase):
                 self.assertIsNone(system_T)
                 continue
             with self.assertRaisesRegex(
-                    RuntimeError,
-                    ".*NonsymbolicExample.*not support.*Expression"):
+                RuntimeError, ".*NonsymbolicExample.*not support.*Expression"
+            ):
                 system_U.ToScalarType[T]()
 
     def test_inheritance(self):
-
         @mut.TemplateSystem.define("Child_")
         def Child_(T):
-
             class Impl(Example_[T]):
                 def _construct(self, converter=None):
                     Example_[T].__init__(self, 1000, converter=converter)
@@ -294,7 +295,6 @@ class TestScalarConversion(unittest.TestCase):
         # Should not define `__init__`.
         @mut.TemplateSystem.define("NoInit_")
         def NoInit_(T):
-
             class NoInitInstantiation(LeafSystem_[T]):
                 def __init__(self):
                     pass
@@ -311,12 +311,12 @@ class TestScalarConversion(unittest.TestCase):
             NoInit_[float]
         self.assertIn(
             "NoInit_[float] defines `__init__`, but should not",
-            str(cm.exception))
+            str(cm.exception),
+        )
 
         # Should define `_construct_copy`.
         @mut.TemplateSystem.define("NoConstructCopy_")
         def NoConstructCopy_(T):
-
             class NoConstructCopyInstantiation(LeafSystem_[T]):
                 def _construct(self, converter=None):
                     pass
@@ -327,12 +327,12 @@ class TestScalarConversion(unittest.TestCase):
             NoConstructCopy_[float]
         self.assertIn(
             "NoConstructCopy_[float] does not define `_construct_copy`",
-            str(cm.exception))
+            str(cm.exception),
+        )
 
         # Should inherit from `LeafSystem_[T]`.
         @mut.TemplateSystem.define("BadParenting_")
         def BadParenting_(T):
-
             class BadParentingInstantiation:
                 def __init__(self):
                     pass

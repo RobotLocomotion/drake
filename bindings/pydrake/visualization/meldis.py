@@ -51,53 +51,84 @@ def _main(args=None):
     _configure_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--host", action="store",
+        "--host",
+        action="store",
         help="The http listen host for MeshCat. If none is given, 'localhost'"
         " will be used by default. In any case, the result will be printed to"
-        " the console.")
+        " the console.",
+    )
     parser.add_argument(
-        "-p", "--port", action="store", metavar="NUM", type=int,
+        "-p",
+        "--port",
+        action="store",
+        metavar="NUM",
+        type=int,
         help="The http listen port for MeshCat. If none is given, a default"
-        " will be chosen and printed to the console.")
+        " will be chosen and printed to the console.",
+    )
     parser.add_argument(
-        "-t", "--open-tab", dest="browser_new",
-        action="store_const", const=2, default=None,
-        help="Open the MeshCat display in a browser tab.")
+        "-t",
+        "--open-tab",
+        dest="browser_new",
+        action="store_const",
+        const=2,
+        default=None,
+        help="Open the MeshCat display in a browser tab.",
+    )
     parser.add_argument(
-        "-w", "--open-window", dest="browser_new",
-        action="store_const", const=1, default=None,
-        help="Open the MeshCat display in a new browser window.")
+        "-w",
+        "--open-window",
+        dest="browser_new",
+        action="store_const",
+        const=1,
+        default=None,
+        help="Open the MeshCat display in a new browser window.",
+    )
     parser.add_argument(
-        "--browser", metavar="NAME", choices=_available_browsers(),
+        "--browser",
+        metavar="NAME",
+        choices=_available_browsers(),
         help="Open the MeshCat display using the given browser. "
         "By default, opens as a new window (use --open-tab to override). "
         "When no --browser is provided, the --open-tab or --open-window flags "
         "use the $BROWSER environment variable by default. "
-        f"(Available names: %(choices)s)")
+        "(Available names: %(choices)s)",
+    )
     parser.add_argument(
-        "--idle-timeout", metavar="TIME", type=float, default=15*60,
+        "--idle-timeout",
+        metavar="TIME",
+        type=float,
+        default=15 * 60,
         help="When no web browser has been connected for this many seconds,"
-        " this program will automatically exit. Set to 0 to run indefinitely.")
+        " this program will automatically exit. Set to 0 to run indefinitely.",
+    )
     parser.add_argument(
-        "--meshcat-params", metavar="PATH",
+        "--meshcat-params",
+        metavar="PATH",
         help="Filesystem path to a YAML or JSON config for MeshcatParams. "
         "This can be used to configure Meshcat's initial properties. "
         "For options that are available as both command line arguments and "
-        "YAML params (e.g., --port), the command line takes precedence.")
+        "YAML params (e.g., --port), the command line takes precedence.",
+    )
     parser.add_argument(
-        "--environment_map", metavar="PATH",
+        "--environment_map",
+        metavar="PATH",
         help="Filesystem path to an image to be used as an environment map. "
-             "It must be an image type normally used by your browser (e.g., "
-             ".jpg, .png, etc.). HDR images are not supported yet."
+        "It must be an image type normally used by your browser (e.g., "
+        ".jpg, .png, etc.). HDR images are not supported yet.",
     )
     args = parser.parse_args(args)
     meshcat_params = None
     if args.meshcat_params is not None:
         meshcat_params = _yaml_load_typed(
-            filename=args.meshcat_params, defaults=_DEFAULT_MESHCAT_PARAMS)
-    meldis = _Meldis(meshcat_host=args.host, meshcat_port=args.port,
-                     meshcat_params=meshcat_params,
-                     environment_map=args.environment_map)
+            filename=args.meshcat_params, defaults=_DEFAULT_MESHCAT_PARAMS
+        )
+    meldis = _Meldis(
+        meshcat_host=args.host,
+        meshcat_port=args.port,
+        meshcat_params=meshcat_params,
+        environment_map=args.environment_map,
+    )
     if args.browser is not None and args.browser_new is None:
         args.browser_new = 1
     if args.browser_new is not None:

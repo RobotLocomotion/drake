@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 import numpy as np
 
@@ -24,9 +23,9 @@ class TestMathematicalProgram(unittest.TestCase):
         # they should still be able to call the dense overload, even when the
         # matrix requires conversion (from numpy's row-major default to the
         # col-major requirement for passing a `const Eigen::MatrixXd`).
-        A = np.array([[1, 3, 4], [2., 4., 5]])
-        lb = np.array([1, 2.])
-        ub = np.array([3., 4.])
+        A = np.array([[1, 3, 4], [2.0, 4.0, 5]])
+        lb = np.array([1, 2.0])
+        ub = np.array([3.0, 4.0])
         dut = LinearConstraint(A=A, lb=lb, ub=ub)
         self.assertEqual(dut.num_constraints(), 2)
         self.assertEqual(dut.num_vars(), 3)
@@ -34,11 +33,14 @@ class TestMathematicalProgram(unittest.TestCase):
         # UpdateCoefficients is similarly overloaded for sparse or dense, and
         # the user should be able to invoke the dense overload without scipy.
         dut.UpdateCoefficients(
-            new_A=np.array([[1E-10, 0, 0], [0, 1, 1]]),
-            new_lb=np.array([2, 3]), new_ub=np.array([3, 4]))
-        dut.RemoveTinyCoefficient(tol=1E-5)
+            new_A=np.array([[1e-10, 0, 0], [0, 1, 1]]),
+            new_lb=np.array([2, 3]),
+            new_ub=np.array([3, 4]),
+        )
+        dut.RemoveTinyCoefficient(tol=1e-5)
         np.testing.assert_array_equal(
-            dut.GetDenseA(), np.array([[0, 0, 0], [0, 1, 1]]))
+            dut.GetDenseA(), np.array([[0, 0, 0], [0, 1, 1]])
+        )
 
         # When testing in Drake CI, scipy will not be installed. When drake
         # developers run this test locally, they might have scipy installed
@@ -46,10 +48,13 @@ class TestMathematicalProgram(unittest.TestCase):
         # that our Bazel logic for disabling scipy is working properly.
         try:
             import scipy
+
             self.assertNotIn(
-                "/scipy_stub/", scipy.__file__,
+                "/scipy_stub/",
+                scipy.__file__,
                 "The BUILD dependencies for this test MUST NOT depend on"
-                " :scipy_stub_py, either directly or transitively.")
+                " :scipy_stub_py, either directly or transitively.",
+            )
             self.fail("Somehow, the scipy_none dependency isn't working?!")
         except ModuleNotFoundError:
             pass

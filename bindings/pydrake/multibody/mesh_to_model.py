@@ -113,7 +113,6 @@ Properties of the resulting SDFormat file:
 """
 
 import argparse
-import logging
 import numpy as np
 import os
 from pathlib import Path
@@ -123,12 +122,10 @@ from pydrake.multibody._mesh_model_maker import (
     MeshModelMaker as _MeshModelMaker,
 )
 
-_logger = logging.getLogger("drake")
-
 
 def _CommaSeparatedXYZ(arg: str):
     """An argparse parser for an x,y,z vector."""
-    x, y, z = [float(item) for item in arg.split(',')]
+    x, y, z = [float(item) for item in arg.split(",")]
     return np.array([x, y, z])
 
 
@@ -144,70 +141,109 @@ def _main():
 
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "--model-name", metavar="NAME",
-        help=("The optional name to assign to both model and body. If none "
-              "is given, the mesh file name is used."))
+        "--model-name",
+        metavar="NAME",
+        help=(
+            "The optional name to assign to both model and body. If none "
+            "is given, the mesh file name is used."
+        ),
+    )
     parser.add_argument(
-        "--scale", default=default_maker.scale, type=float,
+        "--scale",
+        default=default_maker.scale,
+        type=float,
         metavar="FACTOR",
-        help=("The scale for scaling the mesh vertex positions to meters. "
-              "Must be positive."))
+        help=(
+            "The scale for scaling the mesh vertex positions to meters. "
+            "Must be positive."
+        ),
+    )
 
     mass_group = parser.add_mutually_exclusive_group()
     mass_group.add_argument(
-        "--density", default=default_maker.density,
-        type=float, metavar="KG/M3",
-        help=("The density of the object in kg/m³. Only specify one of "
-              "--density and --mass. If neither is specified, the default "
-              "density of water is used."))
+        "--density",
+        default=default_maker.density,
+        type=float,
+        metavar="KG/M3",
+        help=(
+            "The density of the object in kg/m³. Only specify one of "
+            "--density and --mass. If neither is specified, the default "
+            "density of water is used."
+        ),
+    )
     mass_group.add_argument(
-        "--mass", type=float, metavar="KG",
-        help=("The mass of the object in kg. Only specify one of --density "
-              "and --mass. If neither is specified, default density of water "
-              "is used."))
+        "--mass",
+        type=float,
+        metavar="KG",
+        help=(
+            "The mass of the object in kg. Only specify one of --density "
+            "and --mass. If neither is specified, default density of water "
+            "is used."
+        ),
+    )
 
     com_group = parser.add_mutually_exclusive_group()
     com_group.add_argument(
-        "--origin-at-com", action="store_true", dest="at_com",
-        help=("If requested, the body's origin is defined at the geometry's "
-              "center of mass. Only specify one of --body-origin and "
-              "--origin-at-com."))
+        "--origin-at-com",
+        action="store_true",
+        dest="at_com",
+        help=(
+            "If requested, the body's origin is defined at the geometry's "
+            "center of mass. Only specify one of --body-origin and "
+            "--origin-at-com."
+        ),
+    )
     com_group.add_argument(
-        "--body-origin", type=_CommaSeparatedXYZ, dest="p_GoBo",
+        "--body-origin",
+        type=_CommaSeparatedXYZ,
+        dest="p_GoBo",
         metavar="X,Y,Z",
-        help=("Specify the body origin in the mesh's canonical frame "
-              "(p_GoBo_G). Only specify one of --body-origin and "
-              "--origin-at-com."))
+        help=(
+            "Specify the body origin in the mesh's canonical frame "
+            "(p_GoBo_G). Only specify one of --body-origin and "
+            "--origin-at-com."
+        ),
+    )
 
     parser.add_argument(
-        "--package", type=str, dest="encoded_package",
+        "--package",
+        type=str,
+        dest="encoded_package",
         default=default_maker.encoded_package,
         metavar="ENCODING",
-        help=("Specify the package semantics used in the resulting SDFormat "
-              "file. Options are: 'none' (default): the mesh will be "
-              "referenced using a relative path in the same directory, "
-              "'auto': current directory is treated as a package root and "
-              "package.xml will be added if not already present), or "
-              "[path to a package.xml file]: the mesh will be referenced as "
-              "being in the root of that package)."))
+        help=(
+            "Specify the package semantics used in the resulting SDFormat "
+            "file. Options are: 'none' (default): the mesh will be "
+            "referenced using a relative path in the same directory, "
+            "'auto': current directory is treated as a package root and "
+            "package.xml will be added if not already present), or "
+            "[path to a package.xml file]: the mesh will be referenced as "
+            "being in the root of that package)."
+        ),
+    )
 
     parser.add_argument(
-        "--output-dir", type=Path,
-        help=("The path where the SDFormat model will be written. If not "
-              "given, the file will be written in the mesh's directory. If "
-              "given, the directory must already exist. The model file will "
-              "share the same stem name as the mesh file."))
+        "--output-dir",
+        type=Path,
+        help=(
+            "The path where the SDFormat model will be written. If not "
+            "given, the file will be written in the mesh's directory. If "
+            "given, the directory must already exist. The model file will "
+            "share the same stem name as the mesh file."
+        ),
+    )
 
     parser.add_argument(
-        "mesh_path", type=Path,
-        help="The path to the mesh file to process.")
+        "mesh_path", type=Path, help="The path to the mesh file to process."
+    )
 
     args = parser.parse_args()
 
-    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
     maker = _MeshModelMaker(**vars(args))
     maker.make_model()

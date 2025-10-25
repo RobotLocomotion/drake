@@ -4,24 +4,13 @@ from pydrake.systems.rendering import (
     MultibodyPositionToGeometryPose,
 )
 
-import copy
 import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.value import AbstractValue
 from pydrake.geometry import SceneGraph
-from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.math import (
-    SpatialVelocity,
-)
 from pydrake.multibody.parsing import Parser
-from pydrake.systems.framework import (
-    BasicVector,
-    PortDataType,
-)
-from pydrake.common.eigen_geometry import Quaternion
 
 
 def normalized(x):
@@ -31,7 +20,8 @@ def normalized(x):
 class TestRendering(unittest.TestCase):
     def testMultibodyPositionToGeometryPose(self):
         file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         plant = MultibodyPlant(time_step=0.01)
         Parser(plant).AddModels(file_name)
         scene_graph = SceneGraph()
@@ -39,7 +29,8 @@ class TestRendering(unittest.TestCase):
         plant.Finalize()
 
         to_pose = MultibodyPositionToGeometryPose(
-            plant=plant, input_multibody_state=False)
+            plant=plant, input_multibody_state=False
+        )
 
         # Check the size of the input.
         self.assertEqual(to_pose.get_input_port().size(), 2)

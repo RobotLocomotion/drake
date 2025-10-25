@@ -12,10 +12,7 @@ from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import Sphere
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.tree import (
-    BodyIndex,
-    ModelInstanceIndex,
-)
+from pydrake.multibody.tree import BodyIndex
 from pydrake.systems.framework import Context
 
 
@@ -49,7 +46,8 @@ class TestCollisionChecker(unittest.TestCase):
             shape=Sphere(0.25),
             X_BS=RigidTransform.Identity(),
             model_instance_name="foo",
-            body_name="bar")
+            body_name="bar",
+        )
 
         # Getters.
         self.assertEqual(dut.shape().radius(), 0.25)
@@ -65,12 +63,14 @@ class TestCollisionChecker(unittest.TestCase):
         robot, _ = self._make_robot_diagram()
         plant = robot.plant()
         (geometry_id,) = plant.GetCollisionGeometriesForBody(
-            plant.GetBodyByName("box"))
+            plant.GetBodyByName("box")
+        )
         context = robot.CreateDefaultContext()
         dut = mut.MakeBodyShapeDescription(
             plant=plant,
             plant_context=robot.plant_context(context),
-            geometry_id=geometry_id)
+            geometry_id=geometry_id,
+        )
         self.assertIsInstance(dut, mut.BodyShapeDescription)
         self.assertEqual(dut.body_name(), "box")
 
@@ -84,19 +84,19 @@ class TestCollisionChecker(unittest.TestCase):
         box_joint_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
         joint_distance_weights = {box_joint_index: box_joint_weights}
         mut.LinearDistanceAndInterpolationProvider(
-            plant=plant,
-            joint_distance_weights=joint_distance_weights)
+            plant=plant, joint_distance_weights=joint_distance_weights
+        )
 
         distance_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
         weights_vector_provider = mut.LinearDistanceAndInterpolationProvider(
-            plant=plant,
-            distance_weights=distance_weights)
+            plant=plant, distance_weights=distance_weights
+        )
         numpy_compare.assert_equal(
-            weights_vector_provider.distance_weights(),
-            distance_weights)
+            weights_vector_provider.distance_weights(), distance_weights
+        )
         self.assertEqual(
-            weights_vector_provider.quaternion_dof_start_indices(),
-            [0])
+            weights_vector_provider.quaternion_dof_start_indices(), [0]
+        )
 
     @staticmethod
     def _configuration_distance(q1, q2):
@@ -125,15 +125,18 @@ class TestCollisionChecker(unittest.TestCase):
         # Read from properties.
         self.assertIsInstance(dut.model.plant(), MultibodyPlant)
         self.assertListEqual(dut.robot_model_instances, [index])
-        self.assertEqual(dut.configuration_distance_function(
-            np.array([0.25]), np.array([0.75])), 0.5)
+        self.assertEqual(
+            dut.configuration_distance_function(
+                np.array([0.25]), np.array([0.75])
+            ),
+            0.5,
+        )
         self.assertEqual(dut.edge_step_size, 0.125)
         self.assertEqual(dut.env_collision_padding, 0.0625)
         self.assertEqual(dut.self_collision_padding, 0.03125)
 
         # ParamInit.
-        dut = mut.CollisionCheckerParams(
-            robot_model_instances=[index, index])
+        dut = mut.CollisionCheckerParams(robot_model_instances=[index, index])
         self.assertEqual(len(dut.robot_model_instances), 2)
 
     def test_collision_checker_context(self):
@@ -190,13 +193,15 @@ class TestCollisionChecker(unittest.TestCase):
             other_index=BodyIndex(11),
             collision_type=type_self,
             distance=0.1,
-            jacobian=np.array([0.0, 0.0, 0.01]))
+            jacobian=np.array([0.0, 0.0, 0.01]),
+        )
         dut.Append(
             robot_index=BodyIndex(10),
             other_index=BodyIndex(22),
             collision_type=type_env,
             distance=0.2,
-            jacobian=np.array([0.25, 0.00, 0.0]))
+            jacobian=np.array([0.25, 0.00, 0.0]),
+        )
 
         # Getters (non-empty).
         self.assertEqual(dut.num_positions(), 3)
@@ -205,10 +210,12 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertEqual(dut.other_indices(), [BodyIndex(11), BodyIndex(22)])
         self.assertEqual(dut.collision_types(), [type_self, type_env])
         numpy_compare.assert_equal(dut.distances(), [0.1, 0.2])
-        expected_jacobians = np.array([
-            [0.0, 0.0, 0.01],
-            [0.25, 0.0, 0.0],
-        ])
+        expected_jacobians = np.array(
+            [
+                [0.0, 0.0, 0.01],
+                [0.25, 0.0, 0.0],
+            ]
+        )
         numpy_compare.assert_equal(dut.jacobians(), expected_jacobians)
         numpy_compare.assert_equal(dut.mutable_jacobians(), expected_jacobians)
 
@@ -254,15 +261,16 @@ class TestCollisionChecker(unittest.TestCase):
                     for update_self in (None, False, True):
                         actual = start.MakeUpdated(
                             in_environment_collision=update_env,
-                            in_self_collision=update_self)
+                            in_self_collision=update_self,
+                        )
                         expected = _make(
                             start_env if update_env is None else update_env,
-                            start_self if update_self is None else update_self)
+                            start_self if update_self is None else update_self,
+                        )
                         self.assertEqual(actual, expected)
 
     def _test_collision_checker_base_class(self, dut, has_provider):
-        """Checks the API of CollisionChecker, given a concrete instance.
-        """
+        """Checks the API of CollisionChecker, given a concrete instance."""
         self.assertIsInstance(dut.model(), mut.RobotDiagram)
         self.assertIsInstance(dut.plant(), MultibodyPlant)
 
@@ -281,17 +289,20 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertIsInstance(dut.model_context(), mut.CollisionCheckerContext)
         self.assertIsInstance(dut.plant_context(), Context)
         self.assertIsInstance(
-            dut.model_context(context_number=1), mut.CollisionCheckerContext)
+            dut.model_context(context_number=1), mut.CollisionCheckerContext
+        )
         self.assertIsInstance(dut.plant_context(context_number=1), Context)
 
         q = np.array([0.25] * 7)
         self.assertIs(dut.UpdatePositions(q=q), dut.plant_context())
         self.assertIs(
             dut.UpdatePositions(q=q, context_number=1),
-            dut.plant_context(context_number=1))
+            dut.plant_context(context_number=1),
+        )
         ccc = dut.MakeStandaloneModelContext()  # ... a CollisionCheckerContext
-        self.assertIsInstance(dut.UpdateContextPositions(
-            model_context=ccc, q=q), Context)
+        self.assertIsInstance(
+            dut.UpdateContextPositions(model_context=ccc, q=q), Context
+        )
 
         def operation(robot_diagram, context):
             self.assertIsInstance(robot_diagram, mut.RobotDiagram)
@@ -302,55 +313,73 @@ class TestCollisionChecker(unittest.TestCase):
         X = RigidTransform.Identity()
         shape = Sphere(0.1)
         body_shape_description = mut.BodyShapeDescription(
-            shape=shape, X_BS=X, model_instance_name="ground",
-            body_name="ground_plane_box")
+            shape=shape,
+            X_BS=X,
+            model_instance_name="ground",
+            body_name="ground_plane_box",
+        )
         dut.AddCollisionShape(
-            group_name="foo", description=body_shape_description)
+            group_name="foo", description=body_shape_description
+        )
         dut.AddCollisionShapes(
-            group_name="bar", descriptions=[body_shape_description])
+            group_name="bar", descriptions=[body_shape_description]
+        )
         dut.AddCollisionShapes(
-            geometry_groups={"baz": [body_shape_description]})
+            geometry_groups={"baz": [body_shape_description]}
+        )
         dut.AddCollisionShapeToFrame(
-            group_name="quux", frameA=frame, shape=shape, X_AG=X)
+            group_name="quux", frameA=frame, shape=shape, X_AG=X
+        )
         dut.AddCollisionShapeToBody(
-            group_name="quux", bodyA=body, shape=shape, X_AG=X)
+            group_name="quux", bodyA=body, shape=shape, X_AG=X
+        )
         dut.GetAllAddedCollisionShapes()
         dut.RemoveAllAddedCollisionShapes(group_name="foo")
         dut.RemoveAllAddedCollisionShapes()
 
         dut.MaybeGetUniformRobotEnvironmentPadding()
         dut.MaybeGetUniformRobotRobotPadding()
-        dut.GetPaddingBetween(bodyA_index=env_body.index(),
-                              bodyB_index=body.index())
+        dut.GetPaddingBetween(
+            bodyA_index=env_body.index(), bodyB_index=body.index()
+        )
         dut.GetPaddingBetween(bodyA=env_body, bodyB=body)
-        dut.SetPaddingBetween(bodyA_index=env_body.index(),
-                              bodyB_index=body.index(),
-                              padding=0.1)
+        dut.SetPaddingBetween(
+            bodyA_index=env_body.index(), bodyB_index=body.index(), padding=0.1
+        )
         dut.SetPaddingBetween(bodyA=env_body, bodyB=body, padding=0.2)
-        self.assertEqual(dut.GetPaddingMatrix().shape,
-                         (num_bodies, num_bodies))
-        dut.SetPaddingMatrix(collision_padding=np.zeros(
-                                 (num_bodies, num_bodies)))
+        self.assertEqual(dut.GetPaddingMatrix().shape, (num_bodies, num_bodies))
+        dut.SetPaddingMatrix(
+            collision_padding=np.zeros((num_bodies, num_bodies))
+        )
         dut.GetLargestPadding()
         dut.SetPaddingOneRobotBodyAllEnvironmentPairs(
-            body_index=body.index(), padding=0.1)
+            body_index=body.index(), padding=0.1
+        )
         dut.SetPaddingAllRobotEnvironmentPairs(padding=0.1)
         dut.SetPaddingAllRobotRobotPairs(padding=0.1)
 
-        self.assertEqual(dut.GetNominalFilteredCollisionMatrix().shape,
-                         (num_bodies, num_bodies))
-        self.assertEqual(dut.GetFilteredCollisionMatrix().shape,
-                         (num_bodies, num_bodies))
+        self.assertEqual(
+            dut.GetNominalFilteredCollisionMatrix().shape,
+            (num_bodies, num_bodies),
+        )
+        self.assertEqual(
+            dut.GetFilteredCollisionMatrix().shape, (num_bodies, num_bodies)
+        )
         dut.SetCollisionFilterMatrix(
-            filter_matrix=dut.GetNominalFilteredCollisionMatrix())
-        dut.IsCollisionFilteredBetween(bodyA_index=env_body.index(),
-                                       bodyB_index=body.index())
+            filter_matrix=dut.GetNominalFilteredCollisionMatrix()
+        )
+        dut.IsCollisionFilteredBetween(
+            bodyA_index=env_body.index(), bodyB_index=body.index()
+        )
         dut.IsCollisionFilteredBetween(bodyA=env_body, bodyB=body)
         dut.SetCollisionFilteredBetween(
-            bodyA_index=env_body.index(), bodyB_index=body.index(),
-            filter_collision=True)
+            bodyA_index=env_body.index(),
+            bodyB_index=body.index(),
+            filter_collision=True,
+        )
         dut.SetCollisionFilteredBetween(
-            bodyA=env_body, bodyB=body, filter_collision=True)
+            bodyA=env_body, bodyB=body, filter_collision=True
+        )
         dut.SetCollisionFilteredWithAllBodies(body_index=body.index())
         dut.SetCollisionFilteredWithAllBodies(body=body)
 
@@ -358,32 +387,39 @@ class TestCollisionChecker(unittest.TestCase):
         dut.CheckConfigCollisionFree(q=q, context_number=1)
         dut.CheckContextConfigCollisionFree(model_context=ccc, q=q)
         self.assertEqual(
-            len(dut.CheckConfigsCollisionFree(
-                configs=[q]*4, parallelize=True)),
-            4)
+            len(
+                dut.CheckConfigsCollisionFree(configs=[q] * 4, parallelize=True)
+            ),
+            4,
+        )
         dut.CheckConfigsCollisionFree([q])  # Omit the defaulted arg.
 
         if not has_provider:
+
             def distance_function(q1, q2):
                 return np.linalg.norm(q1 - q2)
 
             dut.SetConfigurationDistanceFunction(
-                distance_function=distance_function)
+                distance_function=distance_function
+            )
             dut.ComputeConfigurationDistance(q1=q, q2=q)
             self.assertEqual(
-                dut.MakeStandaloneConfigurationDistanceFunction()(q, q),
-                0.0)
+                dut.MakeStandaloneConfigurationDistanceFunction()(q, q), 0.0
+            )
 
             def interpolation_function(q1, q2, r):
                 return q1 + (q2 - q1) * r
 
             dut.SetConfigurationInterpolationFunction(
-                interpolation_function=interpolation_function)
+                interpolation_function=interpolation_function
+            )
             dut.InterpolateBetweenConfigurations(q1=q, q2=q, ratio=0.5)
             numpy_compare.assert_equal(
                 dut.MakeStandaloneConfigurationInterpolationFunction()(
-                    q, q, 0.5),
-                q)
+                    q, q, 0.5
+                ),
+                q,
+            )
 
         dut.edge_step_size()
         dut.set_edge_step_size(edge_step_size=0.2)
@@ -392,10 +428,13 @@ class TestCollisionChecker(unittest.TestCase):
         dut.CheckContextEdgeCollisionFree(model_context=ccc, q1=q, q2=q)
         dut.CheckEdgeCollisionFreeParallel(q1=q, q2=q, parallelize=True)
         self.assertEqual(
-            len(dut.CheckEdgesCollisionFree(
-                edges=[(q, q)]*4,
-                parallelize=True)),
-            4)
+            len(
+                dut.CheckEdgesCollisionFree(
+                    edges=[(q, q)] * 4, parallelize=True
+                )
+            ),
+            4,
+        )
         dut.CheckEdgesCollisionFree([(q, q)])  # Omit the defaulted arg.
 
         dut.MeasureEdgeCollisionFree(q1=q, q2=q)
@@ -403,7 +442,8 @@ class TestCollisionChecker(unittest.TestCase):
         dut.MeasureContextEdgeCollisionFree(model_context=ccc, q1=q, q2=q)
         dut.MeasureEdgeCollisionFreeParallel(q1=q, q2=q, parallelize=True)
         measures = dut.MeasureEdgesCollisionFree(
-            edges=[(q, q)]*4, parallelize=True)
+            edges=[(q, q)] * 4, parallelize=True
+        )
         self.assertEqual(len(measures), 4)
         self.assertIsInstance(measures[0], mut.EdgeMeasure)
         dut.MeasureEdgesCollisionFree([(q, q)])  # Omit the defaulted arg.
@@ -411,10 +451,12 @@ class TestCollisionChecker(unittest.TestCase):
         clearance = dut.CalcRobotClearance(q=q, influence_distance=10)
         self.assertIsInstance(clearance, mut.RobotClearance)
         clearance = dut.CalcRobotClearance(
-            q=q, influence_distance=10, context_number=1)
+            q=q, influence_distance=10, context_number=1
+        )
         self.assertIsInstance(clearance, mut.RobotClearance)
         clearance = dut.CalcContextRobotClearance(
-            model_context=ccc, q=q, influence_distance=10)
+            model_context=ccc, q=q, influence_distance=10
+        )
         self.assertIsInstance(clearance, mut.RobotClearance)
 
         dut.MaxNumDistances()
@@ -430,7 +472,8 @@ class TestCollisionChecker(unittest.TestCase):
         provider = dut.distance_and_interpolation_provider()
         self.assertIsInstance(provider, mut.DistanceAndInterpolationProvider)
         new_provider = mut.LinearDistanceAndInterpolationProvider(
-            dut.model().plant())
+            dut.model().plant()
+        )
         dut.SetDistanceAndInterpolationProvider(provider=new_provider)
 
     def _make_scene_graph_collision_checker(self, use_provider, use_function):
@@ -445,18 +488,19 @@ class TestCollisionChecker(unittest.TestCase):
         # Getting the plant should add a keep_alive reference.
         self.assertGreaterEqual(actual_ref_count(robot), 3)
         checker_params = mut.CollisionCheckerParams(
-            model=robot,
-            robot_model_instances=[index],
-            edge_step_size=0.125)
+            model=robot, robot_model_instances=[index], edge_step_size=0.125
+        )
         # Storing in the params struct adds a reference.
         self.assertGreaterEqual(actual_ref_count(robot), 4)
 
         if use_provider:
-            checker_params.distance_and_interpolation_provider = \
+            checker_params.distance_and_interpolation_provider = (
                 mut.LinearDistanceAndInterpolationProvider(plant)
+            )
         if use_function:
-            checker_params.configuration_distance_function = \
+            checker_params.configuration_distance_function = (
                 self._configuration_distance
+            )
 
         checker = mut.SceneGraphCollisionChecker(checker_params)
         # The checker constructor transfers a reference.
@@ -473,20 +517,16 @@ class TestCollisionChecker(unittest.TestCase):
         return checker
 
     def test_scene_graph_collision_checker(self):
-        """Tests the full CollisionChecker API.
-        """
+        """Tests the full CollisionChecker API."""
         # With no provider or function specified, the default SGCC has a
         # LinearDistanceAndInterpolationProvider.
-        default_checker = self._make_scene_graph_collision_checker(
-            False, False)
+        default_checker = self._make_scene_graph_collision_checker(False, False)
         self._test_collision_checker_base_class(default_checker, True)
 
-        provider_checker = self._make_scene_graph_collision_checker(
-            True, False)
+        provider_checker = self._make_scene_graph_collision_checker(True, False)
         self._test_collision_checker_base_class(provider_checker, True)
 
-        function_checker = self._make_scene_graph_collision_checker(
-            False, True)
+        function_checker = self._make_scene_graph_collision_checker(False, True)
         self._test_collision_checker_base_class(function_checker, False)
 
     def test_scene_graph_collision_checker_kwargs_ctor(self):
@@ -501,18 +541,19 @@ class TestCollisionChecker(unittest.TestCase):
             # Getting the plant should add a keep_alive reference.
             self.assertGreaterEqual(actual_ref_count(robot), 3)
             checker_kwargs = dict(
-                model=robot,
-                robot_model_instances=[index],
-                edge_step_size=0.125)
+                model=robot, robot_model_instances=[index], edge_step_size=0.125
+            )
             # Storing in a dict adds a reference.
             self.assertGreaterEqual(actual_ref_count(robot), 4)
 
             if use_provider:
-                checker_kwargs["distance_and_interpolation_provider"] = \
+                checker_kwargs["distance_and_interpolation_provider"] = (
                     mut.LinearDistanceAndInterpolationProvider(plant)
+                )
             if use_function:
-                checker_kwargs["configuration_distance_function"] = \
+                checker_kwargs["configuration_distance_function"] = (
                     self._configuration_distance
+                )
             checker = mut.SceneGraphCollisionChecker(**checker_kwargs)
             # The checker constructor adds a reference.
             self.assertGreaterEqual(actual_ref_count(robot), 5)
@@ -526,16 +567,13 @@ class TestCollisionChecker(unittest.TestCase):
             self.assertGreaterEqual(actual_ref_count(robot), 3)
             return checker
 
-        default_checker = _make_with_kwargs_ctor(
-            False, False)
+        default_checker = _make_with_kwargs_ctor(False, False)
         self._test_collision_checker_base_class(default_checker, True)
 
-        provider_checker = _make_with_kwargs_ctor(
-            True, False)
+        provider_checker = _make_with_kwargs_ctor(True, False)
         self._test_collision_checker_base_class(provider_checker, True)
 
-        function_checker = _make_with_kwargs_ctor(
-            False, True)
+        function_checker = _make_with_kwargs_ctor(False, True)
         self._test_collision_checker_base_class(function_checker, False)
 
     def test_visibility_graph(self):
@@ -546,8 +584,8 @@ class TestCollisionChecker(unittest.TestCase):
         points[:, 0] = plant.GetPositions(checker.plant_context())
         points[:, 1] = points[:, 0]
         points[-1, 1] += 0.1
-        A = mut.VisibilityGraph(checker=checker,
-                                points=points,
-                                parallelize=True)
+        A = mut.VisibilityGraph(
+            checker=checker, points=points, parallelize=True
+        )
         self.assertEqual(A.shape, (num_points, num_points))
         self.assertIsInstance(A, scipy.sparse.csc_matrix)

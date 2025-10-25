@@ -123,7 +123,7 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
     newTCoords->Allocate(num_points);
     newTCoords->SetName("TCoords");
     // This estimate is exact because every polygon is a quad.
-    newPolys->Allocate(newPolys->EstimateSize(num_polys, 4));
+    newPolys->AllocateEstimate(num_polys, 4);
 
     /* Each face is defined w.r.t. a particular axis (e.g., +x, -x, +y, ...,
      etc.,) Looking *down* the vector of that axis there is a Frame on which
@@ -285,7 +285,7 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
     newTCoords->Allocate(num_points);
     newTCoords->SetName("TCoords");
     // This estimate is exact because every polygon is a triangle.
-    newPolys->Allocate(newPolys->EstimateSize(num_tris, 3));
+    newPolys->AllocateEstimate(num_tris, 3);
 
     for (int p = 0; p < num_points; ++p) {
       newPoints->InsertNextPoint(mesh_.positions(p, 0), mesh_.positions(p, 1),

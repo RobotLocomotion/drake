@@ -1,8 +1,7 @@
 import matplotlib
 import numpy as np
-from warnings import warn
 
-from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
+from pydrake.systems.framework import LeafSystem
 from pydrake.systems.primitives import VectorLog
 from pydrake.trajectories import Trajectory
 from pydrake.systems._resample_interp1d import _resample_interp1d
@@ -24,8 +23,14 @@ class PyPlotVisualizer(LeafSystem):
     appropriate state.
     """
 
-    def __init__(self, draw_period=None, facecolor=[1, 1, 1],
-                 figsize=None, ax=None, show=None):
+    def __init__(
+        self,
+        draw_period=None,
+        facecolor=[1, 1, 1],
+        figsize=None,
+        ax=None,
+        show=None,
+    ):
         LeafSystem.__init__(self)
 
         # On Ubuntu the Debian package python3-tk is a recommended (but not
@@ -33,9 +38,10 @@ class PyPlotVisualizer(LeafSystem):
         # that by providing a nicer message upon a failure to import.
         try:
             import matplotlib.pyplot as plt
+
             self._plt = plt
         except ImportError as e:
-            if e.name == 'tkinter':
+            if e.name == "tkinter":
                 self._plt = None
             else:
                 raise
@@ -44,18 +50,20 @@ class PyPlotVisualizer(LeafSystem):
                 "On Ubuntu when using the default pyplot configuration (i.e.,"
                 " the TkAgg backend) you must 'sudo apt install python3-tk' to"
                 " obtain Tk support. Alternatively, you may set MPLBACKEND to"
-                " something else (e.g., Qt5Agg).")
+                " something else (e.g., Qt5Agg)."
+            )
 
         # To help avoid small simulation time steps, we use a default period
         # that has an exact representation in binary floating point; see
         # drake#15021 for details.
-        default_draw_period = 1./32
+        default_draw_period = 1.0 / 32
 
-        self.set_name('pyplot_visualization')
+        self.set_name("pyplot_visualization")
         self.time_step = draw_period or default_draw_period
         self.DeclareForcedPublishEvent(self._on_any_publish)
         self.DeclarePeriodicPublishEvent(
-            self.time_step, 0.0, self._on_any_publish)
+            self.time_step, 0.0, self._on_any_publish
+        )
 
         if ax is None:
             self.fig = self._plt.figure(facecolor=facecolor, figsize=figsize)
@@ -66,11 +74,11 @@ class PyPlotVisualizer(LeafSystem):
             self.fig = ax.get_figure()
 
         if show is None:
-            show = (matplotlib.get_backend().lower() != 'template')
+            show = matplotlib.get_backend().lower() != "template"
         self._show = show
 
-        self.ax.axis('equal')
-        self.ax.axis('off')
+        self.ax.axis("equal")
+        self.ax.axis("off")
 
         if not show:
             # This is the preferred way to support the jupyter notebook
@@ -122,11 +130,14 @@ class PyPlotVisualizer(LeafSystem):
         # We defer this import to this call site to prevent the import
         # from hanging. See #18323.
         import matplotlib.animation as animation
-        ani = animation.FuncAnimation(fig=self.fig,
-                                      func=self._draw_recorded_frame,
-                                      frames=len(self._recorded_contexts),
-                                      interval=1000*self.time_step,
-                                      **kwargs)
+
+        ani = animation.FuncAnimation(
+            fig=self.fig,
+            func=self._draw_recorded_frame,
+            frames=len(self._recorded_contexts),
+            interval=1000 * self.time_step,
+            **kwargs,
+        )
         return ani
 
     def animate(self, log, resample=True, **kwargs):
@@ -157,10 +168,13 @@ class PyPlotVisualizer(LeafSystem):
         # We defer this import to this call site to prevent the import
         # from hanging. See #18323.
         import matplotlib.animation as animation
-        ani = animation.FuncAnimation(fig=self.fig,
-                                      func=animate_update,
-                                      frames=t.shape[0],
-                                      # Convert from s to ms.
-                                      interval=1000*self.time_step,
-                                      **kwargs)
+
+        ani = animation.FuncAnimation(
+            fig=self.fig,
+            func=animate_update,
+            frames=t.shape[0],
+            # Convert from s to ms.
+            interval=1000 * self.time_step,
+            **kwargs,
+        )
         return ani

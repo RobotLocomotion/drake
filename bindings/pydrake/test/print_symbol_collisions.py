@@ -6,7 +6,7 @@ from collections import defaultdict
 import sys
 
 # Populate `sys.modules`.
-import pydrake.all
+import pydrake.all  # noqa: F401 (unused-import)
 
 
 def _is_module_of(name, target):
@@ -30,9 +30,8 @@ def main():
     # Use id() just in case type is not hashable.
     name_to_value_ids = defaultdict(set)
     for module_name, m in sys.modules.items():
-        if (
-            not _is_module_of(module_name, "pydrake")
-            or not _is_public_module(module_name)
+        if not _is_module_of(module_name, "pydrake") or not _is_public_module(
+            module_name
         ):
             continue
         for var_name in _get_all_var_names(m):

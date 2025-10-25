@@ -1,11 +1,9 @@
-"""Unit tests for fix_inertia.
-"""
+"""Unit tests for fix_inertia."""
 
 import os
 from pathlib import Path
 import shutil
 import subprocess
-import sys
 import unittest
 
 from pydrake.common import (
@@ -13,7 +11,7 @@ from pydrake.common import (
     temp_directory,
 )
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry import (Role, SceneGraph)
+from pydrake.geometry import Role, SceneGraph
 from pydrake.multibody._inertia_fixer import (
     fix_inertia_from_string,
     GEOM_INERTIA_ROLE_ORDER_DEFAULT,
@@ -385,7 +383,8 @@ class TestFixInertiaFromString(unittest.TestCase):
   <link name="world"/>
   <link name="b">
     <inertial>
-      <inertia ixx="0.16667" ixy="0" ixz="0" iyy="0.16667" iyz="0" izz="0.16667"/>
+      <inertia ixx="0.16667" ixy="0" ixz="0" iyy="0.16667" iyz="0" \
+izz="0.16667"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="1"/>
     </inertial>
@@ -402,9 +401,11 @@ class TestFixInertiaFromString(unittest.TestCase):
       </geometry>
     </collision>
   </link>
-</robot>"""  # noqa
+</robot>"""
         output_illustration = fix_inertia_from_string(
-            input_text, "urdf", geom_inertia_role_order=[Role.kIllustration],
+            input_text,
+            "urdf",
+            geom_inertia_role_order=[Role.kIllustration],
         )
         self.assertEqual(expected_text_illustration, output_illustration)
 
@@ -413,7 +414,8 @@ class TestFixInertiaFromString(unittest.TestCase):
   <link name="world"/>
   <link name="b">
     <inertial>
-      <inertia ixx="0.0016667" ixy="0" ixz="0" iyy="0.0016667" iyz="0" izz="0.0016667"/>
+      <inertia ixx="0.0016667" ixy="0" ixz="0" iyy="0.0016667" iyz="0" \
+izz="0.0016667"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="1"/>
     </inertial>
@@ -430,9 +432,11 @@ class TestFixInertiaFromString(unittest.TestCase):
       </geometry>
     </collision>
   </link>
-</robot>"""  # noqa
+</robot>"""
         output_proximity = fix_inertia_from_string(
-            input_text, "urdf", geom_inertia_role_order=[Role.kProximity],
+            input_text,
+            "urdf",
+            geom_inertia_role_order=[Role.kProximity],
         )
         self.assertEqual(expected_text_proximity, output_proximity)
 
@@ -440,8 +444,7 @@ class TestFixInertiaFromString(unittest.TestCase):
 class FileHandlingFixture(unittest.TestCase):
     def setUp(self):
         self._temp_dir = Path(temp_directory())
-        self._box_urdf = FindResourceOrThrow(
-            "drake/multibody/models/box.urdf")
+        self._box_urdf = FindResourceOrThrow("drake/multibody/models/box.urdf")
 
     def assert_files_equal(self, dut_path, ref_path):
         with open(dut_path) as dut, open(ref_path) as ref:
@@ -466,8 +469,9 @@ class TestInertiaFixer(FileHandlingFixture):
         spatial_inertia = body.default_spatial_inertia()
         self.assertTrue(spatial_inertia.IsPhysicallyValid())
         self.assertEqual(spatial_inertia.get_mass(), 1.0)
-        numpy_compare.assert_float_equal(spatial_inertia.get_com(),
-                                         [0.0, 0.0, 0.0])
+        numpy_compare.assert_float_equal(
+            spatial_inertia.get_com(), [0.0, 0.0, 0.0]
+        )
 
     def test_in_place_invocation(self):
         """Smoke tests that an in-place editing invocation works."""
@@ -477,7 +481,7 @@ class TestInertiaFixer(FileHandlingFixture):
         dut.fix_inertia()
 
         # In-place edited file has inertia text.
-        self.assertIn('inertial', copied.read_text())
+        self.assertIn("inertial", copied.read_text())
         # It has changed from the original.
         with open(self._box_urdf) as orig, open(copied) as edited:
             self.assertNotEqual(orig.read(), edited.read())
@@ -495,10 +499,12 @@ class TestFixInertiaProcess(FileHandlingFixture):
     We'll simply create two output files, one via subprocess and one via
     direct calls to InertiaFixer and compare the files.
     """
+
     def setUp(self):
         super().setUp()
         self._dut = FindResourceOrThrow(
-            "drake/bindings/pydrake/multibody/fix_inertia")
+            "drake/bindings/pydrake/multibody/fix_inertia"
+        )
         self._old_env = os.environ.copy()
 
     def tearDown(self):
@@ -514,9 +520,7 @@ class TestFixInertiaProcess(FileHandlingFixture):
             os.environ[k] = self._old_env[k]
         super().tearDown()
 
-    def subprocess_fix_inertia(
-        self, input_path, output_path, *, extra_args=[]
-    ):
+    def subprocess_fix_inertia(self, input_path, output_path, *, extra_args=[]):
         subprocess.run(
             [self._dut, input_path, output_path] + extra_args, check=True
         )
@@ -535,25 +539,25 @@ class TestFixInertiaProcess(FileHandlingFixture):
             output_file=direct_result,
             geom_inertia_role_order=geom_inertia_role_order,
         ).fix_inertia()
-        self.assertIn('inertial', direct_result.read_text())
+        self.assertIn("inertial", direct_result.read_text())
 
         subprocess_result = self._temp_dir / f"subprocess{file_type}"
         extra_args = []
         if geom_inertia_role_order_args is not None:
-            extra_args = (
-                ["--geom_inertia_role_order"] + geom_inertia_role_order_args
-            )
+            extra_args = [
+                "--geom_inertia_role_order"
+            ] + geom_inertia_role_order_args
         self.subprocess_fix_inertia(
             model_file, subprocess_result, extra_args=extra_args
         )
-        self.assertIn('inertial', subprocess_result.read_text())
+        self.assertIn("inertial", subprocess_result.read_text())
 
         # Direct invocation and subprocess invocation give the same result.
         self.assert_files_equal(direct_result, subprocess_result)
 
         repeat_result = self._temp_dir / "repeat"
         self.subprocess_fix_inertia(subprocess_result, repeat_result)
-        self.assertIn('inertial', repeat_result.read_text())
+        self.assertIn("inertial", repeat_result.read_text())
 
         # Repeated processing of the output gives the same result. This step
         # also ensures XML well-formed-ness and Drake parsing compatibility.
@@ -578,12 +582,14 @@ class TestFixInertiaProcess(FileHandlingFixture):
         # Contains unicode characters in comments; tests the proper use
         # of byte (vs. string) indexing for file edits.
         self.do_test_model(
-            "drake/bindings/pydrake/multibody/test/Acrobot_unicode.urdf")
+            "drake/bindings/pydrake/multibody/test/Acrobot_unicode.urdf"
+        )
 
     def test_sdf_no_geom(self):
         # Contains links without geometry.
         self.do_test_model(
-            "drake/bindings/pydrake/multibody/test/pendulum_on_rail.sdf")
+            "drake/bindings/pydrake/multibody/test/pendulum_on_rail.sdf"
+        )
 
     def test_sdf_no_inertia_link(self):
         # Contains a non-ignored link with no inertial properties.
@@ -592,15 +598,18 @@ class TestFixInertiaProcess(FileHandlingFixture):
     def test_sdf_nested_models(self):
         # Contains nested models.
         self.do_test_model(
-            "drake/manipulation/util/test/simple_nested_model.sdf")
+            "drake/manipulation/util/test/simple_nested_model.sdf"
+        )
 
     def test_package_xml(self):
         """Verify we can access geometry via a package."""
         package_xml = FindResourceOrThrow(
-           "drake/multibody/parsing/test/box_package/package.xml")
-        os.environ['ROS_PACKAGE_PATH'] = str(Path(package_xml).parent)
+            "drake/multibody/parsing/test/box_package/package.xml"
+        )
+        os.environ["ROS_PACKAGE_PATH"] = str(Path(package_xml).parent)
         self.do_test_model(
-            "drake/multibody/parsing/test/box_package/urdfs/box.urdf")
+            "drake/multibody/parsing/test/box_package/urdfs/box.urdf"
+        )
 
     def test_geom_inertia_role_order(self):
         self.do_test_model(

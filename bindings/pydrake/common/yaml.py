@@ -12,7 +12,6 @@ import yaml
 import yaml.representer
 
 from pydrake.common import pretty_class_name
-from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 class _SchemaLoader(yaml.loader.SafeLoader):
@@ -95,11 +94,13 @@ def yaml_load(*, data=None, filename=None, private=False):
     if has_data and has_filename:
         raise RuntimeError(
             "Exactly one of `data=...` or `filename=...` must be provided, "
-            "but both were non-None")
+            "but both were non-None"
+        )
     if not has_data and not has_filename:
         raise RuntimeError(
             "Exactly one of `data=...` or `filename=...` must be provided, "
-            "but both were None")
+            "but both were None"
+        )
     if data:
         return yaml_load_data(data, private=private)
     else:
@@ -123,6 +124,7 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
         it will always emit the tag, e.g., `!!int 10`. (By default, tags for
         scalars are not emitted by pyyaml.)
         """
+
         value: typing.Union[bool, int, float, str]
         schema: type  # One of either bool, int, float, or str.
 
@@ -157,15 +159,17 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
         if getattr(type(data), "__module__", "").startswith("pydrake"):
             raise yaml.representer.RepresenterError(
                 "yaml_dump does not operate on pydrake objects; "
-                "use yaml_dump_typed instead", data)
+                "use yaml_dump_typed instead",
+                data,
+            )
         return super().represent_undefined(data)
 
 
 _SchemaDumper.add_representer(None, _SchemaDumper._represent_undefined)
 _SchemaDumper.add_representer(dict, _SchemaDumper._represent_dict)
 _SchemaDumper.add_representer(
-    _SchemaDumper.ExplicitScalar,
-    _SchemaDumper._represent_explicit_scalar)
+    _SchemaDumper.ExplicitScalar, _SchemaDumper._represent_explicit_scalar
+)
 
 
 class _DrakeFlowSchemaDumper(_SchemaDumper):
@@ -194,18 +198,23 @@ def yaml_dump(data, *, filename=None):
     """
     if filename is not None:
         with open(filename, "w") as f:
-            yaml.dump(data, f, Dumper=_SchemaDumper,
-                      default_flow_style=_FLOW_STYLE)
+            yaml.dump(
+                data, f, Dumper=_SchemaDumper, default_flow_style=_FLOW_STYLE
+            )
     else:
-        return yaml.dump(data, Dumper=_SchemaDumper,
-                         default_flow_style=_FLOW_STYLE)
+        return yaml.dump(
+            data, Dumper=_SchemaDumper, default_flow_style=_FLOW_STYLE
+        )
 
 
-_LoadYamlOptions = collections.namedtuple("LoadYamlOptions", [
-    "allow_yaml_with_no_schema",
-    "allow_schema_with_no_yaml",
-    "retain_map_defaults",
-])
+_LoadYamlOptions = collections.namedtuple(
+    "LoadYamlOptions",
+    [
+        "allow_yaml_with_no_schema",
+        "allow_schema_with_no_yaml",
+        "retain_map_defaults",
+    ],
+)
 
 
 def _enumerate_field_types(schema):
@@ -216,26 +225,26 @@ def _enumerate_field_types(schema):
 
     # Dataclasses offer a public API for introspection.
     if dataclasses.is_dataclass(schema):
-        return dict([
-            (field.name, field.type)
-            for field in dataclasses.fields(schema)])
+        return dict(
+            [(field.name, field.type) for field in dataclasses.fields(schema)]
+        )
 
     # Drake's DefAttributesUsingSerialize offers (hidden) introspection.
     fields = getattr(schema, "__fields__", None)
     if fields is not None:
-        return dict([
-            (field.name, field.type)
-            for field in fields])
+        return dict([(field.name, field.type) for field in fields])
 
     # Detect when the user forgot to use DefAttributesUsingSerialize.
     if getattr(type(schema), "__name__", None) == "pybind11_type":
         raise NotImplementedError(
             f"The bound C++ type {schema} cannot be used as a schema because"
             f" it lacks a __fields__ attribute."
-            f" Use DefAttributesUsingSerialize to add that attribute.")
+            f" Use DefAttributesUsingSerialize to add that attribute."
+        )
 
     raise NotImplementedError(
-        f"Schema objects of type {schema} are not yet supported")
+        f"Schema objects of type {schema} are not yet supported"
+    )
 
 
 def _is_union(generic_base):
@@ -319,8 +328,9 @@ def _convert_yaml_primitive_to_schema_type(*, yaml_value, value_schema):
     return None
 
 
-def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
-                                      target, value_schema):
+def _merge_yaml_dict_item_into_target(
+    *, options, name, yaml_value, target, value_schema
+):
     """Parses the given `yaml_value` into an object of type `value_schema`,
     writing the result to the field named `name` of the given `target` object.
     """
@@ -341,7 +351,8 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         if type(yaml_value) in (list, dict):
             raise RuntimeError(
                 f"Expected a {value_schema} value for '{name}' but instead got"
-                f" non-scalar yaml data of type {type(yaml_value)}")
+                f" non-scalar yaml data of type {type(yaml_value)}"
+            )
         new_value = _convert_yaml_primitive_to_schema_type(
             yaml_value=yaml_value,
             value_schema=value_schema,
@@ -349,7 +360,8 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         if new_value is None:
             raise RuntimeError(
                 f"Expected a {value_schema} value for '{name}' but instead got"
-                f" yaml data of type {type(yaml_value)} ({yaml_value!r})")
+                f" yaml data of type {type(yaml_value)} ({yaml_value!r})"
+            )
         setter(new_value)
         return
 
@@ -363,13 +375,19 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         # Create a non-null default value, if necessary.
         old_value = getter()
         if old_value is None:
-            setter(_create_from_schema(
-                schema=nested_optional_type,
-                forthcoming_value=yaml_value))
+            setter(
+                _create_from_schema(
+                    schema=nested_optional_type, forthcoming_value=yaml_value
+                )
+            )
         # Now we can parse Optional[Foo] like a plain Foo.
         _merge_yaml_dict_item_into_target(
-            options=options, name=name, yaml_value=yaml_value, target=target,
-            value_schema=nested_optional_type)
+            options=options,
+            name=name,
+            yaml_value=yaml_value,
+            target=target,
+            value_schema=nested_optional_type,
+        )
         return
 
     # Handle pathlib.Path.
@@ -377,7 +395,8 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         if not isinstance(yaml_value, str):
             raise RuntimeError(
                 f"Expected a !!str value for '{name}: Path' but instead got"
-                f" yaml data of type {type(yaml_value)}")
+                f" yaml data of type {type(yaml_value)}"
+            )
         new_value = Path(yaml_value)
         setter(new_value)
         return
@@ -402,12 +421,18 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         (value_type,) = generic_args
         new_value = []
         for sub_yaml_value in yaml_value:
-            sub_target = {"_": _create_from_schema(
-                schema=value_type,
-                forthcoming_value=sub_yaml_value)}
+            sub_target = {
+                "_": _create_from_schema(
+                    schema=value_type, forthcoming_value=sub_yaml_value
+                )
+            }
             _merge_yaml_dict_item_into_target(
-                options=options, name="_", yaml_value=sub_yaml_value,
-                target=sub_target, value_schema=value_type)
+                options=options,
+                name="_",
+                yaml_value=sub_yaml_value,
+                target=sub_target,
+                value_schema=value_type,
+            )
             new_value.append(sub_target["_"])
         setter(new_value)
         return
@@ -421,7 +446,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         (key_type, value_type) = generic_args
         # This requirement matches what we have in C++. Allowing sequences
         # or maps as keys would mean we're no longer JSON-compatible.
-        assert key_type == str
+        assert key_type is str
         if options.retain_map_defaults:
             old_value = getter()
             new_value = copy.deepcopy(old_value)
@@ -431,11 +456,15 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             # In case the sub_key does not exist in the map, insert it.
             if sub_key not in new_value:
                 new_value[sub_key] = _create_from_schema(
-                    schema=value_type,
-                    forthcoming_value=sub_yaml_value)
+                    schema=value_type, forthcoming_value=sub_yaml_value
+                )
             _merge_yaml_dict_item_into_target(
-                options=options, name=sub_key, yaml_value=sub_yaml_value,
-                target=new_value, value_schema=value_type)
+                options=options,
+                name=sub_key,
+                yaml_value=sub_yaml_value,
+                target=new_value,
+                value_schema=value_type,
+            )
         setter(new_value)
         return
 
@@ -448,7 +477,8 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
                 raise RuntimeError(
                     f"The schema sum type for '{name}' cannot accept a yaml "
                     f"value '{yaml_value}' of type {yaml_value_type}; only "
-                    f"one of {generic_args} are acceptable")
+                    f"one of {generic_args} are acceptable"
+                )
             setter(yaml_value)
             return
         # A mapping can optionally specify a type tag to choose which Union[]
@@ -473,7 +503,8 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             else:
                 raise RuntimeError(
                     f"The yaml type tag value '{tag}' did not match any of the"
-                    f" allowed type options for '{name}' ({generic_args})")
+                    f" allowed type options for '{name}' ({generic_args})"
+                )
         else:
             refined_yaml_value = yaml_value
             refined_value_schema = generic_args[0]
@@ -482,32 +513,42 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         if refined_value_schema_origin is None:
             refined_value_schema_origin = refined_value_schema
         if not isinstance(getter(), refined_value_schema_origin):
-            setter(_create_from_schema(
-                schema=refined_value_schema_origin,
-                forthcoming_value=yaml_value))
+            setter(
+                _create_from_schema(
+                    schema=refined_value_schema_origin,
+                    forthcoming_value=yaml_value,
+                )
+            )
         _merge_yaml_dict_item_into_target(
-            options=options, name=name, yaml_value=refined_yaml_value,
-            target=target, value_schema=refined_value_schema)
+            options=options,
+            name=name,
+            yaml_value=refined_yaml_value,
+            target=target,
+            value_schema=refined_value_schema,
+        )
         return
 
     # By this point, we've handled all known cases of generic types.
     if generic_base is not None:
         raise NotImplementedError(
             f"The generic type {generic_base} of {value_schema} is "
-            "not yet supported")
+            "not yet supported"
+        )
 
     # If the value_schema is neither primitive nor generic, then we'll assume
     # it's a directly-nested subclass.
     old_value = getter()
     new_value = copy.deepcopy(old_value)
     _merge_yaml_dict_into_target(
-        options=options, yaml_dict=yaml_value,
-        target=new_value, target_schema=value_schema)
+        options=options,
+        yaml_dict=yaml_value,
+        target=new_value,
+        target_schema=value_schema,
+    )
     setter(new_value)
 
 
-def _merge_yaml_dict_into_target(*, options, yaml_dict,
-                                 target, target_schema):
+def _merge_yaml_dict_into_target(*, options, yaml_dict, target, target_schema):
     """Merges the given yaml_dict into the given target (of given type).
     The target must be an instance of some dataclass or pybind11 class.
     The yaml_dict must be typed like the result of calling yaml_load (i.e.,
@@ -517,25 +558,28 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict,
     assert target is not None
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
-    schema_optionals = set([
-        name for name, sub_schema in static_field_map.items()
-        if _get_nested_optional_type(sub_schema) is not None
-    ])
+    schema_optionals = set(
+        [
+            name
+            for name, sub_schema in static_field_map.items()
+            if _get_nested_optional_type(sub_schema) is not None
+        ]
+    )
     yaml_names = list(yaml_dict.keys())
-    extra_yaml_names = [
-        name for name in yaml_names
-        if name not in schema_names
-    ]
+    extra_yaml_names = [name for name in yaml_names if name not in schema_names]
     missing_yaml_names = [
-        name for name, sub_schema in static_field_map.items()
+        name
+        for name, sub_schema in static_field_map.items()
         if name not in yaml_names and name not in schema_optionals
     ]
     if extra_yaml_names and not options.allow_yaml_with_no_schema:
         raise RuntimeError(
-            f"The fields {extra_yaml_names} were unknown to the schema")
+            f"The fields {extra_yaml_names} were unknown to the schema"
+        )
     if missing_yaml_names and not options.allow_schema_with_no_yaml:
         raise RuntimeError(
-            f"The fields {missing_yaml_names} were missing in the yaml data")
+            f"The fields {missing_yaml_names} were missing in the yaml data"
+        )
     for name, sub_schema in static_field_map.items():
         if name in yaml_dict:
             sub_value = yaml_dict[name]
@@ -553,18 +597,25 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict,
             # skip over those fields here. They will remain unchanged.
             continue
         _merge_yaml_dict_item_into_target(
-            options=options, name=name, yaml_value=sub_value,
-            target=target, value_schema=sub_schema)
+            options=options,
+            name=name,
+            yaml_value=sub_value,
+            target=target,
+            value_schema=sub_schema,
+        )
 
 
-def yaml_load_typed(*, schema=None,
-                    data=None,
-                    filename=None,
-                    child_name=None,
-                    defaults=None,
-                    allow_yaml_with_no_schema=False,
-                    allow_schema_with_no_yaml=True,
-                    retain_map_defaults=True):
+def yaml_load_typed(
+    *,
+    schema=None,
+    data=None,
+    filename=None,
+    child_name=None,
+    defaults=None,
+    allow_yaml_with_no_schema=False,
+    allow_schema_with_no_yaml=True,
+    retain_map_defaults=True,
+):
     """Loads either a ``data`` str or a ``filename`` against the given
     ``schema`` type and returns an instance of that type.
 
@@ -607,14 +658,16 @@ def yaml_load_typed(*, schema=None,
     if schema is None:
         if defaults is None:
             raise ValueError(
-                "At least one of schema= and defaults= must be provided")
+                "At least one of schema= and defaults= must be provided"
+            )
         schema = type(defaults)
 
     # Choose the allow/retain setting in case none were provided.
     options = _LoadYamlOptions(
         allow_yaml_with_no_schema=allow_yaml_with_no_schema,
         allow_schema_with_no_yaml=allow_schema_with_no_yaml,
-        retain_map_defaults=retain_map_defaults)
+        retain_map_defaults=retain_map_defaults,
+    )
 
     # Create the result object.
     if defaults is not None:
@@ -630,12 +683,16 @@ def yaml_load_typed(*, schema=None,
         root_node = document
     if not isinstance(root_node, collections.abc.Mapping):
         raise RuntimeError(
-            f"YAML root was a {type(root_node)} but should have been a dict")
+            f"YAML root was a {type(root_node)} but should have been a dict"
+        )
 
     # Merge the document into the result.
     _merge_yaml_dict_into_target(
-        options=options, yaml_dict=root_node,
-        target=result, target_schema=schema)
+        options=options,
+        yaml_dict=root_node,
+        target=result,
+        target_schema=schema,
+    )
     return result
 
 
@@ -678,15 +735,14 @@ def _yaml_dump_typed_item(*, obj, schema):
     if generic_base in (list, typing.List):
         (item_schema,) = generic_args
         return [
-            _yaml_dump_typed_item(obj=item, schema=item_schema)
-            for item in obj
+            _yaml_dump_typed_item(obj=item, schema=item_schema) for item in obj
         ]
 
     # Handle YAML maps:
     #  https://yaml.org/spec/1.2.2/#mapping
     if generic_base in (dict, collections.abc.Mapping):
         (key_schema, value_schema) = generic_args
-        if key_schema != str:
+        if key_schema is not str:
             # This requirement matches what we have in C++. Allowing sequences
             # or maps as keys would mean we're no longer JSON-compatible.
             raise RuntimeError(f"Dict keys must be strings, not {key_schema}")
@@ -720,13 +776,15 @@ def _yaml_dump_typed_item(*, obj, schema):
                 break
         if match is None:
             raise RuntimeError(
-                f"A value of type {type(obj)} did not match any {schema}")
+                f"A value of type {type(obj)} did not match any {schema}"
+            )
         union_schema = generic_args[i]
         result = _yaml_dump_typed_item(obj=obj, schema=union_schema)
         if i != 0:
             if union_schema in _PRIMITIVE_JSON_TYPES:
                 result = _SchemaDumper.ExplicitScalar(
-                    value=result, schema=union_schema)
+                    value=result, schema=union_schema
+                )
             elif union_schema in _PRIMITIVE_YAML_TYPES:
                 # The correct tag will be automatically applied by pyyaml with
                 # no special effort on our part.
@@ -796,12 +854,9 @@ def _erase_matching_maps(*, node, defaults):
         del node[key]
 
 
-def yaml_dump_typed(data,
-                    *,
-                    filename=None,
-                    schema=None,
-                    child_name=None,
-                    defaults=None):
+def yaml_dump_typed(
+    data, *, filename=None, schema=None, child_name=None, defaults=None
+):
     """Dumps an object to a YAML string or ``filename`` (if specified), using
     the ``schema`` in order to support non-primitive types.
 
@@ -827,8 +882,10 @@ def yaml_dump_typed(data,
     assert data is not None
     if child_name is not None:
         if type(child_name) not in _PRIMITIVE_JSON_TYPES:
-            raise RuntimeError("The child_name must be a primitive type, "
-                               f"not a {type(child_name)}")
+            raise RuntimeError(
+                "The child_name must be a primitive type, "
+                f"not a {type(child_name)}"
+            )
 
     # If no schema was provided, then choose one.
     if schema is None:
@@ -850,7 +907,8 @@ def yaml_dump_typed(data,
     # be a mapping node (not scalar nor list).
     if not isinstance(root, collections.abc.Mapping):
         raise RuntimeError(
-            f"YAML root was a {type(root)} but should have been a dict")
+            f"YAML root was a {type(root)} but should have been a dict"
+        )
 
     # Write the data to disk xor return a string, based on the presence of a
     # filename. Use layout options to match the C++ (SaveYamlFile) style.

@@ -4,6 +4,7 @@ import sys
 import warnings
 
 from jupyter_core.command import main as _jupyter_main
+
 # http://nbconvert.readthedocs.io/en/latest/execute_api.html
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -42,7 +43,8 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--test", action="store_true", help="Run as a test (non-interactive)")
+        "--test", action="store_true", help="Run as a test (non-interactive)"
+    )
     args = parser.parse_args(argv)
 
     if not args.test:
@@ -60,7 +62,8 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         # Escalate warnings for non-writable directories for settings
         # directories.
         warnings.filterwarnings(
-            "error", message="IPython dir", category=UserWarning)
+            "error", message="IPython dir", category=UserWarning
+        )
         # Execute using a preprocessor, rather than calling
         # `jupyter nbconvert`, as the latter writes an unused file to
         # `runfiles`.
@@ -75,9 +78,9 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         os.environ["_DRAKE_DEPRECATION_IS_ERROR"] = "1"
         # TODO(eric.cousineau): See if there is a way to redirect this to
         # stdout, rather than having the notebook capture the output.
-        ep = _ExecutePreprocessorNoWidgets(timeout=600, kernel_name='python3')
+        ep = _ExecutePreprocessorNoWidgets(timeout=600, kernel_name="python3")
         try:
-            ep.preprocess(nb, resources={'metadata': {'path': notebook_dir}})
+            ep.preprocess(nb, resources={"metadata": {"path": notebook_dir}})
         except RuntimeError as e:
             if "Kernel died before replying to kernel_info" in str(e):
                 print(_ISSUE_12536_NOTES, file=sys.stderr)

@@ -59,34 +59,39 @@ class TestAutoDiffXd(unittest.TestCase):
         self.assertEqual(repr(a), "<AutoDiffXd 1.0 nderiv=2>")
         numpy_compare.assert_equal(a, a)
         # Test construction from `float` and `int`.
-        numpy_compare.assert_equal(AD(1), AD(1., []))
-        numpy_compare.assert_equal(AD(1.), AD(1., []))
+        numpy_compare.assert_equal(AD(1), AD(1.0, []))
+        numpy_compare.assert_equal(AD(1.0), AD(1.0, []))
         # Test implicit conversion from a simple dtype to AutoDiff.
         numpy_compare.assert_equal(
             autodiff_scalar_pass_through(1),  # int
-            AD(1., []))
+            AD(1.0, []),
+        )
         numpy_compare.assert_equal(
-            autodiff_scalar_pass_through(1.),  # float
-            AD(1., []))
+            autodiff_scalar_pass_through(1.0),  # float
+            AD(1.0, []),
+        )
         # Test explicit conversion to float.
         with self.assertRaises(TypeError) as cm:
             float(a)
         self.assertIn(
-            "not 'pydrake.autodiffutils.AutoDiffXd'", str(cm.exception))
+            "not 'pydrake.autodiffutils.AutoDiffXd'", str(cm.exception)
+        )
         a_scalar = np.array(a)
         with self.assertRaises(TypeError) as cm:
             float(a_scalar)
         if np.lib.NumpyVersion(np.__version__) < "1.14.0":
             self.assertEqual(
                 "don't know how to convert scalar number to float",
-                str(cm.exception))
+                str(cm.exception),
+            )
         else:
             self.assertRegex(
                 str(cm.exception),
                 r"float\(\) argument must be a string or a (real )?number, "
-                r"not 'pydrake\.autodiffutils\.AutoDiffXd'")
+                r"not 'pydrake\.autodiffutils\.AutoDiffXd'",
+            )
         # Test multi-element pass-through.
-        x = np.array([AD(1.), AD(2.), AD(3.)])
+        x = np.array([AD(1.0), AD(2.0), AD(3.0)])
         numpy_compare.assert_equal(autodiff_vector_pass_through(x), x)
         # Ensure fixed-size vectors are correctly converted (#9886).
         numpy_compare.assert_equal(autodiff_vector3_pass_through(x), x)
@@ -97,8 +102,8 @@ class TestAutoDiffXd(unittest.TestCase):
         assert_pickle(self, a, lambda x: x)
 
     def test_array_api(self):
-        a = AD(1, [1., 0])
-        b = AD(2, [0, 1.])
+        a = AD(1, [1.0, 0])
+        b = AD(2, [0, 1.0])
         x = np.array([a, b])
         self.assertEqual(x.dtype, object)
         # Idempotent check.
@@ -120,21 +125,24 @@ class TestAutoDiffXd(unittest.TestCase):
         # Test implicit conversion.
         numpy_compare.assert_equal(
             autodiff_vector_pass_through([1, 2]),  # int
-            [AD(1., []), AD(2., [])])
+            [AD(1.0, []), AD(2.0, [])],
+        )
         numpy_compare.assert_equal(
-            autodiff_vector_pass_through([1., 2.]),  # float
-            [AD(1., []), AD(2., [])])
+            autodiff_vector_pass_through([1.0, 2.0]),  # float
+            [AD(1.0, []), AD(2.0, [])],
+        )
 
     def _check_algebra(self, algebra):
-        a_scalar = AD(1, [1., 0])
-        b_scalar = AD(2, [0, 1.])
-        c_scalar = AD(0, [1., 0])
-        d_scalar = AD(1, [0, 1.])
+        a_scalar = AD(1, [1.0, 0])
+        b_scalar = AD(2, [0, 1.0])
+        c_scalar = AD(0, [1.0, 0])
+        d_scalar = AD(1, [0, 1.0])
         a, b, c, d = map(
-            algebra.to_algebra, (a_scalar, b_scalar, c_scalar, d_scalar))
+            algebra.to_algebra, (a_scalar, b_scalar, c_scalar, d_scalar)
+        )
 
         # Arithmetic
-        numpy_compare.assert_equal(-a, AD(-1, [-1., 0]))
+        numpy_compare.assert_equal(-a, AD(-1, [-1.0, 0]))
         numpy_compare.assert_equal(a + b, AD(3, [1, 1]))
         numpy_compare.assert_equal(a + 1, AD(2, [1, 0]))
         numpy_compare.assert_equal(1 + a, AD(2, [1, 0]))
@@ -144,7 +152,7 @@ class TestAutoDiffXd(unittest.TestCase):
         numpy_compare.assert_equal(a * b, AD(2, [2, 1]))
         numpy_compare.assert_equal(a * 2, AD(2, [2, 0]))
         numpy_compare.assert_equal(2 * a, AD(2, [2, 0]))
-        numpy_compare.assert_equal(a / b, AD(1./2, [1./2, -1./4]))
+        numpy_compare.assert_equal(a / b, AD(1.0 / 2, [1.0 / 2, -1.0 / 4]))
         numpy_compare.assert_equal(a / 2, AD(0.5, [0.5, 0]))
         numpy_compare.assert_equal(2 / a, AD(2, [-2, 0]))
         # Logical
@@ -162,12 +170,12 @@ class TestAutoDiffXd(unittest.TestCase):
         check_logical(algebra.ge, a, b, False)
         # Additional math
         # - See `math_overloads_test` for scalar overloads.
-        numpy_compare.assert_equal(a**2, AD(1, [2., 0]))
-        numpy_compare.assert_equal(algebra.log(a), AD(0, [1., 0]))
-        numpy_compare.assert_equal(algebra.abs(-a), AD(1, [1., 0]))
+        numpy_compare.assert_equal(a**2, AD(1, [2.0, 0]))
+        numpy_compare.assert_equal(algebra.log(a), AD(0, [1.0, 0]))
+        numpy_compare.assert_equal(algebra.abs(-a), AD(1, [1.0, 0]))
         numpy_compare.assert_equal(algebra.exp(a), AD(np.e, [np.e, 0]))
         numpy_compare.assert_equal(algebra.sqrt(a), AD(1, [0.5, 0]))
-        numpy_compare.assert_equal(algebra.pow(a, 2), AD(1, [2., 0]))
+        numpy_compare.assert_equal(algebra.pow(a, 2), AD(1, [2.0, 0]))
         numpy_compare.assert_equal(algebra.pow(a, 0.5), AD(1, [0.5, 0]))
         numpy_compare.assert_equal(algebra.sin(c), AD(0, [1, 0]))
         numpy_compare.assert_equal(algebra.cos(c), AD(1, [0, 0]))
@@ -207,12 +215,12 @@ class TestAutoDiffXd(unittest.TestCase):
         self.assertEqual(a.shape, (2,))
 
     def test_linear_algebra(self):
-        a_scalar = AD(1, [1., 0])
-        b_scalar = AD(2, [0, 1.])
+        a_scalar = AD(1, [1.0, 0])
+        b_scalar = AD(2, [0, 1.0])
         A = np.array([[a_scalar, a_scalar]])
         B = np.array([[b_scalar, b_scalar]]).T
         C = np.dot(A, B)
-        numpy_compare.assert_equal(C, [[AD(4, [4., 2])]])
+        numpy_compare.assert_equal(C, [[AD(4, [4.0, 2])]])
 
         # Before NumPy 1.17, `matmul` was not supported for `dtype=object`
         # (#11332), and `np.dot` should be used instead.
@@ -224,19 +232,19 @@ class TestAutoDiffXd(unittest.TestCase):
             numpy_compare.assert_equal(C2, C)
 
         # Type mixing
-        Bf = np.array([[2., 2]]).T
+        Bf = np.array([[2.0, 2]]).T
         C2 = np.dot(A, Bf)  # Leverages implicit casting.
-        numpy_compare.assert_equal(C2, [[AD(4, [4., 0])]])
+        numpy_compare.assert_equal(C2, [[AD(4, [4.0, 0])]])
 
         # Other methods.
         X = np.array([[a_scalar, b_scalar], [b_scalar, a_scalar]])
-        numpy_compare.assert_equal(np.trace(X), AD(2, [2., 0]))
+        numpy_compare.assert_equal(np.trace(X), AD(2, [2.0, 0]))
 
         # `inv` is a ufunc that we must implement, if possible. However, given
         # that this is currently `dtype=object`, it would be extremely unwise
         # to do so. See #8116 for alternative.
         with self.assertRaises(TypeError):
-            Y = np.linalg.inv(X)
+            np.linalg.inv(X)
 
         # Use workaround for inverse. For now, just check values.
         X_float = numpy_compare.to_float(X)
@@ -245,29 +253,30 @@ class TestAutoDiffXd(unittest.TestCase):
         np.testing.assert_equal(numpy_compare.to_float(Xinv), Xinv_float)
 
     def test_math_utils(self):
-        a = InitializeAutoDiff(value=[1, 2, 3], num_derivatives=3,
-                               deriv_num_start=0)
-        np.testing.assert_array_equal(ExtractValue(auto_diff_matrix=a),
-                                      np.array([[1, 2, 3]]).T)
-        np.testing.assert_array_equal(ExtractGradient(auto_diff_matrix=a),
-                                      np.eye(3))
+        a = InitializeAutoDiff(
+            value=[1, 2, 3], num_derivatives=3, deriv_num_start=0
+        )
+        np.testing.assert_array_equal(
+            ExtractValue(auto_diff_matrix=a), np.array([[1, 2, 3]]).T
+        )
+        np.testing.assert_array_equal(
+            ExtractGradient(auto_diff_matrix=a), np.eye(3)
+        )
 
         a, b = InitializeAutoDiffTuple([1], [2, 3])
-        np.testing.assert_array_equal(ExtractValue(a),
-                                      np.array([[1]]))
-        np.testing.assert_array_equal(ExtractValue(b),
-                                      np.array([[2, 3]]).T)
-        np.testing.assert_array_equal(ExtractGradient(a),
-                                      np.eye(1, 3))
-        np.testing.assert_array_equal(ExtractGradient(b),
-                                      np.hstack((np.zeros((2, 1)), np.eye(2))))
+        np.testing.assert_array_equal(ExtractValue(a), np.array([[1]]))
+        np.testing.assert_array_equal(ExtractValue(b), np.array([[2, 3]]).T)
+        np.testing.assert_array_equal(ExtractGradient(a), np.eye(1, 3))
+        np.testing.assert_array_equal(
+            ExtractGradient(b), np.hstack((np.zeros((2, 1)), np.eye(2)))
+        )
 
         c_grad = [[2, 4, 5], [1, -1, 0]]
         c = InitializeAutoDiff(value=[2, 3], gradient=c_grad)
-        np.testing.assert_array_equal(ExtractValue(c),
-                                      np.array([2, 3]).reshape((2, 1)))
-        np.testing.assert_array_equal(ExtractGradient(c),
-                                      np.array(c_grad))
+        np.testing.assert_array_equal(
+            ExtractValue(c), np.array([2, 3]).reshape((2, 1))
+        )
+        np.testing.assert_array_equal(ExtractGradient(c), np.array(c_grad))
 
     def test_autodiff_equal_to(self):
         a = AD(1.0, [1.0, 2.0])
@@ -371,6 +380,6 @@ class TestAutoDiffXd(unittest.TestCase):
             (T_operands_x, numeric_operands),
         )
         for op in operators:
-            for (op_a, op_b) in operand_combinations:
+            for op_a, op_b in operand_combinations:
                 check_operands(op, op_a, op_b)
                 check_operands(op, op_b, op_a)

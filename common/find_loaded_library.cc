@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 
 // clang-format off
 #ifdef __APPLE__

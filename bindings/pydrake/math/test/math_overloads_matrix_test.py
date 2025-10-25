@@ -30,9 +30,9 @@ def _matmul_dtype_pairs():
         yield dict(T1=T1, T2=T2)
 
 
-class MathOverloadsMatrixTest(unittest.TestCase,
-                              metaclass=meta.ValueParameterizedTest):
-
+class MathOverloadsMatrixTest(
+    unittest.TestCase, metaclass=meta.ValueParameterizedTest
+):
     def _astype(self, M, dtype, name):
         """Returns matrix like M but with a new dtype."""
         assert M.dtype == np.float64, M.dtype

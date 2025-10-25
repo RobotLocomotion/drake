@@ -1,6 +1,8 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import os
 import socket
 import subprocess
@@ -27,11 +29,13 @@ def _install_deepnote_nginx():
     that multiple notebooks can all be served via Deepnote's only open port.
     """
     print("Installing NginX server for MeshCat on Deepnote...")
-    install_nginx = FindResourceOrThrow(
-        "drake/setup/deepnote/install_nginx")
+    install_nginx = FindResourceOrThrow("drake/setup/deepnote/install_nginx")
     proc = subprocess.run(
-        [install_nginx], encoding="utf-8", stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
+        [install_nginx],
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
     if proc.returncode == 0:
         return
     print(proc.stdout, file=sys.stderr, end="")
@@ -44,6 +48,7 @@ def _start_meshcat_deepnote(*, params=None, restart_nginx=False):
     when debugging this function.
     """
     from IPython.display import display, HTML
+
     host = os.environ["DEEPNOTE_PROJECT_ID"]
     if params is None:
         params = MeshcatParams()
@@ -77,17 +82,19 @@ def _add_extraneous_repr_functions():
     """Defines repr functions for various classes in common where defining it
     in python is simply more convenient.
     """
+
     def in_memory_mesh_repr(mesh):
         # If defined, the supporting string has to provide the preceding comma,
         # and space, along with the parameter name and its value.
         supporting_string = ""
         if mesh.supporting_files:
-            supporting_string = (f", supporting_files="
-                                 f"{repr(mesh.supporting_files)}")
+            supporting_string = (
+                f", supporting_files={repr(mesh.supporting_files)}"
+            )
         return (
-            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file)}"
-            f"{supporting_string})"
+            f"InMemoryMesh(mesh_file={repr(mesh.mesh_file)}{supporting_string})"
         )
+
     InMemoryMesh.__repr__ = in_memory_mesh_repr
 
     def mesh_source_repr(source):
@@ -95,9 +102,8 @@ def _add_extraneous_repr_functions():
             param_str = f"path={repr(str(source.path()))}"
         else:
             param_str = f"mesh={repr(source.in_memory())}"
-        return (
-            f"MeshSource({param_str})"
-        )
+        return f"MeshSource({param_str})"
+
     MeshSource.__repr__ = mesh_source_repr
 
     def mesh_or_convex_repr(mesh, type_name):
@@ -109,6 +115,7 @@ def _add_extraneous_repr_functions():
         return (
             f"{type_name}({data_param}, scale3={repr(mesh.scale3().tolist())})"
         )
+
     Mesh.__repr__ = lambda x: mesh_or_convex_repr(x, "Mesh")
     Convex.__repr__ = lambda x: mesh_or_convex_repr(x, "Convex")
 

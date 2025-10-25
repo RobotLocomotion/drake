@@ -74,8 +74,8 @@ class VideoWriter(LeafSystem):
         self._filename = filename
         self._fps = fps
         self._input = self.DeclareAbstractInputPort(
-            name="color_image",
-            model_value=Value(ImageRgba8U()))
+            name="color_image", model_value=Value(ImageRgba8U())
+        )
         # TODO(jwnimmer-tri) Support forced triggers as well (so users can
         # manually record videos of prescribed motion).
         self.DeclarePeriodicPublishEvent(1.0 / fps, 0.0, self._publish)
@@ -83,10 +83,12 @@ class VideoWriter(LeafSystem):
         self._pil_images = None
         if backend == "PIL":
             from PIL import Image
+
             self._backend = Image
             self._write = self._write_pil
         elif backend == "cv2":
             import cv2
+
             self._backend = cv2
             self._write = self._write_cv2
             self._fourcc = fourcc or "mp4v"
@@ -96,9 +98,21 @@ class VideoWriter(LeafSystem):
             raise RuntimeError(f"Invalid backend={backend!r}")
 
     @staticmethod
-    def AddToBuilder(*, filename, builder, sensor_pose, fps=16.0,
-                     width=320, height=240, fov_y=np.pi/6, near=0.01, far=10.0,
-                     kinds=None, backend="PIL", fourcc=None):
+    def AddToBuilder(
+        *,
+        filename,
+        builder,
+        sensor_pose,
+        fps=16.0,
+        width=320,
+        height=240,
+        fov_y=np.pi / 6,
+        near=0.01,
+        far=10.0,
+        kinds=None,
+        backend="PIL",
+        fourcc=None,
+    ):
         """Adds a RgbdSensor and VideoWriter system to the given builder, using
         a world-fixed pose. Returns the VideoWriter system.
 
@@ -128,10 +142,17 @@ class VideoWriter(LeafSystem):
             ``video_writer.Save()`` to finish writing to the video file.
         """
         sensor = VideoWriter._AddRgbdSensor(
-            builder=builder, pose=sensor_pose,
-            width=width, height=height, fov_y=fov_y, near=near, far=far)
-        writer = VideoWriter(filename=filename, fps=fps, backend=backend,
-                             fourcc=fourcc)
+            builder=builder,
+            pose=sensor_pose,
+            width=width,
+            height=height,
+            fov_y=fov_y,
+            near=near,
+            far=far,
+        )
+        writer = VideoWriter(
+            filename=filename, fps=fps, backend=backend, fourcc=fourcc
+        )
         builder.AddSystem(writer)
         writer.ConnectRgbdSensor(builder=builder, sensor=sensor, kinds=kinds)
         return writer
@@ -142,20 +163,25 @@ class VideoWriter(LeafSystem):
         Returns the sensor system, already added to the builder and connected
         to the scene graph and configured to use the VTK render engine.
         """
-        scene_graph = [x for x in builder.GetSystems()
-                       if x.get_name() == "scene_graph"][0]
+        scene_graph = [
+            x for x in builder.GetSystems() if x.get_name() == "scene_graph"
+        ][0]
         if not scene_graph.HasRenderer("vtk"):
-            scene_graph.AddRenderer("vtk", MakeRenderEngineVtk(
-                RenderEngineVtkParams()))
+            scene_graph.AddRenderer(
+                "vtk", MakeRenderEngineVtk(RenderEngineVtkParams())
+            )
         intrinsics = CameraInfo(width, height, fov_y)
         clip = ClippingRange(near, far)
         camera = DepthRenderCamera(
             RenderCameraCore("vtk", intrinsics, clip, RigidTransform()),
-            DepthRange(near, far))
+            DepthRange(near, far),
+        )
         sensor = RgbdSensor(SceneGraph.world_frame_id(), pose, camera)
         builder.AddSystem(sensor)
-        builder.Connect(scene_graph.GetOutputPort("query"),
-                        sensor.GetInputPort("geometry_query"))
+        builder.Connect(
+            scene_graph.GetOutputPort("query"),
+            sensor.GetInputPort("geometry_query"),
+        )
         return sensor
 
     def ConnectRgbdSensor(self, *, builder, sensor, kinds=None):
@@ -177,20 +203,22 @@ class VideoWriter(LeafSystem):
         """
         # Make a list of ImageRgba8U output ports to feed as video input.
         image_sources = []
-        for kind in (kinds or ("color",)):
+        for kind in kinds or ("color",):
             if kind == "color":
                 image_sources.append(sensor.GetOutputPort("color_image"))
             elif kind == "depth":
                 converter = builder.AddSystem(ColorizeDepthImage())
                 builder.Connect(
                     sensor.GetOutputPort("depth_image_32f"),
-                    converter.GetInputPort("depth_image_32f"))
+                    converter.GetInputPort("depth_image_32f"),
+                )
                 image_sources.append(converter.get_output_port())
             elif kind == "label":
                 converter = builder.AddSystem(ColorizeLabelImage())
                 builder.Connect(
-                    sensor.GetOutputPort(f"label_image"),
-                    converter.get_input_port())
+                    sensor.GetOutputPort("label_image"),
+                    converter.get_input_port(),
+                )
                 image_sources.append(converter.get_output_port())
             else:
                 raise RuntimeError(f"Unknown image kind={kind!r}")
@@ -216,8 +244,12 @@ class VideoWriter(LeafSystem):
             images = self._pil_images
             frame_millis = int(1000.0 / self._fps)
             images[0].save(
-                self._filename, save_all=True, append_images=images[1:],
-                optimize=True, duration=frame_millis)
+                self._filename,
+                save_all=True,
+                append_images=images[1:],
+                optimize=True,
+                duration=frame_millis,
+            )
         self._pil_images = None
         # For cv2.
         if self._cv2_writer is not None:
@@ -249,6 +281,7 @@ class VideoWriter(LeafSystem):
             fourcc = cv2.VideoWriter.fourcc(*self._fourcc)
             (height, width, _) = rgba.shape
             self._cv2_writer = cv2.VideoWriter(
-                self._filename, fourcc, self._fps, (width, height))
+                self._filename, fourcc, self._fps, (width, height)
+            )
         bgra = cv2.cvtColor(rgba, cv2.COLOR_RGB2BGR)
         self._cv2_writer.write(bgra)

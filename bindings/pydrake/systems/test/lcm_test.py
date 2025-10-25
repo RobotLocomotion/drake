@@ -1,10 +1,10 @@
 """
 Test bindings of LCM integration with the Systems framework.
 """
+
 import pydrake.systems.lcm as mut
 
 import collections
-import time
 import unittest
 
 import numpy as np
@@ -16,7 +16,9 @@ from pydrake.common.value import Value
 from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
-    BasicVector, DiagramBuilder, LeafSystem, TriggerType,
+    DiagramBuilder,
+    LeafSystem,
+    TriggerType,
 )
 from pydrake.systems.primitives import ConstantVectorSource
 
@@ -34,6 +36,7 @@ def lcm_to_json(message):
             value = getattr(thing, field)
             result[field] = helper(value)
         return result
+
     return helper(message)
 
 
@@ -82,7 +85,8 @@ class TestSystemsLcm(unittest.TestCase):
         model_message = self._model_message()
         model_value = self._model_value_cpp()
         self.assert_lcm_equal(
-            self._cpp_value_to_py_message(model_value), model_message)
+            self._cpp_value_to_py_message(model_value), model_message
+        )
 
     def test_all_serializers_exist(self):
         """Checks that all of Drake's Python LCM messages have a matching C++
@@ -92,9 +96,14 @@ class TestSystemsLcm(unittest.TestCase):
         # a module __init__.py that enumerates all Drake Python LCM messages.
         # Fetch that module's list of message classes.
         all_message_classes = [
-            getattr(drake_lcmtypes, name) for name in dir(drake_lcmtypes)
-            if any([name.startswith("lcmt_"),
-                    name.startswith("experimental_lcmt_")])
+            getattr(drake_lcmtypes, name)
+            for name in dir(drake_lcmtypes)
+            if any(
+                [
+                    name.startswith("lcmt_"),
+                    name.startswith("experimental_lcmt_"),
+                ]
+            )
         ]
         self.assertGreater(len(all_message_classes), 1)
         # Confirm that each message class is partnered with the definition of a
@@ -107,8 +116,11 @@ class TestSystemsLcm(unittest.TestCase):
             # Confirm that we can actually instantiate a publisher that takes
             # the matching C++ message on its input port.
             mut.LcmPublisherSystem.Make(
-                channel="TEST_CHANNEL", lcm_type=message_class, lcm=lcm,
-                use_cpp_serializer=True)
+                channel="TEST_CHANNEL",
+                lcm_type=message_class,
+                lcm=lcm,
+                use_cpp_serializer=True,
+            )
 
     def test_buses(self):
         self.assertIsInstance(mut.LcmBuses.kLcmUrlMemqNull, str)
@@ -130,8 +142,9 @@ class TestSystemsLcm(unittest.TestCase):
         builder = DiagramBuilder()
         buses = mut.ApplyLcmBusConfig(bus_config, builder)
         self.assertEqual(buses.size(), 3)
-        self.assertIsInstance(buses.Find("Config test", "foo"),
-                              mut.LcmInterfaceSystem)
+        self.assertIsInstance(
+            buses.Find("Config test", "foo"), mut.LcmInterfaceSystem
+        )
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
@@ -144,8 +157,11 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            wait_for_message_on_initialization_timeout=0.0)
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm,
+            wait_for_message_on_initialization_timeout=0.0,
+        )
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
@@ -155,7 +171,8 @@ class TestSystemsLcm(unittest.TestCase):
         # Test LcmInterfaceSystem overloads
         lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system)
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system
+        )
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
         context = self._process_event(dut)
@@ -165,9 +182,12 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber_cpp(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm,
             use_cpp_serializer=True,
-            wait_for_message_on_initialization_timeout=0.0)
+            wait_for_message_on_initialization_timeout=0.0,
+        )
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
@@ -187,7 +207,8 @@ class TestSystemsLcm(unittest.TestCase):
             lcm.Publish("TEST_LOOP", message.encode())
             for attempt in range(10):
                 new_count = sub.WaitForMessage(
-                    old_message_count, value, timeout=0.02)
+                    old_message_count, value, timeout=0.02
+                )
                 if new_count > old_message_count:
                     break
                 lcm.HandleSubscriptions(0)
@@ -201,8 +222,12 @@ class TestSystemsLcm(unittest.TestCase):
     def test_publisher(self):
         lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            publish_period=0.1, publish_offset=0.01)
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm,
+            publish_period=0.1,
+            publish_offset=0.01,
+        )
         subscriber = Subscriber(lcm, "TEST_CHANNEL", lcmt_quaternion)
         model_message = self._model_message()
         self._fix_and_publish(dut, Value(model_message))
@@ -210,28 +235,43 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(subscriber.message, model_message)
         # Test `publish_triggers` overload.
         mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            publish_period=0.1, publish_offset=0.01,
-            publish_triggers={TriggerType.kPeriodic})
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm,
+            publish_period=0.1,
+            publish_offset=0.01,
+            publish_triggers={TriggerType.kPeriodic},
+        )
         # Test LcmInterfaceSystem overloads
         lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
         dut = mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
-            publish_period=0.1, publish_offset=0.01)
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm_system,
+            publish_period=0.1,
+            publish_offset=0.01,
+        )
         self._fix_and_publish(dut, Value(model_message))
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
         # Test `publish_triggers` overload.
         mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
-            publish_period=0.1, publish_offset=0.01,
-            publish_triggers={TriggerType.kPeriodic})
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm_system,
+            publish_period=0.1,
+            publish_offset=0.01,
+            publish_triggers={TriggerType.kPeriodic},
+        )
 
     def test_publisher_cpp(self):
         lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            use_cpp_serializer=True)
+            channel="TEST_CHANNEL",
+            lcm_type=lcmt_quaternion,
+            lcm=lcm,
+            use_cpp_serializer=True,
+        )
         subscriber = Subscriber(lcm, "TEST_CHANNEL", lcmt_quaternion)
         model_message = self._model_message()
         model_value = self._model_value_cpp()
@@ -245,7 +285,8 @@ class TestSystemsLcm(unittest.TestCase):
         def __init__(self):
             LeafSystem.__init__(self)
             self.DeclareAbstractOutputPort(
-                "output", self.AllocateOutput, self.CalcOutput)
+                "output", self.AllocateOutput, self.CalcOutput
+            )
 
         def AllocateOutput(self):
             return Value(lcmt_header())
@@ -267,7 +308,9 @@ class TestSystemsLcm(unittest.TestCase):
                 channel="LCMT_HEADER",
                 lcm_type=lcmt_header,
                 lcm=lcm,
-                publish_period=0.05))
+                publish_period=0.05,
+            )
+        )
         builder.Connect(source.get_output_port(), publisher.get_input_port())
         diagram = builder.Build()
         diagram.ForcedPublish(diagram.CreateDefaultContext())
@@ -280,7 +323,8 @@ class TestSystemsLcm(unittest.TestCase):
             lcm=DrakeLcm(),
             signal=source.get_output_port(0),
             channel="TEST_CHANNEL",
-            publish_period=0.001)
+            publish_period=0.001,
+        )
         self.assertIsInstance(scope, mut.LcmScopeSystem)
         self.assertIsInstance(publisher, mut.LcmPublisherSystem)
 
@@ -293,15 +337,19 @@ class TestSystemsLcm(unittest.TestCase):
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.
         self.assertIn(
-            "only inherits from LeafSystem", mut.LcmInterfaceSystem.__doc__)
+            "only inherits from LeafSystem", mut.LcmInterfaceSystem.__doc__
+        )
         # Next, construct a diagram and add both the interface system and
         # a subscriber.
         builder = DiagramBuilder()
         lcm = DrakeLcm()
-        lcm_system = builder.AddSystem(mut.LcmInterfaceSystem(lcm=lcm))
+        builder.AddSystem(mut.LcmInterfaceSystem(lcm=lcm))
         # Create subscriber in the diagram.
-        subscriber = builder.AddSystem(mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm))
+        subscriber = builder.AddSystem(
+            mut.LcmSubscriberSystem.Make(
+                channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm
+            )
+        )
         diagram = builder.Build()
         simulator = Simulator(diagram)
         simulator.Initialize()
@@ -314,6 +362,7 @@ class TestSystemsLcm(unittest.TestCase):
         simulator.AdvanceTo(eps)
         # Ensure that we have what we want.
         context = subscriber.GetMyContextFromRoot(
-            simulator.get_mutable_context())
+            simulator.get_mutable_context()
+        )
         actual_message = subscriber.get_output_port(0).Eval(context)
         self.assert_lcm_equal(actual_message, model_message)

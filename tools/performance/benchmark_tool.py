@@ -32,11 +32,14 @@ def say(*args):
 def sudo(*args, quiet=False):
     """Run sudo, passing all args to it."""
     new_args = ["sudo"] + list(args)
-    print('Running: ', shlex.join(new_args))
+    print("Running: ", shlex.join(new_args))
     if quiet:
         popen = subprocess.Popen(
-            new_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            encoding='utf-8')
+            new_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            encoding="utf-8",
+        )
         if popen.wait() != 0:
             print(popen.stdout.read())
             raise RuntimeError("Failure during sudo()")
@@ -54,8 +57,10 @@ class NoBoost:
 
     def set_boost(self, boost_value):
         """Set the boost state; True means boost is enabled."""
-        say("No method of cpu boost control was found;"
-            " nothing is changed. Benchmark results may be noisy.")
+        say(
+            "No method of cpu boost control was found;"
+            " nothing is changed. Benchmark results may be noisy."
+        )
 
 
 class IntelBoost:
@@ -68,14 +73,14 @@ class IntelBoost:
 
     def get_boost(self):
         """Return the current boost state; True means boost is enabled."""
-        with open(self.NO_TURBO_CONTROL_FILE, 'r', encoding='utf-8') as fo:
+        with open(self.NO_TURBO_CONTROL_FILE, "r", encoding="utf-8") as fo:
             no_turbo = int(fo.read().strip())
             return not no_turbo  # Intel reverses the sense.
 
     def set_boost(self, boost_value):
         """Set the boost state; True means boost is enabled."""
         no_turbo = int(not boost_value)  # Intel reverses the sense.
-        sudo('sh', '-c', f"echo {no_turbo} > {self.NO_TURBO_CONTROL_FILE}")
+        sudo("sh", "-c", f"echo {no_turbo} > {self.NO_TURBO_CONTROL_FILE}")
 
 
 class LinuxKernelBoost:
@@ -89,17 +94,17 @@ class LinuxKernelBoost:
 
     def get_boost(self):
         """Return the current boost state; True means boost is enabled."""
-        with open(self.CPUFREQ_BOOST_FILE, 'r', encoding='utf-8') as fo:
+        with open(self.CPUFREQ_BOOST_FILE, "r", encoding="utf-8") as fo:
             return bool(fo.read().strip())
 
     def set_boost(self, boost_value):
         """Set the boost state; True means boost is enabled."""
-        sudo('sh', '-c',
-             f"echo {int(boost_value)} > {self.CPUFREQ_BOOST_FILE}")
+        sudo("sh", "-c", f"echo {int(boost_value)} > {self.CPUFREQ_BOOST_FILE}")
 
 
 class CpuSpeedSettings:
     """Routines for controlling CPU speed."""
+
     def __init__(self, *, cpu: int):
         """The `cpu` specifies which specific cpu to govern. We disable boost
         for the entire machine, but we only govern the frequency of this one
@@ -119,7 +124,8 @@ class CpuSpeedSettings:
             return
         say("Install tools for CPU speed control. [Note: sudo!]")
         kernel_name = subprocess.check_output(
-            ["uname", "-r"], encoding="utf-8").strip()
+            ["uname", "-r"], encoding="utf-8"
+        ).strip()
         kernel_packages = [f"linux-tools-{kernel_name}", "linux-tools-common"]
         sudo("apt", "install", *kernel_packages)
 
@@ -131,14 +137,22 @@ class CpuSpeedSettings:
         """Return the current CPU governor name string."""
         text = subprocess.check_output(
             ["cpupower", "-c", self._cpu, "frequency-info", "-p"],
-            encoding='utf-8')
+            encoding="utf-8",
+        )
         m = re.search(r'\bgovernor "([^"]*)" ', text)
         return m.group(1)
 
     def set_cpu_governor(self, governor):
         """Set the CPU governor to the given name string."""
-        sudo("cpupower", "-c", self._cpu, "frequency-set",
-             "--governor", governor, quiet=True)
+        sudo(
+            "cpupower",
+            "-c",
+            self._cpu,
+            "frequency-set",
+            "--governor",
+            governor,
+            quiet=True,
+        )
 
     def get_boost(self):
         """Return the current boost state; True means boost is enabled."""
@@ -186,18 +200,18 @@ will be invalid. Supported methods are:
 
     os.mkdir(args.output_dir)
     default_args = [
-        '--benchmark_display_aggregates_only=true',
-        '--benchmark_out_format=json',
-        f'--benchmark_out={args.output_dir}/results.json',
+        "--benchmark_display_aggregates_only=true",
+        "--benchmark_out_format=json",
+        f"--benchmark_out={args.output_dir}/results.json",
     ]
     command = ["taskset", "--cpu-list", str(args.cputask)]
     command += [args.binary] + default_args + args.extra_args
     env = copy.copy(os.environ)
     env["DRAKE_GOOGLEBENCH_SUPPRESS_SCALING_WARNING"] = "1"
-    with open(f'{args.output_dir}/summary.txt', 'wb') as summary:
+    with open(f"{args.output_dir}/summary.txt", "wb") as summary:
         with cpu_speed_settings.scope(governor="performance", boost=False):
             say("Run the experiment.")
-            print('Running: ', shlex.join(command))
+            print("Running: ", shlex.join(command))
             popen = subprocess.Popen(command, stdout=subprocess.PIPE, env=env)
             for line in popen.stdout:
                 summary.write(line)
@@ -208,31 +222,47 @@ will be invalid. Supported methods are:
 
 def main():
     # Make cwd be what the user expected, not the runfiles tree.
-    assert ".runfiles" in ':'.join(sys.path), "Always use 'bazel run'."
-    os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+    assert ".runfiles" in ":".join(sys.path), "Always use 'bazel run'."
+    os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
     # Parse and validate arguments.
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        '--binary', metavar='BINARY', required=True,
-        help='path to googlebench binary; typically this is supplied'
-             ' automatically by the drake_py_experiment_binary macro')
+        "--binary",
+        metavar="BINARY",
+        required=True,
+        help="path to googlebench binary; typically this is supplied"
+        " automatically by the drake_py_experiment_binary macro",
+    )
     parser.add_argument(
-        '--output_dir', metavar='OUTPUT-DIR', required=True,
-        help='output directory for benchmark data; it must not already exist')
+        "--output_dir",
+        metavar="OUTPUT-DIR",
+        required=True,
+        help="output directory for benchmark data; it must not already exist",
+    )
     parser.add_argument(
-        '--sleep', type=float, default=10.0,
-        help='pause this long for lingering activity to subside (in seconds)')
+        "--sleep",
+        type=float,
+        default=10.0,
+        help="pause this long for lingering activity to subside (in seconds)",
+    )
     parser.add_argument(
         # Defaulting to processor #0 is arbitrary; it is up to experimenters to
         # ensure it is idle during experiments or else specify a different one.
-        '--cputask', type=int, metavar='N', default=0,
-        help='pin the BINARY to vcpu number N for this experiment')
+        "--cputask",
+        type=int,
+        metavar="N",
+        default=0,
+        help="pin the BINARY to vcpu number N for this experiment",
+    )
     parser.add_argument(
-        'extra_args', nargs='*',
-        help='extra arguments passed to the underlying executable')
+        "extra_args",
+        nargs="*",
+        help="extra arguments passed to the underlying executable",
+    )
     args = parser.parse_args()
     if not os.path.exists(args.binary):
         parser.error("BINARY does not exist .")
@@ -246,5 +276,5 @@ def main():
     do_benchmark(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -7,11 +7,9 @@ import textwrap
 import unittest
 
 import numpy as np
-from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.value import AbstractValue, Value
+from pydrake.common.value import Value
 from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
@@ -21,10 +19,7 @@ from pydrake.geometry import (
     RenderCameraCore,
 )
 from pydrake.lcm import DrakeLcm
-from pydrake.math import (
-    RigidTransform,
-    RollPitchYaw,
-)
+from pydrake.math import RigidTransform
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
 )
@@ -35,7 +30,7 @@ from pydrake.systems.framework import (
     DiagramBuilder,
     InputPort,
     OutputPort,
-    )
+)
 from pydrake.systems.lcm import LcmBuses, LcmInterfaceSystem, _Serializer_
 from drake import (
     lcmt_image,
@@ -72,7 +67,6 @@ image_type_aliases = [
 
 
 class TestSensors(unittest.TestCase):
-
     def _make_single_body_scene(self):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
@@ -89,36 +83,41 @@ class TestSensors(unittest.TestCase):
     def test_accelerometer(self):
         plant, builder = self._make_single_body_scene()
         box_body = plant.GetBodyByName("box")
-        accelerometer = builder.AddSystem(mut.Accelerometer(
-            body=box_body,
-            X_BS=RigidTransform(),
-        ))
+        accelerometer = builder.AddSystem(
+            mut.Accelerometer(
+                body=box_body,
+                X_BS=RigidTransform(),
+            )
+        )
 
         plant.set_gravity_enabled(box_body.model_instance(), False)
         plant.Finalize()
 
         builder.Connect(
             plant.get_body_poses_output_port(),
-            accelerometer.get_body_poses_input_port()
+            accelerometer.get_body_poses_input_port(),
         )
 
         builder.Connect(
             plant.get_body_spatial_velocities_output_port(),
-            accelerometer.get_body_velocities_input_port()
+            accelerometer.get_body_velocities_input_port(),
         )
 
         builder.Connect(
             plant.get_body_spatial_accelerations_output_port(),
-            accelerometer.get_body_accelerations_input_port()
+            accelerometer.get_body_accelerations_input_port(),
         )
         diagram = builder.Build()
 
         context = diagram.CreateDefaultContext()
         accelerometer_context = diagram.GetMutableSubsystemContext(
-            accelerometer, context)
+            accelerometer, context
+        )
         evaluated_acceleration = (
             accelerometer.get_measurement_output_port().Eval(
-                accelerometer_context))
+                accelerometer_context
+            )
+        )
         self.assertTrue(np.all(evaluated_acceleration == 0.0))
         self.assertTrue(np.all(accelerometer.gravity_vector() == 0.0))
         self.assertEqual(accelerometer.body_index(), box_body.index())
@@ -127,29 +126,33 @@ class TestSensors(unittest.TestCase):
     def test_gyroscope(self):
         plant, builder = self._make_single_body_scene()
         box_body = plant.GetBodyByName("box")
-        gyroscope = builder.AddSystem(mut.Gyroscope(
-            body=box_body,
-            X_BS=RigidTransform(),
-        ))
+        gyroscope = builder.AddSystem(
+            mut.Gyroscope(
+                body=box_body,
+                X_BS=RigidTransform(),
+            )
+        )
         plant.Finalize()
 
         builder.Connect(
             plant.get_body_poses_output_port(),
-            gyroscope.get_body_poses_input_port()
+            gyroscope.get_body_poses_input_port(),
         )
 
         builder.Connect(
             plant.get_body_spatial_velocities_output_port(),
-            gyroscope.get_body_velocities_input_port()
+            gyroscope.get_body_velocities_input_port(),
         )
 
         diagram = builder.Build()
 
         context = diagram.CreateDefaultContext()
         gyroscope_context = diagram.GetMutableSubsystemContext(
-            gyroscope, context)
+            gyroscope, context
+        )
         evaluated_angular_velocity = (
-            gyroscope.get_measurement_output_port().Eval(gyroscope_context))
+            gyroscope.get_measurement_output_port().Eval(gyroscope_context)
+        )
         self.assertTrue(np.all(evaluated_angular_velocity == 0.0))
         self.assertEqual(gyroscope.body_index(), box_body.index())
         self.assertTrue(gyroscope.pose().IsExactlyIdentity())
@@ -157,7 +160,8 @@ class TestSensors(unittest.TestCase):
     def test_image_traits(self):
         # Ensure that we test all available enums.
         self.assertSetEqual(
-            set(pixel_types), set(mut.PixelType.__members__.values()))
+            set(pixel_types), set(mut.PixelType.__members__.values())
+        )
 
         # Spot-check specific instantiations of ImageTraits<>.
         t = mut.ImageTraits[pt.kRgba8U]
@@ -195,8 +199,9 @@ class TestSensors(unittest.TestCase):
 
     def test_image_types(self):
         # Test instantiations of Image<>.
-        for pixel_type, image_type_alias in (
-                zip(pixel_types, image_type_aliases)):
+        for pixel_type, image_type_alias in zip(
+            pixel_types, image_type_aliases
+        ):
             ImageT = mut.Image[pixel_type]
             self.assertEqual(ImageT.Traits, mut.ImageTraits[pixel_type])
             self.assertEqual(ImageT, image_type_alias)
@@ -232,7 +237,6 @@ class TestSensors(unittest.TestCase):
             channel_default = 1
             ImageT = mut.Image[pixel_type]
             image = ImageT(w, h, channel_default)
-            nc = ImageT.Traits.kNumChannels
 
             # Test default initialization.
             self.assertEqual(image.at(0, 0)[0], channel_default)
@@ -279,7 +283,8 @@ class TestSensors(unittest.TestCase):
             for iw in range(w):
                 for ih in range(h):
                     self.assertTrue(
-                        np.allclose(data[ih, iw, :], image.at(iw, ih)))
+                        np.allclose(data[ih, iw, :], image.at(iw, ih))
+                    )
 
             # Ensure that keep alive works by using temporary objects.
 
@@ -308,7 +313,8 @@ class TestSensors(unittest.TestCase):
     def test_camera_config(self):
         mut.CameraConfig()
         config = mut.CameraConfig(
-            width=124, focal=mut.CameraConfig.FocalLength(x=10, y=20))
+            width=124, focal=mut.CameraConfig.FocalLength(x=10, y=20)
+        )
         self.assertEqual(config.width, 124)
         self.assertIn("width", repr(config))
         copy.copy(config)
@@ -335,8 +341,13 @@ class TestSensors(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         system_count = len(builder.GetSystems())
         lcm = DrakeLcm()
-        mut.ApplyCameraConfig(config=config, plant=plant, builder=builder,
-                              scene_graph=scene_graph, lcm=lcm)
+        mut.ApplyCameraConfig(
+            config=config,
+            plant=plant,
+            builder=builder,
+            scene_graph=scene_graph,
+            lcm=lcm,
+        )
         # Systems have been added.
         self.assertGreater(len(builder.GetSystems()), system_count)
 
@@ -350,8 +361,9 @@ class TestSensors(unittest.TestCase):
         lcm_buses = LcmBuses()
         lcm_buses.Add("fancy", DrakeLcm())
         config = mut.CameraConfig(lcm_bus="fancy")
-        mut.ApplyCameraConfig(config=config, builder=builder,
-                              lcm_buses=lcm_buses)
+        mut.ApplyCameraConfig(
+            config=config, builder=builder, lcm_buses=lcm_buses
+        )
 
         # Check that systems were added.
         self.assertGreater(len(builder.GetSystems()), system_count)
@@ -374,18 +386,23 @@ class TestSensors(unittest.TestCase):
         focal_x = focal_y
         center_x = width / 2 - 0.5
         center_y = height / 2 - 0.5
-        intrinsic_matrix = np.array([
-            [focal_x, 0, center_x],
-            [0, focal_y, center_y],
-            [0, 0, 1]])
+        intrinsic_matrix = np.array(
+            [[focal_x, 0, center_x], [0, focal_y, center_y], [0, 0, 1]]
+        )
 
         infos = [
             mut.CameraInfo(width=width, height=height, fov_y=fov_y),
             mut.CameraInfo(
-                width=width, height=height, intrinsic_matrix=intrinsic_matrix),
+                width=width, height=height, intrinsic_matrix=intrinsic_matrix
+            ),
             mut.CameraInfo(
-                width=width, height=height, focal_x=focal_x, focal_y=focal_y,
-                center_x=center_x, center_y=center_y),
+                width=width,
+                height=height,
+                focal_x=focal_x,
+                focal_y=focal_y,
+                center_x=center_x,
+                center_y=center_y,
+            ),
         ]
 
         for info in infos:
@@ -397,8 +414,7 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(info.center_y(), center_y)
             self.assertIsInstance(info.fov_x(), float)
             self.assertIsInstance(info.fov_y(), float)
-            self.assertTrue(
-                (info.intrinsic_matrix() == intrinsic_matrix).all())
+            self.assertTrue((info.intrinsic_matrix() == intrinsic_matrix).all())
             assert_pickle(self, info, mut.CameraInfo.intrinsic_matrix)
 
     def _check_input(self, value):
@@ -410,14 +426,18 @@ class TestSensors(unittest.TestCase):
     def test_image_to_lcm_image_array_basic(self):
         """Tests the nominal constructor."""
         dut = mut.ImageToLcmImageArrayT(
-            color_frame_name="color", depth_frame_name="depth",
-            label_frame_name="label", do_compress=False)
+            color_frame_name="color",
+            depth_frame_name="depth",
+            label_frame_name="label",
+            do_compress=False,
+        )
         for port in (
-                dut.color_image_input_port(), dut.depth_image_input_port(),
-                dut.label_image_input_port()):
+            dut.color_image_input_port(),
+            dut.depth_image_input_port(),
+            dut.label_image_input_port(),
+        ):
             self._check_input(port)
-        for port in (
-                dut.image_array_t_msg_output_port(),):
+        for port in (dut.image_array_t_msg_output_port(),):
             self._check_output(port)
 
     def test_image_to_lcm_image_array_custom(self):
@@ -470,13 +490,13 @@ class TestSensors(unittest.TestCase):
     def test_lcm_image_array_to_images_basic(self):
         """Tests all API calls as well as runtime functionality."""
         dut = mut.LcmImageArrayToImages()
-        for port in (
-                dut.image_array_t_input_port(),):
+        for port in (dut.image_array_t_input_port(),):
             self._check_input(port)
         for port in (
-                dut.color_image_output_port(),
-                dut.depth_image_output_port(),
-                dut.label_image_output_port()):
+            dut.color_image_output_port(),
+            dut.depth_image_output_port(),
+            dut.label_image_output_port(),
+        ):
             self._check_output(port)
 
         # Create a one-pixel lcmt_image message.
@@ -512,21 +532,25 @@ class TestSensors(unittest.TestCase):
     def _make_render_camera_core(*, width=640, height=480):
         return RenderCameraCore(
             "renderer",
-            mut.CameraInfo(width, height, np.pi/6),
+            mut.CameraInfo(width, height, np.pi / 6),
             ClippingRange(0.1, 6.0),
-            RigidTransform())
+            RigidTransform(),
+        )
 
     def test_rgbd_sensor(self):
         def check_ports(system):
             self.assertIsInstance(system.query_object_input_port(), InputPort)
             self.assertIsInstance(system.color_image_output_port(), OutputPort)
-            self.assertIsInstance(system.depth_image_32F_output_port(),
-                                  OutputPort)
-            self.assertIsInstance(system.depth_image_16U_output_port(),
-                                  OutputPort)
+            self.assertIsInstance(
+                system.depth_image_32F_output_port(), OutputPort
+            )
+            self.assertIsInstance(
+                system.depth_image_16U_output_port(), OutputPort
+            )
             self.assertIsInstance(system.label_image_output_port(), OutputPort)
-            self.assertIsInstance(system.body_pose_in_world_output_port(),
-                                  OutputPort)
+            self.assertIsInstance(
+                system.body_pose_in_world_output_port(), OutputPort
+            )
             self.assertIsInstance(system.image_time_output_port(), OutputPort)
 
         # Use HDTV size.
@@ -539,20 +563,26 @@ class TestSensors(unittest.TestCase):
 
         def construct(parent_id, X_PB):
             color_camera = ColorRenderCamera(
-                self._make_render_camera_core(width=width, height=height),
-                False)
-            depth_camera = DepthRenderCamera(color_camera.core(),
-                                             DepthRange(0.1, 5.5))
-            return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
-                                  color_camera=color_camera,
-                                  depth_camera=depth_camera)
+                self._make_render_camera_core(width=width, height=height), False
+            )
+            depth_camera = DepthRenderCamera(
+                color_camera.core(), DepthRange(0.1, 5.5)
+            )
+            return mut.RgbdSensor(
+                parent_id=parent_id,
+                X_PB=X_PB,
+                color_camera=color_camera,
+                depth_camera=depth_camera,
+            )
 
         def construct_single(parent_id, X_PB):
             depth_camera = DepthRenderCamera(
                 self._make_render_camera_core(width=width, height=height),
-                DepthRange(0.1, 5.5))
-            return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
-                                  depth_camera=depth_camera)
+                DepthRange(0.1, 5.5),
+            )
+            return mut.RgbdSensor(
+                parent_id=parent_id, X_PB=X_PB, depth_camera=depth_camera
+            )
 
         # Put it at the origin.
         X_WB = RigidTransform()
@@ -568,10 +598,8 @@ class TestSensors(unittest.TestCase):
             sensor = constructor(parent_id, X_WB)
 
             # Check default accessors.
-            check_info(sensor.default_color_render_camera()
-                       .core().intrinsics())
-            check_info(sensor.default_depth_render_camera()
-                       .core().intrinsics())
+            check_info(sensor.default_color_render_camera().core().intrinsics())
+            check_info(sensor.default_depth_render_camera().core().intrinsics())
             self.assertIsInstance(sensor.default_X_PB(), RigidTransform)
             self.assertEqual(sensor.default_parent_frame_id(), parent_id)
             sensor.set_default_parent_frame_id(id=parent_id)
@@ -585,26 +613,33 @@ class TestSensors(unittest.TestCase):
 
             # Check parameter API.
             context = sensor.CreateDefaultContext()
-            self.assertIsInstance(sensor.GetColorRenderCamera(context=context),
-                                  ColorRenderCamera)
-            sensor.SetColorRenderCamera(context=context,
-                                        color_camera=color_camera)
-            self.assertIsInstance(sensor.GetDepthRenderCamera(context=context),
-                                  DepthRenderCamera)
-            sensor.SetDepthRenderCamera(context=context,
-                                        depth_camera=depth_camera)
-            self.assertIsInstance(sensor.GetX_PB(context=context),
-                                  RigidTransform)
+            self.assertIsInstance(
+                sensor.GetColorRenderCamera(context=context), ColorRenderCamera
+            )
+            sensor.SetColorRenderCamera(
+                context=context, color_camera=color_camera
+            )
+            self.assertIsInstance(
+                sensor.GetDepthRenderCamera(context=context), DepthRenderCamera
+            )
+            sensor.SetDepthRenderCamera(
+                context=context, depth_camera=depth_camera
+            )
+            self.assertIsInstance(
+                sensor.GetX_PB(context=context), RigidTransform
+            )
             sensor.SetX_PB(context=context, sensor_pose=X_WB)
-            self.assertEqual(sensor.GetParentFrameId(context=context),
-                             parent_id)
+            self.assertEqual(
+                sensor.GetParentFrameId(context=context), parent_id
+            )
             sensor.SetParentFrameId(context=context, id=parent_id)
 
         # Test discrete camera. We'll simply use the last sensor constructed.
 
         period = mut.RgbdSensorDiscrete.kDefaultPeriod
         discrete = mut.RgbdSensorDiscrete(
-            sensor=sensor, period=period, render_label_image=True)
+            sensor=sensor, period=period, render_label_image=True
+        )
         self.assertTrue(discrete.sensor() is sensor)
         self.assertEqual(discrete.period(), period)
         check_ports(discrete)
@@ -612,14 +647,10 @@ class TestSensors(unittest.TestCase):
         # That we can access the state as images.
         context = discrete.CreateDefaultContext()
         values = context.get_abstract_state()
-        self.assertIsInstance(values.get_value(0),
-                              Value[mut.ImageRgba8U])
-        self.assertIsInstance(values.get_value(1),
-                              Value[mut.ImageDepth32F])
-        self.assertIsInstance(values.get_value(2),
-                              Value[mut.ImageDepth16U])
-        self.assertIsInstance(values.get_value(3),
-                              Value[mut.ImageLabel16I])
+        self.assertIsInstance(values.get_value(0), Value[mut.ImageRgba8U])
+        self.assertIsInstance(values.get_value(1), Value[mut.ImageDepth32F])
+        self.assertIsInstance(values.get_value(2), Value[mut.ImageDepth16U])
+        self.assertIsInstance(values.get_value(3), Value[mut.ImageLabel16I])
 
     def test_rgbd_sensor_async(self):
         builder = DiagramBuilder()
@@ -628,15 +659,17 @@ class TestSensors(unittest.TestCase):
         color_camera = ColorRenderCamera(camera_core)
         depth_camera = DepthRenderCamera(camera_core, DepthRange(0.1, 5.5))
         parent_id = FrameId.get_new_id()
-        dut = mut.RgbdSensorAsync(scene_graph=scene_graph,
-                                  parent_id=parent_id,
-                                  X_PB=RigidTransform(),
-                                  fps=1.0,
-                                  capture_offset=0.1,
-                                  output_delay=0.01,
-                                  color_camera=color_camera,
-                                  depth_camera=depth_camera,
-                                  render_label_image=True)
+        dut = mut.RgbdSensorAsync(
+            scene_graph=scene_graph,
+            parent_id=parent_id,
+            X_PB=RigidTransform(),
+            fps=1.0,
+            capture_offset=0.1,
+            output_delay=0.01,
+            color_camera=color_camera,
+            depth_camera=depth_camera,
+            render_label_image=True,
+        )
 
         # Check const configuration accessors.
         self.assertIsInstance(dut.fps(), float)
@@ -646,10 +679,12 @@ class TestSensors(unittest.TestCase):
         # Check default accessors.
         self.assertEqual(dut.default_parent_frame_id(), parent_id)
         self.assertIsInstance(dut.default_X_PB(), RigidTransform)
-        self.assertIsInstance(dut.default_color_render_camera(),
-                              ColorRenderCamera)
-        self.assertIsInstance(dut.default_depth_render_camera(),
-                              DepthRenderCamera)
+        self.assertIsInstance(
+            dut.default_color_render_camera(), ColorRenderCamera
+        )
+        self.assertIsInstance(
+            dut.default_depth_render_camera(), DepthRenderCamera
+        )
         dut.set_default_parent_frame_id(id=parent_id)
         dut.set_default_X_PB(sensor_pose=RigidTransform())
         color_camera = dut.default_color_render_camera()
@@ -663,11 +698,13 @@ class TestSensors(unittest.TestCase):
         dut.SetParentFrameId(context=context, id=parent_id)
         self.assertIsInstance(dut.GetX_PB(context=context), RigidTransform)
         dut.SetX_PB(context=context, sensor_pose=RigidTransform())
-        self.assertIsInstance(dut.GetColorRenderCamera(context=context),
-                              ColorRenderCamera)
+        self.assertIsInstance(
+            dut.GetColorRenderCamera(context=context), ColorRenderCamera
+        )
         dut.SetColorRenderCamera(context=context, color_camera=color_camera)
-        self.assertIsInstance(dut.GetDepthRenderCamera(context=context),
-                              DepthRenderCamera)
+        self.assertIsInstance(
+            dut.GetDepthRenderCamera(context=context), DepthRenderCamera
+        )
         dut.SetDepthRenderCamera(context=context, depth_camera=depth_camera)
 
         dut.color_image_output_port()
@@ -724,7 +761,8 @@ class TestSensors(unittest.TestCase):
             port_name="color",
             file_name_format="/tmp/{port_name}-{time_usec}",
             publish_period=0.125,
-            start_time=0.0)
+            start_time=0.0,
+        )
         self.assertIsNotNone(input_port)
 
     @numpy_compare.check_all_types
@@ -733,19 +771,22 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(encoders.get_input_port().size(), 2)
 
         encoders = mut.RotaryEncoders_[T](
-            input_port_size=5, input_vector_indices=[0, 2])
+            input_port_size=5, input_vector_indices=[0, 2]
+        )
         self.assertEqual(encoders.get_input_port().size(), 5)
 
         encoders = mut.RotaryEncoders_[T](
             input_port_size=5,
             input_vector_indices=[0, 2],
-            ticks_per_revolution=[100, 200])
+            ticks_per_revolution=[100, 200],
+        )
         self.assertEqual(encoders.get_input_port().size(), 5)
 
         context = encoders.CreateDefaultContext()
         offsets = [T(0.1), T(0.2)]
         encoders.set_calibration_offsets(
-            context=context, calibration_offsets=offsets)
+            context=context, calibration_offsets=offsets
+        )
         numpy_compare.assert_equal(
-            encoders.get_calibration_offsets(context=context),
-            offsets)
+            encoders.get_calibration_offsets(context=context), offsets
+        )

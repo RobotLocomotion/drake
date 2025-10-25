@@ -36,7 +36,8 @@ class TestDeprecationExample(unittest.TestCase):
         with catch_drake_warnings(expected_count=1) as w:
             mut_cc.ExampleCppClass(0.0)
             self.assertIn(
-                "Do not use ExampleCppClass(double)", str(w[0].message))
+                "Do not use ExampleCppClass(double)", str(w[0].message)
+            )
 
     def test_cc_deprecate_attribute(self):
         obj = mut_cc.ExampleCppClass()
@@ -59,7 +60,7 @@ class TestDeprecationExample(unittest.TestCase):
 
     def test_cc_wrap_deprecated_for_parallelism(self):
         obj = mut_cc.ExampleCppClass()
-        with catch_drake_warnings(expected_count=1) as w:
+        with catch_drake_warnings(expected_count=1):
             obj.ParallelWork(Parallelism.Max())
 
     def test_cc_wrap_deprecated_for_old_kwarg(self):
@@ -72,4 +73,5 @@ class TestDeprecationExample(unittest.TestCase):
         with catch_drake_warnings(expected_count=1) as w:
             obj.FunctionWithArgumentName(old_name=1)
             self.assertIn(
-                "FunctionWithArgumentName(old_name)", str(w[0].message))
+                "FunctionWithArgumentName(old_name)", str(w[0].message)
+            )

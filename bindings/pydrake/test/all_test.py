@@ -6,7 +6,7 @@ import warnings
 # When importing pydrake, confirm that it works without any matplotlib
 # customization. We don't need the MPLBACKEND=Template override (from
 # our tools/bazel.rc file) since importing doesn't open any new windows.
-del os.environ['MPLBACKEND']  # noqa
+del os.environ["MPLBACKEND"]  # noqa
 
 
 class TestAll(unittest.TestCase):
@@ -25,12 +25,17 @@ class TestAll(unittest.TestCase):
         # Catch all warnings using their normal specification.
         with warnings.catch_warnings(record=True) as w:
             warnings.filterwarnings(
-                "ignore", message="Matplotlib is building the font cache",
-                category=UserWarning)
+                "ignore",
+                message="Matplotlib is building the font cache",
+                category=UserWarning,
+            )
             warnings.filterwarnings(
-                "ignore", message=".* from 'collections.abc' is deprecated",
-                category=DeprecationWarning)
-            import pydrake.all
+                "ignore",
+                message=".* from 'collections.abc' is deprecated",
+                category=DeprecationWarning,
+            )
+            import pydrake.all  # noqa: F401 (unused-import)
+
             self.assertEqual(len(w), 0, [x.message for x in w])
 
     def test_usage_no_all(self):
@@ -43,39 +48,49 @@ class TestAll(unittest.TestCase):
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
         Parser(plant).AddModels(
-            FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
+            FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
+        )
         plant.Finalize()
         diagram = builder.Build()
-        simulator = Simulator(diagram)
+        Simulator(diagram)
 
     def test_usage_all(self):
         from pydrake.all import (
-            AddMultibodyPlantSceneGraph, DiagramBuilder, FindResourceOrThrow,
-            Parser, Simulator)
+            AddMultibodyPlantSceneGraph,
+            DiagramBuilder,
+            FindResourceOrThrow,
+            Parser,
+            Simulator,
+        )
 
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)
         Parser(plant).AddModels(
-            FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
+            FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
+        )
         plant.Finalize()
         diagram = builder.Build()
-        simulator = Simulator(diagram)
+        Simulator(diagram)
 
     def test_usage_all_explicit(self):
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
 
         builder = pydrake.systems.framework.DiagramBuilder()
         plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(
-            builder, 0.0)
+            builder, 0.0
+        )
         pydrake.multibody.parsing.Parser(plant).AddModels(
             pydrake.common.FindResourceOrThrow(
-                "drake/examples/pendulum/Pendulum.urdf"))
+                "drake/examples/pendulum/Pendulum.urdf"
+            )
+        )
         plant.Finalize()
         diagram = builder.Build()
-        simulator = pydrake.systems.analysis.Simulator(diagram)
+        pydrake.systems.analysis.Simulator(diagram)
 
     def test_preferred_ordering(self):
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
+
         self.assertIs(pydrake.all.sin, pydrake.math.sin)
         self.assertIs(pydrake.all.Polynomial, pydrake.symbolic.Polynomial)
 
@@ -83,7 +98,7 @@ class TestAll(unittest.TestCase):
         """Tests a subset of symbols provided by `drake.all`. At least one
         symbol per submodule should be included.
         """
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
 
         # Subset of symbols.
         expected_symbols = (
@@ -172,14 +187,15 @@ class TestAll(unittest.TestCase):
         # statement.
         for expected_symbol in expected_symbols:
             self.assertTrue(
-                expected_symbol in pydrake.all.__dict__, expected_symbol)
+                expected_symbol in pydrake.all.__dict__, expected_symbol
+            )
 
     def test_function_only_imports(self):
         """Check for disallowed imports.
 
         Test that none of the modules which we've decided should only be
         imported by functions appear in sys.modules."""
-        import pydrake.all
+        import pydrake.all  # noqa: F401 (unused-import)
 
         # We want to ensure that the following modules are only be imported
         # within a function, not at the module level.
@@ -190,7 +206,7 @@ class TestAll(unittest.TestCase):
             "matplotlib.pyplot",
             "pydot",
             "scipy",
-            )
+        )
 
         bad_imports = list()
         for item in sys.modules.keys():
@@ -200,4 +216,5 @@ class TestAll(unittest.TestCase):
 
         self.assertFalse(
             bad_imports,
-            "Function-only import(s) found after importing pydrake.all")
+            "Function-only import(s) found after importing pydrake.all",
+        )

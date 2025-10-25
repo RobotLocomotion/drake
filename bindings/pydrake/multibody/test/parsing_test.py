@@ -24,7 +24,6 @@ from pydrake.multibody.parsing import (
 import copy
 import os
 from pathlib import Path
-import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
@@ -42,7 +41,6 @@ from pydrake.systems.framework import DiagramBuilder
 
 
 class TestParsing(unittest.TestCase):
-
     def test_collision_filter_groups(self):
         dut = CollisionFilterGroups()
         dut.AddGroup(name="a", members={"b", "c"})
@@ -64,7 +62,7 @@ class TestParsing(unittest.TestCase):
 
         dut = PackageMap.MakeEmpty()
         dut2 = PackageMap.MakeEmpty()
-        tmpdir = os.environ.get('TEST_TMPDIR')
+        tmpdir = os.environ.get("TEST_TMPDIR")
 
         # Simple coverage test for Add, AddMap, Contains, size,
         # GetPackageNames, GetPath, AddPackageXml, Remove.
@@ -75,17 +73,22 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(dut.size(), 1)
         self.assertEqual(dut.GetPackageNames(), ["root"])
         self.assertEqual(dut.GetPath(package_name="root"), tmpdir)
-        dut.AddPackageXml(filename=FindResourceOrThrow(
-            "drake/multibody/parsing/test/box_package/package.xml"))
+        dut.AddPackageXml(
+            filename=FindResourceOrThrow(
+                "drake/multibody/parsing/test/box_package/package.xml"
+            )
+        )
         self.assertEqual(
             dut.ResolveUrl(url="package://box_model/urdfs/box.urdf"),
             FindResourceOrThrow(
-                "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))
+                "drake/multibody/parsing/test/box_package/urdfs/box.urdf"
+            ),
+        )
         dut2.Remove(package_name="root")
         self.assertEqual(dut2.size(), 0)
 
         # Simple coverage test for folder and environment.
-        dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')
+        dut.PopulateFromEnvironment(environment_variable="TEST_TMPDIR")
         dut.PopulateFromFolder(path=tmpdir)
 
     def test_package_map_remote_params(self):
@@ -93,7 +96,8 @@ class TestParsing(unittest.TestCase):
             urls=["file:///tmp/missing.zip"],
             sha256="0" * 64,
             archive_type="zip",
-            strip_prefix="prefix",)
+            strip_prefix="prefix",
+        )
         self.assertIn("missing.zip", dut.ToJson())
         copy.copy(dut)
         copy.deepcopy(dut)
@@ -105,13 +109,19 @@ class TestParsing(unittest.TestCase):
         dut = PackageMap.MakeEmpty()
         zipfile = FindResourceOrThrow(
             "drake/multibody/parsing/test/package_map_test_packages/"
-            "compressed.zip")
-        dut.AddRemote(package_name="compressed",
-                      params=PackageMap.RemoteParams(
-                          urls=[f"file://{zipfile}"],
-                          sha256=("b4bdbad313293ca61fe8f4ed1b5579da"
-                                  "dadb3a5c08f0a6d06a8e39e5f97f1bd1"),
-                          strip_prefix="compressed_prefix"))
+            "compressed.zip"
+        )
+        dut.AddRemote(
+            package_name="compressed",
+            params=PackageMap.RemoteParams(
+                urls=[f"file://{zipfile}"],
+                sha256=(
+                    "b4bdbad313293ca61fe8f4ed1b5579da"
+                    "dadb3a5c08f0a6d06a8e39e5f97f1bd1"
+                ),
+                strip_prefix="compressed_prefix",
+            ),
+        )
         path = dut.GetPath("compressed")
         with open(f"{path}/README", encoding="utf-8") as f:
             self.assertEqual(f.read(), "This package is empty.\n")
@@ -121,13 +131,15 @@ class TestParsing(unittest.TestCase):
         use a file_name (not contents) and inspects their return type.
         """
         sdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         urdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.urdf"
+        )
         for dut, file_name in (
-                (Parser.AddModels, Path(sdf_file)),
-                (Parser.AddModels, str(urdf_file)),
-                ):
+            (Parser.AddModels, Path(sdf_file)),
+            (Parser.AddModels, str(urdf_file)),
+        ):
             plant = MultibodyPlant(time_step=0.01)
             parser = Parser(plant=plant)
             result = dut(parser, file_name=file_name)
@@ -137,26 +149,26 @@ class TestParsing(unittest.TestCase):
     def test_parser_string(self):
         """Checks parsing from a string (not file_name)."""
         sdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         with open(sdf_file, "r") as f:
             sdf_contents = f.read()
 
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         results = parser.AddModelsFromString(
-            file_contents=sdf_contents, file_type="sdf")
+            file_contents=sdf_contents, file_type="sdf"
+        )
         self.assertIsInstance(results[0], ModelInstanceIndex)
 
         # Check the related AddModel overload.
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
-        results = parser.AddModels(
-            file_contents=sdf_contents, file_type="sdf")
+        results = parser.AddModels(file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(results[0], ModelInstanceIndex)
 
     def test_parser_url(self):
-        """Tests for AddModelsFromUrl as well as its related AddModel overload.
-        """
+        """Tests AddModelsFromUrl as well as its related AddModel overload."""
         sdf_url = "package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
 
         plant = MultibodyPlant(time_step=0.01)
@@ -176,16 +188,19 @@ class TestParsing(unittest.TestCase):
 
         # Reload the same model, via a different parser constructor. Catch the
         # name collision.
-        with self.assertRaisesRegex(RuntimeError, r'.*names must be unique.*'):
+        with self.assertRaisesRegex(RuntimeError, r".*names must be unique.*"):
             Parser(plant=plant, scene_graph=scene_graph).AddModelsFromString(
-                model, "urdf")
+                model, "urdf"
+            )
 
         # Reload the same model, but use model_name_prefix to avoid name
         # collisions.
         Parser(plant=plant, model_name_prefix="prefix1").AddModelsFromString(
-            model, "urdf")
+            model, "urdf"
+        )
         parser = Parser(
-            plant=plant, scene_graph=scene_graph, model_name_prefix="prefix2")
+            plant=plant, scene_graph=scene_graph, model_name_prefix="prefix2"
+        )
         parser.AddModelsFromString(model, "urdf")
         self.assertEqual(parser.plant(), plant)
         self.assertEqual(parser.scene_graph(), scene_graph)
@@ -198,14 +213,15 @@ class TestParsing(unittest.TestCase):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         results = parser.AddModelsFromString(
-            file_contents=model, file_type='urdf')
+            file_contents=model, file_type="urdf"
+        )
         self.assertIsInstance(results[0], ModelInstanceIndex)
         # Use strict parsing.
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         parser.SetStrictParsing()
-        with self.assertRaisesRegex(RuntimeError, r'.*version.*ignored.*'):
-            parser.AddModelsFromString(file_contents=model, file_type='urdf')
+        with self.assertRaisesRegex(RuntimeError, r".*version.*ignored.*"):
+            parser.AddModelsFromString(file_contents=model, file_type="urdf")
 
     def test_auto_renaming(self):
         model = """<robot name='robot' version='0.99'>
@@ -215,15 +231,16 @@ class TestParsing(unittest.TestCase):
         parser = Parser(plant=plant)
         self.assertFalse(parser.GetAutoRenaming())
         results = parser.AddModelsFromString(
-            file_contents=model, file_type='urdf')
+            file_contents=model, file_type="urdf"
+        )
         self.assertIsInstance(results[0], ModelInstanceIndex)
         # Reload without auto-renaming; fail.
-        with self.assertRaisesRegex(RuntimeError, r''):
-            parser.AddModelsFromString(model, 'urdf')
+        with self.assertRaisesRegex(RuntimeError, r""):
+            parser.AddModelsFromString(model, "urdf")
         # Enable renaming and subsequently succeed with reload.
         parser.SetAutoRenaming(value=True)
-        results = parser.AddModelsFromString(model, 'urdf')
-        self.assertTrue(plant.HasModelInstanceNamed('robot_1'))
+        results = parser.AddModelsFromString(model, "urdf")
+        self.assertTrue(plant.HasModelInstanceNamed("robot_1"))
 
     def test_get_collision_filter_groups(self):
         plant = MultibodyPlant(time_step=0.01)
@@ -233,10 +250,13 @@ class TestParsing(unittest.TestCase):
 
     def test_parser_diagram_builder(self):
         builder = DiagramBuilder()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(
-            builder, time_step=0.0)
-        parser = Parser(builder=builder, plant=plant, scene_graph=scene_graph,
-                        model_name_prefix="prefix")
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=0.0)
+        parser = Parser(
+            builder=builder,
+            plant=plant,
+            scene_graph=scene_graph,
+            model_name_prefix="prefix",
+        )
         self.assertEqual(parser.builder(), builder)
         self.assertEqual(parser.plant(), plant)
         self.assertEqual(parser.scene_graph(), scene_graph)
@@ -258,9 +278,12 @@ class TestParsing(unittest.TestCase):
 
     def _make_plant_parser_directives(self, *, path_type=Path):
         """Returns a tuple (plant, parser, directives) for later testing."""
-        model_dir = Path(FindResourceOrThrow(
-            "drake/multibody/parsing/test/"
-            "process_model_directives_test/package.xml")).parent
+        model_dir = Path(
+            FindResourceOrThrow(
+                "drake/multibody/parsing/test/"
+                "process_model_directives_test/package.xml"
+            )
+        ).parent
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         parser.package_map().PopulateFromFolder(model_dir)
@@ -279,8 +302,7 @@ directives:
 
     def test_flatten_model_directives(self):
         (plant, parser, directives) = self._make_plant_parser_directives()
-        added_models = ProcessModelDirectives(
-            directives=directives, parser=parser)
+        ProcessModelDirectives(directives=directives, parser=parser)
         flat_directives = FlattenModelDirectives(
             directives=directives, package_map=parser.package_map()
         )
@@ -290,7 +312,8 @@ directives:
         """Check the Process... overload using a Parser."""
         (plant, parser, directives) = self._make_plant_parser_directives()
         added_models = ProcessModelDirectives(
-            directives=directives, parser=parser)
+            directives=directives, parser=parser
+        )
         model_names = [model.model_name for model in added_models]
         self.assertIn("extra_model", model_names)
         plant.GetModelInstanceByName("extra_model")
@@ -303,7 +326,8 @@ directives:
             path_type=str,
         )
         added_models = ProcessModelDirectives(
-            directives=directives, plant=plant, parser=parser)
+            directives=directives, plant=plant, parser=parser
+        )
         model_names = [model.model_name for model in added_models]
         self.assertIn("extra_model", model_names)
         plant.GetModelInstanceByName("extra_model")

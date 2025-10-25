@@ -1,0 +1,17 @@
+[vtk] Use dlsym instead of vtkDynamicLoader
+
+The vtkDynamicLoader is not enabled in our build.
+
+Reasoning for not upstreaming this patch: Drake-specific build config.
+
+--- Utilities/X11/vtkX11Functions.cxx
++++ Utilities/X11/vtkX11Functions.cxx
+@@ -87,7 +87,7 @@ DEFINE_POINTER_TO_FUNCTION(vtkXcursorFilenameLoadCursor);
+ #endif
+ 
+ #define LOAD_POINTER_TO_FUNCTION(lib, symbol, name)                                                \
+-  name = reinterpret_cast<name##Type>(vtkDynamicLoader::GetSymbolAddress(lib, #symbol));           \
++  name = reinterpret_cast<name##Type>(dlsym(lib, #symbol));                                        \
+   if (name == nullptr)                                                                             \
+   {                                                                                                \
+     vtkLog(WARNING, "Failed to load symbol " #symbol);                                             \

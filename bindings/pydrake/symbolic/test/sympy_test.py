@@ -16,7 +16,6 @@ BOOLEAN = Variable.Type.BOOLEAN
 
 
 class TestSympy(unittest.TestCase):
-
     def test_round_trip(self):
         x, y, z = [Variable(name) for name in "x y z".split()]
         q, r = [Variable(name, BOOLEAN) for name in "q r".split()]
@@ -43,7 +42,7 @@ class TestSympy(unittest.TestCase):
             x - y,
             x / y,
             x - y / z,
-            x ** y,
+            x**y,
             # Unary and binary functions, ordered to match ExpressionKind.
             mut.log(x),
             mut.abs(x),
@@ -109,16 +108,20 @@ class TestSympy(unittest.TestCase):
         converted_str = f"converted={converted!r} ({type(converted)})"
         readback_str = f"readback={readback!r} ({type(readback)})"
         try:
-            self.assertTrue(item.EqualTo(readback),
-                            msg=f"Got {readback_str} (from {converted_str})")
+            self.assertTrue(
+                item.EqualTo(readback),
+                msg=f"Got {readback_str} (from {converted_str})",
+            )
             return
-        except TypeError as e:
+        except TypeError:
             # We'll do a self.fail(), but outside the except. Otherwise we are
             # bombarded by Python's "a new exception happened in the middle of
             # handling a prior exception" vomit that isn't useful in this case.
             pass
-        self.fail(f"Incomparable {item_str} with "
-                  f"{readback_str} (from {converted_str})")
+        self.fail(
+            f"Incomparable {item_str} with "
+            f"{readback_str} (from {converted_str})"
+        )
 
     def _test_one_eval(self, item):
         if isinstance(item, (float, int, bool, Variable)):
@@ -137,10 +140,7 @@ class TestSympy(unittest.TestCase):
             return
 
         # Create a handy dictionary of Variable Id => Variable.
-        drake_vars = dict([
-            (var.get_id(), var)
-            for var in item.GetVariables()
-        ])
+        drake_vars = dict([(var.get_id(), var) for var in item.GetVariables()])
         if not drake_vars:
             # Skip this case. Evaluation is not particularly interesting.
             return

@@ -1,4 +1,3 @@
-import sys
 from types import ModuleType
 import unittest
 
@@ -41,8 +40,9 @@ class DummyD:
 class TestCppTemplate(unittest.TestCase):
     def test_base(self):
         template = m.TemplateBase("BaseTpl")
-        self.assertEqual(str(template), "<TemplateBase {}.BaseTpl>".format(
-            _TEST_MODULE))
+        self.assertEqual(
+            str(template), "<TemplateBase {}.BaseTpl>".format(_TEST_MODULE)
+        )
 
         self.assertEqual(template.get_module_name(), _TEST_MODULE)
 
@@ -55,7 +55,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertFalse(template.is_instantiation(10))
         # Duplicate parameters.
         self.assertRaises(
-            RuntimeError, lambda: template.add_instantiation(int, 4))
+            RuntimeError, lambda: template.add_instantiation(int, 4)
+        )
 
         # Invalid parameters.
         self.assertRaises(RuntimeError, lambda: template[float])
@@ -80,6 +81,7 @@ class TestCppTemplate(unittest.TestCase):
         # List instantiation.
         def instantiation_func(param):
             return 100 + len(param)
+
         dummy_a = (str,) * 5
         dummy_b = (str,) * 10
         template.add_instantiations(instantiation_func, [dummy_a, dummy_b])
@@ -96,7 +98,6 @@ class TestCppTemplate(unittest.TestCase):
         self.assertIn("cannot pickle 'module' object", str(cm.exception))
 
     def test_base_negative(self):
-
         class ParentScope:
             pass
 
@@ -106,14 +107,16 @@ class TestCppTemplate(unittest.TestCase):
         self.assertIn(
             "Unable to resolve `get_module_name` for a scope that is not a "
             "module",
-            str(cm.exception))
+            str(cm.exception),
+        )
 
     def test_deprecation(self):
         template = m.TemplateBase("BaseTpl")
         template.add_instantiation(int, 1)
         template.add_instantiation(float, 2)
         instantiation, param = template.deprecate_instantiation(
-            int, "Example deprecation", date="2038-01-19")
+            int, "Example deprecation", date="2038-01-19"
+        )
         self.assertEqual(instantiation, 1)
         self.assertEqual(param, (int,))
         with catch_drake_warnings(expected_count=1) as w:
@@ -125,22 +128,26 @@ class TestCppTemplate(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             template.deprecate_instantiation(int, "Double-deprecate")
         self.assertEqual(
-            str(cm.exception), "Deprecation already registered: BaseTpl[int]")
+            str(cm.exception), "Deprecation already registered: BaseTpl[int]"
+        )
 
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
-        self.assertEqual(str(template), "<TemplateClass {}.ClassTpl>".format(
-            _TEST_MODULE))
+        self.assertEqual(
+            str(template), "<TemplateClass {}.ClassTpl>".format(_TEST_MODULE)
+        )
 
         template.add_instantiation(int, DummyA)
         template.add_instantiation(float, DummyB)
 
         self.assertEqual(template[int], DummyA)
-        self.assertEqual(str(DummyA), "<class '{}.ClassTpl𝓣int𝓤'>".format(
-            _TEST_MODULE))
+        self.assertEqual(
+            str(DummyA), "<class '{}.ClassTpl𝓣int𝓤'>".format(_TEST_MODULE)
+        )
         self.assertEqual(template[float], DummyB)
-        self.assertEqual(str(DummyB), "<class '{}.ClassTpl𝓣float𝓤'>".format(
-            _TEST_MODULE))
+        self.assertEqual(
+            str(DummyB), "<class '{}.ClassTpl𝓣float𝓤'>".format(_TEST_MODULE)
+        )
 
         assert_pickle(self, template[int]())
 
@@ -149,7 +156,7 @@ class TestCppTemplate(unittest.TestCase):
 
         @m.TemplateClass.define("MyTemplate", param_list=((int,), (float,)))
         def MyTemplate(param):
-            T, = param
+            (T,) = param
             # Ensure that we have deferred evaluation.
             test.assertEqual(MyTemplate.param_list, [(int,), (float,)])
 
@@ -165,7 +172,8 @@ class TestCppTemplate(unittest.TestCase):
             return Impl
 
         self.assertEqual(
-            str(MyTemplate), f"<TemplateClass {_TEST_MODULE}.MyTemplate>")
+            str(MyTemplate), f"<TemplateClass {_TEST_MODULE}.MyTemplate>"
+        )
         self.assertIsInstance(MyTemplate, m.TemplateClass)
         MyDefault = MyTemplate[None]
         MyInt = MyTemplate[int]
@@ -206,8 +214,9 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(template[int](), 1)
         self.assertIn("<function func𝓣int𝓤 ", str(template[int]))
         self.assertEqual(template[float](), 2)
-        self.assertEqual(str(template), "<TemplateFunction {}.func>".format(
-            _TEST_MODULE))
+        self.assertEqual(
+            str(template), "<TemplateFunction {}.func>".format(_TEST_MODULE)
+        )
 
         assert_pickle(self, template[int])
 
@@ -216,21 +225,26 @@ class TestCppTemplate(unittest.TestCase):
         DummyC.method.add_instantiation(int, DummyC.dummy_c)
         DummyC.method.add_instantiation(float, DummyC.dummy_d)
 
-        self.assertEqual(str(DummyC.method),
-                         "<unbound TemplateMethod DummyC.method>")
+        self.assertEqual(
+            str(DummyC.method), "<unbound TemplateMethod DummyC.method>"
+        )
         self.assertTrue(DummyC.method.is_instantiation(DummyC.dummy_c))
         self.assertTrue(
             str(DummyC.method[int]).startswith(
-                "<function DummyC.method𝓣int𝓤 at "),
-            str(DummyC.method[int]))
+                "<function DummyC.method𝓣int𝓤 at "
+            ),
+            str(DummyC.method[int]),
+        )
 
         obj = DummyC()
         self.assertTrue(
             str(obj.method).startswith(
-                "<bound TemplateMethod DummyC.method of "))
+                "<bound TemplateMethod DummyC.method of "
+            )
+        )
         self.assertIn(
-            "<bound method DummyC.method𝓣int𝓤 of ",
-            str(obj.method[int]))
+            "<bound method DummyC.method𝓣int𝓤 of ", str(obj.method[int])
+        )
         self.assertEqual(obj.method[int](), (obj, 3))
         self.assertEqual(DummyC.method[int](obj), (obj, 3))
         self.assertEqual(obj.method[float](), (obj, 4))
@@ -281,11 +295,12 @@ class TestCppTemplate(unittest.TestCase):
         self.assertIn("without argument", str(cm.exception))
 
         self.assertEqual(template(0), "int")
-        self.assertEqual(template(0.), "float")
+        self.assertEqual(template(0.0), "float")
         with self.assertRaises(TypeError) as cm:
             template("hello")
         self.assertIn(
-            "incompatible function arguments for template", str(cm.exception))
+            "incompatible function arguments for template", str(cm.exception)
+        )
 
     def test_documentation_flag_sanity(self):
         # Only website builds should ever be setting this to true.

@@ -378,6 +378,7 @@ drake_cc_library(
         ":image_file_format",
         "//common:unused",
         "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOCore",
         "@vtk_internal//:vtkIOImage",
     ],
 )

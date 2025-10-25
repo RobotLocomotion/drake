@@ -21,7 +21,6 @@ from pydrake.systems.framework import (
     InputPort,
     OutputPort,
 )
-from pydrake.systems.analysis import Simulator
 from pydrake.systems.lcm import LcmBuses
 from pydrake.systems.test.test_util import call_build_from_cpp
 
@@ -31,18 +30,26 @@ class TestKukaIiwa(unittest.TestCase):
         builder = DiagramBuilder()
         plant = builder.AddSystem(MultibodyPlant(1.0))
         parser = Parser(plant)
-        directives = LoadModelDirectives(FindResourceOrThrow(
-            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
-        models_from_directives = ProcessModelDirectives(directives, parser)
+        directives = LoadModelDirectives(
+            FindResourceOrThrow(
+                "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"
+            )
+        )
+        ProcessModelDirectives(directives, parser)
         plant.Finalize()
-        controller_plant = MultibodyPlant(1.)
+        controller_plant = MultibodyPlant(1.0)
         parser = Parser(controller_plant)
-        parser.AddModels(url=(
-            "package://drake_models/iiwa_description/sdf/"
-            + "iiwa7_no_collision.sdf"))
+        parser.AddModels(
+            url=(
+                "package://drake_models/iiwa_description/sdf/"
+                + "iiwa7_no_collision.sdf"
+            )
+        )
         controller_plant.WeldFrames(
             controller_plant.world_frame(),
-            controller_plant.GetFrameByName("iiwa_link_0"), RigidTransform())
+            controller_plant.GetFrameByName("iiwa_link_0"),
+            RigidTransform(),
+        )
         controller_plant.Finalize()
         return builder, plant, controller_plant
 
@@ -51,76 +58,94 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertIsInstance(mut.get_iiwa_max_joint_velocities(), np.ndarray)
         self.assertEqual(mut.kIiwaLcmStatusPeriod, 0.005)
         self.assertIsInstance(
-            mut.IiwaControlMode.kPositionOnly, mut.IiwaControlMode)
+            mut.IiwaControlMode.kPositionOnly, mut.IiwaControlMode
+        )
         self.assertIsInstance(
-            mut.IiwaControlMode.kTorqueOnly, mut.IiwaControlMode)
+            mut.IiwaControlMode.kTorqueOnly, mut.IiwaControlMode
+        )
         self.assertIsInstance(
-            mut.IiwaControlMode.kPositionAndTorque, mut.IiwaControlMode)
+            mut.IiwaControlMode.kPositionAndTorque, mut.IiwaControlMode
+        )
         control_mode = mut.IiwaControlMode.kPositionAndTorque
         self.assertTrue(mut.position_enabled(control_mode=control_mode))
         self.assertTrue(mut.torque_enabled(control_mode=control_mode))
         self.assertEqual(
             mut.ParseIiwaControlMode(control_mode="position_and_torque"),
-            control_mode)
+            control_mode,
+        )
 
     def test_kuka_iiwa_lcm(self):
         command_rec = mut.IiwaCommandReceiver(
             num_joints=mut.kIiwaArmNumJoints,
-            control_mode=mut.IiwaControlMode.kPositionAndTorque)
+            control_mode=mut.IiwaControlMode.kPositionAndTorque,
+        )
+        self.assertIsInstance(command_rec.get_message_input_port(), InputPort)
         self.assertIsInstance(
-            command_rec.get_message_input_port(), InputPort)
+            command_rec.get_position_measured_input_port(), InputPort
+        )
         self.assertIsInstance(
-            command_rec.get_position_measured_input_port(), InputPort)
+            command_rec.get_commanded_position_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            command_rec.get_commanded_position_output_port(), OutputPort)
-        self.assertIsInstance(
-            command_rec.get_commanded_torque_output_port(), OutputPort)
-        self.assertIsInstance(
-            command_rec.get_time_output_port(), OutputPort)
+            command_rec.get_commanded_torque_output_port(), OutputPort
+        )
+        self.assertIsInstance(command_rec.get_time_output_port(), OutputPort)
 
         command_send = mut.IiwaCommandSender()
-        self.assertIsInstance(
-            command_send.get_time_input_port(), InputPort)
-        self.assertIsInstance(
-            command_send.get_position_input_port(), InputPort)
-        self.assertIsInstance(
-            command_send.get_torque_input_port(), InputPort)
+        self.assertIsInstance(command_send.get_time_input_port(), InputPort)
+        self.assertIsInstance(command_send.get_position_input_port(), InputPort)
+        self.assertIsInstance(command_send.get_torque_input_port(), InputPort)
         # Constructor variants.
         mut.IiwaCommandSender(
             num_joints=mut.kIiwaArmNumJoints,
-            control_mode=mut.IiwaControlMode.kPositionAndTorque)
+            control_mode=mut.IiwaControlMode.kPositionAndTorque,
+        )
 
         status_rec = mut.IiwaStatusReceiver()
         self.assertIsInstance(
-            status_rec.get_time_measured_output_port(), OutputPort)
+            status_rec.get_time_measured_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            status_rec.get_position_commanded_output_port(), OutputPort)
+            status_rec.get_position_commanded_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            status_rec.get_position_measured_output_port(), OutputPort)
+            status_rec.get_position_measured_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            status_rec.get_velocity_estimated_output_port(), OutputPort)
+            status_rec.get_velocity_estimated_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            status_rec.get_torque_commanded_output_port(), OutputPort)
+            status_rec.get_torque_commanded_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            status_rec.get_torque_measured_output_port(), OutputPort)
+            status_rec.get_torque_measured_output_port(), OutputPort
+        )
         self.assertIsInstance(
-            status_rec.get_torque_external_output_port(), OutputPort)
+            status_rec.get_torque_external_output_port(), OutputPort
+        )
 
         status_send = mut.IiwaStatusSender()
         self.assertIsInstance(
-            status_send.get_time_measured_input_port(), InputPort)
+            status_send.get_time_measured_input_port(), InputPort
+        )
         self.assertIsInstance(
-            status_send.get_position_commanded_input_port(), InputPort)
+            status_send.get_position_commanded_input_port(), InputPort
+        )
         self.assertIsInstance(
-            status_send.get_position_measured_input_port(), InputPort)
+            status_send.get_position_measured_input_port(), InputPort
+        )
         self.assertIsInstance(
-            status_send.get_velocity_estimated_input_port(), InputPort)
+            status_send.get_velocity_estimated_input_port(), InputPort
+        )
         self.assertIsInstance(
-            status_send.get_torque_commanded_input_port(), InputPort)
+            status_send.get_torque_commanded_input_port(), InputPort
+        )
         self.assertIsInstance(
-            status_send.get_torque_measured_input_port(), InputPort)
+            status_send.get_torque_measured_input_port(), InputPort
+        )
         self.assertIsInstance(
-            status_send.get_torque_external_input_port(), InputPort)
+            status_send.get_torque_external_input_port(), InputPort
+        )
 
     def test_kuka_iiwa_api(self):
         self.assertEqual(mut.get_iiwa_max_joint_velocities().shape, (7,))
@@ -131,9 +156,12 @@ class TestKukaIiwa(unittest.TestCase):
         )
         tare = len(builder.GetSystems())
         mut.BuildIiwaControl(
-            builder=builder, lcm=DrakeLcm(), plant=plant,
+            builder=builder,
+            lcm=DrakeLcm(),
+            plant=plant,
             iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
-            driver_config=mut.IiwaDriver(), controller_plant=controller_plant,
+            driver_config=mut.IiwaDriver(),
+            controller_plant=controller_plant,
         )
         self.assertGreater(len(builder.GetSystems()), tare)
 
@@ -147,8 +175,11 @@ class TestKukaIiwa(unittest.TestCase):
         builder = DiagramBuilder()
         plant = builder.AddSystem(MultibodyPlant(1.0))
         parser = Parser(plant)
-        directives = LoadModelDirectives(FindResourceOrThrow(
-            "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
+        directives = LoadModelDirectives(
+            FindResourceOrThrow(
+                "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"
+            )
+        )
         models_from_directives = ProcessModelDirectives(directives, parser)
         plant.Finalize()
         model_dict = dict()
@@ -159,9 +190,13 @@ class TestKukaIiwa(unittest.TestCase):
 
         tare = len(builder.GetSystems())
         mut.ApplyDriverConfig(
-            driver_config=dut, model_instance_name="iiwa7",
-            sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
-            builder=builder)
+            driver_config=dut,
+            model_instance_name="iiwa7",
+            sim_plant=plant,
+            models_from_directives=model_dict,
+            lcms=lcm_bus,
+            builder=builder,
+        )
         self.assertGreater(len(builder.GetSystems()), tare)
 
     def test_kuka_iiwa_sim_driver(self):
@@ -189,7 +224,6 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertGreater(len(builder.GetSystems()), tare)
 
     def test_kuka_iiwa_sim_driver_lifetime_init(self):
-
         def make_diagram():
             builder, plant, controller_plant = (
                 self.make_builder_plant_controller_plant()
@@ -205,7 +239,7 @@ class TestKukaIiwa(unittest.TestCase):
         diagram = make_diagram()
         gc.collect()
         # Crashes if controller_plant is not kept alive by bindings.
-        ad_diagram = diagram.ToAutoDiffXd()
+        ad_diagram = diagram.ToAutoDiffXd()  # noqa: F841 (unused-variable)
 
     def call_build_from(self, diagram_builder, language):
         assert language in ["python", "c++"]
@@ -219,7 +253,6 @@ class TestKukaIiwa(unittest.TestCase):
             return call_build_from_cpp(diagram_builder)
 
     def test_kuka_iiwa_sim_driver_lifetime_add_to_builder(self):
-
         def make_diagram(call_build_from_language):
             builder, plant, controller_plant = (
                 self.make_builder_plant_controller_plant()
@@ -241,7 +274,7 @@ class TestKukaIiwa(unittest.TestCase):
             del dut
             gc.collect()
             # Crashes if controller_plant is not kept alive by bindings.
-            ad_diagram = diagram.ToAutoDiffXd()
+            ad_diagram = diagram.ToAutoDiffXd()  # noqa: F841 (unused-variable)
             # The diagram is mortal.
             spy = weakref.finalize(diagram, lambda: None)
             del diagram
@@ -254,7 +287,7 @@ class TestKukaIiwa(unittest.TestCase):
         del diagram
         gc.collect()
         # Crashes if controller_plant is not kept alive by bindings.
-        ad_dut = dut.ToAutoDiffXd()
+        ad_dut = dut.ToAutoDiffXd()  # noqa: F841 (unused-variable)
         # The dut is mortal.
         spy = weakref.finalize(dut, lambda: None)
         del dut
@@ -262,7 +295,6 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertFalse(spy.alive)
 
     def test_kuka_iiwa_sim_driver_lifetime_build_iiwa_control(self):
-
         def make_diagram(oblivious=False):
             builder, plant, controller_plant = (
                 self.make_builder_plant_controller_plant()
@@ -274,7 +306,7 @@ class TestKukaIiwa(unittest.TestCase):
                 iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
                 driver_config=mut.IiwaDriver(),
                 controller_plant=controller_plant,
-                )
+            )
             if oblivious:
                 diagram = call_build_from_cpp(builder)
             else:

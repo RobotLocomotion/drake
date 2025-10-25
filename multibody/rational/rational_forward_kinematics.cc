@@ -232,20 +232,28 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // X_F'M' = X_FM.inverse()
   // X_M'C' = X_PF.inverse()
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
-  const internal::RigidBodyTopology& parent_topology =
-      tree.get_topology().get_rigid_body_topology(parent);
-  const internal::RigidBodyTopology& child_topology =
-      tree.get_topology().get_rigid_body_topology(child);
+  const internal::SpanningForest& forest = tree.forest();
+
+  const internal::MobodIndex parent_mobod_index =
+      forest.link_by_index(parent).mobod_index();
+  const internal::SpanningForest::Mobod& parent_mobod =
+      forest.mobods(parent_mobod_index);
+
+  const internal::MobodIndex child_mobod_index =
+      forest.link_by_index(child).mobod_index();
+  const internal::SpanningForest::Mobod& child_mobod =
+      forest.mobods(child_mobod_index);
+
   internal::MobodIndex mobilizer_index;
   bool is_order_reversed{};
-  if (parent_topology.parent_body.is_valid() &&
-      parent_topology.parent_body == child) {
+  if (parent_mobod.inboard().is_valid() &&
+      parent_mobod.inboard() == child_mobod_index) {
     is_order_reversed = true;
-    mobilizer_index = parent_topology.inboard_mobilizer;
-  } else if (child_topology.parent_body.is_valid() &&
-             child_topology.parent_body == parent) {
+    mobilizer_index = parent_mobod_index;
+  } else if (child_mobod.inboard().is_valid() &&
+             child_mobod.inboard() == parent_mobod_index) {
     is_order_reversed = false;
-    mobilizer_index = child_topology.inboard_mobilizer;
+    mobilizer_index = child_mobod_index;
   } else {
     throw std::invalid_argument(fmt::format(
         "CalcChildBodyPoseAsMultilinearPolynomial: the pair of body indices "

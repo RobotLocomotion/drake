@@ -63,11 +63,11 @@ def _get_required_helpers(scope_locals):
     # Provides helpers to keep C++ interface as simple as possible.
     # @returns Dictionary containing the helpers needed.
     def getitem(obj, index):
-        """Global function for `obj[index]`. """
+        """Global function for `obj[index]`."""
         return obj[index]
 
     def setitem(obj, index, value):
-        """Global function for `obj[index] = value`. """
+        """Global function for `obj[index] = value`."""
         obj[index] = value
         return obj[index]
 
@@ -75,19 +75,19 @@ def _get_required_helpers(scope_locals):
         return obj(*args, **kwargs)
 
     def pass_through(value):
-        """Pass-through for direct variable access. """
+        """Pass-through for direct variable access."""
         return value
 
     def make_tuple(*args):
-        """Create a tuple from an argument list. """
+        """Create a tuple from an argument list."""
         return tuple(args)
 
     def make_list(*args):
-        """Create a list from an argument list. """
+        """Create a list from an argument list."""
         return list(args)
 
     def make_kwargs(*args):
-        """Create a keyword argument object from an argument list. """
+        """Create a keyword argument object from an argument list."""
         assert len(args) % 2 == 0
         keys = args[0::2]
         values = args[1::2]
@@ -95,17 +95,19 @@ def _get_required_helpers(scope_locals):
         return _KwArgs(**kwargs)
 
     def _make_slice(expr):
-        """Parse a slice object from a string. """
+        """Parse a slice object from a string."""
+
         def to_piece(s):
             return s and int(s) or None
-        pieces = list(map(to_piece, expr.split(':')))
+
+        pieces = list(map(to_piece, expr.split(":")))
         if len(pieces) == 1:
             return slice(pieces[0], pieces[0] + 1)
         else:
             return slice(*pieces)
 
     def make_slice_arg(*args):
-        """Create a scalar or tuple for accessing objects via slices. """
+        """Create a scalar or tuple for accessing objects via slices."""
         out = [None] * len(args)
         for i, arg in enumerate(args):
             if isinstance(arg, str):
@@ -119,11 +121,11 @@ def _get_required_helpers(scope_locals):
             return tuple(out)
 
     def setvar(var, value):
-        """Sets a variable in the client's locals. """
+        """Sets a variable in the client's locals."""
         scope_locals[var] = value
 
     def setvars(*args):
-        """Sets multiple variables in the client's locals. """
+        """Sets multiple variables in the client's locals."""
         scope_locals.update(make_kwargs(*args))
 
     execution_check = _ExecutionCheck()
@@ -165,8 +167,8 @@ def _fix_pyplot(plt):
     # This patches matplotlib/matplotlib#9412 by injecting `time` into the
     # module (#7597).
     cur = plt.__dict__
-    if 'time' not in cur:
-        cur['time'] = time
+    if "time" not in cur:
+        cur["time"] = time
 
 
 def default_globals():
@@ -182,15 +184,16 @@ def default_globals():
     # TODO(eric.cousineau): Consider relegating this to a different module,
     # possibly when this falls under `pydrake`.
     import numpy as np
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (unused-import)
     import matplotlib
+
     # On Ubuntu the Debian package python3-tk is a recommended (but not
     # required) dependency of python3-matplotlib; help users understand that
     # by providing a nicer message upon a failure to import.
     try:
         import matplotlib.pyplot as plt
     except ImportError as e:
-        if e.name == 'tkinter':
+        if e.name == "tkinter":
             plt = None
         else:
             raise
@@ -199,7 +202,8 @@ def default_globals():
             "On Ubuntu when using the default pyplot configuration (i.e., the"
             " TkAgg backend) you must 'sudo apt install python3-tk' to obtain"
             " Tk support. Alternatively, you may set MPLBACKEND to something"
-            " else (e.g., Qt5Agg).")
+            " else (e.g., Qt5Agg)."
+        )
     import pylab  # See `%pylab?` in IPython.
 
     # TODO(eric.cousineau): Where better to put this?
@@ -224,7 +228,7 @@ def default_globals():
 
     def box(bmin, bmax, rstride=1, cstride=1, **kwargs):
         """Plots a box bmin[i] <= x[i] <= bmax[i] for i < 3."""
-        ax = plt.subplot(projection='3d')
+        ax = plt.subplot(projection="3d")
         u = np.linspace(1, 9, 5) * np.pi / 4
         U, V = np.meshgrid(u, u)
         cx, cy, cz = (bmax + bmin) / 2
@@ -236,12 +240,12 @@ def default_globals():
 
     def plot3(x, y, z, **kwargs):
         """Plots a 3d line plot."""
-        ax = plt.subplot(projection='3d')
+        ax = plt.subplot(projection="3d")
         ax.plot(x, y, z, **kwargs)
 
     def sphere(n, rstride=1, cstride=1, **kwargs):
         """Plots a sphere."""
-        ax = plt.subplot(projection='3d')
+        ax = plt.subplot(projection="3d")
         u = np.linspace(0, np.pi, n)
         v = np.linspace(0, 2 * np.pi, n)
         X = np.outer(np.sin(u), np.sin(v))
@@ -251,7 +255,7 @@ def default_globals():
 
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
         """Plots a 3d surface."""
-        ax = plt.subplot(projection='3d')
+        ax = plt.subplot(projection="3d")
         X, Y = np.meshgrid(x, y)
         ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
 
@@ -270,7 +274,7 @@ def default_globals():
         assert N % 2 == 1
         magic_square = np.zeros((N, N), dtype=int)
         n = 1
-        i, j = 0, N//2
+        i, j = 0, N // 2
         while n <= N**2:
             magic_square[i, j] = n
             n += 1
@@ -283,11 +287,7 @@ def default_globals():
 
     # Use <module>.__dict__ to simulate `from <module> import *`, since that is
     # normally invalid in a function with nested functions.
-    return _merge_dicts(
-        globals(),
-        plt.__dict__,
-        pylab.__dict__,
-        locals())
+    return _merge_dicts(globals(), plt.__dict__, pylab.__dict__, locals())
 
 
 class CallPythonClient:
@@ -296,9 +296,16 @@ class CallPythonClient:
     Enables printing or plotting from a C++ application for debugging
     purposes.
     """
-    def __init__(self, filename=None, stop_on_error=True,
-                 scope_globals=None, scope_locals=None,
-                 threaded=False, wait=False):
+
+    def __init__(
+        self,
+        filename=None,
+        stop_on_error=True,
+        scope_globals=None,
+        scope_locals=None,
+        threaded=False,
+        wait=False,
+    ):
         if filename is None:
             # TODO(jamiesnape): Implement and use a
             # drake.common.GetRpcPipeTempDirectory function.
@@ -351,8 +358,10 @@ class CallPythonClient:
         elif arg.shape_type == lcmt_call_python_data.VECTOR:
             assert arg.cols == 1
             return np_raw.reshape(arg.rows)
-        elif arg.shape_type is None or \
-                arg.shape_type == lcmt_call_python_data.MATRIX:
+        elif (
+            arg.shape_type is None
+            or arg.shape_type == lcmt_call_python_data.MATRIX
+        ):
             # TODO(eric.cousineau): Figure out how to ensure `np.frombuffer`
             # creates a column-major array?
             return np_raw.reshape(arg.cols, arg.rows).T
@@ -365,7 +374,7 @@ class CallPythonClient:
         else:
             try:
                 self._execute_message_impl(msg)
-            except Exception as e:
+            except Exception:
                 traceback.print_exc(file=sys.stderr)
                 sys.stderr.write("  Continuing (no --stop_on_error)\n")
                 self._had_error = True
@@ -377,18 +386,18 @@ class CallPythonClient:
         kwargs = None
         for i, arg in enumerate(msg.rhs):
             value = None
-            if (arg.data_type
-                    == lcmt_call_python_data.REMOTE_VARIABLE_REFERENCE):
+            if arg.data_type == lcmt_call_python_data.REMOTE_VARIABLE_REFERENCE:
                 id = np.frombuffer(arg.data, dtype=np.uint64).reshape(1)[0]
                 if id not in self._client_vars:
-                    raise RuntimeError("Unknown local variable. "
-                                       "Dropping message.")
+                    raise RuntimeError(
+                        "Unknown local variable. Dropping message."
+                    )
                 value = self._client_vars[id]
             elif arg.data_type == lcmt_call_python_data.DOUBLE:
                 value = self._to_array(arg, np.double)
             elif arg.data_type == lcmt_call_python_data.CHAR:
                 assert arg.rows == 1
-                value = arg.data.decode('utf8')
+                value = arg.data.decode("utf8")
             elif arg.data_type == lcmt_call_python_data.LOGICAL:
                 value = self._to_array(arg, bool)
             elif arg.data_type == lcmt_call_python_data.INT:
@@ -415,12 +424,16 @@ class CallPythonClient:
             # have closures that refer to locals. For more information, see
             # https://stackoverflow.com/a/28951271/7829525
             globals_and_locals = _merge_dicts(
-                self.scope_globals, self.scope_locals)
+                self.scope_globals, self.scope_locals
+            )
             exec(inputs[0], globals_and_locals, self.scope_locals)
             out = None
         else:
-            out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
-                       self.scope_globals, self.scope_locals)
+            out = eval(
+                function_name + "(*_tmp_args, **_tmp_kwargs)",
+                self.scope_globals,
+                self.scope_locals,
+            )
         self.scope_locals.update(_tmp_out=out)
         # Update outputs.
         self._client_vars[msg.lhs] = out
@@ -435,13 +448,14 @@ class CallPythonClient:
         else:
             self.handle_messages(record=False)
         # Check any execution in progress.
-        execution_check = self.scope_globals['execution_check']
+        execution_check = self.scope_globals["execution_check"]
         if not self._had_error and execution_check.count != 0:
             self._had_error = True
             sys.stderr.write(
                 "ERROR: Invalid termination. "
                 "'execution_check.finish' called insufficient number of "
-                "times: {}\n".format(execution_check.count))
+                "times: {}\n".format(execution_check.count)
+            )
         if self._wait and not self._had_error:
             wait_func = self.scope_globals["wait"]
             wait_func()
@@ -476,7 +490,7 @@ class CallPythonClient:
         # TODO(eric.cousineau): Trying to quit via Ctrl+C is awkward (but kinda
         # works). Is there a way to have `plt.pause` handle Ctrl+C differently?
         try:
-            pause = self.scope_globals['pause']
+            pause = self.scope_globals["pause"]
             while not self._done:
                 # Process messages.
                 while not queue.empty():
@@ -490,7 +504,7 @@ class CallPythonClient:
             # User pressed Ctrl+C.
             self._done = True
             print("Quitting")
-        except Exception as e:
+        except Exception:
             # We encountered an error, and must stop.
             self._done = True
             self._had_error = True
@@ -557,7 +571,7 @@ class CallPythonClient:
             byte = fifo.read(1)
             if not byte:  # EOF
                 return None
-            if byte == b'\0':  # EOM
+            if byte == b"\0":  # EOM
                 datagram_size = int(buffer.decode())
                 break
             else:
@@ -572,13 +586,13 @@ class CallPythonClient:
             buffer.extend(byte)
             if len(buffer) == datagram_size:
                 byte = fifo.read(1)
-                assert byte == b'\0'  # EOM
+                assert byte == b"\0"  # EOM
                 return lcmt_call_python.decode(bytes(buffer))
 
     def _get_file(self):
         # Gets file handle, opening if needed.
         if self._file is None:
-            self._file = open(self.filename, 'rb')
+            self._file = open(self.filename, "rb")
         return self._file
 
     def _close_file(self):
@@ -598,23 +612,33 @@ def main(argv):
     _ensure_sigint_handler()
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
-        "--no_wait", action='store_true',
+        "--no_wait",
+        action="store_true",
         help="Close client after messages are processed. "
-             "For FIFO, this means the client will close after the C++ "
-             "binary is executed once.")
+        "For FIFO, this means the client will close after the C++ "
+        "binary is executed once.",
+    )
     parser.add_argument(
-        "--no_threading", action='store_true',
-        help="Disable threaded dispatch.")
+        "--no_threading", action="store_true", help="Disable threaded dispatch."
+    )
     parser.add_argument(
-        "--stop_on_error", action='store_true',
-        help="Stop client if there is an error when executing a call.")
+        "--stop_on_error",
+        action="store_true",
+        help="Stop client if there is an error when executing a call.",
+    )
     parser.add_argument("-f", "--file", type=str, default=None)
     parser.add_argument(
-        "-c", "--command", type=str, nargs='+', default=None,
+        "-c",
+        "--command",
+        type=str,
+        nargs="+",
+        default=None,
         help="Execute command (e.g. `jupyter notebook`) instead of running "
-             "client.")
+        "client.",
+    )
     args = parser.parse_args(argv)
 
     if args.command is not None:
@@ -624,8 +648,11 @@ def main(argv):
         return False
     else:
         client = CallPythonClient(
-            args.file, stop_on_error=args.stop_on_error,
-            threaded=not args.no_threading, wait=not args.no_wait)
+            args.file,
+            stop_on_error=args.stop_on_error,
+            threaded=not args.no_threading,
+            wait=not args.no_wait,
+        )
         good = client.run()
         return good
 

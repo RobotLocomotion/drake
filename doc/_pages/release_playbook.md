@@ -68,6 +68,10 @@ the main body of the document:
   not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
+* PRs that are tagged with release deprecation information _may_ appear twice.
+  They will be included once in the appropriate deprecation-related section
+  according to the deprecation tag. But they may also appear in their topical
+  section if they also include a tag such as "fix" or "feature".
 * In general you should mention deprecated/removed classes and methods using
   their exact name (for easier searching).
   * In the deprecation section you can provide the fully-qualified name as the
@@ -167,11 +171,11 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **33** release files from
+      them." and then choose for upload the **36** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 9: 3 `.tar.gz` + 6 checksums
       - 6: 2 `.deb` + 4 checksums
-      - 12: 4 linux `.whl` + 8 checksums
+      - 15: 5 linux `.whl` + 10 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so

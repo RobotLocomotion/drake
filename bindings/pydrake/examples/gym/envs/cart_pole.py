@@ -39,7 +39,6 @@ from pydrake.systems.framework import (
     DiagramBuilder,
     EventStatus,
     LeafSystem,
-    PublishEvent,
 )
 from pydrake.systems.primitives import (
     ConstantVectorSource,
@@ -54,27 +53,29 @@ sim_time_step = 0.01
 gym_time_step = 0.05
 controller_time_step = 0.01
 gym_time_limit = 5
-drake_contact_models = ['point', 'hydroelastic_with_fallback']
+drake_contact_models = ["point", "hydroelastic_with_fallback"]
 contact_model = drake_contact_models[0]
-drake_contact_approximations = ['sap', 'tamsi', 'similar', 'lagged']
+drake_contact_approximations = ["sap", "tamsi", "similar", "lagged"]
 contact_approximation = drake_contact_approximations[0]
 
 
 def AddAgent(plant=None, builder=None):
     parser = Parser(builder=builder, plant=plant)
     model_file = FindResourceOrThrow(
-        "drake/bindings/pydrake/examples/gym/models/cartpole_BSA.sdf")
-    agent, = parser.AddModels(model_file)
+        "drake/bindings/pydrake/examples/gym/models/cartpole_BSA.sdf"
+    )
+    (agent,) = parser.AddModels(model_file)
     return agent
 
 
-def make_sim(meshcat=None,
-             time_limit=5,
-             debug=False,
-             obs_noise=False,
-             monitoring_camera=False,
-             add_disturbances=False):
-
+def make_sim(
+    meshcat=None,
+    time_limit=5,
+    debug=False,
+    obs_noise=False,
+    monitoring_camera=False,
+    add_disturbances=False,
+):
     builder = DiagramBuilder()
 
     multibody_plant_config = MultibodyPlantConfig(
@@ -114,17 +115,20 @@ def make_sim(meshcat=None,
     actuation_view = MakeNamedViewActuation(controller_plant, "Actuation")
 
     if debug:
-        print(f'\nNumber of position: {npos},',
-              f'Number of velocities: {nv},',
-              f'Number of actuators: {na},',
-              f'Number of joints: {nj},',
-              f'Number of multibody states: {ns}')
+        print(
+            f"\nNumber of position: {npos},",
+            f"Number of velocities: {nv},",
+            f"Number of actuators: {na},",
+            f"Number of joints: {nj},",
+            f"Number of multibody states: {ns}",
+        )
         print("State view: ", state_view(np.ones(ns)))
         print("Position view: ", position_view(np.ones(npos)))
-        print("Actuation view: ", actuation_view(np.ones(na)), '\n')
+        print("Actuation view: ", actuation_view(np.ones(na)), "\n")
 
         # Visualize the plant.
         import matplotlib.pyplot as plt
+
         plt.figure()
         plot_graphviz(plant.GetTopologyGraphvizString())
         plt.plot(1)
@@ -135,12 +139,15 @@ def make_sim(meshcat=None,
     prismatic_actuation_force = builder.AddSystem(PassThrough(1))
     # Zero torque to the revolute joint --it is underactuated.
     revolute_actuation_torque = builder.AddSystem(ConstantVectorSource([0]))
-    builder.Connect(revolute_actuation_torque.get_output_port(),
-                    actuation.get_input_port(1))
-    builder.Connect(prismatic_actuation_force.get_output_port(),
-                    actuation.get_input_port(0))
-    builder.Connect(actuation.get_output_port(),
-                    plant.get_actuation_input_port(agent))
+    builder.Connect(
+        revolute_actuation_torque.get_output_port(), actuation.get_input_port(1)
+    )
+    builder.Connect(
+        prismatic_actuation_force.get_output_port(), actuation.get_input_port(0)
+    )
+    builder.Connect(
+        actuation.get_output_port(), plant.get_actuation_input_port(agent)
+    )
     builder.ExportInput(prismatic_actuation_force.get_input_port(), "actions")
 
     class ObservationPublisher(LeafSystem):
@@ -154,9 +161,9 @@ def make_sim(meshcat=None,
         def CalcObs(self, context, output):
             plant_state = self.get_input_port(0).Eval(context)
             if self.noise:
-                plant_state += np.random.uniform(low=-0.01,
-                                                 high=0.01,
-                                                 size=self.ns)
+                plant_state += np.random.uniform(
+                    low=-0.01, high=0.01, size=self.ns
+                )
             output.set_value(plant_state)
 
     obs_pub = builder.AddSystem(ObservationPublisher(noise=obs_noise))
@@ -177,38 +184,47 @@ def make_sim(meshcat=None,
             output[0] = reward
 
     reward = builder.AddSystem(RewardSystem())
-    builder.Connect(plant.get_state_output_port(agent),
-                    reward.get_input_port(0))
+    builder.Connect(
+        plant.get_state_output_port(agent), reward.get_input_port(0)
+    )
     builder.ExportOutput(reward.get_output_port(), "reward")
 
     if monitoring_camera:
         # Adds an overhead camera.
         # This is useful for logging videos of rollout evaluation.
         scene_graph.AddRenderer(
-            "renderer", MakeRenderEngineVtk(RenderEngineVtkParams()))
+            "renderer", MakeRenderEngineVtk(RenderEngineVtkParams())
+        )
         color_camera = ColorRenderCamera(
             RenderCameraCore(
                 "renderer",
-                CameraInfo(
-                    width=640,
-                    height=480,
-                    fov_y=np.pi/4),
+                CameraInfo(width=640, height=480, fov_y=np.pi / 4),
                 ClippingRange(0.01, 10.0),
-                RigidTransform()
-            ), False)
-        depth_camera = DepthRenderCamera(color_camera.core(),
-                                         DepthRange(0.01, 10.0))
-        X_PB = RigidTransform(RollPitchYaw(-np.pi/2, 0, 0),
-                              np.array([0, -2.5, 0.4]))
+                RigidTransform(),
+            ),
+            False,
+        )
+        depth_camera = DepthRenderCamera(
+            color_camera.core(), DepthRange(0.01, 10.0)
+        )
+        X_PB = RigidTransform(
+            RollPitchYaw(-np.pi / 2, 0, 0), np.array([0, -2.5, 0.4])
+        )
         rgbd_camera = builder.AddSystem(
-            RgbdSensor(parent_id=scene_graph.world_frame_id(),
-                       X_PB=X_PB,
-                       color_camera=color_camera,
-                       depth_camera=depth_camera))
-        builder.Connect(scene_graph.get_query_output_port(),
-                        rgbd_camera.query_object_input_port())
+            RgbdSensor(
+                parent_id=scene_graph.world_frame_id(),
+                X_PB=X_PB,
+                color_camera=color_camera,
+                depth_camera=depth_camera,
+            )
+        )
+        builder.Connect(
+            scene_graph.get_query_output_port(),
+            rgbd_camera.query_object_input_port(),
+        )
         builder.ExportOutput(
-            rgbd_camera.color_image_output_port(), "color_image")
+            rgbd_camera.color_image_output_port(), "color_image"
+        )
 
     class DisturbanceGenerator(LeafSystem):
         def __init__(self, plant, force_mag, period, duration):
@@ -217,14 +233,15 @@ def make_sim(meshcat=None,
             # period seconds for a given duration.
             LeafSystem.__init__(self)
             forces_cls = Value[List[ExternallyAppliedSpatialForce_[float]]]
-            self.DeclareAbstractOutputPort("spatial_forces",
-                                           lambda: forces_cls(),
-                                           self.CalcDisturbances)
+            self.DeclareAbstractOutputPort(
+                "spatial_forces", lambda: forces_cls(), self.CalcDisturbances
+            )
             self.plant = plant
             self.pole_body = self.plant.GetBodyByName("Pole")
             self.force_mag = force_mag
             assert period > duration, (
-                f"period: {period} must be larger than duration: {duration}")
+                f"period: {period} must be larger than duration: {duration}"
+            )
             self.period = period
             self.duration = duration
 
@@ -237,14 +254,16 @@ def make_sim(meshcat=None,
             if not ((y >= 0) and (y <= (self.period - self.duration))):
                 spatial_force = SpatialForce(
                     tau=[0, 0, 0],
-                    f=[np.random.uniform(
-                        low=-self.force_mag,
-                        high=self.force_mag),
-                       0, 0])
+                    f=[
+                        np.random.uniform(
+                            low=-self.force_mag, high=self.force_mag
+                        ),
+                        0,
+                        0,
+                    ],
+                )
             else:
-                spatial_force = SpatialForce(
-                    tau=[0, 0, 0],
-                    f=[0, 0, 0])
+                spatial_force = SpatialForce(tau=[0, 0, 0], f=[0, 0, 0])
             force.F_Bq_W = spatial_force
             spatial_forces_vector.set_value([force])
 
@@ -253,19 +272,22 @@ def make_sim(meshcat=None,
         # for 0.1s at the COM of the Pole body.
         disturbance_generator = builder.AddSystem(
             DisturbanceGenerator(
-                plant=plant, force_mag=1,
-                period=1, duration=0.1))
-        builder.Connect(disturbance_generator.get_output_port(),
-                        plant.get_applied_spatial_force_input_port())
+                plant=plant, force_mag=1, period=1, duration=0.1
+            )
+        )
+        builder.Connect(
+            disturbance_generator.get_output_port(),
+            plant.get_applied_spatial_force_input_port(),
+        )
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
     simulator.Initialize()
 
     def monitor(context, state_view=state_view):
-        '''
+        """
         Monitors the simulation for episode end conditions.
-        '''
+        """
         plant_context = plant.GetMyContextFromRoot(context)
         state = plant.GetOutputPort("state").Eval(plant_context)
         s = state_view(state)
@@ -274,25 +296,23 @@ def make_sim(meshcat=None,
         if context.get_time() > time_limit:
             if debug:
                 print("Episode reached time limit.")
-            return EventStatus.ReachedTermination(
-                diagram,
-                "time limit")
+            return EventStatus.ReachedTermination(diagram, "time limit")
 
         # Termination: The pole angle exceeded +-0.2 rad.
         if abs(s.PolePin_q) > 0.2:
             if debug:
                 print("Pole angle exceeded +-0.2 rad.")
             return EventStatus.ReachedTermination(
-                diagram,
-                "pole angle exceeded +-0.2 rad")
+                diagram, "pole angle exceeded +-0.2 rad"
+            )
 
         # Termination: Cart position exceeded +-2.4 m.
         if abs(s.CartSlider_x) > 2.4:
             if debug:
                 print("Cart position exceeded +-2.4 m.")
             return EventStatus.ReachedTermination(
-                diagram,
-                "cart position exceeded +-2.4 m")
+                diagram, "cart position exceeded +-2.4 m"
+            )
 
         return EventStatus.Succeeded()
 
@@ -311,64 +331,65 @@ def make_sim(meshcat=None,
 
 
 def reset_handler(simulator, diagram_context, seed):
-    '''
+    """
     Provides an easy method for domain randomization.
-    '''
+    """
 
     # Set the seed.
     np.random.seed(seed)
 
     # Randomize the initial position of the joints.
     home_positions = [
-        ('CartSlider', np.random.uniform(low=-.1, high=0.1)),
-        ('PolePin', np.random.uniform(low=-.15, high=0.15)),
+        ("CartSlider", np.random.uniform(low=-0.1, high=0.1)),
+        ("PolePin", np.random.uniform(low=-0.15, high=0.15)),
     ]
 
     # Randomize the initial velocities of the PolePin joint.
-    home_velocities = [
-        ('PolePin', np.random.uniform(low=-.1, high=0.1))
-    ]
+    home_velocities = [("PolePin", np.random.uniform(low=-0.1, high=0.1))]
 
     # Randomize the mass of the Pole by adding a mass offset.
-    home_body_mass_offset = [
-        ('Pole', np.random.uniform(low=-0.05, high=0.05))
-    ]
+    home_body_mass_offset = [("Pole", np.random.uniform(low=-0.05, high=0.05))]
 
     diagram = simulator.get_system()
     plant = diagram.GetSubsystemByName("plant")
-    plant_context = diagram.GetMutableSubsystemContext(plant,
-                                                       diagram_context)
+    plant_context = diagram.GetMutableSubsystemContext(plant, diagram_context)
 
     # Ensure the positions are within the joint limits.
     for pair in home_positions:
         joint = plant.GetJointByName(pair[0])
         if joint.type_name() == RevoluteJoint.kTypeName:
-            joint.set_angle(plant_context,
-                            np.clip(pair[1],
-                                    joint.position_lower_limit(),
-                                    joint.position_upper_limit()
-                                    )
-                            )
+            joint.set_angle(
+                plant_context,
+                np.clip(
+                    pair[1],
+                    joint.position_lower_limit(),
+                    joint.position_upper_limit(),
+                ),
+            )
         if joint.type_name() == PrismaticJoint.kTypeName:
-            joint.set_translation(plant_context,
-                                  np.clip(pair[1],
-                                          joint.position_lower_limit(),
-                                          joint.position_upper_limit()
-                                          )
-                                  )
+            joint.set_translation(
+                plant_context,
+                np.clip(
+                    pair[1],
+                    joint.position_lower_limit(),
+                    joint.position_upper_limit(),
+                ),
+            )
     for pair in home_velocities:
         joint = plant.GetJointByName(pair[0])
         if joint.type_name() == RevoluteJoint.kTypeName:
-            joint.set_angular_rate(plant_context,
-                                   np.clip(pair[1],
-                                           joint.velocity_lower_limit(),
-                                           joint.velocity_upper_limit()
-                                           )
-                                   )
+            joint.set_angular_rate(
+                plant_context,
+                np.clip(
+                    pair[1],
+                    joint.velocity_lower_limit(),
+                    joint.velocity_upper_limit(),
+                ),
+            )
     for pair in home_body_mass_offset:
         body = plant.GetBodyByName(pair[0])
         mass = body.get_mass(plant.CreateDefaultContext())
-        body.SetMass(plant_context, mass+pair[1])
+        body.SetMass(plant_context, mass + pair[1])
 
 
 def info_handler(simulator: Simulator) -> dict:
@@ -378,20 +399,22 @@ def info_handler(simulator: Simulator) -> dict:
 
 
 def DrakeCartPoleEnv(
-        meshcat=None,
-        time_limit=gym_time_limit,
-        debug=False,
-        obs_noise=False,
-        monitoring_camera=False,
-        add_disturbances=False):
-
+    meshcat=None,
+    time_limit=gym_time_limit,
+    debug=False,
+    obs_noise=False,
+    monitoring_camera=False,
+    add_disturbances=False,
+):
     # Make simulation.
-    simulator = make_sim(meshcat=meshcat,
-                         time_limit=time_limit,
-                         debug=debug,
-                         obs_noise=obs_noise,
-                         monitoring_camera=monitoring_camera,
-                         add_disturbances=add_disturbances)
+    simulator = make_sim(
+        meshcat=meshcat,
+        time_limit=time_limit,
+        debug=debug,
+        obs_noise=obs_noise,
+        monitoring_camera=monitoring_camera,
+        add_disturbances=add_disturbances,
+    )
 
     plant = simulator.get_system().GetSubsystemByName("plant")
 
@@ -399,18 +422,22 @@ def DrakeCartPoleEnv(
     na = 1
     low_a = plant.GetEffortLowerLimits()[:na]
     high_a = plant.GetEffortUpperLimits()[:na]
-    action_space = gym.spaces.Box(low=np.asarray(low_a, dtype="float32"),
-                                  high=np.asarray(high_a, dtype="float32"),
-                                  dtype=np.float32)
+    action_space = gym.spaces.Box(
+        low=np.asarray(low_a, dtype="float32"),
+        high=np.asarray(high_a, dtype="float32"),
+        dtype=np.float32,
+    )
 
     # Define observation space.
     low = np.concatenate(
-        (plant.GetPositionLowerLimits(), plant.GetVelocityLowerLimits()))
+        (plant.GetPositionLowerLimits(), plant.GetVelocityLowerLimits())
+    )
     high = np.concatenate(
-        (plant.GetPositionUpperLimits(), plant.GetVelocityUpperLimits()))
-    observation_space = gym.spaces.Box(low=np.asarray(low),
-                                       high=np.asarray(high),
-                                       dtype=np.float64)
+        (plant.GetPositionUpperLimits(), plant.GetVelocityUpperLimits())
+    )
+    observation_space = gym.spaces.Box(
+        low=np.asarray(low), high=np.asarray(high), dtype=np.float64
+    )
 
     env = DrakeGymEnv(
         simulator=simulator,
@@ -422,7 +449,8 @@ def DrakeCartPoleEnv(
         observation_port_id="observations",
         reset_handler=reset_handler,
         info_handler=info_handler,
-        render_rgb_port_id="color_image" if monitoring_camera else None)
+        render_rgb_port_id="color_image" if monitoring_camera else None,
+    )
 
     # Expose parameters that could be useful for learning.
     env.time_step = gym_time_step

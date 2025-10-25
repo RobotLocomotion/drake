@@ -1,5 +1,4 @@
 import copy
-from enum import Enum
 import logging
 import os
 from pathlib import Path
@@ -12,11 +11,7 @@ import numpy as np
 
 from pydrake.geometry import (
     Box,
-    Cylinder,
-    GeometryInstance,
-    MakePhongIllustrationProperties,
     MeshcatCone,
-    Role,
     Rgba,
     StartMeshcat,
 )
@@ -66,20 +61,24 @@ class ModelVisualizer:
     ``pydrake.visualization.model_visualizer`` script, or via
     ``bazel run //tools:model_visualizer``.
     """
+
     # Note: this class uses C++ method names to ease future porting.
 
-    def __init__(self, *,
-                 visualize_frames=False,
-                 triad_length=0.3,
-                 triad_radius=0.005,
-                 triad_opacity=0.9,
-                 publish_contacts=True,
-                 show_rgbd_sensor=False,
-                 browser_new=False,
-                 pyplot=False,
-                 meshcat=None,
-                 environment_map: Path = Path(),
-                 compliance_type: str = "undefined"):
+    def __init__(
+        self,
+        *,
+        visualize_frames=False,
+        triad_length=0.3,
+        triad_radius=0.005,
+        triad_opacity=0.9,
+        publish_contacts=True,
+        show_rgbd_sensor=False,
+        browser_new=False,
+        pyplot=False,
+        meshcat=None,
+        environment_map: Path = Path(),
+        compliance_type: str = "undefined",
+    ):
         """Initializes a ModelVisualizer.
 
         Args:
@@ -141,7 +140,8 @@ class ModelVisualizer:
         old_config = self._builder.scene_graph().get_config()
         new_config = copy.deepcopy(old_config)
         new_config.default_proximity_properties.compliance_type = (
-            self._compliance_type)
+            self._compliance_type
+        )
         self._builder.scene_graph().set_config(new_config)
 
         # The following fields are set non-None during Finalize().
@@ -187,16 +187,17 @@ class ModelVisualizer:
         result = dict()
         prototype = ModelVisualizer()
         for name in [
-                "visualize_frames",
-                "triad_length",
-                "triad_radius",
-                "triad_opacity",
-                "publish_contacts",
-                "show_rgbd_sensor",
-                "browser_new",
-                "pyplot",
-                "environment_map",
-                "compliance_type"]:
+            "visualize_frames",
+            "triad_length",
+            "triad_radius",
+            "triad_opacity",
+            "publish_contacts",
+            "show_rgbd_sensor",
+            "browser_new",
+            "pyplot",
+            "environment_map",
+            "compliance_type",
+        ]:
             value = getattr(prototype, f"_{name}")
             assert value is not None
             result[name] = value
@@ -356,13 +357,17 @@ class ModelVisualizer:
                     name="$rgbd_sensor_offset",
                     P=self._builder.plant().world_frame(),
                     X_PF=RigidTransform.Identity(),
-                    model_instance=default_model_instance()))
+                    model_instance=default_model_instance(),
+                )
+            )
             sensor_body = self._builder.plant().AddRigidBody(
                 name="$rgbd_sensor_body",
-                model_instance=default_model_instance())
+                model_instance=default_model_instance(),
+            )
             self._builder.plant().WeldFrames(
                 frame_on_parent_F=sensor_offset_frame,
-                frame_on_child_M=sensor_body.body_frame())
+                frame_on_child_M=sensor_body.body_frame(),
+            )
 
         # We're not going to step time, so we don't want output port sampling.
         self._builder.plant().SetUseSampledOutputPorts(False)
@@ -389,11 +394,13 @@ class ModelVisualizer:
         ApplyVisualizationConfig(
             config=VisualizationConfig(
                 publish_contacts=self._publish_contacts,
-                enable_alpha_sliders=True),
+                enable_alpha_sliders=True,
+            ),
             plant=self._builder.plant(),
             scene_graph=self._builder.scene_graph(),
             builder=self._builder.builder(),
-            meshcat=self._meshcat)
+            meshcat=self._meshcat,
+        )
 
         # Add a render camera so we can show role=perception images. The
         # sensor is affixed to the world frame and we'll modify that pose
@@ -412,15 +419,18 @@ class ModelVisualizer:
                 if "darwin" not in sys.platform:
                     camera_config.renderer_class.backend = "GLX"
             ApplyCameraConfig(
-                config=camera_config,
-                builder=self._builder.builder())
+                config=camera_config, builder=self._builder.builder()
+            )
             camera_sensor = self._builder.builder().GetSubsystemByName(
-                "rgbd_sensor_preview")
+                "rgbd_sensor_preview"
+            )
             camera_publisher = self._builder.builder().GetSubsystemByName(
-                "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_preview)")
+                "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_preview)"
+            )
             # Export the preview camera image output port for later use.
             self._builder.builder().ExportOutput(
-                camera_sensor.GetOutputPort("color_image"), "preview_image")
+                camera_sensor.GetOutputPort("color_image"), "preview_image"
+            )
             # Disable LCM image transmission. It has a non-trivial cost, and
             # at the moment Meldis can't display LCM images anyway.
             self._builder.builder().RemoveSystem(camera_publisher)
@@ -437,16 +447,19 @@ class ModelVisualizer:
         # names on demand, especially once the size of the control panel is
         # adjustable so that the slider names are better visible.
         self._sliders = self._builder.builder().AddNamedSystem(
-            "joint_sliders", JointSliders(meshcat=self._meshcat,
-                                          plant=self._builder.plant()))
+            "joint_sliders",
+            JointSliders(meshcat=self._meshcat, plant=self._builder.plant()),
+        )
 
         # Connect to PyPlot.
         if self._pyplot:
             ConnectPlanarSceneGraphVisualizer(
-                self._builder.builder(), self._builder.scene_graph())
+                self._builder.builder(), self._builder.scene_graph()
+            )
 
         self._original_package_map = copy.copy(
-            self._builder.parser().package_map())
+            self._builder.parser().package_map()
+        )
         self._diagram = self._builder.Build()
         self._builder = None
         self._context = self._diagram.CreateDefaultContext()
@@ -457,8 +470,10 @@ class ModelVisualizer:
             self._raise_if_invalid_positions(position)
             self._diagram.plant().SetPositions(
                 self._diagram.plant().GetMyMutableContextFromRoot(
-                    self._context),
-                position)
+                    self._context
+                ),
+                position,
+            )
             self._sliders.SetPositions(position)
 
         # Use Simulator to dispatch initialization events.
@@ -478,19 +493,23 @@ class ModelVisualizer:
         distance = camera.z_far
         width = 0.5 * camera.width * distance / camera.focal_x()
         height = 0.5 * camera.height * distance / camera.focal_y()
-        vertices = np.array([
-            [0.0, 0.0, 0.0],
-            [+width, +height, distance],
-            [+width, -height, distance],
-            [-width, -height, distance],
-            [-width, +height, distance],
-        ]).T
-        faces = np.array([
-            [0, 1, 2],
-            [0, 2, 3],
-            [0, 3, 4],
-            [0, 4, 1],
-        ]).T
+        vertices = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [+width, +height, distance],
+                [+width, -height, distance],
+                [-width, -height, distance],
+                [-width, +height, distance],
+            ]
+        ).T
+        faces = np.array(
+            [
+                [0, 1, 2],
+                [0, 2, 3],
+                [0, 3, 4],
+                [0, 4, 1],
+            ]
+        ).T
         return (vertices, faces)
 
     def _reload(self):
@@ -515,16 +534,18 @@ class ModelVisualizer:
         try:
             for kwargs in self._added_models:
                 self._builder.parser().AddModels(**kwargs)
-            logging.getLogger("drake").info(f"Reload was successful")
+            logging.getLogger("drake").info("Reload was successful")
         except BaseException as e:
             # If there's a parsing error, show it; don't crash.
             logging.getLogger("drake").error(e)
             logging.getLogger("drake").warning(
-                f"Click '{self._reload_button_name}' to try again")
+                f"Click '{self._reload_button_name}' to try again"
+            )
             # Clear the display to help indicate the failure to the user.
             self._builder = RobotDiagramBuilder()
             self._builder.parser().package_map().AddMap(
-                self._original_package_map)
+                self._original_package_map
+            )
             self._add_traffic_cone()
         self._original_package_map = None
 
@@ -549,8 +570,10 @@ class ModelVisualizer:
         frame = self._diagram.plant().GetFrameByName("$rgbd_sensor_offset")
         frame.SetPoseInParentFrame(
             context=self._diagram.plant().GetMyMutableContextFromRoot(
-                self._context),
-            X_PF=X_WC)
+                self._context
+            ),
+            X_PF=X_WC,
+        )
         self._diagram.GetOutputPort("preview_image").Eval(self._context)
 
     def Run(self, position=None, loop_once=False):
@@ -576,8 +599,10 @@ class ModelVisualizer:
                 self._raise_if_invalid_positions(position)
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyMutableContextFromRoot(
-                        self._context),
-                    position)
+                        self._context
+                    ),
+                    position,
+                )
                 self._sliders.SetPositions(position)
                 self._diagram.ForcedPublish(self._context)
 
@@ -596,13 +621,15 @@ class ModelVisualizer:
                 "You've requested to show the RGBD Sensor. To control the "
                 "sensor position, make sure you open one browser to the "
                 "following url:\n\n"
-                f"\t{self._meshcat.web_url()}?tracked_camera=on\n")
+                f"\t{self._meshcat.web_url()}?tracked_camera=on\n"
+            )
 
         # Wait for the user to cancel us.
         stop_button_name = "Stop Running"
         if not loop_once:
             logging.getLogger("drake").info(
-                f"Click '{stop_button_name}' or press Esc to quit")
+                f"Click '{stop_button_name}' or press Esc to quit"
+            )
 
         try:
             self._meshcat.AddButton(stop_button_name, "Escape")
@@ -622,11 +649,14 @@ class ModelVisualizer:
                     self._set_slider_values(slider_values)
                     self._meshcat.AddButton(stop_button_name, "Escape")
                 q = self._sliders.get_output_port().Eval(
-                    self._sliders.GetMyContextFromRoot(self._context))
+                    self._sliders.GetMyContextFromRoot(self._context)
+                )
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyMutableContextFromRoot(
-                        self._context),
-                    q)
+                        self._context
+                    ),
+                    q,
+                )
                 self._diagram.ForcedPublish(self._context)
                 if loop_once or has_clicks(stop_button_name):
                     break
@@ -652,12 +682,15 @@ class ModelVisualizer:
         if actual != expected:
             raise ValueError(
                 f"Number of passed positions ({actual}) does not match the "
-                f"number in the model ({expected}).")
+                f"number in the model ({expected})."
+            )
 
     def _get_slider_values(self):
         """Returns a map of slider names to current values."""
-        return {name: self._meshcat.GetSliderValue(name)
-                for name in self._meshcat.GetSliderNames()}
+        return {
+            name: self._meshcat.GetSliderValue(name)
+            for name in self._meshcat.GetSliderNames()
+        }
 
     def _set_slider_values(self, slider_values):
         """
@@ -684,11 +717,16 @@ class ModelVisualizer:
         orange = Rgba(1.0, 0.33, 0)
         self._meshcat.SetObject(path=f"{path}/base", shape=base, rgba=orange)
         self._meshcat.SetObject(path=f"{path}/cone", shape=cone, rgba=orange)
-        self._meshcat.SetTransform(f"{path}/base", RigidTransform(
-            [0, 0, base_thickness * 0.5]))
-        self._meshcat.SetTransform(f"{path}/cone", RigidTransform(
-            RotationMatrix.MakeYRotation(np.pi),
-            [0, 0, base_thickness + cone_height]))
+        self._meshcat.SetTransform(
+            f"{path}/base", RigidTransform([0, 0, base_thickness * 0.5])
+        )
+        self._meshcat.SetTransform(
+            f"{path}/cone",
+            RigidTransform(
+                RotationMatrix.MakeYRotation(np.pi),
+                [0, 0, base_thickness + cone_height],
+            ),
+        )
 
     def _remove_traffic_cone(self):
         """Removes the traffic cone from the scene."""

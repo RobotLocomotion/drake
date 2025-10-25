@@ -1,5 +1,4 @@
 from collections import namedtuple
-from pathlib import Path
 import re
 import subprocess
 import sys
@@ -12,6 +11,7 @@ _GOOD_SYMBOLS_PREFIX = [
     "_ZTS",
     # For now, allow anything in `namespace std {}`. (We should
     # probably be checking for unwanted template arguments.)
+    "_ZGVNSt7__cxx11",
     "_ZGVZNKSt8__detail",
     "_ZN9__gnu_cxx",
     "_ZNKRSt",
@@ -91,7 +91,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
 
 
 class ExportedSymbolsTest(unittest.TestCase):
-
     def setUp(self):
         self._readelf_repair_pattern = None
 
@@ -151,11 +150,7 @@ class ExportedSymbolsTest(unittest.TestCase):
             symbols.append(Row._make(values))
 
         # Check the symbols against our policy.
-        bad_rows = [
-            row
-            for row in symbols
-            if not self._is_symbol_ok(row)
-        ]
+        bad_rows = [row for row in symbols if not self._is_symbol_ok(row)]
         bad_rows = sorted(bad_rows, key=lambda x: (x.Type, x.Name))
 
         # Report the first few errors.
@@ -183,8 +178,8 @@ class ExportedSymbolsTest(unittest.TestCase):
         # This type of output was noticed using the `mold` linker, see issue:
         # https://github.com/rui314/mold/issues/651
         if self._readelf_repair_pattern is None:
-            self._readelf_repair_pattern = re.compile(r'<\w+ specific>: \d+')
-        return self._readelf_repair_pattern.sub('SPECIFIC', line)
+            self._readelf_repair_pattern = re.compile(r"<\w+ specific>: \d+")
+        return self._readelf_repair_pattern.sub("SPECIFIC", line)
 
     @staticmethod
     def _is_symbol_ok(row):

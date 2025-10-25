@@ -1,3 +1,5 @@
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import pydrake.autodiffutils as _ad
 from pydrake.common import (
     _MangledName,
@@ -12,7 +14,6 @@ def _indented_repr(o):
 
 
 def _spatial_vector_repr(rotation_name, translation_name):
-
     def repr_with_closure(self):
         rotation = self.rotational().tolist()
         translation = self.translational().tolist()
@@ -20,7 +21,8 @@ def _spatial_vector_repr(rotation_name, translation_name):
             f"{_pretty_class_name(type(self))}(\n"
             f"  {rotation_name}={_indented_repr(rotation)},\n"
             f"  {translation_name}={_indented_repr(translation)},\n"
-            f")")
+            f")"
+        )
 
     return repr_with_closure
 
@@ -41,4 +43,5 @@ def __getattr__(name):
     compatibility with unpickling.
     """
     return _MangledName.module_getattr(
-        module_name=__name__, module_globals=globals(), name=name)
+        module_name=__name__, module_globals=globals(), name=name
+    )

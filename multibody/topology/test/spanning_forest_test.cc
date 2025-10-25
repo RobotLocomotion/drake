@@ -73,8 +73,8 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
             std::vector{world_link_index});
   EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
 
-  EXPECT_FALSE(forest.link_to_tree(LinkOrdinal(0)).is_valid());
-  EXPECT_FALSE(forest.link_to_tree(LinkIndex(0)).is_valid());
+  EXPECT_FALSE(forest.link_to_tree_index(LinkOrdinal(0)).is_valid());
+  EXPECT_FALSE(forest.link_to_tree_index(LinkIndex(0)).is_valid());
 
   // Check that the World-only forest makes sense.
   EXPECT_EQ(ssize(forest.mobods()), 1);
@@ -172,15 +172,15 @@ GTEST_TEST(SpanningForest, TreeAndLoopConstraintAPIs) {
   EXPECT_EQ(forest.num_mobods(), 4);
   EXPECT_EQ(ssize(forest.loop_constraints()), 1);
 
-  EXPECT_FALSE(forest.link_to_tree(LinkIndex(0)).is_valid());
-  EXPECT_EQ(forest.link_to_tree(LinkIndex(1)), TreeIndex(0));
+  EXPECT_FALSE(forest.link_to_tree_index(LinkIndex(0)).is_valid());
+  EXPECT_EQ(forest.link_to_tree_index(LinkIndex(1)), TreeIndex(0));
   // Link2's primary follows mobod3, which is in tree1.
-  EXPECT_EQ(forest.link_to_tree(LinkIndex(2)), TreeIndex(1));
+  EXPECT_EQ(forest.link_to_tree_index(LinkIndex(2)), TreeIndex(1));
 
   // The index and ordinal values are the same here.
-  EXPECT_FALSE(forest.link_to_tree(LinkOrdinal(0)).is_valid());
-  EXPECT_EQ(forest.link_to_tree(LinkOrdinal(1)), TreeIndex(0));
-  EXPECT_EQ(forest.link_to_tree(LinkOrdinal(2)), TreeIndex(1));
+  EXPECT_FALSE(forest.link_to_tree_index(LinkOrdinal(0)).is_valid());
+  EXPECT_EQ(forest.link_to_tree_index(LinkOrdinal(1)), TreeIndex(0));
+  EXPECT_EQ(forest.link_to_tree_index(LinkOrdinal(2)), TreeIndex(1));
 
   // Not much to check for the loop constraint.
   const auto& loop_constraint = forest.loop_constraints(LoopConstraintIndex(0));
@@ -393,12 +393,12 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   // clang-format on
 
   // Sample some q's and v's to see if they can find their tree and mobod.
-  EXPECT_EQ(forest.q_to_tree(9), TreeIndex(0));
-  EXPECT_EQ(forest.q_to_tree(19), TreeIndex(1));
-  EXPECT_EQ(forest.q_to_tree(30), TreeIndex(2));
-  EXPECT_EQ(forest.v_to_tree(9), TreeIndex(0));
-  EXPECT_EQ(forest.v_to_tree(19), TreeIndex(1));
-  EXPECT_EQ(forest.v_to_tree(29), TreeIndex(2));
+  EXPECT_EQ(forest.q_to_tree_index(9), TreeIndex(0));
+  EXPECT_EQ(forest.q_to_tree_index(19), TreeIndex(1));
+  EXPECT_EQ(forest.q_to_tree_index(30), TreeIndex(2));
+  EXPECT_EQ(forest.v_to_tree_index(9), TreeIndex(0));
+  EXPECT_EQ(forest.v_to_tree_index(19), TreeIndex(1));
+  EXPECT_EQ(forest.v_to_tree_index(29), TreeIndex(2));
   EXPECT_EQ(forest.q_to_mobod(9), MobodIndex(4));
   EXPECT_EQ(forest.q_to_mobod(20), MobodIndex(9));
   EXPECT_EQ(forest.q_to_mobod(30), MobodIndex(15));
@@ -843,7 +843,7 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
   // The graph shouldn't change from SpanningForest 1, but the forest will.
-  EXPECT_EQ(ssize(graph.joints()) - graph.num_user_joints(), 4);
+  EXPECT_EQ(graph.num_joints() - graph.num_user_joints(), 4);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links,
             link_composites0);
   EXPECT_EQ(graph.link_composites(LinkCompositeIndex(1)).links,
@@ -984,7 +984,7 @@ non-composite links are {3}, {9}, {2}, {11}, and {14*}.
 
 Forest building should start with Link {5} since that is the only direct
 connection to World in the input ({3} and {9} get connected later). If we're
-giving every Link its own mobilizer (rather than making composites from
+giving every Link its own mobilizer (rather than merging composites from
 welded-together ones) we expect this forest of 3 trees and 17 Mobods:
 
       level 6                 12{16*} ....              ... loop constraint
@@ -1011,7 +1011,7 @@ though each Link has its own Mobod. Those are:
 The corresponding Mobods are in WeldedMobod groups:
 [0 1 2 6] [8 9 14 15] [10 11 13 12]
 
-Remodeling with composite link merging turned on should immediately create
+Remodeling with link composite merging turned on should immediately create
 composite {0 5 7 12} on mobod 0, then see outboard links {2} and {11} as new
 base bodies and grow those two trees, discovering a loop at joint 8. As before,
 Link {11} gets split with a shadow link {14} for joint 8. Then it
@@ -1470,8 +1470,7 @@ sufficient to prevent both massless Links from being terminal.
 
   {1}           {2}      massless       1{1}            3{2}
 
-   🡑 0           🡑 1                     🡑 T0            🡑 T1     T
-= tree
+   🡑 0           🡑 1                     🡑 T0            🡑 T1     T = tree
                            ---->
  ........{0}........                     ........ 0 ........
         World                                   World
@@ -1570,7 +1569,7 @@ The expected as-modeled graph and spanning forest model are:
 Notes:
   - Joint numbering determines branch ordering in the tree so the
     middle branch gets modeled last.
-  - Model Joint 8 is the added floating joint to World.
+  - Ephemeral Joint 8 is the added floating joint to World.
   - Link {8} is {6s} (shadow 1 of Link {6}); {9} is {6ss} (shadow 2).
   - Loop constraints (shown as . .) are always ordered so that the constraint's
     "parent" is the primary link and "child" is the shadow link. Thus the order

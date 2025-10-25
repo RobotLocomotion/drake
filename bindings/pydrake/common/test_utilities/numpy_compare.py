@@ -21,7 +21,13 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import (
-    Expression, Formula, Monomial, Polynomial, Variable, RationalFunction)
+    Expression,
+    Formula,
+    Monomial,
+    Polynomial,
+    Variable,
+    RationalFunction,
+)
 from pydrake.polynomial import Polynomial_ as RawPolynomial_
 
 
@@ -37,24 +43,22 @@ class _Registry:
     # make intent explicit.
     # TODO(eric.cousineau): Add `assert_near` when it's necessary.
     AssertComparator = namedtuple(
-        'AssertComparator', ['assert_eq', 'assert_ne', 'assert_allclose'])
+        "AssertComparator", ["assert_eq", "assert_ne", "assert_allclose"]
+    )
 
     def __init__(self):
         self._comparators = {}
         self._to_float = {}
 
     def register_comparator(
-            self,
-            cls_a,
-            cls_b,
-            assert_eq,
-            assert_ne=None,
-            assert_allclose=None):
+        self, cls_a, cls_b, assert_eq, assert_ne=None, assert_allclose=None
+    ):
         key = (cls_a, cls_b)
         assert key not in self._comparators, key
         assert_eq = np.vectorize(assert_eq)
         self._comparators[key] = self.AssertComparator(
-            assert_eq, assert_ne, assert_allclose)
+            assert_eq, assert_ne, assert_allclose
+        )
 
     def get_comparator_from_arrays(self, a, b):
         # Ensure all types are homogeneous.
@@ -111,9 +115,9 @@ def assert_allclose(a, b, atol=1e-15, rtol=0):
     if a.dtype != object and b.dtype != object:
         np.testing.assert_allclose(a, b, atol=atol, rtol=rtol)
     else:
-        assert_allclose = (
-            _registry.get_comparator_from_arrays(a, b).assert_allclose
-        )
+        assert_allclose = _registry.get_comparator_from_arrays(
+            a, b
+        ).assert_allclose
         assert assert_allclose is not None
         assert_allclose(a, b, atol=atol, rtol=rtol)
 
@@ -140,7 +144,6 @@ def assert_not_equal(a, b):
     br = np.broadcast(a, b)
     errs = []
     for ai, bi in br:
-        e = None
         try:
             assert_ne(ai, bi)
         except _UnwantedEquality as e:
@@ -190,9 +193,10 @@ def resolve_type(a):
     a = np.asarray(a)
     assert a.size != 0, "Cannot be empty."
     cls_set = {type(np.asarray(x).item()) for x in a.flat}
-    assert len(cls_set) == 1, (
-        "Types must be homogeneous; got: {}".format(cls_set))
-    cls, = cls_set
+    assert len(cls_set) == 1, "Types must be homogeneous; got: {}".format(
+        cls_set
+    )
+    (cls,) = cls_set
     return cls
 
 
@@ -215,8 +219,10 @@ def _register_autodiff():
         np.testing.assert_equal(a.derivatives(), b.derivatives())
 
     def autodiff_ne(a, b):
-        if (a.value() == b.value()
-                and (a.derivatives() == b.derivatives()).all()):
+        if (
+            a.value() == b.value()
+            and (a.derivatives() == b.derivatives()).all()
+        ):
             raise _UnwantedEquality(str(a.value(), b.derivatives()))
 
     def autodiff_allclose(a, b, atol, rtol):
@@ -231,7 +237,8 @@ def _register_autodiff():
 
     _registry.register_to_float(AutoDiffXd, AutoDiffXd.value)
     _registry.register_comparator(
-        AutoDiffXd, AutoDiffXd, autodiff_eq, autodiff_ne, autodiff_allclose)
+        AutoDiffXd, AutoDiffXd, autodiff_eq, autodiff_ne, autodiff_allclose
+    )
 
 
 def _register_symbolic():
@@ -257,36 +264,43 @@ def _register_symbolic():
     _registry.register_to_float(Expression, Expression.Evaluate)
     _registry.register_comparator(Formula, str, _str_eq, _str_ne)
     _registry.register_comparator(
-        Formula, Formula, Formula.__eq__, Formula.__ne__)
+        Formula, Formula, Formula.__eq__, Formula.__ne__
+    )
     # Ensure that we can do simple boolean comparison, e.g. in lieu of
     # `unittest.TestCase.assertTrue`, use
     # `numpy_compare.assert_equal(f, True)`.
     _registry.register_comparator(
-        Formula, bool, formula_bool_eq, formula_bool_ne)
+        Formula, bool, formula_bool_eq, formula_bool_ne
+    )
     lhs_types = [Variable, Expression, Polynomial, Monomial]
     rhs_types = lhs_types + [float]
     for lhs_type in lhs_types:
         _registry.register_comparator(lhs_type, str, _str_eq, _str_ne)
     for lhs_type, rhs_type in product(lhs_types, rhs_types):
         _registry.register_comparator(
-            lhs_type, rhs_type, sym_struct_eq, sym_struct_ne)
+            lhs_type, rhs_type, sym_struct_eq, sym_struct_ne
+        )
 
 
 def _register_polynomial():
     _registry.register_comparator(
-        RawPolynomial_[float], RawPolynomial_[float], _raw_eq, _raw_ne)
+        RawPolynomial_[float], RawPolynomial_[float], _raw_eq, _raw_ne
+    )
     _registry.register_comparator(
-        RawPolynomial_[AutoDiffXd], RawPolynomial_[AutoDiffXd], _raw_eq,
-        _raw_ne)
+        RawPolynomial_[AutoDiffXd], RawPolynomial_[AutoDiffXd], _raw_eq, _raw_ne
+    )
     _registry.register_comparator(
-        RawPolynomial_[Expression], RawPolynomial_[Expression], _raw_eq,
-        _raw_ne)
+        RawPolynomial_[Expression], RawPolynomial_[Expression], _raw_eq, _raw_ne
+    )
 
 
 def _register_rational_function():
     _registry.register_comparator(
-        RationalFunction, RationalFunction,
-        RationalFunction.__eq__, RationalFunction.__ne__)
+        RationalFunction,
+        RationalFunction,
+        RationalFunction.__eq__,
+        RationalFunction.__ne__,
+    )
 
 
 # Globals.

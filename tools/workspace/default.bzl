@@ -60,7 +60,6 @@ load("//tools/workspace/pkgconfig_x11_internal:repository.bzl", "pkgconfig_x11_i
 load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
-load("//tools/workspace/pycodestyle_internal:repository.bzl", "pycodestyle_internal_repository")  # noqa
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
@@ -143,7 +142,6 @@ def _add_internal_repositories():
     pkgconfig_spdlog_internal_repository(name = "pkgconfig_spdlog_internal")
     pkgconfig_x11_internal_repository(name = "pkgconfig_x11_internal")
     poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
-    pycodestyle_internal_repository(name = "pycodestyle_internal", mirrors = mirrors)  # noqa
     qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
     ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
@@ -188,8 +186,9 @@ def _drake_dep_repositories_impl(module_ctx):
         "lapack",
         "opencl",
         "spdlog",
-        "x11",
         "zlib",
+        # Deprecated for removal on 2026-02-01.
+        "x11",
     ]
     for name in ALIAS_REPOSITORIES:
         actual = "@drake//tools/workspace/" + name

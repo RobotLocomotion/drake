@@ -73,12 +73,16 @@ def _build(*, out_dir, temp_dir, quick, modules):
     if do_styleguide:
         check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
     if do_pydrake:
-        check_call([pydrake_build, f"--out_dir={out_dir}/pydrake"]
-                   + pydrake_modules)
+        check_call(
+            [pydrake_build, f"--out_dir={out_dir}/pydrake"] + pydrake_modules
+        )
     if do_doxygen:
         maybe_quick = ["--quick"] if quick else []
-        check_call([doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"]
-                   + doxygen_modules + maybe_quick)
+        check_call(
+            [doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"]
+            + doxygen_modules
+            + maybe_quick
+        )
     if do_sitemap:
         _build_sitemap(out_dir)
 
@@ -113,8 +117,9 @@ def _build_sitemap(site_dir: str) -> None:
 
     print("Building sitemap.xml...")
     root_path = Path(site_dir)
-    assert root_path.is_absolute(), \
+    assert root_path.is_absolute(), (
         "Path to generated website is not an absolute path"
+    )
     paths = root_path.glob("**/*.html")
 
     XML_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -129,17 +134,25 @@ def _build_sitemap(site_dir: str) -> None:
             relative_location = relative_path.parent.as_posix() + "/"
         else:
             relative_location = relative_path.as_posix()
-        location = urllib.parse.urljoin(ROOT_URL,
-                                        urllib.parse.quote(relative_location))
+        location = urllib.parse.urljoin(
+            ROOT_URL, urllib.parse.quote(relative_location)
+        )
         loc = ET.SubElement(url, "loc")
         loc.text = location
     sitemap = ET.ElementTree(urlset)
     ET.indent(sitemap)
-    sitemap.write(os.path.join(site_dir, "sitemap.xml"),
-                  encoding="utf-8",
-                  xml_declaration=True)
+    sitemap.write(
+        os.path.join(site_dir, "sitemap.xml"),
+        encoding="utf-8",
+        xml_declaration=True,
+    )
 
 
-if __name__ == '__main__':
-    main(build=_build, subdir="", description=__doc__.strip(),
-         supports_modules=True, supports_quick=True)
+if __name__ == "__main__":
+    main(
+        build=_build,
+        subdir="",
+        description=__doc__.strip(),
+        supports_modules=True,
+        supports_quick=True,
+    )

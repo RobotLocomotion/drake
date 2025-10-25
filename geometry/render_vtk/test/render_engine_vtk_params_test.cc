@@ -34,6 +34,13 @@ environment_map:
   texture: !EquirectangularMap
     path: /path/to/environment_image.hdr
 exposure: 1.0
+ssao:
+  radius: 0.2
+  bias: 0.001
+  sample_count: 64
+  intensity_scale: 0.9
+  intensity_shift: 0.01
+  blur: false
 cast_shadows: true
 shadow_map_size: 512
 force_to_pbr: true

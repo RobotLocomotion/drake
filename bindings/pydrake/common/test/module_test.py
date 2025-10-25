@@ -25,11 +25,14 @@ class TestCommon(unittest.TestCase):
             self.assertTrue(e.code is not None)
             self.assertRegex(
                 str(e),
-                ".*".join([
-                    "Failure at ",
-                    " trigger_an_assertion_failure",
-                    " condition 'false' failed",
-                ]))
+                ".*".join(
+                    [
+                        "Failure at ",
+                        " trigger_an_assertion_failure",
+                        " condition 'false' failed",
+                    ]
+                ),
+            )
 
     def test_find_resource_or_throw(self):
         mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf")
@@ -77,10 +80,12 @@ class TestCommon(unittest.TestCase):
             """Confirm that the string is surrounded by quotes (either double
             or single; we don't care which, just so long as they match)."""
             return f"""(['"]){s}\\1"""
+
         representation = repr(file)
         # We know that content_bytes is easily decodable as a string.
-        self.assertRegex(representation,
-                         string_regex(content_bytes.decode("utf-8")))
+        self.assertRegex(
+            representation, string_regex(content_bytes.decode("utf-8"))
+        )
         self.assertRegex(representation, string_regex(hint))
         self.assertRegex(representation, string_regex(ext))
 
@@ -88,7 +93,8 @@ class TestCommon(unittest.TestCase):
         copy.deepcopy(file)
 
         file = mut.MemoryFile.Make(
-            mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"))
+            mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf")
+        )
         self.assertEqual(file.extension(), ".urdf")
 
     def test_memory_file_yaml_serialization(self):
@@ -99,16 +105,19 @@ class TestCommon(unittest.TestCase):
         """
         content = "This is an example of memory file test contents."
         content_b64 = (
-            "VGhpcyBpcyBhbiBleGFtcGxlIG9mIG1lbW9yeSBmaWxlIHRlc3QgY29udGVudHMu")
+            "VGhpcyBpcyBhbiBleGFtcGxlIG9mIG1lbW9yeSBmaWxlIHRlc3QgY29udGVudHMu"
+        )
         dut = mut.MemoryFile(content, ".txt", "payload.txt")
 
         # Serialization.
         dumped = yaml_dump_typed(dut)
-        self.assertEqual(dumped,
-                         "contents: !!binary |\n"
-                         + f"  {content_b64}\n"
-                         + "extension: .txt\n"
-                         + "filename_hint: payload.txt\n")
+        self.assertEqual(
+            dumped,
+            "contents: !!binary |\n"
+            + f"  {content_b64}\n"
+            + "extension: .txt\n"
+            + "filename_hint: payload.txt\n",
+        )
 
         # Deserialization.
         from_yaml = yaml_load_typed(schema=mut.MemoryFile, data=dumped)
@@ -143,8 +152,7 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(mut.Parallelism(3).num_threads(), 3)
 
         # Round-trip repr.
-        for rep in ["Parallelism(num_threads=1)",
-                    "Parallelism(num_threads=2)"]:
+        for rep in ["Parallelism(num_threads=1)", "Parallelism(num_threads=2)"]:
             x = eval(rep, {"Parallelism": mut.Parallelism}, {})
             self.assertEqual(repr(x), rep)
 
@@ -157,7 +165,7 @@ class TestCommon(unittest.TestCase):
         # We'll simply confirm that the path *starts* with the TEST_TMPDIR and
         # that it exists. We'll assume that it otherwise has the documented
         # properties.
-        self.assertTrue(temp_dir.startswith(os.environ.get('TEST_TMPDIR')))
+        self.assertTrue(temp_dir.startswith(os.environ.get("TEST_TMPDIR")))
         self.assertTrue(os.path.exists(temp_dir))
 
     def test_tolerance_type(self):
@@ -173,8 +181,7 @@ class TestCommon(unittest.TestCase):
 
     def test_logging(self):
         self.assertTrue(mut._HAVE_SPDLOG)
-        self.assertIsInstance(
-            mut._set_log_level(level="unchanged"), str)
+        self.assertIsInstance(mut._set_log_level(level="unchanged"), str)
 
     def test_random_generator(self):
         g1 = mut.RandomGenerator()
@@ -193,12 +200,14 @@ class TestCommon(unittest.TestCase):
         self.assertNotEqual(rs1.randint(100), rs2.randint(100))
 
     def test_calc_probability_density(self):
-        density_val = mut.CalcProbabilityDensity(
+        mut.CalcProbabilityDensity(
             distribution=mut.RandomDistribution.kGaussian,
-            x=np.array([0.5, 1.]))
-        density_ad = mut.CalcProbabilityDensity(
+            x=np.array([0.5, 1.0]),
+        )
+        mut.CalcProbabilityDensity(
             distribution=mut.RandomDistribution.kGaussian,
-            x=np.array([AutoDiffXd(1), AutoDiffXd(2)]))
+            x=np.array([AutoDiffXd(1), AutoDiffXd(2)]),
+        )
 
     def test_assert_is_armed(self):
         self.assertIsInstance(mut.kDrakeAssertIsArmed, bool)
@@ -208,31 +217,38 @@ class TestCommon(unittest.TestCase):
         obj = mut_testing.RegisteredType()
         registered_type_py_name = f"{mut_testing.__name__}.RegisteredType"
         registered_type_cc_name = (
-            "drake::pydrake::(anonymous)::testing::RegisteredType")
+            "drake::pydrake::(anonymous)::testing::RegisteredType"
+        )
         unregistered_type_cc_name = (
-            "drake::pydrake::(anonymous)::testing::UnregisteredType")
+            "drake::pydrake::(anonymous)::testing::UnregisteredType"
+        )
         unregistered_derived_type_cc_name = (
-            "drake::pydrake::(anonymous)::testing::UnregisteredDerivedType")
+            "drake::pydrake::(anonymous)::testing::UnregisteredDerivedType"
+        )
         # Type and instance are registered with Python, so it should return the
         # Python type name.
         self.assertEqual(
             mut_testing.get_nice_type_name_cc_registered_instance(obj),
-            registered_type_py_name)
+            registered_type_py_name,
+        )
         # Type is known, but instance is unregistered, so it should return the
         # C++ type name.
         self.assertEqual(
             mut_testing.get_nice_type_name_cc_unregistered_instance(),
-            registered_type_cc_name)
+            registered_type_cc_name,
+        )
         # Uses raw typeid for a registered type, so it should return the C++
         # type name.
         self.assertEqual(
             mut_testing.get_nice_type_name_cc_typeid(obj),
-            registered_type_cc_name)
+            registered_type_cc_name,
+        )
         # Type and instance are unregistered, so it should return the C++ type
         # name.
         self.assertEqual(
             mut_testing.get_nice_type_name_cc_unregistered_type(),
-            unregistered_type_cc_name)
+            unregistered_type_cc_name,
+        )
         # Type is unregistered but derived from a registered base type (to
         # mimic Value<> / AbstractValue), and instance is registered. Should
         # return C++ type name.
@@ -240,5 +256,7 @@ class TestCommon(unittest.TestCase):
         self.assertIs(type(base_only_instance), mut_testing.RegisteredType)
         self.assertEqual(
             mut_testing.get_nice_type_name_cc_registered_instance(
-                base_only_instance),
-            unregistered_derived_type_cc_name)
+                base_only_instance
+            ),
+            unregistered_derived_type_cc_name,
+        )

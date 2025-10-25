@@ -2,7 +2,6 @@
 Test math overloads.
 """
 
-
 import math
 import unittest
 
@@ -26,21 +25,22 @@ class Overloads:
     # Provides interface for testing function overloads for a given type, `T`.
     def supports(self, func):
         # Determines if `func` is supported by this overload.
-        raise NotImplemented
+        raise NotImplementedError()
 
     def to_float(self, y_T):
         # Converts `y_T` (a value of type `T`) to a float.
-        raise NotImplemented
+        raise NotImplementedError()
 
     def to_type(self, y_float):
         # Converts `y_float` (a float value) to a value of type `T`.
-        raise NotImplemented
+        raise NotImplementedError()
 
 
 class FloatOverloads(Overloads):
     # Imports `math` and provides support for testing `float` overloads.
     def __init__(self):
         import pydrake.math as m
+
         self.m = m
         self.T = float
         self.T_logical = bool
@@ -60,6 +60,7 @@ class AutoDiffOverloads(Overloads):
     # overloads.
     def __init__(self):
         import pydrake.autodiffutils as m
+
         self.m = m
         self.T = m.AutoDiffXd
         self.T_logical = bool
@@ -67,13 +68,13 @@ class AutoDiffOverloads(Overloads):
     def supports(self, func):
         backwards_compat = [
             "cos", "sin",
-        ]
+        ]  # fmt: skip
         supported = backwards_compat + [
             "log",
             "tan", "asin", "acos", "atan2",
             "sinh", "cosh", "tanh",
             "inv",
-        ]
+        ]  # fmt: skip
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
             assert hasattr(self.T, func.__name__)
@@ -91,6 +92,7 @@ class SymbolicOverloads(Overloads):
     # overloads.
     def __init__(self):
         import pydrake.symbolic as m
+
         self.m = m
         self.T = m.Expression
         self.T_logical = bool
@@ -102,7 +104,7 @@ class SymbolicOverloads(Overloads):
             "sinh", "cosh", "tanh", "ceil", "floor",
             "min", "max", "pow", "atan2",
             "inv",
-        ]
+        ]  # fmt: skip
         supported = backwards_compat
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
@@ -128,6 +130,7 @@ class MathOverloadsTest(unittest.TestCase):
         # TODO(eric.cousineau): Consider comparing against `numpy` ufunc
         # methods.
         import pydrake.math as drake_math
+
         unary = [
             (drake_math.log, math.log),
             (drake_math.abs, math.fabs),
@@ -201,7 +204,6 @@ class MathOverloadsTest(unittest.TestCase):
                     self.assertEqual(y_T_float, y_float)
 
         debug_print("\n\nOverload: ", qualname(type(overload)))
-        float_overload = FloatOverloads()
         # Check each number of arguments.
         debug_print("Unary:")
         check_eval(unary, 1)

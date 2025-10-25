@@ -10,8 +10,6 @@ For guidance, see:
 # e.g. `LeafSystem` only consists of private things to overload, but it's
 # important to be user-visible.
 
-
-from collections import namedtuple
 import re
 from textwrap import indent
 from typing import Any, Tuple
@@ -41,21 +39,21 @@ def generate_sig_re(extended=False):
     separate group.
     """
     if extended:
-        expression = r'''^ ([\w.]+::)?       # explicit module name
+        expression = r"""^ ([\w.]+::)?       # explicit module name
                            ([\w.]+           # module and/or class name(s)
                        (?: \[\s*[^(]*\s*])?  # optional: type parameters list
                       \.)?                   # end of module/class name(s)
-                     '''
+                     """
     else:
-        expression = r'''^ ([\w.]*           # class name(s)
+        expression = r"""^ ([\w.]*           # class name(s)
                        (?: \[\s*[^(]*\s*])?  # optional: type parameters list
                       \.)?                   # end of class name(s)
-                     '''
+                     """
 
-    expression += r'''(\w+  \s*              # thing name
+    expression += r"""(\w+  \s*              # thing name
                        (?: \[\s*.*\s*])?     # optional: type parameters list
                       )                      # end of thing name
-                  '''
+                  """
 
     # TODO(mwoehlke-kitware): Make unconditional when Jammy is no longer
     # supported.
@@ -64,12 +62,12 @@ def generate_sig_re(extended=False):
         # list. But we want to capture that as part of the name(s). However,
         # we still need to provide a capture group, so 'capture' something that
         # won't exist in order to make the number of capture groups correct.
-        expression += r'(!!dummy_tp_list!!)?'
+        expression += r"(!!dummy_tp_list!!)?"
 
-    expression += r'''(?: \((.*)\)           # optional: arguments
+    expression += r"""(?: \((.*)\)           # optional: arguments
                        (?:\s* -> \s* (.*))?  #           return annotation
                       )? $                   # and nothing more
-                  '''
+                  """
 
     return re.compile(expression, re.VERBOSE)
 
@@ -85,30 +83,29 @@ def patch(obj, name, f):
 
 
 def repair_naive_name_split(objpath):
-    """Rejoins any strings with braces that were naively split across '.'.
-    """
+    """Rejoins any strings with braces that were naively split across '.'."""
     num_open = 0
     out = []
-    cur = ''
+    cur = ""
     for p in objpath:
-        num_open += p.count('[') - p.count(']')
+        num_open += p.count("[") - p.count("]")
         assert num_open >= 0
         if cur:
-            cur += '.'
+            cur += "."
         cur += p
         if num_open == 0:
             out.append(cur)
-            cur = ''
+            cur = ""
     assert len(cur) == 0, (objpath, cur, out)
     return out
 
 
 class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
-    """Specializes `Documenter` for templates from `cpp_template`.
-    """
-    objtype = 'template'
+    """Specializes `Documenter` for templates from `cpp_template`."""
+
+    objtype = "template"
     member_order = autodoc.ClassDocumenter.member_order
-    directivetype = 'template'
+    directivetype = "template"
 
     # Take priority over attributes.
     priority = 1 + autodoc.AttributeDocumenter.priority
@@ -139,7 +136,7 @@ class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
         """Overrides base to add a line to indicate instantiations."""
         autodoc.ModuleLevelDocumenter.add_directive_header(self, sig)
         sourcename = self.get_sourcename()
-        self.add_line(u'', sourcename)
+        self.add_line("", sourcename)
         names = []
         for param in self.object.param_list:
             # TODO(eric.cousineau): Use attribute aliasing already present in
@@ -147,7 +144,8 @@ class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
             rst = ":class:`{}`".format(self.object._instantiation_name(param))
             names.append(rst)
         self.add_line(
-            u"   Instantiations: {}".format(", ".join(names)), sourcename)
+            "   Instantiations: {}".format(", ".join(names)), sourcename
+        )
 
 
 def tpl_attrgetter(obj, name, *defargs):
@@ -172,13 +170,17 @@ def tpl_attrgetter(obj, name, *defargs):
                 return inst
         assert False, (
             "Not a template?",
-            param, obj.param_list,
-            inst.__name__, name)
+            param,
+            obj.param_list,
+            inst.__name__,
+            name,
+        )
     return autodoc.safe_getattr(obj, name, *defargs)
 
 
 def patch_resolve_name(original, self, *args, **kwargs):
-    """Patches implementations of `resolve_name` to handle split across braces.
+    """Patches implementations of `resolve_name` to handle splitting across
+    braces.
     """
     modname, objpath = original(self, *args, **kwargs)
     return modname, repair_naive_name_split(objpath)
@@ -189,29 +191,29 @@ def patch_class_add_directive_header(original, self, sig):
     from bases.
     """
     if self.doc_as_attr:
-        self.directivetype = 'attribute'
+        self.directivetype = "attribute"
     autodoc.Documenter.add_directive_header(self, sig)
     # add inheritance info, if wanted
     if not self.doc_as_attr and self.options.show_inheritance:
         sourcename = self.get_sourcename()
-        self.add_line(u'', sourcename)
-        bases = getattr(self.object, '__bases__', None)
+        self.add_line("", sourcename)
+        bases = getattr(self.object, "__bases__", None)
         if not bases:
             return
-        bases = [b.__module__ in ('__builtin__', 'builtins')
-                 and u':class:`%s`' % b.__name__
-                 or u':class:`%s.%s`' % (b.__module__, b.__name__)
-                 for b in bases
-                 if b.__name__ != "pybind11_object"]
+        bases = [
+            b.__module__ in ("__builtin__", "builtins")
+            and ":class:`%s`" % b.__name__
+            or ":class:`%s.%s`" % (b.__module__, b.__name__)
+            for b in bases
+            if b.__name__ != "pybind11_object"
+        ]
         if not bases:
             return
-        self.add_line(_(u'   Bases: %s') % ', '.join(bases),
-                      sourcename)
+        self.add_line(_("   Bases: %s") % ", ".join(bases), sourcename)
 
 
 def autodoc_skip_member(app, what, name, obj, skip, options):
-    """Skips undesirable members.
-    """
+    """Skips undesirable members."""
     # N.B. This should be registered before `napoleon`s event.
     # N.B. For some reason, `:exclude-members` via `autodoc_default_options`
     # did not work. Revisit this at some point.
@@ -240,12 +242,15 @@ def patch_document_members(original, self, all_members=False):
     Our upstream PR: https://github.com/sphinx-doc/sphinx/pull/7177
     """
     # set current namespace for finding members
-    self.env.temp_data['autodoc:module'] = self.modname
+    self.env.temp_data["autodoc:module"] = self.modname
     if self.objpath:
-        self.env.temp_data['autodoc:class'] = self.objpath[0]
+        self.env.temp_data["autodoc:class"] = self.objpath[0]
 
-    want_all = all_members or self.options.inherited_members or \
-        self.options.members is autodoc.ALL
+    want_all = (
+        all_members
+        or self.options.inherited_members
+        or self.options.members is autodoc.ALL
+    )
     # find out which members are documentable
     members_check_module, members = self.get_object_members(want_all)
 
@@ -259,16 +264,17 @@ def patch_document_members(original, self, all_members=False):
     # remove members given by exclude-members
     if self.options.exclude_members:
         members = [
-            (membername, member) for (membername, member) in members
+            (membername, member)
+            for (membername, member) in members
             if (
                 exclude_members_all
                 or membername not in self.options.exclude_members
-                )
-            ]
+            )
+        ]
 
     # document non-skipped members
     memberdocumenters = []  # type: List[Tuple[Documenter, bool]]
-    for (mname, member, isattr) in self.filter_members(members, want_all):
+    for mname, member, isattr in self.filter_members(members, want_all):
         # This method changed after version 1.6.7.
         # We accommodate the changes till version 2.4.4.
         # https://github.com/sphinx-doc/sphinx/commit/5d6413b7120cfc6d3d0cc9367cfe8b6f7ee87523
@@ -276,8 +282,11 @@ def patch_document_members(original, self, all_members=False):
             documenters = self.documenters
         else:
             documenters = autodoc.AutoDirective._registry
-        classes = [cls for cls in documenters.values()
-                   if cls.can_document_member(member, mname, isattr, self)]
+        classes = [
+            cls
+            for cls in documenters.values()
+            if cls.can_document_member(member, mname, isattr, self)
+        ]
         if not classes:
             # don't know how to document this member
             continue
@@ -285,52 +294,59 @@ def patch_document_members(original, self, all_members=False):
         classes.sort(key=lambda cls: cls.priority)
         # give explicitly separated module name, so that members
         # of inner classes can be documented
-        full_mname = self.modname + '::' + \
-            '.'.join(self.objpath + [mname])
+        full_mname = self.modname + "::" + ".".join(self.objpath + [mname])
         documenter = classes[-1](self.directive, full_mname, self.indent)
         memberdocumenters.append((documenter, isattr))
-    member_order = self.options.member_order or \
-        self.env.config.autodoc_member_order
-    if member_order == 'groupwise':
+    member_order = (
+        self.options.member_order or self.env.config.autodoc_member_order
+    )
+    if member_order == "groupwise":
         # sort by group; relies on stable sort to keep items in the
         # same group sorted alphabetically
         memberdocumenters.sort(key=lambda e: e[0].member_order)
-    elif member_order == 'bysource' and self.analyzer:
+    elif member_order == "bysource" and self.analyzer:
         # sort by source order, by virtue of the module analyzer
         tagorder = self.analyzer.tagorder
 
         def keyfunc(entry):
             # type: (Tuple[Documenter, bool]) -> int
-            fullname = entry[0].name.split('::')[1]
+            fullname = entry[0].name.split("::")[1]
             return tagorder.get(fullname, len(tagorder))
+
         memberdocumenters.sort(key=keyfunc)
     # N.B. Patch for Drake starts here.
-    elif member_order == 'bycustomfunction':
+    elif member_order == "bycustomfunction":
 
         def custom_key(entry: Tuple[autodoc.Documenter, bool]) -> Any:
             result = self.env.app.emit_firstresult(
-                'autodoc-member-order-custom-function', entry[0])
+                "autodoc-member-order-custom-function", entry[0]
+            )
             if result is None:
-                raise RuntimeError("autodoc-member-order-custom-function "
-                                   "has not been specified by user")
+                raise RuntimeError(
+                    "autodoc-member-order-custom-function "
+                    "has not been specified by user"
+                )
             return result
+
         memberdocumenters.sort(key=custom_key)
     # Patch ends here.
 
     for documenter, isattr in memberdocumenters:
         documenter.generate(
-            all_members=True, real_modname=self.real_modname,
-            check_module=members_check_module and not isattr)
+            all_members=True,
+            real_modname=self.real_modname,
+            check_module=members_check_module and not isattr,
+        )
 
     # reset current objects
-    self.env.temp_data['autodoc:module'] = None
-    self.env.temp_data['autodoc:class'] = None
+    self.env.temp_data["autodoc:module"] = None
+    self.env.temp_data["autodoc:class"] = None
 
 
 def autodoc_member_order_function(app, documenter):
     """Let's sort the member full-names (`Class.member_name`) by lower-case."""
     # N.B. This follows suite with the following 3.x code: https://git.io/Jv1CH
-    fullname = documenter.name.split('::')[1]
+    fullname = documenter.name.split("::")[1]
     return fullname.lower()
 
 
@@ -342,18 +358,18 @@ class PydrakeSystemDirective(Directive):
     See also:
     - https://www.sphinx-doc.org/en/1.6.7/extdev/tutorial.html#the-directive-classes
     - https://docutils.sourceforge.io/docs/howto/rst-directives.html#error-handling
-    - Example: https://github.com/sphinx-contrib/autoprogram/blob/0.1.5/sphinxcontrib/autoprogram.py
+    - https://github.com/sphinx-contrib/autoprogram/blob/0.1.5/sphinxcontrib/autoprogram.py
     """  # noqa
 
     has_content = True
 
     def run(self):
-        system_yaml = '\n'.join(self.content)
+        system_yaml = "\n".join(self.content)
         try:
             system_html = system_yaml_to_html(system_yaml)
         except TypeError as e:
             raise self.severe(f"pydrake_system error: {e}")
-        raw_content = indent(system_html.strip(), '   ')
+        raw_content = indent(system_html.strip(), "   ")
         raw_rst = f".. raw:: html\n\n{raw_content}"
         node = _parse_rst(self.state, raw_rst)
         return node.children
@@ -363,7 +379,7 @@ def _parse_rst(state, rst_text):
     # Adapted from `autoprogram` source.
     result = ViewList()
     for line in rst_text.splitlines():
-        result.append(line, '<parsed>')
+        result.append(line, "<parsed>")
     node = nodes.section()
     node.document = state.document
     nested_parse_with_titles(state, result, node)
@@ -371,35 +387,37 @@ def _parse_rst(state, rst_text):
 
 
 def setup(app):
-    """Installs Drake-specific extensions and patches.
-    """
+    """Installs Drake-specific extensions and patches."""
     if sphinx_version[:3] >= (1, 8, 0):
-        app.add_css_file('css/custom.css')
+        app.add_css_file("css/custom.css")
     else:
-        app.add_stylesheet('css/custom.css')
+        app.add_stylesheet("css/custom.css")
     # Add directive to process system doxygen.
-    app.add_directive('pydrake_system', PydrakeSystemDirective)
+    app.add_directive("pydrake_system", PydrakeSystemDirective)
     # Do not warn on Drake deprecations.
     # TODO(eric.cousineau): See if there is a way to intercept this.
-    warnings.simplefilter('ignore', DrakeDeprecationWarning)
+    warnings.simplefilter("ignore", DrakeDeprecationWarning)
     # Ignore `pybind11_object` as a base.
     patch(
-        autodoc.ClassDocumenter, 'add_directive_header',
-        patch_class_add_directive_header)
+        autodoc.ClassDocumenter,
+        "add_directive_header",
+        patch_class_add_directive_header,
+    )
     # Skip specific members.
-    app.connect('autodoc-skip-member', autodoc_skip_member)
-    app.add_event('autodoc-member-order-custom-function')
-    app.connect('autodoc-member-order-custom-function',
-                autodoc_member_order_function)
+    app.connect("autodoc-skip-member", autodoc_skip_member)
+    app.add_event("autodoc-member-order-custom-function")
+    app.connect(
+        "autodoc-member-order-custom-function", autodoc_member_order_function
+    )
     # Register directive so we can pretty-print template declarations.
-    pydoc.PythonDomain.directives['template'] = pydoc.PyClasslike
+    pydoc.PythonDomain.directives["template"] = pydoc.PyClasslike
     # Register autodocumentation for templates.
     app.add_autodoc_attrgetter(TemplateBase, tpl_attrgetter)
     app.add_autodocumenter(TemplateDocumenter)
     # Hack regular expressions to match type-parameterized names.
     autodoc.py_ext_sig_re = generate_sig_re(extended=True)
     pydoc.py_sig_re = generate_sig_re(extended=False)
-    patch(autodoc.ClassLevelDocumenter, 'resolve_name', patch_resolve_name)
-    patch(autodoc.ModuleLevelDocumenter, 'resolve_name', patch_resolve_name)
-    patch(autodoc.Documenter, 'document_members', patch_document_members)
+    patch(autodoc.ClassLevelDocumenter, "resolve_name", patch_resolve_name)
+    patch(autodoc.ModuleLevelDocumenter, "resolve_name", patch_resolve_name)
+    patch(autodoc.Documenter, "document_members", patch_document_members)
     return dict(parallel_read_safe=True)

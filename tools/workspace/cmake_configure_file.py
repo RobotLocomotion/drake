@@ -10,18 +10,19 @@ https://cmake.org/cmake/help/latest/command/configure_file.html
 import argparse
 import os
 import re
-import sys
 
 from collections import OrderedDict
 
 # Looks like "#cmakedefine VAR ..." or "#cmakedefine01 VAR".
-_cmakedefine = re.compile(r'^(\s*)#cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')
+_cmakedefine = re.compile(
+    r"^(\s*)#(\s*)cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)"
+)
 
 # Looks like "${VAR}".
-_varsubst = re.compile(r'^(.*)\$\{([^} ]+?)\}(.*)([\r\n]*)')
+_varsubst = re.compile(r"^(.*)\$\{([^} ]+?)\}(.*)([\r\n]*)")
 
 # Looks like "@VAR@".
-_atvarsubst = re.compile(r'^(.*)@([^@ ]+?)@(.*)([\r\n]*)')
+_atvarsubst = re.compile(r"^(.*)@([^@ ]+?)@(.*)([\r\n]*)")
 
 
 # Transform substitutions in a source line according to a specified pattern.
@@ -37,7 +38,7 @@ def _transform_substitions(*, line, definitions, used_vars, pattern):
         before, var, after, newline = match.groups()
         assert len(var) > 0
 
-        value = definitions[var] or ''
+        value = definitions[var] or ""
         line = before + value + after + newline
         used_vars.add(var)
 
@@ -72,7 +73,7 @@ def _transform_cmake(*, line, definitions, strict, atonly):
     # Replace define statements.
     match = _cmakedefine.match(line)
     if match:
-        blank, maybe01, var, rest, newline = match.groups()
+        blank, _, maybe01, var, rest, newline = match.groups()
         if var not in definitions:
             defined = False
             if strict:
@@ -81,12 +82,12 @@ def _transform_cmake(*, line, definitions, strict, atonly):
             defined = definitions[var] is not None
             used_vars.add(var)
         if maybe01:
-            line = blank + '#define ' + var + [' 0', ' 1'][defined] + newline
+            line = blank + "#define " + var + [" 0", " 1"][defined] + newline
             return line, used_vars
         elif defined:
-            line = blank + '#define ' + var + rest + newline
+            line = blank + "#define " + var + rest + newline
         else:
-            line = blank + '/* #undef ' + var + ' */' + newline
+            line = blank + "/* #undef " + var + " */" + newline
             return line, used_vars
 
     # Replace variable substitutions.
@@ -95,19 +96,21 @@ def _transform_cmake(*, line, definitions, strict, atonly):
             line=line,
             definitions=definitions,
             used_vars=used_vars,
-            pattern=_varsubst)
+            pattern=_varsubst,
+        )
 
     line, used_vars = _transform_substitions(
         line=line,
         definitions=definitions,
         used_vars=used_vars,
-        pattern=_atvarsubst)
+        pattern=_atvarsubst,
+    )
 
     return line, used_vars
 
 
 # Looks like "#undef VAR".
-_autoconf_undef = re.compile(r'^(\s*)#undef +([^ \r\n]+)([\r\n]+)')
+_autoconf_undef = re.compile(r"^(\s*)#undef +([^ \r\n]+)([\r\n]+)")
 
 
 # Transform a source code line using autoconf format.
@@ -125,19 +128,21 @@ def _transform_autoconf(*, line, definitions, strict, atonly):
             used_vars.add(var)
             value = definitions[var]
             if value is not None:
-                line = blank + f'#define {var} {value}' + newline
+                line = blank + f"#define {var} {value}" + newline
             else:
-                line = blank + f'/* undef {var} */' + newline
+                line = blank + f"/* undef {var} */" + newline
         elif strict:
-            raise KeyError(f"Missing define or undefine decision for {var}"
-                           " when running in strict=True mode")
+            raise KeyError(
+                f"Missing define or undefine decision for {var}"
+                " when running in strict=True mode"
+            )
         else:
-            line = blank + f'/* missing {var} */' + newline
+            line = blank + f"/* missing {var} */" + newline
     return line, used_vars
 
 
 # Looks like "set(VAR value)", maybe with an end-of-line comment.
-_set_var = re.compile(r'^\s*set\s*\(\s*(.+)\s+(.+)\s*\)\s*(#.*)?$')
+_set_var = re.compile(r"^\s*set\s*\(\s*(.+)\s+(.+)\s*\)\s*(#.*)?$")
 
 
 # From a line of CMakeLists.txt, return a set(...) key-value pair, if found.
@@ -151,7 +156,8 @@ def _extract_definition(line, prior_definitions):
             line=value,
             definitions=prior_definitions,
             strict=False,
-            atonly=False)
+            atonly=False,
+        )
     except KeyError:
         return dict()
     if value.startswith('"'):
@@ -167,18 +173,18 @@ def _extract_definition(line, prior_definitions):
 def _setup_definitions(args):
     result = OrderedDict()
     for item in args.defines:
-        if '=' in item:
-            key, value = item.split('=', 1)
+        if "=" in item:
+            key, value = item.split("=", 1)
             result[key] = value
         else:
-            result[item] = '1'
+            result[item] = "1"
 
     for item in args.undefines:
         result[item] = None
 
     cmakelist_keys = set()
     for filename in args.cmakelists:
-        with open(filename, 'r') as cmakelist:
+        with open(filename, "r") as cmakelist:
             for line in cmakelist.readlines():
                 definition = _extract_definition(line, result)
                 result.update(definition)
@@ -189,24 +195,23 @@ def _setup_definitions(args):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--input", metavar="FILE", action="append", default=[])
+    parser.add_argument("--output", metavar="FILE", action="append", default=[])
     parser.add_argument(
-        '--input', metavar='FILE', action='append', default=[])
+        "-D", metavar="NAME", dest="defines", action="append", default=[]
+    )
     parser.add_argument(
-        '--output', metavar='FILE', action='append', default=[])
-    parser.add_argument(
-        '-D', metavar='NAME', dest='defines', action='append', default=[])
-    parser.add_argument(
-        '-U', metavar='NAME', dest='undefines', action='append', default=[])
-    parser.add_argument(
-        '--cmakelists', action='append', default=[])
-    parser.add_argument(
-        '--strict', action='store_true')
+        "-U", metavar="NAME", dest="undefines", action="append", default=[]
+    )
+    parser.add_argument("--cmakelists", action="append", default=[])
+    parser.add_argument("--strict", action="store_true")
     modifiers = parser.add_mutually_exclusive_group()
     modifiers.add_argument(
-        '--autoconf', action='store_true',
-        help='The input file is in autoconf format, not cmake format.')
-    modifiers.add_argument(
-        '--atonly', action='store_true')
+        "--autoconf",
+        action="store_true",
+        help="The input file is in autoconf format, not cmake format.",
+    )
+    modifiers.add_argument("--atonly", action="store_true")
     args = parser.parse_args()
     if len(args.input) == 0:
         parser.error("There must be at least one --input")
@@ -218,30 +223,35 @@ def main():
     total_used_vars = set()
     missing_vars = set()
     for input_path, output_path in zip(args.input, args.output):
-        with open(input_path, 'r') as input_file:
-            with open(output_path + '.tmp', 'w') as output_file:
+        with open(input_path, "r") as input_file:
+            with open(output_path + ".tmp", "w") as output_file:
                 for input_line in input_file.readlines():
                     try:
                         output_line, used_vars = transformer(
                             line=input_line,
                             definitions=definitions,
                             strict=args.strict,
-                            atonly=args.atonly)
+                            atonly=args.atonly,
+                        )
                         output_file.write(output_line)
                         total_used_vars |= used_vars
                     except KeyError as e:
                         missing_vars.add(e.args[0])
     if missing_vars:
-        raise RuntimeError(f"The definitions of {sorted(missing_vars)} were"
-                           " required, but missing.")
+        raise RuntimeError(
+            f"The definitions of {sorted(missing_vars)} were"
+            " required, but missing."
+        )
     unused_vars = definitions.keys() - cmakelist_keys - total_used_vars
     if unused_vars:
-        raise RuntimeError(f"The definitions of {sorted(unused_vars)} were"
-                           " ignored and therefore seem like dead code;"
-                           " remove them from defines= or undefines=.")
+        raise RuntimeError(
+            f"The definitions of {sorted(unused_vars)} were"
+            " ignored and therefore seem like dead code;"
+            " remove them from defines= or undefines=."
+        )
     for output_path in args.output:
-        os.rename(output_path + '.tmp', output_path)
+        os.rename(output_path + ".tmp", output_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

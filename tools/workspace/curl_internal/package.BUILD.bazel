@@ -47,6 +47,7 @@ _SRCS = [
     "lib/cf-h2-proxy.c",
     "lib/cf-haproxy.c",
     "lib/cf-https-connect.c",
+    "lib/cf-ip-happy.c",
     "lib/cf-socket.c",
     "lib/cfilters.c",
     "lib/conncache.c",
@@ -268,3 +269,5 @@ install(
     docs = ["COPYING"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])
