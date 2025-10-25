@@ -341,6 +341,20 @@ TEST_F(YamlWriteArchiveTest, EigenVector) {
 )""");
 }
 
+TEST_F(YamlWriteArchiveTest, EigenArray) {
+  const auto test = [](const Eigen::ArrayXd& value,
+                       const std::string& expected) {
+    const EigenArrayXStruct x{value};
+    EXPECT_EQ(Save(x), expected);
+    const EigenArray3Struct x3{value};
+    EXPECT_EQ(Save(x3), expected);
+  };
+
+  test(Eigen::Array3d(1.0, 2.0, 3.0), R"""(doc:
+  value: [1.0, 2.0, 3.0]
+)""");
+}
+
 TEST_F(YamlWriteArchiveTest, EigenVectorX) {
   const auto test = [](const Eigen::VectorXd& value,
                        const std::string& expected) {
@@ -356,6 +370,21 @@ TEST_F(YamlWriteArchiveTest, EigenVectorX) {
 )""");
 }
 
+TEST_F(YamlWriteArchiveTest, EigenArrayX) {
+  const auto test = [](const Eigen::ArrayXd& value,
+                       const std::string& expected) {
+    const EigenVecStruct x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  test(Eigen::ArrayXd(), R"""(doc:
+  value: []
+)""");
+  test(Eigen::Array<double, 1, 1>(1.0), R"""(doc:
+  value: [1.0]
+)""");
+}
+
 TEST_F(YamlWriteArchiveTest, EigenMatrix) {
   using Matrix34d = Eigen::Matrix<double, 3, 4>;
   const auto test = [](const Matrix34d& value, const std::string& expected) {
@@ -366,6 +395,24 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
   };
 
   test((Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
+       R"""(doc:
+  value:
+    - [0.0, 1.0, 2.0, 3.0]
+    - [4.0, 5.0, 6.0, 7.0]
+    - [8.0, 9.0, 10.0, 11.0]
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, EigenArrayXX) {
+  using Array34d = Eigen::Array<double, 3, 4>;
+  const auto test = [](const Array34d& value, const std::string& expected) {
+    const EigenMatrixStruct x{value};
+    EXPECT_EQ(Save(x), expected);
+    const EigenMatrix34Struct x3{value};
+    EXPECT_EQ(Save(x3), expected);
+  };
+
+  test((Array34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
        R"""(doc:
   value:
     - [0.0, 1.0, 2.0, 3.0]
@@ -390,12 +437,42 @@ TEST_F(YamlWriteArchiveTest, EigenMatrixUpTo6) {
 )""");
 }
 
+TEST_F(YamlWriteArchiveTest, EigenArrayUpTo6) {
+  using Array34d = Eigen::Array<double, 3, 4>;
+  const auto test = [](const Array34d& value, const std::string& expected) {
+    const EigenArrayUpTo6Struct x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  test((Array34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
+       R"""(doc:
+  value:
+    - [0.0, 1.0, 2.0, 3.0]
+    - [4.0, 5.0, 6.0, 7.0]
+    - [8.0, 9.0, 10.0, 11.0]
+)""");
+}
+
 TEST_F(YamlWriteArchiveTest, EigenMatrix00) {
   const auto test = [](const std::string& expected) {
     const Eigen::MatrixXd empty;
     const EigenMatrixStruct x{empty};
     EXPECT_EQ(Save(x), expected);
     const EigenMatrix00Struct x00;
+    EXPECT_EQ(Save(x00), expected);
+  };
+
+  test(R"""(doc:
+  value: []
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, EigenArray00) {
+  const auto test = [](const std::string& expected) {
+    const Eigen::ArrayXXd empty;
+    const EigenArrayXXStruct x{empty};
+    EXPECT_EQ(Save(x), expected);
+    const EigenArray00Struct x00;
     EXPECT_EQ(Save(x00), expected);
   };
 
