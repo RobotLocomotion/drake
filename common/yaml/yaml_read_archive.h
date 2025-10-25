@@ -216,17 +216,7 @@ class YamlReadArchive final {
   void DoVisit(const NVP& nvp,
                const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>&,
                int32_t) {
-    if constexpr (Cols == 1) {
-      if constexpr (Rows >= 0) {
-        this->VisitArray(nvp.name(), Rows, nvp.value()->data());
-      } else if constexpr (MaxRows >= 0) {
-        this->VisitVector(nvp, MaxRows);
-      } else {
-        this->VisitVector(nvp);
-      }
-    } else {
-      this->VisitMatrix(nvp.name(), nvp.value());
-    }
+    this->VisitEigenDenseBase(nvp);
   }
 
   // For Eigen::Array.
@@ -235,17 +225,7 @@ class YamlReadArchive final {
   void DoVisit(const NVP& nvp,
                const Eigen::Array<T, Rows, Cols, Options, MaxRows, MaxCols>&,
                int32_t) {
-    if constexpr (Cols == 1) {
-      if constexpr (Rows >= 0) {
-        this->VisitArray(nvp.name(), Rows, nvp.value()->data());
-      } else if constexpr (MaxRows >= 0) {
-        this->VisitVector(nvp, MaxRows);
-      } else {
-        this->VisitVector(nvp);
-      }
-    } else {
-      this->VisitEigenArray(nvp.name(), nvp.value());
-    }
+    this->VisitEigenDenseBase(nvp);
   }
 
   // If no other DoVisit matched, we'll treat the value as a scalar.
@@ -441,70 +421,29 @@ class YamlReadArchive final {
     }
   }
 
-  template <typename T, int Rows, int Cols, int Options = 0, int MaxRows = Rows,
-            int MaxCols = Cols>
-  void VisitMatrix(
-      const char* name,
-      Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
-    const internal::Node* sub_node = GetSubNodeSequence(name);
-    if (sub_node == nullptr) {
-      return;
-    }
-    const std::vector<internal::Node>& elements = sub_node->GetSequence();
-
-    // Measure the YAML Sequence-of-Sequence dimensions.
-    // Take a guess at what rows & cols will be (we might adjust later).
-    size_t pending_rows = elements.size();
-    std::optional<size_t> pending_cols;
-    for (size_t i = 0; i < pending_rows; ++i) {
-      const internal::Node& one_row = elements[i];
-      if (!one_row.IsSequence()) {
-        ReportError(fmt::format("is Sequence-of-{} (not Sequence-of-Sequence)",
-                                one_row.GetTypeString()));
-        return;
+  template <typename NVP>
+  void VisitEigenDenseBase(const NVP& nvp) {
+    using Derived = std::remove_cvref_t<decltype(*nvp.value())>;
+    if constexpr (Derived::ColsAtCompileTime == 1) {
+      // If the compile-time size is a column vector, then we'll re-use the
+      // visitor logic from std::array or std::vector to parse it.
+      if constexpr (Derived::RowsAtCompileTime >= 0) {
+        this->VisitArray(nvp.name(), Derived::RowsAtCompileTime,
+                         nvp.value()->data());
+      } else if constexpr (Derived::MaxRowsAtCompileTime >= 0) {
+        this->VisitVector(nvp, Derived::MaxRowsAtCompileTime);
+      } else {
+        this->VisitVector(nvp);
       }
-      const size_t one_row_size = one_row.GetSequence().size();
-      if (pending_cols && one_row_size != *pending_cols) {
-        ReportError("has inconsistent cols dimensions");
-        return;
-      }
-      pending_cols = one_row_size;
-    }
-    // Never return an Nx0 matrix; demote it to 0x0 instead.
-    if (pending_cols.value_or(0) == 0) {
-      pending_rows = 0;
-      pending_cols = 0;
-    }
-    const size_t rows = pending_rows;
-    const size_t cols = *pending_cols;
-
-    // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).
-    if (((Rows != Eigen::Dynamic) && (static_cast<int>(rows) != Rows)) ||
-        ((Cols != Eigen::Dynamic) && (static_cast<int>(cols) != Cols))) {
-      ReportError(fmt::format("has dimension {}x{} (wanted {}x{})", rows, cols,
-                              Rows, Cols));
-      return;
-    }
-    auto&& storage = *matrix;
-    storage.resize(rows, cols);
-
-    // Parse.
-    for (size_t i = 0; i < rows; ++i) {
-      for (size_t j = 0; j < cols; ++j) {
-        const std::string key = fmt::format("{}[{}][{}]", name, i, j);
-        const internal::Node& value = elements[i].GetSequence()[j];
-        YamlReadArchive item_archive(key.c_str(), &value, this);
-        item_archive.Visit(drake::MakeNameValue(key.c_str(), &storage(i, j)));
-      }
+    } else {
+      // Otherwise, we'll use visit logic for a dense rectangular matrix.
+      this->VisitEigenDenseBaseRectangular(nvp);
     }
   }
 
-  template <typename T, int Rows, int Cols, int Options = 0, int MaxRows = Rows,
-            int MaxCols = Cols>
-  void VisitEigenArray(
-      const char* name,
-      Eigen::Array<T, Rows, Cols, Options, MaxRows, MaxCols>* array) {
-    const internal::Node* sub_node = GetSubNodeSequence(name);
+  template <typename NVP>
+  void VisitEigenDenseBaseRectangular(const NVP& nvp) {
+    const internal::Node* sub_node = GetSubNodeSequence(nvp.name());
     if (sub_node == nullptr) {
       return;
     }
@@ -537,19 +476,23 @@ class YamlReadArchive final {
     const size_t cols = *pending_cols;
 
     // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).
-    if (((Rows != Eigen::Dynamic) && (static_cast<int>(rows) != Rows)) ||
-        ((Cols != Eigen::Dynamic) && (static_cast<int>(cols) != Cols))) {
+    using Derived = std::remove_cvref_t<decltype(*nvp.value())>;
+    if (((Derived::RowsAtCompileTime != Eigen::Dynamic) &&
+         (static_cast<int>(rows) != Derived::RowsAtCompileTime)) ||
+        ((Derived::ColsAtCompileTime != Eigen::Dynamic) &&
+         (static_cast<int>(cols) != Derived::ColsAtCompileTime))) {
       ReportError(fmt::format("has dimension {}x{} (wanted {}x{})", rows, cols,
-                              Rows, Cols));
+                              static_cast<int>(Derived::RowsAtCompileTime),
+                              static_cast<int>(Derived::ColsAtCompileTime)));
       return;
     }
-    auto&& storage = *array;
+    auto&& storage = *nvp.value();
     storage.resize(rows, cols);
 
     // Parse.
     for (size_t i = 0; i < rows; ++i) {
       for (size_t j = 0; j < cols; ++j) {
-        const std::string key = fmt::format("{}[{}][{}]", name, i, j);
+        const std::string key = fmt::format("{}[{}][{}]", nvp.name(), i, j);
         const internal::Node& value = elements[i].GetSequence()[j];
         YamlReadArchive item_archive(key.c_str(), &value, this);
         item_archive.Visit(drake::MakeNameValue(key.c_str(), &storage(i, j)));
