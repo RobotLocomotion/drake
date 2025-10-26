@@ -1,7 +1,7 @@
 # This Dockerfile and the accompanying shell script are used by the project
 # maintainers to create the precompiled doxygen binaries that are downloaded
-# during the build. They are neither called during the build nor expected to be
-# called by most developers or users of the project.
+# during documentation generation. They are neither called during the build
+# nor expected to be called by most developers or users of the project.
 
 ARG UBUNTU_CODENAME=noble
 FROM ubuntu:${UBUNTU_CODENAME}
