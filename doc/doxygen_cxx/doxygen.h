@@ -2,7 +2,7 @@
 namespace drake {
 
 /**
-@mainpage
+@mainpage Drake Documentation
 <h3>Overview</h3>
 
 <p>Drake's C++ library is composed primarily of an interface for solving
