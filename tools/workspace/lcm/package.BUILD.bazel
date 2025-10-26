@@ -258,7 +258,7 @@ java_library(
         "-XepDisableAllChecks",
     ],
     deps = [
-        "@lcm_maven//:net_sf_jchart2d_jchart2d",
+        "@drake_maven_internal//:net_sf_jchart2d_jchart2d",
     ],
     deprecation = DEPRECATION,
 )
@@ -300,7 +300,7 @@ java_library(
     name = "lcm-java_non_deprecated",
     srcs = glob(["lcm-java/lcm/**/*.java"]),
     javacopts = ["-XepDisableAllChecks"],
-    deps = ["@lcm_maven//:net_sf_jchart2d_jchart2d"],
+    deps = ["@drake_maven_internal//:net_sf_jchart2d_jchart2d"],
     visibility = ["@drake//tools/workspace/lcm:__subpackages__"],
 )
 
