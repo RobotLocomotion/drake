@@ -31,7 +31,7 @@ If you want to make your own Doxygen locally, see
 Generation Instructions</a></p>
 
 <p><a href="https://www.doxygen.nl/manual/docblocks.html">Check
-out the Doxygen C++ documentation.</a></p>
+out the Doxygen C++ documentation</a></p>
 
 <p>Drake's Doxygen documentation is
 <a href="https://drake.mit.edu">hosted online</a> for the master branch, but is
