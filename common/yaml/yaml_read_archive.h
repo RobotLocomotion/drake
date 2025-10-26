@@ -426,7 +426,7 @@ class YamlReadArchive final {
     using Derived = std::remove_cvref_t<decltype(*nvp.value())>;
     if constexpr (Derived::ColsAtCompileTime == 1) {
       // If the compile-time size is a column vector, then we'll re-use the
-      // visitor logic from std::array or std::vector to parse it.
+      // visitor logic from std::array or std::vector to handle it.
       if constexpr (Derived::RowsAtCompileTime >= 0) {
         this->VisitArray(nvp.name(), Derived::RowsAtCompileTime,
                          nvp.value()->data());
