@@ -873,8 +873,7 @@ doc:
 
 TEST_P(YamlReadArchiveTest, EigenArrayRectangular) {
   using Array34d = Eigen::Array<double, 3, 4>;
-  const auto test = [](const std::string& doc,
-                       const Eigen::ArrayXXd& expected) {
+  const auto test = [](const std::string& doc, const Array34d& expected) {
     const auto& mat = AcceptNoThrow<EigenArrayStruct<4>>(Load(doc));
     EXPECT_TRUE(drake::CompareMatrices(mat.value.matrix(), expected.matrix()));
   };

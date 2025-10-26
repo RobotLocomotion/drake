@@ -343,13 +343,6 @@ struct EigenArrayStruct {
   Eigen::Array<double, Eigen::Dynamic, Cols> value;
 };
 
-// This is used only for EXPECT_EQ, not by any YAML operations.
-template <int Cols>
-bool operator==(const EigenArrayStruct<Cols>& a,
-                const EigenArrayStruct<Cols>& b) {
-  return a.value == b.value;
-}
-
 using Variant4 =
     std::variant<std::string, double, DoubleStruct, EigenVecStruct>;
 
