@@ -818,17 +818,12 @@ TEST_P(YamlReadArchiveTest, EigenVector) {
   test("[1.0, 2.0, 3.0]", Eigen::Vector3d(1.0, 2.0, 3.0));
 }
 
-TEST_P(YamlReadArchiveTest, EigenArray) {
+TEST_P(YamlReadArchiveTest, EigenArraySingleColumn) {
   const auto test = [](const std::string& value,
                        const Eigen::ArrayXd& expected) {
-    const auto& vec = AcceptNoThrow<EigenArrayXStruct>(LoadSingleValue(value));
-    const auto& vec3 = AcceptNoThrow<EigenArray3Struct>(LoadSingleValue(value));
-    const auto& upto3 =
-        AcceptNoThrow<EigenArrayUpTo3Struct>(LoadSingleValue(value));
+    const auto& vec =
+        AcceptNoThrow<EigenArrayStruct<1>>(LoadSingleValue(value));
     EXPECT_TRUE(drake::CompareMatrices(vec.value.matrix(), expected.matrix()));
-    EXPECT_TRUE(drake::CompareMatrices(vec3.value.matrix(), expected.matrix()));
-    EXPECT_TRUE(
-        drake::CompareMatrices(upto3.value.matrix(), expected.matrix()));
   };
 
   test("[1.0, 2.0, 3.0]", Eigen::Array3d(1.0, 2.0, 3.0));
@@ -846,21 +841,6 @@ TEST_P(YamlReadArchiveTest, EigenVectorX) {
 
   test("[]", Eigen::VectorXd());
   test("[1.0]", Eigen::Matrix<double, 1, 1>(1.0));
-}
-
-TEST_P(YamlReadArchiveTest, EigenArrayX) {
-  const auto test = [](const std::string& value,
-                       const Eigen::ArrayXd& expected) {
-    const auto& x = AcceptNoThrow<EigenArrayXStruct>(LoadSingleValue(value));
-    EXPECT_TRUE(drake::CompareMatrices(x.value.matrix(), expected.matrix()));
-    const auto& upto3 =
-        AcceptNoThrow<EigenArrayUpTo3Struct>(LoadSingleValue(value));
-    EXPECT_TRUE(
-        drake::CompareMatrices(upto3.value.matrix(), expected.matrix()));
-  };
-
-  test("[]", Eigen::ArrayXd());
-  test("[1.0]", Eigen::Array<double, 1, 1>(1.0));
 }
 
 TEST_P(YamlReadArchiveTest, EigenVectorOverflow) {
@@ -891,25 +871,22 @@ doc:
        (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
-TEST_P(YamlReadArchiveTest, EigenArrayXX) {
+TEST_P(YamlReadArchiveTest, EigenArrayRectangular) {
   using Array34d = Eigen::Array<double, 3, 4>;
   const auto test = [](const std::string& doc,
                        const Eigen::ArrayXXd& expected) {
-    const auto& mat = AcceptNoThrow<EigenArrayXXStruct>(Load(doc));
-    const auto& mat34 = AcceptNoThrow<EigenArray34Struct>(Load(doc));
+    const auto& mat = AcceptNoThrow<EigenArrayStruct<4>>(Load(doc));
     EXPECT_TRUE(drake::CompareMatrices(mat.value.matrix(), expected.matrix()));
-    EXPECT_TRUE(
-        drake::CompareMatrices(mat34.value.matrix(), expected.matrix()));
   };
 
   test(R"""(
 doc:
   value:
-  - [0.0, 1.0, 2.0, 3.0]
-  - [4.0, 5.0, 6.0, 7.0]
-  - [8.0, 9.0, 10.0, 11.0]
+  - [1.0, 2.0, 3.0, 4.0]
+  - [5.0, 6.0, 7.0, 8.0]
+  - [9.0, 10.0, 11.0, 12.0]
 )""",
-       (Array34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+       (Array34d{} << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).finished());
 }
 
 TEST_P(YamlReadArchiveTest, EigenMatrixUpTo6) {
@@ -929,23 +906,6 @@ doc:
        (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
-TEST_P(YamlReadArchiveTest, EigenArrayUpTo6) {
-  using Array34d = Eigen::Array<double, 3, 4>;
-  const auto test = [](const std::string& doc, const Array34d& expected) {
-    const auto& mat = AcceptNoThrow<EigenArrayUpTo6Struct>(Load(doc));
-    EXPECT_TRUE(drake::CompareMatrices(mat.value.matrix(), expected.matrix()));
-  };
-
-  test(R"""(
-doc:
-  value:
-  - [0.0, 1.0, 2.0, 3.0]
-  - [4.0, 5.0, 6.0, 7.0]
-  - [8.0, 9.0, 10.0, 11.0]
-)""",
-       (Array34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
-}
-
 TEST_P(YamlReadArchiveTest, EigenMatrix00) {
   const auto test = [](const std::string& doc) {
     const auto& mat = AcceptNoThrow<EigenMatrixStruct>(Load(doc));
@@ -953,25 +913,6 @@ TEST_P(YamlReadArchiveTest, EigenMatrix00) {
     const Eigen::MatrixXd empty;
     EXPECT_TRUE(drake::CompareMatrices(mat.value, empty));
     EXPECT_TRUE(drake::CompareMatrices(mat00.value, empty));
-  };
-
-  test(R"""(
-doc:
-  value: []
-)""");
-  test(R"""(
-doc:
-  value: [[]]
-)""");
-}
-
-TEST_P(YamlReadArchiveTest, EigenArray00) {
-  const auto test = [](const std::string& doc) {
-    const auto& mat = AcceptNoThrow<EigenArrayXXStruct>(Load(doc));
-    const auto& mat00 = AcceptNoThrow<EigenArray00Struct>(Load(doc));
-    const Eigen::ArrayXXd empty;
-    EXPECT_TRUE(drake::CompareMatrices(mat.value.matrix(), empty.matrix()));
-    EXPECT_TRUE(drake::CompareMatrices(mat00.value.matrix(), empty.matrix()));
   };
 
   test(R"""(
