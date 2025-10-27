@@ -26,7 +26,7 @@ namespace trajectory_optimization {
 /**
 GcsTrajectoryOptimization implements a simplified motion planning optimization
 problem introduced in the paper
-["Motion Planning around Obstacles with Convex Optimization"](https://arxiv.org/abs/2205.04422)
+["Motion Planning around Obstacles with Convex Optimization"](https://arxiv.org/abs/2205.04422)
 by Tobia Marcucci, Mark Petersen, David von Wrangel, Russ Tedrake.
 
 @experimental
