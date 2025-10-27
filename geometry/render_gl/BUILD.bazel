@@ -41,6 +41,14 @@ config_setting(
 )
 
 selects.config_setting_group(
+    name = "enabled",
+    match_all = [
+        ":with_render_gl",
+        "//tools/skylark:linux",
+    ],
+)
+
+selects.config_setting_group(
     name = "with_render_gl_or_vtk",
     match_any = [
         ":with_render_gl",
@@ -49,9 +57,9 @@ selects.config_setting_group(
 )
 
 selects.config_setting_group(
-    name = "enabled",
+    name = "enable_internal_loaders",
     match_all = [
-        ":with_render_gl",
+        ":with_render_gl_or_vtk",
         "//tools/skylark:linux",
     ],
 )
@@ -67,7 +75,7 @@ drake_cc_package_library(
 
 drake_cc_variant_library(
     name = "internal_loaders",
-    opt_in_condition = ":with_render_gl_or_vtk",
+    opt_in_condition = ":enable_internal_loaders",
     srcs_always = [],
     srcs_enabled = ["internal_loaders.cc"],
     srcs_disabled = ["no_internal_loaders.cc"],
