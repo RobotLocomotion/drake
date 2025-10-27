@@ -157,6 +157,7 @@ drake_cc_optional_library(
 drake_cc_variant_library(
     name = "factory",
     opt_in_condition = ":with_render_gl_and_linux",
+    srcs_always = [],
     srcs_enabled = ["factory.cc"],
     srcs_disabled = ["no_factory.cc"],
     hdrs = ["factory.h"],
@@ -165,6 +166,7 @@ drake_cc_variant_library(
         ":render_engine_gl_params",
         "//geometry/render:render_engine",
     ],
+    implementation_deps_always = [],
     implementation_deps_enabled = [
         ":internal_render_engine_gl",
     ],
@@ -258,9 +260,8 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_opengl_context_test",
-    opt_in_condition = "//tools/skylark:linux",
-    display = True,
     opt_in_condition = ":with_render_gl_and_linux",
+    display = True,
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
         # definitely lost.  We will investigate soon but for now we'll omit the
@@ -292,7 +293,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_render_engine_gl_test",
-    opt_in_condition = "//tools/skylark:linux",
+    opt_in_condition = ":with_render_gl_and_linux",
     data = [
         "//examples/scene_graph:models",
         "//geometry:test_gltf_files",
@@ -300,7 +301,6 @@ drake_cc_optional_googletest(
         "//geometry/render:test_models",
     ] + glob(["test/*.png"]),
     display = True,
-    opt_in_condition = ":with_render_gl_and_linux",
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gl",
@@ -321,26 +321,22 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "internal_no_render_engine_gl_test",
-    args = select({
-        "//tools/cc_toolchain:linux": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
-    opt_in_condition = ":with_render_gl_and_linux",
     deps = [
-        ":factory",
+        # The ":factory_disabled" target is created by the
+        # drake_cc_variant_library(...) stanza above.
+        ":factory_disabled",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_optional_googletest(
     name = "internal_shape_meshes_test",
-    opt_in_condition = "//tools/skylark:linux",
+    opt_in_condition = ":with_render_gl_and_linux",
     data = [
         "//geometry/render:test_models",
     ],
-    opt_in_condition = ":with_render_gl_and_linux",
     deps = [
         ":internal_shape_meshes",
         "//common:find_resource",
@@ -352,9 +348,8 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_shader_program_test",
-    opt_in_condition = "//tools/skylark:linux",
-    display = True,
     opt_in_condition = ":with_render_gl_and_linux",
+    display = True,
     tags = vtk_test_tags(),
     deps = [
         ":internal_opengl_context",
@@ -367,12 +362,11 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "thread_test",
-    opt_in_condition = "//tools/skylark:linux",
+    opt_in_condition = ":with_render_gl_and_linux",
     data = [
         "//geometry/render:test_models",
     ],
     display = True,
-    opt_in_condition = ":with_render_gl_and_linux",
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
@@ -412,11 +406,10 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_texture_library_test",
-    opt_in_condition = "//tools/skylark:linux",
+    opt_in_condition = ":with_render_gl_and_linux",
     data = [
         "//geometry/render:test_models",
     ],
-    opt_in_condition = ":with_render_gl_and_linux",
     tags = vtk_test_tags(),
     deps = [
         ":internal_texture_library",
@@ -431,16 +424,6 @@ drake_cc_optional_googletest(
     deps = [
         ":render_engine_gl_params",
         "//common/yaml",
-    ],
-)
-
-drake_cc_googletest(
-    name = "disabled_render_gl_test",
-    deps = [
-        # The ":factory_disabled" target is created by the
-        # drake_cc_variant_library(...) stanza above.
-        ":factory_disabled",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 

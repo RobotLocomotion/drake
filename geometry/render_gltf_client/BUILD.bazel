@@ -46,6 +46,7 @@ drake_cc_package_library(
 drake_cc_variant_library(
     name = "factory",
     opt_in_condition = ":enabled",
+    srcs_always = [],
     srcs_enabled = ["factory.cc"],
     srcs_disabled = ["no_factory.cc"],
     hdrs = ["factory.h"],
@@ -54,6 +55,7 @@ drake_cc_variant_library(
         ":render_engine_gltf_client_params",
         "//geometry/render:render_engine",
     ],
+    implementation_deps_always = [],
     implementation_deps_enabled = [
         ":internal_render_engine_gltf_client",
         "//common:network_policy",
@@ -76,7 +78,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
@@ -91,7 +92,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_http_service_curl.cc"],
     hdrs = ["internal_http_service_curl.h"],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service",
@@ -112,7 +112,6 @@ drake_cc_optional_library(
     hdrs = [
         "internal_render_client.h",
     ],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service",
@@ -136,7 +135,6 @@ drake_cc_optional_library(
     hdrs = [
         "internal_render_engine_gltf_client.h",
     ],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":internal_merge_gltf",
@@ -161,7 +159,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_merge_gltf.cc"],
     hdrs = ["internal_merge_gltf.h"],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         "//common:drake_export",

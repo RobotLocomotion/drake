@@ -56,6 +56,7 @@ drake_cc_library(
 drake_cc_variant_library(
     name = "factory",
     opt_in_condition = ":enabled",
+    srcs_always = [],
     srcs_enabled = ["factory.cc"],
     srcs_disabled = ["no_factory.cc"],
     hdrs = ["factory.h"],
@@ -64,6 +65,7 @@ drake_cc_variant_library(
         ":render_engine_vtk_params",
         "//geometry/render:render_engine",
     ],
+    implementation_deps_always = [],
     implementation_deps_enabled = [
         ":internal_render_engine_vtk",
     ],
@@ -74,7 +76,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_make_render_window.cc"],
     hdrs = ["internal_make_render_window.h"],
-    internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
     ],
@@ -93,7 +94,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_render_engine_vtk.cc"],
     hdrs = ["internal_render_engine_vtk.h"],
-    internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
     ],
@@ -131,7 +131,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_render_engine_vtk_base.cc"],
     hdrs = ["internal_render_engine_vtk_base.h"],
-    internal = True,
     deps = [
         "//common:scope_exit",
         "//geometry:geometry_roles",
@@ -152,7 +151,6 @@ drake_cc_optional_library(
     opt_in_condition = ":enabled",
     srcs = ["internal_vtk_util.cc"],
     hdrs = ["internal_vtk_util.h"],
-    internal = True,
     deps = [
         "//common:essential",
         "//math:geometric_transform",
