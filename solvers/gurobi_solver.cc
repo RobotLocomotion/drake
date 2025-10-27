@@ -228,7 +228,7 @@ GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
 
 // Handles the Gurobi C callback function. The where values should match the
 // value of the Gurobi where callback codes at
-// https://docs.gurobi.com/projects/optimizer/en/current/reference/numericcodes/callbacks.html.
+// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html.
 // When handling a particular callback where code, be very careful to handle the
 // associated what callback codes correctly as this has caused bugs in the past.
 int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
