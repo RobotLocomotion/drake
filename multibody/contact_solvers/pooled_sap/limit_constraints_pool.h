@@ -75,9 +75,6 @@ class PooledSapModel<T>::LimitConstraintsPool {
   const T vl_hat(int k, int dof) const { return vl_hat_[k](dof); }
   const T vu_hat(int k, int dof) const { return vu_hat_[k](dof); }
 
-  // Resize the associated data pool to match this pool size.
-  void ResizeData(LimitConstraintsDataPool<T>* limit_data) const;
-
   // Compute problem data for the given generalized velocities `v`.
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
@@ -103,6 +100,9 @@ class PooledSapModel<T>::LimitConstraintsPool {
 
   // Total number of limit constraints.
   int num_constraints() const { return constraint_to_clique_.size(); }
+
+  // Number of velocities for each limit constraint.
+  const std::vector<int>& constraint_sizes() const { return constraint_sizes_; }
 
   // Return a reference to the parent model.
   const PooledSapModel<T>& model() const { return *model_; }

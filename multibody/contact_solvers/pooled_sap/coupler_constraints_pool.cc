@@ -17,12 +17,6 @@ namespace contact_solvers {
 namespace pooled_sap {
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::ResizeData(
-    CouplerConstraintsDataPool<T>* coupler_data) const {
-  coupler_data->Resize(num_constraints());
-}
-
-template <typename T>
 void PooledSapModel<T>::CouplerConstraintsPool::Clear() {
   constraint_to_clique_.clear();
   dofs_.clear();

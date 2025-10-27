@@ -64,9 +64,6 @@ class PooledSapModel<T>::GainConstraintsPool {
   void Add(const int i, int clique, const VectorX<T>& K, const VectorX<T>& b,
            const VectorX<T>& e);
 
-  // Resize the associated data pool to match this pool size.
-  void ResizeData(GainConstraintsDataPool<T>* gain_data) const;
-
   // Compute problem data for the given generalized velocities `v`.
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
@@ -92,6 +89,9 @@ class PooledSapModel<T>::GainConstraintsPool {
 
   // Total number of gain constraints.
   int num_constraints() const { return clique_.size(); }
+
+  // Number of velocities for each gain constraint.
+  const std::vector<int>& constraint_sizes() const { return constraint_sizes_; }
 
   // Return a reference to the parent model.
   const PooledSapModel<T>& model() const { return *model_; }

@@ -139,13 +139,11 @@ void PooledSapModel<T>::CalcMomentumTerms(
   VectorX<T>& Av = cache->Av;
 
   // Scratch data.
-  data.scratch().Clear();
   VectorX<T>& Av_minus_r = data.scratch().Av_minus_r;
-  Av_minus_r.resize(num_velocities());
-
-  MultiplyByDynamicsMatrix(v, &Av);
+  DRAKE_ASSERT(Av_minus_r.size() == num_velocities());
 
   // Cost.
+  MultiplyByDynamicsMatrix(v, &Av);
   Av_minus_r = 0.5 * Av - r;
   cache->momentum_cost = v.dot(Av_minus_r);
 
@@ -261,12 +259,13 @@ void PooledSapModel<T>::SetSparsityPattern() {
 
 template <typename T>
 void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
-  // TODO(vincekurtz): treat patch constraints more like the other constraints.
-  data->Resize(num_bodies_, num_velocities_,
+  const int max_clique_size =
+      *std::max_element(clique_sizes_.begin(), clique_sizes_.end());
+  data->Resize(num_bodies_, num_velocities_, max_clique_size,
+               coupler_constraints_pool_.num_constraints(),
+               gain_constraints_pool_.constraint_sizes(),
+               limit_constraints_pool_.constraint_sizes(),
                patch_constraints_pool_.patch_sizes());
-  coupler_constraints_pool_.ResizeData(&data->cache().coupler_constraints_data);
-  gain_constraints_pool_.ResizeData(&data->cache().gain_constraints_data);
-  limit_constraints_pool_.ResizeData(&data->cache().limit_constraints_data);
 }
 
 template <typename T>
@@ -301,15 +300,11 @@ T PooledSapModel<T>::CalcCostAlongLine(
   const T& b = search_direction.b;
   const T& c = search_direction.c;
 
-  // N.B. We'll use data.scratch() for these, while we'll use
-  // scratch->scratch() below for constraints to avoid overwriting these locals
-  // by mistake.
   auto& V_WB_alpha = data.scratch().V_WB_alpha;
-  V_WB_alpha.Clear();
-  V_WB_alpha.Resize(num_bodies());
-  auto& v_alpha = data.scratch().v_alpha;
-  v_alpha.resize(num_velocities());
+  DRAKE_ASSERT(V_WB_alpha.size() == num_bodies());
 
+  auto& v_alpha = data.scratch().v_alpha;
+  DRAKE_ASSERT(v_alpha.size() == num_velocities());
   v_alpha.noalias() = data.v() + alpha * search_direction.w;
 
   // Compute momentum contributions:
@@ -321,9 +316,6 @@ T PooledSapModel<T>::CalcCostAlongLine(
 
   // Add coupler constraints contributions:
   {
-    // TODO(vincekurtz): resize scratch space earlier, and only once.
-    coupler_constraints_pool_.ResizeData(
-        &data.scratch().coupler_constraints_data);
     coupler_constraints_pool_.CalcData(
         v_alpha, &data.scratch().coupler_constraints_data);
     coupler_constraints_pool_.ProjectAlongLine(
@@ -336,8 +328,6 @@ T PooledSapModel<T>::CalcCostAlongLine(
 
   // Add gain constraints contributions:
   {
-    data.scratch().Gw_gain.resize(num_velocities());
-    gain_constraints_pool_.ResizeData(&data.scratch().gain_constraints_data);
     gain_constraints_pool_.CalcData(v_alpha,
                                     &data.scratch().gain_constraints_data);
     gain_constraints_pool_.ProjectAlongLine(
@@ -350,8 +340,6 @@ T PooledSapModel<T>::CalcCostAlongLine(
 
   // Add limit constraints contributions:
   {
-    data.scratch().Gw_limit.resize(num_velocities());
-    limit_constraints_pool_.ResizeData(&data.scratch().limit_constraints_data);
     limit_constraints_pool_.CalcData(v_alpha,
                                      &data.scratch().limit_constraints_data);
     limit_constraints_pool_.ProjectAlongLine(
@@ -364,8 +352,6 @@ T PooledSapModel<T>::CalcCostAlongLine(
 
   // Add patch constraints contributions:
   {
-    data.scratch().patch_constraints_data.Resize(
-        patch_constraints_pool_.patch_sizes());
     CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
     patch_constraints_pool_.CalcData(V_WB_alpha,
                                      &data.scratch().patch_constraints_data);

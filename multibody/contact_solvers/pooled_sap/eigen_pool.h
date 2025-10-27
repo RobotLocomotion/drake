@@ -143,6 +143,22 @@ struct DynamicSizeStorage {
     }
   }
 
+  // Resize the pool to store `num_elements` elements, each of size (rows x
+  // cols).
+  void Resize(int num_elements, int rows, int cols) {
+    static_assert(!is_fixed_size_v<EigenType>);
+    const int r =
+        EigenType::RowsAtCompileTime >= 0 ? EigenType::RowsAtCompileTime : rows;
+    const int c =
+        EigenType::ColsAtCompileTime >= 0 ? EigenType::ColsAtCompileTime : cols;
+    Clear();
+    data_.reserve(num_elements * r * c);
+    blocks_.reserve(num_elements);
+    for (int i = 0; i < num_elements; ++i) {
+      Add(r, c);
+    }
+  }
+
   // Set the size to zero, but keep any allocated memory.
   void Clear() {
     next_data_index_ = 0;
@@ -237,6 +253,16 @@ class EigenPool {
     requires(!is_fixed_size_v<EigenType>)
   {  // NOLINT(whitespace/braces)
     storage_.Resize(rows, cols);
+  }
+
+  // Resize a pool of dynamic-size matrices (e.g. MatrixXd), where all elements
+  // have the same size.
+  // N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
+  // compile time.
+  void Resize(int num_elements, int rows, int cols)
+    requires(!is_fixed_size_v<EigenType>)
+  {  // NOLINT(whitespace/braces)
+    storage_.Resize(num_elements, rows, cols);
   }
 
   // Clears data. Capacity is not changed, and thus memory is not freed.

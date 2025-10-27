@@ -66,10 +66,6 @@ class PooledSapModel<T>::CouplerConstraintsPool {
   void Add(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
-  // Resize the data object (stores information that changes between iterations)
-  // to match this constraints pool.
-  void ResizeData(CouplerConstraintsDataPool<T>* coupler_data) const;
-
   // Compute problem data from the given generalized velocities v, and store in
   // the given data struct.
   void CalcData(const VectorX<T>& v,

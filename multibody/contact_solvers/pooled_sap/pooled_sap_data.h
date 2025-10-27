@@ -39,12 +39,18 @@ class PooledSapData {
 
   // The cache holds quantities that are computed from v, so they can be reused.
   struct Cache {
-    void Resize(int num_bodies, int num_velocities,
+    void Resize(int num_bodies, int num_velocities, int num_couplers,
+                const std::vector<int>& gain_sizes,
+                const std::vector<int>& limit_sizes,
                 const std::vector<int>& patch_sizes) {
       const int nv = num_velocities;
       Av.resize(nv);
       gradient.resize(nv);
       spatial_velocities.Resize(num_bodies);
+
+      coupler_constraints_data.Resize(num_couplers);
+      gain_constraints_data.Resize(gain_sizes);
+      limit_constraints_data.Resize(limit_sizes);
       patch_constraints_data.Resize(patch_sizes);
     }
 
@@ -64,8 +70,9 @@ class PooledSapData {
     PatchConstraintsDataPool<T> patch_constraints_data;
   };
 
-  // Struct to store pre-allocated scratch space. This space is not intended for
-  // long-term storage and is often cleared or overwritten as needed.
+  // Struct to store pre-allocated scratch space. Unlike the cache, this scratch
+  // space is for intermediate computations, and is often cleared or overwritten
+  // as needed.
   struct Scratch {
     // Clear all data without changing capacity.
     void Clear() {
@@ -78,7 +85,34 @@ class PooledSapData {
       GJa_pool.Clear();
       GJb_pool.Clear();
     }
-    // TODO(vincekurtz): add a Resize() method
+
+    // Resize the scratch space, allocating memory as needed.
+    void Resize(int num_bodies, int num_velocities, int max_clique_size,
+                int num_couplers, const std::vector<int>& gain_sizes,
+                const std::vector<int>& limit_sizes,
+                const std::vector<int>& patch_sizes) {
+      Clear();
+      Av_minus_r.resize(num_velocities);
+
+      V_WB_alpha.Resize(num_bodies);
+      v_alpha.resize(num_velocities);
+
+      Gw_gain.resize(num_velocities);
+      Gw_limit.resize(num_velocities);
+      U_AbB_W_pool.Resize(patch_sizes.size());
+
+      coupler_constraints_data.Resize(num_couplers);
+      gain_constraints_data.Resize(gain_sizes);
+      limit_constraints_data.Resize(limit_sizes);
+      patch_constraints_data.Resize(patch_sizes);
+
+      H_BB_pool.Resize(1, max_clique_size, max_clique_size);
+      H_AA_pool.Resize(1, max_clique_size, max_clique_size);
+      H_AB_pool.Resize(1, max_clique_size, max_clique_size);
+      H_BA_pool.Resize(1, max_clique_size, max_clique_size);
+      GJa_pool.Resize(1, 6, max_clique_size);
+      GJb_pool.Resize(1, 6, max_clique_size);
+    }
 
     // Scratch space for CalcMomentumTerms
     VectorX<T> Av_minus_r;
@@ -90,7 +124,6 @@ class PooledSapData {
     // Scratch space for constraint projection in CalcCostAlongLine
     VectorX<T> Gw_gain;
     VectorX<T> Gw_limit;
-    VectorX<T> Gw_patch;
     EigenPool<Vector6<T>> U_AbB_W_pool;
 
     // Scratch data pools for CalcCostAlongLine
@@ -117,17 +150,26 @@ class PooledSapData {
    * Resizes the data to accommodate the given problem, typically called at the
    * beginning of each solve/time step.
    *
+   * @param num_bodies Total number of bodies in the model.
    * @param num_velocities Total number of generalized velocities.
-   * @param patch_sizes Number of contact pairs for each patch.
-   * @param patch_num_velocities Number of participating velocities per patch.
+   * @param max_clique_size Maximum number of velocities in any clique.
+   * @param num_couplers Number of coupler constraints.
+   * @param gain_sizes Number of velocities for each gain constraint.
+   * @param limit_sizes Number of velocities for each limit constraint.
+   * @param patch_sizes Number of contact pairs for each patch constraint.
    *
    * TODO(vincekurtz): consider fixing num_bodies and num_velocities at
    * construction, and only resizing based on patch_sizes here.
    */
-  void Resize(int num_bodies, int num_velocities,
+  void Resize(int num_bodies, int num_velocities, int max_clique_size,
+              int num_couplers, const std::vector<int>& gain_sizes,
+              const std::vector<int>& limit_sizes,
               const std::vector<int>& patch_sizes) {
     v_.resize(num_velocities);
-    cache_.Resize(num_bodies, num_velocities, patch_sizes);
+    cache_.Resize(num_bodies, num_velocities, num_couplers, gain_sizes,
+                  limit_sizes, patch_sizes);
+    scratch_.Resize(num_bodies, num_velocities, num_couplers, max_clique_size,
+                    gain_sizes, limit_sizes, patch_sizes);
   }
 
   int num_velocities() const { return v_.size(); }
@@ -161,7 +203,6 @@ class PooledSapData {
   Cache cache_;   // All other quantities that are computed from v.
 
   // We allow PooledSapModel methods to write on the scratch as needed.
-  // TODO(CENIC): figure out a better/cleaner way to handle scratch space.
   mutable Scratch scratch_;
 };
 

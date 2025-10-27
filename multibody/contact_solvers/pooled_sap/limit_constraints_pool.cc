@@ -16,12 +16,6 @@ namespace contact_solvers {
 namespace pooled_sap {
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::ResizeData(
-    LimitConstraintsDataPool<T>* limit_data) const {
-  limit_data->Resize(constraint_sizes_);
-}
-
-template <typename T>
 void PooledSapModel<T>::LimitConstraintsPool::Clear() {
   constraint_to_clique_.clear();
   constraint_sizes_.clear();
