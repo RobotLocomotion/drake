@@ -35,6 +35,19 @@ config_setting(
     flag_values = {"//tools/flags:with_render_gl": "True"},
 )
 
+config_setting(
+    name = "with_render_vtk",
+    flag_values = {"//tools/flags:with_render_vtk": "True"},
+)
+
+selects.config_setting_group(
+    name = "with_render_gl_or_vtk",
+    match_any = [
+        ":with_render_gl",
+        ":with_render_vtk",
+    ],
+)
+
 selects.config_setting_group(
     name = "enabled",
     match_all = [
@@ -52,49 +65,24 @@ drake_cc_package_library(
     ],
 )
 
-config_setting(
-    name = "with_render_vtk",
-    flag_values = {"//tools/flags:with_render_vtk": "True"},
-)
-
-selects.config_setting_group(
-    name = "with_render_gl_or_vtk",
-    match_any = [
-        ":with_render_gl",
-        ":with_render_vtk",
-    ],
-)
-
-selects.config_setting_group(
-    name = "with_render_gl_or_vtk_and_linux",
-    match_all = [
-        ":with_render_gl_or_vtk",
-        "//tools/skylark:linux",
-    ],
-)
-
-drake_cc_library(
+drake_cc_variant_library(
     name = "internal_loaders",
-    srcs = ["internal_loaders.cc"],
+    opt_in_condition = ":with_render_gl_or_vtk",
+    srcs_always = [],
+    srcs_enabled = ["internal_loaders.cc"],
+    srcs_disabled = ["no_internal_loaders.cc"],
     hdrs = ["internal_loaders.h"],
-    defines = select({
-        ":with_render_gl_or_vtk_and_linux": ["HAS_RENDER_GL"],
-        "//conditions:default": [],
-    }),
     internal = True,
     visibility = [
         "//geometry/render_vtk:__pkg__",
     ],
-    deps = [
-        "//common:essential",
+    deps = [],
+    implementation_deps_always = [],
+    implementation_deps_enabled = [
         "//common:unused",
-    ] + select({
-        ":with_render_gl_or_vtk_and_linux": [
-            "@vtk_internal//:vtkglad",
-            "@vtk_internal//:vtkx11",
-        ],
-        "//conditions:default": [],
-    }),
+        "@vtk_internal//:vtkglad",
+        "@vtk_internal//:vtkx11",
+    ],
 )
 
 drake_cc_optional_library(
@@ -110,6 +98,7 @@ drake_cc_optional_library(
         "//common:essential",
         "//common:scope_exit",
         "//common:unused",
+        "@vtk_internal//:vtkglad",
     ],
 )
 
