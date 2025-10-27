@@ -1402,28 +1402,6 @@ class ThreeBoxes : public GraphOfConvexSetsTestFixture {
     EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
   }
 
-  // void CheckConvexRestriction(const MathematicalProgramResult& result) {
-  //   MathematicalProgramResult restriction_result =
-  //       g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}),
-  //       options_);
-  //   // Confirm that we get a convex solver (not an NLP solver).
-  //   if (MixedIntegerSolverAvailable()) {
-  //     EXPECT_TRUE(
-  //         restriction_result.get_solver_id() == solvers::MosekSolver::id() ||
-  //         restriction_result.get_solver_id() == solvers::GurobiSolver::id());
-  //   }
-  //   EXPECT_TRUE(restriction_result.is_success());
-  //   EXPECT_NEAR(result.get_optimal_cost(),
-  //               restriction_result.get_optimal_cost(), 1e-6);
-  //   EXPECT_FALSE(sink_->GetSolution(result).has_value());
-  //   EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
-  //   for (const auto* v : {source_, target_}) {
-  //     EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(),
-  //                                 v->GetSolution(restriction_result).value(),
-  //                                 1e-6));
-  //   }
-  // }
-
   Edge* e_on_{nullptr};
   Edge* e_off_{nullptr};
 
