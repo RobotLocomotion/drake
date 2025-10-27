@@ -196,7 +196,7 @@ drake_cc_googletest(
 
 # N.B. This test asserts that the no_factory flavor throws unconditionally.
 drake_cc_googletest(
-    name = "disabled_render_gltf_client_test",
+    name = "internal_no_render_gltf_client_test",
     deps = [
         # The ":factory_disabled" target is created by the
         # drake_cc_variant_library(...) stanza above.

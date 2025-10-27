@@ -313,7 +313,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "disabled_render_vtk_test",
+    name = "internal_no_render_vtk_test",
     deps = [
         # The ":factory_disabled" target is created by the
         # drake_cc_variant_library(...) stanza above.
