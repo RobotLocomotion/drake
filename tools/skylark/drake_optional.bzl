@@ -91,8 +91,7 @@ def drake_cc_optional_library(
         defines = None,
         visibility = ["//visibility:private"],
         deps = None,
-        implementation_deps = None,
-        testonly = False):
+        implementation_deps = None):
     """Declares a private library (package-local, not installed) guarded by a
     configuration setting. When the configuration is disabled, the library is
     totally empty (but still a valid library label). This is used for helper
@@ -134,7 +133,6 @@ def drake_cc_optional_library(
             opt_in_condition: implementation_deps,
             "//conditions:default": [],
         }),
-        testonly = testonly,
     )
     cpplint_extra(
         name = name + "_cpplint",
