@@ -260,7 +260,7 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
       if (error) {
         drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n",
                             error, GRBgeterrormsg(GRBgetenv(model)));
-        return 0;
+        return 1;
       }
       SetProgramSolutionVector(callback_info->is_new_variable,
                                callback_info->solver_sol_vector,
@@ -280,7 +280,7 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
         drake::log()->error(
             "GRB error {} in MIPNode callback getting sol status: {}\n", error,
             GRBgeterrormsg(GRBgetenv(model)));
-        return 0;
+        return 1;
       }
       if (sol_status == GRB_OPTIMAL) {
         // Fetch the current node relaxation solution values.
@@ -335,13 +335,12 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
       return 0;
     }
     case GRB_CB_IIS: {
-      break;
+      return 0;
     }
   }
   // This switch statement should be an exhaustive reference to the Gurobi what
   // codes.
   DRAKE_UNREACHABLE();
-  return 1;
 }
 
 // Checks if the number of variables in the Gurobi model is as expected. This
