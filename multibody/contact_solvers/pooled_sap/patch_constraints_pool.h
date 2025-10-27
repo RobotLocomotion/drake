@@ -135,13 +135,13 @@ class PooledSapModel<T>::PatchConstraintsPool {
    *
    * @param patch_data The pre-computed patch constraint data.
    * @param U_WB Body spatial velocities associated with u = v + αw.
-   * @param scratch Scratch space for the computation.
+   * @param U_AbB_W_pool Scratch space for body spatial velocities.
    * @param dcost The first derivative, dℓ/dα at α = 0.
    * @param d2cost The second derivative, d²ℓ/dα² at α = 0.
    */
   void ProjectAlongLine(const PatchConstraintsDataPool<T>& patch_data,
                         const EigenPool<Vector6<T>>& U_WB_pool,
-                        typename PooledSapData<T>::Scratch* scratch, T* dcost,
+                        EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                         T* d2cost) const;
 
   // Set the stiction tolerance used for regularization.

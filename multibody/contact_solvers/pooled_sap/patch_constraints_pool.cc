@@ -489,8 +489,8 @@ template <typename T>
 void PooledSapModel<T>::PatchConstraintsPool::ProjectAlongLine(
     const PatchConstraintsDataPool<T>& patch_data,
     const EigenPool<Vector6<T>>& U_WB_pool,
-    typename PooledSapData<T>::Scratch* scratch, T* dcost, T* d2cost) const {
-  auto& U_AbB_W_pool = scratch->Vector6_pool;
+    EigenPool<Vector6<T>>* U_AbB_W_pool_ptr, T* dcost, T* d2cost) const {
+  auto& U_AbB_W_pool = *U_AbB_W_pool_ptr;
   U_AbB_W_pool.Clear();
   U_AbB_W_pool.Resize(num_patches());
   CalcConstraintVelocities(U_WB_pool, &U_AbB_W_pool);

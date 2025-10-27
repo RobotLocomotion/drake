@@ -140,14 +140,14 @@ void PooledSapModel<T>::CalcMomentumTerms(
 
   // Scratch data.
   data.scratch().Clear();
-  VectorX<T>& tmp = data.scratch().v_pool;
-  tmp.resize(num_velocities());
+  VectorX<T>& Av_minus_r = data.scratch().Av_minus_r;
+  Av_minus_r.resize(num_velocities());
 
   MultiplyByDynamicsMatrix(v, &Av);
 
   // Cost.
-  tmp = 0.5 * Av - r;
-  cache->momentum_cost = v.dot(tmp);
+  Av_minus_r = 0.5 * Av - r;
+  cache->momentum_cost = v.dot(Av_minus_r);
 
   // Gradient.
   cache->gradient = Av - r;
@@ -297,8 +297,7 @@ T PooledSapModel<T>::CalcCostAlongLine(
     const T& alpha, const PooledSapData<T>& data,
     const SearchDirectionData<T>& search_direction, PooledSapData<T>* scratch,
     T* dcost_dalpha, T* d2cost_dalpha2) const {
-  typename PooledSapData<T>::Cache& cache_alpha = scratch->cache();
-
+  (void)scratch;
   const T& a = search_direction.a;
   const T& b = search_direction.b;
   const T& c = search_direction.c;
@@ -306,10 +305,10 @@ T PooledSapModel<T>::CalcCostAlongLine(
   // N.B. We'll use data.scratch() for these, while we'll use
   // scratch->scratch() below for constraints to avoid overwriting these locals
   // by mistake.
-  auto& V_WB_alpha = data.scratch().Vector6_pool;
+  auto& V_WB_alpha = data.scratch().V_WB_alpha;
   V_WB_alpha.Clear();
   V_WB_alpha.Resize(num_bodies());
-  auto& v_alpha = data.scratch().v_pool;
+  auto& v_alpha = data.scratch().v_alpha;
   v_alpha.resize(num_velocities());
 
   v_alpha.noalias() = data.v() + alpha * search_direction.w;
@@ -321,55 +320,60 @@ T PooledSapModel<T>::CalcCostAlongLine(
 
   T constraint_dcost, constraint_d2cost;
 
-  // Weird to resize here.
-  // TODO(amcastro-tri): Resize where appropriate.
-  scratch->scratch().v_pool.resize(num_velocities());
-
   // Add coupler constraints contributions:
   {
-    coupler_constraints_pool_.CalcData(v_alpha,
-                                       &cache_alpha.coupler_constraints_data);
+    // TODO(vincekurtz): resize scratch space earlier, and only once.
+    coupler_constraints_pool_.ResizeData(
+        &data.scratch().coupler_constraints_data);
+    coupler_constraints_pool_.CalcData(
+        v_alpha, &data.scratch().coupler_constraints_data);
     coupler_constraints_pool_.ProjectAlongLine(
-        cache_alpha.coupler_constraints_data, search_direction.w,
+        data.scratch().coupler_constraints_data, search_direction.w,
         &constraint_dcost, &constraint_d2cost);
-    cost += cache_alpha.coupler_constraints_data.cost();
+    cost += data.scratch().coupler_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
   // Add gain constraints contributions:
   {
+    data.scratch().Gw_gain.resize(num_velocities());
+    gain_constraints_pool_.ResizeData(&data.scratch().gain_constraints_data);
     gain_constraints_pool_.CalcData(v_alpha,
-                                    &cache_alpha.gain_constraints_data);
+                                    &data.scratch().gain_constraints_data);
     gain_constraints_pool_.ProjectAlongLine(
-        cache_alpha.gain_constraints_data, search_direction.w,
-        &scratch->scratch().v_pool, &constraint_dcost, &constraint_d2cost);
-    cost += cache_alpha.gain_constraints_data.cost();
+        data.scratch().gain_constraints_data, search_direction.w,
+        &data.scratch().Gw_gain, &constraint_dcost, &constraint_d2cost);
+    cost += data.scratch().gain_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
   // Add limit constraints contributions:
   {
+    data.scratch().Gw_limit.resize(num_velocities());
+    limit_constraints_pool_.ResizeData(&data.scratch().limit_constraints_data);
     limit_constraints_pool_.CalcData(v_alpha,
-                                     &cache_alpha.limit_constraints_data);
+                                     &data.scratch().limit_constraints_data);
     limit_constraints_pool_.ProjectAlongLine(
-        cache_alpha.limit_constraints_data, search_direction.w,
-        &scratch->scratch().v_pool, &constraint_dcost, &constraint_d2cost);
-    cost += cache_alpha.limit_constraints_data.cost();
+        data.scratch().limit_constraints_data, search_direction.w,
+        &data.scratch().Gw_limit, &constraint_dcost, &constraint_d2cost);
+    cost += data.scratch().limit_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
   // Add patch constraints contributions:
   {
+    data.scratch().patch_constraints_data.Resize(
+        patch_constraints_pool_.patch_sizes());
     CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
     patch_constraints_pool_.CalcData(V_WB_alpha,
-                                     &cache_alpha.patch_constraints_data);
+                                     &data.scratch().patch_constraints_data);
     patch_constraints_pool_.ProjectAlongLine(
-        cache_alpha.patch_constraints_data, search_direction.U,
-        &scratch->scratch(), &constraint_dcost, &constraint_d2cost);
-    cost += cache_alpha.patch_constraints_data.cost();
+        data.scratch().patch_constraints_data, search_direction.U,
+        &data.scratch().U_AbB_W_pool, &constraint_dcost, &constraint_d2cost);
+    cost += data.scratch().patch_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
   }

@@ -69,7 +69,8 @@ class PooledSapData {
   struct Scratch {
     // Clear all data without changing capacity.
     void Clear() {
-      Vector6_pool.Clear();
+      V_WB_alpha.Clear();
+      U_AbB_W_pool.Clear();
       H_BB_pool.Clear();
       H_AA_pool.Clear();
       H_AB_pool.Clear();
@@ -77,14 +78,29 @@ class PooledSapData {
       GJa_pool.Clear();
       GJb_pool.Clear();
     }
-    // TODO(CENIC): this is meant for velocity sized vectors that do not change
-    // size. Update to EigenPool when AutoDiffXd is better supported.
-    VectorX<T> v_pool;
-    EigenPool<Vector6<T>> Vector6_pool;
-    EigenPool<MatrixX<T>> MatrixX_pool;
+    // TODO(vincekurtz): add a Resize() method
 
-    // Data for Hessian accumulation. These pools will only ever hold one
-    // element, but using pools instead of a single MatrixX<T> allows us to
+    // Scratch space for CalcMomentumTerms
+    VectorX<T> Av_minus_r;
+
+    // Scratch space for CalcCostAlongLine
+    EigenPool<Vector6<T>> V_WB_alpha;
+    VectorX<T> v_alpha;
+
+    // Scratch space for constraint projection in CalcCostAlongLine
+    VectorX<T> Gw_gain;
+    VectorX<T> Gw_limit;
+    VectorX<T> Gw_patch;
+    EigenPool<Vector6<T>> U_AbB_W_pool;
+
+    // Scratch data pools for CalcCostAlongLine
+    CouplerConstraintsDataPool<T> coupler_constraints_data;
+    GainConstraintsDataPool<T> gain_constraints_data;
+    LimitConstraintsDataPool<T> limit_constraints_data;
+    PatchConstraintsDataPool<T> patch_constraints_data;
+
+    // Scratch space for Hessian accumulation. These pools will only ever hold
+    // one element, but using pools instead of a single MatrixX<T> allows us to
     // avoid extra heap allocations, as their sizes change frequently.
     EigenPool<MatrixX<T>> H_BB_pool;
     EigenPool<MatrixX<T>> H_AA_pool;
