@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
 #include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"

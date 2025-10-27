@@ -1,19 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <numeric>
-#include <utility>
-#include <variant>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/linear_solve.h"
-#include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/pooled_sap/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/pooled_sap/limit_constraints_data_pool.h"
