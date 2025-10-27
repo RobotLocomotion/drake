@@ -400,8 +400,8 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
                 8 * kEps * abs(momentum_cost_expected));
 
     AutoDiffXd dcost, d2cost;
-    const AutoDiffXd cost = model.CalcCostAlongLine(alpha, data, search_data,
-                                                    &scratch, &dcost, &d2cost);
+    const AutoDiffXd cost =
+        model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
     EXPECT_NEAR(cost.value(), cost_expected, 8 * kEps * abs(cost_expected));
     EXPECT_NEAR(dcost.value(), dcost_expected, 8 * kEps * abs(dcost_expected));
     EXPECT_NEAR(d2cost.value(), d2cost_expected,
@@ -762,8 +762,6 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
   SearchDirectionData<AutoDiffXd> search_data;
-  PooledSapData<AutoDiffXd> scratch;
-  model.ResizeData(&scratch);
 
   // Set data with constant value of v.
   VectorX<AutoDiffXd> v_constant =
@@ -775,8 +773,8 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
       0.35 /* arbitrary value */,
       VectorXd::Ones(1) /* This is the independent variable */};
   AutoDiffXd dcost, d2cost;
-  const AutoDiffXd cost = model.CalcCostAlongLine(alpha, data, search_data,
-                                                  &scratch, &dcost, &d2cost);
+  const AutoDiffXd cost =
+      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
 
   EXPECT_NEAR(dcost.value(), cost.derivatives()[0], kEps);
   EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], kEps * d2cost.value());

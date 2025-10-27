@@ -358,18 +358,13 @@ class PooledSapModel {
    * @param data Stores velocity v along with cached quantities. See CalcData().
    * @param search_direction Stores w along with cached quantities. See
    * UpdateSearchDirection().
-   * @param scratch Scratch space properly resized with ResizeData().
    * @param dcost_dalpha dℓ/dα on output.
    * @param dcost_dalpha d²ℓ/dα² on output.
    * @returns The cost ℓ(α).
-   *
-   * TODO(CENIC): figure out a better scratch space solution than dragging
-   * around a whole extra PooledSapData object.
    */
   T CalcCostAlongLine(const T& alpha, const PooledSapData<T>& data,
                       const SearchDirectionData<T>& search_direction,
-                      PooledSapData<T>* scratch, T* dcost_dalpha,
-                      T* d2cost_dalpha2) const;
+                      T* dcost_dalpha, T* d2cost_dalpha2) const;
 
   // Compute and store the Hessian sparsity pattern.
   void SetSparsityPattern();

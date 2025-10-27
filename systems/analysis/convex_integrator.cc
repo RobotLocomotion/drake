@@ -63,7 +63,6 @@ void ConvexIntegrator<T>::DoInitialize() {
   const T& dt = this->get_initial_step_size_target();
   builder_->UpdateModel(plant_context, dt, false, &model_);
   model_.ResizeData(&data_);
-  model_.ResizeData(&scratch_data_);
 
   // Allocate scratch variables
   scratch_.v_guess.resize(plant().num_velocities());
@@ -441,8 +440,6 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   const double alpha_max = solver_parameters_.alpha_max;
 
   // Set up prerequisites for an efficient CalcCostAlongLine
-  PooledSapData<double>& scratch = scratch_data_;
-  model.ResizeData(&scratch);
   SearchDirectionData<double>& search_data = search_direction_data_;
   model.UpdateSearchDirection(data, dv, &search_data);
 
@@ -467,8 +464,8 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 
   // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max.
-  const double ell = model.CalcCostAlongLine(alpha_max, data, search_data,
-                                             &scratch, &dell, &d2ell);
+  const double ell =
+      model.CalcCostAlongLine(alpha_max, data, search_data, &dell, &d2ell);
   if (dell <= std::numeric_limits<double>::epsilon()) {
     return std::make_pair(alpha_max, 0);
   }
@@ -498,12 +495,11 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   // function that computes the value and gradient of f(α) = −ℓ'(α)/ℓ'₀.
   // Normalizing in this way reduces round-off errors, ensuring f(0) = -1.
   const double dell_scale = -dell0;
-  auto cost_and_gradient = [&model, &data, &search_data, &scratch,
+  auto cost_and_gradient = [&model, &data, &search_data,
                             &dell_scale](double x) {
     double dell_dalpha;
     double d2ell_dalpha2;
-    model.CalcCostAlongLine(x, data, search_data, &scratch, &dell_dalpha,
-                            &d2ell_dalpha2);
+    model.CalcCostAlongLine(x, data, search_data, &dell_dalpha, &d2ell_dalpha2);
     return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
   };
 

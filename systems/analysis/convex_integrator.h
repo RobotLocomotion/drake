@@ -337,7 +337,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<PooledSapBuilder<T>> builder_;
   PooledSapModel<T> model_;
   PooledSapData<T> data_;
-  PooledSapData<T> scratch_data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;

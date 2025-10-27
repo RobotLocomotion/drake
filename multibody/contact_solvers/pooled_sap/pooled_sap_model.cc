@@ -295,9 +295,8 @@ void PooledSapModel<T>::UpdateSearchDirection(
 template <typename T>
 T PooledSapModel<T>::CalcCostAlongLine(
     const T& alpha, const PooledSapData<T>& data,
-    const SearchDirectionData<T>& search_direction, PooledSapData<T>* scratch,
-    T* dcost_dalpha, T* d2cost_dalpha2) const {
-  (void)scratch;
+    const SearchDirectionData<T>& search_direction, T* dcost_dalpha,
+    T* d2cost_dalpha2) const {
   const T& a = search_direction.a;
   const T& b = search_direction.b;
   const T& c = search_direction.c;
