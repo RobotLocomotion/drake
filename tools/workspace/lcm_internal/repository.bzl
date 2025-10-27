@@ -16,6 +16,7 @@ def lcm_internal_repository(
         commit = "v1.5.2",
         sha256 = "d443261619080f1c0693237b2019436988e1b2b2ba5fc09a49bf23769e1796de",  # noqa
         patches = [
+            ":patches/maven.patch",
             ":patches/vendor_namespace.patch",
         ],
         patch_cmds = [
