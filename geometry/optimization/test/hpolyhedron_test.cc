@@ -11,8 +11,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/random.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/random.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/yaml/yaml_io.h"
@@ -35,6 +35,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using drake::RandomGenerator;
 using Eigen::Matrix;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
@@ -44,7 +45,6 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using internal::CheckAddPointInSetConstraints;
 using internal::MakeSceneGraphWithShape;
-using drake::RandomGenerator;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using solvers::Binding;
@@ -52,15 +52,14 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 
-
 namespace {
-  HPolyhedron NoHyperplaneHPolyhedron(int ambient_dim = 3) {
-    return HPolyhedron(Eigen::MatrixXd(0, ambient_dim), Eigen::VectorXd(0));
-  }
-  HPolyhedron ZeroDimHPolyhedron() {
-    return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
-  }
+HPolyhedron NoHyperplaneHPolyhedron(int ambient_dim = 3) {
+  return HPolyhedron(Eigen::MatrixXd(0, ambient_dim), Eigen::VectorXd(0));
 }
+HPolyhedron ZeroDimHPolyhedron() {
+  return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
+}
+}  // namespace
 
 GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   HPolyhedron H;
@@ -122,7 +121,6 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_TRUE(
       H_scene_graph.PointInSet(H_scene_graph.MaybeGetFeasiblePoint().value()));
 }
-
 
 GTEST_TEST(HPolyhedronTest, Move) {
   Matrix<double, 6, 3> A;
@@ -810,22 +808,21 @@ GTEST_TEST(HPolyhedronTest, Scale3) {
 }
 
 namespace {
-  void TestClone(const HPolyhedron& H) {
+void TestClone(const HPolyhedron& H) {
   std::unique_ptr<ConvexSet> clone = H.Clone();
   EXPECT_EQ(clone->ambient_dimension(), H.ambient_dimension());
   HPolyhedron* pointer = dynamic_cast<HPolyhedron*>(clone.get());
   ASSERT_NE(pointer, nullptr);
   EXPECT_TRUE(CompareMatrices(H.A(), pointer->A()));
   EXPECT_TRUE(CompareMatrices(H.b(), pointer->b()));
-  }
 }
+}  // namespace
 
 GTEST_TEST(HPolyhedronTest, CloneTest) {
   TestClone(HPolyhedron::MakeBox(Vector3d{-3, -4, -5}, Vector3d{6, 7, 8}));
   TestClone(NoHyperplaneHPolyhedron());
   TestClone(ZeroDimHPolyhedron());
 }
-
 
 GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest) {
   const Vector3d lb{1, 1, 1}, ub{2, 3, 4};
@@ -1202,7 +1199,8 @@ GTEST_TEST(HPolyhedronTest, ContainedIn) {
 //       Eigen::VectorXd c(0);
 //       auto t = prog.NewContinuousVariables(0, "t");
 //       EXPECT_THROW(
-//           dut.AddPointInNonnegativeScalingConstraints(&prog, A_x, b_x, c, 0.0,
+//           dut.AddPointInNonnegativeScalingConstraints(&prog, A_x, b_x, c,
+//           0.0,
 //                                                       x, t),
 //           std::exception);
 //     } else {
@@ -2028,7 +2026,7 @@ GTEST_TEST(HPolyhedronTest, BoundednessCheckEmptyEdgeCases) {
 }
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneIntersectsWithTest) {
-   const int ambient_dim = 3;
+  const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron();
   const HPolyhedron H1 = HPolyhedron::MakeUnitBox(ambient_dim);
   EXPECT_TRUE(H.IntersectsWith(H1));
@@ -2057,13 +2055,13 @@ GTEST_TEST(HPolyhedronTest, NoHyperlaneAddPointInSetConstraintsTest) {
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   solvers::MathematicalProgram prog{};
   auto x = prog.NewContinuousVariables(ambient_dim, "x");
-  auto [new_vars, new_constraints] =
-      H.AddPointInSetConstraints(&prog, x);
-      EXPECT_EQ(new_vars.size(), 0);
-      EXPECT_TRUE(new_constraints.empty());
+  auto [new_vars, new_constraints] = H.AddPointInSetConstraints(&prog, x);
+  EXPECT_EQ(new_vars.size(), 0);
+  EXPECT_TRUE(new_constraints.empty());
 }
 
-GTEST_TEST(HPolyhedronTest, NoHyperlaneAddPointInNonnegativeScalingConstraintsTest) {
+GTEST_TEST(HPolyhedronTest,
+           NoHyperlaneAddPointInNonnegativeScalingConstraintsTest) {
   const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   solvers::MathematicalProgram prog{};
@@ -2071,8 +2069,8 @@ GTEST_TEST(HPolyhedronTest, NoHyperlaneAddPointInNonnegativeScalingConstraintsTe
   auto t = prog.NewContinuousVariables(1, "t");
   auto new_constraints =
       H.AddPointInNonnegativeScalingConstraints(&prog, x, t[0]);
-      // Adds the constraint that t >= 0.
-      EXPECT_EQ(new_constraints.size(), 1);
+  // Adds the constraint that t >= 0.
+  EXPECT_EQ(new_constraints.size(), 1);
 }
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneGettersTest) {
@@ -2089,13 +2087,13 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneContainedInTest) {
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   const HPolyhedron H1 = HPolyhedron::MakeUnitBox(ambient_dim);
   // Masssively Scaled up box.
-  const HPolyhedron H2{H1.A(), 100*H1.b()};
+  const HPolyhedron H2{H1.A(), 100 * H1.b()};
   EXPECT_FALSE(H.ContainedIn(H1));
   EXPECT_FALSE(H.ContainedIn(H2));
   EXPECT_TRUE(H.ContainedIn(H));
   EXPECT_TRUE(H1.ContainedIn(H));
   EXPECT_TRUE(H2.ContainedIn(H));
-} 
+}
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneIntersectionTest) {
   const int ambient_dim = 3;
@@ -2112,12 +2110,11 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneIntersectionTest) {
   EXPECT_TRUE(CompareMatrices(intersection2.b(), H1.b()));
   EXPECT_TRUE(CompareMatrices(intsection3.A(), H1.A()));
   EXPECT_TRUE(CompareMatrices(intsection3.b(), H1.b()));
-} 
+}
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneFindRedundant) {
   const HPolyhedron H = NoHyperplaneHPolyhedron();
-  std::set<int> redundant_indices =
-      H.FindRedundant(1e-8);
+  std::set<int> redundant_indices = H.FindRedundant(1e-8);
   EXPECT_TRUE(redundant_indices.empty());
 }
 
@@ -2131,19 +2128,21 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneReduceInequalities) {
   EXPECT_EQ(H_reduced.b().size(), 0);
 }
 
-GTEST_TEST(HPolyhedronTest, DISABLED_NoHyperplaneSimplifyByIncrementalFaceTranslation) {
+GTEST_TEST(HPolyhedronTest,
+           DISABLED_NoHyperplaneSimplifyByIncrementalFaceTranslation) {
   const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   // Volume estimation is not defined for unbounded sets.
   EXPECT_TRUE(false);
 }
 
-
-GTEST_TEST(HPolyhedronTest,NoHyperplaneMaximumVolumeInscribedAffineTransformation) {
+GTEST_TEST(HPolyhedronTest,
+           NoHyperplaneMaximumVolumeInscribedAffineTransformation) {
   const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   const HPolyhedron H1 = HPolyhedron::MakeUnitBox(ambient_dim);
-  EXPECT_THROW(H.MaximumVolumeInscribedAffineTransformation(H1), std::exception);
+  EXPECT_THROW(H.MaximumVolumeInscribedAffineTransformation(H1),
+               std::exception);
 }
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneMaximumVolumeInscribedEllipsoid) {
@@ -2154,7 +2153,7 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneMaximumVolumeInscribedEllipsoid) {
 GTEST_TEST(HPolyhedronTest, NoHyperplaneChebyshevCenter) {
   int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
-  const Eigen::VectorXd center_expected=Eigen::VectorXd::Zero(ambient_dim);
+  const Eigen::VectorXd center_expected = Eigen::VectorXd::Zero(ambient_dim);
   EXPECT_TRUE(CompareMatrices(H.ChebyshevCenter(), center_expected));
 }
 
@@ -2165,11 +2164,6 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneScaleTest) {
   EXPECT_TRUE(CompareMatrices(H_scaled.A(), H.A()));
   EXPECT_TRUE(CompareMatrices(H_scaled.b(), H.b()));
 }
-
-
-
-
-
 
 }  // namespace optimization
 }  // namespace geometry

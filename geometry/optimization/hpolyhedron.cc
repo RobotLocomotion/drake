@@ -467,8 +467,9 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
 }
 
 VectorXd HPolyhedron::ChebyshevCenter() const {
-  if(A_.rows() == 0) {
-    // If there are no hyperplanes, return the origin as the Chebyshev center. Technically any point would work.
+  if (A_.rows() == 0) {
+    // If there are no hyperplanes, return the origin as the Chebyshev center.
+    // Technically any point would work.
     return VectorXd::Zero(ambient_dimension());
   }
   MathematicalProgram prog;
@@ -504,7 +505,7 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
 HPolyhedron HPolyhedron::Scale(double scale,
                                std::optional<Eigen::VectorXd> center) const {
   DRAKE_THROW_UNLESS(scale >= 0.0);
-  if(A_.rows() == 0) {
+  if (A_.rows() == 0) {
     // If there are no hyperplanes, scaling does nothing.
     return *this;
   }
@@ -743,12 +744,13 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   if (DoIsEmpty()) {
     return true;
   }
-  if(A_.rows() == 0 ){
-   return other.A().rows() == 0; 
+  if (A_.rows() == 0) {
+    // The full space can only be contained in another HPolyhedron if the other
+    // HPolyhedron is also the full space.
+    return other.A().rows() == 0;
   }
-  if(other.A().rows() == 0) {
-    // Full space can only be contained in another HPolyhedron if the other
-    // HPolyhedron is also full space.
+  if (other.A().rows() == 0) {
+    // If the other polytope is the full space, then we are certainly contained.
     return true;
   }
 
@@ -854,13 +856,13 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
   // however this would require building num_threads mathematical programs and
   // may not be worth it.
   std::set<int> redundant_indices;
-  if(A_.rows() == 0) {
+  if (A_.rows() == 0) {
     // No inequalities so nothing is redundant;
     return redundant_indices;
   }
-  if(A_.cols() == 0) {
+  if (A_.cols() == 0) {
     // All inequalities are redundant in a 0-dimensional space.
-    for(int i = 0; i < A_.rows(); ++i) {
+    for (int i = 0; i < A_.rows(); ++i) {
       redundant_indices.insert(i);
     }
     return redundant_indices;
@@ -1132,9 +1134,9 @@ HPolyhedron HPolyhedron::MaximumVolumeInscribedAffineTransformation(
   DRAKE_THROW_UNLESS(this->ambient_dimension() ==
                      circumbody.ambient_dimension());
 
-                     if(check_bounded){
-  DRAKE_THROW_UNLESS(this->IsBounded());
-                     }
+  if (check_bounded) {
+    DRAKE_THROW_UNLESS(this->IsBounded());
+  }
 
   int n_y = circumbody.A().rows();
   int n_x = this->A().rows();
@@ -1229,11 +1231,11 @@ HPolyhedron::DoAddPointInSetConstraints(
     const Eigen::Ref<const VectorXDecisionVariable>& vars) const {
   VectorX<Variable> new_vars;
   std::vector<Binding<Constraint>> new_constraints;
-  if(A_.rows() > 0){
-  new_constraints.push_back(prog->AddLinearConstraint(
-      A_,
-      VectorXd::Constant(b_.size(), -std::numeric_limits<double>::infinity()),
-      b_, vars));
+  if (A_.rows() > 0) {
+    new_constraints.push_back(prog->AddLinearConstraint(
+        A_,
+        VectorXd::Constant(b_.size(), -std::numeric_limits<double>::infinity()),
+        b_, vars));
   }
   return {std::move(new_vars), std::move(new_constraints)};
 }
@@ -1246,9 +1248,9 @@ HPolyhedron::DoAddPointInNonnegativeScalingConstraints(
   std::vector<Binding<Constraint>> constraints;
   // A x ≤ t b, written as [A,-b][x;t] ≤ 0
   const int m = A_.rows();
-  if(m == 0){
-      // No constraints to add.
-      return constraints;
+  if (m == 0) {
+    // No constraints to add.
+    return constraints;
   }
   const int n = ambient_dimension();
   MatrixXd Abar(m, n + 1);
@@ -1270,9 +1272,9 @@ HPolyhedron::DoAddPointInNonnegativeScalingConstraints(
   // A (A_x x + b_x) ≤ (c' t + d) b, written as [A * A_x, -b * c'][x;t] ≤ d * b
   // - A * b_x
   const int m = A_.rows();
-  if(m == 0){
-      // No constraints to add.
-      return constraints;
+  if (m == 0) {
+    // No constraints to add.
+    return constraints;
   }
   MatrixXd A_bar(m, x.size() + t.size());
   A_bar.leftCols(x.size()) = A_ * A_x;
