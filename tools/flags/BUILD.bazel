@@ -333,7 +333,8 @@ bool_flag(
 # Drake's RenderEngine wraps different render engines into common API.
 # Drake can be compiled with various render engines enabled or disabled.
 #
-# By default, when building from source, all render engines will be enabled.
+# By default, when building from source, all render engines will be enabled,
+# except RenderEngineGl is always disabled on macOS (the flag has no effect).
 # Disabling one or many of the render engines can provide advantages for build
 # times, build sizes on disk, runtime dependencies, or other general issues
 # with compiling the render engine.

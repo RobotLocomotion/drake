@@ -1,9 +1,5 @@
 # Common options for macOS, no matter the arch (x86 or arm).
 
-# //tools/flags:with_render_gl is True by default, but RenderEngineGl is
-# unsupported on macOS, so we should default to False here.
-common --@drake//tools/flags:with_render_gl=False
-
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
 build:asan --copt=-Wno-macro-redefined
