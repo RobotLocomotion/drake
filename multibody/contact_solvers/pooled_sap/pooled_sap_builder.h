@@ -40,6 +40,10 @@ class PooledSapBuilder {
    *                            model. This is useful for avoiding geometry
    *                            queries when only δt has changed, not (q₀, v₀).
    * @param model The PooledSapModel to update.
+   *
+   * TODO(vincekurtz): instead of the reuse_geometry_data flag, consider an
+   * alternative ResetTimestep() methods that only updates δt, keeping all of
+   * the other terms unchanged (and therefore not requiring geometry queries).
    */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    bool reuse_geometry_data, PooledSapModel<T>* model);
