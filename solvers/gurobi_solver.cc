@@ -254,7 +254,6 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     case GRB_CB_MIPSOL: {
       // Extract variable values from Gurobi, and set the current
       // solution of the MathematicalProgram to these values.
-      DRAKE_DEMAND(where == GRB_CB_MIPSOL);
       int error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
                            callback_info->solver_sol_vector.data());
       if (error) {
