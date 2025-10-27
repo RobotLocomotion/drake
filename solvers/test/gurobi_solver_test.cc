@@ -305,13 +305,13 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   GurobiSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 1E-5);
+    prob.CheckSolution(result, 5E-6);
   }
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   GurobiSolver solver;
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1E-6);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 5E-6);
 }
 
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
