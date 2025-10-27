@@ -160,7 +160,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       const auto solver_details =
           results.at(i).get_solver_details<GurobiSolver>();
       // This code is defined in
-      // https://docs.gurobi.com/projects/optimizer/en/current/reference/numericcodes/statuscodes.html
+      // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
       const int ITERATION_LIMIT = 7;
       EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
       EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));
