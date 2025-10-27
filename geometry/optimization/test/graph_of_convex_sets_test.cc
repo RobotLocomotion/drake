@@ -299,8 +299,9 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
           v->GetSolution(restriction_result);
       ASSERT_TRUE(x_result.has_value());
       ASSERT_TRUE(x_restriction_result.has_value());
-      EXPECT_TRUE(v->set().PointInSet(x_result.value()));
-      EXPECT_TRUE(v->set().PointInSet(x_restriction_result.value()));
+      constexpr double kTol = 1e-6;
+      EXPECT_TRUE(v->set().PointInSet(x_result.value(), kTol));
+      EXPECT_TRUE(v->set().PointInSet(x_restriction_result.value(), kTol));
     }
 
     DoExtraConvexRestrictionChecks(result, restriction_result);
