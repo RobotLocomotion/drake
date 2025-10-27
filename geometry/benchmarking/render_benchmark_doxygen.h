@@ -147,8 +147,8 @@ namespace render {
  The `Time` and `CPU` columns are measures of the average time it took to create
  a single frame for all the specified cameras. The `Iterations` indicates how
  often the action was performed to compute the average value. For more
- information see the [google benchmark
- documentation](https://github.com/google/benchmark).
+ information see the
+ [google benchmark documentation](https://github.com/google/benchmark).
 
  Now we can analyze the example output and draw some example inferences (not a
  complete set of valid inferences):
