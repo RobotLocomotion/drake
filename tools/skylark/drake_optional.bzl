@@ -1,4 +1,3 @@
-load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load("//tools/lint:cpplint.bzl", "cpplint_extra")
 load(":drake_cc.bzl", "drake_cc_googletest", "drake_cc_library")
 
@@ -11,19 +10,19 @@ def drake_cc_variant_library(
         name,
         *,
         opt_in_condition,
-        srcs_always = [],
+        srcs_always,
         srcs_enabled,
         srcs_disabled,
         hdrs,
         deps,
-        implementation_deps_always = [],
+        implementation_deps_always,
         implementation_deps_enabled,
         internal = False,
         visibility = None):
     """Declares a library with a uniform set of header files (typically just
     one header file) but with two different cc file implementations, depending
-    on a configuration setting. This is how we turn on/off specific solver or
-    render-engine back-end implementations.
+    on a configuration setting. This is how we turn on/off specific components
+    of our C++ implementation at build-time.
 
     The same hdrs are used unconditionally. The deps should list the
     dependencies for the header file(s), and thus are also unconditional.
@@ -32,7 +31,7 @@ def drake_cc_variant_library(
     which cc files to use.
 
     The sources listed in srcs_always contain definitions that are appropriate
-    whether or not a back-end is enabled, if such definitions are necessary.
+    whether or not a feature is enabled, if such definitions are necessary.
     The implementation_deps_always lists the dependencies of these files.
 
     The sources listed in srcs_enabled contain the code of the fully-featured
@@ -44,7 +43,7 @@ def drake_cc_variant_library(
 
     This rule enables linting of all of the mentioned source files, even if
     the compiler will not build them in the current configuration. We want all
-    files to be lint-free, even when the commercial solvers are disabled.
+    files to be lint-free, even when the feature is disabled.
 
     Additionally, declares a library {name}_disabled with the disabled flavor,
     intended for use by unit test checks of stub implementation even when the
@@ -86,24 +85,25 @@ def drake_cc_optional_library(
         name,
         *,
         opt_in_condition,
-        srcs = [],
+        srcs,
         hdrs,
         copts = None,
-        internal = False,
-        testonly = False,
+        defines = None,
         visibility = ["//visibility:private"],
         deps = None,
-        implementation_deps = None):
+        implementation_deps = None,
+        testonly = False):
     """Declares a private library (package-local, not installed) guarded by a
     configuration setting. When the configuration is disabled, the library is
     totally empty (but still a valid library label). This is used for helper
-    or utility code that's called by a fully-feataured back-end implementation.
+    or utility code that's called by a fully-featured implementation.
 
     The opt_in_condition specifies the configuration setting that chooses
     which cc files to use.
 
     This rule enables linting of all of the mentioned source files, even if
-    the compiler will not build them in the current configuration.
+    the compiler will not build them in the current configuration. We want all
+    files to be lint-free, even when the feature is disabled.
     """
     drake_cc_library(
         name = name,
@@ -115,18 +115,17 @@ def drake_cc_optional_library(
             opt_in_condition: hdrs,
             "//conditions:default": [],
         }),
-        # N.B. 'internal' (passed below) excludes the headers already.
-        install_hdrs_exclude = [] if internal else select({
+        install_hdrs_exclude = select({
             opt_in_condition: hdrs,
             "//conditions:default": [],
         }),
-        # N.B. 'internal' (passed below) adds this tag already.
-        tags = [] if internal else ["exclude_from_package"],
-        visibility = visibility,
+        defines = defines,
         copts = select({
             opt_in_condition: copts or [],
             "//conditions:default": [],
         }),
+        tags = ["exclude_from_package"],
+        visibility = visibility,
         deps = select({
             opt_in_condition: deps or [],
             "//conditions:default": [],
@@ -136,7 +135,6 @@ def drake_cc_optional_library(
             "//conditions:default": [],
         }),
         testonly = testonly,
-        internal = internal,
     )
     cpplint_extra(
         name = name + "_cpplint",
@@ -147,10 +145,12 @@ def drake_cc_optional_googletest(
         name,
         *,
         opt_in_condition,
-        tags = None,
+        timeout = None,
+        tags = [],
+        data = [],
         deps,
-        use_default_main = True,
-        **kwargs):
+        display = False,
+        use_default_main = True):
     """Declares a test that is not even compiled under certain configurations.
 
     This is intended only for testing of drake_cc_optional_library targets,
@@ -178,13 +178,18 @@ def drake_cc_optional_googletest(
             opt_in_condition: srcs,
             "//conditions:default": [],
         }),
+        timeout = timeout,
         tags = tags,
+        data = select({
+            opt_in_condition: data,
+            "//conditions:default": [],
+        }),
         deps = select({
             opt_in_condition: deps,
             "//conditions:default": opt_out_deps,
         }),
+        display = display,
         use_default_main = use_default_main,
-        **kwargs
     )
     cpplint_extra(
         name = name + "_cpplint",

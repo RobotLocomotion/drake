@@ -116,6 +116,7 @@ drake_cc_optional_library(
 drake_cc_optional_library(
     name = "internal_opengl_geometry",
     opt_in_condition = ":with_render_gl_and_linux",
+    srcs = [],
     hdrs = ["internal_opengl_geometry.h"],
     deps = [
         ":internal_opengl_context",
@@ -204,6 +205,7 @@ drake_cc_optional_library(
 drake_cc_optional_library(
     name = "internal_shader_program_data",
     opt_in_condition = ":with_render_gl_and_linux",
+    srcs = [],
     hdrs = ["internal_shader_program_data.h"],
     deps = [
         "//common:copyable_unique_ptr",
@@ -256,6 +258,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_opengl_context_test",
+    opt_in_condition = "//tools/skylark:linux",
     display = True,
     opt_in_condition = ":with_render_gl_and_linux",
     tags = [
@@ -289,6 +292,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_render_engine_gl_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//examples/scene_graph:models",
         "//geometry:test_gltf_files",
@@ -332,6 +336,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_shape_meshes_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -347,6 +352,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_shader_program_test",
+    opt_in_condition = "//tools/skylark:linux",
     display = True,
     opt_in_condition = ":with_render_gl_and_linux",
     tags = vtk_test_tags(),
@@ -361,6 +367,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "thread_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -378,22 +385,15 @@ drake_cc_optional_googletest(
     ],
 )
 
-selects.config_setting_group(
-    name = "with_render_gl_and_jammy",
-    match_all = [
-        ":enabled",
-        "//tools:ubuntu_jammy",
-    ],
-)
-
 drake_cc_optional_googletest(
     name = "multithread_safety_test",
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    # We'd prefer this to be enabled on all //tools/skylark:linux platforms.
+    opt_in_condition = "//tools:ubuntu_jammy",
     data = [
         "//geometry/render:test_models",
     ],
     display = True,
-    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
-    opt_in_condition = ":with_render_gl_and_jammy",
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
@@ -412,6 +412,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "internal_texture_library_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],

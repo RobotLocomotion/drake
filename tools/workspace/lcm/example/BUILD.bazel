@@ -9,6 +9,9 @@ load(
     "lcm_py_library",
 )
 
+# Remove everything here on 2026-02-01 along with LCM deprecation.
+# This directory is a regression test for that deprecated external.
+
 package(default_visibility = ["//visibility:private"])
 
 _LCM_PACKAGE = "package1.package2"
@@ -23,6 +26,7 @@ lcm_cc_library(
     aggregate_hdr = "package1/package2/package2.hpp",
     lcm_package = _LCM_PACKAGE,
     lcm_srcs = _LCM_SRCS,
+    show_macro_deprecation = False,
     # Disable Drake's add_lint_tests() for this library.
     # This line would not typically be required for non-Drake projects.
     tags = ["nolint"],
@@ -32,6 +36,7 @@ lcm_java_library(
     name = "java_lib",
     lcm_package = _LCM_PACKAGE,
     lcm_srcs = _LCM_SRCS,
+    show_macro_deprecation = False,
     # Disable Drake's add_lint_tests() for this library.
     # This line would not typically be required for non-Drake projects.
     tags = ["nolint"],
@@ -41,6 +46,7 @@ lcm_py_library(
     name = "py_lib",
     lcm_package = _LCM_PACKAGE,
     lcm_srcs = _LCM_SRCS,
+    show_macro_deprecation = False,
     # Disable Drake's add_lint_tests() for this library.
     # This line would not typically be required for non-Drake projects.
     tags = ["nolint"],
