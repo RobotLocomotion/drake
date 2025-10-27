@@ -157,30 +157,23 @@ use_repo(
     #
     "pybind11",
     #
-    # TODO(jwnimmer-tri) Move this to be internal (+ deprecation). However, it
-    # has bzlmod support so the rework will be a bit nuanced and attacked as a
-    # dedicated commit.
-    #
-    "lcm",
-    #
     # Deprecated for removal on 2026-02-01.
     #
+    "lcm",
     "x11",
 )
 
 # Load Java dependencies.
 
-# TODO(jwnimmer-tri) This is no longer used by Drake, but is kept around for
-# backwards compatibility for the to-be-deprecated `@lcm` external. It will be
-# deprecated for removal along with the entire @lcm repository soon enough.
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
-    name = "lcm_maven",
+    name = "drake_maven_internal",
     artifacts = [
+        # Used by @lcm_internal.
         "net.sf.jchart2d:jchart2d:3.3.2",
     ],
 )
-use_repo(maven, "lcm_maven")
+use_repo(maven, "drake_maven_internal")
 
 # Load developer dependencies that are modules.
 
