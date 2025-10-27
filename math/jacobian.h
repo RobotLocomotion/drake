@@ -19,7 +19,7 @@ namespace math {
    The derivative vector for each AutoDiffScalar in the output contains the
    derivatives with respect to all components of the argument @f$ x @f$.
 
-   The return type of this function is a matrix with the `best' possible
+   The return type of this function is a matrix with the 'best' possible
    AutoDiffScalar scalar type, in the following sense:
    - If the number of derivatives can be determined at compile time, the
      AutoDiffScalar derivative vector will have that fixed size.

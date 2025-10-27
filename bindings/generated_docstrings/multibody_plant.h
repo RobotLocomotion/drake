@@ -3160,8 +3160,8 @@ Raises:
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
-    solver is not SAP. (i.e. ``get_discrete_contact_solver() !=
-    DiscreteContactSolver::kSap``).)""";
+    solver is not SAP. (i.e. get_discrete_contact_solver() !=
+    DiscreteContactSolver::kSap).)""";
         } AddTendonConstraint;
         // Symbol: drake::multibody::MultibodyPlant::AddWeldConstraint
         struct /* AddWeldConstraint */ {
@@ -5518,8 +5518,8 @@ positions q of a specified model instance in a given Context.
 
 Note:
     q_out is a dense vector of dimension
-    ``num_positions(model_instance)' associated with `model_instance``
-    and is populated by copying from ``context``.
+    ``num_positions(model_instance)`` associated with
+    ``model_instance`` and is populated by copying from ``context``.
 
 Note:
     This function is guaranteed to allocate no heap.

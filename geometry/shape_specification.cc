@@ -81,11 +81,10 @@ std::string MeshToString(std::string_view class_name, const MeshSource& source,
 }
 
 void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
-  if ((scale.array().abs() < 1e-8).any()) {
-    throw std::logic_error(
-        fmt::format("{} |scale| cannot be < 1e-8 on any axis, given [{}].",
-                    source, fmt_eigen(scale.transpose())));
-  }
+  if ((scale.array().abs() >= 1e-8).all() && scale.allFinite()) return;
+  throw std::logic_error(
+      fmt::format("{} |scale| cannot be < 1e-8 on any axis, given [{}].",
+                  source, fmt_eigen(scale.transpose())));
 }
 
 }  // namespace

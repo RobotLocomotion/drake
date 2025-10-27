@@ -672,6 +672,9 @@ GTEST_TEST(ShapeTest, MeshAndConvexValidateScale) {
 // it forwards construction to the validating constructor with individual
 // parameters.
 GTEST_TEST(ShapeTest, NumericalValidation) {
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  constexpr double kNan = std::numeric_limits<double>::quiet_NaN();
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       Box(2, 0, 2), "Box width, depth, and height should all be > 0.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -691,6 +694,10 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "Capsule radius and length should both be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0),
+                              "Convex .scale. cannot be < 1e-8.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", kInf),
+                              "Convex .scale. cannot be < 1e-8.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", kNan),
                               "Convex .scale. cannot be < 1e-8.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Convex(InMemoryMesh{MemoryFile("a", ".a", "a")}, 0),
@@ -721,6 +728,10 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "and c should all be > 0.+");
 
   DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9),
+                              "Mesh .scale. cannot be < 1e-8.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", kInf),
+                              "Mesh .scale. cannot be < 1e-8.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", kNan),
                               "Mesh .scale. cannot be < 1e-8.*");
   DRAKE_EXPECT_THROWS_MESSAGE(Mesh(InMemoryMesh{MemoryFile("a", ".a", "a")}, 0),
                               "Mesh .scale. cannot be < 1e-8.*");

@@ -2324,10 +2324,10 @@ Raises:
 
 Parameter ``y``:
     The bilinear product between ``x`` and ``y`` will be replaced by
-    the corresponding term in ``W.
+    the corresponding term in ``W``.
 
 Raises:
-    RuntimeError if `y`` contains duplicate entries.
+    RuntimeError if ``y`` contains duplicate entries.
 
 Parameter ``W``:
     Bilinear product term x(i) * y(j) will be replaced by W(i, j). If

@@ -157,12 +157,9 @@ use_repo(
     #
     "pybind11",
     #
-    # Deprecated 2026-02-01.
-    #
-    "lcm",
-    #
     # Deprecated for removal on 2026-02-01.
     #
+    "lcm",
     "x11",
 )
 
@@ -170,12 +167,13 @@ use_repo(
 
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
-    name = "lcm_maven",
+    name = "drake_maven_internal",
     artifacts = [
+        # Used by @lcm_internal.
         "net.sf.jchart2d:jchart2d:3.3.2",
     ],
 )
-use_repo(maven, "lcm_maven")
+use_repo(maven, "drake_maven_internal")
 
 # Load developer dependencies that are modules.
 
@@ -206,11 +204,6 @@ single_version_override(
         "//tools/workspace/googletest:patches/add_printers_deps.patch",
         "//tools/workspace/googletest:patches/defines.patch",
     ],
-    # We must pin the same version as ~10 lines prior, because our patch to
-    # MODULE.bazel doesn't apply correctly to other versions of googletest,
-    # but Bazel's MVS selection will try to apply it anyway to all versions
-    # being considered when resolving the dependency graph.
-    version = "1.17.0",
 )
 
 bazel_dep(
