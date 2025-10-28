@@ -45,7 +45,7 @@ struct PooledSapParameters {
   // num_cliques.
   EigenPool<MatrixX<T>> A;
 
-  // The linear term in the cost, r = M₀ v₀ - δt k₀  + δt τ₀.
+  // The linear term in the cost, r = A v₀ - δt k₀
   VectorX<T> r;
 
   // Maps tree index to clique index, or -1 if the tree is anchored.
