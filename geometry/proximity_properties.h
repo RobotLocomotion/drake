@@ -112,7 +112,7 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
  *
  * @throws std::exception if `dissipation` is negative, `point_stiffness` is
  * not positive, of any of the contact material properties have already been
- * defined in ``properties`.
+ * defined in `properties`.
  * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(

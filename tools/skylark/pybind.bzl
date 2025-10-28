@@ -1,6 +1,6 @@
 load("//tools/install:install.bzl", "install")
 load("//tools/skylark:cc.bzl", "cc_binary")
-load("//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_googletest")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_test")
 load("//tools/skylark:py.bzl", "py_library")
 
@@ -270,65 +270,4 @@ def _get_package_info(base_package, sub_package = None):
         base_path_rel = base_path_rel,
         # Sub-package's path relative to base package's path.
         sub_path_rel = sub_path_rel,
-    )
-
-def drake_pybind_cc_googletest(
-        name,
-        cc_srcs = [],
-        cc_deps = [],
-        cc_copts = [],
-        py_srcs = [],
-        py_deps = [],
-        args = [],
-        visibility = None,
-        tags = []):
-    """Defines a C++ test (using `pybind`) which has access to Python
-    libraries. """
-    _check_cc_deps(cc_deps = cc_deps, testonly = True)
-    cc_name = name + "_cc"
-    if not cc_srcs:
-        cc_srcs = ["test/{}.cc".format(name)]
-    drake_cc_googletest(
-        name = cc_name,
-        srcs = cc_srcs,
-        deps = cc_deps + [
-            "//:drake_shared_library",
-            "//bindings/pydrake:pydrake_pybind",
-            "//tools/workspace/python:cc_libpython",
-            "@pybind11",
-        ],
-        copts = cc_copts,
-        use_default_main = False,
-        # Add 'manual', because we only want to run it with Python present.
-        tags = ["manual"] + tags,
-        visibility = visibility,
-    )
-
-    py_name = name + "_py"
-
-    # Expose as library, to make it easier to expose Bazel environment for
-    # external tools.
-    drake_py_library(
-        name = py_name,
-        srcs = py_srcs,
-        deps = py_deps,
-        testonly = 1,
-        visibility = visibility,
-    )
-
-    # Use this Python test as the glue for Bazel to expose the appropriate
-    # environment for the C++ binary.
-    py_main = "@drake//tools/skylark:py_env_runner.py"
-    drake_py_test(
-        name = name,
-        srcs = [py_main],
-        main = py_main,
-        data = [cc_name],
-        args = ["$(location {})".format(cc_name)] + args,
-        deps = [py_name],
-        tags = tags,
-        visibility = visibility,
-        # The C++ test isn't going to `import unittest`, but test dependencies
-        # such as numpy(!!) do so unconditionally.  We should allow that.
-        allow_import_unittest = True,
     )

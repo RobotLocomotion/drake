@@ -303,8 +303,9 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = DRAKE_DOXYGEN_CXX=1 \
                          HAVE_SPDLOG=1
 # =============================================================================
-# N.B. The spelling of the macro names between common/drake_copyable.h and this
-# file must be kept in sync!
+# N.B. The spelling of the macro names between common/drake_copyable.h,
+# common/drake_deprecated.h, common/default_scalars.h and this file must be
+# kept in sync!
 # =============================================================================
 # The following macros are carefully crafted to retain good markup when they
 # pass through Doxygen's preprocessor.
@@ -336,6 +337,15 @@ PREDEFINED            += "DRAKE_DEPRECATED(removal_date,message):= \
 /** (Deprecated.) \deprecated message <br> \
 This will be removed from Drake on or after removal_date. */ \
 "
+# N.B. The two macros below can't be parsed like the ones above, because the
+# fully-qualified class name is always passed to the macro instead of just the
+# unqualified name (so "\relates X" doesn't work). The template instantiation
+# is already indicated by Drake's @tparam_default_scalar and
+# @tparam_nonsymbolic_scalar documentation, so the additional documentation is
+# not needed. To avoid listing the macro as a function in the header files
+# where they're used, we'll define them as empty here.
+PREDEFINED            += DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(X):=
+PREDEFINED            += DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(X):=
 # =============================================================================
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES

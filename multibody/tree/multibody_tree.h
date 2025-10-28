@@ -2730,7 +2730,7 @@ class MultibodyTree {
   // `Js_v_WFpi_W` is either nullptr or a `3*p x n` matrix, where p is the
   // number of points in Fpi and n is the number of elements in 𝑠.
   // @throws std::exception if any of the following occurs:
-  // - The size of `p_WoFpi_W' differs from `3 x n`.
+  // - The size of `p_WoFpi_W` differs from `3 x n`.
   // - `Js_w_WF_W` and `Js_v_WFpi_W` are both nullptr.
   // - `Js_w_WF_W` is not nullptr and its size differs from `3 x n`.
   // - `Js_v_WFpi_W` is not nullptr and its size differs from `3*p x n`.

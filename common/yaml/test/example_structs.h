@@ -325,6 +325,24 @@ using EigenMatrix00Struct = EigenStruct<0, 0>;
 using EigenMatrixUpTo6Struct =
     EigenStruct<Eigen::Dynamic, Eigen::Dynamic, 6, 6>;
 
+template <int Cols>
+struct EigenArrayStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  EigenArrayStruct() {
+    value.resize(1, Cols);
+    value.setConstant(kNominalDouble);
+  }
+
+  explicit EigenArrayStruct(const Eigen::ArrayXXd& value_in)
+      : value(value_in) {}
+
+  Eigen::Array<double, Eigen::Dynamic, Cols> value;
+};
+
 using Variant4 =
     std::variant<std::string, double, DoubleStruct, EigenVecStruct>;
 
