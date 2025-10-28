@@ -596,42 +596,36 @@ endif()
 
 set(BAZEL_CONFIG)
 
-# Defines options for opting out of certain features in Drake's build, and
-# finds the spelling to pass to Bazel. Options default to `ON` (i.e., opt-in).
-# This is currently used for the open-source solvers and render engines.
-function(define_with_feature_option feature)
-  cmake_parse_arguments(ARG "" "DISPLAY_NAME" "" ${ARGN})
-  string(TOUPPER "WITH_${feature}" OPTION_NAME)
-  string(TOLOWER "with_${feature}" OPTION_BAZEL_FLAG)
-  if(NOT ARG_DISPLAY_NAME)
-    set(ARG_DISPLAY_NAME "${feature}")
-  endif()
-  option("${OPTION_NAME}" "Build with support for ${ARG_DISPLAY_NAME}" ON)
-  if(${OPTION_NAME})
+# Defines options for opting out of certain features in Drake's build. Options
+# default to `ON` (i.e., opt-in). This is currently used for the open-source
+# solvers and render engines. The spelling of `option_name` should
+# lowercase-match the spelling of the corresponding Bazel flag.
+function(define_bool_option option_name display_name)
+  string(TOLOWER "${option_name}" option_bazel_flag)
+  option("${option_name}" "Build with support for ${display_name}" ON)
+  if(${option_name})
     string(APPEND BAZEL_CONFIG
-      " --@drake//tools/flags:${OPTION_BAZEL_FLAG}=True")
+      " --@drake//tools/flags:${option_bazel_flag}=True")
   else()
     string(APPEND BAZEL_CONFIG
-      " --@drake//tools/flags:${OPTION_BAZEL_FLAG}=False")
+      " --@drake//tools/flags:${option_bazel_flag}=False")
   endif()
   set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
 endfunction()
 
 if(NOT APPLE)
-  define_with_feature_option("RENDER_GL" DISPLAY_NAME "RenderEngineGl")
+  define_bool_option("WITH_RENDER_GL" "RenderEngineGl")
 endif()
-define_with_feature_option("RENDER_VTK"
-  DISPLAY_NAME "RenderEngineVtk")
-define_with_feature_option("RENDER_GLTF_CLIENT"
-  DISPLAY_NAME "RenderEngineGltfClient")
+define_bool_option("WITH_RENDER_VTK" "RenderEngineVtk")
+define_bool_option("WITH_RENDER_GLTF_CLIENT" "RenderEngineGltfClient")
 
-define_with_feature_option("Clarabel")
-define_with_feature_option("CLP")
-define_with_feature_option("CSDP")
-define_with_feature_option("Ipopt")
-define_with_feature_option("NLopt")
-define_with_feature_option("OSQP")
-define_with_feature_option("SCS")
+define_bool_option("WITH_CLARABEL" "Clarabel")
+define_bool_option("WITH_CLP" "CLP")
+define_bool_option("WITH_CSDP" "CSDP")
+define_bool_option("WITH_IPOPT" "Ipopt")
+define_bool_option("WITH_NLOPT" "NLopt")
+define_bool_option("WITH_OSQP" "OSQP")
+define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
