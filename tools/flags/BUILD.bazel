@@ -345,8 +345,8 @@ bool_flag(
 # words, we cannot guarantee Drake's correctness when a default-enabled render
 # engine is opted-out of.
 #
-# See `RenderEngineFoo::kHasRenderEngineFoo` (e.g.,
-# `RenderEngineGl::kHasRenderEngineGl)` to retrieve these settings at runtime.
+# See `geometry::kHasRenderEngineFoo` (e.g., `geometry::kHasRenderEngineGl)` to
+# retrieve these settings at runtime.
 
 bool_flag(
     name = "with_render_gl",
