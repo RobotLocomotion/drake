@@ -301,6 +301,7 @@ void PooledSapBuilder<T>::AllocatePatchConstraints(
   DRAKE_ASSERT(model != nullptr);
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
+  const int num_surfaces = surfaces_.size();
 
   // First we'll get the number of contact pairs for point contact. There is one
   // pair per contact patch with point contact.
@@ -308,9 +309,36 @@ void PooledSapBuilder<T>::AllocatePatchConstraints(
   std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
 
   // Now we'll do hydro contact. With hydro we typically have multiple contact
-  // pairs in each patch.
-  for (const auto& surface : surfaces_) {
-    num_pairs_per_patch.push_back(surface.num_faces());
+  // pairs in each patch. Additionally, we'll track which faces have a non-zero
+  // hydro contribution to later ignore very small faces.
+  auto& contributing_hydro_faces =
+      patches.get_mutable_contributing_hydro_faces();
+  contributing_hydro_faces.clear();
+  contributing_hydro_faces.resize(num_surfaces);
+
+  for (int surface = 0; surface < num_surfaces; ++surface) {
+    const auto& s = surfaces_[surface];
+    const bool M_is_compliant = s.HasGradE_M();
+    const bool N_is_compliant = s.HasGradE_N();
+
+    std::vector<int>& contributing_faces = contributing_hydro_faces[surface];
+    contributing_faces.clear();
+    for (int face = 0; face < s.num_faces(); ++face) {
+      const Vector3<T>& nhat_NM_W = s.face_normal(face);
+      const T gM = M_is_compliant ? s.EvaluateGradE_M_W(face).dot(nhat_NM_W)
+                                  : std::numeric_limits<double>::infinity();
+      const T gN = N_is_compliant ? -s.EvaluateGradE_N_W(face).dot(nhat_NM_W)
+                                  : std::numeric_limits<double>::infinity();
+
+      // Ignore pairs where the contribution is very small
+      constexpr double kGradientEpsilon = 1.0e-14;
+      if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+        continue;
+      }
+      contributing_faces.push_back(face);
+    }
+
+    num_pairs_per_patch.push_back(ssize(contributing_faces));
   }
 
   patches.Resize(num_pairs_per_patch);
@@ -534,6 +562,10 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
+  const std::vector<std::vector<int>>& contributing_hydro_faces =
+      patches.get_contributing_hydro_faces();
+  DRAKE_DEMAND(ssize(contributing_hydro_faces) == num_surfaces);
+
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     // To get the patch index, we need to account for the fact that there may
     // be some point contact pairs that get added before this
@@ -583,7 +615,10 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     patches.AddPatch(patch_index, bodyA->index(), bodyB->index(), d,
                      mu.static_friction(), mu.dynamic_friction(), p_AB_W);
 
-    for (int face = 0; face < s.num_faces(); ++face) {
+    for (int pair_index = 0;
+         pair_index < ssize(contributing_hydro_faces[surface_index]);
+         ++pair_index) {
+      int face = contributing_hydro_faces[surface_index][pair_index];
       const T Ae = s.area(face);  // Face element area.
       const Vector3<T>& nhat_NM_W = s.face_normal(face);
       const T gM = M_is_compliant ? s.EvaluateGradE_M_W(face).dot(nhat_NM_W)
@@ -591,14 +626,6 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
       const T gN = N_is_compliant ? -s.EvaluateGradE_N_W(face).dot(nhat_NM_W)
                                   : std::numeric_limits<double>::infinity();
 
-      // TODO(vincekurtz): add this check back, which eliminates hydro
-      // constraints with a very small contribution. For now it's just
-      // overcomplicating the logic of how many pairs to pre-allocate for each
-      // contact patch.
-      // constexpr double kGradientEpsilon = 1.0e-14;
-      // if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
-      //   continue;
-      // }
       const T g = 1.0 / (1.0 / gM + 1.0 / gN);
       const Vector3<T>& p_WC = s.centroid(face);
       const Vector3<T> p_BoC_W = p_WC - p_WBo;
@@ -615,7 +642,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
       const T fn0 = Ae * p0;
       const T k = Ae * g;
 
-      patches.AddPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k);
+      patches.AddPair(patch_index, pair_index, p_BoC_W, nhat_AB_W, fn0, k);
     }
   }
 }

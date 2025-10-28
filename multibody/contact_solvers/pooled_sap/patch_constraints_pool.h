@@ -151,6 +151,15 @@ class PooledSapModel<T>::PatchConstraintsPool {
     vs2_ = stiction_tolerance_ * stiction_tolerance_;
   }
 
+  // Faces with a non-negligible hydroelastic contribution, sorted by hydro
+  // surface index.
+  std::vector<std::vector<int>>& get_mutable_contributing_hydro_faces() {
+    return contributing_hydro_faces_;
+  }
+  const std::vector<std::vector<int>>& get_contributing_hydro_faces() const {
+    return contributing_hydro_faces_;
+  }
+
  private:
   using ConstJacobianView =
       typename PooledSapModel<T>::ConstSpatialVelocityJacobianView;
@@ -192,9 +201,14 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
   const PooledSapModel<T>* model_{nullptr};  // The parent model.
 
-  /* Data per patch. Indexed by patch index p < num_patches() */
+  // Data per patch. Indexed by patch index p < num_patches()
   std::vector<int> num_pairs_;    // Number of pairs per patch.
   std::vector<int> num_cliques_;  // Num cliques. One or two.
+
+  // Face indices that have a non-zero hydroelastic contribution, sorted by
+  // hydro surface index. Used to identify hydro pairs with a
+  // non-zero contribution (very small faces are ignored).
+  std::vector<std::vector<int>> contributing_hydro_faces_;
 
   // .first is always body B, which always corresponds to a valid (positive)
   // clique.
@@ -206,7 +220,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<T> static_friction_;  // Friction coefficients
   std::vector<T> dynamic_friction_;
 
-  /* Data per patch and per pair. Indexed by patch_pair_index(p, k). */
+  // Data per patch and per pair. Indexed by patch_pair_index(p, k).
   std::vector<int> pair_data_start_;  // Start into arrays indexed by
                                       // patch_pair_index(p, k).
   /* Returns index into data per patch and per contact pair.
