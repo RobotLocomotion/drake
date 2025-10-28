@@ -560,9 +560,6 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
 
-  // Conservatively allocate scratch space for intermediate matrices.
-  // TODO(vincekurtz): consider doing this earlier on, maybe at construction?
-  // data.scratch().Clear();
   auto& H_BB_pool = data.scratch().H_BB_pool;
   auto& H_AA_pool = data.scratch().H_AA_pool;
   auto& H_AB_pool = data.scratch().H_AB_pool;
