@@ -1397,7 +1397,7 @@ class ThreeBoxes : public GraphOfConvexSetsTestFixture {
 
   void DoExtraConvexRestrictionChecks(
       const MathematicalProgramResult& result,
-      const MathematicalProgramResult& restriction_result) {
+      const MathematicalProgramResult& restriction_result) override {
     EXPECT_FALSE(sink_->GetSolution(result).has_value());
     EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
   }
