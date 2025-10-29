@@ -319,6 +319,15 @@ drake_cc_optional_googletest(
 )
 
 drake_cc_googletest(
+    name = "internal_no_loaders_test",
+    deps = [
+        # The ":factory_disabled" target is created by the
+        # drake_cc_variant_library(...) stanza above.
+        ":internal_loaders_disabled",
+    ],
+)
+
+drake_cc_googletest(
     name = "internal_no_render_engine_gl_test",
     deps = [
         # The ":factory_disabled" target is created by the
