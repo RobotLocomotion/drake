@@ -189,7 +189,7 @@ Adjusting open-source dependencies:
   the build. See `geometry::kHasRenderEngineGl` to retrieve this setting at
   runtime.
   * This option is not available on macOS; `geometry::kHasRenderEngineGl` will
-    will be false.
+    always be false.
 * `WITH_RENDER_GLTF_CLIENT` (default `ON`). When `ON`, enables the
   `RenderEngineGltfClient` in the build. See
   `geometry::kHasRenderEngineGltfClient` to retrieve this setting at runtime.
