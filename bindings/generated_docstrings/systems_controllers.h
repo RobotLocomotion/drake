@@ -1425,7 +1425,7 @@ Parameter ``kd``:
 
 Raises:
     RuntimeError if ``kp``, ``ki`` and ``kd`` have different
-    dimensions or `P_x.row() != 2 * |kp|'.)""";
+    dimensions or ``P_x.row() != 2 * |kp|``.)""";
             // Source: drake/systems/controllers/pid_controller.h
             const char* doc_5args =
 R"""(Constructs a PID controller. This assumes that

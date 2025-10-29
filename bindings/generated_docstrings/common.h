@@ -1084,7 +1084,7 @@ characters.)""";
       struct /* filename_hint */ {
         // Source: drake/common/memory_file.h
         const char* doc =
-R"""(Returns the notional "filename" for this file`.)""";
+R"""(Returns the notional "filename" for this ``file``.)""";
       } filename_hint;
       // Symbol: drake::MemoryFile::sha256
       struct /* sha256 */ {

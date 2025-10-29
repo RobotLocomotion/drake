@@ -2173,7 +2173,7 @@ method computes the pose ``X_BQ`` of frame Q in the body frame B to
 which this frame is attached. In other words, if the pose of ``this``
 frame F in the body frame B is ``X_BF``, this method computes the pose
 ``X_BQ`` of frame Q in the body frame B as ``X_BQ = X_BF * X_FQ``. In
-particular, if ``this`` **is**` the body frame B, i.e. ``X_BF`` is the
+particular, if ``this`` **is** the body frame B, i.e. ``X_BF`` is the
 identity transformation, this method directly returns ``X_FQ``.
 Specific frame subclasses can override this method to provide faster
 implementations if needed.)""";

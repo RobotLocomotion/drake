@@ -19,7 +19,7 @@ namespace symbolic {
  * corresponding term in `W`.
  * @throws std::exception if `x` contains duplicate entries.
  * @param y The bilinear product between `x` and `y` will be replaced by the
- * corresponding term in `W.
+ * corresponding term in `W`.
  * @throws std::exception if `y` contains duplicate entries.
  * @param W Bilinear product term x(i) * y(j) will be replaced by W(i, j). If
  * W(i,j) is not a single variable, but an expression, then this expression

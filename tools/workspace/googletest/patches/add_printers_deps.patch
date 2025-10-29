@@ -9,11 +9,9 @@ Reasoning for not upstreaming this patch: Drake-specific dependency.
 
 --- MODULE.bazel
 +++ MODULE.bazel
-@@ -35,3 +35,4 @@
-     compatibility_level = 1,
+@@ -5,1 +5,2 @@
  )
 +bazel_dep(name = "drake")
- 
 
 --- BUILD.bazel
 +++ BUILD.bazel

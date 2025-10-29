@@ -204,11 +204,6 @@ single_version_override(
         "//tools/workspace/googletest:patches/add_printers_deps.patch",
         "//tools/workspace/googletest:patches/defines.patch",
     ],
-    # We must pin the same version as ~10 lines prior, because our patch to
-    # MODULE.bazel doesn't apply correctly to other versions of googletest,
-    # but Bazel's MVS selection will try to apply it anyway to all versions
-    # being considered when resolving the dependency graph.
-    version = "1.17.0",
 )
 
 bazel_dep(
