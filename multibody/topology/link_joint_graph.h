@@ -434,7 +434,7 @@ class LinkJointGraph {
 
   /* After the SpanningForest has been built, returns groups of Links that are
   welded together, as WeldedLinksAssembly objects. Each such assembly has no
-  internal degrees of freedom and will move as a single rigid objet. The first
+  internal degrees of freedom and will move as a single rigid object. The first
   entry in each WeldedLinksAssembly is the _active link_, whose non-weld
   inboard Joint moves the whole assembly. (World is considered the active link
   for the welded-to-World WeldedLinksAssembly.) The remaining links are

@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -11,6 +13,36 @@ namespace internal {
 
 // TODO(sherm1) Add more tests. This doesn't check everything.
 
+namespace {
+void RecordLevelOfOutboardLinks(const SpanningForest& forest,
+                                JointIndex previous_joint_index,
+                                LinkIndex inboard_index,
+                                std::map<LinkIndex, int>* link_to_level) {
+  DRAKE_DEMAND(link_to_level->contains(inboard_index));
+  const LinkJointGraph::Link& inboard_link =
+      forest.link_by_index(inboard_index);
+  const int inboard_level = (*link_to_level)[inboard_index];
+  for (const auto& joint_index : inboard_link.joints()) {
+    if (previous_joint_index.is_valid() && joint_index == previous_joint_index)
+      continue;  // Skip the one that got us here.
+    const LinkJointGraph::Joint& joint = forest.joint_by_index(joint_index);
+    if (!joint.is_weld()) continue;
+    const LinkIndex outboard_link_index = joint.other_link_index(inboard_index);
+    if (link_to_level->contains(outboard_link_index)) {
+      const LinkJointGraph::Link& outboard_link =
+          forest.link_by_index(outboard_link_index);
+      // We found a loop :(
+      std::cout << fmt::format("  *** loop: link {} {} -> {} {}\n",
+                               inboard_index, inboard_link.name(),
+                               outboard_link_index, outboard_link.name());
+      continue;  // TODO(sherm1) figure out what to do
+    }
+    (*link_to_level)[outboard_link_index] = inboard_level + 1;
+    RecordLevelOfOutboardLinks(forest, joint_index, outboard_link_index,
+                               &*link_to_level);
+  }
+}
+}  // namespace
 void SpanningForest::SanityCheckForest() const {
   // Should always have a LinkJointGraph backpointer even if empty.
   DRAKE_THROW_UNLESS(data_.graph != nullptr);
@@ -78,6 +110,37 @@ void SpanningForest::SanityCheckForest() const {
       if (!link.is_massless()) all_links_are_massless = false;
     }
     DRAKE_THROW_UNLESS(assembly.is_massless == all_links_are_massless);
+  }
+
+  /* Check that Links in a WeldedLinksAssembly are listed in inboard->outboard
+  order. Starting with the active (most inboard) link which we'll assign
+  level 0, we'll determine a level for each link equal to its distance
+  (number of edges) from the active link. Then we'll go through the
+  list to check that level(linkᵢ) <= level(linkᵢ₊₁) ∀ᵢ. */
+  // TODO(sherm1) Is inboard->outboard sufficient or do we have to process
+  //   terminal links first?
+  for (WeldedLinksAssemblyIndex assembly_index(0);
+       assembly_index < ssize(graph().welded_links_assemblies());
+       ++assembly_index) {
+    const LinkJointGraph::WeldedLinksAssembly& assembly =
+        graph().welded_links_assemblies(assembly_index);
+    std::cout << "Assembly " << assembly_index << "\n";
+    std::map<LinkIndex, int> link_to_level;
+    const LinkIndex active_link_index = assembly.links.at(0);
+    link_to_level[active_link_index] = 0;
+    RecordLevelOfOutboardLinks(*this, JointIndex(), active_link_index,
+                               &link_to_level);
+
+    for (const LinkIndex& link_index : assembly.links) {
+      const LinkJointGraph::Link& link = link_by_index(link_index);
+      if (!link_to_level.contains(link_index)) {
+        std::cout << fmt::format("  -->link {} {} level missing\n", link_index,
+                                 link.name());
+        continue;
+      }
+      std::cout << fmt::format("  {} {} : {}\n", link_index, link.name(),
+                               link_to_level[link_index]);
+    }
   }
 
   /* Check that all the Links and Joints have Mobods that point back to them. */
