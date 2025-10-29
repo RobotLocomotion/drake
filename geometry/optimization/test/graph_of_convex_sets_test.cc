@@ -273,7 +273,8 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
   Vertex* source_{nullptr};
   Vertex* target_{nullptr};
 
-  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+  void CheckConvexRestriction(const MathematicalProgramResult& result,
+                              double kCostTol) {
     MathematicalProgramResult restriction_result = DoSolveConvexRestriction();
 
     log()->info("Solved convex restriction with {}",
@@ -286,14 +287,19 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
     }
     EXPECT_TRUE(restriction_result.is_success());
     EXPECT_NEAR(result.get_optimal_cost(),
-                restriction_result.get_optimal_cost(), 1e-4);
+                restriction_result.get_optimal_cost(), kCostTol);
 
     // Don't check that the values are exactly the same in case the convex
     // program has multiple solutions. Instead we just check that both results
     // achieve the same cost and are feasible for the convex sets
     for (const auto* v : {source_, target_}) {
+      // Relax the expected cost tolerance for the individual vertex values
+      // relative to the tolerance of the overall cost. This is reasonable as
+      // the norm of a vector is always less than the sum of the norm of the
+      // components.
       EXPECT_NEAR(v->GetSolutionCost(result).value(),
-                  v->GetSolutionCost(restriction_result).value(), 1e-6);
+                  v->GetSolutionCost(restriction_result).value(),
+                  kCostTol * 10);
       const std::optional<Eigen::VectorXd> x_result = v->GetSolution(result);
       const std::optional<Eigen::VectorXd> x_restriction_result =
           v->GetSolution(restriction_result);
@@ -801,6 +807,10 @@ class ThreePoints : public GraphOfConvexSetsTestFixture {
 
     options_.preprocessing = false;
     options_.convex_relaxation = true;
+  }
+
+  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+    GraphOfConvexSetsTestFixture::CheckConvexRestriction(result, 1e-4);
   }
 
   MathematicalProgramResult DoSolveConvexRestriction() override {
@@ -1388,6 +1398,10 @@ class ThreeBoxes : public GraphOfConvexSetsTestFixture {
 
     options_.preprocessing = true;
     options_.convex_relaxation = true;
+  }
+
+  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+    GraphOfConvexSetsTestFixture::CheckConvexRestriction(result, 1e-6);
   }
 
   MathematicalProgramResult DoSolveConvexRestriction() override {
