@@ -27,6 +27,14 @@ std::string FormatEigenMatrix(
   requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
            std::is_same_v<Scalar, std::string>;
 
+/* Support for `fmt_eigen(x)` in `DRAKE_THROW_UNLESS(condition, fmt_eigen(x))`.
+This is an overload of `StringifyErrorDetailValue()` (as declared in
+drake_assert.h) for fmt_eigen_ref. */
+template <typename Scalar>
+std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value) {
+  return fmt::to_string(value);
+}
+
 }  // namespace internal
 
 /** When passing an Eigen::Matrix to fmt, use this wrapper function to instruct
