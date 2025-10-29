@@ -744,15 +744,16 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   if (DoIsEmpty()) {
     return true;
   }
-  if (A_.rows() == 0) {
-    // The full space can only be contained in another HPolyhedron if the other
-    // HPolyhedron is also the full space.
-    return other.A().rows() == 0;
-  }
   if (other.A().rows() == 0) {
     // If the other polytope is the full space, then we are certainly contained.
     return true;
   }
+  if (A_.rows() == 0 && !other.A().isZero()) {
+    // The full space can only be contained in another HPolyhedron if the other
+    // HPolyhedron is also the full space. The other polytope cannot be the full space if its A matrix is non-zero.
+    return false;
+  }
+  
 
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
