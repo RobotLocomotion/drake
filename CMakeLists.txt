@@ -597,9 +597,12 @@ endif()
 set(BAZEL_CONFIG)
 
 # Defines options for opting out of certain features in Drake's build. Options
-# default to `ON` (i.e., opt-in). This is currently used for the open-source
-# solvers and render engines. The spelling of `option_name` should
-# lowercase-match the spelling of the corresponding Bazel flag.
+# default to ON, i.e., all features are enabled by default but the user can
+# opt-out by specifying ${option_name}=OFF.
+#
+# This is currently used for the open-source solvers and render engines. The
+# spelling of `option_name` should lowercase-match the spelling of the
+# corresponding Bazel flag.
 function(define_bool_option option_name display_name)
   string(TOLOWER "${option_name}" option_bazel_flag)
   option("${option_name}" "Build with support for ${display_name}" ON)
