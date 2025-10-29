@@ -62,6 +62,44 @@ GTEST_TEST(DrakeThrowTest, ThrowWithValues) {
                               ".*a = 1.5, b = 2.5, c = 3.5, d = 4.5.");
 }
 
+GTEST_TEST(DrakeThrowTest, ThrowWithFmtEigen) {
+  const Eigen::Vector3d vec(1.5, 2.5, 3.5);
+  const Eigen::Matrix2d mat = Eigen::Matrix2d::Identity();
+
+  using drake::fmt_eigen;
+
+  // Ensure that we can pass in a fmt_eigen_ref value expression.
+  auto do_throw = [&](int case_number) {
+    switch (case_number) {
+      case 1:
+        DRAKE_THROW_UNLESS(false, fmt_eigen(vec));
+        return;
+      case 2:
+        DRAKE_THROW_UNLESS(false, fmt_eigen(vec.transpose()));
+        return;
+      case 3:
+        DRAKE_THROW_UNLESS(false, drake::fmt_eigen(vec.transpose()));
+        return;
+      case 4:
+        DRAKE_THROW_UNLESS(false, fmt_eigen(mat));
+        return;
+    }
+    DRAKE_UNREACHABLE();
+  };
+
+  // Note: we're trying to ignore *how* the vector gets formatted and just
+  // confirming that there's a sequence of numbers starting with 1 and ending
+  // with 3.5.
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(1),
+                              ".*vec = .*1[^]*3.5.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(2),
+                              ".*vec.transpose\\(\\) = .*1[^]*3.5.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(3),
+                              ".*vec.transpose\\(\\) = .*1[^]*3.5.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(4),
+                              ".*mat = .*1[^]*1.*");
+}
+
 // We explicitly format some built-in types a certain way, confirm they get it.
 GTEST_TEST(DrakeThrowTest, BuiltInFormatting) {
   auto throw_error = [](const auto& value) {
