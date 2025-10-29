@@ -5,6 +5,7 @@ To see this interactively:
 """
 
 import os
+import webbrowser
 
 # To be a meaningful unit test, we must render the figure somehow.
 # The Agg backend (creating a PNG image) is suitably cross-platform.
@@ -14,7 +15,6 @@ os.environ["MPLBACKEND"] = "Agg"  # noqa
 # Now that the environment is set up, it's safe to import matplotlib, etc.
 import matplotlib.pyplot as plt
 import numpy as np
-import webbrowser
 
 from pydrake.math import BarycentricMesh
 

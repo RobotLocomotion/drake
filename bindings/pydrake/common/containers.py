@@ -1,7 +1,8 @@
 """Provides extensions for containers of Drake-related objects."""
 
-import numpy as np
 import re
+
+import numpy as np
 
 
 class _EqualityProxyBase:

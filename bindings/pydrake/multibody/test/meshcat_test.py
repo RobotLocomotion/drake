@@ -1,11 +1,3 @@
-from pydrake.multibody.meshcat import (
-    ContactVisualizer_,
-    ContactVisualizerParams,
-    JointSliders,
-    _HydroelasticContactVisualizer,
-    _PointContactVisualizer,
-)
-
 import copy
 import unittest
 
@@ -20,6 +12,13 @@ from pydrake.common.test_utilities import (
 from pydrake.geometry import (
     Meshcat,
     Rgba,
+)
+from pydrake.multibody.meshcat import (
+    ContactVisualizer_,
+    ContactVisualizerParams,
+    JointSliders,
+    _HydroelasticContactVisualizer,
+    _PointContactVisualizer,
 )
 from pydrake.multibody.parsing import (
     Parser,

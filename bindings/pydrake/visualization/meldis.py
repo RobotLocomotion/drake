@@ -29,8 +29,8 @@ import webbrowser
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.common.yaml import yaml_load_typed as _yaml_load_typed
-from pydrake.visualization._meldis import Meldis as _Meldis
 from pydrake.visualization._meldis import _DEFAULT_MESHCAT_PARAMS
+from pydrake.visualization._meldis import Meldis as _Meldis
 
 
 def _available_browsers():

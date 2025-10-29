@@ -1,4 +1,4 @@
-import pydrake.visualization as mut
+import pydrake.visualization as mut  # ruff: isort: skip
 
 import unittest
 

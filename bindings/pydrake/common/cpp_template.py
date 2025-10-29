@@ -5,7 +5,7 @@ import types
 
 from pydrake import _is_building_documentation
 from pydrake.common import _MangledName, pretty_class_name
-from pydrake.common.cpp_param import get_param_names, get_param_canonical
+from pydrake.common.cpp_param import get_param_canonical, get_param_names
 from pydrake.common.deprecation import _warn_deprecated
 
 

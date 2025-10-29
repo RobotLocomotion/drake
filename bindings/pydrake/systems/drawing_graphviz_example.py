@@ -5,6 +5,7 @@ To see this interactively:
 """
 
 import os
+import webbrowser
 
 # We must render the figures somehow.
 # The Agg backend (creating a PNG image) is suitably cross-platform.
@@ -13,7 +14,6 @@ os.environ["MPLBACKEND"] = "Agg"  # noqa
 
 # Now that the environment is set up, it's safe to import matplotlib, etc.
 import matplotlib.pyplot as plt
-import webbrowser
 
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph

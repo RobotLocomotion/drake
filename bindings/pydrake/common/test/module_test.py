@@ -1,3 +1,6 @@
+import pydrake.common as mut  # ruff: isort: skip
+import pydrake.common._testing as mut_testing  # ruff: isort: skip
+
 import copy
 import os
 import pickle
@@ -6,10 +9,8 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-import pydrake.common as mut
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
-import pydrake.common._testing as mut_testing
 
 
 class TestCommon(unittest.TestCase):

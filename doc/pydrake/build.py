@@ -7,9 +7,6 @@ import os
 from os.path import join
 import sys
 
-import pydrake._all_everything  # noqa: F401 (unused-import)
-from pydrake.common import _MangledName
-
 from doc.defs import (
     check_call,
     main,
@@ -17,6 +14,8 @@ from doc.defs import (
     symlink_input,
     verbose,
 )
+import pydrake._all_everything  # noqa: F401 (unused-import)
+from pydrake.common import _MangledName
 
 
 def _get_submodules(name):

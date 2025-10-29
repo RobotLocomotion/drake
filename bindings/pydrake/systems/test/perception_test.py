@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+
 import numpy as np
 
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix

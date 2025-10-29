@@ -3,9 +3,9 @@ symbol visibility while doing so using `nmedit` to mark everything hidden.
 """
 
 import argparse
+from pathlib import Path
 import subprocess
 import tempfile
-from pathlib import Path
 
 
 def _rewrite(*, input: Path, output: Path, temp: Path):

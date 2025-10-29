@@ -33,6 +33,7 @@ from the Drake source tree.
 """
 
 # ruff: noqa: F401,F403 (unused-import, import-star)
+# ruff: isort: skip_file
 
 # Normal symbols.
 from . import getDrakePath

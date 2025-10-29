@@ -1,16 +1,17 @@
+import pydrake.planning as mut  # ruff: isort: skip
+
 import unittest
 
 import numpy as np
 import scipy.sparse as sp
 
-import pydrake.planning as mut
-from pydrake.solvers import (
-    SolverOptions,
-    CommonSolverOption,
-    MosekSolver,
-    GurobiSolver,
-)
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.solvers import (
+    CommonSolverOption,
+    GurobiSolver,
+    MosekSolver,
+    SolverOptions,
+)
 
 
 def GurobiOrMosekSolverAvailable():

@@ -5,8 +5,8 @@ import unittest
 from pydrake.common import RandomGenerator
 from pydrake.systems.analysis import (
     MonteCarloSimulation,
-    RandomSimulationResult,
     RandomSimulation,
+    RandomSimulationResult,
     Simulator,
 )
 from pydrake.systems.primitives import ConstantVectorSource

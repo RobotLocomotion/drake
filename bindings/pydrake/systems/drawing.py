@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 
 from pydrake.common import temp_directory
 
-
 # TODO(eric.cousineau): Move `plot_graphviz` to something more accessible to
 # `call_python_client`.
 

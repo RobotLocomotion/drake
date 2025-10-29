@@ -8,6 +8,7 @@ lifetime of objects, eventually lock down capabilities as they are introduced.
 
 import gc
 import unittest
+
 import numpy as np
 
 from pydrake.systems.analysis import (

@@ -7,9 +7,9 @@ import functools
 from http.server import SimpleHTTPRequestHandler
 import os.path
 from os.path import join
-from socketserver import ThreadingTCPServer
 import shlex
 import shutil
+from socketserver import ThreadingTCPServer
 import subprocess
 from subprocess import PIPE, STDOUT
 import sys

@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation as mut
+import pydrake.manipulation as mut  # ruff: isort: skip
 
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.manipulation import (
+    ApplyDriverConfigs,
+    ApplyNamedPositionsAsDefaults,
+)
 from pydrake.multibody.parsing import (
     LoadModelDirectives,
     Parser,
     ProcessModelDirectives,
-)
-from pydrake.manipulation import (
-    ApplyDriverConfigs,
-    ApplyNamedPositionsAsDefaults,
 )
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.framework import DiagramBuilder

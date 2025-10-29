@@ -6,17 +6,18 @@ The ball is dropped on an edge of the paddle and bounces off.
 """
 
 import argparse
+
 import numpy as np
 
-from pydrake.math import RigidTransform
-from pydrake.math import RollPitchYaw
+from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import AddMultibodyPlant
-from pydrake.multibody.plant import MultibodyPlantConfig
-from pydrake.systems.analysis import ApplySimulatorConfig
-from pydrake.systems.analysis import Simulator
-from pydrake.systems.analysis import SimulatorConfig
-from pydrake.systems.analysis import PrintSimulatorStatistics
+from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
+from pydrake.systems.analysis import (
+    ApplySimulatorConfig,
+    PrintSimulatorStatistics,
+    Simulator,
+    SimulatorConfig,
+)
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import VectorLogSink
 from pydrake.visualization import AddDefaultVisualization

@@ -13,6 +13,7 @@ import sys
 import trace
 import unittest
 import warnings
+
 import xmlrunner
 
 try:
@@ -244,7 +245,6 @@ def traced(func, ignoredirs=None):
      Python code outside of the system prefix."""
     import functools
     import sys
-    import trace
     if ignoredirs is None:
         ignoredirs = ["/usr", sys.prefix]
     tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)

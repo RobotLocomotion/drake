@@ -1,18 +1,19 @@
-import unittest
-
-import pydrake.planning as mut
-from pydrake.common import RandomGenerator, Parallelism
-from pydrake.planning import (
-    RobotDiagramBuilder,
-    SceneGraphCollisionChecker,
-    IrisNp2Options,
-    IrisZoOptions,
-)
-from pydrake.solvers import MosekSolver, GurobiSolver, SnoptSolver
-from pydrake.geometry.optimization import IrisOptions
+import pydrake.planning as mut  # ruff: isort: skip
 
 import textwrap
+import unittest
+
 import numpy as np
+
+from pydrake.common import Parallelism, RandomGenerator
+from pydrake.geometry.optimization import IrisOptions
+from pydrake.planning import (
+    IrisNp2Options,
+    IrisZoOptions,
+    RobotDiagramBuilder,
+    SceneGraphCollisionChecker,
+)
+from pydrake.solvers import GurobiSolver, MosekSolver, SnoptSolver
 
 
 def _snopt_and_mip_solver_available():

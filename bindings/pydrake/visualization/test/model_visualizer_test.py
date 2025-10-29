@@ -1,3 +1,6 @@
+import pydrake.visualization as mut  # ruff: isort: skip
+import pydrake.visualization._model_visualizer as mut_private  # ruff: isort: skip  # noqa
+
 import copy
 import inspect
 import subprocess
@@ -7,8 +10,6 @@ import unittest
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import Meshcat
 from pydrake.multibody.parsing import PackageMap
-import pydrake.visualization as mut
-import pydrake.visualization._model_visualizer as mut_private
 
 
 class TestModelVisualizerSubprocess(unittest.TestCase):

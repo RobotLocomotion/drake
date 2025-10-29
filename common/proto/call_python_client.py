@@ -183,9 +183,9 @@ def default_globals():
     # `CallPythonClient`) and the client user code (e.g. `plot(x, y)`).
     # TODO(eric.cousineau): Consider relegating this to a different module,
     # possibly when this falls under `pydrake`.
-    import numpy as np
-    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (unused-import)
     import matplotlib
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (unused-import)
+    import numpy as np
 
     # On Ubuntu the Debian package python3-tk is a recommended (but not
     # required) dependency of python3-matplotlib; help users understand that

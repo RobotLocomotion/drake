@@ -6,11 +6,11 @@ lint errors to a non-zero exitcode.
 """
 
 import os
+from pathlib import Path
 import re
 import subprocess
+from subprocess import PIPE, STDOUT, Popen
 import sys
-from pathlib import Path
-from subprocess import Popen, PIPE, STDOUT
 
 from python import runfiles
 

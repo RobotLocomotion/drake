@@ -1,21 +1,22 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 from math import pi
-import numpy as np
 import unittest
+
+import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform_
+import pydrake.symbolic as sym
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import InputPort_, OutputPort_
 from pydrake.systems.sensors import (
     CameraInfo,
-    ImageRgba8U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
 )
-import pydrake.symbolic as sym
 
 
 class TestGeometrySceneGraph(unittest.TestCase):

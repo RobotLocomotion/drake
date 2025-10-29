@@ -1,10 +1,11 @@
-import numpy as np
 import unittest
+
+import numpy as np
 
 from pydrake.solvers import (
     MakeSemidefiniteRelaxation,
-    SemidefiniteRelaxationOptions,
     MathematicalProgram,
+    SemidefiniteRelaxationOptions,
 )
 from pydrake.symbolic import Variables
 

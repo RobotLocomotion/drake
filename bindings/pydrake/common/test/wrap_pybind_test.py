@@ -3,8 +3,8 @@ import unittest
 
 from pydrake.common.test.wrap_test_util import (
     CheckTypeConversionExample,
-    FunctionNeedsWrapCallbacks_Bad,
     FunctionNeedsWrapCallbacks,
+    FunctionNeedsWrapCallbacks_Bad,
     MakeTypeConversionExample,
     MakeTypeConversionExampleBadRvp,
     MyContainerRawPtr,

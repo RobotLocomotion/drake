@@ -18,11 +18,11 @@ from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import Meshcat, SceneGraphConfig
 from pydrake.lcm import DrakeLcmParams
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
-from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
 from pydrake.multibody.parsing import (
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
 )
+from pydrake.multibody.plant import AddMultibodyPlant, MultibodyPlantConfig
 from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
@@ -34,7 +34,6 @@ from pydrake.systems.lcm import ApplyLcmBusConfig
 from pydrake.systems.primitives import ConstantVectorSource
 from pydrake.systems.sensors import ApplyCameraConfig, CameraConfig
 from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
-
 
 # Developer-only configuration.
 VERBOSE = False

@@ -34,6 +34,8 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd as _AutoDiffXd
 from pydrake.common import (
     _MangledName,
+)
+from pydrake.common import (
     pretty_class_name as _pretty_class_name,
 )
 import pydrake.symbolic as _sym

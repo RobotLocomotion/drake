@@ -1,12 +1,11 @@
-import pydrake.geometry as mut
-from pydrake.common.test_utilities import numpy_compare
-
+import pydrake.geometry as mut  # ruff: isort: skip
 import copy
 import unittest
 
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
 
 
 class TestGeometryMeshes(unittest.TestCase):
