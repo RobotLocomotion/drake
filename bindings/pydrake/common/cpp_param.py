@@ -5,6 +5,7 @@ Python types as they relate to C++.
 
 import ctypes
 import typing
+import sys
 
 import numpy as np
 
@@ -59,11 +60,16 @@ class _ParamAliases:
 
     @staticmethod
     def _resugar_typing_shortcuts(origin_name, arg_names):
-        # Re-sugars typing.Union[T, NoneType] into typing.Optional[T] in case
-        # that's what the origin and arg names refer to. Otherwise, returns the
-        # data unchanged.
+        # Re-sugars Union[T, NoneType] into typing.Optional[T] in case that's
+        # what the origin and arg names refer to. Otherwise, returns the data
+        # unchanged.
+        union_name = "Union"
+        if sys.version_info[0:2] < (3, 14):
+            # Python 3.14 removes the typing prefix from the name as part of
+            # the effort to unify it with types.UnionType.
+            union_name = f"typing.{union_name}"
         if (
-            origin_name == "typing.Union"
+            origin_name == union_name
             and len(arg_names) == 2
             and arg_names[-1] == "NoneType"
         ):

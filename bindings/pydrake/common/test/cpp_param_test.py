@@ -9,6 +9,7 @@ tested in `cpp_param_test_util`, which is invoked from this test.
 
 import ctypes
 import unittest
+import sys
 
 import numpy as np
 
@@ -103,9 +104,10 @@ class TestCppParam(unittest.TestCase):
         self._check_names(
             "typing.Optional[CustomPyType]", [mut.Optional[CustomPyType]]
         )
-        self._check_names(
-            "typing.Union[str,CustomPyType]", [mut.Union[str, CustomPyType]]
-        )
+        union_name = "Union[str,CustomPyType]"
+        if sys.version_info[0:2] < (3, 14):
+            union_name = f"typing.{union_name}"
+        self._check_names(union_name, [mut.Union[str, CustomPyType]])
         self._check_names("Template[float]", [TemplateOnFloat])
 
     def test_mangled_names(self):
