@@ -118,7 +118,7 @@ std::unique_ptr<RenderEngine> MakeEngine(const CameraConfig& config) {
             if (!kHasRenderEngineVtk) {
               throw std::logic_error(
                   "Invalid camera configuration; renderer_class = "
-                  "'RenderEngineVtk' is not supported in current build.");
+                  "'RenderEngineVtkParams' is not supported in current build.");
             }
             return MakeRenderEngineVtk(params);
           },
@@ -126,7 +126,7 @@ std::unique_ptr<RenderEngine> MakeEngine(const CameraConfig& config) {
             if (!kHasRenderEngineGl) {
               throw std::logic_error(
                   "Invalid camera configuration; renderer_class = "
-                  "'RenderEngineGl' is not supported in current build.");
+                  "'RenderEngineGlParams' is not supported in current build.");
             }
             return MakeRenderEngineGl(params);
           },
@@ -134,7 +134,7 @@ std::unique_ptr<RenderEngine> MakeEngine(const CameraConfig& config) {
             if (!kHasRenderEngineGltfClient) {
               throw std::logic_error(
                   "Invalid camera configuration; renderer_class = "
-                  "'RenderEngineGltfClient' is not supported in current "
+                  "'RenderEngineGltfClientParams' is not supported in current "
                   "build.");
             }
             return MakeRenderEngineGltfClient(params);
