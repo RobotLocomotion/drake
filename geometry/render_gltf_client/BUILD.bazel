@@ -184,7 +184,7 @@ drake_cc_googletest(
 
 # N.B. This test asserts that the factory throws because of DRAKE_ALLOW_NETWORK.
 # Separately, we'll test that the factory throws because it's disabled via
-# :enabled via the below :disabled_render_gltf_client_test.
+# :enabled via the below :internal_no_render_gltf_client_test.
 drake_cc_googletest(
     name = "factory_denied_test",
     allow_network = ["none"],
