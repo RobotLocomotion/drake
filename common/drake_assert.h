@@ -188,7 +188,8 @@ namespace internal {
 // Note: supported types are explicitly instantiated in drake_assert.cc. */
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>);
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_convertible_v<T, std::string_view>);
 
 // The collection of optional name-value pairs passed to DRAKE_THROW_UNLESS.
 // The values are stored as their `std::string` representations.
