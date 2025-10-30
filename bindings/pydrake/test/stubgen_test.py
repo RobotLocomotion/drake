@@ -3,9 +3,8 @@
 import os.path
 import unittest
 
-from python import runfiles
-
 import mypy.fastparse
+from python import runfiles
 
 
 class TestStubgen(unittest.TestCase):

@@ -21,7 +21,6 @@ from pydrake.common.test_utilities.meta import (
 from pydrake.common.value import Value
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 
-
 # To provide test coverage for all of the special cases of YAML loading, we'll
 # define some dataclasses. These classes mimic
 #  drake/common/yaml/test/example_structs.h

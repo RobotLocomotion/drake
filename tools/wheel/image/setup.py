@@ -4,7 +4,7 @@ import sys
 # Note: use setuptools.glob rather than the built-in glob; see
 # https://bugs.python.org/issue37578.
 import setuptools
-from setuptools import setup, find_packages, glob
+from setuptools import find_packages, glob, setup
 
 DRAKE_VERSION = os.environ.get('DRAKE_VERSION', '0.0.0')
 

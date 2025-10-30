@@ -1,10 +1,10 @@
 import matplotlib
 import numpy as np
 
+from pydrake.systems._resample_interp1d import _resample_interp1d
 from pydrake.systems.framework import LeafSystem
 from pydrake.systems.primitives import VectorLog
 from pydrake.trajectories import Trajectory
-from pydrake.systems._resample_interp1d import _resample_interp1d
 
 
 class PyPlotVisualizer(LeafSystem):

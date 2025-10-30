@@ -4,7 +4,7 @@
 Runs Meldis from an install tree.
 """
 
-from os.path import isdir, join, dirname, realpath
+from os.path import dirname, isdir, join, realpath
 import sys
 
 

@@ -3,8 +3,8 @@
 import copy
 import gc
 from textwrap import dedent
-
 import unittest
+
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -26,9 +26,9 @@ from pydrake.systems.analysis import (
 from pydrake.systems.framework import (
     BasicVector,
     BasicVector_,
-    ContextBase,
     Context,
     Context_,
+    ContextBase,
     ContinuousState,
     ContinuousState_,
     Diagram,
@@ -45,7 +45,6 @@ from pydrake.systems.framework import (
     InputPort,
     InputPort_,
     InputPortIndex,
-    kUseDefaultName,
     LeafContext,
     LeafContext_,
     LeafSystem,
@@ -66,17 +65,18 @@ from pydrake.systems.framework import (
     Supervector_,
     System,
     System_,
-    SystemVisitor,
     SystemBase,
     SystemOutput,
     SystemOutput_,
     SystemScalarConverter,
+    SystemVisitor,
+    TriggerType,
     VectorBase,
     VectorBase_,
-    TriggerType,
     VectorSystem,
     VectorSystem_,
     _ExternalSystemConstraint,
+    kUseDefaultName,
 )
 from pydrake.systems.primitives import (
     Adder,
@@ -91,8 +91,8 @@ from pydrake.systems.primitives import (
     ZeroOrderHold,
 )
 from pydrake.systems.test.test_util import (
-    MyVector2,
     MakeDummySystem,
+    MyVector2,
 )
 from pydrake.systems.test_utilities import framework_test_util
 

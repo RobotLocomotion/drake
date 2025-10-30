@@ -1,4 +1,4 @@
-import pydrake.common.test_utilities.meta as mut
+import pydrake.common.test_utilities.meta as mut  # ruff: isort: skip
 
 import unittest
 

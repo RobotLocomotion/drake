@@ -11,8 +11,8 @@ Prefer comparisons in the following order:
 # TODO(eric.cousineau): Make custom assert-vectorize which will output
 # coordinates and stuff.
 
-from contextlib import contextmanager
 from collections import namedtuple
+from contextlib import contextmanager
 import functools
 import inspect
 from itertools import product
@@ -20,15 +20,15 @@ from itertools import product
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.polynomial import Polynomial_ as RawPolynomial_
 from pydrake.symbolic import (
     Expression,
     Formula,
     Monomial,
     Polynomial,
-    Variable,
     RationalFunction,
+    Variable,
 )
-from pydrake.polynomial import Polynomial_ as RawPolynomial_
 
 
 class _UnwantedEquality(AssertionError):

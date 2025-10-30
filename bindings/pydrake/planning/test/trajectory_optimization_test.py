@@ -4,34 +4,34 @@ import weakref
 import numpy as np
 
 from pydrake.examples import PendulumPlant
-from pydrake.math import eq, BsplineBasis
+from pydrake.geometry.optimization import (
+    GcsGraphvizOptions,
+    GraphOfConvexSets,
+    GraphOfConvexSetsOptions,
+    HPolyhedron,
+    Point,
+    VPolytope,
+)
+from pydrake.math import BsplineBasis, eq
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.planning import (
     AddDirectCollocationConstraint,
     DirectCollocation,
     DirectCollocationConstraint,
     DirectTranscription,
     GcsTrajectoryOptimization,
-    KinematicTrajectoryOptimization,
     GetContinuousRevoluteJointIndices,
+    KinematicTrajectoryOptimization,
 )
-from pydrake.geometry.optimization import (
-    GraphOfConvexSetsOptions,
-    GraphOfConvexSets,
-    GcsGraphvizOptions,
-    HPolyhedron,
-    Point,
-    VPolytope,
-)
+import pydrake.solvers as mp
 from pydrake.solvers import (
     Binding,
-    Cost,
     Constraint,
-    ExpressionCost,
+    Cost,
     ExpressionConstraint,
+    ExpressionCost,
 )
-from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.parsing import Parser
-import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem

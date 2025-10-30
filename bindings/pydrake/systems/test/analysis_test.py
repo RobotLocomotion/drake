@@ -1,14 +1,37 @@
 import copy
 import gc
-import numpy as np
 import unittest
 import weakref
 
+import numpy as np
+
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import isnan
-from pydrake.symbolic import Variable, Expression
-from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import Expression, Variable
+from pydrake.systems.analysis import (
+    ApplySimulatorConfig,
+    BatchEvalTimeDerivatives,
+    BatchEvalUniquePeriodicDiscreteUpdate,
+    DiscreteTimeApproximation,
+    ExtractSimulatorConfig,
+    InitializeParams,
+    IntegratorBase_,
+    PrintSimulatorStatistics,
+    RegionOfAttraction,
+    RegionOfAttractionOptions,
+    ResetIntegratorFromFlags,
+    RungeKutta2Integrator,
+    RungeKutta2Integrator_,
+    RungeKutta3Integrator,
+    RungeKutta3Integrator_,
+    Simulator,
+    Simulator_,
+    SimulatorConfig,
+    SimulatorStatus,
+)
+from pydrake.systems.framework import Context_, DiagramBuilder_, EventStatus
 from pydrake.systems.primitives import (
     AffineSystem_,
     ConstantVectorSource,
@@ -18,28 +41,6 @@ from pydrake.systems.primitives import (
     LinearSystem_,
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
-)
-from pydrake.systems.framework import Context_, DiagramBuilder_, EventStatus
-from pydrake.systems.analysis import (
-    ApplySimulatorConfig,
-    BatchEvalUniquePeriodicDiscreteUpdate,
-    BatchEvalTimeDerivatives,
-    DiscreteTimeApproximation,
-    ExtractSimulatorConfig,
-    InitializeParams,
-    IntegratorBase_,
-    PrintSimulatorStatistics,
-    ResetIntegratorFromFlags,
-    RungeKutta2Integrator,
-    RungeKutta2Integrator_,
-    RungeKutta3Integrator,
-    RungeKutta3Integrator_,
-    RegionOfAttraction,
-    RegionOfAttractionOptions,
-    Simulator,
-    Simulator_,
-    SimulatorConfig,
-    SimulatorStatus,
 )
 from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 

@@ -1,3 +1,5 @@
+import pydrake.visualization as mut  # ruff: isort: skip
+
 import unittest
 
 import numpy as np
@@ -7,7 +9,6 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import FixedOffsetFrame
 from pydrake.planning import RobotDiagramBuilder
-import pydrake.visualization as mut
 
 
 class TestTriad(unittest.TestCase):

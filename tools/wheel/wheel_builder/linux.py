@@ -2,25 +2,24 @@
 # //tools/wheel:builder for the user interface.
 
 import atexit
+from datetime import datetime, timezone
 import os
 import pathlib
 import subprocess
 import sys
 import tarfile
 
-from datetime import datetime, timezone
-
 from .common import (
     create_snopt_tgz,
     die,
+    find_tests,
     gripe,
+    resource_root,
     strip_tar_metadata,
     wheel_name,
+    wheelhouse,
 )
-from .common import resource_root, wheelhouse
-from .common import find_tests
-
-from .linux_types import Platform, Role, Target, BUILD, TEST
+from .linux_types import BUILD, TEST, Platform, Role, Target
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
 _files_to_remove = []

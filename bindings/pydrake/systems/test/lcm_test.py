@@ -2,16 +2,13 @@
 Test bindings of LCM integration with the Systems framework.
 """
 
-import pydrake.systems.lcm as mut
-
 import collections
 import unittest
 
 import numpy as np
 
-from drake import lcmt_header, lcmt_quaternion
 import drake as drake_lcmtypes
-
+from drake import lcmt_header, lcmt_quaternion
 from pydrake.common.value import Value
 from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
@@ -20,6 +17,7 @@ from pydrake.systems.framework import (
     LeafSystem,
     TriggerType,
 )
+import pydrake.systems.lcm as mut
 from pydrake.systems.primitives import ConstantVectorSource
 
 

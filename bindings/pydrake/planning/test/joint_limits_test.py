@@ -1,9 +1,10 @@
+import pydrake.planning as mut  # ruff: isort: skip
+
 import unittest
 
 import numpy as np
 
 from pydrake.multibody.plant import MultibodyPlant
-import pydrake.planning as mut
 
 
 class TestJointLimits(unittest.TestCase):

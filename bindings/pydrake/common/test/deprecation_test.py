@@ -69,8 +69,8 @@ class TestDeprecation(unittest.TestCase):
     def test_module_import_from_all(self):
         # N.B. This is done in another module because `from x import *` is not
         # well supported for `exec`.
-        import deprecation_example.import_all
-        import deprecation_example
+        import deprecation_example.import_all  # ruff: isort: skip
+        import deprecation_example  # ruff: isort: skip
 
         self.assertIsInstance(deprecation_example.sub_module, str)
 

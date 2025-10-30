@@ -8,10 +8,16 @@ import shutil
 import subprocess
 import tempfile
 
-from .common import create_snopt_tgz, die, wheel_name
-from .common import build_root, resource_root, wheelhouse
-from .common import test_root, find_tests
-
+from .common import (
+    build_root,
+    create_snopt_tgz,
+    die,
+    find_tests,
+    resource_root,
+    test_root,
+    wheel_name,
+    wheelhouse,
+)
 from .macos_types import PythonTarget
 
 # This is the complete set of defined targets (i.e. potential wheels). By

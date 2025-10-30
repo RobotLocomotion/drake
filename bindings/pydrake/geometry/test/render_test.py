@@ -1,4 +1,4 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import copy
 import logging
@@ -14,10 +14,10 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.sensors import (
     CameraInfo,
-    ImageRgba8U,
     ImageDepth16U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
     RgbdSensor,
 )
 

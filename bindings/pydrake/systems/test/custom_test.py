@@ -8,6 +8,7 @@ import weakref
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
@@ -50,13 +51,10 @@ from pydrake.systems.primitives import (
     Adder,
     ZeroOrderHold,
 )
-
 from pydrake.systems.test.test_util import (
     call_leaf_system_overrides,
     call_vector_system_overrides,
 )
-
-from pydrake.common.test_utilities import numpy_compare
 
 
 def noop(*args, **kwargs):

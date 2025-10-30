@@ -19,15 +19,14 @@ from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.statemachine import ViewList
 from sphinx import version_info as sphinx_version
-from sphinx.locale import _
 import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
+from sphinx.locale import _
 from sphinx.util.nodes import nested_parse_with_titles
 
+from doc.doxygen_cxx.system_doxygen import system_yaml_to_html
 from pydrake.common.cpp_template import TemplateBase
 from pydrake.common.deprecation import DrakeDeprecationWarning
-
-from doc.doxygen_cxx.system_doxygen import system_yaml_to_html
 
 
 def generate_sig_re(extended=False):

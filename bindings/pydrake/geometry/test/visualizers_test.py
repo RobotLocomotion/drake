@@ -1,4 +1,4 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import copy
 import gc
@@ -10,7 +10,7 @@ import weakref
 import numpy as np
 import umsgpack
 
-from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
+from drake import lcmt_viewer_draw, lcmt_viewer_load_robot
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber

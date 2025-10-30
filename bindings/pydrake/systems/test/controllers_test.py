@@ -6,9 +6,9 @@ import weakref
 import numpy as np
 
 from pydrake.examples import PendulumPlant
-from pydrake.multibody.tree import MultibodyForces
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import MultibodyForces
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
     DiscreteTimeLinearQuadraticRegulator,
@@ -17,11 +17,11 @@ from pydrake.systems.controllers import (
     FiniteHorizonLinearQuadraticRegulatorOptions,
     FiniteHorizonLinearQuadraticRegulatorResult,
     FittedValueIteration,
-    InverseDynamicsController,
     InverseDynamics,
+    InverseDynamicsController,
     JointStiffnessController,
-    LinearQuadraticRegulator,
     LinearProgrammingApproximateDynamicProgramming,
+    LinearQuadraticRegulator,
     MakeFiniteHorizonLinearQuadraticRegulator,
     PeriodicBoundaryCondition,
     PidControlledSystem,
@@ -29,8 +29,8 @@ from pydrake.systems.controllers import (
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
-    InputPortSelection,
     InputPort,
+    InputPortSelection,
     OutputPort,
 )
 from pydrake.systems.primitives import Integrator, LinearSystem

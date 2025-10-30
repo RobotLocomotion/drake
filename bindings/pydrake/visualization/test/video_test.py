@@ -4,13 +4,12 @@ import sys
 import textwrap
 import unittest
 
-from pydrake.math import RollPitchYaw, RigidTransform
+from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.visualization import VideoWriter
-
 
 _PLATFORM_SUPPORTS_CV2 = "darwin" not in sys.platform
 

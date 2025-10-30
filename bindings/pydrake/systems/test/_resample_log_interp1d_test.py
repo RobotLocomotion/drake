@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 from numpy.testing import assert_allclose
 
-from pydrake.systems.analysis import Simulator
 from pydrake.systems._resample_interp1d import _resample_interp1d
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder, VectorSystem
 from pydrake.systems.primitives import VectorLogSink
 

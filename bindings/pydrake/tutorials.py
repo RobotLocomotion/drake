@@ -20,6 +20,7 @@ notebook package on your system:
 
 def __main():
     import sys
+
     import pydrake
 
     sys.argv = ["notebook", f"{pydrake.getDrakePath()}/tutorials/index.ipynb"]

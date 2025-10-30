@@ -7,13 +7,14 @@ N.B. The C++ types are not registered in this test. They are registered and
 tested in `cpp_param_test_util`, which is invoked from this test.
 """
 
+import pydrake.common.cpp_param as mut  # ruff: isort: skip
+
 import ctypes
 import unittest
 
 import numpy as np
 
 from pydrake.common import _MangledName
-import pydrake.common.cpp_param as mut
 import pydrake.common.cpp_param_test_util as cpp_test
 
 

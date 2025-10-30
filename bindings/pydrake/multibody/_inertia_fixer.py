@@ -24,8 +24,8 @@ import xml.parsers.expat as expat
 import numpy as np
 
 from pydrake.geometry import Role, SceneGraph
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import (
     BodyIndex,
     CalcSpatialInertia,

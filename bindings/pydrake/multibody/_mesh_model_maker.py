@@ -1,8 +1,8 @@
 import logging
-import numpy as np
 from pathlib import Path
 import xml.etree.ElementTree
 
+import numpy as np
 
 from pydrake.geometry import (
     ReadObjToTriangleSurfaceMesh,
