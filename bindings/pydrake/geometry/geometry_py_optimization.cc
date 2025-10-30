@@ -348,8 +348,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
             cls_doc.SimplifyByIncrementalFaceTranslation.doc)
         .def("MaximumVolumeInscribedAffineTransformation",
             &HPolyhedron::MaximumVolumeInscribedAffineTransformation,
-            py::arg("circumbody"),
-            py::arg("check_bounded") = true,
+            py::arg("circumbody"), py::arg("check_bounded") = true,
             cls_doc.MaximumVolumeInscribedAffineTransformation.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,

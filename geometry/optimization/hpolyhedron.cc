@@ -750,10 +750,10 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   }
   if (A_.rows() == 0 && !other.A().isZero()) {
     // The full space can only be contained in another HPolyhedron if the other
-    // HPolyhedron is also the full space. The other polytope cannot be the full space if its A matrix is non-zero.
+    // HPolyhedron is also the full space. The other polytope cannot be the full
+    // space if its A matrix is non-zero.
     return false;
   }
-  
 
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =

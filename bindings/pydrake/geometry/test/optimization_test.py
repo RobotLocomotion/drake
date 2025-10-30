@@ -187,9 +187,7 @@ class TestGeometryOptimization(unittest.TestCase):
         )
 
         self.assertTrue(
-            dut.ContainedIn(
-                other=mut.AffineSubspace(basis, translation), tol=0
-            )
+            dut.ContainedIn(other=mut.AffineSubspace(basis, translation), tol=0)
         )
         self.assertTrue(
             dut.IsNearlyEqualTo(
@@ -198,9 +196,7 @@ class TestGeometryOptimization(unittest.TestCase):
         )
         self.assertFalse(dut.ContainedIn(other=mut.AffineSubspace(), tol=0))
         self.assertFalse(mut.AffineSubspace().ContainedIn(other=dut, tol=0))
-        self.assertFalse(
-            dut.IsNearlyEqualTo(other=mut.AffineSubspace(), tol=0)
-        )
+        self.assertFalse(dut.IsNearlyEqualTo(other=mut.AffineSubspace(), tol=0))
 
         self.assertIsNot(dut.Clone(), dut)
         self.assertIsNot(copy.deepcopy(dut), dut)
@@ -270,9 +266,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(
             h_box.MaximumVolumeInscribedEllipsoid(), mut.Hyperellipsoid
         )
-        np.testing.assert_array_almost_equal(
-            h_box.ChebyshevCenter(), [0, 0, 0]
-        )
+        np.testing.assert_array_almost_equal(h_box.ChebyshevCenter(), [0, 0, 0])
         h_scaled = h_box.Scale(scale=2.0, center=[1, 2, 3])
         self.assertIsInstance(h_scaled, mut.HPolyhedron)
         h_scaled = h_box.Scale(scale=2.0)
@@ -374,9 +368,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
         self.assertFalse(ellipsoid.IsEmpty())
         self.assertFalse(ellipsoid.MaybeGetFeasiblePoint() is None)
-        self.assertTrue(
-            ellipsoid.PointInSet(ellipsoid.MaybeGetFeasiblePoint())
-        )
+        self.assertTrue(ellipsoid.PointInSet(ellipsoid.MaybeGetFeasiblePoint()))
         np.testing.assert_array_equal(ellipsoid.A(), self.A)
         np.testing.assert_array_equal(ellipsoid.center(), self.b)
         self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
@@ -409,9 +401,7 @@ class TestGeometryOptimization(unittest.TestCase):
         scale, witness = ellipsoid.MinimumUniformScalingToTouch(point)
         self.assertTrue(scale > 0.0)
         np.testing.assert_array_almost_equal(witness, p)
-        assert_pickle(
-            self, ellipsoid, lambda S: np.vstack((S.A(), S.center()))
-        )
+        assert_pickle(self, ellipsoid, lambda S: np.vstack((S.A(), S.center())))
         e_ball = mut.Hyperellipsoid.MakeAxisAligned(
             radius=[1, 1, 1], center=self.b
         )
@@ -469,9 +459,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(constraints[0], Binding[Constraint])
         shape, pose = rect.ToShapeWithPose()
         self.assertTrue(isinstance(shape, Box))
-        np.testing.assert_array_equal(
-            pose.translation(), np.zeros_like(self.b)
-        )
+        np.testing.assert_array_equal(pose.translation(), np.zeros_like(self.b))
         test_point = np.ones_like(self.b)
         distance, projection = rect.Projection(points=test_point)
         self.assertEqual(distance[0], 0.0)
@@ -578,9 +566,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertAlmostEqual(v_box.CalcVolume(), 8, 1e-10)
         v_unit_box = mut.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
-        v_from_h = mut.VPolytope(
-            H=mut.HPolyhedron.MakeUnitBox(dim=3), tol=1e-9
-        )
+        v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3), tol=1e-9)
         self.assertTrue(v_from_h.PointInSet([0, 0, 0]))
         # Test creating a vpolytope from a non-minimal set of vertices
         # 2D: Random points inside a circle
@@ -708,9 +694,7 @@ class TestGeometryOptimization(unittest.TestCase):
         intersect = mut.Intersection(setA=point, setB=h_box)
         self.assertFalse(intersect.IsEmpty())
         self.assertFalse(intersect.MaybeGetFeasiblePoint() is None)
-        self.assertTrue(
-            intersect.PointInSet(intersect.MaybeGetFeasiblePoint())
-        )
+        self.assertTrue(intersect.PointInSet(intersect.MaybeGetFeasiblePoint()))
         self.assertEqual(intersect.ambient_dimension(), 3)
         self.assertEqual(intersect.num_elements(), 2)
         intersect2 = mut.Intersection(sets=[point, h_box])
@@ -970,9 +954,7 @@ class TestGeometryOptimization(unittest.TestCase):
         )
         self.assertIn(
             "log_level",
-            options.restriction_solver_options.options[
-                ClpSolver().id().name()
-            ],
+            options.restriction_solver_options.options[ClpSolver().id().name()],
         )
         self.assertIn("convex_relaxation", repr(options))
 
@@ -1396,12 +1378,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         )
 
         # FindSeparationCertificateGivenPolytopeOptions
-        lagrangian_options = (
-            dut.FindSeparationCertificateGivenPolytopeOptions()
-        )
-        self.assertIsInstance(
-            lagrangian_options.parallelism.num_threads(), int
-        )
+        lagrangian_options = dut.FindSeparationCertificateGivenPolytopeOptions()
+        self.assertIsInstance(lagrangian_options.parallelism.num_threads(), int)
         self.assertFalse(lagrangian_options.verbose)
         self.assertEqual(lagrangian_options.solver_id, MosekSolver.id())
         self.assertTrue(lagrangian_options.terminate_at_failure)
@@ -1452,9 +1430,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(polytope_options.ellipsoid_margin_epsilon, 1e-6)
         self.assertEqual(polytope_options.solver_id, ScsSolver.id())
         self.assertEqual(
-            polytope_options.solver_options.options["Drake"][
-                "kPrintToConsole"
-            ],
+            polytope_options.solver_options.options["Drake"]["kPrintToConsole"],
             1,
         )
         np.testing.assert_array_almost_equal(
@@ -1564,9 +1540,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
                 plane.negative_side_geometry,
             ]:
                 self.assertIn(geom.type(), geom_type_possible_values)
-                self.assertIn(
-                    type(geom.geometry()), geom_shape_possible_values
-                )
+                self.assertIn(type(geom.geometry()), geom_shape_possible_values)
 
                 self.assertIsInstance(geom.body_index(), BodyIndex)
                 self.assertGreater(geom.num_rationals(), 0)
@@ -1614,9 +1588,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
             )
         )
         self.assertTrue(success)
-        planes = (
-            self.cspace_free_polytope.map_geometries_to_separating_planes()
-        )
+        planes = self.cspace_free_polytope.map_geometries_to_separating_planes()
         geom_pair = list(planes.keys())[0]
         self.assertIn(geom_pair, certificates.keys())
         self.assertIsInstance(
