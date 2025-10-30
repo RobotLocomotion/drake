@@ -125,6 +125,22 @@ class LinkJointGraph::Link {
     return welded_links_assembly_index_;
   }
 
+  /* Returns true if the indicated joint is one that was originally connected
+  to this Link but due to loop breaking is now connected to one of this Link's
+  shadow links instead.
+  @pre the specified joint is one of this Link's joints */
+  bool joint_has_moved_to_shadow(JointIndex joint_index) const {
+    DRAKE_DEMAND(has_joint(joint_index));
+    return std::find(joints_moved_to_shadow_links_.begin(),
+                     joints_moved_to_shadow_links_.end(),
+                     joint_index) != joints_moved_to_shadow_links_.end();
+  }
+
+  bool has_joint(JointIndex joint_index) const {
+    return std::find(joints_.begin(), joints_.end(), joint_index) !=
+           joints_.end();
+  }
+
  private:
   friend class LinkJointGraph;
   friend class LinkJointGraphTester;
@@ -157,6 +173,12 @@ class LinkJointGraph::Link {
 
   void add_loop_constraint(LoopConstraintIndex constraint_index) {
     loop_constraints_.push_back(constraint_index);
+  }
+
+  void note_retargeted_joint(JointIndex joint_for_shadow_link) {
+    DRAKE_DEMAND(has_joint(joint_for_shadow_link));
+    DRAKE_DEMAND(!joint_has_moved_to_shadow(joint_for_shadow_link));
+    joints_moved_to_shadow_links_.push_back(joint_for_shadow_link);
   }
 
   // This is used when a Joint is removed.
@@ -195,6 +217,11 @@ class LinkJointGraph::Link {
   JointIndex joint_;  // Joint that connects us to the Mobod (invalid if World).
 
   std::vector<LinkIndex> shadow_links_;
+
+  // These are joints on the joints_ list above, but which have been
+  // retargeted to one of the shadow links rather than the primary.
+  // The ordering is the same as for shadow_links_.
+  std::vector<JointIndex> joints_moved_to_shadow_links_;
 
   // World is always in an assembly; other links are in an assembly only
   // if they are welded to another link.

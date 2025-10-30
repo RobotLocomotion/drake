@@ -22,11 +22,18 @@ void RecordLevelOfOutboardLinks(const SpanningForest& forest,
   const LinkJointGraph::Link& inboard_link =
       forest.link_by_index(inboard_index);
   const int inboard_level = (*link_to_level)[inboard_index];
+  const std::string blanks(2 * inboard_level, ' ');
+  std::cout << fmt::format("  {}Processing link {} {}:\n", blanks,
+                           inboard_index, inboard_link.name());
   for (const auto& joint_index : inboard_link.joints()) {
     if (previous_joint_index.is_valid() && joint_index == previous_joint_index)
       continue;  // Skip the one that got us here.
     const LinkJointGraph::Joint& joint = forest.joint_by_index(joint_index);
     if (!joint.is_weld()) continue;
+    if (inboard_link.joint_has_moved_to_shadow(joint_index))
+      continue;
+    std::cout << fmt::format("    {}joint {} {}\n", blanks, joint_index,
+                             joint.name());
     const LinkIndex outboard_link_index = joint.other_link_index(inboard_index);
     if (link_to_level->contains(outboard_link_index)) {
       const LinkJointGraph::Link& outboard_link =

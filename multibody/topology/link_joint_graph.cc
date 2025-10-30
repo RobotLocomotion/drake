@@ -143,7 +143,7 @@ void LinkJointGraph::InvalidateForest() {
     data_.ephemeral_link_name_to_index.clear();
     data_.links.erase(data_.links.begin() + data_.num_user_links,
                       data_.links.end());
-    DRAKE_DEMAND(ssize(links()) == data_.num_user_links);
+    DRAKE_DEMAND(num_links() == data_.num_user_links);
   }
 
   if (ssize(data_.joints) > num_user_joints()) {
@@ -175,7 +175,7 @@ LinkIndex LinkJointGraph::AddLink(const std::string& link_name,
   DRAKE_DEMAND(model_instance.is_valid());
 
   // Reject use of world model instance for any Link other than World.
-  if (ssize(links()) > 0 && model_instance == world_model_instance()) {
+  if (num_links() > 0 && model_instance == world_model_instance()) {
     throw std::logic_error(fmt::format(
         "{}(): Model instance index {} is reserved for the World link. "
         " World is always predefined and is named '{}'.",
@@ -203,7 +203,7 @@ LinkIndex LinkJointGraph::AddLink(const std::string& link_name,
   InvalidateForest();
 
   const LinkIndex link_index(num_link_indexes());
-  const LinkOrdinal link_ordinal(ssize(links()));
+  const LinkOrdinal link_ordinal(num_links());
   data_.link_index_to_ordinal.push_back(link_ordinal);
 
   // provide fast name lookup
@@ -211,7 +211,7 @@ LinkIndex LinkJointGraph::AddLink(const std::string& link_name,
 
   data_.links.emplace_back(
       Link(link_index, link_ordinal, link_name, model_instance, flags));
-  data_.num_user_links = ssize(links());
+  data_.num_user_links = num_links();
   data_.max_user_link_index = link_index;
 
   Link& new_link = data_.links.back();
@@ -649,14 +649,14 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
   const int shadow_num = primary_link.num_shadows() + 1;
   /* Name should be <primary_name>$<shadow_num> (unique within primary's model
   instance). In the unlikely event that a user has names like this, we'll keep
-  prepending "_" to the body name until this one is unique. Nothing much depends
+  prepending "_" to the link name until this one is unique. Nothing much depends
   on the details of this name. */
   std::string shadow_link_name =
       fmt::format("{}${}", primary_link.name(), shadow_num);
   while (HasLinkNamed(shadow_link_name, primary_link.model_instance()))
     shadow_link_name = "_" + shadow_link_name;
   const LinkIndex shadow_link_index(num_link_indexes());
-  const LinkOrdinal shadow_link_ordinal(ssize(links()));
+  const LinkOrdinal shadow_link_ordinal(num_links());
   DRAKE_DEMAND(shadow_link_ordinal >= num_user_links());  // A sanity check.
   data_.link_index_to_ordinal.push_back(shadow_link_ordinal);
   data_.ephemeral_link_name_to_index.insert(
@@ -667,13 +667,18 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
   /* Caution: primary_link reference is invalid now -- don't use it! */
   Link& shadow_link = data_.links.back();
   shadow_link.primary_link_ = primary_link_index;
-  const Joint& shadow_joint = joints(shadow_joint_ordinal);
+  Joint& shadow_joint = mutable_joint(shadow_joint_ordinal);
   if (shadow_is_parent) {
     shadow_link.add_joint_as_parent(shadow_joint.index());
+    shadow_joint.replace_parent_link(shadow_link_index);
   } else {
     shadow_link.add_joint_as_child(shadow_joint.index());
+    shadow_joint.replace_child_link(shadow_link_index);
   }
-  mutable_link(primary_link_ordinal).shadow_links_.push_back(shadow_link_index);
+
+  Link& mutable_primary_link = mutable_link(primary_link_ordinal);
+  mutable_primary_link.shadow_links_.push_back(shadow_link_index);
+  mutable_primary_link.note_retargeted_joint(shadow_joint.index());
 
   return shadow_link_ordinal;
 }
@@ -931,6 +936,7 @@ void LinkJointGraph::Link::ClearModel(JointIndex max_user_joint_index) {
   mobod_ = {};
   joint_ = {};
   shadow_links_.clear();
+  joints_moved_to_shadow_links_.clear();
   welded_links_assembly_index_ = {};
 }
 
@@ -946,14 +952,16 @@ LinkJointGraph::Joint::Joint(JointIndex index, JointOrdinal ordinal,
       model_instance_(model_instance),
       flags_(flags),
       traits_index_(joint_traits_index),
-      parent_link_index_(parent_link_index),
-      child_link_index_(child_link_index) {
+      original_parent_link_index_(parent_link_index),
+      original_child_link_index_(child_link_index) {
   DRAKE_DEMAND(index_.is_valid() && !name_.empty() &&
                model_instance_.is_valid());
-  DRAKE_DEMAND(traits_index_.is_valid() && parent_link_index_.is_valid() &&
-               child_link_index_.is_valid());
-  DRAKE_DEMAND(parent_link_index_ != child_link_index_);
+  DRAKE_DEMAND(traits_index_.is_valid() && original_parent_link_index_.is_valid() &&
+               original_child_link_index_.is_valid());
+  DRAKE_DEMAND(original_parent_link_index_ != original_child_link_index_);
   DRAKE_DEMAND(ordinal_ <= static_cast<int>(index_));
+  parent_link_index_ = original_parent_link_index_;
+  child_link_index_ = original_child_link_index_;
 }
 
 }  // namespace internal

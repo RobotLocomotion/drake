@@ -91,6 +91,17 @@ class LinkJointGraph::Joint {
     return !std::holds_alternative<std::monostate>(how_modeled_);
   }
 
+  /* (Internal use only) If we have to split one of this joint's links to
+  break a loop, the resulting ephemeral shadow link must replace the parent or
+  child link here. That must be undone if we clear or rebuild the forest. */
+  void replace_parent_link(LinkIndex shadow_link_index) {
+    parent_link_index_ = shadow_link_index;
+  }
+  /* (Internal use only) */
+  void replace_child_link(LinkIndex shadow_link_index) {
+    child_link_index_ = shadow_link_index;
+  }
+
  private:
   friend class LinkJointGraph;
   friend class LinkJointGraphTester;
@@ -100,7 +111,11 @@ class LinkJointGraph::Joint {
         LinkIndex parent_link_index, LinkIndex child_link_index,
         JointFlags flags);
 
-  void ClearModel() { how_modeled_ = std::monostate{}; }
+  void ClearModel() {
+    how_modeled_ = std::monostate{};
+    parent_link_index_ = original_parent_link_index_;
+    child_link_index_ = original_child_link_index_;
+  }
 
   // (For testing) If `to_set` is JointFlags::kDefault sets the flags to
   // kDefault. Otherwise or's in the given flags to the current set. Returns
@@ -125,20 +140,25 @@ class LinkJointGraph::Joint {
   JointFlags flags_{JointFlags::kDefault};
 
   JointTraitsIndex traits_index_;
-  LinkIndex parent_link_index_;
-  LinkIndex child_link_index_;
+  LinkIndex original_parent_link_index_;
+  LinkIndex original_child_link_index_;
 
-  // Below here is the as-built information; must be flushed when the forest is
+  // Below here is the as-built information; must be reset when the forest is
   // cleared or rebuilt.
 
   // Meaning of the variants:
   // - monostate: not yet processed
   // - MobodIndex: modeled directly by a mobilizer
   // - WeldedLinksAssemblyIndex: not modeled because this is a weld interior to
-  //     the indicated composite and we are combining so that one Mobod serves
-  //     the whole composite.
+  //     the indicated assembly and we are optimizing so that one Mobod serves
+  //     the whole assembly.
   std::variant<std::monostate, MobodIndex, WeldedLinksAssemblyIndex>
       how_modeled_;
+
+  // These are set to the user's originals on construction and when the
+  // forest is cleared or rebuilt.
+  LinkIndex parent_link_index_;
+  LinkIndex child_link_index_;
 };
 
 }  // namespace internal
