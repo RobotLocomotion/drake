@@ -76,4 +76,57 @@ GTEST_TEST(DrakeThrowTest, BuiltInFormatting) {
   DRAKE_EXPECT_THROWS_MESSAGE(throw_error(f), ".*2.0.*");
 }
 
+// Confirm that printable, string-like characters are accepted and get formatted
+// with single quotes.
+GTEST_TEST(DrakeThrowTest, ThrowWithFmtString) {
+  const std::string str = "lvalue string";
+  const std::string empty;
+  const char* c_str = "c-string literal";
+  const std::string_view sv = "string view";
+
+  auto do_throw = [&](int case_number) {
+    switch (case_number) {
+      case 1:
+        DRAKE_THROW_UNLESS(false, str);
+        return;
+      case 2:
+        DRAKE_THROW_UNLESS(false, c_str);
+        return;
+      case 3:
+        DRAKE_THROW_UNLESS(false, sv);
+        return;
+      case 4:
+        DRAKE_THROW_UNLESS(false, empty);
+        return;
+    }
+    DRAKE_UNREACHABLE();
+  };
+
+  // Note: we're confirming that the string values get decorated with single
+  // quotes.
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(1),
+                              ".*str = 'lvalue string'.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(2),
+                              ".*c_str = 'c-string literal'.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(3),
+                              ".*sv = 'string view'.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(4),
+                              ".*empty = ''.*");
+}
+
+// Confirm behavior when the value expressions contain heterogeneous types.
+GTEST_TEST(DrakeThrowTest, ThrowWithHeterogeneousValues) {
+  const double d = 3.14;
+  const std::string str = "pi";
+  const float f = 2.71f;
+  const char* c_str = "e";
+
+  auto do_throw = [&]() {
+    DRAKE_THROW_UNLESS(false, d, f, str, c_str);
+  };
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      do_throw(), ".*d = 3.14, f = 2.71, str = 'pi', c_str = 'e'.*");
+}
+
 }  // namespace
