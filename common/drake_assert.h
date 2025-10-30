@@ -185,10 +185,18 @@ namespace internal {
 // not be exposed. This wrapper launders all such conversions, isolating them
 // from the macro expansion.
 //
-// Note: supported types are explicitly instantiated in drake_assert.cc. */
+// Note: the `requires` clause does not list all supported types. Further
+// support is provided by overloads of this function in other files. To see the
+// full list of supported types, search the codebase for those overloads.
+// Furthermore, this explicitly only supports built-in and `std` types. For
+// other types, an overload for that type should be included with the type
+// definition (see, e.g., fmt_eigen.h). */
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>);
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_same_v<T, std::string> ||
+           std::is_same_v<T, std::string_view> ||
+           std::is_same_v<T, const char*>);
 
 // The collection of optional name-value pairs passed to DRAKE_THROW_UNLESS.
 // The values are stored as their `std::string` representations.
