@@ -79,16 +79,25 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
 
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_convertible_v<T, std::string_view>)
 {
   // TODO(SeanCurtis-TRI) This version only supports floats. As we seek to pass
-  // *other* types (strings, paths, eigen types, etc.), we'll need to extend
-  // the supported types here and extend the declarations below.
-  return fmt_floating_point(value);
+  // *other* types (paths, eigen types, etc.), we'll extend this logic and the
+  // `requires` clause.
+  if constexpr (std::is_floating_point_v<T>) {
+    return fmt_floating_point(value);
+  } else if constexpr (std::is_convertible_v<T, std::string_view>) {
+    return fmt_debug_string(value);
+  }
 }
 
 template std::string StringifyErrorDetailValue<float>(const float&);
 template std::string StringifyErrorDetailValue<double>(const double&);
+template std::string StringifyErrorDetailValue<std::string>(const std::string&);
+template std::string StringifyErrorDetailValue<std::string_view>(
+    const std::string_view&);
+template std::string StringifyErrorDetailValue<char const*>(char const* const&);
 
 }  // namespace internal
 }  // namespace drake
