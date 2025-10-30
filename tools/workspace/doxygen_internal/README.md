@@ -52,7 +52,7 @@ documentation generation.
 ## Updating Core Doxygen Files in Drake
 
 These steps will utilize the new `doxygen` binary saved from the previous
-section. In general, carefully examine
+section.
 
 5. Run `./doxygen -u doc/doxygen_cxx/Doxyfile_CXX.in` to have Doxygen
    automatically update the the configuration file with any new fields. (This
