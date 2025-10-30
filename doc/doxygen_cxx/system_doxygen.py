@@ -18,8 +18,9 @@ python documentation.
 
 import re
 import sys
-import yaml
 from textwrap import indent
+
+import yaml
 
 
 def system_yaml_to_html(system_yaml):

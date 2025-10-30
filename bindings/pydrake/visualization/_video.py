@@ -1,4 +1,5 @@
 import copy
+
 import numpy as np
 
 from pydrake.common.value import Value

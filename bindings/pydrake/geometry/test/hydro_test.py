@@ -1,5 +1,5 @@
-import pydrake.geometry as mut
-import pydrake.geometry._testing as mut_testing
+import pydrake.geometry as mut  # ruff: isort: skip
+import pydrake.geometry._testing as mut_testing  # ruff: isort: skip
 
 import unittest
 

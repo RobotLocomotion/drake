@@ -28,9 +28,9 @@ import subprocess
 import sys
 import unittest
 
-from python.runfiles import Create as CreateRunfiles
 import numpy as np
 from PIL import Image
+from python.runfiles import Create as CreateRunfiles
 
 COLOR_PIXEL_THRESHOLD = 20  # RGB pixel value tolerance.
 DEPTH_PIXEL_THRESHOLD = 0.001  # Depth measurement tolerance in meters.

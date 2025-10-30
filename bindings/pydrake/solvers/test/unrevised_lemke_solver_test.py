@@ -3,9 +3,9 @@ import unittest
 import numpy as np
 
 from pydrake.solvers import (
-    UnrevisedLemkeSolver,
     MathematicalProgram,
     SolverType,
+    UnrevisedLemkeSolver,
 )
 
 

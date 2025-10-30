@@ -1,10 +1,20 @@
-import copy
-import unittest
-import typing
 from collections import namedtuple
+import copy
+import typing
+import unittest
 
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.geometry import (
+    Box,
+    Role,
+    Sphere,
+)
+from pydrake.math import RigidTransform
+import pydrake.multibody.inverse_kinematics as ik
 from pydrake.multibody.optimization import (
     CalcGridPointsOptions,
     CentroidalMomentumConstraint,
@@ -23,22 +33,12 @@ from pydrake.multibody.plant import (
 )
 from pydrake.multibody.tree import (
     PrismaticJoint,
-    UnitInertia,
     SpatialInertia,
+    UnitInertia,
 )
-import pydrake.multibody.inverse_kinematics as ik
 import pydrake.solvers as mp
 from pydrake.symbolic import Expression, MakeVectorVariable, Variable
 from pydrake.systems.framework import DiagramBuilder, DiagramBuilder_
-from pydrake.geometry import (
-    Box,
-    Role,
-    Sphere,
-)
-from pydrake.math import RigidTransform
-from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities import numpy_compare
 from pydrake.trajectories import PiecewisePolynomial
 
 Environment = namedtuple(

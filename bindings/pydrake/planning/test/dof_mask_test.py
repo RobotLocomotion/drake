@@ -1,4 +1,4 @@
-import pydrake.planning as mut
+import pydrake.planning as mut  # ruff: isort: skip
 
 import unittest
 

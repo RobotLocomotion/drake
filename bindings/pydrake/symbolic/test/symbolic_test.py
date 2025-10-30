@@ -7,16 +7,16 @@ import warnings
 
 import numpy as np
 
-import pydrake.symbolic as sym
 import pydrake.common
+from pydrake.common.containers import EqualToDict
+from pydrake.common.deprecation import install_numpy_warning_filters
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
 import pydrake.math as drake_math
-from pydrake.common.containers import EqualToDict
-from pydrake.common.deprecation import install_numpy_warning_filters
-from pydrake.common.test_utilities import numpy_compare
+import pydrake.symbolic as sym
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.

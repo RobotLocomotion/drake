@@ -1,8 +1,9 @@
-import pydrake.visualization as mut
+import pydrake.visualization as mut  # ruff: isort: skip
+
+import unittest
 
 import matplotlib.pyplot as plt
 import numpy as np
-import unittest
 
 from pydrake.symbolic import Variable
 

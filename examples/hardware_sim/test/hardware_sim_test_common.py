@@ -14,9 +14,8 @@ import shlex
 import subprocess
 import sys
 
-import yaml
-
 from python.runfiles import Create as CreateRunfiles
+import yaml
 
 
 class HardwareSimTest:

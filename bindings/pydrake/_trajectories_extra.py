@@ -2,6 +2,8 @@
 
 from pydrake.common import (
     _MangledName,
+)
+from pydrake.common import (
     pretty_class_name as _pretty_class_name,
 )
 

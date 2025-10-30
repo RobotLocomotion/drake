@@ -8,12 +8,12 @@ import unittest
 import weakref
 
 from pydrake.common.ref_cycle_test_util import (
+    IsDynamic,
+    NotDynamic,
     arbitrary_bad,
     arbitrary_ok,
     free_function,
     invalid_arg_index,
-    IsDynamic,
-    NotDynamic,
     ouroboros,
 )
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count

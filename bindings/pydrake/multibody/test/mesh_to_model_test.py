@@ -1,13 +1,14 @@
 """Unit tests for mesh_to_model."""
 
 import logging
-import numpy as np
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import unittest
 import xml.etree.ElementTree
+
+import numpy as np
 
 from pydrake.common import (
     FindResourceOrThrow,

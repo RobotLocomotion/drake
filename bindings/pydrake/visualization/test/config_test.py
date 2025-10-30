@@ -1,4 +1,4 @@
-import pydrake.visualization as mut
+import pydrake.visualization as mut  # ruff: isort: skip
 
 import copy
 import unittest
@@ -7,18 +7,17 @@ from pydrake.geometry import (
     Meshcat,
     Rgba,
 )
-
 from pydrake.lcm import (
     DrakeLcm,
-)
-from pydrake.systems.lcm import (
-    LcmBuses,
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
+)
+from pydrake.systems.lcm import (
+    LcmBuses,
 )
 
 

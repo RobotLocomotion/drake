@@ -1,4 +1,4 @@
-import pydrake.perception as mut
+import pydrake.perception as mut  # ruff: isort: skip
 
 import copy
 import unittest
@@ -6,8 +6,8 @@ import unittest
 import numpy as np
 
 from pydrake.common.value import Value
-from pydrake.systems.sensors import CameraInfo, PixelType
 from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.systems.sensors import CameraInfo, PixelType
 
 
 class TestPerception(unittest.TestCase):

@@ -7,9 +7,9 @@ This program is only tested / supported on Ubuntu.
 
 import logging
 import os
+from pathlib import Path
 import re
 import urllib.request
-from pathlib import Path
 
 
 def _main():

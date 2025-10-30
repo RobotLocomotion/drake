@@ -1,4 +1,4 @@
-import pydrake.common.compatibility as mut
+import pydrake.common.compatibility as mut  # ruff: isort: skip
 
 from functools import partial
 from threading import Thread

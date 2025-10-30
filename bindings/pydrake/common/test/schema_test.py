@@ -1,10 +1,11 @@
+import pydrake.common.schema as mut  # ruff: isort: skip
+
 import copy
 import unittest
 
 import numpy as np
 
 from pydrake.common import RandomGenerator
-import pydrake.common.schema as mut
 import pydrake.math
 
 

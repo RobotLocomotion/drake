@@ -1,5 +1,6 @@
-import numpy as np
 import unittest
+
+import numpy as np
 
 from pydrake.common import ToleranceType
 from pydrake.common.test_utilities import numpy_compare

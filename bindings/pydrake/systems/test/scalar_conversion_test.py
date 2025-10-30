@@ -1,10 +1,11 @@
-import pydrake.systems.scalar_conversion as mut
+import pydrake.systems.scalar_conversion as mut  # ruff: isort: skip
 
 import copy
 import itertools
 import unittest
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.cpp_template import TemplateClass
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     DiagramBuilder_,
@@ -12,7 +13,6 @@ from pydrake.systems.framework import (
     SystemScalarConverter,
     _ExternalSystemConstraint,
 )
-from pydrake.common.cpp_template import TemplateClass
 
 
 @mut.TemplateSystem.define("Example_")

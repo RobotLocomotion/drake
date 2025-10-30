@@ -1,7 +1,7 @@
+import doc.doxygen_cxx.system_doxygen as mut  # ruff: isort: skip
+
 from textwrap import dedent, indent
 import unittest
-
-import doc.doxygen_cxx.system_doxygen as mut
 
 
 class TestSystemDoxygen(unittest.TestCase):

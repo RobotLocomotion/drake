@@ -113,9 +113,10 @@ Properties of the resulting SDFormat file:
 """
 
 import argparse
-import numpy as np
 import os
 from pathlib import Path
+
+import numpy as np
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.multibody._mesh_model_maker import (

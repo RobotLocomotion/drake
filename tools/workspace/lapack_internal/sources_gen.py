@@ -8,7 +8,6 @@ import re
 
 from python import runfiles
 
-
 # These are the Makefile variables we need to extract (in order).
 _WANTED = (
     "ALLBLAS",

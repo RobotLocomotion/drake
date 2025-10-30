@@ -1,14 +1,14 @@
-from pydrake.multibody import rational
-
-import numpy as np
 import unittest
 
+import numpy as np
+
 from pydrake.common import FindResourceOrThrow
-from pydrake.systems.framework import DiagramBuilder
-from pydrake.multibody.plant import MultibodyPlant, AddMultibodyPlantSceneGraph
-from pydrake.symbolic import Polynomial, RationalFunction, Variable, Expression
+from pydrake.multibody import rational
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph, MultibodyPlant
 import pydrake.symbolic as sym
+from pydrake.symbolic import Expression, Polynomial, RationalFunction, Variable
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestRationalForwardKinematics(unittest.TestCase):

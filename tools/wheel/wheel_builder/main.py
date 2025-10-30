@@ -6,7 +6,6 @@ import sys
 
 from tools.wheel.wheel_builder.common import do_main as main
 
-
 if __name__ == "__main__":
     if sys.platform == "linux":
         from tools.wheel.wheel_builder import linux as platform

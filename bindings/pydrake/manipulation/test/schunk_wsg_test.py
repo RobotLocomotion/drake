@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation as mut
+import pydrake.manipulation as mut  # ruff: isort: skip
 
 import unittest
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
