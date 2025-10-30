@@ -670,10 +670,10 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
   Joint& shadow_joint = mutable_joint(shadow_joint_ordinal);
   if (shadow_is_parent) {
     shadow_link.add_joint_as_parent(shadow_joint.index());
-    shadow_joint.replace_parent_link(shadow_link_index);
+    shadow_joint.set_effective_parent_link(shadow_link_index);
   } else {
     shadow_link.add_joint_as_child(shadow_joint.index());
-    shadow_joint.replace_child_link(shadow_link_index);
+    shadow_joint.set_effective_child_link(shadow_link_index);
   }
 
   Link& mutable_primary_link = mutable_link(primary_link_ordinal);
@@ -952,16 +952,16 @@ LinkJointGraph::Joint::Joint(JointIndex index, JointOrdinal ordinal,
       model_instance_(model_instance),
       flags_(flags),
       traits_index_(joint_traits_index),
-      original_parent_link_index_(parent_link_index),
-      original_child_link_index_(child_link_index) {
+      parent_link_index_(parent_link_index),
+      child_link_index_(child_link_index) {
   DRAKE_DEMAND(index_.is_valid() && !name_.empty() &&
                model_instance_.is_valid());
-  DRAKE_DEMAND(traits_index_.is_valid() && original_parent_link_index_.is_valid() &&
-               original_child_link_index_.is_valid());
-  DRAKE_DEMAND(original_parent_link_index_ != original_child_link_index_);
+  DRAKE_DEMAND(traits_index_.is_valid() && parent_link_index_.is_valid() &&
+               child_link_index_.is_valid());
+  DRAKE_DEMAND(parent_link_index_ != child_link_index_);
   DRAKE_DEMAND(ordinal_ <= static_cast<int>(index_));
-  parent_link_index_ = original_parent_link_index_;
-  child_link_index_ = original_child_link_index_;
+  effective_parent_link_index_ = parent_link_index_;
+  effective_child_link_index_ = child_link_index_;
 }
 
 }  // namespace internal

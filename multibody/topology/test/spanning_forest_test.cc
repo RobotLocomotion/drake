@@ -1018,7 +1018,7 @@ assigned.
 
 Some of the Links are welded together. We call those WeldedLinksAssemblies even
 though each Link has its own Mobod. Those are:
-{0 5 7 12} {13 1 4 15} {10 6 8 16}
+{0 5 7 12} {13 1 4 15*} {10 6 8 16*}
 The corresponding Mobods are in WeldedMobod groups:
 [0 1 2 6] [8 9 14 15] [10 11 13 12]
 
@@ -2121,7 +2121,7 @@ supposed to behave the same way as individual massless bodies:
   - We should not break a loop in a way that leaves a branch with a
     terminal massless assembly. (Test 3 below)
 */
-GTEST_TEST(SpanningForest, MasslessMergedAssemblies) {
+GTEST_TEST(SpanningForest, MasslessOptimizedAssemblies) {
   LinkJointGraph graph;
   const SpanningForest& forest = graph.forest();
   graph.SetGlobalForestBuildingOptions(

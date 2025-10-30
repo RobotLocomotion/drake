@@ -9,6 +9,8 @@
 #include <variant>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
@@ -32,10 +34,16 @@ class LinkJointGraph::Joint {
   /* Returns this %Joint's name, unique within model_instance(). */
   const std::string& name() const { return name_; }
 
-  /* Returns the index of this %Joint's parent Link. */
+  /* Returns the index of this %Joint's parent Link, as supplied at
+  construction. In case we break a loop at this Link, the effective
+  parent Link may be an ephemeral shadow link instead.
+  @see effective_parent_link_index() */
   LinkIndex parent_link_index() const { return parent_link_index_; }
 
-  /* Returns the index of this %Joint's child Link. */
+  /* Returns the index of this %Joint's child Link, as supplied at
+  construction. In case we break a loop at this Link, the effective
+  child Link may be an ephemeral shadow link instead.
+  @see effective_child_link_index() */
   LinkIndex child_link_index() const { return child_link_index_; }
 
   /* Returns `true` if this is a Weld %Joint. */
@@ -91,15 +99,31 @@ class LinkJointGraph::Joint {
     return !std::holds_alternative<std::monostate>(how_modeled_);
   }
 
-  /* (Internal use only) If we have to split one of this joint's links to
-  break a loop, the resulting ephemeral shadow link must replace the parent or
-  child link here. That must be undone if we clear or rebuild the forest. */
-  void replace_parent_link(LinkIndex shadow_link_index) {
-    parent_link_index_ = shadow_link_index;
+  /* (Advanced) Returns the link that is actually serving as the parent link
+  for this joint. Might be different from the user's specified parent link
+  if we split that link to break a loop. If there is no SpanningForest yet
+  (or it has been cleared) this will be the same as parent_link_index(). */
+  LinkIndex effective_parent_link_index() const {
+    return effective_parent_link_index_;
   }
-  /* (Internal use only) */
-  void replace_child_link(LinkIndex shadow_link_index) {
-    child_link_index_ = shadow_link_index;
+
+  /* (Advanced) Returns the link that is actually serving as the child link
+  for this joint. Might be different from the user's specified child link
+  if we split that link to break a loop. If there is no SpanningForest yet
+  (or it has been cleared) this will be the same as child_link_index(). */
+  LinkIndex effective_child_link_index() const {
+    return effective_child_link_index_;
+  }
+
+  /* (Advanced) Given one of the effective links of this joint, returns the
+  other one.
+  @pre The specified link is one of this joint's effective links. */
+  LinkIndex other_effective_link_index(LinkIndex effective_link_index) const {
+    DRAKE_DEMAND((effective_parent_link_index() == effective_link_index) ||
+                 (effective_child_link_index() == effective_link_index));
+    return effective_parent_link_index() == effective_link_index
+               ? effective_child_link_index()
+               : effective_parent_link_index();
   }
 
  private:
@@ -113,8 +137,8 @@ class LinkJointGraph::Joint {
 
   void ClearModel() {
     how_modeled_ = std::monostate{};
-    parent_link_index_ = original_parent_link_index_;
-    child_link_index_ = original_child_link_index_;
+    effective_parent_link_index_ = parent_link_index_;
+    effective_child_link_index_ = child_link_index_;
   }
 
   // (For testing) If `to_set` is JointFlags::kDefault sets the flags to
@@ -123,6 +147,17 @@ class LinkJointGraph::Joint {
   JointFlags set_flags(JointFlags to_set) {
     return flags_ = (to_set == JointFlags::kDefault ? JointFlags::kDefault
                                                     : flags_ | to_set);
+  }
+
+  // If we have to split one of this joint's links to break a loop, the
+  // resulting ephemeral shadow link must replace the parent or child link here.
+  // That must be undone if we clear or rebuild the forest.
+  void set_effective_parent_link(LinkIndex shadow_link_index) {
+    effective_parent_link_index_ = shadow_link_index;
+  }
+
+  void set_effective_child_link(LinkIndex shadow_link_index) {
+    effective_child_link_index_ = shadow_link_index;
   }
 
   // Only joints that are modeled with Mobods need renumbering. This gets
@@ -140,8 +175,8 @@ class LinkJointGraph::Joint {
   JointFlags flags_{JointFlags::kDefault};
 
   JointTraitsIndex traits_index_;
-  LinkIndex original_parent_link_index_;
-  LinkIndex original_child_link_index_;
+  LinkIndex parent_link_index_;
+  LinkIndex child_link_index_;
 
   // Below here is the as-built information; must be reset when the forest is
   // cleared or rebuilt.
@@ -157,8 +192,8 @@ class LinkJointGraph::Joint {
 
   // These are set to the user's originals on construction and when the
   // forest is cleared or rebuilt.
-  LinkIndex parent_link_index_;
-  LinkIndex child_link_index_;
+  LinkIndex effective_parent_link_index_;
+  LinkIndex effective_child_link_index_;
 };
 
 }  // namespace internal

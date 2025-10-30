@@ -30,23 +30,24 @@ void RecordLevelOfOutboardLinks(const SpanningForest& forest,
       continue;  // Skip the one that got us here.
     const LinkJointGraph::Joint& joint = forest.joint_by_index(joint_index);
     if (!joint.is_weld()) continue;
-    if (inboard_link.joint_has_moved_to_shadow(joint_index))
-      continue;
+    if (inboard_link.joint_has_moved_to_shadow(joint_index)) continue;
     std::cout << fmt::format("    {}joint {} {}\n", blanks, joint_index,
                              joint.name());
-    const LinkIndex outboard_link_index = joint.other_link_index(inboard_index);
-    if (link_to_level->contains(outboard_link_index)) {
-      const LinkJointGraph::Link& outboard_link =
-          forest.link_by_index(outboard_link_index);
+    const LinkIndex effective_outboard_link_index =
+        joint.other_effective_link_index(inboard_index);
+    if (link_to_level->contains(effective_outboard_link_index)) {
+      const LinkJointGraph::Link& effective_outboard_link =
+          forest.link_by_index(effective_outboard_link_index);
       // We found a loop :(
       std::cout << fmt::format("  *** loop: link {} {} -> {} {}\n",
                                inboard_index, inboard_link.name(),
-                               outboard_link_index, outboard_link.name());
+                               effective_outboard_link_index,
+                               effective_outboard_link.name());
       continue;  // TODO(sherm1) figure out what to do
     }
-    (*link_to_level)[outboard_link_index] = inboard_level + 1;
-    RecordLevelOfOutboardLinks(forest, joint_index, outboard_link_index,
-                               &*link_to_level);
+    (*link_to_level)[effective_outboard_link_index] = inboard_level + 1;
+    RecordLevelOfOutboardLinks(forest, joint_index,
+                               effective_outboard_link_index, &*link_to_level);
   }
 }
 }  // namespace

@@ -438,35 +438,43 @@ class LinkJointGraph {
   entry in each WeldedLinksAssembly is the _active link_, whose non-weld
   inboard Joint moves the whole assembly. (World is considered the active link
   for the welded-to-World WeldedLinksAssembly.) The remaining links are
-  ordered in the WeldedLinksAssembly from inboard to outboard, but not
-  necessarily depth-first.
+  ordered in the WeldedLinksAssembly in the order they are processed during
+  BuildForest(). That will be generally inboard to outboard, but not necessarily
+  depth first.
 
   Depending on modeling options, each assembly may be modeled in the Forest with
   either
-  (1) a Mobod for each Link (a _separated_ assembly), or
+  (1) a Mobod for each Link (an _unoptimized_ assembly), or
   (2) a single Mobod (an _optimized_ assembly).
 
-  In as separated assembly, the weld joints are treated just as any other joint:
-  each weld and link is modeled with its own Mobod, and loops are cut by
-  splitting links as necessary. Reaction forces are available for each weld as
-  they are for other joint types.
+  In an unoptimized assembly, the weld joints are treated just as for any other
+  joint: each weld and link is modeled with its own Mobod, and loops are cut by
+  splitting links as necessary. At runtime, reaction forces will be available
+  for each weld as they are for other joint types.
 
-  In an optimized assembly, a single Mobod is allocated for the entire assembly,
-  with the combined mass properties of all the welded-together links. Only the
-  active link's inboard joint is modeled and has reaction forces calculated.
-  Most multibody algorithms have complexity proportional to the number of
-  Mobods, so optimized assemblies can result in considerable speedups. Note that
-  you can mark individual weld joints as "must be modeled" so if you need
-  reactions for particular joints (for example, a wrist force sensor) you can
-  get those while still taking advantage of optimized assemblies.
+  In an optimized assembly, a single composite Mobod is allocated for the entire
+  assembly, with the combined mass properties of all the welded-together links.
+  Only the active link's inboard joint is modeled and has reaction forces
+  calculated. Most multibody algorithms have complexity proportional to the
+  number of Mobods, so optimized assemblies can result in considerable speedups.
+  Note that you can mark individual weld joints as "must be modeled" so if you
+  need reactions for particular weld joints (for example, a wrist force sensor)
+  you can get those while still taking advantage of optimized assemblies. In
+  that case the full WeldedLinksAssembly will be split into more than one
+  composite Mobod, with reaction forces available for each Mobod's inboard
+  joint.
 
-  To be precise about the ordering, consider a typical weld joint jᵢ interior to
-  a WeldedLinksAssembly with active link A. Joint jᵢ connects parent link pᵢ to
-  child link cᵢ. We promise that whichever of those links is topologically
-  closer to A (typically, but not necessarily, pᵢ) will appear in the list
-  before the more-distal link. In case of a tie (only possible if the welds form
-  a topological loop interior to the WeldedLinksAssembly) the ordering of the
-  two links is arbitrary.
+  @note To be precise about the ordering, consider a typical weld joint jᵢ
+  interior to a WeldedLinksAssembly with active link A. Joint jᵢ connects parent
+  link pᵢ to child link cᵢ. Whichever of those links is topologically closer to
+  A (typically, but not necessarily, pᵢ) will appear in the list before the
+  more-distal link. In case of a tie (only possible if the welds form a
+  topological loop interior to the WeldedLinksAssembly) the ordering of the two
+  links is arbitrary. When there are no loops, the inboard-to-outboard ordering
+  permits post-processing to calculate reaction forces for joints interior to an
+  optimized assembly (composite) by working through the links in reverse order.
+  Processed that way, each link will have only one unknown reaction force at the
+  time it is encountered.
 
   The 0th WeldedLinksAssembly is always present (if there is a valid
   SpanningForest) and its first entry is World (Link 0), even if nothing else is
