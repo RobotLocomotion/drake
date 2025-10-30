@@ -349,6 +349,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
         .def("MaximumVolumeInscribedAffineTransformation",
             &HPolyhedron::MaximumVolumeInscribedAffineTransformation,
             py::arg("circumbody"),
+            py::arg("check_bounded") = true,
             cls_doc.MaximumVolumeInscribedAffineTransformation.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
