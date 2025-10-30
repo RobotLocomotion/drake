@@ -10,6 +10,12 @@ namespace systems {
 /** @defgroup cache_design_notes System Cache Design and Implementation Notes
     @ingroup technical_notes
 
+<center>
+\"There are only two hard things in computer science:<br>
+<b>cache invalidation</b>, and naming things.\"<br>
+-- Phil Karlton
+</center>
+
 <h2>Background</h2>
 Drake System objects are used to specify the computational _structure_ of a
 model to be studied. The actual _values_ during computation are stored in a
