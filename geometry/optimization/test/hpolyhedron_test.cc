@@ -1939,7 +1939,8 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneSimplifyByIncrementalFaceTranslation) {
   const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   // Volume estimation is not defined for unbounded sets.
-  EXPECT_THROW(H.SimplifyByIncrementalFaceTranslation(0.5), std::exception);
+  EXPECT_THROW((void)H.SimplifyByIncrementalFaceTranslation(0.5),
+               std::exception);
 }
 
 GTEST_TEST(HPolyhedronTest,
@@ -1947,13 +1948,13 @@ GTEST_TEST(HPolyhedronTest,
   const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
   const HPolyhedron H1 = HPolyhedron::MakeUnitBox(ambient_dim);
-  EXPECT_THROW(H.MaximumVolumeInscribedAffineTransformation(H1),
+  EXPECT_THROW((void)H.MaximumVolumeInscribedAffineTransformation(H1),
                std::exception);
 }
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneMaximumVolumeInscribedEllipsoid) {
   const HPolyhedron H = NoHyperplaneHPolyhedron();
-  EXPECT_ANY_THROW(H.MaximumVolumeInscribedEllipsoid());
+  EXPECT_ANY_THROW((void)H.MaximumVolumeInscribedEllipsoid());
 }
 
 GTEST_TEST(HPolyhedronTest, NoHyperplaneChebyshevCenter) {
