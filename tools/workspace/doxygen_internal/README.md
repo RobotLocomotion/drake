@@ -54,7 +54,7 @@ documentation generation.
 These steps will utilize the new `doxygen` binary saved from the previous
 section.
 
-5. Run `./doxygen -u doc/doxygen_cxx/Doxyfile_CXX.in` to have Doxygen
+5. Run `./doxygen -s -u doc/doxygen_cxx/Doxyfile_CXX.in` to have Doxygen
    automatically update the the configuration file with any new fields. (This
    will keep any of Drake's previous values intact, but will add any new
    configuration fields with their default values.)
