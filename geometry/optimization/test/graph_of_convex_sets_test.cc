@@ -274,7 +274,7 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
   Vertex* target_{nullptr};
 
   void CheckConvexRestriction(const MathematicalProgramResult& result,
-                              double kCostTol) {
+                              double cost_tol) const {
     MathematicalProgramResult restriction_result = DoSolveConvexRestriction();
 
     log()->info("Solved convex restriction with {}",
@@ -287,7 +287,7 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
     }
     EXPECT_TRUE(restriction_result.is_success());
     EXPECT_NEAR(result.get_optimal_cost(),
-                restriction_result.get_optimal_cost(), kCostTol);
+                restriction_result.get_optimal_cost(), cost_tol);
 
     // Don't check that the values are exactly the same in case the convex
     // program has multiple solutions. Instead we just check that both results
@@ -299,7 +299,7 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
       // components.
       EXPECT_NEAR(v->GetSolutionCost(result).value(),
                   v->GetSolutionCost(restriction_result).value(),
-                  kCostTol * 10);
+                  cost_tol * 10);
       const std::optional<Eigen::VectorXd> x_result = v->GetSolution(result);
       const std::optional<Eigen::VectorXd> x_restriction_result =
           v->GetSolution(restriction_result);
@@ -315,11 +315,11 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
 
   virtual void DoExtraConvexRestrictionChecks(
       const MathematicalProgramResult& result,
-      const MathematicalProgramResult& restriction_result) {
+      const MathematicalProgramResult& restriction_result)  const {
     // Can be overridden by subclasses to add extra checks.
   }
 
-  virtual MathematicalProgramResult DoSolveConvexRestriction() = 0;
+  virtual MathematicalProgramResult DoSolveConvexRestriction()  const = 0;
 };
 
 /*
@@ -809,18 +809,18 @@ class ThreePoints : public GraphOfConvexSetsTestFixture {
     options_.convex_relaxation = true;
   }
 
-  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+  void CheckConvexRestriction(const MathematicalProgramResult& result) const {
     GraphOfConvexSetsTestFixture::CheckConvexRestriction(result, 1e-4);
   }
 
-  MathematicalProgramResult DoSolveConvexRestriction() override {
+  MathematicalProgramResult DoSolveConvexRestriction() const override {
     return g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}),
                                      options_);
   }
 
   void DoExtraConvexRestrictionChecks(
       const MathematicalProgramResult& result,
-      const MathematicalProgramResult& restriction_result) override {
+      const MathematicalProgramResult& restriction_result) const override {
     EXPECT_FALSE(sink_->GetSolution(result).has_value());
     EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
   }
@@ -1400,25 +1400,24 @@ class ThreeBoxes : public GraphOfConvexSetsTestFixture {
     options_.convex_relaxation = true;
   }
 
-  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+  void CheckConvexRestriction(const MathematicalProgramResult& result) const {
     GraphOfConvexSetsTestFixture::CheckConvexRestriction(result, 1e-6);
   }
 
-  MathematicalProgramResult DoSolveConvexRestriction() override {
+  MathematicalProgramResult DoSolveConvexRestriction() const override {
     return g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}),
                                      options_);
   }
 
   void DoExtraConvexRestrictionChecks(
       const MathematicalProgramResult& result,
-      const MathematicalProgramResult& restriction_result) override {
+      const MathematicalProgramResult& restriction_result) const override {
     EXPECT_FALSE(sink_->GetSolution(result).has_value());
     EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
   }
 
   Edge* e_on_{nullptr};
   Edge* e_off_{nullptr};
-
   Vertex* sink_{nullptr};
   Substitution subs_on_off_{};
   GraphOfConvexSetsOptions options_;
