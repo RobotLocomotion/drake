@@ -603,7 +603,8 @@ JointIndex LinkJointGraph::AddEphemeralJointToWorld(
 }
 
 WeldedLinksAssemblyIndex LinkJointGraph::AddToWeldedLinksAssembly(
-    LinkOrdinal maybe_assembly_link_ordinal, LinkOrdinal new_link_ordinal) {
+    LinkOrdinal maybe_assembly_link_ordinal, LinkOrdinal new_link_ordinal,
+    JointOrdinal weld_joint_ordinal) {
   DRAKE_ASSERT(maybe_assembly_link_ordinal.is_valid() &&
                new_link_ordinal.is_valid());
   Link& maybe_assembly_link = mutable_link(maybe_assembly_link_ordinal);
@@ -625,6 +626,7 @@ WeldedLinksAssemblyIndex LinkJointGraph::AddToWeldedLinksAssembly(
   WeldedLinksAssembly& existing_assembly =
       data_.welded_links_assemblies[*existing_assembly_index];
   existing_assembly.links.push_back(new_link.index());
+  existing_assembly.joints.push_back(joints(weld_joint_ordinal).index());
   // For the assembly to be massless, _all_ its links must be massless.
   if (!new_link.is_massless()) existing_assembly.is_massless = false;
   new_link.welded_links_assembly_index_ = existing_assembly_index;
@@ -632,12 +634,22 @@ WeldedLinksAssemblyIndex LinkJointGraph::AddToWeldedLinksAssembly(
   return *existing_assembly_index;
 }
 
-void LinkJointGraph::AddUnmodeledJointToWeldedLinksAssembly(
+void LinkJointGraph::NoteUnmodeledJointInWeldedLinksAssembly(
     JointOrdinal unmodeled_joint_ordinal,
     WeldedLinksAssemblyIndex welded_links_assembly_index) {
   Joint& joint = mutable_joint(unmodeled_joint_ordinal);
-  DRAKE_DEMAND(joint.traits_index() == weld_joint_traits_index());
+  DRAKE_DEMAND(joint.is_weld());
   joint.how_modeled_ = welded_links_assembly_index;
+}
+
+void LinkJointGraph::AddUnmodeledJointToWeldedLinksAssembly(
+    JointOrdinal unmodeled_joint_ordinal,
+    WeldedLinksAssemblyIndex welded_links_assembly_index) {
+  WeldedLinksAssembly& assembly =
+      data_.welded_links_assemblies[welded_links_assembly_index];
+  assembly.joints.push_back(joints(unmodeled_joint_ordinal).index());
+  NoteUnmodeledJointInWeldedLinksAssembly(unmodeled_joint_ordinal,
+                                          welded_links_assembly_index);
 }
 
 LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,

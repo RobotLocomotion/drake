@@ -776,7 +776,7 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
   graph) if we have a Weld joint, starting a new group or composite as needed.
   Note that if we get here we are _not_ optimizing WeldedLinkAssemblies or we
   wouldn't have asked for a new Mobod! */
-  if (joint.traits_index() == LinkJointGraph::weld_joint_traits_index()) {
+  if (joint.is_weld()) {
     if (!inboard_mobod.welded_mobods_index_.has_value()) {
       inboard_mobod.welded_mobods_index_ =
           WeldedMobodsIndex(ssize(welded_mobods()));
@@ -786,8 +786,8 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
     data_.welded_mobods[*inboard_mobod.welded_mobods_index_].push_back(
         new_mobod_index);
 
-    mutable_graph().AddToWeldedLinksAssembly(inboard_mobod.link_ordinal(),
-                                             outboard_link_ordinal);
+    mutable_graph().AddToWeldedLinksAssembly(
+        inboard_mobod.link_ordinal(), outboard_link_ordinal, joint_ordinal);
   }
 
   return new_mobod;
@@ -947,9 +947,10 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
   const Joint& weld_joint = joints(weld_joint_ordinal);
   DRAKE_DEMAND(weld_joint.traits_index() ==
                LinkJointGraph::weld_joint_traits_index());
-  const WeldedLinksAssemblyIndex link_composite_index =
+  const WeldedLinksAssemblyIndex assembly_index =
       mutable_graph().AddToWeldedLinksAssembly(inboard_mobod->link_ordinal(),
-                                               follower_link_ordinal);
+                                               follower_link_ordinal,
+                                               weld_joint_ordinal);
   mutable_graph().set_primary_mobod_for_link(
       follower_link_ordinal, inboard_mobod->index(), weld_joint.index());
   inboard_mobod->follower_link_ordinals_.push_back(follower_link_ordinal);
@@ -957,11 +958,10 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
   if (!follower_link.is_massless())
     inboard_mobod->has_massful_follower_link_ = true;
 
-  /* We're not going to model this weld Joint since it is interior to
-  an optimized WeldedLinksAssembly. We need to note the composite it is part of.
-*/
-  mutable_graph().AddUnmodeledJointToWeldedLinksAssembly(weld_joint_ordinal,
-                                                         link_composite_index);
+  /* We're not going to model this weld Joint since it is interior to an
+  optimized WeldedLinksAssembly. We need to note the composite it is part of. */
+  mutable_graph().NoteUnmodeledJointInWeldedLinksAssembly(weld_joint_ordinal,
+                                                          assembly_index);
   return *inboard_mobod;
 }
 

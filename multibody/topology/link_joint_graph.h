@@ -4,6 +4,7 @@
 #error Do not include this file. Use "drake/multibody/topology/graph.h".
 #endif
 
+#include <algorithm>
 #include <filesystem>
 #include <map>
 #include <optional>
@@ -14,7 +15,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/common/string_unordered_map.h"
 #include "drake/multibody/topology/link_joint_graph_defs.h"
 
@@ -103,10 +103,18 @@ class LinkJointGraph {
     bool has_quaternion{false};  // If so, the first 4 qs are wxyz.
   };
 
-  /* A WeldedLinksAssembly is a set of Links that are mutually connected by weld
-  joints. It is massless only if _all_ its constituent Links are massless. */
+  /* A WeldedLinksAssembly is a set of Links and weld Joints where the links
+  are all interconnected by the joints. It is massless only if _all_ its
+  constituent Links are massless. */
   struct WeldedLinksAssembly {
+    bool has_link(LinkIndex index) const {
+      return std::find(links.begin(), links.end(), index) != links.end();
+    }
+    bool has_joint(JointIndex index) const {
+      return std::find(joints.begin(), joints.end(), index) != joints.end();
+    }
     std::vector<LinkIndex> links;
+    std::vector<JointIndex> joints;
     bool is_massless{false};
   };
 
@@ -759,12 +767,13 @@ class LinkJointGraph {
   JointIndex AddEphemeralJointToWorld(JointTraitsIndex type_index,
                                       LinkOrdinal child_link_ordinal);
 
-  // Adds the new Link to the WeldedLinksAssembly of which maybe_assembly_link
-  // is a member. If maybe_assembly_link is not a member of any
-  // WeldedLinksAssembly, then we create a new WeldedLinksAssembly with
+  // Adds the new Link and Joint to the WeldedLinksAssembly of which
+  // maybe_assembly_link is a member. If maybe_assembly_link is not a member of
+  // any WeldedLinksAssembly, then we create a new WeldedLinksAssembly with
   // maybe_assembly_link as the first (and hence "active") Link.
   WeldedLinksAssemblyIndex AddToWeldedLinksAssembly(
-      LinkOrdinal maybe_assembly_link_ordinal, LinkOrdinal new_link_ordinal);
+      LinkOrdinal maybe_assembly_link_ordinal, LinkOrdinal new_link_ordinal,
+      JointOrdinal weld_joint_ordinal);
 
   // While building the Forest, adds a new Shadow link to the given Primary
   // link, with the Shadow mobilized by the given joint. We'll derive a name for
@@ -814,7 +823,12 @@ class LinkJointGraph {
   }
 
   // Notes that we didn't model this Joint in the Forest because it is just a
-  // weld to an existing Assembly.
+  // weld to an existing Assembly. We expect that the joint is already in the
+  // assembly.
+  void NoteUnmodeledJointInWeldedLinksAssembly(
+      JointOrdinal unmodeled_joint_ordinal, WeldedLinksAssemblyIndex which);
+
+  // Adds the joint to the assembly and notes that it is unmodeled as above.
   void AddUnmodeledJointToWeldedLinksAssembly(
       JointOrdinal unmodeled_joint_ordinal, WeldedLinksAssemblyIndex which);
 
