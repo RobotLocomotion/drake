@@ -73,6 +73,9 @@ Drake's pre-compiled binaries:
 Any other configuration not listed here will lead to undefined behavior
 (as a violation of the C++ One-Definition Rule).
 
+The above information covers the current version of Drake. For historical
+details, see [End of support releases](/release_notes/end_of_support.html).
+
 ## Available Versions
 
 Drake publishes stable releases approximately once a month, and also
