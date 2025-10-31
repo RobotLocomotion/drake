@@ -632,7 +632,7 @@ define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
-  find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
+  find_package(Gurobi 12.0 EXACT MODULE REQUIRED)
 
   string(APPEND BAZEL_CONFIG " --config=gurobi")
 
