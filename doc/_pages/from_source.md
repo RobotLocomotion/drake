@@ -185,6 +185,17 @@ Adjusting open-source dependencies:
   library will be not installed alongside Drake. See  `DrakeLcm::available()` to
   retrieve this setting at runtime.
   * This option cannot be `ON` with `BUILD_SHARED_LIBS=OFF`.
+* `WITH_RENDER_GL` (default `ON`). When `ON`, enables the `RenderEngineGl` in
+  the build. See `geometry::kHasRenderEngineGl` to retrieve this setting at
+  runtime.
+  * This option is not available on macOS; `geometry::kHasRenderEngineGl` will
+    always be false.
+* `WITH_RENDER_GLTF_CLIENT` (default `ON`). When `ON`, enables the
+  `RenderEngineGltfClient` in the build. See
+  `geometry::kHasRenderEngineGltfClient` to retrieve this setting at runtime.
+* `WITH_RENDER_VTK` (default `ON`). When `ON`, enables the `RenderEngineVtk` in
+  the build. See `geometry::kHasRenderEngineVtk` to retrieve this setting at
+  runtime.
 
 Adjusting closed-source (commercial) software dependencies:
 
