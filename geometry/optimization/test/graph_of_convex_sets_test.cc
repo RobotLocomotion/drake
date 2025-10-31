@@ -315,11 +315,11 @@ class GraphOfConvexSetsTestFixture : public ::testing::Test {
 
   virtual void DoExtraConvexRestrictionChecks(
       const MathematicalProgramResult& result,
-      const MathematicalProgramResult& restriction_result)  const {
+      const MathematicalProgramResult& restriction_result) const {
     // Can be overridden by subclasses to add extra checks.
   }
 
-  virtual MathematicalProgramResult DoSolveConvexRestriction()  const = 0;
+  virtual MathematicalProgramResult DoSolveConvexRestriction() const = 0;
 };
 
 /*
