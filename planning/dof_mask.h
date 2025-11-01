@@ -9,8 +9,8 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/reset_after_move.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/counted_dynamic_bitset.h"
 
 namespace drake {
 namespace planning {
@@ -47,7 +47,7 @@ class DofMask {
   /** Default constructor; creates a mask with no dofs (size() = count() = 0 ).
   @pydrake_mkdoc_identifier{default}
   */
-  DofMask();
+  DofMask() = default;
 
   /** Full/empty constructor.
 
@@ -69,7 +69,7 @@ class DofMask {
   /** Constructs a %DofMask from a vector of bool.
   @pydrake_mkdoc_identifier{vector_bool} */
   // NOLINTNEXTLINE(runtime/explicit)
-  DofMask(std::vector<bool> values);
+  DofMask(const std::vector<bool>& values);
 
   //@}
 
@@ -101,10 +101,10 @@ class DofMask {
   //{
 
   /** Reports this %DofMask instance's total number of indexable dofs.  */
-  int size() const { return ssize(data_); }
+  int size() const { return bitset_.size(); }
 
   /** Reports this %DofMask instance's number of _selected_ dofs. */
-  int count() const { return count_; }
+  int count() const { return bitset_.count(); }
 
   /** Creates a collection of all of the joints implied by the selected dofs in
   `this`. The returned joint indices are reported in increasing order.
@@ -115,10 +115,13 @@ class DofMask {
 
   /** Note: `o.size()` may be different from `this->size()`. They will, by
   definition report as not equal. */
-  bool operator==(const DofMask& o) const;
+  bool operator==(const DofMask& o) const = default;
 
   /** @pre `index` is in the range [0, size()). */
-  bool operator[](int index) const { return data_.at(index); }
+  bool operator[](int index) const {
+    DRAKE_THROW_UNLESS(index >= 0 && index < bitset_.size());
+    return bitset_[index];
+  }
 
   /** The string representation of the mask -- it encodes the full mask size
   clearly indicating which dofs are selected and which are unselected. The exact
@@ -253,16 +256,18 @@ class DofMask {
   //@}
 
  private:
+  explicit DofMask(internal::CountedDynamicBitset&& bitset)
+      : bitset_(std::move(bitset)) {}
+
   /* Throws if `plant` is *not* compatible with %DofMask's assumptions.
   Specifically, the iᵗʰ velocity corresponds to the iᵗʰ position for all
   `i`; `vᵢ = q̇ᵢ`. */
   static void ThrowIfNotCompatible(
       const multibody::MultibodyPlant<double>& plant);
 
-  // These member fields are almost "const" -- we have no member functions that
-  // mutate them, other than the two default assignment operators.
-  std::vector<bool> data_;
-  reset_after_move<int> count_{0};
+  // This member field is almost "const" -- we have no member functions that
+  // mutate it, other than the two default assignment operators.
+  internal::CountedDynamicBitset bitset_;
 };
 
 }  // namespace planning

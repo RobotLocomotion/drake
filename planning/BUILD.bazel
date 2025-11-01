@@ -109,8 +109,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "dof_mask",
-    srcs = ["dof_mask.cc"],
-    hdrs = ["dof_mask.h"],
+    srcs = [
+        "counted_dynamic_bitset.cc",
+        "dof_mask.cc",
+    ],
+    hdrs = [
+        "counted_dynamic_bitset.h",
+        "dof_mask.h",
+    ],
     deps = [
         "//multibody/plant",
     ],

@@ -1,32 +1,31 @@
 #include "drake/planning/dof_mask.h"
 
+#include <algorithm>
+#include <memory>
+
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
 namespace drake {
 namespace planning {
 
+using internal::CountedDynamicBitset;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 
-DofMask::DofMask() = default;
-
-DofMask::DofMask(int size, bool value)
-    : data_(size >= 0 ? size : 0, value), count_(value ? size : 0) {
-  DRAKE_THROW_UNLESS(size >= 0);
-}
+DofMask::DofMask(int size, bool value) : bitset_(size, value) {}
 
 DofMask::DofMask(std::initializer_list<bool> values)
-    : DofMask(std::vector(std::move(values))) {}
+    : bitset_(std::span<const bool>(values)) {}
 
-DofMask::DofMask(std::vector<bool> values) : data_(std::move(values)) {
-  for (int i = 0; i < ssize(data_); ++i) {
-    if (data_[i]) {
-      ++count_;
-    }
-  }
+DofMask::DofMask(const std::vector<bool>& values) {
+  // TODO(jwnimmer-tri) Use make_unique_for_overwrite once we have >= C++23.
+  std::unique_ptr<bool[]> storage(new bool[values.size()]);
+  std::copy(values.begin(), values.end(), storage.get());
+  std::span<bool> view(storage.get(), values.size());
+  bitset_ = CountedDynamicBitset(view);
 }
 
 DofMask DofMask::MakeFromModel(const MultibodyPlant<double>& plant,
@@ -41,7 +40,7 @@ DofMask DofMask::MakeFromModel(const MultibodyPlant<double>& plant,
       bits[i] = true;
     }
   }
-  return DofMask(std::move(bits));
+  return DofMask(bits);
 }
 
 DofMask DofMask::MakeFromModel(const MultibodyPlant<double>& plant,
@@ -65,58 +64,31 @@ void DofMask::ThrowIfNotCompatible(const MultibodyPlant<double>& plant) {
 }
 
 std::string DofMask::to_string() const {
-  // In future versions (>9), fmt::to_string(data_) will work, but will require
-  // including fmt/std.h.
-  return fmt::to_string(std::vector<int>(data_.begin(), data_.end()));
+  std::vector<int> exploded;
+  exploded.resize(size());
+  for (int i = 0; i < size(); ++i) {
+    exploded[i] = bitset_[i];
+  }
+  return fmt::to_string(exploded);
 }
 
 DofMask DofMask::Complement() const {
-  DofMask result(*this);
-  result.data_.flip();
-  result.count_ = this->size() - this->count();
-  return result;
+  return DofMask{bitset_.Complement()};
 }
 
 DofMask DofMask::Union(const DofMask& other) const {
-  const int mask_size = size();
-  DRAKE_THROW_UNLESS(other.size() == mask_size);
-  DofMask result(mask_size, false);
-  for (int i = 0; i < mask_size; ++i) {
-    const bool bit = data_[i] || other[i];
-    result.data_[i] = bit;
-    if (bit) {
-      ++result.count_;
-    }
-  }
-  return result;
+  DRAKE_THROW_UNLESS(this->size() == other.size());
+  return DofMask{bitset_.Union(other.bitset_)};
 }
 
 DofMask DofMask::Intersect(const DofMask& other) const {
-  const int mask_size = size();
-  DRAKE_THROW_UNLESS(other.size() == mask_size);
-  DofMask result(mask_size, false);
-  for (int i = 0; i < mask_size; ++i) {
-    const bool bit = data_[i] && other[i];
-    result.data_[i] = bit;
-    if (bit) {
-      ++result.count_;
-    }
-  }
-  return result;
+  DRAKE_THROW_UNLESS(this->size() == other.size());
+  return DofMask{bitset_.Intersect(other.bitset_)};
 }
 
 DofMask DofMask::Subtract(const DofMask& other) const {
-  const int mask_size = size();
-  DRAKE_THROW_UNLESS(other.size() == mask_size);
-  DofMask result(mask_size, false);
-  for (int i = 0; i < mask_size; ++i) {
-    const bool bit = data_[i] && !other[i];
-    result.data_[i] = bit;
-    if (bit) {
-      ++result.count_;
-    }
-  }
-  return result;
+  DRAKE_THROW_UNLESS(this->size() == other.size());
+  return DofMask{bitset_.Subtract(other.bitset_)};
 }
 
 void DofMask::GetFromArray(const Eigen::Ref<const Eigen::VectorXd>& full_vec,
@@ -126,7 +98,7 @@ void DofMask::GetFromArray(const Eigen::Ref<const Eigen::VectorXd>& full_vec,
   DRAKE_THROW_UNLESS(full_vec.size() == size());
   int out_index = -1;
   for (int i = 0; i < size(); ++i) {
-    if (data_[i]) {
+    if (bitset_[i]) {
       (*output)[++out_index] = full_vec[i];
       if (out_index >= output->size()) break;
     }
@@ -150,7 +122,7 @@ void DofMask::GetColumnsFromMatrix(
   DRAKE_THROW_UNLESS(full_mat.cols() == size());
   int out_index = -1;
   for (int i = 0; i < size(); ++i) {
-    if (data_[i]) {
+    if (bitset_[i]) {
       output->col(++out_index) = full_mat.col(i);
       if (out_index >= output->cols()) break;
     }
@@ -172,7 +144,7 @@ void DofMask::SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
   DRAKE_THROW_UNLESS(output->size() == size());
   int input_index = -1;
   for (int i = 0; i < size(); ++i) {
-    if (data_[i]) {
+    if (bitset_[i]) {
       (*output)[i] = vec[++input_index];
     }
   }
@@ -188,7 +160,7 @@ std::vector<JointIndex> DofMask::GetJoints(
     const Joint<double>& joint = plant.get_joint(j);
     for (int i = joint.position_start();
          i < joint.position_start() + joint.num_positions(); ++i) {
-      if (data_[i]) {
+      if (bitset_[i]) {
         result.push_back(j);
         break;
       }
@@ -197,38 +169,32 @@ std::vector<JointIndex> DofMask::GetJoints(
   return result;
 }
 
-bool DofMask::operator==(const DofMask& o) const {
-  const bool result = data_ == o.data_;
-  DRAKE_ASSERT((result == false) || (this->count() == o.count()));
+std::vector<int> DofMask::GetSelectedToFullIndex() const {
+  std::vector<int> result(this->count());
+  int count = 0;
+  for (int i = 0; i < this->size(); ++i) {
+    if (bitset_[i]) {
+      result[count++] = i;
+      if (count >= this->count()) {
+        break;
+      }
+    }
+  }
   return result;
 }
 
-std::vector<int> DofMask::GetSelectedToFullIndex() const {
-  std::vector<int> ret(count_);
-  int count = 0;
-  for (int i = 0; i < std::ssize(data_); ++i) {
-    if (data_[i]) {
-      ret[count++] = i;
-      if (count >= count_) {
-        break;
-      }
-    }
-  }
-  return ret;
-}
-
 std::vector<std::optional<int>> DofMask::GetFullToSelectedIndex() const {
-  std::vector<std::optional<int>> ret(std::ssize(data_), std::nullopt);
+  std::vector<std::optional<int>> result(this->size(), std::nullopt);
   int count = 0;
-  for (int i = 0; i < std::ssize(data_); ++i) {
-    if (data_[i]) {
-      ret[i] = count++;
-      if (count >= count_) {
+  for (int i = 0; i < this->size(); ++i) {
+    if (bitset_[i]) {
+      result[i] = count++;
+      if (count >= this->count()) {
         break;
       }
     }
   }
-  return ret;
+  return result;
 }
 
 }  // namespace planning
