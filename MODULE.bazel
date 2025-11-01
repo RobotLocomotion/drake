@@ -191,7 +191,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "googletest",
-    version = "1.17.0",
+    version = "1.17.0.bcr.1",
     # Ideally we could set dev_dependency = True here, but that would prevent
     # downstream projects from re-using our //common/test_utilities library.
     # Even though that library is not Stable API, historically downstream
