@@ -204,11 +204,30 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
     return SpatialVelocity<T>(w_FM, Vector3<T>::Zero());
   }
 
+  // Angular velocities v are in F. We'll just re-express.
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>& X_FM, const T*,
+                                 const T* v) const {
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialVelocity<T> V_FM_F = calc_V_FM(nullptr, v);
+    const SpatialVelocity<T> V_FM_M = R_FM.inverse() * V_FM_F;  // 30 flops
+    return V_FM_M;
+  }
+
   // Here H_F₆ₓ₃=[I₃ₓ₃ 0₃ₓ₃]ᵀ so Hdot_F=0 and
   // A_FM_F = H_F⋅vdot + Hdot_F⋅v = [vdot, 0₃]ᵀ
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     const Eigen::Map<const Vector3<T>> alpha_FM(vdot);
     return SpatialAcceleration<T>(alpha_FM, Vector3<T>::Zero());
+  }
+
+  // Angular velocities v and accelerations vdot are in F. We'll just
+  // re-express.
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>& X_FM,
+                                     const T*, const T*, const T* vdot) const {
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialAcceleration<T> A_FM_F = calc_A_FM(nullptr, nullptr, vdot);
+    const SpatialAcceleration<T> A_FM_M = R_FM.inverse() * A_FM_F;  // 30 flops
+    return A_FM_M;
   }
 
   // Returns tau = H_FMᵀ⋅F. The rotational part of H is identity here and
@@ -218,6 +237,16 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
     Eigen::Map<VVector<T>> tau_as_vector(tau);
     const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
     tau_as_vector = t_BMo_F;
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M. See class comments.
+  void calc_tau_from_M(const math::RigidTransform<T>& X_FM, const T* q,
+                       const Vector6<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(q != nullptr && tau != nullptr);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const auto t_B_M = F_BMo_M.template head<3>();  // rotational (torque)
+    Eigen::Map<VVector<T>> tau_as_vector(tau);
+    tau_as_vector = R_FM * t_B_M;  // 15 flops
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

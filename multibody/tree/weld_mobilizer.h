@@ -73,6 +73,12 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
     return X_MB;
   }
 
+  /* Since X_FM is identity, applying it to a vector does nothing. */
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>&,
+                        const Vector3<T>& v_M) const {
+    return v_M;
+  }
+
   /* Since R_FM is identity, applying it to a vector does nothing. */
   Vector3<T> apply_R_FM(const math::RotationMatrix<T>&,
                         const Vector3<T>& v_M) const {
@@ -85,14 +91,26 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
     return SpatialVelocity<T>::Zero();
   }
 
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T*) const {
+    return SpatialVelocity<T>::Zero();
+  }
+
   /* Computes the across-mobilizer acceleration A_FM which for this mobilizer is
   always zero. */
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T*) const {
     return SpatialAcceleration<T>::Zero();
   }
 
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T*) const {
+    return SpatialAcceleration<T>::Zero();
+  }
+
   // Does nothing since there are no taus.
   void calc_tau(const T*, const SpatialForce<T>&, T*) const {}
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const Vector6<T>&, T*) const {}
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final;
