@@ -334,7 +334,9 @@ class TestGeometryOptimization(unittest.TestCase):
 
         # Check Simplify MaximumVolumeInscribedAffineTransformation binding
         # with default input parameters.
-        h7 = h6.MaximumVolumeInscribedAffineTransformation(circumbody=h_box)
+        h7 = h6.MaximumVolumeInscribedAffineTransformation(
+            circumbody=h_box, check_bounded=True
+        )
         self.assertIsInstance(h7, mut.HPolyhedron)
         self.assertEqual(h7.ambient_dimension(), 3)
 
@@ -721,7 +723,9 @@ class TestGeometryOptimization(unittest.TestCase):
             source_id=source_id,
             frame_id=frame_id,
             geometry=GeometryInstance(
-                X_PG=RigidTransform(), shape=Cylinder(1.0, 1.0), name="cylinder"
+                X_PG=RigidTransform(),
+                shape=Cylinder(1.0, 1.0),
+                name="cylinder",
             ),
         )
         sphere_geometry_id = scene_graph.RegisterGeometry(
@@ -1039,7 +1043,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(
             isinstance(
                 spp.SamplePaths(
-                    source=source, target=target, result=result, options=options
+                    source=source,
+                    target=target,
+                    result=result,
+                    options=options,
                 ),
                 list,
             )
@@ -1431,7 +1438,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         )
         self.assertFalse(polytope_options.search_s_bounds_lagrangians)
         self.assertEqual(
-            polytope_options.ellipsoid_margin_cost, dut.EllipsoidMarginCost.kSum
+            polytope_options.ellipsoid_margin_cost,
+            dut.EllipsoidMarginCost.kSum,
         )
 
         # BilinearAlternationOptions

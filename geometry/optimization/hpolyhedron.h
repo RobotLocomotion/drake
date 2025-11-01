@@ -184,9 +184,14 @@ class HPolyhedron final : public ConvexSet {
   @returns the transformed polyhedron, t + TX.
 
   @param circumbody is an HPolyhedron that must contain the returned inbody.
+  @pre `this` is bounded. If `check_bounded` is true, this condition is
+  checked and an exception is thrown if it is not satisfied. If `check_bounded`
+  is set to false, then it is the user's responsibility to ensure that `this` is
+  bounded and the result is not necessarily to be trusted if the precondition is
+  not satisfied.
   @throws std::exception if the solver fails to solve the problem.*/
   [[nodiscard]] HPolyhedron MaximumVolumeInscribedAffineTransformation(
-      const HPolyhedron& circumbody) const;
+      const HPolyhedron& circumbody, bool check_bounded = true) const;
 
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and

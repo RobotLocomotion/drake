@@ -3872,6 +3872,14 @@ Returns:
 Parameter ``circumbody``:
     is an HPolyhedron that must contain the returned inbody.
 
+Precondition:
+    ``this`` is bounded. If ``check_bounded`` is true, this condition
+    is checked and an exception is thrown if it is not satisfied. If
+    ``check_bounded`` is set to false, then it is the user's
+    responsibility to ensure that ``this`` is bounded and the result
+    is not necessarily to be trusted if the precondition is not
+    satisfied.
+
 Raises:
     RuntimeError if the solver fails to solve the problem.)""";
           } MaximumVolumeInscribedAffineTransformation;
