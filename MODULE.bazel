@@ -59,7 +59,7 @@ use_repo(cc_configure, "local_config_cc")
 
 bazel_dep(name = "eigen", version = "5.0.0", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.0.0", repo_name = "module_fmt")
-bazel_dep(name = "spdlog", version = "1.15.3", repo_name = "module_spdlog")  # noqa
+bazel_dep(name = "spdlog", version = "1.16.0", repo_name = "module_spdlog")  # noqa
 
 # TODO(jwnimmer-tri) Remove this when we upgrade to eigen > 5.0.0.
 single_version_override(
