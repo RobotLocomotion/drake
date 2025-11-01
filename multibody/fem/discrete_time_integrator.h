@@ -48,7 +48,7 @@ class DiscreteTimeIntegrator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeIntegrator);
 
-  virtual ~DiscreteTimeIntegrator() = default;
+  virtual ~DiscreteTimeIntegrator();
 
   /* Returns an identical copy of `this` DiscreteTimeIntegrator. */
   std::unique_ptr<DiscreteTimeIntegrator<T>> Clone() const { return DoClone(); }

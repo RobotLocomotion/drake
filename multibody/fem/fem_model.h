@@ -88,7 +88,7 @@ class FemModel {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder);
 
-    virtual ~Builder() = default;
+    virtual ~Builder();
 
     /** Adds the FEM elements described by calls to this builder to this
      associated FemModel. The builder is left in an invalid state after Build()
