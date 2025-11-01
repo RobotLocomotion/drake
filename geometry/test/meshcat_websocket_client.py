@@ -152,9 +152,7 @@ def main():
     )
     args = parser.parse_args()
     try:
-        asyncio.get_event_loop().run_until_complete(
-            socket_operations_async(args)
-        )
+        asyncio.run(socket_operations_async(args))
     except Exception as e:
         if args.expect_success:
             raise
