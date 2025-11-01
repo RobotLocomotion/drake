@@ -26,6 +26,13 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "doxygen_input",
+    srcs = ["mathematical_program_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 # When this is set to True, rather than linking to MOSEK directly, Drake will
 # create (using implib.so) and link to a trampoline library that allows the
 # real library to be loaded on demand. This is intended for internal use only,

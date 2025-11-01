@@ -19,6 +19,13 @@ load(
 )
 
 filegroup(
+    name = "doxygen_input",
+    srcs = ["parsing_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
+filegroup(
     name = "test_models",
     testonly = 1,
     srcs = glob([

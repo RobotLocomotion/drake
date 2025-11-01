@@ -1,0 +1,14 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "discrete_systems.h",
+        "stochastic_systems.h",
+        "systems.h",
+    ],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
+add_lint_tests()
