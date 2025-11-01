@@ -267,6 +267,61 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   EXPECT_EQ(v1->outgoing_edges().size(), 0);
 }
 
+class GraphOfConvexSetsTestFixture : public ::testing::Test {
+ protected:
+  GraphOfConvexSets g_;
+  Vertex* source_{nullptr};
+  Vertex* target_{nullptr};
+
+  void CheckConvexRestriction(const MathematicalProgramResult& result,
+                              double cost_tol) const {
+    MathematicalProgramResult restriction_result = DoSolveConvexRestriction();
+
+    log()->info("Solved convex restriction with {}",
+                restriction_result.get_solver_id().name());
+    // Confirm that we get a convex solver (not an NLP solver).
+    if (MixedIntegerSolverAvailable()) {
+      EXPECT_TRUE(
+          restriction_result.get_solver_id() == solvers::MosekSolver::id() ||
+          restriction_result.get_solver_id() == solvers::GurobiSolver::id());
+    }
+    EXPECT_TRUE(restriction_result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(),
+                restriction_result.get_optimal_cost(), cost_tol);
+
+    // Don't check that the values are exactly the same in case the convex
+    // program has multiple solutions. Instead we just check that both results
+    // achieve the same cost and are feasible for the convex sets
+    for (const auto* v : {source_, target_}) {
+      // Relax the expected cost tolerance for the individual vertex values
+      // relative to the tolerance of the overall cost. This is reasonable as
+      // the norm of a vector is always less than the sum of the norm of the
+      // components.
+      EXPECT_NEAR(v->GetSolutionCost(result).value(),
+                  v->GetSolutionCost(restriction_result).value(),
+                  cost_tol * 10);
+      const std::optional<Eigen::VectorXd> x_result = v->GetSolution(result);
+      const std::optional<Eigen::VectorXd> x_restriction_result =
+          v->GetSolution(restriction_result);
+      ASSERT_TRUE(x_result.has_value());
+      ASSERT_TRUE(x_restriction_result.has_value());
+      constexpr double kTol = 1e-6;
+      EXPECT_TRUE(v->set().PointInSet(x_result.value(), kTol));
+      EXPECT_TRUE(v->set().PointInSet(x_restriction_result.value(), kTol));
+    }
+
+    DoExtraConvexRestrictionChecks(result, restriction_result);
+  }
+
+  virtual void DoExtraConvexRestrictionChecks(
+      const MathematicalProgramResult& result,
+      const MathematicalProgramResult& restriction_result) const {
+    // Can be overridden by subclasses to add extra checks.
+  }
+
+  virtual MathematicalProgramResult DoSolveConvexRestriction() const = 0;
+};
+
 /*
 ┌───┐       ┌───┐
 │ u ├───e──►│ v │
@@ -735,7 +790,7 @@ it.
 │ sink │
 └──────┘
 */
-class ThreePoints : public ::testing::Test {
+class ThreePoints : public GraphOfConvexSetsTestFixture {
  protected:
   ThreePoints()
       : p_source_{Vector2d(3., 5.)},
@@ -754,35 +809,25 @@ class ThreePoints : public ::testing::Test {
     options_.convex_relaxation = true;
   }
 
-  void CheckConvexRestriction(const MathematicalProgramResult& result) {
-    MathematicalProgramResult restriction_result =
-        g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}), options_);
-    log()->info("Solved convex restriction with {}",
-                restriction_result.get_solver_id().name());
-    // Confirm that we get a convex solver (not an NLP solver).
-    if (MixedIntegerSolverAvailable()) {
-      EXPECT_TRUE(
-          restriction_result.get_solver_id() == solvers::MosekSolver::id() ||
-          restriction_result.get_solver_id() == solvers::GurobiSolver::id());
-    }
-    EXPECT_TRUE(restriction_result.is_success());
-    EXPECT_NEAR(result.get_optimal_cost(),
-                restriction_result.get_optimal_cost(), 1e-4);
-    EXPECT_FALSE(sink_->GetSolution(result).has_value());
-    EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
-    for (const auto* v : {source_, target_}) {
-      EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(),
-                                  v->GetSolution(restriction_result).value(),
-                                  1e-6));
-    }
+  void CheckConvexRestriction(const MathematicalProgramResult& result) const {
+    GraphOfConvexSetsTestFixture::CheckConvexRestriction(result, 1e-4);
   }
 
-  GraphOfConvexSets g_;
+  MathematicalProgramResult DoSolveConvexRestriction() const override {
+    return g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}),
+                                     options_);
+  }
+
+  void DoExtraConvexRestrictionChecks(
+      const MathematicalProgramResult& result,
+      const MathematicalProgramResult& restriction_result) const override {
+    EXPECT_FALSE(sink_->GetSolution(result).has_value());
+    EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
+  }
+
   Point p_source_;
   Point p_target_;
   Point p_sink_;
-  Vertex* source_{nullptr};
-  Vertex* target_{nullptr};
   Vertex* sink_{nullptr};
   Edge* e_on_{nullptr};
   Edge* e_off_{nullptr};
@@ -1338,7 +1383,7 @@ TEST_F(ThreePoints, GetSolutionPath) {
 }
 
 // Like the ThreePoints, but with boxes for each vertex instead of points.
-class ThreeBoxes : public ::testing::Test {
+class ThreeBoxes : public GraphOfConvexSetsTestFixture {
  protected:
   ThreeBoxes() {
     auto box = HPolyhedron::MakeUnitBox(2);
@@ -1355,32 +1400,24 @@ class ThreeBoxes : public ::testing::Test {
     options_.convex_relaxation = true;
   }
 
-  void CheckConvexRestriction(const MathematicalProgramResult& result) {
-    MathematicalProgramResult restriction_result =
-        g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}), options_);
-    // Confirm that we get a convex solver (not an NLP solver).
-    if (MixedIntegerSolverAvailable()) {
-      EXPECT_TRUE(
-          restriction_result.get_solver_id() == solvers::MosekSolver::id() ||
-          restriction_result.get_solver_id() == solvers::GurobiSolver::id());
-    }
-    EXPECT_TRUE(restriction_result.is_success());
-    EXPECT_NEAR(result.get_optimal_cost(),
-                restriction_result.get_optimal_cost(), 1e-6);
-    EXPECT_FALSE(sink_->GetSolution(result).has_value());
-    EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
-    for (const auto* v : {source_, target_}) {
-      EXPECT_TRUE(CompareMatrices(v->GetSolution(result).value(),
-                                  v->GetSolution(restriction_result).value(),
-                                  1e-6));
-    }
+  void CheckConvexRestriction(const MathematicalProgramResult& result) const {
+    GraphOfConvexSetsTestFixture::CheckConvexRestriction(result, 1e-6);
   }
 
-  GraphOfConvexSets g_;
+  MathematicalProgramResult DoSolveConvexRestriction() const override {
+    return g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}),
+                                     options_);
+  }
+
+  void DoExtraConvexRestrictionChecks(
+      const MathematicalProgramResult& result,
+      const MathematicalProgramResult& restriction_result) const override {
+    EXPECT_FALSE(sink_->GetSolution(result).has_value());
+    EXPECT_FALSE(sink_->GetSolution(restriction_result).has_value());
+  }
+
   Edge* e_on_{nullptr};
   Edge* e_off_{nullptr};
-  Vertex* source_{nullptr};
-  Vertex* target_{nullptr};
   Vertex* sink_{nullptr};
   Substitution subs_on_off_{};
   GraphOfConvexSetsOptions options_;
