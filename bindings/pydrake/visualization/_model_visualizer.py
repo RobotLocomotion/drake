@@ -12,10 +12,10 @@ import numpy as np
 from pydrake.geometry import (
     Box,
     MeshcatCone,
+    RenderEngineVtkParams,
     Rgba,
     StartMeshcat,
 )
-from pydrake.geometry import RenderEngineVtkParams
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.tree import (
@@ -33,8 +33,8 @@ from pydrake.systems.sensors import (
     CameraConfig,
 )
 from pydrake.visualization import (
-    VisualizationConfig,
     ApplyVisualizationConfig,
+    VisualizationConfig,
 )
 from pydrake.visualization._triad import (
     AddFrameTriadIllustration,

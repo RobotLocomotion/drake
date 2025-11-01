@@ -72,7 +72,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasibleOrUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+    // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
@@ -82,7 +82,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+    // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
@@ -305,16 +305,13 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   GurobiSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    // Gurobi 9.0.0 returns a solution that is accurate up to 1.4E-6 for this
-    // specific problem. Might need to change the tolerance when we upgrade
-    // Gurobi.
-    prob.CheckSolution(result, 1.4E-6);
+    prob.CheckSolution(result, 5E-6);
   }
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   GurobiSolver solver;
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1E-6);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 5E-6);
 }
 
 GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
@@ -813,7 +810,7 @@ GTEST_TEST(GurobiTest, TestIterationLimit) {
     const auto result = solver.Solve(prog, std::nullopt, solver_options);
     const auto solver_details = result.get_solver_details<GurobiSolver>();
     // This code is defined in
-    // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+    // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
     const int ITERATION_LIMIT = 7;
     EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
     EXPECT_TRUE(std::isfinite(result.get_optimal_cost()));

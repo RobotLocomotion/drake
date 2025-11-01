@@ -13,12 +13,12 @@ from pydrake.common import (
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import Role, SceneGraph
 from pydrake.multibody._inertia_fixer import (
-    fix_inertia_from_string,
     GEOM_INERTIA_ROLE_ORDER_DEFAULT,
     InertiaFixer,
+    fix_inertia_from_string,
 )
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 
 
 class TestFixInertiaFromString(unittest.TestCase):

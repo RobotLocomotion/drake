@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation as mut
+import pydrake.manipulation as mut  # ruff: isort: skip
 
 import gc
 import unittest
-import numpy as np
 import weakref
+
+import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.lcm import DrakeLcm

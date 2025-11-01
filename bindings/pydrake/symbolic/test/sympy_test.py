@@ -1,8 +1,8 @@
-import pydrake.symbolic as mut
+import pydrake.symbolic as mut  # ruff: isort: skip
 
-import numpy as np
 import unittest
 
+import numpy as np
 import sympy
 
 from pydrake.symbolic import (

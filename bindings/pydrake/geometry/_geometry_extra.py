@@ -47,7 +47,7 @@ def _start_meshcat_deepnote(*, params=None, restart_nginx=False):
     The optional arguments are not available to end users but might be helpful
     when debugging this function.
     """
-    from IPython.display import display, HTML
+    from IPython.display import HTML, display
 
     host = os.environ["DEEPNOTE_PROJECT_ID"]
     if params is None:

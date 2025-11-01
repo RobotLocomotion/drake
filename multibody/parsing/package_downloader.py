@@ -20,14 +20,14 @@ same time with the same arguments.
 import hashlib
 import json
 import logging
-from pathlib import Path
 import os
-import urllib.parse
-import urllib.request as request
+from pathlib import Path
 import shutil
 import sys
 import tempfile
 from typing import List
+import urllib.parse
+import urllib.request as request
 
 
 def _fail(message):

@@ -6,11 +6,12 @@ import copy
 import hashlib
 import json
 import logging
-import numpy as np
 from pathlib import Path
 import re
 import sys
 import time
+
+import numpy as np
 
 from drake import (
     lcmt_contact_results_for_viz,
@@ -48,11 +49,11 @@ from pydrake.math import (
     RotationMatrix,
 )
 from pydrake.multibody.meshcat import (
+    ContactVisualizerParams,
     _HydroelasticContactVisualizer,
     _HydroelasticContactVisualizerItem,
     _PointContactVisualizer,
     _PointContactVisualizerItem,
-    ContactVisualizerParams,
 )
 from pydrake.perception import (
     BaseField,

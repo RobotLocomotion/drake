@@ -1,3 +1,5 @@
+import pydrake.common.schema as mut  # ruff: isort: skip
+
 import dataclasses as dc
 import math
 from textwrap import dedent
@@ -7,7 +9,6 @@ import unittest
 import numpy as np
 from numpy.testing import assert_allclose
 
-import pydrake.common.schema as mut
 from pydrake.common.yaml import yaml_dump_typed, yaml_load, yaml_load_typed
 from pydrake.math import RollPitchYaw
 

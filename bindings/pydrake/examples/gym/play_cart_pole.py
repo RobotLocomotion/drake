@@ -10,8 +10,8 @@ import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
 from pydrake.common import configure_logging
-from pydrake.geometry import StartMeshcat
 from pydrake.examples.gym._bazel_cwd_helpers import bazel_chdir
+from pydrake.geometry import StartMeshcat
 
 
 def _run_playing(args):

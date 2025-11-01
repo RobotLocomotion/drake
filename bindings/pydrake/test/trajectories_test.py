@@ -1,8 +1,9 @@
 import copy
-import numpy as np
 import pickle
 from textwrap import dedent
 import unittest
+
+import numpy as np
 import scipy.sparse
 
 from pydrake.common import ToleranceType
@@ -12,6 +13,7 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.yaml import yaml_load_typed
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
+from pydrake.symbolic import Expression, Variable
 from pydrake.trajectories import (
     BezierCurve_,
     BsplineTrajectory_,
@@ -29,7 +31,6 @@ from pydrake.trajectories import (
     Trajectory_,
     _WrappedTrajectory_,
 )
-from pydrake.symbolic import Variable, Expression
 
 
 # Custom trajectory class used to test Trajectory subclassing in Python.

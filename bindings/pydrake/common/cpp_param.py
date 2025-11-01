@@ -4,6 +4,7 @@ Python types as they relate to C++.
 """
 
 import ctypes
+import types
 import typing
 
 import numpy as np
@@ -42,6 +43,10 @@ class _ParamAliases:
         self.register(np.uint16, [ctypes.c_uint16])
         self.register(np.uint32, [ctypes.c_uint32])
         self.register(np.uint64, [ctypes.c_uint64])
+        # For Python versions < 3.14, convert typing.Union to types.UnionType.
+        # This bring those older versions in line with how Python 3.14 works,
+        # where *both* are a type (and aliases of each other).
+        self.register(types.UnionType, [typing.Union])
 
     def register(self, canonical, aliases):
         # Registers a set of aliases to a canonical value.
@@ -86,6 +91,8 @@ class _ParamAliases:
             if mangle:
                 result = _MangledName.mangle(result)
             return result
+        elif canonical is types.UnionType:
+            return "typing.Union"
         elif isinstance(canonical, type):
             if mangle:
                 return canonical.__name__

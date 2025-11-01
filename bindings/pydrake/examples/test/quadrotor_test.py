@@ -2,12 +2,12 @@ import unittest
 
 import numpy as np
 
-from pydrake.geometry import SceneGraph
 from pydrake.examples import (
     QuadrotorGeometry,
     QuadrotorPlant,
     StabilizingLQRController,
 )
+from pydrake.geometry import SceneGraph
 from pydrake.systems.framework import DiagramBuilder
 
 

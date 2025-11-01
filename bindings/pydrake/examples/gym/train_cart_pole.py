@@ -9,8 +9,8 @@ import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
 from pydrake.common import configure_logging
-from pydrake.geometry import StartMeshcat
 from pydrake.examples.gym._bazel_cwd_helpers import bazel_chdir
+from pydrake.geometry import StartMeshcat
 
 _full_sb3_available = False
 if "drake_internal" not in stable_baselines3.__version__:

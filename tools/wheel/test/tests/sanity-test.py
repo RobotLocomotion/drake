@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-import numpy
 import platform
+
+import numpy
+
 import pydrake.all
 
 # Basic sanity checks.

@@ -8,19 +8,18 @@ import unittest
 
 import pydrake
 import pydrake.common.cpp_template as m
-from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
 from pydrake.common.cpp_template_test_util import (
     Callee,
     DefaultInst,
     SimpleFunction,
     SimpleTemplate,
     SimpleType,
-    simple_func,
     TemplateWithDefault,
     TemplateWithDefault_,
+    simple_func,
 )
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 _TEST_MODULE = "cpp_template_test"
 

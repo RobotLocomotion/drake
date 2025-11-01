@@ -1,47 +1,47 @@
-import pydrake.geometry.optimization as mut
+import pydrake.geometry.optimization as mut  # ruff: isort: skip
 
+import copy
 import os.path
 import unittest
-import copy
 
 import numpy as np
 
-from pydrake.common import RandomGenerator, temp_directory, Parallelism
+from pydrake.common import Parallelism, RandomGenerator, temp_directory
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box,
     Capsule,
-    Cylinder,
     Convex,
+    Cylinder,
     Ellipsoid,
     FramePoseVector,
     GeometryFrame,
+    GeometryId,
     GeometryInstance,
     ProximityProperties,
     SceneGraph,
     Sphere,
-    GeometryId,
 )
 from pydrake.math import RigidTransform
 from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.tree import BodyIndex
-from pydrake.systems.framework import DiagramBuilder
 from pydrake.solvers import (
     Binding,
     ClpSolver,
+    CommonSolverOption,
     Constraint,
     Cost,
     MathematicalProgram,
     MathematicalProgramResult,
-    SolverOptions,
-    CommonSolverOption,
-    ScsSolver,
     MosekSolver,
+    ScsSolver,
+    SolverOptions,
 )
-from pydrake.symbolic import Variable, Polynomial
+from pydrake.symbolic import Polynomial, Variable
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestGeometryOptimization(unittest.TestCase):

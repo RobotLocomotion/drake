@@ -5,8 +5,8 @@
 
 import functools
 import operator
-import typing
 import sys
+import typing
 
 
 def logical_and(*formulas):

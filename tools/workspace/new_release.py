@@ -31,6 +31,7 @@ command line.
 """
 
 import argparse
+from dataclasses import dataclass
 import getpass
 import hashlib
 import json
@@ -39,11 +40,10 @@ import os
 import re
 import shlex
 import subprocess
-import time
-import urllib
-from dataclasses import dataclass
 from tempfile import TemporaryDirectory
+import time
 from typing import Optional, Set
+import urllib
 
 import git
 import github3

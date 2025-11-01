@@ -1,4 +1,4 @@
-import pydrake.systems.sensors as mut
+import pydrake.systems.sensors as mut  # ruff: isort: skip
 
 import copy
 import gc
@@ -7,6 +7,11 @@ import textwrap
 import unittest
 
 import numpy as np
+
+from drake import (
+    lcmt_image,
+    lcmt_image_array,
+)
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import Value
@@ -20,11 +25,11 @@ from pydrake.geometry import (
 )
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
-from pydrake.multibody.plant import (
-    AddMultibodyPlantSceneGraph,
-)
 from pydrake.multibody.parsing import (
     Parser,
+)
+from pydrake.multibody.plant import (
+    AddMultibodyPlantSceneGraph,
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
@@ -32,10 +37,6 @@ from pydrake.systems.framework import (
     OutputPort,
 )
 from pydrake.systems.lcm import LcmBuses, LcmInterfaceSystem, _Serializer_
-from drake import (
-    lcmt_image,
-    lcmt_image_array,
-)
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType

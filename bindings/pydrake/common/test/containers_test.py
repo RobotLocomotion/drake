@@ -1,8 +1,8 @@
-from pydrake.common.containers import EqualToDict, namedview, NamedViewBase
-
 import unittest
 
 import numpy as np
+
+from pydrake.common.containers import EqualToDict, NamedViewBase, namedview
 
 
 class Comparison:

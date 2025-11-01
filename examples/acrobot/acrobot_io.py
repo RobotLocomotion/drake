@@ -1,6 +1,6 @@
 import numpy as np
 
-from pydrake.common.yaml import yaml_load, yaml_dump
+from pydrake.common.yaml import yaml_dump, yaml_load
 
 
 def load_scenario(*, filename=None, data=None):

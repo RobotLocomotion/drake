@@ -4,15 +4,15 @@ from functools import partial
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import pretty_class_name
+from pydrake.common.cpp_template import (
+    TemplateClass,
+    TemplateMethod,
+    _get_module_from_stack,
+)
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     LeafSystem_,
     SystemScalarConverter,
-)
-from pydrake.common.cpp_template import (
-    _get_module_from_stack,
-    TemplateClass,
-    TemplateMethod,
 )
 
 

@@ -47,7 +47,6 @@ from pydrake.systems.primitives import (
 )
 from pydrake.systems.sensors import CameraInfo, RgbdSensor
 
-
 # Gym parameters.
 sim_time_step = 0.01
 gym_time_step = 0.05

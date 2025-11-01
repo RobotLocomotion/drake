@@ -1,4 +1,4 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import copy
 import logging
@@ -14,10 +14,10 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.sensors import (
     CameraInfo,
-    ImageRgba8U,
     ImageDepth16U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
     RgbdSensor,
 )
 
@@ -111,6 +111,17 @@ class TestGeometryRender(unittest.TestCase):
         # The repr and copy both work.
         self.assertIn("warn_unimplemented=", repr(params))
         copy.copy(params)
+
+    def test_render_engine_vtk_api(self):
+        self.assertTrue(mut.kHasRenderEngineVtk)
+
+        scene_graph = mut.SceneGraph()
+        params = mut.RenderEngineVtkParams()
+        scene_graph.AddRenderer(
+            "vtk_renderer", mut.MakeRenderEngineVtk(params=params)
+        )
+        self.assertTrue(scene_graph.HasRenderer("vtk_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 1)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
@@ -388,6 +399,8 @@ class TestGeometryRender(unittest.TestCase):
         # TODO(eric, duy): Test more properties.
 
     def test_render_engine_gltf_client_api(self):
+        self.assertTrue(mut.kHasRenderEngineGltfClient)
+
         scene_graph = mut.SceneGraph()
         params = mut.RenderEngineGltfClientParams()
         scene_graph.AddRenderer(

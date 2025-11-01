@@ -1,20 +1,21 @@
+import pydrake.planning as mut  # ruff: isort: skip
+
 import unittest
 
-import pydrake.planning as mut
+import numpy as np
+
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import Parallelism
-from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
+from pydrake.geometry.optimization import HPolyhedron, Hyperellipsoid
 from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.rational import RationalForwardKinematics
 from pydrake.planning import (
+    IrisParameterizationFunction,
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
-    IrisParameterizationFunction,
 )
 from pydrake.solvers import IpoptSolver
 from pydrake.symbolic import Variable
-
-import numpy as np
 
 # Taken from iris_from_clique_cover_test.py
 cross_cspace_urdf = """

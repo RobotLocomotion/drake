@@ -1,4 +1,5 @@
 import unittest
+
 from pydrake.solvers import ProgramAttribute, ProgramType
 
 

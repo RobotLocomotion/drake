@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import copy
+import os
+from pathlib import Path
+import unittest
+
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.geometry import SceneGraph
 from pydrake.multibody.parsing import (
     AddCollisionFilterGroup,
     AddDirectives,
@@ -20,22 +28,13 @@ from pydrake.multibody.parsing import (
     Parser,
     ProcessModelDirectives,
 )
-
-import copy
-import os
-from pathlib import Path
-import unittest
-
-from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry import SceneGraph
-from pydrake.multibody.tree import (
-    ModelInstanceIndex,
-)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     MultibodyPlant,
     MultibodyPlant_,
+)
+from pydrake.multibody.tree import (
+    ModelInstanceIndex,
 )
 from pydrake.systems.framework import DiagramBuilder
 

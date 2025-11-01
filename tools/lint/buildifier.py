@@ -6,11 +6,11 @@ lint errors to a non-zero exitcode.
 """
 
 import os
+from pathlib import Path
 import re
 import subprocess
+from subprocess import PIPE, STDOUT, Popen
 import sys
-from pathlib import Path
-from subprocess import Popen, PIPE, STDOUT
 
 from python import runfiles
 
@@ -51,9 +51,9 @@ def _help(command):
     return process.returncode
 
 
-def _find_buildifier_sources(workspace_name):
+def _find_buildifier_sources():
     """Return a list of all filenames to be covered by buildifier."""
-    workspace, sources_relpath = find_all_sources(workspace_name)
+    workspace, sources_relpath = find_all_sources()
     exact_filenames = ["BUILD", "WORKSPACE"]
     extensions = ["bazel", "bzl", "BUILD"]
     return workspace, [
@@ -80,7 +80,7 @@ def _passes_check_mode(args):
         raise e
 
 
-def main(workspace_name="drake"):
+def main():
     # Slice out our overlay command-line argument "--all".
     argv = sys.argv[1:]
     find_all = False
@@ -104,7 +104,7 @@ def main(workspace_name="drake"):
         print("ERROR: no input files; did you want '--all'?")
         return 1
     if find_all:
-        workspace_dir, found = _find_buildifier_sources(workspace_name)
+        workspace_dir, found = _find_buildifier_sources()
         if len(found) == 0:
             print("ERROR: '--all' could not find anything")
             return 1

@@ -1,7 +1,3 @@
-from pydrake.visualization import (
-    MeshcatPoseSliders,
-)
-
 import unittest
 
 from pydrake.geometry import (
@@ -9,6 +5,9 @@ from pydrake.geometry import (
 )
 from pydrake.math import (
     RigidTransform,
+)
+from pydrake.visualization import (
+    MeshcatPoseSliders,
 )
 
 

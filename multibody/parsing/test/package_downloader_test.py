@@ -1,13 +1,13 @@
+import multibody.parsing.package_downloader as mut  # ruff: isort: skip
+
 import hashlib
 import io
 import json
 from pathlib import Path
 import tempfile
-import zipfile
 import unittest
 from urllib.error import HTTPError
-
-import multibody.parsing.package_downloader as mut
+import zipfile
 
 # We'll mock out the internet-touching methods. We don't want our unit test
 # touching the internet. See setUp and tearDown below for details.

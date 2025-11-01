@@ -1,4 +1,4 @@
-from pydrake.multibody import inverse_kinematics as ik
+from pydrake.multibody import inverse_kinematics as ik  # ruff: isort: skip
 
 from collections import namedtuple
 from functools import partial, wraps
@@ -14,11 +14,11 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Quaternion
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import MultibodyPlant, AddMultibodyPlantSceneGraph
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph, MultibodyPlant
+from pydrake.planning import RobotDiagramBuilder, SceneGraphCollisionChecker
 import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.planning import RobotDiagramBuilder, SceneGraphCollisionChecker
 
 # TODO(eric.cousineau): Replace manual coordinate indexing with more semantic
 # operations (`CalcRelativeTransform`, `SetFreeBodyPose`).

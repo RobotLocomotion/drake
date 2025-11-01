@@ -35,7 +35,7 @@ class DofMask {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DofMask);
 
-  /** @group  Constructors
+  /** @name  Constructors
 
   There are a number of constructors available. Using these constructors puts
   the burden on the caller to know what the appropriate size is and what the
@@ -73,7 +73,7 @@ class DofMask {
 
   //@}
 
-  /** @group Factory methods
+  /** @name Factory methods
 
   These factory methods construct %DofMask instances from a MultibodyPlant.
   Which dofs are marked as "selected" depends on the particular factory method.
@@ -97,7 +97,7 @@ class DofMask {
                                const std::string& model_name);
   //@}
 
-  /** @group Introspection */
+  /** @name Introspection */
   //{
 
   /** Reports this %DofMask instance's total number of indexable dofs.  */
@@ -127,7 +127,7 @@ class DofMask {
 
   //}
 
-  /** @group Combining masks
+  /** @name Combining masks
 
   We can think of the masks as sets -- the iᵗʰ dof is in the set if it's
   selected. Therefore, we can apply set operations to create new masks from
@@ -158,7 +158,7 @@ class DofMask {
 
   //}
 
-  /** @group Scattering and gathering
+  /** @name Scattering and gathering
 
   These functions allow the mask to selectively write dof-specific values into
   a full state vector or read dof-specific values from a full state vector into

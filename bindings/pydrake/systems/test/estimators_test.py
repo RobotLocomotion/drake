@@ -1,14 +1,15 @@
-import unittest
 import copy
+import unittest
+
 import numpy as np
 
 from pydrake.examples import PendulumPlant
-from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.estimators import (
     DiscreteTimeSteadyStateKalmanFilter,
     LuenbergerObserver,
     SteadyStateKalmanFilter,
 )
+from pydrake.systems.primitives import LinearSystem
 
 
 class TestEstimators(unittest.TestCase):
