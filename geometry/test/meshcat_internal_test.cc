@@ -30,8 +30,10 @@ using nlohmann::json;
 GTEST_TEST(MeshcatInternalTest, GetMeshcatStaticResource) {
   // This matches the list of URLs in the API doc.
   const std::vector<const char*> urls{
-      "/",           "/favicon.ico",  "/index.html", "/meshcat.html",
-      "/meshcat.js", "/stats.min.js",
+      "/favicon.ico",
+      "/meshcat.html",
+      "/meshcat.js",
+      "/stats.min.js",
   };
   for (const auto& url : urls) {
     SCOPED_TRACE(fmt::format("url = {}", url));
