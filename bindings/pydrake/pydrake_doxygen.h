@@ -702,10 +702,9 @@ covered.
 // TODO(eric.cousineau): If it ever stops redirecting stdin, use
 // `bazel run --run_under='gdb --args python' --script_path=...`.
 
-/**
-@{
-@defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
+/** @defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
 @ingroup environment_variables
+@{
 
 By default, pydrake will redirect spdlog logging (from C++) to Python's
 `logging` module. However, if this environment variable is set to "0",
