@@ -5,7 +5,7 @@ namespace drake {
 namespace geometry {
 
 /** @addtogroup geometry_file_formats
-
+ @{
  Drake offers a number of primitive types for representing objects' extents in
  space. They include:
 
@@ -396,7 +396,7 @@ namespace geometry {
  ¹ The distinction between Mesh and Convex is only relevant for proximity
    queries; a Convex shape is treated differently from a Mesh shape. For
    illustration and perception roles, there is no practical distinction.
-
+@}
 */
 
 }  // namespace geometry
