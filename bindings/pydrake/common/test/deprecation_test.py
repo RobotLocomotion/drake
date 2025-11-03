@@ -24,8 +24,9 @@ class TestDeprecation(unittest.TestCase):
         # Remove the module.
         import deprecation_example as mod
 
+        tare = sys.getrefcount(mod)
         del sys.modules[mod.__name__]
-        self.assertEqual(sys.getrefcount(mod), 2)
+        self.assertEqual(sys.getrefcount(mod), tare - 1)
 
     def test_module_nominal(self):
         # Test reading and writing as one would do with a normal module.

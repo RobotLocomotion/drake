@@ -1,13 +1,13 @@
 import pydrake.planning as mut  # ruff: isort: skip
 
 import gc
+import sys
 import unittest
 import weakref
 
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import SceneGraph_
 from pydrake.multibody.plant import MultibodyPlant_, MultibodyPlantConfig
 from pydrake.systems.controllers import InverseDynamicsController
@@ -162,6 +162,9 @@ class TestRobotDiagram(unittest.TestCase):
         self.assertFalse(spy.alive)
 
     def test_issue_23161(self):
+        # The tare value found here differs across python versions.
+        tare = sys.getrefcount(object())
+
         # Check that RobotDiagramBuilder resists cross-generational memory
         # leaks facilitated by pybind11 address aliasing hazards.
         for i in range(10):
@@ -169,7 +172,9 @@ class TestRobotDiagram(unittest.TestCase):
             # In the original bug, the reference count of the builder, and the
             # ref-cycle graph it participated in, would grow without bound.
             self.assertEqual(
-                actual_ref_count(builder.builder()), 0, msg=f"at iteration {i}"
+                sys.getrefcount(builder.builder()),
+                tare,
+                msg=f"at iteration {i}",
             )
             diagram = builder.Build()  # noqa: F841 (unused-variable)
             gc.collect()
