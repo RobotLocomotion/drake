@@ -25,7 +25,12 @@ class TestDeprecation(unittest.TestCase):
         import deprecation_example as mod
 
         del sys.modules[mod.__name__]
-        self.assertEqual(sys.getrefcount(mod), 2)
+        # Python 3.14 makes some optimizations to ref-counting to avoid
+        # duplicates in some cases.
+        # TODO(tyler-yankee): Once Python 3.14 is the minimum supported by
+        # Drake, this condition should be removed.
+        expected_count = 2 if sys.version_info <= (3, 13) else 1
+        self.assertEqual(sys.getrefcount(mod), expected_count)
 
     def test_module_nominal(self):
         # Test reading and writing as one would do with a normal module.
