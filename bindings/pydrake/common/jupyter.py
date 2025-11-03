@@ -38,10 +38,25 @@ def process_ipywidget_events(num_events_to_process=1):
     kernel.shell_handlers["execute_request"] = lambda *e: events.append(e)
     current_parent = (kernel._parent_ident, kernel._parent_header)
 
+    def _get_shell_stream(kernel):
+        # Return the zmq stream that receives messages for the main shell.
+        # Only ipykernel>=7.0.0 supports subshells, so this attribute won't be
+        # defined in previous versions.
+        # TODO(tyler-yankee): Once we support ipykernel>=7.0.0 on all platforms,
+        # this additional check can be removed.
+        if (
+            hasattr(kernel, "_supports_kernel_subshells")
+            and kernel._supports_kernel_subshells
+        ):
+            manager = kernel.shell_channel_thread.manager
+            socket_pair = manager.get_shell_channel_to_subshell_pair(None)
+            return socket_pair.to_stream
+        return kernel.shell_stream
+
     for _ in range(num_events_to_process):
         # Ensure stdout still happens in the same cell.
         kernel.set_parent(*current_parent)
-        kernel.do_one_iteration()
+        _get_shell_stream(kernel).flush(limit=1)
         kernel.set_parent(*current_parent)
 
     kernel.shell_handlers["execute_request"] = old_handler
