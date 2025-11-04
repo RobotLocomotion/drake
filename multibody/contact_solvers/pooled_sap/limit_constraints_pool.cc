@@ -67,10 +67,24 @@ void PooledSapModel<T>::LimitConstraintsPool::Add(int k, int clique, int dof,
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
-  const auto w_clique = model().get_clique_delassus(clique);
+  const auto w_clique = model().clique_delassus(clique);
   regularization(k, dof) = eps * w_clique(dof);
   vl_hat(k, dof) = (ql - q0) / (dt * (1.0 + beta));
   vu_hat(k, dof) = (q0 - qu) / (dt * (1.0 + beta));
+}
+
+template <typename T>
+void PooledSapModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
+                                                             const T& new_dt) {
+  const T ratio = new_dt / old_dt;
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    const int nv = model().clique_size(c);
+    for (int dof = 0; dof < nv; ++dof) {
+      vl_hat(k, dof) *= ratio;
+      vu_hat(k, dof) *= ratio;
+    }
+  }
 }
 
 template <typename T>
@@ -125,8 +139,6 @@ void PooledSapModel<T>::LimitConstraintsPool::CalcData(
 template <typename T>
 void PooledSapModel<T>::LimitConstraintsPool::AccumulateGradient(
     const PooledSapData<T>& data, VectorX<T>* gradient) const {
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
-
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
 
@@ -164,9 +176,6 @@ void PooledSapModel<T>::LimitConstraintsPool::ProjectAlongLine(
   const int nv = model().num_velocities();
   DRAKE_ASSERT(v_sized_scratch != nullptr);
   DRAKE_ASSERT(v_sized_scratch->size() == nv);
-
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
   *dcost = 0.0;
   *d2cost = 0.0;

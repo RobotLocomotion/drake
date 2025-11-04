@@ -192,6 +192,7 @@ void PooledSapModel<T>::PatchConstraintsPool::Resize(
   dissipation_.resize(num_patches);
   static_friction_.resize(num_patches);
   dynamic_friction_.resize(num_patches);
+  Rt_.resize(num_patches);
 
   // per-pair data.
   normal_W_.Resize(num_pairs);
@@ -230,6 +231,20 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPatch(
   const int num_cliques =
       (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
   num_cliques_[index] = num_cliques;
+
+  // Compute per-patch regularization of friction. We use a "spherical body
+  // approximation" for the estimation of the Delassus operator. A sphere has
+  // gyration radius of g = 5/2 R (with R the radius). A contact will happen
+  // at distance R from the CoM.
+  // Thus the Delassus operator will be:
+  //   W = 1/m⋅[I₃   0
+  //           [ 0   R²/g²]
+  // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
+  T w = 2.65 / model().body_mass(bodies_[index].first);
+  if (num_cliques == 2) {
+    w += 2.65 / model().body_mass(bodies_[index].second);
+  }
+  Rt_[index] = sigma_ * w;
 }
 
 template <typename T>
@@ -250,14 +265,14 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPair(
   const int num_cliques = num_cliques_[patch_idx];
 
   // First clique.
-  const Vector6<T>& V_WB = model().V_WB(bodies_[patch_idx].first);
+  const Vector6<T>& V_WB = model().V_WB0(bodies_[patch_idx].first);
   const auto w_WB = V_WB.template head<3>();
   const auto v_WB = V_WB.template tail<3>();
   Vector3<T> v_AcBc_W = v_WB + w_WB.cross(p_BoC_W);
 
   // Second clique.
   if (num_cliques == 2) {
-    const Vector6<T>& V_WA = model().V_WB(bodies_[patch_idx].second);
+    const Vector6<T>& V_WA = model().V_WB0(bodies_[patch_idx].second);
     const Vector3<T> p_AC_W = p_AB_W_[patch_idx] + p_BoC_W;
     const auto w_WA = V_WA.template head<3>();
     const auto v_WA = V_WA.template tail<3>();
@@ -287,24 +302,29 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPair(
       (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
   net_friction_[idx] = mu;
 
-  // Compute per-patch regularization of friction. We use a "spherical body
-  // approximation" for the estimation of the Delassus operator. A sphere has
-  // gyration radius of g = 5/2 R (with R the radius). A contact will happen
-  // at distance R from the CoM.
-  // Thus the Delassus operator will be:
-  //   W = 1/m⋅[I₃   0
-  //           [ 0   R²/g²]
-  // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
-  T w = 2.65 / model().body_mass(bodies_[patch_idx].first);
-  if (num_cliques == 2) {
-    w += 2.65 / model().body_mass(bodies_[patch_idx].second);
-  }
-  const T Rt = sigma_ * w;  // SAP's regularization.
-
   // Regularized Lagged model.
-  const T sap_stiction_tolerance = mu * Rt * n0;
-  const T eps = max(stiction_tolerance_, sap_stiction_tolerance);
-  epsilon_soft_[idx] = eps;
+  const T sap_stiction_tolerance = mu * Rt_[patch_idx] * n0;
+  epsilon_soft_[idx] = max(stiction_tolerance_, sap_stiction_tolerance);
+}
+
+template <typename T>
+void PooledSapModel<T>::PatchConstraintsPool::UpdateTimeStep(
+    const T& old_time_step, const T& time_step) {
+  using std::max;
+  const T ratio = time_step / old_time_step;
+
+  for (int patch = 0; patch < num_patches(); ++patch) {
+    for (int pair = 0; pair < num_pairs(patch); ++pair) {
+      const int pk = patch_pair_index(patch, pair);
+      // Update n₀ = max(0, δt⋅fn0)⋅max(0, 1 - d⋅vn0)
+      n0_[pk] *= ratio;
+
+      // Update ε_soft = μ Rₜ n₀
+      const T& mu = net_friction_[pk];
+      const T sap_stiction_tolerance = mu * Rt_[patch] * n0_[pk];
+      epsilon_soft_[pk] = max(stiction_tolerance_, sap_stiction_tolerance);
+    }
+  }
 }
 
 template <typename T>
@@ -521,8 +541,8 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
   for (int p = 0; p < num_patches(); ++p) {
     const int body_a = bodies_[p].second;
     const int body_b = bodies_[p].first;
-    const int c_b = model().body_clique(body_b);
-    const int c_a = model().body_clique(body_a);  // negative if anchored.
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
 
     // First clique, body B.
     DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
@@ -533,7 +553,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
     if (model().is_floating(body_b)) {
       gradient_b.noalias() -= Gamma_Bo_W;
     } else {
-      const ConstJacobianView J_WB = model().get_jacobian(body_b);
+      ConstJacobianView J_WB = model().J_WB(body_b);
       gradient_b.noalias() -= J_WB.transpose() * Gamma_Bo_W;
     }
 
@@ -546,7 +566,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
       if (model().is_floating(body_a)) {
         gradient_a.noalias() += minus_Gamma_Ao_W;
       } else {
-        const ConstJacobianView J_WA = model().get_jacobian(body_a);
+        ConstJacobianView J_WA = model().J_WB(body_a);
         gradient_a.noalias() += J_WA.transpose() * minus_Gamma_Ao_W;
       }
     }
@@ -572,8 +592,8 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
   for (int p = 0; p < num_patches(); ++p) {
     const int body_a = bodies_[p].second;
     const int body_b = bodies_[p].first;
-    const int c_b = model().body_clique(body_b);
-    const int c_a = model().body_clique(body_a);  // negative if anchored.
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
     const int nv_b = model().clique_size(c_b);
     const int nv_a = model().clique_size(c_a);  // zero if anchored.
 
@@ -585,7 +605,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
     auto H_BB = H_BB_pool[0];
 
     const Matrix6<T>& G_Bp = G_Bp_pool[p];
-    const ConstJacobianView J_WB = model().get_jacobian(body_b);
+    ConstJacobianView J_WB = model().J_WB(body_b);
     if (model().is_floating(body_b)) {
       H_BB.noalias() = G_Bp;
     } else {
@@ -602,7 +622,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
       auto GJa = GJa_pool[0];
 
       const Vector3<T>& p_AB_W = p_AB_W_[p];
-      const ConstJacobianView J_WA = model().get_jacobian(body_a);
+      ConstJacobianView J_WA = model().J_WB(body_a);
 
       // Accumulate (upper triangular) Hessian.
       H_AA_pool.Resize(1, nv_a, nv_a);
@@ -661,8 +681,8 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcSparsityPattern(
     if (!model().is_anchored(body_a)) {
       const int body_b = bodies_[p].first;
       DRAKE_ASSERT(!model().is_anchored(body_b));  // Body B is never anchored.
-      const int c_a = model().body_clique(body_a);
-      const int c_b = model().body_clique(body_b);
+      const int c_a = model().body_to_clique(body_a);
+      const int c_b = model().body_to_clique(body_b);
       if (c_a == c_b) continue;  // we do not add diagonal blocks here.
       const int c_min = std::min(c_a, c_b);
       const int c_max = std::max(c_a, c_b);

@@ -87,6 +87,9 @@ class PooledSapModel<T>::PatchConstraintsPool {
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
 
+  // Update the time step only, leaving all other constraint data unchanged.
+  void UpdateTimeStep(const T& old_time_step, const T& time_step);
+
   // Number of patches (pairs of contacting bodies) in the pool.
   int num_patches() const { return ssize(num_pairs_); }
 
@@ -161,9 +164,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
   }
 
  private:
-  using ConstJacobianView =
-      typename PooledSapModel<T>::ConstSpatialVelocityJacobianView;
-  using ConstVectorXView = Eigen::VectorBlock<const VectorX<T>>;
   using VectorXView = Eigen::VectorBlock<VectorX<T>>;
 
   double stiction_tolerance_{1.0e-4};
@@ -204,6 +204,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   // Data per patch. Indexed by patch index p < num_patches()
   std::vector<int> num_pairs_;    // Number of pairs per patch.
   std::vector<int> num_cliques_;  // Num cliques. One or two.
+  std::vector<T> Rt_;             // Friction regularization
 
   // Face indices that have a non-zero hydroelastic contribution, sorted by
   // hydro surface index. Used to identify hydro pairs with a

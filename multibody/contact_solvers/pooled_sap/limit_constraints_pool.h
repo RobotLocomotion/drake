@@ -58,6 +58,9 @@ class PooledSapModel<T>::LimitConstraintsPool {
    */
   void Add(int k, int clique, int dof, const T& q0, const T& ql, const T& qu);
 
+  // Update the time step, leaving all other parameters unchanged.
+  void UpdateTimeStep(const T& old_dt, const T& new_dt);
+
   // Upper and lower limits
   T& lower_limit(int k, int dof) { return ql_[k](dof); }
   T& upper_limit(int k, int dof) { return qu_[k](dof); }

@@ -98,200 +98,252 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant,
 template <typename T>
 PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
     : plant_(&plant) {
+  using std::isinf;
   const int nv = plant.num_velocities();
+
+  // TODO(vincekurtz): rethink scratch. I think we can get away with just forces
   scratch_.M.resize(nv, nv);
   scratch_.J_V_WB.resize(6, nv);
   scratch_.tmp_v1.resize(nv);
   scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
-}
 
-template <typename T>
-void PooledSapBuilder<T>::UpdateModel(const systems::Context<T>& context,
-                                      const T& time_step,
-                                      bool reuse_geometry_data,
-                                      PooledSapModel<T>* model) {
-  const SpanningForest& forest = GetInternalTree(plant()).forest();
-  const LinkJointGraph& graph = GetInternalTree(plant()).graph();
+  // Define problem cliques based on the spanning forest of the plant. Each tree
+  // gets its own clique, and only trees with a non-zero number of velocities
+  // are included.
+  const SpanningForest& forest = GetInternalTree(plant).forest();
+  const LinkJointGraph& graph = GetInternalTree(plant).graph();
   DRAKE_DEMAND(graph.forest_is_valid());
-  const int nv = plant().num_velocities();
 
-  std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
-  params->time_step = time_step;
-  params->v0 = plant().GetVelocities(context);
-  params->A.Clear();
+  clique_sizes_.clear();
+  tree_to_clique_.resize(forest.num_trees());
+  std::fill(tree_to_clique_.begin(), tree_to_clique_.end(), -1);
 
-  // Dense linearized dynamics from MbP, A = M + δt⋅damping.
-  MatrixX<T>& M = scratch_.M;
-  plant().CalcMassMatrix(context, &M);
-
-  // Implicit damping.
-  // N.B. The mass matrix already includes reflected inertia terms.
-  M.diagonal() += plant().EvalJointDampingCache(context) * time_step;
-
-  // Allocate space for the linear dynamics matrix A.
-  // We only add a clique for trees with a non-zero number of velocities.
-  int num_cliques = 0;
-  std::vector<int>& tree_clique = params->tree_to_clique;
-  tree_clique.resize(forest.num_trees());
-  std::fill(tree_clique.begin(), tree_clique.end(), -1);
-  std::vector<int> clique_sizes;
   for (TreeIndex t(0); t < forest.num_trees(); ++t) {
     const int tree_nv = forest.trees(t).nv();
     if (tree_nv > 0) {
-      tree_clique[t] = num_cliques;
-      clique_sizes.push_back(tree_nv);
-      ++num_cliques;
-    }
-  }
-  params->A.Resize(clique_sizes, clique_sizes);
-
-  // Set the linear dynamics matrix A = M + dt⋅damping, block-by-block.
-  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
-    const int c = tree_clique[t];
-    if (c >= 0) {
-      const int tree_start_in_v = forest.trees(t).v_start();
-      const int tree_nv = forest.trees(t).nv();
-      DRAKE_ASSERT(tree_nv > 0);
-      params->A[c] =
-          M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+      tree_to_clique_[t] = clique_sizes_.size();
+      clique_sizes_.push_back(tree_nv);
     }
   }
 
-  // Set the scaling factor D = diag(A)^{-1/2}.
-  params->D = M.diagonal().cwiseSqrt().cwiseInverse();
+  // Iterate over bodies to find the size of each Jacobian, clique membership,
+  // floating status (floating bodies have an identity Jacobian), body mass.
+  body_jacobian_rows_.resize(plant.num_bodies());
+  body_jacobian_cols_.resize(plant.num_bodies());
+  body_to_clique_.resize(plant.num_bodies());
+  body_is_floating_.resize(plant.num_bodies());
+  body_mass_.resize(plant.num_bodies());
 
-  // Update rigid body cliques and body Jacobians.
-  const auto& world_frame = plant().world_frame();
+  for (int b = 0; b < plant.num_bodies(); ++b) {
+    const auto& body = plant.get_body(BodyIndex(b));
+    const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
 
-  // TODO(vincekurtz): consider reusing mass matrix as well. Note that
-  // A = M + hD includes the time step, so M would need to be stored separately.
-  if (!reuse_geometry_data) {
-    // Get sizes of each body's Jacobian.
-    const std::vector<int> body_jacobian_rows(plant().num_bodies(), 6);
-    std::vector<int> body_jacobian_cols(0);
-    for (int b = 0; b < plant().num_bodies(); ++b) {
-      const auto& body = plant().get_body(BodyIndex(b));
-      if (plant().IsAnchored(body)) {
-        body_jacobian_cols.push_back(1);  // dummy column.
-      } else {
-        const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
-        const int nt = forest.trees(t).nv();
-        body_jacobian_cols.push_back(nt);
-      }
+    body_jacobian_rows_[b] = 6;
+    if (plant.IsAnchored(body)) {
+      body_jacobian_cols_[b] = 1;  // dummy column.
+      body_to_clique_[b] = -1;
+    } else {
+      body_jacobian_cols_[b] = forest.trees(t).nv();
+      body_to_clique_[b] = tree_to_clique(t);
     }
-    params->J_WB.Resize(body_jacobian_rows, body_jacobian_cols);
 
-    params->body_cliques.resize(plant().num_bodies());
-    params->body_mass.resize(plant().num_bodies());
-    params->body_is_floating.resize(plant().num_bodies());
-    for (int b = 0; b < plant().num_bodies(); ++b) {
-      const auto& body = plant().get_body(BodyIndex(b));
+    // Distinguish between "free floating body" and "free floating base". The
+    // former has an identity Jacobian, the latter does not.
+    const auto& link = forest.link_by_index(BodyIndex(b));
+    const auto& mobod = forest.mobods(link.mobod_index());
+    const bool is_free_floating =
+        body.is_floating_base_body() && mobod.is_leaf_mobod();
+    body_is_floating_[b] = is_free_floating ? 1 : 0;
 
-      // Distinguish between "free floating body" and "free floating base". The
-      // former has an identity Jacobian, the latter does not.
-      const auto& link = forest.link_by_index(BodyIndex(b));
-      const auto& mobod = forest.mobods(link.mobod_index());
-      const bool is_free_floating =
-          body.is_floating_base_body() && mobod.is_leaf_mobod();
-      params->body_is_floating[b] = is_free_floating ? 1 : 0;
-
-      // TODO(amcastro-tri): consider using forest.link_composites() in
-      // combination with LinkJointGraph::Link::composite() to precompute
-      // composite's masses.
-
-      // If the body has zero mass, we assign it the mass of its composite.
-      if (body.default_mass() == 0.0) {
-        const auto composite = graph.GetLinksWeldedTo(body.index());
-        T composite_mass = 0.0;
-        for (BodyIndex c : composite) {
-          composite_mass += plant().get_body(c).default_mass();
-        }
-        if (composite_mass == 0.0) {
-          throw std::logic_error(fmt::format(
-              "Composite for body '{}' has zero mass.", body.name()));
-        }
-        params->body_mass[b] = composite_mass;
-      } else {
-        params->body_mass[b] = body.default_mass();
+    // If the body has zero mass, we assign it the mass of its composite.
+    // TODO(amcastro-tri): consider using forest.link_composites() in
+    // combination with LinkJointGraph::Link::composite() to precompute
+    // composite's masses.
+    if (body.default_mass() == 0.0) {
+      const auto composite = graph.GetLinksWeldedTo(body.index());
+      T composite_mass = 0.0;
+      for (BodyIndex c : composite) {
+        composite_mass += plant.get_body(c).default_mass();
       }
-
-      if (plant().IsAnchored(body)) {
-        params->body_cliques[b] = -1;  // mark as anchored.
-      } else {
-        const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
-        const int clique = tree_clique[t];
-        DRAKE_ASSERT(clique >= 0);
-        const bool tree_has_dofs = t.is_valid() && forest.trees(t).has_dofs();
-        DRAKE_ASSERT(tree_has_dofs);
-
-        const int vt_start = forest.trees(t).v_start();
-        const int nt = forest.trees(t).nv();
-
-        params->body_cliques[b] = clique;
-        typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = params->J_WB[b];
-        if (body.is_floating_base_body()) {
-          Jv_WBc_W.setIdentity();
-        } else {
-          Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
-          plant().CalcJacobianSpatialVelocity(
-              context, JacobianWrtVariable::kV, body.body_frame(),
-              Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
-          Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
-        }
+      if (composite_mass == 0.0) {
+        throw std::logic_error(
+            fmt::format("Composite for body '{}' has zero mass.", body.name()));
       }
+      body_mass_[b] = composite_mass;
+    } else {
+      body_mass_[b] = body.default_mass();
     }
   }
 
-  // Residual term r = A⋅v₀ - dt⋅k(q₀,v₀)
-  //                 = M⋅v₀ + dt⋅damping⋅v₀ - dt⋅k(q₀,v₀)
-  //                 = dt (M⋅v₀/dt - k₀) + dt⋅damping⋅v₀
-  //                 = - dt (M⋅ (-v₀/dt) + k₀) + dt⋅damping⋅v₀
-  //                 = - dt InverseDynamics((-v₀/dt), q₀, v₀) + dt⋅damping⋅v₀
-  const VectorX<T>& v0 = params->v0;
-  const T& dt = params->time_step;
-  auto& r = params->r;
-  r.resize(nv);
-  MultibodyForces<T>& forces = *scratch_.forces;
-  VectorX<T>& vdot = scratch_.tmp_v1;
-  vdot = -v0 / dt;
-  plant().CalcForceElementsContribution(context, &forces);
-  r = -dt * plant().CalcInverseDynamics(context, vdot, forces);
-  r += dt * plant().EvalJointDampingCache(context).asDiagonal() * v0;
+  // Iterate over actuators to find number of actuators per clique, and effort
+  // limits for each velocity.
+  clique_nu_.assign(clique_sizes_.size(), 0);
+  effort_limits_.resize(nv);
+  effort_limits_.setZero();
 
-  // Collect effort limits for each clique.
-  params->clique_nu.assign(num_cliques, 0);
-  params->effort_limits.resize(nv);
-  params->effort_limits.setZero();
-
-  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
-    const JointActuator<T>& actuator =
-        plant().get_joint_actuator(actuator_index);
+  for (JointActuatorIndex actuator_index : plant.GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = plant.get_joint_actuator(actuator_index);
     const Joint<T>& joint = actuator.joint();
     const int dof = joint.velocity_start();
     const TreeIndex t = forest.v_to_tree_index(dof);
-    const int c = tree_clique[t];
+    const int c = tree_to_clique(t);
     DRAKE_ASSERT(c >= 0);
-    ++params->clique_nu[c];
-    params->effort_limits[dof] = actuator.effort_limit();
+    ++clique_nu_[c];
+    effort_limits_[dof] = actuator.effort_limit();
   }
 
+  // Iterate over joints to find cliques with at least one 1-DoF joint with
+  // finite limits. Each of these cliques will require a limit constraint.
+  limited_clique_sizes_.clear();
+  clique_to_limit_constraint_.assign(clique_sizes_.size(), -1);
+  limit_constraint_to_clique_.clear();
+  for (JointIndex joint_index : plant.GetJointIndices()) {
+    const Joint<T>& joint = plant.get_joint(joint_index);
+
+    // Check for 1-DoF joints
+    if (joint.num_positions() != 1 || joint.num_velocities() != 1) {
+      continue;
+    }
+
+    // Check for finite upper or lower limits. Note that this must come after
+    // the 1-DoF check above.
+    if (isinf(joint.position_lower_limits()[0]) &&
+        isinf(joint.position_upper_limits()[0])) {
+      continue;
+    }
+
+    // Record the size of the clique this joint belongs to, and the mappings
+    // from limit constraint index <---> clique index.
+    const TreeIndex tree_index = forest.v_to_tree_index(joint.velocity_start());
+    const int clique = tree_to_clique(tree_index);
+    const int clique_nv = clique_sizes_[clique];
+    limited_clique_sizes_.push_back(clique_nv);
+    limit_constraint_to_clique_.push_back(clique);
+    clique_to_limit_constraint_[clique] = limited_clique_sizes_.size() - 1;
+  }
+}
+
+template <typename T>
+void PooledSapBuilder<T>::UpdateModel(
+    const systems::Context<T>& context, const T& time_step,
+    std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> act_lin,
+    std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> ext_lin,
+    PooledSapModel<T>* model) {
+  const SpanningForest& forest = GetInternalTree(plant()).forest();
+  const int nv = plant().num_velocities();
+
+  std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
+
+  // Set the time step δt and initial velocities v₀
+  params->time_step = time_step;
+  params->v0 = plant().GetVelocities(context);
+
+  // Set the (dense) mass matrix M₀.
+  MatrixX<T>& M = params->M0;
+  M.resize(nv, nv);
+  plant().CalcMassMatrix(context, &M);
+
+  // Set joint damping D₀.
+  params->D0.resize(nv);
+  params->D0 = plant().EvalJointDampingCache(context);
+
+  // Compute nonlinear bias terms k₀.
+  params->k0.resize(nv);
+  MultibodyForces<T>& forces = *scratch_.forces;
+  plant().CalcForceElementsContribution(context, &forces);
+  const VectorX<T>& acc = scratch_.tmp_v1.setZero(nv);
+  params->k0 = plant().CalcInverseDynamics(context, acc, forces);
+
+  // Set the sparsity pattern for the dynamics matrix A = M + δt D.
+  params->clique_sizes = clique_sizes_;
+  params->clique_start.resize(clique_sizes_.size() + 1);
+  params->clique_start[0] = 0;
+  for (size_t c = 0; c < clique_sizes_.size(); ++c) {
+    params->clique_start[c + 1] = params->clique_start[c] + clique_sizes_[c];
+  }
+
+  // Body mass, clique membership, and body floating status are defined at
+  // builder construction time, since they depend only on the plant and not on
+  // the current state (q0, v0).
+  params->body_mass = body_mass_;
+  params->body_to_clique = body_to_clique_;
+  params->body_is_floating = body_is_floating_;
+
+  // Compute spatial velocity Jacobians J_WB for all bodies.
+  const auto& world_frame = plant().world_frame();
+  EigenPool<Matrix6X<T>>& J_WB = params->J_WB;
+  J_WB.Resize(body_jacobian_rows(), body_jacobian_cols());
+
+  for (int b = 0; b < plant().num_bodies(); ++b) {
+    const auto& body = plant().get_body(BodyIndex(b));
+
+    if (!plant().IsAnchored(body)) {
+      // We ignore anchored bodies. Their jacobian is included in J_WB as a
+      // dummy column.
+      const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
+      const int clique = tree_to_clique(t);
+      DRAKE_ASSERT(clique >= 0);
+      const bool tree_has_dofs = t.is_valid() && forest.trees(t).has_dofs();
+      DRAKE_ASSERT(tree_has_dofs);
+
+      const int vt_start = forest.trees(t).v_start();
+      const int nt = forest.trees(t).nv();
+
+      typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = J_WB[b];
+      if (body.is_floating_base_body()) {
+        Jv_WBc_W.setIdentity();
+      } else {
+        Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
+        plant().CalcJacobianSpatialVelocity(
+            context, JacobianWrtVariable::kV, body.body_frame(),
+            Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
+        Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
+      }
+    }
+  }
+
+  // Set the model parameters before adding constraints.
   model->ResetParameters(std::move(params));
 
-  // Add contact constraints. We'll need to clear the patch constraints pool
-  // here to avoid conflicting hydro and point contact constraints.
-  if (!reuse_geometry_data) {
-    CalcGeometryContactData(context);
-  }
-
+  // Contact constraints
+  CalcGeometryContactData(context);
   AllocatePatchConstraints(model);
   AddPatchConstraintsForPointContact(context, model);
   AddPatchConstraintsForHydroelasticContact(context, model);
 
-  // Add other constraints to the problem
+  // Coupler constraints
+  AllocateCouplerConstraints(model);
   AddCouplerConstraints(context, model);
+
+  // Limit constraints
+  AllocateLimitConstraints(model);
   AddLimitConstraints(context, model);
 
+  // Gain and external force constraints
+  // N.B. external forces must come first, followed by actuation
+  AllocateGainConstraints(model, act_lin.has_value(), ext_lin.has_value());
+  if (ext_lin.has_value()) {
+    const VectorX<T>& Ke = ext_lin->first;
+    const VectorX<T>& be = ext_lin->second;
+    AddExternalGainConstraints(Ke, be, model);
+  }
+  if (act_lin.has_value()) {
+    const VectorX<T>& Ku = act_lin->first;
+    const VectorX<T>& bu = act_lin->second;
+    // N.B. actuation constraint indices in the pool depend on whether external
+    // or not external forces are present in the model.
+    AddActuationGainConstraints(Ku, bu, ext_lin.has_value(), model);
+  }
+
+  // Define the sparsity pattern, which defines which cliques are connected by
+  // constraints.
   model->SetSparsityPattern();
+}
+
+template <typename T>
+void PooledSapBuilder<T>::UpdateModel(const T& time_step,
+                                      PooledSapModel<T>* model) const {
+  model->UpdateTimeStep(time_step);
 }
 
 template <typename T>
@@ -350,18 +402,27 @@ void PooledSapBuilder<T>::AllocatePatchConstraints(
 }
 
 template <typename T>
+void PooledSapBuilder<T>::AllocateCouplerConstraints(
+    PooledSapModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
+      plant().get_coupler_constraint_specs();
+  typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
+      model->coupler_constraints_pool();
+  couplers.Resize(specs_map.size());
+}
+
+template <typename T>
 void PooledSapBuilder<T>::AddCouplerConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
   const SpanningForest& forest = GetInternalTree(plant()).forest();
-  const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
 
   typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
       model->coupler_constraints_pool();
-  couplers.Resize(specs_map.size());
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
@@ -376,8 +437,8 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     // Sanity check.
     DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
 
-    const int clique0 = tree_to_clique[tree0];
-    const int clique1 = tree_to_clique[tree1];
+    const int clique0 = tree_to_clique(tree0);
+    const int clique1 = tree_to_clique(tree1);
 
     if (clique0 != clique1) {
       throw std::logic_error(
@@ -399,6 +460,17 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
 }
 
 template <typename T>
+void PooledSapBuilder<T>::AllocateLimitConstraints(
+    PooledSapModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+
+  typename PooledSapModel<T>::LimitConstraintsPool& limits =
+      model->limit_constraints_pool();
+
+  limits.Resize(limited_clique_sizes_, limit_constraint_to_clique_);
+}
+
+template <typename T>
 void PooledSapBuilder<T>::AddLimitConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
@@ -408,43 +480,6 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
   typename PooledSapModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
-  limits.Clear();
-  const std::vector<int>& tree_to_clique = model->params().tree_to_clique;
-
-  // Identify all cliques that have at least one 1-DoF joint with finite limits.
-  // TODO(vincekurtz): consider alternative/better data structures here
-  std::vector<int> clique_to_constraint(model->num_cliques(), -1);
-  std::vector<int> limited_clique_sizes(0);
-  std::vector<int> constraint_to_clique(0);
-  for (JointIndex joint_index : plant().GetJointIndices()) {
-    const Joint<T>& joint = plant().get_joint(joint_index);
-
-    // check for 1-DoF joints
-    if (joint.num_positions() != 1 || joint.num_velocities() != 1) {
-      continue;
-    }
-
-    // Check for finite upper or lower limits. Note that this must come after
-    // the 1-DoF check above.
-    if (isinf(joint.position_lower_limits()[0]) &&
-        isinf(joint.position_upper_limits()[0])) {
-      continue;
-    }
-
-    // Record the size of the clique this joint belongs to, and the mappings
-    // from constraint <---> clique.
-    const TreeIndex tree_index = forest.v_to_tree_index(joint.velocity_start());
-    const int clique = tree_to_clique[tree_index];
-    const int clique_nv = model->clique_size(clique);
-    limited_clique_sizes.push_back(clique_nv);
-    constraint_to_clique.push_back(clique);
-    clique_to_constraint[clique] = limited_clique_sizes.size() - 1;
-  }
-
-  // Allocate space for the limit constraints. When we do this allocation, all
-  // of the limits will be set to +/- infinity. We'll set the actual limits
-  // below.
-  limits.Resize(limited_clique_sizes, constraint_to_clique);
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
@@ -457,7 +492,7 @@ void PooledSapBuilder<T>::AddLimitConstraints(
       const int tree_velocity_start = forest.trees(tree_index).v_start();
 
       const int tree_dof = velocity_start - tree_velocity_start;
-      const int clique = tree_to_clique[tree_index];
+      const int clique = tree_to_clique(tree_index);
 
       const double ql = joint.position_lower_limits()[0];
       const double qu = joint.position_upper_limits()[0];
@@ -465,7 +500,7 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
       if (!isinf(ql) || !isinf(qu)) {
         // Add constraint for this dof in clique.
-        const int k = clique_to_constraint[clique];
+        const int k = clique_to_limit_constraint_[clique];
         limits.Add(k, clique, tree_dof, q0, ql, qu);
       }
     }
@@ -653,9 +688,39 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
-                                            const VectorX<T>& bu,
-                                            PooledSapModel<T>* model) const {
+void PooledSapBuilder<T>::AllocateGainConstraints(PooledSapModel<T>* model,
+                                                  bool actuation,
+                                                  bool external_forces) const {
+  DRAKE_DEMAND(model != nullptr);
+
+  auto& gain_constraints = model->gain_constraints_pool();
+  std::vector<int> gain_constraint_sizes(0);
+
+  // The first gain constraints are for external forces, τ = Ke v + be. These
+  // are not subject to effort limits.
+  if (external_forces) {
+    for (int c = 0; c < model->num_cliques(); ++c) {
+      gain_constraint_sizes.push_back(model->clique_size(c));
+    }
+  }
+
+  // Subsequent constraints are for actuation, u = Ku v + bu. These are
+  // subject to effort limits.
+  if (actuation) {
+    for (int c = 0; c < model->num_cliques(); ++c) {
+      if (clique_nu_[c] > 0) {
+        gain_constraint_sizes.push_back(model->clique_size(c));
+      }
+    }
+  }
+
+  gain_constraints.Resize(gain_constraint_sizes);
+}
+
+template <typename T>
+void PooledSapBuilder<T>::AddActuationGainConstraints(
+    const VectorX<T>& Ku, const VectorX<T>& bu, bool has_external_forces,
+    PooledSapModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
   DRAKE_DEMAND(model->num_velocities() == plant().num_velocities());
   const int nv = model->num_velocities();
@@ -667,23 +732,19 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
 
   auto& gain_constraints = model->gain_constraints_pool();
 
-  // Allocate gain constraints for each clique with actuated DOFs.
-  // TODO(vincekurtz): consider a separate AllocateGainConstraints() method.
-  std::vector<int> actuated_clique_sizes(0);
-  for (int c = 0; c < model->num_cliques(); ++c) {
-    if (model->params().clique_nu[c] > 0) {
-      actuated_clique_sizes.push_back(model->clique_size(c));
-    }
+  int i = 0;  // constraint index
+  if (has_external_forces) {
+    // When external forces are present, actuation constraints come after all
+    // the external force constraints in the pool.
+    i = model->num_cliques();
   }
-  gain_constraints.Resize(actuated_clique_sizes);
 
-  int i = 0;  // track actuated clique index.
   for (int c = 0; c < model->num_cliques(); ++c) {
-    if (model->params().clique_nu[c] == 0) continue;
+    if (clique_nu_[c] == 0) continue;
 
     const auto Ku_c = model->clique_segment(c, Ku);
     const auto bu_c = model->clique_segment(c, bu);
-    const auto e_c = model->clique_segment(c, model->params().effort_limits);
+    const auto e_c = model->clique_segment(c, effort_limits_);
 
     gain_constraints.Add(i, c, Ku_c, bu_c, e_c);
     ++i;
@@ -691,24 +752,29 @@ void PooledSapBuilder<T>::AddActuationGains(const VectorX<T>& Ku,
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddExternalGains(const VectorX<T>& Ke,
-                                           const VectorX<T>& be,
-                                           PooledSapModel<T>* model) const {
+void PooledSapBuilder<T>::AddExternalGainConstraints(
+    const VectorX<T>& Ke, const VectorX<T>& be,
+    PooledSapModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
   const int nv = model->num_velocities();
   DRAKE_DEMAND(Ke.size() == nv);
   DRAKE_DEMAND(be.size() == nv);
 
-  const T& dt = model->time_step();
-  PooledSapParameters<T>& params = model->params();
-  for (int c = 0; c < model->num_cliques(); ++c) {
-    auto A_c = params.A[c];
-    const auto Ke_c = model->clique_segment(c, Ke);
-    A_c.diagonal() += dt * Ke_c;
+  auto& gain_constraints = model->gain_constraints_pool();
 
+  for (int c = 0; c < model->num_cliques(); ++c) {
+    const auto Ke_c = model->clique_segment(c, Ke);
     const auto be_c = model->clique_segment(c, be);
-    auto r_c = model->clique_segment(c, &params.r);
-    r_c += dt * be_c;
+
+    // We use infinite effort limits for external force gain constraints.
+    // TODO(vincekurtz): consider dealing with gain constraints by just adding
+    // to A += dt * K and r += dt * b directly instead of using gain
+    // constraints.
+    const int clique_nv = model->clique_size(c);
+    const VectorX<T> e =
+        VectorX<T>::Constant(clique_nv, std::numeric_limits<T>::infinity());
+
+    gain_constraints.Add(c, c, Ke_c, be_c, e);
   }
 }
 

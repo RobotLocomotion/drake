@@ -24,10 +24,51 @@ template <typename T>
 using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
 template <typename T>
+void PooledSapModel<T>::ResetParameters(
+    std::unique_ptr<PooledSapParameters<T>> params) {
+  DRAKE_ASSERT(params != nullptr);
+  params_ = std::move(params);
+
+  // Set some sizes
+  num_velocities_ = v0().size();
+  num_bodies_ = ssize(this->params().body_to_clique);
+  num_cliques_ = ssize(this->params().clique_sizes);
+
+  // Define the sparse dynamics matrix A = M + δt D and the diagonal Delassus
+  // operator estimate W = diag(M)⁻¹.
+  const std::vector<int>& clique_sizes = this->params().clique_sizes;
+  A_.Resize(clique_sizes, clique_sizes);
+  clique_delassus_.Resize(clique_sizes, clique_sizes);
+  for (int c = 0; c < num_cliques_; ++c) {
+    const int v_start = this->params().clique_start[c];
+    const int nv = clique_sizes[c];
+    A_[c] = M0().block(v_start, v_start, nv, nv);
+    A_[c].diagonal() += time_step() * D0().segment(v_start, nv);
+    clique_delassus_[c] =
+        M0().block(v_start, v_start, nv, nv).diagonal().cwiseInverse();
+  }
+
+  // Set the linear cost term r = A v₀ - δt k₀
+  Av0_.resize(num_velocities_);
+  MultiplyByDynamicsMatrix(v0(), &Av0_);
+  r_ = Av0_ - time_step() * k0();
+
+  // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body
+  V_WB0_.Resize(num_bodies_);
+  CalcBodySpatialVelocities(v0(), &V_WB0_);
+
+  // Set the scaling factor diag(M)^{-1/2} for convergence checks
+  scale_factor_ = M0().diagonal().cwiseInverse().cwiseSqrt();
+
+  VerifyInvariants();
+}
+
+template <typename T>
 Eigen::VectorBlock<const VectorX<T>> PooledSapModel<T>::clique_segment(
     int clique, const VectorX<T>& x) const {
   DRAKE_ASSERT(x.size() == num_velocities());
-  return x.segment(clique_start_[clique], clique_sizes_[clique]);
+  return x.segment(params().clique_start[clique],
+                   params().clique_sizes[clique]);
 }
 
 template <typename T>
@@ -35,78 +76,50 @@ Eigen::VectorBlock<VectorX<T>> PooledSapModel<T>::clique_segment(
     int clique, VectorX<T>* x) const {
   DRAKE_ASSERT(x != nullptr);
   DRAKE_ASSERT(x->size() == num_velocities());
-  return x->segment(clique_start_[clique], clique_sizes_[clique]);
+  return x->segment(params().clique_start[clique],
+                    params().clique_sizes[clique]);
 }
 
 template <typename T>
-void PooledSapModel<T>::ResetParameters(
-    std::unique_ptr<PooledSapParameters<T>> params) {
-  // Check validity of the new parameters
-  DRAKE_DEMAND(params != nullptr);
-  DRAKE_DEMAND(params->time_step > 0);
-  const int num_bodies = ssize(params->body_cliques);
-  DRAKE_DEMAND(num_bodies > 0);
-  DRAKE_DEMAND(ssize(params->body_is_floating) == num_bodies);
-  DRAKE_DEMAND(ssize(params->body_mass) == num_bodies);
-  DRAKE_DEMAND(params->body_cliques[0] < 0);  // Always for the world.
-  const int num_cliques = params->A.size();
-  DRAKE_DEMAND(ssize(params->clique_nu) == num_cliques);
+void PooledSapModel<T>::VerifyInvariants() const {
+  DRAKE_DEMAND(time_step() > 0);
+  DRAKE_DEMAND(v0().size() == num_velocities_);
+  DRAKE_DEMAND(M0().rows() == num_velocities_);
+  DRAKE_DEMAND(M0().cols() == num_velocities_);
+  DRAKE_DEMAND(D0().size() == num_velocities_);
+  DRAKE_DEMAND(k0().size() == num_velocities_);
+  DRAKE_DEMAND(scale_factor().size() == num_velocities_);
 
-  DRAKE_DEMAND(params->J_WB.size() == num_bodies);
-  for (int b = 0; b < num_bodies; ++b) {
-    const int c = params->body_cliques[b];
-    DRAKE_DEMAND(c < num_cliques);
+  DRAKE_DEMAND(params().J_WB.size() == num_bodies_);
+  DRAKE_DEMAND(V_WB0_.size() == num_bodies_);
+  DRAKE_DEMAND(ssize(params().body_mass) == num_bodies_);
+
+  DRAKE_DEMAND(A_.size() == num_cliques_);
+  DRAKE_DEMAND(r_.size() == num_velocities_);
+  DRAKE_DEMAND(Av0_.size() == num_velocities_);
+  DRAKE_DEMAND(clique_delassus_.size() == num_cliques_);
+
+  DRAKE_DEMAND(ssize(params().clique_start) == num_cliques_ + 1);
+  DRAKE_DEMAND(ssize(params().clique_sizes) == num_cliques_);
+  DRAKE_DEMAND(ssize(params().body_to_clique) == num_bodies_);
+  DRAKE_DEMAND(ssize(params().body_is_floating) == num_bodies_);
+
+  for (int b = 0; b < num_bodies_; ++b) {
+    const int c = body_to_clique(b);
+    DRAKE_DEMAND(c < num_cliques_);
     if (c >= 0) {
-      DRAKE_DEMAND(params->J_WB[b].cols() == params->A[c].rows());
+      DRAKE_DEMAND(J_WB(b).cols() == A(c).rows());
     }
   }
 
-  // Pre-compute the size of each clique and its starting index in the
-  // full velocity vector.
-  clique_sizes_.clear();
-  clique_start_.clear();
-  clique_sizes_.reserve(num_cliques);
-  clique_start_.reserve(num_cliques + 1);
-  clique_start_.push_back(0);
-  int num_velocities = 0;
-
-  for (int c = 0; c < num_cliques; ++c) {
-    const int clique_nv = params->A[c].rows();
-    DRAKE_DEMAND(params->A[c].cols() == clique_nv);
-    DRAKE_DEMAND(params->clique_nu[c] <= clique_nv);
-
-    // Here we are pushing the start for the next clique, c+1.
-    clique_start_.push_back(clique_start_.back() + clique_nv);
-    clique_sizes_.push_back(clique_nv);
-
-    num_velocities += clique_nv;
+  int nv = 0;
+  for (int c = 0; c < num_cliques_; ++c) {
+    const int clique_nv = clique_size(c);
+    DRAKE_DEMAND(A(c).rows() == clique_nv);
+    DRAKE_DEMAND(A(c).cols() == clique_nv);
+    nv += clique_nv;
   }
-
-  DRAKE_DEMAND(params->r.size() == num_velocities);
-  DRAKE_DEMAND(params->v0.size() == num_velocities);
-  DRAKE_DEMAND(params->effort_limits.size() == num_velocities);
-
-  // All checks passed; set the new parameters.
-  params_ = std::move(params);
-  num_velocities_ = num_velocities;
-  num_bodies_ = num_bodies;
-
-  // Reset all constraint pools.
-  coupler_constraints_pool_.Clear();
-  gain_constraints_pool_.Clear();
-  limit_constraints_pool_.Clear();
-  patch_constraints_pool_.Clear();
-
-  // Pre-compute spatial velocity for each body at the current state.
-  V_WB0_.Resize(num_bodies_);
-  CalcBodySpatialVelocities(params_->v0, &V_WB0_);
-
-  // Set the diagonal approximation of the Delassus operator for constraints
-  // for which the Jacobian J is the identity matrix.
-  clique_delassus_.Resize(clique_sizes_, clique_sizes_);
-  for (int c = 0; c < params_->A.size(); ++c) {
-    clique_delassus_[c] = params_->A[c].diagonal().cwiseInverse();
-  }
+  DRAKE_DEMAND(nv == num_velocities_);
 }
 
 template <typename T>
@@ -116,13 +129,10 @@ void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   DRAKE_ASSERT(result != nullptr);
   DRAKE_ASSERT(result->size() == num_velocities());
 
-  const auto& A = params().A;
-  for (int c = 0; c < A.size(); ++c) {
-    ConstMatrixXView<T> A_clique = A[c];
-    const int start = clique_start_[c];
-    const int nv = clique_sizes_[c];
-    const auto v_clique = v.segment(start, nv);
-    auto Av_clique = result->segment(start, nv);
+  for (int c = 0; c < num_cliques(); ++c) {
+    ConstMatrixXView A_clique = A(c);
+    const auto v_clique = clique_segment(c, v);
+    auto Av_clique = clique_segment(c, result);
     Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
   }
 }
@@ -131,9 +141,6 @@ template <typename T>
 void PooledSapModel<T>::CalcMomentumTerms(
     const PooledSapData<T>& data,
     typename PooledSapData<T>::Cache* cache) const {
-  // Parameters.
-  const auto& r = params().r;
-
   // Data.
   const VectorX<T>& v = data.v();
   VectorX<T>& Av = cache->Av;
@@ -144,33 +151,45 @@ void PooledSapModel<T>::CalcMomentumTerms(
 
   // Cost.
   MultiplyByDynamicsMatrix(v, &Av);
-  Av_minus_r = 0.5 * Av - r;
+  Av_minus_r = 0.5 * Av - r_;
   cache->momentum_cost = v.dot(Av_minus_r);
 
   // Gradient.
-  cache->gradient = Av - r;
+  cache->gradient = Av - r_;
 }
 
 template <typename T>
 void PooledSapModel<T>::CalcBodySpatialVelocities(
     const VectorX<T>& v, EigenPool<Vector6<T>>* V_pool) const {
   EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
+  DRAKE_ASSERT(v.size() == num_velocities());
+  DRAKE_ASSERT(spatial_velocities.size() == num_bodies());
   spatial_velocities[0].setZero();  // World's spatial velocity.
-  for (int b = 1; b < num_bodies_; ++b) {
-    const int c = params().body_cliques[b];
+  for (int b = 1; b < num_bodies(); ++b) {
+    const int c = body_to_clique(b);
     Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {
       auto v_clique = clique_segment(c, v);
       if (is_floating(b)) {
         V_WB = v_clique;
       } else {
-        auto J_WB = params().J_WB[b];
-        V_WB = J_WB * v_clique;
+        V_WB = J_WB(b) * v_clique;
       }
     } else {
       V_WB.setZero();  // Anchored body.
     }
   }
+}
+
+template <typename T>
+void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
+  const int max_clique_size = *std::max_element(params().clique_sizes.begin(),
+                                                params().clique_sizes.end());
+  data->Resize(num_bodies_, num_velocities_, max_clique_size,
+               coupler_constraints_pool_.num_constraints(),
+               gain_constraints_pool_.constraint_sizes(),
+               limit_constraints_pool_.constraint_sizes(),
+               patch_constraints_pool_.patch_sizes());
 }
 
 template <typename T>
@@ -224,9 +243,8 @@ void PooledSapModel<T>::UpdateHessian(
   hessian->SetZero();
 
   // Initialize hessian = A (block diagonal).
-  const auto& A = params().A;
-  for (int c = 0; c < A.size(); ++c) {
-    ConstMatrixXView<T> A_clique = A[c];
+  for (int c = 0; c < num_cliques(); ++c) {
+    ConstMatrixXView A_clique = A(c);
     hessian->AddToBlock(c, c, A_clique);
   }
 
@@ -239,33 +257,22 @@ void PooledSapModel<T>::UpdateHessian(
 
 template <typename T>
 void PooledSapModel<T>::SetSparsityPattern() {
-  std::vector<int> block_sizes = clique_sizes_;
-  const int num_nodes = block_sizes.size();
+  // N.B. we make a copy here because block_sizes will be moved into the
+  // BlockSparsityPattern at the end of this function.
+  std::vector<int> block_sizes = params().clique_sizes;
 
   // Build diagonal entries in the sparsity pattern.
-  std::vector<std::vector<int>> sparsity(num_nodes);
-  for (int i = 0; i < num_nodes; ++i) {
+  std::vector<std::vector<int>> sparsity(num_cliques());
+  for (int i = 0; i < num_cliques(); ++i) {
     sparsity[i].emplace_back(i);
   }
 
-  // Build off-diagonal entries in the sparsity pattern.
-  // TODO(CENIC): account for other constraints that may change the sparsity
-  // pattern.
+  // Build off-diagonal entries in the sparsity pattern. Currently contact
+  // constraints are the only ones that can create off-diagonal entries.
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
 
   sparsity_pattern_ = std::make_unique<internal::BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
-}
-
-template <typename T>
-void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
-  const int max_clique_size =
-      *std::max_element(clique_sizes_.begin(), clique_sizes_.end());
-  data->Resize(num_bodies_, num_velocities_, max_clique_size,
-               coupler_constraints_pool_.num_constraints(),
-               gain_constraints_pool_.constraint_sizes(),
-               limit_constraints_pool_.constraint_sizes(),
-               patch_constraints_pool_.patch_sizes());
 }
 
 template <typename T>
@@ -364,6 +371,36 @@ T PooledSapModel<T>::CalcCostAlongLine(
   }
 
   return cost;
+}
+
+template <typename T>
+void PooledSapModel<T>::UpdateTimeStep(const T& time_step) {
+  DRAKE_DEMAND(time_step > 0);
+  const T old_time_step = this->time_step();
+
+  // Linearized dynamics matrix A = M + δt⋅D
+  for (int c = 0; c < num_cliques_; ++c) {
+    const int v_start = params().clique_start[c];
+    const int nv = params().clique_sizes[c];
+    A_[c] = M0().block(v_start, v_start, nv, nv);
+    A_[c].diagonal() += time_step * D0().segment(v_start, nv);
+    clique_delassus_[c] =
+        M0().block(v_start, v_start, nv, nv).diagonal().cwiseInverse();
+  }
+
+  // Linear cost term r = A v₀ - δt k₀
+  MultiplyByDynamicsMatrix(v0(), &Av0_);
+  r_ = Av0_ - time_step * k0();
+
+  // Constraints
+  coupler_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
+  // Gain constraints only use the time step in CalcData, so gain constraints
+  // do not need to be updated here.
+  limit_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
+  patch_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
+
+  // Finally, set the time step itself
+  params_->time_step = time_step;
 }
 
 }  // namespace pooled_sap

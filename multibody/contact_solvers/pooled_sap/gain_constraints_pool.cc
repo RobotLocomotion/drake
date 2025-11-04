@@ -76,8 +76,6 @@ void PooledSapModel<T>::GainConstraintsPool::CalcData(
 template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::AccumulateGradient(
     const PooledSapData<T>& data, VectorX<T>* gradient) const {
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
-
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
@@ -93,8 +91,6 @@ template <typename T>
 void PooledSapModel<T>::GainConstraintsPool::AccumulateHessian(
     const PooledSapData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
-
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
@@ -112,9 +108,6 @@ void PooledSapModel<T>::GainConstraintsPool::ProjectAlongLine(
   const int nv = model().num_velocities();
   DRAKE_ASSERT(v_sized_scratch != nullptr);
   DRAKE_ASSERT(v_sized_scratch->size() == nv);
-
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
   *dcost = 0.0;
   *d2cost = 0.0;

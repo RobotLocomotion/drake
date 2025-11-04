@@ -384,8 +384,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   PooledSapBuilder<double>& sap_builder = integrator.builder();
   PooledSapModel<double>& model = integrator.get_model();
   PooledSapData<double>& data = integrator.get_data();
-  sap_builder.UpdateModel(plant_context, h, false, &model);
-  sap_builder.AddActuationGains(K, b, &model);
+  std::pair<const VectorXd&, const VectorXd&> act_lin(K, b);
+  sap_builder.UpdateModel(plant_context, h, act_lin, std::nullopt, &model);
   model.ResizeData(&data);
   model.CalcData(v, &data);
   const VectorXd dl = data.cache().gradient;

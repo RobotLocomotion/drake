@@ -260,7 +260,7 @@ TEST_F(TwoSpheres, GetContact) {
 
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, false, &model);
+  builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant_->num_velocities());
   EXPECT_EQ(model.num_patch_constraints(), 1);
@@ -277,11 +277,12 @@ TEST_F(TwoSpheres, MakeData) {
 
   PooledSapBuilder<double> builder(*plant_);
   PooledSapModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, false, &model);
+  builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(model.num_patch_constraints(), 1);
-  EXPECT_EQ(model.clique_sizes(), std::vector<int>({6, 6}));
+  EXPECT_EQ(model.clique_size(0), 6);
+  EXPECT_EQ(model.clique_size(1), 6);
 
   PooledSapModel<double>::PatchConstraintsPool& patch_constraints =
       model.patch_constraints_pool();
@@ -308,7 +309,7 @@ TEST_F(TwoSpheres, MakeData) {
   // Update problem. There should be no allocations for the same problem size.
   // TODO(amcastro-tri): Move this function within the guard. You'll need a
   // pre-allocated workspace for this function.
-  builder.UpdateModel(*plant_context_, time_step, false, &model);
+  builder.UpdateModel(*plant_context_, time_step, &model);
   {
     drake::test::LimitMalloc guard;
     model.ResizeData(&data);
@@ -354,10 +355,58 @@ GTEST_TEST(PooledSapBuilder, Limits) {
   const double time_step = 0.01;
   PooledSapBuilder<double> builder(plant);
   PooledSapModel<double> model;
-  builder.UpdateModel(plant_context, time_step, false, &model);
+  builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant.num_velocities());
   EXPECT_EQ(model.num_limit_constraints(), 2);
+}
+
+GTEST_TEST(PooledSapBuilder, UpdateTimeStepOnly) {
+  const char xml[] = R"""(
+  <?xml version="1.0"?>
+  <mujoco model="robot">
+    <worldbody>
+      <body>
+        <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
+        <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
+        <body>
+          <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
+          <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" range="-45.0 45.0"/>
+        </body>
+      </body>
+    </worldbody>
+  </mujoco>
+  )""";
+
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(xml, "xml");
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 2);
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  const double time_step = 0.01;
+  PooledSapBuilder<double> builder(plant);
+  PooledSapModel<double> model;
+  builder.UpdateModel(plant_context, time_step, &model);
+  EXPECT_EQ(model.num_cliques(), 1);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  EXPECT_EQ(model.num_limit_constraints(), 1);
+  EXPECT_EQ(model.time_step(), time_step);
+
+  builder.UpdateModel(time_step * 2, &model);
+  EXPECT_EQ(model.num_cliques(), 1);
+  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+  EXPECT_EQ(model.num_limit_constraints(), 1);
+  EXPECT_EQ(model.time_step(), time_step * 2);
 }
 
 }  // namespace pooled_sap

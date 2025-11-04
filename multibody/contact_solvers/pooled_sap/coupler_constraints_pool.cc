@@ -55,7 +55,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::Add(int index, int clique,
   const T g0 = qi - gear_ratio * qj - offset;
   v_hat_[index] = -g0 / (dt * (1.0 + beta / M_PI));
 
-  const auto w_clique = model().get_clique_delassus(clique);
+  const auto w_clique = model().clique_delassus(clique);
   // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
   //  J = [0 ... 1 ... -ρ ... 0]
   //             ↑      ↑
@@ -63,6 +63,15 @@ void PooledSapModel<T>::CouplerConstraintsPool::Add(int index, int clique,
   const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
   R_[index] = eps * w;
+}
+
+template <typename T>
+void PooledSapModel<T>::CouplerConstraintsPool::UpdateTimeStep(const T& old_dt,
+                                                               const T& dt) {
+  const T ratio = old_dt / dt;
+  for (int k = 0; k < num_constraints(); ++k) {
+    v_hat_[k] *= ratio;
+  }
 }
 
 template <typename T>

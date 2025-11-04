@@ -36,56 +36,26 @@ class PooledSapBuilder {
    *
    * @param context The MbP context storing the current state (q₀, v₀).
    * @param time_step The requested time step δt.
-   * @param reuse_geometry_data Flag for reusing geometry data aready set in the
-   *                            model. This is useful for avoiding geometry
-   *                            queries when only δt has changed, not (q₀, v₀).
+   * @param act_lin Optional linearization data (Kᵤ, bᵤ) for actuation forces of
+   * the form u = clamp(-Kᵤ⋅v + b, e).
+   * @param ext_lin Optional linearization data (Kₑ, bₑ) for external forces of
+   * the form τ = -Kₑ⋅v + bₑ.
    * @param model The PooledSapModel to update.
-   *
-   * TODO(vincekurtz): instead of the reuse_geometry_data flag, consider an
-   * alternative ResetTimestep() methods that only updates δt, keeping all of
-   * the other terms unchanged (and therefore not requiring geometry queries).
    */
+  void UpdateModel(
+      const systems::Context<T>& context, const T& time_step,
+      std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> act_lin,
+      std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> ext_lin,
+      PooledSapModel<T>* model);
+
+  // Ignore actuation and external force constraints.
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
-                   bool reuse_geometry_data, PooledSapModel<T>* model);
+                   PooledSapModel<T>* model) {
+    UpdateModel(context, time_step, std::nullopt, std::nullopt, model);
+  }
 
-  /**
-   * Update the given model to include external forces
-   *
-   *   τ = −Kₑ⋅v + bₑ
-   *
-   * where Kₑ is a positive semi-definite gain matrix and bₑ a bias term. Matrix
-   * Kₑ is diagonal.
-   *
-   * More specifically, the linear dynamics matrix A and residual term r are
-   * updated according to:
-   *
-   *   A += δt⋅Kₑ
-   *   r += δt⋅bₑ
-   *
-   * Kₑ and bₑ are provided for the entire model. Kₑ can have zero entries.
-   *
-   * @pre Ke has positive (or zero) entries.
-   * @pre Both Ke and be are vectors of size model->num_velocities().
-   */
-  void AddExternalGains(const VectorX<T>& Ke, const VectorX<T>& be,
-                        PooledSapModel<T>* model) const;
-
-  /**
-   * Add constraints to model actuation with effort limits:
-   *
-   *  τ = clamp(−Kᵤ⋅v + bᵤ, e)
-   *
-   * where Kᵤ is a positive semi-definite gain matrix, bᵤ a bias term and e the
-   * effort limit. Matrix Kᵤ is diagonal.
-
-   * Kᵤ and bᵤ are provided for the entire model and Kᵤ can have zero entries.
-   * The effort limits are obtained from the plant() model provided at
-   * construction of `this` builder.
-   * Constraints are added on a per-clique basis, and no actuation constraints
-   * are added if a clique has no actuators.
-   */
-  void AddActuationGains(const VectorX<T>& Ku, const VectorX<T>& bu,
-                         PooledSapModel<T>* model) const;
+  // Only update the time step δt. All other model data remains unchanged.
+  void UpdateModel(const T& time_step, PooledSapModel<T>* model) const;
 
  private:
   // Compute geometry data and store it internally for later use
@@ -103,22 +73,72 @@ class PooledSapBuilder {
   void AddPatchConstraintsForHydroelasticContact(
       const systems::Context<T>& context, PooledSapModel<T>* model) const;
 
-  // Add coupler constraints to the model
+  // Coupler constraints
+  void AllocateCouplerConstraints(PooledSapModel<T>* model) const;
   void AddCouplerConstraints(const systems::Context<T>& context,
                              PooledSapModel<T>* model) const;
 
-  // Add joint limit constraints to the model
+  // Joint limit constraints
+  void AllocateLimitConstraints(PooledSapModel<T>* model) const;
   void AddLimitConstraints(const systems::Context<T>& context,
                            PooledSapModel<T>* model) const;
+
+  // Allocate space for gain constraints. We assume that external force
+  // constraints come first, followed by actuator constraints.
+  void AllocateGainConstraints(PooledSapModel<T>* model, bool actuation,
+                               bool external_forces) const;
+
+  // External force constraints τ = −Kₑ⋅v + bₑ, where Kₑ is diagonal and >= 0.
+  void AddExternalGainConstraints(const VectorX<T>& Ke, const VectorX<T>& be,
+                                  PooledSapModel<T>* model) const;
+
+  // Actuation constraints τ = clamp(−Kᵤ⋅v + bᵤ, e), where Kᵤ is diagonal
+  // and >= 0. Note that effort limits e are enforced here.
+  void AddActuationGainConstraints(const VectorX<T>& Ku, const VectorX<T>& bu,
+                                   bool has_external_forces,
+                                   PooledSapModel<T>* model) const;
 
   // The multibody plant used to build the model.
   const MultibodyPlant<T>& plant() const { return *plant_; }
   const MultibodyPlant<T>* plant_{nullptr};
 
+  // Map a tree index to a clique index. Cliques are trees with nv > 0.
+  // If a tree has nv == 0, it maps to -1.
+  int tree_to_clique(int tree_index) const {
+    DRAKE_ASSERT(tree_index >= 0 && tree_index < ssize(tree_to_clique_));
+    return tree_to_clique_[tree_index];
+  }
+
+  // Number of velocities in each clique.
+  const std::vector<int>& clique_sizes() const { return clique_sizes_; }
+
+  // Number of rows in each body's spatial velocity Jacobian J_WB.
+  const std::vector<int>& body_jacobian_rows() const {
+    return body_jacobian_rows_;
+  }
+
+  // Number of columns in each body's spatial velocity Jacobian J_WB.
+  const std::vector<int>& body_jacobian_cols() const {
+    return body_jacobian_cols_;
+  }
+
   // Model properties that do not change unless the system changes.
   std::map<geometry::GeometryId, CoulombFriction<double>> friction_;
   std::map<geometry::GeometryId, T> stiffness_;    // point contact.
   std::map<geometry::GeometryId, T> dissipation_;  // H&C dissipation.
+  std::vector<int> tree_to_clique_;      // cliques are trees with nv > 0.
+  std::vector<int> clique_sizes_;        // nv for each clique.
+  std::vector<int> body_jacobian_rows_;  // rows of J_WB for each body.
+  std::vector<int> body_jacobian_cols_;  // cols of J_WB for each body.
+  std::vector<int> body_to_clique_;      // clique index for each body.
+  std::vector<int> body_is_floating_;    // 1 if body is floating, 0 otherwise.
+  std::vector<T> body_mass_;             // mass of each body.
+  VectorX<T> effort_limits_;             // actuator limits for each velocity.
+  std::vector<int> clique_nu_;           // number of actuators per clique.
+
+  std::vector<int> limited_clique_sizes_;        // nv in each limited clique.
+  std::vector<int> clique_to_limit_constraint_;  // clique idx <--> limit idx
+  std::vector<int> limit_constraint_to_clique_;
 
   // Internal storage for geometry query results.
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;

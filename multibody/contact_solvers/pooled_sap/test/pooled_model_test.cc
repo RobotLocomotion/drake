@@ -32,36 +32,37 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   const int nv = 18;
 
   std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
+
   params->time_step = time_step;
-  params->A.Clear();
-  params->J_WB.Clear();
   params->v0 = VectorX<T>::Zero(nv);
 
-  // Push back mass matrices for three cliques.
+  // Define a sparse mass matrix with three cliques
   const Matrix6<T> A1 = 0.3 * Matrix6<T>::Identity();
   const Matrix6<T> A2 = 2.3 * Matrix6<T>::Identity();
   const Matrix6<T> A3 = 1.5 * Matrix6<T>::Identity();
 
-  if (single_clique) {
-    params->A.Resize({nv}, {nv});
-    MatrixX<T> A = MatrixX<T>::Identity(nv, nv);
-    A.template block<6, 6>(0, 0) = A1;
-    A.template block<6, 6>(6, 6) = A2;
-    A.template block<6, 6>(12, 12) = A3;
-    params->A[0] = A;
-  } else {
-    params->A.Resize({6, 6, 6}, {6, 6, 6});
-    params->A[0] = A1;
-    params->A[1] = A2;
-    params->A[2] = A3;
-  }
-  params->r = VectorX<T>::LinSpaced(nv, -0.5, 0.5);
+  // Set the dense mass matrix
+  MatrixX<T>& M0 = params->M0;
+  M0 = MatrixX<T>::Identity(nv, nv);
+  M0.template block<6, 6>(0, 0) = A1;
+  M0.template block<6, 6>(6, 6) = A2;
+  M0.template block<6, 6>(12, 12) = A3;
 
-  // Three bodies on different cliques. Three bodies + anchored-body (world).
+  // Define joint damping D₀
+  params->D0 = VectorX<T>::Constant(nv, 0.1);
+
+  // Set coriolis, centrifugal, and gravitational terms k₀
+  params->k0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
+
+  // Define the clique structure for the sparse linearized dynamics matrix A
+  std::vector<int>& clique_sizes = params->clique_sizes;
+  std::vector<int>& clique_start = params->clique_start;
   if (single_clique) {
-    params->body_cliques = {-1, 0, 0, 0};
+    clique_sizes = {nv};
+    clique_start = {0, nv};
   } else {
-    params->body_cliques = {-1, 0, 1, 2};
+    clique_sizes = {6, 6, 6};
+    clique_start = {0, 6, 12, nv};
   }
 
   // We use non-identity Jacobians to stress-test the algebra.
@@ -72,8 +73,9 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   const Matrix6<T> J_WB2 = J_WB0.transpose();
 
   if (single_clique) {
-    params->J_WB.Resize({6, 6, 6, 6}, {6, 18, 18, 18});
-    params->J_WB[0] = Matrix6<T>::Identity();  // World.
+    params->J_WB.Resize(4, 6, 18);
+    params->J_WB[0].setZero();
+    params->J_WB[0].template block<6, 6>(0, 0) = Matrix6<T>::Identity();
     auto J0 = params->J_WB[1];
     J0.setZero();
     J0.template block<6, 6>(0, 0) = J_WB0;
@@ -84,31 +86,26 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
     J2.setZero();
     J2.template block<6, 6>(0, 12) = J_WB2;
   } else {
-    params->J_WB.Resize({6, 6, 6, 6}, {6, 6, 6, 6});
+    params->J_WB.Resize(4, 6, 6);
     params->J_WB[0] = Matrix6<T>::Identity();  // World.
     params->J_WB[1] = J_WB0;
     params->J_WB[2] = J_WB1;
     params->J_WB[3] = J_WB2;
   }
 
-  // None of the bodies are marked as floating
-  params->body_is_floating = {0, 0, 0, 0};
-
-  // Scale factor for convergence check.
-  params->D = VectorX<T>::Ones(nv);
-
-  // There is no actuation in this problem.
-  params->effort_limits.resize(nv);
+  // We have three bodies and the world. The world is body -1.
   if (single_clique) {
-    params->clique_nu = {0};
+    // All bodies in the same clique (clique 0).
+    params->body_to_clique = {-1, 0, 0, 0};
   } else {
-    params->clique_nu = {0, 0, 0};
+    // Each body in its own clique.
+    params->body_to_clique = {-1, 0, 1, 2};
   }
 
-  // Reset model.
+  // Set the core parameters before adding constraints
   model->ResetParameters(std::move(params));
 
-  // Add patches.
+  // Add contact patches.
   const T dissipation = 50.0;
   const T stiffness = 1.0e6;
   const T friction = 0.5;
@@ -116,8 +113,9 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   typename PooledSapModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
-  // Allocate space
-  std::vector<int> num_pairs_per_patch = {1, 1, 1};
+  // Resize to hold three patches with one contact pair each.
+  // N.B. num_pairs_per_patch is allocated on the heap.
+  const std::vector<int> num_pairs_per_patch = {1, 1, 1};
   patches.Resize(num_pairs_per_patch);
 
   // first patch
@@ -159,7 +157,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
                     fn0, stiffness);
   }
 
-  // Establish the sparsity pattern.
+  // N.B. SetSparsityPattern performs several heap allocations.
   model->SetSparsityPattern();
 }
 
@@ -172,10 +170,9 @@ GTEST_TEST(PooledSapModel, Construction) {
   EXPECT_EQ(model.num_constraints(), 3);
 
   // Updating on the same size model should cause no new allocations.
-  // TODO(amcastro-tri): Creating Aldlt_ within ResetParameters triggers
-  // allocations.
+  // There are two places in MakeModel that perform heap allocations, see above.
   {
-    drake::test::LimitMalloc guard({.max_num_allocations = 36});
+    drake::test::LimitMalloc guard({.max_num_allocations = 9});
     MakeModel(&model);
   }
 }
@@ -199,16 +196,8 @@ GTEST_TEST(PooledSapModel, CalcData) {
 
   model.CalcData(v, &data);
 
-  // fmt::print("Mom. Cost: {}\n", data.cache().momentum_cost.value());
-  const double cost_value = data.cache().cost.value();
   const VectorXd cost_derivatives = data.cache().cost.derivatives();
   const VectorXd gradient_value = math::ExtractValue(data.cache().gradient);
-
-  fmt::print("Cost: {}\n", cost_value);
-  fmt::print("Gradient: {}\n", fmt_eigen(gradient_value.transpose()));
-  fmt::print(
-      "|grad-grad_ref|/|grad| = {}\n",
-      (gradient_value - cost_derivatives).norm() / gradient_value.norm());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 8 * kEps,
                               MatrixCompareType::relative));
@@ -238,7 +227,6 @@ GTEST_TEST(PooledSapModel, CalcDenseHessian) {
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 
@@ -251,7 +239,6 @@ GTEST_TEST(PooledSapModel, CalcDenseHessian) {
   gradient_derivatives = math::ExtractGradient(data.cache().gradient);
   hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 }
@@ -281,7 +268,6 @@ GTEST_TEST(PooledSapModel, CalcSparseHessian) {
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 
@@ -294,7 +280,6 @@ GTEST_TEST(PooledSapModel, CalcSparseHessian) {
   gradient_derivatives = math::ExtractGradient(data.cache().gradient);
   hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 }
@@ -406,9 +391,6 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
     EXPECT_NEAR(dcost.value(), dcost_expected, 8 * kEps * abs(dcost_expected));
     EXPECT_NEAR(d2cost.value(), d2cost_expected,
                 8 * kEps * abs(d2cost_expected));
-
-    fmt::print("alpha: {}. cost: {}. dcost: {}. d2cost: {}\n", alpha,
-               cost.value(), dcost.value(), d2cost.value());
   }
 }
 
@@ -484,9 +466,6 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   const VectorXd v2_value = v_value.segment<6>(12);  // Clique 2's values.
   VectorXd tau2_expected = -K2_value.cwiseProduct(v2_value) + u2_value;
 
-  fmt::print("tau0_expected: {}\n", fmt_eigen(tau0_expected.transpose()));
-  fmt::print("tau2_expected: {}\n", fmt_eigen(tau2_expected.transpose()));
-
   // For this test we verify some values are below, within and above effort
   // limits.
   EXPECT_GT(tau0_expected(0), 0.9);
@@ -502,15 +481,11 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   tau0_expected(5) = -0.9;
   const VectorXd gamma0_expected = tau0_expected * model.time_step().value();
 
-  const double cost_value = gains_data.cost().value();
   const VectorXd cost_gradient = gains_data.cost().derivatives();
-  fmt::print("cost: {}\n", cost_value);
-  fmt::print("gradient: {}\n", fmt_eigen(cost_gradient.transpose()));
 
   const VectorX<AutoDiffXd> gamma0 = gains_data.gamma(0);
   EXPECT_EQ(gamma0.size(), nv0);
   const VectorXd gamma0_value = math::ExtractValue(gamma0);
-  fmt::print("gamma: {}\n", fmt_eigen(gamma0_value.transpose()));
   EXPECT_TRUE(CompareMatrices(gamma0_value, gamma0_expected, kEps,
                               MatrixCompareType::relative));
 
@@ -523,23 +498,15 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   const VectorX<AutoDiffXd> gamma2 = gains_data.gamma(1 /* constraint index */);
   EXPECT_EQ(gamma2.size(), nv2);
   const VectorXd gamma2_value = math::ExtractValue(gamma2);
-  fmt::print("gamma: {}\n", fmt_eigen(gamma2_value.transpose()));
   const VectorXd minus_cost2_gradient =
       -cost_gradient.segment<6>(12 /* first velocity index */);
   EXPECT_TRUE(CompareMatrices(gamma2_value, minus_cost2_gradient, kEps,
                               MatrixCompareType::relative));
 
   // Verify accumulated total cost and gradients.
-  const double total_cost_value = data.cache().cost.value();
   const VectorXd total_cost_derivatives = data.cache().cost.derivatives();
   const VectorXd total_gradient_value =
       math::ExtractValue(data.cache().gradient);
-
-  fmt::print("Cost: {}\n", total_cost_value);
-  fmt::print("Gradient: {}\n", fmt_eigen(total_gradient_value.transpose()));
-  fmt::print("|grad-grad_ref|/|grad| = {}\n",
-             (total_gradient_value - total_cost_derivatives).norm() /
-                 total_gradient_value.norm());
 
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
                               2 * kEps, MatrixCompareType::relative));
@@ -548,7 +515,6 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
   MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 }
@@ -618,30 +584,24 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
 
   const AutoDiffXd dt = model.time_step();
   VectorX<AutoDiffXd> q = q0 + dt * v;
-  fmt::print("q: {}\n", fmt_eigen(q.transpose()));
 
   const LimitConstraintsDataPool<AutoDiffXd> limits_data =
       data.cache().limit_constraints_data;
   EXPECT_EQ(limits_data.num_constraints(), 2);
 
-  const double cost_value = limits_data.cost().value();
   const VectorXd cost_gradient = limits_data.cost().derivatives();
-  fmt::print("cost: {}\n", cost_value);
-  fmt::print("gradient: {}\n", fmt_eigen(cost_gradient.transpose()));
 
   // Impulses on constraint 0, clique 0.
   const VectorX<AutoDiffXd> gamma_lower0 = limits_data.gamma_lower(0);
   const VectorX<AutoDiffXd> gamma_upper0 = limits_data.gamma_upper(0);
   // tau = Jᵀ⋅γ, and J = [1; -1] for limit constraints.
   const VectorX<AutoDiffXd> tau0 = gamma_lower0 - gamma_upper0;
-  fmt::print("tau0: {}\n", fmt_eigen(tau0.transpose()));
 
   // Impulses on constraint 1, clique 2.
   const VectorX<AutoDiffXd> gamma_lower1 = limits_data.gamma_lower(1);
   const VectorX<AutoDiffXd> gamma_upper1 = limits_data.gamma_upper(1);
   // tau = Jᵀ⋅γ, and J = [1; -1] for limit constraints.
   const VectorX<AutoDiffXd> tau1 = gamma_lower1 - gamma_upper1;
-  fmt::print("tau1: {}\n", fmt_eigen(tau1.transpose()));
 
   // Assemble all clique contributions into tau by hand.
   VectorX<AutoDiffXd> tau = VectorX<AutoDiffXd>::Zero(nv);
@@ -656,7 +616,6 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
   MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 }
@@ -706,40 +665,28 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   VectorX<AutoDiffXd> q = q0 + dt * v;
   const auto q_c1 = model.clique_segment(1, q);
   const auto v_c1 = model.clique_segment(1, v);
-  // const VectorXd q_value = math::ExtractValue(q);
-  fmt::print("q: {}\n", fmt_eigen(q.transpose()));
 
   // Compute regularization.
   const double beta =
       0.1;  // Keep in sync with hard-coded value in the implementation.
-  // const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
   const double m1 = 2.3;                     // "mass" for clique 1.
   const double w1 = (1 + rho1 * rho1) / m1;  // Delassus for clique 1.
   const double m1_eff = 1.0 / w1;            // "Effective" mass for clique 1.
-  // const double R0 = eps * w0;
   const double omega_near_rigid =
       2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
   const double k1 = m1_eff * omega_near_rigid * omega_near_rigid;
   const double tau1 = beta / M_PI * dt;
 
-  const double R1 = 1.0 / (dt * (dt + tau1) * k1);
-  fmt::print("w1: {}\n", w1);
-  fmt::print("R1: {}\n", R1);
-
   const CouplerConstraintsDataPool<AutoDiffXd> couplers_data =
       data.cache().coupler_constraints_data;
   EXPECT_EQ(couplers_data.num_constraints(), 1);
 
-  const double cost_value = couplers_data.cost().value();
   const VectorXd cost_gradient = couplers_data.cost().derivatives();
-  fmt::print("cost: {}\n", cost_value);
-  fmt::print("gradient: {}\n", fmt_eigen(cost_gradient.transpose()));
 
   // Expected impulse.
   const AutoDiffXd g0 = q_c1(1) - rho1 * q_c1(3) - offset1;
   const AutoDiffXd gdot0 = v_c1(1) - rho1 * v_c1(3);
   const AutoDiffXd gamma0 = -dt * k1 * (g0 + tau1 * gdot0);
-  fmt::print("gamma_expected: {}\n", gamma0.value());
   VectorXd tau_expected = VectorXd::Zero(nv);
   tau_expected(6 + 1) = gamma0.value();
   tau_expected(6 + 3) = -rho1 * gamma0.value();
@@ -753,7 +700,6 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
   MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
-  fmt::print("|H-Href| = {}\n", (hessian_value - gradient_derivatives).norm());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 10 * kEps,
                               MatrixCompareType::relative));
 
@@ -777,7 +723,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
       model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
 
   EXPECT_NEAR(dcost.value(), cost.derivatives()[0], kEps);
-  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], kEps * d2cost.value());
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], 100 * kEps);
 }
 
 }  // namespace pooled_sap

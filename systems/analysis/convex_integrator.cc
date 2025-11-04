@@ -61,7 +61,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   // Allocate and initialize SAP problem objects
   builder_ = std::make_unique<PooledSapBuilder<T>>(plant(), plant_context);
   const T& dt = this->get_initial_step_size_target();
-  builder_->UpdateModel(plant_context, dt, false, &model_);
+  builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);
 
   // Allocate scratch variables
@@ -170,35 +170,36 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
 
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
-  builder().UpdateModel(plant_context, h, reuse_geometry_data, &model);
-
-  // Linearize any external systems (e.g., controllers),
-  //     τ = B u(x) + τₑₓₜ(x),
-  //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-  // TODO(vincekurtz): consider moving this to PooledSapBuilder.
-  bool has_actuators = plant().num_actuators() > 0;
-  bool has_external_forces =
-      plant().get_applied_generalized_force_input_port().HasValue(
-          plant_context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
-
-  if (has_actuators || has_external_forces) {
+  if (reuse_geometry_data) {
+    // Update the time step only
+    builder().UpdateModel(h, &model);
+  } else {
+    // Linearize any external systems (e.g., controllers),
+    //     τ = B u(x) + τₑₓₜ(x),
+    //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
     VectorX<T>& Ku = scratch_.Ku;
     VectorX<T>& bu = scratch_.bu;
     VectorX<T>& Ke = scratch_.Ke;
     VectorX<T>& be = scratch_.be;
 
-    if (!reuse_linearization) {
+    bool has_actuators = plant().num_actuators() > 0;
+    bool has_external_forces =
+        plant().get_applied_generalized_force_input_port().HasValue(
+            plant_context) ||
+        plant().get_applied_spatial_force_input_port().HasValue(plant_context);
+
+    if (!reuse_linearization && (has_actuators || has_external_forces)) {
       LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
     }
-    if (has_actuators) {
-      // τ = clamp(-Kᵤ v + bᵤ)
-      builder().AddActuationGains(Ku, bu, &model);
-    }
-    if (has_external_forces) {
-      // τ = - Kₑ v + bₑ,
-      builder().AddExternalGains(Ke, be, &model);
-    }
+
+    // Update the model with actuation and external force constraints as needed.
+    std::pair<const VectorX<T>&, const VectorX<T>&> act_lin(Ku, bu);
+    std::pair<const VectorX<T>&, const VectorX<T>&> ext_lin(Ke, be);
+    builder().UpdateModel(
+        plant_context, h,
+        has_actuators ? std::make_optional(act_lin) : std::nullopt,
+        has_external_forces ? std::make_optional(ext_lin) : std::nullopt,
+        &model);
   }
 
   // Solve the optimization problem for next-step velocities v = min ℓ(v).
@@ -296,7 +297,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(
   // or the normalized) step size is sufficiently small,
   //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
   // where η = θ / (1 − θ), θ = ‖D⁻¹ Δvₖ‖ / ‖D⁻¹ Δvₖ₋₁‖, as per [Hairer, 1996].
-  const VectorXd& D = model.params().D;
+  const VectorXd& D = model.scale_factor();
   const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
 
   // Without error control, we'll set ε to the user-defined tolerance. With
