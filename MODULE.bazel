@@ -185,7 +185,7 @@ bazel_dep(
 
 bazel_dep(
     name = "gflags",
-    version = "2.2.2",
+    version = "2.2.2.bcr.1",
     # TODO(jwnimmer-tri) Set dev_dependency = True on 2026-02-01 with removal
     # of resource_tool deprecation.
 )
