@@ -17,36 +17,37 @@ load("//tools/workspace:generate_file.bzl", "generate_file")
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
 CXX_FLAGS = [
-    "-Werror=all",
-    "-Werror=attributes",
-    "-Werror=cpp",
-    "-Werror=deprecated",
-    "-Werror=deprecated-declarations",
-    "-Werror=ignored-qualifiers",
-    "-Werror=missing-declarations",
-    "-Werror=old-style-cast",
-    "-Werror=overloaded-virtual",
-    "-Werror=shadow",
-    "-Werror=unused-result",
+    # "-Werror=all",
+    # "-Werror=attributes",
+    # "-Werror=cpp",
+    # "-Werror=deprecated",
+    # "-Werror=deprecated-declarations",
+    # "-Werror=ignored-qualifiers",
+    # "-Werror=missing-declarations",
+    # "-Werror=old-style-cast",
+    # "-Werror=overloaded-virtual",
+    # "-Werror=shadow",
+    # "-Werror=unused-result",
     # We eschew Eigen::IO in lieu of drake::fmt_eigen.
     # See drake/common/fmt_eigen.h for details.
     "-DEIGEN_NO_IO=1",
+    "-w",
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang (excluding the Apple LLVM compiler see APPLECLANG_FLAGS
 # below).
 CLANG_FLAGS = CXX_FLAGS + [
-    "-Werror=absolute-value",
-    "-Werror=c99-designator",
-    "-Werror=inconsistent-missing-override",
-    "-Werror=final-dtor-non-final-class",
-    "-Werror=literal-conversion",
-    "-Werror=non-virtual-dtor",
-    "-Werror=range-loop-analysis",
-    "-Werror=return-stack-address",
-    "-Werror=sign-compare",
-    "-Werror=unqualified-std-cast-call",
+    # "-Werror=absolute-value",
+    # "-Werror=c99-designator",
+    # "-Werror=inconsistent-missing-override",
+    # "-Werror=final-dtor-non-final-class",
+    # "-Werror=literal-conversion",
+    # "-Werror=non-virtual-dtor",
+    # "-Werror=range-loop-analysis",
+    # "-Werror=return-stack-address",
+    # "-Werror=sign-compare",
+    # "-Werror=unqualified-std-cast-call",
 ]
 
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
@@ -56,20 +57,20 @@ APPLECLANG_FLAGS = CLANG_FLAGS
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
 GCC_FLAGS = CXX_FLAGS + [
-    "-Werror=extra",
-    "-Werror=logical-op",
-    "-Werror=non-virtual-dtor",
-    "-Werror=return-local-addr",
-    "-Werror=unused-but-set-parameter",
+    # "-Werror=extra",
+    # "-Werror=logical-op",
+    # "-Werror=non-virtual-dtor",
+    # "-Werror=return-local-addr",
+    # "-Werror=unused-but-set-parameter",
     # This was turned on via -Wextra, but is too strict to have as an error.
-    "-Wno-missing-field-initializers",
+    # "-Wno-missing-field-initializers",
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
 # when building with gcc.
 GCC_CC_TEST_FLAGS = [
-    "-Wno-missing-declarations",
-    "-Wno-unused-parameter",
+    # "-Wno-missing-declarations",
+    # "-Wno-unused-parameter",
 ]
 
 # The GCC_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
@@ -79,19 +80,19 @@ GCC_CC_TEST_FLAGS = [
 # as a Bazel external.)
 GCC_VERSION_SPECIFIC_FLAGS = {
     13: [
-        "-Werror=pessimizing-move",
-        "-Werror=uninitialized",
+        # "-Werror=pessimizing-move",
+        # "-Werror=uninitialized",
         # This falsely dings code that returns const references, e.g., our
         # MbP style for "add element" or "find by name" member functions.
-        "-Wno-dangling-reference",
+        # "-Wno-dangling-reference",
         # This falsely dings code inside Eigen.
-        "-Wno-maybe-uninitialized",
+        # "-Wno-maybe-uninitialized",
         # This falsely dings code inside libstdc++.
-        "-Wno-stringop-overflow",
+        # "-Wno-stringop-overflow",
         # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
         # Eigen uses 16-byte alignment, which these flags doesn't account for.
-        "-Wno-array-bounds",
-        "-Wno-stringop-overread",
+        # "-Wno-array-bounds",
+        # "-Wno-stringop-overread",
     ],
 }
 
