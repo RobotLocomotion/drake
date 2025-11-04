@@ -1,3 +1,4 @@
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",

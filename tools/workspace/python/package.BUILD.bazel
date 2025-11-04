@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@rules_python//python:py_exec_tools_toolchain.bzl", "py_exec_tools_toolchain")  # noqa
 load("@rules_python//python:py_runtime.bzl", "py_runtime")
 load("@rules_python//python:py_runtime_pair.bzl", "py_runtime_pair")

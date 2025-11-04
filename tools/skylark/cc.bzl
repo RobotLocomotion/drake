@@ -10,6 +10,7 @@ load(
     "@rules_cc//cc:defs.bzl",
     _CcInfo = "CcInfo",
     _cc_binary = "cc_binary",
+    _cc_common = "cc_common",
     _cc_import = "cc_import",
     _cc_library = "cc_library",
     _cc_shared_library = "cc_shared_library",
@@ -36,3 +37,4 @@ def objc_library(**kwargs):
     _objc_library(**kwargs)
 
 CcInfo = _CcInfo
+cc_common = _cc_common
