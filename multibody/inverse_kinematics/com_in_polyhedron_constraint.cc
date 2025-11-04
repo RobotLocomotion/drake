@@ -10,6 +10,8 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+ComInPolyhedronConstraint::~ComInPolyhedronConstraint() = default;
+
 ComInPolyhedronConstraint::ComInPolyhedronConstraint(
     const MultibodyPlant<double>* plant,
     std::optional<std::vector<ModelInstanceIndex>> model_instances,

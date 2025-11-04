@@ -12,6 +12,9 @@ const double kInf = std::numeric_limits<double>::infinity();
 namespace internal {
 
 StaticFrictionConeComplementarityNonlinearConstraint::
+    ~StaticFrictionConeComplementarityNonlinearConstraint() = default;
+
+StaticFrictionConeComplementarityNonlinearConstraint::
     StaticFrictionConeComplementarityNonlinearConstraint(
         const ContactWrenchEvaluator* contact_wrench_evaluator,
         double complementarity_tolerance)

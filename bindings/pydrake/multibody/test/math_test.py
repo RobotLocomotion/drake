@@ -4,12 +4,12 @@ import textwrap
 import unittest
 
 import numpy as np
+
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.cpp_param import List
-from pydrake.common.value import Value
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.symbolic import Expression
+from pydrake.common.value import Value
 from pydrake.math import RotationMatrix_
 from pydrake.multibody.math import (
     SpatialAcceleration,
@@ -21,6 +21,7 @@ from pydrake.multibody.math import (
     SpatialVelocity,
     SpatialVelocity_,
 )
+from pydrake.symbolic import Expression
 
 
 class TestMultibodyTreeMath(unittest.TestCase):

@@ -52,7 +52,7 @@ struct VertexSpec {
   VertexAttrib uvs;
 };
 
-/* @group Frames, Geometries, and Instances
+/* @name Frames, Geometries, and Instances
 
  There are a number of frames relating to how geometries are handled in
  RenderEngineGl. What they are and how they relate can be confusing. This

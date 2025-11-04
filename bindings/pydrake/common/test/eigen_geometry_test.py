@@ -1,4 +1,4 @@
-import pydrake.common.eigen_geometry as mut
+import pydrake.common.eigen_geometry as mut  # ruff: isort: skip
 
 import copy
 import pickle
@@ -7,11 +7,11 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import Expression
-from pydrake.common.value import Value
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
+from pydrake.common.value import Value
+from pydrake.symbolic import Expression
 
 
 def normalize(x):

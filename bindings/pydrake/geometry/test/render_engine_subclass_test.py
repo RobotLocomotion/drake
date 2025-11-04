@@ -2,7 +2,7 @@
 confirm the semantics of deriving a RenderEngine implementation in python are
 flaky and are therefore being isolated (see issue #14720)."""
 
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import gc
 from math import pi
@@ -13,9 +13,9 @@ from pydrake.math import RigidTransform
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.sensors import (
     CameraInfo,
-    ImageRgba8U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
 )
 
 

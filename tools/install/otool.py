@@ -2,11 +2,10 @@
 Pythonic wrappers for macOS `otool`.
 """
 
+from collections import namedtuple
 import os
 import re
 import subprocess
-
-from collections import namedtuple
 
 Library = namedtuple(
     "Library",

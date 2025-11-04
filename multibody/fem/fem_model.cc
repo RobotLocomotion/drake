@@ -5,6 +5,9 @@ namespace multibody {
 namespace fem {
 
 template <typename T>
+FemModel<T>::Builder::~Builder() = default;
+
+template <typename T>
 void FemModel<T>::Builder::Build() {
   ThrowIfBuilt();
   DoBuild();

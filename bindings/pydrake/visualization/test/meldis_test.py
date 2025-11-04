@@ -10,7 +10,7 @@ You can also visualize the LCM test data like so:
         TestMeldis.test_contact_applet_hydroelastic
 """
 
-import pydrake.visualization as mut
+import pydrake.visualization as mut  # ruff: isort: skip
 
 import functools
 import hashlib

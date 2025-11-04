@@ -1,7 +1,8 @@
 import copy
-import scipy.sparse
 import unittest
+
 import numpy as np
+import scipy.sparse
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
@@ -18,9 +19,6 @@ from pydrake.systems.framework import (
     TriggerType,
     VectorBase,
     kUseDefaultName,
-)
-from pydrake.systems.test.test_util import (
-    MyVector2,
 )
 from pydrake.systems.primitives import (
     Adder_,
@@ -57,10 +55,10 @@ from pydrake.systems.primitives import (
     LinearTransformDensity_,
     LogVectorOutput,
     MatrixGain,
-    Multiplexer,
-    Multiplexer_,
     MultilayerPerceptron,
     MultilayerPerceptron_,
+    Multiplexer,
+    Multiplexer_,
     ObservabilityMatrix,
     PassThrough,
     PassThrough_,
@@ -94,6 +92,9 @@ from pydrake.systems.primitives import (
     WrapToSystem_,
     ZeroOrderHold,
     ZeroOrderHold_,
+)
+from pydrake.systems.test.test_util import (
+    MyVector2,
 )
 from pydrake.trajectories import PiecewisePolynomial
 

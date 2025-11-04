@@ -1,10 +1,10 @@
+import io
+import os
 import unittest
 
-from python.runfiles import Create as CreateRunfiles
-import io
 import numpy as np
-import os
 from PIL import Image
+from python.runfiles import Create as CreateRunfiles
 
 from pydrake.common import (
     FindResourceOrThrow,

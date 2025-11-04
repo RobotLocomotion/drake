@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.systems.rendering import (
-    MultibodyPositionToGeometryPose,
-)
-
 import unittest
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.systems.rendering import (
+    MultibodyPositionToGeometryPose,
+)
 
 
 def normalized(x):

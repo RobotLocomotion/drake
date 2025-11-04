@@ -4,10 +4,8 @@ import sys
 import warnings
 
 from jupyter_core.command import main as _jupyter_main
-
-# http://nbconvert.readthedocs.io/en/latest/execute_api.html
-import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+import nbformat
 from python import runfiles
 
 _ISSUE_12536_NOTES = """

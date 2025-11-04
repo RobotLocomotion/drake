@@ -6,7 +6,7 @@ from tools.lint.util import find_all_sources
 
 class UtilTest(unittest.TestCase):
     def test_find(self):
-        workspace_dir, relpaths = find_all_sources("drake")
+        workspace_dir, relpaths = find_all_sources()
 
         # Sanity-check workspace_dir.  Most of the correctness assertions are
         # already embedded within the subroutine itself.

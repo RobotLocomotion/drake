@@ -8,8 +8,8 @@ import unittest
 from pydrake.common.type_safe_index_test_util import (
     Index,
     OtherIndex,
-    pass_thru_int,
     pass_thru_index,
+    pass_thru_int,
 )
 from pydrake.common.value import Value
 

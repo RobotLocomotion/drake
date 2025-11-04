@@ -6,6 +6,9 @@ namespace fem {
 namespace internal {
 
 template <typename T>
+DiscreteTimeIntegrator<T>::~DiscreteTimeIntegrator() = default;
+
+template <typename T>
 Vector3<T> DiscreteTimeIntegrator<T>::GetWeights() const {
   return DoGetWeights();
 }

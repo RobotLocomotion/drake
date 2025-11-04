@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.multibody.inverse_kinematics as mut
+import pydrake.multibody.inverse_kinematics as mut  # ruff: isort: skip
 
 import copy
 import unittest
@@ -12,14 +12,14 @@ from pydrake.common.value import Value
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.math import RigidTransform
 from pydrake.multibody.math import SpatialVelocity
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import PrismaticJoint, SpatialInertia
 from pydrake.planning import (
+    CollisionCheckerParams,
     DofMask,
     JointLimits,
     RobotDiagramBuilder,
-    CollisionCheckerParams,
     SceneGraphCollisionChecker,
 )
 from pydrake.solvers import SolverId

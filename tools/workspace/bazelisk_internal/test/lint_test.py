@@ -1,8 +1,7 @@
-import unittest
 from pathlib import Path
+import unittest
 
 from python import runfiles
-
 
 _HOW_TO_FIX = """
 If you're seeing this, you probably didn't follow the upgrade instuctions in

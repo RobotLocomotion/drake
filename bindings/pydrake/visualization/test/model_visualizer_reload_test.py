@@ -1,10 +1,11 @@
+import pydrake.visualization as mut  # ruff: isort: skip
+
 import subprocess
 import time
 import unittest
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import Meshcat
-import pydrake.visualization as mut
 
 
 class TestModelVisualizerReload(unittest.TestCase):

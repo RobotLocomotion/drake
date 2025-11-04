@@ -7,10 +7,11 @@ import numpy as np
 import scipy.sparse
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import kDrakeAssertIsArmed, Parallelism
+from pydrake.common import Parallelism, kDrakeAssertIsArmed
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.math import ge
+import pydrake.solvers as mp
 from pydrake.solvers import (
     GurobiSolver,
     LinearConstraint,
@@ -25,10 +26,8 @@ from pydrake.solvers import (
     SolverOptions,
     SolverType,
 )
-import pydrake.solvers as mp
 import pydrake.solvers._testing as mp_testing
 import pydrake.symbolic as sym
-
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 # MathematicalProgram is only bound for float and AutoDiffXd.

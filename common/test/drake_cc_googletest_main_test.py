@@ -4,8 +4,8 @@ drake_cc_googletest bazel macro, by running
 with a variety of command-line flags.
 """
 
-import subprocess
 import os
+import subprocess
 import sys
 import unittest
 

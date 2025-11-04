@@ -8,10 +8,10 @@ https://drake.mit.edu/bazel.html?highlight=kcov#kcov
 
 import argparse
 import glob
+import os
 import shutil
 import stat
 import subprocess
-import os
 import sys
 import zipfile
 

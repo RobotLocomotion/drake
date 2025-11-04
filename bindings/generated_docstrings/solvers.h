@@ -2588,17 +2588,17 @@ value, then the solver is enabled; otherwise, the solver is not
 enabled.
 
 Gurobi solver supports options/parameters listed in
-https://www.gurobi.com/documentation/10.0/refman/parameters.html. On
-top of these options, we provide the following additional options 1.
-"GRBwrite", set to a file name so that Gurobi solver will write the
+https://docs.gurobi.com/projects/optimizer/en/12.0/concepts/parameters.html.
+On top of these options, we provide the following additional options
+1. "GRBwrite", set to a file name so that Gurobi solver will write the
 optimization model to this file, check
-https://www.gurobi.com/documentation/10.0/refman/py_model_write.html
+https://www.docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Write
 for more details, such as all supported file extensions. Set this
 option to "" if you don't want to write to file. Default is not to
 write to a file. 2. "GRBcomputeIIS", set to 1 to compute an
 Irreducible Inconsistent Subsystem (IIS) when the problem is
 infeasible. Refer to
-https://www.gurobi.com/documentation/10.0/refman/py_model_computeiis.html
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Model.computeIIS
 for more details. Often this method is called together with setting
 GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
 "ilp". Default is not to compute IIS.
@@ -2684,8 +2684,8 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 an intermediate solution node, which may not be feasible. See Gurobi
 reference manual for more detail on callbacks:
-https://www.gurobi.com/documentation/current/refman/cb_codes.html The
-user may supply a partial solution in the VectorXd and
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+The user may supply a partial solution in the VectorXd and
 VectorXDecisionVariable arguments that will be passed to Gurobi as a
 candidate feasible solution. See gurobi_solver_test.cc for an example
 of using std::bind to create a callback of this signature, while
@@ -2714,9 +2714,9 @@ Parameter ``VectorXDecisionVariable*``:
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 a feasible solution. See Gurobi reference manual for more detail on
 callbacks:
-https://www.gurobi.com/documentation/current/refman/cb_codes.html See
-gurobi_solver_test.cc for an example of using std::bind to create a
-callback of this signature, while allowing additional data to be
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+See gurobi_solver_test.cc for an example of using std::bind to create
+a callback of this signature, while allowing additional data to be
 passed through.
 
 Parameter ``MathematicalProgram``:
@@ -2814,7 +2814,7 @@ obtain the details.)""";
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The error message returned from Gurobi call. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/error_codes.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/errors.html)""";
         } error_code;
         // Symbol: drake::solvers::GurobiSolverDetails::objective_bound
         struct /* objective_bound */ {
@@ -2822,21 +2822,21 @@ https://www.gurobi.com/documentation/10.0/refman/error_codes.html)""";
           const char* doc =
 R"""(The best known bound on the optimal objective. This is used in mixed
 integer optimization. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/objbound.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#objbound)""";
         } objective_bound;
         // Symbol: drake::solvers::GurobiSolverDetails::optimization_status
         struct /* optimization_status */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The status code when the optimize call has returned. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html)""";
         } optimization_status;
         // Symbol: drake::solvers::GurobiSolverDetails::optimizer_time
         struct /* optimizer_time */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The gurobi optimization time. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/runtime.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#attrruntime)""";
         } optimizer_time;
       } GurobiSolverDetails;
       // Symbol: drake::solvers::IndeterminatesRefList
@@ -6704,8 +6704,8 @@ solution.
        GurobiSolver solver;
        // Explicitly tell the solver to compute the dual solution for Lorentz
        // cone or rotated Lorentz cone constraint, check
-       // https://www.gurobi.com/documentation/10.1/refman/qcpdual.html for
-       // more information.
+       // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html#qcpdual
+       // for more information.
        SolverOptions options;
        options.SetOption(GurobiSolver::id(), "QCPDual", 1);
        MathematicalProgramResult result = solver.Solve(prog, {}, options);
@@ -10587,8 +10587,8 @@ NLOPT_LD_SLSQP, call ``SetOption(NloptSolver::id(),
 NloptSolver::AlgorithmName(), "LD_SLSQP");``
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference
-Manual, section 10.2 "Parameter Descriptions"
-https://www.gurobi.com/documentation/10.0/refman/parameters.html
+Manual
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html
 
 "SCS" -- Parameter name and values as specified in the struct
 SCS_SETTINGS in SCS header file

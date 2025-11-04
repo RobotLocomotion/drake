@@ -15,7 +15,7 @@ import unittest
 from pydrake.common import Parallelism
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
-import deprecation_example.cc_module as mut_cc
+import deprecation_example.cc_module as mut_cc  # ruff: isort: skip
 
 
 class TestDeprecationExample(unittest.TestCase):

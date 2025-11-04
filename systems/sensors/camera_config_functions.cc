@@ -33,6 +33,9 @@ namespace sensors {
 using drake::lcm::DrakeLcmInterface;
 using drake::systems::lcm::LcmBuses;
 using Eigen::Vector3d;
+using geometry::kHasRenderEngineGl;
+using geometry::kHasRenderEngineGltfClient;
+using geometry::kHasRenderEngineVtk;
 using geometry::MakeRenderEngineGl;
 using geometry::MakeRenderEngineGltfClient;
 using geometry::MakeRenderEngineVtk;
@@ -73,7 +76,7 @@ const std::string& LookupEngineType(const std::string& class_name) {
 std::unique_ptr<RenderEngine> MakeEngineByClassName(
     const std::string& class_name, const CameraConfig& config) {
   if (class_name == "RenderEngineGl") {
-    if (!geometry::kHasRenderEngineGl) {
+    if (!kHasRenderEngineGl) {
       throw std::logic_error(
           "Invalid camera configuration; renderer_class = 'RenderEngineGl' "
           "is not supported in current build.");
@@ -81,6 +84,11 @@ std::unique_ptr<RenderEngine> MakeEngineByClassName(
     RenderEngineGlParams params{.default_clear_color = config.background};
     return MakeRenderEngineGl(params);
   } else if (class_name == "RenderEngineGltfClient") {
+    if (!kHasRenderEngineGltfClient) {
+      throw std::logic_error(
+          "Invalid camera configuration; renderer_class = "
+          "'RenderEngineGltfClient' is not supported in current build.");
+    }
     return MakeRenderEngineGltfClient({});
   }
   // Note: if we add *other* supported render engine implementations, add the
@@ -89,6 +97,11 @@ std::unique_ptr<RenderEngine> MakeEngineByClassName(
   // Fall through to the default render engine type (name is either empty or
   // the only remaining possible value: "RenderEngineVtk").
   DRAKE_DEMAND(class_name.empty() || class_name == "RenderEngineVtk");
+  if (!kHasRenderEngineVtk) {
+    throw std::logic_error(
+        "Invalid camera configuration; renderer_class = "
+        "'RenderEngineVtk' is not supported in current build.");
+  }
   RenderEngineVtkParams params;
   const geometry::Rgba& rgba = config.background;
   params.default_clear_color = Vector3d{rgba.r(), rgba.g(), rgba.b()};
@@ -97,23 +110,35 @@ std::unique_ptr<RenderEngine> MakeEngineByClassName(
 
 std::unique_ptr<RenderEngine> MakeEngine(const CameraConfig& config) {
   return std::visit<std::unique_ptr<RenderEngine>>(
-      overloaded{[&config](const std::string& class_name) {
-                   return MakeEngineByClassName(class_name, config);
-                 },
-                 [](const RenderEngineVtkParams& params) {
-                   return MakeRenderEngineVtk(params);
-                 },
-                 [](const RenderEngineGlParams& params) {
-                   if (!geometry::kHasRenderEngineGl) {
-                     throw std::logic_error(
-                         "Invalid camera configuration; renderer_class = "
-                         "'RenderEngineGl' is not supported in current build.");
-                   }
-                   return MakeRenderEngineGl(params);
-                 },
-                 [](const RenderEngineGltfClientParams& params) {
-                   return MakeRenderEngineGltfClient(params);
-                 }},
+      overloaded{
+          [&config](const std::string& class_name) {
+            return MakeEngineByClassName(class_name, config);
+          },
+          [](const RenderEngineVtkParams& params) {
+            if (!kHasRenderEngineVtk) {
+              throw std::logic_error(
+                  "Invalid camera configuration; renderer_class = "
+                  "'RenderEngineVtkParams' is not supported in current build.");
+            }
+            return MakeRenderEngineVtk(params);
+          },
+          [](const RenderEngineGlParams& params) {
+            if (!kHasRenderEngineGl) {
+              throw std::logic_error(
+                  "Invalid camera configuration; renderer_class = "
+                  "'RenderEngineGlParams' is not supported in current build.");
+            }
+            return MakeRenderEngineGl(params);
+          },
+          [](const RenderEngineGltfClientParams& params) {
+            if (!kHasRenderEngineGltfClient) {
+              throw std::logic_error(
+                  "Invalid camera configuration; renderer_class = "
+                  "'RenderEngineGltfClientParams' is not supported in current "
+                  "build.");
+            }
+            return MakeRenderEngineGltfClient(params);
+          }},
       config.renderer_class);
 }
 

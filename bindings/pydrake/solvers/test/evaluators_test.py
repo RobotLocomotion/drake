@@ -1,14 +1,14 @@
-import unittest
 import typing
+import unittest
 import weakref
 
 import numpy as np
 import scipy.sparse
 
+from pydrake.autodiffutils import InitializeAutoDiff
 import pydrake.solvers as mp
 import pydrake.solvers._testing as mp_testing
 import pydrake.symbolic as sym
-from pydrake.autodiffutils import InitializeAutoDiff
 
 
 class TestCost(unittest.TestCase):

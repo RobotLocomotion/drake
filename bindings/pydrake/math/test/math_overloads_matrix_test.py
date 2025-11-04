@@ -1,4 +1,4 @@
-import pydrake.math as mut
+import pydrake.math as mut  # ruff: isort: skip
 
 import itertools
 import unittest
