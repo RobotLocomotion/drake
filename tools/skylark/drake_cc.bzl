@@ -1,4 +1,11 @@
-load("//tools/skylark:cc.bzl", "CcInfo", "cc_binary", "cc_library", "cc_test")
+load(
+    "//tools/skylark:cc.bzl",
+    "CcInfo",
+    "cc_binary",
+    "cc_common",
+    "cc_library",
+    "cc_test",
+)
 load(
     "//tools/skylark:kwargs.bzl",
     "incorporate_allow_network",
