@@ -81,7 +81,7 @@ class SuperNodalSolver {
  protected:
   SuperNodalSolver() = default;
 
-  // @group NVI implementations. Specific solvers must implement these
+  // @name NVI implementations. Specific solvers must implement these
   // methods. Refer to the specific NVI documentation for details.
   // @{
 
