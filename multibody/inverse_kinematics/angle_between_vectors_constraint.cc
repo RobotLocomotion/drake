@@ -9,6 +9,9 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+
+AngleBetweenVectorsConstraint::~AngleBetweenVectorsConstraint() = default;
+
 AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& a_A, const Frame<double>& frameB,

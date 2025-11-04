@@ -112,7 +112,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                      systems::Context<AutoDiffXd>* plant_context);
 
-  ~PositionConstraint() override {}
+  ~PositionConstraint() override;
 
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
