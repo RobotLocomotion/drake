@@ -4,7 +4,7 @@
 // clang-format off (to preserve link to images)
 
 /** @addtogroup multibody_solvers
-
+@{
 @section multibody_simulation Simulation of Multibody Systems with Frictional Contact
 
 @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers two different
@@ -21,11 +21,12 @@ thus interested readers are referred to the documentation for
 
 As of today (May 2024), for multibody problems involving contact with friction,
 discrete solvers in Drake perform significantly better than error-controlled
-integration methods. 
+integration methods.
+@}
 */
 
 /** @addtogroup mbp_discrete Discrete Models for Simulation
-
+@{
 @section mbp_discrete_intro Discrete Models for Simulation
 
 Currently, this is the preferred modality given its speed and robustness. In
@@ -57,10 +58,11 @@ Therefore it is the preferred model to capture the physics of contact.
 @note Discrete models, formulated at the velocity level, cannot differentiate
  between static (μₛ) and dynamic (μₖ) friction; only dynamic friction can be
  resolved. Therefore the static coefficient of friction is ignored.
+@}
 */
 
 /** @addtogroup mbp_continuous Continuous Models for Simulation
-
+@{
 @section mbp_continuous_intro Continuous Models for Simulation
 
 If the `time_step` defined above is specified to be exactly zero at
@@ -188,4 +190,5 @@ with an explicit integrator, or use of a more-stable implicit integrator.
 multibody_simulation "Choice of Time Advancement Strategy" section), the
 model assumes both static and kinetic coefficients of friction to be equal and
 the static coefficient of friction is ignored.
+@}
 */
