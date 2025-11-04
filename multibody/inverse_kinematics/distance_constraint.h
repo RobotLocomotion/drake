@@ -47,7 +47,7 @@ class DistanceConstraint : public solvers::Constraint {
                      systems::Context<AutoDiffXd>* plant_context,
                      double distance_lower, double distance_upper);
 
-  ~DistanceConstraint() override {}
+  ~DistanceConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

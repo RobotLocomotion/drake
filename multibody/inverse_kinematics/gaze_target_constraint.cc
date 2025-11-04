@@ -11,6 +11,8 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+GazeTargetConstraint::~GazeTargetConstraint() = default;
+
 GazeTargetConstraint::GazeTargetConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& p_AS,
