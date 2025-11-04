@@ -80,7 +80,7 @@ class SpatialVelocityConstraint final : public solvers::Constraint {
       systems::Context<AutoDiffXd>* plant_context,
       const std::optional<AngularVelocityBounds>& w_AC_bounds = std::nullopt);
 
-  ~SpatialVelocityConstraint() final {}
+  ~SpatialVelocityConstraint() final;
 
   // TODO(russt): Implement set_bounds, UpdateLowerBound, and UpdateUpperBound
   // wrappers.

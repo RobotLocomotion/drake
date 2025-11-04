@@ -47,6 +47,8 @@ VectorXd MakeUpperBounds(
 
 }  // namespace
 
+SpatialVelocityConstraint::~SpatialVelocityConstraint() = default;
+
 SpatialVelocityConstraint::SpatialVelocityConstraint(
     const MultibodyPlant<AutoDiffXd>* const plant,
     const Frame<AutoDiffXd>& frameA,

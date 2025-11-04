@@ -17,6 +17,9 @@ int GetLambdaSize(const std::map<SortedPair<geometry::GeometryId>,
   return num_lambda;
 }
 }  // namespace
+
+StaticEquilibriumConstraint::~StaticEquilibriumConstraint() = default;
+
 StaticEquilibriumConstraint::StaticEquilibriumConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
