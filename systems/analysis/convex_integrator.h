@@ -23,6 +23,7 @@ using multibody::MultibodyPlant;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
+using multibody::contact_solvers::pooled_sap::LinearFeedbackGains;
 using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
 using multibody::contact_solvers::pooled_sap::PooledSapData;
 using multibody::contact_solvers::pooled_sap::PooledSapModel;
@@ -324,8 +325,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Note that contributions due to controls u(x) will be clamped to effort
   // limits, while contributions due to external generalized and spatial forces
   // τₑₓₜ(x) will not be.
-  void LinearizeExternalSystem(const T& h, VectorX<T>* Ku, VectorX<T>* bu,
-                               VectorX<T>* Ke, VectorX<T>* be);
+  void LinearizeExternalSystem(const T& h,
+                               LinearFeedbackGains<T>* actuation_feedback,
+                               LinearFeedbackGains<T>* external_feedback);
 
   // Overrides the typical state change norm (weighted infinity norm) to use
   // just the infinity norm of the position vector.
@@ -357,10 +359,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     std::unique_ptr<MultibodyForces<T>> f_ext;
 
     // External system linearization
-    VectorX<T> Ku;
-    VectorX<T> bu;
-    VectorX<T> Ke;
-    VectorX<T> be;
+    LinearFeedbackGains<T> actuation_feedback;  // τ = clamp(−Ku⋅v + bu)
+    LinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
     VectorX<T> gu0;
     VectorX<T> ge0;
     VectorX<T> gu_prime;

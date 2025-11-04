@@ -131,11 +131,12 @@ class ConvexIntegratorTester {
  public:
   ConvexIntegratorTester() = delete;
 
-  static void LinearizeExternalSystem(ConvexIntegrator<double>* integrator,
-                                      const double h, VectorXd* Ku,
-                                      VectorXd* bu, VectorXd* Ke,
-                                      VectorXd* be) {
-    integrator->LinearizeExternalSystem(h, Ku, bu, Ke, be);
+  static void LinearizeExternalSystem(
+      ConvexIntegrator<double>* integrator, const double h,
+      LinearFeedbackGains<double>* actuation_feedback,
+      LinearFeedbackGains<double>* external_feedback) {
+    integrator->LinearizeExternalSystem(h, actuation_feedback,
+                                        external_feedback);
   }
 };
 
@@ -329,10 +330,14 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   // Linearize the non-plant system dynamics around the current state
   const int nv = plant.num_velocities();
-  VectorXd K(nv), b(nv);
-  VectorXd Ke(nv), be(nv);  // unused, for linearizing other input ports
-  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &K, &b, &Ke,
-                                                  &be);
+  LinearFeedbackGains<double> actuation_feedback;
+  LinearFeedbackGains<double> external_feedback;  // unused here
+  actuation_feedback.resize(nv);
+  external_feedback.resize(nv);
+  ConvexIntegratorTester::LinearizeExternalSystem(
+      &integrator, h, &actuation_feedback, &external_feedback);
+  const VectorXd& K = actuation_feedback.K;
+  const VectorXd& b = actuation_feedback.b;
 
   // Reference linearization via autodiff
   const Context<double>& ctrl_context =
@@ -384,8 +389,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   PooledSapBuilder<double>& sap_builder = integrator.builder();
   PooledSapModel<double>& model = integrator.get_model();
   PooledSapData<double>& data = integrator.get_data();
-  std::pair<const VectorXd&, const VectorXd&> act_lin(K, b);
-  sap_builder.UpdateModel(plant_context, h, act_lin, std::nullopt, &model);
+  sap_builder.UpdateModel(plant_context, h, actuation_feedback, std::nullopt,
+                          &model);
   model.ResizeData(&data);
   model.CalcData(v, &data);
   const VectorXd dl = data.cache().gradient;

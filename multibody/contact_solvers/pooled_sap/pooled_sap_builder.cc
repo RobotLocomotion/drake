@@ -226,8 +226,8 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
 template <typename T>
 void PooledSapBuilder<T>::UpdateModel(
     const systems::Context<T>& context, const T& time_step,
-    std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> act_lin,
-    std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> ext_lin,
+    std::optional<LinearFeedbackGains<T>> actuation_feedback,
+    std::optional<LinearFeedbackGains<T>> external_feedback,
     PooledSapModel<T>* model) {
   const SpanningForest& forest = GetInternalTree(plant()).forest();
   const int nv = plant().num_velocities();
@@ -321,18 +321,19 @@ void PooledSapBuilder<T>::UpdateModel(
 
   // Gain and external force constraints
   // N.B. external forces must come first, followed by actuation
-  AllocateGainConstraints(model, act_lin.has_value(), ext_lin.has_value());
-  if (ext_lin.has_value()) {
-    const VectorX<T>& Ke = ext_lin->first;
-    const VectorX<T>& be = ext_lin->second;
+  AllocateGainConstraints(model, actuation_feedback.has_value(),
+                          external_feedback.has_value());
+  if (external_feedback) {
+    const VectorX<T>& Ke = external_feedback->K;
+    const VectorX<T>& be = external_feedback->b;
     AddExternalGainConstraints(Ke, be, model);
   }
-  if (act_lin.has_value()) {
-    const VectorX<T>& Ku = act_lin->first;
-    const VectorX<T>& bu = act_lin->second;
+  if (actuation_feedback) {
+    const VectorX<T>& Ku = actuation_feedback->K;
+    const VectorX<T>& bu = actuation_feedback->b;
     // N.B. actuation constraint indices in the pool depend on whether external
     // or not external forces are present in the model.
-    AddActuationGainConstraints(Ku, bu, ext_lin.has_value(), model);
+    AddActuationGainConstraints(Ku, bu, external_feedback.has_value(), model);
   }
 
   // Define the sparsity pattern, which defines which cliques are connected by

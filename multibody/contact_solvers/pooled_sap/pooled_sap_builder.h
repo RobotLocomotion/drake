@@ -19,6 +19,20 @@ namespace multibody {
 namespace contact_solvers {
 namespace pooled_sap {
 
+// Represent a linear feedback law of the form
+//   τ = −K⋅v + b,
+// where K is non-negative and diagonal.
+template <typename T>
+struct LinearFeedbackGains {
+  VectorX<T> K;
+  VectorX<T> b;
+
+  void resize(int nv) {
+    K.resize(nv);
+    b.resize(nv);
+  }
+};
+
 template <typename T>
 class PooledSapBuilder {
  public:
@@ -36,17 +50,16 @@ class PooledSapBuilder {
    *
    * @param context The MbP context storing the current state (q₀, v₀).
    * @param time_step The requested time step δt.
-   * @param act_lin Optional linearization data (Kᵤ, bᵤ) for actuation forces of
-   * the form u = clamp(-Kᵤ⋅v + b, e).
-   * @param ext_lin Optional linearization data (Kₑ, bₑ) for external forces of
-   * the form τ = -Kₑ⋅v + bₑ.
+   * @param actuation_feedback Optional linearization data (Kᵤ, bᵤ) for
+   * actuation forces τ = clamp(-Kᵤ⋅v + b, e).
+   * @param external_feedback Optional linearization data (Kₑ, bₑ) for external
+   * forces τ = -Kₑ⋅v + bₑ.
    * @param model The PooledSapModel to update.
    */
-  void UpdateModel(
-      const systems::Context<T>& context, const T& time_step,
-      std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> act_lin,
-      std::optional<std::pair<const VectorX<T>&, const VectorX<T>&>> ext_lin,
-      PooledSapModel<T>* model);
+  void UpdateModel(const systems::Context<T>& context, const T& time_step,
+                   std::optional<LinearFeedbackGains<T>> actuation_feedback,
+                   std::optional<LinearFeedbackGains<T>> external_feedback,
+                   PooledSapModel<T>* model);
 
   // Ignore actuation and external force constraints.
   void UpdateModel(const systems::Context<T>& context, const T& time_step,

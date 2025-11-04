@@ -71,10 +71,8 @@ void ConvexIntegrator<T>::DoInitialize() {
   scratch_.q.resize(nq);
   scratch_.z.resize(nz);
   scratch_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
-  scratch_.Ku.resize(nv);
-  scratch_.bu.resize(nv);
-  scratch_.Ke.resize(nv);
-  scratch_.be.resize(nv);
+  scratch_.actuation_feedback.resize(nv);
+  scratch_.external_feedback.resize(nv);
   scratch_.gu0.resize(nv);
   scratch_.ge0.resize(nv);
   scratch_.gu_prime.resize(nv);
@@ -175,12 +173,11 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
     builder().UpdateModel(h, &model);
   } else {
     // Linearize any external systems (e.g., controllers),
-    //     τ = B u(x) + τₑₓₜ(x),
+    //     τ = actuation_feedback + external_feedback,
+    //       = B u(x) + τₑₓₜ(x),
     //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-    VectorX<T>& Ku = scratch_.Ku;
-    VectorX<T>& bu = scratch_.bu;
-    VectorX<T>& Ke = scratch_.Ke;
-    VectorX<T>& be = scratch_.be;
+    LinearFeedbackGains<T>& actuation_feedback = scratch_.actuation_feedback;
+    LinearFeedbackGains<T>& external_feedback = scratch_.external_feedback;
 
     bool has_actuators = plant().num_actuators() > 0;
     bool has_external_forces =
@@ -189,16 +186,15 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
         plant().get_applied_spatial_force_input_port().HasValue(plant_context);
 
     if (!reuse_linearization && (has_actuators || has_external_forces)) {
-      LinearizeExternalSystem(h, &Ku, &bu, &Ke, &be);
+      LinearizeExternalSystem(h, &actuation_feedback, &external_feedback);
     }
 
     // Update the model with actuation and external force constraints as needed.
-    std::pair<const VectorX<T>&, const VectorX<T>&> act_lin(Ku, bu);
-    std::pair<const VectorX<T>&, const VectorX<T>&> ext_lin(Ke, be);
     builder().UpdateModel(
         plant_context, h,
-        has_actuators ? std::make_optional(act_lin) : std::nullopt,
-        has_external_forces ? std::make_optional(ext_lin) : std::nullopt,
+        has_actuators ? std::make_optional(actuation_feedback) : std::nullopt,
+        has_external_forces ? std::make_optional(external_feedback)
+                            : std::nullopt,
         &model);
   }
 
@@ -634,11 +630,20 @@ void ConvexIntegrator<T>::CalcActuationForces(const Context<T>& context,
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
-                                                  VectorX<T>* bu,
-                                                  VectorX<T>* Ke,
-                                                  VectorX<T>* be) {
+void ConvexIntegrator<T>::LinearizeExternalSystem(
+    const T& h, LinearFeedbackGains<T>* actuation_feedback,
+    LinearFeedbackGains<T>* external_feedback) {
   using std::abs;
+
+  // Extract the feedback gains that we'll set
+  VectorX<T>& Ku = actuation_feedback->K;
+  VectorX<T>& bu = actuation_feedback->b;
+  VectorX<T>& Ke = external_feedback->K;
+  VectorX<T>& be = external_feedback->b;
+  DRAKE_ASSERT(Ku.size() == plant().num_velocities());
+  DRAKE_ASSERT(bu.size() == plant().num_velocities());
+  DRAKE_ASSERT(Ke.size() == plant().num_velocities());
+  DRAKE_ASSERT(be.size() == plant().num_velocities());
 
   // Get some useful sizes
   const Context<T>& context = this->get_context();
@@ -707,12 +712,12 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
     // Compute the relevant matrix entries for actuation inputs:
     //   Ku = -dgu/dv
     CalcActuationForces(plant_context, &gu_prime);
-    (*Ku)(i) = -(gu_prime(i) - gu0(i)) / dvi;
+    Ku(i) = -(gu_prime(i) - gu0(i)) / dvi;
 
     // Same thing, but for external systems:
     //  Ke = -dge/dv
     CalcExternalForces(plant_context, &ge_prime);
-    (*Ke)(i) = -(ge_prime(i) - ge0(i)) / dvi;
+    Ke(i) = -(ge_prime(i) - ge0(i)) / dvi;
 
     // Reset the state for the next iteration
     v_prime(i) = v(i);
@@ -724,11 +729,11 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
 
   // Use the diagonal projection for both K and b ensures that any
   // non-convex portion of the dynamics is treated explicitly.
-  (*Ku) = (*Ku).cwiseMax(0);
-  (*bu) = gu0 + (*Ku).asDiagonal() * v0;
+  Ku = Ku.cwiseMax(0);
+  bu = gu0 + Ku.asDiagonal() * v0;
 
-  (*Ke) = (*Ke).cwiseMax(0);
-  (*be) = ge0 + (*Ke).asDiagonal() * v0;
+  Ke = Ke.cwiseMax(0);
+  be = ge0 + Ke.asDiagonal() * v0;
 }
 
 template <typename T>
