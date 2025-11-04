@@ -63,7 +63,7 @@ class ManipulatorEquationConstraint final : public solvers::Constraint {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars,
       const symbolic::Variable& dt_var);
 
-  ~ManipulatorEquationConstraint() override {}
+  ~ManipulatorEquationConstraint() override;
 
   /**
    * Getter for contact_pair_to_wrench_evaluator, passed in the constructor.
