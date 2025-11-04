@@ -80,7 +80,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
       const ContactWrenchEvaluator* contact_wrench_evaluator,
       double complementarity_tolerance);
 
-  ~SlidingFrictionComplementarityNonlinearConstraint() override {}
+  ~SlidingFrictionComplementarityNonlinearConstraint() override;
 
   void UpdateComplementarityTolerance(double complementarity_tolerance);
 
