@@ -36,7 +36,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::Add(int index, int clique,
+void PooledSapModel<T>::CouplerConstraintsPool::Set(int index, int clique,
                                                     int i, int j, const T& qi,
                                                     const T& qj, T gear_ratio,
                                                     T offset) {

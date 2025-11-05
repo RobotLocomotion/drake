@@ -213,24 +213,24 @@ void PooledSapModel<T>::PatchConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::AddPatch(
-    int index, int bodyA, int bodyB, const T& dissipation,
+void PooledSapModel<T>::PatchConstraintsPool::SetPatch(
+    int patch_index, int bodyA, int bodyB, const T& dissipation,
     const T& static_friction, const T& dynamic_friction,
     const Vector3<T>& p_AB_W) {
-  DRAKE_ASSERT(index >= 0 && index < num_patches());
+  DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
   DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
   DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
 
-  bodies_[index] =
+  bodies_[patch_index] =
       std::make_pair(bodyB, bodyA);  // Dynamic body B always first.
-  dissipation_[index] = dissipation;
-  static_friction_[index] = static_friction;
-  dynamic_friction_[index] = dynamic_friction;
-  p_AB_W_[index] = p_AB_W;
+  dissipation_[patch_index] = dissipation;
+  static_friction_[patch_index] = static_friction;
+  dynamic_friction_[patch_index] = dynamic_friction;
+  p_AB_W_[patch_index] = p_AB_W;
 
   const int num_cliques =
       (model().is_anchored(bodyA) || model().is_anchored(bodyB)) ? 1 : 2;
-  num_cliques_[index] = num_cliques;
+  num_cliques_[patch_index] = num_cliques;
 
   // Compute per-patch regularization of friction. We use a "spherical body
   // approximation" for the estimation of the Delassus operator. A sphere has
@@ -240,59 +240,59 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPatch(
   //   W = 1/m⋅[I₃   0
   //           [ 0   R²/g²]
   // It's RMS norm will be w = sqrt(7)/m ≈ 2.65/m.
-  T w = 2.65 / model().body_mass(bodies_[index].first);
+  T w = 2.65 / model().body_mass(bodies_[patch_index].first);
   if (num_cliques == 2) {
-    w += 2.65 / model().body_mass(bodies_[index].second);
+    w += 2.65 / model().body_mass(bodies_[patch_index].second);
   }
-  Rt_[index] = sigma_ * w;
+  Rt_[patch_index] = sigma_ * w;
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::AddPair(
-    const int patch_idx, const int pair_idx, const Vector3<T>& p_BoC_W,
+void PooledSapModel<T>::PatchConstraintsPool::SetPair(
+    const int patch_index, const int pair_index, const Vector3<T>& p_BoC_W,
     const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
-  DRAKE_ASSERT(patch_idx >= 0 && patch_idx < num_patches());
-  DRAKE_ASSERT(pair_idx >= 0 && pair_idx < num_pairs_[patch_idx]);
-  const int idx = patch_pair_index(patch_idx, pair_idx);
+  DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
+  DRAKE_ASSERT(pair_index >= 0 && pair_index < num_pairs_[patch_index]);
+  const int i = patch_pair_index(patch_index, pair_index);
   const T& dt = model().time_step();
 
-  p_BC_W_[idx] = p_BoC_W;
-  normal_W_[idx] = normal_W;
-  fn0_[idx] = fn0;
-  stiffness_[idx] = stiffness;
+  p_BC_W_[i] = p_BoC_W;
+  normal_W_[i] = normal_W;
+  fn0_[i] = fn0;
+  stiffness_[i] = stiffness;
 
   // Pre-computed quantities.
-  const int num_cliques = num_cliques_[patch_idx];
+  const int num_cliques = num_cliques_[patch_index];
 
   // First clique.
-  const Vector6<T>& V_WB = model().V_WB0(bodies_[patch_idx].first);
+  const Vector6<T>& V_WB = model().V_WB0(bodies_[patch_index].first);
   const auto w_WB = V_WB.template head<3>();
   const auto v_WB = V_WB.template tail<3>();
   Vector3<T> v_AcBc_W = v_WB + w_WB.cross(p_BoC_W);
 
   // Second clique.
   if (num_cliques == 2) {
-    const Vector6<T>& V_WA = model().V_WB0(bodies_[patch_idx].second);
-    const Vector3<T> p_AC_W = p_AB_W_[patch_idx] + p_BoC_W;
+    const Vector6<T>& V_WA = model().V_WB0(bodies_[patch_index].second);
+    const Vector3<T> p_AC_W = p_AB_W_[patch_index] + p_BoC_W;
     const auto w_WA = V_WA.template head<3>();
     const auto v_WA = V_WA.template tail<3>();
     v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
   }
 
   using std::max;
-  const T& d = dissipation_[patch_idx];
+  const T& d = dissipation_[patch_index];
   const T vn0 = v_AcBc_W.dot(normal_W);
   const T damping = max(0.0, 1.0 - d * vn0);
   const T n0 = max(0.0, dt * fn0) * damping;
-  n0_[idx] = n0;
+  n0_[i] = n0;
 
   // Coefficient of friction is determined based on previous velocity. This
   // allows us to consider a Streibeck-like curve while maintaining a convex
   // formulation.
   const T vt0 = (v_AcBc_W - vn0 * normal_W).norm();
   const T s = vt0 / stiction_tolerance_;
-  const T& mu_s = static_friction_[patch_idx];
-  const T& mu_d = dynamic_friction_[patch_idx];
+  const T& mu_s = static_friction_[patch_index];
+  const T& mu_d = dynamic_friction_[patch_index];
 
   auto sigmoid = [](const T& x) -> T {
     return x / sqrt(1 + x * x);
@@ -300,11 +300,11 @@ void PooledSapModel<T>::PatchConstraintsPool::AddPair(
 
   const T mu =
       (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
-  net_friction_[idx] = mu;
+  net_friction_[i] = mu;
 
   // Regularized Lagged model.
-  const T sap_stiction_tolerance = mu * Rt_[patch_idx] * n0;
-  epsilon_soft_[idx] = max(stiction_tolerance_, sap_stiction_tolerance);
+  const T sap_stiction_tolerance = mu * Rt_[patch_index] * n0;
+  epsilon_soft_[i] = max(stiction_tolerance_, sap_stiction_tolerance);
 }
 
 template <typename T>

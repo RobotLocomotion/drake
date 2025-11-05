@@ -37,21 +37,21 @@ void PooledSapModel<T>::GainConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::Add(const int i, int clique,
+void PooledSapModel<T>::GainConstraintsPool::Set(const int index, int clique,
                                                  const VectorX<T>& K,
                                                  const VectorX<T>& b,
                                                  const VectorX<T>& e) {
-  DRAKE_ASSERT(i >= 0 && i < num_constraints());
+  DRAKE_ASSERT(index >= 0 && index < num_constraints());
   const int nv = model().clique_size(clique);
   DRAKE_DEMAND(K.size() == nv);
   DRAKE_DEMAND(b.size() == nv);
   DRAKE_DEMAND(e.size() == nv);
-  clique_[i] = clique;
-  constraint_sizes_[i] = nv;
-  K_[i] = K;
-  b_[i] = b;
-  le_[i] = -e;
-  ue_[i] = e;
+  clique_[index] = clique;
+  constraint_sizes_[index] = nv;
+  K_[index] = K;
+  b_[index] = b;
+  le_[index] = -e;
+  ue_[index] = e;
 }
 
 template <typename T>

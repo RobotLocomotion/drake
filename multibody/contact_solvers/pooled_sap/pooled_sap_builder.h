@@ -78,22 +78,22 @@ class PooledSapBuilder {
   // @pre Geometry contact data has already been computed
   void AllocatePatchConstraints(PooledSapModel<T>* model) const;
 
-  // Add point contact constraints to the model
-  void AddPatchConstraintsForPointContact(const systems::Context<T>& context,
+  // Set point contact constraints in the model
+  void SetPatchConstraintsForPointContact(const systems::Context<T>& context,
                                           PooledSapModel<T>* model) const;
 
-  // Add hydroelastic contact constraints to the model
-  void AddPatchConstraintsForHydroelasticContact(
+  // Set hydroelastic contact constraints in the model
+  void SetPatchConstraintsForHydroelasticContact(
       const systems::Context<T>& context, PooledSapModel<T>* model) const;
 
   // Coupler constraints
   void AllocateCouplerConstraints(PooledSapModel<T>* model) const;
-  void AddCouplerConstraints(const systems::Context<T>& context,
+  void SetCouplerConstraints(const systems::Context<T>& context,
                              PooledSapModel<T>* model) const;
 
   // Joint limit constraints
   void AllocateLimitConstraints(PooledSapModel<T>* model) const;
-  void AddLimitConstraints(const systems::Context<T>& context,
+  void SetLimitConstraints(const systems::Context<T>& context,
                            PooledSapModel<T>* model) const;
 
   // Allocate space for gain constraints. We assume that external force
@@ -102,12 +102,12 @@ class PooledSapBuilder {
                                bool external_forces) const;
 
   // External force constraints τ = −Kₑ⋅v + bₑ, where Kₑ is diagonal and >= 0.
-  void AddExternalGainConstraints(const VectorX<T>& Ke, const VectorX<T>& be,
+  void SetExternalGainConstraints(const VectorX<T>& Ke, const VectorX<T>& be,
                                   PooledSapModel<T>* model) const;
 
   // Actuation constraints τ = clamp(−Kᵤ⋅v + bᵤ, e), where Kᵤ is diagonal
   // and >= 0. Note that effort limits e are enforced here.
-  void AddActuationGainConstraints(const VectorX<T>& Ku, const VectorX<T>& bu,
+  void SetActuationGainConstraints(const VectorX<T>& Ku, const VectorX<T>& bu,
                                    bool has_external_forces,
                                    PooledSapModel<T>* model) const;
 

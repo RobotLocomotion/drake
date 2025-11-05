@@ -121,39 +121,39 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   // first patch
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
-    patches.AddPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
+    patches.SetPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
                      dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
-    patches.AddPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+    patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
 
   // Single clique patch.
   {
     const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
-    patches.AddPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
+    patches.SetPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
                      dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
     const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
     const T fn0 = 1.5;
-    patches.AddPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
 
   // Third patch
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
-    patches.AddPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
+    patches.SetPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
                      dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
-    patches.AddPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+    patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
 
@@ -423,7 +423,7 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   VectorX<AutoDiffXd> K0 = 1.1 * VectorX<AutoDiffXd>::Ones(nv0);
   VectorX<AutoDiffXd> u0 = -6.0 * VectorX<AutoDiffXd>::Ones(nv0);
   VectorX<AutoDiffXd> e0 = 0.9 * VectorX<AutoDiffXd>::Ones(nv0);
-  gain_constraints.Add(0, 0, K0, u0, e0);
+  gain_constraints.Set(0, 0, K0, u0, e0);
 
   // On clique 2:
   const int nv2 = model.clique_size(2);
@@ -435,7 +435,7 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
   u2(1) = -13.5;  // bias below limit.
   u2(2) = -5.5;   // bias within limits.
   u2(4) = 15.2;   // bias above limits.
-  gain_constraints.Add(1, 2, K2, u2, e2);
+  gain_constraints.Set(1, 2, K2, u2, e2);
 
   EXPECT_EQ(model.num_gain_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 5);
@@ -552,22 +552,20 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
   VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
   // Limits on clique 0.
-  limits.Add(0 /* constraint */, 0 /* clique */, 1 /* dof */, q0(1), -0.5,
-             0.5);  // Below.
-  limits.Add(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
+  limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
              -1.0);  // Above.
-  limits.Add(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
+  limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
              1.0);  // Within.
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 5);
 
   // Limits on clique 2.
-  limits.Add(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
+  limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
              1.5);  // Below.
-  limits.Add(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
+  limits.Set(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
              0.5);  // Above.
-  limits.Add(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
+  limits.Set(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
              1.5);  // Within.
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
@@ -647,7 +645,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   const auto q0_c1 = model.clique_segment(1, q0);
   const double rho1 = 2.5;
   const double offset1 = 0.1;
-  couplers.Add(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+  couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
                q0_c1(1), q0_c1(3), rho1, offset1);
   EXPECT_EQ(model.num_coupler_constraints(), 1);
   EXPECT_EQ(model.num_constraints(), 4);

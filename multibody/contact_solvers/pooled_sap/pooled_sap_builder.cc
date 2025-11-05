@@ -306,16 +306,16 @@ void PooledSapBuilder<T>::UpdateModel(
   // Contact constraints
   CalcGeometryContactData(context);
   AllocatePatchConstraints(model);
-  AddPatchConstraintsForPointContact(context, model);
-  AddPatchConstraintsForHydroelasticContact(context, model);
+  SetPatchConstraintsForPointContact(context, model);
+  SetPatchConstraintsForHydroelasticContact(context, model);
 
   // Coupler constraints
   AllocateCouplerConstraints(model);
-  AddCouplerConstraints(context, model);
+  SetCouplerConstraints(context, model);
 
   // Limit constraints
   AllocateLimitConstraints(model);
-  AddLimitConstraints(context, model);
+  SetLimitConstraints(context, model);
 
   // Gain and external force constraints
   // N.B. external forces must come first, followed by actuation
@@ -324,14 +324,14 @@ void PooledSapBuilder<T>::UpdateModel(
   if (external_feedback) {
     const VectorX<T>& Ke = external_feedback->K;
     const VectorX<T>& be = external_feedback->b;
-    AddExternalGainConstraints(Ke, be, model);
+    SetExternalGainConstraints(Ke, be, model);
   }
   if (actuation_feedback) {
     const VectorX<T>& Ku = actuation_feedback->K;
     const VectorX<T>& bu = actuation_feedback->b;
     // N.B. actuation constraint indices in the pool depend on whether external
     // or not external forces are present in the model.
-    AddActuationGainConstraints(Ku, bu, external_feedback.has_value(), model);
+    SetActuationGainConstraints(Ku, bu, external_feedback.has_value(), model);
   }
 
   // Define the sparsity pattern, which defines which cliques are connected by
@@ -412,7 +412,7 @@ void PooledSapBuilder<T>::AllocateCouplerConstraints(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddCouplerConstraints(
+void PooledSapBuilder<T>::SetCouplerConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
@@ -452,7 +452,7 @@ void PooledSapBuilder<T>::AddCouplerConstraints(
     const int tree_dof0 = dof0 - forest.trees(tree0).v_start();
     const int tree_dof1 = dof1 - forest.trees(tree0).v_start();
 
-    couplers.Add(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
+    couplers.Set(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
                  spec.offset);
     ++index;
   }
@@ -470,7 +470,7 @@ void PooledSapBuilder<T>::AllocateLimitConstraints(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddLimitConstraints(
+void PooledSapBuilder<T>::SetLimitConstraints(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   using std::isinf;
@@ -499,15 +499,15 @@ void PooledSapBuilder<T>::AddLimitConstraints(
 
       if (!isinf(ql) || !isinf(qu)) {
         // Add constraint for this dof in clique.
-        const int k = clique_to_limit_constraint_[clique];
-        limits.Add(k, clique, tree_dof, q0, ql, qu);
+        const int index = clique_to_limit_constraint_[clique];
+        limits.Set(index, clique, tree_dof, q0, ql, qu);
       }
     }
   }
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
+void PooledSapBuilder<T>::SetPatchConstraintsForPointContact(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   const int num_point_contacts = point_pairs_.size();
   if (num_point_contacts == 0) {
@@ -580,14 +580,14 @@ void PooledSapBuilder<T>::AddPatchConstraintsForPointContact(
     const T fn0 = k * pp.depth;
 
     // For point contact we add single-pair patches.
-    patches.AddPatch(point_pair_index, bodyA->index(), bodyB->index(), d,
+    patches.SetPatch(point_pair_index, bodyA->index(), bodyB->index(), d,
                      mu.static_friction(), mu.dynamic_friction(), p_AB_W);
-    patches.AddPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
+    patches.SetPair(point_pair_index, 0, p_BoC_W, nhat_AB_W, fn0, k);
   }
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
+void PooledSapBuilder<T>::SetPatchConstraintsForHydroelasticContact(
     const systems::Context<T>& context, PooledSapModel<T>* model) const {
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
@@ -651,7 +651,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
     const Vector3<T>& p_WBo = X_WB.translation();
     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
-    patches.AddPatch(patch_index, bodyA->index(), bodyB->index(), d,
+    patches.SetPatch(patch_index, bodyA->index(), bodyB->index(), d,
                      mu.static_friction(), mu.dynamic_friction(), p_AB_W);
 
     for (int pair_index = 0;
@@ -681,7 +681,7 @@ void PooledSapBuilder<T>::AddPatchConstraintsForHydroelasticContact(
       const T fn0 = Ae * p0;
       const T k = Ae * g;
 
-      patches.AddPair(patch_index, pair_index, p_BoC_W, nhat_AB_W, fn0, k);
+      patches.SetPair(patch_index, pair_index, p_BoC_W, nhat_AB_W, fn0, k);
     }
   }
 }
@@ -717,7 +717,7 @@ void PooledSapBuilder<T>::AllocateGainConstraints(PooledSapModel<T>* model,
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddActuationGainConstraints(
+void PooledSapBuilder<T>::SetActuationGainConstraints(
     const VectorX<T>& Ku, const VectorX<T>& bu, bool has_external_forces,
     PooledSapModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
@@ -731,11 +731,11 @@ void PooledSapBuilder<T>::AddActuationGainConstraints(
 
   auto& gain_constraints = model->gain_constraints_pool();
 
-  int i = 0;  // constraint index
+  int index = 0;  // constraint index
   if (has_external_forces) {
     // When external forces are present, actuation constraints come after all
     // the external force constraints in the pool.
-    i = model->num_cliques();
+    index = model->num_cliques();
   }
 
   for (int c = 0; c < model->num_cliques(); ++c) {
@@ -745,13 +745,13 @@ void PooledSapBuilder<T>::AddActuationGainConstraints(
     const auto bu_c = model->clique_segment(c, bu);
     const auto e_c = model->clique_segment(c, effort_limits_);
 
-    gain_constraints.Add(i, c, Ku_c, bu_c, e_c);
-    ++i;
+    gain_constraints.Set(index, c, Ku_c, bu_c, e_c);
+    ++index;
   }
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AddExternalGainConstraints(
+void PooledSapBuilder<T>::SetExternalGainConstraints(
     const VectorX<T>& Ke, const VectorX<T>& be,
     PooledSapModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
@@ -773,7 +773,7 @@ void PooledSapBuilder<T>::AddExternalGainConstraints(
     const VectorX<T> e =
         VectorX<T>::Constant(clique_nv, std::numeric_limits<T>::infinity());
 
-    gain_constraints.Add(c, c, Ke_c, be_c, e);
+    gain_constraints.Set(c, c, Ke_c, be_c, e);
   }
 }
 

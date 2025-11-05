@@ -52,7 +52,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   /**
    * Set the contact patch between bodies A and B.
    *
-   * @param index The index of the patch within the pool.
+   * @param patch_index The index of the patch within the pool.
    * @param bodyA The index of body A (may be anchored).
    * @param bodyB The index of body B (must be dynamic).
    * @param dissipation The dissipation coefficient for the patch.
@@ -62,28 +62,26 @@ class PooledSapModel<T>::PatchConstraintsPool {
    *
    * @pre B is always dynamic (not anchored).
    */
-  // TODO(vincekurtz): consider renaming AddFoo to SetFoo in this and other
-  // constraints.
-  void AddPatch(int index, int bodyA, int bodyB, const T& dissipation,
+  void SetPatch(int patch_index, int bodyA, int bodyB, const T& dissipation,
                 const T& static_friction, const T& dynamic_friction,
                 const Vector3<T>& p_AB_W);
 
   /**
    * Set the contact pair data for the given patch and pair index.
    *
-   * @param patch_idx The index of the patch within the pool.
-   * @param pair_idx The index of the contact pair within the patch.
+   * @param patch_index The index of the patch within the pool.
+   * @param pair_index The index of the contact pair within the patch.
    * @param p_BoC_W The position of the contact point C relative to body B.
    * @param normal_W Contact normal, from A into B by convention.
    * @param fn0 The previous-step normal contact force (lagged for convexity.)
    * @param stiffness The contact stiffness for the pair.
    *
-   * @note As required by AddPatch(), body B is always dynamic (not anchored).
+   * @note As required by SetPatch(), body B is always dynamic (not anchored).
    * Therefore we provide the position of the contact point relative to B and,
    * if needed, the position relative to A is inferred from p_AB_W provided to
-   * AddPatch().
+   * SetPatch().
    */
-  void AddPair(const int patch_idx, const int pair_idx,
+  void SetPair(const int patch_index, const int pair_index,
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
 

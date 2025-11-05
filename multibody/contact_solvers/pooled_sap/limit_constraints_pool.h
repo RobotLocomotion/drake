@@ -46,9 +46,9 @@ class PooledSapModel<T>::LimitConstraintsPool {
               const std::vector<int>& constraint_to_clique);
 
   /**
-   * Set the k-th limit constraint parameters for the given clique and DoF.
+   * Set the limit constraint parameters for the given clique and DoF.
    *
-   * @param k The index of this limit constraint in the pool.
+   * @param index The index of this limit constraint in the pool.
    * @param clique The clique to which this limit constraint applies.
    * @param dof The degree of freedom within the clique to which this limit
    * constraint applies.
@@ -56,7 +56,8 @@ class PooledSapModel<T>::LimitConstraintsPool {
    * @param ql The lower limit for this DoF.
    * @param qu The upper limit for this DoF.
    */
-  void Add(int k, int clique, int dof, const T& q0, const T& ql, const T& qu);
+  void Set(int index, int clique, int dof, const T& q0, const T& ql,
+           const T& qu);
 
   // Update the time step, leaving all other parameters unchanged.
   void UpdateTimeStep(const T& old_dt, const T& new_dt);

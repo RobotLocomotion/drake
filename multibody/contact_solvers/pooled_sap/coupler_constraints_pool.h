@@ -48,8 +48,8 @@ class PooledSapModel<T>::CouplerConstraintsPool {
   void Resize(const int num_constraints);
 
   /**
-   * Add a coupler constraint qᵢ − ρqⱼ−Δq = 0 between the i-th and j-th DoFs of
-   * the given clique.
+   * Set the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
+   * j-th DoFs of the given clique.
    *
    * @param index The index of the constraint within the pool,
    *               must be in [0, num_constraints()).
@@ -63,7 +63,7 @@ class PooledSapModel<T>::CouplerConstraintsPool {
    * @param offset The offset Δq.
    *
    */
-  void Add(int index, int clique, int i, int j, const T& qi, const T& qj,
+  void Set(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
   // Update only the time step for this constraint pool, leaving the constraints

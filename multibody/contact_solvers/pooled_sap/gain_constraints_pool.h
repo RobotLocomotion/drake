@@ -52,17 +52,17 @@ class PooledSapModel<T>::GainConstraintsPool {
   void Resize(const std::vector<int>& sizes);
 
   /**
-   * Add a gain constraint for the given clique.
+   * Set the given gain constraint for the given clique.
    *
-   * @param i The index of this gain constraint in the pool.
+   * @param index The index of this gain constraint in the pool.
    * @param clique The clique to which this gain constraint applies.
    * @param K The diagonal entries of gain matrix K. They must be >= 0.
    * @param b The bias term.
    * @param e The vector of effort limits for each DoF of the clique.
    * @pre K, b, e are of size model().clique_size(clique).
    */
-  void Add(const int i, int clique, const VectorX<T>& K, const VectorX<T>& b,
-           const VectorX<T>& e);
+  void Set(const int index, int clique, const VectorX<T>& K,
+           const VectorX<T>& b, const VectorX<T>& e);
 
   // Compute problem data for the given generalized velocities `v`.
   void CalcData(const VectorX<T>& v,

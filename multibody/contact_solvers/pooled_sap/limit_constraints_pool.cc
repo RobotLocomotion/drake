@@ -56,21 +56,21 @@ void PooledSapModel<T>::LimitConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::Add(int k, int clique, int dof,
-                                                  const T& q0, const T& ql,
-                                                  const T& qu) {
-  lower_limit(k, dof) = ql;
-  upper_limit(k, dof) = qu;
-  configuration(k, dof) = q0;
+void PooledSapModel<T>::LimitConstraintsPool::Set(int index, int clique,
+                                                  int dof, const T& q0,
+                                                  const T& ql, const T& qu) {
+  lower_limit(index, dof) = ql;
+  upper_limit(index, dof) = qu;
+  configuration(index, dof) = q0;
 
   const T dt = model().time_step();
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
   const auto w_clique = model().clique_delassus(clique);
-  regularization(k, dof) = eps * w_clique(dof);
-  vl_hat(k, dof) = (ql - q0) / (dt * (1.0 + beta));
-  vu_hat(k, dof) = (q0 - qu) / (dt * (1.0 + beta));
+  regularization(index, dof) = eps * w_clique(dof);
+  vl_hat(index, dof) = (ql - q0) / (dt * (1.0 + beta));
+  vu_hat(index, dof) = (q0 - qu) / (dt * (1.0 + beta));
 }
 
 template <typename T>
