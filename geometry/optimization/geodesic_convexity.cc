@@ -271,6 +271,9 @@ std::vector<Hyperrectangle> BoundingBoxesForListOfSetsSomeDimensions(
     const ConvexSets& sets, const std::vector<int>& dimensions,
     Parallelism parallelism) {
   DRAKE_DEMAND(sets.size() > 0);
+  for (const copyable_unique_ptr<ConvexSet>& set : sets) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+  }
   int ambient_dimension = sets[0]->ambient_dimension();
   for (int i = 1; i < ssize(sets); ++i) {
     DRAKE_DEMAND(sets[i]->ambient_dimension() == ambient_dimension);
@@ -309,6 +312,12 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
                              bool preprocess_bbox, Parallelism parallelism) {
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
+  for (const copyable_unique_ptr<ConvexSet>& set : convex_sets_A) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+  }
+  for (const copyable_unique_ptr<ConvexSet>& set : convex_sets_B) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+  }
   const int dimension = convex_sets_A[0]->ambient_dimension();
   internal::ThrowsForInvalidContinuousJointsList(dimension,
                                                  continuous_revolute_joints);
@@ -362,6 +371,12 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_A.size() == bboxes_A.size());
   DRAKE_THROW_UNLESS(convex_sets_B.size() == bboxes_B.size());
+  for (const copyable_unique_ptr<ConvexSet>& set : convex_sets_A) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+  }
+  for (const copyable_unique_ptr<ConvexSet>& set : convex_sets_B) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+  }
   const int dimension = convex_sets_A[0]->ambient_dimension();
   internal::ThrowsForInvalidContinuousJointsList(dimension,
                                                  continuous_revolute_joints);
