@@ -105,11 +105,37 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const T t0 = context.get_time();
 
+  // Linearize any external systems (e.g., controllers, external force elements)
+  //     τ = actuation_feedback + external_feedback,
+  //       = B u(x) + τₑₓₜ(x),
+  //     ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ.
+  // We'll only do this linearization once per step, and reuse the same
+  // linearization for error control.
+  LinearFeedbackGains<T>& actuation_feedback = scratch_.actuation_feedback;
+  LinearFeedbackGains<T>& external_feedback = scratch_.external_feedback;
+
+  bool has_actuators = plant().num_actuators() > 0;
+  bool has_external_forces =
+      plant().get_applied_generalized_force_input_port().HasValue(
+          plant_context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
+
+  if (has_actuators || has_external_forces) {
+    LinearizeExternalSystem(h, &actuation_feedback, &external_feedback);
+  }
+
+  std::optional<LinearFeedbackGains<T>> actuation_linearization =
+      has_actuators ? std::make_optional(actuation_feedback) : std::nullopt;
+  std::optional<LinearFeedbackGains<T>> external_linearization =
+      has_external_forces ? std::make_optional(external_feedback)
+                          : std::nullopt;
+
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
   VectorX<T>& v_guess = scratch_.v_guess;
   v_guess = plant().GetVelocities(plant_context);
-  ComputeNextContinuousState(h, v_guess, x_next_full_.get());
+  ComputeNextContinuousState(h, v_guess, x_next_full_.get(),
+                             actuation_linearization, external_linearization);
 
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
@@ -122,12 +148,14 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // We're using error control, and will compare with two half-sized steps.
 
     // First half-step to (t + h/2) uses the average of v_t and v_{t+1} as the
-    // initial guess
+    // initial guess. Note that this solve starts from the same initial state as
+    // the full step, so we can reuse all of the constraints, avoiding expensive
+    // geometry queries and such.
     v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
     v_guess /= 2.0;
     ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get(),
-                               /* reuse_geometry_data = */ true,
-                               /* reuse_linearization = */ true);
+                               actuation_linearization, external_linearization,
+                               /* reuse_constraints = */ true);
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
@@ -135,11 +163,12 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     context.SetTimeAndNoteContinuousStateChange(t0 + 0.5 * h);
 
     // Now we can take the second half-step. We'll use the solution of the full
-    // step as our initial guess here.
+    // step as our initial guess here. We can't reuse the SAP cosntraints, but
+    // we will the linearizations of any external systems, if they exist.
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
     ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get(),
-                               /* reuse_geometry_data = */ false,
-                               /* reuse_linearization = */ true);
+                               actuation_linearization, external_linearization,
+                               /* reuse_constraints = */ false);
 
     // Set the state to the result of the second half-step (since this is more
     // accurate than the full step, and we have it anyway).
@@ -157,45 +186,25 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 }
 
 template <typename T>
-void ConvexIntegrator<T>::ComputeNextContinuousState(const T& h,
-                                                     const VectorX<T>& v_guess,
-                                                     ContinuousState<T>* x_next,
-                                                     bool reuse_geometry_data,
-                                                     bool reuse_linearization) {
+void ConvexIntegrator<T>::ComputeNextContinuousState(
+    const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next,
+    std::optional<LinearFeedbackGains<T>> actuation_feedback,
+    std::optional<LinearFeedbackGains<T>> external_feedback,
+    bool reuse_constraints) {
   // Get plant context storing initial state [q₀, v₀].
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
   PooledSapModel<T>& model = get_model();
-  if (reuse_geometry_data) {
-    // Update the time step only
+  if (reuse_constraints) {
+    // Update the time step only. Assumes that model was last updated with the
+    // the same initial state [q₀, v₀].
     builder().UpdateModel(h, &model);
   } else {
-    // Linearize any external systems (e.g., controllers),
-    //     τ = actuation_feedback + external_feedback,
-    //       = B u(x) + τₑₓₜ(x),
-    //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-    LinearFeedbackGains<T>& actuation_feedback = scratch_.actuation_feedback;
-    LinearFeedbackGains<T>& external_feedback = scratch_.external_feedback;
-
-    bool has_actuators = plant().num_actuators() > 0;
-    bool has_external_forces =
-        plant().get_applied_generalized_force_input_port().HasValue(
-            plant_context) ||
-        plant().get_applied_spatial_force_input_port().HasValue(plant_context);
-
-    if (!reuse_linearization && (has_actuators || has_external_forces)) {
-      LinearizeExternalSystem(h, &actuation_feedback, &external_feedback);
-    }
-
-    // Update the model with actuation and external force constraints as needed.
-    builder().UpdateModel(
-        plant_context, h,
-        has_actuators ? std::make_optional(actuation_feedback) : std::nullopt,
-        has_external_forces ? std::make_optional(external_feedback)
-                            : std::nullopt,
-        &model);
+    // Do a full update of the model
+    builder().UpdateModel(plant_context, h, actuation_feedback,
+                          external_feedback, &model);
   }
 
   // Solve the optimization problem for next-step velocities v = min ℓ(v).

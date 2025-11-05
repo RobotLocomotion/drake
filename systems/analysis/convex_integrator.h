@@ -250,21 +250,24 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // estimate.
   bool DoStep(const T& h) override;
 
-  // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
-  // called multiple times for each DoStep to compute the error estimate.
-  //
-  // @param h the time step to use
-  // @param v_guess the initial guess for the MbP plant velocities.
-  // @param x_next the output continuous state, includes state for both the
-  //               plant and any external systems.
-  // @param reuse_geometry_data use previously computed geometry data, e.g., in
-  //                            the first half-step.
-  // @param reuse_linearization use previously computed external system
-  // linearization, e.g., in the half-steps.
-  void ComputeNextContinuousState(const T& h, const VectorX<T>& v_guess,
-                                  ContinuousState<T>* x_next,
-                                  bool reuse_geometry_data = false,
-                                  bool reuse_linearization = false);
+  /**
+   * Solve the SAP problem to compute x_{t+h} at a given step size. This will be
+   * called multiple times for each DoStep to compute the error estimate.
+   *
+   * @param h the time step to use
+   * @param v_guess the initial guess for the MbP plant velocities.
+   * @param x_next the output continuous state, includes state for both the
+   *               plant and any external systems.
+   * @param actuation_feedback linearization of any actuator forces τ = B u(x)
+   * @param external_feedback linearization of any external forces τₑₓₜ(x)
+   * @param reuse_constraints use previously computed constraint data, updating
+   *                          only the time step of the SAP model.
+   */
+  void ComputeNextContinuousState(
+      const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next,
+      std::optional<LinearFeedbackGains<T>> actuation_feedback,
+      std::optional<LinearFeedbackGains<T>> external_feedback,
+      bool reuse_constraints = false);
 
   // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   // to handle quaternion DoFs properly.
