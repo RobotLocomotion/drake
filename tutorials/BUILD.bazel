@@ -3,6 +3,18 @@ load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_test")
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "images/publish_images_via_doxygen.h",
+    ] + glob([
+        "images/*.jpg",
+        "images/*.png",
+    ]),
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_jupyter_py_binary(
     name = "authoring_leaf_systems",
     add_test_rule = 1,
