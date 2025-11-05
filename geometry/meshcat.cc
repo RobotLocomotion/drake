@@ -787,8 +787,7 @@ class Meshcat::Impl {
       throw std::logic_error("The web_url_pattern must be http:// or https://");
     }
 
-    // Fetch the index once to be sure that we preload the content.
-    DRAKE_DEMAND(internal::GetMeshcatStaticResource("/").has_value());
+    LoadStaticAssets();
 
     std::promise<std::tuple<int, bool>> app_promise;
     std::future<std::tuple<int, bool>> app_future = app_promise.get_future();
@@ -826,6 +825,36 @@ class Meshcat::Impl {
     // and then wait for it to exit.
     mode_.store(kFinished);
     websocket_thread_.join();
+  }
+
+  // Loads the javascript into CAS. This also serves to cross-check that none of
+  // our static resources have gone missing.
+  void LoadStaticAssets() {
+    // Load the javascript into the CAS cache.
+    const std::optional<std::string_view> meshcat_js =
+        internal::GetMeshcatStaticResource("/meshcat.js");
+    const std::optional<std::string_view> stats_js =
+        internal::GetMeshcatStaticResource("/stats.min.js");
+    DRAKE_DEMAND(meshcat_js.has_value());
+    DRAKE_DEMAND(stats_js.has_value());
+    meshcat_js_ = file_storage_.Insert(std::string{*meshcat_js}, "meshcat.js");
+    stats_js_ = file_storage_.Insert(std::string{*stats_js}, "stats.min.js");
+
+    // Load meshcat.html and rewrite its script citations to use CAS URLs.
+    auto meshcat_html = internal::GetMeshcatStaticResource("/meshcat.html");
+    DRAKE_DEMAND(meshcat_html.has_value());
+    meshcat_html_ = std::string{*meshcat_html};
+    std::vector<std::pair<std::string, std::string>> rewrites{
+        {"src=\"meshcat.js\"",
+         fmt::format("src=\"{}\"", FileStorage::GetCasUrl(*meshcat_js_))},
+        {"src=\"stats.min.js\"",
+         fmt::format("src=\"{}\"", FileStorage::GetCasUrl(*stats_js_))},
+    };
+    for (const auto& [old_link, new_link] : rewrites) {
+      const size_t start = meshcat_html_.find(old_link);
+      DRAKE_DEMAND(start != std::string::npos);
+      meshcat_html_.replace(start, old_link.size(), new_link);
+    }
   }
 
   // Throws an exception if the websocket thread has died.
@@ -1824,7 +1853,8 @@ class Meshcat::Impl {
   // outer function calls into here using appropriate deferred handling.
   std::string CalcStandaloneHtml() const {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    std::string html{internal::GetMeshcatStaticResource("/").value()};
+    std::string html{
+        internal::GetMeshcatStaticResource("/meshcat.html").value()};
 
     // Insert the javascript directly into the html.
     std::vector<std::pair<std::string, std::string>> js_paths{
@@ -1846,6 +1876,12 @@ class Meshcat::Impl {
     std::vector<std::shared_ptr<const MemoryFile>> assets =
         file_storage_.DumpEverything();
     for (const auto& asset : assets) {
+      if (asset->sha256() == meshcat_js_->sha256() ||
+          asset->sha256() == stats_js_->sha256()) {
+        // We already directly inserted this JS resource using `js_paths` above,
+        // so there's no need to dump it as part of the CAS.
+        continue;
+      }
       javascript += fmt::format("// {}\n", asset->filename_hint());
       javascript += fmt::format(
           "casAssets[\"{}\"] = "
@@ -2253,14 +2289,15 @@ class Meshcat::Impl {
       return;
     }
     // Handle static (i.e., compiled-in) files.
-    if (const std::optional<std::string_view> content =
-            internal::GetMeshcatStaticResource(url_path)) {
-      if (content->substr(0, 15) == "<!DOCTYPE html>") {
-        response->writeHeader("Content-Type", "text/html; charset=utf-8");
-      } else if (url_path.ends_with(".js")) {
-        response->writeHeader("Content-Type", "text/javascript; charset=utf-8");
-      }
-      response->end(*content);
+    if ((url_path == "/") || (url_path == "/index.html") ||
+        (url_path == "/meshcat.html")) {
+      response->writeHeader("Content-Type", "text/html; charset=utf-8");
+      response->writeHeader("Cache-Control", "no-cache");
+      response->end(meshcat_html_);
+      return;
+    }
+    if (url_path == "/favicon.ico") {
+      response->end(internal::GetMeshcatStaticResource(url_path).value());
       return;
     }
     // Unknown URL.
@@ -2433,6 +2470,9 @@ class Meshcat::Impl {
   uWS::App* app_{nullptr};
   us_listen_socket_t* listen_socket_{nullptr};
   std::set<WebSocket*> websockets_{};
+  std::shared_ptr<const MemoryFile> meshcat_js_;
+  std::shared_ptr<const MemoryFile> stats_js_;
+  std::string meshcat_html_;
 
   // This variable may be accessed from any thread, but should only be modified
   // in the websocket thread.
