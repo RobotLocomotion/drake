@@ -324,7 +324,7 @@ def determine_url(version, is_commit, bazel_filename):
 
     bazelisk_base_url = get_env_or_config("BAZELISK_BASE_URL")
     if bazelisk_base_url is not None:
-        return "{}/{}/{}".format(bazelisk_base_url, version, bazel_filename)
+        return "{}/{}{}/{}".format(bazelisk_base_url, version, rc if rc else "", bazel_filename)
     else:
         return "https://releases.bazel.build/{}/{}/{}".format(
             version, rc if rc else "release", bazel_filename
