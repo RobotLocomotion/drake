@@ -18,9 +18,7 @@ namespace internal {
 
 /* Returns the static content for the given URL, or nullopt when the URL is
 invalid. The valid static resource URLs are:
-- `/`
 - `/favicon.ico`
-- `/index.html`
 - `/meshcat.html`
 - `/meshcat.js`
 - `/stats.min.js` */

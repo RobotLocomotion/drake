@@ -47,8 +47,7 @@ std::optional<std::string_view> GetMeshcatStaticResource(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
-  if ((url_path == "/") || (url_path == "/index.html") ||
-      (url_path == "/meshcat.html")) {
+  if (url_path == "/meshcat.html") {
     return meshcat_html.access();
   }
   if (url_path == "/meshcat.js") {
