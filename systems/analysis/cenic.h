@@ -30,9 +30,9 @@ using multibody::contact_solvers::pooled_sap::PooledSapModel;
 using multibody::contact_solvers::pooled_sap::SearchDirectionData;
 
 /**
- * Tolerances and other parameters for the convex integrator's solver.
+ * Tolerances and other parameters for the CENIC's convex solver.
  */
-struct ConvexIntegratorSolverParameters {
+struct CenicSolverParameters {
   // Maximum outer iterations and linesearch iterations
   int max_iterations{100};
   int max_ls_iterations{100};
@@ -70,7 +70,7 @@ struct ConvexIntegratorSolverParameters {
 /**
  * Statistics to track during the optimization process.
  */
-struct ConvexIntegratorSolverStats {
+struct CenicSolverStats {
   // The simulation time at which the solve was performed.
   double time;
 
@@ -123,14 +123,14 @@ struct ConvexIntegratorSolverStats {
  * specific.
  */
 template <class T>
-class ConvexIntegrator final : public IntegratorBase<T> {
+class CenicIntegrator final : public IntegratorBase<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexIntegrator);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CenicIntegrator);
 
-  ~ConvexIntegrator() override = default;
+  ~CenicIntegrator() override = default;
 
   /**
-   * Constructs the convex integrator.
+   * Constructs the integrator.
    *
    * @param system the overall system diagram to simulate. Must include a
    *               MultibodyPlant and associated SceneGraph.
@@ -140,8 +140,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    *       does not specify the MultibodyPlant used to set up the optimization
    *       problem. set_plant() must be called before using the integrator.
    */
-  explicit ConvexIntegrator(const System<T>& system,
-                            Context<T>* context = nullptr);
+  explicit CenicIntegrator(const System<T>& system,
+                           Context<T>* context = nullptr);
 
   /**
    * Specifies the MultibodyPlant used to set up the optimization problem.
@@ -185,15 +185,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   /**
    * Get the current convex solver tolerances and iteration limits.
    */
-  const ConvexIntegratorSolverParameters& get_solver_parameters() const {
+  const CenicSolverParameters& get_solver_parameters() const {
     return solver_parameters_;
   }
 
   /**
    * Set the convex solver tolerances and iteration limits.
    */
-  void set_solver_parameters(
-      const ConvexIntegratorSolverParameters& parameters) {
+  void set_solver_parameters(const CenicSolverParameters& parameters) {
     solver_parameters_ = parameters;
   }
 
@@ -201,14 +200,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * Get a mutable reference to the convex solver tolerances and iteration
    * limits.
    */
-  ConvexIntegratorSolverParameters& get_mutable_solver_parameters() {
+  CenicSolverParameters& get_mutable_solver_parameters() {
     return solver_parameters_;
   }
 
   /**
    * Get the current convex solver statistics.
    */
-  const ConvexIntegratorSolverStats& get_solver_stats() const { return stats_; }
+  const CenicSolverStats& get_solver_stats() const { return stats_; }
 
   /**
    * Get the current total number of solver iterations across all time steps.
@@ -241,7 +240,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   int get_error_estimate_order() const final { return 2; }
 
  private:
-  friend class ConvexIntegratorTester;
+  friend class CenicTester;
 
   // Perform final checks and allocations before beginning integration.
   void DoInitialize() final;
@@ -379,11 +378,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool reuse_hessian_factorization_{true};
 
   // Solver tolerances and other parameters
-  ConvexIntegratorSolverParameters solver_parameters_;
+  CenicSolverParameters solver_parameters_;
 
   // Logging/performance tracking utilities
   std::ofstream log_file_;
-  ConvexIntegratorSolverStats stats_;
+  CenicSolverStats stats_;
   int total_solver_iterations_{0};
   int total_ls_iterations_{0};
   int total_hessian_factorizations_{0};
@@ -398,15 +397,15 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
 template <>
-bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
-                                              VectorX<double>*);
+bool CenicIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
+                                             VectorX<double>*);
 template <>
-std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
+std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
     const PooledSapModel<double>&, const PooledSapData<double>&,
     const VectorX<double>&);
 
 template <>
-void ConvexIntegrator<double>::ComputeSearchDirection(
+void CenicIntegrator<double>::ComputeSearchDirection(
     const PooledSapModel<double>&, const PooledSapData<double>&,
     VectorX<double>*, bool, bool);
 
@@ -414,4 +413,4 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::ConvexIntegrator);
+    class drake::systems::CenicIntegrator);

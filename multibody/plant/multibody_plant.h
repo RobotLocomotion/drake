@@ -49,7 +49,7 @@ namespace systems {
 
 // Forward declaration for giving the convex integrator private access
 template <typename>
-class ConvexIntegrator;
+class CenicIntegrator;
 
 }  // namespace systems
 
@@ -5835,7 +5835,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   // Pooled sap builder and convex integrator get private acces
   friend class contact_solvers::pooled_sap::PooledSapBuilder<T>;
-  friend class systems::ConvexIntegrator<T>;
+  friend class systems::CenicIntegrator<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.

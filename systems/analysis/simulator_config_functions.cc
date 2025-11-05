@@ -14,7 +14,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
-#include "drake/systems/analysis/convex_integrator.h"
+#include "drake/systems/analysis/cenic.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/radau_integrator.h"
@@ -163,7 +163,7 @@ GetAllNamedConfigureIntegratorFuncs() {
       std::initializer_list<NamedConfigureIntegratorFunc<T>>{
           // Keep this list sorted alphabetically.
           MakeConfigurator<T, BogackiShampine3Integrator>(),
-          MakeConfigurator<T, ConvexIntegrator>(),
+          MakeConfigurator<T, CenicIntegrator>(),
           MakeConfigurator<T, ExplicitEulerIntegrator>(),
           MakeConfigurator<T, ImplicitEulerIntegrator>(),
           MakeConfigurator<T, Radau1Integrator>(),

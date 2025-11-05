@@ -341,7 +341,7 @@ def run_simulation(
 
     simulator = Simulator(diagram, context)
     ApplySimulatorConfig(config, simulator)
-    if config.integration_scheme == "convex":
+    if config.integration_scheme == "cenic":
         ci = simulator.get_mutable_integrator()
         ci.set_plant(plant)
         ci_params = ci.get_solver_parameters()
@@ -377,8 +377,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--integrator",
         type=str,
-        default="convex",
-        help="The integrator to use. default: convex",
+        default="cenic",
+        help="The integrator to use. default: cenic",
     )
     parser.add_argument(
         "--accuracy",
