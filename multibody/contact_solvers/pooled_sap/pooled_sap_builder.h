@@ -122,26 +122,12 @@ class PooledSapBuilder {
     return tree_to_clique_[tree_index];
   }
 
-  // Number of velocities in each clique.
-  const std::vector<int>& clique_sizes() const { return clique_sizes_; }
-
-  // Number of rows in each body's spatial velocity Jacobian J_WB.
-  const std::vector<int>& body_jacobian_rows() const {
-    return body_jacobian_rows_;
-  }
-
-  // Number of columns in each body's spatial velocity Jacobian J_WB.
-  const std::vector<int>& body_jacobian_cols() const {
-    return body_jacobian_cols_;
-  }
-
   // Model properties that do not change unless the system changes.
   std::map<geometry::GeometryId, CoulombFriction<double>> friction_;
   std::map<geometry::GeometryId, T> stiffness_;    // point contact.
   std::map<geometry::GeometryId, T> dissipation_;  // H&C dissipation.
   std::vector<int> tree_to_clique_;      // cliques are trees with nv > 0.
   std::vector<int> clique_sizes_;        // nv for each clique.
-  std::vector<int> body_jacobian_rows_;  // rows of J_WB for each body.
   std::vector<int> body_jacobian_cols_;  // cols of J_WB for each body.
   std::vector<int> body_to_clique_;      // clique index for each body.
   std::vector<int> body_is_floating_;    // 1 if body is floating, 0 otherwise.

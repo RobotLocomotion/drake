@@ -98,6 +98,30 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixX) {
   }
 }
 
+GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixWithFixedRows) {
+  EigenPool<Matrix3X<double>> pool;
+  std::vector<int> cols = {1, 2, 3, 4};
+
+  {
+    // We expect two allocations. One for scalars and one for meta-data (sizes).
+    drake::test::LimitMalloc guard({.max_num_allocations = 2});
+    pool.Resize(cols);
+  }
+  EXPECT_EQ(pool.size(), 4);
+  EXPECT_EQ(pool[0].size(), 3);
+  EXPECT_EQ(pool[1].size(), 6);
+  EXPECT_EQ(pool[2].size(), 9);
+  EXPECT_EQ(pool[3].size(), 12);
+
+  for (int i = 0; i < ssize(cols); ++i) {
+    Matrix3X<double> A =
+        VectorXd::LinSpaced(3 * cols[i], 1.0, 10.0).reshaped(3, cols[i]);
+    pool[i] = A;
+    const auto& const_pool = pool;
+    EXPECT_EQ(const_pool[i], A);
+  }
+}
+
 }  // namespace pooled_sap
 }  // namespace contact_solvers
 }  // namespace multibody

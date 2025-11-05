@@ -128,7 +128,6 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
 
   // Iterate over bodies to find the size of each Jacobian, clique membership,
   // floating status (floating bodies have an identity Jacobian), body mass.
-  body_jacobian_rows_.resize(plant.num_bodies());
   body_jacobian_cols_.resize(plant.num_bodies());
   body_to_clique_.resize(plant.num_bodies());
   body_is_floating_.resize(plant.num_bodies());
@@ -138,7 +137,6 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
     const auto& body = plant.get_body(BodyIndex(b));
     const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
 
-    body_jacobian_rows_[b] = 6;
     if (plant.IsAnchored(body)) {
       body_jacobian_cols_[b] = 1;  // dummy column.
       body_to_clique_[b] = -1;
@@ -272,7 +270,7 @@ void PooledSapBuilder<T>::UpdateModel(
   // Compute spatial velocity Jacobians J_WB for all bodies.
   const auto& world_frame = plant().world_frame();
   EigenPool<Matrix6X<T>>& J_WB = params->J_WB;
-  J_WB.Resize(body_jacobian_rows(), body_jacobian_cols());
+  J_WB.Resize(body_jacobian_cols_);
 
   for (int b = 0; b < plant().num_bodies(); ++b) {
     const auto& body = plant().get_body(BodyIndex(b));

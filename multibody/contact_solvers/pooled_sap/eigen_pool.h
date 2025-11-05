@@ -32,6 +32,17 @@ template <typename T>
 constexpr bool is_dynamic_size_vector_v =
     is_eigen_vector<T>::value && !is_fixed_size_v<T>;
 
+// Detect matrices with fixed number of rows, e.g. Matrix6Xd.
+template <typename T>
+constexpr bool has_fixed_size_rows_v =
+    is_eigen_type<T>::value && T::RowsAtCompileTime != Eigen::Dynamic;
+
+// Detect matrices with fixed number of columns, e.g. MatrixX4d. This includes
+// vectors (e.g. VectorXd).
+template <typename T>
+constexpr bool has_fixed_size_cols_v =
+    is_eigen_type<T>::value && T::ColsAtCompileTime != Eigen::Dynamic;
+
 /**
  * Contiguous storage for a pool of fixed-size Eigen objects.
  *
@@ -109,19 +120,9 @@ struct DynamicSizeStorage {
 
   DynamicSizeStorage() = default;
 
-  // Resize the pool to store VectorX elements of the specified sizes.
-  void Resize(const std::vector<int>& sizes) {
-    static_assert(is_dynamic_size_vector_v<EigenType>);
-    Clear();
-    const int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
-    data_.reserve(total_size);
-    blocks_.reserve(ssize(sizes));
-    for (int sz : sizes) {
-      Add(sz, 1);
-    }
-  }
-
   // Resize the pool to store MatrixX elements of the specified sizes.
+  // N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
+  // compile time.
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols) {
     static_assert(!is_fixed_size_v<EigenType>);
     DRAKE_ASSERT(rows.size() == cols.size());
@@ -239,13 +240,6 @@ class EigenPool {
     storage_.Resize(num_elements);
   }
 
-  // Resize a pool of dynamic-size vectors (e.g. VectorXd).
-  void Resize(const std::vector<int>& sizes)
-    requires is_dynamic_size_vector_v<EigenType>
-  {  // NOLINT(whitespace/braces)
-    storage_.Resize(sizes);
-  }
-
   // Resize a pool of dynamic-size matrices (e.g. MatrixXd).
   // N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
   // compile time.
@@ -253,6 +247,15 @@ class EigenPool {
     requires(!is_fixed_size_v<EigenType>)
   {  // NOLINT(whitespace/braces)
     storage_.Resize(rows, cols);
+  }
+
+  // Resize a pool of matrices with a fixed number of rows or columns, e.g.
+  // Matrix6Xd or VectorXd.
+  void Resize(const std::vector<int>& sizes)
+    requires(has_fixed_size_rows_v<EigenType> ||
+             has_fixed_size_cols_v<EigenType>)
+  {  // NOLINT(whitespace/braces)
+    storage_.Resize(sizes, sizes);
   }
 
   // Resize a pool of dynamic-size matrices (e.g. MatrixXd), where all elements
