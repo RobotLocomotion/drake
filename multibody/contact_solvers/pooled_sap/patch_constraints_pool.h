@@ -152,15 +152,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
     vs2_ = stiction_tolerance_ * stiction_tolerance_;
   }
 
-  // Faces with a non-negligible hydroelastic contribution, sorted by hydro
-  // surface index.
-  std::vector<std::vector<int>>& get_mutable_contributing_hydro_faces() {
-    return contributing_hydro_faces_;
-  }
-  const std::vector<std::vector<int>>& get_contributing_hydro_faces() const {
-    return contributing_hydro_faces_;
-  }
-
  private:
   using VectorXView = Eigen::VectorBlock<VectorX<T>>;
 
@@ -203,11 +194,6 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<int> num_pairs_;    // Number of pairs per patch.
   std::vector<int> num_cliques_;  // Num cliques. One or two.
   std::vector<T> Rt_;             // Friction regularization
-
-  // Face indices that have a non-zero hydroelastic contribution, sorted by
-  // hydro surface index. Used to identify hydro pairs with a
-  // non-zero contribution (very small faces are ignored).
-  std::vector<std::vector<int>> contributing_hydro_faces_;
 
   // .first is always body B, which always corresponds to a valid (positive)
   // clique.
