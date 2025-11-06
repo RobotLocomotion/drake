@@ -103,7 +103,7 @@ const drake::systems::OutputPort<double>&
 PandaCommandReceiver::get_commanded_position_output_port() const {
   if (commanded_position_output_ == nullptr) {
     throw std::runtime_error(
-        "Invalid call to PandaCommandReciver::get_command_position_output_port"
+        "Invalid call to PandaCommandReceiver::get_command_position_output_port"
         " when control_mode does not include position");
   }
   return *commanded_position_output_;
@@ -113,7 +113,7 @@ const drake::systems::OutputPort<double>&
 PandaCommandReceiver::get_commanded_velocity_output_port() const {
   if (commanded_velocity_output_ == nullptr) {
     throw std::runtime_error(
-        "Invalid call to PandaCommandReciver::get_command_velocity_output_port"
+        "Invalid call to PandaCommandReceiver::get_command_velocity_output_port"
         " when control_mode does not include velocity");
   }
   return *commanded_velocity_output_;
@@ -123,7 +123,7 @@ const drake::systems::OutputPort<double>&
 PandaCommandReceiver::get_commanded_torque_output_port() const {
   if (commanded_torque_output_ == nullptr) {
     throw std::runtime_error(
-        "Invalid call to PandaCommandReciver::get_command_torque_output_port"
+        "Invalid call to PandaCommandReceiver::get_command_torque_output_port"
         " when control_mode does not include torque");
   }
   return *commanded_torque_output_;
