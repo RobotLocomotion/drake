@@ -193,6 +193,8 @@ bazel_dep(
 single_version_override(
     module_name = "googletest",
     patches = [
+        "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
+        "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
         "//tools/workspace/googletest:patches/add_printers_deps.patch",
         "//tools/workspace/googletest:patches/defines.patch",
