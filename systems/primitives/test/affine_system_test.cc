@@ -198,30 +198,35 @@ TEST_F(AffineSystemTest, DefaultAndRandomState) {
 
 // Tests converting to different scalar types.
 TEST_F(AffineSystemTest, ConvertScalarType) {
-  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
-    EXPECT_EQ(converted.A(), A_);
-    EXPECT_EQ(converted.B(), B_);
-    EXPECT_EQ(converted.f0(), f0_);
-    EXPECT_EQ(converted.C(), C_);
-    EXPECT_EQ(converted.D(), D_);
-    EXPECT_EQ(converted.y0(), y0_);
-    EXPECT_TRUE(CompareMatrices(
-        math::ExtractValue(converted.get_default_state()), x0_, 0.0));
-    EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
-                                Sigma_x0_, 1e-16));
-  }));
-  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
-    EXPECT_EQ(converted.A(), A_);
-    EXPECT_EQ(converted.B(), B_);
-    EXPECT_EQ(converted.f0(), f0_);
-    EXPECT_EQ(converted.C(), C_);
-    EXPECT_EQ(converted.D(), D_);
-    EXPECT_EQ(converted.y0(), y0_);
-    EXPECT_TRUE(CompareMatrices(
-        symbolic::Evaluate(converted.get_default_state()), x0_, 0.0));
-    EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
-                                Sigma_x0_, 1e-16));
-  }));
+  const testing::AssertionResult autodiff_ok =
+      is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+        EXPECT_EQ(converted.A(), A_);
+        EXPECT_EQ(converted.B(), B_);
+        EXPECT_EQ(converted.f0(), f0_);
+        EXPECT_EQ(converted.C(), C_);
+        EXPECT_EQ(converted.D(), D_);
+        EXPECT_EQ(converted.y0(), y0_);
+        EXPECT_TRUE(CompareMatrices(
+            math::ExtractValue(converted.get_default_state()), x0_, 0.0));
+        EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
+                                    Sigma_x0_, 1e-16));
+      });
+  EXPECT_TRUE(autodiff_ok);
+
+  const testing::AssertionResult symbolic_ok =
+      is_symbolic_convertible(*dut_, [&](const auto& converted) {
+        EXPECT_EQ(converted.A(), A_);
+        EXPECT_EQ(converted.B(), B_);
+        EXPECT_EQ(converted.f0(), f0_);
+        EXPECT_EQ(converted.C(), C_);
+        EXPECT_EQ(converted.D(), D_);
+        EXPECT_EQ(converted.y0(), y0_);
+        EXPECT_TRUE(CompareMatrices(
+            symbolic::Evaluate(converted.get_default_state()), x0_, 0.0));
+        EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
+                                    Sigma_x0_, 1e-16));
+      });
+  EXPECT_TRUE(symbolic_ok);
 }
 
 class FeedthroughAffineSystemTest : public ::testing::Test {
