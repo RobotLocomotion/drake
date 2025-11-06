@@ -1634,12 +1634,17 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
 // transmogrification will preserve the subtype.
 TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   const FeedbackDiagram<double> dut;
-  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
-    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
-  }));
-  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
-    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
-  }));
+  const testing::AssertionResult autodiff_ok =
+      is_autodiffxd_convertible(dut, [](const auto& converted) {
+        EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+      });
+  EXPECT_TRUE(autodiff_ok);
+
+  const testing::AssertionResult symbolic_ok =
+      is_symbolic_convertible(dut, [](const auto& converted) {
+        EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+      });
+  EXPECT_TRUE(symbolic_ok);
 
   // Check that the subtype makes it all the way through cloning.
   // Any mismatched subtype will fail-fast within the Clone implementation.
@@ -1650,20 +1655,10 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   // subclass at runtime will fail-fast.
   class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
   const SubclassOfFeedbackDiagram subclass_dut{};
-  EXPECT_THROW(
-      ({
-        try {
-          subclass_dut.ToAutoDiffXd();
-        } catch (const std::runtime_error& e) {
-          EXPECT_THAT(
-              std::string(e.what()),
-              testing::MatchesRegex(
-                  ".*convert a .*::FeedbackDiagram<double>.* called with a"
-                  ".*::SubclassOfFeedbackDiagram at runtime"));
-          throw;
-        }
-      }),
-      std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      subclass_dut.ToAutoDiffXd(),
+      ".*convert a .*::FeedbackDiagram<double>.* called with a"
+      ".*::SubclassOfFeedbackDiagram at runtime");
 }
 
 // A simple class that consumes *two* inputs and passes one input through. The
