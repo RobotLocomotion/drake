@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef DRAKE_POOLED_SAP_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h" // NOLINT
+#ifndef DRAKE_ICF_INCLUDED
+#error Do not include this file. Use "drake/multibody/contact_solvers/icf/icf.h"
 #endif
 
 #include <algorithm>
@@ -13,27 +13,26 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/limit_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_data.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 /**
  * A pool of limit constraints, qu ≥ q ≥ ql.
  */
 template <typename T>
-class PooledSapModel<T>::LimitConstraintsPool {
+class IcfModel<T>::LimitConstraintsPool {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraintsPool);
 
   // Constructor for an empty pool.
-  LimitConstraintsPool(const PooledSapModel<T>* parent_model)
-      : model_(parent_model) {
+  LimitConstraintsPool(const IcfModel<T>* parent_model) : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
@@ -88,12 +87,11 @@ class PooledSapModel<T>::LimitConstraintsPool {
   // TODO(amcastro-tri): factor out this method into a
   // GeneralizedVelocitiesConstraintsPool parent class, along with other common
   // functionality to all constraint pools on generalized velocities.
-  void AccumulateGradient(const PooledSapData<T>& data,
-                          VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
   // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
-      const PooledSapData<T>& data,
+      const IcfData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
@@ -109,14 +107,14 @@ class PooledSapModel<T>::LimitConstraintsPool {
   const std::vector<int>& constraint_sizes() const { return constraint_sizes_; }
 
   // Return a reference to the parent model.
-  const PooledSapModel<T>& model() const { return *model_; }
+  const IcfModel<T>& model() const { return *model_; }
 
  private:
   // Compute cost, gradient, and Hessian contribution for a single limit
   // constraint.
   T CalcLimitData(const T& v_hat, const T& R, const T& v, T* gamma, T* G) const;
 
-  const PooledSapModel<T>* model_{nullptr};  // The parent model.
+  const IcfModel<T>* model_{nullptr};  // The parent model.
 
   // Clique for the k-th constraint. Of size num_constraints().
   std::vector<int> constraint_to_clique_;
@@ -132,7 +130,7 @@ class PooledSapModel<T>::LimitConstraintsPool {
   EigenPool<VectorX<T>> R_;
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

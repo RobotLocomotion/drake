@@ -1,4 +1,4 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re pooled_sap_model.h
+// NOLINTNEXTLINE(build/include): prevent complaint re icf_model.h
 
 #include <memory>
 #include <set>
@@ -11,12 +11,12 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 template <typename T>
 using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
@@ -24,8 +24,7 @@ template <typename T>
 using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
 template <typename T>
-void PooledSapModel<T>::ResetParameters(
-    std::unique_ptr<PooledSapParameters<T>> params) {
+void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   DRAKE_ASSERT(params != nullptr);
   params_ = std::move(params);
 
@@ -64,7 +63,7 @@ void PooledSapModel<T>::ResetParameters(
 }
 
 template <typename T>
-Eigen::VectorBlock<const VectorX<T>> PooledSapModel<T>::clique_segment(
+Eigen::VectorBlock<const VectorX<T>> IcfModel<T>::clique_segment(
     int clique, const VectorX<T>& x) const {
   DRAKE_ASSERT(x.size() == num_velocities());
   return x.segment(params().clique_start[clique],
@@ -72,7 +71,7 @@ Eigen::VectorBlock<const VectorX<T>> PooledSapModel<T>::clique_segment(
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> PooledSapModel<T>::clique_segment(
+Eigen::VectorBlock<VectorX<T>> IcfModel<T>::clique_segment(
     int clique, VectorX<T>* x) const {
   DRAKE_ASSERT(x != nullptr);
   DRAKE_ASSERT(x->size() == num_velocities());
@@ -81,7 +80,7 @@ Eigen::VectorBlock<VectorX<T>> PooledSapModel<T>::clique_segment(
 }
 
 template <typename T>
-void PooledSapModel<T>::VerifyInvariants() const {
+void IcfModel<T>::VerifyInvariants() const {
   DRAKE_DEMAND(time_step() > 0);
   DRAKE_DEMAND(v0().size() == num_velocities_);
   DRAKE_DEMAND(M0().rows() == num_velocities_);
@@ -123,8 +122,8 @@ void PooledSapModel<T>::VerifyInvariants() const {
 }
 
 template <typename T>
-void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
-                                                 VectorX<T>* result) const {
+void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
+                                           VectorX<T>* result) const {
   DRAKE_ASSERT(v.size() == num_velocities());
   DRAKE_ASSERT(result != nullptr);
   DRAKE_ASSERT(result->size() == num_velocities());
@@ -138,9 +137,8 @@ void PooledSapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }
 
 template <typename T>
-void PooledSapModel<T>::CalcMomentumTerms(
-    const PooledSapData<T>& data,
-    typename PooledSapData<T>::Cache* cache) const {
+void IcfModel<T>::CalcMomentumTerms(const IcfData<T>& data,
+                                    typename IcfData<T>::Cache* cache) const {
   // Data.
   const VectorX<T>& v = data.v();
   VectorX<T>& Av = cache->Av;
@@ -159,7 +157,7 @@ void PooledSapModel<T>::CalcMomentumTerms(
 }
 
 template <typename T>
-void PooledSapModel<T>::CalcBodySpatialVelocities(
+void IcfModel<T>::CalcBodySpatialVelocities(
     const VectorX<T>& v, EigenPool<Vector6<T>>* V_pool) const {
   EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
   DRAKE_ASSERT(v.size() == num_velocities());
@@ -182,7 +180,7 @@ void PooledSapModel<T>::CalcBodySpatialVelocities(
 }
 
 template <typename T>
-void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
+void IcfModel<T>::ResizeData(IcfData<T>* data) const {
   const int max_clique_size = *std::max_element(params().clique_sizes.begin(),
                                                 params().clique_sizes.end());
   data->Resize(num_bodies_, num_velocities_, max_clique_size,
@@ -193,13 +191,12 @@ void PooledSapModel<T>::ResizeData(PooledSapData<T>* data) const {
 }
 
 template <typename T>
-void PooledSapModel<T>::CalcData(const VectorX<T>& v,
-                                 PooledSapData<T>* data) const {
+void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   // Set generalized velocities v
   data->v() = v;
 
   // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
-  typename PooledSapData<T>::Cache& cache = data->cache();
+  typename IcfData<T>::Cache& cache = data->cache();
   CalcMomentumTerms(*data, &cache);
 
   // Compute spatial velocities for all bodies.
@@ -229,7 +226,7 @@ void PooledSapModel<T>::CalcData(const VectorX<T>& v,
 
 template <typename T>
 std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
-PooledSapModel<T>::MakeHessian(const PooledSapData<T>& data) const {
+IcfModel<T>::MakeHessian(const IcfData<T>& data) const {
   auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
       sparsity_pattern());
   UpdateHessian(data, hessian.get());
@@ -237,8 +234,8 @@ PooledSapModel<T>::MakeHessian(const PooledSapData<T>& data) const {
 }
 
 template <typename T>
-void PooledSapModel<T>::UpdateHessian(
-    const PooledSapData<T>& data,
+void IcfModel<T>::UpdateHessian(
+    const IcfData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   hessian->SetZero();
 
@@ -256,7 +253,7 @@ void PooledSapModel<T>::UpdateHessian(
 }
 
 template <typename T>
-void PooledSapModel<T>::SetSparsityPattern() {
+void IcfModel<T>::SetSparsityPattern() {
   // N.B. we make a copy here because block_sizes will be moved into the
   // BlockSparsityPattern at the end of this function.
   std::vector<int> block_sizes = params().clique_sizes;
@@ -276,8 +273,8 @@ void PooledSapModel<T>::SetSparsityPattern() {
 }
 
 template <typename T>
-void PooledSapModel<T>::UpdateSearchDirection(
-    const PooledSapData<T>& data, const VectorX<T>& w,
+void IcfModel<T>::UpdateSearchDirection(
+    const IcfData<T>& data, const VectorX<T>& w,
     SearchDirectionData<T>* search_data) const {
   search_data->w.resize(num_velocities());
   search_data->U.Resize(num_bodies());
@@ -299,10 +296,9 @@ void PooledSapModel<T>::UpdateSearchDirection(
 }
 
 template <typename T>
-T PooledSapModel<T>::CalcCostAlongLine(
-    const T& alpha, const PooledSapData<T>& data,
-    const SearchDirectionData<T>& search_direction, T* dcost_dalpha,
-    T* d2cost_dalpha2) const {
+T IcfModel<T>::CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
+                                 const SearchDirectionData<T>& search_direction,
+                                 T* dcost_dalpha, T* d2cost_dalpha2) const {
   const T& a = search_direction.a;
   const T& b = search_direction.b;
   const T& c = search_direction.c;
@@ -374,7 +370,7 @@ T PooledSapModel<T>::CalcCostAlongLine(
 }
 
 template <typename T>
-void PooledSapModel<T>::UpdateTimeStep(const T& time_step) {
+void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   DRAKE_DEMAND(time_step > 0);
   const T old_time_step = this->time_step();
 
@@ -403,10 +399,10 @@ void PooledSapModel<T>::UpdateTimeStep(const T& time_step) {
   params_->time_step = time_step;
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel);
+    class ::drake::multibody::contact_solvers::icf::IcfModel);

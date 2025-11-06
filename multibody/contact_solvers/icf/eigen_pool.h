@@ -11,7 +11,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 // Differentiate between fixed size (e.g. Matrix3d) and dynamic size (e.g.
 // MatrixXd) Eigen types.
@@ -294,7 +294,7 @@ class EigenPool {
   Storage storage_;
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

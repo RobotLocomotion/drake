@@ -60,7 +60,7 @@ namespace contact_solvers {
 namespace pooled_sap {
 
 template <typename>
-class PooledSapBuilder;
+class IcfBuilder;
 
 }  // namespace pooled_sap
 }  // namespace contact_solvers
@@ -5834,7 +5834,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
 
   // Pooled sap builder and convex integrator get private acces
-  friend class contact_solvers::pooled_sap::PooledSapBuilder<T>;
+  friend class contact_solvers::pooled_sap::IcfBuilder<T>;
   friend class systems::ConvexIntegrator<T>;
 
   // This struct stores in one single place the index of all of our inputs.

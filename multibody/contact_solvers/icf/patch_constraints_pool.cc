@@ -9,13 +9,13 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 template <typename T>
 T SoftNorm(const Vector3<T>& x, const T& eps) {
@@ -155,7 +155,7 @@ T CalcDiscreteHuntCrossleyDerivative(const T& dt, const T& vn, const T& fe0,
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::Clear() {
+void IcfModel<T>::PatchConstraintsPool::Clear() {
   // Data per patch.
   num_pairs_.clear();
   num_cliques_.clear();
@@ -177,7 +177,7 @@ void PooledSapModel<T>::PatchConstraintsPool::Clear() {
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::Resize(
+void IcfModel<T>::PatchConstraintsPool::Resize(
     const std::vector<int>& num_pairs_per_patch) {
   num_pairs_ = num_pairs_per_patch;
 
@@ -213,10 +213,12 @@ void PooledSapModel<T>::PatchConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::SetPatch(
-    int patch_index, int bodyA, int bodyB, const T& dissipation,
-    const T& static_friction, const T& dynamic_friction,
-    const Vector3<T>& p_AB_W) {
+void IcfModel<T>::PatchConstraintsPool::SetPatch(int patch_index, int bodyA,
+                                                 int bodyB,
+                                                 const T& dissipation,
+                                                 const T& static_friction,
+                                                 const T& dynamic_friction,
+                                                 const Vector3<T>& p_AB_W) {
   DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
   DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
   DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
@@ -248,7 +250,7 @@ void PooledSapModel<T>::PatchConstraintsPool::SetPatch(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::SetPair(
+void IcfModel<T>::PatchConstraintsPool::SetPair(
     const int patch_index, const int pair_index, const Vector3<T>& p_BoC_W,
     const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
   DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
@@ -308,8 +310,8 @@ void PooledSapModel<T>::PatchConstraintsPool::SetPair(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::UpdateTimeStep(
-    const T& old_time_step, const T& time_step) {
+void IcfModel<T>::PatchConstraintsPool::UpdateTimeStep(const T& old_time_step,
+                                                       const T& time_step) {
   using std::max;
   const T ratio = time_step / old_time_step;
 
@@ -328,7 +330,7 @@ void PooledSapModel<T>::PatchConstraintsPool::UpdateTimeStep(
 }
 
 template <typename T>
-T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
+T IcfModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
     int p, int k, const Vector3<T>& v_AcBc_W, Vector3<T>* gamma_Bc_W,
     Matrix3<T>* G) const {
   const int pk = patch_pair_index(p, k);
@@ -385,7 +387,7 @@ T PooledSapModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::CalcConstraintVelocities(
+void IcfModel<T>::PatchConstraintsPool::CalcConstraintVelocities(
     const EigenPool<Vector6<T>>& V_WB_pool,
     EigenPool<Vector6<T>>* V_AbB_W_pool) const {
   DRAKE_ASSERT(V_WB_pool.size() == model().num_bodies());
@@ -419,7 +421,7 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcConstraintVelocities(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::CalcContactVelocities(
+void IcfModel<T>::PatchConstraintsPool::CalcContactVelocities(
     const EigenPool<Vector6<T>>& V_WB_pool,
     EigenPool<Vector3<T>>* v_AcBc_W_pool) const {
   for (int p = 0; p < num_patches(); ++p) {
@@ -455,7 +457,7 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcContactVelocities(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::CalcPatchQuantities(
+void IcfModel<T>::PatchConstraintsPool::CalcPatchQuantities(
     const EigenPool<Vector3<T>>& v_AcBc_W_pool, std::vector<T>* cost_pool,
     EigenPool<Vector6<T>>* spatial_impulses_pool,
     EigenPool<Matrix6<T>>* patch_hessians_pool) const {
@@ -495,7 +497,7 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcPatchQuantities(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::CalcData(
+void IcfModel<T>::PatchConstraintsPool::CalcData(
     const EigenPool<Vector6<T>>& V_WB,
     PatchConstraintsDataPool<T>* patch_data) const {
   CalcContactVelocities(V_WB, &patch_data->v_AcBc_W_pool());
@@ -506,7 +508,7 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcData(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::ProjectAlongLine(
+void IcfModel<T>::PatchConstraintsPool::ProjectAlongLine(
     const PatchConstraintsDataPool<T>& patch_data,
     const EigenPool<Vector6<T>>& U_WB_pool,
     EigenPool<Vector6<T>>* U_AbB_W_pool_ptr, T* dcost, T* d2cost) const {
@@ -532,8 +534,8 @@ void PooledSapModel<T>::PatchConstraintsPool::ProjectAlongLine(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
-    const PooledSapData<T>& data, VectorX<T>* gradient) const {
+void IcfModel<T>::PatchConstraintsPool::AccumulateGradient(
+    const IcfData<T>& data, VectorX<T>* gradient) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
@@ -574,8 +576,8 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
-    const PooledSapData<T>& data,
+void IcfModel<T>::PatchConstraintsPool::AccumulateHessian(
+    const IcfData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
@@ -673,7 +675,7 @@ void PooledSapModel<T>::PatchConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void PooledSapModel<T>::PatchConstraintsPool::CalcSparsityPattern(
+void IcfModel<T>::PatchConstraintsPool::CalcSparsityPattern(
     std::vector<std::vector<int>>* sparsity) const {
   for (int p = 0; p < num_patches(); ++p) {
     // We only need to add to the sparsity if body_a is not anchored.
@@ -691,12 +693,12 @@ void PooledSapModel<T>::PatchConstraintsPool::CalcSparsityPattern(
   }
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     double>::PatchConstraintsPool;
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     drake::AutoDiffXd>::PatchConstraintsPool;

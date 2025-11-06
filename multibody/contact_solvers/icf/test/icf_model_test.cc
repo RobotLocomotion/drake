@@ -10,8 +10,8 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 using drake::math::RigidTransformd;
 using Eigen::Matrix3d;
@@ -22,16 +22,16 @@ using Eigen::VectorXd;
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
 template <typename T>
-void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
+void MakeModel(IcfModel<T>* model, bool single_clique = false) {
   const double time_step = 0.01;
   const int nv = 18;
 
-  std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
+  std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
 
   params->time_step = time_step;
   params->v0 = VectorX<T>::Zero(nv);
@@ -110,7 +110,7 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   const T stiffness = 1.0e6;
   const T friction = 0.5;
 
-  typename PooledSapModel<T>::PatchConstraintsPool& patches =
+  typename IcfModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
   // Resize to hold three patches with one contact pair each.
@@ -161,8 +161,8 @@ void MakeModel(PooledSapModel<T>* model, bool single_clique = false) {
   model->SetSparsityPattern();
 }
 
-GTEST_TEST(PooledSapModel, Construction) {
-  PooledSapModel<double> model;
+GTEST_TEST(IcfModel, Construction) {
+  IcfModel<double> model;
   MakeModel(&model);
   EXPECT_EQ(model.num_bodies(), 4);
   EXPECT_EQ(model.num_cliques(), 3);
@@ -177,15 +177,15 @@ GTEST_TEST(PooledSapModel, Construction) {
   }
 }
 
-GTEST_TEST(PooledSapModel, CalcData) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, CalcData) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
   const int nv = model.num_velocities();
 
-  PooledSapData<AutoDiffXd> data;
+  IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -204,15 +204,15 @@ GTEST_TEST(PooledSapModel, CalcData) {
 }
 
 /* The Hessian has a single dense block (one clique). */
-GTEST_TEST(PooledSapModel, CalcDenseHessian) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, CalcDenseHessian) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, true /* single cliques */);
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
   const int nv = model.num_velocities();
 
-  PooledSapData<AutoDiffXd> data;
+  IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -245,15 +245,15 @@ GTEST_TEST(PooledSapModel, CalcDenseHessian) {
 
 /* Hessian has the sparsity structure inherited from the model (with multiple
  * cliques). */
-GTEST_TEST(PooledSapModel, CalcSparseHessian) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, CalcSparseHessian) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
   const int nv = model.num_velocities();
 
-  PooledSapData<AutoDiffXd> data;
+  IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -284,23 +284,23 @@ GTEST_TEST(PooledSapModel, CalcSparseHessian) {
                               MatrixCompareType::relative));
 }
 
-GTEST_TEST(PooledSapModel, SingleVsMultipleCliques) {
-  PooledSapModel<double> model_single;
+GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
+  IcfModel<double> model_single;
   MakeModel(&model_single, true);
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
   EXPECT_EQ(model_single.num_constraints(), 3);
 
-  PooledSapModel<double> model_multiple;
+  IcfModel<double> model_multiple;
   MakeModel(&model_multiple, false);
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
   EXPECT_EQ(model_multiple.num_constraints(), 3);
 
   // Allocate data.
-  PooledSapData<double> data_single;
+  IcfData<double> data_single;
   model_single.ResizeData(&data_single);
-  PooledSapData<double> data_multiple;
+  IcfData<double> data_multiple;
   model_multiple.ResizeData(&data_multiple);
 
   // Compute data.
@@ -318,14 +318,14 @@ GTEST_TEST(PooledSapModel, SingleVsMultipleCliques) {
                               MatrixCompareType::relative));
 }
 
-GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
-  PooledSapModel<double> model;
+GTEST_TEST(IcfModel, LimitMallocOnCalcData) {
+  IcfModel<double> model;
   MakeModel(&model, false /* each body in its own clique */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  PooledSapData<double> data;
+  IcfData<double> data;
   model.ResizeData(&data);
 
   const int nv = model.num_velocities();
@@ -339,15 +339,15 @@ GTEST_TEST(PooledSapModel, LimitMallocOnCalcData) {
   }
 }
 
-GTEST_TEST(PooledSapModel, CostAlongLine) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, CostAlongLine) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* Multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
   // Allocate data, and additional scratch.
-  PooledSapData<AutoDiffXd> data, scratch;
+  IcfData<AutoDiffXd> data, scratch;
   model.ResizeData(&data);
   model.ResizeData(&scratch);
 
@@ -394,14 +394,14 @@ GTEST_TEST(PooledSapModel, CostAlongLine) {
   }
 }
 
-GTEST_TEST(PooledSapModel, GainConstraint) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, GainConstraint) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  PooledSapData<AutoDiffXd> data;
+  IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -519,14 +519,14 @@ GTEST_TEST(PooledSapModel, GainConstraint) {
                               MatrixCompareType::relative));
 }
 
-GTEST_TEST(PooledSapModel, LimitConstraint) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, LimitConstraint) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  PooledSapData<AutoDiffXd> data;
+  IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -618,14 +618,14 @@ GTEST_TEST(PooledSapModel, LimitConstraint) {
                               MatrixCompareType::relative));
 }
 
-GTEST_TEST(PooledSapModel, CouplerConstraint) {
-  PooledSapModel<AutoDiffXd> model;
+GTEST_TEST(IcfModel, CouplerConstraint) {
+  IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 3);
 
-  PooledSapData<AutoDiffXd> data;
+  IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), model.num_constraints());
@@ -724,7 +724,7 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
   EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], 100 * kEps);
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

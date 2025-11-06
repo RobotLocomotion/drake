@@ -5,28 +5,28 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/pooled_sap/coupler_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/gain_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/limit_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 /**
- * Data for the SAP problem minᵥ ℓ(v; q₀, v₀, δt).
+ * Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
  *
  * This class stores all data that depends on the current generalized velocity
  * v, and therefore changes at each solver iteration. That is in contrast with
- * PooledSapModel, which changes with (q₀, v₀, δt) but remains constant for
- * different values of v during the optimization process.
+ * IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
+ * values of v during the optimization process.
  */
 template <typename T>
-class PooledSapData {
+class IcfData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PooledSapData);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfData);
 
   // The cache holds quantities that are computed from v, so they can be reused.
   struct Cache {
@@ -135,7 +135,7 @@ class PooledSapData {
   };
 
   /* Default constructor for empty data. */
-  PooledSapData() = default;
+  IcfData() = default;
 
   /**
    * Resizes the data to accommodate the given problem, typically called at the
@@ -193,7 +193,7 @@ class PooledSapData {
   VectorX<T> v_;  // Generalized velocities.
   Cache cache_;   // All other quantities that are computed from v.
 
-  // We allow PooledSapModel methods to write on the scratch as needed.
+  // We allow IcfModel methods to write on the scratch as needed.
   mutable Scratch scratch_;
 };
 
@@ -210,7 +210,7 @@ struct SearchDirectionData {
   EigenPool<Vector6<T>> U;  // U = J⋅w.
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

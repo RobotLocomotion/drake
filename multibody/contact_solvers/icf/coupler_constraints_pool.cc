@@ -8,16 +8,16 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::Clear() {
+void IcfModel<T>::CouplerConstraintsPool::Clear() {
   constraint_to_clique_.clear();
   dofs_.clear();
   gear_ratio_.clear();
@@ -26,8 +26,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::Clear() {
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::Resize(
-    const int num_constraints) {
+void IcfModel<T>::CouplerConstraintsPool::Resize(const int num_constraints) {
   constraint_to_clique_.resize(num_constraints);
   dofs_.resize(num_constraints);
   gear_ratio_.resize(num_constraints);
@@ -36,10 +35,9 @@ void PooledSapModel<T>::CouplerConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::Set(int index, int clique,
-                                                    int i, int j, const T& qi,
-                                                    const T& qj, T gear_ratio,
-                                                    T offset) {
+void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
+                                              int j, const T& qi, const T& qj,
+                                              T gear_ratio, T offset) {
   DRAKE_ASSERT(index >= 0 && index < num_constraints());
   DRAKE_ASSERT(i >= 0 && i < model().clique_size(clique));
   DRAKE_ASSERT(j >= 0 && j < model().clique_size(clique));
@@ -66,8 +64,8 @@ void PooledSapModel<T>::CouplerConstraintsPool::Set(int index, int clique,
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::UpdateTimeStep(const T& old_dt,
-                                                               const T& dt) {
+void IcfModel<T>::CouplerConstraintsPool::UpdateTimeStep(const T& old_dt,
+                                                         const T& dt) {
   const T ratio = old_dt / dt;
   for (int k = 0; k < num_constraints(); ++k) {
     v_hat_[k] *= ratio;
@@ -75,7 +73,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::UpdateTimeStep(const T& old_dt,
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::CalcData(
+void IcfModel<T>::CouplerConstraintsPool::CalcData(
     const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
   DRAKE_ASSERT(coupler_data != nullptr);
 
@@ -101,8 +99,8 @@ void PooledSapModel<T>::CouplerConstraintsPool::CalcData(
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::AccumulateGradient(
-    const PooledSapData<T>& data, VectorX<T>* gradient) const {
+void IcfModel<T>::CouplerConstraintsPool::AccumulateGradient(
+    const IcfData<T>& data, VectorX<T>* gradient) const {
   const CouplerConstraintsDataPool<T>& coupler_data =
       data.cache().coupler_constraints_data;
 
@@ -124,8 +122,8 @@ void PooledSapModel<T>::CouplerConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::AccumulateHessian(
-    const PooledSapData<T>& data,
+void IcfModel<T>::CouplerConstraintsPool::AccumulateHessian(
+    const IcfData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   unused(data);
 
@@ -145,7 +143,7 @@ void PooledSapModel<T>::CouplerConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void PooledSapModel<T>::CouplerConstraintsPool::ProjectAlongLine(
+void IcfModel<T>::CouplerConstraintsPool::ProjectAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
     T* dcost, T* d2cost) const {
   *dcost = 0.0;
@@ -168,12 +166,12 @@ void PooledSapModel<T>::CouplerConstraintsPool::ProjectAlongLine(
   }
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     double>::CouplerConstraintsPool;
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     drake::AutoDiffXd>::CouplerConstraintsPool;

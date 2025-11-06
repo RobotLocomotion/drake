@@ -11,13 +11,13 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 // Represent a linear feedback law of the form
 //   τ = −K⋅v + b,
@@ -34,17 +34,17 @@ struct LinearFeedbackGains {
 };
 
 template <typename T>
-class PooledSapBuilder {
+class IcfBuilder {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PooledSapBuilder);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfBuilder);
 
-  explicit PooledSapBuilder(const MultibodyPlant<T>& plant);
+  explicit IcfBuilder(const MultibodyPlant<T>& plant);
 
-  PooledSapBuilder(const MultibodyPlant<T>& plant,
-                   const systems::Context<T>& context);
+  IcfBuilder(const MultibodyPlant<T>& plant,
+             const systems::Context<T>& context);
 
   /**
-   * Update the given PooledSapModel to represent the SAP problem
+   * Update the given IcfModel to represent the ICF problem
    *
    *     min ℓ(v; q₀, v₀, δt)
    *
@@ -54,21 +54,21 @@ class PooledSapBuilder {
    * actuation forces τ = clamp(-Kᵤ⋅v + b, e).
    * @param external_feedback Optional linearization data (Kₑ, bₑ) for external
    * forces τ = -Kₑ⋅v + bₑ.
-   * @param model The PooledSapModel to update.
+   * @param model The IcfModel to update.
    */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    std::optional<LinearFeedbackGains<T>> actuation_feedback,
                    std::optional<LinearFeedbackGains<T>> external_feedback,
-                   PooledSapModel<T>* model);
+                   IcfModel<T>* model);
 
   // Ignore actuation and external force constraints.
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
-                   PooledSapModel<T>* model) {
+                   IcfModel<T>* model) {
     UpdateModel(context, time_step, std::nullopt, std::nullopt, model);
   }
 
   // Only update the time step δt. All other model data remains unchanged.
-  void UpdateModel(const T& time_step, PooledSapModel<T>* model) const;
+  void UpdateModel(const T& time_step, IcfModel<T>* model) const;
 
  private:
   // Compute geometry data and store it internally for later use
@@ -76,40 +76,40 @@ class PooledSapBuilder {
 
   // Allocate space for both point contact and hydroelastic contact constraints
   // @pre Geometry contact data has already been computed
-  void AllocatePatchConstraints(PooledSapModel<T>* model) const;
+  void AllocatePatchConstraints(IcfModel<T>* model) const;
 
   // Set point contact constraints in the model
   void SetPatchConstraintsForPointContact(const systems::Context<T>& context,
-                                          PooledSapModel<T>* model) const;
+                                          IcfModel<T>* model) const;
 
   // Set hydroelastic contact constraints in the model
   void SetPatchConstraintsForHydroelasticContact(
-      const systems::Context<T>& context, PooledSapModel<T>* model) const;
+      const systems::Context<T>& context, IcfModel<T>* model) const;
 
   // Coupler constraints
-  void AllocateCouplerConstraints(PooledSapModel<T>* model) const;
+  void AllocateCouplerConstraints(IcfModel<T>* model) const;
   void SetCouplerConstraints(const systems::Context<T>& context,
-                             PooledSapModel<T>* model) const;
+                             IcfModel<T>* model) const;
 
   // Joint limit constraints
-  void AllocateLimitConstraints(PooledSapModel<T>* model) const;
+  void AllocateLimitConstraints(IcfModel<T>* model) const;
   void SetLimitConstraints(const systems::Context<T>& context,
-                           PooledSapModel<T>* model) const;
+                           IcfModel<T>* model) const;
 
   // Allocate space for gain constraints. We assume that external force
   // constraints come first, followed by actuator constraints.
-  void AllocateGainConstraints(PooledSapModel<T>* model, bool actuation,
+  void AllocateGainConstraints(IcfModel<T>* model, bool actuation,
                                bool external_forces) const;
 
   // External force constraints τ = −Kₑ⋅v + bₑ, where Kₑ is diagonal and >= 0.
   void SetExternalGainConstraints(const VectorX<T>& Ke, const VectorX<T>& be,
-                                  PooledSapModel<T>* model) const;
+                                  IcfModel<T>* model) const;
 
   // Actuation constraints τ = clamp(−Kᵤ⋅v + bᵤ, e), where Kᵤ is diagonal
   // and >= 0. Note that effort limits e are enforced here.
   void SetActuationGainConstraints(const VectorX<T>& Ku, const VectorX<T>& bu,
                                    bool has_external_forces,
-                                   PooledSapModel<T>* model) const;
+                                   IcfModel<T>* model) const;
 
   // The multibody plant used to build the model.
   const MultibodyPlant<T>& plant() const { return *plant_; }
@@ -153,10 +153,10 @@ class PooledSapBuilder {
   mutable Scratch scratch_;
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::pooled_sap::PooledSapBuilder);
+    class ::drake::multibody::contact_solvers::icf::IcfBuilder);

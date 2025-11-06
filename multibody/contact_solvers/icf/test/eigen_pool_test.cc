@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 
 #include <utility>
 #include <vector>
@@ -17,7 +17,7 @@ using std::vector;
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 const Eigen::Matrix3d S33 =
     (Eigen::Matrix3d() << 4, 1, 2, 1, 5, 3, 2, 3, 6).finished();
@@ -122,7 +122,7 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixWithFixedRows) {
   }
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
