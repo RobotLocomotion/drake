@@ -1,7 +1,6 @@
 ---------- Provisioned ----------
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-release please
-@drake-jenkins-bot linux-jammy-experimental-cache-server-health-check please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-jammy-gcc-bazel-experimental-release please
 @drake-jenkins-bot linux-jammy-gcc-cmake-experimental-everything-release please
@@ -19,6 +18,7 @@
 @drake-jenkins-bot linux-noble-clang-bazel-experimental-thread-sanitizer please
 @drake-jenkins-bot linux-noble-clang-bazel-experimental-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please
+@drake-jenkins-bot linux-noble-experimental-cache-server-health-check please
 @drake-jenkins-bot linux-noble-gcc-bazel-experimental-coverage please
 @drake-jenkins-bot linux-noble-gcc-bazel-experimental-debug please
 @drake-jenkins-bot linux-noble-gcc-bazel-experimental-everything-debug please
