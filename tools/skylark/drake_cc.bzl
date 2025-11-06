@@ -65,6 +65,11 @@ GCC_FLAGS = CXX_FLAGS + [
     "-Wno-missing-field-initializers",
 ]
 
+# The CC_TEST_FLAGS will be enabled for all cc_test rules in the project.
+CC_TEST_FLAGS = [
+    "-Wno-sign-compare",
+]
+
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
 # when building with gcc.
 GCC_CC_TEST_FLAGS = [
@@ -133,10 +138,11 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
         # In the case of no special arguments at all, we can save Bazel the
         # hassle of concatenating a bunch of empty stuff.
         return BASE_COPTS
-    test_gcc_copts = GCC_CC_TEST_FLAGS if cc_test else []
+    test_gcc_copts = (CC_TEST_FLAGS + GCC_CC_TEST_FLAGS) if cc_test else []
+    test_clang_copts = CC_TEST_FLAGS if cc_test else []
     return BASE_COPTS + rule_copts + select({
         "//tools/cc_toolchain:gcc": rule_gcc_copts + test_gcc_copts,
-        "//tools/cc_toolchain:clang": rule_clang_copts,
+        "//tools/cc_toolchain:clang": rule_clang_copts + test_clang_copts,
         "//conditions:default": [],
     })
 
