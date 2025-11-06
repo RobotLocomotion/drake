@@ -10,6 +10,18 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "contact_defaults_doxygen.h",
+        "contact_model_doxygen.h",
+        "hydroelastic_parameters_doxygen.h",
+        "simulation_and_solvers_doxygen.h",
+    ],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "plant",
     visibility = ["//visibility:public"],

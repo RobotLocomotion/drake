@@ -7,6 +7,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+SuperNodalSolver::~SuperNodalSolver() = default;
+
 void SuperNodalSolver::SetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
   bool weight_matrix_compatible = DoSetWeightMatrix(weight_matrix);

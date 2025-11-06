@@ -8,6 +8,9 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
+LinearOperator<T>::~LinearOperator() = default;
+
+template <typename T>
 void LinearOperator<T>::DoMultiplyByTranspose(
     const Eigen::Ref<const Eigen::SparseVector<T>>&,
     Eigen::SparseVector<T>*) const {

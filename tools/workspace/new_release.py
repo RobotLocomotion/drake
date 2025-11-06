@@ -75,6 +75,7 @@ _IGNORED_REPOSITORIES = [
 # print a reminder to manually check for upgrades.
 _OTHER_REPOSITORIES = [
     "python",
+    "doxygen_internal",
 ]
 
 # For these repositories, ignore any tags that match the specified regex.
