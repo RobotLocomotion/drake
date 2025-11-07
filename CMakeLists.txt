@@ -824,7 +824,6 @@ configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
 configure_file(cmake/BUILD.bazel.in drake_build_cwd/BUILD.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" drake_build_cwd/.bazelversion SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/tools/workspace/rules_cc/patches/upstream/pr456.patch" drake_build_cwd/pr456.patch SYMBOLIC)
 
 find_package(Git)
 

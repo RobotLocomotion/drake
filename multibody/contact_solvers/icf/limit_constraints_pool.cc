@@ -76,7 +76,7 @@ void IcfModel<T>::LimitConstraintsPool::Set(int index, int clique, int dof,
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
                                                        const T& new_dt) {
-  const T ratio = new_dt / old_dt;
+  const T ratio = old_dt / new_dt;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     const int nv = model().clique_size(c);

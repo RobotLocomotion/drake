@@ -730,7 +730,11 @@ Raises:
     ``convex_sets_A`` and ``convex_sets_B``.
 
 Raises:
-    if ``convex_sets_A`` or ``convex_sets_B`` are empty.)""";
+    if ``convex_sets_A`` or ``convex_sets_B`` are empty.
+
+Raises:
+    if any entry of ``convex_sets_A`` or ``convex_sets_B`` is a
+    nullptr.)""";
           // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_6args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B_parallelism =
 R"""(Overload of ``ComputePairwiseIntersections`` allowing the user to
@@ -759,7 +763,11 @@ Raises:
 
 Raises:
     if not all entries of ``convex_sets_A``, `convex_sets_B`,
-    ``bboxes_A``, and ``bboxes_B`` have the same ambient dimension.)""";
+    ``bboxes_A``, and ``bboxes_B`` have the same ambient dimension.
+
+Raises:
+    if any entry of ``convex_sets_A`` or ``convex_sets_B`` is a
+    nullptr.)""";
           // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_4args_convex_sets_continuous_revolute_joints_preprocess_bbox_parallelism =
 R"""(Convenience overload to compute pairwise intersections within a list
@@ -791,7 +799,10 @@ Raises:
     ``convex_sets``.
 
 Raises:
-    if ``convex_sets`` is empty.)""";
+    if ``convex_sets`` is empty.
+
+Raises:
+    if any entry of ``convex_sets`` is a nullptr.)""";
           // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_4args_convex_sets_continuous_revolute_joints_bboxes_parallelism =
 R"""(Overload of ``ComputePairwiseIntersections`` allowing the user to
@@ -812,7 +823,10 @@ Raises:
 
 Raises:
     if not all entries of ``convex_sets`` and ``bboxes`` have the same
-    ambient dimension.)""";
+    ambient dimension.
+
+Raises:
+    if any entry of ``convex_sets`` is a nullptr.)""";
         } ComputePairwiseIntersections;
         // Symbol: drake::geometry::optimization::ConvexHull
         struct /* ConvexHull */ {
@@ -4937,7 +4951,10 @@ Raises:
 
 Raises:
     RuntimeError if continuous_revolute_joints has repeated entries,
-    or if any entry is outside the interval [0, ambient_dimension).)""";
+    or if any entry is outside the interval [0, ambient_dimension).
+
+Raises:
+    if any entry of ``convex_sets`` is a nullptr.)""";
         } PartitionConvexSet;
         // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries
         struct /* PlaneSeparatesGeometries */ {

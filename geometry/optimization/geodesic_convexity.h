@@ -124,7 +124,9 @@ ambient_dimension.
 @throws std::exception if any input convex set is unbounded along dimensions
 corresponding to continuous revolute joints.
 @throws std::exception if continuous_revolute_joints has repeated entries, or if
-any entry is outside the interval [0, ambient_dimension). */
+any entry is outside the interval [0, ambient_dimension).
+@throws if any entry of `convex_sets` is a nullptr.
+*/
 geometry::optimization::ConvexSets PartitionConvexSet(
     const geometry::optimization::ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
@@ -158,6 +160,7 @@ to compute those bounding boxes.
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets_A` and `convex_sets_B`.
 @throws if `convex_sets_A` or `convex_sets_B` are empty.
+@throws if any entry of `convex_sets_A` or `convex_sets_B` is a nullptr.
 */
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
@@ -180,7 +183,9 @@ AABBs corresponding to the sets in `convex_sets_A` (and likewise for bboxes_B).
 @throws if `convex_sets_A.size() != bboxes_A.size()`
 @throws if `convex_sets_B.size() != bboxes_B.size()`
 @throws if not all entries of `convex_sets_A`, `convex_sets_B`, `bboxes_A`, and
-`bboxes_B` have the same ambient dimension. */
+`bboxes_B` have the same ambient dimension.
+@throws if any entry of `convex_sets_A` or `convex_sets_B` is a nullptr.
+*/
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
@@ -207,6 +212,7 @@ to solve an optimization problem.
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
 ambient dimension of the convex sets in `convex_sets`.
 @throws if `convex_sets` is empty.
+@throws if any entry of `convex_sets` is a nullptr.
 */
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets,
@@ -225,7 +231,9 @@ corresponding to the sets in `convex_sets`.
 
 @throws if `convex_sets.size() != bboxes.size()`
 @throws if not all entries of `convex_sets` and `bboxes` have the same
-ambient dimension.*/
+ambient dimension.
+@throws if any entry of `convex_sets` is a nullptr.
+*/
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(
     const ConvexSets& convex_sets,
