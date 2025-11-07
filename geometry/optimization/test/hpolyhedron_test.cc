@@ -1925,6 +1925,18 @@ GTEST_TEST(HPolyhedronTest, NoHyperplaneFindRedundant) {
   EXPECT_TRUE(redundant_indices.empty());
 }
 
+GTEST_TEST(HPolyhedronTest, ZeroDimFindRedundant) {
+  const int num_planes = 100;
+  const Eigen::MatrixXd A(num_planes, 0);
+  const Eigen::VectorXd b = Eigen::VectorXd::Ones(num_planes);
+  const HPolyhedron H(A, b);
+  std::set<int> redundant_indices = H.FindRedundant(1e-8);
+  EXPECT_EQ(redundant_indices.size(), num_planes);
+  for (int i = 0; i < num_planes; ++i) {
+    EXPECT_TRUE(redundant_indices.find(i) != redundant_indices.end());
+  }
+}
+
 GTEST_TEST(HPolyhedronTest, NoHyperplaneReduceInequalities) {
   const int ambient_dim = 3;
   const HPolyhedron H = NoHyperplaneHPolyhedron(ambient_dim);
