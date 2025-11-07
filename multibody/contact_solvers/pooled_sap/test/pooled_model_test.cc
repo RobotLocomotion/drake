@@ -692,8 +692,6 @@ GTEST_TEST(PooledSapModel, CouplerConstraint) {
                               MatrixCompareType::relative));
 
   const double gamma = couplers_data.gamma(0).value();
-  fmt::print("gamma = {}\n", gamma);
-  fmt::print("gamma0 = {}\n", gamma0.value());
   EXPECT_NEAR(gamma, gamma0.value(), std::abs(gamma) * kEps);
 
   // Verify contributions to Hessian.
