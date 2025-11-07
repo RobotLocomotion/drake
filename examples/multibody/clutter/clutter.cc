@@ -10,7 +10,10 @@
 #include <vector>
 
 #include <gflags/gflags.h>
+
+#ifndef __APPLE__
 #include <valgrind/callgrind.h>
+#endif
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
@@ -635,11 +638,15 @@ int do_main() {
 
   clock::time_point sim_start_time = clock::now();
 
+#ifndef __APPLE__
   CALLGRIND_START_INSTRUMENTATION;
   // CALLGRIND_TOGGLE_COLLECT;  // Start collection
+#endif
   simulator->AdvanceTo(FLAGS_simulation_time);
+#ifndef __APPLE__
   // CALLGRIND_TOGGLE_COLLECT;  // Stop collection
   CALLGRIND_STOP_INSTRUMENTATION;
+#endif
 
   clock::time_point sim_end_time = clock::now();
   const double sim_time =

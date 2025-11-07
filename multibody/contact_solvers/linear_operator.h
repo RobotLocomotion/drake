@@ -43,7 +43,7 @@ class LinearOperator {
   // Creates an operator with a given `name`.
   explicit LinearOperator(const std::string& name) : name_(name) {}
 
-  virtual ~LinearOperator() = default;
+  virtual ~LinearOperator();
 
   const std::string& name() const { return name_; }
   virtual int rows() const = 0;

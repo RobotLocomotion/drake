@@ -16,20 +16,13 @@ bazel_dep(name = "apple_support", version = "1.24.3")  # Keep this in sync with 
 bazel_dep(name = "bazel_features", version = "1.38.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.2.13")
+bazel_dep(name = "rules_cc", version = "0.2.14")
 bazel_dep(name = "rules_java", version = "8.16.1")
 bazel_dep(name = "rules_jvm_external", version = "6.8")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "1.6.3")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.67.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
-
-single_version_override(
-    module_name = "rules_cc",
-    patches = [
-        "@drake//tools/workspace/rules_cc:patches/upstream/pr456.patch",
-    ],
-)
 
 # Customize our toolchains.
 
@@ -83,14 +76,14 @@ single_version_override(
 # For first-party Bazel builds (by Drake Developers), the non-module flavor
 # is used by default.
 
-bazel_dep(name = "glib", version = "2.82.2.bcr.5", repo_name = "module_glib")
+bazel_dep(name = "glib", version = "2.82.2.bcr.6", repo_name = "module_glib")
 bazel_dep(name = "zlib", version = "1.3.1.bcr.7", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
 bazel_dep(name = "libx11", version = "1.8.12.bcr.4")
 bazel_dep(name = "nasm", version = "2.16.03.bcr.2")
-bazel_dep(name = "patchelf", version = "0.18.0")
+bazel_dep(name = "patchelf", version = "0.18.0.bcr.1")
 bazel_dep(name = "toolchains_llvm", version = "1.5.0")
 
 llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
@@ -200,6 +193,8 @@ bazel_dep(
 single_version_override(
     module_name = "googletest",
     patches = [
+        "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
+        "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
         "//tools/workspace/googletest:patches/add_printers_deps.patch",
         "//tools/workspace/googletest:patches/defines.patch",
