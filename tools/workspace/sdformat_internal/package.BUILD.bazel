@@ -263,6 +263,7 @@ cc_library_vendored(
         for x in _HDRS
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     copts = ["-w"],
     defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
     linkstatic = 1,
