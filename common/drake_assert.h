@@ -6,6 +6,10 @@
 #include <type_traits>
 #include <utility>
 
+// TODO(PR): Delete me; this currently supports the dumb version of
+// ConditionDetailName.
+#include <fmt/format.h>
+
 /// @file
 /// Provides Drake's assertion mechanics. They come in two flavors:
 ///   - Double checking developer assumptions
@@ -201,6 +205,16 @@ std::string StringifyErrorDetailValue(const T& value)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
            is_printable_string_v<T>);
 
+// Sometimes, names may come in wrapped (e.g., fmt_eigen(x)). This function
+// provides the opportunity to strip out any such cruft. The default behavior
+// does nothing. Overloads which narrow on the associated value (T) can provide
+// bespoke functionality.
+template <typename T>
+std::string ConditionDetailName(const char* name) {
+  // return fmt::format("'{}' - {}", typeid(T).name(), name);
+  return std::string(name);
+}
+
 // The collection of optional name-value pairs passed to DRAKE_THROW_UNLESS.
 // The values are stored as their `std::string` representations.
 //
@@ -208,7 +222,10 @@ std::string StringifyErrorDetailValue(const T& value)
 // front of the array, and the first null-valued const char* indicates the end
 // of the list (if there are fewer than four).
 struct ThrowValuesBuf {
-  std::array<std::pair<const char*, std::string>, 4> values;
+  // TODO(PR): The key could be a string_view, I believe, but only so far as
+  // ConditionDetailName only returns a contiguous subset of the original
+  // expression string.
+  std::array<std::pair<std::string, std::string>, 4> values;
 };
 
 // Throw an error message.
@@ -230,7 +247,10 @@ template <typename... NamesAndValues>
   auto name_and_value =
       std::forward_as_tuple(std::forward<NamesAndValues>(names_and_values)...);
   [&]<size_t... I>(std::integer_sequence<size_t, I...>&&) {
-    (((buffer.values[I].first = std::get<2 * I>(name_and_value),
+    (((buffer.values[I].first =
+           // The template parameter in this context seems to be failing.
+       ConditionDetailName<decltype(std::get<2 * I + 1>(name_and_value))>(
+           std::get<2 * I>(name_and_value)),
        buffer.values[I].second =
            StringifyErrorDetailValue(std::get<2 * I + 1>(name_and_value))),
       ...));

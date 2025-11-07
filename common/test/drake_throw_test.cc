@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -60,6 +61,21 @@ GTEST_TEST(DrakeThrowTest, ThrowWithValues) {
   DRAKE_EXPECT_THROWS_MESSAGE(do_throw(3), ".*a = 1.5, b = 2.5, c = 3.5.");
   DRAKE_EXPECT_THROWS_MESSAGE(do_throw(4),
                               ".*a = 1.5, b = 2.5, c = 3.5, d = 4.5.");
+}
+
+GTEST_TEST(DrakeThrowTest, ConditionKey) {
+  using drake::internal::ConditionDetailName;
+  using drake::internal::fmt_eigen_ref;
+  EXPECT_EQ(ConditionDetailName<double>("my_double"), "my_double");
+  EXPECT_EQ(ConditionDetailName<float>("my_float"), "my_float");
+  EXPECT_EQ(ConditionDetailName<int>("my_int"), "my_int");
+  EXPECT_EQ(ConditionDetailName<std::string>("my_string"), "my_string");
+  EXPECT_EQ(ConditionDetailName<fmt_eigen_ref<double>>("fmt_eigen(x)"), "x");
+  EXPECT_EQ(ConditionDetailName<fmt_eigen_ref<double>>("x"), "x");
+  EXPECT_EQ(ConditionDetailName<fmt_eigen_ref<int>>("fmt_eigen(x)"), "x");
+  // If it is a fmt_eigen with an unsupported Scalar, the name is unchanged.
+  EXPECT_EQ(ConditionDetailName<fmt_eigen_ref<int16_t>>("fmt_eigen(x)"),
+            "fmt_eigen(x)");
 }
 
 // Confirms that the overload defined in fmt_eigen.h plays properly with the

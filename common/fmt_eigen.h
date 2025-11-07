@@ -27,20 +27,54 @@ std::string FormatEigenMatrix(
   requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
            std::is_same_v<Scalar, std::string>;
 
+/* Type trait for supporting the use of fmt_eigen(x) in DRAKE_THROW_UNLESS. This
+is the set of scalar types that are supported (have been explicitly instantiated
+in fmt_eigen.cc). The set is arbitrarily chosen as the scalar types tested in
+fmt_eigen.cc. */
+template <typename T>
+using is_fmt_eigen_drake_throw_scalar =
+    std::disjunction<std::is_same<std::remove_cvref_t<T>, double>,
+                     std::is_same<std::remove_cvref_t<T>, float>,
+                     std::is_same<std::remove_cvref_t<T>, int>,
+                     std::is_same<std::remove_cvref_t<T>, std::string>>;
+
+/* Type trait to determine if T is a fmt_eigen_ref with a scalar type supported
+by DRAKE_THROW_UNLESS(). See below for more. */
+template <typename T, typename Enable = void>
+struct is_fmt_eigen_ref : std::false_type {};
+
+/* Support for fmt_eigen_ref<ScalarType>. */
+template <typename ScalarType>
+struct is_fmt_eigen_ref<fmt_eigen_ref<ScalarType>,
+                        typename std::enable_if_t<
+                            is_fmt_eigen_drake_throw_scalar<ScalarType>::value>>
+    : std::true_type {};
+
+/* Support for const fmt_eigen_ref<ScalarType>. */
+template <typename ScalarType>
+struct is_fmt_eigen_ref<const fmt_eigen_ref<ScalarType>,
+                        typename std::enable_if_t<
+                            is_fmt_eigen_drake_throw_scalar<ScalarType>::value>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool is_fmt_eigen_ref_v = is_fmt_eigen_ref<T>::value;
+
 /* Provides _limited_ support for `fmt_eigen(x)` in
 `DRAKE_THROW_UNLESS(condition, fmt_eigen(x))`. This is an overload of
 `StringifyErrorDetailValue()` (as declared in drake_assert.h) for fmt_eigen_ref.
 
-The support is considered limited in that this only supports certain Scalar
-types, whereas fmt_eigen_ref supports any Scalar type that can be passed to
-fmt::to_string().
-
-Note: the supported types are, arbitrarily, those tested in fmt_eigen_test.cc.
-*/
+The support is considered limited in the supported scalar types (see
+is_fmt_eigen_ref). */
 template <typename Scalar>
 std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value)
-  requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
-           std::is_same_v<Scalar, int> || std::is_same_v<Scalar, std::string>;
+  requires is_fmt_eigen_drake_throw_scalar<Scalar>::value;
+
+/* Provides formatting support when using fmt_eigen() in DRAKE_THROW_UNLESS.
+This overrides the default behavior defined in drake_assert.h. */
+template <typename T>
+std::string ConditionDetailName(const char* name)
+  requires is_fmt_eigen_ref_v<T>;
 
 }  // namespace internal
 

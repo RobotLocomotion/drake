@@ -80,26 +80,58 @@ GTEST_TEST(FmtEigenTest, MatrixString) {
 
 // Regression against the set of supported Scalar types.
 GTEST_TEST(FmtEigenTest, StringifyErrorDetailValue) {
+  using internal::StringifyErrorDetailValue;
   {
     Eigen::VectorX<double> v(1);
     v << 1.5;
-    EXPECT_NO_THROW(internal::StringifyErrorDetailValue(fmt_eigen(v)));
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
   }
   {
     Eigen::VectorX<float> v(1);
     v << 1.5f;
-    EXPECT_NO_THROW(internal::StringifyErrorDetailValue(fmt_eigen(v)));
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
   }
   {
     Eigen::VectorX<int> v(1);
     v << 15;
-    EXPECT_NO_THROW(internal::StringifyErrorDetailValue(fmt_eigen(v)));
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
   }
   {
     Eigen::VectorX<std::string> v(1);
     v << "1.5";
-    EXPECT_NO_THROW(internal::StringifyErrorDetailValue(fmt_eigen(v)));
+    EXPECT_NO_THROW(StringifyErrorDetailValue(fmt_eigen(v)));
   }
+}
+
+GTEST_TEST(FmtEigenTest, ConditionDetailName) {
+  using internal::ConditionDetailName;
+  using internal::fmt_eigen_ref;
+  {
+    const char* name = "fmt_eigen(my_matrix)";
+    const std::string conditioned_name =
+        ConditionDetailName<fmt_eigen_ref<double>>(name);
+    EXPECT_EQ(conditioned_name, "my_matrix");
+  }
+  {
+    const char* name = "drake::fmt_eigen(my_matrix)";
+    const std::string conditioned_name =
+        ConditionDetailName<fmt_eigen_ref<double>>(name);
+    EXPECT_EQ(conditioned_name, "my_matrix");
+  }
+  {
+    const char* name = "some_other_name";
+    const std::string conditioned_name =
+        ConditionDetailName<fmt_eigen_ref<double>>(name);
+    EXPECT_EQ(conditioned_name, "some_other_name");
+  }
+  // Finally, regression against all the _other_ supported scalar types.
+  EXPECT_NO_THROW(ConditionDetailName<fmt_eigen_ref<float>>("test"));
+  EXPECT_NO_THROW(ConditionDetailName<fmt_eigen_ref<int>>("test"));
+  EXPECT_NO_THROW(ConditionDetailName<fmt_eigen_ref<std::string>>("test"));
+  EXPECT_NO_THROW(ConditionDetailName<const fmt_eigen_ref<float>>("test"));
+  EXPECT_NO_THROW(ConditionDetailName<const fmt_eigen_ref<int>>("test"));
+  EXPECT_NO_THROW(
+      ConditionDetailName<const fmt_eigen_ref<std::string>>("test"));
 }
 
 }  // namespace

@@ -34,10 +34,22 @@ std::string FormatEigenMatrix(const FormatterEigenRef<Scalar>& matrix)
 
 template <typename Scalar>
 std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value)
-  requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
-           std::is_same_v<Scalar, int> || std::is_same_v<Scalar, std::string>
+  requires is_fmt_eigen_drake_throw_scalar<Scalar>::value
 {
   return fmt::to_string(value);
+}
+
+template <typename T>
+std::string ConditionDetailName(const char* name)
+  requires is_fmt_eigen_ref_v<T>
+{
+  std::string_view name_sv(name);
+  if (name_sv.starts_with("fmt_eigen(")) {
+    return std::string(name_sv.begin() + 10, name_sv.end() - 1);
+  } else if (name_sv.starts_with("drake::fmt_eigen(")) {
+    return std::string(name_sv.begin() + 17, name_sv.end() - 1);
+  }
+  return std::string(name);
 }
 
 // Explicitly instantiate for the allowed scalar types in our header.
@@ -55,6 +67,22 @@ template std::string StringifyErrorDetailValue<int>(
     const fmt_eigen_ref<int>& value);
 template std::string StringifyErrorDetailValue<std::string>(
     const fmt_eigen_ref<std::string>& value);
+template std::string ConditionDetailName<fmt_eigen_ref<double>>(
+    const char* name);
+template std::string ConditionDetailName<fmt_eigen_ref<float>>(
+    const char* name);
+template std::string ConditionDetailName<fmt_eigen_ref<int>>(const char* name);
+template std::string ConditionDetailName<fmt_eigen_ref<std::string>>(
+    const char* name);
+
+template std::string ConditionDetailName<const fmt_eigen_ref<double>>(
+    const char* name);
+template std::string ConditionDetailName<const fmt_eigen_ref<float>>(
+    const char* name);
+template std::string ConditionDetailName<const fmt_eigen_ref<int>>(
+    const char* name);
+template std::string ConditionDetailName<const fmt_eigen_ref<std::string>>(
+    const char* name);
 
 }  // namespace internal
 }  // namespace drake
