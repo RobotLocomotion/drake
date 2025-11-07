@@ -19,9 +19,9 @@
 namespace drake {
 namespace systems {
 
-/** @addtogroup simulation
+/** @defgroup integrators Integrators
+ @ingroup simulation
  @{
- @defgroup integrators Integrators
 
  Apart from solving initial value problems, for which the integrator is a
  key component of a simulator, integrators can also be used to solve
