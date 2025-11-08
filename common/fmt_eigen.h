@@ -70,12 +70,6 @@ template <typename Scalar>
 std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value)
   requires is_fmt_eigen_drake_throw_scalar<Scalar>::value;
 
-/* Provides formatting support when using fmt_eigen() in DRAKE_THROW_UNLESS.
-This overrides the default behavior defined in drake_assert.h. */
-template <typename T>
-std::string ConditionDetailName(const char* name)
-  requires is_fmt_eigen_ref_v<T>;
-
 }  // namespace internal
 
 /** When passing an Eigen::Matrix to fmt, use this wrapper function to instruct
