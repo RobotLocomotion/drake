@@ -31,8 +31,8 @@ python_targets = (
     # tallies in doc/_pages/release_playbook.md (search `Attach binaries`)
     # and, if necessary, the set of Python versions for which lockfiles are
     # generated in tools/workspace/python/venv_upgrade.
-    PythonTarget(3, 12),
     PythonTarget(3, 13),
+    PythonTarget(3, 14),
 )
 
 

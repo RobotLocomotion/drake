@@ -37,7 +37,7 @@ officially supports when building from source:
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.4   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.4   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sequoia (15)                 | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 17 (Xcode 26.0)   | OpenJDK 23 |
+| macOS Sequoia (15)                 | arm64        | 3.13 ⁽⁵⁾    | 8.4   | 4.1   | Apple LLVM 17 (Xcode 26.0)   | OpenJDK 23 |
 | macOS Tahoe (26) ⁽⁴⁾               | arm64        | TBD        | TBD   | TBD   | TBD                          | TBD        |
 
 "Official support" means that we have Continuous Integration test coverage to
@@ -61,6 +61,9 @@ maybe require extra setup. See the
 
 ⁽⁴⁾ Tahoe support is in development; refer to
 [#23439](https://github.com/RobotLocomotion/drake/issues/23439) for details.
+
+⁽⁵⁾ Python 3.14 support is in development; refer to
+[#23592](https://github.com/RobotLocomotion/drake/issues/23592) for details.
 
 # Building with CMake
 
