@@ -38,34 +38,12 @@ using is_fmt_eigen_drake_throw_scalar =
                      std::is_same<std::remove_cvref_t<T>, int>,
                      std::is_same<std::remove_cvref_t<T>, std::string>>;
 
-/* Type trait to determine if T is a fmt_eigen_ref with a scalar type supported
-by DRAKE_THROW_UNLESS(). See below for more. */
-template <typename T, typename Enable = void>
-struct is_fmt_eigen_ref : std::false_type {};
-
-/* Support for fmt_eigen_ref<ScalarType>. */
-template <typename ScalarType>
-struct is_fmt_eigen_ref<fmt_eigen_ref<ScalarType>,
-                        typename std::enable_if_t<
-                            is_fmt_eigen_drake_throw_scalar<ScalarType>::value>>
-    : std::true_type {};
-
-/* Support for const fmt_eigen_ref<ScalarType>. */
-template <typename ScalarType>
-struct is_fmt_eigen_ref<const fmt_eigen_ref<ScalarType>,
-                        typename std::enable_if_t<
-                            is_fmt_eigen_drake_throw_scalar<ScalarType>::value>>
-    : std::true_type {};
-
-template <typename T>
-constexpr bool is_fmt_eigen_ref_v = is_fmt_eigen_ref<T>::value;
-
 /* Provides _limited_ support for `fmt_eigen(x)` in
 `DRAKE_THROW_UNLESS(condition, fmt_eigen(x))`. This is an overload of
 `StringifyErrorDetailValue()` (as declared in drake_assert.h) for fmt_eigen_ref.
 
 The support is considered limited in the supported scalar types (see
-is_fmt_eigen_ref). */
+is_fmt_eigen_drake_throw_scalar). */
 template <typename Scalar>
 std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value)
   requires is_fmt_eigen_drake_throw_scalar<Scalar>::value;
