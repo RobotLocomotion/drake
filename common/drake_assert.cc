@@ -93,14 +93,13 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
-           is_printable_string_v<T>)
+           std::is_same_v<T, std::string> ||
+           std::is_same_v<T, std::string_view> ||
+           std::is_same_v<T, const char*>)
 {
-  // TODO(SeanCurtis-TRI) This version only supports floats. As we seek to pass
-  // *other* types (paths, eigen types, etc.), we'll extend this logic and the
-  // `requires` clause.
   if constexpr (std::is_floating_point_v<T>) {
     return fmt_floating_point(value);
-  } else if constexpr (is_printable_string_v<T>) {
+  } else {
     return fmt_debug_string(value);
   }
 }

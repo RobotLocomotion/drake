@@ -177,14 +177,6 @@ constexpr bool kDrakeAssertIsDisarmed = true;
 namespace drake {
 namespace internal {
 
-template <typename T>
-using is_printable_string =
-    std::disjunction<std::is_convertible<T, std::string>,
-                     std::is_same<T, std::string_view>>;
-
-template <typename T>
-constexpr bool is_printable_string_v = is_printable_string<T>::value;
-
 // StringifyErrorDetailValue converts `value` into a string. Some types are
 // given special treatment to ensure a specific format.
 //
@@ -199,7 +191,9 @@ constexpr bool is_printable_string_v = is_printable_string<T>::value;
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
-           is_printable_string_v<T>);
+           std::is_same_v<T, std::string> ||
+           std::is_same_v<T, std::string_view> ||
+           std::is_same_v<T, const char*>);
 
 // The collection of optional name-value pairs passed to DRAKE_THROW_UNLESS.
 // The values are stored as their `std::string` representations.
