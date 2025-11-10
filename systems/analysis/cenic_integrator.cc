@@ -61,8 +61,9 @@ void CenicIntegrator<T>::DoInitialize() {
   // Allocate and initialize ICF problem objects
   builder_ = std::make_unique<IcfBuilder<T>>(plant(), plant_context);
   const T& dt = this->get_initial_step_size_target();
-  builder_->UpdateModel(plant_context, dt, &model_);
-  model_.ResizeData(&data_);
+  builder_->UpdateModel(plant_context, dt, &first_step_model_);
+  builder_->UpdateModel(plant_context, dt, &second_step_model_);
+  first_step_model_.ResizeData(&data_);
 
   // Allocate scratch variables
   scratch_.v_guess.resize(plant().num_velocities());
@@ -105,6 +106,14 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const T t0 = context.get_time();
 
+  // TODO(vincekurtz): set these flags at initialization, and store
+  // actuation_feedback and external_feedback as optional
+  bool has_actuators = plant().num_actuators() > 0;
+  bool has_external_forces =
+      plant().get_applied_generalized_force_input_port().HasValue(
+          plant_context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
+
   // Linearize any external systems (e.g., controllers, external force elements)
   //     τ = actuation_feedback + external_feedback,
   //       = B u(x) + τₑₓₜ(x),
@@ -114,28 +123,26 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   LinearFeedbackGains<T>& actuation_feedback = scratch_.actuation_feedback;
   LinearFeedbackGains<T>& external_feedback = scratch_.external_feedback;
 
-  bool has_actuators = plant().num_actuators() > 0;
-  bool has_external_forces =
-      plant().get_applied_generalized_force_input_port().HasValue(
-          plant_context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
-
   if (has_actuators || has_external_forces) {
     LinearizeExternalSystem(h, &actuation_feedback, &external_feedback);
   }
-
-  std::optional<LinearFeedbackGains<T>> actuation_linearization =
+  std::optional<LinearFeedbackGains<T>> actuation_feedback_opt =
       has_actuators ? std::make_optional(actuation_feedback) : std::nullopt;
-  std::optional<LinearFeedbackGains<T>> external_linearization =
+  std::optional<LinearFeedbackGains<T>> external_feedback_opt =
       has_external_forces ? std::make_optional(external_feedback)
                           : std::nullopt;
+
+  // Set up the convex ICF model ℓ(v; q₀, v₀, h) for the full step.
+  // TODO(vincekurtz): detect step rejection and reuse constraints and
+  // linearization in this case.
+  builder().UpdateModel(plant_context, h, actuation_feedback_opt,
+                        external_feedback_opt, &first_step_model_);
 
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
   VectorX<T>& v_guess = scratch_.v_guess;
   v_guess = plant().GetVelocities(plant_context);
-  ComputeNextContinuousState(h, v_guess, x_next_full_.get(),
-                             actuation_linearization, external_linearization);
+  ComputeNextContinuousState(first_step_model_, v_guess, x_next_full_.get());
 
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
@@ -151,11 +158,11 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // initial guess. Note that this solve starts from the same initial state as
     // the full step, so we can reuse all of the constraints, avoiding expensive
     // geometry queries and such.
+    builder().UpdateModel(0.5 * h, &first_step_model_);
     v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
     v_guess /= 2.0;
-    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get(),
-                               actuation_linearization, external_linearization,
-                               /* reuse_constraints = */ true);
+    ComputeNextContinuousState(first_step_model_, v_guess,
+                               x_next_half_1_.get());
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
@@ -165,10 +172,11 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // Now we can take the second half-step. We'll use the solution of the full
     // step as our initial guess here. We can't reuse the ICF constraints, but
     // we will the linearizations of any external systems, if they exist.
+    builder().UpdateModel(plant_context, 0.5 * h, actuation_feedback_opt,
+                          external_feedback_opt, &second_step_model_);
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
-    ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get(),
-                               actuation_linearization, external_linearization,
-                               /* reuse_constraints = */ false);
+    ComputeNextContinuousState(second_step_model_, v_guess,
+                               x_next_half_2_.get());
 
     // Set the state to the result of the second half-step (since this is more
     // accurate than the full step, and we have it anyway).
@@ -187,27 +195,13 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 
 template <typename T>
 void CenicIntegrator<T>::ComputeNextContinuousState(
-    const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next,
-    std::optional<LinearFeedbackGains<T>> actuation_feedback,
-    std::optional<LinearFeedbackGains<T>> external_feedback,
-    bool reuse_constraints) {
-  // Get plant context storing initial state [q₀, v₀].
+    const IcfModel<T>& model, const VectorX<T>& v_guess,
+    ContinuousState<T>* x_next) {
+  const T& h = model.time_step();
   const Context<T>& context = this->get_context();
-  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
-  // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
-  IcfModel<T>& model = get_model();
-  if (reuse_constraints) {
-    // Update the time step only. Assumes that model was last updated with the
-    // the same initial state [q₀, v₀].
-    builder().UpdateModel(h, &model);
-  } else {
-    // Do a full update of the model
-    builder().UpdateModel(plant_context, h, actuation_feedback,
-                          external_feedback, &model);
-  }
-
-  // Solve the optimization problem for next-step velocities v = min ℓ(v).
+  // Solve the optimization problem for next-step velocities
+  // v = min ℓ(v; q₀, v₀, h).
   VectorX<T>& v = scratch_.v;
   v = v_guess;
   if (!SolveWithGuess(model, &v)) {
@@ -219,6 +213,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
                                           stats_.ls_iterations.end(), 0);
 
+  // Compute next-step positions
   // q = q₀ + h N(q₀) v
   VectorX<T>& q = scratch_.q;
   AdvancePlantConfiguration(h, v, &q);

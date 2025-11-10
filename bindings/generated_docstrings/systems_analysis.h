@@ -461,13 +461,6 @@ gradient, Hessian, etc.)""";
 R"""(Half-stepping error estimation gives a second-order error estimate.
 See ImplicitEulerIntegrator for details.)""";
         } get_error_estimate_order;
-        // Symbol: drake::systems::CenicIntegrator::get_model
-        struct /* get_model */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc =
-R"""(Get a reference to the ICF problem model, used to compute the cost,
-gradient, Hessian, etc.)""";
-        } get_model;
         // Symbol: drake::systems::CenicIntegrator::get_mutable_solver_parameters
         struct /* get_mutable_solver_parameters */ {
           // Source: drake/systems/analysis/cenic_integrator.h
