@@ -99,7 +99,18 @@ class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
 
-  IcfSolver() = default;
+  /**
+   * Construct the ICF solver.
+   * 
+   * @param model An example model, used for memory allocation only.
+   * @param parameters Solver parameters.
+   */
+  IcfSolver(const IcfModel<T>& model, const IcfSolverParameters& parameters)
+      : parameters_(parameters) {
+    model.ResizeData(&data_);
+    stats_.Reserve(parameters_.max_iterations);
+    search_direction_.resize(model.num_velocities());
+  }
 
   /**
    * Solve the convex problem to compute next-step velocities v = min ℓ(v).
@@ -156,6 +167,14 @@ class IcfSolver {
   // Store data is a function of v, and changes between solver iterations
   IcfData<T> data_;
 
+  // Iteration limits, tolerances, and other parameters
+  const IcfSolverParameters parameters_;
+
+  // Logging utilities
+  IcfSolverStats stats_;
+
+  // Pre-allocated search direction Δv
+  VectorX<T> search_direction_;
 };
 
 }  // namespace icf

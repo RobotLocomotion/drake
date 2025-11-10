@@ -63,6 +63,7 @@ void CenicIntegrator<T>::DoInitialize() {
   const T& dt = this->get_initial_step_size_target();
   builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);
+  solver_ = std::make_unique<IcfSolver<T>>(model_, solver_parameters_.icf);
 
   // Allocate scratch variables
   scratch_.v_guess.resize(plant().num_velocities());

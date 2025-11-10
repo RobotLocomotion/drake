@@ -24,6 +24,7 @@ using multibody::MultibodyPlant;
 using multibody::contact_solvers::icf::IcfBuilder;
 using multibody::contact_solvers::icf::IcfData;
 using multibody::contact_solvers::icf::IcfModel;
+using multibody::contact_solvers::icf::IcfSolver;
 using multibody::contact_solvers::icf::IcfSolverParameters;
 using multibody::contact_solvers::icf::IcfSolverStats;
 using multibody::contact_solvers::icf::LinearFeedbackGains;
@@ -104,6 +105,14 @@ class CenicIntegrator final : public IntegratorBase<T> {
   IcfBuilder<T>& builder() {
     DRAKE_ASSERT(builder_ != nullptr);
     return *builder_;
+  }
+
+  /**
+   * Get a reference to the ICF solver, used to solve the convex problem.
+   */
+  IcfSolver<T>& solver() {
+    DRAKE_ASSERT(solver_ != nullptr);
+    return *solver_;
   }
 
   /**
@@ -275,6 +284,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
+  std::unique_ptr<IcfSolver<T>> solver_;
   IcfModel<T> model_;
   IcfData<T> data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
