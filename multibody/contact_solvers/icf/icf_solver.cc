@@ -330,6 +330,18 @@ void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
   }
 }
 
+template <typename T>
+bool IcfSolver<T>::SparsityPatternChanged(
+    const IcfModel<T>& model) const {
+  if (previous_sparsity_pattern_ == nullptr) {
+    return true;  // No previous sparsity pattern to compare against.
+  }
+  return (model.sparsity_pattern().neighbors() !=
+          previous_sparsity_pattern_->neighbors()) ||
+         (model.sparsity_pattern().block_sizes() !=
+          previous_sparsity_pattern_->block_sizes());
+}
+
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -125,6 +125,11 @@ class IcfSolver {
   bool SolveWithGuess(const IcfModel<T>& model, const double tolerance,
                       VectorX<T>* v_guess);
 
+  /**
+   * Access solver statistics from the most recent solve.
+   */
+  const IcfSolverStats& stats() const { return stats_; }
+
  private:
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
   // Returns the linesearch parameter α and the number of iterations taken.

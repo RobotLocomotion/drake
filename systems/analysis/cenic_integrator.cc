@@ -201,17 +201,25 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
                           external_feedback, &model);
   }
 
+  // Set convergence tolerance based on integrator accuracy
+  const double tolerance =
+      this->get_fixed_step_mode()
+          ? solver_parameters_.tolerance
+          : solver_parameters_.kappa * this->get_accuracy_in_use();
+
   // Solve the optimization problem for next-step velocities v = min ℓ(v).
   VectorX<T>& v = scratch_.v;
   v = v_guess;
-  if (!SolveWithGuess(model, &v)) {
+  if (!solver().SolveWithGuess(model, tolerance, &v)) {
     throw std::runtime_error("CenicIntegrator: optimization failed.");
   }
 
   // Accumulate solver statistics
-  total_solver_iterations_ += stats_.iterations;
-  total_ls_iterations_ += std::accumulate(stats_.ls_iterations.begin(),
-                                          stats_.ls_iterations.end(), 0);
+  total_solver_iterations_ += solver().stats().iterations;
+  total_hessian_factorizations_ += solver().stats().factorizations;
+  total_ls_iterations_ += std::accumulate(
+      solver().stats().ls_iterations.begin(),
+      solver().stats().ls_iterations.end(), 0);
 
   // q = q₀ + h N(q₀) v
   VectorX<T>& q = scratch_.q;
