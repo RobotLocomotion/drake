@@ -25,7 +25,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/systems/analysis/cenic.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/simulator.h"

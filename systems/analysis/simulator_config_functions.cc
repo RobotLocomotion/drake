@@ -14,7 +14,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
-#include "drake/systems/analysis/cenic.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/radau_integrator.h"

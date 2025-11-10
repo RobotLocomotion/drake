@@ -7,7 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/systems/analysis/cenic.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"

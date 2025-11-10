@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/cenic.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 
 #include <algorithm>
 

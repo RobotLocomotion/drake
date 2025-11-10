@@ -12,7 +12,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
-#include "drake/systems/analysis/cenic.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
