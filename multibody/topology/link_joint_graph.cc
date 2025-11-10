@@ -490,8 +490,9 @@ void LinkJointGraph::CreateWorldWeldedLinksAssembly() {
   DRAKE_DEMAND(data_.welded_links_assemblies.empty());
   Link& world_link = data_.links[LinkOrdinal(0)];
   DRAKE_DEMAND(!world_link.welded_links_assembly_index_.has_value());
-  data_.welded_links_assemblies.emplace_back(WeldedLinksAssembly{
-      .links = std::vector{world_link.index()}, .is_massless = false});
+  WeldedLinksAssembly& assembly = data_.welded_links_assemblies.emplace_back();
+  assembly.links_.push_back(world_link.index());
+  assembly.is_massless_ = false;
   world_link.welded_links_assembly_index_ = WeldedLinksAssemblyIndex(0);
 }
 
@@ -618,17 +619,20 @@ WeldedLinksAssemblyIndex LinkJointGraph::AddToWeldedLinksAssembly(
     // for this Assembly because we saw it first while building the Forest.
     existing_assembly_index = maybe_assembly_link.welded_links_assembly_index_ =
         WeldedLinksAssemblyIndex(ssize(data_.welded_links_assemblies));
-    data_.welded_links_assemblies.emplace_back(WeldedLinksAssembly{
-        .links = std::vector<LinkIndex>{maybe_assembly_link.index()},
-        .is_massless = maybe_assembly_link.is_massless()});
+    WeldedLinksAssembly& assembly =
+        data_.welded_links_assemblies.emplace_back();
+    assembly.links_.push_back(maybe_assembly_link.index());
+    assembly.is_massless_ = maybe_assembly_link.is_massless();
   }
 
   WeldedLinksAssembly& existing_assembly =
       data_.welded_links_assemblies[*existing_assembly_index];
-  existing_assembly.links.push_back(new_link.index());
-  existing_assembly.joints.push_back(joints(weld_joint_ordinal).index());
+  existing_assembly.links_.push_back(new_link.index());
+  existing_assembly.joints_.push_back(joints(weld_joint_ordinal).index());
   // For the assembly to be massless, _all_ its links must be massless.
-  if (!new_link.is_massless()) existing_assembly.is_massless = false;
+  if (!new_link.is_massless()) {
+    existing_assembly.is_massless_ = false;
+  }
   new_link.welded_links_assembly_index_ = existing_assembly_index;
 
   return *existing_assembly_index;
@@ -647,7 +651,7 @@ void LinkJointGraph::AddUnmodeledJointToWeldedLinksAssembly(
     WeldedLinksAssemblyIndex welded_links_assembly_index) {
   WeldedLinksAssembly& assembly =
       data_.welded_links_assemblies[welded_links_assembly_index];
-  assembly.joints.push_back(joints(unmodeled_joint_ordinal).index());
+  assembly.joints_.push_back(joints(unmodeled_joint_ordinal).index());
   NoteUnmodeledJointInWeldedLinksAssembly(unmodeled_joint_ordinal,
                                           welded_links_assembly_index);
 }
@@ -775,7 +779,7 @@ std::vector<std::set<LinkIndex>> LinkJointGraph::GetSubgraphsOfWeldedLinks()
   // the first one, even if nothing is welded to it.
   for (const WeldedLinksAssembly& assembly : welded_links_assemblies()) {
     subgraphs.emplace_back(
-        std::set<LinkIndex>(assembly.links.cbegin(), assembly.links.cend()));
+        std::set<LinkIndex>(assembly.links_.cbegin(), assembly.links_.cend()));
   }
 
   // Finally, make one-Link subgraphs for Links that aren't in any assembly.
@@ -835,7 +839,7 @@ std::set<LinkIndex> LinkJointGraph::GetLinksWeldedTo(
       link.welded_links_assembly();
   if (!assembly_index.has_value()) return std::set<LinkIndex>{link_index};
   const std::vector<LinkIndex>& welded_links =
-      welded_links_assemblies(*assembly_index).links;
+      welded_links_assemblies(*assembly_index).links();
   return std::set<LinkIndex>(welded_links.cbegin(), welded_links.cend());
 }
 

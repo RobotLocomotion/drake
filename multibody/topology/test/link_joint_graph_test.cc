@@ -307,12 +307,13 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);
   EXPECT_EQ(
-      ssize(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links),
+      ssize(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()),
       1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links[0],
-            world_link_index);
+  EXPECT_EQ(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()[0],
+      world_link_index);
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless);
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
 
   EXPECT_EQ(graph.FindPathFromWorld(world_link_index),
             std::vector<LinkIndex>{world_link_index});  // Just World.

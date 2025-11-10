@@ -28,18 +28,17 @@ interconnected by Joints.
 
 Terminology notes:
  - For clarity we use "Link" here to mean what MultibodyPlant calls a
-   "RigidBody" (or just "Body"), that is, what a user inputs as an SDFormat or
-   URDF "link", as a MuJoCo "body", or using the AddRigidBody() call in
-   MultibodyPlant's API.  (It would have been preferable to use Link exclusively
-   in MultibodyPlant as well, but that ship has sailed and there is less chance
-   of confusion there.)
+   "RigidBody", that is, what a user inputs as an SDFormat or URDF "link", as a
+   MuJoCo "body", or using the AddRigidBody() call in MultibodyPlant's API. (It
+   would have been preferable to use Link exclusively in MultibodyPlant as well,
+   but that ship has sailed and there is less chance of confusion there.)
  - The LinkIndex we use here is just an alias for MultibodyPlant's BodyIndex;
    they may be used interchangeably.
  - The spanning forest we generate uses "mobilized bodies" (Mobods). A single
-   Mobod may represent multiple Links when multiple links are welded together.
-   Conversely, a single Link may be split to create multiple Mobods (to break
-   cycles in the graph). As there is not necessarily a one-to-one mapping, we're
-   careful not to mix the two terms.
+   Mobod may model a single Link or a composite formed of multiple Links that
+   are welded together. Conversely, a single Link may be split to create
+   multiple Mobods (to break cycles in the graph). As there is not necessarily
+   a one-to-one mapping, we're careful not to mix the terms "link" and "body".
  - Because Links and Joints may be removed from an existing graph, there may be
    gaps in the sequence of LinkIndex and JointIndex values. However, any
    remaining Links and Joints are stored consecutively, indexed by LinkOrdinal
@@ -82,8 +81,9 @@ In general during SpanningForest building:
     immobilize static bodies. Each Joint maps to at most one Mobod; some weld
     Joints may instead be represented implicitly as part of a
     WeldedLinksAssembly.
-  - A WeldedLinksAssembly (Links welded together) can be represented by a single
-    Mobod, so many Links may follow one Mobod.
+  - A WeldedLinksAssembly (links welded together) can be represented by a
+    single composite Mobod (or several composite Mobods) so many Links may
+    follow one Mobod.
   - We never delete any of the user's Links or Joints; we may add new ones
     during forest building (we call those _ephemeral_ elements) but those are
     kept distinct from the user's elements. */
@@ -104,18 +104,26 @@ class LinkJointGraph {
   };
 
   /* A WeldedLinksAssembly is a set of Links and weld Joints where the links
-  are all interconnected by the joints. It is massless only if _all_ its
-  constituent Links are massless. */
-  struct WeldedLinksAssembly {
+  are interconnected by paths comprised of one or more of those welds. Thus
+  the whole assembly will move as a single rigid object. An assembly is
+  massless only if _all_ its constituent links are massless. */
+  class WeldedLinksAssembly {
+   public:
+    const std::vector<LinkIndex>& links() const { return links_; }
+    const std::vector<JointIndex>& joints() const { return joints_; }
+    bool is_massless() const { return is_massless_; }
     bool HasLink(LinkIndex index) const {
-      return std::find(links.begin(), links.end(), index) != links.end();
+      return std::find(links_.begin(), links_.end(), index) != links_.end();
     }
     bool HasJoint(JointIndex index) const {
-      return std::find(joints.begin(), joints.end(), index) != joints.end();
+      return std::find(joints_.begin(), joints_.end(), index) != joints_.end();
     }
-    std::vector<LinkIndex> links;
-    std::vector<JointIndex> joints;
-    bool is_massless{false};
+
+   private:
+    friend class LinkJointGraph;
+    std::vector<LinkIndex> links_;
+    std::vector<JointIndex> joints_;
+    bool is_massless_{false};
   };
 
   /* Default construction defines well-known joint types and World. */
@@ -434,14 +442,16 @@ class LinkJointGraph {
 
   /* After the SpanningForest has been built, returns the index of the mobilized
   body (Mobod) followed by this Link. If the Link is part of an optimized
-  WeldedLinksAssembly, this will be the mobilized body for the whole assembly.
-  If the Link was split into a primary and shadows, this is the mobilized body
-  followed by the primary. If there is no valid Forest, the returned index will
-  be invalid. */
+  WeldedLinksAssembly, the Mobod may be a composite body modeling other links
+  in addition to the given one. If the given Link was split into a primary and
+  shadows, this is the mobilized body followed by the primary. If there is no
+  valid Forest, the returned index will be invalid. */
   [[nodiscard]] MobodIndex link_to_mobod(LinkIndex index) const;
 
-  /* After the SpanningForest has been built, returns groups of Links that are
-  welded together, as WeldedLinksAssembly objects. Each such assembly has no
+  /* After the SpanningForest has been built, returns groupings of Links and
+  Weld Joints where the links are interconnected by paths comprised only of
+  those joints. These are returned as WeldedLinksAssembly objects (analogous
+  to CAD assemblies). Each such assembly has no
   internal degrees of freedom and will move as a single rigid object. The first
   entry in each WeldedLinksAssembly is the _active link_, whose non-weld
   inboard Joint moves the whole assembly. (World is considered the active link

@@ -45,8 +45,8 @@ std::string LinkJointGraph::GenerateGraphvizString(
     // of the subgraph must begin with "cluster"!
     graphviz += fmt::format("subgraph cluster{}", index) + " {\n";
     graphviz += fmt::format("label=\"WeldedLinksAssembly({}){}\";\n", index,
-                            assembly.is_massless ? "*" : "");
-    for (const LinkIndex& link_index : assembly.links) {
+                            assembly.is_massless() ? "*" : "");
+    for (const LinkIndex& link_index : assembly.links()) {
       const Link& link = link_by_index(link_index);
       const bool ephemeral = link_is_ephemeral(link.index());
       if (ephemeral && !include_ephemeral_elements) continue;

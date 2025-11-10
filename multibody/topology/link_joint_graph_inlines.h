@@ -60,7 +60,7 @@ inline bool LinkJointGraph::link_and_its_assembly_are_massless(
 
   return link.welded_links_assembly().has_value()
              ? welded_links_assemblies(*link.welded_links_assembly())
-                   .is_massless
+                   .is_massless()
              : true;
 }
 
