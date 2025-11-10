@@ -110,6 +110,7 @@ drake_cc_library(
     deps = [
         ":icf_core",
         "//common:essential",
+        "//multibody/contact_solvers:newton_with_bisection",
     ],
 )
 
