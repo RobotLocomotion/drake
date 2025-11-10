@@ -100,8 +100,6 @@ DEFINE_double(viz_period, std::numeric_limits<double>::infinity(),
               "Viz period.");
 
 // Logging and verbosity for the convex integrator.
-DEFINE_bool(log_solver_stats, false,
-            "Whether to log convex integrator statistics to a CSV file.");
 DEFINE_bool(print_solver_stats, false,
             "Whether to print convex integrator statistics to the console.");
 
@@ -151,7 +149,7 @@ using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
 using drake::systems::CenicIntegrator;
-using drake::systems::CenicSolverParameters;
+using drake::systems::CenicParameters;
 using drake::visualization::ApplyVisualizationConfig;
 using drake::visualization::VisualizationConfig;
 
@@ -593,14 +591,13 @@ int do_main() {
     auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
     ci.set_plant(&plant);
 
-    CenicSolverParameters ci_params;
+    CenicParameters ci_params;
     ci_params.icf.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
     ci_params.icf.max_iterations_for_hessian_reuse = FLAGS_k_max;
     ci_params.kappa = FLAGS_kappa;
     ci_params.icf.alpha_max = FLAGS_alpha_max;
     ci_params.icf.ls_tolerance = FLAGS_ls_tolerance;
     ci_params.tolerance = FLAGS_tolerance;
-    ci_params.log_solver_stats = FLAGS_log_solver_stats;
     ci_params.icf.print_solver_stats = FLAGS_print_solver_stats;
     ci_params.icf.use_dense_algebra = FLAGS_dense_algebra;
     ci.set_solver_parameters(ci_params);

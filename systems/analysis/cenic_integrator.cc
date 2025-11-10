@@ -88,13 +88,6 @@ void CenicIntegrator<T>::DoInitialize() {
 
   // Allocate memory for the solver statistics.
   stats_.Reserve(solver_parameters_.icf.max_iterations);
-
-  // Set up the CSV file and write a header, if logging is enabled.
-  if (solver_parameters_.log_solver_stats) {
-    log_file_.open("cenic_stats.csv");
-    log_file_
-        << "time,iteration,cost,gradient_norm,ls_iterations,alpha,step_size\n";
-  }
 }
 
 template <typename T>
@@ -337,13 +330,6 @@ bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
           "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
           "alpha: {}\n",
           k, data.cache().cost, grad_norm, step_size, ls_iterations, alpha);
-    }
-    if (solver_parameters_.log_solver_stats) {
-      DRAKE_THROW_UNLESS(log_file_.is_open());
-      const double step_size = (k == 0) ? NAN : stats_.step_size.back();
-      log_file_ << t << "," << k << "," << data.cache().cost << "," << grad_norm
-                << "," << ls_iterations << "," << alpha << "," << step_size
-                << "\n";
     }
 
     // Gradient-based convergence check. Allows for early exit if v_guess is

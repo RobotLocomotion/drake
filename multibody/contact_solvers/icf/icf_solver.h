@@ -43,7 +43,7 @@ struct IcfSolverParameters {
 /**
  * Statistics to track during the optimization process.
  */
-struct IcfStats {
+struct IcfSolverStats {
   // The simulation time at which the solve was performed.
   double time;
 

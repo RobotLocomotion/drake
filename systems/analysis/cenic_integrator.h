@@ -25,6 +25,7 @@ using multibody::contact_solvers::icf::IcfBuilder;
 using multibody::contact_solvers::icf::IcfData;
 using multibody::contact_solvers::icf::IcfModel;
 using multibody::contact_solvers::icf::IcfSolverParameters;
+using multibody::contact_solvers::icf::IcfSolverStats;
 using multibody::contact_solvers::icf::LinearFeedbackGains;
 using multibody::contact_solvers::icf::SearchDirectionData;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
@@ -32,71 +33,20 @@ using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
 
 /**
- * Tolerances and other parameters for the CENIC's convex solver.
+ * Tolerances and other parameters for CENIC's convex solver.
  */
-struct CenicSolverParameters {
-  // Solver parameters, including max iterations, hessian resuse, etc. 
+struct CenicParameters {
+  // ICF parameters, including max iterations, hessian reuse, etc.
   IcfSolverParameters icf;
 
-  // Tolerance ε for the convergence conditions
+  // Fixed-step tolerance ε for the convergence conditions
   //   ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
-  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖),
-  // in fixed-step mode (no error control).
+  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
   double tolerance{1e-8};
 
-  // Scaling factor for setting the tolerance ε = κ ⋅ accuracy in
+  // Scaling factor κ for setting the tolerance ε = κ⋅accuracy in
   // error-controlled model.
   double kappa{0.001};
-
-  // Logging/performance tracking flags
-  // TODO(vincekurtz): consider dropping this logging functionality.
-  bool log_solver_stats{false};    // Whether to log stats to a file.
-};
-
-/**
- * Statistics to track during the optimization process.
- */
-struct CenicSolverStats {
-  // The simulation time at which the solve was performed.
-  double time;
-
-  // The number of solver iterations
-  int iterations;
-
-  // The cost ℓ(v) at each iteration.
-  std::vector<double> cost;
-
-  // The gradient norm ||∇ℓ(v)|| at each iteration.
-  std::vector<double> gradient_norm;
-
-  // The number of linesearch iterations at each solver iteration.
-  std::vector<int> ls_iterations;
-
-  // The linesearch parameter α at each iteration.
-  std::vector<double> alpha;
-
-  // The step size at this iteration, ||Δvₖ||
-  std::vector<double> step_size;
-
-  // Reset the stats to start a new iteration.
-  void Reset(const double t) {
-    time = t;
-    iterations = 0;
-    cost.resize(0);
-    gradient_norm.resize(0);
-    ls_iterations.resize(0);
-    alpha.resize(0);
-    step_size.resize(0);
-  }
-
-  // Reserve space for the vectors to avoid reallocations.
-  void Reserve(int size) {
-    cost.reserve(size);
-    gradient_norm.reserve(size);
-    ls_iterations.reserve(size);
-    alpha.reserve(size);
-    step_size.reserve(size);
-  }
 };
 
 /**
@@ -171,14 +121,14 @@ class CenicIntegrator final : public IntegratorBase<T> {
   /**
    * Get the current convex solver tolerances and iteration limits.
    */
-  const CenicSolverParameters& get_solver_parameters() const {
+  const CenicParameters& get_solver_parameters() const {
     return solver_parameters_;
   }
 
   /**
    * Set the convex solver tolerances and iteration limits.
    */
-  void set_solver_parameters(const CenicSolverParameters& parameters) {
+  void set_solver_parameters(const CenicParameters& parameters) {
     solver_parameters_ = parameters;
   }
 
@@ -186,14 +136,14 @@ class CenicIntegrator final : public IntegratorBase<T> {
    * Get a mutable reference to the convex solver tolerances and iteration
    * limits.
    */
-  CenicSolverParameters& get_mutable_solver_parameters() {
+  CenicParameters& get_mutable_solver_parameters() {
     return solver_parameters_;
   }
 
   /**
    * Get the current convex solver statistics.
    */
-  const CenicSolverStats& get_solver_stats() const { return stats_; }
+  const IcfSolverStats& get_solver_stats() const { return stats_; }
 
   /**
    * Get the current total number of solver iterations across all time steps.
@@ -363,11 +313,10 @@ class CenicIntegrator final : public IntegratorBase<T> {
   bool reuse_hessian_factorization_{true};
 
   // Solver tolerances and other parameters
-  CenicSolverParameters solver_parameters_;
+  CenicParameters solver_parameters_;
 
   // Logging/performance tracking utilities
-  std::ofstream log_file_;
-  CenicSolverStats stats_;
+  IcfSolverStats stats_;
   int total_solver_iterations_{0};
   int total_ls_iterations_{0};
   int total_hessian_factorizations_{0};
