@@ -72,7 +72,7 @@ void SpanningForest::SanityCheckForest() const {
   DRAKE_THROW_UNLESS(world_link.welded_links_assembly().has_value());
   DRAKE_THROW_UNLESS(world_link.welded_links_assembly() ==
                      WeldedLinksAssemblyIndex(0));
-  DRAKE_THROW_UNLESS(graph().welded_links_assemblies()[0].links[0] ==
+  DRAKE_THROW_UNLESS(graph().welded_links_assemblies()[0].links()[0] ==
                      LinkIndex(0));
 
   for (MobodIndex index(1); index < ssize(mobods()); ++index) {
@@ -103,12 +103,12 @@ void SpanningForest::SanityCheckForest() const {
     const LinkJointGraph::WeldedLinksAssembly& assembly =
         graph().welded_links_assemblies(assembly_index);
     bool all_links_are_massless = true;
-    for (const LinkIndex& link_index : assembly.links) {
+    for (const LinkIndex& link_index : assembly.links()) {
       const LinkJointGraph::Link& link = link_by_index(link_index);
       DRAKE_THROW_UNLESS(link.welded_links_assembly() == assembly_index);
       if (!link.is_massless()) all_links_are_massless = false;
     }
-    DRAKE_THROW_UNLESS(assembly.is_massless == all_links_are_massless);
+    DRAKE_THROW_UNLESS(assembly.is_massless() == all_links_are_massless);
   }
 
   /* Check that Links in a WeldedLinksAssembly are listed in inboard->outboard
@@ -125,24 +125,24 @@ void SpanningForest::SanityCheckForest() const {
         graph().welded_links_assemblies(assembly_index);
     // Map each link index to its position in the links vector.
     std::map<LinkIndex, int> link_to_position;
-    for (int i = 0; i < ssize(assembly.links); ++i)
-      link_to_position[assembly.links[i]] = i;
+    for (int i = 0; i < ssize(assembly.links()); ++i)
+      link_to_position[assembly.links()[i]] = i;
     // Map each link to its level (distance from active link).
     std::map<LinkIndex, int> link_to_level;
-    const LinkIndex active_link_index = assembly.links.at(0);
+    const LinkIndex active_link_index = assembly.links().at(0);
     link_to_level[active_link_index] = 0;
     RecordLevelOfOutboardLinks(*this, JointIndex(), active_link_index,
                                &link_to_level);
 
     // Sanity check of the sanity checker: make sure we built the maps right.
-    for (const LinkIndex& link_index : assembly.links) {
+    for (const LinkIndex& link_index : assembly.links()) {
       DRAKE_DEMAND(link_to_level.contains(link_index));
       DRAKE_DEMAND(link_to_position.contains(link_index));
     }
 
     // Each joint connects two links. Verify that the inboard link
     // appears before the outboard link.
-    for (const JointIndex& joint_index : assembly.joints) {
+    for (const JointIndex& joint_index : assembly.joints()) {
       const LinkIndex parent =
           graph().joint_by_index(joint_index).effective_parent_link_index();
       const LinkIndex child =
@@ -223,7 +223,7 @@ void SpanningForest::SanityCheckForest() const {
             active_link.welded_links_assembly();
         DRAKE_THROW_UNLESS(link_assembly.has_value());
         DRAKE_THROW_UNLESS(
-            graph().welded_links_assemblies(*link_assembly).links[0] ==
+            graph().welded_links_assemblies(*link_assembly).links()[0] ==
             active_link.index());
       }
     }

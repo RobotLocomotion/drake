@@ -69,10 +69,10 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(world_mobod_index, MobodIndex(0));
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             std::vector{world_link_index});
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless);
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
 
   EXPECT_FALSE(forest.link_to_tree_index(LinkOrdinal(0)).is_valid());
   EXPECT_FALSE(forest.link_to_tree_index(LinkIndex(0)).is_valid());
@@ -333,10 +333,11 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   // The only WeldedLinksAssembly is the World assembly and it is alone there.
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);  // just World
   EXPECT_EQ(
-      ssize(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links),
+      ssize(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()),
       1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links[0],
-            graph.world_link().index());
+  EXPECT_EQ(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()[0],
+      graph.world_link().index());
 
   EXPECT_EQ(forest.num_trees(), 3);
   EXPECT_EQ(forest.num_mobods(), 16);           // includes World
@@ -517,13 +518,13 @@ GTEST_TEST(SpanningForest, MultipleBranchesBaseJointOptions) {
   // There is only the World assembly, but now tree1's base link and its
   // ephemeral weld joint are included.
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);  // just World
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             (std::vector{graph.world_link().index(),
                          graph.links(tree1.front().link_ordinal()).index()}));
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             (std::vector{JointIndex(14)}));  // Ephemeral joints start at 13.
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless);
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
 
   // Similarly, there is only one WeldedMobods group, containing just World
   // and tree1's base.
@@ -756,18 +757,18 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   const std::vector<LinkIndex> assembly1{LinkIndex(11), LinkIndex(10)};
   const std::vector<JointIndex> joints1{JointIndex(6)};
 
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             assembly0);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             joints0);
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links(),
             assembly1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints(),
             joints1);
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).is_massless);
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).is_massless());
 
   EXPECT_EQ(ssize(forest.mobods()), 12);
   EXPECT_EQ(ssize(forest.trees()), 6);
@@ -870,13 +871,13 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
 
   // The graph shouldn't change from SpanningForest 1, but the forest will.
   EXPECT_EQ(graph.num_joints() - graph.num_user_joints(), 4);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             assembly0);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             joints0);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links(),
             assembly1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints(),
             joints1);
 
   EXPECT_EQ(ssize(forest.mobods()), 8);
@@ -919,13 +920,13 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   EXPECT_TRUE(graph.BuildForest());
   EXPECT_NO_THROW(forest.SanityCheckForest());
 
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             assembly0);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             joints0);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links(),
             assembly1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints(),
             joints1);
 
   EXPECT_EQ(ssize(forest.mobods()), 9);
@@ -976,9 +977,9 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
       JointIndex(5), JointIndex(7), JointIndex(8),
       JointIndex(9), JointIndex(6), JointIndex(10)};
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             expected_assembly_links);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             expected_assembly_joints);
 }
 
@@ -1184,12 +1185,12 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   const std::vector<std::vector<int>> expected_joints{
       {12, 11, 13}, {0, 2, 1}, {4, 5, 6}};
   for (WeldedLinksAssemblyIndex a(0); a < 3; ++a) {
-    EXPECT_FALSE(graph.welded_links_assemblies(a).is_massless);
+    EXPECT_FALSE(graph.welded_links_assemblies(a).is_massless());
     for (int link = 0; link < ssize(expected_links[a]); ++link)
-      EXPECT_EQ(graph.welded_links_assemblies(a).links[link],
+      EXPECT_EQ(graph.welded_links_assemblies(a).links()[link],
                 expected_links[a][link]);
     for (int joint = 0; joint < ssize(expected_joints[a]); ++joint)
-      EXPECT_EQ(graph.welded_links_assemblies(a).joints[joint],
+      EXPECT_EQ(graph.welded_links_assemblies(a).joints()[joint],
                 expected_joints[a][joint]);
   }
 
@@ -1336,26 +1337,26 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
 
   EXPECT_EQ(ssize(graph.links()), 15);  // Only one added shadow.
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 3);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             (std::vector<LinkIndex>{LinkIndex(0), LinkIndex(5), LinkIndex(7),
                                     LinkIndex(12)}));
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             (std::vector<JointIndex>{JointIndex(12), JointIndex(11),
                                      JointIndex(13)}));
   EXPECT_EQ(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links(),
       (std::vector<LinkIndex>{LinkIndex(13), LinkIndex(1), LinkIndex(4)}));
   EXPECT_EQ(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints(),
       (std::vector<JointIndex>{JointIndex(0), JointIndex(1), JointIndex(2)}));
   EXPECT_EQ(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(2)).links,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(2)).links(),
       (std::vector<LinkIndex>{LinkIndex(10), LinkIndex(6), LinkIndex(8)}));
   EXPECT_EQ(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(2)).joints,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(2)).joints(),
       (std::vector<JointIndex>{JointIndex(4), JointIndex(6), JointIndex(5)}));
   for (WeldedLinksAssemblyIndex i(0); i < 3; ++i) {
-    EXPECT_FALSE(graph.welded_links_assemblies(i).is_massless);
+    EXPECT_FALSE(graph.welded_links_assemblies(i).is_massless());
   }
 
   // Now let's verify that we got the expected SpanningForest. To understand,
@@ -1434,13 +1435,13 @@ GTEST_TEST(SpanningForest, SimpleTrees) {
                             "singular.*cannot be used for dynamics.*"));
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 2);
   const std::vector<LinkIndex>& assembly94 =
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links;
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links();
   const std::vector<JointIndex>& joints94 =
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints;
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints();
   EXPECT_EQ(assembly94, (std::vector<LinkIndex>{LinkIndex(9), LinkIndex(4)}));
   EXPECT_EQ(joints94, std::vector<JointIndex>{JointIndex(5)});
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).is_massless);
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).is_massless());
 
   // Finally if we connect link 2 to a massful link forming a loop, we should
   // get a dynamics-ready forest by splitting the massful link.
@@ -1815,18 +1816,18 @@ GTEST_TEST(SpanningForest, WorldAssemblyComesFirst) {
   EXPECT_FALSE(link4.is_anchored());
 
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 2);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
             (std::vector<LinkIndex>{LinkIndex(0), LinkIndex(3)}));
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             std::vector<JointIndex>{JointIndex(2)});
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless);
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links(),
             (std::vector<LinkIndex>{LinkIndex(1), LinkIndex(2)}));
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints(),
             std::vector<JointIndex>{JointIndex(1)});
   EXPECT_FALSE(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).is_massless);
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).is_massless());
 
   EXPECT_EQ(ssize(forest.welded_mobods()), 2);
   EXPECT_EQ(forest.welded_mobods(WeldedMobodsIndex(0)),
@@ -2134,7 +2135,8 @@ GTEST_TEST(SpanningForest, LoopWithAssemblies) {
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 4);  // World + 3
   std::array<bool, 4> expect_massless{false, false, true, false};
   for (WeldedLinksAssemblyIndex i{0}; i < 4; ++i) {
-    EXPECT_EQ(graph.welded_links_assemblies(i).is_massless, expect_massless[i]);
+    EXPECT_EQ(graph.welded_links_assemblies(i).is_massless(),
+              expect_massless[i]);
   }
 
   EXPECT_EQ(ssize(forest.mobods()), 9);
@@ -2308,9 +2310,9 @@ GTEST_TEST(SpanningForest, MasslessOptimizedAssemblies) {
   ASSERT_EQ(ssize(graph.welded_links_assemblies()),
             1);  // just the world assembly
   EXPECT_EQ(
-      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links,
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
       (std::vector{LinkIndex(0), LinkIndex(4), LinkIndex(5), LinkIndex(6)}));
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             (std::vector{JointIndex(6), JointIndex(7), JointIndex(8)}));
 
   /* (Test 2) Change the type of joint 6 (connects {4} to World) from weld
@@ -2337,9 +2339,9 @@ GTEST_TEST(SpanningForest, MasslessOptimizedAssemblies) {
     EXPECT_EQ(graph.link_by_index(i).mobod_index(), 5);  // Merged to one Mobod.
 
   ASSERT_EQ(ssize(graph.welded_links_assemblies()), 2);  // world and {4:5:6}
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).links(),
             (std::vector{LinkIndex(4), LinkIndex(5), LinkIndex(6)}));
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints,
+  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(1)).joints(),
             (std::vector{JointIndex(7), JointIndex(8)}));
 
   /* (Test 3) Change links 7 and 8 to be massless so that we have to continue

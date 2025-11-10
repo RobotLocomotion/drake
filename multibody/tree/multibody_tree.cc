@@ -3592,10 +3592,10 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     DRAKE_DEMAND(link_assembly_index.has_value());  // Should be an assembly!
     const auto& link_assembly =
         graph().welded_links_assemblies(*link_assembly_index);
-    DRAKE_DEMAND(link_assembly.links[0] ==
+    DRAKE_DEMAND(link_assembly.links()[0] ==
                  graph().links(active_mobod.link_ordinal()).index());
 
-    ThrowIfTerminalBodyHasBadDefaultMassProperties(link_assembly.links,
+    ThrowIfTerminalBodyHasBadDefaultMassProperties(link_assembly.links(),
                                                    active_mobod.index());
   }
 
