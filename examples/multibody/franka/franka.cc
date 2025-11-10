@@ -81,8 +81,6 @@ DEFINE_bool(save_csv, false, "Save CSV data for the convex integrator.");
 DEFINE_bool(trapezoid, false, "Implicit trapezoid rule for error estimation.");
 
 // Logging and verbosity for the convex integrator.
-DEFINE_bool(log_solver_stats, false,
-            "Whether to log convex integrator statistics to a CSV file.");
 DEFINE_bool(print_solver_stats, false,
             "Whether to print convex integrator statistics to the console.");
 
@@ -91,9 +89,6 @@ DEFINE_bool(enable_hessian_reuse, false,
             "Whether to reuse the Hessian factorization between iterations.");
 DEFINE_int32(k_max, 10,
              "Maximum number of iterations before re-computing the Hessian.");
-DEFINE_double(kappa, 0.001,
-              "Scaling factor for the relaxed convergence check (θ method of "
-              "Hairer 1996) used to exit early under loose accuracies.");
 DEFINE_double(
     alpha_max, 1.0,
     "Maximum line search step size for the convex integrator (α_max).");
@@ -123,7 +118,6 @@ using drake::math::RotationMatrixd;
 using drake::multibody::ContactResults;
 using drake::multibody::MultibodyPlant;
 using drake::systems::CenicIntegrator;
-using drake::systems::CenicParameters;
 using drake::systems::ConstantVectorSource;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::IntegratorBase;
@@ -136,6 +130,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using clock = std::chrono::steady_clock;
 using drake::geometry::SceneGraphConfig;
+using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
@@ -347,17 +342,15 @@ int do_main() {
     auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
     ci.set_plant(&plant);
 
-    CenicParameters ci_params;
-    ci_params.icf.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
-    ci_params.icf.max_iterations_for_hessian_reuse = FLAGS_k_max;
-    ci_params.icf.ls_tolerance = FLAGS_ls_tolerance;
-    ci_params.icf.alpha_max = FLAGS_alpha_max;
-    ci_params.icf.log_solver_stats = FLAGS_log_solver_stats;
-    ci_params.icf.print_solver_stats = FLAGS_print_solver_stats;
-    ci_params.icf.use_dense_algebra = FLAGS_dense_algebra;
-    ci_params.tolerance = FLAGS_tolerance;
-    ci_params.kappa = FLAGS_kappa;
-    ci.set_solver_parameters(ci_params);
+    IcfSolverParameters icf_params;
+    icf_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
+    icf_params.max_iterations_for_hessian_reuse = FLAGS_k_max;
+    icf_params.ls_tolerance = FLAGS_ls_tolerance;
+    icf_params.alpha_max = FLAGS_alpha_max;
+    icf_params.print_solver_stats = FLAGS_print_solver_stats;
+    icf_params.use_dense_algebra = FLAGS_dense_algebra;
+    icf_params.tolerance = FLAGS_tolerance;
+    ci.set_solver_parameters(icf_params);
   }
 
   simulator->set_publish_every_time_step(true);

@@ -388,7 +388,7 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
 
   IcfBuilder<double>& icf_builder = integrator.builder();
   IcfModel<double>& model = integrator.get_model();
-  IcfData<double>& data = integrator.get_data();
+  IcfData<double> data;
   icf_builder.UpdateModel(plant_context, h, actuation_feedback, std::nullopt,
                           &model);
   model.ResizeData(&data);
