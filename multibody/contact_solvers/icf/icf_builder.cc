@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf_builder.h"
 
 #include <limits>
 #include <utility>
@@ -24,7 +24,7 @@ using drake::multibody::internal::TreeIndex;
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 template <typename T>
 T CombineHuntCrossleyDissipation(const T& stiffness_A, const T& stiffness_B,
@@ -43,7 +43,7 @@ T CombineHuntCrossleyDissipation(const T& stiffness_A, const T& stiffness_B,
 }
 
 template <typename T>
-void PooledSapBuilder<T>::CalcGeometryContactData(
+void IcfBuilder<T>::CalcGeometryContactData(
     const systems::Context<T>& context) {
   surfaces_.clear();
   point_pairs_.clear();
@@ -72,9 +72,9 @@ void PooledSapBuilder<T>::CalcGeometryContactData(
 }
 
 template <typename T>
-PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant,
-                                      const systems::Context<T>& context)
-    : PooledSapBuilder(plant) {
+IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
+                          const systems::Context<T>& context)
+    : IcfBuilder(plant) {
   // Retrieve constant model parameters.
   // TODO(amcastro-tri): This should be retrieved from the default contact
   // properties.
@@ -96,8 +96,7 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant,
 }
 
 template <typename T>
-PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
-    : plant_(&plant) {
+IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant) : plant_(&plant) {
   using std::isinf;
   const int nv = plant.num_velocities();
 
@@ -222,15 +221,15 @@ PooledSapBuilder<T>::PooledSapBuilder(const MultibodyPlant<T>& plant)
 }
 
 template <typename T>
-void PooledSapBuilder<T>::UpdateModel(
+void IcfBuilder<T>::UpdateModel(
     const systems::Context<T>& context, const T& time_step,
     std::optional<LinearFeedbackGains<T>> actuation_feedback,
     std::optional<LinearFeedbackGains<T>> external_feedback,
-    PooledSapModel<T>* model) {
+    IcfModel<T>* model) {
   const SpanningForest& forest = GetInternalTree(plant()).forest();
   const int nv = plant().num_velocities();
 
-  std::unique_ptr<PooledSapParameters<T>> params = model->ReleaseParameters();
+  std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
 
   // Set the time step δt and initial velocities v₀
   params->time_step = time_step;
@@ -340,17 +339,15 @@ void PooledSapBuilder<T>::UpdateModel(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::UpdateModel(const T& time_step,
-                                      PooledSapModel<T>* model) const {
+void IcfBuilder<T>::UpdateModel(const T& time_step, IcfModel<T>* model) const {
   model->UpdateTimeStep(time_step);
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AllocatePatchConstraints(
-    PooledSapModel<T>* model) const {
+void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
-  typename PooledSapModel<T>::PatchConstraintsPool& patches =
+  typename IcfModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
   const int num_surfaces = surfaces_.size();
 
@@ -375,26 +372,25 @@ void PooledSapBuilder<T>::AllocatePatchConstraints(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AllocateCouplerConstraints(
-    PooledSapModel<T>* model) const {
+void IcfBuilder<T>::AllocateCouplerConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
-  typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
+  typename IcfModel<T>::CouplerConstraintsPool& couplers =
       model->coupler_constraints_pool();
   couplers.Resize(specs_map.size());
 }
 
 template <typename T>
-void PooledSapBuilder<T>::SetCouplerConstraints(
-    const systems::Context<T>& context, PooledSapModel<T>* model) const {
+void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
+                                          IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
   const SpanningForest& forest = GetInternalTree(plant()).forest();
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
 
-  typename PooledSapModel<T>::CouplerConstraintsPool& couplers =
+  typename IcfModel<T>::CouplerConstraintsPool& couplers =
       model->coupler_constraints_pool();
 
   int index = 0;
@@ -415,7 +411,7 @@ void PooledSapBuilder<T>::SetCouplerConstraints(
 
     if (clique0 != clique1) {
       throw std::logic_error(
-          "PooledSapBuilder: Couplers are only allowed within DoFs in the same "
+          "IcfBuilder: Couplers are only allowed within DoFs in the same "
           "tree.");
     }
 
@@ -433,25 +429,24 @@ void PooledSapBuilder<T>::SetCouplerConstraints(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AllocateLimitConstraints(
-    PooledSapModel<T>* model) const {
+void IcfBuilder<T>::AllocateLimitConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
-  typename PooledSapModel<T>::LimitConstraintsPool& limits =
+  typename IcfModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
 
   limits.Resize(limited_clique_sizes_, limit_constraint_to_clique_);
 }
 
 template <typename T>
-void PooledSapBuilder<T>::SetLimitConstraints(
-    const systems::Context<T>& context, PooledSapModel<T>* model) const {
+void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
+                                        IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   using std::isinf;
 
   const SpanningForest& forest = GetInternalTree(plant()).forest();
 
-  typename PooledSapModel<T>::LimitConstraintsPool& limits =
+  typename IcfModel<T>::LimitConstraintsPool& limits =
       model->limit_constraints_pool();
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
@@ -481,8 +476,8 @@ void PooledSapBuilder<T>::SetLimitConstraints(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::SetPatchConstraintsForPointContact(
-    const systems::Context<T>& context, PooledSapModel<T>* model) const {
+void IcfBuilder<T>::SetPatchConstraintsForPointContact(
+    const systems::Context<T>& context, IcfModel<T>* model) const {
   const int num_point_contacts = point_pairs_.size();
   if (num_point_contacts == 0) {
     return;
@@ -491,7 +486,7 @@ void PooledSapBuilder<T>::SetPatchConstraintsForPointContact(
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
-  typename PooledSapModel<T>::PatchConstraintsPool& patches =
+  typename IcfModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
   // Fill in the point contact pairs.
@@ -561,8 +556,8 @@ void PooledSapBuilder<T>::SetPatchConstraintsForPointContact(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::SetPatchConstraintsForHydroelasticContact(
-    const systems::Context<T>& context, PooledSapModel<T>* model) const {
+void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
+    const systems::Context<T>& context, IcfModel<T>* model) const {
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
@@ -572,7 +567,7 @@ void PooledSapBuilder<T>::SetPatchConstraintsForHydroelasticContact(
 
   const int num_surfaces = surfaces_.size();
 
-  typename PooledSapModel<T>::PatchConstraintsPool& patches =
+  typename IcfModel<T>::PatchConstraintsPool& patches =
       model->patch_constraints_pool();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
@@ -654,9 +649,8 @@ void PooledSapBuilder<T>::SetPatchConstraintsForHydroelasticContact(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::AllocateGainConstraints(PooledSapModel<T>* model,
-                                                  bool actuation,
-                                                  bool external_forces) const {
+void IcfBuilder<T>::AllocateGainConstraints(IcfModel<T>* model, bool actuation,
+                                            bool external_forces) const {
   DRAKE_DEMAND(model != nullptr);
 
   auto& gain_constraints = model->gain_constraints_pool();
@@ -684,9 +678,10 @@ void PooledSapBuilder<T>::AllocateGainConstraints(PooledSapModel<T>* model,
 }
 
 template <typename T>
-void PooledSapBuilder<T>::SetActuationGainConstraints(
-    const VectorX<T>& Ku, const VectorX<T>& bu, bool has_external_forces,
-    PooledSapModel<T>* model) const {
+void IcfBuilder<T>::SetActuationGainConstraints(const VectorX<T>& Ku,
+                                                const VectorX<T>& bu,
+                                                bool has_external_forces,
+                                                IcfModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
   DRAKE_DEMAND(model->num_velocities() == plant().num_velocities());
   const int nv = model->num_velocities();
@@ -718,9 +713,9 @@ void PooledSapBuilder<T>::SetActuationGainConstraints(
 }
 
 template <typename T>
-void PooledSapBuilder<T>::SetExternalGainConstraints(
-    const VectorX<T>& Ke, const VectorX<T>& be,
-    PooledSapModel<T>* model) const {
+void IcfBuilder<T>::SetExternalGainConstraints(const VectorX<T>& Ke,
+                                               const VectorX<T>& be,
+                                               IcfModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
   const int nv = model->num_velocities();
   DRAKE_DEMAND(Ke.size() == nv);
@@ -744,10 +739,10 @@ void PooledSapBuilder<T>::SetExternalGainConstraints(
   }
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::pooled_sap::PooledSapBuilder);
+    class ::drake::multibody::contact_solvers::icf::IcfBuilder);

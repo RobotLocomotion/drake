@@ -7,12 +7,12 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 /**
  * Data pool for contact constraints. This data is updated at each solver
@@ -87,11 +87,10 @@ class PatchConstraintsDataPool {
   EigenPool<Vector3<T>> v_AcBc_W_;  // Contact velocity.
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::pooled_sap::
-        PatchConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::PatchConstraintsDataPool);

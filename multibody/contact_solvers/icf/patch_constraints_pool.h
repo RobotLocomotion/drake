@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef DRAKE_POOLED_SAP_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h" // NOLINT
+#ifndef DRAKE_ICF_INCLUDED
+#error Do not include this file. Use "drake/multibody/contact_solvers/icf/icf.h"
 #endif
 
 #include <algorithm>
@@ -11,30 +11,29 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/patch_constraints_data_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_data.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 /**
  * A pool of contact constraints organized by patches. Each patch involves two
  * bodies and one (point contact) or more (hydroelastic) contact pairs.
  */
 template <typename T>
-class PooledSapModel<T>::PatchConstraintsPool {
+class IcfModel<T>::PatchConstraintsPool {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PatchConstraintsPool);
 
   using JacobianView = Eigen::Map<Matrix6X<T>>;
 
   // Constructor for an empty pool.
-  PatchConstraintsPool(const PooledSapModel<T>* parent_model)
-      : model_(parent_model) {
+  PatchConstraintsPool(const IcfModel<T>* parent_model) : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
@@ -96,7 +95,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   int num_constraints() const { return ssize(num_pairs_); }
 
   // Return a reference to the parent model.
-  const PooledSapModel<T>& model() const { return *model_; }
+  const IcfModel<T>& model() const { return *model_; }
 
   // Return the number of pairs in each patch.
   const std::vector<int>& patch_sizes() const { return num_pairs_; }
@@ -121,13 +120,12 @@ class PooledSapModel<T>::PatchConstraintsPool {
 
   // Add the gradient contribution of the patch constraints, ∇ℓ = −Jᵀ⋅γ, to the
   // overall gradient.
-  void AccumulateGradient(const PooledSapData<T>& data,
-                          VectorX<T>* gradient) const;
+  void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
   // Add the Hessian contribution of the patch constraints to the overall
   // Hessian.
   void AccumulateHessian(
-      const PooledSapData<T>& data,
+      const IcfData<T>& data,
       internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   /**
@@ -188,7 +186,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
                                 EigenPool<Vector6<T>>* V_AbB_W_pool) const;
 
-  const PooledSapModel<T>* model_{nullptr};  // The parent model.
+  const IcfModel<T>* model_{nullptr};  // The parent model.
 
   // Data per patch. Indexed by patch index p < num_patches()
   std::vector<int> num_pairs_;    // Number of pairs per patch.
@@ -222,7 +220,7 @@ class PooledSapModel<T>::PatchConstraintsPool {
   std::vector<T> net_friction_;     // Regularized stiction tolerance.
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

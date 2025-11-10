@@ -10,8 +10,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -20,14 +20,14 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::icf::IcfBuilder;
+using multibody::contact_solvers::icf::IcfData;
+using multibody::contact_solvers::icf::IcfModel;
+using multibody::contact_solvers::icf::LinearFeedbackGains;
+using multibody::contact_solvers::icf::SearchDirectionData;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
-using multibody::contact_solvers::pooled_sap::LinearFeedbackGains;
-using multibody::contact_solvers::pooled_sap::PooledSapBuilder;
-using multibody::contact_solvers::pooled_sap::PooledSapData;
-using multibody::contact_solvers::pooled_sap::PooledSapModel;
-using multibody::contact_solvers::pooled_sap::SearchDirectionData;
 
 /**
  * Tolerances and other parameters for the convex integrator's solver.
@@ -114,7 +114,7 @@ struct ConvexIntegratorSolverStats {
 };
 
 /**
- * An experimental implicit integrator that solves a convex SAP problem to
+ * An experimental implicit integrator that solves a convex ICF problem to
  * advance the state, rather than relying on non-convex Newton-Raphson.
  *
  * N.B. Although this is an implicit integration scheme, we inherit from
@@ -161,26 +161,26 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   }
 
   /**
-   * Get a reference to SAP problem builder, used to set up the convex problem.
+   * Get a reference to the ICF builder, used to set up the convex problem.
    *
    * N.B. this is not const because the builder caches geometry data.
    */
-  PooledSapBuilder<T>& builder() {
+  IcfBuilder<T>& builder() {
     DRAKE_ASSERT(builder_ != nullptr);
     return *builder_;
   }
 
   /**
-   * Get a reference to the SAP problem model, used to compute the cost,
+   * Get a reference to the ICF problem model, used to compute the cost,
    * gradient, Hessian, etc.
    */
-  PooledSapModel<T>& get_model() { return model_; }
+  IcfModel<T>& get_model() { return model_; }
 
   /**
-   * Get a reference to the SAP problem data, used to store the cost, gradient,
+   * Get a reference to the ICF problem data, used to store the cost, gradient,
    * Hessian, etc.
    */
-  PooledSapData<T>& get_data() { return data_; }
+  IcfData<T>& get_data() { return data_; }
 
   /**
    * Get the current convex solver tolerances and iteration limits.
@@ -251,7 +251,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool DoStep(const T& h) override;
 
   /**
-   * Solve the SAP problem to compute x_{t+h} at a given step size. This will be
+   * Solve the ICF problem to compute x_{t+h} at a given step size. This will be
    * called multiple times for each DoStep to compute the error estimate.
    *
    * @param h the time step to use
@@ -261,7 +261,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * @param actuation_feedback linearization of any actuator forces τ = B u(x)
    * @param external_feedback linearization of any external forces τₑₓₜ(x)
    * @param reuse_constraints use previously computed constraint data, updating
-   *                          only the time step of the SAP model.
+   *                          only the time step of the ICF model.
    */
   void ComputeNextContinuousState(
       const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next,
@@ -275,15 +275,15 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  // Solve the convex SAP problem for next-step velocities v = min ℓ(v).
+  // Solve the convex ICF problem for next-step velocities v = min ℓ(v).
   // The solution is written back into the initial guess v. Returns true if
   // and only if the optimization converged.
-  bool SolveWithGuess(const PooledSapModel<T>& model, VectorX<T>* v_guess);
+  bool SolveWithGuess(const IcfModel<T>& model, VectorX<T>* v_guess);
 
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
   // Returns the linesearch parameter α and the number of iterations taken.
-  std::pair<T, int> PerformExactLineSearch(const PooledSapModel<T>& model,
-                                           const PooledSapData<T>& data,
+  std::pair<T, int> PerformExactLineSearch(const IcfModel<T>& model,
+                                           const IcfData<T>& data,
                                            const VectorX<T>& dv);
 
   // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
@@ -298,14 +298,13 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse the
   //                            stored sparsity pattern. This gives an exact
   //                            Newton step, but avoids some allocations.
-  void ComputeSearchDirection(const PooledSapModel<T>& model,
-                              const PooledSapData<T>& data, VectorX<T>* dv,
-                              bool reuse_factorization = false,
+  void ComputeSearchDirection(const IcfModel<T>& model, const IcfData<T>& data,
+                              VectorX<T>* dv, bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
   // Indicate whether a change in problem structure requires a Hessian with a
   // new sparsity pattern.
-  bool SparsityPatternChanged(const PooledSapModel<T>& model) const;
+  bool SparsityPatternChanged(const IcfModel<T>& model) const;
 
   // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
   // generalized force input ports.
@@ -340,9 +339,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   MultibodyPlant<T>* plant_{nullptr};
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
-  std::unique_ptr<PooledSapBuilder<T>> builder_;
-  PooledSapModel<T> model_;
-  PooledSapData<T> data_;
+  std::unique_ptr<IcfBuilder<T>> builder_;
+  IcfModel<T> model_;
+  IcfData<T> data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
@@ -398,17 +397,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
 template <>
-bool ConvexIntegrator<double>::SolveWithGuess(const PooledSapModel<double>&,
+bool ConvexIntegrator<double>::SolveWithGuess(const IcfModel<double>&,
                                               VectorX<double>*);
 template <>
 std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>&, const PooledSapData<double>&,
-    const VectorX<double>&);
+    const IcfModel<double>&, const IcfData<double>&, const VectorX<double>&);
 
 template <>
-void ConvexIntegrator<double>::ComputeSearchDirection(
-    const PooledSapModel<double>&, const PooledSapData<double>&,
-    VectorX<double>*, bool, bool);
+void ConvexIntegrator<double>::ComputeSearchDirection(const IcfModel<double>&,
+                                                      const IcfData<double>&,
+                                                      VectorX<double>*, bool,
+                                                      bool);
 
 }  // namespace systems
 }  // namespace drake

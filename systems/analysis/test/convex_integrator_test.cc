@@ -364,7 +364,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       CompareMatrices(b, b_ref, kTolerance, MatrixCompareType::relative));
 
   // Compute the cost, gradient and Hessian analytically, and check that
-  // these match what we get from the PooledSap model.
+  // these match what we get from the ICF model.
   //
   // Cost: ℓ = 1/2 v'Mv − r v + h/2 ∑(kᵢvᵢ−bᵢ)²/kᵢ =
   //         = 1/2 v'Mv − r v + h (1/2 v'Kv - b v) + h/2 b'K⁻¹b
@@ -386,10 +386,10 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const MatrixXd H_ref =
       M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
 
-  PooledSapBuilder<double>& sap_builder = integrator.builder();
-  PooledSapModel<double>& model = integrator.get_model();
-  PooledSapData<double>& data = integrator.get_data();
-  sap_builder.UpdateModel(plant_context, h, actuation_feedback, std::nullopt,
+  IcfBuilder<double>& icf_builder = integrator.builder();
+  IcfModel<double>& model = integrator.get_model();
+  IcfData<double>& data = integrator.get_data();
+  icf_builder.UpdateModel(plant_context, h, actuation_feedback, std::nullopt,
                           &model);
   model.ResizeData(&data);
   model.CalcData(v, &data);
