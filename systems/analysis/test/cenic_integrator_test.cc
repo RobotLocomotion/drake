@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/convex_integrator.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 
 #include <iostream>
 #include <limits>
@@ -127,12 +127,12 @@ const char floating_double_pendulum_xml[] = R"""(
 </mujoco>
 )""";
 
-class ConvexIntegratorTester {
+class CenicTester {
  public:
-  ConvexIntegratorTester() = delete;
+  CenicTester() = delete;
 
   static void LinearizeExternalSystem(
-      ConvexIntegrator<double>* integrator, const double h,
+      CenicIntegrator<double>* integrator, const double h,
       LinearFeedbackGains<double>* actuation_feedback,
       LinearFeedbackGains<double>* external_feedback) {
     integrator->LinearizeExternalSystem(h, actuation_feedback,
@@ -140,7 +140,7 @@ class ConvexIntegratorTester {
   }
 };
 
-GTEST_TEST(ConvexIntegratorTest, TestConstruction) {
+GTEST_TEST(CenicTest, TestConstruction) {
   // Create a simple system
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -150,7 +150,7 @@ GTEST_TEST(ConvexIntegratorTest, TestConstruction) {
   auto context = diagram->CreateDefaultContext();
 
   // Set up the integrator, without specifying the plant.
-  ConvexIntegrator<double> integrator(*diagram, context.get());
+  CenicIntegrator<double> integrator(*diagram, context.get());
   integrator.set_maximum_step_size(0.01);
 
   // Integrator initialization should fail unless the plant is set correctly.
@@ -165,7 +165,7 @@ GTEST_TEST(ConvexIntegratorTest, TestConstruction) {
   integrator.Initialize();
 }
 
-GTEST_TEST(ConvexIntegratorTest, TestStep) {
+GTEST_TEST(CenicTest, TestStep) {
   // TODO(vincekurtz): update this test to include joint damping
   // Create a simple system
   DiagramBuilder<double> builder;
@@ -178,7 +178,7 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   // Set up the integrator
-  ConvexIntegrator<double> integrator(*diagram, diagram_context.get());
+  CenicIntegrator<double> integrator(*diagram, diagram_context.get());
   integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.01);
   integrator.set_fixed_step_mode(true);
@@ -221,7 +221,7 @@ GTEST_TEST(ConvexIntegratorTest, TestStep) {
 
 /* A single free body spins away with a massive angular velocity. The quaternion
 portion of the state should remain normalized. */
-GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
+GTEST_TEST(CenicTest, TestQuaternions) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
@@ -247,8 +247,8 @@ GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
 
   // Set up the integrator
   Simulator<double> simulator(*diagram, std::move(diagram_context));
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.1);  // fairly large dt
   integrator.set_fixed_step_mode(true);
@@ -268,7 +268,7 @@ GTEST_TEST(ConvexIntegratorTest, TestQuaternions) {
 }
 
 // Run tests with an actuated pendulum and an external (PID) controller
-GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
+GTEST_TEST(CenicTest, ActuatedPendulum) {
   // Some options
   const double h = 0.01;
   VectorXd Kp(2), Kd(2), Ki(2);
@@ -310,8 +310,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
 
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.get_mutable_solver_parameters().enable_hessian_reuse = false;
   integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
@@ -334,8 +334,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   LinearFeedbackGains<double> external_feedback;  // unused here
   actuation_feedback.resize(nv);
   external_feedback.resize(nv);
-  ConvexIntegratorTester::LinearizeExternalSystem(
-      &integrator, h, &actuation_feedback, &external_feedback);
+  CenicTester::LinearizeExternalSystem(&integrator, h, &actuation_feedback,
+                                       &external_feedback);
   const VectorXd& K = actuation_feedback.K;
   const VectorXd& b = actuation_feedback.b;
 
@@ -416,7 +416,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 }
 
 // Test implicit joint effort limits
-GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
+GTEST_TEST(CenicTest, EffortLimits) {
   // Set up the a system model with effort limits
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -458,7 +458,7 @@ GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
   }
 
   // Set up the integrator
-  ConvexIntegrator<double> integrator(*diagram, diagram_context.get());
+  CenicIntegrator<double> integrator(*diagram, diagram_context.get());
   integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.1);
   integrator.set_fixed_step_mode(true);
@@ -494,7 +494,7 @@ GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
 }
 
 // Check that we can enforce joint limits
-GTEST_TEST(ConvexIntegratorTest, JointLimits) {
+GTEST_TEST(CenicTest, JointLimits) {
   auto meshcat = std::make_shared<drake::geometry::Meshcat>();
 
   // Set up the a system model with joint limits
@@ -521,8 +521,8 @@ GTEST_TEST(ConvexIntegratorTest, JointLimits) {
   ApplySimulatorConfig(config, &simulator);
 
   // Set the integrator
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.set_maximum_step_size(0.1);
   integrator.set_fixed_step_mode(true);
   integrator.set_plant(&plant);
@@ -546,7 +546,7 @@ GTEST_TEST(ConvexIntegratorTest, JointLimits) {
   std::cout << std::endl;
 }
 
-GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
+GTEST_TEST(CenicTest, PendulumWithCoupler) {
   // Some options
   const double h = 0.01;
   VectorXd Kp(1), Kd(1), Ki(1);
@@ -596,8 +596,8 @@ GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
 
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.get_mutable_solver_parameters().enable_hessian_reuse = false;
   integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
@@ -632,7 +632,7 @@ GTEST_TEST(ConvexIntegratorTest, PendulumWithCoupler) {
 }
 
 // Smoke test for letting a franka arm just flop down freely under gravity.
-GTEST_TEST(ConvexIntegratorTest, FrankaFreeFall) {
+GTEST_TEST(CenicTest, FrankaFreeFall) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   const std::string panda_url =
@@ -648,8 +648,8 @@ GTEST_TEST(ConvexIntegratorTest, FrankaFreeFall) {
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
 
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.get_mutable_solver_parameters().enable_hessian_reuse = true;
   integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
@@ -674,7 +674,7 @@ GTEST_TEST(ConvexIntegratorTest, FrankaFreeFall) {
 }
 
 // Smoke test for a floating double pendulum, to test non-SPD Hessian issues.
-GTEST_TEST(ConvexIntegratorTest, FloatingDoublePendulum) {
+GTEST_TEST(CenicTest, FloatingDoublePendulum) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelsFromString(floating_double_pendulum_xml, "xml");
@@ -687,8 +687,8 @@ GTEST_TEST(ConvexIntegratorTest, FloatingDoublePendulum) {
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
 
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.get_mutable_solver_parameters().print_solver_stats = false;
   integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);

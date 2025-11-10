@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/convex_integrator.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 
 #include <algorithm>
 
@@ -16,20 +16,20 @@ using multibody::contact_solvers::internal::Bracket;
 using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 
 template <typename T>
-ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
-                                      Context<T>* context)
+CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
+                                    Context<T>* context)
     : IntegratorBase<T>(system, context) {}
 
 template <typename T>
-void ConvexIntegrator<T>::DoInitialize() {
+void CenicIntegrator<T>::DoInitialize() {
   using std::isnan;
   if (plant_ == nullptr) {
     throw std::runtime_error(
-        "ConvexIntegrator: MultibodyPlant not set. You must call "
-        "ConvexIntegrator::set_plant() before initialization.");
+        "CenicIntegrator: MultibodyPlant not set. You must call "
+        "CenicIntegrator::set_plant() before initialization.");
   }
 
-  // Convex integration works best at loose accuracies.
+  // CENIC works best at loose accuracies.
   const double kDefaultAccuracy = 1e-1;
 
   // Get the plant context from the overall context. This will throw if plant()
@@ -37,8 +37,8 @@ void ConvexIntegrator<T>::DoInitialize() {
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
-  // For now, the convex integrator only supports systems where the only
-  // second-order state (q, v) is from the MultibodyPlant.
+  // For now, CENIC only supports systems where the only second-order state (q,
+  // v) is from the MultibodyPlant.
   const int nq = this->get_context().get_continuous_state().num_q();
   const int nv = this->get_context().get_continuous_state().num_v();
   const int nz = this->get_context().get_continuous_state().num_z();
@@ -91,14 +91,14 @@ void ConvexIntegrator<T>::DoInitialize() {
 
   // Set up the CSV file and write a header, if logging is enabled.
   if (solver_parameters_.log_solver_stats) {
-    log_file_.open("convex_integrator_stats.csv");
+    log_file_.open("cenic_stats.csv");
     log_file_
         << "time,iteration,cost,gradient_norm,ls_iterations,alpha,step_size\n";
   }
 }
 
 template <typename T>
-bool ConvexIntegrator<T>::DoStep(const T& h) {
+bool CenicIntegrator<T>::DoStep(const T& h) {
   // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
@@ -186,7 +186,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 }
 
 template <typename T>
-void ConvexIntegrator<T>::ComputeNextContinuousState(
+void CenicIntegrator<T>::ComputeNextContinuousState(
     const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next,
     std::optional<LinearFeedbackGains<T>> actuation_feedback,
     std::optional<LinearFeedbackGains<T>> external_feedback,
@@ -211,7 +211,7 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
   VectorX<T>& v = scratch_.v;
   v = v_guess;
   if (!SolveWithGuess(model, &v)) {
-    throw std::runtime_error("ConvexIntegrator: optimization failed.");
+    throw std::runtime_error("CenicIntegrator: optimization failed.");
   }
 
   // Accumulate solver statistics
@@ -247,9 +247,9 @@ void ConvexIntegrator<T>::ComputeNextContinuousState(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::AdvancePlantConfiguration(const T& h,
-                                                    const VectorX<T>& v,
-                                                    VectorX<T>* q) const {
+void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
+                                                   const VectorX<T>& v,
+                                                   VectorX<T>* q) const {
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const VectorX<T>& q0 = plant().GetPositions(plant_context);
@@ -276,16 +276,16 @@ void ConvexIntegrator<T>::AdvancePlantConfiguration(const T& h,
 }
 
 template <typename T>
-bool ConvexIntegrator<T>::SolveWithGuess(const IcfModel<T>&, VectorX<T>*) {
+bool CenicIntegrator<T>::SolveWithGuess(const IcfModel<T>&, VectorX<T>*) {
   // Eventually we could propagate gradients with the implicit function theorem
   // to support AutoDiffXd. For now we'll throw if anything other than double is
   // used.
-  throw std::logic_error("ConvexIntegrator only supports T = double.");
+  throw std::logic_error("CenicIntegrator only supports T = double.");
 }
 
 template <>
-bool ConvexIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
-                                              VectorXd* v_guess) {
+bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
+                                             VectorXd* v_guess) {
   IcfData<double>& data = get_data();
   VectorXd& v = *v_guess;
   VectorXd& dv = scratch_.search_direction;
@@ -320,7 +320,7 @@ bool ConvexIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
   const double t = this->get_context().get_time();
   stats_.Reset(t);
   if (solver_parameters_.print_solver_stats) {
-    fmt::print("ConvexIntegrator: solving at t = {:.4f}\n", t);
+    fmt::print("CenicIntegrator: solving at t = {:.4f}\n", t);
   }
 
   for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
@@ -432,14 +432,14 @@ bool ConvexIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
 }
 
 template <typename T>
-std::pair<T, int> ConvexIntegrator<T>::PerformExactLineSearch(
+std::pair<T, int> CenicIntegrator<T>::PerformExactLineSearch(
     const IcfModel<T>&, const IcfData<T>&, const VectorX<T>&) {
   throw std::logic_error(
-      "ConvexIntegrator: PerformExactLineSearch only supports T = double.");
+      "CenicIntegrator: PerformExactLineSearch only supports T = double.");
 }
 
 template <>
-std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
+std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
     const IcfModel<double>& model, const IcfData<double>& data,
     const VectorXd& dv) {
   const double alpha_max = solver_parameters_.alpha_max;
@@ -461,7 +461,7 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
   const double dell0 = data.cache().gradient.dot(dv);
   if (dell0 >= 0) {
     throw std::logic_error(
-        "ConvexIntegrator: the cost does not decrease along the search "
+        "CenicIntegrator: the cost does not decrease along the search "
         "direction. This is usually caused by an excessive accumulation of "
         "round-off errors for ill-conditioned systems. Consider revisiting "
         "your model.");
@@ -522,8 +522,8 @@ std::pair<double, int> ConvexIntegrator<double>::PerformExactLineSearch(
 }
 
 template <typename T>
-T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
-                                                    const T& c) const {
+T CenicIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
+                                                   const T& c) const {
   using std::clamp;
   using std::sqrt;
 
@@ -554,7 +554,7 @@ T ConvexIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
   constexpr double slop = 1e-8;
   if (s < -slop || s > 1.0 + slop) {
     throw std::runtime_error(
-        "ConvexIntegrator: quadratic root falls outside [0, 1].");
+        "CenicIntegrator: quadratic root falls outside [0, 1].");
   }
 
   return clamp(s, T(0.0), T(1.0));  // Ensure s ∈ [0, 1].
@@ -564,11 +564,11 @@ template <typename T>
 void ComputeSearchDirection(const IcfModel<T>&, const IcfData<T>&, VectorX<T>*,
                             bool, bool) {
   throw std::logic_error(
-      "ConvexIntegrator: ComputeSearchDirection only supports T = double.");
+      "CenicIntegrator: ComputeSearchDirection only supports T = double.");
 }
 
 template <>
-void ConvexIntegrator<double>::ComputeSearchDirection(
+void CenicIntegrator<double>::ComputeSearchDirection(
     const IcfModel<double>& model, const IcfData<double>& data, VectorXd* dv,
     bool reuse_factorization, bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(dv != nullptr);
@@ -596,7 +596,7 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
       // Factorize H
       if (!hessian_factorization_.Factor()) {
         throw std::runtime_error(
-            "ConvexIntegrator: Hessian factorization failed!");
+            "CenicIntegrator: Hessian factorization failed!");
       }
       total_hessian_factorizations_++;
       reuse_hessian_factorization_ = true;
@@ -609,7 +609,7 @@ void ConvexIntegrator<double>::ComputeSearchDirection(
 }
 
 template <typename T>
-bool ConvexIntegrator<T>::SparsityPatternChanged(
+bool CenicIntegrator<T>::SparsityPatternChanged(
     const IcfModel<T>& model) const {
   if (previous_sparsity_pattern_ == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
@@ -621,8 +621,8 @@ bool ConvexIntegrator<T>::SparsityPatternChanged(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::CalcExternalForces(const Context<T>& context,
-                                             VectorX<T>* tau) {
+void CenicIntegrator<T>::CalcExternalForces(const Context<T>& context,
+                                            VectorX<T>* tau) {
   MultibodyForces<T>& forces = *scratch_.f_ext;
   forces.SetZero();
   plant().AddAppliedExternalSpatialForces(context, &forces);
@@ -631,14 +631,14 @@ void ConvexIntegrator<T>::CalcExternalForces(const Context<T>& context,
 }
 
 template <typename T>
-void ConvexIntegrator<T>::CalcActuationForces(const Context<T>& context,
-                                              VectorX<T>* tau) {
+void CenicIntegrator<T>::CalcActuationForces(const Context<T>& context,
+                                             VectorX<T>* tau) {
   tau->setZero();
   plant().AddJointActuationForces(context, tau);
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(
+void CenicIntegrator<T>::LinearizeExternalSystem(
     const T& h, LinearFeedbackGains<T>* actuation_feedback,
     LinearFeedbackGains<T>* external_feedback) {
   using std::abs;
@@ -745,7 +745,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(
 }
 
 template <typename T>
-T ConvexIntegrator<T>::CalcStateChangeNorm(
+T CenicIntegrator<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   // Simple infinity norm of the generalized position change.
   const VectorBase<T>& dgq = dx_state.get_generalized_position();
@@ -759,4 +759,4 @@ T ConvexIntegrator<T>::CalcStateChangeNorm(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::ConvexIntegrator);
+    class drake::systems::CenicIntegrator);

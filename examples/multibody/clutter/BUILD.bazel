@@ -21,7 +21,7 @@ drake_cc_binary(
         "//multibody/contact_solvers/sap:sap_solver",
         "//multibody/meshcat:contact_visualizer",
         "//multibody/plant:contact_results_to_lcm",
-        "//systems/analysis:convex_integrator",
+        "//systems/analysis:cenic_integrator",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",

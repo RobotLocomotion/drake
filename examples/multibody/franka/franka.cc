@@ -25,7 +25,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/systems/analysis/convex_integrator.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -122,9 +122,9 @@ using drake::math::RollPitchYawd;
 using drake::math::RotationMatrixd;
 using drake::multibody::ContactResults;
 using drake::multibody::MultibodyPlant;
+using drake::systems::CenicIntegrator;
+using drake::systems::CenicSolverParameters;
 using drake::systems::ConstantVectorSource;
-using drake::systems::ConvexIntegrator;
-using drake::systems::ConvexIntegratorSolverParameters;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::IntegratorBase;
 using drake::systems::controllers::InverseDynamicsController;
@@ -343,11 +343,11 @@ int do_main() {
     ie.set_use_full_newton(FLAGS_full_newton);
     ie.set_use_implicit_trapezoid_error_estimation(FLAGS_trapezoid);
   }
-  if (FLAGS_simulator_integration_scheme == "convex") {
-    auto& ci = dynamic_cast<ConvexIntegrator<double>&>(integrator);
+  if (FLAGS_simulator_integration_scheme == "cenic") {
+    auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
     ci.set_plant(&plant);
 
-    ConvexIntegratorSolverParameters ci_params;
+    CenicSolverParameters ci_params;
     ci_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
     ci_params.max_iterations_for_hessian_reuse = FLAGS_k_max;
     ci_params.kappa = FLAGS_kappa;
@@ -400,7 +400,7 @@ int main(int argc, char* argv[]) {
 
   // Set some reasonable defaults for the simulator options (these can be
   // overridden from the command line).
-  FLAGS_simulator_integration_scheme = "convex";
+  FLAGS_simulator_integration_scheme = "cenic";
   FLAGS_simulator_accuracy = 1e-3;
   FLAGS_simulator_max_time_step = 0.1;
   FLAGS_simulator_use_error_control = true;

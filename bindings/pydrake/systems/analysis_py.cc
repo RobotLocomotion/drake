@@ -12,7 +12,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
-#include "drake/systems/analysis/convex_integrator.h"
+#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
@@ -272,42 +272,36 @@ PYBIND11_MODULE(analysis, m) {
 
   // Convex integrator options
   {
-    py::class_<ConvexIntegratorSolverParameters>(m,
-        "ConvexIntegratorSolverParameters",
-        doc.ConvexIntegratorSolverParameters.doc)
-        .def_readwrite("max_iterations",
-            &ConvexIntegratorSolverParameters::max_iterations,
-            doc.ConvexIntegratorSolverParameters.max_iterations.doc)
+    py::class_<CenicSolverParameters>(
+        m, "CenicSolverParameters", doc.CenicSolverParameters.doc)
+        .def_readwrite("max_iterations", &CenicSolverParameters::max_iterations,
+            doc.CenicSolverParameters.max_iterations.doc)
         .def_readwrite("max_ls_iterations",
-            &ConvexIntegratorSolverParameters::max_ls_iterations,
-            doc.ConvexIntegratorSolverParameters.max_ls_iterations.doc)
-        .def_readwrite("alpha_max",
-            &ConvexIntegratorSolverParameters::alpha_max,
-            doc.ConvexIntegratorSolverParameters.alpha_max.doc)
-        .def_readwrite("tolerance",
-            &ConvexIntegratorSolverParameters::tolerance,
-            doc.ConvexIntegratorSolverParameters.tolerance.doc)
-        .def_readwrite("ls_tolerance",
-            &ConvexIntegratorSolverParameters::ls_tolerance,
-            doc.ConvexIntegratorSolverParameters.ls_tolerance.doc)
-        .def_readwrite("kappa", &ConvexIntegratorSolverParameters::kappa,
-            doc.ConvexIntegratorSolverParameters.kappa.doc)
+            &CenicSolverParameters::max_ls_iterations,
+            doc.CenicSolverParameters.max_ls_iterations.doc)
+        .def_readwrite("alpha_max", &CenicSolverParameters::alpha_max,
+            doc.CenicSolverParameters.alpha_max.doc)
+        .def_readwrite("tolerance", &CenicSolverParameters::tolerance,
+            doc.CenicSolverParameters.tolerance.doc)
+        .def_readwrite("ls_tolerance", &CenicSolverParameters::ls_tolerance,
+            doc.CenicSolverParameters.ls_tolerance.doc)
+        .def_readwrite("kappa", &CenicSolverParameters::kappa,
+            doc.CenicSolverParameters.kappa.doc)
         .def_readwrite("enable_hessian_reuse",
-            &ConvexIntegratorSolverParameters::enable_hessian_reuse,
-            doc.ConvexIntegratorSolverParameters.enable_hessian_reuse.doc)
+            &CenicSolverParameters::enable_hessian_reuse,
+            doc.CenicSolverParameters.enable_hessian_reuse.doc)
         .def_readwrite("max_iterations_for_hessian_reuse",
-            &ConvexIntegratorSolverParameters::max_iterations_for_hessian_reuse,
-            doc.ConvexIntegratorSolverParameters
-                .max_iterations_for_hessian_reuse.doc)
+            &CenicSolverParameters::max_iterations_for_hessian_reuse,
+            doc.CenicSolverParameters.max_iterations_for_hessian_reuse.doc)
         .def_readwrite("print_solver_stats",
-            &ConvexIntegratorSolverParameters::print_solver_stats,
-            doc.ConvexIntegratorSolverParameters.print_solver_stats.doc)
+            &CenicSolverParameters::print_solver_stats,
+            doc.CenicSolverParameters.print_solver_stats.doc)
         .def_readwrite("log_solver_stats",
-            &ConvexIntegratorSolverParameters::log_solver_stats,
-            doc.ConvexIntegratorSolverParameters.log_solver_stats.doc)
+            &CenicSolverParameters::log_solver_stats,
+            doc.CenicSolverParameters.log_solver_stats.doc)
         .def_readwrite("use_dense_algebra",
-            &ConvexIntegratorSolverParameters::use_dense_algebra,
-            doc.ConvexIntegratorSolverParameters.use_dense_algebra.doc);
+            &CenicSolverParameters::use_dense_algebra,
+            doc.CenicSolverParameters.use_dense_algebra.doc);
   }
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
@@ -323,22 +317,22 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
-    DefineTemplateClassWithDefault<ConvexIntegrator<T>, IntegratorBase<T>>(
-        m, "ConvexIntegrator", GetPyParam<T>(), doc.ConvexIntegrator.doc)
+    DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
+        m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc)
         .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
             py::arg("context") = nullptr,
             // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
-            py::keep_alive<1, 3>(), doc.ConvexIntegrator.ctor.doc)
-        .def("set_plant", &ConvexIntegrator<T>::set_plant, py::arg("plant"),
-            doc.ConvexIntegrator.set_plant.doc)
+            py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
+        .def("set_plant", &CenicIntegrator<T>::set_plant, py::arg("plant"),
+            doc.CenicIntegrator.set_plant.doc)
         .def("get_solver_parameters",
-            &ConvexIntegrator<T>::get_solver_parameters,
-            doc.ConvexIntegrator.get_solver_parameters.doc)
+            &CenicIntegrator<T>::get_solver_parameters,
+            doc.CenicIntegrator.get_solver_parameters.doc)
         .def("set_solver_parameters",
-            &ConvexIntegrator<T>::set_solver_parameters, py::arg("parameters"),
-            doc.ConvexIntegrator.set_solver_parameters.doc);
+            &CenicIntegrator<T>::set_solver_parameters, py::arg("parameters"),
+            doc.CenicIntegrator.set_solver_parameters.doc);
 
     // See equivalent note about EventCallback in `framework_py_systems.cc`.
     using MonitorCallback =

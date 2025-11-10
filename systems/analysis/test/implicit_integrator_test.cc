@@ -149,9 +149,9 @@ GTEST_TEST(ImplicitIntegratorTest, Clone) {
   SpringMassSystem<double> dummy_system(spring_k, mass, false /* unforced */);
 
   for (auto& scheme : GetIntegrationSchemes()) {
-    // Skip the convex integrator, since it doesn't support the dummy system
-    // (only diagrams with a plant in them).
-    if (scheme == "convex") {
+    // Skip CENIC, since it doesn't support the dummy system (only diagrams with
+    // a plant in them).
+    if (scheme == "cenic") {
       continue;
     }
 

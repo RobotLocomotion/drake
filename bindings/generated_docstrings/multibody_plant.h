@@ -9882,9 +9882,9 @@ to be zero.)""";
       } Wing;
       // Symbol: drake::multibody::contact_solvers
       struct /* contact_solvers */ {
-        // Symbol: drake::multibody::contact_solvers::pooled_sap
-        struct /* pooled_sap */ {
-        } pooled_sap;
+        // Symbol: drake::multibody::contact_solvers::icf
+        struct /* icf */ {
+        } icf;
       } contact_solvers;
     } multibody;
     // Symbol: drake::systems

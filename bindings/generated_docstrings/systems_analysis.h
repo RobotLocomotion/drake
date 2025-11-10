@@ -15,7 +15,7 @@
 // #include "drake/systems/analysis/antiderivative_function.h"
 // #include "drake/systems/analysis/batch_eval.h"
 // #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
-// #include "drake/systems/analysis/convex_integrator.h"
+// #include "drake/systems/analysis/cenic_integrator.h"
 // #include "drake/systems/analysis/dense_output.h"
 // #include "drake/systems/analysis/discrete_time_approximation.h"
 // #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -408,9 +408,9 @@ R"""(The order of the asymptotic term in the error estimate.)""";
 R"""(The integrator supports error estimation.)""";
         } supports_error_estimation;
       } BogackiShampine3Integrator;
-      // Symbol: drake::systems::ConvexIntegrator
-      struct /* ConvexIntegrator */ {
-        // Source: drake/systems/analysis/convex_integrator.h
+      // Symbol: drake::systems::CenicIntegrator
+      struct /* CenicIntegrator */ {
+        // Source: drake/systems/analysis/cenic_integrator.h
         const char* doc =
 R"""(An experimental implicit integrator that solves a convex ICF problem
 to advance the state, rather than relying on non-convex
@@ -420,11 +420,11 @@ N.B. Although this is an implicit integration scheme, we inherit from
 IntegratorBase rather than ImplicitIntegrator because the way we
 compute the Jacobian (Hessian) is completely different, and
 MultibodyPlant specific.)""";
-        // Symbol: drake::systems::ConvexIntegrator::ConvexIntegrator<type-parameter-0-0>
+        // Symbol: drake::systems::CenicIntegrator::CenicIntegrator<type-parameter-0-0>
         struct /* ctor */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
-R"""(Constructs the convex integrator.
+R"""(Constructs the integrator.
 
 Parameter ``system``:
     the overall system diagram to simulate. Must include a
@@ -439,213 +439,213 @@ Note:
     optimization problem. set_plant() must be called before using the
     integrator.)""";
         } ctor;
-        // Symbol: drake::systems::ConvexIntegrator::builder
+        // Symbol: drake::systems::CenicIntegrator::builder
         struct /* builder */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get a reference to the ICF builder, used to set up the convex problem.
 
 N.B. this is not const because the builder caches geometry data.)""";
         } builder;
-        // Symbol: drake::systems::ConvexIntegrator::get_data
+        // Symbol: drake::systems::CenicIntegrator::get_data
         struct /* get_data */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get a reference to the ICF problem data, used to store the cost,
 gradient, Hessian, etc.)""";
         } get_data;
-        // Symbol: drake::systems::ConvexIntegrator::get_error_estimate_order
+        // Symbol: drake::systems::CenicIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Half-stepping error estimation gives a second-order error estimate.
 See ImplicitEulerIntegrator for details.)""";
         } get_error_estimate_order;
-        // Symbol: drake::systems::ConvexIntegrator::get_model
+        // Symbol: drake::systems::CenicIntegrator::get_model
         struct /* get_model */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get a reference to the ICF problem model, used to compute the cost,
 gradient, Hessian, etc.)""";
         } get_model;
-        // Symbol: drake::systems::ConvexIntegrator::get_mutable_solver_parameters
+        // Symbol: drake::systems::CenicIntegrator::get_mutable_solver_parameters
         struct /* get_mutable_solver_parameters */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get a mutable reference to the convex solver tolerances and iteration
 limits.)""";
         } get_mutable_solver_parameters;
-        // Symbol: drake::systems::ConvexIntegrator::get_solver_parameters
+        // Symbol: drake::systems::CenicIntegrator::get_solver_parameters
         struct /* get_solver_parameters */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get the current convex solver tolerances and iteration limits.)""";
         } get_solver_parameters;
-        // Symbol: drake::systems::ConvexIntegrator::get_solver_stats
+        // Symbol: drake::systems::CenicIntegrator::get_solver_stats
         struct /* get_solver_stats */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get the current convex solver statistics.)""";
         } get_solver_stats;
-        // Symbol: drake::systems::ConvexIntegrator::get_total_hessian_factorizations
+        // Symbol: drake::systems::CenicIntegrator::get_total_hessian_factorizations
         struct /* get_total_hessian_factorizations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get the current total number of Hessian factorizations performed,
 across all time steps and solver iterations.)""";
         } get_total_hessian_factorizations;
-        // Symbol: drake::systems::ConvexIntegrator::get_total_ls_iterations
+        // Symbol: drake::systems::CenicIntegrator::get_total_ls_iterations
         struct /* get_total_ls_iterations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get the current total number of linesearch iterations, across all time
 steps and solver iterations.)""";
         } get_total_ls_iterations;
-        // Symbol: drake::systems::ConvexIntegrator::get_total_solver_iterations
+        // Symbol: drake::systems::CenicIntegrator::get_total_solver_iterations
         struct /* get_total_solver_iterations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get the current total number of solver iterations across all time
 steps.)""";
         } get_total_solver_iterations;
-        // Symbol: drake::systems::ConvexIntegrator::plant
+        // Symbol: drake::systems::CenicIntegrator::plant
         struct /* plant */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Get a reference to the MultibodyPlant used to formulate the convex
 optimization problem.)""";
         } plant;
-        // Symbol: drake::systems::ConvexIntegrator::set_plant
+        // Symbol: drake::systems::CenicIntegrator::set_plant
         struct /* set_plant */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Specifies the MultibodyPlant used to set up the optimization problem.)""";
         } set_plant;
-        // Symbol: drake::systems::ConvexIntegrator::set_solver_parameters
+        // Symbol: drake::systems::CenicIntegrator::set_solver_parameters
         struct /* set_solver_parameters */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Set the convex solver tolerances and iteration limits.)""";
         } set_solver_parameters;
-        // Symbol: drake::systems::ConvexIntegrator::supports_error_estimation
+        // Symbol: drake::systems::CenicIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
 R"""(Error estimation is supported via half-stepping.)""";
         } supports_error_estimation;
-      } ConvexIntegrator;
-      // Symbol: drake::systems::ConvexIntegratorSolverParameters
-      struct /* ConvexIntegratorSolverParameters */ {
-        // Source: drake/systems/analysis/convex_integrator.h
+      } CenicIntegrator;
+      // Symbol: drake::systems::CenicSolverParameters
+      struct /* CenicSolverParameters */ {
+        // Source: drake/systems/analysis/cenic_integrator.h
         const char* doc =
-R"""(Tolerances and other parameters for the convex integrator's solver.)""";
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::alpha_max
+R"""(Tolerances and other parameters for the CENIC's convex solver.)""";
+        // Symbol: drake::systems::CenicSolverParameters::alpha_max
         struct /* alpha_max */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } alpha_max;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::enable_hessian_reuse
+        // Symbol: drake::systems::CenicSolverParameters::enable_hessian_reuse
         struct /* enable_hessian_reuse */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } enable_hessian_reuse;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::kappa
+        // Symbol: drake::systems::CenicSolverParameters::kappa
         struct /* kappa */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } kappa;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::log_solver_stats
+        // Symbol: drake::systems::CenicSolverParameters::log_solver_stats
         struct /* log_solver_stats */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } log_solver_stats;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::ls_tolerance
+        // Symbol: drake::systems::CenicSolverParameters::ls_tolerance
         struct /* ls_tolerance */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } ls_tolerance;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::max_iterations
+        // Symbol: drake::systems::CenicSolverParameters::max_iterations
         struct /* max_iterations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } max_iterations;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::max_iterations_for_hessian_reuse
+        // Symbol: drake::systems::CenicSolverParameters::max_iterations_for_hessian_reuse
         struct /* max_iterations_for_hessian_reuse */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } max_iterations_for_hessian_reuse;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::max_ls_iterations
+        // Symbol: drake::systems::CenicSolverParameters::max_ls_iterations
         struct /* max_ls_iterations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } max_ls_iterations;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::print_solver_stats
+        // Symbol: drake::systems::CenicSolverParameters::print_solver_stats
         struct /* print_solver_stats */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } print_solver_stats;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::tolerance
+        // Symbol: drake::systems::CenicSolverParameters::tolerance
         struct /* tolerance */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } tolerance;
-        // Symbol: drake::systems::ConvexIntegratorSolverParameters::use_dense_algebra
+        // Symbol: drake::systems::CenicSolverParameters::use_dense_algebra
         struct /* use_dense_algebra */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } use_dense_algebra;
-      } ConvexIntegratorSolverParameters;
-      // Symbol: drake::systems::ConvexIntegratorSolverStats
-      struct /* ConvexIntegratorSolverStats */ {
-        // Source: drake/systems/analysis/convex_integrator.h
+      } CenicSolverParameters;
+      // Symbol: drake::systems::CenicSolverStats
+      struct /* CenicSolverStats */ {
+        // Source: drake/systems/analysis/cenic_integrator.h
         const char* doc =
 R"""(Statistics to track during the optimization process.)""";
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::Reserve
+        // Symbol: drake::systems::CenicSolverStats::Reserve
         struct /* Reserve */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } Reserve;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::Reset
+        // Symbol: drake::systems::CenicSolverStats::Reset
         struct /* Reset */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } Reset;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::alpha
+        // Symbol: drake::systems::CenicSolverStats::alpha
         struct /* alpha */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } alpha;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::cost
+        // Symbol: drake::systems::CenicSolverStats::cost
         struct /* cost */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } cost;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::gradient_norm
+        // Symbol: drake::systems::CenicSolverStats::gradient_norm
         struct /* gradient_norm */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } gradient_norm;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::iterations
+        // Symbol: drake::systems::CenicSolverStats::iterations
         struct /* iterations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } iterations;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::ls_iterations
+        // Symbol: drake::systems::CenicSolverStats::ls_iterations
         struct /* ls_iterations */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } ls_iterations;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::step_size
+        // Symbol: drake::systems::CenicSolverStats::step_size
         struct /* step_size */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } step_size;
-        // Symbol: drake::systems::ConvexIntegratorSolverStats::time
+        // Symbol: drake::systems::CenicSolverStats::time
         struct /* time */ {
-          // Source: drake/systems/analysis/convex_integrator.h
+          // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc = R"""()""";
         } time;
-      } ConvexIntegratorSolverStats;
+      } CenicSolverStats;
       // Symbol: drake::systems::CreateIntegratorFromConfig
       struct /* CreateIntegratorFromConfig */ {
         // Source: drake/systems/analysis/simulator_config_functions.h

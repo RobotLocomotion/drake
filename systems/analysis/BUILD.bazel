@@ -20,7 +20,7 @@ drake_cc_package_library(
         ":antiderivative_function",
         ":batch_eval",
         ":bogacki_shampine3_integrator",
-        ":convex_integrator",
+        ":cenic_integrator",
         ":dense_output",
         ":discrete_time_approximation",
         ":explicit_euler_integrator",
@@ -86,7 +86,7 @@ drake_cc_library(
     hdrs = ["simulator_config_functions.h"],
     deps = [
         ":bogacki_shampine3_integrator",
-        ":convex_integrator",
+        ":cenic_integrator",
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":radau_integrator",
@@ -114,9 +114,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "convex_integrator",
-    srcs = ["convex_integrator.cc"],
-    hdrs = ["convex_integrator.h"],
+    name = "cenic_integrator",
+    srcs = ["cenic_integrator.cc"],
+    hdrs = ["cenic_integrator.h"],
     deps = [
         ":integrator_base",
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
@@ -442,7 +442,7 @@ drake_cc_library(
     srcs = ["simulator_print_stats.cc"],
     hdrs = ["simulator_print_stats.h"],
     deps = [
-        ":convex_integrator",
+        ":cenic_integrator",
         ":implicit_integrator",
         ":integrator_base",
         ":simulator",
@@ -621,12 +621,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "convex_integrator_test",
+    name = "cenic_integrator_test",
     data = [
         "@drake_models//:franka_description",
     ],
     deps = [
-        ":convex_integrator",
+        ":cenic_integrator",
         ":simulator",
         ":simulator_config_functions",
         ":simulator_print_stats",
