@@ -106,8 +106,12 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const T t0 = context.get_time();
 
-  // TODO(vincekurtz): set these flags at initialization, and store
-  // actuation_feedback and external_feedback as optional
+  // Track whether error control rejected the last step. If so, we can reuse
+  // constraints and geometry queries from the previous solve.
+  const bool previous_step_was_rejected = (t0 == time_at_last_solve_);
+  time_at_last_solve_ = t0;
+
+  // TODO(vincekurtz): set these flags at initialization
   bool has_actuators = plant().num_actuators() > 0;
   bool has_external_forces =
       plant().get_applied_generalized_force_input_port().HasValue(
@@ -123,7 +127,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   LinearFeedbackGains<T>& actuation_feedback = scratch_.actuation_feedback;
   LinearFeedbackGains<T>& external_feedback = scratch_.external_feedback;
 
-  if (has_actuators || has_external_forces) {
+  if (!previous_step_was_rejected && (has_actuators || has_external_forces)) {
     LinearizeExternalSystem(h, &actuation_feedback, &external_feedback);
   }
   std::optional<LinearFeedbackGains<T>> actuation_feedback_opt =
@@ -133,10 +137,15 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
                           : std::nullopt;
 
   // Set up the convex ICF model ℓ(v; q₀, v₀, h) for the full step.
-  // TODO(vincekurtz): detect step rejection and reuse constraints and
-  // linearization in this case.
-  builder().UpdateModel(plant_context, h, actuation_feedback_opt,
-                        external_feedback_opt, &first_step_model_);
+  if (previous_step_was_rejected) {
+    // The last time we updated the model, we used the initial state (q₀, v₀),
+    // so all we need to update is the time step.
+    builder().UpdateModel(h, &first_step_model_);
+  } else {
+    // Build the full model around (q₀, v₀, h).
+    builder().UpdateModel(plant_context, h, actuation_feedback_opt,
+                          external_feedback_opt, &first_step_model_);
+  }
 
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
@@ -171,7 +180,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 
     // Now we can take the second half-step. We'll use the solution of the full
     // step as our initial guess here. We can't reuse the ICF constraints, but
-    // we will the linearizations of any external systems, if they exist.
+    // we will reuse the linearizations of any external systems, if they exist.
     builder().UpdateModel(plant_context, 0.5 * h, actuation_feedback_opt,
                           external_feedback_opt, &second_step_model_);
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();

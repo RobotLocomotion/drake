@@ -335,6 +335,10 @@ class CenicIntegrator final : public IntegratorBase<T> {
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
   SearchDirectionData<T> search_direction_data_;
 
+  // Track whether solves are initialized at the same time as a previous
+  // rejected step, to enable model (e.g., constraints, geometry) reuse.
+  T time_at_last_solve_{NAN};
+
   // Pre-allocated scratch space for intermediate calculations.
   struct Scratch {
     VectorX<T> v_guess;
