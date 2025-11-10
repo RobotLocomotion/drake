@@ -44,9 +44,6 @@ struct IcfSolverParameters {
  * Statistics to track during the optimization process.
  */
 struct IcfSolverStats {
-  // The simulation time at which the solve was performed.
-  double time;
-
   // The number of solver iterations
   int iterations;
 
@@ -66,8 +63,7 @@ struct IcfSolverStats {
   std::vector<double> step_size;
 
   // Reset the stats to start a new iteration.
-  void Reset(const double t) {
-    time = t;
+  void Reset() {
     iterations = 0;
     cost.resize(0);
     gradient_norm.resize(0);
@@ -164,6 +160,9 @@ class IcfSolver {
   // Track the sparsity pattern for Hessian reuse
   std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;
 
+  // Flag for Hessian factorization re-use (changes between iterations)
+  bool reuse_hessian_factorization_{true};
+
   // Store data is a function of v, and changes between solver iterations
   IcfData<T> data_;
 
@@ -176,6 +175,20 @@ class IcfSolver {
   // Pre-allocated search direction Δv
   VectorX<T> search_direction_;
 };
+
+// Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
+template <>
+bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>&,
+                                       const double tolerance,
+                                       VectorX<double>*);
+template <>
+std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
+    const IcfModel<double>&, const IcfData<double>&, const VectorX<double>&);
+
+template <>
+void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>&,
+                                               const IcfData<double>&,
+                                               VectorX<double>*, bool, bool);
 
 }  // namespace icf
 }  // namespace contact_solvers

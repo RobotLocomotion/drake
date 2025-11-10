@@ -312,7 +312,7 @@ bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
   double eta = 1.0;
 
   const double t = this->get_context().get_time();
-  stats_.Reset(t);
+  stats_.Reset();
   if (solver_parameters_.icf.print_solver_stats) {
     fmt::print("CenicIntegrator: solving at t = {:.4f}\n", t);
   }
