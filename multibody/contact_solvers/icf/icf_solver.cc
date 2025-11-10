@@ -13,8 +13,7 @@ using internal::Bracket;
 using internal::DoNewtonWithBisectionFallback;
 
 template <class T>
-bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, const double,
-                                  VectorX<T>*) {
+bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, VectorX<T>*) {
   // Eventually we could propagate gradients with the implicit function
   // theorem to support AutoDiffXd. For now we'll throw if anything other than
   // double is used.
@@ -23,7 +22,6 @@ bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, const double,
 
 template <>
 bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
-                                       const double tolerance,
                                        VectorXd* v_guess) {
   VectorXd& v = *v_guess;
   VectorXd& dv = search_direction_;
@@ -68,7 +66,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
     // already close enough to the solution.
-    if (grad_norm < tolerance * scale) {
+    if (grad_norm < parameters_.tolerance * scale) {
       return true;
     }
 
@@ -77,7 +75,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     if (k > 0) {
       // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹ Δvₖ|| < tol.
       // Otherwise we use η = θ/(1−θ) as set below (see Hairer 1996, p.120).
-      if (eta * stats_.step_size.back() < tolerance * scale) {
+      if (eta * stats_.step_size.back() < parameters_.tolerance * scale) {
         return true;
       }
     }
@@ -101,7 +99,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 
-      if (anticipated_residual > tolerance * scale || theta >= 1.0) {
+      if (anticipated_residual > parameters_.tolerance * scale || theta >= 1.0) {
         // We likely won't converge in time at this (linear) rate, so we should
         // use a fresh Hessian in hopes of faster (quadratic) convergence.
         reuse_hessian_factorization_ = false;

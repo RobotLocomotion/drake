@@ -34,23 +34,6 @@ using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;
 
 /**
- * Tolerances and other parameters for CENIC's convex solver.
- */
-struct CenicParameters {
-  // ICF parameters, including max iterations, hessian reuse, etc.
-  IcfSolverParameters icf;
-
-  // Fixed-step tolerance ε for the convergence conditions
-  //   ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
-  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
-  double tolerance{1e-8};
-
-  // Scaling factor κ for setting the tolerance ε = κ⋅accuracy in
-  // error-controlled model.
-  double kappa{0.001};
-};
-
-/**
  * An experimental implicit integrator that solves a convex ICF problem to
  * advance the state, rather than relying on non-convex Newton-Raphson.
  *
@@ -108,51 +91,38 @@ class CenicIntegrator final : public IntegratorBase<T> {
   }
 
   /**
-   * Get a reference to the ICF solver, used to solve the convex problem.
-   */
-  IcfSolver<T>& solver() {
-    DRAKE_ASSERT(solver_ != nullptr);
-    return *solver_;
-  }
-
-  /**
    * Get a reference to the ICF problem model, used to compute the cost,
    * gradient, Hessian, etc.
    */
   IcfModel<T>& get_model() { return model_; }
 
   /**
-   * Get a reference to the ICF problem data, used to store the cost, gradient,
-   * Hessian, etc.
-   */
-  IcfData<T>& get_data() { return data_; }
-
-  /**
    * Get the current convex solver tolerances and iteration limits.
    */
-  const CenicParameters& get_solver_parameters() const {
-    return solver_parameters_;
+  const IcfSolverParameters& get_solver_parameters() const {
+    return solver_.get_parameters();
   }
 
   /**
    * Set the convex solver tolerances and iteration limits.
    */
-  void set_solver_parameters(const CenicParameters& parameters) {
-    solver_parameters_ = parameters;
+  void set_solver_parameters(const IcfSolverParameters& parameters) {
+    fmt::print("setting parameters\n");
+    solver_.set_parameters(parameters);
   }
 
   /**
    * Get a mutable reference to the convex solver tolerances and iteration
    * limits.
    */
-  CenicParameters& get_mutable_solver_parameters() {
-    return solver_parameters_;
+  IcfSolverParameters& get_mutable_solver_parameters() {
+    return solver_.get_mutable_parameters();
   }
 
   /**
    * Get the current convex solver statistics.
    */
-  const IcfSolverStats& get_solver_stats() const { return stats_; }
+  const IcfSolverStats& get_solver_stats() const { return solver_.stats(); }
 
   /**
    * Get the current total number of solver iterations across all time steps.
@@ -219,37 +189,6 @@ class CenicIntegrator final : public IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  // Solve the convex ICF problem for next-step velocities v = min ℓ(v).
-  // The solution is written back into the initial guess v. Returns true if
-  // and only if the optimization converged.
-  bool SolveWithGuess(const IcfModel<T>& model, VectorX<T>* v_guess);
-
-  // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
-  // Returns the linesearch parameter α and the number of iterations taken.
-  std::pair<T, int> PerformExactLineSearch(const IcfModel<T>& model,
-                                           const IcfData<T>& data,
-                                           const VectorX<T>& dv);
-
-  // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
-  T SolveQuadraticInUnitInterval(const T& a, const T& b, const T& c) const;
-
-  // Solve for the Newton search direction Δv = −H⁻¹g, with flags for several
-  // levels of Hessian reuse:
-  //  - reuse_factorization: reuse the exact same factorization of H as in the
-  //                         previous iteration. Do not compute the new Hessian
-  //                         at all. This is the fastest option, but gives a
-  //                         lower-quality search direction.
-  //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse the
-  //                            stored sparsity pattern. This gives an exact
-  //                            Newton step, but avoids some allocations.
-  void ComputeSearchDirection(const IcfModel<T>& model, const IcfData<T>& data,
-                              VectorX<T>* dv, bool reuse_factorization = false,
-                              bool reuse_sparsity_pattern = false);
-
-  // Indicate whether a change in problem structure requires a Hessian with a
-  // new sparsity pattern.
-  bool SparsityPatternChanged(const IcfModel<T>& model) const;
-
   // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
   // generalized force input ports.
   void CalcExternalForces(const Context<T>& context, VectorX<T>* tau);
@@ -284,18 +223,12 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
-  std::unique_ptr<IcfSolver<T>> solver_;
+  IcfSolver<T> solver_;
   IcfModel<T> model_;
-  IcfData<T> data_;
-  std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
-  BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
-  Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
-  SearchDirectionData<T> search_direction_data_;
 
   // Pre-allocated scratch space for intermediate calculations.
   struct Scratch {
     VectorX<T> v_guess;
-    VectorX<T> search_direction;
 
     // Next-step state
     VectorX<T> v;
@@ -316,17 +249,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
     MatrixX<T> N;
   } scratch_;
 
-  // Track previous sparsity pattern for hessian reuse
-  std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;
-
-  // Flag for Hessian factorization re-use (changes between iterations)
-  bool reuse_hessian_factorization_{true};
-
-  // Solver tolerances and other parameters
-  CenicParameters solver_parameters_;
-
   // Logging/performance tracking utilities
-  IcfSolverStats stats_;
   int total_solver_iterations_{0};
   int total_ls_iterations_{0};
   int total_hessian_factorizations_{0};
@@ -338,20 +261,6 @@ class CenicIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
   std::unique_ptr<ContinuousState<T>> z_dot_;          // Misc state derivs.
 };
-
-// Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
-template <>
-bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>&,
-                                             VectorX<double>*);
-template <>
-std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
-    const IcfModel<double>&, const IcfData<double>&, const VectorX<double>&);
-
-template <>
-void CenicIntegrator<double>::ComputeSearchDirection(const IcfModel<double>&,
-                                                     const IcfData<double>&,
-                                                     VectorX<double>*, bool,
-                                                     bool);
 
 }  // namespace systems
 }  // namespace drake

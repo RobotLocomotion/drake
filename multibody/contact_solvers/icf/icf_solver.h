@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/multibody/contact_solvers/icf/icf.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
@@ -24,6 +24,11 @@ struct IcfSolverParameters {
   // Maximum line search step size
   double alpha_max{1.0};
 
+  // Tolerance ε for the convergence conditions
+  //   ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
+  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
+  double tolerance{1e-8};
+
   // Tolerance for exact line search.
   double ls_tolerance{1e-8};
 
@@ -32,7 +37,7 @@ struct IcfSolverParameters {
   int max_iterations_for_hessian_reuse{10};  // k_max from [Hairer, 1996]
 
   // Whether to print stats to console.
-  bool print_solver_stats{false};  
+  bool print_solver_stats{false};
 
   // Dense algebra (LDLT) for solving for the search direction H⁻¹ g.
   // This is primarily useful for debugging and testing: sparse algebra is
@@ -99,14 +104,12 @@ class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
 
+  IcfSolver() = default;
+
   /**
-   * Construct the ICF solver.
-   * 
-   * @param model An example model, used for memory allocation only.
-   * @param parameters Solver parameters.
+   * Re-allocate stored data structures based on the provided model.
    */
-  IcfSolver(const IcfModel<T>& model, const IcfSolverParameters& parameters)
-      : parameters_(parameters) {
+  void Resize(const IcfModel<T>& model) {
     model.ResizeData(&data_);
     stats_.Reserve(parameters_.max_iterations);
     search_direction_.resize(model.num_velocities());
@@ -116,23 +119,34 @@ class IcfSolver {
    * Solve the convex problem to compute next-step velocities v = min ℓ(v).
    *
    * @param model The ICF model defining the optimization problem.
-   * @param tolerance Convergence tolerance (varies with integrator accuracy).
    * @param v_guess Initial guess for the solution. On output, contains the
    *                computed solution.
    *
    * @return true if and only if the optimizer converged.
    */
-  bool SolveWithGuess(const IcfModel<T>& model, const double tolerance,
-                      VectorX<T>* v_guess);
+  bool SolveWithGuess(const IcfModel<T>& model, VectorX<T>* v_guess);
 
   /**
    * Access solver statistics from the most recent solve.
    */
   const IcfSolverStats& stats() const { return stats_; }
 
+  void set_parameters(const IcfSolverParameters& parameters) {
+    parameters_ = parameters;
+  }
+
+  const IcfSolverParameters& get_parameters() const {
+    return parameters_;
+  }
+
+  IcfSolverParameters& get_mutable_parameters() {
+    return parameters_;
+  }
+
  private:
-  // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection fallback.
-  // Returns the linesearch parameter α and the number of iterations taken.
+  // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
+  // fallback. Returns the linesearch parameter α and the number of iterations
+  // taken.
   std::pair<T, int> PerformExactLineSearch(const IcfModel<T>& model,
                                            const IcfData<T>& data,
                                            const VectorX<T>& dv);
@@ -144,10 +158,11 @@ class IcfSolver {
   // Solve for the Newton search direction Δv = −H⁻¹g, with flags for several
   // levels of Hessian reuse:
   //  - reuse_factorization: reuse the exact same factorization of H as in the
-  //                         previous iteration. Do not compute the new Hessian
-  //                         at all. This is the fastest option, but gives a
-  //                         lower-quality search direction.
-  //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse the
+  //                         previous iteration. Do not compute the new
+  //                         Hessian at all. This is the fastest option, but
+  //                         gives a lower-quality search direction.
+  //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse
+  //  the
   //                            stored sparsity pattern. This gives an exact
   //                            Newton step, but avoids some allocations.
   void ComputeSearchDirection(const IcfModel<T>& model, const IcfData<T>& data,
@@ -157,10 +172,10 @@ class IcfSolver {
   // Indicate whether a change in problem structure requires a Hessian with a
   // new sparsity pattern.
   bool SparsityPatternChanged(const IcfModel<T>& model) const;
- 
-  // Stored Hessian and factorization objects. Allows for Hessian reuse between
-  // iterations and between subsequent soicf.lves (which is a valid strategy since
-  // the problem is convex).
+
+  // Stored Hessian and factorization objects. Allows for Hessian reuse
+  // between iterations and between subsequent soicf.lves (which is a valid
+  // strategy since the problem is convex).
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
@@ -176,7 +191,7 @@ class IcfSolver {
   IcfData<T> data_;
 
   // Iteration limits, tolerances, and other parameters
-  const IcfSolverParameters parameters_;
+  IcfSolverParameters parameters_;
 
   // Logging utilities
   IcfSolverStats stats_;
@@ -188,7 +203,6 @@ class IcfSolver {
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
 template <>
 bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>&,
-                                       const double tolerance,
                                        VectorX<double>*);
 template <>
 std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
