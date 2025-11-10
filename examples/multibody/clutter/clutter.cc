@@ -584,7 +584,7 @@ int do_main() {
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
-    
+
   drake::systems::IntegratorBase<double>& integrator =
       simulator->get_mutable_integrator();
   if (FLAGS_simulator_integration_scheme == "cenic") {

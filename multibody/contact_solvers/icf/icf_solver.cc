@@ -1,5 +1,8 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 
+#include <algorithm>
+#include <limits>
+
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {
@@ -99,7 +102,8 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 
-      if (anticipated_residual > parameters_.tolerance * scale || theta >= 1.0) {
+      if (anticipated_residual > parameters_.tolerance * scale ||
+          theta >= 1.0) {
         // We likely won't converge in time at this (linear) rate, so we should
         // use a fresh Hessian in hopes of faster (quadratic) convergence.
         reuse_hessian_factorization_ = false;
@@ -329,8 +333,7 @@ void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
 }
 
 template <typename T>
-bool IcfSolver<T>::SparsityPatternChanged(
-    const IcfModel<T>& model) const {
+bool IcfSolver<T>::SparsityPatternChanged(const IcfModel<T>& model) const {
   if (previous_sparsity_pattern_ == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
   }

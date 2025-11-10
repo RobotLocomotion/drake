@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf.h"
@@ -135,13 +139,9 @@ class IcfSolver {
     parameters_ = parameters;
   }
 
-  const IcfSolverParameters& get_parameters() const {
-    return parameters_;
-  }
+  const IcfSolverParameters& get_parameters() const { return parameters_; }
 
-  IcfSolverParameters& get_mutable_parameters() {
-    return parameters_;
-  }
+  IcfSolverParameters& get_mutable_parameters() { return parameters_; }
 
  private:
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
