@@ -47,6 +47,9 @@ struct IcfSolverStats {
   // The number of solver iterations
   int iterations;
 
+  // The total number of Hessian factorizations.
+  int factorizations;
+
   // The cost ℓ(v) at each iteration.
   std::vector<double> cost;
 
@@ -65,6 +68,7 @@ struct IcfSolverStats {
   // Reset the stats to start a new iteration.
   void Reset() {
     iterations = 0;
+    factorizations = 0;
     cost.resize(0);
     gradient_norm.resize(0);
     ls_iterations.resize(0);
@@ -150,7 +154,7 @@ class IcfSolver {
   bool SparsityPatternChanged(const IcfModel<T>& model) const;
  
   // Stored Hessian and factorization objects. Allows for Hessian reuse between
-  // iterations and between subsequent solves (which is a valid strategy since
+  // iterations and between subsequent soicf.lves (which is a valid strategy since
   // the problem is convex).
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;

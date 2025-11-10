@@ -7,6 +7,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 
+using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using internal::Bracket;
 using internal::DoNewtonWithBisectionFallback;
@@ -106,7 +107,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
         reuse_hessian_factorization_ = false;
       }
     }
-    
+
     // For iterations other than the first, we know the sparsity pattern is
     // unchanged, so we can reuse it without checking. The sparsity pattern is
     // often but not always the same between solves, so we need to perform the
@@ -120,7 +121,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     //      in time under a linear convergence assumption.
     bool reuse_hessian = parameters_.enable_hessian_reuse &&
                          reuse_sparsity_pattern && reuse_hessian_factorization_;
-    
+
     // Compute the search direction dv = -H⁻¹ g
     ComputeSearchDirection(model, data_, &dv, reuse_hessian,
                            reuse_sparsity_pattern);
@@ -239,6 +240,94 @@ std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
   return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
       parameters_.ls_tolerance, parameters_.max_ls_iterations);
+}
+
+template <typename T>
+T IcfSolver<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
+                                             const T& c) const {
+  using std::clamp;
+  using std::sqrt;
+
+  // Sign function that returns 1 for positive numbers, -1 for
+  // negative numbers, and 0 for zero.
+  auto sign = [](const T& x) {
+    return (x > 0) - (x < 0);
+  };
+
+  T s;
+  if (a < std::numeric_limits<T>::epsilon()) {
+    // If a ≈ 0, just solve b x + c = 0.
+    s = -c / b;
+  } else {
+    // Use the numerically stable root-finding method described here:
+    // https://math.stackexchange.com/questions/866331/
+    const T discriminant = b * b - 4 * a * c;
+    DRAKE_DEMAND(discriminant >= 0);  // must have a real root
+    s = -b - sign(b) * sqrt(discriminant);
+    s /= 2 * a;
+    // If the first root is outside [0, 1], try the second root.
+    if (s < 0.0 || s > 1.0) {
+      s = c / (a * s);
+    }
+  }
+
+  // The solution must be in [0, 1], modulo some numerical slop.
+  constexpr double slop = 1e-8;
+  if (s < -slop || s > 1.0 + slop) {
+    throw std::runtime_error(
+        "CenicIntegrator: quadratic root falls outside [0, 1].");
+  }
+
+  return clamp(s, T(0.0), T(1.0));  // Ensure s ∈ [0, 1].
+}
+
+template <typename T>
+void IcfSolver<T>::ComputeSearchDirection(const IcfModel<T>&, const IcfData<T>&,
+                                          VectorX<T>*, bool, bool) {
+  throw std::logic_error(
+      "IcfSolver: ComputeSearchDirection only supports T = double.");
+}
+
+template <>
+void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
+                                               const IcfData<double>& data,
+                                               VectorXd* dv,
+                                               bool reuse_factorization,
+                                               bool reuse_sparsity_pattern) {
+  DRAKE_ASSERT(dv != nullptr);
+
+  if (parameters_.use_dense_algebra) {
+    if (!reuse_factorization) {
+      MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
+      dense_hessian_factorization_ = H.ldlt();
+      stats_.factorizations++;
+      reuse_hessian_factorization_ = true;
+    }
+    *dv = dense_hessian_factorization_.solve(-data.cache().gradient);
+
+  } else {
+    if (!reuse_factorization) {
+      // Compute H and set up the factorization.
+      if (reuse_sparsity_pattern) {
+        model.UpdateHessian(data, hessian_.get());
+        hessian_factorization_.UpdateMatrix(*hessian_);
+      } else {
+        hessian_ = model.MakeHessian(data);
+        hessian_factorization_.SetMatrix(*hessian_);
+      }
+
+      // Factorize H
+      if (!hessian_factorization_.Factor()) {
+        throw std::runtime_error("IcfSolver: Hessian factorization failed!");
+      }
+      stats_.factorizations++;
+      reuse_hessian_factorization_ = true;
+    }
+
+    // Compute the search direction dv = -H⁻¹ g
+    *dv = -data.cache().gradient;
+    hessian_factorization_.SolveInPlace(dv);
+  }
 }
 
 }  // namespace icf
