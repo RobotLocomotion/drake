@@ -7,12 +7,12 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 /**
  * Data pool for joint limit constraints (qu ≥ q ≥ ql). This data is updated at
@@ -87,11 +87,10 @@ class LimitConstraintsDataPool {
   EigenPool<MatrixX<T>> G_upper_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::pooled_sap::
-        LimitConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::LimitConstraintsDataPool);

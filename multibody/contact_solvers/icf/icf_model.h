@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef DRAKE_POOLED_SAP_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"  // NOLINT
+#ifndef DRAKE_ICF_INCLUDED
+#error Do not include this file. Use "drake/multibody/contact_solvers/icf/icf.h"
 #endif
 
 #include <memory>
@@ -15,24 +15,24 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_data.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf_data.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 using internal::BlockSparsityPattern;
 
 /**
- * A struct to hold the key parameters that define a convex SAP problem.
+ * A struct to hold the key parameters that define a convex ICF problem.
  *
- * These parameters are owned by the PooledSapModel, and are set externally by
- * a PooledSapBuilder.
+ * These parameters are owned by the IcfModel, and are set externally by
+ * a IcfBuilder.
  */
 template <typename T>
-struct PooledSapParameters {
+struct IcfParameters {
   T time_step{0.0};  // Discrete time step δt.
   VectorX<T> v0;     // Current generalized velocities v₀.
   MatrixX<T> M0;     // Current mass matrix M₀.
@@ -49,7 +49,7 @@ struct PooledSapParameters {
 };
 
 /**
- * This class defines a convex SAP problem,
+ * This class defines a convex ICF problem,
  *
  *    minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
  *
@@ -65,22 +65,18 @@ struct PooledSapParameters {
  *
  * This class is designed to be independent of the MultibodyPlant used to
  * construct the problem: the job of constructing the problem given a
- * MultibodyPlant and its state (Context) falls to PooledSapBuilder.
+ * MultibodyPlant and its state (Context) falls to IcfBuilder.
  *
  * Similarly, this model does not change with different values of the decision
- * variable v: quantities that change with v are stored in PooledSapData.
- *
- * TODO(CENIC): Consider renaming everything from "PooledSap" to "ICF"
- * (Irrotational Contact Fields) or something like that. "SAP" is already an
- * overloaded term, and CENIC builds on ICF more so than SAP.
+ * variable v: quantities that change with v are stored in IcfData.
  */
 template <typename T>
-class PooledSapModel {
+class IcfModel {
  public:
   // TODO(amcastro-tri): We'd only need to fix the model (this) pointer in the
   // constraint classes within their copy/ctor to enable value semantics.
   // For now, I'll just disable it.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PooledSapModel);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfModel);
 
   // Defined in separate headers.
   class CouplerConstraintsPool;
@@ -94,8 +90,8 @@ class PooledSapModel {
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
   // Constructor for an empty model.
-  PooledSapModel()
-      : params_{std::make_unique<PooledSapParameters<T>>()},
+  IcfModel()
+      : params_{std::make_unique<IcfParameters<T>>()},
         coupler_constraints_pool_(this),
         gain_constraints_pool_(this),
         limit_constraints_pool_(this),
@@ -108,16 +104,16 @@ class PooledSapModel {
   //   ... modify params ...
   //   model.ResetParameters(std::move(params));
   //
-  std::unique_ptr<PooledSapParameters<T>> ReleaseParameters() {
+  std::unique_ptr<IcfParameters<T>> ReleaseParameters() {
     return std::move(params_);
   }
 
   // Reset problem parameters. Verifies that the parameters are valid and
   // computes some auxiliary data that will be useful during the solve.
-  void ResetParameters(std::unique_ptr<PooledSapParameters<T>> params);
+  void ResetParameters(std::unique_ptr<IcfParameters<T>> params);
 
   // Access to problem parameters.
-  const PooledSapParameters<T>& params() const {
+  const IcfParameters<T>& params() const {
     DRAKE_ASSERT(params_ != nullptr);
     return *params_;
   }
@@ -252,12 +248,12 @@ class PooledSapModel {
 
   // Resizes `data` to fit this model.
   // No allocations are required if `data`'s capacity is already enough.
-  void ResizeData(PooledSapData<T>* data) const;
+  void ResizeData(IcfData<T>* data) const;
 
   // Updates `data` as a function of v.
-  void CalcData(const VectorX<T>& v, PooledSapData<T>* data) const;
+  void CalcData(const VectorX<T>& v, IcfData<T>* data) const;
 
-  /* Makes a new Hessian matrix. If only `data` changes for the same SAP model,
+  /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
    calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
    cheaper, and incurs in no memory allocations.
 
@@ -292,15 +288,15 @@ class PooledSapModel {
   See documentation in  internal::BlockSparseCholeskySolver for further details.
   */
   std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>> MakeHessian(
-      const PooledSapData<T>& data) const;
+      const IcfData<T>& data) const;
 
   // Updates the values of the Hessian for the input `data`.
   // @pre The sparsity of the `hessian` matches the structure of `this` model.
-  void UpdateHessian(const PooledSapData<T>& data,
+  void UpdateHessian(const IcfData<T>& data,
                      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Pre-compute some quantities used to speed up CalcCostAlongLine() below.
-  void UpdateSearchDirection(const PooledSapData<T>& data, const VectorX<T>& w,
+  void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
   /**
@@ -315,7 +311,7 @@ class PooledSapModel {
    * @param dcost_dalpha d²ℓ/dα² on output.
    * @returns The cost ℓ(α).
    */
-  T CalcCostAlongLine(const T& alpha, const PooledSapData<T>& data,
+  T CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
                       const SearchDirectionData<T>& search_direction,
                       T* dcost_dalpha, T* d2cost_dalpha2) const;
 
@@ -332,11 +328,11 @@ class PooledSapModel {
 
   // Change only the time step δt, updating all dependent quantities. This
   // allows us to reuse pre-computed quantities, like geometry queries, between
-  // SAP solves that share a common initial state (q₀,v₀).
+  // ICF solves that share a common initial state (q₀,v₀).
   void UpdateTimeStep(const T& time_step);
 
  private:
-  // Check that this model's parameters define a valid SAP problem.
+  // Check that this model's parameters define a valid ICF problem.
   void VerifyInvariants() const;
 
   // Compute result = A⋅v, where A is the (sparse) linearized dynamics matrix.
@@ -344,8 +340,8 @@ class PooledSapModel {
 
   // Compute the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
   // relate to momentum only (no constraints).
-  void CalcMomentumTerms(const PooledSapData<T>& data,
-                         typename PooledSapData<T>::Cache* cache) const;
+  void CalcMomentumTerms(const IcfData<T>& data,
+                         typename IcfData<T>::Cache* cache) const;
 
   // Compute spatial velocities V_WB for all bodies, given generalized
   // velocities v.
@@ -353,7 +349,7 @@ class PooledSapModel {
                                  EigenPool<Vector6<T>>* V_WB) const;
 
   // Core parameters that define the optimization problem.
-  std::unique_ptr<PooledSapParameters<T>> params_;
+  std::unique_ptr<IcfParameters<T>> params_;
 
   // Secondary parameters that are derived from the core parameters.
   EigenPool<Vector6<T>> V_WB0_;  // Body spatial velocities at v₀, V = J_WB v₀.
@@ -379,7 +375,7 @@ class PooledSapModel {
   PatchConstraintsPool patch_constraints_pool_;
 };
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

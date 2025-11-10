@@ -120,8 +120,8 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
-        "//multibody/contact_solvers/pooled_sap:pooled_sap_builder",
-        "//multibody/contact_solvers/pooled_sap:pooled_sap_core",
+        "//multibody/contact_solvers/icf:icf_builder",
+        "//multibody/contact_solvers/icf:icf_core",
         "//multibody/plant",
     ],
 )

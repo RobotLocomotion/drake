@@ -7,16 +7,16 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::Clear() {
+void IcfModel<T>::GainConstraintsPool::Clear() {
   clique_.clear();
   constraint_sizes_.clear();
   K_.Clear();
@@ -26,8 +26,7 @@ void PooledSapModel<T>::GainConstraintsPool::Clear() {
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::Resize(
-    const std::vector<int>& sizes) {
+void IcfModel<T>::GainConstraintsPool::Resize(const std::vector<int>& sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());
   K_.Resize(sizes);
@@ -37,10 +36,10 @@ void PooledSapModel<T>::GainConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::Set(const int index, int clique,
-                                                 const VectorX<T>& K,
-                                                 const VectorX<T>& b,
-                                                 const VectorX<T>& e) {
+void IcfModel<T>::GainConstraintsPool::Set(const int index, int clique,
+                                           const VectorX<T>& K,
+                                           const VectorX<T>& b,
+                                           const VectorX<T>& e) {
   DRAKE_ASSERT(index >= 0 && index < num_constraints());
   const int nv = model().clique_size(clique);
   DRAKE_DEMAND(K.size() == nv);
@@ -55,7 +54,7 @@ void PooledSapModel<T>::GainConstraintsPool::Set(const int index, int clique,
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::CalcData(
+void IcfModel<T>::GainConstraintsPool::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
 
@@ -74,8 +73,8 @@ void PooledSapModel<T>::GainConstraintsPool::CalcData(
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::AccumulateGradient(
-    const PooledSapData<T>& data, VectorX<T>* gradient) const {
+void IcfModel<T>::GainConstraintsPool::AccumulateGradient(
+    const IcfData<T>& data, VectorX<T>* gradient) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
@@ -88,8 +87,8 @@ void PooledSapModel<T>::GainConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::AccumulateHessian(
-    const PooledSapData<T>& data,
+void IcfModel<T>::GainConstraintsPool::AccumulateHessian(
+    const IcfData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
@@ -102,7 +101,7 @@ void PooledSapModel<T>::GainConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void PooledSapModel<T>::GainConstraintsPool::ProjectAlongLine(
+void IcfModel<T>::GainConstraintsPool::ProjectAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();
@@ -126,9 +125,10 @@ void PooledSapModel<T>::GainConstraintsPool::ProjectAlongLine(
 }
 
 template <typename T>
-T PooledSapModel<T>::GainConstraintsPool::Clamp(
-    int k, const Eigen::Ref<const VectorX<T>>& v, EigenPtr<VectorX<T>> gamma,
-    EigenPtr<MatrixX<T>> G) const {
+T IcfModel<T>::GainConstraintsPool::Clamp(int k,
+                                          const Eigen::Ref<const VectorX<T>>& v,
+                                          EigenPtr<VectorX<T>> gamma,
+                                          EigenPtr<MatrixX<T>> G) const {
   const int n = v.size();
   DRAKE_ASSERT(gamma->size() == n);
   DRAKE_ASSERT(G->rows() == n);
@@ -183,12 +183,12 @@ T PooledSapModel<T>::GainConstraintsPool::Clamp(
   return cost;
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     double>::GainConstraintsPool;
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     drake::AutoDiffXd>::GainConstraintsPool;

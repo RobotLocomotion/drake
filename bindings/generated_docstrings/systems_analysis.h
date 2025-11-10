@@ -412,7 +412,7 @@ R"""(The integrator supports error estimation.)""";
       struct /* CenicIntegrator */ {
         // Source: drake/systems/analysis/cenic_integrator.h
         const char* doc =
-R"""(An experimental implicit integrator that solves a convex SAP problem
+R"""(An experimental implicit integrator that solves a convex ICF problem
 to advance the state, rather than relying on non-convex
 Newton-Raphson.
 
@@ -443,8 +443,7 @@ Note:
         struct /* builder */ {
           // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
-R"""(Get a reference to SAP problem builder, used to set up the convex
-problem.
+R"""(Get a reference to the ICF builder, used to set up the convex problem.
 
 N.B. this is not const because the builder caches geometry data.)""";
         } builder;
@@ -452,7 +451,7 @@ N.B. this is not const because the builder caches geometry data.)""";
         struct /* get_data */ {
           // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
-R"""(Get a reference to the SAP problem data, used to store the cost,
+R"""(Get a reference to the ICF problem data, used to store the cost,
 gradient, Hessian, etc.)""";
         } get_data;
         // Symbol: drake::systems::CenicIntegrator::get_error_estimate_order
@@ -466,7 +465,7 @@ See ImplicitEulerIntegrator for details.)""";
         struct /* get_model */ {
           // Source: drake/systems/analysis/cenic_integrator.h
           const char* doc =
-R"""(Get a reference to the SAP problem model, used to compute the cost,
+R"""(Get a reference to the ICF problem model, used to compute the cost,
 gradient, Hessian, etc.)""";
         } get_model;
         // Symbol: drake::systems::CenicIntegrator::get_mutable_solver_parameters

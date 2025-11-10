@@ -7,16 +7,16 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/pooled_sap/eigen_pool.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::Clear() {
+void IcfModel<T>::LimitConstraintsPool::Clear() {
   constraint_to_clique_.clear();
   constraint_sizes_.clear();
   ql_.Clear();
@@ -28,7 +28,7 @@ void PooledSapModel<T>::LimitConstraintsPool::Clear() {
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::Resize(
+void IcfModel<T>::LimitConstraintsPool::Resize(
     const std::vector<int>& constrained_clique_sizes,
     const std::vector<int>& constraint_to_clique) {
   DRAKE_DEMAND(constrained_clique_sizes.size() == constraint_to_clique.size());
@@ -56,9 +56,9 @@ void PooledSapModel<T>::LimitConstraintsPool::Resize(
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::Set(int index, int clique,
-                                                  int dof, const T& q0,
-                                                  const T& ql, const T& qu) {
+void IcfModel<T>::LimitConstraintsPool::Set(int index, int clique, int dof,
+                                            const T& q0, const T& ql,
+                                            const T& qu) {
   lower_limit(index, dof) = ql;
   upper_limit(index, dof) = qu;
   configuration(index, dof) = q0;
@@ -74,8 +74,8 @@ void PooledSapModel<T>::LimitConstraintsPool::Set(int index, int clique,
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
-                                                             const T& new_dt) {
+void IcfModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
+                                                       const T& new_dt) {
   const T ratio = old_dt / new_dt;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
@@ -88,9 +88,9 @@ void PooledSapModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
 }
 
 template <typename T>
-T PooledSapModel<T>::LimitConstraintsPool::CalcLimitData(const T& v_hat,
-                                                         const T& R, const T& v,
-                                                         T* gamma, T* G) const {
+T IcfModel<T>::LimitConstraintsPool::CalcLimitData(const T& v_hat, const T& R,
+                                                   const T& v, T* gamma,
+                                                   T* G) const {
   T cost = 0;
   *(gamma) = 0;
   *(G) = 0;
@@ -106,7 +106,7 @@ T PooledSapModel<T>::LimitConstraintsPool::CalcLimitData(const T& v_hat,
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::CalcData(
+void IcfModel<T>::LimitConstraintsPool::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
   using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
@@ -137,8 +137,8 @@ void PooledSapModel<T>::LimitConstraintsPool::CalcData(
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::AccumulateGradient(
-    const PooledSapData<T>& data, VectorX<T>* gradient) const {
+void IcfModel<T>::LimitConstraintsPool::AccumulateGradient(
+    const IcfData<T>& data, VectorX<T>* gradient) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
 
@@ -156,8 +156,8 @@ void PooledSapModel<T>::LimitConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::AccumulateHessian(
-    const PooledSapData<T>& data,
+void IcfModel<T>::LimitConstraintsPool::AccumulateHessian(
+    const IcfData<T>& data,
     internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
@@ -170,7 +170,7 @@ void PooledSapModel<T>::LimitConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void PooledSapModel<T>::LimitConstraintsPool::ProjectAlongLine(
+void IcfModel<T>::LimitConstraintsPool::ProjectAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();
@@ -200,12 +200,12 @@ void PooledSapModel<T>::LimitConstraintsPool::ProjectAlongLine(
   }
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     double>::LimitConstraintsPool;
-template class ::drake::multibody::contact_solvers::pooled_sap::PooledSapModel<
+template class ::drake::multibody::contact_solvers::icf::IcfModel<
     drake::AutoDiffXd>::LimitConstraintsPool;

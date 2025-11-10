@@ -58,8 +58,8 @@ void CenicIntegrator<T>::DoInitialize() {
   if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
   this->set_accuracy_in_use(working_accuracy);
 
-  // Allocate and initialize SAP problem objects
-  builder_ = std::make_unique<PooledSapBuilder<T>>(plant(), plant_context);
+  // Allocate and initialize ICF problem objects
+  builder_ = std::make_unique<IcfBuilder<T>>(plant(), plant_context);
   const T& dt = this->get_initial_step_size_target();
   builder_->UpdateModel(plant_context, dt, &model_);
   model_.ResizeData(&data_);
@@ -163,7 +163,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     context.SetTimeAndNoteContinuousStateChange(t0 + 0.5 * h);
 
     // Now we can take the second half-step. We'll use the solution of the full
-    // step as our initial guess here. We can't reuse the SAP cosntraints, but
+    // step as our initial guess here. We can't reuse the ICF constraints, but
     // we will the linearizations of any external systems, if they exist.
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
     ComputeNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get(),
@@ -196,7 +196,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
 
   // Set up the convex optimization problem minᵥ ℓ(v; q₀, v₀, h)
-  PooledSapModel<T>& model = get_model();
+  IcfModel<T>& model = get_model();
   if (reuse_constraints) {
     // Update the time step only. Assumes that model was last updated with the
     // the same initial state [q₀, v₀].
@@ -276,7 +276,7 @@ void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
 }
 
 template <typename T>
-bool CenicIntegrator<T>::SolveWithGuess(const PooledSapModel<T>&, VectorX<T>*) {
+bool CenicIntegrator<T>::SolveWithGuess(const IcfModel<T>&, VectorX<T>*) {
   // Eventually we could propagate gradients with the implicit function theorem
   // to support AutoDiffXd. For now we'll throw if anything other than double is
   // used.
@@ -284,9 +284,9 @@ bool CenicIntegrator<T>::SolveWithGuess(const PooledSapModel<T>&, VectorX<T>*) {
 }
 
 template <>
-bool CenicIntegrator<double>::SolveWithGuess(
-    const PooledSapModel<double>& model, VectorXd* v_guess) {
-  PooledSapData<double>& data = get_data();
+bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
+                                             VectorXd* v_guess) {
+  IcfData<double>& data = get_data();
   VectorXd& v = *v_guess;
   VectorXd& dv = scratch_.search_direction;
   model.ResizeData(&data);
@@ -433,14 +433,14 @@ bool CenicIntegrator<double>::SolveWithGuess(
 
 template <typename T>
 std::pair<T, int> CenicIntegrator<T>::PerformExactLineSearch(
-    const PooledSapModel<T>&, const PooledSapData<T>&, const VectorX<T>&) {
+    const IcfModel<T>&, const IcfData<T>&, const VectorX<T>&) {
   throw std::logic_error(
       "CenicIntegrator: PerformExactLineSearch only supports T = double.");
 }
 
 template <>
 std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
-    const PooledSapModel<double>& model, const PooledSapData<double>& data,
+    const IcfModel<double>& model, const IcfData<double>& data,
     const VectorXd& dv) {
   const double alpha_max = solver_parameters_.alpha_max;
 
@@ -477,7 +477,7 @@ std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
 
   // TODO(vincekurtz): add a check to enable full Newton steps very close to
   // machine epsilon, as in SapSolver. We'll need to be mindful of the fact that
-  // the cost can be negative in the pooled SAP formulation.
+  // the cost can be negative in the pooled ICF formulation.
 
   // Set the initial guess for linesearch based on a cubic hermite spline
   // between α = 0 and α = α_max. This spline takes the form
@@ -561,16 +561,16 @@ T CenicIntegrator<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
 }
 
 template <typename T>
-void ComputeSearchDirection(const PooledSapModel<T>&, const PooledSapData<T>&,
-                            VectorX<T>*, bool, bool) {
+void ComputeSearchDirection(const IcfModel<T>&, const IcfData<T>&, VectorX<T>*,
+                            bool, bool) {
   throw std::logic_error(
       "CenicIntegrator: ComputeSearchDirection only supports T = double.");
 }
 
 template <>
 void CenicIntegrator<double>::ComputeSearchDirection(
-    const PooledSapModel<double>& model, const PooledSapData<double>& data,
-    VectorXd* dv, bool reuse_factorization, bool reuse_sparsity_pattern) {
+    const IcfModel<double>& model, const IcfData<double>& data, VectorXd* dv,
+    bool reuse_factorization, bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(dv != nullptr);
 
   if (solver_parameters_.use_dense_algebra) {
@@ -610,7 +610,7 @@ void CenicIntegrator<double>::ComputeSearchDirection(
 
 template <typename T>
 bool CenicIntegrator<T>::SparsityPatternChanged(
-    const PooledSapModel<T>& model) const {
+    const IcfModel<T>& model) const {
   if (previous_sparsity_pattern_ == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
   }

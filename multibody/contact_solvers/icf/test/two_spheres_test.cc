@@ -11,8 +11,8 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/contact_solvers/contact_configuration.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap.h"
-#include "drake/multibody/contact_solvers/pooled_sap/pooled_sap_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
@@ -82,7 +82,7 @@ class SapDriverTest {
 }  // namespace internal
 
 namespace contact_solvers {
-namespace pooled_sap {
+namespace icf {
 
 class TwoSpheres : public testing::Test {
  public:
@@ -258,8 +258,8 @@ TEST_F(TwoSpheres, GetContact) {
   fmt::print("Acc. ratio : {}\n", accel_ratio);
   fmt::print("Mass ratio : {}\n", mass_ratio);
 
-  PooledSapBuilder<double> builder(*plant_);
-  PooledSapModel<double> model;
+  IcfBuilder<double> builder(*plant_);
+  IcfModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant_->num_velocities());
@@ -275,8 +275,8 @@ TEST_F(TwoSpheres, MakeData) {
   const int num_pairs =
       plant_->get_contact_model() == ContactModel::kPoint ? 1 : 4;
 
-  PooledSapBuilder<double> builder(*plant_);
-  PooledSapModel<double> model;
+  IcfBuilder<double> builder(*plant_);
+  IcfModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), nv);
@@ -284,13 +284,13 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(model.clique_size(0), 6);
   EXPECT_EQ(model.clique_size(1), 6);
 
-  PooledSapModel<double>::PatchConstraintsPool& patch_constraints =
+  IcfModel<double>::PatchConstraintsPool& patch_constraints =
       model.patch_constraints_pool();
   EXPECT_EQ(patch_constraints.num_patches(), 1);
   EXPECT_EQ(patch_constraints.total_num_pairs(), num_pairs);
   EXPECT_EQ(patch_constraints.patch_sizes(), std::vector<int>({num_pairs}));
 
-  PooledSapData<double> data;
+  IcfData<double> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.num_patches(), 1);
@@ -318,7 +318,7 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(data.num_patches(), 1);
 }
 
-GTEST_TEST(PooledSapBuilder, Limits) {
+GTEST_TEST(IcfBuilder, Limits) {
   const char xml[] = R"""(
   <?xml version="1.0"?>
   <mujoco model="robot">
@@ -353,15 +353,15 @@ GTEST_TEST(PooledSapBuilder, Limits) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   const double time_step = 0.01;
-  PooledSapBuilder<double> builder(plant);
-  PooledSapModel<double> model;
+  IcfBuilder<double> builder(plant);
+  IcfModel<double> model;
   builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant.num_velocities());
   EXPECT_EQ(model.num_limit_constraints(), 2);
 }
 
-GTEST_TEST(PooledSapBuilder, UpdateTimeStepOnly) {
+GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
   const char xml[] = R"""(
   <?xml version="1.0"?>
   <mujoco model="robot">
@@ -394,8 +394,8 @@ GTEST_TEST(PooledSapBuilder, UpdateTimeStepOnly) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   const double time_step = 0.01;
-  PooledSapBuilder<double> builder(plant);
-  PooledSapModel<double> model;
+  IcfBuilder<double> builder(plant);
+  IcfModel<double> model;
   builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), plant.num_velocities());
@@ -409,7 +409,7 @@ GTEST_TEST(PooledSapBuilder, UpdateTimeStepOnly) {
   EXPECT_EQ(model.time_step(), time_step * 2);
 }
 
-}  // namespace pooled_sap
+}  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
