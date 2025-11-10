@@ -33,7 +33,6 @@ GTEST_TEST(MeshcatInternalTest, GetMeshcatStaticResource) {
       "/favicon.ico",
       "/meshcat.html",
       "/meshcat.js",
-      "/stats.min.js",
   };
   for (const auto& url : urls) {
     SCOPED_TRACE(fmt::format("url = {}", url));

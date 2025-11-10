@@ -312,10 +312,6 @@ use_repo(
     "uritemplate_py_internal",
     "xmlrunner_py_internal",
     #
-    # JavaScript libraries.
-    #
-    "statsjs_internal",
-    #
     # Test or example data.
     #
     "dm_control_internal",

@@ -125,7 +125,6 @@ all of their maintainers, whose work is essential to Drake's success:
 * Graphics
   * [meshcat](https://github.com/meshcat-dev/meshcat)
   * [pillow](https://pillow.readthedocs.io/)
-  * [stats.js](https://github.com/mrdoob/stats.js)
   * [threejs](https://threejs.org/)
   * [vtk](https://github.com/Kitware/VTK)
 

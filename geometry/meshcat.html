@@ -15,12 +15,11 @@
   </div>
 
   <script type="text/javascript" src="meshcat.js"></script>
-  <script type="text/javascript" src="stats.min.js"></script>
   <script>
     // TODO(#16486): add tooltips to Stats to describe chart contents
-    var stats = new Stats();
+    var stats = new MeshCat.Stats();
     var realtimeRatePanel = stats.addPanel(
-            new Stats.Panel('rtr%', '#ff8', '#221')
+            new MeshCat.Stats.Panel('rtr%', '#ff8', '#221')
     );
     document.body.appendChild(stats.dom);
     stats.dom.id = "stats-plot";
