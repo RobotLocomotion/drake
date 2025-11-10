@@ -87,7 +87,7 @@ void CenicIntegrator<T>::DoInitialize() {
   z_dot_ = this->get_system().AllocateTimeDerivatives();
 
   // Allocate memory for the solver statistics.
-  stats_.Reserve(solver_parameters_.max_iterations);
+  stats_.Reserve(solver_parameters_.icf.max_iterations);
 
   // Set up the CSV file and write a header, if logging is enabled.
   if (solver_parameters_.log_solver_stats) {
@@ -319,11 +319,11 @@ bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
 
   const double t = this->get_context().get_time();
   stats_.Reset(t);
-  if (solver_parameters_.print_solver_stats) {
+  if (solver_parameters_.icf.print_solver_stats) {
     fmt::print("CenicIntegrator: solving at t = {:.4f}\n", t);
   }
 
-  for (int k = 0; k < solver_parameters_.max_iterations; ++k) {
+  for (int k = 0; k < solver_parameters_.icf.max_iterations; ++k) {
     // Compute the cost and gradient
     model.CalcData(v, &data);
     const double grad_norm = (D.asDiagonal() * data.cache().gradient).norm();
@@ -331,7 +331,7 @@ bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
     // We'll print and log solver stats before doing any convergence checks.
     // That ensures that we get a printout even when v_guess is good enough that
     // no iterations are performed.
-    if (solver_parameters_.print_solver_stats) {
+    if (solver_parameters_.icf.print_solver_stats) {
       const double step_size = (k == 0) ? NAN : stats_.step_size.back();
       fmt::print(
           "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
@@ -377,7 +377,7 @@ bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
       // it is possible that θ ≥ 1 without diverging, thanks to linesearch.
       eta = (theta < 1.0) ? theta / (1.0 - theta) : 1.0;
 
-      const int k_max = solver_parameters_.max_iterations_for_hessian_reuse;
+      const int k_max = solver_parameters_.icf.max_iterations_for_hessian_reuse;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 
@@ -399,7 +399,7 @@ bool CenicIntegrator<double>::SolveWithGuess(const IcfModel<double>& model,
     //   2. the sparsity pattern is unchanged,
     //   3. the "anticipated residual" heuristics indicate that we'll converge
     //      in time under a linear convergence assumption.
-    bool reuse_hessian = solver_parameters_.enable_hessian_reuse &&
+    bool reuse_hessian = solver_parameters_.icf.enable_hessian_reuse &&
                          reuse_sparsity_pattern && reuse_hessian_factorization_;
 
     // Compute the search direction dv = -H⁻¹ g
@@ -442,7 +442,7 @@ template <>
 std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
     const IcfModel<double>& model, const IcfData<double>& data,
     const VectorXd& dv) {
-  const double alpha_max = solver_parameters_.alpha_max;
+  const double alpha_max = solver_parameters_.icf.alpha_max;
 
   // Set up prerequisites for an efficient CalcCostAlongLine
   SearchDirectionData<double>& search_data = search_direction_data_;
@@ -515,10 +515,11 @@ std::pair<double, int> CenicIntegrator<double>::PerformExactLineSearch(
   const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
   // TODO(vincekurtz): scale linesearch tolerance based on accuracy.
-  const double alpha_tolerance = solver_parameters_.ls_tolerance;
+  const double alpha_tolerance = solver_parameters_.icf.ls_tolerance;
   return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
-      solver_parameters_.ls_tolerance, solver_parameters_.max_ls_iterations);
+      solver_parameters_.icf.ls_tolerance,
+      solver_parameters_.icf.max_ls_iterations);
 }
 
 template <typename T>
@@ -573,7 +574,7 @@ void CenicIntegrator<double>::ComputeSearchDirection(
     bool reuse_factorization, bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(dv != nullptr);
 
-  if (solver_parameters_.use_dense_algebra) {
+  if (solver_parameters_.icf.use_dense_algebra) {
     if (!reuse_factorization) {
       MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
       dense_hessian_factorization_ = H.ldlt();

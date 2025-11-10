@@ -594,15 +594,15 @@ int do_main() {
     ci.set_plant(&plant);
 
     CenicSolverParameters ci_params;
-    ci_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
-    ci_params.max_iterations_for_hessian_reuse = FLAGS_k_max;
+    ci_params.icf.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
+    ci_params.icf.max_iterations_for_hessian_reuse = FLAGS_k_max;
     ci_params.kappa = FLAGS_kappa;
-    ci_params.alpha_max = FLAGS_alpha_max;
-    ci_params.ls_tolerance = FLAGS_ls_tolerance;
+    ci_params.icf.alpha_max = FLAGS_alpha_max;
+    ci_params.icf.ls_tolerance = FLAGS_ls_tolerance;
     ci_params.tolerance = FLAGS_tolerance;
     ci_params.log_solver_stats = FLAGS_log_solver_stats;
-    ci_params.print_solver_stats = FLAGS_print_solver_stats;
-    ci_params.use_dense_algebra = FLAGS_dense_algebra;
+    ci_params.icf.print_solver_stats = FLAGS_print_solver_stats;
+    ci_params.icf.use_dense_algebra = FLAGS_dense_algebra;
     ci.set_solver_parameters(ci_params);
 
   } else if (FLAGS_simulator_integration_scheme == "implicit_euler") {

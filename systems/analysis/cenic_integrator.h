@@ -24,6 +24,7 @@ using multibody::MultibodyPlant;
 using multibody::contact_solvers::icf::IcfBuilder;
 using multibody::contact_solvers::icf::IcfData;
 using multibody::contact_solvers::icf::IcfModel;
+using multibody::contact_solvers::icf::IcfSolverParameters;
 using multibody::contact_solvers::icf::LinearFeedbackGains;
 using multibody::contact_solvers::icf::SearchDirectionData;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
@@ -34,12 +35,8 @@ using multibody::contact_solvers::internal::BlockSparsityPattern;
  * Tolerances and other parameters for the CENIC's convex solver.
  */
 struct CenicSolverParameters {
-  // Maximum outer iterations and linesearch iterations
-  int max_iterations{100};
-  int max_ls_iterations{100};
-
-  // Maximum line search step size
-  double alpha_max{1.0};
+  // Solver parameters, including max iterations, hessian resuse, etc. 
+  IcfSolverParameters icf;
 
   // Tolerance ε for the convergence conditions
   //   ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
@@ -47,25 +44,13 @@ struct CenicSolverParameters {
   // in fixed-step mode (no error control).
   double tolerance{1e-8};
 
-  // Tolerance for exact line search.
-  double ls_tolerance{1e-8};
-
   // Scaling factor for setting the tolerance ε = κ ⋅ accuracy in
   // error-controlled model.
   double kappa{0.001};
 
-  // Whether hessian reuse between iterations and time steps is enabled.
-  bool enable_hessian_reuse{false};
-  int max_iterations_for_hessian_reuse{10};  // k_max from [Hairer, 1996]
-
   // Logging/performance tracking flags
-  bool print_solver_stats{false};  // Whether to print stats to console.
+  // TODO(vincekurtz): consider dropping this logging functionality.
   bool log_solver_stats{false};    // Whether to log stats to a file.
-
-  // Dense algebra (LDLT) for solving for the search direction Δv = H⁻¹ g.
-  // This is primarily useful for debugging and testing: sparse algebra is
-  // generally much faster.
-  bool use_dense_algebra{false};
 };
 
 /**
