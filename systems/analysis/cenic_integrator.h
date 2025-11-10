@@ -107,7 +107,6 @@ class CenicIntegrator final : public IntegratorBase<T> {
    * Set the convex solver tolerances and iteration limits.
    */
   void set_solver_parameters(const IcfSolverParameters& parameters) {
-    fmt::print("setting parameters\n");
     solver_.set_parameters(parameters);
   }
 

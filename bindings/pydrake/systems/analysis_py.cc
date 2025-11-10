@@ -270,40 +270,6 @@ PYBIND11_MODULE(analysis, m) {
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
-  // Convex integrator options
-  {
-    py::class_<CenicSolverParameters>(
-        m, "CenicSolverParameters", doc.CenicSolverParameters.doc)
-        .def_readwrite("max_iterations", &CenicSolverParameters::max_iterations,
-            doc.CenicSolverParameters.max_iterations.doc)
-        .def_readwrite("max_ls_iterations",
-            &CenicSolverParameters::max_ls_iterations,
-            doc.CenicSolverParameters.max_ls_iterations.doc)
-        .def_readwrite("alpha_max", &CenicSolverParameters::alpha_max,
-            doc.CenicSolverParameters.alpha_max.doc)
-        .def_readwrite("tolerance", &CenicSolverParameters::tolerance,
-            doc.CenicSolverParameters.tolerance.doc)
-        .def_readwrite("ls_tolerance", &CenicSolverParameters::ls_tolerance,
-            doc.CenicSolverParameters.ls_tolerance.doc)
-        .def_readwrite("kappa", &CenicSolverParameters::kappa,
-            doc.CenicSolverParameters.kappa.doc)
-        .def_readwrite("enable_hessian_reuse",
-            &CenicSolverParameters::enable_hessian_reuse,
-            doc.CenicSolverParameters.enable_hessian_reuse.doc)
-        .def_readwrite("max_iterations_for_hessian_reuse",
-            &CenicSolverParameters::max_iterations_for_hessian_reuse,
-            doc.CenicSolverParameters.max_iterations_for_hessian_reuse.doc)
-        .def_readwrite("print_solver_stats",
-            &CenicSolverParameters::print_solver_stats,
-            doc.CenicSolverParameters.print_solver_stats.doc)
-        .def_readwrite("log_solver_stats",
-            &CenicSolverParameters::log_solver_stats,
-            doc.CenicSolverParameters.log_solver_stats.doc)
-        .def_readwrite("use_dense_algebra",
-            &CenicSolverParameters::use_dense_algebra,
-            doc.CenicSolverParameters.use_dense_algebra.doc);
-  }
-
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
@@ -317,6 +283,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
+    // TODO(vincekurtz): add bindings set IcfSolverParameters
     DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
         m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc)
         .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
@@ -326,13 +293,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
         .def("set_plant", &CenicIntegrator<T>::set_plant, py::arg("plant"),
-            doc.CenicIntegrator.set_plant.doc)
-        .def("get_solver_parameters",
-            &CenicIntegrator<T>::get_solver_parameters,
-            doc.CenicIntegrator.get_solver_parameters.doc)
-        .def("set_solver_parameters",
-            &CenicIntegrator<T>::set_solver_parameters, py::arg("parameters"),
-            doc.CenicIntegrator.set_solver_parameters.doc);
+            doc.CenicIntegrator.set_plant.doc);
 
     // See equivalent note about EventCallback in `framework_py_systems.cc`.
     using MonitorCallback =

@@ -344,8 +344,6 @@ def run_simulation(
     if config.integration_scheme == "cenic":
         ci = simulator.get_mutable_integrator()
         ci.set_plant(plant)
-        ci_params = ci.get_solver_parameters()
-        ci.set_solver_parameters(ci_params)
     meshcat.StartRecording()
     simulator.Initialize()
 

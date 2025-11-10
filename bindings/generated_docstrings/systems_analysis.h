@@ -447,13 +447,6 @@ R"""(Get a reference to the ICF builder, used to set up the convex problem.
 
 N.B. this is not const because the builder caches geometry data.)""";
         } builder;
-        // Symbol: drake::systems::CenicIntegrator::get_data
-        struct /* get_data */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc =
-R"""(Get a reference to the ICF problem data, used to store the cost,
-gradient, Hessian, etc.)""";
-        } get_data;
         // Symbol: drake::systems::CenicIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
           // Source: drake/systems/analysis/cenic_integrator.h
@@ -534,118 +527,6 @@ R"""(Set the convex solver tolerances and iteration limits.)""";
 R"""(Error estimation is supported via half-stepping.)""";
         } supports_error_estimation;
       } CenicIntegrator;
-      // Symbol: drake::systems::CenicSolverParameters
-      struct /* CenicSolverParameters */ {
-        // Source: drake/systems/analysis/cenic_integrator.h
-        const char* doc =
-R"""(Tolerances and other parameters for the CENIC's convex solver.)""";
-        // Symbol: drake::systems::CenicSolverParameters::alpha_max
-        struct /* alpha_max */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } alpha_max;
-        // Symbol: drake::systems::CenicSolverParameters::enable_hessian_reuse
-        struct /* enable_hessian_reuse */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } enable_hessian_reuse;
-        // Symbol: drake::systems::CenicSolverParameters::kappa
-        struct /* kappa */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } kappa;
-        // Symbol: drake::systems::CenicSolverParameters::log_solver_stats
-        struct /* log_solver_stats */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } log_solver_stats;
-        // Symbol: drake::systems::CenicSolverParameters::ls_tolerance
-        struct /* ls_tolerance */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } ls_tolerance;
-        // Symbol: drake::systems::CenicSolverParameters::max_iterations
-        struct /* max_iterations */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } max_iterations;
-        // Symbol: drake::systems::CenicSolverParameters::max_iterations_for_hessian_reuse
-        struct /* max_iterations_for_hessian_reuse */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } max_iterations_for_hessian_reuse;
-        // Symbol: drake::systems::CenicSolverParameters::max_ls_iterations
-        struct /* max_ls_iterations */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } max_ls_iterations;
-        // Symbol: drake::systems::CenicSolverParameters::print_solver_stats
-        struct /* print_solver_stats */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } print_solver_stats;
-        // Symbol: drake::systems::CenicSolverParameters::tolerance
-        struct /* tolerance */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } tolerance;
-        // Symbol: drake::systems::CenicSolverParameters::use_dense_algebra
-        struct /* use_dense_algebra */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } use_dense_algebra;
-      } CenicSolverParameters;
-      // Symbol: drake::systems::CenicSolverStats
-      struct /* CenicSolverStats */ {
-        // Source: drake/systems/analysis/cenic_integrator.h
-        const char* doc =
-R"""(Statistics to track during the optimization process.)""";
-        // Symbol: drake::systems::CenicSolverStats::Reserve
-        struct /* Reserve */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } Reserve;
-        // Symbol: drake::systems::CenicSolverStats::Reset
-        struct /* Reset */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } Reset;
-        // Symbol: drake::systems::CenicSolverStats::alpha
-        struct /* alpha */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } alpha;
-        // Symbol: drake::systems::CenicSolverStats::cost
-        struct /* cost */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } cost;
-        // Symbol: drake::systems::CenicSolverStats::gradient_norm
-        struct /* gradient_norm */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } gradient_norm;
-        // Symbol: drake::systems::CenicSolverStats::iterations
-        struct /* iterations */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } iterations;
-        // Symbol: drake::systems::CenicSolverStats::ls_iterations
-        struct /* ls_iterations */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } ls_iterations;
-        // Symbol: drake::systems::CenicSolverStats::step_size
-        struct /* step_size */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } step_size;
-        // Symbol: drake::systems::CenicSolverStats::time
-        struct /* time */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc = R"""()""";
-        } time;
-      } CenicSolverStats;
       // Symbol: drake::systems::CreateIntegratorFromConfig
       struct /* CreateIntegratorFromConfig */ {
         // Source: drake/systems/analysis/simulator_config_functions.h
