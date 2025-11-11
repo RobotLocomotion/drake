@@ -593,7 +593,7 @@ int do_main() {
 
     IcfSolverParameters icf_params;
     icf_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
-    icf_params.max_iterations_for_hessian_reuse = FLAGS_k_max;
+    icf_params.hessian_reuse_target_iterations = FLAGS_k_max;
     icf_params.alpha_max = FLAGS_alpha_max;
     icf_params.ls_tolerance = FLAGS_ls_tolerance;
     icf_params.tolerance = FLAGS_tolerance;

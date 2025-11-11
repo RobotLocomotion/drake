@@ -98,7 +98,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
       // it is possible that θ ≥ 1 without diverging, thanks to linesearch.
       eta = (theta < 1.0) ? theta / (1.0 - theta) : 1.0;
 
-      const int k_max = parameters_.max_iterations_for_hessian_reuse;
+      const int k_max = parameters_.hessian_reuse_target_iterations;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 

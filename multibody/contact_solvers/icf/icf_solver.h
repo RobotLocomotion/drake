@@ -17,36 +17,37 @@ using internal::BlockSparseCholeskySolver;
 using internal::BlockSparseSymmetricMatrixT;
 using internal::BlockSparsityPattern;
 
-/**
- * Parameters to configure the ICF convex solver.
- */
+// Parameters to configure the ICF convex solver.
 struct IcfSolverParameters {
-  // Maximum outer iterations and linesearch iterations
+  // Outer solver iteration limit
   int max_iterations{100};
-  int max_ls_iterations{100};
-
-  // Maximum line search step size
-  double alpha_max{1.0};
 
   // Tolerance ε for the convergence conditions
   //   ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
   //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
   double tolerance{1e-8};
 
-  // Tolerance for exact line search.
-  double ls_tolerance{1e-8};
-
   // Whether hessian reuse between iterations and time steps is enabled.
   bool enable_hessian_reuse{false};
-  int max_iterations_for_hessian_reuse{10};  // k_max from [Hairer, 1996]
 
-  // Whether to print stats to console.
-  bool print_solver_stats{false};
+  // Target maximum number of iterations for Hessian reuse. The solver
+  // effectively estimates the number of iterations to convergence. If the
+  // estimate is larger than this target, the Hessian will be recomputed to
+  // regain faster Newton-style convergence. See [Hairer, 1996], Ch. IV.8.
+  int hessian_reuse_target_iterations{10};
 
   // Dense algebra (LDLT) for solving for the search direction H⁻¹ g.
   // This is primarily useful for debugging and testing: sparse algebra is
   // generally much faster.
   bool use_dense_algebra{false};
+
+  // Parameters for exact linesearch
+  int max_ls_iterations{100};
+  double ls_tolerance{1e-8};
+  double alpha_max{1.0};  // maximum step length
+
+  // Whether to print stats to console.
+  bool print_solver_stats{false};
 };
 
 /**
