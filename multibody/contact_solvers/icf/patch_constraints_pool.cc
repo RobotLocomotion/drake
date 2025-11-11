@@ -172,7 +172,6 @@ void IcfModel<T>::PatchConstraintsPool::Clear() {
   stiffness_.clear();
   fn0_.clear();
   n0_.clear();
-  epsilon_soft_.clear();
   net_friction_.clear();
 }
 
@@ -200,7 +199,6 @@ void IcfModel<T>::PatchConstraintsPool::Resize(
   stiffness_.resize(num_pairs);
   fn0_.resize(num_pairs);
   n0_.resize(num_pairs);
-  epsilon_soft_.resize(num_pairs);
   net_friction_.resize(num_pairs);
 
   // Start indexes for each patch
@@ -253,10 +251,10 @@ template <typename T>
 void IcfModel<T>::PatchConstraintsPool::SetPair(
     const int patch_index, const int pair_index, const Vector3<T>& p_BoC_W,
     const Vector3<T>& normal_W, const T& fn0, const T& stiffness) {
+  using std::max;
   DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
   DRAKE_ASSERT(pair_index >= 0 && pair_index < num_pairs_[patch_index]);
   const int i = patch_pair_index(patch_index, pair_index);
-  const T& dt = model().time_step();
 
   p_BC_W_[i] = p_BoC_W;
   normal_W_[i] = normal_W;
@@ -281,11 +279,14 @@ void IcfModel<T>::PatchConstraintsPool::SetPair(
     v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
   }
 
-  using std::max;
+  // N.B. the normal component is n₀ = (δt fₙ₀))₊(1−dvₙ₀)₊, where
+  // (·)₊ = max(0, ·). However, the time step δt may change between when the
+  // constraint is set and when the problem is solved. Thus we only store
+  // n₀ = (fₙ₀)₊(1−dvₙ₀)₊ here and scale by δt later.
   const T& d = dissipation_[patch_index];
   const T vn0 = v_AcBc_W.dot(normal_W);
   const T damping = max(0.0, 1.0 - d * vn0);
-  const T n0 = max(0.0, dt * fn0) * damping;
+  const T n0 = max(0.0, fn0) * damping;
   n0_[i] = n0;
 
   // Coefficient of friction is determined based on previous velocity. This
@@ -303,53 +304,33 @@ void IcfModel<T>::PatchConstraintsPool::SetPair(
   const T mu =
       (mu_s - mu_d) * 0.5 * (1 - (sigmoid(s - 10) / sigmoid(10))) + mu_d;
   net_friction_[i] = mu;
-
-  // Regularized Lagged model.
-  const T sap_stiction_tolerance = mu * Rt_[patch_index] * n0;
-  epsilon_soft_[i] = max(stiction_tolerance_, sap_stiction_tolerance);
-}
-
-template <typename T>
-void IcfModel<T>::PatchConstraintsPool::UpdateTimeStep(const T& old_time_step,
-                                                       const T& time_step) {
-  using std::max;
-  const T ratio = time_step / old_time_step;
-
-  for (int patch = 0; patch < num_patches(); ++patch) {
-    for (int pair = 0; pair < num_pairs(patch); ++pair) {
-      const int pk = patch_pair_index(patch, pair);
-      // Update n₀ = max(0, δt⋅fn0)⋅max(0, 1 - d⋅vn0)
-      n0_[pk] *= ratio;
-
-      // Update ε_soft = μ Rₜ n₀
-      const T& mu = net_friction_[pk];
-      const T sap_stiction_tolerance = mu * Rt_[patch] * n0_[pk];
-      epsilon_soft_[pk] = max(stiction_tolerance_, sap_stiction_tolerance);
-    }
-  }
 }
 
 template <typename T>
 T IcfModel<T>::PatchConstraintsPool::CalcLaggedHuntCrossleyModel(
     int p, int k, const Vector3<T>& v_AcBc_W, Vector3<T>* gamma_Bc_W,
     Matrix3<T>* G) const {
+  using std::max;
   const int pk = patch_pair_index(p, k);
-  const T& vs = epsilon_soft_[pk];
   const Vector3<T>& normal_W = normal_W_[pk];
   const T& dt = model().time_step();
+
+  // Data.
+  const T& mu = net_friction_[pk];
+  const T& d = dissipation_[p];
+  const T& stiffness = stiffness_[pk];
+  const T& n0 = n0_[pk] * dt;
+  const T& fe0 = fn0_[pk];
+
+  // Regularization for the stiction tolerance
+  const T sap_stiction_tolerance = mu * Rt_[p] * n0;
+  const T vs = max(stiction_tolerance_, sap_stiction_tolerance);
 
   // Normal velocity. Positive when bodies move apart.
   const T vn = v_AcBc_W.dot(normal_W);
   const Vector3<T> vt_AcBc_W = v_AcBc_W - vn * normal_W;
   const T vt_soft = SoftNorm(vt_AcBc_W, vs);
   const Vector3<T> t_hat_W = vt_AcBc_W / (vt_soft + vs);
-
-  // Data.
-  const T& mu = net_friction_[pk];
-  const T& d = dissipation_[p];
-  const T& stiffness = stiffness_[pk];
-  const T& n0 = n0_[pk];
-  const T& fe0 = fn0_[pk];
 
   // Cost
   const T N = CalcDiscreteHuntCrossleyAntiderivative(dt, vn, fe0, stiffness, d);

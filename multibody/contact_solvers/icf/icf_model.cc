@@ -372,7 +372,6 @@ T IcfModel<T>::CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
 template <typename T>
 void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   DRAKE_DEMAND(time_step > 0);
-  const T old_time_step = this->time_step();
 
   // Linearized dynamics matrix A = M + δt⋅D
   for (int c = 0; c < num_cliques_; ++c) {
@@ -388,10 +387,6 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   MultiplyByDynamicsMatrix(v0(), &Av0_);
   r_ = Av0_ - time_step * k0();
 
-  // Constraints
-  patch_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
-
-  // Finally, set the time step itself
   params_->time_step = time_step;
 }
 
