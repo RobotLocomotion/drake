@@ -255,6 +255,7 @@ cc_library(
     hdrs = _HDRS + [":lib/curl_config.h"],
     srcs = _SRCS,
     includes = _INCLUDES,
+    isystem = True,
     copts = _COPTS,
     linkopts = _LINKOPTS,
     linkstatic = 1,
