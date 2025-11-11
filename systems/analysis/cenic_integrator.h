@@ -171,12 +171,6 @@ class CenicIntegrator final : public IntegratorBase<T> {
   }
 
   /**
-   * Get a reference to the ICF problem model, used to compute the cost,
-   * gradient, Hessian, etc.
-   */
-  IcfModel<T>& get_model() { return model_; }
-
-  /**
    * Get a reference to the ICF problem data, used to store the cost, gradient,
    * Hessian, etc.
    */
@@ -253,20 +247,14 @@ class CenicIntegrator final : public IntegratorBase<T> {
    * Solve the ICF problem to compute x_{t+h} at a given step size. This will be
    * called multiple times for each DoStep to compute the error estimate.
    *
-   * @param h the time step to use
+   * @param model the ICF model for the convex problem min_v ℓ(v; q₀, v₀, h).
    * @param v_guess the initial guess for the MbP plant velocities.
    * @param x_next the output continuous state, includes state for both the
    *               plant and any external systems.
-   * @param actuation_feedback linearization of any actuator forces τ = B u(x)
-   * @param external_feedback linearization of any external forces τₑₓₜ(x)
-   * @param reuse_constraints use previously computed constraint data, updating
-   *                          only the time step of the ICF model.
    */
-  void ComputeNextContinuousState(
-      const T& h, const VectorX<T>& v_guess, ContinuousState<T>* x_next,
-      std::optional<LinearFeedbackGains<T>> actuation_feedback,
-      std::optional<LinearFeedbackGains<T>> external_feedback,
-      bool reuse_constraints = false);
+  void ComputeNextContinuousState(const IcfModel<T>& model,
+                                  const VectorX<T>& v_guess,
+                                  ContinuousState<T>* x_next);
 
   // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   // to handle quaternion DoFs properly.
@@ -339,12 +327,17 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
-  IcfModel<T> model_;
+  IcfModel<T> model_at_x0_;  // for the full step and first half-step
+  IcfModel<T> model_at_xh_;  // for the second half-step (at t + h/2)
   IcfData<T> data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
   SearchDirectionData<T> search_direction_data_;
+
+  // Track whether solves are initialized at the same time as a previous
+  // rejected step, to enable model (e.g., constraints, geometry) reuse.
+  T time_at_last_solve_{NAN};
 
   // Pre-allocated scratch space for intermediate calculations.
   struct Scratch {
