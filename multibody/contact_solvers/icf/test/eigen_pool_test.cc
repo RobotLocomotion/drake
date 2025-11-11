@@ -18,6 +18,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 const Eigen::Matrix3d S33 =
     (Eigen::Matrix3d() << 4, 1, 2, 1, 5, 3, 2, 3, 6).finished();
@@ -122,6 +123,7 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixWithFixedRows) {
   }
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -14,6 +14,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
@@ -210,6 +211,7 @@ struct SearchDirectionData {
   EigenPool<Vector6<T>> U;  // U = J⋅w.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

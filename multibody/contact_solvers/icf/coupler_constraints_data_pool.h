@@ -13,6 +13,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * Stores data for coupler constraints. This data is updated at each solver
@@ -46,10 +47,12 @@ class CouplerConstraintsDataPool {
   std::vector<T> gamma_pool_;  // Constraint impulses
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::CouplerConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        CouplerConstraintsDataPool);

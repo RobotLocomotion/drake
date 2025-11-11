@@ -20,6 +20,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * A pool of contact constraints organized by patches. Each patch involves two
@@ -126,7 +127,7 @@ class IcfModel<T>::PatchConstraintsPool {
   // Hessian.
   void AccumulateHessian(
       const IcfData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   /**
    * Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
@@ -220,6 +221,7 @@ class IcfModel<T>::PatchConstraintsPool {
   std::vector<T> net_friction_;     // Regularized stiction tolerance.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

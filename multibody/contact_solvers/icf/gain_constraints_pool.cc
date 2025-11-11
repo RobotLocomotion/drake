@@ -14,6 +14,11 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 void IcfModel<T>::GainConstraintsPool::Clear() {
@@ -88,8 +93,7 @@ void IcfModel<T>::GainConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void IcfModel<T>::GainConstraintsPool::AccumulateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
@@ -183,12 +187,13 @@ T IcfModel<T>::GainConstraintsPool::Clamp(int k,
   return cost;
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     double>::GainConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     drake::AutoDiffXd>::GainConstraintsPool;

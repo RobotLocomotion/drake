@@ -18,6 +18,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 // Represent a linear feedback law of the form
 //   τ = −K⋅v + b,
@@ -153,10 +154,11 @@ class IcfBuilder {
   mutable Scratch scratch_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::IcfBuilder);
+    class ::drake::multibody::contact_solvers::icf::internal::IcfBuilder);

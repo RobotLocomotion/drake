@@ -21,6 +21,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * A pool of coupler constraints (qᵢ - ρqⱼ = Δq) linking generalized positions
@@ -85,7 +86,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const IcfData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
   // for exact line search.
@@ -111,6 +112,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   std::vector<T> R_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

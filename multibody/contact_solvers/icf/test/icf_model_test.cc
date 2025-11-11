@@ -23,6 +23,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -724,6 +725,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], 100 * kEps);
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

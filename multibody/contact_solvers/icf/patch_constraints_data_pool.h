@@ -13,6 +13,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * Data pool for contact constraints. This data is updated at each solver
@@ -87,10 +88,12 @@ class PatchConstraintsDataPool {
   EigenPool<Vector3<T>> v_AcBc_W_;  // Contact velocity.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::PatchConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        PatchConstraintsDataPool);

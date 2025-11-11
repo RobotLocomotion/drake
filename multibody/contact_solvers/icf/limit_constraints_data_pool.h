@@ -13,6 +13,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * Data pool for joint limit constraints (qu ≥ q ≥ ql). This data is updated at
@@ -87,10 +88,12 @@ class LimitConstraintsDataPool {
   EigenPool<MatrixX<T>> G_upper_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::LimitConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        LimitConstraintsDataPool);

@@ -13,6 +13,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 /**
  * Data pool for torque-limited actuation constraints τ = clamp(−K⋅v + b, e).
@@ -74,10 +75,12 @@ class GainConstraintsDataPool {
   EigenPool<MatrixX<T>> G_pool_;  // G = -∂γ/∂v ≥ is diagonal.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::GainConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        GainConstraintsDataPool);
