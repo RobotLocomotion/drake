@@ -107,14 +107,7 @@ class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
 
-  IcfSolver() = default;
-
-  // Re-allocate stored data structures based on the provided model.
-  void Resize(const IcfModel<T>& model) {
-    model.ResizeData(&data_);
-    stats_.Reserve(parameters_.max_iterations);
-    search_direction_.resize(model.num_velocities());
-  }
+  IcfSolver() { stats_.Reserve(parameters_.max_iterations); }
 
   // Solve the convex problem to compute next-step velocities v = min ℓ(v).
   //
@@ -130,6 +123,7 @@ class IcfSolver {
 
   void set_parameters(const IcfSolverParameters& parameters) {
     parameters_ = parameters;
+    stats_.Reserve(parameters_.max_iterations);
   }
 
   const IcfSolverParameters& get_parameters() const { return parameters_; }
