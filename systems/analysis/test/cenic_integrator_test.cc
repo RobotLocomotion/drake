@@ -387,7 +387,7 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
       M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
 
   IcfBuilder<double>& icf_builder = integrator.builder();
-  IcfModel<double>& model = integrator.get_model();
+  IcfModel<double> model;
   IcfData<double> data;
   icf_builder.UpdateModel(plant_context, h, actuation_feedback, std::nullopt,
                           &model);
