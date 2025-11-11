@@ -389,7 +389,6 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   r_ = Av0_ - time_step * k0();
 
   // Constraints
-  limit_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
   patch_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
 
   // Finally, set the time step itself
