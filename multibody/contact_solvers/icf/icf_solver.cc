@@ -60,11 +60,11 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     // That ensures that we get a printout even when v_guess is good enough
     // that no iterations are performed.
     if (parameters_.print_solver_stats) {
-      const double step_size = (k == 0) ? NAN : stats_.step_size.back();
+      const double step_norm = (k == 0) ? NAN : stats_.step_norm.back();
       fmt::print(
           "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
           "alpha: {}\n",
-          k, data_.cache().cost, grad_norm, step_size, ls_iterations, alpha);
+          k, data_.cache().cost, grad_norm, step_norm, ls_iterations, alpha);
     }
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
@@ -78,7 +78,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     if (k > 0) {
       // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹ Δvₖ|| < tol.
       // Otherwise we use η = θ/(1−θ) as set below (see Hairer 1996, p.120).
-      if (eta * stats_.step_size.back() < parameters_.tolerance * scale) {
+      if (eta * stats_.step_norm.back() < parameters_.tolerance * scale) {
         return true;
       }
     }
@@ -87,8 +87,8 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
     // converge within (k_max - k) iterations, assuming linear convergence.
     if (k > 1) {
-      const double dvk = stats_.step_size[k - 1];    // ||D⁻¹ Δvₖ||
-      const double dvkm1 = stats_.step_size[k - 2];  // ||D⁻¹ Δvₖ₋₁||
+      const double dvk = stats_.step_norm[k - 1];    // ||D⁻¹ Δvₖ||
+      const double dvkm1 = stats_.step_norm[k - 2];  // ||D⁻¹ Δvₖ₋₁||
       const double theta = dvk / dvkm1;
 
       // For the step-size-based convergence check η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖),
@@ -147,7 +147,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     stats_.gradient_norm.push_back(data_.cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
-    stats_.step_size.push_back((D.cwiseInverse().asDiagonal() * dv).norm());
+    stats_.step_norm.push_back((D.cwiseInverse().asDiagonal() * dv).norm());
   }
 
   return false;  // Failed to converge.

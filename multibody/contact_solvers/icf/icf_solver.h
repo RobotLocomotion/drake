@@ -73,7 +73,7 @@ struct IcfSolverStats {
   std::vector<double> alpha;
 
   // The step size at this iteration, ||Δvₖ||
-  std::vector<double> step_size;
+  std::vector<double> step_norm;
 
   // Reset the stats to start a new iteration.
   void Reset() {
@@ -83,7 +83,7 @@ struct IcfSolverStats {
     gradient_norm.resize(0);
     ls_iterations.resize(0);
     alpha.resize(0);
-    step_size.resize(0);
+    step_norm.resize(0);
   }
 
   // Reserve space for the vectors to avoid reallocations.
@@ -92,7 +92,7 @@ struct IcfSolverStats {
     gradient_norm.reserve(size);
     ls_iterations.reserve(size);
     alpha.reserve(size);
-    step_size.reserve(size);
+    step_norm.reserve(size);
   }
 };
 
