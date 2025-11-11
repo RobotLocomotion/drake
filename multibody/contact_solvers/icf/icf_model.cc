@@ -1,5 +1,3 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re icf_model.h
-
 #include <memory>
 #include <set>
 #include <utility>

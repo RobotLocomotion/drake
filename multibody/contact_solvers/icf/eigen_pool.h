@@ -237,7 +237,7 @@ class EigenPool {
   // Resize a pool of fixed-size elements (e.g. Matrix3d).
   void Resize(int num_elements)
     requires is_fixed_size_v<EigenType>
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(num_elements);
   }
 
@@ -246,7 +246,7 @@ class EigenPool {
   // compile time.
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols)
     requires(!is_fixed_size_v<EigenType>)
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(rows, cols);
   }
 
@@ -255,7 +255,7 @@ class EigenPool {
   void Resize(const std::vector<int>& sizes)
     requires(has_fixed_size_rows_v<EigenType> ||
              has_fixed_size_cols_v<EigenType>)
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(sizes, sizes);
   }
 
@@ -265,7 +265,7 @@ class EigenPool {
   // compile time.
   void Resize(int num_elements, int rows, int cols)
     requires(!is_fixed_size_v<EigenType>)
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(num_elements, rows, cols);
   }
 

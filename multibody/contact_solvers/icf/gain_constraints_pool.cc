@@ -1,5 +1,3 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
-
 #include <numeric>
 #include <vector>
 
