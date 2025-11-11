@@ -50,9 +50,7 @@ struct IcfSolverParameters {
   bool print_solver_stats{false};
 };
 
-/**
- * Statistics to track during the optimization process.
- */
+// Statistics to track during the optimization process.
 struct IcfSolverStats {
   // The number of solver iterations
   int iterations;
@@ -96,14 +94,12 @@ struct IcfSolverStats {
   }
 };
 
-/**
- * A solver for convex Irrotational Contact Fields (ICF) problems,
- *
- *     min_v ℓ(v; q₀, v₀, h)
- *
- * where (q₀, v₀) is the initial state, h is the time step, and ℓ(v) is the
- * convex cost.
- */
+// A solver for convex Irrotational Contact Fields (ICF) problems,
+//
+//     min_v ℓ(v; q₀, v₀, h)
+//
+// where (q₀, v₀) is the initial state, h is the time step, and ℓ(v) is the
+// convex cost.
 template <typename T>
 class IcfSolver {
  public:
@@ -111,29 +107,23 @@ class IcfSolver {
 
   IcfSolver() = default;
 
-  /**
-   * Re-allocate stored data structures based on the provided model.
-   */
+  // Re-allocate stored data structures based on the provided model.
   void Resize(const IcfModel<T>& model) {
     model.ResizeData(&data_);
     stats_.Reserve(parameters_.max_iterations);
     search_direction_.resize(model.num_velocities());
   }
 
-  /**
-   * Solve the convex problem to compute next-step velocities v = min ℓ(v).
-   *
-   * @param model The ICF model defining the optimization problem.
-   * @param v_guess Initial guess for the solution. On output, contains the
-   *                computed solution.
-   *
-   * @return true if and only if the optimizer converged.
-   */
+  // Solve the convex problem to compute next-step velocities v = min ℓ(v).
+  //
+  // @param model The ICF model defining the optimization problem.
+  // @param v_guess Initial guess for the solution. On output, contains the
+  //                computed solution.
+  //
+  // @return true if and only if the optimizer converged.
   bool SolveWithGuess(const IcfModel<T>& model, VectorX<T>* v_guess);
 
-  /**
-   * Access solver statistics from the most recent solve.
-   */
+  // Access solver statistics from the most recent solve.
   const IcfSolverStats& stats() const { return stats_; }
 
   void set_parameters(const IcfSolverParameters& parameters) {
