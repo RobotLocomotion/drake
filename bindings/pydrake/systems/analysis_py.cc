@@ -270,6 +270,27 @@ PYBIND11_MODULE(analysis, m) {
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
+  // ICF Solver Parameters
+  // TODO(CENIC): wire up the docstrings properly
+  {
+    py::class_<IcfSolverParameters>(m, "IcfSolverParameters")
+        .def(py::init<>())
+        .def_readwrite("max_iterations", &IcfSolverParameters::max_iterations)
+        .def_readwrite("tolerance", &IcfSolverParameters::tolerance)
+        .def_readwrite(
+            "enable_hessian_reuse", &IcfSolverParameters::enable_hessian_reuse)
+        .def_readwrite("hessian_reuse_target_iterations",
+            &IcfSolverParameters::hessian_reuse_target_iterations)
+        .def_readwrite(
+            "use_dense_algebra", &IcfSolverParameters::use_dense_algebra)
+        .def_readwrite(
+            "max_ls_iterations", &IcfSolverParameters::max_ls_iterations)
+        .def_readwrite("ls_tolerance", &IcfSolverParameters::ls_tolerance)
+        .def_readwrite("alpha_max", &IcfSolverParameters::alpha_max)
+        .def_readwrite(
+            "print_solver_stats", &IcfSolverParameters::print_solver_stats);
+  }
+
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
@@ -293,7 +314,13 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
         .def("set_plant", &CenicIntegrator<T>::set_plant, py::arg("plant"),
-            doc.CenicIntegrator.set_plant.doc);
+            doc.CenicIntegrator.set_plant.doc)
+        .def("get_solver_parameters",
+            &CenicIntegrator<T>::get_solver_parameters,
+            doc.CenicIntegrator.get_solver_parameters.doc)
+        .def("set_solver_parameters",
+            &CenicIntegrator<T>::set_solver_parameters, py::arg("parameters"),
+            doc.CenicIntegrator.set_solver_parameters.doc);
 
     // See equivalent note about EventCallback in `framework_py_systems.cc`.
     using MonitorCallback =
