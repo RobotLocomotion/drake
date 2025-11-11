@@ -327,8 +327,8 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
-  IcfModel<T> first_step_model_;   // for the full step and first half-step
-  IcfModel<T> second_step_model_;  // for the second half-step
+  IcfModel<T> model_at_x0_;  // for the full step and first half-step
+  IcfModel<T> model_at_xh_;  // for the second half-step (at t + h/2)
   IcfData<T> data_;
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
   BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;

@@ -61,9 +61,9 @@ void CenicIntegrator<T>::DoInitialize() {
   // Allocate and initialize ICF problem objects
   builder_ = std::make_unique<IcfBuilder<T>>(plant(), plant_context);
   const T& dt = this->get_initial_step_size_target();
-  builder_->UpdateModel(plant_context, dt, &first_step_model_);
-  builder_->UpdateModel(plant_context, dt, &second_step_model_);
-  first_step_model_.ResizeData(&data_);
+  builder_->UpdateModel(plant_context, dt, &model_at_x0_);
+  builder_->UpdateModel(plant_context, dt, &model_at_xh_);
+  model_at_x0_.ResizeData(&data_);
 
   // Allocate scratch variables
   scratch_.v_guess.resize(plant().num_velocities());
@@ -108,6 +108,8 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 
   // Track whether error control rejected the last step. If so, we can reuse
   // constraints and geometry queries from the previous solve.
+  // TODO(vincekurtz): consider implementing something like
+  // IntegratorBase::previous_step_was_rejected() instead.
   const bool previous_step_was_rejected = (t0 == time_at_last_solve_);
   time_at_last_solve_ = t0;
 
@@ -140,18 +142,18 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   if (previous_step_was_rejected) {
     // The last time we updated the model, we used the initial state (q₀, v₀),
     // so all we need to update is the time step.
-    builder().UpdateModel(h, &first_step_model_);
+    builder().UpdateModel(h, &model_at_x0_);
   } else {
     // Build the full model around (q₀, v₀, h).
     builder().UpdateModel(plant_context, h, actuation_feedback_opt,
-                          external_feedback_opt, &first_step_model_);
+                          external_feedback_opt, &model_at_x0_);
   }
 
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
   VectorX<T>& v_guess = scratch_.v_guess;
   v_guess = plant().GetVelocities(plant_context);
-  ComputeNextContinuousState(first_step_model_, v_guess, x_next_full_.get());
+  ComputeNextContinuousState(model_at_x0_, v_guess, x_next_full_.get());
 
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
@@ -167,11 +169,10 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // initial guess. Note that this solve starts from the same initial state as
     // the full step, so we can reuse all of the constraints, avoiding expensive
     // geometry queries and such.
-    builder().UpdateModel(0.5 * h, &first_step_model_);
+    builder().UpdateModel(0.5 * h, &model_at_x0_);
     v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
     v_guess /= 2.0;
-    ComputeNextContinuousState(first_step_model_, v_guess,
-                               x_next_half_1_.get());
+    ComputeNextContinuousState(model_at_x0_, v_guess, x_next_half_1_.get());
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
@@ -182,10 +183,9 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // step as our initial guess here. We can't reuse the ICF constraints, but
     // we will reuse the linearizations of any external systems, if they exist.
     builder().UpdateModel(plant_context, 0.5 * h, actuation_feedback_opt,
-                          external_feedback_opt, &second_step_model_);
+                          external_feedback_opt, &model_at_xh_);
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
-    ComputeNextContinuousState(second_step_model_, v_guess,
-                               x_next_half_2_.get());
+    ComputeNextContinuousState(model_at_xh_, v_guess, x_next_half_2_.get());
 
     // Set the state to the result of the second half-step (since this is more
     // accurate than the full step, and we have it anyway).
