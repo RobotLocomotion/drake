@@ -46,7 +46,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
   double alpha{NAN};
   int ls_iterations{0};
   double eta = 1.0;
-  stats_.Reset();
+  stats_.Clear();
 
   if (parameters_.print_solver_stats) {
     fmt::print("IcfSolver: starting convex solve\n");
