@@ -58,12 +58,9 @@ void CenicIntegrator<T>::DoInitialize() {
   if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
   this->set_accuracy_in_use(working_accuracy);
 
-  // Allocate and initialize ICF problem objects
+  // Create the ICF builder, which will manage the construction of the convex
+  // ICF optimization problem.
   builder_ = std::make_unique<IcfBuilder<T>>(plant(), plant_context);
-  const T& dt = this->get_initial_step_size_target();
-  builder_->UpdateModel(plant_context, dt, &model_at_x0_);
-  builder_->UpdateModel(plant_context, dt, &model_at_xh_);
-  model_at_x0_.ResizeData(&data_);
 
   // Allocate scratch variables
   scratch_.v_guess.resize(plant().num_velocities());
