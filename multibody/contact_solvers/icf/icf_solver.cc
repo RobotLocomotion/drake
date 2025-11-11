@@ -142,7 +142,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     v += dv;
 
     // Finalize solver stats now that we've finished the iteration
-    stats_.iterations++;
+    stats_.num_iterations++;
     stats_.cost.push_back(data_.cache().cost);
     stats_.gradient_norm.push_back(data_.cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);

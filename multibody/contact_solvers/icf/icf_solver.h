@@ -52,8 +52,10 @@ struct IcfSolverParameters {
 
 // Statistics to track during the optimization process.
 struct IcfSolverStats {
-  // The number of solver iterations
-  int iterations;
+  // The number of solver iterations.
+  // Iterations are counted starting from k = 0 as the first iteration. All
+  // std::vectors below will have size() == num_iterations.
+  int num_iterations;
 
   // The total number of Hessian factorizations.
   int num_factorizations;
@@ -75,7 +77,7 @@ struct IcfSolverStats {
 
   // Reset the stats to start a new iteration.
   void Reset() {
-    iterations = 0;
+    num_iterations = 0;
     num_factorizations = 0;
     cost.resize(0);
     gradient_norm.resize(0);
