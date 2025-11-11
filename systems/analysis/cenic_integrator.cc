@@ -208,7 +208,10 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   model.ResizeData(&data_);
   VectorX<T>& v = data_.v();
   v = v_guess;
-  if (!solver_.SolveWithGuess(model, &data_)) {
+  if constexpr (!std::is_same_v<T, double>) {
+    throw std::runtime_error(
+        "CenicIntegrator: ICF solver only supports T = double.");
+  } else if (!solver_.SolveWithGuess(model, &data_)) {
     throw std::runtime_error("CenicIntegrator: optimization failed.");
   }
 

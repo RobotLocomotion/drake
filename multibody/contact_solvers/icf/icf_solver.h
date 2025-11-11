@@ -13,6 +13,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using internal::BlockSparseCholeskySolver;
 using internal::BlockSparseSymmetricMatrixT;
 using internal::BlockSparsityPattern;
@@ -102,7 +104,6 @@ struct IcfSolverStats {
 //
 // where (q₀, v₀) is the initial state, h is the time step, and ℓ(v) is the
 // convex cost.
-template <typename T>
 class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
@@ -119,7 +120,7 @@ class IcfSolver {
   //
   // N.B. the caller must ensure that the model and data are compatible, i.e.,
   // model.ResizeData(&data) has been called.
-  bool SolveWithGuess(const IcfModel<T>& model, IcfData<T>* data);
+  bool SolveWithGuess(const IcfModel<double>& model, IcfData<double>* data);
 
   // Access solver statistics from the most recent solve.
   const IcfSolverStats& stats() const { return stats_; }
@@ -139,39 +140,42 @@ class IcfSolver {
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
   // fallback. Returns the linesearch parameter α and the number of iterations
   // taken.
-  std::pair<T, int> PerformExactLineSearch(const IcfModel<T>& model,
-                                           const IcfData<T>& data,
-                                           const VectorX<T>& dv);
+  std::pair<double, int> PerformExactLineSearch(const IcfModel<double>& model,
+                                                const IcfData<double>& data,
+                                                const VectorXd& dv);
 
   // Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
   // Used for cubic linesearch initialization.
-  T SolveQuadraticInUnitInterval(const T& a, const T& b, const T& c) const;
+  double SolveQuadraticInUnitInterval(const double a, const double b,
+                                      const double c) const;
 
   // Solve for the Newton search direction Δv = −H⁻¹g, with flags for several
   // levels of Hessian reuse:
+  //
   //  - reuse_factorization: reuse the exact same factorization of H as in the
   //                         previous iteration. Do not compute the new
   //                         Hessian at all. This is the fastest option, but
   //                         gives a lower-quality search direction.
-  //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse
-  //  the
+  //
+  //  - reuse_sparsity_pattern: recompute H and its factorization, but reuse the
   //                            stored sparsity pattern. This gives an exact
   //                            Newton step, but avoids some allocations.
-  void ComputeSearchDirection(const IcfModel<T>& model, const IcfData<T>& data,
-                              VectorX<T>* dv, bool reuse_factorization = false,
+  void ComputeSearchDirection(const IcfModel<double>& model,
+                              const IcfData<double>& data, VectorXd* dv,
+                              bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
   // Indicate whether a change in problem structure requires a Hessian with a
   // new sparsity pattern.
-  bool SparsityPatternChanged(const IcfModel<T>& model) const;
+  bool SparsityPatternChanged(const IcfModel<double>& model) const;
 
   // Stored Hessian and factorization objects. Allows for Hessian reuse
   // between iterations and between subsequent soicf.lves (which is a valid
   // strategy since the problem is convex).
-  std::unique_ptr<BlockSparseSymmetricMatrixT<T>> hessian_;
-  BlockSparseCholeskySolver<Eigen::MatrixXd> hessian_factorization_;
-  Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
-  SearchDirectionData<T> search_direction_data_;
+  std::unique_ptr<BlockSparseSymmetricMatrixT<double>> hessian_;
+  BlockSparseCholeskySolver<MatrixXd> hessian_factorization_;
+  Eigen::LDLT<MatrixXd> dense_hessian_factorization_;
+  SearchDirectionData<double> search_direction_data_;
 
   // Track the sparsity pattern for Hessian reuse
   std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;
@@ -186,26 +190,10 @@ class IcfSolver {
   IcfSolverStats stats_;
 
   // Pre-allocated search direction Δv
-  VectorX<T> search_direction_;
+  VectorXd search_direction_;
 };
-
-// Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
-template <>
-bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>&,
-                                       IcfData<double>*);
-template <>
-std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
-    const IcfModel<double>&, const IcfData<double>&, const VectorX<double>&);
-
-template <>
-void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>&,
-                                               const IcfData<double>&,
-                                               VectorX<double>*, bool, bool);
 
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::IcfSolver);

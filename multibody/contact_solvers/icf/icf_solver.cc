@@ -15,17 +15,8 @@ using Eigen::VectorXd;
 using internal::Bracket;
 using internal::DoNewtonWithBisectionFallback;
 
-template <class T>
-bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, IcfData<T>*) {
-  // Eventually we could propagate gradients with the implicit function
-  // theorem to support AutoDiffXd. For now we'll throw if anything other than
-  // double is used.
-  throw std::logic_error("IcfSolver only supports T = double.");
-}
-
-template <>
-bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
-                                       IcfData<double>* data) {
+bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
+                               IcfData<double>* data) {
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
   VectorXd& v = data->v();
   VectorXd& dv = search_direction_;
@@ -152,16 +143,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
   return false;  // Failed to converge.
 }
 
-template <typename T>
-std::pair<T, int> IcfSolver<T>::PerformExactLineSearch(const IcfModel<T>&,
-                                                       const IcfData<T>&,
-                                                       const VectorX<T>&) {
-  throw std::logic_error(
-      "IcfSolver: PerformExactLineSearch only supports T = double.");
-}
-
-template <>
-std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
+std::pair<double, int> IcfSolver::PerformExactLineSearch(
     const IcfModel<double>& model, const IcfData<double>& data,
     const VectorXd& dv) {
   const double alpha_max = parameters_.alpha_max;
@@ -243,26 +225,25 @@ std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
       parameters_.ls_tolerance, parameters_.max_ls_iterations);
 }
 
-template <typename T>
-T IcfSolver<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
-                                             const T& c) const {
+double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
+                                               const double c) const {
   using std::clamp;
   using std::sqrt;
 
   // Sign function that returns 1 for positive numbers, -1 for
   // negative numbers, and 0 for zero.
-  auto sign = [](const T& x) {
+  auto sign = [](const double x) {
     return (x > 0) - (x < 0);
   };
 
-  T s;
-  if (a < std::numeric_limits<T>::epsilon()) {
+  double s;
+  if (a < std::numeric_limits<double>::epsilon()) {
     // If a ≈ 0, just solve b x + c = 0.
     s = -c / b;
   } else {
     // Use the numerically stable root-finding method described here:
     // https://math.stackexchange.com/questions/866331/
-    const T discriminant = b * b - 4 * a * c;
+    const double discriminant = b * b - 4 * a * c;
     DRAKE_DEMAND(discriminant >= 0);  // must have a real root
     s = -b - sign(b) * sqrt(discriminant);
     s /= 2 * a;
@@ -279,22 +260,13 @@ T IcfSolver<T>::SolveQuadraticInUnitInterval(const T& a, const T& b,
         "CenicIntegrator: quadratic root falls outside [0, 1].");
   }
 
-  return clamp(s, T(0.0), T(1.0));  // Ensure s ∈ [0, 1].
+  return clamp(s, 0.0, 1.0);  // Ensure s ∈ [0, 1].
 }
 
-template <typename T>
-void IcfSolver<T>::ComputeSearchDirection(const IcfModel<T>&, const IcfData<T>&,
-                                          VectorX<T>*, bool, bool) {
-  throw std::logic_error(
-      "IcfSolver: ComputeSearchDirection only supports T = double.");
-}
-
-template <>
-void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
-                                               const IcfData<double>& data,
-                                               VectorXd* dv,
-                                               bool reuse_factorization,
-                                               bool reuse_sparsity_pattern) {
+void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
+                                       const IcfData<double>& data,
+                                       VectorXd* dv, bool reuse_factorization,
+                                       bool reuse_sparsity_pattern) {
   DRAKE_ASSERT(dv != nullptr);
 
   if (parameters_.use_dense_algebra) {
@@ -331,8 +303,7 @@ void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
   }
 }
 
-template <typename T>
-bool IcfSolver<T>::SparsityPatternChanged(const IcfModel<T>& model) const {
+bool IcfSolver::SparsityPatternChanged(const IcfModel<double>& model) const {
   if (previous_sparsity_pattern_ == nullptr) {
     return true;  // No previous sparsity pattern to compare against.
   }
@@ -346,6 +317,3 @@ bool IcfSolver<T>::SparsityPatternChanged(const IcfModel<T>& model) const {
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::IcfSolver);

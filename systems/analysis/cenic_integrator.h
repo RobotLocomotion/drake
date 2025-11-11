@@ -202,7 +202,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
-  IcfSolver<T> solver_;
+  IcfSolver solver_;
   IcfModel<T> model_at_x0_;  // for the full step and first half-step
   IcfModel<T> model_at_xh_;  // for the second half-step (at t + h/2)
   IcfData<T> data_;          // reusable data for the solver
