@@ -213,6 +213,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
   IcfSolver<T> solver_;
   IcfModel<T> model_at_x0_;  // for the full step and first half-step
   IcfModel<T> model_at_xh_;  // for the second half-step (at t + h/2)
+  IcfData<T> data_;          // reusable data for the solver
 
   // Track whether solves are initialized at the same time as a previous
   // rejected step, to enable model (e.g., constraints, geometry) reuse.
@@ -223,7 +224,6 @@ class CenicIntegrator final : public IntegratorBase<T> {
     VectorX<T> v_guess;
 
     // Next-step state
-    VectorX<T> v;
     VectorX<T> q;
     VectorX<T> z;
 

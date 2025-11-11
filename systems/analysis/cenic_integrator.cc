@@ -64,7 +64,6 @@ void CenicIntegrator<T>::DoInitialize() {
 
   // Allocate scratch variables
   scratch_.v_guess.resize(plant().num_velocities());
-  scratch_.v.resize(nv);
   scratch_.q.resize(nq);
   scratch_.z.resize(nz);
   scratch_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
@@ -192,6 +191,8 @@ template <typename T>
 void CenicIntegrator<T>::ComputeNextContinuousState(
     const IcfModel<T>& model, const VectorX<T>& v_guess,
     ContinuousState<T>* x_next) {
+  DRAKE_ASSERT(v_guess.size() == model.num_velocities());
+  DRAKE_ASSERT(model.num_velocities() == plant().num_velocities());
   const T& h = model.time_step();
   const Context<T>& context = this->get_context();
 
@@ -205,9 +206,10 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
 
   // Solve the optimization problem for next-step velocities
   // v = min ℓ(v; q₀, v₀, h).
-  VectorX<T>& v = scratch_.v;
+  model.ResizeData(&data_);
+  VectorX<T>& v = data_.v();
   v = v_guess;
-  if (!solver_.SolveWithGuess(model, &v)) {
+  if (!solver_.SolveWithGuess(model, &data_)) {
     throw std::runtime_error("CenicIntegrator: optimization failed.");
   }
 

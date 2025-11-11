@@ -16,7 +16,7 @@ using internal::Bracket;
 using internal::DoNewtonWithBisectionFallback;
 
 template <class T>
-bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, VectorX<T>*) {
+bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, IcfData<T>*) {
   // Eventually we could propagate gradients with the implicit function
   // theorem to support AutoDiffXd. For now we'll throw if anything other than
   // double is used.
@@ -25,12 +25,11 @@ bool IcfSolver<T>::SolveWithGuess(const IcfModel<T>&, VectorX<T>*) {
 
 template <>
 bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
-                                       VectorXd* v_guess) {
-  VectorXd& v = *v_guess;
+                                       IcfData<double>* data) {
+  DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
+  VectorXd& v = data->v();
   VectorXd& dv = search_direction_;
-  model.ResizeData(&data_);
   dv.resize(model.num_velocities());
-  DRAKE_DEMAND(model.num_velocities() == v.size());
 
   // Convergence tolerances are scaled by D = diag(M)^{-1/2}, so that all
   // entries of g̃ = Dg and ṽ = D⁻¹v have the same units [Castro 2021, IV.E].
@@ -53,8 +52,8 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
   }
   for (int k = 0; k < parameters_.max_iterations; ++k) {
     // Compute the cost and gradient
-    model.CalcData(v, &data_);
-    const double grad_norm = (D.asDiagonal() * data_.cache().gradient).norm();
+    model.CalcData(v, data);
+    const double grad_norm = (D.asDiagonal() * data->cache().gradient).norm();
 
     // We'll print solver stats before doing any convergence checks.
     // That ensures that we get a printout even when v_guess is good enough
@@ -64,7 +63,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
       fmt::print(
           "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
           "alpha: {}\n",
-          k, data_.cache().cost, grad_norm, step_norm, ls_iterations, alpha);
+          k, data->cache().cost, grad_norm, step_norm, ls_iterations, alpha);
     }
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
@@ -125,7 +124,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
                          reuse_sparsity_pattern && reuse_hessian_factorization_;
 
     // Compute the search direction dv = -H⁻¹ g
-    ComputeSearchDirection(model, data_, &dv, reuse_hessian,
+    ComputeSearchDirection(model, *data, &dv, reuse_hessian,
                            reuse_sparsity_pattern);
 
     // If the sparsity pattern changed, store it for future checks.
@@ -135,7 +134,7 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
     }
 
     // Compute the step size with linesearch
-    std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, data_, dv);
+    std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, *data, dv);
 
     // Update the decision variables (velocities)
     dv *= alpha;
@@ -143,8 +142,8 @@ bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>& model,
 
     // Finalize solver stats now that we've finished the iteration
     stats_.num_iterations++;
-    stats_.cost.push_back(data_.cache().cost);
-    stats_.gradient_norm.push_back(data_.cache().gradient.norm());
+    stats_.cost.push_back(data->cache().cost);
+    stats_.gradient_norm.push_back(data->cache().gradient.norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
     stats_.step_norm.push_back((D.cwiseInverse().asDiagonal() * dv).norm());

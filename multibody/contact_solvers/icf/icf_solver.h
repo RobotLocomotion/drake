@@ -112,11 +112,14 @@ class IcfSolver {
   // Solve the convex problem to compute next-step velocities v = min ℓ(v).
   //
   // @param model The ICF model defining the optimization problem.
-  // @param v_guess Initial guess for the solution. On output, contains the
-  //                computed solution.
+  // @param data The ICF data structure to be updated with the solution. To
+  //             begin, stores the initial guess for velocities v.
   //
   // @return true if and only if the optimizer converged.
-  bool SolveWithGuess(const IcfModel<T>& model, VectorX<T>* v_guess);
+  //
+  // N.B. the caller must ensure that the model and data are compatible, i.e.,
+  // model.ResizeData(&data) has been called.
+  bool SolveWithGuess(const IcfModel<T>& model, IcfData<T>* data);
 
   // Access solver statistics from the most recent solve.
   const IcfSolverStats& stats() const { return stats_; }
@@ -174,9 +177,6 @@ class IcfSolver {
   // Flag for Hessian factorization re-use (changes between iterations)
   bool reuse_hessian_factorization_{true};
 
-  // Store data is a function of v, and changes between solver iterations
-  IcfData<T> data_;
-
   // Iteration limits, tolerances, and other parameters
   IcfSolverParameters parameters_;
 
@@ -190,7 +190,7 @@ class IcfSolver {
 // Forward-declare specializations to double, prior to DRAKE_DECLARE... below.
 template <>
 bool IcfSolver<double>::SolveWithGuess(const IcfModel<double>&,
-                                       VectorX<double>*);
+                                       IcfData<double>*);
 template <>
 std::pair<double, int> IcfSolver<double>::PerformExactLineSearch(
     const IcfModel<double>&, const IcfData<double>&, const VectorX<double>&);
