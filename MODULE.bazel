@@ -7,7 +7,7 @@
 module(
     name = "drake",
     # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
-    bazel_compatibility = [">=8.0.1"],
+    bazel_compatibility = [">=8.4.0"],
 )
 
 # Add starlark rules.
