@@ -389,9 +389,6 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   r_ = Av0_ - time_step * k0();
 
   // Constraints
-  coupler_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
-  // Gain constraints only use the time step in CalcData, so gain constraints
-  // do not need to be updated here.
   limit_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
   patch_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
 

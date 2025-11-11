@@ -66,10 +66,6 @@ class IcfModel<T>::CouplerConstraintsPool {
   void Set(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
-  // Update only the time step for this constraint pool, leaving the constraints
-  // otherwise unchanged.
-  void UpdateTimeStep(const T& old_time_step, const T& time_step);
-
   // Compute problem data from the given generalized velocities v, and store in
   // the given data struct.
   void CalcData(const VectorX<T>& v,

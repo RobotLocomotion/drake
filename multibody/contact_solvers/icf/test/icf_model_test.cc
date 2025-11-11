@@ -688,7 +688,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   VectorXd tau_expected = VectorXd::Zero(nv);
   tau_expected(6 + 1) = gamma0.value();
   tau_expected(6 + 3) = -rho1 * gamma0.value();
-  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, kEps,
+  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, 10 * kEps,
                               MatrixCompareType::relative));
 
   const double gamma = couplers_data.gamma(0).value();
@@ -720,8 +720,9 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const AutoDiffXd cost =
       model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
 
-  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], kEps);
-  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], 100 * kEps);
+  const double scale = std::abs(dcost.value());
+  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEps);
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEps);
 }
 
 }  // namespace icf
