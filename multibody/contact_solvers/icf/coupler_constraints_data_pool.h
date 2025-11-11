@@ -15,7 +15,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/**
+/*
  * Stores data for coupler constraints. This data is updated at each solver
  * iteration, as opposed to the CouplerConstraintsPool, which helps define the
  * optimization problem.

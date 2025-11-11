@@ -44,7 +44,7 @@ template <typename T>
 constexpr bool has_fixed_size_cols_v =
     is_eigen_type<T>::value && T::ColsAtCompileTime != Eigen::Dynamic;
 
-/**
+/*
  * Contiguous storage for a pool of fixed-size Eigen objects.
  *
  * This is essentially a wrapper around std::vector<EigenType>, where EigenType
@@ -87,7 +87,7 @@ struct FixedSizeStorage {
   ElementView at(int i) { return data_.at(i); }
 };
 
-/**
+/*
  * Contiguous storage for a pool of dynamic-size Eigen objects.
  *
  * Each element in the pool can have a different size, but they must have the
@@ -207,7 +207,7 @@ struct StorageSelector<EigenType, Eigen::Dynamic> {
   using Storage = DynamicSizeStorage<EigenType>;
 };
 
-/**
+/*
  * A replacement for std::vector<MatrixX<T>> with a contiguous memory layout.
  *
  * @tparam EigenType The type of the Eigen elements. E.g. MatrixXd,

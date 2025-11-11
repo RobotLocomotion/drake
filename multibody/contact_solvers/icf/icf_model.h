@@ -24,7 +24,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/**
+/*
  * A struct to hold the key parameters that define a convex ICF problem.
  *
  * These parameters are owned by the IcfModel, and are set externally by
@@ -47,7 +47,7 @@ struct IcfParameters {
   std::vector<int> clique_start;  // Starting velocity index for each clique.
 };
 
-/**
+/*
  * This class defines a convex ICF problem,
  *
  *    minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
@@ -299,7 +299,7 @@ class IcfModel {
   void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
-  /**
+  /*
    * Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
    * derivatives d²ℓ/dα²(α).
    *

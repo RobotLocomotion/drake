@@ -23,7 +23,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/**
+/*
  * A pool of coupler constraints (qᵢ - ρqⱼ = Δq) linking generalized positions
  * (qᵢ, qⱼ) with gear ratio ρ and offset Δq.
  *
@@ -48,7 +48,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   // Resize the constraints pool to store the given number of constraints.
   void Resize(const int num_constraints);
 
-  /**
+  /*
    * Set the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
    * j-th DoFs of the given clique.
    *

@@ -44,7 +44,7 @@ class IcfBuilder {
   IcfBuilder(const MultibodyPlant<T>& plant,
              const systems::Context<T>& context);
 
-  /**
+  /*
    * Update the given IcfModel to represent the ICF problem
    *
    *     min ℓ(v; q₀, v₀, δt)

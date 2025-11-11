@@ -15,7 +15,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/**
+/*
  * Data pool for contact constraints. This data is updated at each solver
  * iteration, as opposed to the PatchConstraintsPool, which defines the
  * constraints themselves and is fixed for the lifetime of the optimization
@@ -35,7 +35,7 @@ class PatchConstraintsDataPool {
   // Default constructor for an empty pool.
   PatchConstraintsDataPool() = default;
 
-  /**
+  /*
    * Resize the data pool to hold constraints of the given sizes.
    *
    * @param patch_size Number of contact pairs for the k-th patch.

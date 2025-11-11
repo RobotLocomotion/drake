@@ -24,7 +24,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/**
+/*
  * A pool of limit constraints, qu ≥ q ≥ ql.
  */
 template <typename T>
@@ -45,7 +45,7 @@ class IcfModel<T>::LimitConstraintsPool {
   void Resize(const std::vector<int>& constrained_clique_sizes,
               const std::vector<int>& constraint_to_clique);
 
-  /**
+  /*
    * Set the limit constraint parameters for the given clique and DoF.
    *
    * @param index The index of this limit constraint in the pool.

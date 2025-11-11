@@ -23,7 +23,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/**
+/*
  * A pool of gain constraints organized by cliques.
  *
  * A clique can have a gain constraint that models generalized forces on the
@@ -51,7 +51,7 @@ class IcfModel<T>::GainConstraintsPool {
   // Resize this pool to store gain constraints of the given sizes.
   void Resize(const std::vector<int>& sizes);
 
-  /**
+  /*
    * Set the given gain constraint for the given clique.
    *
    * @param index The index of this gain constraint in the pool.
