@@ -105,14 +105,6 @@ class CenicIntegrator final : public IntegratorBase<T> {
   }
 
   /**
-   * Get a mutable reference to the convex solver tolerances and iteration
-   * limits.
-   */
-  IcfSolverParameters& get_mutable_solver_parameters() {
-    return solver_.get_mutable_parameters();
-  }
-
-  /**
    * Get the current convex solver statistics.
    */
   const IcfSolverStats& get_solver_stats() const { return solver_.stats(); }

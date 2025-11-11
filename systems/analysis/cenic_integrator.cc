@@ -200,8 +200,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   if (!this->get_fixed_step_mode()) {
     // TODO(vincekurtz): consider exposing kappa as a user-settable parameter
     const double kappa = 0.001;
-    solver_.get_mutable_parameters().tolerance =
-        kappa * this->get_accuracy_in_use();
+    solver_.set_tolerance(kappa * this->get_accuracy_in_use());
   }
 
   // Solve the optimization problem for next-step velocities

@@ -131,7 +131,9 @@ class IcfSolver {
 
   const IcfSolverParameters& get_parameters() const { return parameters_; }
 
-  IcfSolverParameters& get_mutable_parameters() { return parameters_; }
+  // Update only the convergence tolerance. Used by the integrator to set
+  // convergence criteria based on integrator accuracy.
+  void set_tolerance(const double tol) { parameters_.tolerance = tol; }
 
  private:
   // Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
