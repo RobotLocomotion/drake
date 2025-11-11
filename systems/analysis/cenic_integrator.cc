@@ -213,7 +213,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
 
   // Accumulate solver statistics
   total_solver_iterations_ += solver_.stats().iterations;
-  total_hessian_factorizations_ += solver_.stats().factorizations;
+  total_hessian_factorizations_ += solver_.stats().num_factorizations;
   total_ls_iterations_ +=
       std::accumulate(solver_.stats().ls_iterations.begin(),
                       solver_.stats().ls_iterations.end(), 0);

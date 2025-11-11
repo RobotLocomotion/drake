@@ -302,7 +302,7 @@ void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
     if (!reuse_factorization) {
       MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
       dense_hessian_factorization_ = H.ldlt();
-      stats_.factorizations++;
+      stats_.num_factorizations++;
       reuse_hessian_factorization_ = true;
     }
     *dv = dense_hessian_factorization_.solve(-data.cache().gradient);
@@ -322,7 +322,7 @@ void IcfSolver<double>::ComputeSearchDirection(const IcfModel<double>& model,
       if (!hessian_factorization_.Factor()) {
         throw std::runtime_error("IcfSolver: Hessian factorization failed!");
       }
-      stats_.factorizations++;
+      stats_.num_factorizations++;
       reuse_hessian_factorization_ = true;
     }
 

@@ -56,7 +56,7 @@ struct IcfSolverStats {
   int iterations;
 
   // The total number of Hessian factorizations.
-  int factorizations;
+  int num_factorizations;
 
   // The cost ℓ(v) at each iteration.
   std::vector<double> cost;
@@ -76,7 +76,7 @@ struct IcfSolverStats {
   // Reset the stats to start a new iteration.
   void Reset() {
     iterations = 0;
-    factorizations = 0;
+    num_factorizations = 0;
     cost.resize(0);
     gradient_norm.resize(0);
     ls_iterations.resize(0);
