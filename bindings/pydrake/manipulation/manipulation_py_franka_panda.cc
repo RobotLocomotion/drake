@@ -24,18 +24,18 @@ void DefineManipulationFrankaPanda(py::module m) {
   // Constants.
   m.attr("kPandaArmNumJoints") = kPandaArmNumJoints;
 
-  // Control mode enum
-  py::enum_<PandaControlMode>(m, "PandaControlMode", py::arithmetic(),
-      "Control modes for the Panda robot. "
-      "These can be bitwise OR'd together.")
-      .value("kNone", PandaControlMode::kNone)
-      .value("kPosition", PandaControlMode::kPosition)
-      .value("kVelocity", PandaControlMode::kVelocity)
-      .value("kTorque", PandaControlMode::kTorque)
-      .def("__or__",
-          [](PandaControlMode a, PandaControlMode b) { return a | b; })
-      .def("__and__",
-          [](PandaControlMode a, PandaControlMode b) { return a & b; });
+  // Control mode constants. PandaControlMode is a uint64_t typedef, so we
+  // expose the constants as integers. Python's native bitwise operators (| and &)
+  // work with these integers, and pybind11 automatically converts them to uint64_t
+  // when calling C++ functions.
+  py::object control_mode_class = py::module_::import("types").attr("SimpleNamespace")();
+  control_mode_class.attr("__doc__") =
+      "Control modes for the Panda robot. These can be bitwise OR'd together.";
+  control_mode_class.attr("kNone") = py::int_(PandaControlModes::kNone);
+  control_mode_class.attr("kPosition") = py::int_(PandaControlModes::kPosition);
+  control_mode_class.attr("kVelocity") = py::int_(PandaControlModes::kVelocity);
+  control_mode_class.attr("kTorque") = py::int_(PandaControlModes::kTorque);
+  m.attr("PandaControlMode") = control_mode_class;
   {
     using Class = PandaCommandReceiver;
     constexpr auto& cls_doc = doc.PandaCommandReceiver;

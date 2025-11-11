@@ -37,8 +37,8 @@ PandaCommandReceiver::PandaCommandReceiver(int num_joints,
   // Even if we have not yet received a message, we still need to provide
   // default values for our output ports.  We use a cache entry to compute
   // those values, by populating a default lcmt_panda_control message.
-  if ((control_mode_ & PandaControlMode::kPosition) !=
-      PandaControlMode::kNone) {
+  if ((control_mode_ & PandaControlModes::kPosition) !=
+      PandaControlModes::kNone) {
     // When in position control mode, the default is derived from the
     // "position_measured" input.
     latched_position_measured_is_set_ = DeclareDiscreteState(VectorXd::Zero(1));
@@ -65,33 +65,34 @@ PandaCommandReceiver::PandaCommandReceiver(int num_joints,
       {message_input_->ticket(), default_command_->ticket()});
 
   PandaControlMode remaining = control_mode_;
-  if ((control_mode_ & PandaControlMode::kPosition) !=
-      PandaControlMode::kNone) {
-    remaining &= ~PandaControlMode::kPosition;
+  if ((control_mode_ & PandaControlModes::kPosition) !=
+      PandaControlModes::kNone) {
+    remaining &= ~PandaControlModes::kPosition;
     commanded_position_output_ =
         &DeclareVectorOutputPort("position", BasicVector<double>(num_joints),
                                  &PandaCommandReceiver::CalcPositionOutput,
                                  {message_input_or_default_->ticket()});
   }
 
-  if ((control_mode_ & PandaControlMode::kVelocity) !=
-      PandaControlMode::kNone) {
-    remaining &= ~PandaControlMode::kVelocity;
+  if ((control_mode_ & PandaControlModes::kVelocity) !=
+      PandaControlModes::kNone) {
+    remaining &= ~PandaControlModes::kVelocity;
     commanded_velocity_output_ =
         &DeclareVectorOutputPort("velocity", BasicVector<double>(num_joints),
                                  &PandaCommandReceiver::CalcVelocityOutput,
                                  {message_input_or_default_->ticket()});
   }
 
-  if ((control_mode_ & PandaControlMode::kTorque) != PandaControlMode::kNone) {
-    remaining &= ~PandaControlMode::kTorque;
+  if ((control_mode_ & PandaControlModes::kTorque) !=
+      PandaControlModes::kNone) {
+    remaining &= ~PandaControlModes::kTorque;
     commanded_torque_output_ =
         &DeclareVectorOutputPort("torque", BasicVector<double>(num_joints),
                                  &PandaCommandReceiver::CalcTorqueOutput,
                                  {message_input_or_default_->ticket()});
   }
 
-  if (remaining != PandaControlMode::kNone) {
+  if (remaining != PandaControlModes::kNone) {
     throw std::logic_error(fmt::format("Invalid control_mode bits set: 0x{:x}",
                                        to_int(remaining)));
   }
@@ -131,8 +132,8 @@ PandaCommandReceiver::get_commanded_torque_output_port() const {
 
 void PandaCommandReceiver::LatchInitialPosition(
     const Context<double>& context, DiscreteValues<double>* result) const {
-  DRAKE_DEMAND((control_mode_ & PandaControlMode::kPosition) !=
-               PandaControlMode::kNone);
+  DRAKE_DEMAND((control_mode_ & PandaControlModes::kPosition) !=
+               PandaControlModes::kNone);
   const auto& bool_index = latched_position_measured_is_set_;
   const auto& value_index = latched_position_measured_;
   result->get_mutable_vector(bool_index).get_mutable_value()[0] = 1.0;
@@ -143,8 +144,8 @@ void PandaCommandReceiver::LatchInitialPosition(
 void PandaCommandReceiver::LatchInitialPosition(
     Context<double>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
-  DRAKE_THROW_UNLESS((control_mode_ & PandaControlMode::kPosition) !=
-                     PandaControlMode::kNone);
+  DRAKE_THROW_UNLESS((control_mode_ & PandaControlModes::kPosition) !=
+                     PandaControlModes::kNone);
   LatchInitialPosition(*context, &context->get_mutable_discrete_state());
 }
 
@@ -160,8 +161,8 @@ void PandaCommandReceiver::DoCalcNextUpdateTime(
   DRAKE_THROW_UNLESS(std::isinf(*time));
 
   // If we're not using position control, then we have no state to latch.
-  if ((control_mode_ & PandaControlMode::kPosition) ==
-      PandaControlMode::kNone) {
+  if ((control_mode_ & PandaControlModes::kPosition) ==
+      PandaControlModes::kNone) {
     return;
   }
 
@@ -186,8 +187,8 @@ void PandaCommandReceiver::CalcDefaultCommand(
     const Context<double>& context, lcmt_panda_command* result) const {
   *result = {};
   result->control_mode_expected = to_int(control_mode_);
-  if ((control_mode_ & PandaControlMode::kPosition) !=
-      PandaControlMode::kNone) {
+  if ((control_mode_ & PandaControlModes::kPosition) !=
+      PandaControlModes::kNone) {
     const BasicVector<double>& latch_is_set =
         context.get_discrete_state(latched_position_measured_is_set_);
     const BasicVector<double>& default_position =
@@ -199,12 +200,13 @@ void PandaCommandReceiver::CalcDefaultCommand(
     result->num_joint_position = num_joints_;
     result->joint_position = {vec.data(), vec.data() + num_joints_};
   }
-  if ((control_mode_ & PandaControlMode::kVelocity) !=
-      PandaControlMode::kNone) {
+  if ((control_mode_ & PandaControlModes::kVelocity) !=
+      PandaControlModes::kNone) {
     result->num_joint_velocity = num_joints_;
     result->joint_velocity = std::vector<double>(num_joints_, 0.0);
   }
-  if ((control_mode_ & PandaControlMode::kTorque) != PandaControlMode::kNone) {
+  if ((control_mode_ & PandaControlModes::kTorque) !=
+      PandaControlModes::kNone) {
     result->num_joint_torque = num_joints_;
     result->joint_torque = std::vector<double>(num_joints_, 0.0);
   }
@@ -237,8 +239,8 @@ void CheckNumJoints(const std::string& system_name, const char* vector_name,
 
 void PandaCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  DRAKE_DEMAND((control_mode_ & PandaControlMode::kPosition) !=
-               PandaControlMode::kNone);
+  DRAKE_DEMAND((control_mode_ & PandaControlModes::kPosition) !=
+               PandaControlModes::kNone);
   const auto& message =
       message_input_or_default_->Eval<lcmt_panda_command>(context);
   DRAKE_DEMAND(message.control_mode_expected == to_int(control_mode_));
@@ -252,8 +254,8 @@ void PandaCommandReceiver::CalcPositionOutput(
 
 void PandaCommandReceiver::CalcVelocityOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  DRAKE_DEMAND((control_mode_ & PandaControlMode::kVelocity) !=
-               PandaControlMode::kNone);
+  DRAKE_DEMAND((control_mode_ & PandaControlModes::kVelocity) !=
+               PandaControlModes::kNone);
   const auto& message =
       message_input_or_default_->Eval<lcmt_panda_command>(context);
   DRAKE_DEMAND(message.control_mode_expected == to_int(control_mode_));
@@ -267,8 +269,8 @@ void PandaCommandReceiver::CalcVelocityOutput(
 
 void PandaCommandReceiver::CalcTorqueOutput(const Context<double>& context,
                                             BasicVector<double>* output) const {
-  DRAKE_DEMAND((control_mode_ & PandaControlMode::kTorque) !=
-               PandaControlMode::kNone);
+  DRAKE_DEMAND((control_mode_ & PandaControlModes::kTorque) !=
+               PandaControlModes::kNone);
   const auto& message =
       message_input_or_default_->Eval<lcmt_panda_command>(context);
   DRAKE_DEMAND(message.control_mode_expected == to_int(control_mode_));

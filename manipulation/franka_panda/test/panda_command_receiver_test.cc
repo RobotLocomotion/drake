@@ -24,7 +24,7 @@ class PandaCommandReceiverTest : public testing::Test {
  public:
   PandaCommandReceiverTest()
       : dut_(kPandaArmNumJoints,
-             PandaControlMode::kPosition | PandaControlMode::kTorque),
+             PandaControlModes::kPosition | PandaControlModes::kTorque),
         context_ptr_(dut_.CreateDefaultContext()),
         context_(*context_ptr_),
         fixed_input_(FixInput()) {}
@@ -81,7 +81,7 @@ TEST_F(PandaCommandReceiverTest, AcceptanceTestWithMeasuredPositionInput) {
   const VectorXd t1 = VectorXd::LinSpaced(N, 0.5, 0.6);
   lcmt_panda_command command{};
   command.control_mode_expected =
-      to_int(PandaControlMode::kPosition | PandaControlMode::kTorque);
+      to_int(PandaControlModes::kPosition | PandaControlModes::kTorque);
   command.utime = 0;
   command.num_joint_position = N;
   command.joint_position = {q1.data(), q1.data() + q1.size()};
@@ -127,7 +127,7 @@ TEST_F(PandaCommandReceiverTest, AcceptanceTestWithLatching) {
   const VectorXd t3 = VectorXd::LinSpaced(N, 0.6, 0.7);
   lcmt_panda_command command{};
   command.control_mode_expected =
-      to_int(PandaControlMode::kPosition | PandaControlMode::kTorque);
+      to_int(PandaControlModes::kPosition | PandaControlModes::kTorque);
   command.utime = 0;
   command.num_joint_position = N;
   command.joint_position = {q3.data(), q3.data() + q3.size()};
@@ -140,7 +140,7 @@ TEST_F(PandaCommandReceiverTest, AcceptanceTestWithLatching) {
 
 GTEST_TEST(PandaCommandReceiverTestVelocity, VelocityControl) {
   PandaCommandReceiver receiver(kPandaArmNumJoints,
-                                PandaControlMode::kVelocity);
+                                PandaControlModes::kVelocity);
   EXPECT_EQ(receiver.num_discrete_state_groups(), 0);
 
   EXPECT_THROW(receiver.get_commanded_position_output_port(),
@@ -148,7 +148,7 @@ GTEST_TEST(PandaCommandReceiverTestVelocity, VelocityControl) {
   EXPECT_THROW(receiver.get_commanded_torque_output_port(), std::runtime_error);
 
   lcmt_panda_command command{};
-  command.control_mode_expected = to_int(PandaControlMode::kVelocity);
+  command.control_mode_expected = to_int(PandaControlModes::kVelocity);
   command.num_joint_velocity = kPandaArmNumJoints;
   command.joint_velocity.resize(kPandaArmNumJoints, 0.1);
 

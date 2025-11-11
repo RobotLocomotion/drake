@@ -38,7 +38,7 @@ class PandaCommandSender final : public drake::systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PandaCommandSender);
 
   /// @param control_mode is a bitset of one or more control mode constants
-  /// defined in PandaControlMode enum. Use bitwise OR to combine modes.
+  /// defined in PandaControlModes namespace. Use bitwise OR to combine modes.
   PandaCommandSender(int num_joints, PandaControlMode control_mode);
   ~PandaCommandSender() final;
 

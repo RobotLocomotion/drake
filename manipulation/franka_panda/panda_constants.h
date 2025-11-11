@@ -8,40 +8,18 @@ namespace franka_panda {
 
 const int kPandaArmNumJoints = 7;
 
-/** Control modes for the Panda robot. These can be bitwise OR'd together
- * to enable multiple control modes simultaneously.
+/** Type alias for Panda control mode bitfields. Control modes can be bitwise
+ * OR'd together to enable multiple control modes simultaneously.
  * Values match lcmt_panda_status::CONTROL_MODE_* constants. */
-enum class PandaControlMode : int {
-  kNone = 0,
-  kPosition = 1,
-  kVelocity = 2,
-  kTorque = 4,
-};
+using PandaControlMode = uint64_t;
 
-// Enable bitwise operations for PandaControlMode
-constexpr PandaControlMode operator|(PandaControlMode a, PandaControlMode b) {
-  return static_cast<PandaControlMode>(static_cast<int>(a) |
-                                       static_cast<int>(b));
-}
-
-constexpr PandaControlMode operator&(PandaControlMode a, PandaControlMode b) {
-  return static_cast<PandaControlMode>(static_cast<int>(a) &
-                                       static_cast<int>(b));
-}
-
-constexpr PandaControlMode operator~(PandaControlMode a) {
-  return static_cast<PandaControlMode>(~static_cast<int>(a));
-}
-
-constexpr PandaControlMode& operator|=(PandaControlMode& a,
-                                       PandaControlMode b) {
-  return a = a | b;
-}
-
-constexpr PandaControlMode& operator&=(PandaControlMode& a,
-                                       PandaControlMode b) {
-  return a = a & b;
-}
+/** Control mode constants for the Panda robot. */
+namespace PandaControlModes {
+constexpr PandaControlMode kNone = 0;
+constexpr PandaControlMode kPosition = 1;
+constexpr PandaControlMode kVelocity = 2;
+constexpr PandaControlMode kTorque = 4;
+}  // namespace PandaControlModes
 
 // Helper to convert to int for use in comparisons and LCM messages
 constexpr int to_int(PandaControlMode mode) {
@@ -49,15 +27,15 @@ constexpr int to_int(PandaControlMode mode) {
 }
 
 // Ensure our constants match the LCM message definition
-static_assert(to_int(PandaControlMode::kPosition) ==
+static_assert(to_int(PandaControlModes::kPosition) ==
                   drake::lcmt_panda_status::CONTROL_MODE_POSITION,
-              "PandaControlMode::kPosition must match LCM definition");
-static_assert(to_int(PandaControlMode::kVelocity) ==
+              "PandaControlModes::kPosition must match LCM definition");
+static_assert(to_int(PandaControlModes::kVelocity) ==
                   drake::lcmt_panda_status::CONTROL_MODE_VELOCITY,
-              "PandaControlMode::kVelocity must match LCM definition");
-static_assert(to_int(PandaControlMode::kTorque) ==
+              "PandaControlModes::kVelocity must match LCM definition");
+static_assert(to_int(PandaControlModes::kTorque) ==
                   drake::lcmt_panda_status::CONTROL_MODE_TORQUE,
-              "PandaControlMode::kTorque must match LCM definition");
+              "PandaControlModes::kTorque must match LCM definition");
 
 }  // namespace franka_panda
 }  // namespace manipulation

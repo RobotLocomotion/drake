@@ -13,6 +13,31 @@ class TestFrankaPanda(unittest.TestCase):
     def test_constants(self):
         self.assertEqual(mut.kPandaArmNumJoints, 7)
 
+    def test_control_mode_bitwise_or(self):
+        # Test that OR-ing control modes produces correct bit patterns
+        # kPosition = 1, kVelocity = 2, kTorque = 4
+        self.assertEqual(mut.PandaControlMode.kPosition, 1)
+        self.assertEqual(mut.PandaControlMode.kVelocity, 2)
+        self.assertEqual(mut.PandaControlMode.kTorque, 4)
+        self.assertEqual(mut.PandaControlMode.kNone, 0)
+
+        # Test OR combinations
+        self.assertEqual(
+            mut.PandaControlMode.kPosition | mut.PandaControlMode.kVelocity, 3
+        )
+        self.assertEqual(
+            mut.PandaControlMode.kPosition | mut.PandaControlMode.kTorque, 5
+        )
+        self.assertEqual(
+            mut.PandaControlMode.kVelocity | mut.PandaControlMode.kTorque, 6
+        )
+        self.assertEqual(
+            mut.PandaControlMode.kPosition
+            | mut.PandaControlMode.kVelocity
+            | mut.PandaControlMode.kTorque,
+            7
+        )
+
     def test_franka_panda_command_receiver(self):
         # Test with position and torque control mode
         control_mode = (

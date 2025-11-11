@@ -20,24 +20,25 @@ PandaCommandSender::PandaCommandSender(int num_joints,
                                        PandaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
   PandaControlMode remaining = control_mode_;
-  if ((control_mode_ & PandaControlMode::kPosition) !=
-      PandaControlMode::kNone) {
-    remaining &= ~PandaControlMode::kPosition;
+  if ((control_mode_ & PandaControlModes::kPosition) !=
+      PandaControlModes::kNone) {
+    remaining &= ~PandaControlModes::kPosition;
     position_input_port_ =
         &this->DeclareInputPort("position", kVectorValued, num_joints_);
   }
-  if ((control_mode_ & PandaControlMode::kVelocity) !=
-      PandaControlMode::kNone) {
-    remaining &= ~PandaControlMode::kVelocity;
+  if ((control_mode_ & PandaControlModes::kVelocity) !=
+      PandaControlModes::kNone) {
+    remaining &= ~PandaControlModes::kVelocity;
     velocity_input_port_ =
         &this->DeclareInputPort("velocity", kVectorValued, num_joints_);
   }
-  if ((control_mode_ & PandaControlMode::kTorque) != PandaControlMode::kNone) {
-    remaining &= ~PandaControlMode::kTorque;
+  if ((control_mode_ & PandaControlModes::kTorque) !=
+      PandaControlModes::kNone) {
+    remaining &= ~PandaControlModes::kTorque;
     torque_input_port_ =
         &this->DeclareInputPort("torque", kVectorValued, num_joints_);
   }
-  if (remaining != PandaControlMode::kNone) {
+  if (remaining != PandaControlModes::kNone) {
     throw std::logic_error(fmt::format("Invalid control_mode bits set: 0x{:x}",
                                        to_int(remaining)));
   }

@@ -56,7 +56,7 @@ class PandaCommandReceiver final : public drake::systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PandaCommandReceiver);
 
   /// @param control_mode is a bitset of one or more control mode constants
-  /// defined in PandaControlMode enum. Use bitwise OR to combine modes.
+  /// defined in PandaControlModes namespace. Use bitwise OR to combine modes.
   PandaCommandReceiver(int num_joints, PandaControlMode control_mode);
   ~PandaCommandReceiver() final;
 
