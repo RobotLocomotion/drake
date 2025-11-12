@@ -293,7 +293,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   }
 
   // This function calculates this mobilizer's N matrix using the quaternion in
-  // context, _without_ normalization, which differs from DoCalcNplusMatrix().
+  // context, _without_ normalization, which differs from DoCalcNplusMatrix()
+  // which uses the quaternion in context _with_ normalization.
   // This mobilizer's N(q) matrix relates q̇ (time derivatives of 7 generalized
   // positions) to v (6 generalized velocities) as q̇ = N(q)⋅v, where
   // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   0₄₃ is the 4x3 zero matrix.
@@ -315,16 +316,27 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
-  // This function calculates this mobilizer's N⁺ matrix using the quaternion in
-  // context, _with_ normalization, which differs from DoCalcNMatrix().
-  // This mobilizer's N⁺(q) matrix relates v (6 generalized velocities) to q̇
+  // This function calculates this mobilizer's N⁺ matrix using the quaternion qᵣ
+  // in context, _with_ normalization, which differs from DoCalcNMatrix() which
+  // uses the quaternion in context _without_ normalization. That is, if qᵣ is
+  // the unnormalized quaternion taken directly from context and q̇ᵣ is a
+  // "plausible" dqᵣ/dt, we calculate Nᵣ⁺(qᵣ) such that w_FM_F = Nᵣ⁺(qᵣ) * q̇ᵣ is
+  // the angular velocity of the mobilizer's M frame in the mobilizer's F frame,
+  // expressed in the F frame. Herein "plausible" means the choice of q̇ᵣ leaves
+  // |qᵣ| unchanged, which in math means d/dt [dot(qᵣ, qᵣ)] = 2 dot(qᵣ, q̇ᵣ) = 0.
+  // Note: We can prove that if q̇ᵣ is calculated from q̇ᵣ = Nᵣ(qᵣ) * w_FM_F, then
+  // dot(qᵣ, q̇ᵣ) = 0 and Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) = I₃₃, which means Nᵣ⁺(qᵣ) is truly a
+  // pseudo-inverse of Nᵣ(qᵣ). If q̇ᵣ is not "plausible", Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) ≠ I₃₃.
+  // Nᵣ⁺(qᵣ) is a 3x4 matrix formed by QuaternionRateToAngularVelocityMatrix().
+  // Contextual definition of Nᵣ⁺(qᵣ): denoting q̂ = qᵣ / |qᵣ|,
+  // w_FM_F = Nᵣ⁺(q̂ᵣ) * d/dt(q̂_FM) = Nᵣ⁺(qᵣ) * d/dt(qᵣ). Hence, using
+  // Nᵣ⁺(qᵣ) = QuaternionRateToAngularVelocityMatrix() accounts for a non-unit
+  // qᵣ and its corresponding time-derivative q̇ᵣ.
+  // Now, considering this mobilizer entirety (both rotation and translation),
+  // this mobilizer's N⁺(q) matrix relates v (6 generalized velocities) to q̇
   // (time derivatives of 7 generalized positions) as v = N⁺(q)⋅q̇, where
-  // N⁺(q) = ⎡ Nᵣ(q)⁺  0₃₄ ⎤   0₃₄ is the 4x3 zero matrix.
-  //         ⎣ 0₃₃     I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
-  // Nᵣ⁺(q) is a 3x4 matrix formed by QuaternionRateToAngularVelocityMatrix().
-  // Note: Contextual definition of Nᵣ⁺ -- denoting q̂_FM = q_FM / |q_FM|,
-  // w_FM_F = Nᵣ⁺ * d/dt(q̂_FM), where w_FM_F is frame M's angular velocity
-  // in frame F, expressed in F. Hence, this accounts for a non-unit q_FM.
+  // N⁺(q) = ⎡ Nᵣ⁺(q)  0₃₃ ⎤   0₃₃ is the 3x4 zero matrix.
+  //         ⎣ 0₃₄     I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
