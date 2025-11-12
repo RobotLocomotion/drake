@@ -80,24 +80,10 @@ struct IcfSolverStats {
   std::vector<double> step_norm;
 
   /* Reset the stats to start a new solve. */
-  void Clear() {
-    num_iterations = 0;
-    num_factorizations = 0;
-    cost.clear();
-    gradient_norm.clear();
-    ls_iterations.clear();
-    alpha.clear();
-    step_norm.clear();
-  }
+  void Clear();
 
   /* Reserve space for the vectors to avoid reallocations. */
-  void Reserve(int size) {
-    cost.reserve(size);
-    gradient_norm.reserve(size);
-    ls_iterations.reserve(size);
-    alpha.reserve(size);
-    step_norm.reserve(size);
-  }
+  void Reserve(int size);
 };
 
 /* A solver for convex Irrotational Contact Fields (ICF) problems,

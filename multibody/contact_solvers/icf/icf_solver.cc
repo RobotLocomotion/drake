@@ -16,6 +16,24 @@ using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+void IcfSolverStats::Clear() {
+  num_iterations = 0;
+  num_factorizations = 0;
+  cost.clear();
+  gradient_norm.clear();
+  ls_iterations.clear();
+  alpha.clear();
+  step_norm.clear();
+}
+
+void IcfSolverStats::Reserve(int size) {
+  cost.reserve(size);
+  gradient_norm.reserve(size);
+  ls_iterations.reserve(size);
+  alpha.reserve(size);
+  step_norm.reserve(size);
+}
+
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                IcfData<double>* data) {
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
