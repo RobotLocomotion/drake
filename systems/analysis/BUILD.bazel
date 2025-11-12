@@ -20,7 +20,6 @@ drake_cc_package_library(
         ":antiderivative_function",
         ":batch_eval",
         ":bogacki_shampine3_integrator",
-        ":cenic_integrator",
         ":dense_output",
         ":discrete_time_approximation",
         ":explicit_euler_integrator",
@@ -86,7 +85,6 @@ drake_cc_library(
     hdrs = ["simulator_config_functions.h"],
     deps = [
         ":bogacki_shampine3_integrator",
-        ":cenic_integrator",
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":radau_integrator",
@@ -101,6 +99,9 @@ drake_cc_library(
         "//common:essential",
         "//common:nice_type_name",
         "//systems/framework:leaf_system",
+    ],
+    implementation_deps = [
+        ":cenic_integrator",
     ],
 )
 
@@ -117,6 +118,10 @@ drake_cc_library(
     name = "cenic_integrator",
     srcs = ["cenic_integrator.cc"],
     hdrs = ["cenic_integrator.h"],
+    tags = [
+        # TODO(jwnimmer-tri) Move cenic_integrator into multibody somewhere.
+        "exclude_from_package",
+    ],
     deps = [
         ":integrator_base",
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
@@ -442,11 +447,13 @@ drake_cc_library(
     srcs = ["simulator_print_stats.cc"],
     hdrs = ["simulator_print_stats.h"],
     deps = [
-        ":cenic_integrator",
         ":implicit_integrator",
         ":integrator_base",
         ":simulator",
         "@fmt",
+    ],
+    implementation_deps = [
+        ":cenic_integrator",
     ],
 )
 

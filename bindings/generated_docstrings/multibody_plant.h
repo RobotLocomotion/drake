@@ -16,7 +16,6 @@
 // #include "drake/multibody/plant/compliant_contact_manager.h"
 // #include "drake/multibody/plant/constraint_specs.h"
 // #include "drake/multibody/plant/contact_jacobians.h"
-// #include "drake/multibody/plant/contact_properties.h"
 // #include "drake/multibody/plant/contact_results.h"
 // #include "drake/multibody/plant/contact_results_to_lcm.h"
 // #include "drake/multibody/plant/coulomb_friction.h"
@@ -9882,9 +9881,6 @@ to be zero.)""";
       } Wing;
       // Symbol: drake::multibody::contact_solvers
       struct /* contact_solvers */ {
-        // Symbol: drake::multibody::contact_solvers::icf
-        struct /* icf */ {
-        } icf;
       } contact_solvers;
     } multibody;
     // Symbol: drake::systems

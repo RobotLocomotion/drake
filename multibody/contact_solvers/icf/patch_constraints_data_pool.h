@@ -1,10 +1,10 @@
 #pragma once
 
 #include <numeric>
+#include <span>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
@@ -13,62 +13,47 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
- * Data pool for contact constraints. This data is updated at each solver
- * iteration, as opposed to the PatchConstraintsPool, which defines the
- * constraints themselves and is fixed for the lifetime of the optimization
- * problem.
- */
+/* Data pool for contact constraints. This data is updated at each solver
+iteration, as opposed to the PatchConstraintsPool, which defines the
+constraints themselves and is fixed for the lifetime of the optimization
+problem. */
 template <typename T>
 class PatchConstraintsDataPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PatchConstraintsDataPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PatchConstraintsDataPool);
 
-  // The number of patches in the pool.
+  /* The number of patches in the pool. */
   int num_patches() const { return num_patches_; }
 
-  // The total number of contact pairs among all patches.
+  /* The total number of contact pairs among all patches. */
   int num_pairs() const { return num_pairs_; }
 
-  // Default constructor for an empty pool.
+  /* Default constructor for an empty pool. */
   PatchConstraintsDataPool() = default;
 
-  /**
-   * Resize the data pool to hold constraints of the given sizes.
-   *
-   * @param patch_size Number of contact pairs for the k-th patch.
-   */
-  void Resize(const std::vector<int>& patch_size) {
-    num_patches_ = ssize(patch_size);
-    num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);
+  /* Resize the data pool to hold constraints of the given sizes.
+  @param patch_size Number of contact pairs for the k-th patch. */
+  void Resize(std::span<const int> patch_size);
 
-    // Data per patch.
-    cost_pool_.resize(num_patches_);
-    G_Bp_pool_.Resize(num_patches_);
-    Gamma_Bo_W_.Resize(num_patches_);
-
-    // Data per pair.
-    v_AcBc_W_.Resize(num_pairs_);
-  }
-
-  // Hessian block per patch
+  /* Hessian block per patch */
   EigenPool<Matrix6<T>>& G_Bp_pool() { return G_Bp_pool_; }
   const EigenPool<Matrix6<T>>& G_Bp_pool() const { return G_Bp_pool_; }
 
-  // Contact velocities per pair
+  /* Contact velocities per pair */
   EigenPool<Vector3<T>>& v_AcBc_W_pool() { return v_AcBc_W_; }
   const EigenPool<Vector3<T>>& v_AcBc_W_pool() const { return v_AcBc_W_; }
 
-  // Constraint impulse (gradient) per patch
+  /* Constraint impulse (gradient) per patch */
   EigenPool<Vector6<T>>& Gamma_Bo_W_pool() { return Gamma_Bo_W_; }
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool() const { return Gamma_Bo_W_; }
 
-  // Cost per patch
+  /* Cost per patch */
   const std::vector<T>& cost_pool() const { return cost_pool_; }
   std::vector<T>& cost_pool() { return cost_pool_; }
 
-  // Total cost over all patches.
+  /* Total cost over all patches. */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 
@@ -87,10 +72,12 @@ class PatchConstraintsDataPool {
   EigenPool<Vector3<T>> v_AcBc_W_;  // Contact velocity.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::PatchConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        PatchConstraintsDataPool);

@@ -1,28 +1,23 @@
 #pragma once
 
-#include <numeric>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
- * Stores data for coupler constraints. This data is updated at each solver
- * iteration, as opposed to the CouplerConstraintsPool, which helps define the
- * optimization problem.
- */
+/* Stores data for coupler constraints. This data is updated at each solver
+iteration, as opposed to the CouplerConstraintsPool, which helps define the
+optimization problem. */
 template <typename T>
 class CouplerConstraintsDataPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CouplerConstraintsDataPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CouplerConstraintsDataPool);
 
   /* Default constructor for an empty pool. */
   CouplerConstraintsDataPool() = default;
@@ -37,7 +32,7 @@ class CouplerConstraintsDataPool {
   const T& gamma(int k) const { return gamma_pool_[k]; }
   T& gamma(int k) { return gamma_pool_[k]; }
 
-  /* The constraint cost ℓ_c(v)*/
+  /* The constraint cost ℓ_c(v) */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 
@@ -46,10 +41,12 @@ class CouplerConstraintsDataPool {
   std::vector<T> gamma_pool_;  // Constraint impulses
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::CouplerConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        CouplerConstraintsDataPool);

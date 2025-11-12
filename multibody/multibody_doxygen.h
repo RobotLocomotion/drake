@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 /** @addtogroup multibody_notation
-
+@{
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
 code is correct. In Drake we use terminology, notation, and abstractions that
@@ -82,6 +82,7 @@ from your Doxygen comments; instructions are at the top of the source file used
 to generate them.</em>
 
 Next topic: @ref multibody_notation_basics
+@}
 */
 
 // Developers: this document is somewhat of an exception to the motherhood-

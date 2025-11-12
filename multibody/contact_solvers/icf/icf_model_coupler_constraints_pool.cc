@@ -1,20 +1,17 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
-
-#include <numeric>
 #include <utility>
-#include <vector>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 void IcfModel<T>::CouplerConstraintsPool::Clear() {
@@ -118,8 +115,7 @@ void IcfModel<T>::CouplerConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void IcfModel<T>::CouplerConstraintsPool::AccumulateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   unused(data);
 
   for (int k = 0; k < num_constraints(); ++k) {
@@ -161,12 +157,13 @@ void IcfModel<T>::CouplerConstraintsPool::ProjectAlongLine(
   }
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     double>::CouplerConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     drake::AutoDiffXd>::CouplerConstraintsPool;

@@ -23,7 +23,7 @@ officially supports:
 |------------------------------------|--------------|------------|-----------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
-| macOS Sequoia (15)                 | arm64        | 3.13 ⁽³⁾   | October 2026    |
+| macOS Sequoia (15)                 | arm64        | 3.14 ⁽³⁾   | October 2026    |
 | macOS Tahoe (26) ⁽⁵⁾               | arm64        | TBD        | October 2027    |
 
 "Official support" means that we have Continuous Integration test coverage to
@@ -45,8 +45,8 @@ that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, when installing via ``pip``
-on Ubuntu Python versions 3.10 through 3.14 (inclusive) are supported⁽⁶⁾ and
-on macOS Python versions 3.12 through 3.13 (inclusive) are supported.
+on Ubuntu Python versions 3.10 through 3.14 (inclusive) are supported ⁽⁶⁾ and
+on macOS Python versions 3.13 through 3.14 (inclusive) are supported ⁽⁶⁾.
 Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
 timeline for changing which Python versions are supported.
 

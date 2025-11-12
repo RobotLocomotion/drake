@@ -31,6 +31,7 @@ cc_library_vendored(
         for x in _HDRS
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )

@@ -4,6 +4,7 @@ See also ref_cycle_test_util_py.cc for the bindings used in the tests.
 """
 
 import gc
+import sys
 import unittest
 import weakref
 
@@ -16,7 +17,6 @@ from pydrake.common.ref_cycle_test_util import (
     invalid_arg_index,
     ouroboros,
 )
-from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 
 
 class TestRefCycle(unittest.TestCase):
@@ -30,9 +30,9 @@ class TestRefCycle(unittest.TestCase):
         # callers may hold an arbitrary number of references.
 
         for x in [p0, p1]:
-            self.assertEqual(actual_ref_count(x.__dict__), 1)
+            self.assertEqual(sys.getrefcount(x.__dict__), 2)
             self.assertEqual(
-                actual_ref_count(x._pydrake_internal_ref_cycle_peers), 1
+                sys.getrefcount(x._pydrake_internal_ref_cycle_peers), 2
             )
 
             # Check that all parts are tracked by gc.

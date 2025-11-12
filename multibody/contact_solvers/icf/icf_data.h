@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <span>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -14,36 +14,26 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
- * Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
- *
- * This class stores all data that depends on the current generalized velocity
- * v, and therefore changes at each solver iteration. That is in contrast with
- * IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
- * values of v during the optimization process.
- */
+/* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
+
+This class stores all data that depends on the current generalized velocity
+v, and therefore changes at each solver iteration. That is in contrast with
+IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
+values of v during the optimization process. */
 template <typename T>
 class IcfData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfData);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
-  // The cache holds quantities that are computed from v, so they can be reused.
+  /* The cache holds quantities that are computed from v, so they can be reused.
+   */
   struct Cache {
     void Resize(int num_bodies, int num_velocities, int num_couplers,
-                const std::vector<int>& gain_sizes,
-                const std::vector<int>& limit_sizes,
-                const std::vector<int>& patch_sizes) {
-      const int nv = num_velocities;
-      Av.resize(nv);
-      gradient.resize(nv);
-      spatial_velocities.Resize(num_bodies);
-
-      coupler_constraints_data.Resize(num_couplers);
-      gain_constraints_data.Resize(gain_sizes);
-      limit_constraints_data.Resize(limit_sizes);
-      patch_constraints_data.Resize(patch_sizes);
-    }
+                std::span<const int> gain_sizes,
+                std::span<const int> limit_sizes,
+                std::span<const int> patch_sizes);
 
     T momentum_cost{0};
     T constraints_cost{0};
@@ -61,49 +51,18 @@ class IcfData {
     PatchConstraintsDataPool<T> patch_constraints_data;
   };
 
-  // Struct to store pre-allocated scratch space. Unlike the cache, this scratch
-  // space is for intermediate computations, and is often cleared or overwritten
-  // as needed.
+  /* Struct to store pre-allocated scratch space. Unlike the cache, this scratch
+  space is for intermediate computations, and is often cleared or overwritten as
+  needed. */
   struct Scratch {
-    // Clear all data without changing capacity.
-    void Clear() {
-      V_WB_alpha.Clear();
-      U_AbB_W_pool.Clear();
-      H_BB_pool.Clear();
-      H_AA_pool.Clear();
-      H_AB_pool.Clear();
-      H_BA_pool.Clear();
-      GJa_pool.Clear();
-      GJb_pool.Clear();
-    }
+    /* Clear all data without changing capacity. */
+    void Clear();
 
-    // Resize the scratch space, allocating memory as needed.
+    /* Resize the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
-                int num_couplers, const std::vector<int>& gain_sizes,
-                const std::vector<int>& limit_sizes,
-                const std::vector<int>& patch_sizes) {
-      Clear();
-      Av_minus_r.resize(num_velocities);
-
-      V_WB_alpha.Resize(num_bodies);
-      v_alpha.resize(num_velocities);
-
-      Gw_gain.resize(num_velocities);
-      Gw_limit.resize(num_velocities);
-      U_AbB_W_pool.Resize(patch_sizes.size());
-
-      coupler_constraints_data.Resize(num_couplers);
-      gain_constraints_data.Resize(gain_sizes);
-      limit_constraints_data.Resize(limit_sizes);
-      patch_constraints_data.Resize(patch_sizes);
-
-      H_BB_pool.Resize(1, max_clique_size, max_clique_size);
-      H_AA_pool.Resize(1, max_clique_size, max_clique_size);
-      H_AB_pool.Resize(1, max_clique_size, max_clique_size);
-      H_BA_pool.Resize(1, max_clique_size, max_clique_size);
-      GJa_pool.Resize(1, 6, max_clique_size);
-      GJb_pool.Resize(1, 6, max_clique_size);
-    }
+                int num_couplers, std::span<const int> gain_sizes,
+                std::span<const int> limit_sizes,
+                std::span<const int> patch_sizes);
 
     // Scratch space for CalcMomentumTerms
     VectorX<T> Av_minus_r;
@@ -137,31 +96,23 @@ class IcfData {
   /* Default constructor for empty data. */
   IcfData() = default;
 
-  /**
-   * Resizes the data to accommodate the given problem, typically called at the
-   * beginning of each solve/time step.
-   *
-   * @param num_bodies Total number of bodies in the model.
-   * @param num_velocities Total number of generalized velocities.
-   * @param max_clique_size Maximum number of velocities in any clique.
-   * @param num_couplers Number of coupler constraints.
-   * @param gain_sizes Number of velocities for each gain constraint.
-   * @param limit_sizes Number of velocities for each limit constraint.
-   * @param patch_sizes Number of contact pairs for each patch constraint.
-   *
-   * TODO(vincekurtz): consider fixing num_bodies and num_velocities at
-   * construction, and only resizing based on patch_sizes here.
-   */
+  /* Resizes the data to accommodate the given problem, typically called at the
+  beginning of each solve/time step.
+
+  @param num_bodies Total number of bodies in the model.
+  @param num_velocities Total number of generalized velocities.
+  @param max_clique_size Maximum number of velocities in any clique.
+  @param num_couplers Number of coupler constraints.
+  @param gain_sizes Number of velocities for each gain constraint.
+  @param limit_sizes Number of velocities for each limit constraint.
+  @param patch_sizes Number of contact pairs for each patch constraint.
+
+  TODO(vincekurtz): consider fixing num_bodies and num_velocities at
+  construction, and only resizing based on patch_sizes here. */
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
-              int num_couplers, const std::vector<int>& gain_sizes,
-              const std::vector<int>& limit_sizes,
-              const std::vector<int>& patch_sizes) {
-    v_.resize(num_velocities);
-    cache_.Resize(num_bodies, num_velocities, num_couplers, gain_sizes,
-                  limit_sizes, patch_sizes);
-    scratch_.Resize(num_bodies, num_velocities, num_couplers, max_clique_size,
-                    gain_sizes, limit_sizes, patch_sizes);
-  }
+              int num_couplers, std::span<const int> gain_sizes,
+              std::span<const int> limit_sizes,
+              std::span<const int> patch_sizes);
 
   int num_velocities() const { return v_.size(); }
 
@@ -210,7 +161,11 @@ struct SearchDirectionData {
   EigenPool<Vector6<T>> U;  // U = J⋅w.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::IcfData);

@@ -7,18 +7,18 @@
 module(
     name = "drake",
     # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
-    bazel_compatibility = [">=8.0.1"],
+    bazel_compatibility = [">=8.4.0"],
 )
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "1.24.3")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "apple_support", version = "1.24.4")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "bazel_features", version = "1.38.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.2.14")
-bazel_dep(name = "rules_java", version = "8.16.1")
-bazel_dep(name = "rules_jvm_external", version = "6.8")
+bazel_dep(name = "rules_java", version = "9.0.3")
+bazel_dep(name = "rules_jvm_external", version = "6.9")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "1.6.3")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.67.0")
@@ -311,10 +311,6 @@ use_repo(
     "sympy_py_internal",
     "uritemplate_py_internal",
     "xmlrunner_py_internal",
-    #
-    # JavaScript libraries.
-    #
-    "statsjs_internal",
     #
     # Test or example data.
     #

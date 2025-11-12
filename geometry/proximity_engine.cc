@@ -10,10 +10,6 @@
 #include <utility>
 #include <vector>
 
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
-
 #include <fcl/fcl.h>
 #include <fmt/format.h>
 

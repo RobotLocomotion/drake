@@ -3,10 +3,10 @@
 See also systems/test/test_util_py.cc for the bindings used in the tests.
 """
 
+import sys
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.systems.test.test_util import (
     Arbitrary,
     DiagramBuilderTestAdversary_,
@@ -22,7 +22,6 @@ class TestBuilderLifeSupport(unittest.TestCase):
             RuntimeError, "Could not activate builder_life_support_stash.*"
         ):
             adversary.StashBadIndex()
-        self.assertEqual(actual_ref_count(adversary), 1)
 
     @numpy_compare.check_all_types
     def test_wrong_type(self, T):
@@ -30,38 +29,48 @@ class TestBuilderLifeSupport(unittest.TestCase):
         adversary = DiagramBuilderTestAdversary()
         with self.assertRaisesRegex(RuntimeError, "Unable to cast.*"):
             adversary.StashWrongType(Arbitrary())
-        self.assertEqual(actual_ref_count(adversary), 1)
 
     @numpy_compare.check_all_types
     def test_bind_at_init(self, T):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         # The int-accepting constructor also stashes.
         adversary = DiagramBuilderTestAdversary(10)
-        self.assertEqual(actual_ref_count(adversary), 2)
+        # Python versions differ on whether binding an object to a local
+        # variable increases the ref count.
+        tare = sys.getrefcount(adversary)
         adversary.Abandon()
-        self.assertEqual(actual_ref_count(adversary), 1)
+        self.assertEqual(sys.getrefcount(adversary), tare - 1)
 
     @numpy_compare.check_all_types
     def test_bind_self(self, T):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         adversary = DiagramBuilderTestAdversary()
+        # Python versions differ on whether binding an object to a local
+        # variable increases the ref count.
+        tare = sys.getrefcount(adversary)
         adversary.StashSelf()
-        self.assertEqual(actual_ref_count(adversary), 2)
+        self.assertEqual(sys.getrefcount(adversary), tare + 1)
         adversary.Abandon()
-        self.assertEqual(actual_ref_count(adversary), 1)
+        self.assertEqual(sys.getrefcount(adversary), tare)
 
     @numpy_compare.check_all_types
     def test_bind_returned_self(self, T):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         adversary = DiagramBuilderTestAdversary()
+        # Python versions differ on whether binding an object to a local
+        # variable increases the ref count.
+        tare = sys.getrefcount(adversary)
         adversary.StashReturnedSelf()
-        self.assertEqual(actual_ref_count(adversary), 2)
+        self.assertEqual(sys.getrefcount(adversary), tare + 1)
         adversary.Abandon()
-        self.assertEqual(actual_ref_count(adversary), 1)
+        self.assertEqual(sys.getrefcount(adversary), tare)
 
     @numpy_compare.check_all_types
     def test_bind_returned_none(self, T):
         DiagramBuilderTestAdversary = DiagramBuilderTestAdversary_[T]
         adversary = DiagramBuilderTestAdversary()
+        # Python versions differ on whether binding an object to a local
+        # variable increases the ref count.
+        tare = sys.getrefcount(adversary)
         adversary.StashReturnedNull()
-        self.assertEqual(actual_ref_count(adversary), 1)
+        self.assertEqual(sys.getrefcount(adversary), tare)

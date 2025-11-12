@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -11,8 +12,8 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/multibody/contact_solvers/contact_configuration.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
@@ -83,6 +84,7 @@ class SapDriverTest {
 
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 class TwoSpheres : public testing::Test {
  public:
@@ -127,8 +129,6 @@ class TwoSpheres : public testing::Test {
       multibody::Parser parser(discrete_.plant);
       parser.AddModelsFromString(xml, "xml");
     }
-
-    // plant_->SetUseSampledOutputPorts(false);
 
     // TODO(amcastro-tri): parameterize test.
     plant_->set_contact_model(ContactModel::kHydroelastic);
@@ -288,7 +288,7 @@ TEST_F(TwoSpheres, MakeData) {
       model.patch_constraints_pool();
   EXPECT_EQ(patch_constraints.num_patches(), 1);
   EXPECT_EQ(patch_constraints.total_num_pairs(), num_pairs);
-  EXPECT_EQ(patch_constraints.patch_sizes(), std::vector<int>({num_pairs}));
+  EXPECT_THAT(patch_constraints.patch_sizes(), testing::ElementsAre(num_pairs));
 
   IcfData<double> data;
   model.ResizeData(&data);
@@ -409,6 +409,7 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
   EXPECT_EQ(model.time_step(), time_step * 2);
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -1,19 +1,18 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
-
-#include <numeric>
+#include <limits>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::Clear() {
@@ -29,8 +28,8 @@ void IcfModel<T>::LimitConstraintsPool::Clear() {
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::Resize(
-    const std::vector<int>& constrained_clique_sizes,
-    const std::vector<int>& constraint_to_clique) {
+    std::span<const int> constrained_clique_sizes,
+    std::span<const int> constraint_to_clique) {
   DRAKE_DEMAND(constrained_clique_sizes.size() == constraint_to_clique.size());
   ql_.Resize(constrained_clique_sizes);
   qu_.Resize(constrained_clique_sizes);
@@ -38,8 +37,10 @@ void IcfModel<T>::LimitConstraintsPool::Resize(
   R_.Resize(constrained_clique_sizes);
   vl_hat_.Resize(constrained_clique_sizes);
   vu_hat_.Resize(constrained_clique_sizes);
-  constraint_sizes_ = constrained_clique_sizes;
-  constraint_to_clique_ = constraint_to_clique;
+  constraint_sizes_.assign(constrained_clique_sizes.begin(),
+                           constrained_clique_sizes.end());
+  constraint_to_clique_.assign(constraint_to_clique.begin(),
+                               constraint_to_clique.end());
 
   // All constraints are disabled (e.g., infinite bounds) by default. This
   // allows us to add a limit constraint on only one DoF in a multi-DoF
@@ -150,8 +151,7 @@ void IcfModel<T>::LimitConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::AccumulateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
 
@@ -193,12 +193,13 @@ void IcfModel<T>::LimitConstraintsPool::ProjectAlongLine(
   }
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     double>::LimitConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     drake::AutoDiffXd>::LimitConstraintsPool;
