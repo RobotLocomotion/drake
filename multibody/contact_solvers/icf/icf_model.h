@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef DRAKE_ICF_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/icf/icf.h"
-#endif
-
 #include <memory>
 #include <set>
 #include <utility>
@@ -77,7 +73,7 @@ class IcfModel {
   // For now, I'll just disable it.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfModel);
 
-  // Defined in separate headers.
+  // Defined in separate headers included at the bottom of this file.
   class CouplerConstraintsPool;
   class LimitConstraintsPool;
   class PatchConstraintsPool;
@@ -382,3 +378,14 @@ class IcfModel {
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
+
+// The nested classes are declared in separate files.
+#define DRAKE_ICF_MODEL_NESTED_CLASS_INCLUDES
+#include "drake/multibody/contact_solvers/icf/icf_model_coupler_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf_model_gain_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf_model_limit_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf_model_patch_constraints_pool.h"
+#undef DRAKE_ICF_MODEL_NESTED_CLASS_INCLUDES
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::IcfModel);

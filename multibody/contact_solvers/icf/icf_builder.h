@@ -11,7 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {

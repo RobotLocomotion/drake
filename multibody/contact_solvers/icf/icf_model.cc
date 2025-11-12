@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
+
 #include <memory>
 #include <set>
 #include <utility>
@@ -9,7 +11,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {

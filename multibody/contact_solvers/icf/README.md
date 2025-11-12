@@ -1,9 +1,3 @@
-#pragma once
-
-/* @file
-This is the file to #include to use ICF. It includes subsidiary headers for
-nested class definitions to keep file sizes reasonable.
-
 ICF solves the convex Irrotational Contact Fields problem
 
     minᵥ ℓ(v; q₀, v₀, δt)
@@ -47,20 +41,3 @@ Other components:
 References:
   [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
   Contact Fields. https://arxiv.org/abs/2312.03908
-*/
-
-#define DRAKE_ICF_INCLUDED
-
-// Don't alpha-sort these internal includes; the order matters.
-// clang-format off
-#include "drake/multibody/contact_solvers/icf/icf_model.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_coupler_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_gain_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_limit_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_patch_constraints_pool.h"
-// clang-format on
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::internal::IcfModel);
-
-#undef DRAKE_ICF_INCLUDED

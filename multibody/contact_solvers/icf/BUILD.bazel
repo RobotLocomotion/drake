@@ -108,7 +108,6 @@ drake_cc_library(
 drake_cc_library(
     name = "icf_core",
     srcs = [
-        "icf.cc",
         "icf_model.cc",
         "icf_model_coupler_constraints_pool.cc",
         "icf_model_gain_constraints_pool.cc",
@@ -116,7 +115,6 @@ drake_cc_library(
         "icf_model_patch_constraints_pool.cc",
     ],
     hdrs = [
-        "icf.h",
         "icf_model.h",
         "icf_model_coupler_constraints_pool.h",
         "icf_model_gain_constraints_pool.h",

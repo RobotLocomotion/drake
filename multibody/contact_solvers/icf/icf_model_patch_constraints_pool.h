@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef DRAKE_ICF_INCLUDED
-#error Do not include this file. Use "drake/multibody/contact_solvers/icf/icf.h"
+#ifndef DRAKE_ICF_MODEL_NESTED_CLASS_INCLUDES
+#error Do not directly include this file; instead, use icf_model.h.
 #endif
 
 #include <algorithm>
@@ -12,7 +12,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 

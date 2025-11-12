@@ -10,8 +10,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
 

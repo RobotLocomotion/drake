@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
 namespace multibody {

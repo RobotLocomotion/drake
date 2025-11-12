@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
+
 #include <limits>
 #include <memory>
 #include <utility>
@@ -11,7 +13,6 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 
 using drake::math::RigidTransformd;
 using Eigen::Matrix3d;
