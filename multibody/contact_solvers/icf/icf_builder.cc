@@ -102,10 +102,10 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant) : plant_(&plant) {
   const int nv = plant.num_velocities();
 
   // TODO(vincekurtz): rethink scratch. I think we can get away with just forces
-  scratch_.M.resize(nv, nv);
-  scratch_.J_V_WB.resize(6, nv);
-  scratch_.tmp_v1.resize(nv);
-  scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
+  scratch_.Resize(plant);
+  // scratch_.J_V_WB.resize(6, nv);
+  // scratch_.accelerations.resize(nv);
+  // scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
 
   // Define problem cliques based on the spanning forest of the plant. Each tree
   // gets its own clique, and only trees with a non-zero number of velocities
@@ -249,7 +249,7 @@ void IcfBuilder<T>::UpdateModel(
   params->k0.resize(nv);
   MultibodyForces<T>& forces = *scratch_.forces;
   plant().CalcForceElementsContribution(context, &forces);
-  const VectorX<T>& acc = scratch_.tmp_v1.setZero(nv);
+  const VectorX<T>& acc = scratch_.accelerations.setZero(nv);
   params->k0 = plant().CalcInverseDynamics(context, acc, forces);
 
   // Set the sparsity pattern for the dynamics matrix A = M + δt D.
@@ -738,6 +738,14 @@ void IcfBuilder<T>::SetExternalGainConstraints(const VectorX<T>& Ke,
 
     gain_constraints.Set(c, c, Ke_c, be_c, e);
   }
+}
+
+template <typename T>
+void IcfBuilder<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
+  const int nv = plant.num_velocities();
+  J_V_WB.resize(6, nv);
+  accelerations.resize(nv);
+  forces = std::make_unique<MultibodyForces<T>>(plant);
 }
 
 }  // namespace internal

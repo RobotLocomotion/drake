@@ -144,12 +144,13 @@ class IcfBuilder {
 
   /* Scratch workspace data to build the model. */
   struct Scratch {
-    MatrixX<T> M;        // Dense mass matrix computed by MbP.
-    Matrix6X<T> J_V_WB;  // Dense spatial velocity Jacobian.
-    VectorX<T> tmp_v1;   // Scratch of size num_velocities.
+    /* Resize the workspace to accommodate the given plant model. */
+    void Resize(const MultibodyPlant<T>& plant);
+
+    Matrix6X<T> J_V_WB;        // size 6 x nv
+    VectorX<T> accelerations;  // size nv
     std::unique_ptr<MultibodyForces<T>> forces;
-  };
-  mutable Scratch scratch_;
+  } scratch_;
 };
 
 }  // namespace internal
