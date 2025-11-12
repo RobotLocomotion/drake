@@ -12,7 +12,6 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <fmt/ranges.h>
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_ostream.h"
@@ -37,31 +36,8 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
   return false;
 }
 
-// AutoDiff-supported linear system solver for performing principle pivoting
-// transformations. The matrix is supposed to be a linear basis, but it's
-// possible that the basis becomes degenerate (meaning that the matrix becomes
-// singular) due to accumulated roundoff error from pivoting. Recovering from
-// a degenerate basis is currently an open problem;
-// see http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf, for
-// example. The caller would ideally terminate at this point, but
-// compilation of householderQr().rank() with AutoDiff currently generates
-// template errors. Continuing on blindly means that the calling pivoting
-// algorithm might continue on for some time.
-template <class T>
-VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
-  // Special case necessary because Eigen doesn't always handle empty matrices
-  // properly.
-  if (M.rows() == 0) {
-    DRAKE_ASSERT(b.size() == 0);
-    return VectorX<T>(0);
-  }
-  return M.householderQr().solve(b);
-}
-
-// Linear system solver, specialized for double types. This method is faster
-// than the QR factorization necessary for AutoDiff support. It is assumed that
-// the matrix is full rank (see notes for generic LinearSolve() above).
-template <>
+// Linear system solver (with an extra size check). It is assumed that the
+// matrix is full rank (see notes for generic LinearSolve() above).
 VectorX<double> LinearSolve(const MatrixX<double>& M,
                             const VectorX<double>& b) {
   // Special case necessary because Eigen doesn't always handle empty matrices
@@ -138,15 +114,6 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
   bas_.clear();
   nonbas_.clear();
   j_.clear();
-}
-
-template <>
-void MobyLCPSolver<Eigen::AutoDiffScalar<Vector1d>>::DoSolve(
-    const MathematicalProgram&, const Eigen::VectorXd&, const SolverOptions&,
-    MathematicalProgramResult*) const {
-  throw std::logic_error(
-      "MobyLCPSolver cannot yet be used in a MathematicalProgram "
-      "while templatized as an AutoDiff");
 }
 
 // TODO(edrumwri): Break the following code out into a special
@@ -532,18 +499,11 @@ bool MobyLCPSolver<T>::SolveLcpFastRegularized(const MatrixX<T>& M,
 }
 
 // Retrieves the solution computed by Lemke's Algorithm.
-// T is irrelevant for this method (necessary only for the member function).
-// MatrixType allows both dense and sparse matrices to be used.
-// Scalar allows this method to be used for when the T is AutoDiffXd but
-// the caller wants to use sparse methods.
-// TODO(edrumwri): Address this kludge when calling sparse LCP solves from
-//                 MobyLCPSolver<AutoDiffXd> has been prevented.
 template <typename T>
-template <typename MatrixType, typename Scalar>
-void MobyLCPSolver<T>::FinishLemkeSolution(const MatrixType& M,
-                                           const VectorX<Scalar>& q,
-                                           const VectorX<Scalar>& x,
-                                           VectorX<Scalar>* z) const {
+void MobyLCPSolver<T>::FinishLemkeSolution(const MatrixX<T>& M,
+                                           const VectorX<T>& q,
+                                           const VectorX<T>& x,
+                                           VectorX<T>* z) const {
   using std::abs;
   using std::max;
   std::vector<unsigned>::iterator iiter;
@@ -1060,15 +1020,5 @@ bool MobyLCPSolver<T>::ProgramAttributesSatisfied(
 }  // namespace solvers
 }  // namespace drake
 
-using AutoDiff1d = Eigen::AutoDiffScalar<drake::Vector1d>;
-
-// Provide a formatter for Moby's irregular AutoDiff type, so that our templated
-// code can print it to spdlog.
-namespace fmt {
-template <>
-struct formatter<AutoDiff1d> : drake::ostream_formatter {};
-}  // namespace fmt
-
 // Instantiate templates.
 template class drake::solvers::MobyLCPSolver<double>;
-template class drake::solvers::MobyLCPSolver<AutoDiff1d>;

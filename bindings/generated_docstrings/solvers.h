@@ -8184,7 +8184,10 @@ latter) describe relevant matrix classes in more detail.
 * [Karmarkar 1984]  N. Karmarkar. A New Polynomial-Time Algorithm for
                     Linear Programming. Combinatorica, 4(4), pp. 373-395.
 * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
-                    Programming. Heldermann Verlag, 1988.)""";
+                    Programming. Heldermann Verlag, 1988.
+
+Template parameter ``T``:
+    must be ``double``)""";
         // Symbol: drake::solvers::MobyLCPSolver::ComputeZeroTolerance
         struct /* ComputeZeroTolerance */ {
           // Source: drake/solvers/moby_lcp_solver.h
