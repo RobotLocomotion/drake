@@ -50,9 +50,17 @@ use_repo(cc_configure, "local_config_cc")
 # For first-party Bazel builds (by Drake Developers), the pkgconfig flavor is
 # used by default but can be changed using the Bazel flags.
 
-bazel_dep(name = "eigen", version = "5.0.1", repo_name = "module_eigen")
+bazel_dep(name = "eigen", version = "5.0.0", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.16.0.bcr.1", repo_name = "module_spdlog")  # noqa
+
+# TODO(jwnimmer-tri) Remove this when we upgrade to eigen > 5.0.0.
+single_version_override(
+    module_name = "eigen",
+    patches = [
+        "//tools/workspace/eigen:patches/upstream/b27f784c.patch",
+    ],
+)
 
 # Add C++ module dependencies that are NOT used by Drake's public API, but are
 # used by Drake's implementation. Builds have the option to opt-out of these
