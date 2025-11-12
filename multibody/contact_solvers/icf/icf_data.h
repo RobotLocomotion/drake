@@ -14,8 +14,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
  *
  * This class stores all data that depends on the current generalized velocity
@@ -137,7 +138,7 @@ class IcfData {
   /* Default constructor for empty data. */
   IcfData() = default;
 
-  /**
+  /*
    * Resizes the data to accommodate the given problem, typically called at the
    * beginning of each solve/time step.
    *
@@ -210,6 +211,7 @@ struct SearchDirectionData {
   EigenPool<Vector6<T>> U;  // U = J⋅w.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

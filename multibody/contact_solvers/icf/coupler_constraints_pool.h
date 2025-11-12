@@ -21,8 +21,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * A pool of coupler constraints (qᵢ - ρqⱼ = Δq) linking generalized positions
  * (qᵢ, qⱼ) with gear ratio ρ and offset Δq.
  *
@@ -47,7 +48,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   // Resize the constraints pool to store the given number of constraints.
   void Resize(const int num_constraints);
 
-  /**
+  /*
    * Set the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
    * j-th DoFs of the given clique.
    *
@@ -85,7 +86,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const IcfData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
   // for exact line search.
@@ -111,6 +112,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   std::vector<T> R_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

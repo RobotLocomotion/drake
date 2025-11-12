@@ -20,8 +20,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * A pool of contact constraints organized by patches. Each patch involves two
  * bodies and one (point contact) or more (hydroelastic) contact pairs.
  */
@@ -41,14 +42,14 @@ class IcfModel<T>::PatchConstraintsPool {
   // After this call num_patches() and num_pairs() are zero.
   void Clear();
 
-  /**
+  /*
    * Resize to store the given patches and pairs.
    *
    * @param num_pairs_per_patch Number of contact pairs for each patch.
    */
   void Resize(const std::vector<int>& num_pairs_per_patch);
 
-  /**
+  /*
    * Set the contact patch between bodies A and B.
    *
    * @param patch_index The index of the patch within the pool.
@@ -65,7 +66,7 @@ class IcfModel<T>::PatchConstraintsPool {
                 const T& static_friction, const T& dynamic_friction,
                 const Vector3<T>& p_AB_W);
 
-  /**
+  /*
    * Set the contact pair data for the given patch and pair index.
    *
    * @param patch_index The index of the patch within the pool.
@@ -126,9 +127,9 @@ class IcfModel<T>::PatchConstraintsPool {
   // Hessian.
   void AccumulateHessian(
       const IcfData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  /**
+  /*
    * Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
    * for exact line search.
    *
@@ -157,7 +158,7 @@ class IcfModel<T>::PatchConstraintsPool {
   double vs2_{stiction_tolerance_ * stiction_tolerance_};
   double sigma_{1.0e-3};
 
-  /**
+  /*
    * Compute cost, gradient, and Hessian contributions for the given pair
    *
    * @param p Patch index.
@@ -220,6 +221,7 @@ class IcfModel<T>::PatchConstraintsPool {
   std::vector<T> net_friction_;     // Regularized stiction tolerance.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

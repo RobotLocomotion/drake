@@ -22,8 +22,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * A pool of limit constraints, qu ≥ q ≥ ql.
  */
 template <typename T>
@@ -44,7 +45,7 @@ class IcfModel<T>::LimitConstraintsPool {
   void Resize(const std::vector<int>& constrained_clique_sizes,
               const std::vector<int>& constraint_to_clique);
 
-  /**
+  /*
    * Set the limit constraint parameters for the given clique and DoF.
    *
    * @param index The index of this limit constraint in the pool.
@@ -92,7 +93,7 @@ class IcfModel<T>::LimitConstraintsPool {
   // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const IcfData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
   // for exact line search.
@@ -130,6 +131,7 @@ class IcfModel<T>::LimitConstraintsPool {
   EigenPool<VectorX<T>> R_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

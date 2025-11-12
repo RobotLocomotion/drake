@@ -13,8 +13,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * Data pool for contact constraints. This data is updated at each solver
  * iteration, as opposed to the PatchConstraintsPool, which defines the
  * constraints themselves and is fixed for the lifetime of the optimization
@@ -34,7 +35,7 @@ class PatchConstraintsDataPool {
   // Default constructor for an empty pool.
   PatchConstraintsDataPool() = default;
 
-  /**
+  /*
    * Resize the data pool to hold constraints of the given sizes.
    *
    * @param patch_size Number of contact pairs for the k-th patch.
@@ -87,10 +88,12 @@ class PatchConstraintsDataPool {
   EigenPool<Vector3<T>> v_AcBc_W_;  // Contact velocity.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::PatchConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        PatchConstraintsDataPool);

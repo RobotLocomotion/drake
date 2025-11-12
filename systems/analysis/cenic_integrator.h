@@ -20,11 +20,11 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
-using multibody::contact_solvers::icf::IcfBuilder;
-using multibody::contact_solvers::icf::IcfData;
-using multibody::contact_solvers::icf::IcfModel;
-using multibody::contact_solvers::icf::LinearFeedbackGains;
-using multibody::contact_solvers::icf::SearchDirectionData;
+using multibody::contact_solvers::icf::internal::IcfBuilder;
+using multibody::contact_solvers::icf::internal::IcfData;
+using multibody::contact_solvers::icf::internal::IcfModel;
+using multibody::contact_solvers::icf::internal::LinearFeedbackGains;
+using multibody::contact_solvers::icf::internal::SearchDirectionData;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;

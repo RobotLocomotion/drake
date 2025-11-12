@@ -22,10 +22,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-using internal::BlockSparsityPattern;
-
-/**
+/*
  * A struct to hold the key parameters that define a convex ICF problem.
  *
  * These parameters are owned by the IcfModel, and are set externally by
@@ -48,7 +47,7 @@ struct IcfParameters {
   std::vector<int> clique_start;  // Starting velocity index for each clique.
 };
 
-/**
+/*
  * This class defines a convex ICF problem,
  *
  *    minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
@@ -287,19 +286,20 @@ class IcfModel {
 
   See documentation in  internal::BlockSparseCholeskySolver for further details.
   */
-  std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>> MakeHessian(
-      const IcfData<T>& data) const;
+  std::unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrixT<T>>
+  MakeHessian(const IcfData<T>& data) const;
 
   // Updates the values of the Hessian for the input `data`.
   // @pre The sparsity of the `hessian` matches the structure of `this` model.
-  void UpdateHessian(const IcfData<T>& data,
-                     internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+  void UpdateHessian(
+      const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Pre-compute some quantities used to speed up CalcCostAlongLine() below.
   void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
-  /**
+  /*
    * Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
    * derivatives d²ℓ/dα²(α).
    *
@@ -321,7 +321,8 @@ class IcfModel {
   // Access the Hessian sparsity pattern. This is useful for when the sparsity
   // pattern is the same (in which case we use UpdateHessian()), and when it has
   // changed (in which case we use MakeHessian()).
-  const BlockSparsityPattern& sparsity_pattern() const {
+  const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern()
+      const {
     DRAKE_ASSERT(sparsity_pattern_ != nullptr);
     return *sparsity_pattern_;
   }
@@ -366,7 +367,8 @@ class IcfModel {
   int num_cliques_{0};
 
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
-  std::unique_ptr<BlockSparsityPattern> sparsity_pattern_;
+  std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
+      sparsity_pattern_;
 
   // Fixed set of constraints.
   CouplerConstraintsPool coupler_constraints_pool_;
@@ -375,6 +377,7 @@ class IcfModel {
   PatchConstraintsPool patch_constraints_pool_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -61,6 +61,6 @@ References:
 // clang-format on
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::IcfModel);
+    class ::drake::multibody::contact_solvers::icf::internal::IcfModel);
 
 #undef DRAKE_ICF_INCLUDED

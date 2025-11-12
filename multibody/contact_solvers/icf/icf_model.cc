@@ -1,5 +1,3 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re icf_model.h
-
 #include <memory>
 #include <set>
 #include <utility>
@@ -17,6 +15,13 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+using contact_solvers::internal::BlockSparsityPattern;
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
@@ -225,8 +230,8 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 }
 
 template <typename T>
-std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
-IcfModel<T>::MakeHessian(const IcfData<T>& data) const {
+std::unique_ptr<BlockSparseSymmetricMatrixT<T>> IcfModel<T>::MakeHessian(
+    const IcfData<T>& data) const {
   auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
       sparsity_pattern());
   UpdateHessian(data, hessian.get());
@@ -268,7 +273,7 @@ void IcfModel<T>::SetSparsityPattern() {
   // constraints are the only ones that can create off-diagonal entries.
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
 
-  sparsity_pattern_ = std::make_unique<internal::BlockSparsityPattern>(
+  sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
 }
 
@@ -399,10 +404,11 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   params_->time_step = time_step;
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::IcfModel);
+    class ::drake::multibody::contact_solvers::icf::internal::IcfModel);

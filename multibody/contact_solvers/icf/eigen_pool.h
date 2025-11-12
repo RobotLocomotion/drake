@@ -12,6 +12,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 // Differentiate between fixed size (e.g. Matrix3d) and dynamic size (e.g.
 // MatrixXd) Eigen types.
@@ -43,7 +44,7 @@ template <typename T>
 constexpr bool has_fixed_size_cols_v =
     is_eigen_type<T>::value && T::ColsAtCompileTime != Eigen::Dynamic;
 
-/**
+/*
  * Contiguous storage for a pool of fixed-size Eigen objects.
  *
  * This is essentially a wrapper around std::vector<EigenType>, where EigenType
@@ -86,7 +87,7 @@ struct FixedSizeStorage {
   ElementView at(int i) { return data_.at(i); }
 };
 
-/**
+/*
  * Contiguous storage for a pool of dynamic-size Eigen objects.
  *
  * Each element in the pool can have a different size, but they must have the
@@ -206,7 +207,7 @@ struct StorageSelector<EigenType, Eigen::Dynamic> {
   using Storage = DynamicSizeStorage<EigenType>;
 };
 
-/**
+/*
  * A replacement for std::vector<MatrixX<T>> with a contiguous memory layout.
  *
  * @tparam EigenType The type of the Eigen elements. E.g. MatrixXd,
@@ -236,7 +237,7 @@ class EigenPool {
   // Resize a pool of fixed-size elements (e.g. Matrix3d).
   void Resize(int num_elements)
     requires is_fixed_size_v<EigenType>
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(num_elements);
   }
 
@@ -245,7 +246,7 @@ class EigenPool {
   // compile time.
   void Resize(const std::vector<int>& rows, const std::vector<int>& cols)
     requires(!is_fixed_size_v<EigenType>)
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(rows, cols);
   }
 
@@ -254,7 +255,7 @@ class EigenPool {
   void Resize(const std::vector<int>& sizes)
     requires(has_fixed_size_rows_v<EigenType> ||
              has_fixed_size_cols_v<EigenType>)
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(sizes, sizes);
   }
 
@@ -264,7 +265,7 @@ class EigenPool {
   // compile time.
   void Resize(int num_elements, int rows, int cols)
     requires(!is_fixed_size_v<EigenType>)
-  {  // NOLINT(whitespace/braces)
+  {
     storage_.Resize(num_elements, rows, cols);
   }
 
@@ -294,6 +295,7 @@ class EigenPool {
   Storage storage_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

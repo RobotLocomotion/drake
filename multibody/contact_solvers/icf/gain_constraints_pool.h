@@ -21,8 +21,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * A pool of gain constraints organized by cliques.
  *
  * A clique can have a gain constraint that models generalized forces on the
@@ -50,7 +51,7 @@ class IcfModel<T>::GainConstraintsPool {
   // Resize this pool to store gain constraints of the given sizes.
   void Resize(const std::vector<int>& sizes);
 
-  /**
+  /*
    * Set the given gain constraint for the given clique.
    *
    * @param index The index of this gain constraint in the pool.
@@ -77,7 +78,7 @@ class IcfModel<T>::GainConstraintsPool {
   // Add the Hessian contribution of this constraint to the overall Hessian.
   void AccumulateHessian(
       const IcfData<T>& data,
-      internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   // Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
   // for exact line search.
@@ -113,6 +114,7 @@ class IcfModel<T>::GainConstraintsPool {
   EigenPool<VectorX<T>> ue_;  // Upper effort limit.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

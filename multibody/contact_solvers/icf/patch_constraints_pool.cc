@@ -1,5 +1,3 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
-
 #include <algorithm>
 #include <numeric>
 #include <utility>
@@ -16,6 +14,11 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 T SoftNorm(const Vector3<T>& x, const T& eps) {
@@ -577,8 +580,7 @@ void IcfModel<T>::PatchConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void IcfModel<T>::PatchConstraintsPool::AccumulateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const PatchConstraintsDataPool<T>& patch_data =
       data.cache().patch_constraints_data;
 
@@ -693,12 +695,13 @@ void IcfModel<T>::PatchConstraintsPool::CalcSparsityPattern(
   }
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     double>::PatchConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     drake::AutoDiffXd>::PatchConstraintsPool;

@@ -1,5 +1,3 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
-
 #include <numeric>
 #include <vector>
 
@@ -14,6 +12,11 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::Clear() {
@@ -157,8 +160,7 @@ void IcfModel<T>::LimitConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::AccumulateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
 
@@ -200,12 +202,13 @@ void IcfModel<T>::LimitConstraintsPool::ProjectAlongLine(
   }
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     double>::LimitConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     drake::AutoDiffXd>::LimitConstraintsPool;

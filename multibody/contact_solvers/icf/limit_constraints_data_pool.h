@@ -13,8 +13,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
-/**
+/*
  * Data pool for joint limit constraints (qu ≥ q ≥ ql). This data is updated at
  * each solver iteration, as opposed to the LimitConstraintsPool, which defines
  * the constraints themselves and is fixed for the lifetime of the optimization
@@ -33,7 +34,7 @@ class LimitConstraintsDataPool {
   // Default constructor for an empty pool.
   LimitConstraintsDataPool() = default;
 
-  /**
+  /*
    * Resize the data pool to hold constraints of the given sizes.
    *
    * @param constraint_size The size (number of velocities) for each gain
@@ -87,10 +88,12 @@ class LimitConstraintsDataPool {
   EigenPool<MatrixX<T>> G_upper_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::LimitConstraintsDataPool);
+    class ::drake::multibody::contact_solvers::icf::internal::
+        LimitConstraintsDataPool);

@@ -83,6 +83,7 @@ class SapDriverTest {
 
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 class TwoSpheres : public testing::Test {
  public:
@@ -409,6 +410,7 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
   EXPECT_EQ(model.time_step(), time_step * 2);
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
