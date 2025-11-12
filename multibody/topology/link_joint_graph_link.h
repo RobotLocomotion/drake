@@ -14,11 +14,11 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-/* Represents a %Link in the LinkJointGraph. This includes Links provided via
+/* Represents a %Link in the LinkJointGraph. This includes links provided via
 user input and also those added during forest building as Shadow links created
-when we cut a user %Link in order to break a kinematic loop. Links may be
-modeled individually or can be combined into WeldedLinksAssemblies comprising
-groups of Links that were connected by weld joints. */
+when we cut a user link in order to break a kinematic loop. Links may be
+modeled individually (each with its own Mobod) or can be combined with other
+mutually-welded links in a WeldedLinksAssembly onto a composite Mobod. */
 class LinkJointGraph::Link {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link);
@@ -108,10 +108,10 @@ class LinkJointGraph::Link {
   const std::vector<LinkIndex>& shadow_links() const { return shadow_links_; }
 
   /* Returns the index of the mobilized body (Mobod) that mobilizes this %Link.
-  If this %Link is part of a WeldedLinksAssembly, this is the Mobod that
-  mobilizes the WeldedLinksAssembly as a whole via the assembly's active %Link.
-  If you ask this Mobod what Joint it represents, it will report the Joint that
-  was used to mobilize the WeldedLinksAssembly; that won't necessarily be a
+  If this %Link is part of a WeldedLinksAssembly, the returned Mobod may be
+  a composite of some or all of the links in the assembly (including this one
+  of course). If you ask this Mobod what Joint it represents, it will report the
+  Joint that was used to mobilize that composite; that won't necessarily be a
   Joint connected to this %Link. See inboard_joint_index() to find the Joint
   that connected this %Link to its WeldedLinksAssembly. */
   MobodIndex mobod_index() const { return mobod_; }
@@ -123,8 +123,8 @@ class LinkJointGraph::Link {
   JointIndex inboard_joint_index() const { return joint_; }
 
   /* Returns the index of the WeldedLinksAssembly this %Link is part of, if any.
-  World is always in WeldedLinksAssembly 0; any other link is in an Assembly
-  only if it is connected by a weld joint to another link. */
+  World is always in WeldedLinksAssembly 0; any other link is in an assembly
+  only if it is connected by a weld joint to at least one other link. */
   std::optional<WeldedLinksAssemblyIndex> welded_links_assembly() const {
     return welded_links_assembly_index_;
   }
@@ -180,7 +180,7 @@ class LinkJointGraph::Link {
     loop_constraints_.push_back(constraint_index);
   }
 
-  void note_retargeted_joint(JointIndex joint_for_shadow_link) {
+  void NoteRetargetedJoint(JointIndex joint_for_shadow_link) {
     DRAKE_DEMAND(HasJoint(joint_for_shadow_link));
     DRAKE_DEMAND(!JointHasMovedToShadowLink(joint_for_shadow_link));
     joints_moved_to_shadow_links_.push_back(joint_for_shadow_link);
@@ -229,7 +229,7 @@ class LinkJointGraph::Link {
   std::vector<JointIndex> joints_moved_to_shadow_links_;
 
   // World is always in an assembly; other links are in an assembly only
-  // if they are welded to another link.
+  // if they are welded to at least one other link.
   std::optional<WeldedLinksAssemblyIndex> welded_links_assembly_index_;
 };
 
