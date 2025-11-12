@@ -31,20 +31,9 @@ class GainConstraintsDataPool {
   GainConstraintsDataPool() = default;
 
   /* Resize the data pool to hold constraints of the given sizes.
-
   @param constraint_size The size (number of velocities) for each gain
          constraint. */
-  void Resize(std::span<const int> constraint_size) {
-    gamma_pool_.Resize(constraint_size);
-    G_pool_.Resize(constraint_size, constraint_size);
-
-    // We will only ever update the diagonal entries in Gk, so that off-diagonal
-    // entires will forever remain zero.
-    const int num_constraints = constraint_size.size();
-    for (int k = 0; k < num_constraints; ++k) {
-      G_pool_[k].setZero();
-    }
-  }
+  void Resize(std::span<const int> constraint_size);
 
   /* Number of gain constraints. */
   int num_constraints() const { return gamma_pool_.size(); }

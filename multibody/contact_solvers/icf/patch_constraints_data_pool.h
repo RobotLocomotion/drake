@@ -34,20 +34,8 @@ class PatchConstraintsDataPool {
   PatchConstraintsDataPool() = default;
 
   /* Resize the data pool to hold constraints of the given sizes.
-
   @param patch_size Number of contact pairs for the k-th patch. */
-  void Resize(std::span<const int> patch_size) {
-    num_patches_ = ssize(patch_size);
-    num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);
-
-    // Data per patch.
-    cost_pool_.resize(num_patches_);
-    G_Bp_pool_.Resize(num_patches_);
-    Gamma_Bo_W_.Resize(num_patches_);
-
-    // Data per pair.
-    v_AcBc_W_.Resize(num_pairs_);
-  }
+  void Resize(std::span<const int> patch_size);
 
   /* Hessian block per patch */
   EigenPool<Matrix6<T>>& G_Bp_pool() { return G_Bp_pool_; }
