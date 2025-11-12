@@ -139,14 +139,12 @@ class IcfModel<T>::PatchConstraintsPool {
   void set_stiction_tolerance(double stiction_tolerance) {
     DRAKE_DEMAND(stiction_tolerance > 0.0);
     stiction_tolerance_ = stiction_tolerance;
-    vs2_ = stiction_tolerance_ * stiction_tolerance_;
   }
 
  private:
   using VectorXView = Eigen::VectorBlock<VectorX<T>>;
 
   double stiction_tolerance_{1.0e-4};
-  double vs2_{stiction_tolerance_ * stiction_tolerance_};
   double sigma_{1.0e-3};
 
   /* Compute cost, gradient, and Hessian contributions for the given pair
