@@ -20,7 +20,7 @@ problem. */
 template <typename T>
 class LimitConstraintsDataPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraintsDataPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LimitConstraintsDataPool);
 
   using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;

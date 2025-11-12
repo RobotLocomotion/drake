@@ -452,7 +452,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
   math::InitializeAutoDiff(v_value, &v);
   model.CalcData(v, &data);
 
-  const GainConstraintsDataPool<AutoDiffXd> gains_data =
+  const GainConstraintsDataPool<AutoDiffXd>& gains_data =
       data.cache().gain_constraints_data;
   EXPECT_EQ(gains_data.num_constraints(), 2);
 
@@ -585,7 +585,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   const AutoDiffXd dt = model.time_step();
   VectorX<AutoDiffXd> q = q0 + dt * v;
 
-  const LimitConstraintsDataPool<AutoDiffXd> limits_data =
+  const LimitConstraintsDataPool<AutoDiffXd>& limits_data =
       data.cache().limit_constraints_data;
   EXPECT_EQ(limits_data.num_constraints(), 2);
 
@@ -677,7 +677,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const double k1 = m1_eff * omega_near_rigid * omega_near_rigid;
   const double tau1 = beta / M_PI * dt;
 
-  const CouplerConstraintsDataPool<AutoDiffXd> couplers_data =
+  const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
       data.cache().coupler_constraints_data;
   EXPECT_EQ(couplers_data.num_constraints(), 1);
 

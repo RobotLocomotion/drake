@@ -46,7 +46,7 @@ This is essentially a wrapper around std::vector<EigenType>, where EigenType
 is something like Matrix3d, Vector4d, etc. */
 template <typename EigenType>
 struct FixedSizeStorage {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FixedSizeStorage);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedSizeStorage);
 
   static_assert(EigenType::SizeAtCompileTime != Eigen::Dynamic,
                 "Only for fixed-size Eigen types.");
@@ -87,7 +87,7 @@ Each element in the pool can have a different size, but they must have the
 same type (e.g. MatrixXd, VectorXd, VectorX<AutoDiffXd>, etc). */
 template <typename EigenType>
 struct DynamicSizeStorage {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DynamicSizeStorage);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizeStorage);
 
   static_assert(EigenType::SizeAtCompileTime == Eigen::Dynamic,
                 "Only for dynamics-size Eigen types.");
@@ -206,7 +206,7 @@ struct StorageSelector<EigenType, Eigen::Dynamic> {
 template <typename EigenType>
 class EigenPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EigenPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EigenPool);
 
   static_assert(is_eigen_type<EigenType>::value, "Must be an Eigen type.");
 

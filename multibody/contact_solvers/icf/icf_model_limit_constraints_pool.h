@@ -24,7 +24,7 @@ namespace internal {
 template <typename T>
 class IcfModel<T>::LimitConstraintsPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraintsPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LimitConstraintsPool);
 
   /* Constructor for an empty pool. */
   LimitConstraintsPool(const IcfModel<T>* parent_model) : model_(parent_model) {

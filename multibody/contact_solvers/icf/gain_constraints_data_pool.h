@@ -20,7 +20,7 @@ the lifetime of the optimization problem. */
 template <typename T>
 class GainConstraintsDataPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GainConstraintsDataPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GainConstraintsDataPool);
 
   using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;

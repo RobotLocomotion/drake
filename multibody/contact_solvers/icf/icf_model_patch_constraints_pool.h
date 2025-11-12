@@ -26,7 +26,7 @@ bodies and one (point contact) or more (hydroelastic) contact pairs. */
 template <typename T>
 class IcfModel<T>::PatchConstraintsPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PatchConstraintsPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PatchConstraintsPool);
 
   using JacobianView = Eigen::Map<Matrix6X<T>>;
 

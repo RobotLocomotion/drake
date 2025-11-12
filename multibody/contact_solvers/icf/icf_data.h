@@ -25,7 +25,7 @@ values of v during the optimization process. */
 template <typename T>
 class IcfData {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfData);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
   /* The cache holds quantities that are computed from v, so they can be reused.
    */

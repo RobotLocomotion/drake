@@ -29,7 +29,7 @@ TODO(vincekurtz): consider relaxing this requirement. */
 template <typename T>
 class IcfModel<T>::CouplerConstraintsPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CouplerConstraintsPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CouplerConstraintsPool);
 
   /* Constructor for an empty pool. */
   CouplerConstraintsPool(const IcfModel<T>* parent_model)

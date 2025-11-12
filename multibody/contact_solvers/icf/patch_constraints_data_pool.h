@@ -22,7 +22,7 @@ problem. */
 template <typename T>
 class PatchConstraintsDataPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PatchConstraintsDataPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PatchConstraintsDataPool);
 
   /* The number of patches in the pool. */
   int num_patches() const { return num_patches_; }

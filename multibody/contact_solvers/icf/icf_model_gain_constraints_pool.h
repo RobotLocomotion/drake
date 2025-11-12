@@ -33,7 +33,7 @@ and e is an effort limit. Generalized impulses for that clique are thus γ =
 template <typename T>
 class IcfModel<T>::GainConstraintsPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GainConstraintsPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GainConstraintsPool);
 
   /* Constructor for an empty pool. */
   GainConstraintsPool(const IcfModel<T>* parent_model) : model_(parent_model) {

@@ -17,7 +17,7 @@ optimization problem. */
 template <typename T>
 class CouplerConstraintsDataPool {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CouplerConstraintsDataPool);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CouplerConstraintsDataPool);
 
   /* Default constructor for an empty pool. */
   CouplerConstraintsDataPool() = default;
