@@ -66,6 +66,8 @@ class MobyLcpSolverId {
 ///                     Linear Programming. Combinatorica, 4(4), pp. 373-395.
 /// * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
 ///                     Programming. Heldermann Verlag, 1988.
+///
+/// @tparam T must be `double`
 template <class T>
 class MobyLCPSolver final : public SolverBase {
  public:
@@ -286,9 +288,8 @@ class MobyLCPSolver final : public SolverBase {
 
   void ClearIndexVectors() const;
 
-  template <typename MatrixType, typename Scalar>
-  void FinishLemkeSolution(const MatrixType& M, const VectorX<Scalar>& q,
-                           const VectorX<Scalar>& x, VectorX<Scalar>* z) const;
+  void FinishLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
+                           const VectorX<T>& x, VectorX<T>* z) const;
 
   // Records the number of pivoting operations used during the last solve.
   mutable unsigned pivots_{0};
