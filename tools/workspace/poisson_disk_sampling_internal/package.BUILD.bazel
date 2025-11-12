@@ -25,6 +25,7 @@ cc_library(
     hdrs = ["include/thinks/tph_poisson.h"],
     srcs = [":implementation"],
     strip_include_prefix = "include/thinks",
+    isystem = True,
     linkstatic = 1,
     copts = [
         "-fvisibility=hidden",

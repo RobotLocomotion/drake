@@ -80,6 +80,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "icf_data",
+    srcs = ["icf_data.cc"],
     hdrs = ["icf_data.h"],
     deps = [
         ":coupler_constraints_data_pool",
@@ -101,6 +102,9 @@ drake_cc_library(
         "//common:essential",
         "//multibody/plant",
     ],
+    implementation_deps = [
+        "//multibody/plant:contact_properties",
+    ],
 )
 
 drake_cc_library(
@@ -117,20 +121,18 @@ drake_cc_library(
 drake_cc_library(
     name = "icf_core",
     srcs = [
-        "coupler_constraints_pool.cc",
-        "gain_constraints_pool.cc",
-        "icf.cc",
         "icf_model.cc",
-        "limit_constraints_pool.cc",
-        "patch_constraints_pool.cc",
+        "icf_model_coupler_constraints_pool.cc",
+        "icf_model_gain_constraints_pool.cc",
+        "icf_model_limit_constraints_pool.cc",
+        "icf_model_patch_constraints_pool.cc",
     ],
     hdrs = [
-        "coupler_constraints_pool.h",
-        "gain_constraints_pool.h",
-        "icf.h",
         "icf_model.h",
-        "limit_constraints_pool.h",
-        "patch_constraints_pool.h",
+        "icf_model_coupler_constraints_pool.h",
+        "icf_model_gain_constraints_pool.h",
+        "icf_model_limit_constraints_pool.h",
+        "icf_model_patch_constraints_pool.h",
     ],
     deps = [
         ":icf_data",
@@ -171,6 +173,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//multibody/parsing:parser",
+        "//multibody/plant:contact_properties",
         "//systems/framework:diagram_builder",
     ],
 )

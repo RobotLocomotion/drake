@@ -97,7 +97,7 @@ else()
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
-set(MINIMUM_BAZEL_VERSION 8.0.1)
+set(MINIMUM_BAZEL_VERSION 8.4.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
@@ -224,7 +224,7 @@ set(CMAKE_CXX_STANDARD 20)
 if(APPLE)
   # The macOS python version should match what's listed in both the
   # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
-  set(SUPPORTED_PYTHON_VERSION 3.13)
+  set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
     set(SUPPORTED_PYTHON_VERSION 3.12)

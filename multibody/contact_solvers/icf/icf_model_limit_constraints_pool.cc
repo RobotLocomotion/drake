@@ -1,19 +1,18 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re patch_constraints_pool.h
-
-#include <numeric>
+#include <limits>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::Clear() {
@@ -29,8 +28,8 @@ void IcfModel<T>::LimitConstraintsPool::Clear() {
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::Resize(
-    const std::vector<int>& constrained_clique_sizes,
-    const std::vector<int>& constraint_to_clique) {
+    std::span<const int> constrained_clique_sizes,
+    std::span<const int> constraint_to_clique) {
   DRAKE_DEMAND(constrained_clique_sizes.size() == constraint_to_clique.size());
   ql_.Resize(constrained_clique_sizes);
   qu_.Resize(constrained_clique_sizes);
@@ -38,8 +37,10 @@ void IcfModel<T>::LimitConstraintsPool::Resize(
   R_.Resize(constrained_clique_sizes);
   vl_hat_.Resize(constrained_clique_sizes);
   vu_hat_.Resize(constrained_clique_sizes);
-  constraint_sizes_ = constrained_clique_sizes;
-  constraint_to_clique_ = constraint_to_clique;
+  constraint_sizes_.assign(constrained_clique_sizes.begin(),
+                           constrained_clique_sizes.end());
+  constraint_to_clique_.assign(constraint_to_clique.begin(),
+                               constraint_to_clique.end());
 
   // All constraints are disabled (e.g., infinite bounds) by default. This
   // allows us to add a limit constraint on only one DoF in a multi-DoF
@@ -63,28 +64,20 @@ void IcfModel<T>::LimitConstraintsPool::Set(int index, int clique, int dof,
   upper_limit(index, dof) = qu;
   configuration(index, dof) = q0;
 
-  const T dt = model().time_step();
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
   const auto w_clique = model().clique_delassus(clique);
   regularization(index, dof) = eps * w_clique(dof);
-  vl_hat(index, dof) = (ql - q0) / (dt * (1.0 + beta));
-  vu_hat(index, dof) = (q0 - qu) / (dt * (1.0 + beta));
-}
 
-template <typename T>
-void IcfModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
-                                                       const T& new_dt) {
-  const T ratio = old_dt / new_dt;
-  for (int k = 0; k < num_constraints(); ++k) {
-    const int c = constraint_to_clique_[k];
-    const int nv = model().clique_size(c);
-    for (int dof = 0; dof < nv; ++dof) {
-      vl_hat(k, dof) *= ratio;
-      vu_hat(k, dof) *= ratio;
-    }
-  }
+  // Eventually we will use
+  //  v̂ₗ = (qₗ − q₀) / (δt (1 + β))
+  //  v̂ᵤ = (q₀ − qᵤ) / (δt (1 + β))
+  // However, since model.time_step() may change between now and when we
+  // actually solve the problem, we neglect the 1/δt factor for now, and
+  // will scale v̂ by 1/δt in CalcData().
+  vl_hat(index, dof) = (ql - q0) / (1.0 + beta);
+  vu_hat(index, dof) = (q0 - qu) / (1.0 + beta);
 }
 
 template <typename T>
@@ -112,6 +105,7 @@ void IcfModel<T>::LimitConstraintsPool::CalcData(
   using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
   using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
 
+  const T& dt = model().time_step();
   T& cost = limit_data->cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -125,12 +119,12 @@ void IcfModel<T>::LimitConstraintsPool::CalcData(
     for (int i = 0; i < nv; ++i) {
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      cost += CalcLimitData(vl_hat(k, i), regularization(k, i), vl,
+      cost += CalcLimitData(vl_hat(k, i) / dt, regularization(k, i), vl,
                             &gamma_lower(i), &G_lower(i, i));
 
       // i-th upper limit for constraint k (clique c).
       const T vu = -vk(i);
-      cost += CalcLimitData(vu_hat(k, i), regularization(k, i), vu,
+      cost += CalcLimitData(vu_hat(k, i) / dt, regularization(k, i), vu,
                             &gamma_upper(i), &G_upper(i, i));
     }
   }
@@ -157,8 +151,7 @@ void IcfModel<T>::LimitConstraintsPool::AccumulateGradient(
 
 template <typename T>
 void IcfModel<T>::LimitConstraintsPool::AccumulateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
 
@@ -200,12 +193,13 @@ void IcfModel<T>::LimitConstraintsPool::ProjectAlongLine(
   }
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     double>::LimitConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::IcfModel<
+template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
     drake::AutoDiffXd>::LimitConstraintsPool;

@@ -10,8 +10,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -21,14 +21,14 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
-using multibody::contact_solvers::icf::IcfBuilder;
-using multibody::contact_solvers::icf::IcfData;
-using multibody::contact_solvers::icf::IcfModel;
-using multibody::contact_solvers::icf::IcfSolver;
-using multibody::contact_solvers::icf::IcfSolverParameters;
-using multibody::contact_solvers::icf::IcfSolverStats;
-using multibody::contact_solvers::icf::LinearFeedbackGains;
-using multibody::contact_solvers::icf::SearchDirectionData;
+using multibody::contact_solvers::icf::internal::IcfBuilder;
+using multibody::contact_solvers::icf::internal::IcfData;
+using multibody::contact_solvers::icf::internal::IcfModel;
+using multibody::contact_solvers::icf::internal::IcfSolver;
+using multibody::contact_solvers::icf::internal::IcfSolverParameters;
+using multibody::contact_solvers::icf::internal::IcfSolverStats;
+using multibody::contact_solvers::icf::internal::LinearFeedbackGains;
+using multibody::contact_solvers::icf::internal::SearchDirectionData;
 using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
 using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using multibody::contact_solvers::internal::BlockSparsityPattern;

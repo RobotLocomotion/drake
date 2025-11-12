@@ -7,6 +7,7 @@
 #include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
+#ifndef DRAKE_DOXYGEN_CXX
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -32,6 +33,7 @@ struct traits<drake::multibody::contact_solvers::internal::
 
 }  // namespace internal
 }  // namespace Eigen
+#endif  // DRAKE_DOXYGEN_CXX
 
 namespace drake {
 namespace multibody {
@@ -155,6 +157,7 @@ class EigenBlock3x3SparseSymmetricMatrix
 }  // namespace multibody
 }  // namespace drake
 
+#ifndef DRAKE_DOXYGEN_CXX
 namespace Eigen {
 namespace internal {
 
@@ -187,3 +190,4 @@ struct generic_product_impl<drake::multibody::contact_solvers::internal::
 
 }  // namespace internal
 }  // namespace Eigen
+#endif  // DRAKE_DOXYGEN_CXX

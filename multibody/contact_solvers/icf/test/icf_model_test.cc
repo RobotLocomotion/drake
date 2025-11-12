@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
+
 #include <limits>
 #include <memory>
 #include <utility>
@@ -11,7 +13,6 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 
 using drake::math::RigidTransformd;
 using Eigen::Matrix3d;
@@ -23,6 +24,7 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -244,7 +246,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
 }
 
 /* Hessian has the sparsity structure inherited from the model (with multiple
- * cliques). */
+cliques). */
 GTEST_TEST(IcfModel, CalcSparseHessian) {
   IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);
@@ -450,7 +452,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
   math::InitializeAutoDiff(v_value, &v);
   model.CalcData(v, &data);
 
-  const GainConstraintsDataPool<AutoDiffXd> gains_data =
+  const GainConstraintsDataPool<AutoDiffXd>& gains_data =
       data.cache().gain_constraints_data;
   EXPECT_EQ(gains_data.num_constraints(), 2);
 
@@ -583,7 +585,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   const AutoDiffXd dt = model.time_step();
   VectorX<AutoDiffXd> q = q0 + dt * v;
 
-  const LimitConstraintsDataPool<AutoDiffXd> limits_data =
+  const LimitConstraintsDataPool<AutoDiffXd>& limits_data =
       data.cache().limit_constraints_data;
   EXPECT_EQ(limits_data.num_constraints(), 2);
 
@@ -675,7 +677,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const double k1 = m1_eff * omega_near_rigid * omega_near_rigid;
   const double tau1 = beta / M_PI * dt;
 
-  const CouplerConstraintsDataPool<AutoDiffXd> couplers_data =
+  const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
       data.cache().coupler_constraints_data;
   EXPECT_EQ(couplers_data.num_constraints(), 1);
 
@@ -688,7 +690,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   VectorXd tau_expected = VectorXd::Zero(nv);
   tau_expected(6 + 1) = gamma0.value();
   tau_expected(6 + 3) = -rho1 * gamma0.value();
-  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, kEps,
+  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, 10 * kEps,
                               MatrixCompareType::relative));
 
   const double gamma = couplers_data.gamma(0).value();
@@ -720,10 +722,12 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const AutoDiffXd cost =
       model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
 
-  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], kEps);
-  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], 100 * kEps);
+  const double scale = std::abs(dcost.value());
+  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEps);
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEps);
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

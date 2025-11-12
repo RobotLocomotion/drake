@@ -183,14 +183,17 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<
 
 template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>,
                                                            true>;
-template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
-                                                           true>;
-
 template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>,
                                                            false>;
+
 template class BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>,
                                                            true>;
 template class BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>,
+                                                           false>;
+
+template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
+                                                           true>;
+template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
                                                            false>;
 
 }  // namespace internal

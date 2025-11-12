@@ -56,6 +56,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/contact_solvers",
+    "//multibody/contact_solvers/icf",
     "//multibody/contact_solvers/sap",
     "//multibody/fem",
     "//multibody/hydroelastics",
@@ -78,6 +79,7 @@ LIBDRAKE_COMPONENTS = [
     "//planning/trajectory_optimization",
     "//solvers",
     "//systems/analysis",
+    "//systems/analysis:cenic_integrator",  # unpackaged
     "//systems/controllers",
     "//systems/estimators",
     "//systems/framework",

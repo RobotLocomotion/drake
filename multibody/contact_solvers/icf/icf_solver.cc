@@ -9,11 +9,12 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
+using contact_solvers::internal::Bracket;
+using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using internal::Bracket;
-using internal::DoNewtonWithBisectionFallback;
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                IcfData<double>* data) {
@@ -313,6 +314,7 @@ bool IcfSolver::SparsityPatternChanged(const IcfModel<double>& model) const {
           previous_sparsity_pattern_->block_sizes());
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -54,17 +54,6 @@ class CenicIntegrator;
 }  // namespace systems
 
 namespace multibody {
-
-// Forward declaration for giving the icf builder private access
-namespace contact_solvers {
-namespace icf {
-
-template <typename>
-class IcfBuilder;
-
-}  // namespace icf
-}  // namespace contact_solvers
-
 namespace internal {
 
 // Data stored in the cache entry for joint locking.
@@ -5833,8 +5822,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
 
-  // Pooled sap builder and cenic integrator get private acces
-  friend class contact_solvers::icf::IcfBuilder<T>;
+  // Cenic integrator gets private access.
   friend class systems::CenicIntegrator<T>;
 
   // This struct stores in one single place the index of all of our inputs.

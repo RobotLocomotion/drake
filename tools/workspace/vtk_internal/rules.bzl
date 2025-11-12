@@ -113,6 +113,7 @@ def _vtk_cc_module_impl(
             name = module_name + "_gen_hdrs",
             hdrs = gen_hdrs,
             strip_include_prefix = "gen/" + subdir,
+            isystem = True,
             linkstatic = True,
         )
         gen_hdrs_lib = [module_name + "_gen_hdrs"]
@@ -177,6 +178,7 @@ def _vtk_cc_module_impl(
         hdrs = hdrs,
         defines = defines_extra,
         includes = includes_extra,
+        isystem = True,
         strip_include_prefix = subdir + strip_include_prefix_extra,
         copts = copts,
         linkopts = linkopts,

@@ -6,18 +6,20 @@
 
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
+#include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
 
+using contact_solvers::internal::BlockSparseCholeskySolver;
+using contact_solvers::internal::BlockSparseSymmetricMatrixT;
+using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using internal::BlockSparseCholeskySolver;
-using internal::BlockSparseSymmetricMatrixT;
-using internal::BlockSparsityPattern;
 
 // Parameters to configure the ICF convex solver.
 struct IcfSolverParameters {
@@ -193,6 +195,7 @@ class IcfSolver {
   VectorXd search_direction_;
 };
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody

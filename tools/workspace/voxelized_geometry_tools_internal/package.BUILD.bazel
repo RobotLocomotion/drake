@@ -12,6 +12,7 @@ cc_library(
     name = "cl_hpp",
     hdrs = ["include/voxelized_geometry_tools/cl.hpp"],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = ["@opencl"],
 )
@@ -37,6 +38,7 @@ cc_library(
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -59,6 +61,7 @@ cc_library(
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -77,6 +80,7 @@ cc_library(
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":cl_hpp",
@@ -102,6 +106,7 @@ cc_library(
         "include/voxelized_geometry_tools/pointcloud_voxelization_interface.hpp",  # noqa
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":voxelized_geometry_tools",

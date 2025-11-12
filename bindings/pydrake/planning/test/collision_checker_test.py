@@ -1,6 +1,7 @@
 import pydrake.planning as mut  # ruff: isort: skip
 
 import copy
+import sys
 import textwrap
 import unittest
 
@@ -8,7 +9,6 @@ import numpy as np
 import scipy.sparse
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import Sphere
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
@@ -108,14 +108,14 @@ class TestCollisionChecker(unittest.TestCase):
         # We expect that `robot` and the diagram<==>builder `ref_cycle` will
         # hold references at this point. Various build environments or
         # debuggers could inflate the count.
-        self.assertGreaterEqual(actual_ref_count(robot), 2)
+        self.assertGreaterEqual(sys.getrefcount(robot), 2)
 
         # Default constructor; write to properties.
         dut = mut.CollisionCheckerParams()
         dut.model = robot
         # We expect an additional reference to now be held by the params
         # struct.
-        self.assertGreaterEqual(actual_ref_count(robot), 3)
+        self.assertGreaterEqual(sys.getrefcount(robot), 3)
         dut.robot_model_instances = [index]
         dut.configuration_distance_function = self._configuration_distance
         dut.edge_step_size = 0.125
@@ -483,15 +483,15 @@ class TestCollisionChecker(unittest.TestCase):
         # We expect that `robot` and the diagram<==>builder `ref_cycle`
         # will hold references at this point. Various build environments or
         # debuggers could inflate the count.
-        self.assertGreaterEqual(actual_ref_count(robot), 2)
+        self.assertGreaterEqual(sys.getrefcount(robot), 2)
         plant = robot.plant()
         # Getting the plant should add a keep_alive reference.
-        self.assertGreaterEqual(actual_ref_count(robot), 3)
+        self.assertGreaterEqual(sys.getrefcount(robot), 3)
         checker_params = mut.CollisionCheckerParams(
             model=robot, robot_model_instances=[index], edge_step_size=0.125
         )
         # Storing in the params struct adds a reference.
-        self.assertGreaterEqual(actual_ref_count(robot), 4)
+        self.assertGreaterEqual(sys.getrefcount(robot), 4)
 
         if use_provider:
             checker_params.distance_and_interpolation_provider = (
@@ -504,16 +504,16 @@ class TestCollisionChecker(unittest.TestCase):
 
         checker = mut.SceneGraphCollisionChecker(checker_params)
         # The checker constructor transfers a reference.
-        self.assertGreaterEqual(actual_ref_count(robot), 4)
+        self.assertGreaterEqual(sys.getrefcount(robot), 4)
         del checker_params
         # Deleting the obsolete params struct does not remove a reference; it
         # was already transferred to the checker.
-        self.assertGreaterEqual(actual_ref_count(robot), 4)
+        self.assertGreaterEqual(sys.getrefcount(robot), 4)
         del plant
         # Deleting the plant removes the plant's python wrapper and
         # keep_alive. We might have an unprotected c++ alias in the
         # provider object.
-        self.assertGreaterEqual(actual_ref_count(robot), 3)
+        self.assertGreaterEqual(sys.getrefcount(robot), 3)
         return checker
 
     def test_scene_graph_collision_checker(self):
@@ -536,15 +536,15 @@ class TestCollisionChecker(unittest.TestCase):
             # We expect that `robot` and the diagram<==>builder `ref_cycle`
             # will hold references at this point. Various build environments or
             # debuggers could inflate the count.
-            self.assertGreaterEqual(actual_ref_count(robot), 2)
+            self.assertGreaterEqual(sys.getrefcount(robot), 2)
             plant = robot.plant()
             # Getting the plant should add a keep_alive reference.
-            self.assertGreaterEqual(actual_ref_count(robot), 3)
+            self.assertGreaterEqual(sys.getrefcount(robot), 3)
             checker_kwargs = dict(
                 model=robot, robot_model_instances=[index], edge_step_size=0.125
             )
             # Storing in a dict adds a reference.
-            self.assertGreaterEqual(actual_ref_count(robot), 4)
+            self.assertGreaterEqual(sys.getrefcount(robot), 4)
 
             if use_provider:
                 checker_kwargs["distance_and_interpolation_provider"] = (
@@ -556,15 +556,15 @@ class TestCollisionChecker(unittest.TestCase):
                 )
             checker = mut.SceneGraphCollisionChecker(**checker_kwargs)
             # The checker constructor adds a reference.
-            self.assertGreaterEqual(actual_ref_count(robot), 5)
+            self.assertGreaterEqual(sys.getrefcount(robot), 5)
             del checker_kwargs
             # Deleting the obsolete dict removes a reference.
-            self.assertGreaterEqual(actual_ref_count(robot), 4)
+            self.assertGreaterEqual(sys.getrefcount(robot), 4)
             del plant
             # Deleting the plant removes the plant's python wrapper and
             # keep_alive. We might have an unprotected c++ alias in the
             # provider object.
-            self.assertGreaterEqual(actual_ref_count(robot), 3)
+            self.assertGreaterEqual(sys.getrefcount(robot), 3)
             return checker
 
         default_checker = _make_with_kwargs_ctor(False, False)

@@ -1,22 +1,18 @@
-// NOLINTNEXTLINE(build/include): prevent complaint re icf_model.h
+#include "drake/multibody/contact_solvers/icf/icf_model.h"
 
-#include <memory>
-#include <set>
 #include <utility>
-#include <vector>
-
-#include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
-#include "drake/math/autodiff.h"
-#include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/contact_solvers/icf/icf.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
+namespace internal {
+
+using contact_solvers::internal::BlockSparsityPattern;
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
 using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
@@ -225,8 +221,8 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 }
 
 template <typename T>
-std::unique_ptr<internal::BlockSparseSymmetricMatrixT<T>>
-IcfModel<T>::MakeHessian(const IcfData<T>& data) const {
+std::unique_ptr<BlockSparseSymmetricMatrixT<T>> IcfModel<T>::MakeHessian(
+    const IcfData<T>& data) const {
   auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
       sparsity_pattern());
   UpdateHessian(data, hessian.get());
@@ -268,7 +264,7 @@ void IcfModel<T>::SetSparsityPattern() {
   // constraints are the only ones that can create off-diagonal entries.
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
 
-  sparsity_pattern_ = std::make_unique<internal::BlockSparsityPattern>(
+  sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
 }
 
@@ -372,7 +368,6 @@ T IcfModel<T>::CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
 template <typename T>
 void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   DRAKE_DEMAND(time_step > 0);
-  const T old_time_step = this->time_step();
 
   // Linearized dynamics matrix A = M + δt⋅D
   for (int c = 0; c < num_cliques_; ++c) {
@@ -388,21 +383,14 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   MultiplyByDynamicsMatrix(v0(), &Av0_);
   r_ = Av0_ - time_step * k0();
 
-  // Constraints
-  coupler_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
-  // Gain constraints only use the time step in CalcData, so gain constraints
-  // do not need to be updated here.
-  limit_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
-  patch_constraints_pool_.UpdateTimeStep(old_time_step, time_step);
-
-  // Finally, set the time step itself
   params_->time_step = time_step;
 }
 
+}  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::icf::IcfModel);
+    class ::drake::multibody::contact_solvers::icf::internal::IcfModel);

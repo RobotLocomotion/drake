@@ -26,6 +26,7 @@ drake_cc_binary(
         "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing:parser",
         "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:cenic_integrator",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",
