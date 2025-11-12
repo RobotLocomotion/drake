@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -289,7 +290,7 @@ TEST_F(TwoSpheres, MakeData) {
       model.patch_constraints_pool();
   EXPECT_EQ(patch_constraints.num_patches(), 1);
   EXPECT_EQ(patch_constraints.total_num_pairs(), num_pairs);
-  EXPECT_EQ(patch_constraints.patch_sizes(), std::vector<int>({num_pairs}));
+  EXPECT_THAT(patch_constraints.patch_sizes(), testing::ElementsAre(num_pairs));
 
   IcfData<double> data;
   model.ResizeData(&data);

@@ -4,9 +4,7 @@
 #error Do not directly include this file; instead, use icf_model.h.
 #endif
 
-#include <algorithm>
-#include <limits>
-#include <numeric>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"

@@ -4,9 +4,7 @@
 #error Do not directly include this file; instead, use icf_model.h.
 #endif
 
-#include <algorithm>
-#include <numeric>
-#include <utility>
+#include <span>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -48,7 +46,7 @@ class IcfModel<T>::GainConstraintsPool {
   void Clear();
 
   // Resize this pool to store gain constraints of the given sizes.
-  void Resize(const std::vector<int>& sizes);
+  void Resize(std::span<const int> sizes);
 
   /*
    * Set the given gain constraint for the given clique.
@@ -89,7 +87,9 @@ class IcfModel<T>::GainConstraintsPool {
   int num_constraints() const { return clique_.size(); }
 
   // Number of velocities for each gain constraint.
-  const std::vector<int>& constraint_sizes() const { return constraint_sizes_; }
+  std::span<const int> constraint_sizes() const {
+    return std::span<const int>(constraint_sizes_);
+  }
 
   // Return a reference to the parent model.
   const IcfModel<T>& model() const { return *model_; }

@@ -1,10 +1,8 @@
 #pragma once
 
-#include <numeric>
-#include <vector>
+#include <span>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
@@ -40,7 +38,7 @@ class GainConstraintsDataPool {
    * @param constraint_size The size (number of velocities) for each gain
    * constraint.
    */
-  void Resize(const std::vector<int>& constraint_size) {
+  void Resize(std::span<const int> constraint_size) {
     gamma_pool_.Resize(constraint_size);
     G_pool_.Resize(constraint_size, constraint_size);
 

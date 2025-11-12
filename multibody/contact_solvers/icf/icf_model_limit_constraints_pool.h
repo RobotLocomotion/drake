@@ -4,10 +4,7 @@
 #error Do not directly include this file; instead, use icf_model.h.
 #endif
 
-#include <algorithm>
-#include <limits>
-#include <numeric>
-#include <utility>
+#include <span>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -41,8 +38,8 @@ class IcfModel<T>::LimitConstraintsPool {
 
   // Re-allocate memory as needed, setting all constraints as infinite by
   // default so they are disabled to start with.
-  void Resize(const std::vector<int>& constrained_clique_sizes,
-              const std::vector<int>& constraint_to_clique);
+  void Resize(std::span<const int> constrained_clique_sizes,
+              std::span<const int> constraint_to_clique);
 
   /*
    * Set the limit constraint parameters for the given clique and DoF.
@@ -104,7 +101,9 @@ class IcfModel<T>::LimitConstraintsPool {
   int num_constraints() const { return constraint_to_clique_.size(); }
 
   // Number of velocities for each limit constraint.
-  const std::vector<int>& constraint_sizes() const { return constraint_sizes_; }
+  std::span<const int> constraint_sizes() const {
+    return std::span<const int>(constraint_sizes_);
+  }
 
   // Return a reference to the parent model.
   const IcfModel<T>& model() const { return *model_; }
