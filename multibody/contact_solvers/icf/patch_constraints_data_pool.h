@@ -1,10 +1,10 @@
 #pragma once
 
 #include <numeric>
+#include <span>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
@@ -36,7 +36,7 @@ class PatchConstraintsDataPool {
   /* Resize the data pool to hold constraints of the given sizes.
 
   @param patch_size Number of contact pairs for the k-th patch. */
-  void Resize(const std::vector<int>& patch_size) {
+  void Resize(std::span<const int> patch_size) {
     num_patches_ = ssize(patch_size);
     num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);
 

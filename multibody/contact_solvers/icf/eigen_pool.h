@@ -1,7 +1,6 @@
 #pragma once
 
-#include <numeric>
-#include <utility>
+#include <span>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -117,7 +116,7 @@ struct DynamicSizeStorage {
   /* Resize the pool to store MatrixX elements of the specified sizes.
   N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
   compile time. */
-  void Resize(const std::vector<int>& rows, const std::vector<int>& cols) {
+  void Resize(std::span<const int> rows, std::span<const int> cols) {
     static_assert(!is_fixed_size_v<EigenType>);
     DRAKE_ASSERT(rows.size() == cols.size());
     Clear();
@@ -235,7 +234,7 @@ class EigenPool {
 
   N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
   compile time. */
-  void Resize(const std::vector<int>& rows, const std::vector<int>& cols)
+  void Resize(std::span<const int> rows, std::span<const int> cols)
     requires(!is_fixed_size_v<EigenType>)
   {
     storage_.Resize(rows, cols);
@@ -243,7 +242,7 @@ class EigenPool {
 
   /* Resize a pool of matrices with a fixed number of rows or columns, e.g.
   Matrix6Xd or VectorXd. */
-  void Resize(const std::vector<int>& sizes)
+  void Resize(std::span<const int> sizes)
     requires(has_fixed_size_rows_v<EigenType> ||
              has_fixed_size_cols_v<EigenType>)
   {

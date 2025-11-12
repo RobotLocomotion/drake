@@ -1,11 +1,5 @@
-#include <numeric>
-#include <vector>
+#include <algorithm>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
-#include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -29,7 +23,7 @@ void IcfModel<T>::GainConstraintsPool::Clear() {
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::Resize(const std::vector<int>& sizes) {
+void IcfModel<T>::GainConstraintsPool::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());
   K_.Resize(sizes);

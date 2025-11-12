@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <span>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -31,9 +31,9 @@ class IcfData {
    */
   struct Cache {
     void Resize(int num_bodies, int num_velocities, int num_couplers,
-                const std::vector<int>& gain_sizes,
-                const std::vector<int>& limit_sizes,
-                const std::vector<int>& patch_sizes) {
+                std::span<const int> gain_sizes,
+                std::span<const int> limit_sizes,
+                std::span<const int> patch_sizes) {
       const int nv = num_velocities;
       Av.resize(nv);
       gradient.resize(nv);
@@ -79,9 +79,9 @@ class IcfData {
 
     /* Resize the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
-                int num_couplers, const std::vector<int>& gain_sizes,
-                const std::vector<int>& limit_sizes,
-                const std::vector<int>& patch_sizes) {
+                int num_couplers, std::span<const int> gain_sizes,
+                std::span<const int> limit_sizes,
+                std::span<const int> patch_sizes) {
       Clear();
       Av_minus_r.resize(num_velocities);
 
@@ -151,9 +151,9 @@ class IcfData {
   TODO(vincekurtz): consider fixing num_bodies and num_velocities at
   construction, and only resizing based on patch_sizes here. */
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
-              int num_couplers, const std::vector<int>& gain_sizes,
-              const std::vector<int>& limit_sizes,
-              const std::vector<int>& patch_sizes) {
+              int num_couplers, std::span<const int> gain_sizes,
+              std::span<const int> limit_sizes,
+              std::span<const int> patch_sizes) {
     v_.resize(num_velocities);
     cache_.Resize(num_bodies, num_velocities, num_couplers, gain_sizes,
                   limit_sizes, patch_sizes);

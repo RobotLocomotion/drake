@@ -4,8 +4,8 @@
 #error Do not directly include this file; instead, use icf_model.h.
 #endif
 
-#include <algorithm>
-#include <numeric>
+#include <span>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -42,7 +42,7 @@ class IcfModel<T>::PatchConstraintsPool {
   /* Resize to store the given patches and pairs.
 
   @param num_pairs_per_patch Number of contact pairs for each patch.*/
-  void Resize(const std::vector<int>& num_pairs_per_patch);
+  void Resize(std::span<const int> num_pairs_per_patch);
 
   /* Set the contact patch between bodies A and B.
 
@@ -90,7 +90,9 @@ class IcfModel<T>::PatchConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
 
   /* Return the number of pairs in each patch. */
-  const std::vector<int>& patch_sizes() const { return num_pairs_; }
+  std::span<const int> patch_sizes() const {
+    return std::span<const int>(num_pairs_);
+  }
 
   /* Total number of pairs across all patches. */
   int total_num_pairs() const { return ssize(fn0_); }

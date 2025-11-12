@@ -1,13 +1,9 @@
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
-#include "drake/common/unused.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -181,8 +177,8 @@ void IcfModel<T>::PatchConstraintsPool::Clear() {
 
 template <typename T>
 void IcfModel<T>::PatchConstraintsPool::Resize(
-    const std::vector<int>& num_pairs_per_patch) {
-  num_pairs_ = num_pairs_per_patch;
+    std::span<const int> num_pairs_per_patch) {
+  num_pairs_.assign(num_pairs_per_patch.begin(), num_pairs_per_patch.end());
 
   const int num_patches = num_pairs_.size();
   const int num_pairs =
