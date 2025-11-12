@@ -12,6 +12,7 @@ cc_library(
     hdrs = ["tinyxml2.h"],
     srcs = ["tinyxml2.cpp"],
     includes = ["."],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )

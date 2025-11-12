@@ -95,7 +95,8 @@ class BlockSparsityPattern {
  directly.
 
  @tparam MatrixType   The Eigen matrix type of each block in block sparse
-                      matrix, e.g. Matrix3<double> or MatrixX<double>.
+                      matrix. The only valid options are `Matrix3d`, `MatrixXd`,
+                      or `MatrixX<AutoDiffXd>`.
  @pre MatrixType::RowsAtCompileType == MatrixType::ColsAtCompileTime.
  @tparam is_symmetric Determines whether the matrix is symmetric or lower
                       triangular.

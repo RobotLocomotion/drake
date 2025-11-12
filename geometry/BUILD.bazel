@@ -504,14 +504,6 @@ drake_cc_library(
 )
 
 genrule(
-    name = "stats_js_genrule",
-    srcs = ["@statsjs_internal//:build/stats.min.js"],
-    outs = ["stats.min.js"],
-    cmd = "cp $< $@",
-    visibility = ["//visibility:private"],
-)
-
-genrule(
     name = "meshcat_ico_genrule",
     srcs = ["//doc:favicon.ico"],
     outs = ["meshcat.ico"],
@@ -533,7 +525,6 @@ filegroup(
         "meshcat.html",
         ":meshcat.ico",
         ":meshcat.js",
-        ":stats.min.js",
     ],
     visibility = ["//visibility:private"],
 )

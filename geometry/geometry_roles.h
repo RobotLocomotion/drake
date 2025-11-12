@@ -12,7 +12,7 @@ namespace drake {
 namespace geometry {
 
 /** @addtogroup geometry_roles
-
+ @{
  Geometry roles help define how a real-world object is modeled in Drake.
 
  We model the physical presence of real-world objects with geometric
@@ -153,7 +153,9 @@ namespace geometry {
  isn't an error, but it does mean that property values would be copied and
  persisted without value.
 
- Next topic: @ref proximity_queries  */
+ Next topic: @ref proximity_queries
+ @}
+ */
 
 /** The set of properties for geometry used in a _proximity_ role.
 

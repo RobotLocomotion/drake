@@ -20,8 +20,7 @@ namespace internal {
 invalid. The valid static resource URLs are:
 - `/favicon.ico`
 - `/meshcat.html`
-- `/meshcat.js`
-- `/stats.min.js` */
+- `/meshcat.js` */
 std::optional<std::string_view> GetMeshcatStaticResource(
     std::string_view url_path);
 

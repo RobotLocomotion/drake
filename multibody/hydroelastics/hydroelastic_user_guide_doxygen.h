@@ -4,7 +4,7 @@
 
 /**
 @addtogroup hydroelastic_user_guide
-
+@{
 A guide to using hydroelastic contact in practice.
 
 @section hug_introduction Introduction
@@ -600,5 +600,5 @@ indicate what can and cannot be done with hydroelastic contact.
 - @anchor Sherman2022 [Sherman 2022] Sherman, M. (2022, June). Rethinking
   Contact Simulation for Robot Manipulation. Blog post in Medium.
   https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88 .
-
+ @}
  */

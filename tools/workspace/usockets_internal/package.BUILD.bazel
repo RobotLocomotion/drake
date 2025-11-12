@@ -17,6 +17,7 @@ cc_library(
         "src/**/*.h",
     ]),
     includes = ["src"],
+    isystem = True,
     copts = [
         "-DLIBUS_NO_SSL",
         "-fvisibility=hidden",

@@ -65,6 +65,7 @@ cc_library(
         "-fno-openmp",
     ],
     includes = ["includes"],
+    isystem = True,
     linkstatic = 1,
     deps = [
         "@blas",

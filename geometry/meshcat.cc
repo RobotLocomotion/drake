@@ -833,29 +833,20 @@ class Meshcat::Impl {
     // Load the javascript into the CAS cache.
     const std::optional<std::string_view> meshcat_js =
         internal::GetMeshcatStaticResource("/meshcat.js");
-    const std::optional<std::string_view> stats_js =
-        internal::GetMeshcatStaticResource("/stats.min.js");
     DRAKE_DEMAND(meshcat_js.has_value());
-    DRAKE_DEMAND(stats_js.has_value());
     meshcat_js_ = file_storage_.Insert(std::string{*meshcat_js}, "meshcat.js");
-    stats_js_ = file_storage_.Insert(std::string{*stats_js}, "stats.min.js");
 
-    // Load meshcat.html and rewrite its script citations to use CAS URLs.
+    // Load meshcat.html and rewrite its script citation to use the CAS URL.
     const std::optional<std::string_view> meshcat_html =
         internal::GetMeshcatStaticResource("/meshcat.html");
     DRAKE_DEMAND(meshcat_html.has_value());
     meshcat_html_ = std::string{*meshcat_html};
-    std::vector<std::pair<std::string, std::string>> rewrites{
-        {"src=\"meshcat.js\"",
-         fmt::format("src=\"{}\"", FileStorage::GetCasUrl(*meshcat_js_))},
-        {"src=\"stats.min.js\"",
-         fmt::format("src=\"{}\"", FileStorage::GetCasUrl(*stats_js_))},
-    };
-    for (const auto& [old_link, new_link] : rewrites) {
-      const size_t start = meshcat_html_.find(old_link);
-      DRAKE_DEMAND(start != std::string::npos);
-      meshcat_html_.replace(start, old_link.size(), new_link);
-    }
+    const std::string_view old_link{"src=\"meshcat.js\""};
+    const size_t start = meshcat_html_.find(old_link);
+    DRAKE_DEMAND(start != std::string::npos);
+    meshcat_html_.replace(
+        start, old_link.size(),
+        fmt::format("src=\"{}\"", FileStorage::GetCasUrl(*meshcat_js_)));
   }
 
   // Throws an exception if the websocket thread has died.
@@ -1858,17 +1849,12 @@ class Meshcat::Impl {
         internal::GetMeshcatStaticResource("/meshcat.html").value()};
 
     // Insert the javascript directly into the html.
-    std::vector<std::pair<std::string, std::string>> js_paths{
-        {" src=\"meshcat.js\"", "/meshcat.js"},
-        {" src=\"stats.min.js\"", "/stats.min.js"},
-    };
-    for (const auto& [src_link, url] : js_paths) {
-      const std::string_view url_data =
-          internal::GetMeshcatStaticResource(url).value();
+    {
+      const std::string_view src_link{" src=\"meshcat.js\""};
       const size_t js_pos = html.find(src_link);
       DRAKE_DEMAND(js_pos != std::string::npos);
       html.erase(js_pos, src_link.size());
-      html.insert(js_pos + 1, url_data);
+      html.insert(js_pos + 1, meshcat_js_->contents());
     }
 
     // Insert a JavaScript URL hook that knows how to serve the CAS database.
@@ -1877,10 +1863,9 @@ class Meshcat::Impl {
     std::vector<std::shared_ptr<const MemoryFile>> assets =
         file_storage_.DumpEverything();
     for (const auto& asset : assets) {
-      if (asset->sha256() == meshcat_js_->sha256() ||
-          asset->sha256() == stats_js_->sha256()) {
-        // We already directly inserted this JS resource using `js_paths` above,
-        // so there's no need to dump it as part of the CAS.
+      if (asset->sha256() == meshcat_js_->sha256()) {
+        // We already inserted this resource directly into the html above, so
+        // there's no need to dump it as part of the CAS.
         continue;
       }
       javascript += fmt::format("// {}\n", asset->filename_hint());
@@ -2472,7 +2457,6 @@ class Meshcat::Impl {
   us_listen_socket_t* listen_socket_{nullptr};
   std::set<WebSocket*> websockets_{};
   std::shared_ptr<const MemoryFile> meshcat_js_;
-  std::shared_ptr<const MemoryFile> stats_js_;
   std::string meshcat_html_;
 
   // This variable may be accessed from any thread, but should only be modified
