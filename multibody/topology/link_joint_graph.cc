@@ -694,7 +694,7 @@ LinkOrdinal LinkJointGraph::AddShadowLink(LinkOrdinal primary_link_ordinal,
 
   Link& mutable_primary_link = mutable_link(primary_link_ordinal);
   mutable_primary_link.shadow_links_.push_back(shadow_link_index);
-  mutable_primary_link.note_retargeted_joint(shadow_joint.index());
+  mutable_primary_link.NoteRetargetedJoint(shadow_joint.index());
 
   return shadow_link_ordinal;
 }
