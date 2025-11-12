@@ -29,7 +29,6 @@ drake_cc_package_library(
         ":calc_distance_and_time_derivative",
         ":constraint_specs",
         ":contact_jacobians",
-        ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
         ":desired_state_input",
@@ -431,6 +430,8 @@ drake_cc_library(
     hdrs = [
         "contact_properties.h",
     ],
+    internal = True,
+    visibility = ["//multibody/contact_solvers:__subpackages__"],
     deps = [
         "//common:default_scalars",
         "//geometry:scene_graph_inspector",

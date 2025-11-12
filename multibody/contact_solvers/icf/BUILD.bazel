@@ -100,6 +100,9 @@ drake_cc_library(
         "//common:essential",
         "//multibody/plant",
     ],
+    implementation_deps = [
+        "//multibody/plant:contact_properties",
+    ],
 )
 
 drake_cc_library(
@@ -159,6 +162,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//multibody/parsing:parser",
+        "//multibody/plant:contact_properties",
         "//systems/framework:diagram_builder",
     ],
 )
