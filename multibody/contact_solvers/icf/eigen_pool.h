@@ -16,12 +16,9 @@ namespace internal {
 
 // Differentiate between fixed size (e.g. Matrix3d) and dynamic size (e.g.
 // MatrixXd) Eigen types.
-template <typename Derived>
-struct is_fixed_size
-    : std::bool_constant<is_eigen_type<Derived>::value &&
-                         Derived::SizeAtCompileTime != Eigen::Dynamic> {};
-template <typename EigenType>
-constexpr bool is_fixed_size_v = is_fixed_size<EigenType>::value;
+template <typename T>
+constexpr bool is_fixed_size_v =
+    is_eigen_type<T>::value && T::SizeAtCompileTime != Eigen::Dynamic;
 
 // Detect fixed-size Eigen vectors, e.g. Vector3d.
 template <typename T>
