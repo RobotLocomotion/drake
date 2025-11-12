@@ -97,7 +97,7 @@ class IcfModel<T>::CouplerConstraintsPool {
   std::vector<T> gear_ratio_;
 
   // Regularization and bias per constraint.
-  std::vector<T> v_hat_;
+  std::vector<T> v_hat_;  // scaled by dt
   std::vector<T> R_;
 };
 

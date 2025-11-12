@@ -48,10 +48,11 @@ void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
 
   const T g0 = qi - gear_ratio * qj - offset;
 
-  // N.B. We have v̂ = −g₀ / (δt (1 + β/π)), but we only want to use the time
-  // step δt = model().time_step() at the time of solving, in case the δt
-  // changes between when the constraint is set and when the problem is solved.
-  // Thus we store v̂ = −g₀ / (1 + β/π) and scale by 1/δt in CalcData().
+  // Eventually we will use
+  //  v̂ = −g₀ / (δt (1 + β/π)),
+  // However, since model.time_step() may change between now and when we
+  // actually solve the problem, we neglect the 1/δt factor for now, and will
+  // scale v̂ by 1/δt in CalcData().
   v_hat_[index] = -g0 / (1.0 + beta / M_PI);
 
   const auto w_clique = model().clique_delassus(clique);

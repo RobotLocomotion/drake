@@ -279,9 +279,9 @@ void IcfModel<T>::PatchConstraintsPool::SetPair(
   }
 
   // N.B. the normal component is n₀ = (δt fₙ₀))₊(1−dvₙ₀)₊, where
-  // (·)₊ = max(0, ·). However, the time step δt may change between when the
+  // (·)₊ = max(0, ·). However, model.time_step() may change between when the
   // constraint is set and when the problem is solved. Thus we only store
-  // n₀ = (fₙ₀)₊(1−dvₙ₀)₊ here and scale by δt later.
+  // n₀ = (fₙ₀)₊(1−dvₙ₀)₊ here and scale by δt later in CalcData.
   const T& d = dissipation_[patch_index];
   const T vn0 = v_AcBc_W.dot(normal_W);
   const T damping = max(0.0, 1.0 - d * vn0);
