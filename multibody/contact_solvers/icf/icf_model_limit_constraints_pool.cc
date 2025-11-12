@@ -64,28 +64,20 @@ void IcfModel<T>::LimitConstraintsPool::Set(int index, int clique, int dof,
   upper_limit(index, dof) = qu;
   configuration(index, dof) = q0;
 
-  const T dt = model().time_step();
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
   const auto w_clique = model().clique_delassus(clique);
   regularization(index, dof) = eps * w_clique(dof);
-  vl_hat(index, dof) = (ql - q0) / (dt * (1.0 + beta));
-  vu_hat(index, dof) = (q0 - qu) / (dt * (1.0 + beta));
-}
 
-template <typename T>
-void IcfModel<T>::LimitConstraintsPool::UpdateTimeStep(const T& old_dt,
-                                                       const T& new_dt) {
-  const T ratio = old_dt / new_dt;
-  for (int k = 0; k < num_constraints(); ++k) {
-    const int c = constraint_to_clique_[k];
-    const int nv = model().clique_size(c);
-    for (int dof = 0; dof < nv; ++dof) {
-      vl_hat(k, dof) *= ratio;
-      vu_hat(k, dof) *= ratio;
-    }
-  }
+  // Eventually we will use
+  //  v̂ₗ = (qₗ − q₀) / (δt (1 + β))
+  //  v̂ᵤ = (q₀ − qᵤ) / (δt (1 + β))
+  // However, since model.time_step() may change between now and when we
+  // actually solve the problem, we neglect the 1/δt factor for now, and
+  // will scale v̂ by 1/δt in CalcData().
+  vl_hat(index, dof) = (ql - q0) / (1.0 + beta);
+  vu_hat(index, dof) = (q0 - qu) / (1.0 + beta);
 }
 
 template <typename T>
@@ -113,6 +105,7 @@ void IcfModel<T>::LimitConstraintsPool::CalcData(
   using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
   using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
 
+  const T& dt = model().time_step();
   T& cost = limit_data->cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
@@ -126,12 +119,12 @@ void IcfModel<T>::LimitConstraintsPool::CalcData(
     for (int i = 0; i < nv; ++i) {
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      cost += CalcLimitData(vl_hat(k, i), regularization(k, i), vl,
+      cost += CalcLimitData(vl_hat(k, i) / dt, regularization(k, i), vl,
                             &gamma_lower(i), &G_lower(i, i));
 
       // i-th upper limit for constraint k (clique c).
       const T vu = -vk(i);
-      cost += CalcLimitData(vu_hat(k, i), regularization(k, i), vu,
+      cost += CalcLimitData(vu_hat(k, i) / dt, regularization(k, i), vu,
                             &gamma_upper(i), &G_upper(i, i));
     }
   }

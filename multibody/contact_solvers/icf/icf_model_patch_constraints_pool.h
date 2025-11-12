@@ -76,9 +76,6 @@ class IcfModel<T>::PatchConstraintsPool {
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
 
-  /* Update the time step only, leaving all other constraint data unchanged. */
-  void UpdateTimeStep(const T& old_time_step, const T& time_step);
-
   /* Number of patches (pairs of contacting bodies) in the pool. */
   int num_patches() const { return ssize(num_pairs_); }
 
@@ -205,8 +202,7 @@ class IcfModel<T>::PatchConstraintsPool {
   std::vector<T> stiffness_;        // Linear stiffness, N/m.
   std::vector<T> fn0_;              // Previous time step normal force.
   std::vector<T> n0_;               // Previous time step impulse.
-  std::vector<T> epsilon_soft_;     // Regularized stiction tolerance.
-  std::vector<T> net_friction_;     // Regularized stiction tolerance.
+  std::vector<T> net_friction_;     // Friction coefficients mu(s)
 };
 
 }  // namespace internal

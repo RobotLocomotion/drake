@@ -43,12 +43,17 @@ void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
   dofs_[index] = std::make_pair(i, j);
   gear_ratio_[index] = gear_ratio;
 
-  const T dt = model().time_step();
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
 
   const T g0 = qi - gear_ratio * qj - offset;
-  v_hat_[index] = -g0 / (dt * (1.0 + beta / M_PI));
+
+  // Eventually we will use
+  //  v̂ = −g₀ / (δt (1 + β/π)),
+  // However, since model.time_step() may change between now and when we
+  // actually solve the problem, we neglect the 1/δt factor for now, and will
+  // scale v̂ by 1/δt in CalcData().
+  v_hat_[index] = -g0 / (1.0 + beta / M_PI);
 
   const auto w_clique = model().clique_delassus(clique);
   // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
@@ -58,15 +63,6 @@ void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
   const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
   R_[index] = eps * w;
-}
-
-template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::UpdateTimeStep(const T& old_dt,
-                                                         const T& dt) {
-  const T ratio = old_dt / dt;
-  for (int k = 0; k < num_constraints(); ++k) {
-    v_hat_[k] *= ratio;
-  }
 }
 
 template <typename T>
@@ -82,7 +78,7 @@ void IcfModel<T>::CouplerConstraintsPool::CalcData(
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
-    const T& v_hat = v_hat_[k];
+    const T& v_hat = v_hat_[k] / model().time_step();
     const T& R = R_[k];
 
     const T vi = vk(i);
