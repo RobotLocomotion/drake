@@ -16,20 +16,19 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/*
- * Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
- *
- * This class stores all data that depends on the current generalized velocity
- * v, and therefore changes at each solver iteration. That is in contrast with
- * IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
- * values of v during the optimization process.
- */
+/* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
+
+This class stores all data that depends on the current generalized velocity
+v, and therefore changes at each solver iteration. That is in contrast with
+IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
+values of v during the optimization process. */
 template <typename T>
 class IcfData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfData);
 
-  // The cache holds quantities that are computed from v, so they can be reused.
+  /* The cache holds quantities that are computed from v, so they can be reused.
+   */
   struct Cache {
     void Resize(int num_bodies, int num_velocities, int num_couplers,
                 const std::vector<int>& gain_sizes,
@@ -62,11 +61,11 @@ class IcfData {
     PatchConstraintsDataPool<T> patch_constraints_data;
   };
 
-  // Struct to store pre-allocated scratch space. Unlike the cache, this scratch
-  // space is for intermediate computations, and is often cleared or overwritten
-  // as needed.
+  /* Struct to store pre-allocated scratch space. Unlike the cache, this scratch
+  space is for intermediate computations, and is often cleared or overwritten as
+  needed. */
   struct Scratch {
-    // Clear all data without changing capacity.
+    /* Clear all data without changing capacity. */
     void Clear() {
       V_WB_alpha.Clear();
       U_AbB_W_pool.Clear();
@@ -78,7 +77,7 @@ class IcfData {
       GJb_pool.Clear();
     }
 
-    // Resize the scratch space, allocating memory as needed.
+    /* Resize the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
                 int num_couplers, const std::vector<int>& gain_sizes,
                 const std::vector<int>& limit_sizes,
@@ -138,21 +137,19 @@ class IcfData {
   /* Default constructor for empty data. */
   IcfData() = default;
 
-  /*
-   * Resizes the data to accommodate the given problem, typically called at the
-   * beginning of each solve/time step.
-   *
-   * @param num_bodies Total number of bodies in the model.
-   * @param num_velocities Total number of generalized velocities.
-   * @param max_clique_size Maximum number of velocities in any clique.
-   * @param num_couplers Number of coupler constraints.
-   * @param gain_sizes Number of velocities for each gain constraint.
-   * @param limit_sizes Number of velocities for each limit constraint.
-   * @param patch_sizes Number of contact pairs for each patch constraint.
-   *
-   * TODO(vincekurtz): consider fixing num_bodies and num_velocities at
-   * construction, and only resizing based on patch_sizes here.
-   */
+  /* Resizes the data to accommodate the given problem, typically called at the
+  beginning of each solve/time step.
+
+  @param num_bodies Total number of bodies in the model.
+  @param num_velocities Total number of generalized velocities.
+  @param max_clique_size Maximum number of velocities in any clique.
+  @param num_couplers Number of coupler constraints.
+  @param gain_sizes Number of velocities for each gain constraint.
+  @param limit_sizes Number of velocities for each limit constraint.
+  @param patch_sizes Number of contact pairs for each patch constraint.
+
+  TODO(vincekurtz): consider fixing num_bodies and num_velocities at
+  construction, and only resizing based on patch_sizes here. */
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
               int num_couplers, const std::vector<int>& gain_sizes,
               const std::vector<int>& limit_sizes,

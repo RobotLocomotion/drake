@@ -246,7 +246,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
 }
 
 /* Hessian has the sparsity structure inherited from the model (with multiple
- * cliques). */
+cliques). */
 GTEST_TEST(IcfModel, CalcSparseHessian) {
   IcfModel<AutoDiffXd> model;
   MakeModel(&model, false /* multiple cliques */);

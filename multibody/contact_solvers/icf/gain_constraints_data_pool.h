@@ -15,12 +15,10 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/*
- * Data pool for torque-limited actuation constraints τ = clamp(−K⋅v + b, e).
- * This data is updated at each solver iteration, as opposed to the
- * GainConstraintsPool, which defines the constraints themselves and is fixed
- * for the lifetime of the optimization problem.
- */
+/* Data pool for torque-limited actuation constraints τ = clamp(−K⋅v + b, e).
+This data is updated at each solver iteration, as opposed to the
+GainConstraintsPool, which defines the constraints themselves and is fixed for
+the lifetime of the optimization problem. */
 template <typename T>
 class GainConstraintsDataPool {
  public:
@@ -31,15 +29,13 @@ class GainConstraintsDataPool {
   using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
 
-  // Default constructor for an empty pool.
+  /* Default constructor for an empty pool. */
   GainConstraintsDataPool() = default;
 
-  /*
-   * Resize the data pool to hold constraints of the given sizes.
-   *
-   * @param constraint_size The size (number of velocities) for each gain
-   * constraint.
-   */
+  /* Resize the data pool to hold constraints of the given sizes.
+
+  @param constraint_size The size (number of velocities) for each gain
+  constraint. */
   void Resize(const std::vector<int>& constraint_size) {
     gamma_pool_.Resize(constraint_size);
     G_pool_.Resize(constraint_size, constraint_size);
@@ -52,18 +48,18 @@ class GainConstraintsDataPool {
     }
   }
 
-  // Number of gain constraints.
+  /* Number of gain constraints. */
   int num_constraints() const { return gamma_pool_.size(); }
 
-  // Hessian block G = -∂γ/∂v (diagonal).
+  /* Hessian block G = -∂γ/∂v (diagonal). */
   ConstMatrixXView G(int k) const { return G_pool_[k]; }
   MatrixXView G(int k) { return G_pool_[k]; }
 
-  // Constraint impulse γ = -∇ℓ(v).
+  /* Constraint impulse γ = -∇ℓ(v). */
   ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
   VectorXView gamma(int k) { return gamma_pool_[k]; }
 
-  // Constraint cost ℓ(v).
+  /* Constraint cost ℓ(v). */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 

@@ -129,8 +129,6 @@ class TwoSpheres : public testing::Test {
       parser.AddModelsFromString(xml, "xml");
     }
 
-    // plant_->SetUseSampledOutputPorts(false);
-
     // TODO(amcastro-tri): parameterize test.
     plant_->set_contact_model(ContactModel::kHydroelastic);
     discrete_.plant->set_contact_model(ContactModel::kHydroelastic);

@@ -15,12 +15,10 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/*
- * Data pool for joint limit constraints (qu ≥ q ≥ ql). This data is updated at
- * each solver iteration, as opposed to the LimitConstraintsPool, which defines
- * the constraints themselves and is fixed for the lifetime of the optimization
- * problem.
- */
+/* Data pool for joint limit constraints (qu ≥ q ≥ ql). This data is updated at
+each solver iteration, as opposed to the LimitConstraintsPool, which defines
+the constraints themselves and is fixed for the lifetime of the optimization
+problem. */
 template <typename T>
 class LimitConstraintsDataPool {
  public:
@@ -31,15 +29,13 @@ class LimitConstraintsDataPool {
   using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
 
-  // Default constructor for an empty pool.
+  /* Default constructor for an empty pool. */
   LimitConstraintsDataPool() = default;
 
-  /*
-   * Resize the data pool to hold constraints of the given sizes.
-   *
-   * @param constraint_size The size (number of velocities) for each gain
-   * constraint.
-   */
+  /* Resize the data pool to hold constraints of the given sizes.
+
+  @param constraint_size The size (number of velocities) for each gain
+                         constraint. */
   void Resize(const std::vector<int>& constraint_size) {
     gamma_lower_pool_.Resize(constraint_size);
     G_lower_pool_.Resize(constraint_size, constraint_size);
@@ -55,26 +51,26 @@ class LimitConstraintsDataPool {
     }
   }
 
-  // Returns the number of limit constraints.
+  /* Returns the number of limit constraints. */
   int num_constraints() const { return gamma_lower_pool_.size(); }
 
-  // Hessian block G = -∂γ/∂v (diagonal) for lower limits.
+  /* Hessian block G = -∂γ/∂v (diagonal) for lower limits. */
   ConstMatrixXView G_lower(int k) const { return G_lower_pool_[k]; }
   MatrixXView G_lower(int k) { return G_lower_pool_[k]; }
 
-  // Hessian block G = -∂γ/∂v (diagonal) for upper limits.
+  /* Hessian block G = -∂γ/∂v (diagonal) for upper limits. */
   ConstMatrixXView G_upper(int k) const { return G_upper_pool_[k]; }
   MatrixXView G_upper(int k) { return G_upper_pool_[k]; }
 
-  // Constraint impulse γ = -∇ℓ(v) for lower limits.
+  /* Constraint impulse γ = -∇ℓ(v) for lower limits. */
   ConstVectorXView gamma_lower(int k) const { return gamma_lower_pool_[k]; }
   VectorXView gamma_lower(int k) { return gamma_lower_pool_[k]; }
 
-  // Constraint impulse γ = -∇ℓ(v) for upper limits.
+  /* Constraint impulse γ = -∇ℓ(v) for upper limits. */
   ConstVectorXView gamma_upper(int k) const { return gamma_upper_pool_[k]; }
   VectorXView gamma_upper(int k) { return gamma_upper_pool_[k]; }
 
-  // Total cost over all limit constraints (including both lower and upper).
+  /* Total cost over all limit constraints (including both lower and upper). */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 

@@ -15,11 +15,9 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/*
- * Stores data for coupler constraints. This data is updated at each solver
- * iteration, as opposed to the CouplerConstraintsPool, which helps define the
- * optimization problem.
- */
+/* Stores data for coupler constraints. This data is updated at each solver
+iteration, as opposed to the CouplerConstraintsPool, which helps define the
+optimization problem. */
 template <typename T>
 class CouplerConstraintsDataPool {
  public:
@@ -38,7 +36,7 @@ class CouplerConstraintsDataPool {
   const T& gamma(int k) const { return gamma_pool_[k]; }
   T& gamma(int k) { return gamma_pool_[k]; }
 
-  /* The constraint cost ℓ_c(v)*/
+  /* The constraint cost ℓ_c(v) */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 
