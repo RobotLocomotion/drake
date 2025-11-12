@@ -36,7 +36,7 @@ Other components:
      with v for the corresponding constraints.
    - The underlying EigenPool datatype is used to store constraint quantities in
      contiguous memory blocks. EigenPool essentially provides something like
-     std::vector<MatrixX<T>>, but with contiguous storage.
+     `std::vector<MatrixX<T>>`, but with contiguous storage.
 
 References:
   [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
