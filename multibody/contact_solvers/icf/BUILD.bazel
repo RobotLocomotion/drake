@@ -79,6 +79,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "icf_data",
+    srcs = ["icf_data.cc"],
     hdrs = ["icf_data.h"],
     deps = [
         ":coupler_constraints_data_pool",
