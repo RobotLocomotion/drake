@@ -4,12 +4,12 @@ import numpy as np
 
 from pydrake.solvers import (
     MathematicalProgram,
-    MobyLCPSolver,
+    MobyLcpSolver,
     SolverType,
 )
 
 
-class TestMobyLCPSolver(unittest.TestCase):
+class TestMobyLcpSolver(unittest.TestCase):
     def _make_prog(self):
         prog = MathematicalProgram()
         x = prog.NewContinuousVariables(3)
@@ -21,8 +21,8 @@ class TestMobyLCPSolver(unittest.TestCase):
 
     def test_mobylcp_solver(self):
         prog, x, x_expected = self._make_prog()
-        solver = MobyLCPSolver()
-        self.assertEqual(solver.solver_id(), MobyLCPSolver.id())
+        solver = MobyLcpSolver()
+        self.assertEqual(solver.solver_id(), MobyLcpSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "Moby LCP")
         self.assertEqual(solver.SolverName(), "Moby LCP")
@@ -30,3 +30,8 @@ class TestMobyLCPSolver(unittest.TestCase):
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         np.testing.assert_allclose(result.GetSolution(x), x_expected)
+
+    def test_mobylcp_solver_deprecated(self):
+        from pydrake.solvers import MobyLCPSolver
+
+        MobyLCPSolver()

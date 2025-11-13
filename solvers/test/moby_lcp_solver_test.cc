@@ -19,7 +19,7 @@ const double epsilon = 1e-6;
 template <typename Derived>
 void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                  const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
-  MobyLCPSolver<double> l;
+  MobyLcpSolver l;
 
   Eigen::VectorXd expected_z = expected_z_in;
 
@@ -57,7 +57,7 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
                        const Eigen::VectorXd& q,
                        const Eigen::VectorXd& expected_z_in,
                        bool expect_fast_pass) {
-  MobyLCPSolver<double> l;
+  MobyLcpSolver l;
 
   Eigen::VectorXd expected_z = expected_z_in;
 
@@ -195,7 +195,7 @@ GTEST_TEST(testMobyLCP, testProblem4) {
   Eigen::VectorXd z(4);
   z << 1. / 90., 2. / 45., 1. / 90., 2. / 45.;
 
-  MobyLCPSolver<double> l;
+  MobyLcpSolver l;
 
   Eigen::VectorXd fast_z;
   bool result = l.SolveLcpFast(M, q, &fast_z);
@@ -254,7 +254,7 @@ GTEST_TEST(testMobyLCP, testEmpty) {
   Eigen::MatrixXd empty_M(0, 0);
   Eigen::VectorXd empty_q(0);
   Eigen::VectorXd z;
-  MobyLCPSolver<double> l;
+  MobyLcpSolver l;
 
   bool result = l.SolveLcpFast(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
@@ -283,7 +283,7 @@ GTEST_TEST(testMobyLCP, testFailure) {
   neg_M(0, 0) = -1;
   neg_q[0] = -1;
   Eigen::VectorXd z;
-  MobyLCPSolver<double> l;
+  MobyLcpSolver l;
 
   bool result = l.SolveLcpFast(neg_M, neg_q, &z);
   EXPECT_FALSE(result);
@@ -302,6 +302,16 @@ GTEST_TEST(testMobyLCP, testFailure) {
   // interested in algorithm failure and the regularized solvers are designed
   // not to fail.
 }
+
+// Deprecated 2026-03-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(testMobyLCP, testDeprecated) {
+  MobyLCPSolver<double> dut;
+  EXPECT_TRUE(dut.enabled());
+  EXPECT_EQ(MobyLcpSolverId::id(), MobyLcpSolver::id());
+}
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace solvers
