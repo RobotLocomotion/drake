@@ -349,7 +349,7 @@ int do_main() {
     icf_params.alpha_max = FLAGS_alpha_max;
     icf_params.print_solver_stats = FLAGS_print_solver_stats;
     icf_params.use_dense_algebra = FLAGS_dense_algebra;
-    icf_params.tolerance = FLAGS_tolerance;
+    icf_params.min_tolerance = FLAGS_tolerance;
     ci.set_solver_parameters(icf_params);
   }
 

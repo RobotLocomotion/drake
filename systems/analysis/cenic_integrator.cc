@@ -197,11 +197,11 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   const Context<T>& context = this->get_context();
 
   // Set convergence tolerance based on integrator accuracy
-  if (!this->get_fixed_step_mode()) {
-    // TODO(vincekurtz): consider exposing kappa as a user-settable parameter
-    const double kappa = 0.001;
-    solver_.set_tolerance(kappa * this->get_accuracy_in_use());
-  }
+  // TODO(vincekurtz): consider exposing kappa as a user-settable parameter
+  const double kappa = 0.001;
+  const double tolerance = this->get_fixed_step_mode()
+                               ? get_solver_parameters().min_tolerance
+                               : kappa * this->get_accuracy_in_use();
 
   // Solve the optimization problem for next-step velocities
   // v = min ℓ(v; q₀, v₀, h).
@@ -211,7 +211,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   if constexpr (!std::is_same_v<T, double>) {
     throw std::runtime_error(
         "CenicIntegrator: ICF solver only supports T = double.");
-  } else if (!solver_.SolveWithGuess(model, &data_)) {
+  } else if (!solver_.SolveWithGuess(model, tolerance, &data_)) {
     throw std::runtime_error("CenicIntegrator: optimization failed.");
   }
 
