@@ -26,6 +26,8 @@ Use the following steps as a rough guide when upgrading to a new version of
 Doxygen. This document is not meant to be a comprehensive set of all steps, but
 an outline of some tools and knowledge that can be useful.
 
+This process is only supported on Ubuntu 24.04 "Noble".
+
 # Updating the Binary
 
 1. Download the official source code of the latest release from
@@ -35,9 +37,9 @@ an outline of some tools and knowledge that can be useful.
    fields such as `DOXYGEN_VERSION` and `DOXYGEN_SHA256` should be updated.
    `UBUNTU_CODENAME` may also be updated to the primary developer platform at
    the time of running (currently Ubuntu 24.04 "Noble").
-3. Run the `Dockerfile`. In short, this downloads, untars, and builds the
-   previously uploaded sources and should produce a tarball with a working
-   binary inside.
+3. Run `tools/workspace/doxygen_internal/build_binaries_with_docker`. In short,
+   this downloads, untars, and builds the previously-uploaded sources and should
+   produce a tarball with a working binary inside.
     * At this point, as a sanity check, it might not be a bad idea to untar
       the produced tarball and run `./doxygen --version`, just to make sure
       everything worked as expected.
