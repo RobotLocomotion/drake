@@ -26,10 +26,11 @@ template <typename T>
 void IcfModel<T>::GainConstraintsPool::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());
-  K_.Resize(sizes);
-  b_.Resize(sizes);
-  le_.Resize(sizes);
-  ue_.Resize(sizes);
+  const int num_elements = ssize(sizes);
+  K_.Resize(num_elements, sizes, {});
+  b_.Resize(num_elements, sizes, {});
+  le_.Resize(num_elements, sizes, {});
+  ue_.Resize(num_elements, sizes, {});
 }
 
 template <typename T>
