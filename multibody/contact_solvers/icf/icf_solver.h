@@ -29,6 +29,8 @@ struct IcfSolverParameters {
   /* Tolerance ε for the convergence conditions
        ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
        η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖). */
+  // TODO(CENIC): rethink how/where this parameter is set. Currently it has no
+  // effect in error-controlled mode.
   double tolerance{1e-8};
 
   /* Whether hessian reuse between iterations and time steps is enabled. */
@@ -64,7 +66,11 @@ struct IcfSolverStats {
   /* The total number of Hessian factorizations. */
   int num_factorizations;
 
-  /* The cost ℓ(v) at each iteration. */
+  /* The cost ℓ(v) at each iteration.
+  Note that all std::vectors below have size() == num_iterations, so cost[0] is
+  the cost at the first iteration. If the solver exits early (e.g., the initial
+  guess solves the problem to tolerances), then we have `num_iterations = 0` and
+  these vectors are empty. */
   std::vector<double> cost;
 
   /* The gradient norm ||∇ℓ(v)|| at each iteration. */
