@@ -31,12 +31,13 @@ void IcfModel<T>::LimitConstraintsPool::Resize(
     std::span<const int> constrained_clique_sizes,
     std::span<const int> constraint_to_clique) {
   DRAKE_DEMAND(constrained_clique_sizes.size() == constraint_to_clique.size());
-  ql_.Resize(constrained_clique_sizes);
-  qu_.Resize(constrained_clique_sizes);
-  q0_.Resize(constrained_clique_sizes);
-  R_.Resize(constrained_clique_sizes);
-  vl_hat_.Resize(constrained_clique_sizes);
-  vu_hat_.Resize(constrained_clique_sizes);
+  const int num_elements = ssize(constrained_clique_sizes);
+  ql_.Resize(num_elements, constrained_clique_sizes);
+  qu_.Resize(num_elements, constrained_clique_sizes);
+  q0_.Resize(num_elements, constrained_clique_sizes);
+  vl_hat_.Resize(num_elements, constrained_clique_sizes);
+  vu_hat_.Resize(num_elements, constrained_clique_sizes);
+  R_.Resize(num_elements, constrained_clique_sizes);
   constraint_sizes_.assign(constrained_clique_sizes.begin(),
                            constrained_clique_sizes.end());
   constraint_to_clique_.assign(constraint_to_clique.begin(),

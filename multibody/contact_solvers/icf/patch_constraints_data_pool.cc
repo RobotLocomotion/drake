@@ -13,11 +13,11 @@ void PatchConstraintsDataPool<T>::Resize(std::span<const int> patch_size) {
 
   // Data per patch.
   cost_pool_.resize(num_patches_);
-  G_Bp_pool_.Resize(num_patches_);
-  Gamma_Bo_W_.Resize(num_patches_);
+  G_Bp_pool_.Resize(num_patches_, 6, 6);
+  Gamma_Bo_W_.Resize(num_patches_, 6, 1);
 
   // Data per pair.
-  v_AcBc_W_.Resize(num_pairs_);
+  v_AcBc_W_.Resize(num_pairs_, 3, 1);
 }
 
 }  // namespace internal

@@ -186,15 +186,15 @@ void IcfModel<T>::PatchConstraintsPool::Resize(
   // per-patch data.
   num_cliques_.resize(num_patches);
   bodies_.resize(num_patches);
-  p_AB_W_.Resize(num_patches);
+  p_AB_W_.Resize(num_patches, 3, 1);
   dissipation_.resize(num_patches);
   static_friction_.resize(num_patches);
   dynamic_friction_.resize(num_patches);
   Rt_.resize(num_patches);
 
   // per-pair data.
-  normal_W_.Resize(num_pairs);
-  p_BC_W_.Resize(num_pairs);
+  p_BC_W_.Resize(num_pairs, 3, 1);
+  normal_W_.Resize(num_pairs, 3, 1);
   stiffness_.resize(num_pairs);
   fn0_.resize(num_pairs);
   n0_.resize(num_pairs);

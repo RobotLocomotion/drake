@@ -28,21 +28,21 @@ GTEST_TEST(EigenPoolTest, ResizeForFixedSizedElements) {
   EXPECT_EQ(pool.size(), 0);
 
   // Reserve some memory by resizing, then clearing
-  pool.Resize(10);
+  pool.Resize(10, 3, 3);
   pool.Clear();
   EXPECT_EQ(pool.size(), 0);
 
   // We already reserved.
   {
     drake::test::LimitMalloc guard;
-    pool.Resize(3);
+    pool.Resize(4, 3, 3);
   }
-  EXPECT_EQ(pool.size(), 3);
+  EXPECT_EQ(pool.size(), 4);
 
   for (int i = 0; i < pool.size(); ++i) {
     pool[i] = i * S33;
   }
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < 4; ++i) {
     EXPECT_EQ(pool[i], Matrix3d(i * S33));
   }
 
@@ -58,8 +58,7 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfVectorX) {
   {
     // We expect two allocations. One for scalars and one for meta-data (sizes).
     drake::test::LimitMalloc guard({.max_num_allocations = 2});
-    pool.Resize(sizes);
-    // N.B. pool.Resize(sizes, sizes) is valid also, though "cols" is ignored.
+    pool.Resize(3, sizes);
   }
   EXPECT_EQ(pool.size(), 3);
   EXPECT_EQ(pool[0].size(), 3);
@@ -83,7 +82,7 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixX) {
   {
     // We expect two allocations. One for scalars and one for meta-data (sizes).
     drake::test::LimitMalloc guard({.max_num_allocations = 2});
-    pool.Resize(rows, cols);
+    pool.Resize(3, rows, cols);
   }
   EXPECT_EQ(pool.size(), 3);
   EXPECT_EQ(pool[0].size(), 3);
@@ -106,7 +105,7 @@ GTEST_TEST(EigenPoolTest, ResizeForPoolsOfMatrixWithFixedRows) {
   {
     // We expect two allocations. One for scalars and one for meta-data (sizes).
     drake::test::LimitMalloc guard({.max_num_allocations = 2});
-    pool.Resize(cols);
+    pool.Resize(4, {}, cols);
   }
   EXPECT_EQ(pool.size(), 4);
   EXPECT_EQ(pool[0].size(), 3);
