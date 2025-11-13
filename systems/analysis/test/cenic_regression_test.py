@@ -45,6 +45,59 @@ class CenicRegressionTest(unittest.TestCase):
   </worldbody>
 </mujoco>"""
 
+        self.gripper_xml = """
+<?xml version="1.0"?>
+<mujoco model="robot">
+    <worldbody>
+    <geom name="table" type="box" size="0.5 0.5 0.02"/>
+    <body>
+        <joint type="slide" />
+        <geom name="post" type="box" pos="0 0 0.3" size="0.02 0.02 0.1"/>
+        <geom name="finger1" type="box" pos="0.01 0.025 0.39"
+          size="0.005 0.04 0.005"/>
+        <geom name="finger2" type="box" 
+          pos="-0.01 0.025 0.39" size="0.005 0.04 0.005"/>
+    </body>
+    <body>
+        <joint type="free" />
+        <geom name="manipuland" type="box" 
+          pos="0.0 0.05 0.36" euler="10 0 0" size="0.00501 0.005 0.04"/>
+    </body>
+    </worldbody>
+</mujoco>"""
+
+        self.clutter_xml = """
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <geom name="base" type="box" pos="0.0 0.0 0.0" size="0.05 0.05 0.002" />
+    <geom name="left" type="box" pos="0.05 0.0 0.05" size="0.002 0.05 0.05" />
+    <geom name="right" type="box" pos="-0.05 0.0 0.05" size="0.002 0.05 0.05" />
+    <geom name="front" type="box" pos="0.0 0.05 0.05" size="0.05 0.002 0.05" />
+    <geom name="back" type="box" pos="0.0 -0.05 0.05" size="0.05 0.002 0.05" />
+    <body>
+      <joint type="free"/>
+      <geom name="ball1" type="sphere" pos="0.0 0.0 0.05" size="0.01" />
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball2" type="sphere" pos="0.0001 0.0 0.07" size="0.01" />
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball3" type="sphere" pos="0.0 0.0001 0.09" size="0.01" />
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball4" type="sphere" pos="-0.0001 0.0 0.11" size="0.01" />
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball5" type="sphere" pos="0.0 -0.0001 0.13" size="0.01" />
+    </body>
+  </worldbody>
+</mujoco>"""
+
     def create_system_setup(self, xml, time_step, use_hydroelastics):
         """Do some boilerplate system setup for the given MJCF model."""
         builder = DiagramBuilder()
@@ -88,7 +141,7 @@ class CenicRegressionTest(unittest.TestCase):
         plant_context = plant.GetMyContextFromRoot(context)
         return simulator, plant_context
 
-    def compare_with_discrete_sap(self, xml, x0, sim_time, use_hydro, tol):
+    def compare_with_discrete_sap(self, xml, x0, sim_time, use_hydro):
         """Run a short simulation comparing CENIC with discrete SAP."""
         # Run a short simulation with CENIC
         builder, plant = self.create_system_setup(
@@ -110,8 +163,23 @@ class CenicRegressionTest(unittest.TestCase):
         simulator.AdvanceTo(sim_time)
         q_discrete = plant.GetPositions(plant_context)
 
-        # Check that the final configurations are similar.
-        np.testing.assert_allclose(q_cenic, q_discrete, atol=tol, rtol=tol)
+        # Check that the final configurations are similar. Tolerances are fairly
+        # loose, since we don't really expect the results to align exactly.
+        np.testing.assert_allclose(q_cenic, q_discrete, atol=5e-2, rtol=5e-2)
+
+    def test_setting_icf_params(self):
+        """Make sure ICF parameters are accessible from python."""
+        builder, plant = self.create_system_setup(
+            xml=self.cylinder_xml, time_step=0.0, use_hydroelastics=True
+        )
+        simulator, plant_context = self.create_cenic_simulation(builder, plant)
+        ci = simulator.get_mutable_integrator()
+
+        params = ci.get_solver_parameters()
+        self.assertFalse(params.max_iterations == 42)
+        params.max_iterations = 42
+        ci.set_solver_parameters(params)
+        self.assertTrue(ci.get_solver_parameters().max_iterations == 42)
 
     def test_cylinder_hydro(self):
         """Drop a simple cylinder with point contact on a table."""
@@ -125,7 +193,6 @@ class CenicRegressionTest(unittest.TestCase):
             x0=x0,
             sim_time=1.0,
             use_hydro=True,
-            tol=5e-2,
         )
 
     def test_cylinder_point(self):
@@ -140,7 +207,6 @@ class CenicRegressionTest(unittest.TestCase):
             x0=x0,
             sim_time=1.0,
             use_hydro=False,
-            tol=5e-2,
         )
 
     def test_damped_double_pendulum(self):
@@ -152,5 +218,14 @@ class CenicRegressionTest(unittest.TestCase):
             x0=x0,
             sim_time=2.0,
             use_hydro=False,
-            tol=5e-2,
+        )
+
+    def test_gripper(self):
+        """Drop an object wedged between two "fingers" of a gripper."""
+        x0 = np.array([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self.compare_with_discrete_sap(
+            xml=self.gripper_xml,
+            x0=x0,
+            sim_time=2.0,
+            use_hydro=True,
         )
