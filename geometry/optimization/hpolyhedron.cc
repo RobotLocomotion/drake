@@ -935,7 +935,9 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   return inbody;
 }
 
-bool CheckIntersectionAndPointContainmentConstraints(const HPolyhedron& inbody, const HPolyhedron& circumbody, const Eigen::MatrixXd& points_to_contain,
+bool CheckIntersectionAndPointContainmentConstraints(
+    const HPolyhedron& inbody, const HPolyhedron& circumbody,
+    const Eigen::MatrixXd& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
     const bool keep_whole_intersection, const double intersection_padding) {
   const double kConstraintTol = 1e-6;
@@ -950,7 +952,8 @@ bool CheckIntersectionAndPointContainmentConstraints(const HPolyhedron& inbody, 
   // Check intersection with each intersecting polytope
   for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
     if (keep_whole_intersection) {
-      const HPolyhedron intersection = circumbody.Intersection(intersecting_polytopes[i]);
+      const HPolyhedron intersection =
+          circumbody.Intersection(intersecting_polytopes[i]);
       if (!intersection.ContainedIn(inbody, kConstraintTol)) {
         return false;
       }
@@ -959,7 +962,12 @@ bool CheckIntersectionAndPointContainmentConstraints(const HPolyhedron& inbody, 
       solvers::VectorXDecisionVariable x =
           prog.NewContinuousVariables(inbody.ambient_dimension(), "x");
       intersecting_polytopes[i].AddPointInSetConstraints(&prog, x);
-      prog.AddLinearConstraint(inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf), inbody.b() - VectorXd::Constant(inbody.b().rows(), intersection_padding - kConstraintTol), x);
+      prog.AddLinearConstraint(
+          inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf),
+          inbody.b() -
+              VectorXd::Constant(inbody.b().rows(),
+                                 intersection_padding - kConstraintTol),
+          x);
       solvers::MathematicalProgramResult result = Solve(prog);
       if (!result.is_success()) {
         return false;
@@ -1011,14 +1019,16 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       1 - std::pow(min_volume_ratio, 1.0 / ambient_dimension());
 
   // A multiplier for cost in LPs that find how far a face can be moved inward
-  // before losing an intersection.  LP and interpretation of the optimal cost vary depending on `keep_whole_intersection` parameter value.
+  // before losing an intersection.  LP and interpretation of the optimal cost
+  // vary depending on `keep_whole_intersection` parameter value.
   const int cost_multiplier = keep_whole_intersection ? -1 : 1;
 
-  // If scaled circumbody still meets the intersection constraint with a polytope in
-  // `intersecting_polytopes`, then we don't need to worry about losing this
-  // intersection in the face translation algorithm because the scaled
-  // circumbody will always be a subset of the inbody.
-  const HPolyhedron scaled_circumbody = circumbody.Scale(min_volume_ratio, circumbody_ellipsoid_center);
+  // If scaled circumbody still meets the intersection constraint with a
+  // polytope in `intersecting_polytopes`, then we don't need to worry about
+  // losing this intersection in the face translation algorithm because the
+  // scaled circumbody will always be a subset of the inbody.
+  const HPolyhedron scaled_circumbody =
+      circumbody.Scale(min_volume_ratio, circumbody_ellipsoid_center);
   std::vector<drake::geometry::optimization::HPolyhedron>
       reduced_intersecting_polytopes;
   reduced_intersecting_polytopes.reserve(intersecting_polytopes.size());
@@ -1028,13 +1038,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
     } else {
       bool trivially_satisfied =
-        CheckIntersectionAndPointContainmentConstraints(
-          scaled_circumbody,
-          circumbody,
-          Eigen::MatrixXd(0, 0),
-          std::vector<HPolyhedron>{intersecting_polytopes[i]},
-          keep_whole_intersection,
-          intersection_padding);
+          CheckIntersectionAndPointContainmentConstraints(
+              scaled_circumbody, circumbody, Eigen::MatrixXd(0, 0),
+              std::vector<HPolyhedron>{intersecting_polytopes[i]},
+              keep_whole_intersection, intersection_padding);
       if (trivially_satisfied) {
         reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
       }
@@ -1087,21 +1094,27 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
              intersection_ind < ssize(reduced_intersecting_polytopes);
              ++intersection_ind) {
           MathematicalProgram prog;
-            solvers::VectorXDecisionVariable x =
-                prog.NewContinuousVariables(ambient_dimension(), "x");
-            
+          solvers::VectorXDecisionVariable x =
+              prog.NewContinuousVariables(ambient_dimension(), "x");
+
           if (keep_whole_intersection) {
             const HPolyhedron intersection = inbody.Intersection(
                 reduced_intersecting_polytopes[intersection_ind]);
-            
+
             prog.AddLinearCost(-inbody.A().row(i), 0, x);
             intersection.AddPointInSetConstraints(&prog, x);
           } else {
-            solvers::VectorXDecisionVariable b_i = prog.NewContinuousVariables(1);
+            solvers::VectorXDecisionVariable b_i =
+                prog.NewContinuousVariables(1);
 
-            reduced_intersecting_polytopes[intersection_ind].AddPointInSetConstraints(&prog, x);
-            prog.AddLinearConstraint(inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf), inbody.b() - VectorXd::Constant(inbody.b().rows(), intersection_padding), x);
-            
+            reduced_intersecting_polytopes[intersection_ind]
+                .AddPointInSetConstraints(&prog, x);
+            prog.AddLinearConstraint(
+                inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf),
+                inbody.b() -
+                    VectorXd::Constant(inbody.b().rows(), intersection_padding),
+                x);
+
             // A(i) x <= b(i) - intersection_padding.
             RowVectorXd row = Eigen::RowVectorXd(inbody.A().cols() + 1);
             row << inbody.A().row(i), -1.0;
@@ -1115,7 +1128,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
           if (result.is_success()) {
             if (cost_multiplier * result.get_optimal_cost() +
-                kIntersectionFeasibilityPad >
+                    kIntersectionFeasibilityPad >
                 b_i_min_allowed) {
               b_i_min_allowed = cost_multiplier * result.get_optimal_cost() +
                                 kIntersectionFeasibilityPad;
@@ -1172,18 +1185,14 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   // Check if intersection and containment constraints are still satisfied after
   // affine transformation, and revert if not.  There is currently no way to
   // constrain that the affine transformation upholds these constraints.
-  if (not CheckIntersectionAndPointContainmentConstraints(
-        inbody,
-        circumbody,
-        points_to_contain,
-        intersecting_polytopes,
-        keep_whole_intersection,
-        intersection_padding)) {
-      inbody = inbody_before_affine_transformation;
-      log()->debug(
-          "Reverting affine transformation due to loss of containment "
-          " of point or intersection with other polytope");
-    }
+  if (!CheckIntersectionAndPointContainmentConstraints(
+          inbody, circumbody, points_to_contain, intersecting_polytopes,
+          keep_whole_intersection, intersection_padding)) {
+    inbody = inbody_before_affine_transformation;
+    log()->debug(
+        "Reverting affine transformation due to loss of containment "
+        " of point or intersection with other polytope");
+  }
   return inbody;
 }
 
