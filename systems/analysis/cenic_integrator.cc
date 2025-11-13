@@ -63,18 +63,7 @@ void CenicIntegrator<T>::DoInitialize() {
   builder_ = std::make_unique<IcfBuilder<T>>(plant(), plant_context);
 
   // Allocate scratch variables
-  scratch_.v_guess.resize(plant().num_velocities());
-  scratch_.q.resize(nq);
-  scratch_.z.resize(nz);
-  scratch_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
-  scratch_.actuation_feedback.resize(nv);
-  scratch_.external_feedback.resize(nv);
-  scratch_.gu0.resize(nv);
-  scratch_.ge0.resize(nv);
-  scratch_.gu_prime.resize(nv);
-  scratch_.ge_prime.resize(nv);
-  scratch_.x_prime.resize(nq + nv + nz);
-  scratch_.N.resize(nq, nv);
+  scratch_.Resize(plant(), nz);
 
   // Allocate intermediate states for error control
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
@@ -136,7 +125,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 
   // Solve for the full step x_{t+h}. We'll need this regardless of whether
   // error control is enabled or not.
-  VectorX<T>& v_guess = scratch_.v_guess;
+  VectorX<T>& v_guess = scratch_.v;
   v_guess = plant().GetVelocities(plant_context);
   ComputeNextContinuousState(model_at_x0_, v_guess, x_next_full_.get());
 
@@ -412,6 +401,25 @@ T CenicIntegrator<T>::CalcStateChangeNorm(
   using std::isnan;
   if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
   return x_norm;
+}
+
+template <typename T>
+void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
+                                         int nz) {
+  const int nv = plant.num_velocities();
+  const int nq = plant.num_positions();
+  v.resize(nv);
+  q.resize(nq);
+  z.resize(nz);
+  f_ext = std::make_unique<MultibodyForces<T>>(plant);
+  actuation_feedback.resize(nv);
+  external_feedback.resize(nv);
+  gu0.resize(nv);
+  ge0.resize(nv);
+  gu_prime.resize(nv);
+  ge_prime.resize(nv);
+  x_prime.resize(nq + nv + nz);
+  N.resize(nq, nv);
 }
 
 }  // namespace systems

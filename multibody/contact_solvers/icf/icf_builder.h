@@ -69,6 +69,15 @@ class IcfBuilder {
   void UpdateModel(const T& time_step, IcfModel<T>* model) const;
 
  private:
+  /* Scratch workspace data to build the model. */
+  struct Scratch {
+    explicit Scratch(const MultibodyPlant<T>& plant);
+
+    Matrix6X<T> J_V_WB;        // size 6 x nv
+    VectorX<T> accelerations;  // size nv
+    MultibodyForces<T> forces;
+  };
+
   /* Compute geometry data and store it internally for later use */
   void CalcGeometryContactData(const systems::Context<T>& context);
 
@@ -142,14 +151,8 @@ class IcfBuilder {
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;
   std::vector<geometry::ContactSurface<T>> surfaces_;
 
-  /* Scratch workspace data to build the model. */
-  struct Scratch {
-    MatrixX<T> M;        // Dense mass matrix computed by MbP.
-    Matrix6X<T> J_V_WB;  // Dense spatial velocity Jacobian.
-    VectorX<T> tmp_v1;   // Scratch of size num_velocities.
-    std::unique_ptr<MultibodyForces<T>> forces;
-  };
-  mutable Scratch scratch_;
+  // Storage for intermediate computations, often overwritten.
+  Scratch scratch_;
 };
 
 }  // namespace internal
