@@ -7,6 +7,9 @@ template <typename T>
 Event<T>::~Event() = default;
 
 template <typename T>
+EventCollection<T>::~EventCollection() = default;
+
+template <typename T>
 CompositeEventCollection<T>::~CompositeEventCollection() = default;
 
 }  // namespace systems
@@ -39,3 +42,13 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::UnrestrictedUpdateEvent);
+
+DRAKE_DEFINE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    ::drake::systems::EventCollection, ::drake::systems::DiscreteUpdateEvent);
+
+DRAKE_DEFINE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    ::drake::systems::EventCollection,
+    ::drake::systems::UnrestrictedUpdateEvent);
+
+DRAKE_DEFINE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    ::drake::systems::EventCollection, ::drake::systems::PublishEvent);

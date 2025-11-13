@@ -117,6 +117,12 @@ struct scalar_phase_t<2> {
 template SomeType<double>; \
 template SomeType<::drake::AutoDiffXd>; \
 template SomeType<::drake::symbolic::Expression>;
+
+#define DRAKE_DEFINE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeTypeOuter, SomeTypeInner) \
+template class SomeTypeOuter<SomeTypeInner<double>>; \
+template class SomeTypeOuter<SomeTypeInner<::drake::AutoDiffXd>>; \
+template class SomeTypeOuter<SomeTypeInner<::drake::symbolic::Expression>>;
 #else
 #define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
     SomeType) \
@@ -152,6 +158,13 @@ static_assert(true);
 extern template SomeType<double>; \
 extern template SomeType<::drake::AutoDiffXd>; \
 extern template SomeType<::drake::symbolic::Expression>;
+
+#define DRAKE_DECLARE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeTypeOuter, SomeTypeInner) \
+extern template class SomeTypeOuter<SomeTypeInner<double>>; \
+extern template class SomeTypeOuter<SomeTypeInner<::drake::AutoDiffXd>>; \
+extern template class SomeTypeOuter<SomeTypeInner< \
+    ::drake::symbolic::Expression>>;
 
 /// Declares that template instantiations exist for Drake's default nonsymbolic
 /// scalars.  This should only be used in .h files, never in .cc files.

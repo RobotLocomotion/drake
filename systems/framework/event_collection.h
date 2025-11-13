@@ -78,7 +78,7 @@ class EventCollection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventCollection);
 
-  virtual ~EventCollection() {}
+  virtual ~EventCollection();
 
   /**
    * Clears all the events maintained by `this` then adds all of the events in
@@ -757,3 +757,13 @@ DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::DiagramCompositeEventCollection);
+
+DRAKE_DECLARE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    ::drake::systems::EventCollection, ::drake::systems::DiscreteUpdateEvent);
+
+DRAKE_DECLARE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    ::drake::systems::EventCollection,
+    ::drake::systems::UnrestrictedUpdateEvent);
+
+DRAKE_DECLARE_NESTED_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    ::drake::systems::EventCollection, ::drake::systems::PublishEvent);
