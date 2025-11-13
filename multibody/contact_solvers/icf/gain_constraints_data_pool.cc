@@ -8,8 +8,9 @@ namespace internal {
 
 template <typename T>
 void GainConstraintsDataPool<T>::Resize(std::span<const int> constraint_size) {
-  gamma_pool_.Resize(constraint_size);
-  G_pool_.Resize(constraint_size, constraint_size);
+  const int num_elements = ssize(constraint_size);
+  gamma_pool_.Resize(num_elements, constraint_size);
+  G_pool_.Resize(num_elements, constraint_size, constraint_size);
 
   // We will only ever update the diagonal entries in Gk, so that off-diagonal
   // entires will forever remain zero.
