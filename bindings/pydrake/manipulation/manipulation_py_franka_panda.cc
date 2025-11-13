@@ -25,10 +25,11 @@ void DefineManipulationFrankaPanda(py::module m) {
   m.attr("kPandaArmNumJoints") = kPandaArmNumJoints;
 
   // Control mode constants. PandaControlMode is a uint64_t typedef, so we
-  // expose the constants as integers. Python's native bitwise operators (| and &)
-  // work with these integers, and pybind11 automatically converts them to uint64_t
-  // when calling C++ functions.
-  py::object control_mode_class = py::module_::import("types").attr("SimpleNamespace")();
+  // expose the constants as integers. Python's native bitwise operators (| and
+  // &) work with these integers, and pybind11 automatically converts them to
+  // uint64_t when calling C++ functions.
+  py::object control_mode_class =
+      py::module_::import("types").attr("SimpleNamespace")();
   control_mode_class.attr("__doc__") =
       "Control modes for the Panda robot. These can be bitwise OR'd together.";
   control_mode_class.attr("kNone") = py::int_(PandaControlModes::kNone);

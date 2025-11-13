@@ -35,7 +35,7 @@ class TestFrankaPanda(unittest.TestCase):
             mut.PandaControlMode.kPosition
             | mut.PandaControlMode.kVelocity
             | mut.PandaControlMode.kTorque,
-            7
+            7,
         )
 
     def test_franka_panda_command_receiver(self):

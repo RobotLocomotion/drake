@@ -92,7 +92,7 @@ Precondition:
             const char* doc =
 R"""(Parameter ``control_mode``:
     is a bitset of one or more control mode constants defined in
-    lcmt_panda_status::CONTROL_MODE_{POSITION,VELOCITY,TORQUE}.)""";
+    PandaControlModes namespace. Use bitwise OR to combine modes.)""";
           } ctor;
           // Symbol: drake::manipulation::franka_panda::PandaCommandReceiver::get_commanded_position_output_port
           struct /* get_commanded_position_output_port */ {
@@ -157,7 +157,7 @@ See also:
             const char* doc =
 R"""(Parameter ``control_mode``:
     is a bitset of one or more control mode constants defined in
-    lcmt_panda_status::CONTROL_MODE_{POSITION,VELOCITY,TORQUE}.)""";
+    PandaControlModes namespace. Use bitwise OR to combine modes.)""";
           } ctor;
           // Symbol: drake::manipulation::franka_panda::PandaCommandSender::get_position_input_port
           struct /* get_position_input_port */ {
@@ -175,6 +175,17 @@ R"""(Parameter ``control_mode``:
             const char* doc = R"""()""";
           } get_velocity_input_port;
         } PandaCommandSender;
+        // Symbol: drake::manipulation::franka_panda::PandaControlMode
+        struct /* PandaControlMode */ {
+          // Source: drake/manipulation/franka_panda/panda_constants.h
+          const char* doc =
+R"""(Type alias for Panda control mode bitfields. Control modes can be
+bitwise OR'd together to enable multiple control modes simultaneously.
+Values match lcmt_panda_status::CONTROL_MODE_* constants.)""";
+        } PandaControlMode;
+        // Symbol: drake::manipulation::franka_panda::PandaControlModes
+        struct /* PandaControlModes */ {
+        } PandaControlModes;
         // Symbol: drake::manipulation::franka_panda::PandaStatusReceiver
         struct /* PandaStatusReceiver */ {
           // Source: drake/manipulation/franka_panda/panda_status_receiver.h
@@ -324,6 +335,11 @@ See also:
             const char* doc = R"""()""";
           } get_velocity_measured_input_port;
         } PandaStatusSender;
+        // Symbol: drake::manipulation::franka_panda::to_int
+        struct /* to_int */ {
+          // Source: drake/manipulation/franka_panda/panda_constants.h
+          const char* doc = R"""()""";
+        } to_int;
       } franka_panda;
     } manipulation;
   } drake;
