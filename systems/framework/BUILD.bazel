@@ -236,7 +236,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "framework_common",
-    srcs = [],
+    srcs = ["framework_common.cc"],
     hdrs = [
         "framework_common.h",
     ],

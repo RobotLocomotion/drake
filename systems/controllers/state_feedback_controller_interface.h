@@ -15,6 +15,10 @@ namespace controllers {
  */
 template <typename T>
 class StateFeedbackControllerInterface {
+ protected:
+  StateFeedbackControllerInterface() {}
+  virtual ~StateFeedbackControllerInterface();
+
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackControllerInterface);
 
@@ -32,12 +36,11 @@ class StateFeedbackControllerInterface {
    * Returns the output port for computed control.
    */
   virtual const OutputPort<T>& get_output_port_control() const = 0;
-
- protected:
-  StateFeedbackControllerInterface() {}
-  virtual ~StateFeedbackControllerInterface() {}
 };
 
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::StateFeedbackControllerInterface);
