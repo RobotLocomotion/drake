@@ -127,6 +127,7 @@ drake_cc_library(
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
         "//multibody/contact_solvers/icf:icf_builder",
         "//multibody/contact_solvers/icf:icf_core",
+        "//multibody/contact_solvers/icf:icf_solver",
         "//multibody/plant",
     ],
 )
