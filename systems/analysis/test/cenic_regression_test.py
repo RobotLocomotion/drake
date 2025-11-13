@@ -16,6 +16,20 @@ from pydrake.systems.framework import DiagramBuilder
 class CenicRegressionTest(unittest.TestCase):
     """Some basic high-level simulation tests for the CENIC integrator."""
 
+    def setUp(self):
+        """Define some little MJCF models for testing."""
+        self.cylinder_xml = """
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <geom name="table_top" type="box" size="0.6 1.1 0.05"/>
+    <body>
+      <joint type="free"/>
+      <geom name="object" type="cylinder" euler="80 0 0" size="0.1 0.1"/>
+    </body>
+  </worldbody>
+</mujoco>"""
+
     def create_system_setup(self, xml, time_step, use_hydroelastics):
         """Do some boilerplate system setup for the given MJCF model."""
         builder = DiagramBuilder()
@@ -59,45 +73,57 @@ class CenicRegressionTest(unittest.TestCase):
         plant_context = plant.GetMyContextFromRoot(context)
         return simulator, plant_context
 
-    def test_cylinder_on_table(self):
-        """Drop a simple cylinder on a table."""
-        # MJCF model of the system
-        xml = """
-<?xml version="1.0"?>
-<mujoco model="robot">
-  <worldbody>
-    <geom name="table_top" type="box" size="0.6 1.1 0.05"/>
-    <body>
-      <joint type="free"/>
-      <geom name="object" type="cylinder" euler="80 0 0" size="0.1 0.1"/>
-    </body>
-  </worldbody>
-</mujoco>"""
-
-        # Initial state x = [q, v], with some non-trivial sideways velocity
-        x0 = np.array(
-            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
-        )
-
+    def compare_with_discrete_sap(self, xml, x0, sim_time, use_hydro, tol):
+        """Run a short simulation comparing CENIC with discrete SAP."""
         # Run a short simulation with CENIC
         builder, plant = self.create_system_setup(
-            xml=xml, time_step=0.0, use_hydroelastics=True
+            xml=xml, time_step=0.0, use_hydroelastics=use_hydro
         )
         simulator, plant_context = self.create_cenic_simulation(builder, plant)
         plant.SetPositionsAndVelocities(plant_context, x0)
-        simulator.AdvanceTo(1.0)
+        simulator.AdvanceTo(sim_time)
         q_cenic = plant.GetPositions(plant_context)
 
         # Run the same simulation with discrete SAP
         builder, plant = self.create_system_setup(
-            xml=xml, time_step=0.001, use_hydroelastics=True
+            xml=xml, time_step=0.001, use_hydroelastics=use_hydro
         )
         simulator, plant_context = self.create_discrete_simulation(
             builder, plant
         )
         plant.SetPositionsAndVelocities(plant_context, x0)
-        simulator.AdvanceTo(1.0)
+        simulator.AdvanceTo(sim_time)
         q_discrete = plant.GetPositions(plant_context)
 
-        # Check that the final configurations are similar
-        self.assertTrue(np.allclose(q_cenic, q_discrete, atol=5e-2))
+        # Check that the final configurations are similar.
+        np.testing.assert_allclose(q_cenic, q_discrete, atol=tol, rtol=tol)
+
+    def test_cylinder_hydro(self):
+        """Drop a simple cylinder with point contact on a table."""
+        # Initial state x = [q, v], with some non-trivial sideways velocity
+        x0 = np.array(
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+        )
+
+        self.compare_with_discrete_sap(
+            xml=self.cylinder_xml,
+            x0=x0,
+            sim_time=1.0,
+            use_hydro=True,
+            tol=5e-2,
+        )
+
+    def test_cylinder_point(self):
+        """Drop a simple cylinder with point contact on a table."""
+        # Initial state x = [q, v], with some non-trivial sideways velocity
+        x0 = np.array(
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+        )
+
+        self.compare_with_discrete_sap(
+            xml=self.cylinder_xml,
+            x0=x0,
+            sim_time=1.0,
+            use_hydro=False,
+            tol=5e-2,
+        )
