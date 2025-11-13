@@ -80,7 +80,7 @@ constexpr std::array<StaticSolverInterface, 13> kKnownSolvers{
     StaticSolverInterface::Make<GurobiSolver>(),
     StaticSolverInterface::Make<IpoptSolver>(),
     StaticSolverInterface::Make<LinearSystemSolver>(),
-    StaticSolverInterface::Make<MobyLCPSolver<double>>(),
+    StaticSolverInterface::Make<MobyLcpSolver>(),
     StaticSolverInterface::Make<MosekSolver>(),
     StaticSolverInterface::Make<NloptSolver>(),
     StaticSolverInterface::Make<OsqpSolver>(),
@@ -291,7 +291,7 @@ void GetAvailableSolversHelper(
     case ProgramType::kLCP: {
       AddSolversIfAvailable<
           // Preferred solver.
-          MobyLCPSolver<double>,
+          MobyLcpSolver,
           // Dispreferred solver (generic nonlinear solver).
           SnoptSolver>(result);
       if (!conservative) {
@@ -308,9 +308,9 @@ void GetAvailableSolversHelper(
         // other case statements shown above.
         AddSolversIfAvailable<LinearSystemSolver, EqualityConstrainedQPSolver,
                               MosekSolver, GurobiSolver, ClarabelSolver,
-                              OsqpSolver, ClpSolver, MobyLCPSolver<double>,
-                              SnoptSolver, IpoptSolver, NloptSolver, CsdpSolver,
-                              ScsSolver>(result);
+                              OsqpSolver, ClpSolver, MobyLcpSolver, SnoptSolver,
+                              IpoptSolver, NloptSolver, CsdpSolver, ScsSolver>(
+            result);
       }
       return;
     }
