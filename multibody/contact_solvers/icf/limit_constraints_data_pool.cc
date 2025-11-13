@@ -8,10 +8,11 @@ namespace internal {
 
 template <typename T>
 void LimitConstraintsDataPool<T>::Resize(std::span<const int> constraint_size) {
-  gamma_lower_pool_.Resize(constraint_size);
-  G_lower_pool_.Resize(constraint_size, constraint_size);
-  gamma_upper_pool_.Resize(constraint_size);
-  G_upper_pool_.Resize(constraint_size, constraint_size);
+  const int num_elements = ssize(constraint_size);
+  gamma_lower_pool_.Resize(num_elements, constraint_size);
+  G_lower_pool_.Resize(num_elements, constraint_size, constraint_size);
+  gamma_upper_pool_.Resize(num_elements, constraint_size);
+  G_upper_pool_.Resize(num_elements, constraint_size, constraint_size);
 
   // We will only ever update the diagonal entries in Gk, so that
   // off-diagonal entires will forever remain zero.

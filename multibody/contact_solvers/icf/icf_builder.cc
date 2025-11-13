@@ -270,7 +270,7 @@ void IcfBuilder<T>::UpdateModel(
   // Compute spatial velocity Jacobians J_WB for all bodies.
   const auto& world_frame = plant().world_frame();
   EigenPool<Matrix6X<T>>& J_WB = params->J_WB;
-  J_WB.Resize(body_jacobian_cols_);
+  J_WB.Resize(plant().num_bodies(), 6, body_jacobian_cols_);
 
   for (int b = 0; b < plant().num_bodies(); ++b) {
     const auto& body = plant().get_body(BodyIndex(b));
