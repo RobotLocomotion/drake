@@ -601,6 +601,13 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "cenic_regression_test",
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 drake_cc_googletest(
     name = "batch_eval_test",
     # This test launches 2 threads to test both serial and parallel code paths
