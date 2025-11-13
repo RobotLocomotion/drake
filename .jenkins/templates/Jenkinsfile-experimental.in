@@ -8,7 +8,7 @@
 // pull requests, but we should check anyways.
 if(env.CHANGE_ID) {
   if (pullRequest.labels.contains('status: defer ci')) {
-    currentBuild.result == 'ABORTED'
+    currentBuild.result = 'ABORTED'
     throw new Exception(
       "This pull request is labeled 'defer ci'. " +
       "This label will need to be removed in order for CI to pass " +

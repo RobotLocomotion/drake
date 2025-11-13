@@ -1,3 +1,5 @@
+import jenkins.model.Jenkins
+
 /**
  * Performs the checkout step for drake (cloning into WORKSPACE/'src') and
  * drake-ci (cloning into WORKSPACE/'ci').
@@ -170,5 +172,23 @@ def getNodeLabel() {
   }
   else {
     return null
+  }
+}
+
+/**
+ Aborts the current build if there is a newer job in the queue.
+ */
+def maybeAbortBuild() {
+  def jenkins = Jenkins.instance
+  def buildNumber = env.BUILD_NUMBER.toInteger()
+  def newerQueued = jenkins.queue.items.find { qi ->
+    qi.task.name == env.JOB_NAME && qi.params != null && qi.id > buildNumber
+  }
+
+  if (newerQueued) {
+    currentBuild.result = 'ABORTED'
+    throw new Exception(
+      "There is a newer job in the queue, which subsumes the current job."
+    )
   }
 }
