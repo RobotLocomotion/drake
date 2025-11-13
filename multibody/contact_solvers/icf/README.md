@@ -16,7 +16,7 @@ This implementation of ICF focuses on simplicity and performance:
 
 Key components and how they talk to each other:
 
-   - IcfSolver: Coming soon (#23747), this will solve the convex problem itself.
+   - IcfSolver: Solves the convex problem itself, e.g., does Newton iterations.
    - IcfBuilder: Constructs the optimization problem. The builder is the only
      component that knows about MultibodyPlant.
    - IcfModel: Represents the convex ICF problem min ℓ(v; q₀, v₀, δt) for a
