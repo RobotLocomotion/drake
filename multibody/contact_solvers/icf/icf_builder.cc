@@ -97,15 +97,10 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
 }
 
 template <typename T>
-IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant) : plant_(&plant) {
+IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
+    : plant_(&plant), scratch_(plant) {
   using std::isinf;
   const int nv = plant.num_velocities();
-
-  // TODO(vincekurtz): rethink scratch. I think we can get away with just forces
-  scratch_.Resize(plant);
-  // scratch_.J_V_WB.resize(6, nv);
-  // scratch_.accelerations.resize(nv);
-  // scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
 
   // Define problem cliques based on the spanning forest of the plant. Each tree
   // gets its own clique, and only trees with a non-zero number of velocities
@@ -247,7 +242,7 @@ void IcfBuilder<T>::UpdateModel(
 
   // Compute nonlinear bias terms k₀.
   params->k0.resize(nv);
-  MultibodyForces<T>& forces = *scratch_.forces;
+  MultibodyForces<T>& forces = scratch_.forces;
   plant().CalcForceElementsContribution(context, &forces);
   const VectorX<T>& acc = scratch_.accelerations.setZero(nv);
   params->k0 = plant().CalcInverseDynamics(context, acc, forces);
@@ -741,11 +736,11 @@ void IcfBuilder<T>::SetExternalGainConstraints(const VectorX<T>& Ke,
 }
 
 template <typename T>
-void IcfBuilder<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
+IcfBuilder<T>::Scratch::Scratch(const MultibodyPlant<T>& plant)
+    : forces(plant) {
   const int nv = plant.num_velocities();
   J_V_WB.resize(6, nv);
   accelerations.resize(nv);
-  forces = std::make_unique<MultibodyForces<T>>(plant);
 }
 
 }  // namespace internal
