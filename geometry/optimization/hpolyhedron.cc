@@ -1010,9 +1010,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   const double face_scale_ratio =
       1 - std::pow(min_volume_ratio, 1.0 / ambient_dimension());
 
-  // A multiplier for cost in LP that finds how far a face can be moved inward
-  // before losing an intersection.  Maximizes or minimizes dot product between
-  // a point and the face normal, depending on `keep_whole_intersection`.
+  // A multiplier for cost in LPs that find how far a face can be moved inward
+  // before losing an intersection.  LP and interpretation of the optimal cost vary depending on `keep_whole_intersection` parameter value.
   const int cost_multiplier = keep_whole_intersection ? -1 : 1;
 
   // If scaled circumbody still meets the intersection constraint with a polytope in
@@ -1042,7 +1041,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     }
   }
 
-  const double kIntersectionPaddingFeasibilityPad = 1e-5;
+  const double kIntersectionFeasibilityPad = 1e-5;
 
   // Initialize inbody as circumbody.
   HPolyhedron inbody = circumbody;
@@ -1087,22 +1086,39 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         for (int intersection_ind = 0;
              intersection_ind < ssize(reduced_intersecting_polytopes);
              ++intersection_ind) {
-          const HPolyhedron intersection = inbody.Intersection(
-              reduced_intersecting_polytopes[intersection_ind]);
-
           MathematicalProgram prog;
-          solvers::VectorXDecisionVariable x =
-              prog.NewContinuousVariables(ambient_dimension(), "x");
-          prog.AddLinearCost(cost_multiplier * inbody.A().row(i), 0, x);
-          intersection.AddPointInSetConstraints(&prog, x);
+            solvers::VectorXDecisionVariable x =
+                prog.NewContinuousVariables(ambient_dimension(), "x");
+            
+          if (keep_whole_intersection) {
+            const HPolyhedron intersection = inbody.Intersection(
+                reduced_intersecting_polytopes[intersection_ind]);
+            
+            prog.AddLinearCost(-inbody.A().row(i), 0, x);
+            intersection.AddPointInSetConstraints(&prog, x);
+          } else {
+            solvers::VectorXDecisionVariable b_i = prog.NewContinuousVariables(1);
+
+            reduced_intersecting_polytopes[intersection_ind].AddPointInSetConstraints(&prog, x);
+            prog.AddLinearConstraint(inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf), inbody.b() - VectorXd::Constant(inbody.b().rows(), intersection_padding), x);
+            
+            // A(i) x <= b(i) - intersection_padding.
+            RowVectorXd row = Eigen::RowVectorXd(inbody.A().cols() + 1);
+            row << inbody.A().row(i), -1.0;
+            solvers::VectorXDecisionVariable xb(inbody.ambient_dimension() + 1);
+            xb << x, b_i;
+            prog.AddLinearConstraint(row, -kInf, -intersection_padding, xb);
+            prog.AddLinearCost(b_i[0]);
+          }
+
           solvers::MathematicalProgramResult result = Solve(prog);
 
           if (result.is_success()) {
             if (cost_multiplier * result.get_optimal_cost() +
-                    intersection_padding >
+                kIntersectionFeasibilityPad >
                 b_i_min_allowed) {
               b_i_min_allowed = cost_multiplier * result.get_optimal_cost() +
-                                intersection_padding;
+                                kIntersectionFeasibilityPad;
             }
           } else {
             log()->warn(
@@ -1156,7 +1172,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   // Check if intersection and containment constraints are still satisfied after
   // affine transformation, and revert if not.  There is currently no way to
   // constrain that the affine transformation upholds these constraints.
-  if (CheckIntersectionAndPointContainmentConstraints(
+  if (not CheckIntersectionAndPointContainmentConstraints(
         inbody,
         circumbody,
         points_to_contain,
