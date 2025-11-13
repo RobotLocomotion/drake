@@ -78,7 +78,7 @@ class EventCollection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventCollection);
 
-  virtual ~EventCollection() {}
+  virtual ~EventCollection();
 
   /**
    * Clears all the events maintained by `this` then adds all of the events in
@@ -418,7 +418,7 @@ class CompositeEventCollection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeEventCollection);
 
-  virtual ~CompositeEventCollection() {}
+  virtual ~CompositeEventCollection();
 
   /**
    * Clears all the events.

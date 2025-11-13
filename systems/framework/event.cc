@@ -1,13 +1,13 @@
-#include "drake/systems/framework/system_visitor.h"
+#include "drake/systems/framework/event.h"
 
 namespace drake {
 namespace systems {
 
 template <typename T>
-SystemVisitor<T>::~SystemVisitor() = default;
+Event<T>::~Event() = default;
 
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::SystemVisitor);
+    class ::drake::systems::Event);
