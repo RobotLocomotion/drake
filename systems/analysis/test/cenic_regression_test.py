@@ -30,6 +30,21 @@ class CenicRegressionTest(unittest.TestCase):
   </worldbody>
 </mujoco>"""
 
+        self.damped_double_pendulum_xml = """
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <body>
+      <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-2"/>
+      <geom type="capsule" size="0.01 0.1"/>
+      <body>
+        <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="1e-2"/>
+        <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>"""
+
     def create_system_setup(self, xml, time_step, use_hydroelastics):
         """Do some boilerplate system setup for the given MJCF model."""
         builder = DiagramBuilder()
@@ -124,6 +139,18 @@ class CenicRegressionTest(unittest.TestCase):
             xml=self.cylinder_xml,
             x0=x0,
             sim_time=1.0,
+            use_hydro=False,
+            tol=5e-2,
+        )
+
+    def test_damped_double_pendulum(self):
+        """Simulate a damped double pendulum without contact."""
+        x0 = np.array([0.5, -0.5, 0.1, 0.2])
+
+        self.compare_with_discrete_sap(
+            xml=self.damped_double_pendulum_xml,
+            x0=x0,
+            sim_time=2.0,
             use_hydro=False,
             tol=5e-2,
         )
