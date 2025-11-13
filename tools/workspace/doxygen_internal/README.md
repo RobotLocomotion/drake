@@ -26,9 +26,14 @@ Use the following steps as a rough guide when upgrading to a new version of
 Doxygen. This document is not meant to be a comprehensive set of all steps, but
 an outline of some tools and knowledge that can be useful.
 
+Before updating, it's a good idea to check the
+[changelog](https://www.doxygen.nl/manual/changelog.html) for any new features
+or fixes. There might be new things to be taken advantage of or keep up with
+that aren't immediately obvious from just trudging along with the upgrade.
+
 This process is only supported on Ubuntu 24.04 "Noble".
 
-# Updating the Binary
+## Updating the Binary
 
 1. Download the official source code of the latest release from
    https://github.com/doxygen/doxygen/releases. Upload the source tarball
@@ -65,6 +70,7 @@ section.
       https://www.doxygen.nl/manual/config.html for details.
     * Update the version at the top of the file; this is inserted manually by
       the project maintainers for clarity and history.
+    * Remove any spurious changes, such as removed comments, quotes, etc.
 6. Run `./doxygen -l` to generate a new `DoxygenLayout.xml` file. Drake's copy
    currently lives in `doc/doxygen_cxx/DoxygenLayout.xml`. Unlike the
    `Doxyfile_CXX.in`, there is no "update" command for this file to maintain
