@@ -1,10 +1,17 @@
 import unittest
+
 import numpy as np
-from pydrake.systems.analysis import Simulator, SimulatorConfig, ApplySimulatorConfig
-from pydrake.systems.framework import DiagramBuilder
-from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
-from pydrake.multibody.parsing import Parser
+
 from pydrake.geometry import SceneGraphConfig
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
+from pydrake.systems.analysis import (
+    ApplySimulatorConfig,
+    Simulator,
+    SimulatorConfig,
+)
+from pydrake.systems.framework import DiagramBuilder
+
 
 class CenicRegressionTest(unittest.TestCase):
     """Some basic high-level simulation tests for the CENIC integrator."""
@@ -73,15 +80,21 @@ class CenicRegressionTest(unittest.TestCase):
         )
 
         # Run a short simulation with CENIC
-        builder, plant = self.create_system_setup(xml=xml, time_step=0.0, use_hydroelastics=True)
+        builder, plant = self.create_system_setup(
+            xml=xml, time_step=0.0, use_hydroelastics=True
+        )
         simulator, plant_context = self.create_cenic_simulation(builder, plant)
         plant.SetPositionsAndVelocities(plant_context, x0)
         simulator.AdvanceTo(1.0)
         q_cenic = plant.GetPositions(plant_context)
 
         # Run the same simulation with discrete SAP
-        builder, plant = self.create_system_setup(xml=xml, time_step=0.001, use_hydroelastics=True)
-        simulator, plant_context = self.create_discrete_simulation(builder, plant)
+        builder, plant = self.create_system_setup(
+            xml=xml, time_step=0.001, use_hydroelastics=True
+        )
+        simulator, plant_context = self.create_discrete_simulation(
+            builder, plant
+        )
         plant.SetPositionsAndVelocities(plant_context, x0)
         simulator.AdvanceTo(1.0)
         q_discrete = plant.GetPositions(plant_context)
