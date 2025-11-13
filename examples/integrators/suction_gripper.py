@@ -344,8 +344,13 @@ def run_simulation(
     if config.integration_scheme == "cenic":
         ci = simulator.get_mutable_integrator()
         ci.set_plant(plant)
-        ci_params = ci.get_solver_parameters()
-        ci.set_solver_parameters(ci_params)
+
+        # Make sure we can set ICF parameters
+        icf_params = IcfSolverParameters()
+        icf_params.tolerance = 1e-7
+        ci.set_solver_parameters(icf_params)
+        assert ci.get_solver_parameters().tolerance == 1e-7
+
     meshcat.StartRecording()
     simulator.Initialize()
 

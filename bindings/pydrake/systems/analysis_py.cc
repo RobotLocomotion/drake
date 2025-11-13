@@ -270,38 +270,25 @@ PYBIND11_MODULE(analysis, m) {
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
-  // Convex integrator options
+  // ICF Solver Parameters
+  // TODO(CENIC): wire up the docstrings properly
   {
-    py::class_<CenicSolverParameters>(
-        m, "CenicSolverParameters", doc.CenicSolverParameters.doc)
-        .def_readwrite("max_iterations", &CenicSolverParameters::max_iterations,
-            doc.CenicSolverParameters.max_iterations.doc)
-        .def_readwrite("max_ls_iterations",
-            &CenicSolverParameters::max_ls_iterations,
-            doc.CenicSolverParameters.max_ls_iterations.doc)
-        .def_readwrite("alpha_max", &CenicSolverParameters::alpha_max,
-            doc.CenicSolverParameters.alpha_max.doc)
-        .def_readwrite("tolerance", &CenicSolverParameters::tolerance,
-            doc.CenicSolverParameters.tolerance.doc)
-        .def_readwrite("ls_tolerance", &CenicSolverParameters::ls_tolerance,
-            doc.CenicSolverParameters.ls_tolerance.doc)
-        .def_readwrite("kappa", &CenicSolverParameters::kappa,
-            doc.CenicSolverParameters.kappa.doc)
-        .def_readwrite("enable_hessian_reuse",
-            &CenicSolverParameters::enable_hessian_reuse,
-            doc.CenicSolverParameters.enable_hessian_reuse.doc)
-        .def_readwrite("max_iterations_for_hessian_reuse",
-            &CenicSolverParameters::max_iterations_for_hessian_reuse,
-            doc.CenicSolverParameters.max_iterations_for_hessian_reuse.doc)
-        .def_readwrite("print_solver_stats",
-            &CenicSolverParameters::print_solver_stats,
-            doc.CenicSolverParameters.print_solver_stats.doc)
-        .def_readwrite("log_solver_stats",
-            &CenicSolverParameters::log_solver_stats,
-            doc.CenicSolverParameters.log_solver_stats.doc)
-        .def_readwrite("use_dense_algebra",
-            &CenicSolverParameters::use_dense_algebra,
-            doc.CenicSolverParameters.use_dense_algebra.doc);
+    py::class_<IcfSolverParameters>(m, "IcfSolverParameters")
+        .def(py::init<>())
+        .def_readwrite("max_iterations", &IcfSolverParameters::max_iterations)
+        .def_readwrite("tolerance", &IcfSolverParameters::tolerance)
+        .def_readwrite(
+            "enable_hessian_reuse", &IcfSolverParameters::enable_hessian_reuse)
+        .def_readwrite("hessian_reuse_target_iterations",
+            &IcfSolverParameters::hessian_reuse_target_iterations)
+        .def_readwrite(
+            "use_dense_algebra", &IcfSolverParameters::use_dense_algebra)
+        .def_readwrite(
+            "max_ls_iterations", &IcfSolverParameters::max_ls_iterations)
+        .def_readwrite("ls_tolerance", &IcfSolverParameters::ls_tolerance)
+        .def_readwrite("alpha_max", &IcfSolverParameters::alpha_max)
+        .def_readwrite(
+            "print_solver_stats", &IcfSolverParameters::print_solver_stats);
   }
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
@@ -317,6 +304,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
+    // TODO(vincekurtz): add bindings set IcfSolverParameters
     DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
         m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc)
         .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
