@@ -700,7 +700,7 @@ class ConstraintSolver {
       std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
       int gv_dim, ProblemData* modified_problem_data);
 
-  drake::solvers::MobyLCPSolver<T> lcp_;
+  drake::solvers::MobyLcpSolver lcp_;
 };
 
 }  // namespace rod2d

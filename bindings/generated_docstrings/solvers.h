@@ -8121,8 +8121,8 @@ consecutive. Mathematically
 R"""(Getter for φ₊, the non-negative part of φ.)""";
         } phi_nonnegative;
       } MixedIntegerRotationConstraintGenerator;
-      // Symbol: drake::solvers::MobyLCPSolver
-      struct /* MobyLCPSolver */ {
+      // Symbol: drake::solvers::MobyLcpSolver
+      struct /* MobyLcpSolver */ {
         // Source: drake/solvers/moby_lcp_solver.h
         const char* doc =
 R"""(A class for solving Linear Complementarity Problems (LCPs). Solving a
@@ -8184,28 +8184,25 @@ latter) describe relevant matrix classes in more detail.
 * [Karmarkar 1984]  N. Karmarkar. A New Polynomial-Time Algorithm for
                     Linear Programming. Combinatorica, 4(4), pp. 373-395.
 * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
-                    Programming. Heldermann Verlag, 1988.
-
-Template parameter ``T``:
-    must be ``double``)""";
-        // Symbol: drake::solvers::MobyLCPSolver::ComputeZeroTolerance
+                    Programming. Heldermann Verlag, 1988.)""";
+        // Symbol: drake::solvers::MobyLcpSolver::ComputeZeroTolerance
         struct /* ComputeZeroTolerance */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Calculates the zero tolerance that the solver would compute if the
 user does not specify a tolerance.)""";
         } ComputeZeroTolerance;
-        // Symbol: drake::solvers::MobyLCPSolver::MobyLCPSolver<T>
+        // Symbol: drake::solvers::MobyLcpSolver::MobyLcpSolver
         struct /* ctor */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ctor;
-        // Symbol: drake::solvers::MobyLCPSolver::ProgramAttributesSatisfied
+        // Symbol: drake::solvers::MobyLcpSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpFast
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpFast
         struct /* SolveLcpFast */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8259,7 +8256,7 @@ Returns:
                      and no-slip rigid contact models. arXiv:
                      1504.00719v1. 2015.)""";
         } SolveLcpFast;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpFastRegularized
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpFastRegularized
         struct /* SolveLcpFastRegularized */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8346,7 +8343,7 @@ See also:
 * [Cottle, 1992]     R. Cottle, J.-S. Pang, and R. Stone. The Linear
                      Complementarity Problem. Academic Press, 1992.)""";
         } SolveLcpFastRegularized;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpLemke
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpLemke
         struct /* SolveLcpLemke */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8408,7 +8405,7 @@ Raises:
 * [LEMKE]          P. Fackler and M. Miranda. LEMKE.
                    http://people.sc.fsu.edu/~burkardt/m\_src/lemke/lemke.m)""";
         } SolveLcpLemke;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpLemkeRegularized
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpLemkeRegularized
         struct /* SolveLcpLemkeRegularized */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8461,40 +8458,44 @@ See also:
 * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
                      Complementarity Problem. Academic Press, 1992.)""";
         } SolveLcpLemkeRegularized;
-        // Symbol: drake::solvers::MobyLCPSolver::get_num_pivots
+        // Symbol: drake::solvers::MobyLcpSolver::get_num_pivots
         struct /* get_num_pivots */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Returns the number of pivoting operations made by the last LCP solve.)""";
         } get_num_pivots;
-        // Symbol: drake::solvers::MobyLCPSolver::id
+        // Symbol: drake::solvers::MobyLcpSolver::id
         struct /* id */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } id;
-        // Symbol: drake::solvers::MobyLCPSolver::is_available
+        // Symbol: drake::solvers::MobyLcpSolver::is_available
         struct /* is_available */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } is_available;
-        // Symbol: drake::solvers::MobyLCPSolver::is_enabled
+        // Symbol: drake::solvers::MobyLcpSolver::is_enabled
         struct /* is_enabled */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
-        // Symbol: drake::solvers::MobyLCPSolver::reset_num_pivots
+        // Symbol: drake::solvers::MobyLcpSolver::reset_num_pivots
         struct /* reset_num_pivots */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Resets the number of pivoting operations made by the last LCP solver
 to zero.)""";
         } reset_num_pivots;
-      } MobyLCPSolver;
+      } MobyLcpSolver;
       // Symbol: drake::solvers::MobyLcpSolverId
       struct /* MobyLcpSolverId */ {
         // Source: drake/solvers/moby_lcp_solver.h
-        const char* doc =
-R"""(Non-template class for MobyLcpSolver<T> constants.)""";
+        const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use MobyLcpSolver::id() directly. This will be removed from Drake
+    on or after 2026-03-01.)""";
         // Symbol: drake::solvers::MobyLcpSolverId::MobyLcpSolverId
         struct /* ctor */ {
           // Source: drake/solvers/moby_lcp_solver.h
@@ -8503,9 +8504,12 @@ R"""(Non-template class for MobyLcpSolver<T> constants.)""";
         // Symbol: drake::solvers::MobyLcpSolverId::id
         struct /* id */ {
           // Source: drake/solvers/moby_lcp_solver.h
-          const char* doc =
-R"""(Returns:
-    same as SolverInterface::solver_id())""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use MobyLcpSolver::id() directly. This will be removed from Drake
+    on or after 2026-03-01.)""";
         } id;
       } MobyLcpSolverId;
       // Symbol: drake::solvers::MosekSolver
