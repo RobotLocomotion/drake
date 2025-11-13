@@ -28,8 +28,10 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "eigen_pool",
+    srcs = ["eigen_pool.cc"],
     hdrs = ["eigen_pool.h"],
     deps = [
+        "//common:autodiff",
         "//common:essential",
     ],
 )
