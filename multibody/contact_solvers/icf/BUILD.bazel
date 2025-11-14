@@ -18,8 +18,8 @@ drake_cc_package_library(
         ":eigen_pool",
         ":gain_constraints_data_pool",
         ":icf_builder",
-        ":icf_core",
         ":icf_data",
+        ":icf_model",
         ":icf_solver",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
@@ -100,7 +100,7 @@ drake_cc_library(
     srcs = ["icf_builder.cc"],
     hdrs = ["icf_builder.h"],
     deps = [
-        ":icf_core",
+        ":icf_model",
         "//common:essential",
         "//multibody/plant",
     ],
@@ -114,14 +114,14 @@ drake_cc_library(
     srcs = ["icf_solver.cc"],
     hdrs = ["icf_solver.h"],
     deps = [
-        ":icf_core",
+        ":icf_model",
         "//common:essential",
         "//multibody/contact_solvers:newton_with_bisection",
     ],
 )
 
 drake_cc_library(
-    name = "icf_core",
+    name = "icf_model",
     srcs = [
         "icf_model.cc",
         "icf_model_coupler_constraints_pool.cc",
@@ -159,7 +159,7 @@ drake_cc_googletest(
     name = "icf_model_test",
     deps = [
         ":eigen_pool",
-        ":icf_core",
+        ":icf_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
@@ -171,7 +171,7 @@ drake_cc_googletest(
     name = "two_spheres_test",
     deps = [
         ":icf_builder",
-        ":icf_core",
+        ":icf_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//multibody/parsing:parser",
