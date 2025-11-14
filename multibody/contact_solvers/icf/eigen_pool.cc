@@ -17,10 +17,10 @@ template <typename EigenType>
 EigenPoolFixedSizeStorage<EigenType>::~EigenPoolFixedSizeStorage() = default;
 
 template <typename EigenType>
-void EigenPoolFixedSizeStorage<EigenType>::Resize(int num_elements,
+void EigenPoolFixedSizeStorage<EigenType>::Resize(int num_matrices,
                                                   int /* rows */,
                                                   int /* cols */) {
-  data_.resize(num_elements);
+  data_.resize(num_matrices);
 }
 
 template <typename EigenType>
@@ -30,8 +30,10 @@ void EigenPoolFixedSizeStorage<EigenType>::Clear() {
 
 template <typename EigenType>
 void EigenPoolFixedSizeStorage<EigenType>::SetZero() {
+  constexpr int num_scalars_per_matrix = EigenType::SizeAtCompileTime;
+  static_assert(sizeof(EigenType) == sizeof(Scalar) * num_scalars_per_matrix);
   Scalar* const first_scalar = data_.data()->data();
-  const int num_scalars = data_.size() * EigenType::SizeAtCompileTime;
+  const int num_scalars = ssize(data_) * num_scalars_per_matrix;
   Eigen::Map<VectorX<Scalar>>(first_scalar, num_scalars).setZero();
 }
 
@@ -43,18 +45,18 @@ EigenPoolDynamicSizeStorage<EigenType>::~EigenPoolDynamicSizeStorage() =
     default;
 
 template <typename EigenType>
-void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_elements, int rows,
+void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_matrices, int rows,
                                                     int cols) {
   Clear();
-  data_.reserve(num_elements * rows * cols);
-  blocks_.reserve(num_elements);
-  for (int i = 0; i < num_elements; ++i) {
+  data_.reserve(num_matrices * rows * cols);
+  blocks_.reserve(num_matrices);
+  for (int i = 0; i < num_matrices; ++i) {
     Add(rows, cols);
   }
 }
 
 template <typename EigenType>
-void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_elements,
+void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_matrices,
                                                     std::span<const int> rows,
                                                     std::span<const int> cols) {
   Clear();
@@ -64,28 +66,28 @@ void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_elements,
   if constexpr (fixed_rows >= 0 || fixed_cols >= 0) {
     // Only dynamic in one dimension.
     const int fixed_dim = (fixed_rows >= 0) ? fixed_rows : fixed_cols;
-    const std::span<const int>& dyn_dims = (fixed_rows >= 0) ? cols : rows;
-    DRAKE_DEMAND(ssize(dyn_dims) == num_elements);
-    const int total_size =
-        fixed_dim * std::accumulate(dyn_dims.begin(), dyn_dims.end(), 0);
+    const std::span<const int>& dynamic_dims = (fixed_rows >= 0) ? cols : rows;
+    DRAKE_DEMAND(ssize(dynamic_dims) == num_matrices);
+    const int total_size = fixed_dim * std::accumulate(dynamic_dims.begin(),
+                                                       dynamic_dims.end(), 0);
     data_.reserve(total_size);
-    blocks_.reserve(num_elements);
-    for (int i = 0; i < num_elements; ++i) {
+    blocks_.reserve(num_matrices);
+    for (int i = 0; i < num_matrices; ++i) {
       const int r = fixed_rows >= 0 ? fixed_rows : rows[i];
       const int c = fixed_cols >= 0 ? fixed_cols : cols[i];
       Add(r, c);
     }
   } else {
     // Fully dynamic.
-    DRAKE_DEMAND(ssize(rows) == num_elements);
-    DRAKE_DEMAND(ssize(cols) == num_elements);
+    DRAKE_DEMAND(ssize(rows) == num_matrices);
+    DRAKE_DEMAND(ssize(cols) == num_matrices);
     int total_size = 0;
-    for (int i = 0; i < num_elements; ++i) {
+    for (int i = 0; i < num_matrices; ++i) {
       total_size += rows[i] * cols[i];
     }
     data_.reserve(total_size);
-    blocks_.reserve(num_elements);
-    for (int i = 0; i < num_elements; ++i) {
+    blocks_.reserve(num_matrices);
+    for (int i = 0; i < num_matrices; ++i) {
       Add(rows[i], cols[i]);
     }
   }
@@ -104,9 +106,9 @@ void EigenPoolDynamicSizeStorage<EigenType>::Clear() {
 
 template <typename EigenType>
 void EigenPoolDynamicSizeStorage<EigenType>::Add(int rows, int cols) {
-  const int size = rows * cols;
-  blocks_.push_back({static_cast<int>(ssize(data_)), rows, cols});
-  data_.resize(data_.size() + size);
+  const int index = ssize(data_);
+  blocks_.push_back({index, rows, cols});
+  data_.resize(data_.size() + rows * cols);
 }
 
 template <typename EigenType>

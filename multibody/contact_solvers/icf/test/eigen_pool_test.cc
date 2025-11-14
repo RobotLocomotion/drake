@@ -9,18 +9,16 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 
-using Eigen::Matrix3d;
-using Eigen::MatrixXd;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using std::pair;
-using std::vector;
-
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 GTEST_TEST(EigenPoolTest, EigenFixedSize) {
   EigenPool<Matrix3d> pool;
@@ -39,8 +37,7 @@ GTEST_TEST(EigenPoolTest, EigenFixedSize) {
   ASSERT_EQ(pool.size(), 4);
 
   // Check setting & re-getting.
-  const Eigen::Matrix3d S33 =
-      (Eigen::Matrix3d() << 4, 1, 2, 1, 5, 3, 2, 3, 6).finished();
+  const Matrix3d S33 = (Matrix3d() << 4, 1, 2, 1, 5, 3, 2, 3, 6).finished();
   for (int i = 0; i < 4; ++i) {
     pool[i] = i * S33;
     const auto& const_pool = pool;
