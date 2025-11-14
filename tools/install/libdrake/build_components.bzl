@@ -56,6 +56,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/contact_solvers",
+    "//multibody/contact_solvers/icf",
     "//multibody/contact_solvers/sap",
     "//multibody/fem",
     "//multibody/hydroelastics",
