@@ -115,9 +115,10 @@ void PandaStatusSender::CalcOutput(const Context<double>& context,
   const auto& torque_measured = EvalFirstConnected(
       context, 1, 2, zero_vector_, get_torque_measured_input_port(),
       get_torque_commanded_input_port());
-  const auto& torque_external = EvalFirstConnected(
-      context, 0, 2, zero_vector_, get_torque_external_input_port(),
-      get_torque_external_input_port());
+  const auto& torque_external =
+      get_torque_external_input_port().HasValue(context)
+          ? get_torque_external_input_port().Eval(context)
+          : zero_vector_.head(num_joints_);
 
   lcmt_panda_status& status = *output;
   status.utime = context.get_time() * 1e6;
