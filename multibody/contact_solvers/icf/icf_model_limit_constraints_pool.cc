@@ -103,8 +103,8 @@ template <typename T>
 void IcfModel<T>::LimitConstraintsPool::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
-  using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
-  using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
+  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
 
   const T& dt = model().time_step();
   T& cost = limit_data->cost();

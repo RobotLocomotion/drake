@@ -56,8 +56,8 @@ void IcfModel<T>::GainConstraintsPool::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
 
-  using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
-  using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
+  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
 
   T& cost = gain_data->cost();
   cost = 0;

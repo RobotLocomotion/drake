@@ -22,10 +22,10 @@ class GainConstraintsDataPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GainConstraintsDataPool);
 
-  using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
-  using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
+  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
+  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
+  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
 
   /* Default constructor for an empty pool. */
   GainConstraintsDataPool() = default;

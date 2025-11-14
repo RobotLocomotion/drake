@@ -15,9 +15,9 @@ using BlockSparseSymmetricMatrixT =
     contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
 
 template <typename T>
-using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
+using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
 template <typename T>
-using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
+using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {

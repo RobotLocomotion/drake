@@ -73,10 +73,10 @@ class IcfModel {
   class PatchConstraintsPool;
   class GainConstraintsPool;
 
-  using ConstJacobianView = typename EigenPool<Matrix6X<T>>::ConstElementView;
-  using ConstVector6View = typename EigenPool<Vector6<T>>::ConstElementView;
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
+  using ConstJacobianView = typename EigenPool<Matrix6X<T>>::ConstMatrixView;
+  using ConstVector6View = typename EigenPool<Vector6<T>>::ConstMatrixView;
+  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
+  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
   /* Constructor for an empty model. */
   IcfModel()

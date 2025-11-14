@@ -282,7 +282,7 @@ void IcfBuilder<T>::UpdateModel(
       const int vt_start = forest.trees(t).v_start();
       const int nt = forest.trees(t).nv();
 
-      typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = J_WB[b];
+      typename EigenPool<Matrix6X<T>>::MatrixView Jv_WBc_W = J_WB[b];
       if (body.is_floating_base_body()) {
         Jv_WBc_W.setIdentity();
       } else {
