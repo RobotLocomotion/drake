@@ -26,12 +26,14 @@ struct IcfSolverParameters {
   /* Outer solver iteration limit */
   int max_iterations{100};
 
-  /* Tolerance ε for the convergence conditions
+  /* Minimum tolerance ε for the convergence conditions
        ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
-       η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖). */
-  // TODO(CENIC): rethink how/where this parameter is set. Currently it has no
-  // effect in error-controlled mode.
-  double tolerance{1e-8};
+       η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
+  This provides a lower bound on the actual tolerance used, which is specified
+  explicitly when calling the solver. CENIC uses this minimum tolerance in fixed
+  step mode, and relaxes it in error-controlled mode based on the desired
+  accuracy. */
+  double min_tolerance{1e-8};
 
   /* Whether hessian reuse between iterations and time steps is enabled. */
   bool enable_hessian_reuse{false};
@@ -107,6 +109,7 @@ class IcfSolver {
   /* Solve the convex problem to compute next-step velocities v = min ℓ(v).
 
   @param model The ICF model defining the optimization problem.
+  @param tolerance The convergence tolerance ε to be used for this solve.
   @param data The ICF data structure to be updated with the solution. To
               begin, stores the initial guess for velocities v.
 
@@ -114,7 +117,8 @@ class IcfSolver {
 
   N.B. the caller must ensure that the model and data are compatible, i.e.,
   model.ResizeData(&data) has been called. */
-  bool SolveWithGuess(const IcfModel<double>& model, IcfData<double>* data);
+  bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
+                      IcfData<double>* data);
 
   /* Access solver statistics from the most recent solve. */
   const IcfSolverStats& stats() const { return stats_; }
@@ -125,10 +129,6 @@ class IcfSolver {
   }
 
   const IcfSolverParameters& get_parameters() const { return parameters_; }
-
-  /* Update only the convergence tolerance. Used by the integrator to set
-  convergence criteria based on integrator accuracy. */
-  void set_tolerance(const double tol) { parameters_.tolerance = tol; }
 
  private:
   /* Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
