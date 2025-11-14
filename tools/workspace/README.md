@@ -208,10 +208,12 @@ found in the calls to `ExternalProject_Add` in the example's
 Any time these packages are upgraded in Drake (via the steps above, or separate
 from the monthly upgrades), use the
 [automated upgrade script](https://github.com/RobotLocomotion/drake-external-examples/blob/main/private/upgrade_cmake_externals.py)
-to create a pull request on drake-external-examples with an upgrade to match
-Drake. See the script for its usage requirements; you may have to remove the
-"bcr..." from the end of the canonical version string in Drake, to match the
-upstream directly outside Bazel.
+to create a pull request on drake-external-examples. See the script for its
+usage requirements; it mirrors the workflow of the `new_release` tooling.
+
+The continuous integration (via GitHub Actions) in that repository runs the
+upgrade script to verify that packages are in sync with Drake. That should serve
+as a reminder to the maintainers to keep things up-to-date.
 
 # Changing the version of third-party software manually
 
