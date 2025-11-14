@@ -338,6 +338,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "detail_parsing_workspace",
+    srcs = ["detail_parsing_workspace.cc"],
     hdrs = ["detail_parsing_workspace.h"],
     internal = True,
     visibility = ["//visibility:private"],
