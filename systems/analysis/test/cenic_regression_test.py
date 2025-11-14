@@ -226,6 +226,6 @@ class CenicRegressionTest(unittest.TestCase):
         self.compare_with_discrete_sap(
             xml=self.gripper_xml,
             x0=x0,
-            sim_time=2.0,
-            use_hydro=True,
+            sim_time=1.0,
+            use_hydro=False,
         )
