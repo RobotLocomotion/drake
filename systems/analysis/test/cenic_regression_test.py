@@ -227,5 +227,5 @@ class CenicRegressionTest(unittest.TestCase):
             xml=self.gripper_xml,
             x0=x0,
             sim_time=1.0,
-            use_hydro=False,
+            use_hydro=True,
         )

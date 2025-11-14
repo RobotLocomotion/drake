@@ -603,6 +603,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "cenic_regression_test",
+    timeout = "long",
     deps = [
         "//bindings/pydrake",
     ],
