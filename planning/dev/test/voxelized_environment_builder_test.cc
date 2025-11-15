@@ -55,24 +55,24 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   const std::string world_frame_name = "world";
 
   // Build both types of grids
-  const VoxelCollisionMap cmap = BuildCollisionMap(
+  const VoxelOccupancyMap cmap = BuildOccupancyMap(
       model->plant(), plant_context,
       std::unordered_set<drake::geometry::GeometryId>(), world_frame_name, X_WG,
       grid_dimensions, grid_resolution);
   ASSERT_FALSE(cmap.is_empty());
-  const auto& internal_cmap = internal::GetInternalCollisionMap(cmap);
+  const auto& internal_cmap = internal::GetInternalOccupancyMap(cmap);
   ASSERT_TRUE(internal_cmap.IsInitialized());
   ASSERT_EQ(internal_cmap.GetNumXCells(), 8);
   ASSERT_EQ(internal_cmap.GetNumYCells(), 8);
   ASSERT_EQ(internal_cmap.GetNumZCells(), 8);
 
-  const VoxelTaggedObjectCollisionMap tocmap = BuildTaggedObjectCollisionMap(
+  const VoxelTaggedObjectOccupancyMap tocmap = BuildTaggedObjectOccupancyMap(
       model->plant(), plant_context,
       std::unordered_set<drake::geometry::GeometryId>(), world_frame_name, X_WG,
       grid_dimensions, grid_resolution);
   ASSERT_FALSE(tocmap.is_empty());
   const auto& internal_tocmap =
-      internal::GetInternalTaggedObjectCollisionMap(tocmap);
+      internal::GetInternalTaggedObjectOccupancyMap(tocmap);
   ASSERT_TRUE(internal_tocmap.IsInitialized());
   ASSERT_EQ(internal_tocmap.GetNumXCells(), 8);
   ASSERT_EQ(internal_tocmap.GetNumYCells(), 8);

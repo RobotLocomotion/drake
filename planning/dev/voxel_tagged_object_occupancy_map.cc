@@ -1,88 +1,88 @@
-#include "drake/planning/dev/voxel_tagged_object_collision_map.h"
+#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
 
 #include <utility>
 
 #include <voxelized_geometry_tools/signed_distance_field.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
+#include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
 #include "drake/planning/dev/voxel_signed_distance_field_internal.h"
-#include "drake/planning/dev/voxel_tagged_object_collision_map_internal.h"
+#include "drake/planning/dev/voxel_tagged_object_occupancy_map_internal.h"
 
 namespace drake {
 namespace planning {
 
 using common_robotics_utilities::voxel_grid::GridSizes;
 using voxelized_geometry_tools::SignedDistanceField;
-using voxelized_geometry_tools::TaggedObjectCollisionCell;
-using voxelized_geometry_tools::TaggedObjectCollisionMap;
+using voxelized_geometry_tools::TaggedObjectOccupancyCell;
+using voxelized_geometry_tools::TaggedObjectOccupancyMap;
 
 namespace {
 
 std::shared_ptr<void> CopyInternalRepresentation(
-    const VoxelTaggedObjectCollisionMap& collision_map) {
-  auto copied_internal_collision_map =
-      std::make_shared<TaggedObjectCollisionMap>(
-          internal::GetInternalTaggedObjectCollisionMap(collision_map));
-  return std::shared_ptr<void>(copied_internal_collision_map,
-                               copied_internal_collision_map.get());
+    const VoxelTaggedObjectOccupancyMap& occupancy_map) {
+  auto copied_internal_occupancy_map =
+      std::make_shared<TaggedObjectOccupancyMap>(
+          internal::GetInternalTaggedObjectOccupancyMap(occupancy_map));
+  return std::shared_ptr<void>(copied_internal_occupancy_map,
+                               copied_internal_occupancy_map.get());
 }
 
 }  // namespace
 
-VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap() {
+VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap() {
   InitializeEmpty();
 }
 
-VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
+VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
     const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const float default_occupancy, const uint32_t default_object_id) {
   const GridSizes cru_sizes(grid_resolution, grid_dimensions.x(),
                             grid_dimensions.y(), grid_dimensions.z());
-  const TaggedObjectCollisionCell default_cell(default_occupancy,
+  const TaggedObjectOccupancyCell default_cell(default_occupancy,
                                                default_object_id);
-  auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
+  auto internal_occupancy_map = std::make_shared<TaggedObjectOccupancyMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
   internal_representation_ = std::shared_ptr<void>(
-      internal_collision_map, internal_collision_map.get());
+      internal_occupancy_map, internal_occupancy_map.get());
 }
 
-VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
+VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
     const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
     const double grid_resolution, const float default_occupancy,
     const uint32_t default_object_id) {
   const GridSizes cru_sizes(grid_resolution, grid_sizes.x(), grid_sizes.y(),
                             grid_sizes.z());
-  const TaggedObjectCollisionCell default_cell(default_occupancy,
+  const TaggedObjectOccupancyCell default_cell(default_occupancy,
                                                default_object_id);
-  auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>(
+  auto internal_occupancy_map = std::make_shared<TaggedObjectOccupancyMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
   internal_representation_ = std::shared_ptr<void>(
-      internal_collision_map, internal_collision_map.get());
+      internal_occupancy_map, internal_occupancy_map.get());
 }
 
-VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
-    const VoxelTaggedObjectCollisionMap& other) {
+VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
+    const VoxelTaggedObjectOccupancyMap& other) {
   internal_representation_ = CopyInternalRepresentation(other);
 }
 
-VoxelTaggedObjectCollisionMap::VoxelTaggedObjectCollisionMap(
-    VoxelTaggedObjectCollisionMap&& other) {
+VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
+    VoxelTaggedObjectOccupancyMap&& other) {
   internal_representation_ = std::move(other.internal_representation_);
   other.InitializeEmpty();
 }
 
-VoxelTaggedObjectCollisionMap& VoxelTaggedObjectCollisionMap::operator=(
-    const VoxelTaggedObjectCollisionMap& other) {
+VoxelTaggedObjectOccupancyMap& VoxelTaggedObjectOccupancyMap::operator=(
+    const VoxelTaggedObjectOccupancyMap& other) {
   if (this != &other) {
     internal_representation_ = CopyInternalRepresentation(other);
   }
   return *this;
 }
 
-VoxelTaggedObjectCollisionMap& VoxelTaggedObjectCollisionMap::operator=(
-    VoxelTaggedObjectCollisionMap&& other) {
+VoxelTaggedObjectOccupancyMap& VoxelTaggedObjectOccupancyMap::operator=(
+    VoxelTaggedObjectOccupancyMap&& other) {
   if (this != &other) {
     internal_representation_ = std::move(other.internal_representation_);
     other.InitializeEmpty();
@@ -91,14 +91,14 @@ VoxelTaggedObjectCollisionMap& VoxelTaggedObjectCollisionMap::operator=(
 }
 
 VoxelSignedDistanceField
-VoxelTaggedObjectCollisionMap::ExportSignedDistanceField(
+VoxelTaggedObjectOccupancyMap::ExportSignedDistanceField(
     const std::vector<uint32_t>& objects_to_include,
     const VoxelSignedDistanceField::GenerationParameters& parameters) const {
-  const auto& internal_collision_map =
-      internal::GetInternalTaggedObjectCollisionMap(*this);
+  const auto& internal_occupancy_map =
+      internal::GetInternalTaggedObjectOccupancyMap(*this);
 
   auto internal_sdf = std::make_shared<SignedDistanceField<float>>(
-      internal_collision_map.ExtractSignedDistanceFieldFloat(
+      internal_occupancy_map.ExtractSignedDistanceFieldFloat(
           objects_to_include, internal::ToVGT(parameters)));
 
   auto internal_sdf_representation =
@@ -107,22 +107,22 @@ VoxelTaggedObjectCollisionMap::ExportSignedDistanceField(
   return VoxelSignedDistanceField(internal_sdf_representation);
 }
 
-const std::string& VoxelTaggedObjectCollisionMap::parent_body_name() const {
-  const auto& internal_collision_map =
-      internal::GetInternalTaggedObjectCollisionMap(*this);
-  return internal_collision_map.GetFrame();
+const std::string& VoxelTaggedObjectOccupancyMap::parent_body_name() const {
+  const auto& internal_occupancy_map =
+      internal::GetInternalTaggedObjectOccupancyMap(*this);
+  return internal_occupancy_map.GetFrame();
 }
 
-bool VoxelTaggedObjectCollisionMap::is_empty() const {
-  const auto& internal_collision_map =
-      internal::GetInternalTaggedObjectCollisionMap(*this);
-  return !internal_collision_map.IsInitialized();
+bool VoxelTaggedObjectOccupancyMap::is_empty() const {
+  const auto& internal_occupancy_map =
+      internal::GetInternalTaggedObjectOccupancyMap(*this);
+  return !internal_occupancy_map.IsInitialized();
 }
 
-void VoxelTaggedObjectCollisionMap::InitializeEmpty() {
-  auto internal_collision_map = std::make_shared<TaggedObjectCollisionMap>();
+void VoxelTaggedObjectOccupancyMap::InitializeEmpty() {
+  auto internal_occupancy_map = std::make_shared<TaggedObjectOccupancyMap>();
   internal_representation_ = std::shared_ptr<void>(
-      internal_collision_map, internal_collision_map.get());
+      internal_occupancy_map, internal_occupancy_map.get());
 }
 
 }  // namespace planning

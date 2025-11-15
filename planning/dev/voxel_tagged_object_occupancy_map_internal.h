@@ -1,25 +1,25 @@
 #pragma once
 
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
+#include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
-#include "drake/planning/dev/voxel_tagged_object_collision_map.h"
+#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
 
 namespace drake {
 namespace planning {
 namespace internal {
-// Retrieve a const reference to the internal TaggedObjectCollisionMap of a
-// VoxelTaggedObjectCollisionMap instance.
-const voxelized_geometry_tools::TaggedObjectCollisionMap&
-GetInternalTaggedObjectCollisionMap(
-    const VoxelTaggedObjectCollisionMap& collision_map);
+// Retrieve a const reference to the internal TaggedObjectOccupancyMap of a
+// VoxelTaggedObjectOccupancyMap instance.
+const voxelized_geometry_tools::TaggedObjectOccupancyMap&
+GetInternalTaggedObjectOccupancyMap(
+    const VoxelTaggedObjectOccupancyMap& occupancy_map);
 
-// Retrieve a mutable reference to the internal TaggedObjectCollisionMap of a
-// VoxelTaggedObjectCollisionMap instance. API takes mutable reference instead
+// Retrieve a mutable reference to the internal TaggedObjectOccupancyMap of a
+// VoxelTaggedObjectOccupancyMap instance. API takes mutable reference instead
 // of pointer for consistency with non-mutable equivalent.
-voxelized_geometry_tools::TaggedObjectCollisionMap&
-GetMutableInternalTaggedObjectCollisionMap(
+voxelized_geometry_tools::TaggedObjectOccupancyMap&
+GetMutableInternalTaggedObjectOccupancyMap(
     // NOLINTNEXTLINE(runtime/references)
-    VoxelTaggedObjectCollisionMap& collision_map);
+    VoxelTaggedObjectOccupancyMap& occupancy_map);
 
 }  // namespace internal
 }  // namespace planning
