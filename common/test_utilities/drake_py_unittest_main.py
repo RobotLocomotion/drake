@@ -237,7 +237,9 @@ def reexecute_if_unbuffered():
             argv.insert(0, sys.executable)
         cmd = " ".join([shlex.quote(arg) for arg in argv])
         sys.stdout.flush()
+        os.environ["PYTHONPATH"] = ":".join(sys.path)
         os.execv(argv[0], argv)
+    os.environ.pop("PYTHONPATH", None)
 
 
 def traced(func, ignoredirs=None):
