@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "drake/bindings/generated_docstrings/planning_iris.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
@@ -43,6 +45,15 @@ void DefinePlanningIrisNp2(py::module m) {
   const auto& cls_doc = doc.IrisNp2Options;
   py::class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
   iris_np2_options.def(py::init<>())
+      .def_property("solver_options",
+          py::cpp_function(
+              [](IrisNp2Options& self) { return &(self.solver_options); },
+              py_rvp::reference_internal),
+          py::cpp_function(
+              [](IrisNp2Options& self, solvers::SolverOptions solver_options) {
+                self.solver_options = std::move(solver_options);
+              }),
+          cls_doc.solver_options.doc)
       .def_readwrite("sampled_iris_options",
           &IrisNp2Options::sampled_iris_options,
           cls_doc.sampled_iris_options.doc)

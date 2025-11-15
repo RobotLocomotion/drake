@@ -14,7 +14,7 @@ from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
 )
-from pydrake.solvers import IpoptSolver
+from pydrake.solvers import IpoptSolver, SolverOptions
 from pydrake.symbolic import Variable
 
 # Taken from iris_from_clique_cover_test.py
@@ -208,6 +208,7 @@ class TestIrisNp2(unittest.TestCase):
 
         # For speed reasons -- IPOPT seems to be faster than SNOPT here.
         options.solver = IpoptSolver()
+        self.assertTrue(isinstance(options.solver_options, SolverOptions))
 
         domain = HPolyhedron.MakeBox(
             plant.GetPositionLowerLimits(), plant.GetPositionUpperLimits()
@@ -272,6 +273,7 @@ class TestOptionsPrinting(unittest.TestCase):
     skip_fields = [
         "parameterization",  # a function
         "solver",  # a solver object
+        "solver_options",  # a solver_options object
     ]
 
     def get_options_fields(self, options, skip):
