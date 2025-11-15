@@ -98,14 +98,15 @@ GTEST_TEST(LinkJointGraph, FlagsAndOptions) {
 
   // Repeat for Modeling Options.
   const auto use_fixed_base = ForestBuildingOptions::kUseFixedBase;
-  const auto combine_links = ForestBuildingOptions::kMergeLinkComposites;
+  const auto combine_links =
+      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies;
   auto forest_building_options = use_fixed_base | combine_links;
   static_assert(
       std::is_same_v<decltype(forest_building_options), ForestBuildingOptions>);
   EXPECT_EQ(forest_building_options & use_fixed_base,
             ForestBuildingOptions::kUseFixedBase);
   EXPECT_EQ(forest_building_options & combine_links,
-            ForestBuildingOptions::kMergeLinkComposites);
+            ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
   EXPECT_FALSE(static_cast<bool>(forest_building_options &
                                  ForestBuildingOptions::kUseRpyFloatingJoints));
   EXPECT_EQ(
@@ -129,7 +130,7 @@ GTEST_TEST(LinkJointGraph, SpecifyForestBuildingOptions) {
 
   const ForestBuildingOptions default_options = ForestBuildingOptions::kDefault;
   const ForestBuildingOptions two_options =
-      ForestBuildingOptions::kMergeLinkComposites |
+      ForestBuildingOptions::kOptimizeWeldedLinksAssemblies |
       ForestBuildingOptions::kUseRpyFloatingJoints;
 
   // If we haven't said anything, global and all ModelInstance options are
@@ -275,8 +276,8 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
 
   EXPECT_FALSE(graph.forest_is_valid());
 
-  // With no forest built, there are no composites.
-  EXPECT_TRUE(graph.link_composites().empty());
+  // With no forest built, there are no assemblies.
+  EXPECT_TRUE(graph.welded_links_assemblies().empty());
   // These "Calc" functions don't require a forest.
   EXPECT_EQ(graph.CalcSubgraphsOfWeldedLinks(),
             std::vector<std::set<LinkIndex>>{{world_link_index}});
@@ -304,11 +305,15 @@ GTEST_TEST(LinkJointGraph, WorldOnlyTest) {
   // "Find" and "Get" methods require that the forest is valid.
   EXPECT_TRUE(graph.world_link().is_anchored());
   EXPECT_EQ(graph.link_to_mobod(world_link_index), MobodIndex(0));
-  EXPECT_EQ(ssize(graph.link_composites()), 1);
-  EXPECT_EQ(ssize(graph.link_composites(LinkCompositeIndex(0)).links), 1);
-  EXPECT_EQ(graph.link_composites(LinkCompositeIndex(0)).links[0],
-            world_link_index);
-  EXPECT_FALSE(graph.link_composites(LinkCompositeIndex(0)).is_massless);
+  EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);
+  EXPECT_EQ(
+      ssize(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()),
+      1);
+  EXPECT_EQ(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links()[0],
+      world_link_index);
+  EXPECT_FALSE(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).is_massless());
 
   EXPECT_EQ(graph.FindPathFromWorld(world_link_index),
             std::vector<LinkIndex>{world_link_index});  // Just World.
@@ -512,7 +517,7 @@ GTEST_TEST(LinkJoinGraph, LinkAPITest) {
   EXPECT_EQ(link5.primary_link(), link5.index());
   EXPECT_FALSE(link5.mobod_index().is_valid());
   EXPECT_FALSE(link5.inboard_joint_index().is_valid());
-  EXPECT_FALSE(link5.composite().has_value());
+  EXPECT_FALSE(link5.welded_links_assembly().has_value());
 }
 
 // Check operation of the public members of the Joint subclass.
@@ -548,9 +553,10 @@ GTEST_TEST(LinkJointGraph, JointAPITest) {
 }
 
 // Verify that we can define a serial chain, some static and floating links,
-// and some simple composites, and correctly reject improper attempts. We're
-// mostly testing the LinkJointGraph API here; see spanning_forest_test.cc
-// for validation of the generated forest for a similar graph.
+// and some simple welded links assemblies, and correctly reject improper
+// attempts. We're mostly testing the LinkJointGraph API here; see
+// spanning_forest_test.cc for validation of the generated forest for a similar
+// graph.
 GTEST_TEST(LinkJointGraph, SerialChainAndMore) {
   LinkJointGraph graph;
 

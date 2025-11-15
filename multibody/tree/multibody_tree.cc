@@ -749,8 +749,9 @@ welds between Links that were merged onto a single Mobod. We visit the forest's
 mobilized bodies (Mobods) in depth-first order and create Mobilizers in the same
 order as Mobods. We make a stub 0th Mobilizer for World so that Mobilizers and
 Mobods are numbered identically. (Think of it as a weld of World to the
-universe.) Joints that are interior to merged LinkComposites won't get modeled
-at all since they don't appear in the forest. */
+universe.) Joints that are interior to optimized WeldedLinksAssemblies
+(composite bodies) won't get modeled at all since they don't appear in the
+forest. */
 template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!is_finalized());
@@ -913,8 +914,8 @@ void MultibodyTree<T>::Finalize() {
       directed by inboard/outboard edges, and
     - added constraints where needed to close kinematic loops in the graph.
   The modeler sorts the mobilized bodies into depth-first order. Note that
-  welded-together Links (in a LinkComposite) may be merged into a single
-  mobilized body so there can be more Links than Mobods.
+  welded-together Links (in a WeldedLinksAssembly) may be optimized into a
+  single mobilized body so there can be more Links than Mobods.
 
   Every Link will be modeled with one "primary" body and possibly several
   "shadow" bodies. Every non-Weld Joint will be modeled with a mobilizer, with
@@ -1529,7 +1530,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   // M_BBo_B from the parameterization of that inertia.
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
     if (mobod.is_world()) continue;
-    // TODO(sherm1) Can't handle composites yet.
+    // TODO(sherm1) Can't handle optimized WeldedLinksAssemblies yet.
     DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
     const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
 
@@ -3585,15 +3586,16 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     if (active_mobod.nq_outboard() > 0) continue;  // Not a terminal group.
 
     // At this point we're looking at a non-World, terminal WeldedMobods group.
-    // Find the matching LinkComposite that carries the mass properties.
-    const std::optional<LinkCompositeIndex> link_composite_index =
-        graph().links(active_mobod.link_ordinal()).composite();
-    DRAKE_DEMAND(link_composite_index.has_value());  // Should be composite!
-    const auto& link_composite = graph().link_composites(*link_composite_index);
-    DRAKE_DEMAND(link_composite.links[0] ==
+    // Find the matching WeldedLinksAssembly that carries the mass properties.
+    const std::optional<WeldedLinksAssemblyIndex> link_assembly_index =
+        graph().links(active_mobod.link_ordinal()).welded_links_assembly();
+    DRAKE_DEMAND(link_assembly_index.has_value());  // Should be an assembly!
+    const auto& link_assembly =
+        graph().welded_links_assemblies(*link_assembly_index);
+    DRAKE_DEMAND(link_assembly.links()[0] ==
                  graph().links(active_mobod.link_ordinal()).index());
 
-    ThrowIfTerminalBodyHasBadDefaultMassProperties(link_composite.links,
+    ThrowIfTerminalBodyHasBadDefaultMassProperties(link_assembly.links(),
                                                    active_mobod.index());
   }
 
@@ -3611,34 +3613,34 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
 // assumed to have the expected properties.
 template <typename T>
 void MultibodyTree<T>::ThrowIfTerminalBodyHasBadDefaultMassProperties(
-    const std::vector<BodyIndex>& link_composite,  // might be just a Link
+    const std::vector<BodyIndex>& link_assembly,  // might be just a Link
     MobodIndex active_mobilizer_index) const {
-  DRAKE_DEMAND(!link_composite.empty());
-  const bool is_composite = ssize(link_composite) > 1;
+  DRAKE_DEMAND(!link_assembly.empty());
+  const bool is_assembly = ssize(link_assembly) > 1;
   const Mobilizer<T>& active_mobilizer = get_mobilizer(active_mobilizer_index);
   const bool can_rotate = active_mobilizer.can_rotate();
   const bool can_translate = active_mobilizer.can_translate();
 
-  const std::string& active_link_name = get_body(link_composite[0]).name();
-  const char* description =
-      is_composite ? "the active body for a terminal composite body"
-                   : "a terminal body";
+  const std::string& active_link_name = get_body(link_assembly[0]).name();
+  const char* description = is_assembly
+                                ? "the active body for a terminal assembly"
+                                : "a terminal body";
 
-  if (can_translate && (CalcTotalDefaultMass(link_composite) == 0)) {
+  if (can_translate && (CalcTotalDefaultMass(link_assembly) == 0)) {
     throw std::logic_error(
         fmt::format("Body {} is {} that is massless, but its joint has a "
                     "translational degree of freedom.",
                     active_link_name, description));
   }
 
-  if (can_rotate && IsAnyDefaultRotationalInertiaNaN(link_composite)) {
+  if (can_rotate && IsAnyDefaultRotationalInertiaNaN(link_assembly)) {
     throw std::logic_error(fmt::format(
         "Body {} is {} that has a NaN rotational inertia, but its joint has a "
         "rotational degree of freedom.",
         active_link_name, description));
   }
 
-  if (can_rotate && AreAllDefaultRotationalInertiaZero(link_composite)) {
+  if (can_rotate && AreAllDefaultRotationalInertiaZero(link_assembly)) {
     throw std::logic_error(fmt::format(
         "Body {} is {} that has zero rotational inertia, but its joint has a "
         "rotational degree of freedom.",
@@ -4248,8 +4250,8 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
 
   // We need only look at World's outboard mobods since those are the base
   // bodies of each tree in the forest. Each of those mobods has an
-  // associated Link (the active link in case of composites). We're only
-  // interested in links in the given model instance, and there should be
+  // associated Link (the active link in case of WeldedLinksAssemblies). We're
+  // only interested in links in the given model instance, and there should be
   // just one of those.
   const SpanningForest::Mobod& world = forest().world_mobod();
   std::optional<BodyIndex> base_body_index{};
