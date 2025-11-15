@@ -125,6 +125,8 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
 }
 
 namespace internal {
+FingerNoSlidingConstraint::~FingerNoSlidingConstraint() = default;
+
 FingerNoSlidingConstraint::FingerNoSlidingConstraint(
     const GripperBrickHelper<double>* gripper_brick, Finger finger,
     BrickFace face, systems::Context<double>* from_context,
@@ -226,6 +228,9 @@ void AddFingerNoSlidingConstraint(
 }
 
 namespace internal {
+FingerNoSlidingFromFixedPostureConstraint::
+    ~FingerNoSlidingFromFixedPostureConstraint() = default;
+
 FingerNoSlidingFromFixedPostureConstraint::
     FingerNoSlidingFromFixedPostureConstraint(
         const GripperBrickHelper<double>* gripper_brick, Finger finger,

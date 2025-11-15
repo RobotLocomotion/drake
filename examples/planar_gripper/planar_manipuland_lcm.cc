@@ -3,6 +3,8 @@
 namespace drake {
 namespace examples {
 namespace planar_gripper {
+PlanarManipulandStatusDecoder::~PlanarManipulandStatusDecoder() = default;
+
 PlanarManipulandStatusDecoder::PlanarManipulandStatusDecoder() {
   this->DeclareVectorOutputPort(systems::kUseDefaultName, 6,
                                 &PlanarManipulandStatusDecoder::OutputStatus);

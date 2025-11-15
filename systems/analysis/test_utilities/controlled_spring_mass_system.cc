@@ -11,6 +11,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
+PidControlledSpringMassSystem<T>::~PidControlledSpringMassSystem() = default;
+
+template <typename T>
 PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
     double spring_stiffness, double mass, double Kp, double Ki, double Kd,
     const T& target_position)
