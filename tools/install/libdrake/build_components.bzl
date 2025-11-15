@@ -44,6 +44,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/render_gltf_client",
     "//geometry/render_vtk",
     "//lcm",
+    "//manipulation/franka_panda",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
     "//manipulation/schunk_wsg",
