@@ -49,23 +49,23 @@ CollisionCheckerTestParams MakeVoxelizedEnvironmentCollisionCheckerParams() {
   constexpr float filled_occupancy = 1.0f;
 
   // Voxelize.
-  const VoxelCollisionMap voxelized_environment = BuildCollisionMap(
+  const VoxelOccupancyMap voxelized_environment = BuildOccupancyMap(
       voxel_checker->plant(), voxel_checker->plant_context(),
       static_cast<SphereRobotModelCollisionChecker*>(voxel_checker)
           ->RobotGeometries(),
       world_frame_name, X_WG, grid_dimensions, grid_resolution);
 
   // Sanity check the voxelized environment.
-  const auto& internal_collision_map =
-      internal::GetInternalCollisionMap(voxelized_environment);
+  const auto& internal_occupancy_map =
+      internal::GetInternalOccupancyMap(voxelized_environment);
 
-  for (int64_t xidx = 0; xidx < internal_collision_map.GetNumXCells(); xidx++) {
-    for (int64_t yidx = 0; yidx < internal_collision_map.GetNumYCells();
+  for (int64_t xidx = 0; xidx < internal_occupancy_map.GetNumXCells(); xidx++) {
+    for (int64_t yidx = 0; yidx < internal_occupancy_map.GetNumYCells();
          yidx++) {
-      for (int64_t zidx = 0; zidx < internal_collision_map.GetNumZCells();
+      for (int64_t zidx = 0; zidx < internal_occupancy_map.GetNumZCells();
            zidx++) {
         const float occupancy =
-            internal_collision_map.GetIndexImmutable(xidx, yidx, zidx)
+            internal_occupancy_map.GetIndexImmutable(xidx, yidx, zidx)
                 .Value()
                 .Occupancy();
         if (zidx >= 8) {

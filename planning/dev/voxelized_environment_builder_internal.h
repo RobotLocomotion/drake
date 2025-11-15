@@ -13,8 +13,8 @@
 #include <common_robotics_utilities/parallelism.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <fmt/format.h>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
+#include <voxelized_geometry_tools/occupancy_map.hpp>
+#include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
 #include "drake/common/parallelism.h"
 #include "drake/geometry/scene_graph.h"

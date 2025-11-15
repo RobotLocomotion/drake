@@ -20,20 +20,26 @@ cc_library(
 cc_library(
     name = "voxelized_geometry_tools",
     srcs = [
-        "src/voxelized_geometry_tools/collision_map.cpp",
-        "src/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.cpp",
+        "src/voxelized_geometry_tools/dynamic_spatial_hashed_occupancy_map.cpp",
         "src/voxelized_geometry_tools/mesh_rasterizer.cpp",
+        "src/voxelized_geometry_tools/occupancy_component_map.cpp",
+        "src/voxelized_geometry_tools/occupancy_map.cpp",
+        "src/voxelized_geometry_tools/occupancy_map_conversions.cpp",
         "src/voxelized_geometry_tools/signed_distance_field.cpp",
         "src/voxelized_geometry_tools/signed_distance_field_generation.cpp",  # noqa
-        "src/voxelized_geometry_tools/tagged_object_collision_map.cpp",
+        "src/voxelized_geometry_tools/tagged_object_occupancy_component_map.cpp",  # noqa
+        "src/voxelized_geometry_tools/tagged_object_occupancy_map.cpp",
     ],
     hdrs = [
-        "include/voxelized_geometry_tools/collision_map.hpp",
-        "include/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.hpp",  # noqa
+        "include/voxelized_geometry_tools/dynamic_spatial_hashed_occupancy_map.hpp",  # noqa
         "include/voxelized_geometry_tools/mesh_rasterizer.hpp",
+        "include/voxelized_geometry_tools/occupancy_component_map.hpp",
+        "include/voxelized_geometry_tools/occupancy_map.hpp",
+        "include/voxelized_geometry_tools/occupancy_map_conversions.hpp",
         "include/voxelized_geometry_tools/signed_distance_field.hpp",
         "include/voxelized_geometry_tools/signed_distance_field_generation.hpp",
-        "include/voxelized_geometry_tools/tagged_object_collision_map.hpp",
+        "include/voxelized_geometry_tools/tagged_object_occupancy_component_map.hpp",  # noqa
+        "include/voxelized_geometry_tools/tagged_object_occupancy_map.hpp",
         "include/voxelized_geometry_tools/topology_computation.hpp",
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
@@ -146,6 +152,17 @@ cc_test(
         "cpu:2",
         "no_kcov",
     ],
+    deps = [
+        ":voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "occupancy_map_conversions_test",
+    srcs = ["test/occupancy_map_conversions_test.cpp"],
+    tags = ["no_kcov"],
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",

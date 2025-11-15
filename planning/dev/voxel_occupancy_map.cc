@@ -1,82 +1,82 @@
-#include "drake/planning/dev/voxel_collision_map.h"
+#include "drake/planning/dev/voxel_occupancy_map.h"
 
 #include <utility>
 
-#include <voxelized_geometry_tools/collision_map.hpp>
+#include <voxelized_geometry_tools/occupancy_map.hpp>
 #include <voxelized_geometry_tools/signed_distance_field.hpp>
 
-#include "drake/planning/dev/voxel_collision_map_internal.h"
+#include "drake/planning/dev/voxel_occupancy_map_internal.h"
 #include "drake/planning/dev/voxel_signed_distance_field_internal.h"
 
 namespace drake {
 namespace planning {
 
 using common_robotics_utilities::voxel_grid::GridSizes;
-using voxelized_geometry_tools::CollisionCell;
-using voxelized_geometry_tools::CollisionMap;
+using voxelized_geometry_tools::OccupancyCell;
+using voxelized_geometry_tools::OccupancyMap;
 using voxelized_geometry_tools::SignedDistanceField;
 
 namespace {
 
 std::shared_ptr<void> CopyInternalRepresentation(
-    const VoxelCollisionMap& collision_map) {
-  auto copied_internal_collision_map = std::make_shared<CollisionMap>(
-      internal::GetInternalCollisionMap(collision_map));
-  return std::shared_ptr<void>(copied_internal_collision_map,
-                               copied_internal_collision_map.get());
+    const VoxelOccupancyMap& occupancy_map) {
+  auto copied_internal_occupancy_map = std::make_shared<OccupancyMap>(
+      internal::GetInternalOccupancyMap(occupancy_map));
+  return std::shared_ptr<void>(copied_internal_occupancy_map,
+                               copied_internal_occupancy_map.get());
 }
 
 }  // namespace
 
-VoxelCollisionMap::VoxelCollisionMap() {
+VoxelOccupancyMap::VoxelOccupancyMap() {
   InitializeEmpty();
 }
 
-VoxelCollisionMap::VoxelCollisionMap(const std::string& parent_body_name,
+VoxelOccupancyMap::VoxelOccupancyMap(const std::string& parent_body_name,
                                      const math::RigidTransformd& X_PG,
                                      const Eigen::Vector3d& grid_dimensions,
                                      const double grid_resolution,
                                      const float default_occupancy) {
   const GridSizes cru_sizes(grid_resolution, grid_dimensions.x(),
                             grid_dimensions.y(), grid_dimensions.z());
-  const CollisionCell default_cell(default_occupancy);
-  auto internal_collision_map = std::make_shared<CollisionMap>(
+  const OccupancyCell default_cell(default_occupancy);
+  auto internal_occupancy_map = std::make_shared<OccupancyMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
   internal_representation_ = std::shared_ptr<void>(
-      internal_collision_map, internal_collision_map.get());
+      internal_occupancy_map, internal_occupancy_map.get());
 }
 
-VoxelCollisionMap::VoxelCollisionMap(
+VoxelOccupancyMap::VoxelOccupancyMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
     const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
     const double grid_resolution, const float default_occupancy) {
   const GridSizes cru_sizes(grid_resolution, grid_sizes.x(), grid_sizes.y(),
                             grid_sizes.z());
-  const CollisionCell default_cell(default_occupancy);
-  auto internal_collision_map = std::make_shared<CollisionMap>(
+  const OccupancyCell default_cell(default_occupancy);
+  auto internal_occupancy_map = std::make_shared<OccupancyMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
   internal_representation_ = std::shared_ptr<void>(
-      internal_collision_map, internal_collision_map.get());
+      internal_occupancy_map, internal_occupancy_map.get());
 }
 
-VoxelCollisionMap::VoxelCollisionMap(const VoxelCollisionMap& other) {
+VoxelOccupancyMap::VoxelOccupancyMap(const VoxelOccupancyMap& other) {
   internal_representation_ = CopyInternalRepresentation(other);
 }
 
-VoxelCollisionMap::VoxelCollisionMap(VoxelCollisionMap&& other) {
+VoxelOccupancyMap::VoxelOccupancyMap(VoxelOccupancyMap&& other) {
   internal_representation_ = std::move(other.internal_representation_);
   other.InitializeEmpty();
 }
 
-VoxelCollisionMap& VoxelCollisionMap::operator=(
-    const VoxelCollisionMap& other) {
+VoxelOccupancyMap& VoxelOccupancyMap::operator=(
+    const VoxelOccupancyMap& other) {
   if (this != &other) {
     internal_representation_ = CopyInternalRepresentation(other);
   }
   return *this;
 }
 
-VoxelCollisionMap& VoxelCollisionMap::operator=(VoxelCollisionMap&& other) {
+VoxelOccupancyMap& VoxelOccupancyMap::operator=(VoxelOccupancyMap&& other) {
   if (this != &other) {
     internal_representation_ = std::move(other.internal_representation_);
     other.InitializeEmpty();
@@ -84,12 +84,12 @@ VoxelCollisionMap& VoxelCollisionMap::operator=(VoxelCollisionMap&& other) {
   return *this;
 }
 
-VoxelSignedDistanceField VoxelCollisionMap::ExportSignedDistanceField(
+VoxelSignedDistanceField VoxelOccupancyMap::ExportSignedDistanceField(
     const VoxelSignedDistanceField::GenerationParameters& parameters) const {
-  const auto& internal_collision_map = internal::GetInternalCollisionMap(*this);
+  const auto& internal_occupancy_map = internal::GetInternalOccupancyMap(*this);
 
   auto internal_sdf = std::make_shared<SignedDistanceField<float>>(
-      internal_collision_map.ExtractSignedDistanceFieldFloat(
+      internal_occupancy_map.ExtractSignedDistanceFieldFloat(
           internal::ToVGT(parameters)));
 
   auto internal_sdf_representation =
@@ -98,20 +98,20 @@ VoxelSignedDistanceField VoxelCollisionMap::ExportSignedDistanceField(
   return VoxelSignedDistanceField(internal_sdf_representation);
 }
 
-const std::string& VoxelCollisionMap::parent_body_name() const {
-  const auto& internal_collision_map = internal::GetInternalCollisionMap(*this);
-  return internal_collision_map.GetFrame();
+const std::string& VoxelOccupancyMap::parent_body_name() const {
+  const auto& internal_occupancy_map = internal::GetInternalOccupancyMap(*this);
+  return internal_occupancy_map.GetFrame();
 }
 
-bool VoxelCollisionMap::is_empty() const {
-  const auto& internal_collision_map = internal::GetInternalCollisionMap(*this);
-  return !internal_collision_map.IsInitialized();
+bool VoxelOccupancyMap::is_empty() const {
+  const auto& internal_occupancy_map = internal::GetInternalOccupancyMap(*this);
+  return !internal_occupancy_map.IsInitialized();
 }
 
-void VoxelCollisionMap::InitializeEmpty() {
-  auto internal_collision_map = std::make_shared<CollisionMap>();
+void VoxelOccupancyMap::InitializeEmpty() {
+  auto internal_occupancy_map = std::make_shared<OccupancyMap>();
   internal_representation_ = std::shared_ptr<void>(
-      internal_collision_map, internal_collision_map.get());
+      internal_occupancy_map, internal_occupancy_map.get());
 }
 
 }  // namespace planning
