@@ -3,6 +3,10 @@
 // Load utils.
 @UTILS_CONTENT@
 
+if (env.JOB_NAME.contains("continuous")) {
+  maybeAbortBuild()
+}
+
 node(getNodeLabel()) {
   stage('test') {
     timeout(600) {

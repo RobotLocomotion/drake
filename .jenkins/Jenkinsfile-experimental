@@ -1,6 +1,8 @@
 #!/usr/bin/env groovy
 
 // Load utils.
+import jenkins.model.Jenkins
+
 /**
  * Performs the checkout step for drake (cloning into WORKSPACE/'src') and
  * drake-ci (cloning into WORKSPACE/'ci').
@@ -176,13 +178,31 @@ def getNodeLabel() {
   }
 }
 
+/**
+ Aborts the current build if there is a newer job in the queue.
+ */
+def maybeAbortBuild() {
+  def jenkins = Jenkins.instance
+  def buildNumber = env.BUILD_NUMBER.toInteger()
+  def newerQueued = jenkins.queue.items.find { qi ->
+    qi.task.name == env.JOB_NAME && qi.params != null && qi.id > buildNumber
+  }
+
+  if (newerQueued) {
+    currentBuild.result = 'ABORTED'
+    throw new Exception(
+      "There is a newer job in the queue, which subsumes the current job."
+    )
+  }
+}
+
 
 // Check if CI should be deferred for this pull request based on the label.
 // CHANGE_ID should always be defined in this file, as it corresponds to
 // pull requests, but we should check anyways.
 if(env.CHANGE_ID) {
   if (pullRequest.labels.contains('status: defer ci')) {
-    currentBuild.result == 'ABORTED'
+    currentBuild.result = 'ABORTED'
     throw new Exception(
       "This pull request is labeled 'defer ci'. " +
       "This label will need to be removed in order for CI to pass " +
