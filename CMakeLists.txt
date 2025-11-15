@@ -291,23 +291,39 @@ endif()
 set(BAZEL_REPO_ENV)
 
 if(NOT APPLE)
-  string(APPEND BAZEL_REPO_ENV
-    " --repo_env=CC=${CMAKE_C_COMPILER}"
-    " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
-  )
-  # Pass a Bazel flag which enforces the underlying compiler so that
-  # compiler- and version-specific logic (e.g., warnings) is enforced in the
-  # build, since rules_cc's support for compiler identification is not as
-  # robust as using CMake's CMAKE_<LANG>_COMPILER_ID.
-  if(CMAKE_C_COMPILER_ID STREQUAL Clang)
-    string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/cc_toolchain:compiler=clang"
-    )
-  elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
-    string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/cc_toolchain:compiler=gcc"
-    )
+  # Determine the real underlying compiler, so that compiler- and version-
+  # specific warning logic is enforced throughout the build (even for
+  # externals). Since rules_cc only identifies the compiler based on the
+  # filename (rather than actually running it, as CMake does), create a local
+  # symlink to the compiler with the expected name.
+  # TODO(tyler-yankee): Ideally, rules_cc would perform proper compiler
+  # introspection so that this workaround is not needed, but that doesn't seem
+  # to exist yet.
+
+  # Base case; use whatever we were given. (If the filenames already look like
+  # gcc or clang, or if we fail to parse, we'll fall back to this.)
+  set(DRAKE_C_COMPILER "${CMAKE_C_COMPILER}")
+  set(DRAKE_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
+
+  cmake_path(GET CMAKE_C_COMPILER FILENAME C_COMPILER_BASENAME)
+  if (NOT C_COMPILER_BASENAME MATCHES "(gcc|clang)(-\\d+)?")
+    if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+      set(DRAKE_C_COMPILER "${CMAKE_BINARY_DIR}/clang")
+      set(DRAKE_CXX_COMPILER "${CMAKE_BINARY_DIR}/clang++")
+      file(CREATE_LINK "${CMAKE_C_COMPILER}" "${DRAKE_C_COMPILER}" SYMBOLIC)
+      file(CREATE_LINK "${CMAKE_CXX_COMPILER}" "${DRAKE_CXX_COMPILER}" SYMBOLIC)
+    elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+      set(DRAKE_C_COMPILER "${CMAKE_BINARY_DIR}/gcc")
+      set(DRAKE_CXX_COMPILER "${CMAKE_BINARY_DIR}/g++")
+      file(CREATE_LINK "${CMAKE_C_COMPILER}" "${DRAKE_C_COMPILER}" SYMBOLIC)
+      file(CREATE_LINK "${CMAKE_CXX_COMPILER}" "${DRAKE_CXX_COMPILER}" SYMBOLIC)
+    endif()
   endif()
+
+  string(APPEND BAZEL_REPO_ENV
+    " --repo_env=CC=${DRAKE_C_COMPILER}"
+    " --repo_env=CXX=${DRAKE_CXX_COMPILER}"
+  )
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
