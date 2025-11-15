@@ -156,7 +156,7 @@ output_ports:
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
-  ~Rod2D() override {}
+  ~Rod2D() override;
 
   /// System model and approach for simulating the system.
   enum class SystemType {
