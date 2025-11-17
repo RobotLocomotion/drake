@@ -221,14 +221,7 @@ void DefineGeometryProperties(py::module m) {
             py::arg("name"), cls_doc.RemoveProperty.doc)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
-        .def(
-            "__str__",
-            [](const Class& self) {
-              std::stringstream ss;
-              ss << self;
-              return ss.str();
-            },
-            "Returns formatted string.");
+        .def("__str__", &Class::to_string, "Returns formatted string.");
   }
 }
 
