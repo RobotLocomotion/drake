@@ -27,6 +27,7 @@ _SUBDIRS = [
     "geometry/render_vtk",
     "lcm",
     "manipulation/kuka_iiwa",
+    "manipulation/franka_panda",
     "manipulation/schunk_wsg",
     "manipulation/util",
     "math",

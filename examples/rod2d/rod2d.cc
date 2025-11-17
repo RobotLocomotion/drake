@@ -18,6 +18,9 @@ namespace examples {
 namespace rod2d {
 
 template <typename T>
+Rod2D<T>::~Rod2D() = default;
+
+template <typename T>
 Rod2D<T>::Rod2D(SystemType system_type, double dt)
     : system_type_(system_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or

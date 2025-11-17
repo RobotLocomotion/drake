@@ -142,6 +142,8 @@ FingerNoSlidingConstraint::FingerNoSlidingConstraint(
       from_context_(from_context),
       to_context_(to_context) {}
 
+FingerNoSlidingConstraint::~FingerNoSlidingConstraint() = default;
+
 template <typename T>
 void FingerNoSlidingConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
@@ -239,6 +241,9 @@ FingerNoSlidingFromFixedPostureConstraint::
       face_{face},
       from_context_{from_context},
       to_context_{to_context} {}
+
+FingerNoSlidingFromFixedPostureConstraint::
+    ~FingerNoSlidingFromFixedPostureConstraint() = default;
 
 template <typename T>
 void FingerNoSlidingFromFixedPostureConstraint::DoEvalGeneric(
