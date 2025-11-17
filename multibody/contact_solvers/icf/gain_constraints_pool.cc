@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
+
 #include <algorithm>
 
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
@@ -9,11 +11,7 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
-
-template <typename T>
-void IcfModel<T>::GainConstraintsPool::Clear() {
+void GainConstraintsPool<T>::Clear() {
   clique_.clear();
   constraint_sizes_.clear();
   K_.Clear();
@@ -23,7 +21,7 @@ void IcfModel<T>::GainConstraintsPool::Clear() {
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::Resize(std::span<const int> sizes) {
+void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());
   const int num_elements = ssize(sizes);
@@ -34,10 +32,9 @@ void IcfModel<T>::GainConstraintsPool::Resize(std::span<const int> sizes) {
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::Set(const int index, int clique,
-                                           const VectorX<T>& K,
-                                           const VectorX<T>& b,
-                                           const VectorX<T>& e) {
+void GainConstraintsPool<T>::Set(const int index, int clique,
+                                 const VectorX<T>& K, const VectorX<T>& b,
+                                 const VectorX<T>& e) {
   DRAKE_ASSERT(index >= 0 && index < num_constraints());
   const int nv = model().clique_size(clique);
   DRAKE_DEMAND(K.size() == nv);
@@ -52,7 +49,7 @@ void IcfModel<T>::GainConstraintsPool::Set(const int index, int clique,
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::CalcData(
+void GainConstraintsPool<T>::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
 
@@ -71,8 +68,8 @@ void IcfModel<T>::GainConstraintsPool::CalcData(
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::AccumulateGradient(
-    const IcfData<T>& data, VectorX<T>* gradient) const {
+void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
+                                                VectorX<T>* gradient) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
@@ -85,7 +82,7 @@ void IcfModel<T>::GainConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::AccumulateHessian(
+void GainConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
@@ -98,7 +95,7 @@ void IcfModel<T>::GainConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::ProjectAlongLine(
+void GainConstraintsPool<T>::ProjectAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();
@@ -122,10 +119,9 @@ void IcfModel<T>::GainConstraintsPool::ProjectAlongLine(
 }
 
 template <typename T>
-T IcfModel<T>::GainConstraintsPool::Clamp(int k,
-                                          const Eigen::Ref<const VectorX<T>>& v,
-                                          EigenPtr<VectorX<T>> gamma,
-                                          EigenPtr<MatrixX<T>> G) const {
+T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
+                                EigenPtr<VectorX<T>> gamma,
+                                EigenPtr<MatrixX<T>> G) const {
   const int n = v.size();
   DRAKE_ASSERT(gamma->size() == n);
   DRAKE_ASSERT(G->rows() == n);
@@ -186,7 +182,6 @@ T IcfModel<T>::GainConstraintsPool::Clamp(int k,
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    double>::GainConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    drake::AutoDiffXd>::GainConstraintsPool;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::
+        GainConstraintsPool);

@@ -112,8 +112,7 @@ void MakeModel(IcfModel<T>* model, bool single_clique = false) {
   const T stiffness = 1.0e6;
   const T friction = 0.5;
 
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   // Resize to hold three patches with one contact pair each.
   // N.B. num_pairs_per_patch is allocated on the heap.

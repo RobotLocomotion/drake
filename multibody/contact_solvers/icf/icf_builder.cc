@@ -343,8 +343,7 @@ template <typename T>
 void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
   const int num_surfaces = surfaces_.size();
 
   // First we'll get the number of contact pairs for point contact. There is one
@@ -372,8 +371,7 @@ void IcfBuilder<T>::AllocateCouplerConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
-  typename IcfModel<T>::CouplerConstraintsPool& couplers =
-      model->coupler_constraints_pool();
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
   couplers.Resize(specs_map.size());
 }
 
@@ -386,8 +384,7 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
 
-  typename IcfModel<T>::CouplerConstraintsPool& couplers =
-      model->coupler_constraints_pool();
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
@@ -428,8 +425,7 @@ template <typename T>
 void IcfBuilder<T>::AllocateLimitConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
-  typename IcfModel<T>::LimitConstraintsPool& limits =
-      model->limit_constraints_pool();
+  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
   limits.Resize(limited_clique_sizes_, limit_constraint_to_clique_);
 }
@@ -442,8 +438,7 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
 
   const SpanningForest& forest = GetInternalTree(plant()).forest();
 
-  typename IcfModel<T>::LimitConstraintsPool& limits =
-      model->limit_constraints_pool();
+  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
@@ -482,8 +477,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   // Fill in the point contact pairs.
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
@@ -563,8 +557,7 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
 
   const int num_surfaces = surfaces_.size();
 
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     // To get the patch index, we need to account for the fact that there may

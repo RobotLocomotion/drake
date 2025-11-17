@@ -284,7 +284,7 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(model.clique_size(0), 6);
   EXPECT_EQ(model.clique_size(1), 6);
 
-  IcfModel<double>::PatchConstraintsPool& patch_constraints =
+  PatchConstraintsPool<double>& patch_constraints =
       model.patch_constraints_pool();
   EXPECT_EQ(patch_constraints.num_patches(), 1);
   EXPECT_EQ(patch_constraints.total_num_pairs(), num_pairs);

@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
+
 #include <limits>
 #include <vector>
 
@@ -11,11 +13,7 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
-
-template <typename T>
-void IcfModel<T>::LimitConstraintsPool::Clear() {
+void LimitConstraintsPool<T>::Clear() {
   constraint_to_clique_.clear();
   constraint_sizes_.clear();
   ql_.Clear();
@@ -27,7 +25,7 @@ void IcfModel<T>::LimitConstraintsPool::Clear() {
 }
 
 template <typename T>
-void IcfModel<T>::LimitConstraintsPool::Resize(
+void LimitConstraintsPool<T>::Resize(
     std::span<const int> constrained_clique_sizes,
     std::span<const int> constraint_to_clique) {
   DRAKE_DEMAND(constrained_clique_sizes.size() == constraint_to_clique.size());
@@ -58,9 +56,8 @@ void IcfModel<T>::LimitConstraintsPool::Resize(
 }
 
 template <typename T>
-void IcfModel<T>::LimitConstraintsPool::Set(int index, int clique, int dof,
-                                            const T& q0, const T& ql,
-                                            const T& qu) {
+void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
+                                  const T& ql, const T& qu) {
   lower_limit(index, dof) = ql;
   upper_limit(index, dof) = qu;
   configuration(index, dof) = q0;
@@ -82,9 +79,8 @@ void IcfModel<T>::LimitConstraintsPool::Set(int index, int clique, int dof,
 }
 
 template <typename T>
-T IcfModel<T>::LimitConstraintsPool::CalcLimitData(const T& v_hat, const T& R,
-                                                   const T& v, T* gamma,
-                                                   T* G) const {
+T LimitConstraintsPool<T>::CalcLimitData(const T& v_hat, const T& R, const T& v,
+                                         T* gamma, T* G) const {
   T cost = 0;
   *(gamma) = 0;
   *(G) = 0;
@@ -100,7 +96,7 @@ T IcfModel<T>::LimitConstraintsPool::CalcLimitData(const T& v_hat, const T& R,
 }
 
 template <typename T>
-void IcfModel<T>::LimitConstraintsPool::CalcData(
+void LimitConstraintsPool<T>::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
@@ -132,8 +128,8 @@ void IcfModel<T>::LimitConstraintsPool::CalcData(
 }
 
 template <typename T>
-void IcfModel<T>::LimitConstraintsPool::AccumulateGradient(
-    const IcfData<T>& data, VectorX<T>* gradient) const {
+void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
+                                                 VectorX<T>* gradient) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
 
@@ -151,7 +147,7 @@ void IcfModel<T>::LimitConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void IcfModel<T>::LimitConstraintsPool::AccumulateHessian(
+void LimitConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data =
       data.cache().limit_constraints_data;
@@ -164,7 +160,7 @@ void IcfModel<T>::LimitConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void IcfModel<T>::LimitConstraintsPool::ProjectAlongLine(
+void LimitConstraintsPool<T>::ProjectAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();
@@ -200,7 +196,6 @@ void IcfModel<T>::LimitConstraintsPool::ProjectAlongLine(
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    double>::LimitConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    drake::AutoDiffXd>::LimitConstraintsPool;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::
+        LimitConstraintsPool);

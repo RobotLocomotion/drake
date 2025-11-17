@@ -8,17 +8,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparsityPattern;
-
-template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
-
-template <typename T>
-using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
-template <typename T>
-using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
-
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   DRAKE_ASSERT(params != nullptr);
@@ -200,7 +189,6 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
 
   // Compute constraint data.
-  // TODO(CENIC): factor out common functionality into a ConstraintsPool class.
   coupler_constraints_pool_.CalcData(v, &cache.coupler_constraints_data);
   gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
   limit_constraints_pool_.CalcData(v, &cache.limit_constraints_data);
@@ -224,16 +212,15 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 template <typename T>
 std::unique_ptr<BlockSparseSymmetricMatrixT<T>> IcfModel<T>::MakeHessian(
     const IcfData<T>& data) const {
-  auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
-      sparsity_pattern());
+  auto hessian =
+      std::make_unique<BlockSparseSymmetricMatrixT<T>>(sparsity_pattern());
   UpdateHessian(data, hessian.get());
   return hessian;
 }
 
 template <typename T>
-void IcfModel<T>::UpdateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
+                                BlockSparseSymmetricMatrixT<T>* hessian) const {
   hessian->SetZero();
 
   // Initialize hessian = A (block diagonal).

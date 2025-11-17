@@ -1,15 +1,12 @@
 #pragma once
 
-#ifndef DRAKE_ICF_MODEL_NESTED_CLASS_INCLUDES
-#error Do not directly include this file; instead, use icf_model.h.
-#endif
-
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -17,8 +14,15 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+
+using internal::BlockSparseSymmetricMatrixT;
+
 namespace icf {
 namespace internal {
+
+// Forward declaration to break circular dependencies.
+template <typename T>
+class IcfModel;
 
 /* A pool of coupler constraints (qᵢ - ρqⱼ = Δq) linking generalized positions
 (qᵢ, qⱼ) with gear ratio ρ and offset Δq.
@@ -27,12 +31,12 @@ Coupler constraints only apply to joints within the same clique, so they do not
 change the sparsity structure of the problem.
 TODO(vincekurtz): consider relaxing this requirement. */
 template <typename T>
-class IcfModel<T>::CouplerConstraintsPool {
+class CouplerConstraintsPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CouplerConstraintsPool);
 
   /* Constructor for an empty pool. */
-  CouplerConstraintsPool(const IcfModel<T>* parent_model)
+  explicit CouplerConstraintsPool(const IcfModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
@@ -73,9 +77,8 @@ class IcfModel<T>::CouplerConstraintsPool {
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
   /* Add the Hessian contribution of this constraint to the overall Hessian. */
-  void AccumulateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+  void AccumulateHessian(const IcfData<T>& data,
+                         BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   /* Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
   for exact line search. */
@@ -106,3 +109,7 @@ class IcfModel<T>::CouplerConstraintsPool {
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::
+        CouplerConstraintsPool);

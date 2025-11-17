@@ -16,7 +16,6 @@ namespace icf {
 namespace internal {
 
 using contact_solvers::internal::BlockSparseCholeskySolver;
-using contact_solvers::internal::BlockSparseSymmetricMatrixT;
 using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
