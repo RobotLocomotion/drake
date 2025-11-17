@@ -2155,6 +2155,12 @@ accessed via this method.)""";
           const char* doc =
 R"""(Reports the number of property groups in this set.)""";
         } num_groups;
+        // Symbol: drake::geometry::GeometryProperties::to_string
+        struct /* to_string */ {
+          // Source: drake/geometry/geometry_properties.h
+          const char* doc =
+R"""(Converts the GeometryProperties to a string representation.)""";
+        } to_string;
       } GeometryProperties;
       // Symbol: drake::geometry::GeometrySet
       struct /* GeometrySet */ {
@@ -6539,6 +6545,12 @@ Raises:
 Raises:
     RuntimeError if any values are outside of the range [0, 1].)""";
         } set;
+        // Symbol: drake::geometry::Rgba::to_string
+        struct /* to_string */ {
+          // Source: drake/geometry/rgba.h
+          const char* doc =
+R"""(Converts the Rgba value to a string representation.)""";
+        } to_string;
         // Symbol: drake::geometry::Rgba::update
         struct /* update */ {
           // Source: drake/geometry/rgba.h

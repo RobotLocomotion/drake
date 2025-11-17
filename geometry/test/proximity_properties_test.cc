@@ -1,6 +1,5 @@
 #include "drake/geometry/proximity_properties.h"
 
-#include <sstream>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -185,9 +184,7 @@ GTEST_TEST(ProximityPropertiesTest, HydroelasticTypeTest) {
   for (const auto& [name, value] : known_values) {
     EXPECT_EQ(internal::GetHydroelasticTypeFromString(name), value);
     EXPECT_EQ(internal::GetStringFromHydroelasticType(value), name);
-    std::stringstream ss;
-    ss << value;
-    EXPECT_EQ(ss.str(), name);
+    EXPECT_EQ(fmt::to_string(value), name);
   }
 
   DRAKE_EXPECT_THROWS_MESSAGE(internal::GetHydroelasticTypeFromString("foobar"),

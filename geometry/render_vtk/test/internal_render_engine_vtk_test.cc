@@ -2167,7 +2167,7 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
     const TestColor center_color(image.at(cx, cy));
     EXPECT_TRUE(IsColorNear(center_color, config.sphere_color, tolerance))
         << "  test color: " << center_color << "\n"
-        << "  expected sphere color: " << config.sphere_color;
+        << "  expected sphere color: " << fmt::to_string(config.sphere_color);
 
     // Test the background (we see the right part of the environment map
     // or none at all, if we're not using the sky box).
