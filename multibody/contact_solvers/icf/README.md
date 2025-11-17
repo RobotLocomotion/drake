@@ -1,0 +1,43 @@
+ICF solves the convex Irrotational Contact Fields problem
+
+    minᵥ ℓ(v; q₀, v₀, δt)
+
+to produce next-step velocities v, as described in [Castro et al., 2023]. The
+CENIC integrator builds on ICF to perform error-controlled integration.
+
+This implementation of ICF focuses on simplicity and performance:
+   - Contiguous memory layouts for better cache locality.
+   - Memory allocations are performed once at simulation startup, typically with
+     overestimation. Reallocation is permitted but should occur at most once.
+   - Constraints are grouped into patches, enabling re-use of per-patch
+     computations and reduced FLOP count.
+   - Contact constraints are expressed directly in world coordinates,
+     eliminating expensive intermediate frame computations.
+
+Key components and how they talk to each other:
+
+   - IcfSolver: Solves the convex problem itself, e.g., does Newton iterations.
+   - IcfBuilder: Constructs the optimization problem. The builder is the only
+     component that knows about MultibodyPlant.
+   - IcfModel: Represents the convex ICF problem min ℓ(v; q₀, v₀, δt) for a
+     given state (q₀, v₀) and time step δt. The model is constant during the
+     optimization process, e.g., for different values of decision variables v.
+   - IcfData: Holds all variable data that changes during the optimization
+     process, e.g., v and derived quantities.
+
+Other components:
+
+   - Constraint pools (CouplerConstraintsPool, GainConstraintsPool,
+     LimitConstraintsPool, PatchConstraintsPool) are part of IcfModel, and hold
+     constraints of various types.
+   - Similarly, constraint data pools (CouplerConstraintsDataPool,
+     GainConstraintsDataPool, LimitConstraintsDataPool,
+     PatchConstraintsDataPool) are part of IcfData, and hold data that change
+     with v for the corresponding constraints.
+   - The underlying EigenPool datatype is used to store constraint quantities in
+     contiguous memory blocks. EigenPool essentially provides something like
+     `std::vector<MatrixX<T>>`, but with contiguous storage.
+
+References:
+  [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
+  Contact Fields. https://arxiv.org/abs/2312.03908
