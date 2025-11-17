@@ -13,12 +13,12 @@ const RenderLabel::ValueType RenderLabel::kMaxUnreserved(kUnspecified.value_ -
                                                          4);
 
 std::ostream& operator<<(std::ostream& out, const RenderLabel& label) {
-  out << label.value_;
+  out << fmt::to_string(label);
   return out;
 }
 
-std::string to_string(const RenderLabel& label) {
-  return std::to_string(label.value_);
+std::string RenderLabel::to_string() const {
+  return std::to_string(value_);
 }
 
 }  // namespace render
