@@ -10295,7 +10295,10 @@ Parameter ``prog``:
     options.
 
 Parameter ``initial_guess``:
-    The initial guess for the decision variables.
+    The initial guess for the decision variables. If an
+    ``initial_guess`` is provided, then the solver uses
+    ``initial_guess`` and ignores the initial guess stored in
+    ``prog``.
 
 Parameter ``solver_options``:
     The options in addition to those stored in ``prog``. For each
@@ -10502,11 +10505,13 @@ string.)""";
           const char* doc =
 R"""(Solves an optimization program with optional initial guess and solver
 options. Note that these initial guess and solver options are not
-written to ``prog``. If the ``prog`` has set an option for a solver,
-and ``solver_options`` contains a different value for the same option
-on the same solver, then ``solver_options`` takes priority. Derived
-implementations of this interface may elect to throw RuntimeError for
-badly formed programs.)""";
+written to ``prog``. If the ``prog`` has set an initial guess, and
+``initial_guess`` is set, then ``initial_guess`` takes priority. If
+the ``prog`` has set an option for a solver, and ``solver_options``
+contains a different value for the same option on the same solver,
+then ``solver_options`` takes priority. Derived implementations of
+this interface may elect to throw RuntimeError for badly formed
+programs.)""";
         } Solve;
         // Symbol: drake::solvers::SolverInterface::SolverInterface
         struct /* ctor */ {
