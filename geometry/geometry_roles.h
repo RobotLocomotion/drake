@@ -1,12 +1,15 @@
 #pragma once
 
-#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/geometry/geometry_properties.h"
+
+// Remove with deprecation 2026-03-01.
+#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -226,6 +229,7 @@ enum class RoleAssign {
 
 std::string to_string(const Role& role);
 
+DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
 std::ostream& operator<<(std::ostream& out, const Role& role);
 
 //@}
@@ -245,8 +249,4 @@ IllustrationProperties MakePhongIllustrationProperties(
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::Role> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry, Role, x, drake::geometry::to_string(x))

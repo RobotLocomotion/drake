@@ -1032,6 +1032,12 @@ R"""(Allows the labels to be compared to imply a total ordering --
 facilitates use in data structures which require ordering (e.g.,
 std::set). The ordering has no particular meaning for applications.)""";
           } operator_lt;
+          // Symbol: drake::geometry::render::RenderLabel::to_string
+          struct /* to_string */ {
+            // Source: drake/geometry/render/render_label.h
+            const char* doc =
+R"""(Converts the RenderLabel value to a string representation.)""";
+          } to_string;
         } RenderLabel;
         // Symbol: drake::geometry::render::light_frame_from_string
         struct /* light_frame_from_string */ {
@@ -1057,6 +1063,20 @@ Parameter ``spec``:
 Raises:
     if ``spec`` is an unrecognized string.)""";
         } light_type_from_string;
+        // Symbol: drake::geometry::render::to_string
+        struct /* to_string */ {
+          // Source: drake/geometry/render/light_parameter.h
+          const char* doc_1args_t = R"""(Returns the LightType as a string.)""";
+          // Source: drake/geometry/render/light_parameter.h
+          const char* doc_1args_f = R"""(Returns the LightFrame as a string.)""";
+          // Source: drake/geometry/render/render_label.h
+          const char* doc_deprecated_deprecated_1args_label =
+R"""((Deprecated.)
+
+Deprecated:
+    Use label.to_string(), instead This will be removed from Drake on
+    or after 2026-03-01.)""";
+        } to_string;
       } render;
     } geometry;
   } drake;

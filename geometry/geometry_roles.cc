@@ -35,7 +35,7 @@ std::string to_string(const Role& role) {
 }
 
 std::ostream& operator<<(std::ostream& out, const Role& role) {
-  out << to_string(role);
+  out << fmt::to_string(role);
   return out;
 }
 
