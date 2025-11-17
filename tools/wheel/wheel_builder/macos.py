@@ -121,7 +121,7 @@ def build(options):
 
     # Sanitize the build/test environment.
     environment = os.environ.copy()
-    environment.pop("PYTHONPATH")
+    environment.pop("PYTHONPATH", None)
     environment.pop("RUNFILES_MANIFEST_FILE")
 
     # Xcode updates may change the default -mmacosx-version-min when not
