@@ -47,7 +47,6 @@ rigid-body contact.
 
 *Source Code:* [drake/examples/kuka_iiwa_arm](https://github.com/RobotLocomotion/drake/tree/master/examples/kuka_iiwa_arm)
 
-
 # Manipulation class at MIT
 
 Drake is being used to teach a new [course on manipulation at MIT](https://manipulation.csail.mit.edu/).
@@ -69,6 +68,19 @@ TODO(russt): Add link to
 https://github.com/gizatt/blender_server/tree/manipulation_station_demo
 once gizatt is happy with it.
 {% endcomment %}
+
+# LBM Eval Benchmark
+
+[LBM Eval](https://github.com/ToyotaResearchInstitute/lbm_eval) is a simulation
+benchmark from Toyota Research Institute containing 49 tasks that measure the
+performance of Large Behavior Model policies. A version of this benchmark was
+used for the simulation-based evaluation in the 2025 paper
+[A Careful Examination of Large Behavior Models for Multitask Dexterous Manipulation](https://toyotaresearchinstitute.github.io/lbm1/).
+
+{% include video.html
+  url = "https://github.com/user-attachments/assets/4cbe099b-3653-4030-acf2-f52f20d05889"
+  full_width = true
+%}
 
 # Trajectory Optimization
 
