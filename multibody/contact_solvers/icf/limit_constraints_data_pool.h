@@ -24,8 +24,6 @@ class LimitConstraintsDataPool {
 
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
-  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
   /* Constructs an empty pool. */
   LimitConstraintsDataPool() = default;
@@ -39,12 +37,12 @@ class LimitConstraintsDataPool {
   int num_constraints() const { return gamma_lower_pool_.size(); }
 
   /* Returns the Hessian block G = -∂γ/∂v (diagonal) for lower limits. */
-  ConstMatrixXView G_lower(int k) const { return G_lower_pool_[k]; }
-  MatrixXView G_lower(int k) { return G_lower_pool_[k]; }
+  ConstVectorXView G_lower(int k) const { return G_lower_pool_[k]; }
+  VectorXView G_lower(int k) { return G_lower_pool_[k]; }
 
   /* Returns the Hessian block G = -∂γ/∂v (diagonal) for upper limits. */
-  ConstMatrixXView G_upper(int k) const { return G_upper_pool_[k]; }
-  MatrixXView G_upper(int k) { return G_upper_pool_[k]; }
+  ConstVectorXView G_upper(int k) const { return G_upper_pool_[k]; }
+  VectorXView G_upper(int k) { return G_upper_pool_[k]; }
 
   /* Returns the constraint impulse γ = -∇ℓ(v) for lower limits. */
   ConstVectorXView gamma_lower(int k) const { return gamma_lower_pool_[k]; }
@@ -63,10 +61,8 @@ class LimitConstraintsDataPool {
   T cost_{0.0};
   EigenPool<VectorX<T>> gamma_lower_pool_;
   EigenPool<VectorX<T>> gamma_upper_pool_;
-
-  // TODO(vincekurtz): consider storing as VectorX<T> since diagonal.
-  EigenPool<MatrixX<T>> G_lower_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
-  EigenPool<MatrixX<T>> G_upper_pool_;  // G = -∂γ/∂v ≥ is Diagonal.
+  EigenPool<VectorX<T>> G_lower_pool_;  // G = -∂γ/∂v ≥ 0 is Diagonal.
+  EigenPool<VectorX<T>> G_upper_pool_;  // G = -∂γ/∂v ≥ 0 is Diagonal.
 };
 
 }  // namespace internal

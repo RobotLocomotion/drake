@@ -30,8 +30,8 @@ class LimitConstraintsPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LimitConstraintsPool);
 
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
   /* Constructs an empty pool. */
   explicit LimitConstraintsPool(const IcfModel<T>* parent_model)

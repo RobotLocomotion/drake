@@ -99,8 +99,6 @@ template <typename T>
 void LimitConstraintsPool<T>::CalcData(
     const VectorX<T>& v, LimitConstraintsDataPool<T>* limit_data) const {
   DRAKE_ASSERT(limit_data != nullptr);
-  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
-  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
 
   const T& dt = model().time_step();
   T& cost = limit_data->cost();
@@ -111,18 +109,18 @@ void LimitConstraintsPool<T>::CalcData(
     auto vk = model().clique_segment(c, v);
     VectorXView gamma_lower = limit_data->gamma_lower(k);
     VectorXView gamma_upper = limit_data->gamma_upper(k);
-    MatrixXView G_lower = limit_data->G_lower(k);
-    MatrixXView G_upper = limit_data->G_upper(k);
+    VectorXView G_lower = limit_data->G_lower(k);
+    VectorXView G_upper = limit_data->G_upper(k);
     for (int i = 0; i < nv; ++i) {
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
       cost += CalcLimitData(vl_hat(k, i) / dt, regularization(k, i), vl,
-                            &gamma_lower(i), &G_lower(i, i));
+                            &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
       const T vu = -vk(i);
       cost += CalcLimitData(vu_hat(k, i) / dt, regularization(k, i), vu,
-                            &gamma_upper(i), &G_upper(i, i));
+                            &gamma_upper(i), &G_upper(i));
     }
   }
 }
@@ -154,8 +152,8 @@ void LimitConstraintsPool<T>::AccumulateHessian(
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
-    hessian->AddToBlock(c, c, limit_data.G_lower(k));
-    hessian->AddToBlock(c, c, limit_data.G_upper(k));
+    hessian->diagonal_block(c).diagonal() += limit_data.G_lower(k);
+    hessian->diagonal_block(c).diagonal() += limit_data.G_upper(k);
   }
 }
 
@@ -176,15 +174,15 @@ void LimitConstraintsPool<T>::ProjectAlongLine(
 
     // Lower limit contribution.
     ConstVectorXView gamma_lower = limit_data.gamma_lower(k);
-    ConstMatrixXView G_lower = limit_data.G_lower(k);
-    G_times_w.noalias() = G_lower.diagonal().asDiagonal() * w_c;
+    ConstVectorXView G_lower = limit_data.G_lower(k);
+    G_times_w.noalias() = G_lower.asDiagonal() * w_c;
     (*dcost) -= w_c.dot(gamma_lower);
     (*d2cost) += w_c.dot(G_times_w);
 
     // Upper limit contribution.
     ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
-    ConstMatrixXView G_upper = limit_data.G_upper(k);
-    G_times_w.noalias() = G_upper.diagonal().asDiagonal() * w_c;
+    ConstVectorXView G_upper = limit_data.G_upper(k);
+    G_times_w.noalias() = G_upper.asDiagonal() * w_c;
     (*dcost) += w_c.dot(gamma_upper);
     (*d2cost) += w_c.dot(G_times_w);
   }
