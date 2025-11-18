@@ -248,7 +248,7 @@ class IcfModel {
 
   /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
   calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
-  cheaper, and incurs in no memory allocations.
+  cheaper, and incurs no memory allocations.
 
   The workflow to use the Hessian should be:
 
