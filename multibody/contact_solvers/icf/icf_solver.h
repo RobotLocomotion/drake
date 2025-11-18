@@ -84,10 +84,10 @@ struct IcfSolverStats {
   /* The step size at this iteration, ||Δvₖ|| */
   std::vector<double> step_norm;
 
-  /* Reset the stats to start a new solve. */
+  /* Resets the stats to start a new solve. */
   void Clear();
 
-  /* Reserve space for the vectors to avoid reallocations. */
+  /* Reserves space for the vectors to avoid reallocations. */
   void Reserve(int size);
 };
 
@@ -103,7 +103,7 @@ class IcfSolver {
 
   IcfSolver() { stats_.Reserve(parameters_.max_iterations); }
 
-  /* Solve the convex problem to compute next-step velocities v = min ℓ(v).
+  /* Solves the convex problem to compute next-step velocities v = min ℓ(v).
 
   @param model The ICF model defining the optimization problem.
   @param data The ICF data structure to be updated with the solution. To
@@ -115,7 +115,7 @@ class IcfSolver {
   model.ResizeData(&data) has been called. */
   bool SolveWithGuess(const IcfModel<double>& model, IcfData<double>* data);
 
-  /* Access solver statistics from the most recent solve. */
+  /* Returns solver statistics from the most recent solve. */
   const IcfSolverStats& stats() const { return stats_; }
 
   void set_parameters(const IcfSolverParameters& parameters) {
@@ -125,12 +125,12 @@ class IcfSolver {
 
   const IcfSolverParameters& get_parameters() const { return parameters_; }
 
-  /* Update only the convergence tolerance. Used by the integrator to set
+  /* Updates only the convergence tolerance. Used by the integrator to set
   convergence criteria based on integrator accuracy. */
   void set_tolerance(const double tol) { parameters_.tolerance = tol; }
 
  private:
-  /* Solve min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
+  /* Solves min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
   fallback. Returns the linesearch parameter α and the number of iterations
   taken. */
   std::pair<double, int> PerformExactLineSearch(const IcfModel<double>& model,
@@ -142,7 +142,7 @@ class IcfSolver {
   double SolveQuadraticInUnitInterval(const double a, const double b,
                                       const double c) const;
 
-  /* Solve for the Newton search direction Δv = −H⁻¹g, with flags for several
+  /* Solves for the Newton search direction Δv = −H⁻¹g, with flags for several
   levels of Hessian reuse:
 
    - reuse_factorization: reuse the exact same factorization of H as in the
@@ -158,7 +158,7 @@ class IcfSolver {
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
-  /* Indicate whether a change in problem structure requires a Hessian with a
+  /* Indicates whether a change in problem structure requires a Hessian with a
   new sparsity pattern. */
   bool SparsityPatternChanged(const IcfModel<double>& model) const;
 

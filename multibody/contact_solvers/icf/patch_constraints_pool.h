@@ -35,22 +35,22 @@ class PatchConstraintsPool {
   using JacobianView = Eigen::Map<Matrix6X<T>>;
   using ConstJacobianView = typename EigenPool<Matrix6X<T>>::ConstMatrixView;
 
-  /* Constructor for an empty pool. */
+  /* Constructs an empty pool. */
   explicit PatchConstraintsPool(const IcfModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Clear the constraints without freeing memory (capacity remains the same).
+  /* Clears the constraints without freeing memory (capacity remains the same).
   After this call num_patches() and num_pairs() are zero. */
   void Clear();
 
-  /* Resize to store the given patches and pairs.
+  /* Resizes to store the given patches and pairs.
 
   @param num_pairs_per_patch Number of contact pairs for each patch.*/
   void Resize(std::span<const int> num_pairs_per_patch);
 
-  /* Set the contact patch between bodies A and B.
+  /* Sets the contact patch between bodies A and B.
 
   @param patch_index The index of the patch within the pool.
   @param bodyA The index of body A (may be anchored).
@@ -65,7 +65,7 @@ class PatchConstraintsPool {
                 const T& static_friction, const T& dynamic_friction,
                 const Vector3<T>& p_AB_W);
 
-  /* Set the contact pair data for the given patch and pair index.
+  /* Sets the contact pair data for the given patch and pair index.
 
   @param patch_index The index of the patch within the pool.
   @param pair_index The index of the contact pair within the patch.
@@ -82,50 +82,50 @@ class PatchConstraintsPool {
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
 
-  /* Number of patches (pairs of contacting bodies) in the pool. */
+  /* Returns the number of patches (pairs of contacting bodies) in the pool. */
   int num_patches() const { return ssize(num_pairs_); }
 
-  /* Number of constraints (contact pairs) in the pool. Should be >=
-  num_patches(). */
-  int num_constraints() const { return ssize(num_pairs_); }
+  /* Returns the number of constraints in the pool. We introduce one constraint
+   * for each patch. */
+  int num_constraints() const { return num_patches(); }
 
-  /* Return a reference to the parent model. */
+  /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
-  /* Return the number of pairs in each patch. */
+  /* Returns the number of pairs in each patch. */
   std::span<const int> patch_sizes() const {
     return std::span<const int>(num_pairs_);
   }
 
-  /* Total number of pairs across all patches. */
+  /* Returns the total number of pairs across all patches. */
   int total_num_pairs() const { return ssize(fn0_); }
 
-  /* Number of pairs in the given patch. */
+  /* Returns the number of pairs in the given patch. */
   int num_pairs(int patch_index) const {
     DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
     return num_pairs_[patch_index];
   }
 
-  /* Compute the sparsity pattern for the pool. That is, cliques i is connected
+  /* Computes the sparsity pattern for the pool. That is, cliques i is connected
   to clique j > i iff sparsity[i] contains j. */
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
 
-  /* Given the body spatial velocities V_WB, compute the constraint data for
-  each patch. */
+  /* Computes constraint data for each patch, given the body spatial velocities
+  V_WB. */
   void CalcData(const EigenPool<Vector6<T>>& V_WB,
                 PatchConstraintsDataPool<T>* patch_data) const;
 
-  /* Add the gradient contribution of the patch constraints, ∇ℓ = −Jᵀ⋅γ, to the
+  /* Adds the gradient contribution of the patch constraints, ∇ℓ = −Jᵀ⋅γ, to the
   overall gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Add the Hessian contribution of the patch constraints to the overall
+  /* Adds the Hessian contribution of the patch constraints to the overall
   Hessian. */
   void AccumulateHessian(const IcfData<T>& data,
                          BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  /* Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
-  for exact line search.
+  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
+  Used for exact line search.
 
   @param patch_data The pre-computed patch constraint data.
   @param U_WB Body spatial velocities associated with u = v + αw.
@@ -137,7 +137,7 @@ class PatchConstraintsPool {
                         EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                         T* d2cost) const;
 
-  /* Set the stiction tolerance used for regularization. */
+  /* Sets the stiction tolerance used for friction regularization. */
   void set_stiction_tolerance(double stiction_tolerance) {
     DRAKE_DEMAND(stiction_tolerance > 0.0);
     stiction_tolerance_ = stiction_tolerance;
@@ -149,7 +149,7 @@ class PatchConstraintsPool {
   double stiction_tolerance_{1.0e-4};
   double sigma_{1.0e-3};
 
-  /* Compute cost, gradient, and Hessian contributions for the given pair
+  /* Computes cost, gradient, and Hessian contributions for the given pair.
 
   @param p Patch index.
   @param k Pair index within patch.
@@ -159,22 +159,26 @@ class PatchConstraintsPool {
   T CalcLaggedHuntCrossleyModel(int p, int k, const Vector3<T>& v_AcBc_W,
                                 Vector3<T>* gamma_Bc_W, Matrix3<T>* G) const;
 
-  /* Compute cost, gradient, and Hessian contributions for each patch. */
+  /* Computes cost, gradient, and Hessian contributions for each patch. */
   void CalcPatchQuantities(const EigenPool<Vector3<T>>& v_AcBc_W_pool,
                            std::vector<T>* cost_pool,
                            EigenPool<Vector6<T>>* spatial_impulses_pool,
                            EigenPool<Matrix6<T>>* patch_hessians_pool) const;
 
-  /* Given the body spatial velocities V_WB, compute the contact velocities
-  for each contact pair. */
+  /* Computes contact velocities for each contact pair from body spatial
+  velocities V_WB. */
   void CalcContactVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
                              EigenPool<Vector3<T>>* v_AcBc_W_pool) const;
 
-  /* Given the body spatial velocities V_WB, compute the relative spatial
-  velocity V_AbB_W for each patch. When A is anchored, V_WA = 0 and V_AbB_W =
-  V_WB. */
+  /* Computes relative spatial velocities V_AbB_W for each patch, given body
+  spatial velocities V_WB. When A is anchored, V_WA = 0 and V_AbB_W = V_WB. */
   void CalcConstraintVelocities(const EigenPool<Vector6<T>>& V_WB_pool,
                                 EigenPool<Vector6<T>>* V_AbB_W_pool) const;
+
+  /* Returns the index into data per patch and per contact pair.
+  @param p Patch index p < num_pairs().
+  @param k Pair index k < num_pairs(p). */
+  int patch_pair_index(int p, int k) const { return pair_data_start_[p] + k; }
 
   const IcfModel<T>* model_{nullptr};  // The parent model.
 
@@ -194,20 +198,13 @@ class PatchConstraintsPool {
   std::vector<T> dynamic_friction_;
 
   // Data per patch and per pair. Indexed by patch_pair_index(p, k).
-  std::vector<int> pair_data_start_;  // Start into arrays indexed by
-                                      // patch_pair_index(p, k).
-
-  /* Returns index into data per patch and per contact pair.
-  @param p Patch index p < num_pairs().
-  @param k Pair index k < num_pairs(p). */
-  int patch_pair_index(int p, int k) const { return pair_data_start_[p] + k; }
-
-  EigenPool<Vector3<T>> p_BC_W_;    // Position of contact point from body A.
-  EigenPool<Vector3<T>> normal_W_;  // Contact normals/
-  std::vector<T> stiffness_;        // Linear stiffness, N/m.
-  std::vector<T> fn0_;              // Previous time step normal force.
-  std::vector<T> n0_;               // Previous time step impulse.
-  std::vector<T> net_friction_;     // Friction coefficients mu(s)
+  std::vector<int> pair_data_start_;  // Starting index for each patch.
+  EigenPool<Vector3<T>> p_BC_W_;      // Position of contact point from body A.
+  EigenPool<Vector3<T>> normal_W_;    // Contact normals.
+  std::vector<T> stiffness_;          // Linear stiffness, N/m.
+  std::vector<T> fn0_;                // Previous time step normal force.
+  std::vector<T> n0_;                 // Previous time step impulse.
+  std::vector<T> net_friction_;       // Friction coefficients mu(s)
 };
 
 }  // namespace internal

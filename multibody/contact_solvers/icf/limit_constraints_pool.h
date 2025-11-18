@@ -33,21 +33,21 @@ class LimitConstraintsPool {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
-  /* Constructor for an empty pool. */
+  /* Constructs an empty pool. */
   explicit LimitConstraintsPool(const IcfModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Reset, zeroing out the constraints while keeping memory allocated. */
+  /* Resets, zeroing out the constraints while keeping memory allocated. */
   void Clear();
 
-  /* Re-allocate memory as needed, setting all constraints as infinite by
+  /* Re-allocates memory as needed, setting all constraints as infinite by
   default so they are disabled to start with. */
   void Resize(std::span<const int> constrained_clique_sizes,
               std::span<const int> constraint_to_clique);
 
-  /* Set the limit constraint parameters for the given clique and DoF.
+  /* Sets the limit constraint parameters for the given clique and DoF.
 
    @param index The index of this limit constraint in the pool.
    @param clique The clique to which this limit constraint applies.
@@ -59,57 +59,56 @@ class LimitConstraintsPool {
   void Set(int index, int clique, int dof, const T& q0, const T& ql,
            const T& qu);
 
-  /* Upper and lower limits */
+  /* Returns the lower limit for the given constraint and DoF. */
   T& lower_limit(int k, int dof) { return ql_[k](dof); }
+
+  /* Returns the upper limit for the given constraint and DoF. */
   T& upper_limit(int k, int dof) { return qu_[k](dof); }
 
-  /* Initial configuration q0 */
+  /* Returns the initial configuration q0 for the given constraint and DoF. */
   T& configuration(int k, int dof) { return q0_[k](dof); }
 
-  /* Near-rigid regularization */
+  /* Returns the near-rigid regularization parameter R. */
   T& regularization(int k, int dof) { return R_[k](dof); }
   const T regularization(int k, int dof) const { return R_[k](dof); }
 
-  /* Upper and lower bound velocity targets */
+  /* Returns upper and lower bound velocity targets */
   T& vl_hat(int k, int dof) { return vl_hat_[k](dof); }
   T& vu_hat(int k, int dof) { return vu_hat_[k](dof); }
   const T vl_hat(int k, int dof) const { return vl_hat_[k](dof); }
   const T vu_hat(int k, int dof) const { return vu_hat_[k](dof); }
 
-  /* Compute problem data for the given generalized velocities `v`. */
+  /* Computes problem data for the given generalized velocities `v`. */
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
 
-  /* Add the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
-  gradient.
-  TODO(amcastro-tri): factor out this method into a
-  GeneralizedVelocitiesConstraintsPool parent class, along with other common
-  functionality to all constraint pools on generalized velocities. */
+  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
+  gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Add the Hessian contribution of this constraint to the overall Hessian. */
+  /* Adds the Hessian contribution of this constraint to the overall Hessian. */
   void AccumulateHessian(const IcfData<T>& data,
                          BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  /* Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
-  for exact line search. */
+  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
+  Used for exact line search. */
   void ProjectAlongLine(const LimitConstraintsDataPool<T>& limit_data,
                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
                         T* dcost, T* d2cost) const;
 
-  /* Total number of limit constraints. */
+  /* Returns the total number of limit constraints. */
   int num_constraints() const { return constraint_to_clique_.size(); }
 
-  /* Number of velocities for each limit constraint. */
+  /* Returns the number of velocities for each limit constraint. */
   std::span<const int> constraint_sizes() const {
     return std::span<const int>(constraint_sizes_);
   }
 
-  /* Return a reference to the parent model. */
+  /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
  private:
-  /* Compute cost, gradient, and Hessian contribution for a single limit
+  /* Computes cost, gradient, and Hessian contribution for a single limit
   constraint. */
   T CalcLimitData(const T& v_hat, const T& R, const T& v, T* gamma, T* G) const;
 

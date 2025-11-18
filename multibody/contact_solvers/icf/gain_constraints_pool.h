@@ -42,19 +42,19 @@ class GainConstraintsPool {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
-  /* Constructor for an empty pool. */
+  /* Constructs an empty pool. */
   explicit GainConstraintsPool(const IcfModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Reset, zeroing out the constraints while keeping memory allocated. */
+  /* Resets, zeroing out the constraints while keeping memory allocated. */
   void Clear();
 
-  /* Resize this pool to store gain constraints of the given sizes. */
+  /* Resizes this pool to store gain constraints of the given sizes. */
   void Resize(std::span<const int> sizes);
 
-  /* Set the given gain constraint for the given clique.
+  /* Sets the given gain constraint for the given clique.
 
    @param index The index of this gain constraint in the pool.
    @param clique The clique to which this gain constraint applies.
@@ -65,36 +65,33 @@ class GainConstraintsPool {
   void Set(const int index, int clique, const VectorX<T>& K,
            const VectorX<T>& b, const VectorX<T>& e);
 
-  /* Compute problem data for the given generalized velocities `v`. */
+  /* Computes problem data for the given generalized velocities `v`. */
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
 
-  /* Add the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
-  gradient.
-  TODO(amcastro-tri): factor out this method into a
-  GeneralizedVelocitiesConstraintsPool parent class, along with other common
-  functionality to all constraint pools on generalized velocities. */
+  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
+  gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Add the Hessian contribution of this constraint to the overall Hessian. */
+  /* Adds the Hessian contribution of this constraint to the overall Hessian. */
   void AccumulateHessian(const IcfData<T>& data,
                          BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  /* Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
-  for exact line search. */
+  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
+  Used for exact line search. */
   void ProjectAlongLine(const GainConstraintsDataPool<T>& gain_data,
                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
                         T* dcost, T* d2cost) const;
 
-  /* Total number of gain constraints. */
+  /* Returns the total number of gain constraints stored in this pool. */
   int num_constraints() const { return clique_.size(); }
 
-  /* Number of velocities for each gain constraint. */
+  /* Returns the number of velocities for each gain constraint. */
   std::span<const int> constraint_sizes() const {
     return std::span<const int>(constraint_sizes_);
   }
 
-  /* Return a reference to the parent model. */
+  /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
  private:

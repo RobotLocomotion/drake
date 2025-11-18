@@ -35,7 +35,7 @@ class CouplerConstraintsPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CouplerConstraintsPool);
 
-  /* Constructor for an empty pool. */
+  /* Constructs an empty pool. */
   explicit CouplerConstraintsPool(const IcfModel<T>* parent_model)
       : model_(parent_model) {
     DRAKE_ASSERT(parent_model != nullptr);
@@ -44,10 +44,10 @@ class CouplerConstraintsPool {
   /* Resets, zeroing out the constraints while keeping memory allocated. */
   void Clear();
 
-  /* Resize the constraints pool to store the given number of constraints. */
+  /* Resizes the constraints pool to store the given number of constraints. */
   void Resize(const int num_constraints);
 
-  /* Set the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
+  /* Sets the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
   j-th DoFs of the given clique.
 
   @param index The index of the constraint within the pool,
@@ -63,32 +63,28 @@ class CouplerConstraintsPool {
   void Set(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
-  /* Compute problem data from the given generalized velocities v, and store in
-  the given data struct. */
+  /* Computes problem data from the given generalized velocities v, and stores
+  in the given data struct. */
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
-  /* Add the gradient contribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
-  overall gradient.
-
-  TODO(amcastro-tri): factor out this method into a
-  GeneralizedVelocitiesConstraintsPool parent class, along with other common
-  functionality to all constraint pools on generalized velocities. */
+  /* Adds the gradient contribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
+  overall gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Add the Hessian contribution of this constraint to the overall Hessian. */
+  /* Adds the Hessian contribution of this constraint to the overall Hessian. */
   void AccumulateHessian(const IcfData<T>& data,
                          BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  /* Compute the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0. Used
-  for exact line search. */
+  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
+  Used for exact line search. */
   void ProjectAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                         const VectorX<T>& w, T* dcost, T* d2cost) const;
 
-  /* Total number of constraints. */
+  /* Returns the total number of constraints stored in this pool. */
   int num_constraints() const { return constraint_to_clique_.size(); }
 
-  /* Return a reference to the parent model. */
+  /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
  private:
