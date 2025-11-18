@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
+
 #include <utility>
 
 #include "drake/common/unused.h"
@@ -10,11 +12,7 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
-
-template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::Clear() {
+void CouplerConstraintsPool<T>::Clear() {
   constraint_to_clique_.clear();
   dofs_.clear();
   gear_ratio_.clear();
@@ -23,7 +21,7 @@ void IcfModel<T>::CouplerConstraintsPool::Clear() {
 }
 
 template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::Resize(const int num_constraints) {
+void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
   constraint_to_clique_.resize(num_constraints);
   dofs_.resize(num_constraints);
   gear_ratio_.resize(num_constraints);
@@ -32,9 +30,9 @@ void IcfModel<T>::CouplerConstraintsPool::Resize(const int num_constraints) {
 }
 
 template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
-                                              int j, const T& qi, const T& qj,
-                                              T gear_ratio, T offset) {
+void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
+                                    const T& qi, const T& qj, T gear_ratio,
+                                    T offset) {
   DRAKE_ASSERT(index >= 0 && index < num_constraints());
   DRAKE_ASSERT(i >= 0 && i < model().clique_size(clique));
   DRAKE_ASSERT(j >= 0 && j < model().clique_size(clique));
@@ -55,7 +53,7 @@ void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
   // scale v̂ by 1/δt in CalcData().
   v_hat_[index] = -g0 / (1.0 + beta / M_PI);
 
-  const auto w_clique = model().clique_delassus(clique);
+  const auto w_clique = model().clique_delassus_approx(clique);
   // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
   //  J = [0 ... 1 ... -ρ ... 0]
   //             ↑      ↑
@@ -66,7 +64,7 @@ void IcfModel<T>::CouplerConstraintsPool::Set(int index, int clique, int i,
 }
 
 template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::CalcData(
+void CouplerConstraintsPool<T>::CalcData(
     const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
   DRAKE_ASSERT(coupler_data != nullptr);
 
@@ -92,8 +90,8 @@ void IcfModel<T>::CouplerConstraintsPool::CalcData(
 }
 
 template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::AccumulateGradient(
-    const IcfData<T>& data, VectorX<T>* gradient) const {
+void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
+                                                   VectorX<T>* gradient) const {
   const CouplerConstraintsDataPool<T>& coupler_data =
       data.cache().coupler_constraints_data;
 
@@ -115,7 +113,7 @@ void IcfModel<T>::CouplerConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::AccumulateHessian(
+void CouplerConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   unused(data);
 
@@ -135,7 +133,7 @@ void IcfModel<T>::CouplerConstraintsPool::AccumulateHessian(
 }
 
 template <typename T>
-void IcfModel<T>::CouplerConstraintsPool::ProjectAlongLine(
+void CouplerConstraintsPool<T>::ProjectAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
     T* dcost, T* d2cost) const {
   *dcost = 0.0;
@@ -164,7 +162,6 @@ void IcfModel<T>::CouplerConstraintsPool::ProjectAlongLine(
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    double>::CouplerConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    drake::AutoDiffXd>::CouplerConstraintsPool;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::
+        CouplerConstraintsPool);

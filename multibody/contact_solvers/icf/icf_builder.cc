@@ -97,15 +97,10 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
 }
 
 template <typename T>
-IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant) : plant_(&plant) {
+IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
+    : plant_(&plant), scratch_(plant) {
   using std::isinf;
   const int nv = plant.num_velocities();
-
-  // TODO(vincekurtz): rethink scratch. I think we can get away with just forces
-  scratch_.M.resize(nv, nv);
-  scratch_.J_V_WB.resize(6, nv);
-  scratch_.tmp_v1.resize(nv);
-  scratch_.forces = std::make_unique<MultibodyForces<T>>(plant);
 
   // Define problem cliques based on the spanning forest of the plant. Each tree
   // gets its own clique, and only trees with a non-zero number of velocities
@@ -247,9 +242,9 @@ void IcfBuilder<T>::UpdateModel(
 
   // Compute nonlinear bias terms k₀.
   params->k0.resize(nv);
-  MultibodyForces<T>& forces = *scratch_.forces;
+  MultibodyForces<T>& forces = scratch_.forces;
   plant().CalcForceElementsContribution(context, &forces);
-  const VectorX<T>& acc = scratch_.tmp_v1.setZero(nv);
+  const VectorX<T>& acc = scratch_.accelerations.setZero(nv);
   params->k0 = plant().CalcInverseDynamics(context, acc, forces);
 
   // Set the sparsity pattern for the dynamics matrix A = M + δt D.
@@ -270,7 +265,7 @@ void IcfBuilder<T>::UpdateModel(
   // Compute spatial velocity Jacobians J_WB for all bodies.
   const auto& world_frame = plant().world_frame();
   EigenPool<Matrix6X<T>>& J_WB = params->J_WB;
-  J_WB.Resize(body_jacobian_cols_);
+  J_WB.Resize(plant().num_bodies(), 6, body_jacobian_cols_);
 
   for (int b = 0; b < plant().num_bodies(); ++b) {
     const auto& body = plant().get_body(BodyIndex(b));
@@ -287,7 +282,7 @@ void IcfBuilder<T>::UpdateModel(
       const int vt_start = forest.trees(t).v_start();
       const int nt = forest.trees(t).nv();
 
-      typename EigenPool<Matrix6X<T>>::ElementView Jv_WBc_W = J_WB[b];
+      typename EigenPool<Matrix6X<T>>::MatrixView Jv_WBc_W = J_WB[b];
       if (body.is_floating_base_body()) {
         Jv_WBc_W.setIdentity();
       } else {
@@ -348,8 +343,7 @@ template <typename T>
 void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
   const int num_surfaces = surfaces_.size();
 
   // First we'll get the number of contact pairs for point contact. There is one
@@ -377,8 +371,7 @@ void IcfBuilder<T>::AllocateCouplerConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
-  typename IcfModel<T>::CouplerConstraintsPool& couplers =
-      model->coupler_constraints_pool();
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
   couplers.Resize(specs_map.size());
 }
 
@@ -391,8 +384,7 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
       plant().get_coupler_constraint_specs();
 
-  typename IcfModel<T>::CouplerConstraintsPool& couplers =
-      model->coupler_constraints_pool();
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
@@ -433,8 +425,7 @@ template <typename T>
 void IcfBuilder<T>::AllocateLimitConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
-  typename IcfModel<T>::LimitConstraintsPool& limits =
-      model->limit_constraints_pool();
+  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
   limits.Resize(limited_clique_sizes_, limit_constraint_to_clique_);
 }
@@ -447,8 +438,7 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
 
   const SpanningForest& forest = GetInternalTree(plant()).forest();
 
-  typename IcfModel<T>::LimitConstraintsPool& limits =
-      model->limit_constraints_pool();
+  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
@@ -487,8 +477,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   // Fill in the point contact pairs.
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
@@ -568,8 +557,7 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
 
   const int num_surfaces = surfaces_.size();
 
-  typename IcfModel<T>::PatchConstraintsPool& patches =
-      model->patch_constraints_pool();
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     // To get the patch index, we need to account for the fact that there may
@@ -738,6 +726,14 @@ void IcfBuilder<T>::SetExternalGainConstraints(const VectorX<T>& Ke,
 
     gain_constraints.Set(c, c, Ke_c, be_c, e);
   }
+}
+
+template <typename T>
+IcfBuilder<T>::Scratch::Scratch(const MultibodyPlant<T>& plant)
+    : forces(plant) {
+  const int nv = plant.num_velocities();
+  J_V_WB.resize(6, nv);
+  accelerations.resize(nv);
 }
 
 }  // namespace internal

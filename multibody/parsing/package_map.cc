@@ -360,7 +360,7 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   const std::string downloader =
       FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
   const std::string command =
-      fmt::format("/usr/bin/python3 {} {} {} {}", downloader, json_filename,
+      fmt::format("/usr/bin/python3 -E {} {} {} {}", downloader, json_filename,
                   error_filename, "--disable-drake-valgrind-tracing");
   const int returncode = std::system(command.c_str());
   if (returncode != 0) {

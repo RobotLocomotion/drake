@@ -13,7 +13,7 @@ class TriangleQuadratureRule {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TriangleQuadratureRule);
   TriangleQuadratureRule() = default;
-  virtual ~TriangleQuadratureRule() {}
+  virtual ~TriangleQuadratureRule();
 
   /// Returns the order of this rule.
   int order() const {

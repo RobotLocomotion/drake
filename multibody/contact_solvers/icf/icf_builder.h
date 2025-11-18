@@ -19,7 +19,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Represent a linear feedback law of the form
+/* Represents a linear feedback law of the form
     τ = −K⋅v + b,
 where K is non-negative and diagonal. */
 template <typename T>
@@ -43,7 +43,7 @@ class IcfBuilder {
   IcfBuilder(const MultibodyPlant<T>& plant,
              const systems::Context<T>& context);
 
-  /* Update the given IcfModel to represent the ICF problem
+  /* Updates the given IcfModel to represent the ICF problem
 
       min ℓ(v; q₀, v₀, δt)
 
@@ -59,63 +59,83 @@ class IcfBuilder {
                    std::optional<LinearFeedbackGains<T>> external_feedback,
                    IcfModel<T>* model);
 
-  /* Ignore actuation and external force constraints. */
+  /* Updates the IcfModel for a problem without actuation or external force
+   * constraints. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    IcfModel<T>* model) {
     UpdateModel(context, time_step, std::nullopt, std::nullopt, model);
   }
 
-  /* Only update the time step δt. All other model data remains unchanged. */
+  /* Updates only the time step δt. All other model data remains unchanged. */
   void UpdateModel(const T& time_step, IcfModel<T>* model) const;
 
  private:
-  /* Compute geometry data and store it internally for later use */
+  /* Scratch workspace data to build the model. */
+  struct Scratch {
+    explicit Scratch(const MultibodyPlant<T>& plant);
+
+    Matrix6X<T> J_V_WB;        // size 6 x nv
+    VectorX<T> accelerations;  // size nv
+    MultibodyForces<T> forces;
+  };
+
+  /* Computes geometry data and store it internally for later use. */
   void CalcGeometryContactData(const systems::Context<T>& context);
 
-  /* Allocate space for both point contact and hydroelastic contact constraints
+  /* Allocates space for both point and hydroelastic contact constraints.
   @pre Geometry contact data has already been computed */
   void AllocatePatchConstraints(IcfModel<T>* model) const;
 
-  /* Set point contact constraints in the model */
+  /* Sets point contact constraints in the model
+  @pre AllocatePatchConstraints() has already been called. */
   void SetPatchConstraintsForPointContact(const systems::Context<T>& context,
                                           IcfModel<T>* model) const;
 
-  /* Set hydroelastic contact constraints in the model */
+  /* Sets hydroelastic contact constraints in the model
+  @pre AllocatePatchConstraints() has already been called. */
   void SetPatchConstraintsForHydroelasticContact(
       const systems::Context<T>& context, IcfModel<T>* model) const;
 
-  /* Coupler constraints */
+  /* Resizes the model to accommodate coupler constraints. */
   void AllocateCouplerConstraints(IcfModel<T>* model) const;
+
+  /* Sets coupler constraints in the model.
+  @pre AllocateCouplerConstraints() has already been called. */
   void SetCouplerConstraints(const systems::Context<T>& context,
                              IcfModel<T>* model) const;
 
-  /* Joint limit constraints */
+  /* Resizes the model to accommodate limit constraints. */
   void AllocateLimitConstraints(IcfModel<T>* model) const;
+
+  /* Sets limit constraints in the model.
+  @pre AllocateLimitConstraints() has already been called. */
   void SetLimitConstraints(const systems::Context<T>& context,
                            IcfModel<T>* model) const;
 
-  /* Allocate space for gain constraints. We assume that external force
-  constraints come first, followed by actuator constraints. */
+  /* Resizes the model to accommodate gain constraints. We assume that external
+  force constraints come first, followed by actuator constraints. */
   void AllocateGainConstraints(IcfModel<T>* model, bool actuation,
                                bool external_forces) const;
 
-  /* External force constraints τ = −Kₑ⋅v + bₑ, where Kₑ is diagonal and >= 0.
-   */
+  /* Sets external force constraints τ = −Kₑ⋅v + bₑ, where Kₑ is diagonal and
+  non-negative.
+  @pre AllocateGainConstraints() has already been called. */
   void SetExternalGainConstraints(const VectorX<T>& Ke, const VectorX<T>& be,
                                   IcfModel<T>* model) const;
 
-  /* Actuation constraints τ = clamp(−Kᵤ⋅v + bᵤ, e), where Kᵤ is diagonal
-  and >= 0. Note that effort limits e are enforced here. */
+  /* Sets actuation constraints τ = clamp(−Kᵤ⋅v + bᵤ, e), where Kᵤ is diagonal
+  and non-negative. Note that effort limits e are enforced here.
+  @pre AllocateGainConstraints() has already been called. */
   void SetActuationGainConstraints(const VectorX<T>& Ku, const VectorX<T>& bu,
                                    bool has_external_forces,
                                    IcfModel<T>* model) const;
 
-  /* The multibody plant used to build the model. */
+  /* Returns the multibody plant used to build the model. */
   const MultibodyPlant<T>& plant() const { return *plant_; }
   const MultibodyPlant<T>* plant_{nullptr};
 
-  /* Map a tree index to a clique index. Cliques are trees with nv > 0.
-  If a tree has nv == 0, it maps to -1. */
+  /* Maps a tree index to a clique index. Cliques are trees with nv > 0. If a
+  tree has nv == 0, its clique index is -1. */
   int tree_to_clique(int tree_index) const {
     DRAKE_ASSERT(tree_index >= 0 && tree_index < ssize(tree_to_clique_));
     return tree_to_clique_[tree_index];
@@ -135,21 +155,15 @@ class IcfBuilder {
   std::vector<int> clique_nu_;           // number of actuators per clique.
 
   std::vector<int> limited_clique_sizes_;        // nv in each limited clique.
-  std::vector<int> clique_to_limit_constraint_;  // clique idx <--> limit idx
+  std::vector<int> clique_to_limit_constraint_;  // clique idx <--> limit idx.
   std::vector<int> limit_constraint_to_clique_;
 
   // Internal storage for geometry query results.
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;
   std::vector<geometry::ContactSurface<T>> surfaces_;
 
-  /* Scratch workspace data to build the model. */
-  struct Scratch {
-    MatrixX<T> M;        // Dense mass matrix computed by MbP.
-    Matrix6X<T> J_V_WB;  // Dense spatial velocity Jacobian.
-    VectorX<T> tmp_v1;   // Scratch of size num_velocities.
-    std::unique_ptr<MultibodyForces<T>> forces;
-  };
-  mutable Scratch scratch_;
+  // Storage for intermediate computations, often overwritten.
+  Scratch scratch_;
 };
 
 }  // namespace internal

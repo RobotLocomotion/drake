@@ -1,11 +1,13 @@
 #pragma once
 
 #include <span>
+#include <type_traits>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/ssize.h"
 
 namespace drake {
 namespace multibody {
@@ -13,274 +15,224 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Differentiate between fixed size (e.g. Matrix3d) and dynamic size (e.g.
-MatrixXd) Eigen types. */
-template <typename T>
-constexpr bool is_fixed_size_v =
-    is_eigen_type<T>::value && T::SizeAtCompileTime != Eigen::Dynamic;
-
-/* Detect fixed-size Eigen vectors, e.g. Vector3d. */
-template <typename T>
-constexpr bool is_fixed_size_vector_v =
-    is_eigen_vector<T>::value && is_fixed_size_v<T>;
-
-/* Detect dynamic-size Eigen vectors, e.g. VectorXd. */
-template <typename T>
-constexpr bool is_dynamic_size_vector_v =
-    is_eigen_vector<T>::value && !is_fixed_size_v<T>;
-
-/* Detect matrices with fixed number of rows, e.g. Matrix6Xd. */
-template <typename T>
-constexpr bool has_fixed_size_rows_v =
-    is_eigen_type<T>::value && T::RowsAtCompileTime != Eigen::Dynamic;
-
-/* Detect matrices with fixed number of columns, e.g. MatrixX4d. This includes
-vectors (e.g. VectorXd). */
-template <typename T>
-constexpr bool has_fixed_size_cols_v =
-    is_eigen_type<T>::value && T::ColsAtCompileTime != Eigen::Dynamic;
-
 /* Contiguous storage for a pool of fixed-size Eigen objects.
 
-This is essentially a wrapper around std::vector<EigenType>, where EigenType
-is something like Matrix3d, Vector4d, etc. */
-template <typename EigenType>
-struct FixedSizeStorage {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedSizeStorage);
+This is essentially a wrapper around std::vector<EigenType>, where EigenType is
+something like Matrix3d, Vector4d, etc.
 
-  static_assert(EigenType::SizeAtCompileTime != Eigen::Dynamic,
-                "Only for fixed-size Eigen types.");
+All of the public types and methods are an implementation of the EigenPool API.
+Refer to that class for documentation. */
+template <typename EigenType>
+class EigenPoolFixedSizeStorage {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EigenPoolFixedSizeStorage);
+
+  static_assert(EigenType::SizeAtCompileTime != Eigen::Dynamic);
 
   using Scalar = typename EigenType::Scalar;
-  using ElementView = EigenType&;
-  using ConstElementView = const EigenType&;
+  using ConstMatrixView = const EigenType&;
+  using MatrixView = EigenType&;
 
-  /* Contiguous storage for all Eigen objects in the pool. */
+  EigenPoolFixedSizeStorage();
+  ~EigenPoolFixedSizeStorage();
+
+  int size() const { return ssize(data_); }
+  ConstMatrixView operator[](int i) const { return data_[i]; }
+  MatrixView operator[](int i) { return data_[i]; }
+  void Resize(int num_matrices, int rows, int cols);
+  void Clear();
+  void SetZero();
+
+ private:
+  // Contiguous storage for all Eigen matrices.
   std::vector<EigenType> data_;
-
-  FixedSizeStorage() = default;
-
-  /* Set the size to zero, but keep the allocated memory. */
-  void Clear() { data_.clear(); }
-
-  /* Resize to store `num_elements`, allocating additional memory if needed. */
-  void Resize(int num_elements) { data_.resize(num_elements); }
-
-  /* Sets all elements in the pool to zero. */
-  void SetZero() {
-    Eigen::Map<VectorX<Scalar>>(data_.data()->data(),
-                                data_.size() * EigenType::SizeAtCompileTime)
-        .setZero();
-  }
-
-  /* The number of elements in the pool. */
-  int size() const { return data_.size(); }
-
-  /* Access the i-th element in the pool. */
-  ConstElementView at(int i) const { return data_.at(i); }
-  ElementView at(int i) { return data_.at(i); }
 };
 
 /* Contiguous storage for a pool of dynamic-size Eigen objects.
 
-Each element in the pool can have a different size, but they must have the
-same type (e.g. MatrixXd, VectorXd, VectorX<AutoDiffXd>, etc). */
-template <typename EigenType>
-struct DynamicSizeStorage {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizeStorage);
+Each matrix in the pool can have a different size, but they must have the same
+type (e.g. MatrixXd, VectorXd, VectorX<AutoDiffXd>, etc).
 
-  static_assert(EigenType::SizeAtCompileTime == Eigen::Dynamic,
-                "Only for dynamics-size Eigen types.");
+All of the public types and methods are an implementation of the EigenPool API.
+Refer to that class for documentation. */
+template <typename EigenType>
+class EigenPoolDynamicSizeStorage {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EigenPoolDynamicSizeStorage);
+
+  static_assert(EigenType::SizeAtCompileTime == Eigen::Dynamic);
 
   using Scalar = typename EigenType::Scalar;
-  using ElementView = Eigen::Map<EigenType>;
-  using ConstElementView = Eigen::Map<const EigenType>;
+  using ConstMatrixView = Eigen::Map<const EigenType>;
+  using MatrixView = Eigen::Map<EigenType>;
 
-  struct ElementData {
-    int index{0};  // index into Storage::data_.
+  EigenPoolDynamicSizeStorage();
+  ~EigenPoolDynamicSizeStorage();
+
+  int size() const { return blocks_.size(); }
+  ConstMatrixView operator[](int i) const {
+    return ConstMatrixView(&data_[blocks_[i].index], blocks_[i].rows,
+                           blocks_[i].cols);
+  }
+  MatrixView operator[](int i) {
+    return MatrixView(&data_[blocks_[i].index], blocks_[i].rows,
+                      blocks_[i].cols);
+  }
+  void Resize(int num_matrices, int rows, int cols);
+  /* Slight API change vs the outer class: if either RowsAtCompileTime or
+  ColsAtCompileTime is not Eigen::Dynamic, then the respective `rows` or `cols`
+  argument must be empty (vs a matching `int` in the outer class). */
+  void Resize(int num_matrices, std::span<const int> rows,
+              std::span<const int> cols);
+  void SetZero();
+  void Clear();
+
+ private:
+  struct MatrixData {
+    int index{0};  // Offset into data_.
     int rows{0};   // Number of rows.
     int cols{0};   // Number of columns.
   };
 
-  /* Index into data_ for the next Eigen element. */
-  int next_data_index_{0};
+  /* Appends a new matrix of the specified size to the end of the pool. */
+  void Add(int rows, int cols);
 
-  /* Contiguous storage for all Eigen objects in the pool. */
+  // Contiguous storage for all Eigen scalars.
   std::vector<Scalar> data_;
 
-  /* Properly sized maps to each element in the pool. */
-  std::vector<ElementData> blocks_;
-
-  DynamicSizeStorage() = default;
-
-  /* Resize the pool to store MatrixX elements of the specified sizes.
-  N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
-  compile time. */
-  void Resize(std::span<const int> rows, std::span<const int> cols) {
-    static_assert(!is_fixed_size_v<EigenType>);
-    DRAKE_ASSERT(rows.size() == cols.size());
-    Clear();
-    int total_size = 0;
-    for (int i = 0; i < ssize(rows); ++i) {
-      total_size += rows[i] * cols[i];
-    }
-    data_.reserve(total_size);
-    blocks_.reserve(ssize(rows));
-    for (int i = 0; i < ssize(rows); ++i) {
-      const int r = EigenType::RowsAtCompileTime >= 0
-                        ? EigenType::RowsAtCompileTime
-                        : rows[i];
-      const int c = EigenType::ColsAtCompileTime >= 0
-                        ? EigenType::ColsAtCompileTime
-                        : cols[i];
-      Add(r, c);
-    }
-  }
-
-  /* Resize the pool to store `num_elements` elements, each of size (rows x
-  cols). */
-  void Resize(int num_elements, int rows, int cols) {
-    static_assert(!is_fixed_size_v<EigenType>);
-    const int r =
-        EigenType::RowsAtCompileTime >= 0 ? EigenType::RowsAtCompileTime : rows;
-    const int c =
-        EigenType::ColsAtCompileTime >= 0 ? EigenType::ColsAtCompileTime : cols;
-    Clear();
-    data_.reserve(num_elements * r * c);
-    blocks_.reserve(num_elements);
-    for (int i = 0; i < num_elements; ++i) {
-      Add(r, c);
-    }
-  }
-
-  /* Set the size to zero, but keep any allocated memory. */
-  void Clear() {
-    next_data_index_ = 0;
-    data_.clear();
-    blocks_.clear();
-  }
-
-  /* Append a new element of the specified size to the end of the pool. */
-  void Add(int rows, int cols) {
-    const int size = rows * cols;
-    data_.resize(data_.size() + size);
-    blocks_.push_back({next_data_index_, rows, cols});
-    next_data_index_ += size;
-  }
-
-  /* Sets all elements in the pool to zero. */
-  void SetZero() {
-    Eigen::Map<VectorX<Scalar>>(data_.data(), data_.size()).setZero();
-  }
-
-  /* The number of elements in the pool. */
-  int size() const { return blocks_.size(); }
-
-  /* Access the i-th element in the pool. */
-  ConstElementView at(int i) const {
-    return ConstElementView(&data_.at(blocks_[i].index), blocks_[i].rows,
-                            blocks_[i].cols);
-  }
-  ElementView at(int i) {
-    return ElementView(&data_.at(blocks_[i].index), blocks_[i].rows,
-                       blocks_[i].cols);
-  }
+  // Properly sized maps to each matrix.
+  std::vector<MatrixData> blocks_;
 };
 
-/* Choose fixed-size storage (e.g. Matrix3d). */
-template <typename EigenType, int size_at_compile_time>
-struct StorageSelector {
-  using Storage = FixedSizeStorage<EigenType>;
-};
+/* A replacement for std::vector<Eigen::Matrix<...>> with a contiguous memory
+layout.
 
-/* Choose dynamic-size storage (e.g. MatrixXd). */
-template <typename EigenType>
-struct StorageSelector<EigenType, Eigen::Dynamic> {
-  using Storage = DynamicSizeStorage<EigenType>;
-};
+TODO(#23770) The pool puts all of the scalars in *this* pool next to each other,
+but we can do even better by putting the meta-data std::vector alongside the
+scalars and/or sharing the allocation across multiple pools.
 
-/* A replacement for std::vector<MatrixX<T>> with a contiguous memory layout.
-
-@tparam EigenType The type of the Eigen elements. E.g. MatrixXd, Vector3d, etc.
-@pre EigenType must be an Eigen type derived from Eigen::MatrixBase. */
+@tparam EigenType The type of Eigen::Matrix being stored; valid choices are:
+- Matrix3<T>
+- Matrix3X<T>
+- Matrix6<T>
+- Matrix6X<T>
+- MatrixX<T>
+- Vector3<T>
+- Vector6<T>
+- VectorX<T>
+where T is either `double` or `AutoDiffXd`. */
 template <typename EigenType>
 class EigenPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EigenPool);
 
-  static_assert(is_eigen_type<EigenType>::value, "Must be an Eigen type.");
+  static_assert(is_eigen_type<EigenType>::value);
 
+  /* The underlying scalar type of the Eigen::Matrix in this pool. */
   using Scalar = typename EigenType::Scalar;
+
+  /* The private implementation class. */
   using Storage =
-      typename StorageSelector<EigenType,
-                               EigenType::SizeAtCompileTime>::Storage;
-  using ElementView = typename Storage::ElementView;
-  using ConstElementView = typename Storage::ConstElementView;
+      std::conditional_t<EigenType::SizeAtCompileTime == Eigen::Dynamic,
+                         EigenPoolDynamicSizeStorage<EigenType>,
+                         EigenPoolFixedSizeStorage<EigenType>>;
 
-  /* Default constructor for an empty pool. */
-  EigenPool() = default;
+  /* The return type of const operator[]. For fixed-size storage, this is a C++
+  reference to the EigenType. For dynamic-size stoage, this is an Eigen::Map. */
+  using ConstMatrixView = typename Storage::ConstMatrixView;
 
-  // Resize methods allocate memory only if the current capacity is
-  // insufficient, and do not reduce the capacity.
+  /* The return type of operator[]. For fixed-size storage, this is a C++
+  reference to the EigenType. For dynamic-size stoage, this is an Eigen::Map. */
+  using MatrixView = typename Storage::MatrixView;
 
-  /* Resize a pool of fixed-size elements (e.g. Matrix3d). */
-  void Resize(int num_elements)
-    requires is_fixed_size_v<EigenType>
-  {
-    storage_.Resize(num_elements);
+  /* Constructs an empty pool. */
+  EigenPool();
+
+  ~EigenPool();
+
+  /* Returns the number of matrices in this pool. */
+  int size() const { return ssize(storage_); }
+
+  /* Returns a const reference (or Eigen::Map) to the i-th matrix.
+  @pre 0 <= i < size() */
+  const ConstMatrixView operator[](int i) const {
+    DRAKE_ASSERT(0 <= i && i < size());
+    return storage_[i];
   }
 
-  /* Resize a pool of dynamic-size matrices (e.g. MatrixXd).
-
-  N.B. rows (cols) are ignored if the rows (cols) of EigenType are fixed at
-  compile time. */
-  void Resize(std::span<const int> rows, std::span<const int> cols)
-    requires(!is_fixed_size_v<EigenType>)
-  {
-    storage_.Resize(rows, cols);
+  /* Returns a mutable reference (or Eigen::Map) to the i-th matrix.
+  @pre 0 <= i < size() */
+  MatrixView operator[](int i) {
+    DRAKE_ASSERT(0 <= i && i < size());
+    return storage_[i];
   }
 
-  /* Resize a pool of matrices with a fixed number of rows or columns, e.g.
-  Matrix6Xd or VectorXd. */
-  void Resize(std::span<const int> sizes)
-    requires(has_fixed_size_rows_v<EigenType> ||
-             has_fixed_size_cols_v<EigenType>)
-  {
-    storage_.Resize(sizes, sizes);
+  /* @name Re-sizing
+
+  Resize methods allocate memory only if the current capacity is insufficient,
+  and do not reduce the capacity.
+
+  Note that even though Resize() is not a cheap / inline operation, these outer
+  class wrappers are still defined inline so that the DRAKE_DEMAND checks can be
+  elided by the compiler. The Storage methods that these delegate to a properly
+  non-inline, so having these forwarding functions defined inline is not a big
+  problem.
+
+  @{ */
+
+  /* Resizes a pool using a homogeneous size for all matrices. If either or both
+  of RowsAtCompileTime or ColsAtCompileTime are not Eigen::Dynamic, then the
+  respective `rows` or `cols` argument must match the compile-time size. */
+  void Resize(int num_matrices, int rows, int cols) {
+    DRAKE_DEMAND(EigenType::RowsAtCompileTime == Eigen::Dynamic ||
+                 rows == EigenType::RowsAtCompileTime);
+    DRAKE_DEMAND(EigenType::ColsAtCompileTime == Eigen::Dynamic ||
+                 cols == EigenType::ColsAtCompileTime);
+    storage_.Resize(num_matrices, rows, cols);
   }
 
-  /* Resize a pool of dynamic-size matrices (e.g. MatrixXd), where all elements
-  have the same size. Rows (cols) are ignored if the rows (cols) of EigenType
-  are fixed at compile time. */
-  void Resize(int num_elements, int rows, int cols)
-    requires(!is_fixed_size_v<EigenType>)
+  /* Resizes a pool using heterogenous row sizes for the matrices but a fixed
+  size for `cols` that must match ColsAtCompileTime. The default `cols = 1` is
+  useful when `EigenType = Eigen::VectorX<T>`, i.e., column vectors. */
+  void Resize(int num_matrices, std::span<const int> rows, int cols = 1)
+    requires(EigenType::RowsAtCompileTime == Eigen::Dynamic &&
+             EigenType::ColsAtCompileTime >= 0)
   {
-    storage_.Resize(num_elements, rows, cols);
+    DRAKE_DEMAND(cols == EigenType::ColsAtCompileTime);
+    storage_.Resize(num_matrices, rows, {});
   }
 
-  /* Clears data. Capacity is not changed, and thus memory is not freed. */
+  /* Resizes a pool using heterogenous column sizes for the matrices but a fixed
+  size for `rows` that must match RowsAtCompileTime. */
+  void Resize(int num_matrices, int rows, std::span<const int> cols)
+    requires(EigenType::RowsAtCompileTime >= 0 &&
+             EigenType::ColsAtCompileTime == Eigen::Dynamic)
+  {
+    DRAKE_DEMAND(rows == EigenType::RowsAtCompileTime);
+    storage_.Resize(num_matrices, {}, cols);
+  }
+
+  /* Resizes a pool using heterogenous sizes for the matrices. Both
+  RowsAtCompileTime and ColsAtCompileTime must be Eigen::Dynamic. */
+  void Resize(int num_matrices, std::span<const int> rows,
+              std::span<const int> cols)
+    requires(EigenType::RowsAtCompileTime == Eigen::Dynamic &&
+             EigenType::ColsAtCompileTime == Eigen::Dynamic)
+  {
+    storage_.Resize(num_matrices, rows, cols);
+  }
+
+  /* @} */
+
+  /* Sets this pool's size() to zero. Capacity is not changed, and thus memory
+  is not freed. */
   void Clear() { storage_.Clear(); }
 
-  /* Zeroes out all elements in the pool. */
+  /* Zeroes out all matrices in this pool. */
   void SetZero() { storage_.SetZero(); }
 
-  /* Returns the number of elements in the pool. */
-  int size() const { return storage_.size(); }
-
-  /* Const access to the i-th element. */
-  const ConstElementView operator[](int i) const {
-    DRAKE_DEMAND(0 <= i && i < size());
-    return storage_.at(i);
-  }
-
-  /* Non-const access to the i-th element. */
-  ElementView operator[](int i) {
-    DRAKE_DEMAND(0 <= i && i < size());
-    return storage_.at(i);
-  }
-
  private:
-  /* The underlying data, FixedSizeStorage or DynamicSizeStorage. */
+  /* The underlying data, one of EigenPool{Fixed,Dynamic}SizeStorage. */
   Storage storage_;
 };
 

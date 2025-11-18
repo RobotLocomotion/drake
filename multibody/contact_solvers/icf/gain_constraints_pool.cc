@@ -1,3 +1,5 @@
+#include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
+
 #include <algorithm>
 
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
@@ -9,11 +11,7 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
-
-template <typename T>
-void IcfModel<T>::GainConstraintsPool::Clear() {
+void GainConstraintsPool<T>::Clear() {
   clique_.clear();
   constraint_sizes_.clear();
   K_.Clear();
@@ -23,20 +21,20 @@ void IcfModel<T>::GainConstraintsPool::Clear() {
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::Resize(std::span<const int> sizes) {
+void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());
-  K_.Resize(sizes);
-  b_.Resize(sizes);
-  le_.Resize(sizes);
-  ue_.Resize(sizes);
+  const int num_elements = ssize(sizes);
+  K_.Resize(num_elements, sizes);
+  b_.Resize(num_elements, sizes);
+  le_.Resize(num_elements, sizes);
+  ue_.Resize(num_elements, sizes);
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::Set(const int index, int clique,
-                                           const VectorX<T>& K,
-                                           const VectorX<T>& b,
-                                           const VectorX<T>& e) {
+void GainConstraintsPool<T>::Set(const int index, int clique,
+                                 const VectorX<T>& K, const VectorX<T>& b,
+                                 const VectorX<T>& e) {
   DRAKE_ASSERT(index >= 0 && index < num_constraints());
   const int nv = model().clique_size(clique);
   DRAKE_DEMAND(K.size() == nv);
@@ -51,12 +49,9 @@ void IcfModel<T>::GainConstraintsPool::Set(const int index, int clique,
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::CalcData(
+void GainConstraintsPool<T>::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
-
-  using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
-  using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
 
   T& cost = gain_data->cost();
   cost = 0;
@@ -64,14 +59,14 @@ void IcfModel<T>::GainConstraintsPool::CalcData(
     const int c = clique_[k];
     auto vk = model().clique_segment(c, v);
     VectorXView gk = gain_data->gamma(k);
-    MatrixXView Gk = gain_data->G(k);
+    VectorXView Gk = gain_data->G(k);
     cost += Clamp(k, vk, &gk, &Gk);
   }
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::AccumulateGradient(
-    const IcfData<T>& data, VectorX<T>* gradient) const {
+void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
+                                                VectorX<T>* gradient) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
@@ -84,20 +79,20 @@ void IcfModel<T>::GainConstraintsPool::AccumulateGradient(
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::AccumulateHessian(
+void GainConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
   const GainConstraintsDataPool<T>& gain_data =
       data.cache().gain_constraints_data;
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    ConstMatrixXView Gk = gain_data.G(k);
-    hessian->AddToBlock(c, c, Gk);
+    ConstVectorXView Gk = gain_data.G(k);
+    hessian->diagonal_block(c).diagonal() += Gk;
   }
 }
 
 template <typename T>
-void IcfModel<T>::GainConstraintsPool::ProjectAlongLine(
+void GainConstraintsPool<T>::ProjectAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();
@@ -110,10 +105,10 @@ void IcfModel<T>::GainConstraintsPool::ProjectAlongLine(
     const int c = clique_[k];
     auto w_c = model().clique_segment(c, w);
     ConstVectorXView gk = gain_data.gamma(k);
-    ConstMatrixXView Gk = gain_data.G(k);
+    ConstVectorXView Gk = gain_data.G(k);
 
     auto G_times_w = model().clique_segment(c, v_sized_scratch);
-    G_times_w.noalias() = Gk.diagonal().asDiagonal() * w_c;
+    G_times_w.noalias() = Gk.asDiagonal() * w_c;
 
     (*dcost) -= w_c.dot(gk);
     (*d2cost) += w_c.dot(G_times_w);
@@ -121,14 +116,12 @@ void IcfModel<T>::GainConstraintsPool::ProjectAlongLine(
 }
 
 template <typename T>
-T IcfModel<T>::GainConstraintsPool::Clamp(int k,
-                                          const Eigen::Ref<const VectorX<T>>& v,
-                                          EigenPtr<VectorX<T>> gamma,
-                                          EigenPtr<MatrixX<T>> G) const {
+T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
+                                EigenPtr<VectorX<T>> gamma,
+                                EigenPtr<VectorX<T>> G) const {
   const int n = v.size();
   DRAKE_ASSERT(gamma->size() == n);
-  DRAKE_ASSERT(G->rows() == n);
-  DRAKE_ASSERT(G->cols() == n);
+  DRAKE_ASSERT(G->size() == n);
   using std::max;
   using std::min;
 
@@ -142,7 +135,7 @@ T IcfModel<T>::GainConstraintsPool::Clamp(int k,
     const T& uei = ue_[k][i];
     const T& vi = v[i];
     T& gi = (*gamma)[i];
-    T& Gi = (*G)(i, i);
+    T& Gi = (*G)[i];
 
     const T yi = -ki * vi + bi;
 
@@ -185,7 +178,6 @@ T IcfModel<T>::GainConstraintsPool::Clamp(int k,
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    double>::GainConstraintsPool;
-template class ::drake::multibody::contact_solvers::icf::internal::IcfModel<
-    drake::AutoDiffXd>::GainConstraintsPool;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::
+        GainConstraintsPool);

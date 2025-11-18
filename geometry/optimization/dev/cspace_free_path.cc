@@ -71,6 +71,12 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
   }
 }
 
+CspaceFreePath::SeparationCertificateResult::~SeparationCertificateResult() =
+    default;
+
+CspaceFreePath::SeparationCertificateProgram::~SeparationCertificateProgram() =
+    default;
+
 CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const geometry::SceneGraph<double>* scene_graph,
                                const Eigen::Ref<const Eigen::VectorXd>& q_star,

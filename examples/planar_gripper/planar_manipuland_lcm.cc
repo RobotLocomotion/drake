@@ -18,6 +18,8 @@ PlanarManipulandStatusDecoder::PlanarManipulandStatusDecoder() {
       &PlanarManipulandStatusDecoder::UpdateDiscreteState);
 }
 
+PlanarManipulandStatusDecoder::~PlanarManipulandStatusDecoder() = default;
+
 systems::EventStatus PlanarManipulandStatusDecoder::UpdateDiscreteState(
     const systems::Context<double>& context,
     systems::DiscreteValues<double>* discrete_state) const {

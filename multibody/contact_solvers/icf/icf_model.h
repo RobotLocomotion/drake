@@ -9,12 +9,20 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/gain_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+
+using internal::BlockSparseSymmetricMatrixT;
+using internal::BlockSparsityPattern;
+
 namespace icf {
 namespace internal {
 
@@ -41,17 +49,19 @@ struct IcfParameters {
 
 /* This class defines a convex ICF problem,
 
-   minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
+   minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ_c(v).
 
-The gradient of this cost is
-
+The optimality conditions ∇ℓ = 0 are
+   Av - r + ∇ℓ_c = 0,
+   Av - r - Jᵀγ = 0,
    Av = r + Jᵀγ,
    Mv = Mv₀ - δt k₀ + Jᵀγ,
    M(v - v₀) + δt k₀ = Jᵀγ,
 
-which are the discrete momentum balance conditions for a multibody system
-with contact (and other constraints). (Note that we really use A = M + δtD to
-handle joint damping implicitly, but the above notation is easier to read.)
+since A = M, r = Av₀ - δt k₀, and ∇ℓ_c = -Jᵀγ. These are the discrete momentum
+balance conditions for a multibody system with contact (and other constraints).
+(Note that we really use A = M + δtD to handle joint damping implicitly, but the
+above notation is easier to read.)
 
 This class is designed to be independent of the MultibodyPlant used to
 construct the problem: the job of constructing the problem given a
@@ -67,18 +77,13 @@ class IcfModel {
   // For now, I'll just disable it.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfModel);
 
-  // Defined in separate headers included at the bottom of this file.
-  class CouplerConstraintsPool;
-  class LimitConstraintsPool;
-  class PatchConstraintsPool;
-  class GainConstraintsPool;
+  using ConstJacobianView = typename EigenPool<Matrix6X<T>>::ConstMatrixView;
+  using ConstVector6View = typename EigenPool<Vector6<T>>::ConstMatrixView;
+  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
+  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
+  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
 
-  using ConstJacobianView = typename EigenPool<Matrix6X<T>>::ConstElementView;
-  using ConstVector6View = typename EigenPool<Vector6<T>>::ConstElementView;
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
-
-  /* Constructor for an empty model. */
+  /* Constructs an empty model. */
   IcfModel()
       : params_{std::make_unique<IcfParameters<T>>()},
         coupler_constraints_pool_(this),
@@ -86,7 +91,7 @@ class IcfModel {
         limit_constraints_pool_(this),
         patch_constraints_pool_(this) {}
 
-  /* Release ownership of parameters so that we can re-use memory.
+  /* Releases ownership of parameters so that we can re-use memory.
   The typical usage is something like:
 
     auto params = model.ReleaseParameters();
@@ -96,125 +101,130 @@ class IcfModel {
     return std::move(params_);
   }
 
-  /* Reset problem parameters. Verifies that the parameters are valid and
+  /* Sets problem parameters. Verifies that the parameters are valid and
   computes some auxiliary data that will be useful during the solve. */
   void ResetParameters(std::unique_ptr<IcfParameters<T>> params);
 
-  /* Access to problem parameters. */
+  /* Provides access to problem parameters. */
   const IcfParameters<T>& params() const {
     DRAKE_ASSERT(params_ != nullptr);
     return *params_;
   }
 
-  /* The time step δt. */
+  /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
 
-  /* Initial velocities v₀ at the start of the time step. */
+  /* Returns initial velocities v₀ at the start of the time step. */
   const VectorX<T>& v0() const { return params().v0; }
 
-  /* Initial mass matrix M₀ at the start of the time step. */
+  /* Returns the mass matrix M₀ at the start of the time step. */
   const MatrixX<T>& M0() const { return params().M0; }
 
-  /* Initial joint damping at the start of the time step. */
+  /* Returns the joint damping vector at the start of the time step. */
   const VectorX<T>& D0() const { return params().D0; }
 
-  /* Initial coriolis, centrifugal, and gravitational terms, k₀. */
+  /* Returns initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
 
-  /* Spatial velocity Jacobian for the given body. */
+  /* Returns the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().J_WB[body];
   }
 
-  /* Composite mass of the given body. */
+  /* Returns the (composite) mass of the given body. */
   const T& body_mass(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_mass[body];
   }
 
-  /* Clique index for the given body. */
+  /* Maps a body index to a clique index. */
   int body_to_clique(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_to_clique[body];
   }
 
-  /* Check whether the given body is anchored to the world. Anchored bodies are
+  /* Checks whether the given body is anchored to the world. Anchored bodies are
   not included in the problem, and thus have a negative clique index. */
   bool is_anchored(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return body_to_clique(body) < 0;
   }
 
-  /* Check whether the given body is free floating. */
+  /* Checks whether the given body is free floating. */
   bool is_floating(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_is_floating[body] == 1;
   }
 
-  /* The number of generalized velocities in the given clique. */
+  /* Returns the number of generalized velocities in the given clique. */
   int clique_size(int clique) const {
     return clique < 0 ? 0 : params().clique_sizes[clique];
   }
 
-  /* Helpers to access the subset of elements (e.g., generalized velocities,
-  generalized forces) that go with a given clique. */
+  /* Accesses the subset of elements (e.g., generalized velocities, generalized
+  forces) that go with a given clique. */
   Eigen::VectorBlock<const VectorX<T>> clique_segment(
       int clique, const VectorX<T>& x) const;
   Eigen::VectorBlock<VectorX<T>> clique_segment(int clique,
                                                 VectorX<T>* x) const;
 
-  /* Initial spatial velocity for the given body. */
+  /* Returns the initial spatial velocity of the given body. */
   ConstVector6View V_WB0(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return V_WB0_[body];
   }
 
-  /* Scaling factor diag(M)^{-1/2} for convergence checks. */
+  /* Returns the scaling factor diag(M)^{-1/2} for convergence checks. */
   const VectorX<T>& scale_factor() const { return scale_factor_; }
 
-  /* Sparse linearized dynamics matrix block for the given clique. */
+  /* Returns the linearized dynamics matrix block for the given clique. */
   ConstMatrixXView A(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
     return A_[clique];
   }
 
-  /* Linear cost term r = A v₀ - δt k₀ */
+  /* Returns the linear cost term r = A v₀ - δt k₀ */
   const VectorX<T>& r() const { return r_; }
 
-  /* Diagonal estimation of the Delassus operator for the given clique.
+  /* Returns an approximation of the Delassus operator for the given clique.
   The Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v,
   i.e. the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
   simplify this estimation as W = diag(M)⁻¹. */
-  ConstVectorXView clique_delassus(int clique) const {
+  ConstVectorXView clique_delassus_approx(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
     return clique_delassus_[clique];
   }
 
-  /* Problem size, in terms of bodies, velocities, and cliques. Each clique
-  represents a diagonal block in the mass matrix. */
+  /* Returns the number of bodies involved in the problem.*/
   int num_bodies() const { return num_bodies_; }
+
+  /* Returns the number of generalized velocities in the problem. */
   int num_velocities() const { return num_velocities_; }
+
+  /* Returns the number of cliques in the problem. Each clique corresponds to a
+   * diagonal block in the mass matrix. */
   int num_cliques() const { return num_cliques_; }
 
+  /* Returns the total number of constraints of any type in the problem.. */
   int num_constraints() const {
     return num_patch_constraints() + num_gain_constraints() +
            num_limit_constraints() + num_coupler_constraints();
   }
 
-  CouplerConstraintsPool& coupler_constraints_pool() {
+  CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
   }
 
-  PatchConstraintsPool& patch_constraints_pool() {
+  PatchConstraintsPool<T>& patch_constraints_pool() {
     return patch_constraints_pool_;
   }
 
-  GainConstraintsPool& gain_constraints_pool() {
+  GainConstraintsPool<T>& gain_constraints_pool() {
     return gain_constraints_pool_;
   }
 
-  LimitConstraintsPool& limit_constraints_pool() {
+  LimitConstraintsPool<T>& limit_constraints_pool() {
     return limit_constraints_pool_;
   }
 
@@ -243,7 +253,7 @@ class IcfModel {
 
   /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
   calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
-  cheaper, and incurs in no memory allocations.
+  cheaper, and incurs no memory allocations.
 
   The workflow to use the Hessian should be:
 
@@ -275,16 +285,15 @@ class IcfModel {
 
   See documentation in  internal::BlockSparseCholeskySolver for further details.
   */
-  std::unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrixT<T>>
-  MakeHessian(const IcfData<T>& data) const;
+  std::unique_ptr<BlockSparseSymmetricMatrixT<T>> MakeHessian(
+      const IcfData<T>& data) const;
 
   /* Updates the values of the Hessian for the input `data`.
   @pre The sparsity of the `hessian` matches the structure of `this` model. */
-  void UpdateHessian(
-      const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+  void UpdateHessian(const IcfData<T>& data,
+                     BlockSparseSymmetricMatrixT<T>* hessian) const;
 
-  /* Pre-compute some quantities used to speed up CalcCostAlongLine() below. */
+  /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
   void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
@@ -302,37 +311,36 @@ class IcfModel {
                       const SearchDirectionData<T>& search_direction,
                       T* dcost_dalpha, T* d2cost_dalpha2) const;
 
-  /* Compute and store the Hessian sparsity pattern. */
+  /* Computes and stores the Hessian sparsity pattern. */
   void SetSparsityPattern();
 
-  /* Access the Hessian sparsity pattern. This is useful for when the sparsity
-  pattern is the same (in which case we use UpdateHessian()), and when it has
-  changed (in which case we use MakeHessian()). */
-  const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern()
-      const {
+  /* Returns the Hessian sparsity pattern. This is useful for detecting when the
+  sparsity pattern is the same (in which case we use UpdateHessian()), and when
+  it has changed (in which case we use MakeHessian()). */
+  const BlockSparsityPattern& sparsity_pattern() const {
     DRAKE_ASSERT(sparsity_pattern_ != nullptr);
     return *sparsity_pattern_;
   }
 
-  /* Change only the time step δt, updating all dependent quantities. This
+  /* Changes only the time step δt, updating all dependent quantities. This
   allows us to reuse pre-computed quantities, like geometry queries, between
   ICF solves that share a common initial state (q₀,v₀). */
   void UpdateTimeStep(const T& time_step);
 
  private:
-  /* Check that this model's parameters define a valid ICF problem. */
+  /* Checks that this model's parameters define a valid ICF problem. */
   void VerifyInvariants() const;
 
-  /* Compute result = A⋅v, where A is the (sparse) linearized dynamics matrix.
+  /* Computes result = A⋅v, where A is the (sparse) linearized dynamics matrix.
    */
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
 
-  /* Compute the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
+  /* Computes the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
   relate to momentum only (no constraints). */
   void CalcMomentumTerms(const IcfData<T>& data,
                          typename IcfData<T>::Cache* cache) const;
 
-  /* Compute spatial velocities V_WB for all bodies, given generalized
+  /* Computes spatial velocities V_WB for all bodies, given generalized
   velocities v. */
   void CalcBodySpatialVelocities(const VectorX<T>& v,
                                  EigenPool<Vector6<T>>* V_WB) const;
@@ -355,14 +363,13 @@ class IcfModel {
   int num_cliques_{0};
 
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
-  std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
-      sparsity_pattern_;
+  std::unique_ptr<BlockSparsityPattern> sparsity_pattern_;
 
   // Fixed set of constraints.
-  CouplerConstraintsPool coupler_constraints_pool_;
-  GainConstraintsPool gain_constraints_pool_;
-  LimitConstraintsPool limit_constraints_pool_;
-  PatchConstraintsPool patch_constraints_pool_;
+  CouplerConstraintsPool<T> coupler_constraints_pool_;
+  GainConstraintsPool<T> gain_constraints_pool_;
+  LimitConstraintsPool<T> limit_constraints_pool_;
+  PatchConstraintsPool<T> patch_constraints_pool_;
 };
 
 }  // namespace internal
@@ -370,14 +377,6 @@ class IcfModel {
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
-
-// The nested classes are declared in separate files.
-#define DRAKE_ICF_MODEL_NESTED_CLASS_INCLUDES
-#include "drake/multibody/contact_solvers/icf/icf_model_coupler_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_gain_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_limit_constraints_pool.h"
-#include "drake/multibody/contact_solvers/icf/icf_model_patch_constraints_pool.h"
-#undef DRAKE_ICF_MODEL_NESTED_CLASS_INCLUDES
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::contact_solvers::icf::internal::IcfModel);

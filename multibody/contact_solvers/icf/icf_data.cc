@@ -14,7 +14,7 @@ void IcfData<T>::Cache::Resize(int num_bodies, int num_velocities,
                                std::span<const int> patch_sizes) {
   Av.resize(num_velocities);
   gradient.resize(num_velocities);
-  spatial_velocities.Resize(num_bodies);
+  spatial_velocities.Resize(num_bodies, 6, 1);
 
   coupler_constraints_data.Resize(num_couplers);
   gain_constraints_data.Resize(gain_sizes);
@@ -43,12 +43,12 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
   Clear();
   Av_minus_r.resize(num_velocities);
 
-  V_WB_alpha.Resize(num_bodies);
+  V_WB_alpha.Resize(num_bodies, 6, 1);
   v_alpha.resize(num_velocities);
 
   Gw_gain.resize(num_velocities);
   Gw_limit.resize(num_velocities);
-  U_AbB_W_pool.Resize(patch_sizes.size());
+  U_AbB_W_pool.Resize(ssize(patch_sizes), 6, 1);
 
   coupler_constraints_data.Resize(num_couplers);
   gain_constraints_data.Resize(gain_sizes);

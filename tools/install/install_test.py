@@ -30,11 +30,13 @@ class InstallTest(unittest.TestCase):
         python = install_test_helper.get_python_executable()
 
         # Our launched processes should be independent, not inherit their
-        # runfiles from the install_test.py runner.
+        # runfiles from the install_test.py runner. However, the sys.path
+        # should be inherited.
         env = dict(os.environ)
         for key in ["RUNFILES_MANIFEST_FILE", "RUNFILES_DIR", "TEST_SRCDIR"]:
             if key in env:
                 del env[key]
+        env["PYTHONPATH"] = ":".join(sys.path)
 
         # Execute the test_command.
         print("+ {}".format(test_command), file=sys.stderr)

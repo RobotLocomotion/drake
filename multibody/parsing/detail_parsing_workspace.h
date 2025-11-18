@@ -24,7 +24,7 @@ struct ParsingWorkspace;
 // enables the definition of an abstract parser-selector functor type.
 class ParserInterface {
  public:
-  virtual ~ParserInterface() {}
+  virtual ~ParserInterface();
 
   // Parses a model from the input file specified by @p data_source and adds it
   // to @p plant. A new model instance will be added to @p plant.

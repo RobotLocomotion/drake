@@ -33,7 +33,7 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
     case SolverType::kLinearSystem:
       return LinearSystemSolver::id();
     case SolverType::kMobyLCP:
-      return MobyLcpSolverId::id();
+      return MobyLcpSolver::id();
     case SolverType::kMosek:
       return MosekSolver::id();
     case SolverType::kNlopt:
@@ -63,7 +63,7 @@ std::optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
     return SolverType::kIpopt;
   } else if (solver_id == LinearSystemSolver::id()) {
     return SolverType::kLinearSystem;
-  } else if (solver_id == MobyLcpSolverId::id()) {
+  } else if (solver_id == MobyLcpSolver::id()) {
     return SolverType::kMobyLCP;
   } else if (solver_id == MosekSolver::id()) {
     return SolverType::kMosek;

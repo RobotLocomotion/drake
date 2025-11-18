@@ -22,40 +22,35 @@ class GainConstraintsDataPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GainConstraintsDataPool);
 
-  using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
-  using VectorXView = typename EigenPool<VectorX<T>>::ElementView;
-  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstElementView;
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
+  using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
 
-  /* Default constructor for an empty pool. */
+  /* Constructs an empty pool. */
   GainConstraintsDataPool() = default;
 
-  /* Resize the data pool to hold constraints of the given sizes.
-  @param constraint_size The size (number of velocities) for each gain
-         constraint. */
+  /* Resizes the data pool to hold constraints of the given sizes.
+  @param constraint_size The number of velocities for each gain constraint. */
   void Resize(std::span<const int> constraint_size);
 
-  /* Number of gain constraints. */
+  /* Returns the number of gain constraints. */
   int num_constraints() const { return gamma_pool_.size(); }
 
-  /* Hessian block G = -∂γ/∂v (diagonal). */
-  ConstMatrixXView G(int k) const { return G_pool_[k]; }
-  MatrixXView G(int k) { return G_pool_[k]; }
+  /* Returns the Hessian block G = -∂γ/∂v (diagonal). */
+  ConstVectorXView G(int k) const { return G_pool_[k]; }
+  VectorXView G(int k) { return G_pool_[k]; }
 
-  /* Constraint impulse γ = -∇ℓ(v). */
+  /* Returns the constraint impulse γ = -∇ℓ(v). */
   ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
   VectorXView gamma(int k) { return gamma_pool_[k]; }
 
-  /* Constraint cost ℓ(v). */
+  /* Returns the constraint cost ℓ_c(v). */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 
  private:
   T cost_{0.0};                       // Total cost over all gain constraints.
   EigenPool<VectorX<T>> gamma_pool_;  // Generalized impulses per constraint.
-
-  // TODO(vincekurtz): consider storing as VectorX<T> since diagonal.
-  EigenPool<MatrixX<T>> G_pool_;  // G = -∂γ/∂v ≥ is diagonal.
+  EigenPool<VectorX<T>> G_pool_;      // Diagonal Hessians G = -∂γ/∂v ≥ 0.
 };
 
 }  // namespace internal

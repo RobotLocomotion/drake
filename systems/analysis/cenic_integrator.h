@@ -142,6 +142,32 @@ class CenicIntegrator final : public IntegratorBase<T> {
  private:
   friend class CenicTester;
 
+  // Preallocated scratch space
+  struct Scratch {
+    // Resize to accommodate the given plant and external state size.
+    void Resize(const MultibodyPlant<T>& plant, int nz);
+
+    // State-sized variables, x = [q; v; z]
+    VectorX<T> v;
+    VectorX<T> q;
+    VectorX<T> z;
+
+    // External forces
+    std::unique_ptr<MultibodyForces<T>> f_ext;
+
+    // Linearized external system gains
+    LinearFeedbackGains<T> actuation_feedback;  // τ = clamp(−Ku⋅v + bu)
+    LinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
+
+    // External system linearization
+    VectorX<T> gu0;       // Actuation gu(x) = B u(x) at x₀
+    VectorX<T> ge0;       // External forces ge(x) = τ_ext(x) at x₀
+    VectorX<T> gu_prime;  // Perturbed actuation gu(x') = B u(x')
+    VectorX<T> ge_prime;  // Perturbed external forces ge(x') = τ_ext(x')
+    VectorX<T> x_prime;   // Perturbed state x' for finite differences
+    MatrixX<T> N;         // Kinematic map q̇ = N v
+  };
+
   // Perform final checks and allocations before beginning integration.
   void DoInitialize() final;
 
@@ -212,26 +238,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
   T time_at_last_solve_{NAN};
 
   // Pre-allocated scratch space for intermediate calculations.
-  struct Scratch {
-    VectorX<T> v_guess;
-
-    // Next-step state
-    VectorX<T> q;
-    VectorX<T> z;
-
-    // External forces
-    std::unique_ptr<MultibodyForces<T>> f_ext;
-
-    // External system linearization
-    LinearFeedbackGains<T> actuation_feedback;  // τ = clamp(−Ku⋅v + bu)
-    LinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
-    VectorX<T> gu0;
-    VectorX<T> ge0;
-    VectorX<T> gu_prime;
-    VectorX<T> ge_prime;
-    VectorX<T> x_prime;
-    MatrixX<T> N;
-  } scratch_;
+  Scratch scratch_;
 
   // Logging/performance tracking utilities
   int total_solver_iterations_{0};

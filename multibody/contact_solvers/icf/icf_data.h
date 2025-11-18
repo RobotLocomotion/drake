@@ -27,8 +27,7 @@ class IcfData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
-  /* The cache holds quantities that are computed from v, so they can be reused.
-   */
+  /* Cache holds quantities that are computed from v, so they can be reused. */
   struct Cache {
     void Resize(int num_bodies, int num_velocities, int num_couplers,
                 std::span<const int> gain_sizes,
@@ -55,10 +54,10 @@ class IcfData {
   space is for intermediate computations, and is often cleared or overwritten as
   needed. */
   struct Scratch {
-    /* Clear all data without changing capacity. */
+    /* Clears all data without changing capacity. */
     void Clear();
 
-    /* Resize the scratch space, allocating memory as needed. */
+    /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
                 int num_couplers, std::span<const int> gain_sizes,
                 std::span<const int> limit_sizes,
@@ -93,7 +92,7 @@ class IcfData {
     EigenPool<Matrix6X<T>> GJb_pool;
   };
 
-  /* Default constructor for empty data. */
+  /* Constructs empty data. */
   IcfData() = default;
 
   /* Resizes the data to accommodate the given problem, typically called at the
@@ -148,6 +147,7 @@ class IcfData {
   mutable Scratch scratch_;
 };
 
+/* Data for performing efficient exact line search. */
 template <typename T>
 struct SearchDirectionData {
   VectorX<T> w;  // Search direction.

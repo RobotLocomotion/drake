@@ -8,17 +8,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparsityPattern;
-
-template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseSymmetricMatrixT<T>;
-
-template <typename T>
-using MatrixXView = typename EigenPool<MatrixX<T>>::ElementView;
-template <typename T>
-using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstElementView;
-
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   DRAKE_ASSERT(params != nullptr);
@@ -32,8 +21,9 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   // Define the sparse dynamics matrix A = M + δt D and the diagonal Delassus
   // operator estimate W = diag(M)⁻¹.
   const std::vector<int>& clique_sizes = this->params().clique_sizes;
-  A_.Resize(clique_sizes, clique_sizes);
-  clique_delassus_.Resize(clique_sizes, clique_sizes);
+  const int num_cliques = ssize(clique_sizes);
+  A_.Resize(num_cliques, clique_sizes, clique_sizes);
+  clique_delassus_.Resize(num_cliques, clique_sizes);
   for (int c = 0; c < num_cliques_; ++c) {
     const int v_start = this->params().clique_start[c];
     const int nv = clique_sizes[c];
@@ -49,7 +39,7 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   r_ = Av0_ - time_step() * k0();
 
   // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body
-  V_WB0_.Resize(num_bodies_);
+  V_WB0_.Resize(num_bodies_, 6, 1);
   CalcBodySpatialVelocities(v0(), &V_WB0_);
 
   // Set the scaling factor diag(M)^{-1/2} for convergence checks
@@ -199,7 +189,6 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   CalcBodySpatialVelocities(v, &cache.spatial_velocities);
 
   // Compute constraint data.
-  // TODO(CENIC): factor out common functionality into a ConstraintsPool class.
   coupler_constraints_pool_.CalcData(v, &cache.coupler_constraints_data);
   gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
   limit_constraints_pool_.CalcData(v, &cache.limit_constraints_data);
@@ -223,16 +212,15 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
 template <typename T>
 std::unique_ptr<BlockSparseSymmetricMatrixT<T>> IcfModel<T>::MakeHessian(
     const IcfData<T>& data) const {
-  auto hessian = std::make_unique<internal::BlockSparseSymmetricMatrixT<T>>(
-      sparsity_pattern());
+  auto hessian =
+      std::make_unique<BlockSparseSymmetricMatrixT<T>>(sparsity_pattern());
   UpdateHessian(data, hessian.get());
   return hessian;
 }
 
 template <typename T>
-void IcfModel<T>::UpdateHessian(
-    const IcfData<T>& data,
-    internal::BlockSparseSymmetricMatrixT<T>* hessian) const {
+void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
+                                BlockSparseSymmetricMatrixT<T>* hessian) const {
   hessian->SetZero();
 
   // Initialize hessian = A (block diagonal).
@@ -273,7 +261,7 @@ void IcfModel<T>::UpdateSearchDirection(
     const IcfData<T>& data, const VectorX<T>& w,
     SearchDirectionData<T>* search_data) const {
   search_data->w.resize(num_velocities());
-  search_data->U.Resize(num_bodies());
+  search_data->U.Resize(num_bodies(), 6, 1);
 
   // We'll use search_data->w as scratch, to avoid memory allocation.
   auto& tmp = search_data->w;
