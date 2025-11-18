@@ -14,12 +14,12 @@
 namespace drake {
 namespace planning {
 
-class VoxelTaggedObjectCollisionMap {
+class VoxelTaggedObjectOccupancyMap {
  public:
-  /// Default constructor creates an empty VoxelCollisionMap.
-  VoxelTaggedObjectCollisionMap();
+  /// Default constructor creates an empty VoxelOccupancyMap.
+  VoxelTaggedObjectOccupancyMap();
 
-  /// Construct a VoxelTaggedObjectCollisionMap filled with cells of
+  /// Construct a VoxelTaggedObjectOccupancyMap filled with cells of
   /// `default_occupancy` and `default_object_id`. `parent_body_name` specifies
   /// the name of the parent body, and `X_PG` specifies the pose of the origin
   /// of the voxel grid relative to the parent body frame. `grid_dimensions`
@@ -27,31 +27,31 @@ class VoxelTaggedObjectCollisionMap {
   /// specifies the size of an individual voxel. If you specify dimensions that
   /// are not evenly divisible by `grid_resolution`, you will get a larger grid
   /// with num_cells = ceil(dimension/resolution).
-  VoxelTaggedObjectCollisionMap(const std::string& parent_body_name,
+  VoxelTaggedObjectOccupancyMap(const std::string& parent_body_name,
                                 const math::RigidTransformd& X_PG,
                                 const Eigen::Vector3d& grid_dimensions,
                                 double grid_resolution, float default_occupancy,
                                 uint32_t default_object_id);
 
-  /// Construct a VoxelTaggedObjectCollisionMap filled with cells of
+  /// Construct a VoxelTaggedObjectOccupancyMap filled with cells of
   /// `default_occupancy` and `default_object_id`. `parent_body_name` specifies
   /// the name of the parent body, and `X_PG` specifies the pose of the origin
   /// of the voxel grid relative to the parent body frame. `grid_sizes`
   /// specifies the number of voxels for each axis of the voxel grid, and
   /// `grid_resolution` specifies the size of an individual voxel.
-  VoxelTaggedObjectCollisionMap(const std::string& parent_body_name,
+  VoxelTaggedObjectOccupancyMap(const std::string& parent_body_name,
                                 const math::RigidTransformd& X_PG,
                                 const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
                                 double grid_resolution, float default_occupancy,
                                 uint32_t default_object_id);
 
-  /// VoxelTaggedObjectCollisionMap provides copy, move, and assignment.
-  VoxelTaggedObjectCollisionMap(const VoxelTaggedObjectCollisionMap& other);
-  VoxelTaggedObjectCollisionMap(VoxelTaggedObjectCollisionMap&& other);
-  VoxelTaggedObjectCollisionMap& operator=(
-      const VoxelTaggedObjectCollisionMap& other);
-  VoxelTaggedObjectCollisionMap& operator=(
-      VoxelTaggedObjectCollisionMap&& other);
+  /// VoxelTaggedObjectOccupancyMap provides copy, move, and assignment.
+  VoxelTaggedObjectOccupancyMap(const VoxelTaggedObjectOccupancyMap& other);
+  VoxelTaggedObjectOccupancyMap(VoxelTaggedObjectOccupancyMap&& other);
+  VoxelTaggedObjectOccupancyMap& operator=(
+      const VoxelTaggedObjectOccupancyMap& other);
+  VoxelTaggedObjectOccupancyMap& operator=(
+      VoxelTaggedObjectOccupancyMap&& other);
 
   /// Construct a voxelized signed distance field from `this` using the provided
   /// parameters `parameters`. The objects to include are specified by
@@ -64,7 +64,7 @@ class VoxelTaggedObjectCollisionMap {
   /// Get the name of the parent body frame.
   const std::string& parent_body_name() const;
 
-  /// Returns true if empty. A VoxelTaggedObjectCollisionMap will be empty if it
+  /// Returns true if empty. A VoxelTaggedObjectOccupancyMap will be empty if it
   /// is in the default constructed state or has been moved-from.
   bool is_empty() const;
 
@@ -85,7 +85,7 @@ class VoxelTaggedObjectCollisionMap {
 
   // Opaque handle to the internal voxel grid representation.
   // Note that while a shared_ptr is used here for type erasure, the internal
-  // representation is never shared between VoxelTaggedObjectCollisionMap
+  // representation is never shared between VoxelTaggedObjectOccupancyMap
   // objects.
   std::shared_ptr<void> internal_representation_;
 };

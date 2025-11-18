@@ -87,7 +87,7 @@ void SetSphereCells(
 /// @param q Current configuration of the robot.
 /// @param padding Padding to inflate the spheres of the collision model to use
 /// in the self-filter. @pre >= 0.0.
-/// @param collision_map Current environment. @pre != nullptr.
+/// @param environment Current environment. @pre != nullptr.
 /// @param empty_cell_value Value for empty cells.
 /// @param parallelism Parallelism to use.
 /// @param context_number Optional context number for use in parallel contexts.

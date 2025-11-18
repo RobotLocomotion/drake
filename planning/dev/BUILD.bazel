@@ -14,10 +14,10 @@ drake_cc_package_library(
     deps = [
         ":mbp_environment_collision_checker",
         ":sphere_robot_model_collision_checker",
-        ":voxel_collision_map",
+        ":voxel_occupancy_map",
         ":voxel_self_filter",
         ":voxel_signed_distance_field",
-        ":voxel_tagged_object_collision_map",
+        ":voxel_tagged_object_occupancy_map",
         ":voxelized_environment_builder",
         ":voxelized_environment_collision_checker",
     ],
@@ -51,15 +51,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "voxel_collision_map",
+    name = "voxel_occupancy_map",
     srcs = [
-        "voxel_collision_map.cc",
-        "voxel_collision_map_internal.cc",
-        "voxel_collision_map_internal.h",
+        "voxel_occupancy_map.cc",
+        "voxel_occupancy_map_internal.cc",
+        "voxel_occupancy_map_internal.h",
         "voxel_signed_distance_field_internal.cc",
         "voxel_signed_distance_field_internal.h",
     ],
-    hdrs = ["voxel_collision_map.h"],
+    hdrs = ["voxel_occupancy_map.h"],
     deps = [
         ":voxel_signed_distance_field",
         "//common:essential",
@@ -74,21 +74,21 @@ drake_cc_library(
 drake_cc_library(
     name = "voxel_grid_internal",
     srcs = [
-        "voxel_collision_map_internal.cc",
+        "voxel_occupancy_map_internal.cc",
         "voxel_signed_distance_field_internal.cc",
-        "voxel_tagged_object_collision_map_internal.cc",
+        "voxel_tagged_object_occupancy_map_internal.cc",
     ],
     hdrs = [
-        "voxel_collision_map_internal.h",
         "voxel_grid_internal.h",
+        "voxel_occupancy_map_internal.h",
         "voxel_signed_distance_field_internal.h",
-        "voxel_tagged_object_collision_map_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
     ],
     tags = ["exclude_from_package"],
     deps = [
-        ":voxel_collision_map",
+        ":voxel_occupancy_map",
         ":voxel_signed_distance_field",
-        ":voxel_tagged_object_collision_map",
+        ":voxel_tagged_object_occupancy_map",
         "//common:essential",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
@@ -114,15 +114,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "voxel_tagged_object_collision_map",
+    name = "voxel_tagged_object_occupancy_map",
     srcs = [
         "voxel_signed_distance_field_internal.cc",
         "voxel_signed_distance_field_internal.h",
-        "voxel_tagged_object_collision_map.cc",
-        "voxel_tagged_object_collision_map_internal.cc",
-        "voxel_tagged_object_collision_map_internal.h",
+        "voxel_tagged_object_occupancy_map.cc",
+        "voxel_tagged_object_occupancy_map_internal.cc",
+        "voxel_tagged_object_occupancy_map_internal.h",
     ],
-    hdrs = ["voxel_tagged_object_collision_map.h"],
+    hdrs = ["voxel_tagged_object_occupancy_map.h"],
     deps = [
         ":voxel_signed_distance_field",
         "//common:essential",
@@ -140,9 +140,9 @@ drake_cc_library(
     hdrs = ["voxelized_environment_collision_checker.h"],
     deps = [
         ":sphere_robot_model_collision_checker",
-        ":voxel_collision_map",
+        ":voxel_occupancy_map",
         ":voxel_signed_distance_field",
-        ":voxel_tagged_object_collision_map",
+        ":voxel_tagged_object_occupancy_map",
         "//common:essential",
         "//planning:collision_checker",
     ],
@@ -161,8 +161,8 @@ drake_cc_library(
     ],
     hdrs = ["voxelized_environment_builder.h"],
     deps = [
-        ":voxel_collision_map",
-        ":voxel_tagged_object_collision_map",
+        ":voxel_occupancy_map",
+        ":voxel_tagged_object_occupancy_map",
         "//common:essential",
         "//common:parallelism",
         "//geometry",
@@ -184,8 +184,8 @@ drake_cc_library(
     hdrs = ["voxel_self_filter.h"],
     deps = [
         ":sphere_robot_model_collision_checker",
-        ":voxel_collision_map",
-        ":voxel_tagged_object_collision_map",
+        ":voxel_occupancy_map",
+        ":voxel_tagged_object_occupancy_map",
         "//common:essential",
         "//planning:collision_checker",
     ],
