@@ -22,8 +22,6 @@ class GainConstraintsDataPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GainConstraintsDataPool);
 
-  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
   using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
 
@@ -38,8 +36,8 @@ class GainConstraintsDataPool {
   int num_constraints() const { return gamma_pool_.size(); }
 
   /* Returns the Hessian block G = -∂γ/∂v (diagonal). */
-  ConstMatrixXView G(int k) const { return G_pool_[k]; }
-  MatrixXView G(int k) { return G_pool_[k]; }
+  ConstVectorXView G(int k) const { return G_pool_[k]; }
+  VectorXView G(int k) { return G_pool_[k]; }
 
   /* Returns the constraint impulse γ = -∇ℓ(v). */
   ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
@@ -52,9 +50,7 @@ class GainConstraintsDataPool {
  private:
   T cost_{0.0};                       // Total cost over all gain constraints.
   EigenPool<VectorX<T>> gamma_pool_;  // Generalized impulses per constraint.
-
-  // TODO(vincekurtz): consider storing as VectorX<T> since diagonal.
-  EigenPool<MatrixX<T>> G_pool_;  // G = -∂γ/∂v ≥ is diagonal.
+  EigenPool<VectorX<T>> G_pool_;      // Diagonal Hessians G = -∂γ/∂v ≥ 0.
 };
 
 }  // namespace internal

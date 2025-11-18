@@ -53,16 +53,13 @@ void GainConstraintsPool<T>::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
 
-  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
-  using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
-
   T& cost = gain_data->cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
     auto vk = model().clique_segment(c, v);
     VectorXView gk = gain_data->gamma(k);
-    MatrixXView Gk = gain_data->G(k);
+    VectorXView Gk = gain_data->G(k);
     cost += Clamp(k, vk, &gk, &Gk);
   }
 }
@@ -89,8 +86,8 @@ void GainConstraintsPool<T>::AccumulateHessian(
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    ConstMatrixXView Gk = gain_data.G(k);
-    hessian->AddToBlock(c, c, Gk);
+    ConstVectorXView Gk = gain_data.G(k);
+    hessian->diagonal_block(c).diagonal() += Gk;
   }
 }
 
@@ -108,10 +105,10 @@ void GainConstraintsPool<T>::ProjectAlongLine(
     const int c = clique_[k];
     auto w_c = model().clique_segment(c, w);
     ConstVectorXView gk = gain_data.gamma(k);
-    ConstMatrixXView Gk = gain_data.G(k);
+    ConstVectorXView Gk = gain_data.G(k);
 
     auto G_times_w = model().clique_segment(c, v_sized_scratch);
-    G_times_w.noalias() = Gk.diagonal().asDiagonal() * w_c;
+    G_times_w.noalias() = Gk.asDiagonal() * w_c;
 
     (*dcost) -= w_c.dot(gk);
     (*d2cost) += w_c.dot(G_times_w);
@@ -121,11 +118,10 @@ void GainConstraintsPool<T>::ProjectAlongLine(
 template <typename T>
 T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
                                 EigenPtr<VectorX<T>> gamma,
-                                EigenPtr<MatrixX<T>> G) const {
+                                EigenPtr<VectorX<T>> G) const {
   const int n = v.size();
   DRAKE_ASSERT(gamma->size() == n);
-  DRAKE_ASSERT(G->rows() == n);
-  DRAKE_ASSERT(G->cols() == n);
+  DRAKE_ASSERT(G->size() == n);
   using std::max;
   using std::min;
 
@@ -139,7 +135,7 @@ T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
     const T& uei = ue_[k][i];
     const T& vi = v[i];
     T& gi = (*gamma)[i];
-    T& Gi = (*G)(i, i);
+    T& Gi = (*G)[i];
 
     const T yi = -ki * vi + bi;
 

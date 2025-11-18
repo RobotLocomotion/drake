@@ -39,8 +39,8 @@ class GainConstraintsPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GainConstraintsPool);
 
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
-  using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
   /* Constructs an empty pool. */
   explicit GainConstraintsPool(const IcfModel<T>* parent_model)
@@ -100,7 +100,7 @@ class GainConstraintsPool {
     - The clamped gradient/impulse γ = -∇ℓ(v) = clamp(−K⋅v + b, e)
     - The clamped Hessian G = -∂γ/∂v (diagonal) */
   T Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
-          EigenPtr<VectorX<T>> gamma, EigenPtr<MatrixX<T>> G) const;
+          EigenPtr<VectorX<T>> gamma, EigenPtr<VectorX<T>> G) const;
 
   const IcfModel<T>* model_{nullptr};  // The parent model.
 
