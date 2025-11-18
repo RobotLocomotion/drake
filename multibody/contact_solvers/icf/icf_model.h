@@ -191,7 +191,7 @@ class IcfModel {
   The Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v,
   i.e. the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
   simplify this estimation as W = diag(M)⁻¹. */
-  ConstVectorXView clique_delassus(int clique) const {
+  ConstVectorXView clique_delassus_approx(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
     return clique_delassus_[clique];
   }

@@ -65,7 +65,7 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
-  const auto w_clique = model().clique_delassus(clique);
+  const auto w_clique = model().clique_delassus_approx(clique);
   regularization(index, dof) = eps * w_clique(dof);
 
   // Eventually we will use
