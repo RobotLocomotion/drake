@@ -111,34 +111,34 @@ class IcfModel {
     return *params_;
   }
 
-  /* The time step δt. */
+  /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
 
-  /* Initial velocities v₀ at the start of the time step. */
+  /* Returns initial velocities v₀ at the start of the time step. */
   const VectorX<T>& v0() const { return params().v0; }
 
-  /* Initial mass matrix M₀ at the start of the time step. */
+  /* Returns the mass matrix M₀ at the start of the time step. */
   const MatrixX<T>& M0() const { return params().M0; }
 
-  /* Initial joint damping at the start of the time step. */
+  /* Returns the joint damping vector at the start of the time step. */
   const VectorX<T>& D0() const { return params().D0; }
 
-  /* Initial coriolis, centrifugal, and gravitational terms, k₀. */
+  /* Returns initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
 
-  /* Spatial velocity Jacobian for the given body. */
+  /* Returns the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().J_WB[body];
   }
 
-  /* Composite mass of the given body. */
+  /* Returns the (composite) mass of the given body. */
   const T& body_mass(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_mass[body];
   }
 
-  /* Clique index for the given body. */
+  /* Maps a body index to a clique index. */
   int body_to_clique(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_to_clique[body];
@@ -157,37 +157,37 @@ class IcfModel {
     return params().body_is_floating[body] == 1;
   }
 
-  /* The number of generalized velocities in the given clique. */
+  /* Returns the number of generalized velocities in the given clique. */
   int clique_size(int clique) const {
     return clique < 0 ? 0 : params().clique_sizes[clique];
   }
 
-  /* Helpers to access the subset of elements (e.g., generalized velocities,
-  generalized forces) that go with a given clique. */
+  /* Accesses the subset of elements (e.g., generalized velocities, generalized
+  forces) that go with a given clique. */
   Eigen::VectorBlock<const VectorX<T>> clique_segment(
       int clique, const VectorX<T>& x) const;
   Eigen::VectorBlock<VectorX<T>> clique_segment(int clique,
                                                 VectorX<T>* x) const;
 
-  /* Initial spatial velocity for the given body. */
+  /* Returns the initial spatial velocity of the given body. */
   ConstVector6View V_WB0(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return V_WB0_[body];
   }
 
-  /* Scaling factor diag(M)^{-1/2} for convergence checks. */
+  /* Returns the scaling factor diag(M)^{-1/2} for convergence checks. */
   const VectorX<T>& scale_factor() const { return scale_factor_; }
 
-  /* Sparse linearized dynamics matrix block for the given clique. */
+  /* Returns the linearized dynamics matrix block for the given clique. */
   ConstMatrixXView A(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
     return A_[clique];
   }
 
-  /* Linear cost term r = A v₀ - δt k₀ */
+  /* Returns the linear cost term r = A v₀ - δt k₀ */
   const VectorX<T>& r() const { return r_; }
 
-  /* Diagonal estimation of the Delassus operator for the given clique.
+  /* Returns an approximation of the Delassus operator for the given clique.
   The Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v,
   i.e. the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
   simplify this estimation as W = diag(M)⁻¹. */
@@ -196,12 +196,17 @@ class IcfModel {
     return clique_delassus_[clique];
   }
 
-  /* Problem size, in terms of bodies, velocities, and cliques. Each clique
-  represents a diagonal block in the mass matrix. */
+  /* Returns the number of bodies involved in the problem.*/
   int num_bodies() const { return num_bodies_; }
+
+  /* Returns the number of generalized velocities in the problem. */
   int num_velocities() const { return num_velocities_; }
+
+  /* Returns the number of cliques in the problem. Each clique corresponds to a
+   * diagonal block in the mass matrix. */
   int num_cliques() const { return num_cliques_; }
 
+  /* Returns the total number of constraints of any type in the problem.. */
   int num_constraints() const {
     return num_patch_constraints() + num_gain_constraints() +
            num_limit_constraints() + num_coupler_constraints();
@@ -309,9 +314,9 @@ class IcfModel {
   /* Computes and stores the Hessian sparsity pattern. */
   void SetSparsityPattern();
 
-  /* Access the Hessian sparsity pattern. This is useful for when the sparsity
-  pattern is the same (in which case we use UpdateHessian()), and when it has
-  changed (in which case we use MakeHessian()). */
+  /* Returns the Hessian sparsity pattern. This is useful for detecting when the
+  sparsity pattern is the same (in which case we use UpdateHessian()), and when
+  it has changed (in which case we use MakeHessian()). */
   const BlockSparsityPattern& sparsity_pattern() const {
     DRAKE_ASSERT(sparsity_pattern_ != nullptr);
     return *sparsity_pattern_;

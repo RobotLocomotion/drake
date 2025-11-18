@@ -27,10 +27,10 @@ class LimitConstraintsDataPool {
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
 
-  /* Default constructor for an empty pool. */
+  /* Constructs an empty pool. */
   LimitConstraintsDataPool() = default;
 
-  /* Resize the data pool to hold constraints of the given sizes.
+  /* Resizes the data pool to hold constraints of the given sizes.
   @param constraint_size The size (number of velocities) for each gain
                          constraint. */
   void Resize(std::span<const int> constraint_size);
@@ -38,23 +38,24 @@ class LimitConstraintsDataPool {
   /* Returns the number of limit constraints. */
   int num_constraints() const { return gamma_lower_pool_.size(); }
 
-  /* Hessian block G = -∂γ/∂v (diagonal) for lower limits. */
+  /* Returns the Hessian block G = -∂γ/∂v (diagonal) for lower limits. */
   ConstMatrixXView G_lower(int k) const { return G_lower_pool_[k]; }
   MatrixXView G_lower(int k) { return G_lower_pool_[k]; }
 
-  /* Hessian block G = -∂γ/∂v (diagonal) for upper limits. */
+  /* Returns the Hessian block G = -∂γ/∂v (diagonal) for upper limits. */
   ConstMatrixXView G_upper(int k) const { return G_upper_pool_[k]; }
   MatrixXView G_upper(int k) { return G_upper_pool_[k]; }
 
-  /* Constraint impulse γ = -∇ℓ(v) for lower limits. */
+  /* Returns the constraint impulse γ = -∇ℓ(v) for lower limits. */
   ConstVectorXView gamma_lower(int k) const { return gamma_lower_pool_[k]; }
   VectorXView gamma_lower(int k) { return gamma_lower_pool_[k]; }
 
-  /* Constraint impulse γ = -∇ℓ(v) for upper limits. */
+  /* Returns the constraint impulse γ = -∇ℓ(v) for upper limits. */
   ConstVectorXView gamma_upper(int k) const { return gamma_upper_pool_[k]; }
   VectorXView gamma_upper(int k) { return gamma_upper_pool_[k]; }
 
-  /* Total cost over all limit constraints (including both lower and upper). */
+  /* Returns the total cost over all limit constraints (including both lower and
+  upper limits). */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 

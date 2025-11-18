@@ -24,36 +24,36 @@ class PatchConstraintsDataPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PatchConstraintsDataPool);
 
-  /* The number of patches in the pool. */
+  /* Returns the number of patches in the pool. */
   int num_patches() const { return num_patches_; }
 
-  /* The total number of contact pairs among all patches. */
+  /* Returns the total number of contact pairs among all patches. */
   int num_pairs() const { return num_pairs_; }
 
-  /* Default constructor for an empty pool. */
+  /* Constructs an empty pool. */
   PatchConstraintsDataPool() = default;
 
-  /* Resize the data pool to hold constraints of the given sizes.
+  /* Resizes the data pool to hold constraints of the given sizes.
   @param patch_size Number of contact pairs for the k-th patch. */
   void Resize(std::span<const int> patch_size);
 
-  /* Hessian block per patch */
+  /* Returns the Hessian block for each patch. */
   EigenPool<Matrix6<T>>& G_Bp_pool() { return G_Bp_pool_; }
   const EigenPool<Matrix6<T>>& G_Bp_pool() const { return G_Bp_pool_; }
 
-  /* Contact velocities per pair */
+  /* Returns contact velocities for each pair. */
   EigenPool<Vector3<T>>& v_AcBc_W_pool() { return v_AcBc_W_; }
   const EigenPool<Vector3<T>>& v_AcBc_W_pool() const { return v_AcBc_W_; }
 
-  /* Constraint impulse (gradient) per patch */
+  /* Returns constraint impulses (gradients) for each patch. */
   EigenPool<Vector6<T>>& Gamma_Bo_W_pool() { return Gamma_Bo_W_; }
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool() const { return Gamma_Bo_W_; }
 
-  /* Cost per patch */
+  /* Returns the cost contribution for each patch. */
   const std::vector<T>& cost_pool() const { return cost_pool_; }
   std::vector<T>& cost_pool() { return cost_pool_; }
 
-  /* Total cost over all patches. */
+  /* Returns the total cost over all patches. */
   const T& cost() const { return cost_; }
   T& cost() { return cost_; }
 

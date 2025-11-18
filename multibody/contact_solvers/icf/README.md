@@ -8,10 +8,10 @@ multibody plant
 ````
 where $q, v$ are generalized positions and velocities, $M$ is the mass matrix,
 $k$ collects nonlinear terms, $f$ are constraint (contact) forces, and $J$ is
-the constraint Jacobian. 
+the constraint Jacobian.
 
 Full details can be found in [Castro et al., 2023]. The CENIC integrator [Kurtz
-et al. 2025] builds on ICF to perform error-controlled integration. 
+et al. 2025] builds on ICF to perform error-controlled integration.
 
 ## Math Overview
 
@@ -39,7 +39,7 @@ configurations with the semi-explicit Euler strategy
 ```math
   q_{n+1} = q_n + \delta t N(q_n) v_{n+1},
 ```
-where $\dot{q} = N(q)\dot{v}$. 
+where $\dot{q} = N(q)\dot{v}$.
 
 In addition to contact, ICF can support other constraint types (e.g., joint
 limits, couplers, etc.) via appropriately designed convex potentials. For full
@@ -83,7 +83,7 @@ Other components:
      like `std::vector<MatrixX<T>>`, but with contiguous storage.
 
 ## References:
-  
+
 [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
 Contact Fields. https://arxiv.org/abs/2312.03908
 
