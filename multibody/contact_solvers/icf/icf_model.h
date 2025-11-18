@@ -49,17 +49,19 @@ struct IcfParameters {
 
 /* This class defines a convex ICF problem,
 
-   minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
+   minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ_c(v).
 
-The gradient of this cost is
-
+The optimality conditions ∇ℓ = 0 are
+   Av - r + ∇ℓ_c = 0,
+   Av - r - Jᵀγ = 0,
    Av = r + Jᵀγ,
    Mv = Mv₀ - δt k₀ + Jᵀγ,
    M(v - v₀) + δt k₀ = Jᵀγ,
 
-which are the discrete momentum balance conditions for a multibody system
-with contact (and other constraints). (Note that we really use A = M + δtD to
-handle joint damping implicitly, but the above notation is easier to read.)
+since A = M, r = Av₀ - δt k₀, and ∇ℓ_c = -Jᵀγ. These are the discrete momentum
+balance conditions for a multibody system with contact (and other constraints).
+(Note that we really use A = M + δtD to handle joint damping implicitly, but the
+above notation is easier to read.)
 
 This class is designed to be independent of the MultibodyPlant used to
 construct the problem: the job of constructing the problem given a
