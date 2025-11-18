@@ -53,7 +53,7 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   // scale v̂ by 1/δt in CalcData().
   v_hat_[index] = -g0 / (1.0 + beta / M_PI);
 
-  const auto w_clique = model().clique_delassus(clique);
+  const auto w_clique = model().clique_delassus_approx(clique);
   // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
   //  J = [0 ... 1 ... -ρ ... 0]
   //             ↑      ↑

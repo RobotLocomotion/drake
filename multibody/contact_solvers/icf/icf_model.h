@@ -49,17 +49,19 @@ struct IcfParameters {
 
 /* This class defines a convex ICF problem,
 
-   minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ(v).
+   minᵥ ℓ(v;q₀,v₀,δt) = 1/2 v'Av - r'v + ℓ_c(v).
 
-The gradient of this cost is
-
+The optimality conditions ∇ℓ = 0 are
+   Av - r + ∇ℓ_c = 0,
+   Av - r - Jᵀγ = 0,
    Av = r + Jᵀγ,
    Mv = Mv₀ - δt k₀ + Jᵀγ,
    M(v - v₀) + δt k₀ = Jᵀγ,
 
-which are the discrete momentum balance conditions for a multibody system
-with contact (and other constraints). (Note that we really use A = M + δtD to
-handle joint damping implicitly, but the above notation is easier to read.)
+since A = M, r = Av₀ - δt k₀, and ∇ℓ_c = -Jᵀγ. These are the discrete momentum
+balance conditions for a multibody system with contact (and other constraints).
+(Note that we really use A = M + δtD to handle joint damping implicitly, but the
+above notation is easier to read.)
 
 This class is designed to be independent of the MultibodyPlant used to
 construct the problem: the job of constructing the problem given a
@@ -189,7 +191,7 @@ class IcfModel {
   The Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v,
   i.e. the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
   simplify this estimation as W = diag(M)⁻¹. */
-  ConstVectorXView clique_delassus(int clique) const {
+  ConstVectorXView clique_delassus_approx(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
     return clique_delassus_[clique];
   }
@@ -246,7 +248,7 @@ class IcfModel {
 
   /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
   calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
-  cheaper, and incurs in no memory allocations.
+  cheaper, and incurs no memory allocations.
 
   The workflow to use the Hessian should be:
 
