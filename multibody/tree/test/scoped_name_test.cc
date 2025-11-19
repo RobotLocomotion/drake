@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/scoped_name.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {

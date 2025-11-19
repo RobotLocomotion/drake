@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/parallelism.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/body_shape_description.h"
@@ -206,7 +206,7 @@ class CollisionChecker {
    These methods all provide access to the underlying robot model's contents. */
   //@{
 
-  /** @returns a `const` reference to the full model. */
+  /** @returns a const reference to the full model. */
   const RobotDiagram<double>& model() const {
     if (IsInitialSetup()) {
       return *setup_model_;
@@ -216,12 +216,12 @@ class CollisionChecker {
     }
   }
 
-  /** @returns a `const reference to the full model's plant. */
+  /** @returns a const reference to the full model's plant. */
   const multibody::MultibodyPlant<double>& plant() const {
     return model().plant();
   }
 
-  /** @returns a `const` body reference to a body in the full model's plant for
+  /** @returns a const body reference to a body in the full model's plant for
    the given `body_index`. */
   const multibody::RigidBody<double>& get_body(
       multibody::BodyIndex body_index) const {
@@ -260,7 +260,7 @@ class CollisionChecker {
   /** Accesses a collision checking context from within the implicit context
    pool owned by this collision checker.
    @param context_number Optional implicit context number.
-   @returns a `const` reference to either the collision checking context given
+   @returns a const reference to either the collision checking context given
    by the `context_number`, or when nullopt the context to be used with the
    current OpenMP thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
@@ -271,7 +271,7 @@ class CollisionChecker {
   /** Accesses a multibody plant sub-context context from within the implicit
    context pool owned by this collision checker.
    @param context_number Optional implicit context number.
-   @returns a `const` reference to the multibody plant sub-context within
+   @returns a const reference to the multibody plant sub-context within
    the context given by the `context_number`, or when nullopt the context to be
    used with the current OpenMP thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */

@@ -2,6 +2,10 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 // clang-format: on
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

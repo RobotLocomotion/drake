@@ -1,0 +1,19 @@
+[lcm] Rename maven repository to match Drake's MODULE.bazel
+
+Upstream LCM declares `maven.install(name = "lcm_maven", ...)` in its
+MODULE file, but Drake doesn't consume LCM as a module and therefore
+it doesn't inherit that dependency. Instead, Drake's MODULE file
+declares `maven.install(name = "drake_maven_internal", ...)` so we
+must re-spell LCM's dependency to use that phrasing.  (Drake avoids
+the name "lcm_maven" because it would cause warnings with any
+downstream Bazel projects that both Drake and LCM as modules; maven's
+namespace is shared across all modules that use rules_jvm_external.)
+
+
+--- lcm-java/BUILD.bazel
++++ lcm-java/BUILD.bazel
+@@ -48,3 +48,3 @@ java_library(
+     deps = [
+-        "@lcm_maven//:net_sf_jchart2d_jchart2d",
++        "@drake_maven_internal//:net_sf_jchart2d_jchart2d",
+     ],

@@ -5,7 +5,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -46,14 +45,6 @@ class RevoluteSpring final : public ForceElement<T> {
   /// @throws std::exception if this element is not associated with a
   ///   MultibodyPlant.
   const RevoluteJoint<T>& joint() const;
-
-  DRAKE_DEPRECATED("2025-09-01",
-                   "Use the 'default_nominal_angle()' method instead.")
-  double nominal_angle() const { return nominal_angle_; }
-
-  DRAKE_DEPRECATED("2025-09-01",
-                   "Use the 'default_stiffness()' method instead.")
-  double stiffness() const { return stiffness_; }
 
   /// Returns the default spring reference angle θ₀ in radians.
   double default_nominal_angle() const { return nominal_angle_; }

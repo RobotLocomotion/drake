@@ -38,7 +38,7 @@ template <typename T>
 class SystemVisitor {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemVisitor);
-  virtual ~SystemVisitor() = default;
+  virtual ~SystemVisitor();
 
   /** This method will be called by System<T>::accept() if the System *is not* a
   Diagram<T>. */
@@ -54,3 +54,6 @@ class SystemVisitor {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SystemVisitor);

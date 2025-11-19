@@ -3,9 +3,9 @@
 # for testing.
 # This does not affect the functionality of env_checker.check_env()
 
-from . import distributions
-from . import nn
-from . import optim
+# ruff: noqa: F401 (unused-import)
+
+from . import distributions, nn, optim
 
 Tensor = None
 device = None

@@ -101,7 +101,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     const RigidTransform<double> X_WB(
         RollPitchYaw<double>(M_PI / 3, -M_PI / 2, M_PI / 8),
         Vector3<double>(0.05, -0.2, 0.05));
-    plant_->SetFreeBodyPoseInAnchoredFrame(
+    plant_->SetFloatingBaseBodyPoseInAnchoredFrame(
         context_.get(), plant_->world_frame(), base_body, X_WB);
     // Set an arbitrary non-zero spatial velocity of the floating base link.
     const Vector3<double> w_WB{-1, 1, -1};

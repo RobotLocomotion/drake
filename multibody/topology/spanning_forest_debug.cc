@@ -1,6 +1,8 @@
+#include <algorithm>
+#include <string>
 #include <vector>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/multibody/topology/forest.h"
 
 namespace drake {

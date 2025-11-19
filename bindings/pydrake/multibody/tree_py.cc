@@ -1,7 +1,14 @@
 #include "drake/bindings/pydrake/multibody/tree_py.h"
 
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -10,7 +17,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
@@ -51,7 +57,7 @@ namespace {
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::multibody;
-constexpr auto& doc = pydrake_doc.drake.multibody;
+constexpr auto& doc = pydrake_doc_multibody_tree.drake.multibody;
 
 // Negative case for checking T::name().
 // https://stackoverflow.com/a/16000226/7829525
@@ -333,7 +339,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
-        .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)
+        .def("is_floating_base_body", &Class::is_floating_base_body,
+            cls_doc.is_floating_base_body.doc)
         .def("has_quaternion_dofs", &Class::has_quaternion_dofs,
             cls_doc.has_quaternion_dofs.doc)
         .def("floating_positions_start", &Class::floating_positions_start,
@@ -396,6 +403,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetSpatialInertiaInBodyFrame",
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("is_floating",
+            WrapDeprecated(
+                cls_doc.is_floating.doc_deprecated, &Class::is_floating),
+            cls_doc.is_floating.doc_deprecated);
+#pragma GCC diagnostic pop
 
     // Aliases for backwards compatibility (dispreferred).
     m.attr("Body") = m.attr("RigidBody");
@@ -1039,16 +1054,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetNominalAngle.doc)
         .def("SetNominalAngle", &Class::SetNominalAngle, py::arg("context"),
             py::arg("nominal_angle"), cls_doc.SetNominalAngle.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("stiffness",
-           WrapDeprecated(cls_doc.stiffness.doc_deprecated, &Class::stiffness),
-           cls_doc.stiffness.doc_deprecated)
-        .def("nominal_angle",
-            WrapDeprecated(
-                cls_doc.nominal_angle.doc_deprecated, &Class::nominal_angle),
-            cls_doc.nominal_angle.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   {

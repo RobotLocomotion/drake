@@ -7,11 +7,13 @@ released: YYYY-MM-DD
 
 # Announcements
 
-* TBD
+* None
 
 # Breaking changes since v{prior_version}
 
-* TBD
+<!-- <relnotes for breaking-changes go here> -->
+
+* None
 
 Refer to our [Drake Stability Guidelines](/stable.html) for our policy
 on API changes.
@@ -25,11 +27,11 @@ on API changes.
 
 New features
 
-* TBD
+* None
 
 Fixes
 
-* TBD
+* None
 
 ## Mathematical Program
 
@@ -38,11 +40,11 @@ Fixes
 
 New features
 
-* TBD
+* None
 
 Fixes
 
-* TBD
+* None
 
 ## Multibody Dynamics and Geometry
 
@@ -51,11 +53,11 @@ Fixes
 
 New features
 
-* TBD
+* None
 
 Fixes
 
-* TBD
+* None
 
 ## Planning
 
@@ -64,23 +66,23 @@ Fixes
 
 New features
 
-* TBD
+* None
 
 Fixes
 
-* TBD
+* None
 
 ## Tutorials and examples
 
 <!-- <relnotes for examples,tutorials go here> -->
 
-* TBD
+* None
 
 ## Miscellaneous features and fixes
 
 <!-- <relnotes for common,math,lcm,lcmtypes,manipulation,perception,visualization go here> -->
 
-* TBD
+* None
 
 ## pydrake bindings
 
@@ -89,31 +91,35 @@ Fixes
 
 New features
 
-* TBD
+* None
 
 Fixes
 
-* TBD
+* None
 
 ## Build system
 
 <!-- <relnotes for cmake,doc,setup,third_party,tools go here> -->
 
-* TBD
+* None
 
 ## Build dependencies
 
 <!-- <relnotes for workspace go here> -->
 
-* TBD
+* None
 
 ## Newly-deprecated APIs
 
-* TBD
+<!-- <relnotes for newly-deprecated go here> -->
+
+* None
 
 ## Removal of deprecated items
 
-* TBD
+<!-- <relnotes for deprecated-removed go here> -->
+
+* None
 
 # Notes
 

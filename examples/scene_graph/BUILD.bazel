@@ -69,7 +69,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//lcm",
-        "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",

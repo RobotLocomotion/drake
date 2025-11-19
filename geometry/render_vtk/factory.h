@@ -8,6 +8,10 @@
 
 namespace drake {
 namespace geometry {
+
+/** Reports the availability of the RenderEngineVtk implementation. */
+extern const bool kHasRenderEngineVtk;
+
 // We need to get clang-format to ignore the long table lines so they get
 // rendered properly in doxygen.
 // clang-format off
@@ -83,6 +87,8 @@ namespace geometry {
  e.g., render label validation).
  <!-- TODO(SeanCurtis-TRI): Change this policy to be more selective when other
       renderers with different properties are introduced. -->
+
+ @throws std::exception if kHasRenderEngineVtk is false.
  */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineVtk(
     const RenderEngineVtkParams& params);

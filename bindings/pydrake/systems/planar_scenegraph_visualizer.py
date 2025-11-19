@@ -1,15 +1,9 @@
 import math
-import warnings
 
-import errno
-import glob
 import matplotlib
 import matplotlib.cm as plt_cm
 import numpy as np
-import os
-from pathlib import Path
 
-from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value
 from pydrake.geometry import (
     Box,
@@ -67,19 +61,25 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     and *maybe* offsetting with the projection matrix.
     """
 
-    def __init__(self,
-                 scene_graph,
-                 draw_period=None,
-                 T_VW=np.array([[1., 0., 0., 0.],
-                                [0., 0., 1., 0.],
-                                [0., 0., 0., 1.]]),
-                 xlim=[-1., 1],
-                 ylim=[-1, 1],
-                 facecolor=[1, 1, 1],
-                 use_random_colors=False,
-                 substitute_collocated_mesh_files=True,
-                 ax=None,
-                 show=None):
+    def __init__(
+        self,
+        scene_graph,
+        draw_period=None,
+        T_VW=np.array(
+            [
+                [1.0, 0.0, 0.0, 0.0],  # BR
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        ),
+        xlim=[-1.0, 1],
+        ylim=[-1, 1],
+        facecolor=[1, 1, 1],
+        use_random_colors=False,
+        substitute_collocated_mesh_files=True,
+        ax=None,
+        show=None,
+    ):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -105,22 +105,29 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 Default is None, which implies show=True unless
                 matplotlib.get_backend() is 'template'.
         """
-        default_size = matplotlib.rcParams['figure.figsize']
-        scalefactor = (ylim[1]-ylim[0]) / (xlim[1]-xlim[0])
-        figsize = (default_size[0], default_size[0]*scalefactor)
+        default_size = matplotlib.rcParams["figure.figsize"]
+        scalefactor = (ylim[1] - ylim[0]) / (xlim[1] - xlim[0])
+        figsize = (default_size[0], default_size[0] * scalefactor)
 
-        PyPlotVisualizer.__init__(self, facecolor=facecolor, figsize=figsize,
-                                  ax=ax, draw_period=draw_period, show=show)
-        self.set_name('planar_scenegraph_visualizer')
+        PyPlotVisualizer.__init__(
+            self,
+            facecolor=facecolor,
+            figsize=figsize,
+            ax=ax,
+            draw_period=draw_period,
+            show=show,
+        )
+        self.set_name("planar_scenegraph_visualizer")
 
         self._scene_graph = scene_graph
         self._T_VW = T_VW
 
         self._geometry_query_input_port = self.DeclareAbstractInputPort(
-            "geometry_query", Value(QueryObject()))
+            "geometry_query", Value(QueryObject())
+        )
 
-        self.ax.axis('equal')
-        self.ax.axis('off')
+        self.ax.axis("equal")
+        self.ax.axis("off")
 
         # Achieve the desired view limits.
         self.ax.set_xlim(xlim)
@@ -129,9 +136,11 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self.fig.set_size_inches(figsize[0], figsize[1])
 
         # Populate body patches.
-        self._build_body_patches(use_random_colors,
-                                 substitute_collocated_mesh_files,
-                                 scene_graph.model_inspector())
+        self._build_body_patches(
+            use_random_colors,
+            substitute_collocated_mesh_files,
+            scene_graph.model_inspector(),
+        )
 
         # Populate the body fill list -- which requires doing most of a draw
         # pass, but with an ax.fill() command to initialize the draw patches.
@@ -143,8 +152,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._body_fill_dict = {}
         X_WB_initial = RigidTransform.Identity()
         for full_name in self._patch_Blist.keys():
-            patch_Wlist, view_colors = self._get_view_patches(full_name,
-                                                              X_WB_initial)
+            patch_Wlist, view_colors = self._get_view_patches(
+                full_name, X_WB_initial
+            )
             self._body_fill_dict[full_name] = []
             for patch_W, color in zip(patch_Wlist, view_colors):
                 # Project the full patch the first time, to initialize a vertex
@@ -152,8 +162,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # vertex set.
                 patch_V = self._project_patch(patch_W)
                 body_fill = self.ax.fill(
-                    patch_V[0, :], patch_V[1, :], zorder=0,
-                    edgecolor='k', facecolor=color, closed=True)[0]
+                    patch_V[0, :],
+                    patch_V[1, :],
+                    zorder=0,
+                    edgecolor="k",
+                    facecolor=color,
+                    closed=True,
+                )[0]
                 self._body_fill_dict[full_name].append(body_fill)
                 # Then update the vertices for a more accurate initial draw.
                 self._update_body_fill_verts(body_fill, patch_V)
@@ -170,11 +185,12 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         if frame_id == inspector.world_frame_id():
             return "world"
         return "{}::{}".format(
-            inspector.GetOwningSourceName(frame_id),
-            inspector.GetName(frame_id))
+            inspector.GetOwningSourceName(frame_id), inspector.GetName(frame_id)
+        )
 
-    def _build_body_patches(self, use_random_colors,
-                            substitute_collocated_mesh_files, inspector):
+    def _build_body_patches(
+        self, use_random_colors, substitute_collocated_mesh_files, inspector
+    ):
         """
         Generates body patches. self._patch_Blist stores a list of patches for
         each body (starting at body id 1). A body patch is a list of all 3D
@@ -184,8 +200,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._patch_Blist_colors = {}
 
         for frame_id in inspector.GetAllFrameIds():
-            count = inspector.NumGeometriesForFrameWithRole(frame_id,
-                                                            Role.kIllustration)
+            count = inspector.NumGeometriesForFrameWithRole(
+                frame_id, Role.kIllustration
+            )
             if count == 0:
                 continue
 
@@ -200,13 +217,16 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
                 if isinstance(shape, Box):
                     # Draw a bounding box.
-                    patch_G = np.vstack((
-                        shape.width()/2.*np.array(
-                            [-1, -1, 1, 1, -1, -1, 1, 1]),
-                        shape.depth()/2.*np.array(
-                            [-1, 1, -1, 1, -1, 1, -1, 1]),
-                        shape.height()/2.*np.array(
-                            [-1, -1, -1, -1, 1, 1, 1, 1])))
+                    half_width = shape.width() / 2.0
+                    half_depth = shape.depth() / 2.0
+                    half_height = shape.height() / 2.0
+                    patch_G = np.vstack(
+                        (
+                            half_width * np.array([-1, -1, 1, 1, -1, -1, 1, 1]),
+                            half_depth * np.array([-1, 1, -1, 1, -1, 1, -1, 1]),
+                            half_height * np.array([-1, -1, -1, -1, 1, 1, 1, 1]),  # noqa
+                        )
+                    )  # fmt: skip
 
                 elif isinstance(shape, Sphere):
                     # Sphere is the only shape that allows a zero-measure. A
@@ -214,14 +234,19 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if shape.radius() == 0:
                         continue
 
-                    lati, longi = np.meshgrid(np.arange(0., 2.*math.pi, 0.5),
-                                              np.arange(0., 2.*math.pi, 0.5))
+                    lati, longi = np.meshgrid(
+                        np.arange(0.0, 2.0 * math.pi, 0.5),
+                        np.arange(0.0, 2.0 * math.pi, 0.5),
+                    )
                     lati = lati.ravel()
                     longi = longi.ravel()
-                    patch_G = np.vstack([
-                        np.sin(lati)*np.cos(longi),
-                        np.sin(lati)*np.sin(longi),
-                        np.cos(lati)])
+                    patch_G = np.vstack(
+                        [
+                            np.sin(lati) * np.cos(longi),
+                            np.sin(lati) * np.sin(longi),
+                            np.cos(lati),
+                        ]
+                    )
                     patch_G *= shape.radius()
 
                 elif isinstance(shape, Cylinder):
@@ -231,21 +256,27 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     # In the lcm geometry, cylinders are along +z
                     # https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/matlab/systems/plants/RigidBodyCylinder.m
                     # Two circles: one at bottom, one at top.
-                    sample_pts = np.arange(0., 2.*math.pi, 0.25)
+                    sample_cos_sin = [
+                        (math.cos(angle), math.sin(angle))
+                        for angle in np.arange(0.0, 2.0 * math.pi, 0.25)
+                    ]
                     patch_G = np.hstack(
-                        [np.array([
-                            [radius*math.cos(pt),
-                             radius*math.sin(pt),
-                             -length/2.],
-                            [radius*math.cos(pt),
-                             radius*math.sin(pt),
-                             length/2.]]).T
-                         for pt in sample_pts])
+                        [
+                            np.array(
+                                [
+                                    [radius * cos, radius * sin, -length / 2.0],
+                                    [radius * cos, radius * sin, length / 2.0],
+                                ]
+                            ).T
+                            for cos, sin in sample_cos_sin
+                        ]
+                    )
 
                 elif isinstance(shape, (Mesh, Convex)):
                     source = shape.source()
                     search_for_alternate = (
-                        source.is_path() and substitute_collocated_mesh_files)
+                        source.is_path() and substitute_collocated_mesh_files
+                    )
                     convex_hull = None
                     try:
                         # For both shape types, we replace it with its convex
@@ -273,13 +304,17 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                         # If we're here, we know:
                         #   shape.source().extension() is not supported.
                         #   We didn't/couldn't find a supported alternative.
-                        suffix = (" No supported alternative could be found."
-                                  if search_for_alternate else "")
+                        suffix = (
+                            " No supported alternative could be found."
+                            if search_for_alternate
+                            else ""
+                        )
                         raise RuntimeError(
                             f"The {type(shape).__name__} instance with mesh "
                             f"data '{source.description()}' has an "
                             f"unsupported extension ('{source.extension()}')."
-                            f"{suffix}")
+                            f"{suffix}"
+                        )
                     patch_G = np.empty((3, convex_hull.num_vertices()))
                     for i in range(convex_hull.num_vertices()):
                         patch_G[:, i] = convex_hull.vertex(i)
@@ -291,16 +326,22 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     x = 50
                     y = 50
                     z = -1
-                    patch_G = np.vstack((
-                        x * np.array([-1, -1,  1,  1, -1, -1,  1, 1]),
-                        y * np.array([-1,  1, -1,  1, -1,  1, -1, 1]),
-                        z * np.array([-1, -1, -1, -1,  0,  0,  0, 0])))
+                    patch_G = np.vstack(
+                        (
+                            x * np.array([-1, -1, 1, 1, -1, -1, 1, 1]),
+                            y * np.array([-1, 1, -1, 1, -1, 1, -1, 1]),
+                            z * np.array([-1, -1, -1, -1, 0, 0, 0, 0]),
+                        )
+                    )
 
                 # TODO(SeanCurtis-TRI): Provide support for capsule and
                 # ellipsoid.
                 else:
-                    print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
-                        type(shape)))
+                    print(
+                        "UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
+                            type(shape)
+                        )
+                    )
                     continue
 
                 # Compute pose in body.
@@ -317,7 +358,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     props = inspector.GetIllustrationProperties(g_id)
                     assert props is not None
                     rgba = props.GetPropertyOrDefault(
-                        "phong", "diffuse",  Rgba(0.9, 0.9, 0.9, 1.0))
+                        "phong", "diffuse", Rgba(0.9, 0.9, 0.9, 1.0)
+                    )
                     color = np.array((rgba.r(), rgba.g(), rgba.b(), rgba.a()))
                     this_body_colors.append(color)
 
@@ -328,8 +370,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         # color when using this random generator, with each visual element of
         # the body colored the same.
         if use_random_colors:
-            color = iter(plt_cm.rainbow(
-                np.linspace(0, 1, len(self._patch_Blist_colors))))
+            color = iter(
+                plt_cm.rainbow(np.linspace(0, 1, len(self._patch_Blist_colors)))
+            )
             for name in self._patch_Blist_colors.keys():
                 this_color = next(color)
                 patch_count = len(self._patch_Blist[name])
@@ -382,7 +425,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         # replicating the final vertex.
         n_verts = body_fill.get_path().vertices.shape[0]
         patch_V = np.pad(
-            patch_V, ((0, 0), (0, n_verts - patch_V.shape[1])), mode="edge")
+            patch_V, ((0, 0), (0, n_verts - patch_V.shape[1])), mode="edge"
+        )
         body_fill.get_path().vertices[:, :] = patch_V.T
 
     def draw(self, context):
@@ -406,13 +450,12 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # Use the latest vertices to update the body_fill.
                 self._update_body_fill_verts(body_fill, patch_V)
                 body_fill.zorder = X_WB.translation() @ view_dir
-        self.ax.set_title('t = {:.1f}'.format(context.get_time()))
+        self.ax.set_title("t = {:.1f}".format(context.get_time()))
 
 
-def ConnectPlanarSceneGraphVisualizer(builder,
-                                      scene_graph,
-                                      output_port=None,
-                                      **kwargs):
+def ConnectPlanarSceneGraphVisualizer(
+    builder, scene_graph, output_port=None, **kwargs
+):
     """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
     diagram, and wires the scene_graph pose bundle output port to the input
     port of the visualizer.  Provides an interface comparable to
@@ -436,7 +479,8 @@ def ConnectPlanarSceneGraphVisualizer(builder,
         The newly created PlanarSceneGraphVisualizer object.
     """
     visualizer = builder.AddSystem(
-        PlanarSceneGraphVisualizer(scene_graph, **kwargs))
+        PlanarSceneGraphVisualizer(scene_graph, **kwargs)
+    )
 
     if output_port is None:
         output_port = scene_graph.get_query_output_port()

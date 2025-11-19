@@ -3,12 +3,12 @@
 For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
-import argparse
-from fnmatch import fnmatch
 from glob import glob
 import os
-from os.path import join, relpath
+from os.path import join
+from pathlib import Path
 import shutil
+import stat
 import sys
 
 from python import runfiles
@@ -22,68 +22,50 @@ from doc.defs import (
 )
 
 
-def _symlink_headers(*, drake_workspace, temp_dir, modules):
-    """Prepare the input and output folders. We will copy the requested input
-    file(s) into a temporary scratch directory, so that Doxygen doesn't scan
-    the drake_workspace directly (which is extremely slow).
+def _cull_skipped_headers(*, temp_dir, modules):
+    """Removes the header file symlinks for any modules beyond the requested
+    list of `modules`, but never removes any headers under `doc/**`.
     """
-    # Locate the default top-level modules.
-    unwanted_top_level_dirs = [
-        ".*",           # There is no C++ code here.
-        "bazel-*",      # Ignore Bazel build artifacts.
-        "build",        # Ignore CMake build artifacts.
-        "cmake",        # There is no C++ code here.
-        "debian",       # Ignore Debian build artifacts.
-        "doc",          # There is no C++ code here.
-        "gen",          # Ignore setup artifacts.
-        "setup",        # There is no C++ code here.
-        "third_party",  # Only document first-party Drake code.
-        "tools",        # There is no C++ code here.
-    ]
-    default_modules = [
-        f"drake.{x}" for x in os.listdir(drake_workspace)
-        if os.path.isdir(join(drake_workspace, x))
-        and not any([
-            fnmatch(x, unwanted)
-            for unwanted in unwanted_top_level_dirs
-        ])
-    ]
+    # It's easier to deal with directory paths than dotted strings.
+    module_paths = [Path(x.replace(".", "/")) for x in modules]
 
-    # Iterate modules one by one.
-    for module in (modules or default_modules):
-        if verbose():
-            print(f"Symlinking {module} ...")
-        prefix = "drake."
-        if not module.startswith(prefix):
-            print("error: Doxygen modules must start with 'drake',"
-                  f" not {module}")
+    # Never remove any headers under `doc/**`.
+    module_paths.append(Path("drake/doc"))
+
+    # Validate the list of modules.
+    for module_path in module_paths:
+        top = str(module_path.parents[-2])
+        if top != "drake":
+            print(f"error: Modules must start with 'drake', not {top!r}")
             sys.exit(1)
-        module_as_subdir = module[len(prefix):].replace('.', '/')
-        module_workspace = join(drake_workspace, module_as_subdir)
-        if not os.path.isdir(module_workspace):
-            print(f"error: Unknown module {module}")
+        if not (temp_dir / module_path).is_dir():
+            print(f"error: Unknown module {module_path}")
             sys.exit(1)
-        for dirpath, dirs, files in os.walk(module_workspace):
-            subdir = relpath(dirpath, drake_workspace)
-            os.makedirs(join(temp_dir, "drake", subdir))
-            for item in files:
-                if any([module.startswith("doc"),
-                        "images" in subdir,
-                        item.endswith(".h")]):
-                    dest = join(temp_dir, "drake", subdir, item)
-                    if not os.path.exists(dest):
-                        os.symlink(join(dirpath, item), dest)
+
+    # Cull the directories as requested.
+    for dirpath, _, filenames in (temp_dir / Path("drake")).walk():
+        subdir = dirpath.relative_to(temp_dir)
+        is_wanted = any(
+            [
+                str(subdir).startswith(str(module_path))
+                for module_path in module_paths
+            ]
+        )
+        if is_wanted:
+            continue
+        for filename in filenames:
+            (dirpath / filename).unlink()
 
 
 def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
     """Creates Doxyfile_CXX from Doxyfile_CXX.in."""
-    input_filename = manifest.Rlocation(
-        "drake/doc/doxygen_cxx/Doxyfile_CXX.in")
+    input_filename = manifest.Rlocation("drake/doc/doxygen_cxx/Doxyfile_CXX.in")
     assert os.path.exists(input_filename)
     output_filename = join(temp_dir, "Doxyfile_CXX")
 
     cmake_configure_file = manifest.Rlocation(
-        "drake/tools/workspace/cmake_configure_file")
+        "drake/tools/workspace/cmake_configure_file"
+    )
     assert os.path.exists(cmake_configure_file)
 
     definitions = {}
@@ -96,16 +78,27 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
         definitions["DOXYGEN_DOT_FOUND"] = "NO"
         definitions["DOXYGEN_DOT_EXECUTABLE"] = ""
 
-    check_call([
-        cmake_configure_file,
-        "--input", input_filename,
-        "--output", output_filename,
-        ] + [
-        "-D%s=%s" % (key, value)
-        for key, value in definitions.items()
-        ])
+    check_call(
+        [
+            cmake_configure_file,
+            "--input",
+            input_filename,
+            "--output",
+            output_filename,
+        ]
+        + ["-D%s=%s" % (key, value) for key, value in definitions.items()]
+    )
     assert os.path.exists(output_filename)
     return output_filename
+
+
+def _generate_system_doxygen_wrapper(*, temp_dir):
+    # This matches Doxyfile_CXX.
+    script = "drake/doc/doxygen_cxx/system_doxygen.py"
+    content = f'exec {sys.executable} {script} "$@"'
+    wrapper_path = f"{temp_dir}/system_doxygen.sh"
+    Path(wrapper_path).write_text(content, encoding="utf-8")
+    os.chmod(wrapper_path, stat.S_IRUSR | stat.S_IXUSR)
 
 
 def _generate_doxygen_header(*, doxygen, temp_dir):
@@ -145,9 +138,6 @@ def _is_important_warning(line):
         # more important links such as section cross-references.  An example:
         # ... unable to resolve ... `AssignRole(SourceId,...)' for ref ...
         if "(" in line:
-            return False
-        # TODO(#14107) Remove this if-clause once the issue is resolved.
-        if "df_contact_material" in line:
             return False
         # Broken link.
         return True
@@ -208,12 +198,6 @@ def _build(*, out_dir, temp_dir, modules, quick):
     """
     manifest = runfiles.Create()
 
-    # Find drake's sources.
-    drake_workspace = os.path.dirname(os.path.realpath(
-        manifest.Rlocation("drake/.bazelproject")))
-    assert os.path.exists(drake_workspace), drake_workspace
-    assert os.path.exists(join(drake_workspace, "WORKSPACE")), drake_workspace
-
     # Find doxygen.
     doxygen = manifest.Rlocation("doxygen_internal/doxygen")
     assert os.path.exists(doxygen), doxygen
@@ -227,19 +211,21 @@ def _build(*, out_dir, temp_dir, modules, quick):
         manifest=manifest,
         out_dir=out_dir,
         temp_dir=temp_dir,
-        dot=(dot if not quick else ""))
+        dot=(dot if not quick else ""),
+    )
+    _generate_system_doxygen_wrapper(temp_dir=temp_dir)
 
     # Prepare our input.
-    symlink_input(
-        "drake/doc/doxygen_cxx/doxygen_input.txt", temp_dir)
+    symlink_input("drake/doc/doxygen_cxx/doxygen_input.txt", temp_dir)
     _generate_doxygen_header(
         doxygen=doxygen,
         temp_dir=temp_dir,
     )
-    _symlink_headers(
-        drake_workspace=drake_workspace,
-        temp_dir=temp_dir,
-        modules=modules)
+    if len(modules) > 0:
+        _cull_skipped_headers(
+            temp_dir=temp_dir,
+            modules=modules,
+        )
 
     # Run doxygen.
     check_call([doxygen, doxyfile], cwd=temp_dir)
@@ -248,32 +234,14 @@ def _build(*, out_dir, temp_dir, modules, quick):
     # subset of the docs, we are likely to encounter errors due to the missing
     # sections, so we'll only enable the promotion of warnings to errors when
     # we're building all of the C++ documentation.
-    check_for_errors = (len(modules) == 0)
+    check_for_errors = len(modules) == 0
     with open(f"{temp_dir}/doxygen.log", encoding="utf-8") as f:
         lines = [
-            line.strip().replace(f"{temp_dir}/", "")
-            for line in f.readlines()
+            line.strip().replace(f"{temp_dir}/", "") for line in f.readlines()
         ]
     _postprocess_doxygen_log(lines, check_for_errors)
 
     extra_perl_statements = [
-        # The next stanza forms the second half of the handling for the Python
-        # "▶ Details" block (i.e., the @python_details_{begin,end} markup).
-        #
-        # Here's how it works:
-        #
-        # Our current version of Doxygen doesn't know that <details> is a valid
-        # HTML element, so if we try to put that element in a comment, it would
-        # get escaped rather than passed through. Instead, our Doxyfile macros
-        # for @python_details_begin and @python_details_end convert the markup
-        # to a <span>, which *is* passed through as raw HTML by Doxygen. Then,
-        # with the following regular expressions, we transform the two <span>s
-        # to <detail> and </detail>.
-        (r's#<p><span class="_python_details_begin"></span> </p>#'
-         r'<p><details><summary>Click to expand Python code...</summary>#;'),
-        (r's#<p> <span class="_python_details_end"></span></p>$#'
-         r'</details></p>#;'),
-
         # Fix the formatting of deprecation text (see #15619 for an example).
         # (1) Remove quotes around the removal date.
         r's#(removed from Drake on or after) "(....-..-..)" *\.#\1 \2.#;',
@@ -288,8 +256,8 @@ def _build(*, out_dir, temp_dir, modules, quick):
         r'while (s#(?<=_deprecated\d{6}")([^"]*)"(.*?<br)#\1\2#) {};',
     ]
     perl_cleanup_html_output(
-        out_dir=out_dir,
-        extra_perl_statements=extra_perl_statements)
+        out_dir=out_dir, extra_perl_statements=extra_perl_statements
+    )
 
     # Remove extraneous Doxygen build files.
     files_to_remove = glob(join(out_dir, "*.md5"))
@@ -304,6 +272,11 @@ def _build(*, out_dir, temp_dir, modules, quick):
     return ["", "classes.html", "modules.html"]
 
 
-if __name__ == '__main__':
-    main(build=_build, subdir="doxygen_cxx", description=__doc__.strip(),
-         supports_modules=True, supports_quick=True)
+if __name__ == "__main__":
+    main(
+        build=_build,
+        subdir="doxygen_cxx",
+        description=__doc__.strip(),
+        supports_modules=True,
+        supports_quick=True,
+    )

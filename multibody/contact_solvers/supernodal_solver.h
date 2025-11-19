@@ -45,7 +45,7 @@ class SuperNodalSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SuperNodalSolver);
 
-  virtual ~SuperNodalSolver() = default;
+  virtual ~SuperNodalSolver();
 
   // Sets the block-diagonal weight matrix G.  The block rows of J and G both
   // partition the set {1, 2, ..., num_rows(J)}. Similar to the mass_matrix,
@@ -81,7 +81,7 @@ class SuperNodalSolver {
  protected:
   SuperNodalSolver() = default;
 
-  // @group NVI implementations. Specific solvers must implement these
+  // @name NVI implementations. Specific solvers must implement these
   // methods. Refer to the specific NVI documentation for details.
   // @{
 

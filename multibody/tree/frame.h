@@ -9,7 +9,6 @@
 #include "drake/multibody/tree/frame_body_pose_cache.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
@@ -155,7 +154,7 @@ class Frame : public MultibodyElement<T> {
   /// In other words, if the pose of `this` frame F in the body frame B is
   /// `X_BF`, this method computes the pose `X_BQ` of frame Q in the body frame
   /// B as `X_BQ = X_BF * X_FQ`.
-  /// In particular, if `this` **is**` the body frame B, i.e. `X_BF` is the
+  /// In particular, if `this` **is** the body frame B, i.e. `X_BF` is the
   /// identity transformation, this method directly returns `X_FQ`.
   /// Specific frame subclasses can override this method to provide faster
   /// implementations if needed.
@@ -636,10 +635,8 @@ class Frame : public MultibodyElement<T> {
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().
-  void DoSetTopology(
-      const internal::MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_frame_topology(this->index());
-    DRAKE_ASSERT(topology_.index == this->index());
+  void DoSetTopology() final {
+    // Frame gets everything it needs at construction.
   }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
@@ -657,9 +654,6 @@ class Frame : public MultibodyElement<T> {
 
   // The body associated with this frame.
   const RigidBody<T>& body_;
-
-  // The internal bookkeeping topology struct used by MultibodyTree.
-  internal::FrameTopology topology_;
 
   int body_pose_index_in_cache_{-1};
 };

@@ -19,6 +19,7 @@
 #include <vtkImageReader2Factory.h>      // vtkIOImage
 #include <vtkLight.h>                    // vtkRenderingCore
 #include <vtkLightsPass.h>               // vtkRenderingOpenGL2
+#include <vtkMemoryResourceStream.h>     // vtkIOCore
 #include <vtkOpaquePass.h>               // vtkRenderingOpenGL2
 #include <vtkOpenGLFXAAPass.h>           // vtkRenderingOpenGL2
 #include <vtkOpenGLPolyDataMapper.h>     // vtkRenderingOpenGL2
@@ -30,6 +31,7 @@
 #include <vtkPointData.h>                // vtkCommonDataModel
 #include <vtkProperty.h>                 // vtkRenderingCore
 #include <vtkRenderPassCollection.h>     // vtkRenderingOpenGL2
+#include <vtkSSAOPass.h>                 // vtkRenderingOpenGL2
 #include <vtkSequencePass.h>             // vtkRenderingOpenGL2
 #include <vtkShadowMapBakerPass.h>       // vtkRenderingOpenGL2
 #include <vtkShadowMapPass.h>            // vtkRenderingOpenGL2
@@ -962,7 +964,27 @@ void RenderEngineVtk::InitializePipelines() {
   vtkNew<vtkSequencePass> full_seq;
   vtkNew<vtkRenderPassCollection> full_passes;
   full_passes->AddItem(vtkNew<vtkLightsPass>());
-  full_passes->AddItem(vtkNew<vtkOpaquePass>());
+  if (parameters_.ssao.has_value()) {
+    vtkNew<vtkOpaquePass> opaque_pass;
+
+    vtkNew<vtkCameraPass> ssao_camera_pass;
+    ssao_camera_pass->SetDelegatePass(opaque_pass);
+
+    vtkNew<vtkSSAOPass> ssao_pass;
+    ssao_pass->SetDelegatePass(ssao_camera_pass);
+
+    const auto& ssao_parameter = parameters_.ssao.value();
+    ssao_pass->SetRadius(ssao_parameter.radius);
+    ssao_pass->SetBias(ssao_parameter.bias);
+    ssao_pass->SetKernelSize(ssao_parameter.sample_count);
+    ssao_pass->SetIntensityScale(ssao_parameter.intensity_scale);
+    ssao_pass->SetIntensityShift(ssao_parameter.intensity_shift);
+    ssao_pass->SetBlur(ssao_parameter.blur);
+
+    full_passes->AddItem(ssao_pass);
+  } else {
+    full_passes->AddItem(vtkNew<vtkOpaquePass>());
+  }
   full_passes->AddItem(vtkNew<vtkTranslucentPass>());
   full_seq->SetPasses(full_passes);
 
@@ -1082,8 +1104,9 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
             },
             [reader = texture_reader.Get()](const MemoryFile& file) {
               const std::string& contents = file.contents();
-              reader->SetMemoryBuffer(contents.c_str());
-              reader->SetMemoryBufferLength(contents.size());
+              vtkNew<vtkMemoryResourceStream> stream;
+              stream->SetBuffer(contents.c_str(), contents.size());
+              reader->SetStream(stream);
               return file.filename_hint();
             }},
         material.diffuse_map);

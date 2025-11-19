@@ -1,3 +1,6 @@
+# ruff: noqa: F401,F403 (unused-import, import-star)
+# ruff: isort: skip_file
+
 import warnings
 
 # Normal symbols.

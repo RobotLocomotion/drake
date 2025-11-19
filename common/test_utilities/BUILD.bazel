@@ -42,10 +42,11 @@ drake_cc_package_library(
 drake_cc_library(
     name = "diagnostic_policy_test_base",
     testonly = 1,
+    srcs = ["diagnostic_policy_test_base.cc"],
     hdrs = ["diagnostic_policy_test_base.h"],
     deps = [
         "//common:diagnostic_policy",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -55,7 +56,7 @@ drake_cc_library(
     hdrs = ["eigen_matrix_compare.h"],
     deps = [
         "//common:essential",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -77,13 +78,18 @@ drake_cc_library(
 
 drake_cc_library(
     name = "gtest_printers",
-    testonly = 1,
     hdrs = [
         "eigen_printer.h",
         "fmt_format_printer.h",
     ],
     tags = ["exclude_from_package"],
-    visibility = ["@gtest//:__pkg__"],
+    visibility = [
+        # We allow two spellings for where gtest came from -- the bazel central
+        # registry @googletest, or our traditional module extension @gtest.
+        "@googletest//:__pkg__",
+        # Remove on 2026-01-01 per @gtest deprecation.
+        "@gtest//:__pkg__",
+    ],
     deps = [
         "//common:fmt",
         "@eigen",
@@ -169,7 +175,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 

@@ -30,6 +30,7 @@ cc_library_vendored(
         "FEATURE_SDP",
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = True,
 )
 
@@ -66,3 +67,5 @@ install(
     docs = ["LICENSE.md"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

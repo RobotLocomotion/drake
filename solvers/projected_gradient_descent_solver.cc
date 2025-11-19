@@ -1,5 +1,8 @@
 #include "drake/solvers/projected_gradient_descent_solver.h"
 
+#include <memory>
+#include <vector>
+
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/choose_best_solver.h"

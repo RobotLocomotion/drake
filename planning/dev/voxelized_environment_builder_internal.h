@@ -13,13 +13,17 @@
 #include <common_robotics_utilities/parallelism.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <fmt/format.h>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
+#include <voxelized_geometry_tools/occupancy_map.hpp>
+#include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
 #include "drake/common/parallelism.h"
-#include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
+
+// Our linter rejects logging from header files, but this isn't really a header
+// file. It is listed as `srcs` not `hdrs` in the BUILD file and is more like an
+// `*.inc` file than a true header.
+#include "drake/common/text_logging.h"  // drakelint: ignore
 
 namespace drake {
 namespace planning {

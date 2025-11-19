@@ -1,5 +1,4 @@
-"""Drake's wrapper for the clang-format binary.
-"""
+"""Drake's wrapper for the clang-format binary."""
 
 import os
 from pathlib import Path

@@ -1,11 +1,12 @@
 #include <atomic>
 #include <chrono>
 #include <future>
+#include <memory>
 #include <thread>
 
 #include "pybind11/pybind11.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
 namespace py = pybind11;

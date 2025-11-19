@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 import numpy as np
 
@@ -18,7 +17,7 @@ class TestNloptSolver(unittest.TestCase):
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
-        x_expected = np.array([1., 1.])
+        x_expected = np.array([1.0, 1.0])
 
         solver = NloptSolver()
         self.assertEqual(solver.solver_id(), NloptSolver.id())
@@ -29,7 +28,8 @@ class TestNloptSolver(unittest.TestCase):
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         numpy_compare.assert_float_allclose(
-            result.GetSolution(x), x_expected, atol=1E-7)
+            result.GetSolution(x), x_expected, atol=1e-7
+        )
         self.assertEqual(result.get_solver_details().status, 4)
 
         self.assertIsInstance(NloptSolver.ConstraintToleranceName(), str)

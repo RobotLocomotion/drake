@@ -1,6 +1,10 @@
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 
+#include <limits>
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -1,6 +1,12 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 
+#include <limits>
+#include <memory>
 #include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

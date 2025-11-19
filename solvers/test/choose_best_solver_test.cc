@@ -1,5 +1,10 @@
 #include "drake/solvers/choose_best_solver.h"
 
+#include <memory>
+#include <set>
+#include <unordered_set>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -34,7 +39,7 @@ class ChooseBestSolverTest : public ::testing::Test {
         mosek_solver_{std::make_unique<MosekSolver>()},
         gurobi_solver_{std::make_unique<GurobiSolver>()},
         osqp_solver_{std::make_unique<OsqpSolver>()},
-        moby_lcp_solver_{std::make_unique<MobyLCPSolver<double>>()},
+        moby_lcp_solver_{std::make_unique<MobyLcpSolver>()},
         snopt_solver_{std::make_unique<SnoptSolver>()},
         ipopt_solver_{std::make_unique<IpoptSolver>()},
         nlopt_solver_{std::make_unique<NloptSolver>()},
@@ -92,7 +97,7 @@ class ChooseBestSolverTest : public ::testing::Test {
   std::unique_ptr<MosekSolver> mosek_solver_;
   std::unique_ptr<GurobiSolver> gurobi_solver_;
   std::unique_ptr<OsqpSolver> osqp_solver_;
-  std::unique_ptr<MobyLCPSolver<double>> moby_lcp_solver_;
+  std::unique_ptr<MobyLcpSolver> moby_lcp_solver_;
   std::unique_ptr<SnoptSolver> snopt_solver_;
   std::unique_ptr<IpoptSolver> ipopt_solver_;
   std::unique_ptr<NloptSolver> nlopt_solver_;

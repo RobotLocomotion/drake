@@ -37,7 +37,6 @@ cmake_configure_file(
         "PROJECT_VERSION_PATCH=0",
         "PROJECT_VERSION=0.0",
         "PROJECT_VERSION_FULL=0.0.0",
-        "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     undefines = [
         "USE_INTERNAL_URDF",
@@ -264,6 +263,7 @@ cc_library_vendored(
         for x in _HDRS
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     copts = ["-w"],
     defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
     linkstatic = 1,
@@ -305,3 +305,5 @@ install(
         "LICENSE",
     ],
 )
+
+exports_files(["drake_repository_metadata.json"])

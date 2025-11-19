@@ -9,6 +9,10 @@ a way to model a kinematic loop. It shows:
 
   Refer to README.md for more details.
 */
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gflags/gflags.h>
 
 #include "drake/multibody/parsing/parser.h"

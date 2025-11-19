@@ -81,6 +81,9 @@ SolarSystem<T>::SolarSystem(SceneGraph<T>* scene_graph) {
 }
 
 template <typename T>
+SolarSystem<T>::~SolarSystem() = default;
+
+template <typename T>
 const systems::OutputPort<T>& SolarSystem<T>::get_geometry_pose_output_port()
     const {
   return systems::System<T>::get_output_port(geometry_pose_port_);

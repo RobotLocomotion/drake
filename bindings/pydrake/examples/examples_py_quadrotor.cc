@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_quadrotor.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/quadrotor/quadrotor_geometry.h"
@@ -14,7 +14,7 @@ void DefineExamplesQuadrotor(py::module m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::quadrotor;
-  constexpr auto& doc = pydrake_doc.drake.examples.quadrotor;
+  constexpr auto& doc = pydrake_doc_examples_quadrotor.drake.examples.quadrotor;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar

@@ -67,7 +67,7 @@ drake_cc_library(
     deps = [
         ":lcm_publisher_system",
         "//lcm:interface",
-        "//lcmtypes:scope",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
     ],
@@ -168,7 +168,7 @@ drake_cc_googletest(
         ":lcm_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 
@@ -179,7 +179,7 @@ drake_cc_googletest(
         ":lcm_interface_system",
         ":lcm_subscriber_system",
         "//lcm:drake_lcm",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
     ],
@@ -202,7 +202,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_log_playback_system",
         ":lcm_pubsub_system",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
     ],
@@ -213,7 +213,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_interface_system",
         ":lcm_scope_system",
-        "//lcmtypes:scope",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",
@@ -226,7 +226,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_system_graphviz",
         "//lcm:drake_lcm",
-        "//lcmtypes:drake_signal",
+        "//lcmtypes:lcmtypes_drake_cc",
         "@abseil_cpp_internal//absl/strings",
     ],
 )

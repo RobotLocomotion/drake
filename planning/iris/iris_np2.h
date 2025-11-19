@@ -90,6 +90,9 @@ class IrisNp2Options {
    * solvers::MakeFirstAvailableSolver will be used to pick the solver. */
   const solvers::SolverInterface* solver{nullptr};
 
+  /** Options passed to the counterexample search program solver. */
+  solvers::SolverOptions solver_options{};
+
   /** Options common to IRIS-type algorithms. */
   CommonSampledIrisOptions sampled_iris_options{};
 
@@ -108,6 +111,12 @@ class IrisNp2Options {
 
   /** Additional options for kRaySampler. Ignored if kGreedySampler is used. */
   RaySamplerOptions ray_sampler_options;
+
+  /** Add a hyperplane at a particle in collision if the nonlinear solve
+   * (initialized at that point) fails. Generally leads to regions with more
+   * faces, but helpful for getting the algorithm unstuck if most nonlinear
+   * solves are failing. */
+  bool add_hyperplane_if_solve_fails{false};
 };
 
 /** The IRIS-NP2 (Iterative Regional Inflation by Semidefinite and Nonlinear

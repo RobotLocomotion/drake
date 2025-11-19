@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
-import numpy
 import platform
+
+import numpy
+
 import pydrake.all
 
 # Basic sanity checks.
 print(pydrake.getDrakePath())
 print(pydrake.all.PackageMap().GetPath('drake'))
 
-# Check for presence of optional solvers.
-assert pydrake.all.MosekSolver().available(), 'Missing MOSEK'
+# Check for presence of optional solver(s). Note that MOSEK is covered by
+# mosek-test.py in more detail, so we don't redundantly check it here.
 assert pydrake.all.SnoptSolver().available(), 'Missing SNOPT'
 
 # Check that IPOPT is working.

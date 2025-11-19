@@ -1,6 +1,10 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
 #include <algorithm>
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -270,10 +274,6 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   // In the functions below we use CompliantContactManagerTester to provide
   // access to private functions for unit testing.
 
-  const internal::MultibodyTreeTopology& topology() const {
-    return CompliantContactManagerTester::topology(*contact_manager_);
-  }
-
   const GeometryContactData<double>& EvalGeometryContactData(
       const Context<double>& context) const {
     return CompliantContactManagerTester::EvalGeometryContactData(
@@ -536,10 +536,10 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
 
   // In this simple setup only positions change since there is no angular
   // velocities nor external torques.
-  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere1_,
-                                      RigidTransformd(p_WS1));
-  plant_->SetFreeBodyPoseInWorldFrame(next_context.get(), *sphere2_,
-                                      RigidTransformd(p_WS2));
+  plant_->SetFloatingBaseBodyPoseInWorldFrame(next_context.get(), *sphere1_,
+                                              RigidTransformd(p_WS1));
+  plant_->SetFloatingBaseBodyPoseInWorldFrame(next_context.get(), *sphere2_,
+                                              RigidTransformd(p_WS2));
   plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere1_, V_WS);
   plant_->SetFreeBodySpatialVelocity(next_context.get(), *sphere2_, V_WS);
 

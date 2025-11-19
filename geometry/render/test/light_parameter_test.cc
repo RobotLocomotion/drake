@@ -9,6 +9,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
 
+// Remove with deprecation 2026-03-01.
+#include <sstream>
+
 namespace drake {
 namespace geometry {
 namespace render {
@@ -19,14 +22,32 @@ using Eigen::Vector3d;
 // Test for valid default values.
 GTEST_TEST(LightParamterTest, DefaultValues) {
   const LightParameter light;
-  EXPECT_EQ(light.type, fmt::to_string(fmt_streamed(LightType::kDirectional)));
+  EXPECT_EQ(light.type, fmt::to_string(LightType::kDirectional));
   EXPECT_EQ(light.color, Rgba(1, 1, 1));
   EXPECT_TRUE(CompareMatrices(light.attenuation_values, Vector3d(1, 0, 0)));
   EXPECT_TRUE(CompareMatrices(light.position, Vector3d(0, 0, 0)));
-  EXPECT_EQ(light.frame, fmt::to_string(fmt_streamed(LightFrame::kCamera)));
+  EXPECT_EQ(light.frame, fmt::to_string(LightFrame::kCamera));
   EXPECT_EQ(light.intensity, 1.0);
   EXPECT_TRUE(CompareMatrices(light.direction, Vector3d{0, 0, 1}));
   EXPECT_EQ(light.cone_angle, 0);
+}
+
+GTEST_TEST(LightParamterTest, ToString) {
+  const LightType light = LightType::kDirectional;
+  const LightFrame frame = LightFrame::kCamera;
+  EXPECT_EQ(to_string(light), "directional");
+  EXPECT_EQ(to_string(frame), "camera");
+  EXPECT_EQ(fmt::to_string(light), "directional");
+  EXPECT_EQ(fmt::to_string(frame), "camera");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::stringstream light_out;
+  std::stringstream frame_out;
+  light_out << light;
+  frame_out << frame;
+  EXPECT_EQ(light_out.str(), "directional");
+  EXPECT_EQ(frame_out.str(), "camera");
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(LightParameterTest, Serialization) {

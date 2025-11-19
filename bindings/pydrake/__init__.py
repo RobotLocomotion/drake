@@ -32,12 +32,12 @@ def _execute_extra_python_code(m, use_subdir: bool = False):
         sys.modules[m.__name__] = m
     module_path = m.__name__.split(".")
     if len(module_path) == 1:
-        raise RuntimeError((
+        raise RuntimeError(
             "ExecuteExtraPythonCode cannot be used with the top-level "
-            "module `{}`. If you are writing modules in a downstream "
-            "project, please review this thread and ensure your import is "
-            "correct: https://stackoverflow.com/a/57858822/7829525"
-            ).format(m.__name__))
+            f"module `{m.__name__}`. If you are writing modules in a "
+            "downstream project, please review this thread and ensure your "
+            "import is correct: https://stackoverflow.com/a/57858822/7829525"
+        )
     top_module_name = module_path[0]
     top_module_dir = os.path.dirname(sys.modules[top_module_name].__file__)
     if use_subdir:
@@ -53,7 +53,7 @@ def _execute_extra_python_code(m, use_subdir: bool = False):
     extra_path = [top_module_dir] + mid_module_names + [extra_module_name]
     extra_filename = os.path.join(*extra_path)
     with open(extra_filename) as f:
-        _code = compile(f.read(), extra_filename, 'exec')
+        _code = compile(f.read(), extra_filename, "exec")
         exec(_code, m.__dict__, m.__dict__)
 
 
@@ -134,7 +134,8 @@ def _check_for_rtld_global_usages():
 
 if _check_for_rtld_global_usages():
     warnings.warn(
-        _RTLD_GLOBAL_WARNING, category=_DrakeImportWarning, stacklevel=3)
+        _RTLD_GLOBAL_WARNING, category=_DrakeImportWarning, stacklevel=3
+    )
 
 
 # We specifically load `common` prior to loading any other pydrake modules,
@@ -145,24 +146,26 @@ if _check_for_rtld_global_usages():
 try:
     from . import common
 except ImportError as e:
-    if ('cannot open shared object file' in (e.msg or '')
-            and '/pydrake/' in (e.path or '')):
-        message = f'''
+    if "cannot open shared object file" in (e.msg or "") and "/pydrake/" in (
+        e.path or ""
+    ):
+        message = """
 Drake failed to load a required library. This could indicate an installation
 problem, or that your system is missing required distro-provided packages.
 Please refer to the installation instructions to ensure that all required
 dependencies are installed.
-'''
+"""
         # For wheel builds, we have a file with additional advice.
         wheel_doc = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'INSTALLATION')
+            os.path.dirname(os.path.realpath(__file__)), "INSTALLATION"
+        )
         if os.path.exists(wheel_doc):
             with open(wheel_doc) as f:
                 message += f.read()
-        message += '''
+        message += """
 For more information, please see https://drake.mit.edu/installation.html
-'''
+"""
         print(message)
     raise
 
-__all__ = ['common', 'getDrakePath']
+__all__ = ["common", "getDrakePath"]

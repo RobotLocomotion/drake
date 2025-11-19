@@ -21,6 +21,7 @@ cc_library(
     name = "compat",
     hdrs = ["src/compat.hxx"],
     includes = ["src"],
+    isystem = True,
     copts = _COPTS,
     linkstatic = True,
 )
@@ -29,6 +30,7 @@ cc_library(
     name = "contrib",
     hdrs = ["src/ssids/contrib.h"],
     includes = ["src"],
+    isystem = True,
     copts = _COPTS,
     linkstatic = True,
     deps = [
@@ -46,6 +48,7 @@ cc_library(
     ],
     hdrs = glob(["src/ssids/cpu/**/*.hxx"], allow_empty = False),
     includes = ["src"],
+    isystem = True,
     copts = _COPTS + ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
@@ -65,6 +68,7 @@ cc_library(
         "src/hw_topology/guess_topology.hxx",
     ],
     includes = ["src"],
+    isystem = True,
     copts = _COPTS,
     linkstatic = True,
     deps = [
@@ -77,6 +81,7 @@ cc_library(
     srcs = ["src/omp.cxx"],
     hdrs = ["src/omp.hxx"],
     includes = ["src"],
+    isystem = True,
     copts = _COPTS,
     linkstatic = True,
 )
@@ -88,6 +93,7 @@ cc_library(
     # The patches/no_fortran_profiling.patch removes the Fortran callers, so
     # we can omit it (so that it doesn't leak global symbols into our library).
     includes = ["src"],
+    isystem = True,
     copts = _COPTS,
     deps = [
         ":guess_topology",
@@ -346,6 +352,7 @@ cc_library(
     name = "spral",
     hdrs = ["include/spral_ssids.h"],
     includes = ["include"],
+    isystem = True,
     copts = _COPTS,
     linkstatic = True,
     deps = [
@@ -360,3 +367,5 @@ install(
     docs = ["LICENCE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

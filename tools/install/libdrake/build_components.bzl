@@ -1,4 +1,4 @@
-# This file governs the contents of libdrake.so.
+# This file governs the contents of libdrake.
 
 # Do not update this list by hand; instead, from the drake workspace run
 #
@@ -44,6 +44,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/render_gltf_client",
     "//geometry/render_vtk",
     "//lcm",
+    "//manipulation/franka_panda",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
     "//manipulation/schunk_wsg",
@@ -56,6 +57,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/contact_solvers",
+    "//multibody/contact_solvers/icf",
     "//multibody/contact_solvers/sap",
     "//multibody/fem",
     "//multibody/hydroelastics",

@@ -55,7 +55,9 @@ class CommonSampledIrisOptions {
 
   CommonSampledIrisOptions() = default;
 
-  /** Number of particles used to estimate the closest collision. */
+  /** Minimum number of particles drawn per inner iteration. Some or all of
+   * these particles, depending on the other algorithm settings, will be used to
+   * find the closest collisions. */
   int num_particles = 1e3;
 
   /** Decision threshold for the unadaptive test. Choosing a small value
@@ -110,6 +112,13 @@ class CommonSampledIrisOptions {
    * possibility of requiring an infinite number of faces to approximate a
    * curved boundary. */
   double configuration_space_margin{1e-2};
+
+  /** Suppose stepping back by configuration_space_margin would cut off the seed
+   * point. If `relax_margin` is false, we throw an error, and if `relax_margin`
+   * is true, we repeatedly divide configuration_space_margin by two (for that
+   * hyperplane only) until the seed point is not cut off. Ignored if the user
+   * has provided `containment_points`. */
+  bool relax_margin{false};
 
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
   between iterations is less that this threshold. This termination condition can
@@ -313,7 +322,7 @@ float calc_delta_min(double delta, int max_iterations);
 void AddTangentToPolytope(
     const geometry::optimization::Hyperellipsoid& E,
     const Eigen::Ref<const Eigen::VectorXd>& point,
-    double configuration_space_margin,
+    double configuration_space_margin, bool relax_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints);
 

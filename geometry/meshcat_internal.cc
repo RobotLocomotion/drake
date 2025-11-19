@@ -41,21 +41,15 @@ std::optional<std::string_view> GetMeshcatStaticResource(
     std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
-  static const drake::never_destroyed<std::string> stats_js(
-      LoadResource("drake/geometry/stats.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
-  if ((url_path == "/") || (url_path == "/index.html") ||
-      (url_path == "/meshcat.html")) {
+  if (url_path == "/meshcat.html") {
     return meshcat_html.access();
   }
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
-  }
-  if (url_path == "/stats.min.js") {
-    return stats_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();

@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 #include <Eigen/Dense>
 

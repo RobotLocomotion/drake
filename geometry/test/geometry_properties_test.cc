@@ -1,5 +1,10 @@
 #include "drake/geometry/geometry_properties.h"
 
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -9,6 +14,9 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/rgba.h"
+
+// Remove with deprecation 2026-03-01.
+#include <sstream>
 
 namespace drake {
 namespace geometry {
@@ -530,6 +538,19 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, vector_name));
   // - Get<Vector4d>.
   EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, vector_name));
+}
+
+GTEST_TEST(GeometryProperties, ToString) {
+  const TestProperties subclass;
+  const GeometryProperties& dut = subclass;
+  EXPECT_EQ(dut.to_string(), "[__default__]");
+  EXPECT_EQ(fmt::to_string(dut), "[__default__]");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::stringstream out;
+  out << dut;
+  EXPECT_EQ(out.str(), "[__default__]");
+#pragma GCC diagnostic pop
 }
 
 }  // namespace

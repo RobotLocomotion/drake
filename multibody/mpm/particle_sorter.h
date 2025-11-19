@@ -198,9 +198,9 @@ class ParticleSorter {
    }
    ```
 
-   Refer to Section 3.2 of the technical document of [Hu et al. 2018]
-   (https://yzhu.io/publication/mpmmls2018siggraph/supp.pdf) for more
-   details about how the colors are arranged and why there are 8 colors.
+   Refer to Section 3.2 of the technical document of
+   [Hu et al. 2018](https://yzhu.io/publication/mpmmls2018siggraph/supp.pdf) for
+   more details about how the colors are arranged and why there are 8 colors.
 
    [Hu et al. 2018] Hu, Yuanming, et al. "A moving least squares material point
    method with displacement discontinuity and two-way rigid body coupling." ACM
@@ -359,7 +359,7 @@ class ParticleSorter {
    indices. */
   void UnpackResults();
 
-  /* Helper for `Sort`()` that builds `colored_ranges_`. */
+  /* Helper for `Sort()` that builds `colored_ranges_`. */
   template <typename SpGrid>
   void BuildColoredRanges(const SpGrid& spgrid, int num_particles) {
     /* Keep track of where each new "page" begins. */

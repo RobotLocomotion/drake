@@ -11,7 +11,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/network_policy.h"
 #include "drake/common/text_logging.h"
 
@@ -369,6 +368,10 @@ DrakeLcm::~DrakeLcm() {
     }
   }
   ::lcm_destroy(impl_->lcm_);
+}
+
+bool DrakeLcm::available() {
+  return true;
 }
 
 }  // namespace lcm

@@ -15,7 +15,6 @@ If you would like to disable all Drake-related warnings, you may use the
 import os
 import re
 import sys
-import traceback
 from types import ModuleType
 import warnings
 
@@ -45,13 +44,15 @@ class ModuleShim:
 
     def __init__(self, orig_module, handler):
         assert hasattr(orig_module, "__all__"), (
-            "Please define `__all__` for this module.")
+            "Please define `__all__` for this module."
+        )
         assert isinstance(orig_module, ModuleType), (
-            "{} must be a module".format(orig_module))
+            "{} must be a module".format(orig_module)
+        )
         # https://stackoverflow.com/a/16237698/7829525
-        object.__setattr__(self, '_orig_module', orig_module)
-        object.__setattr__(self, '_handler', handler)
-        object.__setattr__(self, '__doc__', orig_module.__doc__)
+        object.__setattr__(self, "_orig_module", orig_module)
+        object.__setattr__(self, "_handler", handler)
+        object.__setattr__(self, "__doc__", orig_module.__doc__)
 
     def __getattr__(self, name):
         # Use the original module if possible.
@@ -67,7 +68,8 @@ class ModuleShim:
                     raise e
                 else:
                     raise AttributeError(
-                        "'module' object has no attribute '{}'".format(name))
+                        f"'module' object has no attribute '{name}'"
+                    )
             setattr(m, name, value)
             return value
 
@@ -106,9 +108,7 @@ class ModuleShim:
         old_module = sys.modules[name]
         if auto_all:
             old_module.__all__ = [
-                name
-                for name in old_module.__dict__
-                if not name.startswith("_")
+                name for name in old_module.__dict__ if not name.startswith("_")
             ]
         new_module = cls(old_module, handler)
         sys.modules[name] = new_module
@@ -117,6 +117,7 @@ class ModuleShim:
 class DrakeDeprecationWarning(DeprecationWarning):
     """Extends `DeprecationWarning` to permit Drake-specific warnings to
     be filtered by default, without having side effects on other libraries."""
+
     pass
 
 
@@ -159,7 +160,7 @@ class _DeprecatedDescriptor:
     """
 
     def __init__(self, original, message, *, date=None):
-        assert hasattr(original, '__get__'), (
+        assert hasattr(original, "__get__"), (
             f"`original` must be a descriptor: {original}"
         )
         self._original = original
@@ -224,25 +225,34 @@ def install_numpy_warning_filters(force=False):
     # raised from C code, and thus inherits the calling module, which may not
     # be "numpy\..*" (numpy/numpy#10861).
     warnings.filterwarnings(
-        "error", category=DeprecationWarning, message="numpy equal will not")
+        "error", category=DeprecationWarning, message="numpy equal will not"
+    )
     warnings.filterwarnings(
-        "error", category=DeprecationWarning,
-        message="elementwise == comparison failed")
+        "error",
+        category=DeprecationWarning,
+        message="elementwise == comparison failed",
+    )
     warnings.filterwarnings(
-        "error", category=DeprecationWarning,
-        message="elementwise != comparison failed")
+        "error",
+        category=DeprecationWarning,
+        message="elementwise != comparison failed",
+    )
     # Error changed in 1.16.0
     warnings.filterwarnings(
-        "error", category=DeprecationWarning,
-        message="elementwise comparison failed")
+        "error",
+        category=DeprecationWarning,
+        message="elementwise comparison failed",
+    )
 
     # TODO(#17898): This is not a deprecation per se, nor is it promoting the
     # deprecation to warning. However, this warning currently does not incur
     # a functional penalty, so we suppress the warning to minimize
     # distractions. Root-cause investigation pending.
     warnings.filterwarnings(
-        "ignore", category=RuntimeWarning,
-        message="invalid value encountered in")
+        "ignore",
+        category=RuntimeWarning,
+        message="invalid value encountered in",
+    )
 
 
 def deprecated_callable(message, *, date=None):
@@ -272,7 +282,6 @@ def deprecated_callable(message, *, date=None):
     """
 
     def decorator(original):
-
         def wrapped(*args, **kwargs):
             _warn_deprecated(message, date=date, stacklevel=3)
             return original(*args, **kwargs)
@@ -310,9 +319,9 @@ if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
     # This is used for testing Jupyter notebooks in `jupyter_bazel`.
     # Note that the same literal string name for the environment variable is
     # used for both C++ code and Python code, so keep the two in sync.
-    warnings.simplefilter('error', DrakeDeprecationWarning)
+    warnings.simplefilter("error", DrakeDeprecationWarning)
 else:
-    warnings.simplefilter('once', DrakeDeprecationWarning)
+    warnings.simplefilter("once", DrakeDeprecationWarning)
 _installed_numpy_warning_filters = False
 
 # Used to enforce presence of YYYY-MM-DD timestamp for deprecation.

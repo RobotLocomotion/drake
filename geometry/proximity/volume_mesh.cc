@@ -1,9 +1,12 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 
 #include "drake/common/default_scalars.h"
+#include "drake/math/linear_solve.h"
 
 namespace drake {
 namespace geometry {
+
+using drake::math::internal::PartialPivLU;
 
 template <typename T>
 VolumeMesh<T>::VolumeMesh(std::vector<VolumeElement>&& elements,
@@ -13,6 +16,39 @@ VolumeMesh<T>::VolumeMesh(std::vector<VolumeElement>&& elements,
     throw std::logic_error("A mesh must contain at least one tetrahedron");
   }
   ComputePositionDependentQuantities();
+}
+
+template <typename T>
+template <typename C>
+typename VolumeMesh<T>::template Barycentric<promoted_numerical_t<T, C>>
+VolumeMesh<T>::CalcBarycentric(const Vector3<C>& p_MQ, int e) const
+  requires scalar_predicate<C>::is_bool
+{
+  // We have two conditions to satisfy.
+  // 1. b₀ + b₁ + b₂ + b₃ = 1
+  // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
+  // Together they create this 4x4 linear system:
+  //
+  //      | 1  1  1  1 ||b₀|   | 1 |
+  //      | |  |  |  | ||b₁| = | | |
+  //      | v0 v1 v2 v3||b₂|   |p_M|
+  //      | |  |  |  | ||b₃|   | | |
+  //
+  // q = p_M - v0 = b₀*u0 + b₁*u1 + b₂*u2 + b₃*u3
+  //              = 0 + b₁*u1 + b₂*u2 + b₃*u3
+  using ReturnType = promoted_numerical_t<T, C>;
+  Matrix4<ReturnType> A;
+  for (int i = 0; i < 4; ++i) {
+    A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i));
+  }
+  Vector4<ReturnType> b;
+  b << ReturnType(1.0), p_MQ;
+  const math::LinearSolver<PartialPivLU, Matrix4<ReturnType>> A_lu(A);
+  const Vector4<ReturnType> b_Q = A_lu.Solve(b);
+  // TODO(DamrongGuoy): Save the inverse of the matrix instead of
+  //  calculating it on the fly. We can reduce to 3x3 system too.  See
+  //  issue #11653.
+  return b_Q;
 }
 
 template <typename T>
@@ -126,6 +162,9 @@ bool VolumeMesh<T>::Equal(const VolumeMesh<T>& mesh,
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class VolumeMesh);
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&VolumeMesh<T>::template CalcBarycentric<U>));
 
 }  // namespace geometry
 }  // namespace drake

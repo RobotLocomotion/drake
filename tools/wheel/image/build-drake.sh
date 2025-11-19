@@ -21,16 +21,21 @@ build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
 build --repo_env=SNOPT_PATH=${SNOPT_PATH}
 build --config=packaging
-build --define=LCM_INSTALL_JAVA=OFF
 # Enable MOSEK lazy loading. Right now this is only done for Linux builds.
 build --@drake//solvers:mosek_lazy_load=True
-# The JDK mentioned here is not actually used, but must not be local_jdk
-# because we don't have any local JDK installed and rules_java fails fast
-# when that option is selected but no JDK can be found.
-# TODO(jwnimmer-tri) Offer an official //tools/flags and CMake option to
-# disable Drake's Java support, and use it here.
-build --java_runtime_version=remotejdk_11
 EOF
+
+# MOSEK's published wheels declare an upper bound on their supported Python
+# version, which is currently Python < 3.14. When that changes to a larger
+# version number, we should bump this up to match, and also grep tools/wheel
+# for other mentions of MOSEK version bounds and fix those as well.
+PYTHON_MINOR=$(/usr/local/bin/python -c "import sys; print(sys.version_info.minor)")
+if [[ ${PYTHON_MINOR} -ge 14 ]]; then
+    cat >> /tmp/drake-wheel-build/drake-build/drake.bazelrc << EOF
+build --@drake//tools/flags:with_mosek=False
+build --@drake//solvers:mosek_lazy_load=False
+EOF
+fi
 
 # Install Drake using our wheel-build-specific Python interpreter.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
@@ -41,6 +46,7 @@ cmake ../drake-src \
     -DWITH_USER_BLAS=OFF \
     -DWITH_USER_LAPACK=OFF \
     -DWITH_USER_ZLIB=OFF \
+    -DDRAKE_INSTALL_JAVA=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DDRAKE_GIT_SHA_OVERRIDE="${DRAKE_GIT_SHA}" \
     -DCMAKE_INSTALL_PREFIX=/tmp/drake-wheel-build/drake-dist \

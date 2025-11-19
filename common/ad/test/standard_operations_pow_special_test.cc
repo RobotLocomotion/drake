@@ -1,5 +1,8 @@
 #include <algorithm>
 #include <initializer_list>
+#include <limits>
+#include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 

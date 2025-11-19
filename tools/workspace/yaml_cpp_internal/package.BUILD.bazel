@@ -31,6 +31,7 @@ cc_library_vendored(
         for x in _HDRS
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )
@@ -40,3 +41,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

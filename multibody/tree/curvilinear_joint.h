@@ -136,7 +136,7 @@ class CurvilinearJoint final : public Joint<T> {
   void set_default_damping(double damping) {
     DRAKE_THROW_UNLESS(damping >= 0);
     DRAKE_THROW_UNLESS(this->has_parent_tree());
-    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
     this->set_default_damping_vector(Vector1d(damping));
   }
 
@@ -258,7 +258,8 @@ class CurvilinearJoint final : public Joint<T> {
   }
 
   /** @returns A reference to the underlying trajectory. */
-  const PiecewiseConstantCurvatureTrajectory<double>& get_trajectory() const {
+  const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+  get_trajectory() const {
     return curvilinear_path_;
   }
 

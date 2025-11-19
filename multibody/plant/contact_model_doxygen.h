@@ -4,7 +4,7 @@
 // clang-format off (to preserve link to images)
 
 /** @addtogroup drake_contacts
-
+@{
 @section solid_mechanics Mechanics of Solids
 
 All objects in real life are compliant and deform under the action of external
@@ -177,10 +177,11 @@ compliant_contact.
   analytically-invertible dynamics with contacts and constraints: Theory and
   implementation in mujoco. In 2014 IEEE International Conference on Robotics
   and Automation (ICRA) (pp. 6054-6061). IEEE.
+@}
 */
 
 /** @addtogroup compliant_contact Modeling Compliant Contact
-
+@{
 @section compliant_point_contact Compliant Point Contact
 
 The point contact model defines the contact force by determining the minimum
@@ -559,9 +560,11 @@ particular, drake::multibody::DiscreteContactApproximation::kSimilar and
 drake::multibody::DiscreteContactApproximation::kLagged are convex
 approximations of contact, using a solver with theoretical and practical
 convergence guarantees.
+@}
 */
 
 /** @addtogroup  friction_model Modeling of Dry Friction
+ @{
  @section friction_physical_model Physical Model
 
  Despite several @ref friction_numerical_approximations
@@ -591,9 +594,9 @@ convergence guarantees.
  force directly opposes vₜ and its magnitude is μₖfₙ (or μₖpₙ), where μₖ is the
  "dynamic" (or kinetic) coefficient of friction, with μₖ ≤ μₛ. This can be
  written as:
- <pre> 
+ <pre>
   fₜ = -μₖ vₜ/‖vₜ‖ fₙ.
- </pre> 
+ </pre>
 
  @section friction_numerical_approximations Numerical Approximations
 
@@ -620,10 +623,11 @@ convergence guarantees.
  @note Discrete models, formulated at the velocity level, cannot differentiate
  between static (μₛ) and dynamic (μₖ) friction; only dynamic friction can be
  resolved. Therefore the static coefficient of friction is ignored.
-*/
+ @}
+ */
 
 /** @addtogroup hydro_margin Margin for Hydroelastic Contact
-
+@{
 @brief  <a><!-- no brief line please --></a>
 
 In Drake, multibody systems with frictional contact are simulated via a discrete
@@ -946,7 +950,7 @@ instabilities). For each contact constraint we measure the signed distance ϕ an
 compute its standard deviation σ(|ϕ|) as a metric to characterize the amplitude
 of these spurious oscillations. Since h² changes several orders of magnitude,
 and guided by (3), we plot in Fig. 7 the dimensionless amplitude σ(|ϕ|) /
-(h²⋅g). 
+(h²⋅g).
 
 @note Theoretically, for the rod, the dimensionless amplitude σ(|ϕ|) / (h²⋅g)
 should equal one. For more complex geometries, we do not expect this to be true.
@@ -1088,7 +1092,7 @@ range. Even for this case, estimating the amplitude of these vibrations with
 ~h²⋅g, provides a good approximation.
 
 @image html drake/multibody/plant/images/box_on_box_std_penetration_with_notations.png "Figure 8: Amplitude of the oscillations with problem parameters. No margin, δ = 0." width=35%
-
+@}
 */
 
 /**

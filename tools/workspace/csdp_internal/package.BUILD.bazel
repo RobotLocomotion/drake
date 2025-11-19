@@ -65,6 +65,7 @@ cc_library(
         "-fno-openmp",
     ],
     includes = ["includes"],
+    isystem = True,
     linkstatic = 1,
     deps = [
         "@blas",
@@ -81,3 +82,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

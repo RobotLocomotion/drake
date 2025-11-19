@@ -1,7 +1,9 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -237,6 +239,21 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   options.sampled_iris_options.remove_all_collisions_possible = true;
   region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   EXPECT_FALSE(region.PointInSet(query_point));
+}
+
+TEST_F(DoublePendulum, RelaxMargin) {
+  IrisZoOptions options;
+
+  // Deliberately set the configuration space margin to be very large, so that
+  // the hyperplanes added will cut off the seed point and cause an error.
+  options.sampled_iris_options.configuration_space_margin = 1e8;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options),
+      ".*within sampled_iris_options\\.configuration_space_margin of being "
+      "infeasible.*");
+
+  options.sampled_iris_options.relax_margin = true;
+  EXPECT_NO_THROW(IrisZo(*checker_, starting_ellipsoid_, domain_, options));
 }
 
 // Test growing a region for the double pendulum along a parameterization of the

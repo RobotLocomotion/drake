@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cstdio>
 #include <limits>
 
 #include "drake/common/fmt_ostream.h"

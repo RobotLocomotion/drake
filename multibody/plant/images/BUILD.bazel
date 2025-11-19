@@ -1,16 +1,33 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
-PYTHON_SCRIPTS = [
-    "ideal_stiction.py",
-    "stiction.py",
-]
+filegroup(
+    name = "doxygen_input",
+    srcs = glob([
+        "*.gif",
+        "*.png",
+        "*.svg",
+    ]),
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
+drake_py_binary(
+    name = "ideal_stiction",
+    srcs = ["ideal_stiction.py"],
+)
+
+drake_py_binary(
+    name = "stiction",
+    srcs = ["stiction.py"],
+)
 
 drake_py_unittest(
     name = "scripts_test",
-    data = PYTHON_SCRIPTS,
+    data = [
+        ":ideal_stiction",
+        ":stiction",
+    ],
 )
 
-add_lint_tests(
-    python_lint_extra_srcs = PYTHON_SCRIPTS,
-)
+add_lint_tests()

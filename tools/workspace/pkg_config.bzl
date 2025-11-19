@@ -1,4 +1,4 @@
-load("//tools/workspace:execute.bzl", "path", "which")
+load(":execute.bzl", "path", "which")
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
@@ -276,6 +276,14 @@ def _maybe_setup_pkg_config_repository(repository_ctx):
     )
     repository_ctx.template("BUILD.bazel", template, substitutions)
 
+    extra_templates = getattr(
+        repository_ctx.attr,
+        "extra_build_file_templates",
+        {},
+    )
+    for path, template in extra_templates.items():
+        repository_ctx.template(path, template, substitutions)
+
     return struct(error = None)
 
 def setup_pkg_config_repository(repository_ctx):
@@ -338,6 +346,7 @@ _do_pkg_config_repository = repository_rule(
             default = _DEFAULT_TEMPLATE,
             allow_files = True,
         ),
+        "extra_build_file_templates": attr.string_keyed_label_dict(),
         "extra_srcs": attr.string_list(),
         "extra_hdrs": attr.string_list(),
         "extra_copts": attr.string_list(),
@@ -393,6 +402,10 @@ def pkg_config_repository(**kwargs):
         static: (Optional) Add linkopts for static linking to the library
                 target.
         build_file_template: (Optional) (Advanced) Override the BUILD template.
+        extra_build_file_templates: (Optional) (Advanced) Add additional BUILD
+                                    files in directories other than the top
+                                    level. The keys are BUILD file path(s), and
+                                    the values are labels for which template.
         extra_srcs: (Optional) Extra items to add to the library target.
         extra_hdrs: (Optional) Extra items to add to the library target.
         extra_copts: (Optional) Extra items to add to the library target.

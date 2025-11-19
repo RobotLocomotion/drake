@@ -2,6 +2,14 @@
  drake::geometry::optimization namespace. They can be found in the
  pydrake.geometry.optimization module. */
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/geometry_optimization.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -9,7 +17,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
@@ -45,7 +52,8 @@ namespace {
 using namespace drake::geometry;
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry::optimization;
-constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
+constexpr auto& doc =
+    pydrake_doc_geometry_optimization.drake.geometry.optimization;
 
 // Definitions for cspace_separating_plane.h.
 void DefineCspaceSeparatingPlane(py::module m) {
@@ -340,7 +348,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
             cls_doc.SimplifyByIncrementalFaceTranslation.doc)
         .def("MaximumVolumeInscribedAffineTransformation",
             &HPolyhedron::MaximumVolumeInscribedAffineTransformation,
-            py::arg("circumbody"),
+            py::arg("circumbody"), py::arg("check_bounded") = true,
             cls_doc.MaximumVolumeInscribedAffineTransformation.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,

@@ -1,0 +1,38 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "icf",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":eigen_pool",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_pool",
+    srcs = ["eigen_pool.cc"],
+    hdrs = ["eigen_pool.h"],
+    deps = [
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_pool_test",
+    deps = [
+        ":eigen_pool",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+add_lint_tests()

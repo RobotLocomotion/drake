@@ -8,6 +8,9 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+
+OrientationConstraint::~OrientationConstraint() = default;
+
 OrientationConstraint::OrientationConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameAbar,
     const math::RotationMatrix<double>& R_AbarA, const Frame<double>& frameBbar,

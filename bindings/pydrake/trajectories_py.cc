@@ -1,8 +1,14 @@
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "pybind11/eval.h"
 
+#include "drake/bindings/generated_docstrings/common_trajectories.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
@@ -256,7 +262,7 @@ struct Impl {
 
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::trajectories;
-    constexpr auto& doc = pydrake_doc.drake.trajectories;
+    constexpr auto& doc = pydrake_doc_common_trajectories.drake.trajectories;
 
     {
       using Class = Trajectory<T>;

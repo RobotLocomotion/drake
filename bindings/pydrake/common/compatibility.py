@@ -4,11 +4,10 @@ which may need changes for compatibility.
 
 import numpy as np
 
-
 _patches = {
-    'numpy_formatters': {
-        'applied': False,
-        'required': np.lib.NumpyVersion(np.__version__) < '1.13.0',
+    "numpy_formatters": {
+        "applied": False,
+        "required": np.lib.NumpyVersion(np.__version__) < "1.13.0",
     },
 }
 
@@ -41,18 +40,18 @@ def maybe_patch_numpy_formatters():
     """
     # Provides version-dependent monkey-patch which effectively achieves a
     # portion of https://github.com/numpy/numpy/pull/8963
-    patch = _patches['numpy_formatters']
-    if not patch['required']:
+    patch = _patches["numpy_formatters"]
+    if not patch["required"]:
         return
-    if patch['applied']:
+    if patch["applied"]:
         return
     module = np.core.arrayprint
     defer_callable_types = [
-        'IntegerFormat',
-        'FloatFormat',
+        "IntegerFormat",
+        "FloatFormat",
     ]
     for name in defer_callable_types:
         original = getattr(module, name)
         deferred = _defer_callable_type(original)
         setattr(module, name, deferred)
-    patch['applied'] = True
+    patch["applied"] = True

@@ -8,10 +8,9 @@
  */
 
 #include <optional>
-#include <ostream>
 #include <string>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
@@ -96,8 +95,8 @@ HydroelasticType GetHydroelasticTypeFromString(
     std::string_view hydroelastic_type);
 std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type);
 
-/* Streaming operator for writing hydroelastic type to output stream.  */
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
+/* String conversion for debug-printing hydroelastic type.  */
+std::string_view to_string(const HydroelasticType& type);
 
 }  // namespace internal
 
@@ -112,7 +111,7 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
  *
  * @throws std::exception if `dissipation` is negative, `point_stiffness` is
  * not positive, of any of the contact material properties have already been
- * defined in ``properties`.
+ * defined in `properties`.
  * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(
@@ -188,11 +187,5 @@ void AddCompliantHydroelasticPropertiesForHalfSpace(
 }  // namespace geometry
 }  // namespace drake
 
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::internal::HydroelasticType>
-    : drake::ostream_formatter {};
-}  // namespace fmt
-#endif
+DRAKE_FORMATTER_AS(, drake::geometry::internal, HydroelasticType, x,
+                   drake::geometry::internal::to_string(x))

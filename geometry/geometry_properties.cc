@@ -1,5 +1,7 @@
 #include "drake/geometry/geometry_properties.h"
 
+#include <sstream>
+
 #include <fmt/format.h>
 
 namespace drake {
@@ -129,9 +131,10 @@ const AbstractValue* GeometryProperties::GetPropertyAbstractMaybe(
   }
 }
 
-std::ostream& operator<<(std::ostream& out, const GeometryProperties& props) {
+std::string GeometryProperties::to_string() const {
+  std::stringstream out;
   int i = 0;
-  for (const auto& group_pair : props.values_) {
+  for (const auto& group_pair : values_) {
     const string& group_name = group_pair.first;
     const GeometryProperties::Group& group_properties = group_pair.second;
     out << "[" << group_name << "]";
@@ -141,9 +144,14 @@ std::ostream& operator<<(std::ostream& out, const GeometryProperties& props) {
           << property_pair.second->GetNiceTypeName();
       // TODO(SeanCurtis-TRI): How do I print the value in an AbstractValue?
     }
-    if (i < props.num_groups() - 1) out << "\n";
+    if (i < num_groups() - 1) out << "\n";
     ++i;
   }
+  return out.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const GeometryProperties& props) {
+  out << fmt::to_string(props);
   return out;
 }
 

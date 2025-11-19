@@ -1,6 +1,6 @@
 import numpy as np
 
-from pydrake.common.yaml import yaml_load, yaml_dump
+from pydrake.common.yaml import yaml_dump, yaml_load
 
 
 def load_scenario(*, filename=None, data=None):
@@ -11,8 +11,7 @@ def load_scenario(*, filename=None, data=None):
 
 
 def save_scenario(*, scenario):
-    """Given a scenario, returns a yaml-formatted str for it.
-    """
+    """Given a scenario, returns a yaml-formatted str for it."""
     # For a known list of scenario-specific items, convert numpy arrays into
     # lists for serialization purposes.
     scrubbed = dict(scenario)
@@ -40,6 +39,5 @@ def load_output(*, filename=None, data=None):
 
 
 def save_output(*, x_tape):
-    """Given an acrobot output `x_tape`, returns a yaml-formatter str for it.
-    """
+    """Given an acrobot output `x_tape`, returns a yaml-formatter str for it."""
     return yaml_dump({"x_tape": x_tape.tolist()})

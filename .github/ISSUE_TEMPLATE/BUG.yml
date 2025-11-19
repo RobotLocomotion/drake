@@ -34,8 +34,8 @@ body:
         - Unknown / Other
         - Ubuntu 22.04
         - Ubuntu 24.04
-        - macOS 14 (Sonoma)
         - macOS 15 (Sequoia)
+        - macOS 26 (Tahoe)
         - Other
   - type: dropdown
     attributes:

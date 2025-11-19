@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -11,11 +10,11 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/parameter_conversion.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/scoped_name.h"
@@ -160,6 +159,14 @@ class RigidBodyAttorney {
   static RigidBodyFrame<T>& get_mutable_body_frame(RigidBody<T>* body) {
     return body->get_mutable_body_frame();
   }
+
+  // Used by MultibodyTree _during_ Finalize(), after the call to
+  // SetTopology() has appropriately registered which bodies are floating base
+  // bodies, but before the MultibodyTree::is_finalized() flag has been set.
+  static bool is_floating_base_body_pre_finalize(const RigidBody<T>& body) {
+    return body.is_floating_base_body_;
+  }
+
   friend class internal::MultibodyTree<T>;
 };
 }  // namespace internal
@@ -247,16 +254,13 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
-    if (!is_floating()) {
+    if (!is_floating_base_body()) {
       // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::logic_error(fmt::format(
           "Attempted to call Lock() on non-floating-base rigid body {}",
           name()));
     }
-    DRAKE_ASSERT(this->has_parent_tree());
-    this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
-        .Lock(context);
+    mobilizer().Lock(context);
   }
 
   /// For a floating base %RigidBody, unlock its inboard joint.
@@ -265,16 +269,13 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     //  non-floating bodies.
-    if (!is_floating()) {
+    if (!is_floating_base_body()) {
       // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::logic_error(fmt::format(
           "Attempted to call Unlock() on non-floating-base rigid body {}",
           name()));
     }
-    DRAKE_ASSERT(this->has_parent_tree());
-    this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
-        .Unlock(context);
+    mobilizer().Unlock(context);
   }
 
   /// Determines whether this %RigidBody is currently locked to its inboard
@@ -284,29 +285,33 @@ class RigidBody : public MultibodyElement<T> {
   bool is_locked(const systems::Context<T>& context) const {
     ThrowIfNotFinalized(__func__);
     DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
-        .is_locked(context);
+    return mobilizer().is_locked(context);
   }
 
   /// (Advanced) Returns the index of the mobilized body ("mobod") in the
   /// computational directed forest structure of the owning MultibodyTree to
   /// which this %RigidBody belongs. This serves as the BodyNode index and the
   /// index into all associated quantities.
-  internal::MobodIndex mobod_index() const { return topology_.mobod_index; }
+  internal::MobodIndex mobod_index() const { return mobilizer().index(); }
 
-  /// (Advanced) Returns `true` if this body is granted 6-dofs by a Mobilizer
-  /// and the parent body of this body's associated 6-dof joint is `world`.
+  /// (Advanced) Returns `true` if this body is a _floating base body_, meaning
+  /// it had no explicit joint to a parent body so is mobilized by an
+  /// automatically-added (ephemeral) floating (6 dof) joint to World.
+  ///
   /// @note A floating base body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a
   /// roll-pitch-yaw (rpy) parametrization of rotations, see
   /// RpyFloatingMobilizer.
+  ///
   /// @throws std::exception if called pre-finalize,
   /// @see MultibodyPlant::Finalize()
-  bool is_floating() const {
+  bool is_floating_base_body() const {
     ThrowIfNotFinalized(__func__);
-    return topology_.is_floating_base;
+    return is_floating_base_body_;
   }
+
+  DRAKE_DEPRECATED("2026-01-01", "Use is_floating_base_body() instead.")
+  bool is_floating() const { return is_floating_base_body(); }
 
   /// (Advanced) If `true`, this body's generalized position coordinates q
   /// include a quaternion, which occupies the first four elements of q. Note
@@ -314,13 +319,13 @@ class RigidBody : public MultibodyElement<T> {
   /// have fewer than 6 dofs or its inboard body could be something other than
   /// World.
   /// @throws std::exception if called pre-finalize
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   bool has_quaternion_dofs() const {
     ThrowIfNotFinalized(__func__);
-    return topology_.has_quaternion_dofs;
+    return mobilizer().has_quaternion_dofs();
   }
 
-  /// (Advanced) For floating base bodies (see is_floating()) this method
+  /// (Advanced) For floating base bodies (see is_floating_base_body()),
   /// returns the index of this %RigidBody's first generalized position in the
   /// vector q of generalized position coordinates for a MultibodyPlant model.
   /// Positions q for this %RigidBody are then contiguous starting at this
@@ -330,60 +335,57 @@ class RigidBody : public MultibodyElement<T> {
   /// %RigidBody's orientation.
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), has_quaternion_dofs(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), has_quaternion_dofs()
+  /// @see MultibodyPlant::Finalize()
   int floating_positions_start() const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
-    return topology_.floating_positions_start;
+    DRAKE_DEMAND(is_floating_base_body());
+    return mobilizer().position_start_in_q();
   }
 
-  /// (Advanced) For floating base bodies (see is_floating()) this method
+  /// (Advanced) For floating base bodies (see is_floating_base_body()),
   /// returns the index of this %RigidBody's first generalized velocity in the
   /// vector v of generalized velocities for a MultibodyPlant model. Velocities
   /// v for this %RigidBody are then contiguous starting at this index.
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   int floating_velocities_start_in_v() const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
-    return topology_.floating_velocities_start_in_v;
+    DRAKE_DEMAND(is_floating_base_body());
+    return mobilizer().velocity_start_in_v();
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th position in the floating base. `position_index_in_body` must
-  /// be in [0, 7) if `has_quaternion_dofs()` is true, otherwise in [0, 6).
+  /// the `k`th position in the floating base body. `position_index_in_body`
+  /// must be in [0, 7) if `has_quaternion_dofs()` is true, otherwise in [0, 6).
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), has_quaternion_dofs(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), has_quaternion_dofs()
+  /// @see MultibodyPlant::Finalize()
   std::string floating_position_suffix(int position_index_in_body) const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(is_floating_base_body());
     if (has_quaternion_dofs()) {
       DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 7);
     } else {
       DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 6);
     }
-    DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
-        .position_suffix(position_index_in_body);
+    return mobilizer().position_suffix(position_index_in_body);
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th velocity in the floating base. `velocity_index_in_body` must
-  /// be in [0,6).
+  /// the `k`th velocity in the floating base body. `velocity_index_in_body`
+  /// must be in [0,6).
   /// @throws std::exception if called pre-finalize
   /// @pre this is a floating base body
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see is_floating_base_body(), MultibodyPlant::Finalize()
   std::string floating_velocity_suffix(int velocity_index_in_body) const {
     ThrowIfNotFinalized(__func__);
-    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(is_floating_base_body());
     DRAKE_DEMAND(0 <= velocity_index_in_body && velocity_index_in_body < 6);
     DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
-        .velocity_suffix(velocity_index_in_body);
+    return mobilizer().velocity_suffix(velocity_index_in_body);
   }
 
   /// Returns this %RigidBody's default mass, which is initially supplied at
@@ -751,13 +753,19 @@ class RigidBody : public MultibodyElement<T> {
   // selected set of private RigidBody methods.
   friend class internal::RigidBodyAttorney<T>;
 
-  // Implementation for MultibodyElement::DoSetTopology().
-  // At MultibodyTree::Finalize() time, each body retrieves its topology
-  // from the parent MultibodyTree.
-  void DoSetTopology(
-      const internal::MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_rigid_body_topology(this->index());
-    body_frame_.SetTopology(tree_topology);
+  // Called near the end of Finalize().
+  void DoSetTopology() final {
+    DRAKE_DEMAND(mobilizer_ == nullptr);
+    const internal::MultibodyTree<T>& tree = this->get_parent_tree();
+    const internal::SpanningForest& forest = tree.forest();
+    const internal::LinkJointGraph::Link& link = forest.link_by_index(index());
+    mobilizer_ = &tree.get_mobilizer(link.mobod_index());
+
+    // Is this RigidBody the active link on its Mobod?
+    const bool is_active_link =
+        link.ordinal() == forest.mobods(link.mobod_index()).link_ordinal();
+    is_floating_base_body_ =
+        is_active_link && mobilizer_->is_floating_base_mobilizer();
   }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
@@ -787,7 +795,7 @@ class RigidBody : public MultibodyElement<T> {
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const {
     DRAKE_THROW_UNLESS(this->has_parent_tree());
-    if (!this->get_parent_tree().topology_is_valid()) {
+    if (!this->get_parent_tree().is_finalized()) {
       // TODO(jwnimmer-tri) This code is not supposed to be inlined (GSG).
       throw std::runtime_error(
           "From '" + std::string(source_method) +
@@ -839,6 +847,11 @@ class RigidBody : public MultibodyElement<T> {
   // RigidBodyAttorney.
   RigidBodyFrame<T>& get_mutable_body_frame() { return body_frame_; }
 
+  const internal::Mobilizer<T>& mobilizer() const {
+    DRAKE_ASSERT(mobilizer_ != nullptr);
+    return *mobilizer_;
+  }
+
   // A string identifying the body in its model.
   // Within a MultibodyPlant model instance this string is guaranteed to be
   // unique by MultibodyPlant's API.
@@ -847,15 +860,21 @@ class RigidBody : public MultibodyElement<T> {
   // Body frame associated with this body.
   RigidBodyFrame<T> body_frame_;
 
-  // The internal bookkeeping topology struct used by MultibodyTree.
-  internal::RigidBodyTopology topology_;
-
   // Spatial inertia about the body frame origin Bo, expressed in B.
   SpatialInertia<double> default_spatial_inertia_;
 
   // System parameter index for this bodies SpatialInertia stored in a
   // context.
   systems::NumericParameterIndex spatial_inertia_parameter_index_;
+
+  // Below here, members are set at Finalize() via SetTopology().
+
+  // The mobilizer of the Mobod that this body follows.
+  const internal::Mobilizer<T>* mobilizer_{};
+
+  // True if the mobilizer is a floating base mobilizer and this body is the
+  // active link of the mobilized composite.
+  bool is_floating_base_body_{false};
 };
 
 /// (Compatibility) Prefer RigidBody to Body, however this dispreferred alias

@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:cc.bzl", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -51,6 +51,7 @@ cc_library(
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     copts = COPTS,
     linkstatic = True,
     deps = [
@@ -75,7 +76,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -87,7 +88,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -99,7 +100,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -119,7 +120,7 @@ cc_test(
     timeout = "moderate",
     deps = [
         ":common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -136,7 +137,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -149,7 +150,7 @@ cc_test(
     tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -161,7 +162,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -173,7 +174,7 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:without_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -196,3 +197,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -12,11 +12,15 @@
 ///        the vertical case. Using these keyframes to simulate the horizontal
 ///        case may cause the simulation to fail.
 
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/examples/planar_gripper/planar_gripper_lcm.h"
 #include "drake/lcm/drake_lcm.h"

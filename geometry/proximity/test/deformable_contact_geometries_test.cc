@@ -1,5 +1,11 @@
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"

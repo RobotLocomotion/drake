@@ -1,5 +1,12 @@
 #include "drake/solvers/semidefinite_relaxation_internal.h"
 
+#include <limits>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/ssize.h"

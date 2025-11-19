@@ -1,5 +1,8 @@
 #include "drake/multibody/tree/revolute_mobilizer.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -37,9 +40,10 @@ class RevoluteMobilizerTest : public MobilizerTester {
             std::make_unique<RevoluteJoint<double>>(
                 "joint0", tree().world_body().body_frame(), body_->body_frame(),
                 axis_Jp_));
-    // Mobilizers are always ephemeral (i.e. not added by user).
+    // Mobilizers are marked ephemeral only if the modeled joint is ephemeral
+    // (that is, added automatically).
     mobilizer_ = const_cast<RevoluteMobilizer<double>*>(&const_mobilizer);
-    EXPECT_TRUE(mobilizer_->is_ephemeral());
+    EXPECT_FALSE(mobilizer_->is_ephemeral());
   }
 
  protected:

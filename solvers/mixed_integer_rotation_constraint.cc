@@ -520,9 +520,6 @@ void AddBoxSphereIntersectionConstraints(
             double cos_theta = d;
             const double theta = std::acos(cos_theta);
 
-            Eigen::Matrix<double, 1, 6> a;
-            Eigen::Matrix<double, 3, 9> A_cross;
-
             Eigen::Vector3d orthant_normal;
             Vector3<Expression> orthant_c;
             for (int o = 0; o < 8; o++) {  // iterate over orthants
@@ -797,7 +794,6 @@ void ComputeBoxSphereIntersectionAndHalfSpace(
           DRAKE_DEMAND((*box_sphere_intersection_vertices)[xi][yi][zi].size() >=
                        3);
 
-          Eigen::Vector3d normal{};
           internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
               (*box_sphere_intersection_vertices)[xi][yi][zi],
               &((*box_sphere_intersection_halfspace)[xi][yi][zi].first),

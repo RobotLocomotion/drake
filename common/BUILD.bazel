@@ -15,6 +15,13 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "doxygen_input",
+    srcs = ["cxx_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "common",
     visibility = ["//visibility:public"],
@@ -89,7 +96,7 @@ drake_cc_library(
 drake_cc_library(
     name = "essential",
     srcs = [
-        "drake_assert_and_throw.cc",
+        "drake_assert.cc",
         "drake_deprecated.cc",
         "text_logging.cc",
     ],
@@ -428,7 +435,11 @@ drake_cc_library(
     name = "nice_type_name_override_header",
     hdrs = ["nice_type_name_override.h"],
     install_hdrs_exclude = ["nice_type_name_override.h"],
-    tags = ["exclude_from_package"],
+    tags = [
+        "exclude_from_package",
+        # This is linted using `extra_srcs`, below.
+        "nolint",
+    ],
     visibility = ["//bindings/pydrake/common:__pkg__"],
 )
 
@@ -440,6 +451,10 @@ drake_cc_library(
     ],
     hdrs = [
         "nice_type_name.h",
+    ],
+    tags = [
+        # This is linted using `extra_srcs`, below.
+        "nolint",
     ],
     deps = [
         ":essential",
@@ -618,6 +633,8 @@ drake_cc_library(
 drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
+    deprecation = "DRAKE DEPRECATED: The resource_tool binary is deprecated and will be removed from Drake on or after 2026-02-01",  # noqa
+    tags = ["manual"],
     deps = [
         ":add_text_logging_gflags",
         ":essential",
@@ -626,24 +643,21 @@ drake_cc_binary(
 )
 
 install(
-    name = "install_drake_marker",
-    targets = [":libdrake_marker.so"],
-)
-
-install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
+        # TODO(tyler-yankee): As written, find_resource relies on dynamic
+        # loading and disregards //tools/flags:install_libdrake=static.
+        # We should determine alternatives to make this work, so that users
+        # linking libdrake statically can distribute a single archive file.
         ":libdrake_marker.so",
+        # Remove with resource_tool deprecation 2026-02-01.
         ":resource_tool",
     ],
     runtime_dest = "share/drake/common",
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    deps = [
-        ":install_drake_marker",
-    ],
 )
 
 # === test/ ===
@@ -887,6 +901,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1300,6 +1315,7 @@ drake_py_unittest(
     data = [":drake_cc_googletest_main_test_device"],
 )
 
+# Remove with resource_tool deprecation 2026-02-01.
 drake_py_unittest(
     name = "resource_tool_test",
     args = [
@@ -1333,7 +1349,14 @@ drake_cc_googletest(
 )
 
 add_lint_tests(
+    cpplint_extra_srcs = [
+        "nice_type_name.cc",
+        "nice_type_name.h",
+        "nice_type_name_override.cc",
+        "nice_type_name_override.h",
+    ],
     python_lint_extra_srcs = [
+        # Remove with resource_tool deprecation 2026-02-01.
         ":test/resource_tool_installed_test.py",
     ],
 )

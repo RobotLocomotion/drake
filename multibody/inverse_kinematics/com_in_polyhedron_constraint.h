@@ -66,7 +66,7 @@ class ComInPolyhedronConstraint : public solvers::Constraint {
       const Eigen::Ref<const Eigen::VectorXd>& ub,
       systems::Context<AutoDiffXd>* plant_context);
 
-  ~ComInPolyhedronConstraint() override {}
+  ~ComInPolyhedronConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

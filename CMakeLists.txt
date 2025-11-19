@@ -45,8 +45,8 @@ set(UNIX_DISTRIBUTION_CODENAME)
 # For Ubuntu, don't make as harsh a check for minimum supported version
 # since Drake *can* compile on non-Ubuntu UNIX, even though it's not
 # officially supported.
-set(MINIMUM_DARWIN_VERSION 23)
-set(MINIMUM_MACOS_CODENAME "Sonoma")
+set(MINIMUM_DARWIN_VERSION 24)
+set(MINIMUM_MACOS_CODENAME "Sequoia")
 
 if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS ${MINIMUM_DARWIN_VERSION})
@@ -97,7 +97,7 @@ else()
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
-set(MINIMUM_BAZEL_VERSION 8.0.1)
+set(MINIMUM_BAZEL_VERSION 8.4.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
@@ -151,7 +151,7 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
 else()
   message(WARNING
     "Compilation with ${CMAKE_C_COMPILER_ID} is NOT supported. Compilation of "
-    "project drake_cxx_python may fail."
+    "project drake_install may fail."
   )
 endif()
 
@@ -176,7 +176,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   message(WARNING
     "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported. Compilation "
-    "of project drake_cxx_python may fail."
+    "of project drake_install may fail."
   )
 endif()
 
@@ -224,7 +224,7 @@ set(CMAKE_CXX_STANDARD 20)
 if(APPLE)
   # The macOS python version should match what's listed in both the
   # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
-  set(SUPPORTED_PYTHON_VERSION 3.13)
+  set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
     set(SUPPORTED_PYTHON_VERSION 3.12)
@@ -273,7 +273,7 @@ endif()
 if(NOT Python_INTERPRETER_ID STREQUAL Python)
   message(WARNING
     "Python interpreter ${Python_INTERPRETER_ID} is NOT supported. Python "
-    "code in project drake_cxx_python may fail at runtime."
+    "code in project drake_install may fail at runtime."
   )
 endif()
 set(PYTHON_VERSION_MAJOR_MINOR
@@ -344,44 +344,85 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-# Symlinks the C++ include path for TARGET as workspace/NAME/include, e.g.
+# Symlinks the C++ interface include directories for TARGET as
+# workspace/NAME/include, e.g.
 #  workspace/eigen/include -> .../build/install/include/eigen3
+# If TARGET has multiple include directories, then symlink each file or
+# directory within each include directory.
 function(symlink_external_repository_includes NAME TARGET)
-  get_target_property(include_dir ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+  get_target_property(include_dirs ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
   set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/workspace)
   file(MAKE_DIRECTORY ${workspace}/${NAME})
-  file(CREATE_LINK ${include_dir} ${workspace}/${NAME}/include SYMBOLIC)
+  list(LENGTH include_dirs n_include_dirs)
+
+  if (n_include_dirs GREATER 1)
+    file(MAKE_DIRECTORY ${workspace}/${NAME}/include)
+    foreach(dir IN LISTS include_dirs)
+      file(GLOB items RELATIVE ${dir} ${dir}/*)
+      foreach(item IN LISTS items)
+        file(CREATE_LINK ${dir}/${item}
+          ${workspace}/${NAME}/include/${item} SYMBOLIC)
+      endforeach()
+    endforeach()
+  else()
+    file(CREATE_LINK ${include_dirs} ${workspace}/${NAME}/include SYMBOLIC)
+  endif()
 endfunction()
 
 # Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
 #  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/libfmt.so.6.1.2
 #  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/libfmt.so.6.1.2
-# If USE_SO_MINOR_VERSION is ON, the last line above uses .so.x.y instead, i.e.
+# If USE_SO_MINOR_VERSION is provided as argument, the last line above uses
+# .so.x.y instead, e.g.
 #  workspace/fmt/lib/libfmt.so.6.1 -> ../build/install/lib/libfmt.so.6.1.2
-function(symlink_external_repository_libs NAME TARGET USE_SO_MINOR_VERSION)
+# Uses the LOCATION_<CONFIG> target property to determine the location of the
+# target file on disk to be symlinked, unless LIBRARIES is provided as
+# argument, in which case they are used directly.
+function(symlink_external_repository_libs NAME TARGET)
+  cmake_parse_arguments(ARG
+    "USE_SO_MINOR_VERSION"
+    "" "" ${ARGN}
+  )
+
+  function(_create_links lib_dir location)
+    get_filename_component(basename "${location}" NAME)
+    file(CREATE_LINK "${location}" "${lib_dir}/${basename}" SYMBOLIC)
+    # Link the SONAME spelling in case of shared libraries.
+    # If the basename does not match this pattern, this part is all a no-op.
+    if(ARG_USE_SO_MINOR_VERSION)
+      string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
+        other_basename "${basename}")
+      string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
+        other_basename "${other_basename}")
+    else()
+      string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+        other_basename "${basename}")
+      string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+        other_basename "${other_basename}")
+    endif()
+    file(CREATE_LINK "${location}" "${lib_dir}/${other_basename}" SYMBOLIC)
+  endfunction()
+
   set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/workspace")
-  file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
-  # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
-  get_target_property(location ${TARGET} LOCATION_${CMAKE_BUILD_TYPE})
-  if(NOT location)
-    message(FATAL_ERROR "Target ${TARGET} has no library in LOCATION_${CMAKE_BUILD_TYPE}")
-  endif()
-  get_filename_component(basename "${location}" NAME)
-  file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
-  # Link the SONAME spelling in case of shared libraries.
-  # If the basename does not match this pattern, this part is all a no-op.
-  if(USE_SO_MINOR_VERSION)
-    string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
-      other_basename "${basename}")
-    string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
-      other_basename "${other_basename}")
+  set(lib_dir "${workspace}/${NAME}/lib/")
+  file(MAKE_DIRECTORY "${lib_dir}")
+
+  get_target_property(type ${TARGET} TYPE)
+  if (type STREQUAL INTERFACE_LIBRARY)
+    get_target_property(libs ${TARGET} INTERFACE_LINK_LIBRARIES)
+    if(NOT libs)
+      message(FATAL_ERROR "Target ${TARGET} has no interface link libraries.")
+    endif()
+    foreach(lib IN LISTS libs)
+      _create_links("${lib_dir}" "${lib}")
+    endforeach()
   else()
-    string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
-      other_basename "${basename}")
-    string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
-      other_basename "${other_basename}")
+    get_target_property(location ${TARGET} LOCATION_${CMAKE_BUILD_TYPE})
+    if(NOT location)
+      message(FATAL_ERROR "Target ${TARGET} has no location on disk.")
+    endif()
+    _create_links("${lib_dir}" "${location}")
   endif()
-  file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
 endfunction()
 
 macro(override_module NAME)
@@ -434,7 +475,7 @@ option(WITH_USER_FMT "Use user-provided fmt" ${DEFAULT_WITH_USER_LIBS})
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
   symlink_external_repository_includes(fmt fmt::fmt)
-  symlink_external_repository_libs(fmt fmt::fmt OFF)
+  symlink_external_repository_libs(fmt fmt::fmt)
   override_module(fmt)
 endif()
 
@@ -452,10 +493,10 @@ if(WITH_USER_SPDLOG)
   # SONAME spelling, while older versions only use the major version.
   # We support that logic here to provide compatibility with both.
   # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
-  set(SPDLOG_USE_SO_MINOR_VERSION ON)
+  set(SPDLOG_USE_SO_MINOR_VERSION USE_SO_MINOR_VERSION)
   if(${spdlog_VERSION_MAJOR} LESS 1 OR
-     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
-     set(SPDLOG_USE_SO_MINOR_VERSION OFF)
+    (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
+    set(SPDLOG_USE_SO_MINOR_VERSION)
   endif()
   symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
   override_module(spdlog)
@@ -500,6 +541,35 @@ if(NOT APPLE)
   endif()
 endif()
 
+find_package(PkgConfig 1)
+if(PkgConfig_FOUND)
+  option(WITH_USER_GLIB "Use user-provided GLIB" ${DEFAULT_WITH_USER_LIBS})
+
+  if(WITH_USER_GLIB)
+
+    # CMake's pkg-config allows for system libraries and cflags, which contains
+    # -I/usr/include on Ubuntu, and we don't want to generate symlinks for every
+    # item contained there later. In this case, we can truncate because we know
+    # this flag comes from PCRE and that GLib doesn't have any public
+    # dependencies. Also, ensure we don't leak our PKG_CONFIG_ARGN modification
+    # for future use.
+    set(_pkg_config_argn "${PKG_CONFIG_ARGN}")
+    list(APPEND PKG_CONFIG_ARGN "--maximum-traverse-depth=2")
+    pkg_search_module(GLib REQUIRED IMPORTED_TARGET glib-2.0)
+    set(PKG_CONFIG_ARGN "${_pkg_config_argn}")
+    unset(_pkg_config_argn)
+
+    symlink_external_repository_includes(glib PkgConfig::GLib)
+    symlink_external_repository_libs(glib PkgConfig::GLib)
+    override_module(glib)
+    # glib's BCR module defines its library in a subdirectory BUILD file rather
+    # than the top-level file, so we must replicate that structure here.
+    file(WRITE
+      "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/glib/glib/BUILD.bazel"
+      "alias(name = 'glib', actual = '//:glib', visibility = ['//visibility:public'])")
+  endif()
+endif()
+
 option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
 
 if(APPLE)
@@ -519,39 +589,50 @@ else()
   if(WITH_USER_ZLIB)
     find_package(ZLIB REQUIRED)
     symlink_external_repository_includes(zlib ZLIB::ZLIB)
-    symlink_external_repository_libs(zlib ZLIB::ZLIB OFF)
+    symlink_external_repository_libs(zlib ZLIB::ZLIB)
     override_module(zlib)
   endif()
 endif()
 
 set(BAZEL_CONFIG)
 
-# Defines common options for open-source solver dependencies.
-# By default, these are all ON.
-# Passes the corresponding options to Bazel.
-function(open_solver_option SOLVER)
-  string(TOUPPER "WITH_${SOLVER}" OPTION_NAME)
-  string(TOLOWER "with_${SOLVER}" OPTION_BAZEL_ARG)
-  option("${OPTION_NAME}" "Build with support for ${SOLVER}" ON)
-  if(${OPTION_NAME})
-    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=True")
+# Defines options for opting out of certain features in Drake's build. Options
+# default to ON, i.e., all features are enabled by default but the user can
+# opt-out by specifying ${option_name}=OFF.
+#
+# This is currently used for the open-source solvers and render engines. The
+# spelling of `option_name` should lowercase-match the spelling of the
+# corresponding Bazel flag.
+function(define_bool_option option_name display_name)
+  string(TOLOWER "${option_name}" option_bazel_flag)
+  option("${option_name}" "Build with support for ${display_name}" ON)
+  if(${option_name})
+    string(APPEND BAZEL_CONFIG
+      " --@drake//tools/flags:${option_bazel_flag}=True")
   else()
-    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
+    string(APPEND BAZEL_CONFIG
+      " --@drake//tools/flags:${option_bazel_flag}=False")
   endif()
   set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
 endfunction()
 
-open_solver_option("Clarabel")
-open_solver_option("CLP")
-open_solver_option("CSDP")
-open_solver_option("Ipopt")
-open_solver_option("NLopt")
-open_solver_option("OSQP")
-open_solver_option("SCS")
+if(NOT APPLE)
+  define_bool_option("WITH_RENDER_GL" "RenderEngineGl")
+endif()
+define_bool_option("WITH_RENDER_VTK" "RenderEngineVtk")
+define_bool_option("WITH_RENDER_GLTF_CLIENT" "RenderEngineGltfClient")
+
+define_bool_option("WITH_CLARABEL" "Clarabel")
+define_bool_option("WITH_CLP" "CLP")
+define_bool_option("WITH_CSDP" "CSDP")
+define_bool_option("WITH_IPOPT" "Ipopt")
+define_bool_option("WITH_NLOPT" "NLopt")
+define_bool_option("WITH_OSQP" "OSQP")
+define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
-  find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
+  find_package(Gurobi 12.0 EXACT MODULE REQUIRED)
 
   string(APPEND BAZEL_CONFIG " --config=gurobi")
 
@@ -564,6 +645,51 @@ endif()
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
+endif()
+
+option(BUILD_SHARED_LIBS "Install libdrake as a shared library" ON)
+if(BUILD_SHARED_LIBS)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=shared")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_libdrake=static")
+endif()
+
+option(WITH_LCM_RUNTIME
+  "Build with LCM runtime library support" ${BUILD_SHARED_LIBS}
+)
+
+if(WITH_LCM_RUNTIME)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_lcm_runtime=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_lcm_runtime=False")
+endif()
+
+option(DRAKE_INSTALL_JAVA "Install Drake's Java tools (currently only Java lcmtypes)" ON)
+
+if(DRAKE_INSTALL_JAVA)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_java=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_java=False")
+endif()
+
+option(DRAKE_INSTALL_PYTHON
+  "Install Drake's Python tools (pydrake, pybind11 headers, tutorials, and Python lcmtypes)"
+  ${BUILD_SHARED_LIBS}
+)
+if(DRAKE_INSTALL_PYTHON)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:install_python=False")
+endif()
+
+if((NOT BUILD_SHARED_LIBS AND DRAKE_INSTALL_PYTHON) OR
+   (NOT BUILD_SHARED_LIBS AND WITH_LCM_RUNTIME))
+  message(FATAL_ERROR
+    "Building and installing a static libdrake is incompatible with "
+    "installing Python tools and LCM runtime library support. Set "
+    "DRAKE_INSTALL_PYTHON=OFF WITH_LCM_RUNTIME=OFF or use a shared libdrake "
+    "by setting BUILD_SHARED_LIBS=ON (the default)."
+  )
 endif()
 
 option(WITH_OPENMP "Build with support for OpenMP" OFF)
@@ -598,7 +724,7 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   else()
     message(WARNING
       "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
-      "Compilation of project drake_cxx_python may fail."
+      "Compilation of project drake_install may fail."
     )
   endif()
 
@@ -647,15 +773,26 @@ endif()
 
 set(BAZEL_INSTALL_ARGS "\${CMAKE_INSTALL_PREFIX}")
 
-if(CMAKE_INSTALL_NAME_TOOL)
-  list(INSERT BAZEL_INSTALL_ARGS 0
-    "--install_name_tool"
-    "${CMAKE_INSTALL_NAME_TOOL}"
+if(APPLE)
+  set(INSTALL_NAME_TOOL "" CACHE FILEPATH
+    "Path to the install name tool program"
   )
+  # Users should rarely need to modify this option.
+  mark_as_advanced(INSTALL_NAME_TOOL)
+  if(INSTALL_NAME_TOOL)
+    list(INSERT BAZEL_INSTALL_ARGS 0
+      "--install_name_tool" "${INSTALL_NAME_TOOL}"
+    )
+  endif()
 endif()
 
-if(CMAKE_STRIP)
-  list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
+set(INSTALL_STRIP_TOOL "" CACHE FILEPATH
+  "Path to the strip program"
+)
+# Users should rarely need to modify this option.
+mark_as_advanced(INSTALL_STRIP_TOOL)
+if(INSTALL_STRIP_TOOL)
+  list(INSERT BAZEL_INSTALL_ARGS 0 "--strip_tool" "${INSTALL_STRIP_TOOL}")
 endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
@@ -684,6 +821,7 @@ endforeach()
 # ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
+configure_file(cmake/BUILD.bazel.in drake_build_cwd/BUILD.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" drake_build_cwd/.bazelversion SYMBOLIC)
 
@@ -711,12 +849,12 @@ add_custom_target(drake_version ALL
     -P "${PROJECT_SOURCE_DIR}/tools/install/libdrake/generate_version.cmake"
 )
 
-add_custom_target(drake_cxx_python ALL
+add_custom_target(drake_install ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
   USES_TERMINAL
 )
-add_dependencies(drake_cxx_python drake_version)
+add_dependencies(drake_install drake_version)
 
 install(CODE
   "execute_process(

@@ -1,0 +1,24 @@
+From 488f57f44a4624a7fb4f7f329120e688e90e6ac3 Mon Sep 17 00:00:00 2001
+From: chua <chris.sirhc@gmail.com>
+Date: Thu, 11 Sep 2025 09:36:20 +0000
+Subject: [PATCH] make release candidate versions handling on BAZELISK_BASE_URL
+
+Make this more consistent with the github.com release urls, for simpler mirrors.
+This is a non-backwards compatible change, so we may want to introduce a new ENV var to prevent breakages with existing setups that are working.
+---
+ bazelisk.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bazelisk.py b/bazelisk.py
+index 5de6effb..bab7638a 100755
+--- bazelisk.py
++++ bazelisk.py
+@@ -324,7 +324,7 @@ def determine_url(version, is_commit, bazel_filename):
+ 
+     bazelisk_base_url = get_env_or_config("BAZELISK_BASE_URL")
+     if bazelisk_base_url is not None:
+-        return "{}/{}/{}".format(bazelisk_base_url, version, bazel_filename)
++        return "{}/{}{}/{}".format(bazelisk_base_url, version, rc if rc else "", bazel_filename)
+     else:
+         return "https://releases.bazel.build/{}/{}/{}".format(
+             version, rc if rc else "release", bazel_filename

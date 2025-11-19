@@ -87,9 +87,9 @@ class EdgesIterator {
   }
 
   // Compares two iterators.
-  bool operator!=(const EdgesIterator& other) const {
-    return outer_idx_ != other.outer_idx_ || inner_idx_ != other.inner_idx_ ||
-           upper_triangle_ != other.upper_triangle_;
+  bool operator==(const EdgesIterator& other) const {
+    return outer_idx_ == other.outer_idx_ && inner_idx_ == other.inner_idx_ &&
+           upper_triangle_ == other.upper_triangle_;
   }
 
  private:

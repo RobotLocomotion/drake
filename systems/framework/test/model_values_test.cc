@@ -1,5 +1,7 @@
 #include "drake/systems/framework/model_values.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/default_scalars.h"

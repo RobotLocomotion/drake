@@ -1,9 +1,13 @@
 #include "drake/geometry/meshcat.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -30,6 +34,9 @@ using math::RollPitchYawd;
 using math::RotationMatrixd;
 using testing::ElementsAre;
 using ::testing::HasSubstr;
+
+// N.B. the bindings/pydrake/geometry/test/visualizers_test.py covers testing
+// of our Meshcat http operations. It's too awkward to try to do that here.
 
 // A small wrapper around std::system to ensure correct argument passing.
 int SystemCall(const std::vector<std::string>& argv) {
@@ -121,28 +128,6 @@ std::pair<std::string, T> GetDecodedProperty(const Meshcat& meshcat,
   EXPECT_EQ(decoded.type, "set_property");
   EXPECT_EQ(decoded.property, property);
   return {decoded.path, decoded.value};
-}
-
-GTEST_TEST(MeshcatTest, TestHttp) {
-  Meshcat meshcat;
-  // Note: The server doesn't respect all requests; unfortunately we can't use
-  // curl --head and wget --spider nor curl --range to avoid downloading the
-  // full file.
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/index.html"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/meshcat.js"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/favicon.ico"}),
-            0);
-  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/no-such-file"}),
-            0);
-  // Note that the pydrake visualizers_test.py case test_start_meshcat() also
-  // checks the http Content-Type and page data. It's too awkward to try to
-  // do that here.
 }
 
 GTEST_TEST(MeshcatTest, ConstructMultiple) {
@@ -1539,9 +1524,8 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
 
   const std::string html = meshcat.StaticHtml();
 
-  // Confirm that the js source links were replaced.
+  // Confirm that the js link was replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
-  EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
   // The static html replaces the javascript web socket connection code with
   // direct invocation of MeshCat with all of the data. We'll confirm that
   // this appears to have happened by testing for the presence of the injected

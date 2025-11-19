@@ -1,5 +1,7 @@
 #include "drake/math/convert_time_derivative.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

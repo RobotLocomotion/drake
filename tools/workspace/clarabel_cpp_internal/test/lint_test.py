@@ -1,9 +1,8 @@
-import unittest
 from pathlib import Path
+import unittest
 
 
 class ClarabelCppInternalLintTest(unittest.TestCase):
-
     def _read(self, filename):
         """Returns the contents of the given filename."""
         with open(filename, encoding="utf-8") as f:

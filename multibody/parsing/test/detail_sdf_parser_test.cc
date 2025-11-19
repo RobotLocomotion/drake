@@ -2375,15 +2375,17 @@ template <typename ShapeType>
     const std::string_view shape_type =
         inspector.GetShape(geometry_id).type_name();
     if (shape_type != name) {
-      return ::testing::AssertionFailure()
-             << "Geometry with role " << role << " has wrong shape type."
-             << "\n  Expected: " << name << "\n  Found: " << shape_type;
+      return ::testing::AssertionFailure() << fmt::format(
+                 "Geometry with role {} has wrong shape type.\n"
+                 "  Expected: {}\n"
+                 "  Found: {}",
+                 role, name, shape_type);
     }
   } catch (const std::exception& e) {
-    return ::testing::AssertionFailure()
-           << "Frame " << frame_id << " does not have a geometry with role "
-           << role << " and name " << name
-           << ". Exception message: " << e.what();
+    return ::testing::AssertionFailure() << fmt::format(
+               "Frame {} does not have a geometry with role {} and name {}.\n"
+               "  Exception message: {}",
+               frame_id, role, name, e.what());
   }
   return ::testing::AssertionSuccess();
 }
@@ -5019,6 +5021,302 @@ TEST_F(SdfParserTest, WallBoundaryConditionOnRigidLink) {
   EXPECT_THAT(TakeError(),
               MatchesRegex(".*Unsupported SDFormat element in link: "
                            "drake:wall_boundary_condition.*"));
+}
+
+/* Requesting auto calculation of link inertia. This is a regression test
+ against SDFormat's implementation. It should handle its primitive types,
+ accounting for pose values, and multiple geometries so they all combine into a
+ single spatial inertia. The purpose of this test is to exercise enough of the
+ functionality that Drake would rely on, that we are confident its does the
+ right thing. */
+TEST_F(SdfParserTest, AutoInertiaForPrimitive) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+<model name='inertia_from_box'>
+  <link name='body'>
+    <inertial auto="true">
+      <density>25</density>
+    </inertial>
+    <collision name="collision1">
+      <pose>1 2 3 0 0 0</pose>
+      <geometry>
+        <box>
+          <size>0.2 0.3 0.4</size>
+        </box>
+      </geometry>
+    </collision>
+    <collision name="collision2">
+      <pose>10 20 30 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>0.35</radius>
+        </sphere>
+      </geometry>
+    </collision>
+  </link>
+</model>)""");
+
+  const double kDensity = 25;
+  // Box inertia, shifted to body origin.
+  auto M_BBo_B_expected =
+      SpatialInertia<double>::SolidBoxWithDensity(kDensity, /* lx= */ 0.2,
+                                                  /* ly= */ 0.3, /* lz= */ 0.4)
+          .Shift({-1, -2, -3});
+  // Add in sphere inertia, shifted to body origin.
+  M_BBo_B_expected += SpatialInertia<double>::SolidSphereWithDensity(
+                          kDensity, /* radius= */ 0.35)
+                          .Shift({-10, -20, -30});
+
+  const RigidBody<double>* body =
+      dynamic_cast<const RigidBody<double>*>(&plant_.GetBodyByName("body"));
+
+  const SpatialInertia<double>& M_BBo_B = body->default_spatial_inertia();
+  EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
+                              M_BBo_B_expected.CopyToFullMatrix6(), 1e-12));
+}
+
+/* In contrast with AutoInertiaForPrimitive, this test checks the behavior for
+ mesh geometries which Drake has explicitly implemented.
+
+ In this case, we expect to compute spatial inertia from a valid mesh (a cube,
+ two units on a side).
+
+ Like with AutoInertiaForPrimitive, we're including multiple collision
+ geometries with disparate poses to make sure they're combined as expected. */
+TEST_F(SdfParserTest, AutoInertiaForMesh) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+<model name='inertia_from_box'>
+  <link name='body'>
+    <inertial auto="true">
+      <density>25</density>
+    </inertial>
+    <collision name="collision1">
+      <pose>1 2 3 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
+          <scale>0.1 0.15 0.2</scale>
+        </mesh>
+      </geometry>
+    </collision>
+    <collision name="collision2">
+      <pose>10 20 30 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
+          <scale>0.3 0.05 0.2</scale>
+        </mesh>
+      </geometry>
+    </collision>
+  </link>
+</model>)""");
+  // The box measures are twice the scale factors, because tri_cube.obj has
+  // length 2.
+  auto make_box_inertia = [](const Vector3d& half_size, const Vector3d& p_BoC,
+                             double density) {
+    const Vector3d size = 2.0 * half_size;
+    return SpatialInertia<double>::SolidBoxWithDensity(density, size.x(),
+                                                       size.y(), size.z())
+        .Shift(-p_BoC);
+  };
+
+  constexpr double kDensity = 25.0;
+  SpatialInertia<double> M_BBo_B_expected =
+      make_box_inertia({0.1, 0.15, 0.2}, {1, 2, 3}, kDensity);
+  M_BBo_B_expected +=
+      make_box_inertia({0.3, 0.05, 0.2}, {10, 20, 30}, kDensity);
+
+  const RigidBody<double>* body =
+      dynamic_cast<const RigidBody<double>*>(&plant_.GetBodyByName("body"));
+
+  const SpatialInertia<double>& M_BBo_B = body->default_spatial_inertia();
+  EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
+                              M_BBo_B_expected.CopyToFullMatrix6(), 1e-14));
+}
+
+/* Identical to AutoInertiaForMesh, but this time we specify the mass. The total
+ mass of the spatial inertia should reflect the explicitly declared mass. */
+TEST_F(SdfParserTest, AutoInertiaForMeshFromMass) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+<model name='inertia_from_box'>
+  <link name='body'>
+    <inertial auto="true">
+      <mass>25</mass>
+    </inertial>
+    <collision name="collision1">
+      <pose>1 2 3 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
+          <scale>0.1 0.15 0.2</scale>
+        </mesh>
+      </geometry>
+    </collision>
+    <collision name="collision2">
+      <pose>10 20 30 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
+          <scale>0.3 0.05 0.2</scale>
+        </mesh>
+      </geometry>
+    </collision>
+  </link>
+</model>)""");
+  // The box measures are twice the scale factors, because tri_cube.obj has
+  // length 2.
+  auto make_box_inertia = [](const Vector3d& half_size, const Vector3d& p_BoC) {
+    const Vector3d size = 2.0 * half_size;
+    const double kDensity = 1.0;
+    return SpatialInertia<double>::SolidBoxWithDensity(kDensity, size.x(),
+                                                       size.y(), size.z())
+        .Shift(-p_BoC);
+  };
+
+  SpatialInertia<double> M_BBo_B_unit =
+      make_box_inertia({0.1, 0.15, 0.2}, {1, 2, 3});
+  M_BBo_B_unit += make_box_inertia({0.3, 0.05, 0.2}, {10, 20, 30});
+  SpatialInertia<double> M_BBo_B_expected(
+      /* mass= */ 25, M_BBo_B_unit.get_com(), M_BBo_B_unit.get_unit_inertia());
+
+  const RigidBody<double>* body =
+      dynamic_cast<const RigidBody<double>*>(&plant_.GetBodyByName("body"));
+
+  const SpatialInertia<double>& M_BBo_B = body->default_spatial_inertia();
+  EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
+                              M_BBo_B_expected.CopyToFullMatrix6(), 1e-14));
+}
+
+TEST_F(SdfParserTest, AutoInertiaForMeshBadData) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+<model name='inertia_from_box'>
+  <link name='missing_uri'>
+    <inertial auto="true"/>      <!-- default density is not a problem. -->
+    <collision name="collision1">
+      <geometry>
+        <mesh/>                   <!-- missing uri -->
+      </geometry>
+    </collision>
+  </link>
+
+  <link name='bad_density'>
+    <inertial auto="true">
+      <density>-1</density>       <!-- bad density -->
+    </inertial>
+    <collision name="collision1">
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
+        </mesh>
+      </geometry>
+    </collision>
+  </link>
+</model>)""");
+  ASSERT_EQ(this->NumErrors(), 2);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*non-physical density value: -1.*"));
+  // This gets dispatched in detail_sdf_geometry.cc, MakeShapeFromSdfGeometry().
+  EXPECT_THAT(TakeError(), MatchesRegex(".*missing the required 'uri'.*"));
+}
+
+/* Similar to AutoInertiaForMesh, but in this case, we provide a Mesh that will
+ produce an invalid spatial inertia (its faces are reversed). So, it must
+ resort to its convex hull. The mesh is comprised of two faces with normals that
+ point toward each other and can't produce a meaningful inertia. Instead, we'll
+ use the mesh's convex hull (a cube, 2 meters on a side). We can *tell* that
+ we've used the fallback because we check for the corresponding warning output
+ to the diagnostic policy. */
+TEST_F(SdfParserTest, AutoInertiaForMeshConvexFallback) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+<model name='inertia_from_box'>
+  <link name='body'>
+    <inertial auto="true">
+      <density>25</density>
+    </inertial>
+    <collision name="collision">
+      <pose>1 2 3 0 0 0</pose>
+      <geometry>
+        <mesh>
+          <uri>package://drake/geometry/test/two_inverted_faces.obj</uri>
+          <scale>0.1 0.15 0.2</scale>
+        </mesh>
+      </geometry>
+    </collision>
+  </link>
+</model>)""");
+  // The box measures are twice the scale factors, because tri_cube.obj has
+  // length 2.
+  const double lx = 0.2;
+  const double ly = 0.3;
+  const double lz = 0.4;
+  const double density = 25;
+  const auto M_BBo_B_expected =
+      SpatialInertia<double>::SolidBoxWithDensity(density, lx, ly, lz)
+          .Shift(-Vector3d(1, 2, 3));
+
+  const RigidBody<double>* body =
+      dynamic_cast<const RigidBody<double>*>(&plant_.GetBodyByName("body"));
+
+  const SpatialInertia<double>& M_BBo_B = body->default_spatial_inertia();
+  EXPECT_TRUE(CompareMatrices(M_BBo_B.CopyToFullMatrix6(),
+                              M_BBo_B_expected.CopyToFullMatrix6(), 1e-14));
+  ASSERT_EQ(this->NumWarnings(), 1);
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*calculated volume of a triangle surface mesh.*"));
+}
+
+// Drake has introduced two custom geometry types to be parsed in sdf: ellipsoid
+// and capsule. These should be removed (as per issue 14837). In the meantime,
+// using those shapes and asking for auto-inertia results in a parse failure.
+TEST_F(SdfParserTest, AutoInertiaForDrakeShapes) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+<model name='inertia_from_box'>
+  <link name='body'>
+    <inertial auto="true">
+      <density>25</density>
+    </inertial>
+    <collision name="ellipsoid">
+      <geometry>
+        <drake:ellipsoid>
+          <a>0.5</a>
+          <b>0.6</b>
+          <c>0.7</c>
+        </drake:ellipsoid>
+      </geometry>
+    </collision>
+    <collision name="capsule">
+      <geometry>
+        <drake:capsule>
+          <radius>0.5</radius>
+          <length>1.2</length>
+        </drake:capsule>
+      </geometry>
+    </collision>
+  </link>
+</model>)""");
+
+  // Nothing was loaded; we still only have the world body.
+  EXPECT_EQ(plant_.num_bodies(), 1);
+
+  // SDFormat's message about unsupported geometry for auto inertia.
+  const std::string_view unsupported_geo_message =
+      ".*Automatic inertia calculations are not supported for the given "
+      "Geometry type.*";
+  ASSERT_EQ(NumErrors(), 2);
+  EXPECT_THAT(TakeError(), MatchesRegex(unsupported_geo_message));
+  EXPECT_THAT(TakeError(), MatchesRegex(unsupported_geo_message));
+
+  // Failure to compute inertia for the unknown shapes also leads to complaints
+  // about missing inertia.
+  const std::string_view missing_inertia_message =
+      ".*Inertia Calculated for collision: (ellipsoid|capsule) is invalid.*";
+  ASSERT_EQ(NumWarnings(), 2);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(missing_inertia_message));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(missing_inertia_message));
 }
 
 }  // namespace

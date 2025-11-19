@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include <gtest/gtest.h>
 

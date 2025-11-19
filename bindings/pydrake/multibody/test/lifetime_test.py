@@ -1,15 +1,14 @@
 import gc
-import math
 import unittest
 import weakref
 
-import numpy as np
-
 from pydrake.geometry import SceneGraph, SceneGraphConfig
-from pydrake.multibody.plant import (AddMultibodyPlant,
-                                     AddMultibodyPlantSceneGraph,
-                                     MultibodyPlant,
-                                     MultibodyPlantConfig)
+from pydrake.multibody.plant import (
+    AddMultibodyPlant,
+    AddMultibodyPlantSceneGraph,
+    MultibodyPlant,
+    MultibodyPlantConfig,
+)
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.test.test_util import call_build_from_cpp
 
@@ -45,8 +44,9 @@ class TestAddSystemWrappers(unittest.TestCase):
             return diagram
 
         def make_from_plant_scene_graph(builder):
-            return AddMultibodyPlantSceneGraph(builder, MultibodyPlant(0.01),
-                                               SceneGraph())
+            return AddMultibodyPlantSceneGraph(
+                builder, MultibodyPlant(0.01), SceneGraph()
+            )
 
         def make_from_plant(builder):
             return AddMultibodyPlantSceneGraph(builder, MultibodyPlant(0.01))
@@ -58,21 +58,29 @@ class TestAddSystemWrappers(unittest.TestCase):
             return AddMultibodyPlantSceneGraph(builder, 0.01)
 
         def make_from_plant_config(builder):
-            return AddMultibodyPlant(MultibodyPlantConfig(time_step=0.01),
-                                     builder)
+            return AddMultibodyPlant(
+                MultibodyPlantConfig(time_step=0.01), builder
+            )
 
         def make_from_plant_config_scene_graph_config(builder):
-            return AddMultibodyPlant(MultibodyPlantConfig(time_step=0.01),
-                                     SceneGraphConfig(), builder)
+            return AddMultibodyPlant(
+                MultibodyPlantConfig(time_step=0.01),
+                SceneGraphConfig(),
+                builder,
+            )
 
         for add_plant_wrapper in [
-                make_from_plant_scene_graph, make_from_plant,
-                make_from_time_step_scene_graph, make_from_time_step,
-                make_from_plant_config,
-                make_from_plant_config_scene_graph_config]:
+            make_from_plant_scene_graph,
+            make_from_plant,
+            make_from_time_step_scene_graph,
+            make_from_time_step,
+            make_from_plant_config,
+            make_from_plant_config_scene_graph_config,
+        ]:
             for call_build_from_language in ["python", "c++"]:
-                diagram = make_diagram(add_plant_wrapper,
-                                       call_build_from_language)
+                diagram = make_diagram(
+                    add_plant_wrapper, call_build_from_language
+                )
                 gc.collect()
                 # Without necessary lifetime annotations, we get a segfault
                 # when creating the context.

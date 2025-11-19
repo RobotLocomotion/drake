@@ -4,12 +4,16 @@
  represent the input values to all of those computations. They can be found in
  the pydrake.geometry module. */
 
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/geometry.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/collision_filter_declaration.h"
@@ -31,7 +35,7 @@ namespace {
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry;
-constexpr auto& doc = pydrake_doc.drake.geometry;
+constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
@@ -217,14 +221,7 @@ void DefineGeometryProperties(py::module m) {
             py::arg("name"), cls_doc.RemoveProperty.doc)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
-        .def(
-            "__str__",
-            [](const Class& self) {
-              std::stringstream ss;
-              ss << self;
-              return ss.str();
-            },
-            "Returns formatted string.");
+        .def("__str__", &Class::to_string, "Returns formatted string.");
   }
 }
 

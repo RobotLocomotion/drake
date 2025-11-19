@@ -1,10 +1,12 @@
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"

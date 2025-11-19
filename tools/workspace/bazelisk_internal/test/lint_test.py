@@ -1,8 +1,7 @@
-import unittest
 from pathlib import Path
+import unittest
 
 from python import runfiles
-
 
 _HOW_TO_FIX = """
 If you're seeing this, you probably didn't follow the upgrade instuctions in
@@ -21,7 +20,6 @@ $ cp -t third_party/com_github_bazelbuild_bazelisk/ \\
 
 
 class BazeliskLintTest(unittest.TestCase):
-
     def _read(self, respath):
         """Returns the contents of the given resource path."""
         manifest = runfiles.Create()
@@ -35,6 +33,8 @@ class BazeliskLintTest(unittest.TestCase):
         for name in ["LICENSE", "bazelisk.py"]:
             upstream_content = self._read(f"bazelisk_internal/{name}")
             vendored_content = self._read(
-                f"drake/third_party/com_github_bazelbuild_bazelisk/{name}")
-            self.assertMultiLineEqual(upstream_content, vendored_content,
-                                      "\n" + _HOW_TO_FIX)
+                f"drake/third_party/com_github_bazelbuild_bazelisk/{name}"
+            )
+            self.assertMultiLineEqual(
+                upstream_content, vendored_content, "\n" + _HOW_TO_FIX
+            )

@@ -1,6 +1,11 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# Deprecated for removal on 2026-02-01.
+alias(
+    name = "x11",
+    actual = "@pkgconfig_x11_internal",
+    visibility = ["//visibility:public"],
+)
 
 add_lint_tests()

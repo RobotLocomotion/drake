@@ -33,7 +33,8 @@ class ExampleClass:
     # Deprecate public property.
     _deprecated_prop = property(lambda self: 2, doc=doc_prop)
     deprecated_prop = deprecated(message_prop, date="2038-01-19")(
-        _deprecated_prop)
+        _deprecated_prop
+    )
 
 
 message_func = "`deprecated_func` is deprecated"

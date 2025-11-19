@@ -1,5 +1,6 @@
 #include <iostream>
 #include <limits>
+#include <memory>
 
 #include "drake/common/proto/call_python.h"
 #include "drake/solvers/mathematical_program.h"

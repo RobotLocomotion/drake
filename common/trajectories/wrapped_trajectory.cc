@@ -1,5 +1,6 @@
 #include "drake/common/trajectories/wrapped_trajectory.h"
 
+#include <utility>
 namespace drake {
 namespace trajectories {
 namespace internal {

@@ -252,19 +252,19 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-These docstrings are available within `constexpr struct ... pydrake_doc`
-as `const char*` values . When these are not available or not suitable for
-Python documentation, provide custom strings. If this custom string is long,
-consider placing them in a heredoc string.
+These docstrings are available within nested `constexpr struct` trees as
+`const char*` values. When these are not available or not suitable for Python
+documentation, provide custom strings. If this custom string is long, consider
+placing them in a heredoc string.
 
-An example of incorporating docstrings from `pydrake_doc`:
+An example of incorporating docstrings:
 
-```{.cc}
-    #include "drake/bindings/pydrake/documentation_pybind.h"
+@code{.cc}
+    #include "drake/bindings/generated_docstrings/math.h"
 
     PYBIND11_MODULE(math, m) {
       using namespace drake::math;
-      constexpr auto& doc = pydrake_doc.drake.math;
+      constexpr auto& doc = pydrake_doc_math.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
           .def(py::init(), doc.RigidTransform.ctor.doc_0args)
@@ -279,7 +279,7 @@ An example of incorporating docstrings from `pydrake_doc`:
               doc.RigidTransform.set_rotation.doc)
       ...
     }
-```
+@endcode
 
 An example of supplying custom strings:
 
@@ -310,7 +310,7 @@ and the docstring structures. Borrowing from above:
 
 To view the documentation rendered in Sphinx:
 
-    bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
+    bazel run -- //doc/pydrake:build --serve [--browser=false]
 
 @note Drake's online Python documentation is generated on Ubuntu Noble, and it
 is suggested to preview documentation using this platform. Other platforms may
@@ -318,35 +318,26 @@ have slightly different generated documentation.
 
 To browse the generated documentation strings that are available for use (or
 especially, to find out the names for overloaded functions' documentation),
-generate and open the docstring header:
+re-generate and open the docstring header:
 
-    bazel build //bindings/pydrake:documentation_pybind.h
-    $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
+    bazel run //bindings/generated_docstrings:regenerate
+    $EDITOR bazel-bin/bindings/generated_docstrings/SOME_FILE.h
 
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
 line corresponding to the symbol that the docstring was pulled from.
 
-@note This file may be large, on the order of ~100K lines; be sure to use an
+@note This file may be large, on the order of ~10K lines; be sure to use an
 efficient editor!
-
-@note If you are debugging a certain file and want quicker generation and a
-smaller generated file, you can hack `mkdoc.py` to focus only on your include
-file of choice. As an example, debugging `mathematical_program.h`:
-```{.py}
-    ...
-    assert len(include_files) > 0  # Existing code.
-    include_files = ["drake/solvers/mathematical_program.h"]  # HACK
-```
-This may break the bindings themselves, and should only be used for inspecting
-the output.
 
 For more detail:
 
-- Each docstring is stored in `documentation_pybind.h` in the nested structure
-`pydrake_doc`.
+- Docstrings are stored in files named after the subdirectory where the original
+C++ header file lives, e.g., `multibody_tree.h` for `drake/multibody/tree` docs.
+- The constants sit within structures named `pydrake_doc_{directory_names}`,
+e.g., `pydrake_doc_multibody_tree` for `drake/multibody/tree` docs.
 - The docstring for a symbol without any overloads will be accessible via
-`pydrake_doc.drake.{namespace...}.{symbol}.doc`.
+`pydrake_doc_{directory_names}.drake.{namespace...}.{symbol}.doc`.
 - The docstring for an overloaded symbol will be `.doc_something` instead of
 just `.doc`, where the `_something` suffix conveys some information about the
 overload.  Browse the documentation_pybind.h (described above) for details.
@@ -406,8 +397,8 @@ versa).
 If there is an indirect / transitive relationship (storing a reference to an
 argument's member or a transfer of ownership, append `(tr.)` to the
 relationship. Note: ownership transfer solutions likely require treatment of
-all the involved objects; see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle" and [issue
-#14387](https://github.com/RobotLocomotion/drake/issues/14387).
+all the involved objects; see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle" and
+[issue #14387](https://github.com/RobotLocomotion/drake/issues/14387).
 
 Some example comments:
 
@@ -430,7 +421,7 @@ For more information about `pybind11` return value policies, see [the pybind11
 documentation](
 https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
 
-`pydrake` offers the @ref drake::pydrake::py_rvp "py_rvp" alias to help with
+`pydrake` offers the `drake::pydrake::py_rvp` alias to help with
 shortened usage of `py::return_value_policy`. The most used (non-default)
 policies in `pydrake` are `reference` and `reference_internal` due to the usage
 of raw pointers / references in the public C++ API (rather than
@@ -465,15 +456,16 @@ explicitly.
 
 The `ref_cycle` annotation has been helpful in solving some tricky lifetime
 problems with pydrake bindings. It was one piece of the solution to Diagram
-memory leaks; see [issue
-#14387](https://github.com/RobotLocomotion/drake/issues/14387) for details. In
-the case of Python custom leaf systems, it was used to avoid inadvertent
-self-reference via stored references to port objects. See [issue
-#22515](https://github.com/RobotLocomotion/drake/issues/22515) for details.
+memory leaks; see
+[issue #14387](https://github.com/RobotLocomotion/drake/issues/14387) for
+details. In the case of Python custom leaf systems, it was used to avoid
+inadvertent self-reference via stored references to port objects. See
+[issue #22515](https://github.com/RobotLocomotion/drake/issues/22515) for
+details.
 
 A fairly simple example of using `ref_cycle` might look like the code
-below. The code is excerpted from fixes to [issue
-#22515](https://github.com/RobotLocomotion/drake/issues/22515):
+below. The code is excerpted from fixes to
+[issue #22515](https://github.com/RobotLocomotion/drake/issues/22515):
 
 ```
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
@@ -502,8 +494,8 @@ Notice that in replacing `py_rvp::reference_internal`, we need both the
 ## Function Overloads
 
 To bind function overloads, please try the following (in order):
-- `py::overload_cast<Args>(func)`: See [the pybind11
-documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
+- `py::overload_cast<Args>(func)`: See
+[the pybind11 documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
 This works about 80% of the time.
 - `pydrake::overload_cast_explicit<Return, Args...>(func)`: When
 `py::overload_cast` does not work (not always guaranteed to work).
@@ -710,10 +702,9 @@ covered.
 // TODO(eric.cousineau): If it ever stops redirecting stdin, use
 // `bazel run --run_under='gdb --args python' --script_path=...`.
 
-/**
-@addtogroup environment_variables
+/** @defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
+@ingroup environment_variables
 @{
-@defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
 
 By default, pydrake will redirect spdlog logging (from C++) to Python's
 `logging` module. However, if this environment variable is set to "0",

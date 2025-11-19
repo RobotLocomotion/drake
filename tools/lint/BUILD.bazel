@@ -1,16 +1,12 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/lint:python_lint.bzl",
-    "PYTHON_LINT_IGNORE_DEFAULT",
-    "python_lint",
-)
-load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
 load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
+load("//tools/skylark:sh.bzl", "sh_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,6 +23,7 @@ drake_py_library(
     visibility = ["//visibility:private"],
     deps = [
         ":module_py",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -35,7 +32,7 @@ drake_py_binary(
     srcs = ["buildifier.py"],
     data = [
         ":buildifier-tables.json",
-        "@buildifier",
+        "@buildifier_prebuilt//:buildifier",
     ],
     deps = [
         ":module_py",
@@ -87,16 +84,6 @@ drake_py_binary(
 )
 
 drake_py_binary(
-    name = "bzlcodestyle",
-    srcs = ["bzlcodestyle.py"],
-    main = "bzlcodestyle.py",
-    deps = [
-        ":module_py",
-        "@pycodestyle",
-    ],
-)
-
-drake_py_binary(
     name = "install_lint_reporter",
     testonly = 1,
     srcs = ["install_lint_reporter.py"],
@@ -113,6 +100,16 @@ drake_py_binary(
         ":module_py",
     ],
 )
+
+sh_binary(
+    name = "ruff",
+    srcs = ["ruff.sh"],
+    data = [
+        "@ruff",
+    ],
+)
+
+exports_files(["ruff_format_lint.sh"])
 
 # === test ===
 
@@ -136,13 +133,6 @@ drake_py_unittest(
         "no_kcov",
     ],
     deps = [":util"],
-)
-
-# Exercise `ignore` for `python_lint`.
-python_lint(
-    existing_rules = [],
-    extra_srcs = ["test/python_lint_ignore_example.py"],
-    ignore = ["E402"],
 )
 
 add_lint_tests()

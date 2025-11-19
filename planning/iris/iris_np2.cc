@@ -1,5 +1,13 @@
 #include "drake/planning/iris/iris_np2.h"
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/text_logging.h"
@@ -262,7 +270,7 @@ bool RaySamplerProcess(const SceneGraphCollisionChecker& checker,
     std::vector<uint8_t> particle_satisfies_additional_constraints =
         internal::CheckProgConstraintsParallel(
             options.sampled_iris_options.prog_with_additional_constraints,
-            ambient_particles, chunk_size, constraints_tol);
+            candidate_particles, chunk_size, constraints_tol);
 
     for (int i = 0; i < ssize(ambient_particles); ++i) {
       if (!particle_collision_free[i] ||
@@ -547,7 +555,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   if (options.sampled_iris_options.verbose) {
     log()->info(
         "IrisNp2 finding region that is {} collision free with {} certainty ",
-        options.sampled_iris_options.epsilon,
+        1 - options.sampled_iris_options.epsilon,
         1 - options.sampled_iris_options.delta);
     log()->info("IrisNp2 worst case test requires {} samples.", N_max);
   }
@@ -591,9 +599,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           options.sampled_iris_options.tau);
 
       particles.resize(N_k);  // Entries will be overwritten.
-
-      // TODO(rhjiang): Implement the ray sampling strategy, and expose it as an
-      // option to the user.
       internal::PopulateParticlesByUniformSampling(
           P_candidate, N_k, options.sampled_iris_options.mixing_steps,
           &generators, &particles);
@@ -732,7 +737,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       for (int particle_index = 0;
            particle_index < num_particles_to_walk_toward; ++particle_index) {
         auto& particle = particles_to_work_on[particle_index];
-        if (num_hyperplanes_added >
+        if (num_hyperplanes_added >=
             options.sampled_iris_options.max_separating_planes_per_iteration) {
           break;
         }
@@ -802,12 +807,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
-          solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
-
-          if (solve_succeeded) {
-            prog.UpdatePolytope(A.topRows(num_constraints),
-                                b.head(num_constraints));
-          }
+          solve_succeeded =
+              prog.Solve(*solver, particle, options.solver_options, &closest);
         } else {
           // We did not find a collision pair corresponding to this particle, so
           // the particle must be violating one of the constraints from
@@ -860,17 +861,18 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
-          solve_succeeded =
-              counter_example_prog->Solve(*solver, particle, {}, &closest);
-
-          if (solve_succeeded) {
-            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
-                                                 b.head(num_constraints));
-          }
+          solve_succeeded = counter_example_prog->Solve(
+              *solver, particle, options.solver_options, &closest);
         }
+
+        bool add_hyperplane =
+            solve_succeeded || options.add_hyperplane_if_solve_fails;
+        ++num_hyperplanes_added;
+        VectorXd* point_to_add_hyperplane{nullptr};
 
         if (solve_succeeded) {
           ++num_prog_successes;
+          point_to_add_hyperplane = &closest;
           if (do_debugging_visualization) {
             point_to_draw.head(nq) =
                 options.parameterization.get_parameterization_double()(closest);
@@ -881,15 +883,34 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
             options.sampled_iris_options.meshcat->SetTransform(
                 path, RigidTransform<double>(point_to_draw));
           }
+        } else {
+          ++num_prog_failures;
+          point_to_add_hyperplane = &particle;
+          if (do_debugging_visualization) {
+            point_to_draw.head(nq) =
+                options.parameterization.get_parameterization_double()(closest);
+            std::string path = fmt::format("iteration{:02}/{:03}/closest",
+                                           iteration, num_points_drawn);
+            options.sampled_iris_options.meshcat->SetObject(
+                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
+            options.sampled_iris_options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
+        }
+
+        if (add_hyperplane) {
+          DRAKE_DEMAND(point_to_add_hyperplane != nullptr);
           if (options.sampled_iris_options.containment_points.has_value()) {
             internal::AddTangentToPolytope(
-                E, closest, containment_points_vpolytope, *solver,
+                E, *point_to_add_hyperplane, containment_points_vpolytope,
+                *solver,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints, &max_relaxation);
           } else {
             internal::AddTangentToPolytope(
-                E, closest,
-                options.sampled_iris_options.configuration_space_margin, &A, &b,
+                E, *point_to_add_hyperplane,
+                options.sampled_iris_options.configuration_space_margin,
+                options.sampled_iris_options.relax_margin, &A, &b,
                 &num_constraints);
           }
           P_candidate =
@@ -902,16 +923,12 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               return P;
             }
           }
-        } else {
-          ++num_prog_failures;
-          if (do_debugging_visualization) {
-            point_to_draw.head(nq) = closest;
-            std::string path = fmt::format("iteration{:02}/{:03}/closest",
-                                           iteration, num_points_drawn);
-            options.sampled_iris_options.meshcat->SetObject(
-                path, Sphere(0.01), geometry::Rgba(0.1, 0.8, 0.8, 1.0));
-            options.sampled_iris_options.meshcat->SetTransform(
-                path, RigidTransform<double>(point_to_draw));
+
+          // Update the counterexample search program. No need to update the
+          // closest collision program, since it is re-created each time.
+          if (counter_example_prog != nullptr) {
+            counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
+                                                 b.head(num_constraints));
           }
         }
       }

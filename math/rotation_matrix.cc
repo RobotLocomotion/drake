@@ -340,7 +340,12 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
 template <typename T>
 Matrix3<T> RotationMatrix<T>::ProjectMatrix3ToOrthonormalMatrix3(
     const Matrix3<T>& M, T* quality_factor) {
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+  const auto svd =
+      M.template jacobiSvd<Eigen::ComputeFullU | Eigen::ComputeFullV>();
+#else
   const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+#endif  // EIGEN_VERSION_AT_LEAST
   if (quality_factor != nullptr) {
     // Singular values are always non-negative and sorted in decreasing order.
     const auto singular_values = svd.singularValues();

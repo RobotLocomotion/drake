@@ -1,4 +1,6 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include <string>
+
+#include "drake/bindings/generated_docstrings/planning.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -14,7 +16,7 @@ using multibody::MultibodyPlant;
 void DefinePlanningDofMask(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
-  constexpr auto& doc = pydrake_doc.drake.planning;
+  constexpr auto& doc = pydrake_doc_planning.drake.planning;
 
   {
     using Class = DofMask;
@@ -46,7 +48,11 @@ void DefinePlanningDofMask(py::module m) {
         .def("Intersect", &Class::Intersect, py::arg("other"),
             cls_doc.Intersect.doc)
         .def("Subtract", &Class::Subtract, py::arg("other"),
-            cls_doc.Subtract.doc);
+            cls_doc.Subtract.doc)
+        .def("GetFullToSelectedIndex", &Class::GetFullToSelectedIndex,
+            cls_doc.GetFullToSelectedIndex.doc)
+        .def("GetSelectedToFullIndex", &Class::GetSelectedToFullIndex,
+            cls_doc.GetSelectedToFullIndex.doc);
     py::implicitly_convertible<std::vector<bool>, Class>();
   }
 }

@@ -65,6 +65,7 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * [Russ Tedrake](http://people.csail.mit.edu/russt/)
 * Belinda Teh
 * Andres Valenzuela
+* Peter Werner
 * [David von Wrangel](https://www.davidvonwrangel.com/)
 * Matthew Woehlke
 * Huihua Zhao
@@ -87,7 +88,6 @@ all of their maintainers, whose work is essential to Drake's success:
   * [numpy](https://numpy.org/)
   * [onetbb](https://github.com/oneapi-src/oneTBB)
   * [pybind11](https://pybind11.readthedocs.io/)
-  * [pycodestyle](https://github.com/PyCQA/pycodestyle)
   * [spdlog](https://github.com/gabime/spdlog)
 
 * Documentation:
@@ -126,7 +126,6 @@ all of their maintainers, whose work is essential to Drake's success:
 * Graphics
   * [meshcat](https://github.com/meshcat-dev/meshcat)
   * [pillow](https://pillow.readthedocs.io/)
-  * [stats.js](https://github.com/mrdoob/stats.js)
   * [threejs](https://threejs.org/)
   * [vtk](https://github.com/Kitware/VTK)
 

@@ -1,6 +1,9 @@
 #include "drake/perception/point_cloud.h"
 
+#include <limits>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <gtest/gtest.h>

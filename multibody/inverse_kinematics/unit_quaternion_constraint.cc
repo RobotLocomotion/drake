@@ -4,6 +4,9 @@
 
 namespace drake {
 namespace multibody {
+
+UnitQuaternionConstraint::~UnitQuaternionConstraint() = default;
+
 UnitQuaternionConstraint::UnitQuaternionConstraint()
     : solvers::Constraint(1, 4, Vector1d(1), Vector1d(1)) {}
 

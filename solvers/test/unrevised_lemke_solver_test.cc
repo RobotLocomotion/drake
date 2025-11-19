@@ -1,6 +1,8 @@
 #include "drake/solvers/unrevised_lemke_solver.h"
 
+#include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>

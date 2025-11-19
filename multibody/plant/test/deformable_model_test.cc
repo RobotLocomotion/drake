@@ -1,5 +1,10 @@
 #include "drake/multibody/plant/deformable_model.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

@@ -27,14 +27,17 @@ bazel test --config lint //common/...  # Check common/ and its child subdirector
 User manuals for the style-checking tools are as follows:
 
 * C/C++: See the cpplint ``USAGE`` string at
-  [https://github.com/google/styleguide/blob/gh-pages/cpplint/cpplint.py](https://github.com/google/styleguide/blob/gh-pages/cpplint/cpplint.py).
+  [https://github.com/cpplint/cpplint/blob/develop/cpplint.py](https://github.com/cpplint/cpplint/blob/develop/cpplint.py).
   * In particular, note the ``// NOLINT(foo/bar)`` syntax to disable a warning.
-* Python: See the pycodestyle manual at
-  [http://pycodestyle.readthedocs.io/en/latest/intro.html](http://pycodestyle.readthedocs.io/en/latest/intro.html).
+* Python: Drake uses `ruff` both for linting (`check` mode) and auto-formatting
+  (`format --check` mode). See the `ruff` manual at
+  [https://docs.astral.sh/ruff/linter/#error-suppression](https://docs.astral.sh/ruff/linter/#error-suppression)
+  and
+  [https://docs.astral.sh/ruff/formatter/#format-suppression](https://docs.astral.sh/ruff/formatter/#format-suppression).
   * The syntax ``# noqa`` can be used to quiet the warning about an overly-long
     line.
-* Bazel: Uses both pycodestyle like Python, and also the buildifier tool as
-  described in [Updating BUILD files](/bazel.html#updating-build-files).
+* Bazel: Uses the buildifier tool as described in
+  [Updating BUILD files](/bazel.html#updating-build-files).
 
 To opt-out of all linting (e.g., when committing vendored copies of third-party
 external files into Drake's workspace), add `tags = ["nolint"]` to the
@@ -61,3 +64,12 @@ We have some tips for specific IDEs:
 * [CLion](/clion.html#formatting-files)
 * [Emacs](/emacs.html#c-code-formatting)
 * [VS Code](/vscode.html#c-code-formatting)
+
+## Python: Ruff Format
+
+To run ``ruff`` auto-formatter:
+
+```
+cd drake
+bazel run -- //tools/lint:ruff format path/to/my_file.py
+```

@@ -1,13 +1,10 @@
 #pragma once
 
 #include <algorithm>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -26,7 +23,6 @@
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -44,7 +40,7 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
     std::unique_ptr<FrameType<T>> frame) {
   static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
                 "FrameType must be a sub-class of Frame<T>.");
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more frames "
         "is not allowed. See documentation for Finalize() for details.");
@@ -61,10 +57,6 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
   }
   DRAKE_DEMAND(frame->model_instance().is_valid());
   const FrameIndex frame_index(num_frames());
-  topology_.add_frame_topology(frame_index, frame->body().index());
-
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   frame->set_parent_tree(this, frame_index);
   FrameType<T>* result = frame.get();
   frames_.Add(std::move(frame));
@@ -93,7 +85,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
     std::unique_ptr<MobilizerType<T>> mobilizer) {
   static_assert(std::is_convertible_v<MobilizerType<T>*, Mobilizer<T>*>,
                 "MobilizerType must be a sub-class of mobilizer<T>.");
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more "
         "mobilizers is not allowed. See documentation for Finalize() for "
@@ -112,45 +104,15 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // Sanity check that we are processing in the expected order.
   DRAKE_DEMAND(mobilizer->mobod().index() == num_mobilizers());
 
-  topology_.add_mobilizer_topology(mobilizer->mobod(),
-                                   mobilizer->inboard_frame().index(),
-                                   mobilizer->outboard_frame().index());
-
-  // TODO(sammy-tri) This effectively means that there's no way to
-  //  programmatically add mobilizers from outside of MultibodyTree
-  //  itself with multiple model instances.  I'm not convinced that
-  //  this is a problem.
   if (!mobilizer->model_instance().is_valid()) {
     mobilizer->set_model_instance(default_model_instance());
   }
 
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   mobilizer->set_parent_tree(this, mobilizer->mobod().index());
-
-  // Mark free bodies as needed.
-  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
-  bool is_floating_base_body =
-      mobilizer->has_six_dofs() &&
-      mobilizer->inboard_frame().body().index() == world_body().index();
-
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .is_floating_base = is_floating_base_body;
-  topology_.get_mutable_rigid_body_topology(outboard_body_index)
-      .has_quaternion_dofs = mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
-}
-
-template <typename T>
-template <template <typename Scalar> class MobilizerType, typename... Args>
-const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
-  static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                "MobilizerType must be a sub-class of Mobilizer<T>.");
-  return AddMobilizer(
-      std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
 }
 
 template <typename T>
@@ -159,7 +121,7 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     std::unique_ptr<ForceElementType<T>> force_element) {
   static_assert(std::is_convertible_v<ForceElementType<T>*, ForceElement<T>*>,
                 "ForceElementType<T> must be a sub-class of ForceElement<T>.");
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more force "
         "elements is not allowed. See documentation for Finalize() for "
@@ -207,7 +169,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
         joint->name()));
   }
 
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more joints "
         "is not allowed. See documentation for Finalize() for details.");
@@ -307,7 +269,7 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
         model_instances_.get_element(joint.model_instance()).name(), name));
   }
 
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more "
         "actuators is not allowed. See documentation for Finalize() for "
@@ -318,7 +280,8 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   // if the JointActuator constructor throws our state will still be valid.
   auto actuator = std::make_unique<JointActuator<T>>(name, joint, effort_limit);
   const JointActuatorIndex actuator_index(actuators_.next_index());
-  topology_.add_joint_actuator_topology(actuator_index, joint.num_velocities());
+  actuator->set_actuator_dof_start(num_actuated_dofs_);
+  num_actuated_dofs_ += joint.num_velocities();
   actuator->set_parent_tree(this, actuator_index);
   return actuators_.Add(std::move(actuator));
 }
@@ -331,7 +294,7 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
         "'. Model instance names must be unique within a given model.");
   }
 
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore adding more model "
         "instances is not allowed. See documentation for Finalize() for "
@@ -357,7 +320,7 @@ void MultibodyTree<T>::RenameModelInstance(ModelInstanceIndex model_instance,
         "'. Model instance names must be unique within a given model.");
   }
 
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. Therefore renaming model "
         "instances is not allowed. See documentation for Finalize() for "
@@ -445,7 +408,7 @@ MultibodyTree<T>::get_mutable_positions_and_velocities(
 // Must be implemented carefully to avoid invalidating more cache entries than
 // are necessary.
 // TODO(sherm1) Currently we can only get q and v together so have no way to
-// invalidate just q-dependent or v-dependent cache entries.
+//  invalidate just q-dependent or v-dependent cache entries.
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::GetMutablePositions(
     systems::Context<T>* context) const {

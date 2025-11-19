@@ -1,11 +1,21 @@
 #pragma once
 
+#include <array>
+#include <string>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 
 /// @file
-/// Provides Drake's assertion implementation.  This is intended to be used
-/// both within Drake and by other software.  Drake's asserts can be armed
-/// and disarmed independently from the system-wide asserts.
+/// Provides Drake's assertion mechanics. They come in two flavors:
+///   - Double checking developer assumptions
+///      - DRAKE_ASSERT can be armed or disarmed independently from the
+///        system-wide asserts.
+///      - DRAKE_DEMAND is similar to DRAKE_ASSERT but is always armed.
+///   - Testing user inputs
+///     - DRAKE_THROW_UNLESS is similar to DRAKE_DEMAND, but uses exceptions
+///       instead of `::abort()`.
+/// These are intended to be used both within Drake and by other software.
 
 #ifdef DRAKE_DOXYGEN_CXX
 /// @p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
@@ -163,5 +173,142 @@ constexpr bool kDrakeAssertIsDisarmed = true;
   static_assert(std::is_convertible_v<decltype(expression), void>, \
                 "Expression should be void.")
 #endif
+
+namespace drake {
+namespace internal {
+
+// StringifyErrorDetailValue converts `value` into a string. Some types are
+// given special treatment to ensure a specific format.
+//
+// This function plays an important role in the DRAKE_THROW_UNLESS macro. In
+// order for *that* function to be safely inlined, the string conversion must
+// not be exposed. This wrapper launders all such conversions, isolating them
+// from the macro expansion.
+//
+// Note: the `requires` clause does not list all supported types. Further
+// support is provided by overloads of this function in other files. To see the
+// full list of supported types, search the codebase for those overloads.
+// Furthermore, this explicitly only supports built-in and `std` types. For
+// other types, an overload for that type should be included with the type
+// definition (see, e.g., fmt_eigen.h). */
+template <typename T>
+std::string StringifyErrorDetailValue(const T& value)
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_same_v<T, std::string> ||
+           std::is_same_v<T, std::string_view> ||
+           std::is_same_v<T, const char*>);
+
+// The collection of optional name-value pairs passed to DRAKE_THROW_UNLESS.
+// The values are stored as their `std::string` representations.
+//
+// We support up to four such pairs. The defined pairs will be loaded in the
+// front of the array, and the first null-valued const char* indicates the end
+// of the list (if there are fewer than four).
+struct ThrowValuesBuf {
+  std::array<std::pair<const char*, std::string>, 4> values;
+};
+
+// Throw an error message.
+[[noreturn]] void Throw(const char* condition, const char* func,
+                        const char* file, int line,
+                        const ThrowValuesBuf& buffer = {});
+
+// Packages the optional name-value pairs passed to DRAKE_THROW_UNLESS into a
+// buffer for Throw.
+template <typename... NamesAndValues>
+[[noreturn]] __attribute__((noinline, cold)) void ThrowWithValues(
+    const char* condition, const char* func, const char* file, int line,
+    NamesAndValues... names_and_values) {
+  constexpr size_t N = sizeof...(names_and_values);
+  static_assert(N % 2 == 0,
+                "There should be an even number: up to 4 (name, value) pairs.");
+  ThrowValuesBuf buffer;
+  // This is a "constexpr for" loop for 0 <= I < N.
+  auto name_and_value =
+      std::forward_as_tuple(std::forward<NamesAndValues>(names_and_values)...);
+  [&]<size_t... I>(std::integer_sequence<size_t, I...>&&) {
+    (((buffer.values[I].first = std::get<2 * I>(name_and_value),
+       buffer.values[I].second =
+           StringifyErrorDetailValue(std::get<2 * I + 1>(name_and_value))),
+      ...));
+  }(std::make_index_sequence<N / 2>{});
+
+  Throw(condition, func, file, line, buffer);
+}
+
+// The following infrastructure lets us iterate through a list of macro variadic
+// arguments (up to length four).
+// See https://codecraft.co/variadic-macros-tricks.html for explanation.
+
+// Support up to *four* variadic arguments.
+#define _GET_NTH_ARG(_1, _2, _3, _4, N, ...) N
+// Macros for encoding a value expression into its value. _e is short for
+// _encode.
+#define _e_0(...)
+#define _e_1(value) static_cast<const char*>(#value), value
+#define _e_2(value, ...) \
+  static_cast<const char*>(#value), value, _e_1(__VA_ARGS__)
+#define _e_3(value, ...) \
+  static_cast<const char*>(#value), value, _e_2(__VA_ARGS__)
+#define _e_4(value, ...) \
+  static_cast<const char*>(#value), value, _e_3(__VA_ARGS__)
+
+#define ACCUMULATE(...)                                                 \
+  /* NOLINTNEXTLINE(whitespace/comma) */                                \
+  _GET_NTH_ARG(__VA_ARGS__ __VA_OPT__(, ) _e_4, _e_3, _e_2, _e_1, _e_0) \
+  (__VA_ARGS__)
+
+}  // namespace internal
+}  // namespace drake
+
+/// Provides a convenient wrapper to throw an exception when a condition is
+/// unmet.  This is similar to an assertion, but uses exceptions instead of
+/// `::abort()`, and cannot be disabled.
+///
+/// Evaluates `condition` and iff the value is false will throw an exception
+/// with a message showing at least the condition text, function name, file, and
+/// line.
+///
+/// The condition must not be a pointer, where we'd implicitly rely on its
+/// nullness. Instead, always write out "!= nullptr" to be precise.
+///
+/// Correct: `DRAKE_THROW_UNLESS(foo != nullptr);`
+/// Incorrect: `DRAKE_THROW_UNLESS(foo);`
+///
+/// Because this macro is intended to provide a useful exception message to
+/// users, we should err on the side of extra detail about the failure. The
+/// meaning of "foo" isolated within error message text does not make it clear
+/// that a null pointer is the proximate cause of the problem.
+///
+/// In addition to the `condition`, up to four value expressions can be
+/// provided. Each value expression and its value will be included in the error
+/// message. For example:
+///
+///   DRAKE_THROW_UNLESS(x < 0, x);
+///
+/// Will include the the value of `x` in the message. If too many value
+/// expressions are specified, this will most likely produce a compiler error
+/// referencing "ENCODE_EACH".
+///
+/// Not all value expression types are supported. This shouldn't be interpreted
+/// as *the* definitive list. If yours isn't supported, feel free to submit a PR
+/// to add it (reaching out for help as appropriate).
+#define DRAKE_THROW_UNLESS(condition, ...)                                    \
+  do {                                                                        \
+    typedef ::drake::assert::ConditionTraits<                                 \
+        typename std::remove_cv_t<decltype(condition)>>                       \
+        Trait;                                                                \
+    static_assert(Trait::is_valid, "Condition should be bool-convertible.");  \
+    static_assert(                                                            \
+        !std::is_pointer_v<decltype(condition)>,                              \
+        "When using DRAKE_THROW_UNLESS on a raw pointer, always write out "   \
+        "DRAKE_THROW_UNLESS(foo != nullptr), do not write DRAKE_THROW_UNLESS" \
+        "(foo) and rely on implicit pointer-to-bool conversion.");            \
+    if (!Trait::Evaluate(condition)) {                                        \
+      ::drake::internal::ThrowWithValues(                                     \
+          #condition, __func__, __FILE__,                                     \
+          __LINE__ __VA_OPT__(, ACCUMULATE(__VA_ARGS__)));                    \
+    }                                                                         \
+  } while (0)
 
 #endif  // DRAKE_DOXYGEN_CXX

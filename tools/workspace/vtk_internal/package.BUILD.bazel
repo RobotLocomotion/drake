@@ -76,12 +76,15 @@ install(
     name = "install",
     docs = [
         "Copyright.txt",
-        "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
         "ThirdParty/fast_float/vtkfast_float/LICENSE-MIT",
         "ThirdParty/glad/vtkglad/LICENSE",
         "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
+        "ThirdParty/scn/vtkscn/LICENSE",
+        "ThirdParty/scn/vtkscn/LICENSE.nanorange",
         "ThirdParty/token/vtktoken/license.md",
         "ThirdParty/utf8/vtkutf8/LICENSE",
     ],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

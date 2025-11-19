@@ -2,11 +2,10 @@ import os
 import unittest
 import warnings
 
-from lcm import EventLog, LCM
+from lcm import LCM, EventLog
 
 
 class Test(unittest.TestCase):
-
     def test_publish(self):
         """
         Ensures that no warnings are issued using `lcm.publish()`.

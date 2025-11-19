@@ -1,6 +1,3 @@
-default-jdk
-diffutils
-file
 gfortran
 libclang-19-dev
 libgl-dev
@@ -8,12 +5,9 @@ libglib2.0-dev
 libglx-dev
 liblapack-dev
 libopengl-dev
-libx11-dev
-nasm
 ocl-icd-opencl-dev
 opencl-headers
 patch
-patchelf
 pkg-config
 python3-all-dev
 zlib1g-dev

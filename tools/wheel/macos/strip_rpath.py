@@ -3,7 +3,6 @@ Remove RPATH commands from an artifact (binary or library).
 """
 
 import argparse
-import re
 import subprocess
 import sys
 
@@ -14,6 +13,7 @@ def _filter_rpaths(paths, exclusions):
     """
     Returns `paths`, less any items that start with any of `exclusions`.
     """
+
     def _filter(path):
         for x in exclusions:
             if path.startswith(x):
@@ -29,20 +29,26 @@ def _strip_rpaths(path, rpaths):
     """
     for rpath in rpaths:
         subprocess.check_call(
-            ['install_name_tool', '-delete_rpath', rpath, path],
+            ["install_name_tool", "-delete_rpath", rpath, path],
         )
 
 
 def main(args):
     # Set up argument parser.
     parser = argparse.ArgumentParser(
-        description='Strip RPATH(s) from a library.')
+        description="Strip RPATH(s) from a library."
+    )
     parser.add_argument(
-        '-x', '--exclude', metavar='PREFIX', action='append',
-        help='leave any RPATH that starts with the specified prefix')
+        "-x",
+        "--exclude",
+        metavar="PREFIX",
+        action="append",
+        help="leave any RPATH that starts with the specified prefix",
+    )
     parser.add_argument(
-        'library',
-        help='dynamic library to modify')
+        "library",  # BR
+        help="dynamic library to modify",
+    )
 
     # Parse arguments.
     options = parser.parse_args(args)
@@ -50,8 +56,9 @@ def main(args):
     # Extract RPATH entries from load commands.
     commands = otool.load_commands(options.library)
     rpaths = _filter_rpaths(
-        [c['path'] for c in commands if c['cmd'] == 'LC_RPATH'],
-        options.exclude)
+        paths=[c["path"] for c in commands if c["cmd"] == "LC_RPATH"],
+        exclusions=options.exclude,
+    )
 
     # Remove the RPATH load commands.
     _strip_rpaths(options.library, rpaths)
@@ -59,5 +66,5 @@ def main(args):
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

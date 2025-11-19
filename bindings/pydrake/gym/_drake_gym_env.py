@@ -17,27 +17,33 @@ from pydrake.systems.framework import (
 from pydrake.systems.sensors import ImageRgba8U
 
 
+def _reached_termination(status: SimulatorStatus):
+    """Returns true iff status is "reached termination condition"."""
+    ReturnReason = SimulatorStatus.ReturnReason
+    return status.reason() == ReturnReason.kReachedTerminationCondition
+
+
 class DrakeGymEnv(gym.Env):
     """
     DrakeGymEnv provides a gym.Env interface for a Drake System (often a
     Diagram) using a Simulator.
     """
 
-    def __init__(self,
-                 simulator: Union[Simulator,
-                                  Callable[[RandomGenerator], Simulator]],
-                 time_step: float,
-                 action_space: gym.spaces.Space,
-                 observation_space: gym.spaces.Space,
-                 reward: Union[Callable[[System, Context], float],
-                               OutputPortIndex, str],
-                 action_port_id: Union[InputPort, InputPortIndex, str] = None,
-                 observation_port_id: Union[OutputPortIndex, str] = None,
-                 render_rgb_port_id: Union[OutputPortIndex, str] = None,
-                 render_mode: str = 'human',
-                 reset_handler: Callable[[Simulator, Context], None] = None,
-                 info_handler: Callable[[Simulator], dict] = None,
-                 hardware: bool = False):
+    def __init__(
+        self,
+        simulator: Union[Simulator, Callable[[RandomGenerator], Simulator]],
+        time_step: float,
+        action_space: gym.spaces.Space,
+        observation_space: gym.spaces.Space,
+        reward: Union[Callable[[System, Context], float], OutputPortIndex, str],
+        action_port_id: Union[InputPort, InputPortIndex, str] = None,
+        observation_port_id: Union[OutputPortIndex, str] = None,
+        render_rgb_port_id: Union[OutputPortIndex, str] = None,
+        render_mode: str = "human",
+        reset_handler: Callable[[Simulator, Context], None] = None,
+        info_handler: Callable[[Simulator], dict] = None,
+        hardware: bool = False,
+    ):
         """
         Args:
             simulator: Either a ``drake.systems.analysis.Simulator``, or
@@ -148,14 +154,14 @@ class DrakeGymEnv(gym.Env):
         else:
             self.observation_port_id = OutputPortIndex(0)
 
-        self.metadata['render_modes'] = ['human', 'ascii']
+        self.metadata["render_modes"] = ["human", "ascii"]
 
         # Setup rendering.
         self.render_mode = render_mode
         if render_rgb_port_id:
             assert isinstance(render_rgb_port_id, (OutputPortIndex, str))
-            self.render_mode = 'rgb_array'
-            self.metadata['render_modes'].append('rgb_array')
+            self.render_mode = "rgb_array"
+            self.metadata["render_modes"].append("rgb_array")
         self.render_rgb_port_id = render_rgb_port_id
 
         self.generator = RandomGenerator()
@@ -187,8 +193,9 @@ class DrakeGymEnv(gym.Env):
             else:
                 self.action_port = system.GetInputPort(self.action_port_id)
         if self.action_port.get_data_type() == PortDataType.kVectorValued:
-            assert np.array_equal(self.action_space.shape,
-                                  [self.action_port.size()])
+            assert np.array_equal(
+                self.action_space.shape, [self.action_port.size()]
+            )
 
         def get_output_port(id):
             if isinstance(id, OutputPortIndex):
@@ -199,8 +206,9 @@ class DrakeGymEnv(gym.Env):
         if self.observation_port_id:
             self.observation_port = get_output_port(self.observation_port_id)
         if self.observation_port.get_data_type() == PortDataType.kVectorValued:
-            assert np.array_equal(self.observation_space.shape,
-                                  [self.observation_port.size()])
+            assert np.array_equal(
+                self.observation_space.shape, [self.observation_port.size()]
+            )
 
         # Note: We require that there is no direct feedthrough action_port to
         # observation_port.  Unfortunately, HasDirectFeedthrough returns false
@@ -214,10 +222,13 @@ class DrakeGymEnv(gym.Env):
         # Setup rendering port.
         if self.render_rgb_port_id:
             self.render_rgb_port = get_output_port(self.render_rgb_port_id)
-            assert self.render_rgb_port.get_data_type() == \
-                PortDataType.kAbstractValued
-            assert isinstance(self.render_rgb_port.Allocate().get_value(),
-                              ImageRgba8U)
+            assert (
+                self.render_rgb_port.get_data_type()
+                == PortDataType.kAbstractValued
+            )
+            assert isinstance(
+                self.render_rgb_port.Allocate().get_value(), ImageRgba8U
+            )
 
     def step(self, action):
         """
@@ -264,17 +275,14 @@ class DrakeGymEnv(gym.Env):
 
         observation = self.observation_port.Eval(context)
         reward = self.reward(self.simulator.get_system(), context)
-        terminated = (
-            not truncated
-            and (status.reason()
-                 == SimulatorStatus.ReturnReason.kReachedTerminationCondition))
+        terminated = not truncated and _reached_termination(status)
         info = self.info_handler(self.simulator)
 
         return observation, reward, terminated, truncated, info
 
-    def reset(self, *,
-              seed: Optional[int] = None,
-              options: Optional[dict] = None):
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[dict] = None
+    ):
         """
         If a callable "simulator factory" was passed to the constructor, then a
         new simulator is created.  Otherwise this method simply resets the
@@ -282,9 +290,10 @@ class DrakeGymEnv(gym.Env):
         """
         super().reset(seed=seed)
         assert options is None or options == dict(), (
-            "Options are not supported in env.reset() method.")
+            "Options are not supported in env.reset() method."
+        )
 
-        if (seed is not None):
+        if seed is not None:
             # TODO(ggould) This should not reset the generator if it was
             # already explicitly seeded (see API spec), but we have no way to
             # check that at the moment.
@@ -303,8 +312,9 @@ class DrakeGymEnv(gym.Env):
             self.reset_handler(self.simulator, context, seed)
         else:
             if not self.hardware:
-                self.simulator.get_system().SetRandomContext(context,
-                                                             self.generator)
+                self.simulator.get_system().SetRandomContext(
+                    context, self.generator
+                )
 
         # Note: The output port will be evaluated without fixing the input
         # port.
@@ -328,16 +338,19 @@ class DrakeGymEnv(gym.Env):
         """
         assert self.simulator, "You must call reset() first"
 
-        if self.render_mode == 'human':
+        if self.render_mode == "human":
             self.simulator.get_system().ForcedPublish(
-                self.simulator.get_context())
+                self.simulator.get_context()
+            )
             return
-        elif self.render_mode == 'ansi':
-            return __repr__(self.simulator.get_context())
-        elif self.render_mode == 'rgb_array':
-            assert self.render_rgb_port, \
+        elif self.render_mode == "ansi":
+            return repr(self.simulator.get_context())
+        elif self.render_mode == "rgb_array":
+            assert self.render_rgb_port, (
                 "You must set render_rgb_port in the constructor"
-            return self.render_rgb_port.Eval(
-                self.simulator.get_context()).data[:, :, :3]
+            )
+            return self.render_rgb_port.Eval(self.simulator.get_context()).data[
+                :, :, :3
+            ]
         else:
             super(DrakeGymEnv).render()

@@ -43,7 +43,6 @@ drake_pybind_library(
     add_install = False,
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
     ],
     cc_so_name = "autodiffutils_test_util",
     cc_srcs = ["autodiffutils_test_util_py.cc"],
@@ -55,15 +54,6 @@ drake_py_library(
     testonly = 1,
     srcs = ["deprecation.py"],
     deps = [":module_py"],
-)
-
-drake_py_library(
-    name = "memory_test_util_py",
-    testonly = True,
-    srcs = ["memory_test_util.py"],
-    deps = [
-        ":module_py",
-    ],
 )
 
 drake_py_library(
@@ -136,7 +126,6 @@ drake_py_library(
     testonly = 1,
     deps = [
         ":deprecation_py",
-        ":memory_test_util_py",
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",

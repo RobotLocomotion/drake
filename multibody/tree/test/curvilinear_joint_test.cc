@@ -1,5 +1,10 @@
 #include "drake/multibody/tree/curvilinear_joint.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -93,7 +98,7 @@ class CurvilinearJointTest : public ::testing::Test {
   const Vector3d tangent_axis_{1., -std::sqrt(2.), 1.};
   const Vector3d plane_axis_{1., std::sqrt(2.), 1.};
   const Vector3d initial_position_{1., 2., 3.};
-  const PiecewiseConstantCurvatureTrajectory<double> trajectory_{
+  const trajectories::PiecewiseConstantCurvatureTrajectory<double> trajectory_{
       breaks_, turning_rates_, tangent_axis_, plane_axis_, initial_position_};
 };
 

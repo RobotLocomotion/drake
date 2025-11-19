@@ -12,3 +12,5 @@ py_library(
     data = glob(["**/version.txt"]),
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

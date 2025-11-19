@@ -10,6 +10,20 @@ load(
     "drake_cc_package_library",
 )
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "cache_doxygen.h",
+        "system_compatibility_doxygen.h",
+        "system_scalar_conversion_doxygen.h",
+    ] + glob([
+        "images/*.dot",
+        "images/*.png",
+    ]),
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
@@ -190,6 +204,7 @@ drake_cc_library(
 drake_cc_library(
     name = "event_collection",
     srcs = [
+        "event.cc",
         "event_collection.cc",
         "event_status.cc",
     ],
@@ -222,10 +237,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "framework_common",
-    srcs = [],
-    hdrs = [
-        "framework_common.h",
-    ],
+    srcs = ["framework_common.cc"],
+    hdrs = ["framework_common.h"],
     deps = [
         "//common:identifier",
         "//common:type_safe_index",

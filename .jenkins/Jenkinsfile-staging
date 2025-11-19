@@ -120,15 +120,22 @@ def emailFailureResults() {
     }
     emailext (
       subject: "${subject}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-      body: "See <${env.BUILD_URL}display/redirect?page=changes> " +
-        "and <${env.BUILD_URL}changes>",
+      mimeType: 'text/html',
+      body: """\
+For details, see:
+<ul>
+  <li>Changes in this revision: ${env.BUILD_URL}changes</li>
+  <li>Changelog for this job: ${env.BUILD_URL}display/redirect?page=changes</li>
+  <li>Console log: ${env.BUILD_URL}console</li>
+</ul>
+""",
       to: '$DEFAULT_RECIPIENTS',
     )
   }
 }
 
 /**
- * Deletes the workspace and tmp directories, for use at the end of a build.
+ * Deletes the workspace and tmp directories.
  */
 def cleanWorkspace() {
   dir(env.WORKSPACE) {
@@ -176,10 +183,13 @@ node(getNodeLabel()) {
       ansiColor('xterm') {
         timestamps {
           try {
-            // Always use drake-ci/main for staging builds, but use the
-            // drake SHA parameter for the drake checkout.
-            def scmVars = checkout('main', params.sha1)
-            doMainBuild(scmVars, params.release_version)
+            cleanWorkspace()
+            dir(env.WORKSPACE) {
+              // Always use drake-ci/main for staging builds, but use the
+              // drake SHA parameter for the drake checkout.
+              def scmVars = checkout('main', params.sha1)
+              doMainBuild(scmVars, params.release_version)
+            }
           } finally {
             try {
               checkBuildResult()

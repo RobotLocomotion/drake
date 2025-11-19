@@ -47,7 +47,11 @@
 // TODO(rcory) Include a README.md that explains the use cases for this
 //  example.
 
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 
