@@ -39,7 +39,7 @@ VoxelizedEnvironmentCollisionChecker::DoClone() const {
 }
 
 void VoxelizedEnvironmentCollisionChecker::UpdateEnvironment(
-    const std::string& environment_name, const VoxelCollisionMap& environment,
+    const std::string& environment_name, const VoxelOccupancyMap& environment,
     const std::optional<BodyIndex>& override_environment_body_index) {
   if (!environment.is_empty()) {
     // Use default options for SDF generation.
@@ -56,7 +56,7 @@ void VoxelizedEnvironmentCollisionChecker::UpdateEnvironment(
 
 void VoxelizedEnvironmentCollisionChecker::UpdateEnvironment(
     const std::string& environment_name,
-    const VoxelTaggedObjectCollisionMap& environment,
+    const VoxelTaggedObjectOccupancyMap& environment,
     const std::optional<BodyIndex>& override_environment_body_index) {
   if (!environment.is_empty()) {
     // An empty vector of object indices specifies that all objects in the

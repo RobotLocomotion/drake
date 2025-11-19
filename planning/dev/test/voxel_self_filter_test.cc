@@ -95,15 +95,15 @@ GTEST_TEST(VoxelSelfFilterTest, Test) {
   constexpr float empty_occupancy = 0.0f;
   constexpr float filled_occupancy = 1.0f;
 
-  VoxelCollisionMap filled_environment(world_frame_name, X_WG, grid_dimensions,
+  VoxelOccupancyMap filled_environment(world_frame_name, X_WG, grid_dimensions,
                                        grid_resolution, filled_occupancy);
 
   // We set a single cell empty to ensure a valid SDF is computed.
-  auto& internal_collision_map =
-      internal::GetMutableInternalCollisionMap(filled_environment);
+  auto& internal_occupancy_map =
+      internal::GetMutableInternalOccupancyMap(filled_environment);
 
   auto& zero_voxel =
-      internal_collision_map.GetLocationMutable(0.0, 0.0, 0.0).Value();
+      internal_occupancy_map.GetLocationMutable(0.0, 0.0, 0.0).Value();
   zero_voxel.SetOccupancy(empty_occupancy);
 
   // Check self-filter at a range of configurations.

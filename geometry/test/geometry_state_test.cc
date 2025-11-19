@@ -3601,7 +3601,7 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
       if (actual_count != expected_count) {
         success = false;
         failure << "\nExpected " << expected_count << " geometries with the "
-                << role << " role. Found " << actual_count;
+                << fmt::to_string(role) << " role. Found " << actual_count;
       }
     }
     if (success) {

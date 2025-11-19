@@ -569,6 +569,12 @@ R"""(The user can specify a solver to use for the counterexample search
 program. If nullptr (the default value) is given, then
 solvers::MakeFirstAvailableSolver will be used to pick the solver.)""";
         } solver;
+        // Symbol: drake::planning::IrisNp2Options::solver_options
+        struct /* solver_options */ {
+          // Source: drake/planning/iris/iris_np2.h
+          const char* doc =
+R"""(Options passed to the counterexample search program solver.)""";
+        } solver_options;
         auto Serialize__fields() const {
           return std::array{
             std::make_pair("add_hyperplane_if_solve_fails", add_hyperplane_if_solve_fails.doc),
@@ -577,6 +583,7 @@ solvers::MakeFirstAvailableSolver will be used to pick the solver.)""";
             std::make_pair("sampled_iris_options", sampled_iris_options.doc),
             std::make_pair("sampling_strategy", sampling_strategy.doc),
             std::make_pair("solver", solver.doc),
+            std::make_pair("solver_options", solver_options.doc),
           };
         }
       } IrisNp2Options;
