@@ -81,7 +81,18 @@ TEST_F(TetSubdivisionQuadratureTest, Locations) {
     const Vector3d& p = subd_0_quadrature_.get_point(i);
     EXPECT_EQ(p, Vector3d(0.25, 0.25, 0.25));
   }
-  // TODO(xuchenhan-tri): Add more tests for non-zero subdivisions.
+
+  /* After one subdivision the reference tetrahedron is divided into four. These
+   results are verified by pen and paper. */
+  EXPECT_EQ(subd_1_quadrature_.num_quadrature_points, 4);
+  EXPECT_EQ(subd_1_quadrature_.get_point(0),
+            Vector3d(5.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0));
+  EXPECT_EQ(subd_1_quadrature_.get_point(1),
+            Vector3d(5.0 / 16.0, 1.0 / 16.0, 5.0 / 16.0));
+  EXPECT_EQ(subd_1_quadrature_.get_point(2),
+            Vector3d(1.0 / 16.0, 5.0 / 16.0, 5.0 / 16.0));
+  EXPECT_EQ(subd_1_quadrature_.get_point(3),
+            Vector3d(5.0 / 16.0, 5.0 / 16.0, 5.0 / 16.0));
 }
 
 TEST_F(TetSubdivisionQuadratureTest, ReproducesLinearFunctions) {
