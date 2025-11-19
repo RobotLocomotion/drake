@@ -346,15 +346,17 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
-  // Set an arbitrary "non-zero" state.
-  const Quaterniond q_WB(
+  // Set an arbitrary "non-zero" state for the quaternion qᵣ = q_WB.
+  const Quaterniond qr(
       RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
-  mobilizer_->SetQuaternion(context_.get(), q_WB);
+  mobilizer_->SetQuaternion(context_.get(), qr);
 
+  // Set an arbitrary non-zero state for position.
   const Vector3d p_WB(1.0, 2.0, 3.0);
   mobilizer_->SetTranslation(context_.get(), p_WB);
 
-  // Set an arbitrary qdot.
+  // Set an arbitrary qdot with a rotational part q̇ᵣ = [1 2 3 4]ᵀ and a
+  // translational part q̇ₜ = [ẋ ẏ ż] = [5 6 7]ᵀ
   VectorX<double> qdot(7);
   qdot << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
 
@@ -370,14 +372,26 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
                               MatrixCompareType::relative));
 
-  // Notice that the rotational part of the arbitrary qdot violates a constraint
-  // on the rotational unit quaternion q_WB.  Why?  Since (q_WB)ᵀ * q_WB = 1,
-  // (q̇_WB)ᵀ * q_WB + (q_WB)ᵀ * q̇_WB = 2 * (q_WB)ᵀ * q̇_WB = 0.  However, since
-  // the qdot above is arbitrary, this is not true.
-  const Vector4<double> qdot_WB(qdot[0], qdot[1], qdot[2], qdot[3]);
-  const double is_zero_if_proper_qdot =
-      Vector4<double>(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z()).dot(qdot_WB);
-  EXPECT_FALSE(std::abs(is_zero_if_proper_qdot) < 0.1);
+  // Note: the previously arbitrarily chosen q̇ᵣ = [1 2 3 4]ᵀ violates a
+  // constraint for the unit quaternion qᵣ. Why?  Since (qᵣ)ᵀ * qᵣ = 1,
+  // (q̇ᵣ)ᵀ qᵣ + (qᵣ)ᵀ q̇ᵣ = 2 (qᵣ)ᵀ q̇ᵣ = 0.  However, since q̇ᵣ = [1 2 3 4]ᵀ above
+  // was chosen without regarding the constraint, this is not true.
+  // Resolve q̇ᵣ = q̇ᵣ_parallel + q̇ᵣ_perp, where q̇ᵣ_parallel is the part of q̇ᵣ
+  // parallel to q_WB and q̇ᵣ_perp is the part of q̇ᵣ perpendicular to q_WB.
+  const Vector4<double> qrdot(qdot[0], qdot[1], qdot[2], qdot[3]);
+  const Vector4<double> qr_as_vector4(qr.w(), qr.x(), qr.y(), qr.z());
+  const double qrdot_parallel_measure = qrdot.dot(qr_as_vector4);
+  EXPECT_TRUE(std::abs(qrdot_parallel_measure) > 0.1);  // Ensure non-zero.
+  const Vector4<double> qrdot_parallel = qrdot_parallel_measure * qr_as_vector4;
+  const Vector4<double> qrdot_perpendicular = qrdot - qrdot_parallel;
+
+  // Set q̇ᵣ (the rotational part of qdot) to be just q̇ᵣ_perp.  Recalculate the
+  // angular and translational velocity associated with qdot and see that they
+  // are unchanged -- verifying that only q̇ᵣ_perp affects this calculation.
+  qdot.head(4) = qrdot_perpendicular;
+  Vector6<double> v2;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v2);
+  EXPECT_TRUE(CompareMatrices(v, v2, kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
@@ -443,14 +457,19 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   EXPECT_TRUE(CompareMatrices(v, v_from_qdot_nonUnit, 16 * kTolerance,
                               MatrixCompareType::relative));
 
-  // Verify that if q̇ᵣ_nonUnit = scalar * quat_nonUnit, where scalar is a
-  // real number, that angular velocity vr_from_qdot_nonUnit = [0 0 0].
+  // Verify that if q̇ᵣ is parallel to qᵣ, i.e., q̇ᵣ = scalar * qᵣ where scalar is
+  // a real number, that angular velocity vr_from_qrdot_parallel = [0 0 0].
   // Note: The proof of this uses the fact that Nᵣ⁺ * qᵣ = 0.
-  qdot_nonUnit.head(4) =
+  const Vector4<double> qrdot_parallel =
       3.45 * Vector4<double>(quat_nonUnit.w(), quat_nonUnit.x(),
                              quat_nonUnit.y(), quat_nonUnit.z());
-  mobilizer_->MapQDotToVelocity(*context_, qdot_nonUnit, &v_from_qdot_nonUnit);
-  Vector3<double> angular_velocity = v_from_qdot_nonUnit.head(3);
+  Eigen::Matrix<double, 7, 1> qdot_parallel;
+  qdot_parallel.head(4) = qrdot_parallel;        // q̇ᵣ is parallel to qᵣ.
+  qdot_parallel.tail(3) = qdot_nonUnit.tail(3);  // Translation is unchanged.
+  Vector6<double> v_from_qrdot_parallel;
+  mobilizer_->MapQDotToVelocity(*context_, qdot_parallel,
+                                &v_from_qrdot_parallel);
+  Vector3<double> angular_velocity = v_from_qrdot_parallel.head(3);
   EXPECT_TRUE(CompareMatrices(angular_velocity, Vector3<double>::Zero(),
                               16 * kTolerance, MatrixCompareType::relative));
 
@@ -460,7 +479,7 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // q̇ᵣ_parallel is parallel to qᵣ (e.g., q̇ᵣ_parallel = scalar * qᵣ), then for
   // the purposes of using MapQDotToVelocity() to calculate angular velocity,
   // it is as if q̇ᵣ_parallel is zero. This fact builds on the previous test.
-  qdot_nonUnit.head(4) += qrdot_nonUnit;  // Sets q̇ᵣ = q̇ᵣ_parallel + q̇ᵣ_perp.
+  qdot_nonUnit.head(4) += qrdot_parallel;  // Sets q̇ᵣ = q̇ᵣ_parallel + q̇ᵣ_perp.
   mobilizer_->MapQDotToVelocity(*context_, qdot_nonUnit, &v_from_qdot_nonUnit);
   EXPECT_TRUE(CompareMatrices(v_from_qdot_nonUnit, v_from_qdot_unit,
                               16 * kTolerance, MatrixCompareType::relative));
@@ -537,6 +556,9 @@ TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot_redo);
   EXPECT_TRUE(CompareMatrices(vdot_redo, vdot, 16 * kTolerance,
                               MatrixCompareType::relative));
+
+  // TODO(Mitiguy) As like the test for qdot and angular/translational velocity,
+  //  add tests similar to the parallel/perpendicular parts of qdot.
 }
 
 }  // namespace
