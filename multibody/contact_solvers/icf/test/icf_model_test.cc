@@ -194,6 +194,9 @@ GTEST_TEST(IcfModel, PerBodyElements) {
     }
 
     EXPECT_GT(model.body_mass(b), 0.0);
+    if (!model.is_anchored(b)) {
+      EXPECT_GT(model.clique_delassus_approx(c).minCoeff(), 0.0);
+    }
   }
 
   // We should have exactly one floating body and one anchored body.
