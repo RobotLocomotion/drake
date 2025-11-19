@@ -322,13 +322,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // the unnormalized quaternion taken directly from context and q̇ᵣ is a
   // "plausible" dqᵣ/dt, we calculate Nᵣ⁺(qᵣ) such that w_FM_F = Nᵣ⁺(qᵣ) * q̇ᵣ is
   // the angular velocity of the mobilizer's M frame in the mobilizer's F frame,
-  // expressed in the F frame. Herein "plausible" means the choice of q̇ᵣ leaves
+  // expressed in the F frame. Herein, "plausible" means the choice of q̇ᵣ leaves
   // |qᵣ| unchanged, which in math means d/dt [dot(qᵣ, qᵣ)] = 2 dot(qᵣ, q̇ᵣ) = 0.
   // Note: We can prove that if q̇ᵣ is calculated from q̇ᵣ = Nᵣ(qᵣ) * w_FM_F, then
   // dot(qᵣ, q̇ᵣ) = 0 and Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) = I₃₃, which means Nᵣ⁺(qᵣ) is truly a
   // pseudo-inverse of Nᵣ(qᵣ). If q̇ᵣ is not "plausible", Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) ≠ I₃₃.
-  // Nᵣ⁺(qᵣ) is a 3x4 matrix formed by QuaternionRateToAngularVelocityMatrix().
-  // Contextual definition of Nᵣ⁺(qᵣ): denoting q̂ = qᵣ / |qᵣ|,
+  // Contextual definition of the 3x4 matrix Nᵣ⁺(qᵣ): denoting q̂ = qᵣ / |qᵣ|,
   // w_FM_F = Nᵣ⁺(q̂ᵣ) * d/dt(q̂_FM) = Nᵣ⁺(qᵣ) * d/dt(qᵣ). Hence, using
   // Nᵣ⁺(qᵣ) = QuaternionRateToAngularVelocityMatrix() accounts for a non-unit
   // qᵣ and its corresponding time-derivative q̇ᵣ.

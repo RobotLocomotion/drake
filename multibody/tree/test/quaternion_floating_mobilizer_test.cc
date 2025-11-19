@@ -356,7 +356,7 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
   mobilizer_->SetTranslation(context_.get(), p_WB);
 
   // Set an arbitrary qdot with a rotational part q̇ᵣ = [1 2 3 4]ᵀ and a
-  // translational part q̇ₜ = [ẋ ẏ ż] = [5 6 7]ᵀ
+  // translational part [ẋ ẏ ż] = [5 6 7]ᵀ.
   VectorX<double> qdot(7);
   qdot << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
 
