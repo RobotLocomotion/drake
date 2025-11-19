@@ -151,10 +151,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *      @throws std::exception when the precondition is not satisfied.
  * @ingroup solver_evaluators
  */
-std::tuple<Binding<LinearConstraint>,
-           std::vector<Binding<RotatedLorentzConeConstraint>>,
-           VectorXDecisionVariable>
-AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+auto AddRelaxNonConvexQuadraticConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,
@@ -163,6 +160,9 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
     const Eigen::Ref<const Eigen::VectorXd>& p, double lower_bound,
     double upper_bound,
     const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
-    double trust_region_gap);
+    double trust_region_gap)
+    -> std::tuple<Binding<LinearConstraint>,
+                  std::vector<Binding<RotatedLorentzConeConstraint>>,
+                  VectorXDecisionVariable>;
 }  // namespace solvers
 }  // namespace drake

@@ -47,10 +47,8 @@ double GetVariableValue(
  * variables.
  */
 template <typename Derived>
-typename std::enable_if_t<
-    std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-    MatrixLikewise<double, Derived>>
-GetVariableValue(
+  requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+MatrixLikewise<double, Derived> GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
     const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
