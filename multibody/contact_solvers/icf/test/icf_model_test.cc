@@ -166,15 +166,15 @@ GTEST_TEST(IcfModel, PerBodyElements) {
 
     if (model.is_anchored(b)) {
       ++num_anchored;
-      EXPECT_TRUE(c < 0);
-      EXPECT_TRUE(clique_nv == 0);
+      EXPECT_LT(c, 0);
+      EXPECT_EQ(clique_nv, 0);
 
       // Spatial velocity should be zero.
       EXPECT_TRUE(CompareMatrices(V_WB, Vector6d::Zero(), kEpsilon,
                                   MatrixCompareType::relative));
     } else if (model.is_floating(b)) {
       ++num_floating;
-      EXPECT_TRUE(c >= 0);
+      EXPECT_GE(c, 0);
       EXPECT_EQ(clique_nv, 6);
 
       // Spatial velocity should equal v0 segment.
@@ -183,7 +183,7 @@ GTEST_TEST(IcfModel, PerBodyElements) {
                                   MatrixCompareType::relative));
 
     } else {
-      EXPECT_TRUE(c >= 0);
+      EXPECT_GE(c, 0);
 
       // Spatial velocity should equal J_WB * v0 segment.
       const Matrix6X<double>& J_WB = model.J_WB(b);
@@ -193,7 +193,7 @@ GTEST_TEST(IcfModel, PerBodyElements) {
                                   MatrixCompareType::relative));
     }
 
-    EXPECT_TRUE(model.body_mass(b) > 0.0);
+    EXPECT_GT(model.body_mass(b), 0.0);
   }
 
   // We should have exactly one floating body and one anchored body.

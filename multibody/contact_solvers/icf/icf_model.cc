@@ -148,8 +148,7 @@ void IcfModel<T>::CalcBodySpatialVelocities(
   EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
   DRAKE_ASSERT(v.size() == num_velocities());
   DRAKE_ASSERT(spatial_velocities.size() == num_bodies());
-  spatial_velocities[0].setZero();  // World's spatial velocity.
-  for (int b = 1; b < num_bodies(); ++b) {
+  for (int b = 0; b < num_bodies(); ++b) {
     const int c = body_to_clique(b);
     Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {
