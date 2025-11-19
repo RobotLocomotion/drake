@@ -199,7 +199,7 @@ std::unique_ptr<BlockSparseSymmetricMatrixT<T>> IcfModel<T>::MakeHessian(
 }
 
 template <typename T>
-void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
+void IcfModel<T>::UpdateHessian(const IcfData<T>&,
                                 BlockSparseSymmetricMatrixT<T>* hessian) const {
   hessian->SetZero();
 
@@ -209,7 +209,8 @@ void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
     hessian->AddToBlock(c, c, A_clique);
   }
 
-  // TODO(#23769): Add constraints' contributions.
+  // TODO(#23769): Add constraints' contributions. IcfData will be used in this
+  // case.
 }
 
 template <typename T>
