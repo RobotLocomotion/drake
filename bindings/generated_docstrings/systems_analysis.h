@@ -427,17 +427,14 @@ MultibodyPlant specific.)""";
 R"""(Constructs the integrator.
 
 Parameter ``system``:
-    the overall system diagram to simulate. Must include a
-    MultibodyPlant and associated SceneGraph.
+    The overall system diagram to simulate. Must include a
+    MultibodyPlant and associated SceneGraph, with the plant found as
+    a direct child of the ``system`` diagram using the subsystem name
+    ``"plant"``. This system is aliased by this object so must remain
+    alive longer than the integrator.
 
 Parameter ``context``:
-    context for the overall system.
-
-Note:
-    This constructor matches the signature used by other integrators,
-    but does not specify the MultibodyPlant used to set up the
-    optimization problem. set_plant() must be called before using the
-    integrator.)""";
+    context for the overall system.)""";
         } ctor;
         // Symbol: drake::systems::CenicIntegrator::builder
         struct /* builder */ {
@@ -494,12 +491,6 @@ steps.)""";
 R"""(Get a reference to the MultibodyPlant used to formulate the convex
 optimization problem.)""";
         } plant;
-        // Symbol: drake::systems::CenicIntegrator::set_plant
-        struct /* set_plant */ {
-          // Source: drake/systems/analysis/cenic_integrator.h
-          const char* doc =
-R"""(Specifies the MultibodyPlant used to set up the optimization problem.)""";
-        } set_plant;
         // Symbol: drake::systems::CenicIntegrator::set_solver_parameters
         struct /* set_solver_parameters */ {
           // Source: drake/systems/analysis/cenic_integrator.h

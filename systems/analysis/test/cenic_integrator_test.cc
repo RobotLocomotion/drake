@@ -149,19 +149,9 @@ GTEST_TEST(CenicTest, TestConstruction) {
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 
-  // Set up the integrator, without specifying the plant.
+  // Set up the integrator.
   CenicIntegrator<double> integrator(*diagram, context.get());
   integrator.set_maximum_step_size(0.01);
-
-  // Integrator initialization should fail unless the plant is set correctly.
-  EXPECT_THROW(integrator.Initialize(), std::runtime_error);
-
-  MultibodyPlant<double> wrong_plant(0.0);
-  wrong_plant.Finalize();
-  integrator.set_plant(&wrong_plant);
-  EXPECT_THROW(integrator.Initialize(), std::runtime_error);
-
-  integrator.set_plant(&plant);
   integrator.Initialize();
 }
 
@@ -179,7 +169,6 @@ GTEST_TEST(CenicTest, TestStep) {
 
   // Set up the integrator
   CenicIntegrator<double> integrator(*diagram, diagram_context.get());
-  integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.01);
   integrator.set_fixed_step_mode(true);
   integrator.Initialize();
@@ -249,7 +238,6 @@ GTEST_TEST(CenicTest, TestQuaternions) {
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
-  integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.1);  // fairly large dt
   integrator.set_fixed_step_mode(true);
 
@@ -316,7 +304,6 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   solver_params.enable_hessian_reuse = true;
   solver_params.print_solver_stats = false;
   integrator.set_solver_parameters(solver_params);
-  integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(h);
 
@@ -461,7 +448,6 @@ GTEST_TEST(CenicTest, EffortLimits) {
 
   // Set up the integrator
   CenicIntegrator<double> integrator(*diagram, diagram_context.get());
-  integrator.set_plant(&plant);
   integrator.set_maximum_step_size(0.1);
   integrator.set_fixed_step_mode(true);
   integrator.Initialize();
@@ -527,7 +513,6 @@ GTEST_TEST(CenicTest, JointLimits) {
       simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.set_maximum_step_size(0.1);
   integrator.set_fixed_step_mode(true);
-  integrator.set_plant(&plant);
   simulator.Initialize();
 
   // Simulate for a few seconds
@@ -604,7 +589,6 @@ GTEST_TEST(CenicTest, PendulumWithCoupler) {
   solver_params.enable_hessian_reuse = false;
   solver_params.print_solver_stats = false;
   integrator.set_solver_parameters(solver_params);
-  integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(h);
 
@@ -658,7 +642,6 @@ GTEST_TEST(CenicTest, FrankaFreeFall) {
   solver_params.enable_hessian_reuse = true;
   solver_params.print_solver_stats = false;
   integrator.set_solver_parameters(solver_params);
-  integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(0.01);
 
@@ -695,7 +678,6 @@ GTEST_TEST(CenicTest, FloatingDoublePendulum) {
 
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
-  integrator.set_plant(&plant);
   integrator.set_fixed_step_mode(true);
   integrator.set_maximum_step_size(0.01);
 

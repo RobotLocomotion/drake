@@ -339,9 +339,6 @@ int do_main() {
     ie.set_use_implicit_trapezoid_error_estimation(FLAGS_trapezoid);
   }
   if (FLAGS_simulator_integration_scheme == "cenic") {
-    auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
-    ci.set_plant(&plant);
-
     IcfSolverParameters icf_params;
     icf_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
     icf_params.hessian_reuse_target_iterations = FLAGS_k_max;
@@ -350,6 +347,7 @@ int do_main() {
     icf_params.print_solver_stats = FLAGS_print_solver_stats;
     icf_params.use_dense_algebra = FLAGS_dense_algebra;
     icf_params.tolerance = FLAGS_tolerance;
+    auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
     ci.set_solver_parameters(icf_params);
   }
 
