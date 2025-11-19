@@ -73,7 +73,7 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   }
 
   // We use non-identity Jacobians to stress-test the algebra.
-  params->body_is_floating = {0, 0, 0, 0};
+  params->body_is_floating = {0, 0, 1, 0};
   params->body_mass = {1.0e20, 0.3, 2.3, 1.5};  // First body is the world.
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
   const Matrix6<T> J_WB1 = 1.5 * J_WB0 + 0.1 * Matrix6<T>::Identity();
@@ -146,6 +146,59 @@ GTEST_TEST(IcfModel, LimitMallocOnCalcData) {
     drake::test::LimitMalloc guard;
     model.CalcData(v, &data);
   }
+}
+
+/* Iterates over each body to check sizes and such. */
+GTEST_TEST(IcfModel, PerBodyElements) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  EXPECT_EQ(model.num_bodies(), 4);
+  EXPECT_EQ(model.num_velocities(), 18);
+
+  const VectorXd& v = model.v0();
+
+  int num_anchored = 0;
+  int num_floating = 0;
+  for (int b = 0; b < model.num_bodies(); ++b) {
+    const Vector6d& V_WB = model.V_WB0(b);
+    const int c = model.body_to_clique(b);
+    const int clique_nv = model.clique_size(c);
+
+    if (model.is_anchored(b)) {
+      ++num_anchored;
+      EXPECT_TRUE(c < 0);
+      EXPECT_TRUE(clique_nv == 0);
+
+      // Spatial velocity should be zero.
+      EXPECT_TRUE(CompareMatrices(V_WB, Vector6d::Zero(), kEpsilon,
+                                  MatrixCompareType::relative));
+    } else if (model.is_floating(b)) {
+      ++num_floating;
+      EXPECT_TRUE(c >= 0);
+      EXPECT_EQ(clique_nv, 6);
+
+      // Spatial velocity should equal v0 segment.
+      const Vector6d& V_WB_expected = model.clique_segment(c, v);
+      EXPECT_TRUE(CompareMatrices(V_WB, V_WB_expected, kEpsilon,
+                                  MatrixCompareType::relative));
+
+    } else {
+      EXPECT_TRUE(c >= 0);
+
+      // Spatial velocity should equal J_WB * v0 segment.
+      const Matrix6X<double>& J_WB = model.J_WB(b);
+      EXPECT_EQ(J_WB.cols(), clique_nv);
+      const Vector6d V_WB_expected = J_WB * model.clique_segment(c, v);
+      EXPECT_TRUE(CompareMatrices(V_WB, V_WB_expected, kEpsilon,
+                                  MatrixCompareType::relative));
+    }
+
+    EXPECT_TRUE(model.body_mass(b) > 0.0);
+  }
+
+  // We should have exactly one floating body and one anchored body.
+  EXPECT_EQ(num_floating, 1);
+  EXPECT_EQ(num_anchored, 1);
 }
 
 /* Checks that gradients are computed correctly for an unconstrained problem. */
