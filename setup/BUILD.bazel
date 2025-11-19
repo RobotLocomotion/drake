@@ -25,15 +25,6 @@ exports_files([
     "ubuntu/source_distribution/packages-noble-test-only.txt",
 ])
 
-filegroup(
-    name = "deepnote",
-    srcs = [
-        "deepnote/install_nginx",
-        "deepnote/nginx-meshcat-proxy.conf",
-    ],
-    visibility = ["//bindings/pydrake:__subpackages__"],
-)
-
 install_files(
     name = "install",
     dest = "share/drake/setup",
@@ -46,8 +37,6 @@ install_files(
             "python/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "deepnote/install_nginx",
-            "deepnote/nginx-meshcat-proxy.conf",
             "ubuntu/binary_distribution/install_prereqs.sh",
             "ubuntu/binary_distribution/packages-jammy.txt",
             "ubuntu/binary_distribution/packages-noble.txt",

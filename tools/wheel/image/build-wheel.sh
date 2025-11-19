@@ -108,12 +108,6 @@ cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /tmp/drake-wheel-build/drake-dist/share/drake/tutorials
 
 if [[ "$(uname)" == "Linux" ]]; then
-    mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
-    cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
-        /tmp/drake-wheel-build/drake-dist/share/drake/setup/deepnote
-fi
-
-if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib
 fi
 
