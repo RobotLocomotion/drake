@@ -35,7 +35,7 @@ void IcfSolverStats::Reserve(int size) {
 }
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
-                               IcfData<double>* data) {
+                               const double tolerance, IcfData<double>* data) {
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
   VectorXd& v = data->v();
   VectorXd& dv = search_direction_;
@@ -51,6 +51,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   // where η = θ / (1 − θ), θ = ‖D⁻¹ Δvₖ‖ / ‖D⁻¹ Δvₖ₋₁‖, as per [Hairer, 1996].
   const VectorXd& D = model.scale_factor();
   const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
+  const double epsilon = std::max(tolerance, parameters_.min_tolerance);
+  const double scaled_tolerance = epsilon * scale;
 
   double alpha{NAN};
   int ls_iterations{0};
@@ -78,7 +80,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
     // already close enough to the solution.
-    if (grad_norm < parameters_.tolerance * scale) {
+    if (grad_norm < scaled_tolerance) {
       return true;
     }
 
@@ -87,7 +89,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     if (k > 0) {
       // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹ Δvₖ|| < tol.
       // Otherwise we use η = θ/(1−θ) as set below (see Hairer 1996, p.120).
-      if (eta * stats_.step_norm.back() < parameters_.tolerance * scale) {
+      if (eta * stats_.step_norm.back() < scaled_tolerance) {
         return true;
       }
     }
@@ -111,8 +113,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 
-      if (anticipated_residual > parameters_.tolerance * scale ||
-          theta >= 1.0) {
+      if (anticipated_residual > scaled_tolerance || theta >= 1.0) {
         // We likely won't converge in time at this (linear) rate, so we should
         // use a fresh Hessian in hopes of faster (quadratic) convergence.
         reuse_hessian_factorization_ = false;

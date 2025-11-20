@@ -276,7 +276,7 @@ PYBIND11_MODULE(analysis, m) {
     py::class_<IcfSolverParameters>(m, "IcfSolverParameters")
         .def(py::init<>())
         .def_readwrite("max_iterations", &IcfSolverParameters::max_iterations)
-        .def_readwrite("tolerance", &IcfSolverParameters::tolerance)
+        .def_readwrite("min_tolerance", &IcfSolverParameters::min_tolerance)
         .def_readwrite(
             "enable_hessian_reuse", &IcfSolverParameters::enable_hessian_reuse)
         .def_readwrite("hessian_reuse_target_iterations",

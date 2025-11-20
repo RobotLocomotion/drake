@@ -145,7 +145,7 @@ using drake::systems::IntegratorBase;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using clock = std::chrono::steady_clock;
-using drake::multibody::contact_solvers::icf::internal::IcfSolverParameters;
+using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
@@ -593,7 +593,7 @@ int do_main() {
     icf_params.hessian_reuse_target_iterations = FLAGS_k_max;
     icf_params.alpha_max = FLAGS_alpha_max;
     icf_params.ls_tolerance = FLAGS_ls_tolerance;
-    icf_params.tolerance = FLAGS_tolerance;
+    icf_params.min_tolerance = FLAGS_tolerance;
     icf_params.print_solver_stats = FLAGS_print_solver_stats;
     icf_params.use_dense_algebra = FLAGS_dense_algebra;
     auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);

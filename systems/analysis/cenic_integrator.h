@@ -13,6 +13,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
+#include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -21,11 +22,11 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::icf::IcfSolverParameters;
 using multibody::contact_solvers::icf::internal::IcfBuilder;
 using multibody::contact_solvers::icf::internal::IcfData;
 using multibody::contact_solvers::icf::internal::IcfModel;
 using multibody::contact_solvers::icf::internal::IcfSolver;
-using multibody::contact_solvers::icf::internal::IcfSolverParameters;
 using multibody::contact_solvers::icf::internal::IcfSolverStats;
 using multibody::contact_solvers::icf::internal::LinearFeedbackGains;
 using multibody::contact_solvers::icf::internal::SearchDirectionData;
