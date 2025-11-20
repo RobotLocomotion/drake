@@ -145,7 +145,7 @@ using drake::systems::IntegratorBase;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using clock = std::chrono::steady_clock;
-using drake::multibody::contact_solvers::icf::internal::IcfSolverParameters;
+using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
