@@ -3155,7 +3155,6 @@ class MathematicalProgram {
    * optimization program.
    * @throws std::exception if the pre condition is not satisfied.
    */
-
   template <typename Derived>
     requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
   MatrixLikewise<double, Derived> GetInitialGuess(
