@@ -313,8 +313,6 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
-        .def("set_plant", &CenicIntegrator<T>::set_plant, py::arg("plant"),
-            doc.CenicIntegrator.set_plant.doc)
         .def("get_solver_parameters",
             &CenicIntegrator<T>::get_solver_parameters,
             doc.CenicIntegrator.get_solver_parameters.doc)

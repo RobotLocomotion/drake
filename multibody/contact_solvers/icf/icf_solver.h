@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
@@ -22,6 +23,21 @@ using Eigen::VectorXd;
 
 /* Parameters to configure the ICF convex solver. */
 struct IcfSolverParameters {
+  /* Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(max_iterations));
+    a->Visit(DRAKE_NVP(min_tolerance));
+    a->Visit(DRAKE_NVP(enable_hessian_reuse));
+    a->Visit(DRAKE_NVP(hessian_reuse_target_iterations));
+    a->Visit(DRAKE_NVP(use_dense_algebra));
+    a->Visit(DRAKE_NVP(max_ls_iterations));
+    a->Visit(DRAKE_NVP(ls_tolerance));
+    a->Visit(DRAKE_NVP(alpha_max));
+    a->Visit(DRAKE_NVP(print_solver_stats));
+  }
+
   /* Outer solver iteration limit */
   int max_iterations{100};
 

@@ -52,33 +52,21 @@ class CenicIntegrator final : public IntegratorBase<T> {
   /**
    * Constructs the integrator.
    *
-   * @param system the overall system diagram to simulate. Must include a
-   *               MultibodyPlant and associated SceneGraph.
+   * @param system The overall system diagram to simulate. Must include a
+   *               MultibodyPlant and associated SceneGraph, with the plant
+   *               found as a direct child of the `system` diagram using the
+   *               subsystem name `"plant"`. This system is aliased by this
+   *               object so must remain alive longer than the integrator.
    * @param context context for the overall system.
-   *
-   * @note This constructor matches the signature used by other integrators, but
-   *       does not specify the MultibodyPlant used to set up the optimization
-   *       problem. set_plant() must be called before using the integrator.
    */
   explicit CenicIntegrator(const System<T>& system,
                            Context<T>* context = nullptr);
 
   /**
-   * Specifies the MultibodyPlant used to set up the optimization problem.
-   */
-  void set_plant(MultibodyPlant<T>* plant) {
-    DRAKE_DEMAND(plant != nullptr);
-    plant_ = plant;
-  }
-
-  /**
    * Get a reference to the MultibodyPlant used to formulate the convex
    * optimization problem.
    */
-  const MultibodyPlant<T>& plant() const {
-    DRAKE_ASSERT(plant_ != nullptr);
-    return *plant_;
-  }
+  const MultibodyPlant<T>& plant() const { return plant_; }
 
   /**
    * Get a reference to the ICF builder, used to set up the convex problem.
@@ -224,7 +212,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
   T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const final;
 
   // The multibody plant used as the basis of the convex optimization problem.
-  MultibodyPlant<T>* plant_{nullptr};
+  const MultibodyPlant<T>& plant_;
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;

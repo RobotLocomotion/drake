@@ -2,13 +2,16 @@
 
 #include <cstdint>
 #include <limits>
-#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/systems/sensors/pixel_types.h"
+
+// Remove with deprecation 2026-03-01.
+#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -142,11 +145,8 @@ class RenderLabel {
   /** Implicit conversion to its underlying integer representation.  */
   operator ValueType() const { return value_; }
 
-  /** Enables use of labels with the streaming operator.  */
-  friend std::ostream& operator<<(std::ostream& out, const RenderLabel& label);
-
   /** Converts the RenderLabel value to a string representation.  */
-  friend std::string to_string(const RenderLabel& label);
+  std::string to_string() const;
 
  private:
   // RenderEngine needs access to encode labels as raster colors and to convert
@@ -171,6 +171,14 @@ class RenderLabel {
   ValueType value_{kMaxValue};
 };
 
+DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
+std::ostream& operator<<(std::ostream& out, const RenderLabel& label);
+
+DRAKE_DEPRECATED("2026-03-01", "Use label.to_string(), instead")
+inline std::string to_string(const RenderLabel& label) {
+  return label.to_string();
+}
+
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
@@ -185,9 +193,4 @@ struct hash<drake::geometry::render::RenderLabel> : public drake::DefaultHash {
 
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::render::RenderLabel>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry::render, RenderLabel, x, x.to_string())

@@ -193,6 +193,7 @@ def _build(*, out_dir, temp_dir, modules):
 # test` (e.g. scan for instances of `TemporaryName`, scan for raw C++ types
 # in type signatures, etc).
 if __name__ == "__main__":
+    os.environ["PYTHONPATH"] = ":".join(sys.path)
     main(
         build=_build,
         subdir="pydrake",

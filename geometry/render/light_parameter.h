@@ -1,14 +1,18 @@
 #pragma once
 
-#include <ostream>
 #include <string>
+#include <string_view>
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/rgba.h"
+
+// Remove with deprecation 2026-03-01.
+#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -23,7 +27,10 @@ namespace render {
                   light (like a sun). */
 enum class LightType { kPoint = 1, kSpot = 2, kDirectional = 3 };
 
-/** Writes the LightType as a string. */
+/** Returns the LightType as a string. */
+std::string_view to_string(const LightType& t);
+
+DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
 std::ostream& operator<<(std::ostream& out, const LightType& t);
 
 /** Instantiates a LightType from its string representation.
@@ -39,8 +46,11 @@ LightType light_type_from_string(const std::string& spec);
  moves it with the camera. */
 enum class LightFrame { kWorld = 0, kCamera = 1 };
 
-/** Writes the LightFrame as a string. */
-std::ostream& operator<<(std::ostream& out, const LightFrame& t);
+/** Returns the LightFrame as a string. */
+std::string_view to_string(const LightFrame& f);
+
+DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
+std::ostream& operator<<(std::ostream& out, const LightFrame& f);
 
 /** Instantiates a LightFrame from its string representation.
  @param spec  Must be one of 'world' or 'camera'.
@@ -131,3 +141,8 @@ struct LightParameter {
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::geometry::render, LightType, x,
+                   drake::geometry::render::to_string(x))
+DRAKE_FORMATTER_AS(, drake::geometry::render, LightFrame, x,
+                   drake::geometry::render::to_string(x))

@@ -96,13 +96,16 @@ template <typename T>
   ::testing::AssertionResult failure = ::testing::AssertionFailure();
   const bool has_value = p.HasProperty(group, property);
   if (!has_value) {
-    return failure << "Expected (" << group << ", " << property
-                   << "); not found";
+    return failure << fmt::format("Expected ({}, {}); not found", group,
+                                  property);
   }
   const T value = p.template GetProperty<T>(group, property);
   if (value != expected) {
-    return failure << "Wrong value for (" << group << ", " << property << "):"
-                   << "\n  Expected: " << expected << "\n  Found: " << value;
+    return failure << fmt::format(
+               "Wrong value for ({}, {}):\n"
+               "  Expected: {}\n"
+               "  Found: {}",
+               group, property, expected, value);
   }
   return ::testing::AssertionSuccess();
 }
@@ -153,9 +156,11 @@ TEST_F(ParseProximityPropertiesTest, HydroelasticProperties) {
       auto compliance =
           p.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType);
       if (is_rigid && compliance != HydroelasticType::kRigid) {
-        return failure << "Expected rigid compliance; found " << compliance;
+        return failure << fmt::format("Expected rigid compliance; found {}",
+                                      compliance);
       } else if (is_compliant && compliance != HydroelasticType::kSoft) {
-        return failure << "Expected compliant; found " << compliance;
+        return failure << fmt::format("Expected compliant; found {}",
+                                      compliance);
       }
     } else {
       if (has_compliance_type) {

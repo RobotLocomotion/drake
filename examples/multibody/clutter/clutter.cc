@@ -588,9 +588,6 @@ int do_main() {
   drake::systems::IntegratorBase<double>& integrator =
       simulator->get_mutable_integrator();
   if (FLAGS_simulator_integration_scheme == "cenic") {
-    auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
-    ci.set_plant(&plant);
-
     IcfSolverParameters icf_params;
     icf_params.enable_hessian_reuse = FLAGS_enable_hessian_reuse;
     icf_params.hessian_reuse_target_iterations = FLAGS_k_max;
@@ -599,8 +596,8 @@ int do_main() {
     icf_params.min_tolerance = FLAGS_tolerance;
     icf_params.print_solver_stats = FLAGS_print_solver_stats;
     icf_params.use_dense_algebra = FLAGS_dense_algebra;
+    auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
     ci.set_solver_parameters(icf_params);
-
   } else if (FLAGS_simulator_integration_scheme == "implicit_euler") {
     auto& ie = dynamic_cast<ImplicitEulerIntegrator<double>&>(integrator);
     using JacobianComputationScheme =

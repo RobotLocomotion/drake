@@ -15,19 +15,29 @@ using multibody::JointIndex;
 using multibody::contact_solvers::internal::Bracket;
 using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 
+namespace {
+
+template <typename T>
+const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
+  const auto* const diagram = dynamic_cast<const Diagram<T>*>(&system);
+  if (diagram == nullptr) {
+    throw std::logic_error(
+        fmt::format("CenicIntegrator must be given a Diagram, not a {}",
+                    NiceTypeName::Get(system)));
+  }
+  return diagram->template GetDowncastSubsystemByName<MultibodyPlant>("plant");
+}
+
+}  // namespace
+
 template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
-    : IntegratorBase<T>(system, context) {}
+    : IntegratorBase<T>(system, context), plant_(GetPlantFromDiagram(system)) {}
 
 template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
   using std::isnan;
-  if (plant_ == nullptr) {
-    throw std::runtime_error(
-        "CenicIntegrator: MultibodyPlant not set. You must call "
-        "CenicIntegrator::set_plant() before initialization.");
-  }
 
   // CENIC works best at loose accuracies.
   const double kDefaultAccuracy = 1e-1;
