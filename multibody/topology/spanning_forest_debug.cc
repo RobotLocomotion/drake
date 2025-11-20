@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,36 @@ namespace multibody {
 namespace internal {
 
 // TODO(sherm1) Add more tests. This doesn't check everything.
+
+namespace {
+// This is a helper for checking assemblies. It populates the link_to_level
+// map for each link of an assembly with the distance of that link from the
+// active (most inboard) link of the assembly.
+void RecordLevelOfOutboardLinks(const SpanningForest& forest,
+                                JointIndex previous_joint_index,
+                                LinkIndex inboard_index,
+                                std::map<LinkIndex, int>* link_to_level) {
+  DRAKE_DEMAND(link_to_level->contains(inboard_index));
+  const LinkJointGraph::Link& inboard_link =
+      forest.link_by_index(inboard_index);
+  const int inboard_level = (*link_to_level)[inboard_index];
+  for (const auto& joint_index : inboard_link.joints()) {
+    if (previous_joint_index.is_valid() && joint_index == previous_joint_index)
+      continue;  // Skip the one that got us here.
+    const LinkJointGraph::Joint& joint = forest.joint_by_index(joint_index);
+    if (!joint.is_weld()) continue;
+    if (inboard_link.JointHasMovedToShadowLink(joint_index))
+      continue;  // We'll find it on the shadow's branch.
+    const LinkIndex effective_outboard_link_index =
+        joint.other_effective_link_index(inboard_index);
+    if (link_to_level->contains(effective_outboard_link_index))
+      continue;  // We found a loop.
+    (*link_to_level)[effective_outboard_link_index] = inboard_level + 1;
+    RecordLevelOfOutboardLinks(forest, joint_index,
+                               effective_outboard_link_index, &*link_to_level);
+  }
+}
+}  // namespace
 
 void SpanningForest::SanityCheckForest() const {
   // Should always have a LinkJointGraph backpointer even if empty.
@@ -29,18 +60,20 @@ void SpanningForest::SanityCheckForest() const {
   DRAKE_THROW_UNLESS(!world_mobod.inboard().is_valid());
   DRAKE_THROW_UNLESS(ssize(world_mobod.outboards()) == ssize(trees()));
 
-  /* WeldedMobods groups and LinkComposites are different but in either case
-  there is always a World group or composite, it must come first, and the World
-  Link or Mobod must be listed first in that group or composite. */
+  /* WeldedMobods groups and WeldedLinksAssemblies are different but in either
+  case there is always a World group or assembly, it must come first, and the
+  World Link or Mobod must be listed first in that group or assembly. */
   DRAKE_THROW_UNLESS(world_mobod.welded_mobods_group().has_value());
   DRAKE_THROW_UNLESS(world_mobod.welded_mobods_group() == WeldedMobodsIndex(0));
   DRAKE_THROW_UNLESS(welded_mobods()[0][0] == MobodIndex(0));
 
   const LinkJointGraph::Link& world_link = links(LinkOrdinal(0));
   DRAKE_THROW_UNLESS(world_link.mobod_index() == 0);
-  DRAKE_THROW_UNLESS(world_link.composite().has_value());
-  DRAKE_THROW_UNLESS(world_link.composite() == LinkCompositeIndex(0));
-  DRAKE_THROW_UNLESS(graph().link_composites()[0].links[0] == LinkIndex(0));
+  DRAKE_THROW_UNLESS(world_link.welded_links_assembly().has_value());
+  DRAKE_THROW_UNLESS(world_link.welded_links_assembly() ==
+                     WeldedLinksAssemblyIndex(0));
+  DRAKE_THROW_UNLESS(graph().welded_links_assemblies()[0].links()[0] ==
+                     LinkIndex(0));
 
   for (MobodIndex index(1); index < ssize(mobods()); ++index) {
     const Mobod& mobod = mobods(index);
@@ -61,19 +94,70 @@ void SpanningForest::SanityCheckForest() const {
     }
   }
 
-  /* Check that Links alleged to be in a LinkComposite agree that they are,
-  and that massless LinkComposites are composed only of massless Links. */
-  for (LinkCompositeIndex composite_index(0);
-       composite_index < ssize(graph().link_composites()); ++composite_index) {
-    const LinkJointGraph::LinkComposite& composite =
-        graph().link_composites(composite_index);
+  /* Check that Links alleged to be in a WeldedLinksAssembly agree that they
+  are, and that massless WeldedLinksAssemblies are composed only of massless
+  Links. */
+  for (WeldedLinksAssemblyIndex assembly_index(0);
+       assembly_index < ssize(graph().welded_links_assemblies());
+       ++assembly_index) {
+    const LinkJointGraph::WeldedLinksAssembly& assembly =
+        graph().welded_links_assemblies(assembly_index);
     bool all_links_are_massless = true;
-    for (const LinkIndex& link_index : composite.links) {
+    for (const LinkIndex& link_index : assembly.links()) {
       const LinkJointGraph::Link& link = link_by_index(link_index);
-      DRAKE_THROW_UNLESS(link.composite() == composite_index);
+      DRAKE_THROW_UNLESS(link.welded_links_assembly() == assembly_index);
       if (!link.is_massless()) all_links_are_massless = false;
     }
-    DRAKE_THROW_UNLESS(composite.is_massless == all_links_are_massless);
+    DRAKE_THROW_UNLESS(assembly.is_massless() == all_links_are_massless);
+  }
+
+  /* Check that Links in a WeldedLinksAssembly are listed in inboard->outboard
+  order. Starting with the active (most inboard) link which we'll assign
+  level 0, we'll determine a level for each link equal to its distance
+  (number of edges) from the active link. Then we'll go through each joint
+  in the assembly to see that its inboard link is listed before its outboard
+  link. (If there was a loop within the assembly we might find the levels
+  are the same for a joint's links. In that case the order is arbitrary.) */
+  for (WeldedLinksAssemblyIndex assembly_index(0);
+       assembly_index < ssize(graph().welded_links_assemblies());
+       ++assembly_index) {
+    const LinkJointGraph::WeldedLinksAssembly& assembly =
+        graph().welded_links_assemblies(assembly_index);
+    // Map each link index to its position in the links vector.
+    std::map<LinkIndex, int> link_to_position;
+    for (int i = 0; i < ssize(assembly.links()); ++i)
+      link_to_position[assembly.links()[i]] = i;
+    // Map each link to its level (distance from active link).
+    std::map<LinkIndex, int> link_to_level;
+    const LinkIndex active_link_index = assembly.links().at(0);
+    link_to_level[active_link_index] = 0;
+    RecordLevelOfOutboardLinks(*this, JointIndex(), active_link_index,
+                               &link_to_level);
+
+    // Sanity check of the sanity checker: make sure we built the maps right.
+    for (const LinkIndex& link_index : assembly.links()) {
+      DRAKE_DEMAND(link_to_level.contains(link_index));
+      DRAKE_DEMAND(link_to_position.contains(link_index));
+    }
+
+    // Each joint connects two links. Verify that the inboard link
+    // appears before the outboard link.
+    for (const JointIndex& joint_index : assembly.joints()) {
+      const LinkIndex parent =
+          graph().joint_by_index(joint_index).effective_parent_link_index();
+      const LinkIndex child =
+          graph().joint_by_index(joint_index).effective_child_link_index();
+      const int parent_level = link_to_level[parent];
+      const int parent_pos = link_to_position[parent];
+      const int child_level = link_to_level[child];
+      const int child_pos = link_to_position[child];
+      if (parent_level < child_level) {
+        DRAKE_THROW_UNLESS(parent_pos < child_pos);
+      } else if (parent_level > child_level) {
+        DRAKE_THROW_UNLESS(parent_pos > child_pos);
+      }
+      // If the levels are equal the order is arbitrary.
+    }
   }
 
   /* Check that all the Links and Joints have Mobods that point back to them. */
@@ -117,7 +201,7 @@ void SpanningForest::SanityCheckForest() const {
      - except for the World group, the first entry in each group is a
        Mobod that has a non-weld inboard joint, and all the others are Welds.
      - the first entry in each WeldedMobods group should map to the Link (the
-       "active link") that is listed first in its LinkComposite. */
+       "active link") that is listed first in its WeldedLinksAssembly. */
   for (WeldedMobodsIndex welded_mobods_index(0);
        welded_mobods_index < ssize(welded_mobods()); ++welded_mobods_index) {
     const std::vector<MobodIndex> welded_mobods_group =
@@ -135,11 +219,12 @@ void SpanningForest::SanityCheckForest() const {
       if (is_active_mobod) {
         const LinkOrdinal active_link_ordinal = mobod.link_ordinal();
         const Link& active_link = links(active_link_ordinal);
-        const std::optional<LinkCompositeIndex> link_composite =
-            active_link.composite();
-        DRAKE_THROW_UNLESS(link_composite.has_value());
-        DRAKE_THROW_UNLESS(graph().link_composites(*link_composite).links[0] ==
-                           active_link.index());
+        const std::optional<WeldedLinksAssemblyIndex> link_assembly =
+            active_link.welded_links_assembly();
+        DRAKE_THROW_UNLESS(link_assembly.has_value());
+        DRAKE_THROW_UNLESS(
+            graph().welded_links_assemblies(*link_assembly).links()[0] ==
+            active_link.index());
       }
     }
   }
