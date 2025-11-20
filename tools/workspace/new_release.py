@@ -522,12 +522,14 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         warn("")
 
     # Finalize the result.
-    message = f"Upgrade {workspace_name} to latest"
     if new_commit:
         if _smells_like_a_git_commit(new_commit):
-            message += " commit"
+            message = f"Update dependency {workspace_name} to latest commit"
         else:
-            message += f" release {new_commit}"
+            release = new_commit.lstrip("v")
+            message = f"Update dependency {workspace_name} to {release}"
+    else:
+        message = f"Update {workspace_name} to latest"
 
     return UpgradeResult(True, can_commit, modified_paths, message)
 
