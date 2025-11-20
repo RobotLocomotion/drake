@@ -343,7 +343,6 @@ def run_simulation(
     ApplySimulatorConfig(config, simulator)
     if config.integration_scheme == "cenic":
         ci = simulator.get_mutable_integrator()
-        ci.set_plant(plant)
 
         # Make sure we can set ICF parameters
         icf_params = IcfSolverParameters()
