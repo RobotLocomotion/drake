@@ -311,6 +311,7 @@ def _update(args, notes_filename, gh, drake, target_commit):
             "breaking change": "breaking-changes",
             "newly deprecated": "newly-deprecated",
             "removal of deprecated": "deprecated-removed",
+            "announce": "announcements",
         }
         primary_used = False
         for severity in severities:
