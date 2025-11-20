@@ -138,6 +138,7 @@ drake_cc_library(
         ":icf_data",
         "//common:default_scalars",
         "//common:essential",
+        "//common:name_value",
         "//math:gradient",
         "//math:linear_solve",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
