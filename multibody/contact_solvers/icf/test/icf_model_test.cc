@@ -73,7 +73,12 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   }
 
   // We use non-identity Jacobians to stress-test the algebra.
-  params->body_is_floating = {0, 0, 1, 0};
+  if (single_clique) {
+    // Floating bodies doen't make sense in a single-clique model.
+    params->body_is_floating = {0, 0, 0, 0};
+  } else {
+    params->body_is_floating = {0, 0, 1, 0};
+  }
   params->body_mass = {1.0e20, 0.3, 2.3, 1.5};  // First body is the world.
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
   const Matrix6<T> J_WB1 = 1.5 * J_WB0 + 0.1 * Matrix6<T>::Identity();
