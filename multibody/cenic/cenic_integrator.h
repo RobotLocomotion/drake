@@ -217,6 +217,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   IcfModel<T> model_at_xh_;  // for the second half-step (at t + h/2)
   IcfData<T> data_;          // reusable data for the solver
 
+  // Flags indicating whether the plant is connected to external systems that
+  // should be linearized.
+  bool has_actuators_{false};
+  bool has_external_forces_{false};
+
   // Track whether solves are initialized at the same time as a previous
   // rejected step, to enable model (e.g., constraints, geometry) reuse.
   T time_at_last_solve_{NAN};

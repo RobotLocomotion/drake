@@ -84,6 +84,15 @@ void CenicIntegrator<T>::DoInitialize() {
   x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
   z_dot_ = this->get_system().AllocateTimeDerivatives();
+
+  // Check whether the plant is connected to external systems that should be
+  // linearized.
+  has_actuators_ = plant().num_actuators() > 0 &&
+                   plant().get_actuation_input_port().HasValue(plant_context);
+  has_external_forces_ =
+      plant().get_applied_generalized_force_input_port().HasValue(
+          plant_context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
 }
 
 template <typename T>
@@ -101,13 +110,6 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   const bool previous_step_was_rejected = (t0 == time_at_last_solve_);
   time_at_last_solve_ = t0;
 
-  // TODO(vincekurtz): set these flags at initialization
-  bool has_actuators = plant().num_actuators() > 0;
-  bool has_external_forces =
-      plant().get_applied_generalized_force_input_port().HasValue(
-          plant_context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
-
   // Linearize any external systems (e.g., controllers, external force elements)
   //     τ = actuation_feedback + external_feedback,
   //       = B u(x) + τₑₓₜ(x),
@@ -117,14 +119,14 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   LinearFeedbackGains<T>& actuation_feedback = scratch_.actuation_feedback;
   LinearFeedbackGains<T>& external_feedback = scratch_.external_feedback;
 
-  if (!previous_step_was_rejected && (has_actuators || has_external_forces)) {
+  if (!previous_step_was_rejected && (has_actuators_ || has_external_forces_)) {
     LinearizeExternalSystem(h, &actuation_feedback, &external_feedback);
   }
   std::optional<LinearFeedbackGains<T>> actuation_feedback_opt =
-      has_actuators ? std::make_optional(actuation_feedback) : std::nullopt;
+      has_actuators_ ? std::make_optional(actuation_feedback) : std::nullopt;
   std::optional<LinearFeedbackGains<T>> external_feedback_opt =
-      has_external_forces ? std::make_optional(external_feedback)
-                          : std::nullopt;
+      has_external_forces_ ? std::make_optional(external_feedback)
+                           : std::nullopt;
 
   // Set up the convex ICF model ℓ(v; q₀, v₀, h) for the full step.
   if (previous_step_was_rejected) {
