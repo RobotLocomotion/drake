@@ -197,6 +197,9 @@ def abortBuildIfNewerQueued() {
 }
 
 
+// WIP: REMOVE.
+abortBuildIfNewerQueued()
+
 // Check if CI should be deferred for this pull request based on the label.
 // CHANGE_ID should always be defined in this file, as it corresponds to
 // pull requests, but we should check anyways.
