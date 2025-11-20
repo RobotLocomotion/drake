@@ -296,6 +296,8 @@ the email address associated with your github account.
         server_name _;
         location ~ /(7[0-9][0-9][0-9])/(.*) {
           proxy_pass http://127.0.0.1:$1/$2;
+          proxy_set_header Host $host;
+          proxy_http_version 1.1;
         }
         proxy_read_timeout 600;
         proxy_connect_timeout 600;
