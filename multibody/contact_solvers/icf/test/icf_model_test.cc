@@ -227,8 +227,8 @@ GTEST_TEST(IcfModel, CalcGradients) {
 
   model.CalcData(v, &data);
 
-  const VectorXd cost_derivatives = data.cache().cost.derivatives();
-  const VectorXd gradient_value = math::ExtractValue(data.cache().gradient);
+  const VectorXd cost_derivatives = data.cost().derivatives();
+  const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 8 * kEpsilon,
                               MatrixCompareType::relative));
@@ -253,7 +253,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   math::InitializeAutoDiff(v_values, &v);
 
   model.CalcData(v, &data);
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
 
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
@@ -267,7 +267,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   model.CalcData(v, &data);
   model.UpdateHessian(data, hessian.get());
 
-  gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  gradient_derivatives = math::ExtractGradient(data.gradient());
   hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 8 * kEpsilon,
@@ -315,10 +315,9 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   EXPECT_EQ(hessian_multiple->block_cols(), 3);
 
   // Cost, gradient, and Hessian should be the same regardless of sparsity.
-  EXPECT_NEAR(data_single.cache().cost, data_multiple.cache().cost, kEpsilon);
-  EXPECT_TRUE(CompareMatrices(data_single.cache().gradient,
-                              data_multiple.cache().gradient, kEpsilon,
-                              MatrixCompareType::relative));
+  EXPECT_NEAR(data_single.cost(), data_multiple.cost(), kEpsilon);
+  EXPECT_TRUE(CompareMatrices(data_single.gradient(), data_multiple.gradient(),
+                              kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(H_single, H_multiple, kEpsilon,
                               MatrixCompareType::relative));
 }
@@ -354,10 +353,10 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
 
     const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
     model.CalcData(v_alpha, &scratch);
-    const double cost_expected = scratch.cache().cost.value();
-    const double momentum_cost_expected = scratch.cache().momentum_cost.value();
-    const double dcost_expected = scratch.cache().cost.derivatives()[0];
-    const VectorXd w_times_H = math::ExtractGradient(scratch.cache().gradient);
+    const double cost_expected = scratch.cost().value();
+    const double momentum_cost_expected = scratch.momentum_cost().value();
+    const double dcost_expected = scratch.cost().derivatives()[0];
+    const VectorXd w_times_H = math::ExtractGradient(scratch.gradient());
     const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
 
     // Verify pre-computed terms are correct.
@@ -414,10 +413,9 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   model_new.CalcData(v, &data_new);
 
   // Cost and gradient should be the same.
-  EXPECT_NEAR(data_original.cache().cost, data_new.cache().cost, 8 * kEpsilon);
-  EXPECT_TRUE(CompareMatrices(data_original.cache().gradient,
-                              data_new.cache().gradient, 8 * kEpsilon,
-                              MatrixCompareType::relative));
+  EXPECT_NEAR(data_original.cost(), data_new.cost(), 8 * kEpsilon);
+  EXPECT_TRUE(CompareMatrices(data_original.gradient(), data_new.gradient(),
+                              8 * kEpsilon, MatrixCompareType::relative));
 
   // Hessians should be the same.
   auto hessian_original = model_original.MakeHessian(data_original);

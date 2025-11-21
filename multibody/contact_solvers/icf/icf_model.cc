@@ -123,23 +123,20 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }
 
 template <typename T>
-void IcfModel<T>::CalcMomentumTerms(const IcfData<T>& data,
-                                    typename IcfData<T>::Cache* cache) const {
-  // Data.
-  const VectorX<T>& v = data.v();
-  VectorX<T>& Av = cache->Av;
-
-  // Scratch data.
-  VectorX<T>& Av_minus_r = data.scratch().Av_minus_r;
+void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
+                                    IcfData<T>* data) const {
+  DRAKE_ASSERT(v.size() == num_velocities());
+  VectorX<T>& Av = data->mutable_Av();
+  VectorX<T>& Av_minus_r = data->scratch().Av_minus_r;
   DRAKE_ASSERT(Av_minus_r.size() == num_velocities());
 
   // Cost.
   MultiplyByDynamicsMatrix(v, &Av);
   Av_minus_r = 0.5 * Av - r_;
-  cache->momentum_cost = v.dot(Av_minus_r);
+  data->set_momentum_cost(v.dot(Av_minus_r));
 
   // Gradient.
-  cache->gradient = Av - r_;
+  data->mutable_gradient() = Av - r_;
 }
 
 template <typename T>
@@ -174,18 +171,18 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
 template <typename T>
 void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   // Set generalized velocities v
-  data->v() = v;
+  data->mutable_v() = v;
 
   // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
-  typename IcfData<T>::Cache& cache = data->cache();
-  CalcMomentumTerms(*data, &cache);
+  CalcMomentumTerms(v, data);
 
   // Compute spatial velocities for all bodies.
-  CalcBodySpatialVelocities(v, &cache.spatial_velocities);
+  EigenPool<Vector6<T>>& V_WB = data->mutable_V_WB();
+  CalcBodySpatialVelocities(v, &V_WB);
 
   // TODO(#23769): Add constraint contributions as well. For now all we have is
   // the unconstrained momentum contribution.
-  cache.cost = cache.momentum_cost;
+  data->set_cost(data->momentum_cost());
 }
 
 template <typename T>
@@ -246,7 +243,7 @@ void IcfModel<T>::UpdateSearchDirection(
   search_data->a = tmp.dot(w);        // a = ‖w‖²
   const T vAw = v.dot(tmp);           // vAw = vᵀ⋅A⋅w
   search_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
-  search_data->c = data.cache().momentum_cost;
+  search_data->c = data.momentum_cost();
 
   search_data->w = w;  // it is now safe to overwrite with the desired value.
 

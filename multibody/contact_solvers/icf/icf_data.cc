@@ -7,13 +7,6 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-void IcfData<T>::Cache::Resize(int num_bodies, int num_velocities) {
-  Av.resize(num_velocities);
-  gradient.resize(num_velocities);
-  spatial_velocities.Resize(num_bodies, 6, 1);
-}
-
-template <typename T>
 void IcfData<T>::Scratch::Clear() {
   V_WB_alpha.Clear();
   H_BB_pool.Clear();
@@ -45,7 +38,9 @@ template <typename T>
 void IcfData<T>::Resize(int num_bodies, int num_velocities,
                         int max_clique_size) {
   v_.resize(num_velocities);
-  cache_.Resize(num_bodies, num_velocities);
+  V_WB_.Resize(num_bodies, 6, 1);
+  Av_.resize(num_velocities);
+  gradient_.resize(num_velocities);
   scratch_.Resize(num_bodies, num_velocities, max_clique_size);
 }
 

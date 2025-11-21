@@ -38,20 +38,6 @@ class IcfData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
-  /* Cache holds quantities that are computed from v, so they can be reused. */
-  struct Cache {
-    void Resize(int num_bodies, int num_velocities);
-
-    T momentum_cost{0};
-    T constraints_cost{0};
-    T cost;
-    VectorX<T> Av;        // = A * v.
-    VectorX<T> gradient;  // Of size num_velocities().
-
-    // Rigid body spatial velocities, V_WB.
-    EigenPool<Vector6<T>> spatial_velocities;
-  };
-
   /* Struct to store pre-allocated scratch space. Unlike the cache, this scratch
   space is for intermediate computations, and is often cleared or overwritten as
   needed. */
@@ -96,19 +82,45 @@ class IcfData {
 
   /* Returns the generalized velocity vector v. */
   const VectorX<T>& v() const { return v_; }
-  VectorX<T>& v() { return v_; }
+  VectorX<T>& mutable_v() { return v_; }
 
-  /* Returns a cache of intermediate quanities computed from v. */
-  const Cache& cache() const { return cache_; }
-  Cache& cache() { return cache_; }
+  /* Returns the pool of rigid body spatial velocities, V_WB. */
+  const EigenPool<Vector6<T>>& V_WB() const { return V_WB_; }
+  EigenPool<Vector6<T>>& mutable_V_WB() { return V_WB_; }
+
+  /* Returns the linearized dynamics matrix times velocities, A⋅v. */
+  const VectorX<T>& Av() const { return Av_; }
+  VectorX<T>& mutable_Av() { return Av_; }
+
+  /* Returns the momentum cost 0.5 vᵀA v - rᵀv. */
+  const T& momentum_cost() const { return momentum_cost_; }
+  void set_momentum_cost(const T& cost) { momentum_cost_ = cost; }
+
+  /* Returns the constraints cost ℓᶜ(v). */
+  const T& constraints_cost() const { return constraints_cost_; }
+  void set_constraints_cost(const T& cost) { constraints_cost_ = cost; }
+
+  /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v). */
+  const T& cost() const { return cost_; }
+  void set_cost(const T& cost) { cost_ = cost; }
+
+  /* Returns the total gradient ∇ℓ(v). */
+  const VectorX<T>& gradient() const { return gradient_; }
+  VectorX<T>& mutable_gradient() { return gradient_; }
 
   /* Returns a mutable scratch space for intermediate computations. We allow
   IcfModel to write on the scratch as needed. */
   Scratch& scratch() const { return scratch_; }
 
  private:
-  VectorX<T> v_;
-  Cache cache_;
+  VectorX<T> v_;                // Generalized velocities v
+  EigenPool<Vector6<T>> V_WB_;  // Rigid body spatial velocities V_WB
+  VectorX<T> Av_;               // A⋅v
+  T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
+  T constraints_cost_{0};       // ℓᶜ(v)
+  T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
+  VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
+
   mutable Scratch scratch_;
 };
 

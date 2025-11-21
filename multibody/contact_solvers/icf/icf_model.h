@@ -296,8 +296,7 @@ class IcfModel {
 
   /* Computes the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
   relate to momentum only (no constraints). */
-  void CalcMomentumTerms(const IcfData<T>& data,
-                         typename IcfData<T>::Cache* cache) const;
+  void CalcMomentumTerms(const VectorX<T>& v, IcfData<T>* data) const;
 
   /* Computes spatial velocities V_WB for all bodies, given generalized
   velocities v. */
