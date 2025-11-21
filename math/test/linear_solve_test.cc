@@ -9,6 +9,34 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
+#if EIGEN_VERSION_AT_LEAST(5, 0, 1)
+// Eigen 5.0.1's implementation of fixed-size AutoDiff doesn't compile vs
+// HouseholderQR's linear solver. We need to shim in overloads for sqrt
+// and operator+ whose return types are more suitable.
+namespace Eigen {
+template <typename EigenFixedSizeMatrix>
+  requires(EigenFixedSizeMatrix::SizeAtCompileTime > 0)
+auto sqrt(const Eigen::AutoDiffScalar<EigenFixedSizeMatrix>& x) {
+  using PlainDerivativeType =
+      Eigen::Matrix<typename EigenFixedSizeMatrix::Scalar,
+                    EigenFixedSizeMatrix::RowsAtCompileTime,
+                    EigenFixedSizeMatrix::ColsAtCompileTime>;
+  Eigen::AutoDiffScalar<PlainDerivativeType> result = x;
+  const double value = std::sqrt(x.value());
+  result.value() = value;
+  result.derivatives() *= 0.5 / value;
+  return result;
+}
+auto operator+(const Eigen::AutoDiffScalar<Eigen::Vector3d>& a,
+               const Eigen::AutoDiffScalar<Eigen::Vector3d>& b) {
+  Eigen::AutoDiffScalar<Eigen::Vector3d> result = a;
+  result.value() += b.value();
+  result.derivatives() += b.derivatives();
+  return result;
+}
+}  // namespace Eigen
+#endif  // EIGEN_VERSION_AT_LEAST
+
 namespace drake {
 namespace math {
 namespace {
