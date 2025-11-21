@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/ad/derivatives_xpr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -7,7 +8,7 @@ namespace drake {
 namespace ad {
 namespace internal {
 
-/* A vector of partial derivatives, for use with Drake's AutoDiff.
+/* A vector of partial derivatives, optimized for use with Drake's AutoDiff.
 
 Partials are dynamically sized, and can have size() == 0.
 
@@ -23,7 +24,13 @@ never returns back to being zero-sized (unless the Partials is moved-from).
 In particular, note that the result of a binary operation takes on the size from
 either operand, e.g., foo.Add(bar) with foo.size() == 0 and bar.size() == 4 will
 will result in foo.size() == 4 after the addition, and that's true even if bar's
-vector was all zeros. */
+vector was all zeros.
+
+A large portion of this class definition appears inline, because AutoDiff is
+used heavily in inner loops. The general approach is that simple word-sized
+sets, gets, and branches appear inline; functions that do more than a couple
+branches or touch more than a couple words (and all functions that allocate)
+are out-of-line (in the cc file). */
 class Partials {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Partials);
@@ -42,7 +49,7 @@ class Partials {
   ~Partials() = default;
 
   /* Returns the size of this vector. */
-  int size() const { return derivatives_.size(); }
+  int size() const { return storage_.size(); }
 
   /* Updates `this` to be the same size as `other`.
   If `this` and `other` are already the same size then does nothing.
@@ -53,34 +60,34 @@ class Partials {
   void MatchSizeOf(const Partials& other);
 
   /* Set this to zero. */
-  void SetZero() { derivatives_.setZero(); }
+  void SetZero() { coeff_ = 0.0; }
 
   /* Scales this vector by the given amount. */
-  void Mul(double factor) { derivatives_ *= factor; }
+  void Mul(double factor) { coeff_ *= factor; }
 
   /* Scales this vector by the reciprocal of the given amount. */
-  void Div(double factor) { derivatives_ /= factor; }
+  void Div(double factor) { coeff_ /= factor; }
 
   /* Adds `other` into `this`. */
-  void Add(const Partials& other);
+  void Add(const Partials& other) { AddScaled(1.0, other); }
 
   /* Adds `scale * other` into `this`. */
   void AddScaled(double scale, const Partials& other);
 
-  /* Returns the underlying storage vector (readonly).
-  TODO(jwnimmer-tri) Use a more Xpr-like return type. By "Xpr", we mean what
-  Eigen calls an XprType, e.g., something like Eigen::CwiseBinaryOp. */
-  const Eigen::VectorXd& make_const_xpr() const { return derivatives_; }
+  /* Returns an Eigen-compatible view into this vector. */
+  ad::DerivativesConstXpr make_const_xpr() const;
 
-  /* Returns the underlying storage vector (mutable). */
-  Eigen::VectorXd& get_raw_storage_mutable() { return derivatives_; }
+  /* Returns the underlying storage vector (mutable). This may involve O(size)
+  multiplications. */
+  Eigen::VectorXd& GetRawStorageMutable();
 
  private:
   void ThrowIfDifferentSize(const Partials& other);
 
-  // TODO(jwnimmer-tri) Replace this implementation with a more efficient
-  // representation.
-  Eigen::VectorXd derivatives_;
+  // Our effective value is `coeff_ * storage_`; we store them separately so
+  // that re-scaling is fast (we can just scale the coeff).
+  double coeff_{0.0};
+  Eigen::VectorXd storage_;
 };
 
 }  // namespace internal
