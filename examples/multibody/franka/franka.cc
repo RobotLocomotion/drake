@@ -1,5 +1,4 @@
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -264,7 +263,7 @@ int do_main() {
 
   simulator.Initialize();
   if (config.visualization_config.has_value()) {
-    std::cout << "Press any key to continue ...\n";
+    fmt::print("Press any key to continue ...\n");
     getchar();
   }
 
@@ -278,7 +277,7 @@ int do_main() {
   clock::time_point sim_end_time = clock::now();
   const double sim_time =
       std::chrono::duration<double>(sim_end_time - sim_start_time).count();
-  std::cout << fmt::format("AdvanceTo() time [sec]: {}\n", sim_time);
+  fmt::print("AdvanceTo() time [sec]: {}\n", sim_time);
   meshcat->StopRecording();
   meshcat->PublishRecording();
 
@@ -286,7 +285,7 @@ int do_main() {
 
   // Wait for user input again b/c meshcat is too slow to publish the recording.
   if (config.visualization_config.has_value()) {
-    std::cout << "Press any key to quit ...\n";
+    fmt::print("Press any key to quit ...\n");
     getchar();
   }
 

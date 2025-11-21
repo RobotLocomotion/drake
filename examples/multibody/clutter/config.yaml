@@ -16,8 +16,8 @@ config:
     # If time_step = 0, the plant is modeled as a continuous system and no
     # contact forces are displayed.
     time_step: 0.0
-    # Use hydro contact. (Alternatively, you can use "point".)
-    contact_model: "hydroelastic"
+    # Use point contact. (Alternatively, you can use "hydroelastic".)
+    contact_model: "point"
     # Stiction tolerance [m/s].
     stiction_tolerance: 1.0e-4
     # Discrete contact solver. Options are: "tamsi", "sap", "lagged", "similar".
@@ -27,16 +27,26 @@ config:
   # Config for `class SceneGraph`.
   scene_graph_config:
     default_proximity_properties:
-      # For hydro contact.
-      compliance_type: "compliant"
-      resolution_hint: 0.01
+      # N.B. Certain objects will opt-in to "rigid" on a one-by-one basis.
+      compliance_type: compliant
+      # Material stiffness [Pa].
+      hydroelastic_modulus: 1.0e7
+      # Resolution hint for the spheres [m].
+      resolution_hint: 0.02
+      # Friction [unitless].
+      dynamic_friction: 0.5
+      static_friction: 0.5
+      # Hunt & Crossley dissipation [s/m].
+      hunt_crossley_dissipation: 10.0
+      # Dissipation time constant [s].
+      relaxation_time: 0.01
+      # Material stiffness [N/m].
+      point_stiffness: 1.0e5
   # Adds visualization; to disable it, delete this entire stanza.
   visualization_config:
     publish_period: .inf
     # Whether to visualize forces (true) or not (false).
-    publish_contacts: true
-    # Whether to visualize collision geometry (true) or not (false).
-    publish_proximity: false
+    publish_contacts: false
   # Config for `class IcfSolver`. Only used when integration_scheme is "cenic".
   icf_solver_config:
     # Main solver tolerance.
@@ -53,14 +63,32 @@ config:
     alpha_max: 1.0
     # Whether to print statistics to the console.
     print_solver_stats: false
-  # Config for the arm's controller.
-  controller_config:
-    # Controller type: "pid", "inverse_dynamics", or "joint_stiffness".
-    # When plant_config.time_step > 0, only "pid" is valid.
-    type: "joint_stiffness"
-    # Controller gains (proportional, integral, derivative).
-    kp: 1e3
-    ki: 0
-    kd: 1e3
-  # Whether to include a box to hold.
-  manipuland: true
+  clutter_config:
+    # Physical parameters.
+    # - The density of all objects, in kg/m³.
+    density: 1000.0
+    # Contact geometry parameters.
+    # - Emulate multicontact by adding spheres to the faces of box geometries.
+    emulate_box_multicontact: true
+    # - Multi-contact emulation. We place num_sphere x num_spheres_per_face on
+    #   each box face, when emulate_box_multicontact = true.
+    num_spheres_per_face: 3
+    # - Enable box vs. box contact.
+    enable_box_box_collision: false
+    # - Adds collision points at the corners of each box.
+    add_box_corners: false
+    # Scenario parameters.
+    # - Number of piles (1-4).
+    num_piles: 4 
+    # - Number of object per pile.
+    objects_per_pile: 5
+    # - Initial distance between objects in the pile.
+    dz: 0.15
+    # - Multiplicative factor to generate the pile.
+    scale_factor: 1.0
+    # Adds wall of a sink model.
+    add_sink_walls: true
+    # - Make some of the objects boxes.
+    enable_boxes: true
+    # - Use slight random offsets in initial positions.
+    random_offsets: true
