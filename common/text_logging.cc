@@ -43,6 +43,7 @@ logging::logger* log() {
   return g_logger.access().get();
 }
 
+// Move into text_logging_spdlog.cc upon 2026-03-01 deprecation removal.
 logging::sink* logging::get_dist_sink() {
   // Extract the dist_sink_mt from Drake's logger instance.
   auto* sink = log()->sinks().empty() ? nullptr : log()->sinks().front().get();
@@ -133,6 +134,7 @@ logging::logger* log() {
   return &g_logger;
 }
 
+// Delete upon 2026-03-01 deprecation removal.
 logging::sink* logging::get_dist_sink() {
   // An empty sink instance.
   static logging::sink g_sink;
