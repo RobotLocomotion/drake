@@ -14,7 +14,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -44,7 +43,6 @@ using drake::systems::Simulator;
 using drake::systems::WitnessFunction;
 using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using StatelessSystem = drake::systems::analysis_test::StatelessSystem<double>;
-using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
 using std::complex;
 using testing::ElementsAre;
@@ -1528,7 +1526,6 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
 // in turn is a Diagram composed of primitives such as Gain and Adder systems.
 GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   typedef complex<double> complexd;
-  typedef AutoDiffScalar<Vector1d> SingleVarAutoDiff;
 
   // SpringMassSystem parameters.
   const double kSpring = 300.0;  // N/m
@@ -1591,16 +1588,15 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   double C2 = (zeta * w0 * x0 + v0) / wd;
 
   // 3) Computes analytical solution at time final_time.
-  // Velocity is computed using AutoDiffScalar.
+  // Velocity is computed using AutoDiff.
   double final_time = 0.2;
   double x_final{}, v_final{};
   {
     // At the end of this local scope x_final and v_final are properly
     // initialized.
-    // Auxiliary AutoDiffScalar variables are confined to this local scope so
+    // Auxiliary AutoDiff variables are confined to this local scope so
     // that we don't pollute the test's scope with them.
-    SingleVarAutoDiff time(final_time);
-    time.derivatives() << 1.0;
+    AutoDiffXd time(final_time, Vector1d{1.0});
     auto x =
         exp(-zeta * w0 * time) * (C1 * cos(wd * time) + C2 * sin(wd * time));
     x_final = x.value();
