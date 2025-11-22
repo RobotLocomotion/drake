@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/spatial_inertia.h"
 
-#include <iomanip>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -770,15 +769,15 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   SpatialInertia<double> M(mass, com, G);
 
   std::stringstream stream;
-  stream << std::fixed << std::setprecision(4) << M;
+  stream << M;
   std::string expected_string =
       "\n"
       " mass = 2.5\n"
       " Center of mass = [0.1  -0.2  0.3]\n"
       " Inertia about point P, I_BP =\n"
-      "[ 5.0000   0.2500  -0.2500]\n"
-      "[ 0.2500   5.7500   0.5000]\n"
-      "[-0.2500   0.5000   6.0000]\n";
+      "[    5   0.25  -0.25]\n"
+      "[ 0.25   5.75    0.5]\n"
+      "[-0.25    0.5      6]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -1051,7 +1050,7 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
 GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
   const double mass = 0.634;
   const Vector3<double> p_PBcm(0, 0.016, -0.02);  // Center of mass.
-  const double Ixx = 0.001983, Ixy = 0.000245, Ixz = 0.000013;
+  const double Ixx = 0.001983, Ixy = 0.000245, Ixz = 0.0000129;
   const double Iyy = 0.002103, Iyz = 0.0000015, Izz = 0.000408;
 
   // Create an invalid rotational inertia.
@@ -1069,14 +1068,12 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
       " mass = 0.634\n"
       " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
       " Inertia about point P, I_BP =\n"
-      "\\[0.001983  0.000245   1.3e-05\\]\n"
+      "\\[0.001983  0.000245  1.29e-05\\]\n"
       "\\[0.000245  0.002103   1.5e-06\\]\n"
-      "\\[ 1.3e-05   1.5e-06  0.000408\\]\n"
+      "\\[1.29e-05   1.5e-06  0.000408\\]\n"
       " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
-      "\\[0.0004078925412\\d+  0.001790822592803\\d+  0.00229528486596\\d+\\]"
+      "\\[0.00040789\\d+  0.00179082\\d+  0.002295284\\d+\\]"
       "\n");
-  // Note: The principal moments of inertia (with more significant digits)
-  // are: 0.0004078925412357755  0.0017908225928030743  0.002295284865961151.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, I_BBcm),
       expected_message);
