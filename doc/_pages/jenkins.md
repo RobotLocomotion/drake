@@ -27,7 +27,9 @@ For example:
 A list of Jenkins bot commands for experimental builds that covers the full
 set of continuous and nightly production jobs is available
 [here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental.txt).
-Both provisioned and unprovisioned jobs are listed.
+Both provisioned and unprovisioned jobs are listed. A subset of this list which
+excludes the jobs that normally run pre-merge is available
+[here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental-extra.txt).
 
 To rerun all regular builds on an open pull request (if the previous build(s)
 failed for various reasons), comment:
