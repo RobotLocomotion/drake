@@ -896,7 +896,8 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
 namespace {
 HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
                             Eigen::VectorXd* face_center_distance,
-                            std::vector<bool>* face_moved_in, int* i,
+                            std::vector<bool>* face_moved_in,
+                            std::vector<VectorXd>* witness_points, int* i,
                             const std::vector<int>& i_cull) {
   DRAKE_DEMAND(ssize(*face_moved_in) >= *i + 1);
   (*face_moved_in)[*i] = true;
@@ -917,11 +918,14 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   VectorXd b_new(i_not_cull.size());
   std::vector<bool> face_moved_in_new;
   face_moved_in_new.reserve(i_not_cull.size());
+  std::vector<VectorXd> witness_points_new;
+  witness_points_new.reserve(i_not_cull.size());
   VectorXd face_center_distance_new(i_not_cull.size());
   for (int j = 0; j < ssize(i_not_cull); ++j) {
     A_new.row(j) = A.row(i_not_cull[j]);
     b_new(j) = b(i_not_cull[j]);
     face_moved_in_new.push_back((*face_moved_in)[i_not_cull[j]]);
+    witness_points_new.push_back((*witness_points)[i_not_cull[j]]);
     face_center_distance_new[j] = (*face_center_distance)[i_not_cull[j]];
   }
   // The face index needs to reduce because faces at lower indices have been
@@ -931,6 +935,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
   HPolyhedron inbody = HPolyhedron(A_new, b_new);
   *face_center_distance = face_center_distance_new;
   *face_moved_in = face_moved_in_new;
+  *witness_points = witness_points_new;
 
   return inbody;
 }
@@ -976,6 +981,79 @@ bool CheckIntersectionAndPointContainmentConstraints(
   }
   return true;
 }
+
+std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
+    const HPolyhedron& polytope, const std::set<int>& inds_to_not_check) {
+  // This method is based on FindRedundant, but adapted, for use with
+  // `SimplifyByIncrementalFaceTranslation`, to optionally take
+  // `inds_to_not_check`, which dictates certain faces to skip.  This method is
+  // also adapted to to return `witness_points`, which contains a point that
+  // certifies that each non-redundant face is non-redundant.
+  std::set<int> redundant_indices;
+  std::vector<VectorXd> witness_points;
+  if (polytope.A().rows() == 0) {
+    // No inequalities so nothing is redundant;
+    return std::pair(redundant_indices, witness_points);
+  }
+  if (polytope.A().cols() == 0) {
+    // All inequalities are redundant in a 0-dimensional space.
+    for (int i = 0; i < polytope.A().rows(); ++i) {
+      redundant_indices.insert(i);
+    }
+    return std::pair(redundant_indices, witness_points);
+  }
+  MathematicalProgram prog;
+  const int num_vars = polytope.A().cols();
+  const int num_cons = polytope.A().rows();
+  const auto x = prog.NewContinuousVariables(num_vars, "x");
+  std::vector<Binding<LinearConstraint>> bindings_vec;
+  for (int i = 0; i < num_cons; ++i) {
+    bindings_vec.push_back(prog.AddLinearConstraint(
+        polytope.A().row(i), -std::numeric_limits<double>::infinity(),
+        polytope.b()[i], x));
+  }
+  auto cost_binding = prog.AddLinearCost(-polytope.A().row(0), 0, x);
+  witness_points.reserve(num_cons);
+  const double kHyperplaneShift = 0.01;
+  const VectorXd hyperplane_shift_vec = VectorXd::Constant(1, kHyperplaneShift);
+  for (int i = 0; i < num_cons; ++i) {
+    if (inds_to_not_check.contains(i)) {
+      // Use zero as a placeholder for witness points that don't need to be
+      // calculated
+      witness_points.push_back(Eigen::VectorXd::Zero(num_vars));
+    } else {
+      // Instead of removing the constraint like FindRedundant does, shift the
+      // hyperplane slightly outward, to ensure that the polytope stays bounded
+      // and we get a valid witness point.
+      bindings_vec[i].evaluator()->UpdateUpperBound(
+          bindings_vec[i].evaluator()->upper_bound() + hyperplane_shift_vec);
+      cost_binding.evaluator()->UpdateCoefficients(-polytope.A().row(i), 0);
+      const auto result = Solve(prog);
+      if ((result.is_success() &&
+           -result.get_optimal_cost() > polytope.b()[i]) ||
+          !result.is_success()) {
+        // Bring back the constraint, it is not redundant.
+        bindings_vec[i].evaluator()->UpdateUpperBound(
+            bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
+        if (result.is_success()) {
+          witness_points.push_back(result.GetSolution(x));
+        } else {
+          // Use a point at infinity so that the witness point will be
+          // re-calculated at the next check
+          witness_points.push_back(VectorXd::Constant(num_vars, kInf));
+        }
+      } else {
+        prog.RemoveConstraint(bindings_vec.at(i));
+        redundant_indices.insert(i);
+        // Use zero as a placeholder for witness points that will be removed
+        // with their corresponding redundant faces
+        witness_points.push_back(Eigen::VectorXd::Zero(num_vars));
+      }
+    }
+  }
+  return std::pair(redundant_indices, witness_points);
+}
+
 }  // namespace
 
 HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
@@ -988,22 +1066,48 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   DRAKE_THROW_UNLESS(max_iterations > 0);
   DRAKE_THROW_UNLESS(intersection_padding >= 0);
 
-  const HPolyhedron circumbody = this->ReduceInequalities(0);
-  MatrixXd circumbody_A = circumbody.A();
-  VectorXd circumbody_b = circumbody.b();
-  DRAKE_THROW_UNLESS(!circumbody.IsEmpty());
-  DRAKE_THROW_UNLESS(circumbody.IsBounded());
+  DRAKE_THROW_UNLESS(!IsEmpty());
+  DRAKE_THROW_UNLESS(IsBounded());
 
   for (int i = 0; i < points_to_contain.cols(); ++i) {
-    DRAKE_DEMAND(circumbody.PointInSet(points_to_contain.col(i)));
+    DRAKE_DEMAND(PointInSet(points_to_contain.col(i)));
   }
 
+  MatrixXd A_initial = A_;
+  VectorXd b_initial = b_;
+
   // Ensure rows are normalized.
-  for (int i = 0; i < circumbody_A.rows(); ++i) {
-    const double initial_row_norm = circumbody_A.row(i).norm();
-    circumbody_A.row(i) /= initial_row_norm;
-    circumbody_b(i) /= initial_row_norm;
+  for (int i = 0; i < A_initial.rows(); ++i) {
+    const double initial_row_norm = A_initial.row(i).norm();
+    A_initial.row(i) /= initial_row_norm;
+    b_initial(i) /= initial_row_norm;
   }
+
+  // Circumbody with normalized faces, before removing initially redundant
+  // hyperplanes.
+  const HPolyhedron initial_polytope = HPolyhedron(A_initial, b_initial);
+
+  // Remove redundant hyperplanes while calculating witness points that certify
+  // non-redundancy of remaining hyperplanes.
+  std::pair<std::set<int>, std::vector<VectorXd>> redundancy_info =
+      FindRedundantWithWitnessPoints(initial_polytope, std::set<int>{});
+  std::set<int> i_redundant_initial = redundancy_info.first;
+  std::vector<VectorXd> witness_points_before_reducing = redundancy_info.second;
+
+  std::vector<VectorXd> witness_points;
+  MatrixXd circumbody_A(b_.rows() - i_redundant_initial.size(),
+                        ambient_dimension());
+  VectorXd circumbody_b(b_.rows() - i_redundant_initial.size());
+
+  witness_points.reserve(b_.rows() - i_redundant_initial.size());
+  for (int ind = 0; ind < b_.rows(); ++ind) {
+    if (!i_redundant_initial.contains(ind)) {
+      witness_points.push_back(witness_points_before_reducing[ind]);
+      circumbody_A.row(ind) = A_.row(ind);
+      circumbody_b.row(ind) = b_.row(ind);
+    }
+  }
+  const HPolyhedron circumbody = HPolyhedron(circumbody_A, circumbody_b);
 
   // Create vector of distances from all faces to circumbody center.
   const VectorXd circumbody_ellipsoid_center =
@@ -1067,6 +1171,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     VectorXd b_shuffled(inbody.b().size());
     VectorXd face_center_distance_shuffled(inbody.b().size());
     std::vector<bool> face_moved_in_shuffled(inbody.b().size());
+    std::vector<VectorXd> witness_points_shuffled(inbody.b().size());
     for (int i_shuffle : shuffle_inds) {
       A_shuffled.row(i_shuffle) = inbody.A().row(shuffle_inds[i_shuffle]);
       b_shuffled(i_shuffle) = inbody.b()(shuffle_inds[i_shuffle]);
@@ -1074,10 +1179,13 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           face_center_distance(shuffle_inds[i_shuffle]);
       face_moved_in_shuffled[i_shuffle] =
           face_moved_in[shuffle_inds[i_shuffle]];
+      witness_points_shuffled[i_shuffle] =
+          witness_points[shuffle_inds[i_shuffle]];
     }
     inbody = HPolyhedron(A_shuffled, b_shuffled);
     face_center_distance = face_center_distance_shuffled;
     face_moved_in = face_moved_in_shuffled;
+    witness_points = witness_points_shuffled;
 
     int i = 0;
     // Loop through remaining hyperplanes.
@@ -1154,17 +1262,41 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
         // Find which hyperplanes become redundant if we move the hyperplane
         // as far as is allowed.  If any, move face and cull other faces.
+        // First find which face indices don't need to be checked for redundancy
+        // due to their witness points still being in the set even if the face
+        // moves in.
         VectorXd b_proposed = inbody.b();
         b_proposed(i) = b_i_min_allowed;
+        std::set<int> indices_to_not_check;
+        for (int ind = 0; ind < b_proposed.rows(); ++ind) {
+          if (face_moved_in[ind] ||
+              inbody.A().row(i) * witness_points[ind] <= b_proposed(i)) {
+            indices_to_not_check.insert(ind);
+          }
+        }
+
         const HPolyhedron inbody_proposed = HPolyhedron(inbody.A(), b_proposed);
-        const std::set<int> i_redundant_set = inbody_proposed.FindRedundant(0);
+        redundancy_info = FindRedundantWithWitnessPoints(inbody_proposed,
+                                                         indices_to_not_check);
+        std::set<int> i_redundant_set = redundancy_info.first;
         const std::vector<int> i_redundant(i_redundant_set.begin(),
                                            i_redundant_set.end());
+        const std::vector<VectorXd> updated_witness_points =
+            redundancy_info.second;
+        // update the witness points that have changed
+        for (size_t i_witness_point = 0;
+             i_witness_point < witness_points.size(); ++i_witness_point) {
+          if (!indices_to_not_check.contains(i_witness_point)) {
+            witness_points[i_witness_point] =
+                updated_witness_points[i_witness_point];
+          }
+        }
         if (i_redundant.size() > 0) {
           any_faces_moved = true;
           const MatrixXd A = inbody.A();
-          inbody = MoveFaceAndCull(A, b_proposed, &face_center_distance,
-                                   &face_moved_in, &i, i_redundant);
+          inbody =
+              MoveFaceAndCull(A, b_proposed, &face_center_distance,
+                              &face_moved_in, &witness_points, &i, i_redundant);
         }
       }
       ++i;
