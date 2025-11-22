@@ -201,3 +201,14 @@ The project is open-sourced to support education and research of brachiation wit
 
 *Source Code:* [https://github.com/kwesiRutledge/brom_drake-py](https://github.com/kwesiRutledge/brom_drake-py)
 
+## Constrained Bimanual Planning
+
+This example demonstrates planning motions for a bimanual iiwa setup, such that the relative pose of the two end-effectors remains fixed.
+It uses analytic inverse kinematics, together with Drake's trajectory optimization algorithms, to efficiently produce collision-free, kinematically valid trajectories.
+
+<img class="gallery" src="https://raw.githubusercontent.com/cohnt/constrained-bimanual-planning-example/main/other/plan.gif"/>
+
+Thomas Cohn, Seiji Shaw, Max Simchowitz, Russ Tedrake. "Constrained Bimanual Planning with Analytic Inverse Kinematics." ICRA, 2024.
+Peter Werner, Thomas Cohn, Rebecca Jiang Tim Seyde, Max Simchowitz, Russ Tedrake, Daniela Rus. "Faster Algorithms for Growing Collision-Free Convex Polytopes in Robot Configuration Space." ISRR, 2024.
+
+*Source Code:* [https://github.com/cohnt/constrained-bimanual-planning-example](https://github.com/cohnt/constrained-bimanual-planning-example)
