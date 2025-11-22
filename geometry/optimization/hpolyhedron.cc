@@ -988,20 +988,10 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
   // `SimplifyByIncrementalFaceTranslation`, to optionally take
   // `inds_to_not_check`, which dictates certain faces to skip.  This method is
   // also adapted to to return `witness_points`, which contains a point that
-  // certifies that each non-redundant face is non-redundant.
+  // certifies that each non-redundant face is non-redundant (the witess point is on the "wrong" side of the face it certifies, but the "right" side of all other faces).
   std::set<int> redundant_indices;
   std::vector<VectorXd> witness_points;
-  if (polytope.A().rows() == 0) {
-    // No inequalities so nothing is redundant;
-    return std::pair(redundant_indices, witness_points);
-  }
-  if (polytope.A().cols() == 0) {
-    // All inequalities are redundant in a 0-dimensional space.
-    for (int i = 0; i < polytope.A().rows(); ++i) {
-      redundant_indices.insert(i);
-    }
-    return std::pair(redundant_indices, witness_points);
-  }
+
   MathematicalProgram prog;
   const int num_vars = polytope.A().cols();
   const int num_cons = polytope.A().rows();
@@ -1032,7 +1022,7 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
       if ((result.is_success() &&
            -result.get_optimal_cost() > polytope.b()[i]) ||
           !result.is_success()) {
-        // Bring back the constraint, it is not redundant.
+        // Bring back the constraint, it is not redundant (or if the program fails for some reason, it is safer to treat it as non-redundant).
         bindings_vec[i].evaluator()->UpdateUpperBound(
             bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
         if (result.is_success()) {
@@ -1043,10 +1033,11 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
           witness_points.push_back(VectorXd::Constant(num_vars, kInf));
         }
       } else {
+        // The constraint is redundant and should be removed from the program.
         prog.RemoveConstraint(bindings_vec.at(i));
         redundant_indices.insert(i);
         // Use zero as a placeholder for witness points that will be removed
-        // with their corresponding redundant faces
+        // with their corresponding redundant hyperplanes.
         witness_points.push_back(Eigen::VectorXd::Zero(num_vars));
       }
     }
@@ -1073,6 +1064,11 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     DRAKE_DEMAND(PointInSet(points_to_contain.col(i)));
   }
 
+  if (A_.cols() == 0) {
+    // All inequalities are redundant in a 0-dimensional space.
+    return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
+  }
+
   MatrixXd A_initial = A_;
   VectorXd b_initial = b_;
 
@@ -1094,17 +1090,20 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   std::set<int> i_redundant_initial = redundancy_info.first;
   std::vector<VectorXd> witness_points_before_reducing = redundancy_info.second;
 
+  // Remove redundant hyperplanes and their corresponding witness points, and define the circumbody.
   std::vector<VectorXd> witness_points;
   MatrixXd circumbody_A(b_.rows() - i_redundant_initial.size(),
                         ambient_dimension());
   VectorXd circumbody_b(b_.rows() - i_redundant_initial.size());
 
   witness_points.reserve(b_.rows() - i_redundant_initial.size());
+  int row_ind = 0;
   for (int ind = 0; ind < b_.rows(); ++ind) {
     if (!i_redundant_initial.contains(ind)) {
       witness_points.push_back(witness_points_before_reducing[ind]);
-      circumbody_A.row(ind) = A_.row(ind);
-      circumbody_b.row(ind) = b_.row(ind);
+      circumbody_A.row(row_ind) = A_.row(ind);
+      circumbody_b.row(row_ind) = b_.row(ind);
+      ++row_ind;
     }
   }
   const HPolyhedron circumbody = HPolyhedron(circumbody_A, circumbody_b);
