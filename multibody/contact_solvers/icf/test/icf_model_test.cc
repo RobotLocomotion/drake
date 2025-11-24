@@ -9,13 +9,10 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 
-using drake::math::RigidTransformd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;

@@ -65,14 +65,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "icf_data_test",
+    deps = [
+        ":icf_data",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
     name = "icf_model_test",
     deps = [
         ":eigen_pool",
         ":icf_model",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
-        "//math:geometric_transform",
+        "//math:gradient",
     ],
 )
 
