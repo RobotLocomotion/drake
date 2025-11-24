@@ -1,7 +1,5 @@
 #pragma once
 
-#include <span>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -25,17 +23,18 @@ constraints cost.
 This struct holds precomputed terms (e.g., a, b, c) that allow us to efficiently
 evaluate
   ℓ̃ (α) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
-and its derivatives for different values of α.
-*/
+and its derivatives for different values of α. */
 template <typename T>
 struct SearchDirectionData {
   VectorX<T> w;  // Search direction.
 
-  // Precomputed terms
-  T a;                      // = ‖w‖²/2 (A norm)
-  T b;                      // = w⋅(v+r)
-  T c;                      // = ‖v‖²/2 + r⋅v  (momentum cost at v)
-  EigenPool<Vector6<T>> U;  // U = J⋅w.
+  // Precomputed quadratic coefficients
+  T a;  // = ‖w‖²/2 (A norm)
+  T b;  // = w⋅(v+r)
+  T c;  // = ‖v‖²/2 + r⋅v  (momentum cost at v)
+
+  // Spatial velocities U = J⋅w for each body.
+  EigenPool<Vector6<T>> U;
 };
 
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
@@ -43,7 +42,14 @@ struct SearchDirectionData {
 This class stores all data that depends on the current generalized velocity
 v, and therefore changes at each solver iteration. That is in contrast with
 IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
-values of v during the optimization process. */
+values of v during the optimization process.
+
+For most data elements, we provide a getter and a setter, e.g.,
+  const T& cost() const;
+  void set_cost(const T& cost);
+For elements where setting would require require allocation, we instead offer
+a mutable getter, e.g.,
+  EigenPool<Vector6<T>>& mutable_V_WB(); */
 template <typename T>
 class IcfData {
  public:
@@ -60,11 +66,11 @@ class IcfData {
     void Resize(int num_bodies, int num_velocities, int max_clique_size);
 
     // Scratch space for CalcMomentumTerms
-    VectorX<T> Av_minus_r;
+    VectorX<T> Av_minus_r;  // A⋅v - r, size num_velocities()
 
     // Scratch space for CalcCostAlongLine
-    EigenPool<Vector6<T>> V_WB_alpha;
-    VectorX<T> v_alpha;
+    EigenPool<Vector6<T>> V_WB_alpha;  // body spatial velocities at v + α⋅w.
+    VectorX<T> v_alpha;                // v + α⋅w, size num_velocities()
 
     // Scratch space for Hessian accumulation. These pools will only ever hold
     // one element, but using pools instead of a single MatrixX<T> allows us to
@@ -80,6 +86,8 @@ class IcfData {
   /* Constructs empty data. */
   IcfData() = default;
 
+  ~IcfData();
+
   /* Resizes the data to accommodate the given problem, typically called at the
   beginning of each solve/time step.
 
@@ -94,15 +102,18 @@ class IcfData {
   /* Returns the generalized velocity vector v. */
   const VectorX<T>& v() const { return v_; }
 
-  /* Sets the generalized velocity vector v. In debug builds sets doubles to NaN
-  to enforce that any v-dependent quantity is recomputed after v changes. */
+  /* Sets the generalized velocity vector v. In debug builds, sets member data
+  (other than v) to NaN to enforce that any downstream quantities are recomputed
+  after v changes. */
   void set_v(const VectorX<T>& v);
 
-  /* Returns the pool of rigid body spatial velocities, V_WB. */
+  /* Returns the pool of rigid body spatial velocities, V_WB. Size is
+  num_bodies(). */
   const EigenPool<Vector6<T>>& V_WB() const { return V_WB_; }
   EigenPool<Vector6<T>>& mutable_V_WB() { return V_WB_; }
 
-  /* Returns the linearized dynamics matrix times velocities, A⋅v. */
+  /* Returns the linearized dynamics matrix times velocities, A⋅v. Size is
+   * num_velocities().*/
   const VectorX<T>& Av() const { return Av_; }
   VectorX<T>& mutable_Av() { return Av_; }
 
@@ -118,7 +129,7 @@ class IcfData {
   const T& cost() const { return cost_; }
   void set_cost(const T& cost) { cost_ = cost; }
 
-  /* Returns the total gradient ∇ℓ(v). */
+  /* Returns the total gradient ∇ℓ(v). Size is num_velocities(). */
   const VectorX<T>& gradient() const { return gradient_; }
   VectorX<T>& mutable_gradient() { return gradient_; }
 

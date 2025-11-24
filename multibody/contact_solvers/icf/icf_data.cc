@@ -37,6 +37,9 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
 }
 
 template <typename T>
+IcfData<T>::~IcfData() = default;
+
+template <typename T>
 void IcfData<T>::Resize(int num_bodies, int num_velocities,
                         int max_clique_size) {
   v_.resize(num_velocities);
