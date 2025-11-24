@@ -57,7 +57,7 @@ Eigen::VectorBlock<const VectorX<T>> IcfModel<T>::clique_segment(
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> IcfModel<T>::clique_segment(
+Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
     int clique, VectorX<T>* x) const {
   DRAKE_ASSERT(x != nullptr);
   DRAKE_ASSERT(x->size() == num_velocities());
@@ -117,7 +117,7 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   for (int c = 0; c < num_cliques(); ++c) {
     ConstMatrixXView A_clique = A(c);
     const auto v_clique = clique_segment(c, v);
-    auto Av_clique = clique_segment(c, result);
+    auto Av_clique = mutable_clique_segment(c, result);
     Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
   }
 }

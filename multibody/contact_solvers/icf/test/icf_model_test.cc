@@ -74,7 +74,7 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
 
   // We use non-identity Jacobians to stress-test the algebra.
   if (single_clique) {
-    // Floating bodies doen't make sense in a single-clique model.
+    // Floating bodies don't make sense in a single-clique model.
     params->body_is_floating = {0, 0, 0, 0};
   } else {
     params->body_is_floating = {0, 0, 1, 0};
