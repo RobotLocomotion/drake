@@ -126,6 +126,15 @@ GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 0);
 
+  EXPECT_EQ(model.M0().rows(), 18);
+  EXPECT_EQ(model.M0().cols(), 18);
+  EXPECT_EQ(model.D0().size(), 18);
+  EXPECT_EQ(model.k0().size(), 18);
+  EXPECT_EQ(model.scale_factor().size(), 18);
+  EXPECT_EQ(model.r().size(), 18);
+  EXPECT_EQ(model.A(0).rows(), 6);
+  EXPECT_EQ(model.A(0).cols(), 6);
+
   // Updating on the same size model should cause no new allocations.
   {
     drake::test::LimitMalloc guard;
@@ -314,6 +323,11 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   EXPECT_EQ(hessian_multiple->block_rows(), 3);
   EXPECT_EQ(hessian_multiple->block_cols(), 3);
 
+  EXPECT_EQ(model_single.sparsity_pattern().block_sizes(),
+            std::vector<int>({18}));
+  EXPECT_EQ(model_multiple.sparsity_pattern().block_sizes(),
+            std::vector<int>({6, 6, 6}));
+
   // Cost, gradient, and Hessian should be the same regardless of sparsity.
   EXPECT_NEAR(data_single.cost(), data_multiple.cost(), kEpsilon);
   EXPECT_TRUE(CompareMatrices(data_single.gradient(), data_multiple.gradient(),
@@ -399,7 +413,9 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   EXPECT_EQ(model_new.num_velocities(), 18);
 
   // Now update the time step of the original model.
+  EXPECT_NE(model_original.time_step(), new_time_step);
   model_original.UpdateTimeStep(new_time_step);
+  EXPECT_EQ(model_original.time_step(), new_time_step);
 
   // Allocate data.
   IcfData<double> data_original, data_new;
@@ -424,6 +440,17 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   MatrixXd H_new = hessian_new->MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(H_original, H_new, 8 * kEpsilon,
                               MatrixCompareType::relative));
+}
+
+/* Verify that model.params() and model.ReleaseParams() use the same address. */
+GTEST_TEST(IcfModel, ParamsAccessors) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+
+  const IcfParameters<double>* params1 = &model.params();
+  std::unique_ptr<IcfParameters<double>> params2 = model.ReleaseParameters();
+
+  EXPECT_EQ(params1, params2.get());
 }
 
 }  // namespace internal
