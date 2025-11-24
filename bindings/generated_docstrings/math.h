@@ -36,6 +36,7 @@
 // #include "drake/math/jacobian.h"
 // #include "drake/math/knot_vector_type.h"
 // #include "drake/math/linear_solve.h"
+// #include "drake/math/matrix_exponential.h"
 // #include "drake/math/matrix_util.h"
 // #include "drake/math/normalize_vector.h"
 // #include "drake/math/quadratic_form.h"

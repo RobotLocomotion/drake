@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include <unsupported/Eigen/MatrixFunctions>
+#include "drake/math/matrix_exponential.h"
 
 namespace drake {
 namespace trajectories {
@@ -62,7 +62,7 @@ MatrixX<T> ExponentialPlusPiecewisePolynomial<T>::do_value(const T& t) const {
   int segment_index = this->get_segment_index(t);
   MatrixX<T> ret = piecewise_polynomial_part_.value(t);
   double tj = this->start_time(segment_index);
-  auto exponential = (A_ * (t - tj)).eval().exp().eval();
+  auto exponential = internal::CalcMatrixExponential(A_ * (t - tj));
   ret.noalias() += K_ * exponential * alpha_.col(segment_index);
   return ret;
 }

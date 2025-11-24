@@ -2,9 +2,8 @@
 
 #include <vector>
 
-#include <unsupported/Eigen/MatrixFunctions>
-
 #include "drake/common/text_logging.h"
+#include "drake/math/matrix_exponential.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 namespace drake {
@@ -149,8 +148,7 @@ void ZmpPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
     }
 
     double dt = zmp_d.duration(t);
-    Eigen::Matrix4d A2exp = A2 * dt;
-    A2exp = A2exp.exp();
+    const Eigen::Matrix4d A2exp = internal::CalcMatrixExponential(A2 * dt);
     for (int i = 0; i < zmp_d_degree + 1; i++)
       delta_time_vec[i] = std::pow(dt, i);
     tmp4 = tmp4 - beta[t] * delta_time_vec;
@@ -222,7 +220,7 @@ void ZmpPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
     a.block<4, 1>(0, t) = x - b[t].col(0);
 
     Az_exp = Az * dt;
-    Az_exp = Az_exp.exp();
+    Az_exp = internal::CalcMatrixExponential(Az_exp);
     for (int i = 0; i < zmp_d_degree + 1; i++)
       delta_time_vec[i] = std::pow(dt, i);
     x = I48 * Az_exp * a.col(t) + b[t] * delta_time_vec;
