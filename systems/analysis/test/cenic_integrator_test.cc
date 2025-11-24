@@ -382,8 +382,8 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
                           &model);
   model.ResizeData(&data);
   model.CalcData(v, &data);
-  const VectorXd dl = data.cache().gradient;
-  const double l = data.cache().cost;
+  const VectorXd dl = data.gradient();
+  const double l = data.cost();
   const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
 
   EXPECT_TRUE(

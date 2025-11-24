@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
@@ -15,6 +16,31 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+
+/* Data for performing efficient exact line search.
+
+For line search, we consider the cost
+  ℓ(v) = 0.5 vᵀAv - rᵀv + ℓᶜ(v)
+along a search direction w as a function of the step size α:
+  ℓ̃ (α) = ℓ(v + α⋅w).
+Here A and r define the unconstrained momentum cost, and ℓᶜ(v) is the
+constraints cost.
+
+This struct holds precomputed terms (e.g., a, b, c) that allow us to efficiently
+evaluate
+  ℓ̃ (α) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
+and its derivatives for different values of α.
+*/
+template <typename T>
+struct SearchDirectionData {
+  VectorX<T> w;  // Search direction.
+
+  // Precomputed terms
+  T a;                      // = ‖w‖²/2 (A norm)
+  T b;                      // = w⋅(v+r)
+  T c;                      // = ‖v‖²/2 + r⋅v  (momentum cost at v)
+  EigenPool<Vector6<T>> U;  // U = J⋅w.
+};
 
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
 
@@ -27,35 +53,12 @@ class IcfData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
-  /* Cache holds quantities that are computed from v, so they can be reused. */
-  struct Cache {
-    void Resize(int num_bodies, int num_velocities, int num_couplers,
-                std::span<const int> gain_sizes,
-                std::span<const int> limit_sizes,
-                std::span<const int> patch_sizes);
-
-    T momentum_cost{0};
-    T constraints_cost{0};
-    T cost;
-    VectorX<T> Av;        // = A * v.
-    VectorX<T> gradient;  // Of size num_velocities().
-
-    // Rigid body spatial velocities, V_WB.
-    EigenPool<Vector6<T>> spatial_velocities;
-
-    // Type-specific constraint pools.
-    CouplerConstraintsDataPool<T> coupler_constraints_data;
-    GainConstraintsDataPool<T> gain_constraints_data;
-    LimitConstraintsDataPool<T> limit_constraints_data;
-    PatchConstraintsDataPool<T> patch_constraints_data;
-  };
-
   /* Struct to store pre-allocated scratch space. Unlike the cache, this scratch
   space is for intermediate computations, and is often cleared or overwritten as
   needed. */
   struct Scratch {
     /* Clears all data without changing capacity. */
-    void Clear();
+    void ClearPools();
 
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
@@ -113,52 +116,102 @@ class IcfData {
               std::span<const int> limit_sizes,
               std::span<const int> patch_sizes);
 
+  /* Returns the number of generalized velocities in the system. */
   int num_velocities() const { return v_.size(); }
 
-  int num_patches() const {
-    return cache_.patch_constraints_data.num_patches();
-  }
+  int num_patches() const { return patch_constraints_data_.num_patches(); }
 
-  int num_gains() const {
-    return cache_.gain_constraints_data.num_constraints();
-  }
+  int num_gains() const { return gain_constraints_data_.num_constraints(); }
 
-  int num_limits() const {
-    return cache_.limit_constraints_data.num_constraints();
-  }
+  int num_limits() const { return limit_constraints_data_.num_constraints(); }
 
   int num_couplers() const {
-    return cache_.coupler_constraints_data.num_constraints();
+    return coupler_constraints_data_.num_constraints();
   }
 
+  /* Returns the generalized velocity vector v. */
   const VectorX<T>& v() const { return v_; }
-  VectorX<T>& v() { return v_; }
 
-  const Cache& cache() const { return cache_; }
-  Cache& cache() { return cache_; }
+  /* Sets the generalized velocity vector v. In debug builds sets doubles to NaN
+  to enforce that any v-dependent quantity is recomputed after v changes. */
+  void set_v(const VectorX<T>& v);
 
+  /* Returns the pool of rigid body spatial velocities, V_WB. */
+  const EigenPool<Vector6<T>>& V_WB() const { return V_WB_; }
+  EigenPool<Vector6<T>>& mutable_V_WB() { return V_WB_; }
+
+  /* Returns the linearized dynamics matrix times velocities, A⋅v. */
+  const VectorX<T>& Av() const { return Av_; }
+  VectorX<T>& mutable_Av() { return Av_; }
+
+  /* Returns the momentum cost 0.5 vᵀA v - rᵀv. */
+  const T& momentum_cost() const { return momentum_cost_; }
+  void set_momentum_cost(const T& cost) { momentum_cost_ = cost; }
+
+  /* Returns the constraints cost ℓᶜ(v). */
+  const T& constraints_cost() const { return constraints_cost_; }
+  void set_constraints_cost(const T& cost) { constraints_cost_ = cost; }
+
+  /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v). */
+  const T& cost() const { return cost_; }
+  void set_cost(const T& cost) { cost_ = cost; }
+
+  /* Returns the total gradient ∇ℓ(v). */
+  const VectorX<T>& gradient() const { return gradient_; }
+  VectorX<T>& mutable_gradient() { return gradient_; }
+
+  /* Returns the data pool for coupler constraints. */
+  const CouplerConstraintsDataPool<T>& coupler_constraints_data() const {
+    return coupler_constraints_data_;
+  }
+  CouplerConstraintsDataPool<T>& mutable_coupler_constraints_data() {
+    return coupler_constraints_data_;
+  }
+
+  /* Returns the data pool for external gain (e.g., actuation) constraints. */
+  const GainConstraintsDataPool<T>& gain_constraints_data() const {
+    return gain_constraints_data_;
+  }
+  GainConstraintsDataPool<T>& mutable_gain_constraints_data() {
+    return gain_constraints_data_;
+  }
+
+  /* Returns the data pool for joint limit constraints. */
+  const LimitConstraintsDataPool<T>& limit_constraints_data() const {
+    return limit_constraints_data_;
+  }
+  LimitConstraintsDataPool<T>& mutable_limit_constraints_data() {
+    return limit_constraints_data_;
+  }
+
+  /* Returns the data pool for contact constraints. */
+  const PatchConstraintsDataPool<T>& patch_constraints_data() const {
+    return patch_constraints_data_;
+  }
+  PatchConstraintsDataPool<T>& mutable_patch_constraints_data() {
+    return patch_constraints_data_;
+  }
+
+  /* Returns a mutable scratch space for intermediate computations. We allow
+  IcfModel to write on the scratch as needed. */
   Scratch& scratch() const { return scratch_; }
 
  private:
-  VectorX<T> v_;  // Generalized velocities.
-  Cache cache_;   // All other quantities that are computed from v.
+  VectorX<T> v_;                // Generalized velocities v
+  EigenPool<Vector6<T>> V_WB_;  // Rigid body spatial velocities V_WB
+  VectorX<T> Av_;               // A⋅v
+  T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
+  T constraints_cost_{0};       // ℓᶜ(v)
+  T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
+  VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
 
-  // We allow IcfModel methods to write on the scratch as needed.
+  // Type-specific constraint pools.
+  CouplerConstraintsDataPool<T> coupler_constraints_data_;
+  GainConstraintsDataPool<T> gain_constraints_data_;
+  LimitConstraintsDataPool<T> limit_constraints_data_;
+  PatchConstraintsDataPool<T> patch_constraints_data_;
+
   mutable Scratch scratch_;
-};
-
-/* Data for performing efficient exact line search. */
-template <typename T>
-struct SearchDirectionData {
-  VectorX<T> w;  // Search direction.
-
-  // Precomputed terms:
-  //   ℓ(α) = ℓ(v+α⋅w) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
-  // where ℓᶜ(v+α⋅w) is the constraints cost.
-  T a;                      // = ‖w‖²/2 (A norm)
-  T b;                      // = w⋅(v+r)
-  T c;                      // = ‖v‖²/2 + r⋅v  (momentum cost at v)
-  EigenPool<Vector6<T>> U;  // U = J⋅w.
 };
 
 }  // namespace internal

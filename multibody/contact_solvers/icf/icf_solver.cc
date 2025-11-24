@@ -37,9 +37,13 @@ void IcfSolverStats::Reserve(int size) {
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                IcfData<double>* data) {
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
-  VectorXd& v = data->v();
+  VectorXd& v = decision_variables_;
   VectorXd& dv = search_direction_;
+  v.resize(model.num_velocities());
   dv.resize(model.num_velocities());
+
+  // Set the initial guess as stored in data
+  v = data->v();
 
   // Convergence tolerances are scaled by D = diag(M)^{-1/2}, so that all
   // entries of g̃ = Dg and ṽ = D⁻¹v have the same units [Castro 2021, IV.E].
@@ -63,7 +67,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   for (int k = 0; k < parameters_.max_iterations; ++k) {
     // Compute the cost and gradient
     model.CalcData(v, data);
-    const double grad_norm = (D.asDiagonal() * data->cache().gradient).norm();
+    const double grad_norm = (D.asDiagonal() * data->gradient()).norm();
 
     // We'll print solver stats before doing any convergence checks.
     // That ensures that we get a printout even when v_guess is good enough
@@ -73,7 +77,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
       fmt::print(
           "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
           "alpha: {}\n",
-          k, data->cache().cost, grad_norm, step_norm, ls_iterations, alpha);
+          k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
     }
 
     // Gradient-based convergence check. Allows for early exit if v_guess is
@@ -152,8 +156,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
 
     // Finalize solver stats now that we've finished the iteration
     stats_.num_iterations++;
-    stats_.cost.push_back(data->cache().cost);
-    stats_.gradient_norm.push_back(data->cache().gradient.norm());
+    stats_.cost.push_back(data->cost());
+    stats_.gradient_norm.push_back(data->gradient().norm());
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
     stats_.step_norm.push_back((D.cwiseInverse().asDiagonal() * dv).norm());
@@ -180,8 +184,8 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   // the gradient at α = 0 cached from solving for the search direction earlier.
   // N.B. We use a new dell0 rather than dell declared above, b/c both dell and
   // dell0 will be used to generate an initial guess.
-  const double ell0 = data.cache().cost;
-  const double dell0 = data.cache().gradient.dot(dv);
+  const double ell0 = data.cost();
+  const double dell0 = data.gradient().dot(dv);
   if (dell0 >= 0) {
     throw std::logic_error(
         "CenicIntegrator: the cost does not decrease along the search "
@@ -295,7 +299,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       stats_.num_factorizations++;
       reuse_hessian_factorization_ = true;
     }
-    *dv = dense_hessian_factorization_.solve(-data.cache().gradient);
+    *dv = dense_hessian_factorization_.solve(-data.gradient());
 
   } else {
     if (!reuse_factorization) {
@@ -317,7 +321,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
     }
 
     // Compute the search direction dv = -H⁻¹ g
-    *dv = -data.cache().gradient;
+    *dv = -data.gradient();
     hessian_factorization_.SolveInPlace(dv);
   }
 }

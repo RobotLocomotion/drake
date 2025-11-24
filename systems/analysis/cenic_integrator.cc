@@ -205,8 +205,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   // Solve the optimization problem for next-step velocities
   // v = min ℓ(v; q₀, v₀, h).
   model.ResizeData(&data_);
-  VectorX<T>& v = data_.v();
-  v = v_guess;
+  data_.set_v(v_guess);
   if constexpr (!std::is_same_v<T, double>) {
     throw std::runtime_error(
         "CenicIntegrator: ICF solver only supports T = double.");
@@ -223,6 +222,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
 
   // Compute next-step positions
   // q = q₀ + h N(q₀) v
+  const VectorX<T>& v = data_.v();
   VectorX<T>& q = scratch_.q;
   AdvancePlantConfiguration(h, v, &q);
 

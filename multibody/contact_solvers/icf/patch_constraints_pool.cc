@@ -514,8 +514,7 @@ void PatchConstraintsPool<T>::ProjectAlongLine(
 template <typename T>
 void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                  VectorX<T>* gradient) const {
-  const PatchConstraintsDataPool<T>& patch_data =
-      data.cache().patch_constraints_data;
+  const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
 
   for (int p = 0; p < num_patches(); ++p) {
@@ -529,7 +528,7 @@ void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
     const Vector6<T>& Gamma_Bo_W = Gamma_Bo_W_pool[p];
 
-    VectorXView gradient_b = model().clique_segment(c_b, gradient);
+    VectorXView gradient_b = model().mutable_clique_segment(c_b, gradient);
     if (model().is_floating(body_b)) {
       gradient_b.noalias() -= Gamma_Bo_W;
     } else {
@@ -541,7 +540,7 @@ void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
     if (!model().is_anchored(body_a)) {
       const Vector3<T>& p_AB_W = p_AB_W_[p];
       const Vector6<T> minus_Gamma_Ao_W = ShiftSpatialForce(Gamma_Bo_W, p_AB_W);
-      VectorXView gradient_a = model().clique_segment(c_a, gradient);
+      VectorXView gradient_a = model().mutable_clique_segment(c_a, gradient);
 
       if (model().is_floating(body_a)) {
         gradient_a.noalias() += minus_Gamma_Ao_W;
@@ -556,8 +555,7 @@ void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 template <typename T>
 void PatchConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
-  const PatchConstraintsDataPool<T>& patch_data =
-      data.cache().patch_constraints_data;
+  const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
 
   auto& H_BB_pool = data.scratch().H_BB_pool;
   auto& H_AA_pool = data.scratch().H_AA_pool;

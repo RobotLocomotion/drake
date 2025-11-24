@@ -9,12 +9,10 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
+#include "drake/multibody/contact_solvers/icf/icf_data.h"
 
-using drake::math::RigidTransformd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -32,8 +30,8 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 versions of the same model: one with everything stuffed into a single clique,
 and one with three separate cliques. */
 template <typename T>
-void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false) {
-  const double time_step = 0.01;
+void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
+                            const double time_step = 0.01) {
   const int nv = 18;
 
   // Release the parameters in order to set them.
@@ -72,7 +70,12 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false) {
   }
 
   // We use non-identity Jacobians to stress-test the algebra.
-  params->body_is_floating = {0, 0, 0, 0};
+  if (single_clique) {
+    // Floating bodies don't make sense in a single-clique model.
+    params->body_is_floating = {0, 0, 0, 0};
+  } else {
+    params->body_is_floating = {0, 0, 1, 0};
+  }
   params->body_mass = {1.0e20, 0.3, 2.3, 1.5};  // First body is the world.
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
   const Matrix6<T> J_WB1 = 1.5 * J_WB0 + 0.1 * Matrix6<T>::Identity();
@@ -120,6 +123,15 @@ GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 0);
 
+  EXPECT_EQ(model.M0().rows(), 18);
+  EXPECT_EQ(model.M0().cols(), 18);
+  EXPECT_EQ(model.D0().size(), 18);
+  EXPECT_EQ(model.k0().size(), 18);
+  EXPECT_EQ(model.scale_factor().size(), 18);
+  EXPECT_EQ(model.r().size(), 18);
+  EXPECT_EQ(model.A(0).rows(), 6);
+  EXPECT_EQ(model.A(0).cols(), 6);
+
   // Updating on the same size model should cause no new allocations.
   {
     drake::test::LimitMalloc guard;
@@ -147,6 +159,62 @@ GTEST_TEST(IcfModel, LimitMallocOnCalcData) {
   }
 }
 
+/* Iterates over each body to check sizes and such. */
+GTEST_TEST(IcfModel, PerBodyElements) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  EXPECT_EQ(model.num_bodies(), 4);
+  EXPECT_EQ(model.num_velocities(), 18);
+
+  const VectorXd& v = model.v0();
+
+  int num_anchored = 0;
+  int num_floating = 0;
+  for (int b = 0; b < model.num_bodies(); ++b) {
+    const Vector6d& V_WB = model.V_WB0(b);
+    const int c = model.body_to_clique(b);
+    const int clique_nv = model.clique_size(c);
+
+    if (model.is_anchored(b)) {
+      ++num_anchored;
+      EXPECT_LT(c, 0);
+      EXPECT_EQ(clique_nv, 0);
+
+      // Spatial velocity should be zero.
+      EXPECT_TRUE(CompareMatrices(V_WB, Vector6d::Zero(), kEpsilon,
+                                  MatrixCompareType::relative));
+    } else if (model.is_floating(b)) {
+      ++num_floating;
+      EXPECT_GE(c, 0);
+      EXPECT_EQ(clique_nv, 6);
+
+      // Spatial velocity should equal v0 segment.
+      const Vector6d& V_WB_expected = model.clique_segment(c, v);
+      EXPECT_TRUE(CompareMatrices(V_WB, V_WB_expected, kEpsilon,
+                                  MatrixCompareType::relative));
+
+    } else {
+      EXPECT_GE(c, 0);
+
+      // Spatial velocity should equal J_WB * v0 segment.
+      const Matrix6X<double>& J_WB = model.J_WB(b);
+      EXPECT_EQ(J_WB.cols(), clique_nv);
+      const Vector6d V_WB_expected = J_WB * model.clique_segment(c, v);
+      EXPECT_TRUE(CompareMatrices(V_WB, V_WB_expected, kEpsilon,
+                                  MatrixCompareType::relative));
+    }
+
+    EXPECT_GT(model.body_mass(b), 0.0);
+    if (!model.is_anchored(b)) {
+      EXPECT_GT(model.clique_delassus_approx(c).minCoeff(), 0.0);
+    }
+  }
+
+  // We should have exactly one floating body and one anchored body.
+  EXPECT_EQ(num_floating, 1);
+  EXPECT_EQ(num_anchored, 1);
+}
+
 /* Checks that gradients are computed correctly for an unconstrained problem. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
@@ -165,8 +233,8 @@ GTEST_TEST(IcfModel, CalcGradients) {
 
   model.CalcData(v, &data);
 
-  const VectorXd cost_derivatives = data.cache().cost.derivatives();
-  const VectorXd gradient_value = math::ExtractValue(data.cache().gradient);
+  const VectorXd cost_derivatives = data.cost().derivatives();
+  const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 8 * kEpsilon,
                               MatrixCompareType::relative));
@@ -185,14 +253,13 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.num_patches(), model.num_constraints());
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
   model.CalcData(v, &data);
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
 
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
@@ -206,7 +273,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   model.CalcData(v, &data);
   model.UpdateHessian(data, hessian.get());
 
-  gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  gradient_derivatives = math::ExtractGradient(data.gradient());
   hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
 
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives, 8 * kEpsilon,
@@ -253,11 +320,15 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   EXPECT_EQ(hessian_multiple->block_rows(), 3);
   EXPECT_EQ(hessian_multiple->block_cols(), 3);
 
+  EXPECT_EQ(model_single.sparsity_pattern().block_sizes(),
+            std::vector<int>({18}));
+  EXPECT_EQ(model_multiple.sparsity_pattern().block_sizes(),
+            std::vector<int>({6, 6, 6}));
+
   // Cost, gradient, and Hessian should be the same regardless of sparsity.
-  EXPECT_NEAR(data_single.cache().cost, data_multiple.cache().cost, kEpsilon);
-  EXPECT_TRUE(CompareMatrices(data_single.cache().gradient,
-                              data_multiple.cache().gradient, kEpsilon,
-                              MatrixCompareType::relative));
+  EXPECT_NEAR(data_single.cost(), data_multiple.cost(), kEpsilon);
+  EXPECT_TRUE(CompareMatrices(data_single.gradient(), data_multiple.gradient(),
+                              kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(H_single, H_multiple, kEpsilon,
                               MatrixCompareType::relative));
 }
@@ -293,10 +364,10 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
 
     const VectorX<AutoDiffXd> v_alpha = v + alpha * w;
     model.CalcData(v_alpha, &scratch);
-    const double cost_expected = scratch.cache().cost.value();
-    const double momentum_cost_expected = scratch.cache().momentum_cost.value();
-    const double dcost_expected = scratch.cache().cost.derivatives()[0];
-    const VectorXd w_times_H = math::ExtractGradient(scratch.cache().gradient);
+    const double cost_expected = scratch.cost().value();
+    const double momentum_cost_expected = scratch.momentum_cost().value();
+    const double dcost_expected = scratch.cost().derivatives()[0];
+    const VectorXd w_times_H = math::ExtractGradient(scratch.gradient());
     const double d2cost_expected = w_times_H.dot(math::ExtractValue(w));
 
     // Verify pre-computed terms are correct.
@@ -444,7 +515,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
   model.CalcData(v, &data);
 
   const GainConstraintsDataPool<AutoDiffXd>& gains_data =
-      data.cache().gain_constraints_data;
+      data.gain_constraints_data();
   EXPECT_EQ(gains_data.num_constraints(), 2);
 
   const VectorXd K0_value = math::ExtractValue(K0);
@@ -497,9 +568,8 @@ GTEST_TEST(IcfModel, GainConstraint) {
                               MatrixCompareType::relative));
 
   // Verify accumulated total cost and gradients.
-  const VectorXd total_cost_derivatives = data.cache().cost.derivatives();
-  const VectorXd total_gradient_value =
-      math::ExtractValue(data.cache().gradient);
+  const VectorXd total_cost_derivatives = data.cost().derivatives();
+  const VectorXd total_gradient_value = math::ExtractValue(data.gradient());
 
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
                               2 * kEpsilon, MatrixCompareType::relative));
@@ -507,7 +577,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
   // Verify contributions to Hessian.
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
 }
@@ -577,7 +647,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   VectorX<AutoDiffXd> q = q0 + dt * v;
 
   const LimitConstraintsDataPool<AutoDiffXd>& limits_data =
-      data.cache().limit_constraints_data;
+      data.limit_constraints_data();
   EXPECT_EQ(limits_data.num_constraints(), 2);
 
   const VectorXd cost_gradient = limits_data.cost().derivatives();
@@ -606,7 +676,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   // Verify contributions to Hessian.
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
 }
@@ -669,7 +739,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const double tau1 = beta / M_PI * dt;
 
   const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
-      data.cache().coupler_constraints_data;
+      data.coupler_constraints_data();
   EXPECT_EQ(couplers_data.num_constraints(), 1);
 
   const VectorXd cost_gradient = couplers_data.cost().derivatives();
@@ -690,7 +760,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   // Verify contributions to Hessian.
   auto hessian = model.MakeHessian(data);
   MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.cache().gradient);
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
 

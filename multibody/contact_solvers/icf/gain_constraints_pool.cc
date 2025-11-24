@@ -67,12 +67,11 @@ void GainConstraintsPool<T>::CalcData(
 template <typename T>
 void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                 VectorX<T>* gradient) const {
-  const GainConstraintsDataPool<T>& gain_data =
-      data.cache().gain_constraints_data;
+  const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    auto gradient_c = model().clique_segment(c, gradient);
+    auto gradient_c = model().mutable_clique_segment(c, gradient);
     ConstVectorXView gk = gain_data.gamma(k);
     gradient_c -= gk;
   }
@@ -81,8 +80,7 @@ void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 template <typename T>
 void GainConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
-  const GainConstraintsDataPool<T>& gain_data =
-      data.cache().gain_constraints_data;
+  const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
@@ -107,7 +105,7 @@ void GainConstraintsPool<T>::ProjectAlongLine(
     ConstVectorXView gk = gain_data.gamma(k);
     ConstVectorXView Gk = gain_data.G(k);
 
-    auto G_times_w = model().clique_segment(c, v_sized_scratch);
+    auto G_times_w = model().mutable_clique_segment(c, v_sized_scratch);
     G_times_w.noalias() = Gk.asDiagonal() * w_c;
 
     (*dcost) -= w_c.dot(gk);

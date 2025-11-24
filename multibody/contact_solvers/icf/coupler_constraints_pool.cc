@@ -93,11 +93,11 @@ template <typename T>
 void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                    VectorX<T>* gradient) const {
   const CouplerConstraintsDataPool<T>& coupler_data =
-      data.cache().coupler_constraints_data;
+      data.coupler_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
-    auto gradient_c = model().clique_segment(c, gradient);
+    auto gradient_c = model().mutable_clique_segment(c, gradient);
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];

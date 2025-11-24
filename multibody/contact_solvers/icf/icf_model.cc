@@ -57,7 +57,7 @@ Eigen::VectorBlock<const VectorX<T>> IcfModel<T>::clique_segment(
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> IcfModel<T>::clique_segment(
+Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
     int clique, VectorX<T>* x) const {
   DRAKE_ASSERT(x != nullptr);
   DRAKE_ASSERT(x->size() == num_velocities());
@@ -117,29 +117,26 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   for (int c = 0; c < num_cliques(); ++c) {
     ConstMatrixXView A_clique = A(c);
     const auto v_clique = clique_segment(c, v);
-    auto Av_clique = clique_segment(c, result);
+    auto Av_clique = mutable_clique_segment(c, result);
     Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
   }
 }
 
 template <typename T>
-void IcfModel<T>::CalcMomentumTerms(const IcfData<T>& data,
-                                    typename IcfData<T>::Cache* cache) const {
-  // Data.
-  const VectorX<T>& v = data.v();
-  VectorX<T>& Av = cache->Av;
-
-  // Scratch data.
-  VectorX<T>& Av_minus_r = data.scratch().Av_minus_r;
+void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
+                                    IcfData<T>* data) const {
+  DRAKE_ASSERT(v.size() == num_velocities());
+  VectorX<T>& Av = data->mutable_Av();
+  VectorX<T>& Av_minus_r = data->scratch().Av_minus_r;
   DRAKE_ASSERT(Av_minus_r.size() == num_velocities());
 
   // Cost.
   MultiplyByDynamicsMatrix(v, &Av);
   Av_minus_r = 0.5 * Av - r_;
-  cache->momentum_cost = v.dot(Av_minus_r);
+  data->set_momentum_cost(v.dot(Av_minus_r));
 
   // Gradient.
-  cache->gradient = Av - r_;
+  data->mutable_gradient() = Av - r_;
 }
 
 template <typename T>
@@ -148,8 +145,7 @@ void IcfModel<T>::CalcBodySpatialVelocities(
   EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
   DRAKE_ASSERT(v.size() == num_velocities());
   DRAKE_ASSERT(spatial_velocities.size() == num_bodies());
-  spatial_velocities[0].setZero();  // World's spatial velocity.
-  for (int b = 1; b < num_bodies(); ++b) {
+  for (int b = 0; b < num_bodies(); ++b) {
     const int c = body_to_clique(b);
     Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {
@@ -179,34 +175,36 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
 template <typename T>
 void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   // Set generalized velocities v
-  data->v() = v;
+  data->set_v(v);
 
   // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
-  typename IcfData<T>::Cache& cache = data->cache();
-  CalcMomentumTerms(*data, &cache);
+  CalcMomentumTerms(v, data);
 
   // Compute spatial velocities for all bodies.
-  CalcBodySpatialVelocities(v, &cache.spatial_velocities);
+  EigenPool<Vector6<T>>& V_WB = data->mutable_V_WB();
+  CalcBodySpatialVelocities(v, &V_WB);
 
   // Compute constraint data.
-  coupler_constraints_pool_.CalcData(v, &cache.coupler_constraints_data);
-  gain_constraints_pool_.CalcData(v, &cache.gain_constraints_data);
-  limit_constraints_pool_.CalcData(v, &cache.limit_constraints_data);
-  patch_constraints_pool_.CalcData(cache.spatial_velocities,
-                                   &cache.patch_constraints_data);
+  coupler_constraints_pool_.CalcData(v,
+                                     &data->mutable_coupler_constraints_data());
+  gain_constraints_pool_.CalcData(v, &data->mutable_gain_constraints_data());
+  limit_constraints_pool_.CalcData(v, &data->mutable_limit_constraints_data());
+  patch_constraints_pool_.CalcData(V_WB,
+                                   &data->mutable_patch_constraints_data());
 
   // Accumulate gradient contributions from constraints.
-  coupler_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
-  gain_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
-  limit_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
-  patch_constraints_pool_.AccumulateGradient(*data, &cache.gradient);
+  VectorX<T>& gradient = data->mutable_gradient();
+  coupler_constraints_pool_.AccumulateGradient(*data, &gradient);
+  gain_constraints_pool_.AccumulateGradient(*data, &gradient);
+  limit_constraints_pool_.AccumulateGradient(*data, &gradient);
+  patch_constraints_pool_.AccumulateGradient(*data, &gradient);
 
   // Accumulate cost contributions from constraints.
-  cache.cost = cache.momentum_cost;
-  cache.cost += cache.coupler_constraints_data.cost();
-  cache.cost += cache.gain_constraints_data.cost();
-  cache.cost += cache.limit_constraints_data.cost();
-  cache.cost += cache.patch_constraints_data.cost();
+  data->set_cost(data->momentum_cost() +
+                 data->coupler_constraints_data().cost() +
+                 data->gain_constraints_data().cost() +
+                 data->limit_constraints_data().cost() +
+                 data->patch_constraints_data().cost());
 }
 
 template <typename T>
@@ -271,7 +269,7 @@ void IcfModel<T>::UpdateSearchDirection(
   search_data->a = tmp.dot(w);        // a = ‖w‖²
   const T vAw = v.dot(tmp);           // vAw = vᵀ⋅A⋅w
   search_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
-  search_data->c = data.cache().momentum_cost;
+  search_data->c = data.momentum_cost();
 
   search_data->w = w;  // it is now safe to overwrite with the desired value.
 

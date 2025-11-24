@@ -198,7 +198,8 @@ class IcfSolver {
   // Logging utilities
   IcfSolverStats stats_;
 
-  // Pre-allocated search direction Δv
+  // Pre-allocated decision variables v and search direction Δv
+  VectorXd decision_variables_;
   VectorXd search_direction_;
 };
 

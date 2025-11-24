@@ -128,12 +128,11 @@ void LimitConstraintsPool<T>::CalcData(
 template <typename T>
 void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                  VectorX<T>* gradient) const {
-  const LimitConstraintsDataPool<T>& limit_data =
-      data.cache().limit_constraints_data;
+  const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
-    auto gradient_c = model().clique_segment(c, gradient);
+    auto gradient_c = model().mutable_clique_segment(c, gradient);
     ConstVectorXView gamma_lower = limit_data.gamma_lower(k);
     ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
 
@@ -147,8 +146,7 @@ void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 template <typename T>
 void LimitConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
-  const LimitConstraintsDataPool<T>& limit_data =
-      data.cache().limit_constraints_data;
+  const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
@@ -170,7 +168,7 @@ void LimitConstraintsPool<T>::ProjectAlongLine(
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     auto w_c = model().clique_segment(c, w);
-    auto G_times_w = model().clique_segment(c, v_sized_scratch);
+    auto G_times_w = model().mutable_clique_segment(c, v_sized_scratch);
 
     // Lower limit contribution.
     ConstVectorXView gamma_lower = limit_data.gamma_lower(k);

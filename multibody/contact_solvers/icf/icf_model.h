@@ -19,12 +19,14 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
-
-using internal::BlockSparseSymmetricMatrixT;
-using internal::BlockSparsityPattern;
-
 namespace icf {
 namespace internal {
+
+template <typename T>
+using BlockSparseSymmetricMatrixT =
+    contact_solvers::internal::BlockSparseLowerTriangularOrSymmetricMatrix<
+        MatrixX<T>, true>;
+using contact_solvers::internal::BlockSparsityPattern;
 
 /* A struct to hold the key parameters that define a convex ICF problem.
 
@@ -72,9 +74,6 @@ variable v: quantities that change with v are stored in IcfData. */
 template <typename T>
 class IcfModel {
  public:
-  // TODO(amcastro-tri): We'd only need to fix the model (this) pointer in the
-  // constraint classes within their copy/ctor to enable value semantics.
-  // For now, I'll just disable it.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfModel);
 
   using ConstJacobianView = typename EigenPool<Matrix6X<T>>::ConstMatrixView;
@@ -126,7 +125,7 @@ class IcfModel {
   /* Returns initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
 
-  /* Returns the spatial velocity Jacobian for the given body. */
+  /* Returns a reference to the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().J_WB[body];
@@ -151,7 +150,8 @@ class IcfModel {
     return body_to_clique(body) < 0;
   }
 
-  /* Checks whether the given body is free floating. */
+  /* Checks whether the given body is free floating, for optimizing computations
+  for identity Jacobians. */
   bool is_floating(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_is_floating[body] == 1;
@@ -166,8 +166,8 @@ class IcfModel {
   forces) that go with a given clique. */
   Eigen::VectorBlock<const VectorX<T>> clique_segment(
       int clique, const VectorX<T>& x) const;
-  Eigen::VectorBlock<VectorX<T>> clique_segment(int clique,
-                                                VectorX<T>* x) const;
+  Eigen::VectorBlock<VectorX<T>> mutable_clique_segment(int clique,
+                                                        VectorX<T>* x) const;
 
   /* Returns the initial spatial velocity of the given body. */
   ConstVector6View V_WB0(int body) const {
@@ -248,7 +248,8 @@ class IcfModel {
   No allocations are required if `data`'s capacity is already enough. */
   void ResizeData(IcfData<T>* data) const;
 
-  /* Updates `data` as a function of v. */
+  /* Updates `data` as a function of v. Performs no heap allocations.
+  @pre `data` has been resized to fit this model via ResizeData(). */
   void CalcData(const VectorX<T>& v, IcfData<T>* data) const;
 
   /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
@@ -265,7 +266,7 @@ class IcfModel {
   auto hessian = model.MakeHessian(data);
 
   // This performs sparsity analysis, so only call when Hessian's sparsity
-  changed (i.e. MakeHessian() was called)
+  // changed (i.e. MakeHessian() was called)
   factorization.SetMatrix(*hessian);
   factorization.Factor(); // Actual numerical factorization.
 
@@ -283,7 +284,7 @@ class IcfModel {
   BlockSparseSymmetricMatrix::MakeDenseMatrix(). The additional bookkeeping in
   this class is indeed necessary to build the matrix even if dense.
 
-  See documentation in  internal::BlockSparseCholeskySolver for further details.
+  See documentation in internal::BlockSparseCholeskySolver for further details.
   */
   std::unique_ptr<BlockSparseSymmetricMatrixT<T>> MakeHessian(
       const IcfData<T>& data) const;
@@ -297,21 +298,22 @@ class IcfModel {
   void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
                              SearchDirectionData<T>* search_data) const;
 
-  /* Computes ℓ(α) = ℓ(v + α⋅w) along w at α and its first dℓ/dα(α) and second
-  derivatives d²ℓ/dα²(α).
+  /* Computes ℓ̃ (α) = ℓ(v + α⋅w) along w at α, along with first and second
+  derivatives of ℓ̃ (α).
 
   @param alpha The value of α.
   @param data Stores velocity v along with cached quantities. See CalcData().
   @param search_direction Stores w along with cached quantities. See
                           UpdateSearchDirection().
-  @param dcost_dalpha dℓ/dα on output.
-  @param dcost_dalpha d²ℓ/dα² on output.
-  @returns The cost ℓ(α). */
+  @param dcost_dalpha dℓ̃ /dα on output.
+  @param dcost_dalpha d²ℓ̃ /dα² on output.
+  @returns The cost ℓ̃ (α). */
   T CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
                       const SearchDirectionData<T>& search_direction,
                       T* dcost_dalpha, T* d2cost_dalpha2) const;
 
-  /* Computes and stores the Hessian sparsity pattern. */
+  /* Computes and stores the Hessian sparsity pattern.
+  Note that this incurs heap allocations. */
   void SetSparsityPattern();
 
   /* Returns the Hessian sparsity pattern. This is useful for detecting when the
@@ -337,8 +339,7 @@ class IcfModel {
 
   /* Computes the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
   relate to momentum only (no constraints). */
-  void CalcMomentumTerms(const IcfData<T>& data,
-                         typename IcfData<T>::Cache* cache) const;
+  void CalcMomentumTerms(const VectorX<T>& v, IcfData<T>* data) const;
 
   /* Computes spatial velocities V_WB for all bodies, given generalized
   velocities v. */
