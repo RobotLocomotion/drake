@@ -994,9 +994,9 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   DRAKE_THROW_UNLESS(!circumbody.IsEmpty());
   DRAKE_THROW_UNLESS(circumbody.IsBounded());
 
-  for (int i = 0; i < points_to_contain.cols(); ++i) {
-    DRAKE_DEMAND(circumbody.PointInSet(points_to_contain.col(i)));
-  }
+  DRAKE_THROW_UNLESS(CheckIntersectionAndPointContainmentConstraints(
+      circumbody, circumbody, points_to_contain, intersecting_polytopes,
+      keep_whole_intersection, intersection_padding));
 
   // Ensure rows are normalized.
   for (int i = 0; i < circumbody_A.rows(); ++i) {
@@ -1033,7 +1033,6 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       reduced_intersecting_polytopes;
   reduced_intersecting_polytopes.reserve(intersecting_polytopes.size());
   for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
-    DRAKE_DEMAND(circumbody.IntersectsWith(intersecting_polytopes[i]));
     if (keep_whole_intersection) {
       reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
     } else {
