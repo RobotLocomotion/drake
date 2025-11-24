@@ -13,14 +13,25 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Data for performing efficient exact line search. */
+/* Data for performing efficient exact line search.
+
+For line search, we consider the cost
+  ℓ(v) = 0.5 vᵀAv - rᵀv + ℓᶜ(v)
+along a search direction w as a function of the step size α:
+  ℓ̃ (α) = ℓ(v + α⋅w).
+Here A and r define the unconstrained momentum cost, and ℓᶜ(v) is the
+constraints cost.
+
+This struct holds precomputed terms (e.g., a, b, c) that allow us to efficiently
+evaluate
+  ℓ̃ (α) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
+and its derivatives for different values of α.
+*/
 template <typename T>
 struct SearchDirectionData {
   VectorX<T> w;  // Search direction.
 
-  // Precomputed terms:
-  //   ℓ(α) = ℓ(v+α⋅w) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
-  // where ℓᶜ(v+α⋅w) is the constraints cost.
+  // Precomputed terms
   T a;                      // = ‖w‖²/2 (A norm)
   T b;                      // = w⋅(v+r)
   T c;                      // = ‖v‖²/2 + r⋅v  (momentum cost at v)
