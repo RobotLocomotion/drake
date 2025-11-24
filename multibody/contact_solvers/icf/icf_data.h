@@ -93,7 +93,10 @@ class IcfData {
 
   /* Returns the generalized velocity vector v. */
   const VectorX<T>& v() const { return v_; }
-  VectorX<T>& mutable_v() { return v_; }
+
+  /* Sets the generalized velocity vector v. In debug builds sets doubles to NaN
+  to enforce that any v-dependent quantity is recomputed after v changes. */
+  void set_v(const VectorX<T>& v);
 
   /* Returns the pool of rigid body spatial velocities, V_WB. */
   const EigenPool<Vector6<T>>& V_WB() const { return V_WB_; }

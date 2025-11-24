@@ -171,7 +171,7 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
 template <typename T>
 void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   // Set generalized velocities v
-  data->mutable_v() = v;
+  data->set_v(v);
 
   // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
   CalcMomentumTerms(v, data);

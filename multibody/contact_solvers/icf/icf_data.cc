@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 
+#include <limits>
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -42,6 +44,19 @@ void IcfData<T>::Resize(int num_bodies, int num_velocities,
   Av_.resize(num_velocities);
   gradient_.resize(num_velocities);
   scratch_.Resize(num_bodies, num_velocities, max_clique_size);
+}
+
+template <typename T>
+void IcfData<T>::set_v(const VectorX<T>& v) {
+#ifdef DRAKE_ASSERT_IS_ARMED
+  V_WB_.SetZero();
+  Av_.setConstant(std::numeric_limits<T>::quiet_NaN());
+  momentum_cost_ = std::numeric_limits<T>::quiet_NaN();
+  constraints_cost_ = std::numeric_limits<T>::quiet_NaN();
+  cost_ = std::numeric_limits<T>::quiet_NaN();
+  gradient_.setConstant(std::numeric_limits<T>::quiet_NaN());
+#endif
+  v_ = v;
 }
 
 }  // namespace internal
