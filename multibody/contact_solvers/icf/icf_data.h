@@ -54,7 +54,7 @@ class IcfData {
   needed. */
   struct Scratch {
     /* Clears all data without changing capacity. */
-    void Clear();
+    void ClearPools();
 
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size);

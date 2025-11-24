@@ -9,7 +9,7 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-void IcfData<T>::Scratch::Clear() {
+void IcfData<T>::Scratch::ClearPools() {
   V_WB_alpha.Clear();
   H_BB_pool.Clear();
   H_AA_pool.Clear();
@@ -22,7 +22,7 @@ void IcfData<T>::Scratch::Clear() {
 template <typename T>
 void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
                                  int max_clique_size) {
-  Clear();
+  ClearPools();
   Av_minus_r.resize(num_velocities);
 
   V_WB_alpha.Resize(num_bodies, 6, 1);
