@@ -338,9 +338,9 @@ class IcfModel {
   EigenPool<Vector6<T>> V_WB0_;  // Body spatial velocities at v₀, V = J_WB v₀.
   VectorX<T> scale_factor_;      // Scale diag(M)^{-1/2} for convergence check.
   EigenPool<MatrixX<T>> A_;  // Sparse linearized dynamics matrix A = M₀ + δtD₀.
-  VectorX<T> r_;             // Linear cost term r = Av₀ - δt k₀.
-  VectorX<T> Av0_;           // Av₀ storage, used to recompute r with a new δt.
-  EigenPool<VectorX<T>> clique_delassus_;  // Delassus estimate W = diag(M)⁻¹.
+  EigenPool<VectorX<T>> clique_delassus_;  // Delassus estimate W = diag(M₀)⁻¹.
+  VectorX<T> Av0_;  // Av₀ storage, used to recompute r with a new δt.
+  VectorX<T> r_;    // Linear cost term r = Av₀ - δt k₀.
 
   // Bookkeeping parameters. Like the core parameters, these do not change if
   // only the time step δt is updated.

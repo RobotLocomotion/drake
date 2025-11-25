@@ -9,6 +9,7 @@ namespace icf {
 namespace internal {
 
 using contact_solvers::internal::BlockSparsityPattern;
+using Eigen::VectorBlock;
 
 template <typename T>
 IcfModel<T>::IcfModel() : params_{std::make_unique<IcfParameters<T>>()} {}
@@ -22,6 +23,13 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   num_velocities_ = v0().size();
   num_bodies_ = ssize(this->params().body_to_clique);
   num_cliques_ = ssize(this->params().clique_sizes);
+
+  // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body.
+  V_WB0_.Resize(num_bodies_, 6, 1);
+  CalcBodySpatialVelocities(v0(), &V_WB0_);
+
+  // Set the scaling factor diag(M)^{-1/2} for convergence checks.
+  scale_factor_ = M0().diagonal().cwiseInverse().cwiseSqrt();
 
   // Define the sparse dynamics matrix A = M + δt D and the diagonal Delassus
   // operator estimate W = diag(M)⁻¹.
@@ -42,13 +50,6 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   Av0_.resize(num_velocities_);
   MultiplyByDynamicsMatrix(v0(), &Av0_);
   r_ = Av0_ - time_step() * k0();
-
-  // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body.
-  V_WB0_.Resize(num_bodies_, 6, 1);
-  CalcBodySpatialVelocities(v0(), &V_WB0_);
-
-  // Set the scaling factor diag(M)^{-1/2} for convergence checks.
-  scale_factor_ = M0().diagonal().cwiseInverse().cwiseSqrt();
 
   VerifyInvariants();
 }
@@ -121,8 +122,8 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 
   for (int c = 0; c < num_cliques(); ++c) {
     ConstMatrixXView A_clique = A(c);
-    const auto v_clique = clique_segment(c, v);
-    auto Av_clique = mutable_clique_segment(c, result);
+    VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
+    VectorBlock<VectorX<T>> Av_clique = mutable_clique_segment(c, result);
     Av_clique.noalias() = A_clique * v_clique;  // Required to avoid allocation!
   }
 }
@@ -154,7 +155,7 @@ void IcfModel<T>::CalcBodySpatialVelocities(
     const int c = body_to_clique(b);
     Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {
-      auto v_clique = clique_segment(c, v);
+      VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
       if (is_floating(b)) {
         V_WB = v_clique;
       } else {
