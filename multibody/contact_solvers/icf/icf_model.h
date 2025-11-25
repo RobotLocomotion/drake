@@ -30,19 +30,40 @@ These parameters are owned by the IcfModel, and are set externally by
 an IcfBuilder. */
 template <typename T>
 struct IcfParameters {
-  T time_step{0.0};  // Discrete time step δt.
-  VectorX<T> v0;     // Current generalized velocities v₀.
-  MatrixX<T> M0;     // Current mass matrix M₀.
-  VectorX<T> D0;     // Current diagonal joint-space damping matrix D₀.
-  VectorX<T> k0;     // Current bias terms k₀.
+  // Discrete time step δt.
+  T time_step{0.0};
 
-  EigenPool<Matrix6X<T>> J_WB;        // Body spatial velocity Jacobians.
-  std::vector<T> body_mass;           // (composite) mass of each body.
-  std::vector<int> body_to_clique;    // Clique index for each body.
-  std::vector<int> body_is_floating;  // 1 if body is floating
+  // Current generalized velocities v₀, size nv.
+  VectorX<T> v0;
 
-  std::vector<int> clique_sizes;  // Number of velocities in each clique.
-  std::vector<int> clique_start;  // Starting velocity index for each clique.
+  // Current mass matrix M₀, size nv x nv.
+  MatrixX<T> M0;
+
+  // Current diagonal joint-space damping matrix D₀, size nv.
+  VectorX<T> D0;
+
+  // Current bias terms k₀, size nv.
+  VectorX<T> k0;
+
+  // Body spatial velocity Jacobians, indexed by body (size nb). Each J_WB[body]
+  // is 6 x clique_nv, where clique_nv is the number of velocities in the clique
+  // containing `body`.
+  EigenPool<Matrix6X<T>> J_WB;
+
+  // (Composite) mass of each body, size nb.
+  std::vector<T> body_mass;
+
+  // Clique index for each body, size nb.
+  std::vector<int> body_to_clique;
+
+  // 1 if body is free floating, 0 otherwise, size nb.
+  std::vector<int> body_is_floating;
+
+  // Number of velocities in each clique, indexed by clique, size nc.
+  std::vector<int> clique_sizes;
+
+  // Starting index in the velocity vector for each clique, size nc + 1.
+  std::vector<int> clique_start;
 };
 
 /* This class defines a convex ICF problem,
