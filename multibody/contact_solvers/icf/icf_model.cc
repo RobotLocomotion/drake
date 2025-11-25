@@ -23,6 +23,9 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   num_velocities_ = v0().size();
   num_bodies_ = ssize(this->params().body_to_clique);
   num_cliques_ = ssize(this->params().clique_sizes);
+  DRAKE_DEMAND(num_cliques_ > 0);
+  max_clique_size_ = *std::max_element(this->params().clique_sizes.begin(),
+                                       this->params().clique_sizes.end());
 
   // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body.
   V_WB0_.Resize(num_bodies_, 6, 1);
@@ -169,9 +172,7 @@ void IcfModel<T>::CalcBodySpatialVelocities(
 
 template <typename T>
 void IcfModel<T>::ResizeData(IcfData<T>* data) const {
-  const int max_clique_size = *std::max_element(params().clique_sizes.begin(),
-                                                params().clique_sizes.end());
-  data->Resize(num_bodies_, num_velocities_, max_clique_size);
+  data->Resize(num_bodies_, num_velocities_, max_clique_size_);
 }
 
 template <typename T>
@@ -242,17 +243,17 @@ void IcfModel<T>::CalcSearchDirectionData(
   search_direction_data->U.Resize(num_bodies(), 6, 1);
 
   // We'll use search_direction_data->w as scratch, to avoid memory allocation.
-  auto& tmp = search_direction_data->w;
-  MultiplyByDynamicsMatrix(w, &tmp);  // tmp = A⋅w
+  VectorX<T>& temp = search_direction_data->w;
+  MultiplyByDynamicsMatrix(w, &temp);  // temp = A⋅w
 
   const VectorX<T>& v = data.v();
-  search_direction_data->a = tmp.dot(w);        // a = ‖w‖²
-  const T vAw = v.dot(tmp);                     // vAw = vᵀ⋅A⋅w
+  search_direction_data->a = temp.dot(w);       // a = ‖w‖²
+  const T vAw = v.dot(temp);                    // vAw = vᵀ⋅A⋅w
   search_direction_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
   search_direction_data->c = data.momentum_cost();
 
-  search_direction_data->w =
-      w;  // it is now safe to overwrite with the desired value.
+  // It is now safe to overwrite with the desired value.
+  search_direction_data->w = w;
 
   // U = J⋅w.
   CalcBodySpatialVelocities(w, &search_direction_data->U);
@@ -267,10 +268,10 @@ T IcfModel<T>::CalcCostAlongLine(
   const T& b = search_direction.b;
   const T& c = search_direction.c;
 
-  auto& V_WB_alpha = data.scratch().V_WB_alpha;
+  EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
   DRAKE_ASSERT(V_WB_alpha.size() == num_bodies());
 
-  auto& v_alpha = data.scratch().v_alpha;
+  VectorX<T>& v_alpha = data.scratch().v_alpha;
   DRAKE_ASSERT(v_alpha.size() == num_velocities());
   v_alpha.noalias() = data.v() + alpha * search_direction.w;
 

@@ -131,8 +131,11 @@ class IcfModel {
   int num_velocities() const { return num_velocities_; }
 
   /* Returns the number of cliques in the problem. Each clique corresponds to a
-   * diagonal block in the mass matrix. */
+  diagonal block in the mass matrix. */
   int num_cliques() const { return num_cliques_; }
+
+  /* Returns the maximum number of velocities in any clique. */
+  int max_clique_size() const { return max_clique_size_; }
 
   /* Returns the total number of constraints of any type in the problem.. */
   int num_constraints() const {
@@ -347,6 +350,7 @@ class IcfModel {
   int num_bodies_{0};
   int num_velocities_{0};
   int num_cliques_{0};
+  int max_clique_size_{0};
 
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
   std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>

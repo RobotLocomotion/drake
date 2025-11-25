@@ -50,9 +50,9 @@ class IcfData {
     EigenPool<Vector6<T>> V_WB_alpha;  // body spatial velocities at v + α⋅w.
     VectorX<T> v_alpha;                // v + α⋅w, size num_velocities()
 
-    // Scratch space for Hessian accumulation. These pools will only ever hold
-    // one element, but using pools instead of a single MatrixX<T> allows us to
-    // avoid extra heap allocations, as their sizes change frequently.
+    // Scratch space for Hessian accumulation. These pools will only hold at
+    // most one element, but using pools instead of a single MatrixX<T> allows
+    // us to avoid extra heap allocations, as their sizes change frequently.
     EigenPool<MatrixX<T>> H_BB_pool;
     EigenPool<MatrixX<T>> H_AA_pool;
     EigenPool<MatrixX<T>> H_AB_pool;
