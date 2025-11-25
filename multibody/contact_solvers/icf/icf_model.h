@@ -230,6 +230,15 @@ class IcfModel {
     return clique_delassus_[clique];
   }
 
+  /* Returns the Hessian sparsity pattern. This is useful for detecting when the
+  sparsity pattern is the same (in which case we use UpdateHessian()), and when
+  it has changed (in which case we use MakeHessian()). */
+  const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern()
+      const {
+    DRAKE_ASSERT(sparsity_pattern_ != nullptr);
+    return *sparsity_pattern_;
+  }
+
   /* Resizes `data` to fit this model.
   No allocations are required if `data`'s capacity is already enough. */
   void ResizeData(IcfData<T>* data) const;
@@ -302,15 +311,6 @@ class IcfModel {
   /* Computes and stores the Hessian sparsity pattern.
   Note that this incurs heap allocations. */
   void SetSparsityPattern();
-
-  /* Returns the Hessian sparsity pattern. This is useful for detecting when the
-  sparsity pattern is the same (in which case we use UpdateHessian()), and when
-  it has changed (in which case we use MakeHessian()). */
-  const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern()
-      const {
-    DRAKE_ASSERT(sparsity_pattern_ != nullptr);
-    return *sparsity_pattern_;
-  }
 
   /* Changes only the time step δt, updating all dependent quantities. This
   allows us to reuse pre-computed quantities, like geometry queries, between
