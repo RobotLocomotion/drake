@@ -11,6 +11,8 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+using contact_solvers::internal::BlockSparseCholeskySolver;
+using contact_solvers::internal::BlockSparsityPattern;
 using contact_solvers::internal::Bracket;
 using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
