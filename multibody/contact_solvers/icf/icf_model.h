@@ -67,7 +67,9 @@ construct the problem: the job of constructing the problem given a
 MultibodyPlant and its state (Context) falls to IcfBuilder.
 
 Similarly, this model does not change with different values of the decision
-variable v: quantities that change with v are stored in IcfData. */
+variable v: quantities that change with v are stored in IcfData.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class IcfModel {
  public:
