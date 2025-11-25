@@ -24,6 +24,8 @@ For most data elements, we provide a getter and a setter, e.g.,
 For elements where setting would require require allocation, we instead offer
 a mutable getter, e.g.,
   EigenPool<Vector6<T>>& mutable_V_WB();
+Note that mutable getters should only be used for setting values, not for
+resizing.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
