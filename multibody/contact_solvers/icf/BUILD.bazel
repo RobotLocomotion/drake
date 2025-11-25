@@ -15,6 +15,7 @@ drake_cc_package_library(
         ":eigen_pool",
         ":icf_data",
         ":icf_model",
+        ":icf_search_direction_data",
     ],
 )
 
@@ -40,6 +41,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "icf_search_direction_data",
+    hdrs = ["icf_search_direction_data.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "icf_model",
     srcs = [
         "icf_model.cc",
@@ -49,6 +60,7 @@ drake_cc_library(
     ],
     deps = [
         ":icf_data",
+        ":icf_search_direction_data",
         "//common:default_scalars",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa

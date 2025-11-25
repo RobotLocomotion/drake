@@ -12,6 +12,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
@@ -354,7 +355,7 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   // Allocate search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
-  SearchDirectionData<AutoDiffXd> search_data;
+  IcfSearchDirectionData<AutoDiffXd> search_data;
   model.UpdateSearchDirection(data, w, &search_data);
 
   // Try-out a set of arbitrary values.

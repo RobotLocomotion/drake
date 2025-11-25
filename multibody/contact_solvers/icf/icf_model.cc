@@ -231,7 +231,7 @@ void IcfModel<T>::SetSparsityPattern() {
 template <typename T>
 void IcfModel<T>::UpdateSearchDirection(
     const IcfData<T>& data, const VectorX<T>& w,
-    SearchDirectionData<T>* search_data) const {
+    IcfSearchDirectionData<T>* search_data) const {
   search_data->w.resize(num_velocities());
   search_data->U.Resize(num_bodies(), 6, 1);
 
@@ -252,9 +252,10 @@ void IcfModel<T>::UpdateSearchDirection(
 }
 
 template <typename T>
-T IcfModel<T>::CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
-                                 const SearchDirectionData<T>& search_direction,
-                                 T* dcost_dalpha, T* d2cost_dalpha2) const {
+T IcfModel<T>::CalcCostAlongLine(
+    const T& alpha, const IcfData<T>& data,
+    const IcfSearchDirectionData<T>& search_direction, T* dcost_dalpha,
+    T* d2cost_dalpha2) const {
   const T& a = search_direction.a;
   const T& b = search_direction.b;
   const T& c = search_direction.c;

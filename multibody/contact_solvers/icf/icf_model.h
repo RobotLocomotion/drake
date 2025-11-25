@@ -11,6 +11,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 
 namespace drake {
 namespace multibody {
@@ -255,7 +256,7 @@ class IcfModel {
 
   /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
   void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
-                             SearchDirectionData<T>* search_data) const;
+                             IcfSearchDirectionData<T>* search_data) const;
 
   /* Computes ℓ̃ (α) = ℓ(v + α⋅w) along w at α, along with first and second
   derivatives of ℓ̃ (α).
@@ -268,7 +269,7 @@ class IcfModel {
   @param dcost_dalpha d²ℓ̃ /dα² on output.
   @returns The cost ℓ̃ (α). */
   T CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
-                      const SearchDirectionData<T>& search_direction,
+                      const IcfSearchDirectionData<T>& search_direction,
                       T* dcost_dalpha, T* d2cost_dalpha2) const;
 
   /* Computes and stores the Hessian sparsity pattern.
