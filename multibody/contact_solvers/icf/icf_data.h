@@ -99,10 +99,6 @@ class IcfData {
   const T& momentum_cost() const { return momentum_cost_; }
   void set_momentum_cost(const T& cost) { momentum_cost_ = cost; }
 
-  /* Returns the constraints cost ℓᶜ(v). */
-  const T& constraints_cost() const { return constraints_cost_; }
-  void set_constraints_cost(const T& cost) { constraints_cost_ = cost; }
-
   /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v). */
   const T& cost() const { return cost_; }
   void set_cost(const T& cost) { cost_ = cost; }
@@ -120,7 +116,6 @@ class IcfData {
   EigenPool<Vector6<T>> V_WB_;  // Rigid body spatial velocities V_WB
   VectorX<T> Av_;               // A⋅v
   T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
-  T constraints_cost_{0};       // ℓᶜ(v)
   T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
 

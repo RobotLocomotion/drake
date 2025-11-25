@@ -55,7 +55,6 @@ void IcfData<T>::set_v(const VectorX<T>& v) {
   V_WB_.SetZero();
   Av_.setConstant(std::numeric_limits<T>::quiet_NaN());
   momentum_cost_ = std::numeric_limits<T>::quiet_NaN();
-  constraints_cost_ = std::numeric_limits<T>::quiet_NaN();
   cost_ = std::numeric_limits<T>::quiet_NaN();
   gradient_.setConstant(std::numeric_limits<T>::quiet_NaN());
 #endif
