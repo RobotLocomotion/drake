@@ -12,6 +12,23 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+/* Checks that a default constructed data object is empty. */
+GTEST_TEST(IcfData, DefaultConstructedIsEmpty) {
+  IcfData<double> data;
+
+  EXPECT_EQ(data.num_velocities(), 0);
+  EXPECT_EQ(data.V_WB().size(), 0);
+  EXPECT_EQ(data.scratch().Av_minus_r.size(), 0);
+  EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
+  EXPECT_EQ(data.scratch().v_alpha.size(), 0);
+  EXPECT_EQ(data.scratch().H_BB_pool.size(), 0);
+  EXPECT_EQ(data.scratch().H_AA_pool.size(), 0);
+  EXPECT_EQ(data.scratch().H_AB_pool.size(), 0);
+  EXPECT_EQ(data.scratch().H_BA_pool.size(), 0);
+  EXPECT_EQ(data.scratch().GJa_pool.size(), 0);
+  EXPECT_EQ(data.scratch().GJb_pool.size(), 0);
+}
+
 /* Checks that elements are the correct shape after a resize. */
 GTEST_TEST(IcfData, ResizeAndAccessors) {
   IcfData<double> data;
@@ -32,15 +49,15 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   EXPECT_EQ(data.V_WB().size(), num_bodies);
   EXPECT_EQ(data.Av().size(), num_velocities);
   EXPECT_EQ(data.gradient().size(), num_velocities);
-  // N.B. scalar cost terms (cost, momentum cost, constraints_cost) are
-  // considered undefined until set explicitly.
+  // N.B. scalar cost terms (cost, momentum cost) are considered undefined until
+  // set explicitly.
 
   // Constraint sizes
 
   // Scratch space
-  EXPECT_EQ(data.scratch().Av_minus_r.size(), num_velocities);
+  EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
-  EXPECT_EQ(data.scratch().v_alpha.size(), num_velocities);
+  EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_AA_pool[0].rows(), max_clique_size);
@@ -67,15 +84,19 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
   data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers,
               gain_sizes, limit_sizes, patch_sizes);
 
-  // Clearing pools shouldn't change capacity
+  // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
-  data.scratch().ClearPools();
+  data.scratch().Clear();
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
 
+  VectorX<double> v = VectorX<double>::LinSpaced(num_velocities, 1.0, 11.0);
   {
+    // Restoring the data to the original size and setting velocities should not
+    // cause any new allocations.
     drake::test::LimitMalloc guard;
     data.scratch().Resize(num_bodies, num_velocities, max_clique_size,
                           num_couplers, gain_sizes, limit_sizes, patch_sizes);
+    data.set_v(v);
   }
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
 }

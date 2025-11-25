@@ -9,8 +9,10 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-void IcfData<T>::Scratch::ClearPools() {
+void IcfData<T>::Scratch::Clear() {
+  Av_minus_r.Clear();
   V_WB_alpha.Clear();
+  v_alpha.Clear();
   H_BB_pool.Clear();
   H_AA_pool.Clear();
   H_AB_pool.Clear();
@@ -25,11 +27,11 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
                                  std::span<const int> gain_sizes,
                                  std::span<const int> limit_sizes,
                                  std::span<const int> patch_sizes) {
-  ClearPools();
-  Av_minus_r.resize(num_velocities);
+  Clear();
+  Av_minus_r.Resize(1, num_velocities, 1);
 
   V_WB_alpha.Resize(num_bodies, 6, 1);
-  v_alpha.resize(num_velocities);
+  v_alpha.Resize(1, num_velocities, 1);
 
   Gw_gain.resize(num_velocities);
   Gw_limit.resize(num_velocities);
@@ -47,6 +49,9 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
   GJa_pool.Resize(1, 6, max_clique_size);
   GJb_pool.Resize(1, 6, max_clique_size);
 }
+
+template <typename T>
+IcfData<T>::~IcfData() = default;
 
 template <typename T>
 void IcfData<T>::Resize(int num_bodies, int num_velocities, int max_clique_size,
@@ -71,7 +76,6 @@ void IcfData<T>::set_v(const VectorX<T>& v) {
   V_WB_.SetZero();
   Av_.setConstant(std::numeric_limits<T>::quiet_NaN());
   momentum_cost_ = std::numeric_limits<T>::quiet_NaN();
-  constraints_cost_ = std::numeric_limits<T>::quiet_NaN();
   cost_ = std::numeric_limits<T>::quiet_NaN();
   gradient_.setConstant(std::numeric_limits<T>::quiet_NaN());
 #endif

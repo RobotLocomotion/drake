@@ -9,6 +9,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
+#include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 
 namespace drake {
 namespace multibody {
@@ -184,7 +185,7 @@ class IcfSolver {
   std::unique_ptr<BlockSparseSymmetricMatrixT<double>> hessian_;
   BlockSparseCholeskySolver<MatrixXd> hessian_factorization_;
   Eigen::LDLT<MatrixXd> dense_hessian_factorization_;
-  SearchDirectionData<double> search_direction_data_;
+  IcfSearchDirectionData<double> search_direction_data_;
 
   // Track the sparsity pattern for Hessian reuse
   std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;

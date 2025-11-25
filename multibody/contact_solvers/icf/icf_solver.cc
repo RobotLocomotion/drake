@@ -172,8 +172,8 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   const double alpha_max = parameters_.alpha_max;
 
   // Set up prerequisites for an efficient CalcCostAlongLine
-  SearchDirectionData<double>& search_data = search_direction_data_;
-  model.UpdateSearchDirection(data, dv, &search_data);
+  IcfSearchDirectionData<double>& search_data = search_direction_data_;
+  model.CalcSearchDirectionData(data, dv, &search_data);
 
   // Allocate first and second derivatives of ℓ(α)
   double dell{NAN};

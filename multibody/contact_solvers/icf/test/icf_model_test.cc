@@ -12,6 +12,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
@@ -354,8 +355,8 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   // Allocate search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
-  SearchDirectionData<AutoDiffXd> search_data;
-  model.UpdateSearchDirection(data, w, &search_data);
+  IcfSearchDirectionData<AutoDiffXd> search_data;
+  model.CalcSearchDirectionData(data, w, &search_data);
 
   // Try-out a set of arbitrary values.
   for (double alpha_value : {-0.45, 0., 0.15, 0.34, 0.93, 1.32}) {
@@ -768,13 +769,13 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   // Allocate search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
-  SearchDirectionData<AutoDiffXd> search_data;
+  IcfSearchDirectionData<AutoDiffXd> search_data;
 
   // Set data with constant value of v.
   VectorX<AutoDiffXd> v_constant =
       VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
   model.CalcData(v_constant, &data);
-  model.UpdateSearchDirection(data, w, &search_data);
+  model.CalcSearchDirectionData(data, w, &search_data);
 
   const AutoDiffXd alpha = {
       0.35 /* arbitrary value */,

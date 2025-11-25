@@ -1,7 +1,5 @@
 #pragma once
 
-#include <span>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -17,37 +15,23 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Data for performing efficient exact line search.
-
-For line search, we consider the cost
-  ℓ(v) = 0.5 vᵀAv - rᵀv + ℓᶜ(v)
-along a search direction w as a function of the step size α:
-  ℓ̃ (α) = ℓ(v + α⋅w).
-Here A and r define the unconstrained momentum cost, and ℓᶜ(v) is the
-constraints cost.
-
-This struct holds precomputed terms (e.g., a, b, c) that allow us to efficiently
-evaluate
-  ℓ̃ (α) = aα²/2 + bα + c + ℓᶜ(v+α⋅w),
-and its derivatives for different values of α.
-*/
-template <typename T>
-struct SearchDirectionData {
-  VectorX<T> w;  // Search direction.
-
-  // Precomputed terms
-  T a;                      // = ‖w‖²/2 (A norm)
-  T b;                      // = w⋅(v+r)
-  T c;                      // = ‖v‖²/2 + r⋅v  (momentum cost at v)
-  EigenPool<Vector6<T>> U;  // U = J⋅w.
-};
-
 /* Data for the ICF problem minᵥ ℓ(v; q₀, v₀, δt).
 
 This class stores all data that depends on the current generalized velocity
 v, and therefore changes at each solver iteration. That is in contrast with
 IcfModel, which changes with (q₀, v₀, δt) but remains constant for different
-values of v during the optimization process. */
+values of v during the optimization process.
+
+For most data elements, we provide a getter and a setter, e.g.,
+  const T& cost() const;
+  void set_cost(const T& cost);
+For elements where setting would require require allocation, we instead offer
+a mutable getter, e.g.,
+  EigenPool<Vector6<T>>& mutable_V_WB();
+Note that mutable getters should only be used for setting values, not for
+resizing.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class IcfData {
  public:
@@ -58,7 +42,7 @@ class IcfData {
   needed. */
   struct Scratch {
     /* Clears all data without changing capacity. */
-    void ClearPools();
+    void Clear();
 
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
@@ -66,12 +50,13 @@ class IcfData {
                 std::span<const int> limit_sizes,
                 std::span<const int> patch_sizes);
 
-    // Scratch space for CalcMomentumTerms
-    VectorX<T> Av_minus_r;
+    // Scratch space for CalcMomentumTerms. Holds a single vector of size
+    // num_velocities().
+    EigenPool<VectorX<T>> Av_minus_r;
 
     // Scratch space for CalcCostAlongLine
-    EigenPool<Vector6<T>> V_WB_alpha;
-    VectorX<T> v_alpha;
+    EigenPool<Vector6<T>> V_WB_alpha;  // body spatial velocities at v + α⋅w.
+    EigenPool<VectorX<T>> v_alpha;  // v + α⋅w, one item, size num_velocities().
 
     // Scratch space for constraint projection in CalcCostAlongLine
     VectorX<T> Gw_gain;
@@ -84,9 +69,9 @@ class IcfData {
     LimitConstraintsDataPool<T> limit_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
 
-    // Scratch space for Hessian accumulation. These pools will only ever hold
-    // one element, but using pools instead of a single MatrixX<T> allows us to
-    // avoid extra heap allocations, as their sizes change frequently.
+    // Scratch space for Hessian accumulation. These pools will only hold at
+    // most one element, but using pools instead of a single MatrixX<T> allows
+    // us to avoid extra heap allocations, as their sizes change frequently.
     EigenPool<MatrixX<T>> H_BB_pool;
     EigenPool<MatrixX<T>> H_AA_pool;
     EigenPool<MatrixX<T>> H_AB_pool;
@@ -97,6 +82,8 @@ class IcfData {
 
   /* Constructs empty data. */
   IcfData() = default;
+
+  ~IcfData();
 
   /* Resizes the data to accommodate the given problem, typically called at the
   beginning of each solve/time step.
@@ -132,15 +119,18 @@ class IcfData {
   /* Returns the generalized velocity vector v. */
   const VectorX<T>& v() const { return v_; }
 
-  /* Sets the generalized velocity vector v. In debug builds sets doubles to NaN
-  to enforce that any v-dependent quantity is recomputed after v changes. */
+  /* Sets the generalized velocity vector v. In debug builds, sets member data
+  (other than v) to NaN to enforce that any downstream quantities are recomputed
+  after v changes. */
   void set_v(const VectorX<T>& v);
 
-  /* Returns the pool of rigid body spatial velocities, V_WB. */
+  /* Returns the pool of rigid body spatial velocities, V_WB. Size is
+  num_bodies(). */
   const EigenPool<Vector6<T>>& V_WB() const { return V_WB_; }
   EigenPool<Vector6<T>>& mutable_V_WB() { return V_WB_; }
 
-  /* Returns the linearized dynamics matrix times velocities, A⋅v. */
+  /* Returns the linearized dynamics matrix times velocities, A⋅v. Size is
+   * num_velocities().*/
   const VectorX<T>& Av() const { return Av_; }
   VectorX<T>& mutable_Av() { return Av_; }
 
@@ -148,15 +138,11 @@ class IcfData {
   const T& momentum_cost() const { return momentum_cost_; }
   void set_momentum_cost(const T& cost) { momentum_cost_ = cost; }
 
-  /* Returns the constraints cost ℓᶜ(v). */
-  const T& constraints_cost() const { return constraints_cost_; }
-  void set_constraints_cost(const T& cost) { constraints_cost_ = cost; }
-
   /* Returns the total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v). */
   const T& cost() const { return cost_; }
   void set_cost(const T& cost) { cost_ = cost; }
 
-  /* Returns the total gradient ∇ℓ(v). */
+  /* Returns the total gradient ∇ℓ(v). Size is num_velocities(). */
   const VectorX<T>& gradient() const { return gradient_; }
   VectorX<T>& mutable_gradient() { return gradient_; }
 
@@ -201,7 +187,6 @@ class IcfData {
   EigenPool<Vector6<T>> V_WB_;  // Rigid body spatial velocities V_WB
   VectorX<T> Av_;               // A⋅v
   T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
-  T constraints_cost_{0};       // ℓᶜ(v)
   T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
 

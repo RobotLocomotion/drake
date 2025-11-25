@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":icf_builder",
         ":icf_data",
         ":icf_model",
+        ":icf_search_direction_data",
         ":icf_solver",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
@@ -79,6 +80,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "icf_search_direction_data",
+    hdrs = ["icf_search_direction_data.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "icf_data",
     srcs = ["icf_data.cc"],
     hdrs = ["icf_data.h"],
@@ -112,7 +123,9 @@ drake_cc_library(
     srcs = ["icf_solver.cc"],
     hdrs = ["icf_solver.h"],
     deps = [
+        ":icf_data",
         ":icf_model",
+        ":icf_search_direction_data",
         "//common:essential",
         "//common:name_value",
         "//multibody/contact_solvers:newton_with_bisection",
@@ -137,6 +150,7 @@ drake_cc_library(
     ],
     deps = [
         ":icf_data",
+        ":icf_search_direction_data",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
