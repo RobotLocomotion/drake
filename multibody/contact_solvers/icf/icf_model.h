@@ -124,6 +124,22 @@ class IcfModel {
     return *params_;
   }
 
+  /* Returns the number of bodies involved in the problem.*/
+  int num_bodies() const { return num_bodies_; }
+
+  /* Returns the number of generalized velocities in the problem. */
+  int num_velocities() const { return num_velocities_; }
+
+  /* Returns the number of cliques in the problem. Each clique corresponds to a
+   * diagonal block in the mass matrix. */
+  int num_cliques() const { return num_cliques_; }
+
+  /* Returns the total number of constraints of any type in the problem.. */
+  int num_constraints() const {
+    // TODO(#23769): add constraints to the model.
+    return 0;
+  }
+
   /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
 
@@ -208,22 +224,6 @@ class IcfModel {
   ConstVectorXView clique_delassus_approx(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
     return clique_delassus_[clique];
-  }
-
-  /* Returns the number of bodies involved in the problem.*/
-  int num_bodies() const { return num_bodies_; }
-
-  /* Returns the number of generalized velocities in the problem. */
-  int num_velocities() const { return num_velocities_; }
-
-  /* Returns the number of cliques in the problem. Each clique corresponds to a
-   * diagonal block in the mass matrix. */
-  int num_cliques() const { return num_cliques_; }
-
-  /* Returns the total number of constraints of any type in the problem.. */
-  int num_constraints() const {
-    // TODO(#23769): add constraints to the model.
-    return 0;
   }
 
   /* Resizes `data` to fit this model.
