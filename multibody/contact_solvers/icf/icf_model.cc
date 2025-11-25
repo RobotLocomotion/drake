@@ -11,6 +11,9 @@ namespace internal {
 using contact_solvers::internal::BlockSparsityPattern;
 
 template <typename T>
+IcfModel<T>::IcfModel() : params_{std::make_unique<IcfParameters<T>>()} {}
+
+template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   DRAKE_ASSERT(params != nullptr);
   params_ = std::move(params);

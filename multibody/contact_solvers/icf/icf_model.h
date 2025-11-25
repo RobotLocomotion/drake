@@ -102,7 +102,7 @@ class IcfModel {
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
 
   /* Constructs an empty model. */
-  IcfModel() : params_{std::make_unique<IcfParameters<T>>()} {}
+  IcfModel();
 
   /* Releases ownership of parameters so that we can re-use memory.
   The typical usage is something like:
@@ -127,16 +127,16 @@ class IcfModel {
   /* Returns the time step δt. */
   const T& time_step() const { return params().time_step; }
 
-  /* Returns initial velocities v₀ at the start of the time step. */
+  /* Returns the initial generalized velocities v₀. */
   const VectorX<T>& v0() const { return params().v0; }
 
-  /* Returns the mass matrix M₀ at the start of the time step. */
+  /* Returns the initial mass matrix M₀. */
   const MatrixX<T>& M0() const { return params().M0; }
 
-  /* Returns the joint damping vector at the start of the time step. */
+  /* Returns the initial joint damping vector. */
   const VectorX<T>& D0() const { return params().D0; }
 
-  /* Returns initial coriolis, centrifugal, and gravitational terms, k₀. */
+  /* Returns the initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
 
   /* Returns a reference to the spatial velocity Jacobian for the given body. */
