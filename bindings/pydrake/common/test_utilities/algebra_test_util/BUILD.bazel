@@ -1,0 +1,36 @@
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
+
+load(
+    "//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+    "//tools/workspace/drake_models:__pkg__",
+])
+
+# This determines how `PYTHONPATH` is configured.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_py_library(
+    name = "module_py",
+    testonly = True,
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        "//bindings/pydrake/common",
+    ],
+)
+
+drake_py_library(
+    name = "algebra_test_util_py",
+    testonly = True,
+    srcs = ["__init__.py"],
+    deps = [
+        ":module_py",
+    ],
+)

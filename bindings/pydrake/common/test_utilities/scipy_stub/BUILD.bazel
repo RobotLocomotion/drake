@@ -1,0 +1,29 @@
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+    "//tools/workspace/drake_models:__pkg__",
+])
+
+# A minimal of implementation scipy.sparse that's barely functional enough
+# to support unit testing the Drake APIs that return Eigen::Sparse matrices.
+# The pybind11 type caster for Eigen::Sparse maps it to scipy.sparse.
+drake_py_library(
+    name = "scipy_stub_py",
+    testonly = True,
+    srcs = [
+        "scipy/__init__.py",
+        "scipy/sparse/__init__.py",
+    ],
+    # N.B. We do not depend on ":module_py".
+    imports = ["."],
+)
+
+drake_py_unittest(
+    name = "scipy_stub_test",
+    deps = [":scipy_stub_py"],
+)
