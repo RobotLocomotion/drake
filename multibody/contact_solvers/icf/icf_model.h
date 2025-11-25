@@ -23,7 +23,6 @@ template <typename T>
 using BlockSparseSymmetricMatrixT =
     contact_solvers::internal::BlockSparseLowerTriangularOrSymmetricMatrix<
         MatrixX<T>, true>;
-using contact_solvers::internal::BlockSparsityPattern;
 
 /* A struct to hold the key parameters that define a convex ICF problem.
 
@@ -281,7 +280,8 @@ class IcfModel {
   /* Returns the Hessian sparsity pattern. This is useful for detecting when the
   sparsity pattern is the same (in which case we use UpdateHessian()), and when
   it has changed (in which case we use MakeHessian()). */
-  const BlockSparsityPattern& sparsity_pattern() const {
+  const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern()
+      const {
     DRAKE_ASSERT(sparsity_pattern_ != nullptr);
     return *sparsity_pattern_;
   }
@@ -326,7 +326,8 @@ class IcfModel {
   int num_cliques_{0};
 
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
-  std::unique_ptr<BlockSparsityPattern> sparsity_pattern_;
+  std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
+      sparsity_pattern_;
 };
 
 }  // namespace internal

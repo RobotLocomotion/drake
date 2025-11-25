@@ -8,6 +8,8 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+using contact_solvers::internal::BlockSparsityPattern;
+
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   DRAKE_ASSERT(params != nullptr);
