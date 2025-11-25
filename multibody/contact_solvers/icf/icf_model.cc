@@ -15,10 +15,10 @@ IcfModel<T>::IcfModel() : params_{std::make_unique<IcfParameters<T>>()} {}
 
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
-  DRAKE_ASSERT(params != nullptr);
+  DRAKE_DEMAND(params != nullptr);
   params_ = std::move(params);
 
-  // Set some sizes
+  // Set some sizes.
   num_velocities_ = v0().size();
   num_bodies_ = ssize(this->params().body_to_clique);
   num_cliques_ = ssize(this->params().clique_sizes);
@@ -38,16 +38,16 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
         M0().block(v_start, v_start, nv, nv).diagonal().cwiseInverse();
   }
 
-  // Set the linear cost term r = A v₀ - δt k₀
+  // Set the linear cost term r = A v₀ - δt k₀.
   Av0_.resize(num_velocities_);
   MultiplyByDynamicsMatrix(v0(), &Av0_);
   r_ = Av0_ - time_step() * k0();
 
-  // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body
+  // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body.
   V_WB0_.Resize(num_bodies_, 6, 1);
   CalcBodySpatialVelocities(v0(), &V_WB0_);
 
-  // Set the scaling factor diag(M)^{-1/2} for convergence checks
+  // Set the scaling factor diag(M)^{-1/2} for convergence checks.
   scale_factor_ = M0().diagonal().cwiseInverse().cwiseSqrt();
 
   VerifyInvariants();
@@ -55,19 +55,19 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> IcfModel<T>::clique_segment(
-    int clique, const VectorX<T>& x) const {
-  DRAKE_ASSERT(x.size() == num_velocities());
-  return x.segment(params().clique_start[clique],
-                   params().clique_sizes[clique]);
+    int clique, const VectorX<T>& full_vector) const {
+  DRAKE_ASSERT(full_vector.size() == num_velocities());
+  return full_vector.segment(params().clique_start[clique],
+                             params().clique_sizes[clique]);
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
-    int clique, VectorX<T>* x) const {
-  DRAKE_ASSERT(x != nullptr);
-  DRAKE_ASSERT(x->size() == num_velocities());
-  return x->segment(params().clique_start[clique],
-                    params().clique_sizes[clique]);
+    int clique, VectorX<T>* full_vector) const {
+  DRAKE_ASSERT(full_vector != nullptr);
+  DRAKE_ASSERT(full_vector->size() == num_velocities());
+  return full_vector->segment(params().clique_start[clique],
+                              params().clique_sizes[clique]);
 }
 
 template <typename T>
@@ -175,7 +175,7 @@ void IcfModel<T>::ResizeData(IcfData<T>* data) const {
 
 template <typename T>
 void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
-  // Set generalized velocities v
+  // Set generalized velocities v.
   data->set_v(v);
 
   // Set momentum cost (1/2 v'Av - r'v) and gradient (Av - r).
@@ -234,26 +234,27 @@ void IcfModel<T>::SetSparsityPattern() {
 }
 
 template <typename T>
-void IcfModel<T>::UpdateSearchDirection(
+void IcfModel<T>::CalcSearchDirectionData(
     const IcfData<T>& data, const VectorX<T>& w,
-    IcfSearchDirectionData<T>* search_data) const {
-  search_data->w.resize(num_velocities());
-  search_data->U.Resize(num_bodies(), 6, 1);
+    IcfSearchDirectionData<T>* search_direction_data) const {
+  search_direction_data->w.resize(num_velocities());
+  search_direction_data->U.Resize(num_bodies(), 6, 1);
 
-  // We'll use search_data->w as scratch, to avoid memory allocation.
-  auto& tmp = search_data->w;
+  // We'll use search_direction_data->w as scratch, to avoid memory allocation.
+  auto& tmp = search_direction_data->w;
   MultiplyByDynamicsMatrix(w, &tmp);  // tmp = A⋅w
 
   const VectorX<T>& v = data.v();
-  search_data->a = tmp.dot(w);        // a = ‖w‖²
-  const T vAw = v.dot(tmp);           // vAw = vᵀ⋅A⋅w
-  search_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
-  search_data->c = data.momentum_cost();
+  search_direction_data->a = tmp.dot(w);        // a = ‖w‖²
+  const T vAw = v.dot(tmp);                     // vAw = vᵀ⋅A⋅w
+  search_direction_data->b = vAw - w.dot(r());  // b = vᵀ⋅A⋅w - w⋅r
+  search_direction_data->c = data.momentum_cost();
 
-  search_data->w = w;  // it is now safe to overwrite with the desired value.
+  search_direction_data->w =
+      w;  // it is now safe to overwrite with the desired value.
 
   // U = J⋅w.
-  CalcBodySpatialVelocities(w, &search_data->U);
+  CalcBodySpatialVelocities(w, &search_direction_data->U);
 }
 
 template <typename T>

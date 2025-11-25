@@ -356,7 +356,7 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
   IcfSearchDirectionData<AutoDiffXd> search_data;
-  model.UpdateSearchDirection(data, w, &search_data);
+  model.CalcSearchDirectionData(data, w, &search_data);
 
   // Try-out a set of arbitrary values.
   for (double alpha_value : {-0.45, 0., 0.15, 0.34, 0.93, 1.32}) {

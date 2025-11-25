@@ -192,12 +192,13 @@ class IcfModel {
     return clique < 0 ? 0 : params().clique_sizes[clique];
   }
 
-  /* Accesses the subset of elements (e.g., generalized velocities, generalized
-  forces) that go with a given clique. */
+  /* Accesses the subset of elements of `full_vector` that go with a given
+  clique. This is useful when `full_vector` contains quantities for all
+  velocities, e.g., generalized velocities or forces. */
   Eigen::VectorBlock<const VectorX<T>> clique_segment(
-      int clique, const VectorX<T>& x) const;
-  Eigen::VectorBlock<VectorX<T>> mutable_clique_segment(int clique,
-                                                        VectorX<T>* x) const;
+      int clique, const VectorX<T>& full_vector) const;
+  Eigen::VectorBlock<VectorX<T>> mutable_clique_segment(
+      int clique, VectorX<T>* full_vector) const;
 
   /* Returns the initial spatial velocity of the given body. */
   ConstVector6View V_WB0(int body) const {
@@ -205,7 +206,7 @@ class IcfModel {
     return V_WB0_[body];
   }
 
-  /* Returns the scaling factor diag(M)^{-1/2} for convergence checks. */
+  /* Returns the scaling factor diag(M)⁻¹/² for convergence checks. */
   const VectorX<T>& scale_factor() const { return scale_factor_; }
 
   /* Returns the linearized dynamics matrix block for the given clique. */
@@ -248,7 +249,7 @@ class IcfModel {
   auto hessian = model.MakeHessian(data);
 
   // This performs sparsity analysis, so only call when Hessian's sparsity
-  // changed (i.e. MakeHessian() was called)
+  // changed (i.e. MakeHessian() was called).
   factorization.SetMatrix(*hessian);
   factorization.Factor(); // Actual numerical factorization.
 
@@ -277,8 +278,9 @@ class IcfModel {
                      BlockSparseSymmetricMatrixT<T>* hessian) const;
 
   /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
-  void UpdateSearchDirection(const IcfData<T>& data, const VectorX<T>& w,
-                             IcfSearchDirectionData<T>* search_data) const;
+  void CalcSearchDirectionData(
+      const IcfData<T>& data, const VectorX<T>& w,
+      IcfSearchDirectionData<T>* search_direction_data) const;
 
   /* Computes ℓ̃ (α) = ℓ(v + α⋅w) along w at α, along with first and second
   derivatives of ℓ̃ (α).
@@ -286,9 +288,9 @@ class IcfModel {
   @param alpha The value of α.
   @param data Stores velocity v along with cached quantities. See CalcData().
   @param search_direction Stores w along with cached quantities. See
-                          UpdateSearchDirection().
-  @param dcost_dalpha dℓ̃ /dα on output.
-  @param dcost_dalpha d²ℓ̃ /dα² on output.
+                          CalcSearchDirectionData().
+  @param[out] dcost_dalpha dℓ̃ /dα on output.
+  @param[out] dcost_dalpha d²ℓ̃ /dα² on output.
   @returns The cost ℓ̃ (α). */
   T CalcCostAlongLine(const T& alpha, const IcfData<T>& data,
                       const IcfSearchDirectionData<T>& search_direction,
