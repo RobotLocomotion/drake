@@ -156,7 +156,7 @@ T IcfModel<T>::CalcCostAlongLine(
   EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
   DRAKE_ASSERT(V_WB_alpha.size() == num_bodies());
 
-  VectorX<T>& v_alpha = data.scratch().v_alpha;
+  VectorXView v_alpha = data.scratch().v_alpha[0];
   DRAKE_ASSERT(v_alpha.size() == num_velocities());
   v_alpha.noalias() = data.v() + alpha * search_direction.w;
 
@@ -272,7 +272,7 @@ void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
                                     IcfData<T>* data) const {
   DRAKE_ASSERT(v.size() == num_velocities());
   VectorX<T>& Av = data->mutable_Av();
-  VectorX<T>& Av_minus_r = data->scratch().Av_minus_r;
+  VectorXView Av_minus_r = data->scratch().Av_minus_r[0];
   DRAKE_ASSERT(Av_minus_r.size() == num_velocities());
 
   // Cost.

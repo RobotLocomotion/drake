@@ -38,17 +38,18 @@ class IcfData {
   needed. */
   struct Scratch {
     /* Clears all data without changing capacity. */
-    void ClearPools();
+    void Clear();
 
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size);
 
-    // Scratch space for CalcMomentumTerms
-    VectorX<T> Av_minus_r;  // A⋅v - r, size num_velocities()
+    // Scratch space for CalcMomentumTerms. Holds a single vector of size
+    // num_velocities().
+    EigenPool<VectorX<T>> Av_minus_r;
 
     // Scratch space for CalcCostAlongLine
     EigenPool<Vector6<T>> V_WB_alpha;  // body spatial velocities at v + α⋅w.
-    VectorX<T> v_alpha;                // v + α⋅w, size num_velocities()
+    EigenPool<VectorX<T>> v_alpha;  // v + α⋅w, one item, size num_velocities().
 
     // Scratch space for Hessian accumulation. These pools will only hold at
     // most one element, but using pools instead of a single MatrixX<T> allows

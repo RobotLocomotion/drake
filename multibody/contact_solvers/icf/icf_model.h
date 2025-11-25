@@ -100,6 +100,7 @@ class IcfModel {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
   using ConstMatrixXView = typename EigenPool<MatrixX<T>>::ConstMatrixView;
   using MatrixXView = typename EigenPool<MatrixX<T>>::MatrixView;
+  using VectorXView = typename EigenPool<VectorX<T>>::MatrixView;
 
   /* Constructs an empty model. */
   IcfModel();

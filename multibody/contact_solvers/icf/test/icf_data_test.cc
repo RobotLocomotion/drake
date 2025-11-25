@@ -16,7 +16,9 @@ GTEST_TEST(IcfData, DefaultConstructedIsEmpty) {
 
   EXPECT_EQ(data.num_velocities(), 0);
   EXPECT_EQ(data.V_WB().size(), 0);
+  EXPECT_EQ(data.scratch().Av_minus_r.size(), 0);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
+  EXPECT_EQ(data.scratch().v_alpha.size(), 0);
   EXPECT_EQ(data.scratch().H_BB_pool.size(), 0);
   EXPECT_EQ(data.scratch().H_AA_pool.size(), 0);
   EXPECT_EQ(data.scratch().H_AB_pool.size(), 0);
@@ -44,9 +46,9 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   // set explicitly.
 
   // Scratch space
-  EXPECT_EQ(data.scratch().Av_minus_r.size(), num_velocities);
+  EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
-  EXPECT_EQ(data.scratch().v_alpha.size(), num_velocities);
+  EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_AA_pool[0].rows(), max_clique_size);
@@ -70,7 +72,7 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
 
   // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
-  data.scratch().ClearPools();
+  data.scratch().Clear();
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
 
   VectorX<double> v = VectorX<double>::LinSpaced(num_velocities, 1.0, 11.0);
