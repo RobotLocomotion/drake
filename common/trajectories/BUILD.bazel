@@ -142,6 +142,7 @@ drake_cc_library(
         "//common:name_value",
         "//common:polynomial",
         "//math:binomial_coefficient",
+        "//math:matrix_exponential",
         "//math:matrix_util",
         "@fmt",
     ],

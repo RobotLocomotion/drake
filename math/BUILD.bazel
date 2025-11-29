@@ -29,6 +29,7 @@ drake_cc_package_library(
         ":gray_code",
         ":jacobian",
         ":linear_solve",
+        ":matrix_exponential",
         ":matrix_util",
         ":quadratic_form",
         ":soft_min_max",
@@ -238,6 +239,15 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":vector3_util",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "matrix_exponential",
+    srcs = ["matrix_exponential.cc"],
+    hdrs = ["matrix_exponential.h"],
+    deps = [
         "//common:essential",
     ],
 )

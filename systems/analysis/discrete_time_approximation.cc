@@ -10,9 +10,9 @@
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
-#include <unsupported/Eigen/MatrixFunctions>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/math/matrix_exponential.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -340,7 +340,7 @@ std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
   Eigen::MatrixXd M(ns + ni, ns + ni);
   M << system.A(), system.B(), Eigen::MatrixXd::Zero(ni, ns + ni);
 
-  Eigen::MatrixXd Md = (M * time_period).exp();
+  Eigen::MatrixXd Md = drake::internal::CalcMatrixExponential(M * time_period);
 
   auto Ad = Md.block(0, 0, ns, ns);
   auto Bd = Md.block(0, ns, ns, ni);
@@ -365,7 +365,7 @@ std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
   M << system.A(), system.B(), system.f0(),
       Eigen::MatrixXd::Zero(ni + 1, ns + ni + 1);
 
-  Eigen::MatrixXd Md = (M * time_period).exp();
+  Eigen::MatrixXd Md = drake::internal::CalcMatrixExponential(M * time_period);
 
   auto Ad = Md.block(0, 0, ns, ns);
   auto Bd = Md.block(0, ns, ns, ni);

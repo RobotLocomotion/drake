@@ -129,6 +129,7 @@ drake_cc_library(
     deps = [
         ":simulator_config_functions",
         "//common:nice_type_name",
+        "//math:matrix_exponential",
         "//systems/framework",
         "//systems/primitives:affine_system",
         "//systems/primitives:linear_system",
