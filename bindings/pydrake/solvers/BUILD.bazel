@@ -134,7 +134,7 @@ drake_py_unittest(
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities/scipy_stub:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -241,7 +241,7 @@ drake_py_unittest(
         ":solvers",
         "//bindings/pydrake:forwarddiff_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities/scipy_stub:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -250,7 +250,7 @@ drake_py_unittest(
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities/scipy_stub:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
