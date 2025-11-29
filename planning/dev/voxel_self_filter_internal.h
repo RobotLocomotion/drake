@@ -36,11 +36,11 @@ void SetSphereCells(
     const SphereSpecification& sphere, double padding, const T& cell_value) {
   DRAKE_THROW_UNLESS(environment != nullptr);
   DRAKE_THROW_UNLESS(environment->IsInitialized());
-  DRAKE_THROW_UNLESS(environment->HasUniformCellSize());
+  DRAKE_THROW_UNLESS(environment->HasUniformVoxelSize());
   DRAKE_THROW_UNLESS(padding >= 0.0);
 
   // Add check buffer equal to the cell center->cell corner distance.
-  const double cell_size = environment->GetCellSizes().x();
+  const double cell_size = environment->VoxelXSize();
   const double center_to_corner = cell_size * 0.5 * std::sqrt(3.0);
 
   const Eigen::Vector4d& p_BSo = sphere.Origin();
@@ -63,7 +63,7 @@ void SetSphereCells(
         const common_robotics_utilities::voxel_grid::GridIndex query_index(
             x_index, y_index, z_index);
 
-        if (environment->IndexInBounds(query_index)) {
+        if (environment->CheckGridIndexInBounds(query_index)) {
           // Compute the position of the center of the voxel.
           const Eigen::Vector4d p_BCo =
               environment->GridIndexToLocation(query_index);
@@ -103,7 +103,7 @@ void SelfFilter(
   DRAKE_THROW_UNLESS(padding >= 0.0);
   DRAKE_THROW_UNLESS(environment != nullptr);
   DRAKE_THROW_UNLESS(environment->IsInitialized());
-  DRAKE_THROW_UNLESS(environment->HasUniformCellSize());
+  DRAKE_THROW_UNLESS(environment->HasUniformVoxelSize());
 
   const auto start_time = std::chrono::steady_clock::now();
 
