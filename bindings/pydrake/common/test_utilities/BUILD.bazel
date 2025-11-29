@@ -86,7 +86,9 @@ drake_py_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":autodiffutils_test_util_py",
         ":deprecation_py",
+        ":meta_py",
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",
