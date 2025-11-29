@@ -63,7 +63,7 @@ drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities/algebra_test_util:module_py",
+        "//bindings/pydrake/common/test_utilities/algebra_test_util",
     ],
 )
 
