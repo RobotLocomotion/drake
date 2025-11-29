@@ -40,9 +40,9 @@ TEST_F(StandardOperationsTest, Classify) {
   const AutoDiffDut b{std::numeric_limits<double>::infinity(), 3, 0};
   const AutoDiffDut c{std::numeric_limits<double>::quiet_NaN(), 3, 0};
   for (const auto& x : {a, b, c}) {
-    EXPECT_EQ(isfinite(x), std::isfinite(x.value())) << x;
-    EXPECT_EQ(isinf(x), std::isinf(x.value())) << x;
-    EXPECT_EQ(isnan(x), std::isnan(x.value())) << x;
+    EXPECT_EQ(isfinite(x), std::isfinite(x.value())) << x.value();
+    EXPECT_EQ(isinf(x), std::isinf(x.value())) << x.value();
+    EXPECT_EQ(isnan(x), std::isnan(x.value())) << x.value();
   }
 }
 

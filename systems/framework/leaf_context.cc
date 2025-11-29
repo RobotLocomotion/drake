@@ -54,7 +54,7 @@ std::string LeafContext<T>::do_to_string() const {
 
   os << this->GetSystemPathname() << " Context\n";
   os << std::string(this->GetSystemPathname().size() + 9, '-') << "\n";
-  os << "Time: " << this->get_time() << "\n";
+  os << "Time: " << fmt::to_string(this->get_time()) << "\n";
 
   if (this->num_continuous_states() || this->num_discrete_state_groups() ||
       this->num_abstract_states()) {

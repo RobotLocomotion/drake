@@ -300,9 +300,5 @@ AutoDiff nexttoward(AutoDiff from, long double to) {
   return from;
 }
 
-std::ostream& operator<<(std::ostream& s, const AutoDiff& x) {
-  return s << fmt::format("{}", x.value());
-}
-
 }  // namespace ad
 }  // namespace drake
