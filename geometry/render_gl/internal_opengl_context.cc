@@ -79,26 +79,6 @@ static Display* display() {
   return g_display;
 }
 
-// The vtkXDefaultScreen function is broken (dlsym fails on a macro), so we'll
-// make our own forwarding function into Xlib.h for now. The Xlib.h uses a C-
-// style cast which we need to suppress.
-int SafeDefaultScreen(Display* display) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-  return DefaultScreen(display);
-#pragma GCC diagnostic pop
-}
-
-// The vtkXRootWindow function is broken (dlsym fails on a macro), so we'll
-// make our own forwarding function into Xlib.h for now. The Xlib.h uses a
-// C-style cast which we need to suppress.
-Window SafeRootWindow(Display* display, int screen_id) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-  return RootWindow(display, screen_id);
-#pragma GCC diagnostic pop
-}
-
 }  // namespace
 
 class OpenGlContext::Impl {
@@ -106,6 +86,9 @@ class OpenGlContext::Impl {
   // Open an X display and initialize an OpenGL context. The display will be
   // open and ready for offscreen rendering, but no window is visible.
   explicit Impl(bool debug, GLXContext source_context = NULL) : debug_(debug) {
+    // We must do this first to lazy-init X11 and GLX.
+    display();
+
     // See Offscreen Rendering section here:
     // https://sidvind.com/index.php?title=Opengl/windowless
 
@@ -128,7 +111,7 @@ class OpenGlContext::Impl {
                                   True,
                                   None};
     int fb_count = 0;
-    const int screen_id = SafeDefaultScreen(display());
+    const int screen_id = vtkXDefaultScreen(display());
 
     // No matter what, we want to make sure that the context is not current
     // at the conclusion of construction.
@@ -170,7 +153,7 @@ class OpenGlContext::Impl {
 
     // This requires a call to XFreeColormap in the destructor.
     window_attribs.colormap =
-        vtkXCreateColormap(display(), SafeRootWindow(display(), screen_id),
+        vtkXCreateColormap(display(), vtkXRootWindow(display(), screen_id),
                            visual->visual, AllocNone);
     ScopeExit colormap_guard(
         [colormap = window_attribs.colormap, &is_complete]() {
@@ -181,7 +164,7 @@ class OpenGlContext::Impl {
     // redrawn.
     window_attribs.event_mask = ExposureMask;
     // This requires a call to XDestroyWindow in the destructor.
-    window_ = vtkXCreateWindow(display(), SafeRootWindow(display(), screen_id),
+    window_ = vtkXCreateWindow(display(), vtkXRootWindow(display(), screen_id),
                                0, 0, window_width_, window_height_, 0,
                                visual->depth, InputOutput, visual->visual,
                                CWColormap | CWEventMask, &window_attribs);
