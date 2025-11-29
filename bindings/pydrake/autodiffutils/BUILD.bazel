@@ -65,7 +65,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:autodiffutils_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/common/test_utilities/algebra_test_util:algebra_test_util_py",
+        "//bindings/pydrake/common/test_utilities/algebra_test_util:module_py",
     ],
 )
 
