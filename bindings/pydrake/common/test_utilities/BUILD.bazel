@@ -81,17 +81,6 @@ drake_py_library(
     ],
 )
 
-# A library that force-disables scipy, even if it's installed system-wide.
-drake_py_library(
-    name = "scipy_none_py",
-    testonly = 1,
-    srcs = [
-        "scipy_none/scipy/__init__.py",
-    ],
-    # N.B. We do not depend on ":module_py".
-    imports = ["scipy_none"],
-)
-
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
