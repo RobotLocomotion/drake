@@ -28,15 +28,6 @@ drake_py_library(
     ],
 )
 
-drake_py_library(
-    name = "algebra_test_util_py",
-    testonly = True,
-    srcs = ["algebra_test_util.py"],
-    deps = [
-        ":module_py",
-    ],
-)
-
 drake_pybind_library(
     name = "autodiffutils_test_util_py",
     testonly = True,
@@ -90,50 +81,17 @@ drake_py_library(
     ],
 )
 
-# A library that force-disables scipy, even if it's installed system-wide.
-drake_py_library(
-    name = "scipy_none_py",
-    testonly = 1,
-    srcs = [
-        "scipy_none/scipy/__init__.py",
-    ],
-    # N.B. We do not depend on ":module_py".
-    imports = ["scipy_none"],
-)
-
-# A minimal of implementation scipy.sparse that's barely functional enough
-# to support unit testing the Drake APIs that return Eigen::Sparse matrices.
-# The pybind11 type caster for Eigen::Sparse maps it to scipy.sparse.
-drake_py_library(
-    name = "scipy_stub_py",
-    testonly = 1,
-    srcs = [
-        "scipy_stub/scipy/__init__.py",
-        "scipy_stub/scipy/sparse/__init__.py",
-    ],
-    # N.B. We do not depend on ":module_py".
-    imports = ["scipy_stub"],
-)
-
-drake_py_unittest(
-    name = "scipy_stub_test",
-    deps = [":scipy_stub_py"],
-)
-
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":autodiffutils_test_util_py",
         ":deprecation_py",
+        ":meta_py",
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",
-        # N.B. Do not add algebra_test_util_py here; it should be scoped to
-        # only very specific tests that need it.
-        # N.B. Do not add scipy_stub_py here; it inserts scipy as a top-level
-        # module. Developers should only do that with intent, not as a bonus
-        # dependency from a conveience roll-up module.
     ],
 )
 

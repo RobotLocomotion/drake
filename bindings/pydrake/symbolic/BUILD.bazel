@@ -73,7 +73,7 @@ drake_py_unittest(
     name = "symbolic_test",
     deps = [
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/common/test_utilities:algebra_test_util_py",
+        "//bindings/pydrake/common/test_utilities/algebra_test_util",
     ],
 )
 
