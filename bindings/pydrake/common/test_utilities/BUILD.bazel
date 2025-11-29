@@ -101,11 +101,6 @@ drake_py_library(
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",
-        # N.B. Do not add algebra_test_util_py here; it should be scoped to
-        # only very specific tests that need it.
-        # N.B. Do not add scipy_stub_py here; it inserts scipy as a top-level
-        # module. Developers should only do that with intent, not as a bonus
-        # dependency from a conveience roll-up module.
     ],
 )
 
