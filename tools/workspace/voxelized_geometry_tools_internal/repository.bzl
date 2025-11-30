@@ -10,8 +10,8 @@ def voxelized_geometry_tools_internal_repository(
         When updating, ensure that any new unit tests are reflected in
         package.BUILD.bazel and BUILD.bazel in drake.
         """,
-        commit = "05862044d453da5807606b8ec295b3ab8f00c493",
-        sha256 = "c849371edc83664cddd8d2aad8345e56f430ea9803d84c59936c6e56013675a3",  # noqa
+        commit = "a145a8bfdf91575b41e4886ddf3b7203bfb5de1e",
+        sha256 = "546b542fa3c05e543df0358321c02e0c0a40a617cc0019ce4f66d22304416d59",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",
