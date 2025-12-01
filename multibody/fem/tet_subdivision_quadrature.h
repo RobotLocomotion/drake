@@ -64,7 +64,7 @@ class TetSubdivisionQuadrature final
   };
 
   /* Returns (points[], weights[]) in a single std::pair, which the base class
-   constructor expects.  The number of points is 4ᴺ  We store them in
+   constructor expects.  The number of points is 4ᴺ. We store them in
    a std::array<Vector3<double>, 4ᴺ> and std::array<double, 4ᴺ>. */
   static std::pair<LocationsType, WeightsType> MakePointsAndWeights();
 

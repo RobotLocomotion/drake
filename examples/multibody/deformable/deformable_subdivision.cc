@@ -63,7 +63,7 @@ int do_main() {
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
   RegisterRigidGround(&plant);
 
-  /* Set up a deformable bodies. We used fixed parameters here as they are not
+  /* Set up a deformable body. We used fixed parameters here as they are not
    important for the demonstration. */
   DeformableBodyConfig<double> deformable_config;
   deformable_config.set_youngs_modulus(3e4);
