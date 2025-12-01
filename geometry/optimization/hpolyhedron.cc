@@ -1040,7 +1040,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
               scaled_circumbody, circumbody, Eigen::MatrixXd(0, 0),
               std::vector<HPolyhedron>{intersecting_polytopes[i]},
               keep_whole_intersection, intersection_padding);
-      if (trivially_satisfied) {
+      if (!trivially_satisfied) {
         reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
       }
     }
