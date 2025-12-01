@@ -7,6 +7,10 @@ load(
     "drake_cc_package_library",
 )
 load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
+)
+load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
@@ -1098,8 +1102,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "bvh_test",
+    # TODO(#23855) This test is currently broken on macOS.
+    opt_in_condition = "//tools/cc_toolchain:linux",
     deps = [
         ":bvh",
         ":make_ellipsoid_mesh",

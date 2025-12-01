@@ -5,6 +5,10 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
+)
 
 package(
     default_visibility = ["//visibility:public"],
@@ -1046,9 +1050,11 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "deformable_integration_test",
     timeout = "moderate",
+    # TODO(#23854): This test is currently broken on macOS.
+    opt_in_condition = "//tools/cc_toolchain:linux",
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
