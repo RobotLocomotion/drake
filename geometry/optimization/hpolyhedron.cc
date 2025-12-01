@@ -941,7 +941,6 @@ bool CheckIntersectionAndPointContainmentConstraints(
     const std::vector<HPolyhedron>& intersecting_polytopes,
     const bool keep_whole_intersection, const double intersection_padding) {
   const double kConstraintTol = 1e-6;
-
   // Check that all given points are inside this HPolyhedron (the "inbody").
   for (int i_point = 0; i_point < points_to_contain.cols(); ++i_point) {
     if (!inbody.PointInSet(points_to_contain.col(i_point), kConstraintTol)) {
