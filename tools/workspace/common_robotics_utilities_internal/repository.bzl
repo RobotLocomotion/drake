@@ -12,8 +12,8 @@ def common_robotics_utilities_internal_repository(
         updated in ToyotaResearchInstitute/common_robotics_utilities/test/ or
         ToyotaResearchInstitute/common_robotics_utilities/CMakeLists.txt.ros2
         """,
-        commit = "5e6580fe7751b20dfc6f2752e17896e29a09acf8",
-        sha256 = "e46d3735c064dd7052f447ec183372c1b56b352838bbe9b1840e0668e6216810",  # noqa
+        commit = "d5d370f5302e25c9d37e49bd4b82528f6c1c4b6b",
+        sha256 = "1805697750da7e4a8e5cfd277e9bb31450e75cfed40d738b7390a5ebbcadf4ca",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",
