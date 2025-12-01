@@ -312,7 +312,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
                               MatrixCompareType::relative));
 }
 
-/* Check that we get the same result for the same problem, regardless of how we
+/* Checks that we get the same result for the same problem, regardless of how we
 break out the cliques. */
 GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_single;
@@ -422,7 +422,7 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   }
 }
 
-/* Test that updating the time step produces the same result as creating a new
+/* Checks that updating the time step produces the same result as creating a new
 model from scratch. */
 GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_original;
@@ -466,6 +466,16 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   MatrixXd H_new = hessian_new->MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(H_original, H_new, 8 * kEpsilon,
                               MatrixCompareType::relative));
+}
+
+/* Verifies that params() and ReleaseParams() use the same address. */
+GTEST_TEST(IcfModel, ParamsAccessors) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+
+  const IcfParameters<double>* params1 = &model.params();
+  std::unique_ptr<IcfParameters<double>> params2 = model.ReleaseParameters();
+  EXPECT_EQ(params1, params2.get());
 }
 
 // Note: the functions below are separated out to prepare for landing the
