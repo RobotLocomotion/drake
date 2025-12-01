@@ -66,7 +66,7 @@ enum class MaterialModel {
  - Mass density: Has unit kg/m³. Must be positive. Default to 1.5e3.
  - Material model: The constitutive model that describes the stress-strain
    relationship of the body, see MaterialModel. Default to
-   MaterialModel::kCorotated.
+   MaterialModel::kLinearCorotated.
  - Element subdivision count: to integrate external volumetric forces, elements
    can be subdivided to resolve large non-linearities within the domain of the
    element. Zero means no subdivision, one means split in half, etc. Must be
