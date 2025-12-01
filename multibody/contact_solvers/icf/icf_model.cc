@@ -60,12 +60,16 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   r_ = Av0_ - time_step() * k0();
 
   VerifyInvariants();
+
+  // The old sparsity pattern is now invalid. It must be recomputed with
+  // SetSparsityPattern().
+  sparsity_pattern_ = nullptr;
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> IcfModel<T>::clique_segment(
     int clique, const VectorX<T>& full_vector) const {
-  DRAKE_ASSERT(full_vector.size() == num_velocities());
+  DRAKE_ASSERT(full_vector.size() == num_velocities_);
   return full_vector.segment(params().clique_start[clique],
                              params().clique_sizes[clique]);
 }
@@ -74,7 +78,7 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
     int clique, VectorX<T>* full_vector) const {
   DRAKE_ASSERT(full_vector != nullptr);
-  DRAKE_ASSERT(full_vector->size() == num_velocities());
+  DRAKE_ASSERT(full_vector->size() == num_velocities_);
   return full_vector->segment(params().clique_start[clique],
                               params().clique_sizes[clique]);
 }
@@ -138,7 +142,7 @@ void IcfModel<T>::UpdateHessian(const IcfData<T>& data,
   hessian->SetZero();
 
   // Initialize hessian = A (block diagonal).
-  for (int c = 0; c < num_cliques(); ++c) {
+  for (int c = 0; c < num_cliques_; ++c) {
     ConstMatrixXView A_clique = A(c);
     hessian->AddToBlock(c, c, A_clique);
   }
@@ -154,8 +158,8 @@ template <typename T>
 void IcfModel<T>::CalcSearchDirectionData(
     const IcfData<T>& data, const VectorX<T>& w,
     IcfSearchDirectionData<T>* search_direction_data) const {
-  search_direction_data->w.resize(num_velocities());
-  search_direction_data->U.Resize(num_bodies(), 6, 1);
+  search_direction_data->w.resize(num_velocities_);
+  search_direction_data->U.Resize(num_bodies_, 6, 1);
 
   // We'll use search_direction_data->w as scratch, to avoid memory allocation.
   VectorX<T>& temp = search_direction_data->w;
@@ -184,10 +188,10 @@ T IcfModel<T>::CalcCostAlongLine(
   const T& c = search_direction.c;
 
   EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
-  DRAKE_ASSERT(V_WB_alpha.size() == num_bodies());
+  DRAKE_ASSERT(V_WB_alpha.size() == num_bodies_);
 
   VectorXView v_alpha = data.scratch().v_alpha[0];
-  DRAKE_ASSERT(v_alpha.size() == num_velocities());
+  DRAKE_ASSERT(v_alpha.size() == num_velocities_);
   v_alpha.noalias() = data.v() + alpha * search_direction.w;
 
   // Compute momentum contributions:
@@ -253,13 +257,15 @@ T IcfModel<T>::CalcCostAlongLine(
 
 template <typename T>
 void IcfModel<T>::SetSparsityPattern() {
+  DRAKE_DEMAND(params_ != nullptr);
+
   // N.B. we make a copy here because block_sizes will be moved into the
   // BlockSparsityPattern at the end of this function.
   std::vector<int> block_sizes = params().clique_sizes;
 
   // Build diagonal entries in the sparsity pattern.
-  std::vector<std::vector<int>> sparsity(num_cliques());
-  for (int i = 0; i < num_cliques(); ++i) {
+  std::vector<std::vector<int>> sparsity(num_cliques_);
+  for (int i = 0; i < num_cliques_; ++i) {
     sparsity[i].emplace_back(i);
   }
 
@@ -274,6 +280,7 @@ void IcfModel<T>::SetSparsityPattern() {
 template <typename T>
 void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   DRAKE_DEMAND(time_step > 0);
+  DRAKE_DEMAND(params_ != nullptr);
 
   // Linearized dynamics matrix A = M + δt⋅D
   for (int c = 0; c < num_cliques_; ++c) {
@@ -294,7 +301,14 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
 
 template <typename T>
 void IcfModel<T>::VerifyInvariants() const {
+  DRAKE_DEMAND(params_ != nullptr);
   DRAKE_DEMAND(time_step() > 0);
+
+  DRAKE_DEMAND(num_bodies_ > 0);
+  DRAKE_DEMAND(num_velocities_ > 0);
+  DRAKE_DEMAND(num_cliques_ > 0);
+  DRAKE_DEMAND(max_clique_size_ > 0);
+
   DRAKE_DEMAND(v0().size() == num_velocities_);
   DRAKE_DEMAND(M0().rows() == num_velocities_);
   DRAKE_DEMAND(M0().cols() == num_velocities_);
@@ -337,11 +351,11 @@ void IcfModel<T>::VerifyInvariants() const {
 template <typename T>
 void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
                                            VectorX<T>* result) const {
-  DRAKE_ASSERT(v.size() == num_velocities());
+  DRAKE_ASSERT(v.size() == num_velocities_);
   DRAKE_ASSERT(result != nullptr);
-  DRAKE_ASSERT(result->size() == num_velocities());
+  DRAKE_ASSERT(result->size() == num_velocities_);
 
-  for (int c = 0; c < num_cliques(); ++c) {
+  for (int c = 0; c < num_cliques_; ++c) {
     ConstMatrixXView A_clique = A(c);
     VectorBlock<const VectorX<T>> v_clique = clique_segment(c, v);
     VectorBlock<VectorX<T>> Av_clique = mutable_clique_segment(c, result);
@@ -352,10 +366,10 @@ void IcfModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 template <typename T>
 void IcfModel<T>::CalcMomentumTerms(const VectorX<T>& v,
                                     IcfData<T>* data) const {
-  DRAKE_ASSERT(v.size() == num_velocities());
+  DRAKE_ASSERT(v.size() == num_velocities_);
   VectorX<T>& Av = data->mutable_Av();
   VectorXView Av_minus_r = data->scratch().Av_minus_r[0];
-  DRAKE_ASSERT(Av_minus_r.size() == num_velocities());
+  DRAKE_ASSERT(Av_minus_r.size() == num_velocities_);
 
   // Cost.
   MultiplyByDynamicsMatrix(v, &Av);
@@ -370,9 +384,9 @@ template <typename T>
 void IcfModel<T>::CalcBodySpatialVelocities(
     const VectorX<T>& v, EigenPool<Vector6<T>>* V_pool) const {
   EigenPool<Vector6<T>>& spatial_velocities = *V_pool;
-  DRAKE_ASSERT(v.size() == num_velocities());
-  DRAKE_ASSERT(spatial_velocities.size() == num_bodies());
-  for (int b = 0; b < num_bodies(); ++b) {
+  DRAKE_ASSERT(v.size() == num_velocities_);
+  DRAKE_ASSERT(spatial_velocities.size() == num_bodies_);
+  for (int b = 0; b < num_bodies_; ++b) {
     const int c = body_to_clique(b);
     Vector6<T>& V_WB = spatial_velocities[b];
     if (c >= 0) {

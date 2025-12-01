@@ -10,13 +10,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 
-using Eigen::Matrix3d;
 using Eigen::MatrixXd;
-using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -24,42 +21,44 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+namespace {
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-/* Set up a simple dummy model, without any constraints. This can create two
+/* Sets up a simple dummy model, without any constraints. This can create two
 versions of the same model: one with everything stuffed into a single clique,
 and one with three separate cliques. */
 template <typename T>
 void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
-                            const double time_step = 0.01) {
+                            double time_step = 0.01) {
   const int nv = 18;
 
   // Release the parameters in order to set them.
   std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
+  ASSERT_TRUE(params != nullptr);
 
   params->time_step = time_step;
   params->v0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
-  // Define a sparse mass matrix with three cliques
+  // Define a sparse mass matrix with three cliques.
   const Matrix6<T> A1 = 0.3 * Matrix6<T>::Identity();
   const Matrix6<T> A2 = 2.3 * Matrix6<T>::Identity();
   const Matrix6<T> A3 = 1.5 * Matrix6<T>::Identity();
 
-  // Set the dense mass matrix
+  // Set the dense mass matrix.
   MatrixX<T>& M0 = params->M0;
   M0 = MatrixX<T>::Identity(nv, nv);
   M0.template block<6, 6>(0, 0) = A1;
   M0.template block<6, 6>(6, 6) = A2;
   M0.template block<6, 6>(12, 12) = A3;
 
-  // Define joint damping D₀
+  // Define joint damping D₀.
   params->D0 = VectorX<T>::Constant(nv, 0.1);
 
-  // Set coriolis, centrifugal, and gravitational terms k₀
+  // Set coriolis, centrifugal, and gravitational terms k₀.
   params->k0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
-  // Define the clique structure for the sparse linearized dynamics matrix A
+  // Define the clique structure for the sparse linearized dynamics matrix A.
   std::vector<int>& clique_sizes = params->clique_sizes;
   std::vector<int>& clique_start = params->clique_start;
   if (single_clique) {
@@ -86,13 +85,13 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
     params->J_WB.Resize(4, 6, 18);
     params->J_WB[0].setZero();
     params->J_WB[0].template block<6, 6>(0, 0) = Matrix6<T>::Identity();
-    auto J0 = params->J_WB[1];
+    typename EigenPool<Matrix6X<T>>::MatrixView J0 = params->J_WB[1];
     J0.setZero();
     J0.template block<6, 6>(0, 0) = J_WB0;
-    auto J1 = params->J_WB[2];
+    typename EigenPool<Matrix6X<T>>::MatrixView J1 = params->J_WB[2];
     J1.setZero();
     J1.template block<6, 6>(0, 6) = J_WB1;
-    auto J2 = params->J_WB[3];
+    typename EigenPool<Matrix6X<T>>::MatrixView J2 = params->J_WB[3];
     J2.setZero();
     J2.template block<6, 6>(0, 12) = J_WB2;
   } else {
@@ -115,17 +114,37 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   model->ResetParameters(std::move(params));
 }
 
+/* Checks that a default constructed model is empty. */
+GTEST_TEST(IcfModel, EmptyModel) {
+  IcfModel<double> model;
+  EXPECT_EQ(model.num_bodies(), 0);
+  EXPECT_EQ(model.num_cliques(), 0);
+  EXPECT_EQ(model.num_velocities(), 0);
+  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model.max_clique_size(), 0);
+
+  EXPECT_EQ(model.M0().rows(), 0);
+  EXPECT_EQ(model.M0().cols(), 0);
+  EXPECT_EQ(model.v0().size(), 0);
+  EXPECT_EQ(model.D0().size(), 0);
+  EXPECT_EQ(model.k0().size(), 0);
+  EXPECT_EQ(model.scale_factor().size(), 0);
+  EXPECT_EQ(model.r().size(), 0);
+}
+
 /* Checks that the model can be constructed with minimal heap allocations. */
 GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   IcfModel<double> model;
-  MakeUnconstrainedModel(&model);  // memory is allocated here.
+  MakeUnconstrainedModel(&model);  // Memory is allocated here.
   EXPECT_EQ(model.num_bodies(), 4);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model.max_clique_size(), 6);
 
   EXPECT_EQ(model.M0().rows(), 18);
   EXPECT_EQ(model.M0().cols(), 18);
+  EXPECT_EQ(model.v0().size(), 18);
   EXPECT_EQ(model.D0().size(), 18);
   EXPECT_EQ(model.k0().size(), 18);
   EXPECT_EQ(model.scale_factor().size(), 18);
@@ -169,6 +188,9 @@ GTEST_TEST(IcfModel, PerBodyElements) {
 
   const VectorXd& v = model.v0();
 
+  // We'll fill this with ones, clique by clique.
+  VectorXd mutable_vector = VectorXd::Zero(model.num_velocities());
+
   int num_anchored = 0;
   int num_floating = 0;
   for (int b = 0; b < model.num_bodies(); ++b) {
@@ -208,8 +230,17 @@ GTEST_TEST(IcfModel, PerBodyElements) {
     EXPECT_GT(model.body_mass(b), 0.0);
     if (!model.is_anchored(b)) {
       EXPECT_GT(model.clique_delassus_approx(c).minCoeff(), 0.0);
+      model.mutable_clique_segment(c, &mutable_vector) +=
+          VectorXd::Ones(clique_nv);
     }
   }
+
+  // Our mutable vector now be filled with ones in each clique segment. Any
+  // zeros would indicate that a segment was missed, while twos would indicate
+  // that a segment was double counted.
+  EXPECT_TRUE(CompareMatrices(mutable_vector,
+                              VectorXd::Ones(model.num_velocities()), kEpsilon,
+                              MatrixCompareType::relative));
 
   // We should have exactly one floating body and one anchored body.
   EXPECT_EQ(num_floating, 1);
@@ -315,7 +346,7 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   MatrixXd H_single = hessian_single->MakeDenseMatrix();
   MatrixXd H_multiple = hessian_multiple->MakeDenseMatrix();
 
-  // Verify sparsity patterns
+  // Verify sparsity patterns.
   EXPECT_EQ(hessian_single->block_rows(), 1);
   EXPECT_EQ(hessian_single->block_cols(), 1);
   EXPECT_EQ(hessian_multiple->block_rows(), 3);
@@ -391,10 +422,56 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   }
 }
 
+/* Test that updating the time step produces the same result as creating a new
+model from scratch. */
+GTEST_TEST(IcfModel, UpdateTimeStep) {
+  IcfModel<double> model_original;
+  // TODO(vincekurtz): run this test with constraints once they land.
+  MakeUnconstrainedModel(&model_original, false, 0.02);
+  model_original.SetSparsityPattern();
+  EXPECT_EQ(model_original.num_cliques(), 3);
+  EXPECT_EQ(model_original.num_velocities(), 18);
+  EXPECT_EQ(model_original.time_step(), 0.02);
+
+  const double new_time_step = 0.003;
+
+  // Create a second model from scratch with the new time step.
+  IcfModel<double> model_new;
+  MakeUnconstrainedModel(&model_new, false, new_time_step);
+  model_new.SetSparsityPattern();
+  EXPECT_EQ(model_new.num_cliques(), 3);
+  EXPECT_EQ(model_new.num_velocities(), 18);
+  EXPECT_EQ(model_new.time_step(), new_time_step);
+  // Now update the time step of the original model.
+  EXPECT_NE(model_original.time_step(), new_time_step);
+  model_original.UpdateTimeStep(new_time_step);
+  EXPECT_EQ(model_original.time_step(), new_time_step);
+  // Allocate data.
+  IcfData<double> data_original, data_new;
+  model_original.ResizeData(&data_original);
+  model_new.ResizeData(&data_new);
+  // Compute data for an arbitrary velocity.
+  const int nv = model_original.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+  model_original.CalcData(v, &data_original);
+  model_new.CalcData(v, &data_new);
+  // Cost and gradient should be the same.
+  EXPECT_NEAR(data_original.cost(), data_new.cost(), 8 * kEpsilon);
+  EXPECT_TRUE(CompareMatrices(data_original.gradient(), data_new.gradient(),
+                              8 * kEpsilon, MatrixCompareType::relative));
+  // Hessians should be the same.
+  auto hessian_original = model_original.MakeHessian(data_original);
+  auto hessian_new = model_new.MakeHessian(data_new);
+  MatrixXd H_original = hessian_original->MakeDenseMatrix();
+  MatrixXd H_new = hessian_new->MakeDenseMatrix();
+  EXPECT_TRUE(CompareMatrices(H_original, H_new, 8 * kEpsilon,
+                              MatrixCompareType::relative));
+}
+
 // Note: the functions below are separated out to prepare for landing the
 // unconstrained model first.
 
-/** Adds some dummy contact constraints to the model. */
+/* Adds some dummy contact constraints to the model. */
 template <typename T>
 void AddContactConstraints(IcfModel<T>* model) {
   // Add contact patches.
@@ -403,7 +480,6 @@ void AddContactConstraints(IcfModel<T>* model) {
   const T friction = 0.5;
 
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
-
   // Resize to hold three patches with one contact pair each.
   // N.B. num_pairs_per_patch is allocated on the heap.
   const std::vector<int> num_pairs_per_patch = {1, 1, 1};
@@ -789,6 +865,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
 }
 
+}  // namespace
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers
