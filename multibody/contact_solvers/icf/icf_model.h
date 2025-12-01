@@ -110,7 +110,10 @@ class IcfModel {
 
     auto params = model.ReleaseParameters();
     ... modify params ...
-    model.ResetParameters(std::move(params)); */
+    model.ResetParameters(std::move(params));
+
+  @warning Between ReleaseParameters() and ResetParameters(), the model is in an
+  invalid state: no other member functions should be called. */
   std::unique_ptr<IcfParameters<T>> ReleaseParameters() {
     return std::move(params_);
   }
