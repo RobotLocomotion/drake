@@ -47,6 +47,8 @@ config:
     publish_period: .inf
     # Whether to visualize forces (true) or not (false).
     publish_contacts: false
+    # Whether to visualize collision geometry (true) or not (false).
+    publish_proximity: false
   # Config for `class IcfSolver`. Only used when integration_scheme is "cenic".
   icf_solver_config:
     # Main solver tolerance.
