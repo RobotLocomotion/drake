@@ -93,7 +93,7 @@ class SchurComplement {
      v v v
 
    @pre D_indices is a subset of {0, ..., A.block_cols()-1}. */
-  SchurComplement(const Block3x3SparseSymmetricMatrix& A,
+  SchurComplement(const BlockSparseSymmetricMatrix3d& A,
                   const std::unordered_set<int>& D_indices);
 
   /* Returns the Schur complement for the block D of the matrix A,
