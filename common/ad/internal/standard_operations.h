@@ -571,15 +571,5 @@ inline bool isnan(const AutoDiff& x) {
 
 //@}
 
-/// @name Miscellaneous functions
-//@{
-
-// TODO(jwnimmer-tri) Deprecate me.
-/** Outputs the `value()` part of x to the stream.
-To output the derivatives use `<< x.derivatives().transpose()`. */
-std::ostream& operator<<(std::ostream& s, const AutoDiff& x);
-
-//@}
-
 }  // namespace ad
 }  // namespace drake

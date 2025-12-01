@@ -276,9 +276,5 @@ AutoDiff sqrt(AutoDiff x) {
   return x;
 }
 
-std::ostream& operator<<(std::ostream& s, const AutoDiff& x) {
-  return s << fmt::format("{}", x.value());
-}
-
 }  // namespace ad
 }  // namespace drake
