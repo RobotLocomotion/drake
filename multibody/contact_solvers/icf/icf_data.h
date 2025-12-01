@@ -43,13 +43,17 @@ class IcfData {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size);
 
-    // Scratch space for CalcMomentumTerms. Holds a single vector of size
+    // Scratch space for CalcMomentumTerms. Holds at most one vector of size
     // num_velocities().
     EigenPool<VectorX<T>> Av_minus_r;
 
     // Scratch space for CalcCostAlongLine
-    EigenPool<Vector6<T>> V_WB_alpha;  // body spatial velocities at v + α⋅w.
-    EigenPool<VectorX<T>> v_alpha;  // v + α⋅w, one item, size num_velocities().
+    // Body spatial velocities at v + α⋅w. Holds at most num_bodies() vectors.
+    EigenPool<Vector6<T>> V_WB_alpha;
+
+    // Generalized velocities at v + α⋅w. Holds at most one vector of size
+    // num_velocities().
+    EigenPool<VectorX<T>> v_alpha;
 
     // Scratch space for Hessian accumulation. These pools will only hold at
     // most one element, but using pools instead of a single MatrixX<T> allows
@@ -87,12 +91,16 @@ class IcfData {
   void set_v(const VectorX<T>& v);
 
   /* Returns the pool of rigid body spatial velocities, V_WB. Size is
-  num_bodies(). */
+  num_bodies().
+
+  N.B. We use Vector6<T> rather than SpatialVelocity<T> for compatibility with
+  EigenPool, though these represent the same quantities. The first three entries
+  are angular velocity, and the last three entries are linear velocity. */
   const EigenPool<Vector6<T>>& V_WB() const { return V_WB_; }
   EigenPool<Vector6<T>>& mutable_V_WB() { return V_WB_; }
 
   /* Returns the linearized dynamics matrix times velocities, A⋅v. Size is
-   * num_velocities().*/
+  num_velocities().*/
   const VectorX<T>& Av() const { return Av_; }
   VectorX<T>& mutable_Av() { return Av_; }
 

@@ -55,6 +55,10 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   r_ = Av0_ - time_step() * k0();
 
   VerifyInvariants();
+
+  // The old sparsity pattern is now invalid. It must be recomputed with
+  // SetSparsityPattern().
+  sparsity_pattern_ = nullptr;
 }
 
 template <typename T>
@@ -213,6 +217,12 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
 template <typename T>
 void IcfModel<T>::VerifyInvariants() const {
   DRAKE_DEMAND(time_step() > 0);
+
+  DRAKE_DEMAND(num_bodies_ > 0);
+  DRAKE_DEMAND(num_velocities_ > 0);
+  DRAKE_DEMAND(num_cliques_ > 0);
+  DRAKE_DEMAND(max_clique_size_ > 0);
+
   DRAKE_DEMAND(v0().size() == num_velocities_);
   DRAKE_DEMAND(M0().rows() == num_velocities_);
   DRAKE_DEMAND(M0().cols() == num_velocities_);
