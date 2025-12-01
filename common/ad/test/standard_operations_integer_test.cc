@@ -9,30 +9,26 @@ namespace {
 
 TEST_F(StandardOperationsTest, Ceil) {
   const AutoDiffDut x{0.5, 3, 0};
-  const AutoDiffDut y = ceil(x);
-  EXPECT_EQ(y.value(), std::ceil(x.value()));
-  EXPECT_EQ(y.derivatives(), Eigen::Vector3d::Zero());
+  const double y = ceil(x);
+  EXPECT_EQ(y, std::ceil(x.value()));
 }
 
 TEST_F(StandardOperationsTest, Floor) {
   const AutoDiffDut x{0.5, 3, 0};
-  const AutoDiffDut y = floor(x);
-  EXPECT_EQ(y.value(), std::floor(x.value()));
-  EXPECT_EQ(y.derivatives(), Eigen::Vector3d::Zero());
+  const double y = floor(x);
+  EXPECT_EQ(y, std::floor(x.value()));
 }
 
 TEST_F(StandardOperationsTest, Round) {
   const AutoDiffDut x{0.5, 3, 0};
-  const AutoDiffDut y = round(x);
-  EXPECT_EQ(y.value(), std::round(x.value()));
-  EXPECT_EQ(y.derivatives(), Eigen::Vector3d::Zero());
+  const double y = round(x);
+  EXPECT_EQ(y, std::round(x.value()));
 }
 
 TEST_F(StandardOperationsTest, NextToward) {
   const AutoDiffDut x{0.5, 3, 0};
-  const AutoDiffDut y = nexttoward(x, 1.0);
-  EXPECT_EQ(y.value(), std::nexttoward(x.value(), 1.0));
-  EXPECT_EQ(y.derivatives(), Eigen::Vector3d::Zero());
+  const double y = nexttoward(x, 1.0);
+  EXPECT_EQ(y, std::nexttoward(x.value(), 1.0));
 }
 
 TEST_F(StandardOperationsTest, Classify) {
