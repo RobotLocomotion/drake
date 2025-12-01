@@ -10,7 +10,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 
@@ -115,6 +114,24 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   model->ResetParameters(std::move(params));
 }
 
+/* Check that a default constructed model is empty. */
+GTEST_TEST(IcfModel, EmptyModel) {
+  IcfModel<double> model;
+  EXPECT_EQ(model.num_bodies(), 0);
+  EXPECT_EQ(model.num_cliques(), 0);
+  EXPECT_EQ(model.num_velocities(), 0);
+  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model.max_clique_size(), 0);
+
+  EXPECT_EQ(model.M0().rows(), 0);
+  EXPECT_EQ(model.M0().cols(), 0);
+  EXPECT_EQ(model.v0().size(), 0);
+  EXPECT_EQ(model.D0().size(), 0);
+  EXPECT_EQ(model.k0().size(), 0);
+  EXPECT_EQ(model.scale_factor().size(), 0);
+  EXPECT_EQ(model.r().size(), 0);
+}
+
 /* Checks that the model can be constructed with minimal heap allocations. */
 GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   IcfModel<double> model;
@@ -123,9 +140,11 @@ GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
   EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model.max_clique_size(), 6);
 
   EXPECT_EQ(model.M0().rows(), 18);
   EXPECT_EQ(model.M0().cols(), 18);
+  EXPECT_EQ(model.v0().size(), 18);
   EXPECT_EQ(model.D0().size(), 18);
   EXPECT_EQ(model.k0().size(), 18);
   EXPECT_EQ(model.scale_factor().size(), 18);
@@ -169,6 +188,9 @@ GTEST_TEST(IcfModel, PerBodyElements) {
 
   const VectorXd& v = model.v0();
 
+  // We'll fill this with ones, clique by clique.
+  VectorXd mutable_vector = VectorXd::Zero(model.num_velocities());
+
   int num_anchored = 0;
   int num_floating = 0;
   for (int b = 0; b < model.num_bodies(); ++b) {
@@ -208,8 +230,17 @@ GTEST_TEST(IcfModel, PerBodyElements) {
     EXPECT_GT(model.body_mass(b), 0.0);
     if (!model.is_anchored(b)) {
       EXPECT_GT(model.clique_delassus_approx(c).minCoeff(), 0.0);
+      model.mutable_clique_segment(c, &mutable_vector) +=
+          VectorXd::Ones(clique_nv);
     }
   }
+
+  // Our mutable vector now be filled with ones in each clique segment. Any
+  // zeros would indicate that a segment was missed, while twos would indicate
+  // that a segment was double counted.
+  EXPECT_TRUE(CompareMatrices(mutable_vector,
+                              VectorXd::Ones(model.num_velocities()), kEpsilon,
+                              MatrixCompareType::relative));
 
   // We should have exactly one floating body and one anchored body.
   EXPECT_EQ(num_floating, 1);
@@ -400,6 +431,7 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
+  EXPECT_EQ(model_original.time_step(), 0.02);
 
   const double new_time_step = 0.003;
 
@@ -409,6 +441,7 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
+  EXPECT_EQ(model_new.time_step(), new_time_step);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);

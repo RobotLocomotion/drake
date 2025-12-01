@@ -176,6 +176,8 @@ T IcfModel<T>::CalcCostAlongLine(
 
 template <typename T>
 void IcfModel<T>::SetSparsityPattern() {
+  DRAKE_DEMAND(params_ != nullptr);
+
   // N.B. we make a copy here because block_sizes will be moved into the
   // BlockSparsityPattern at the end of this function.
   std::vector<int> block_sizes = params().clique_sizes;
@@ -196,6 +198,7 @@ void IcfModel<T>::SetSparsityPattern() {
 template <typename T>
 void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   DRAKE_DEMAND(time_step > 0);
+  DRAKE_DEMAND(params_ != nullptr);
 
   // Linearized dynamics matrix A = M + δt⋅D
   for (int c = 0; c < num_cliques_; ++c) {
@@ -216,6 +219,7 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
 
 template <typename T>
 void IcfModel<T>::VerifyInvariants() const {
+  DRAKE_DEMAND(params_ != nullptr);
   DRAKE_DEMAND(time_step() > 0);
 
   DRAKE_DEMAND(num_bodies_ > 0);
