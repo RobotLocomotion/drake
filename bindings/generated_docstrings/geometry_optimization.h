@@ -4520,16 +4520,6 @@ Note:
     require_sample_point_is_contained, iteration_limit,
     termination_threshold, relative_termination_threshold.)""";
         } Iris;
-        // Symbol: drake::geometry::optimization::IrisInConfigurationSpace
-        struct /* IrisInConfigurationSpace */ {
-          // Source: drake/geometry/optimization/iris.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use IrisNp instead. This will be removed from Drake on or after
-    2025-12-01.)""";
-        } IrisInConfigurationSpace;
         // Symbol: drake::geometry::optimization::IrisNp
         struct /* IrisNp */ {
           // Source: drake/geometry/optimization/iris.h

@@ -672,18 +672,6 @@ void DefineIris(py::module m) {
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisNp.doc);
 
-// Deprecated 2025-12-01
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("IrisInConfigurationSpace",
-      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
-          py::overload_cast<const multibody::MultibodyPlant<double>&,
-              const systems::Context<double>&, const IrisOptions&>(
-              &IrisInConfigurationSpace)),
-      py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
-      doc.IrisInConfigurationSpace.doc_deprecated);
-#pragma GCC diagnostic pop
-
   // TODO(#19597) Deprecate and remove these functions once Python
   // can natively handle the file I/O.
   m.def(
