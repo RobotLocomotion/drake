@@ -305,8 +305,10 @@ class SpatialVector {
 template <template <typename> class SpatialQuantity, typename T>
 std::ostream& operator<<(std::ostream& o,
                          const SpatialVector<SpatialQuantity, T>& V) {
-  o << "[" << V[0];
-  for (int i = 1; i < V.size(); ++i) o << ", " << V[i];
+  o << "[" << fmt::to_string(V[0]);
+  for (int i = 1; i < V.size(); ++i) {
+    o << ", " << fmt::to_string(V[i]);
+  }
   o << "]ᵀ";  // The "transpose" symbol.
   return o;
 }
