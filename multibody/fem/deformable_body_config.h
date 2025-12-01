@@ -69,8 +69,8 @@ enum class MaterialModel {
    MaterialModel::kLinearCorotated.
  - Element subdivision count: to integrate external volumetric forces, elements
    can be subdivided to resolve large non-linearities within the domain of the
-   element. Zero means no subdivision, one means split in half, etc. Must be
-   less than or equal to 4. Default to 0.
+   element. The number of resulting quadrature points is equal to 4^N where N is
+   the subdivision count. Zero means no subdivision. Default to 0.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 class DeformableBodyConfig {
