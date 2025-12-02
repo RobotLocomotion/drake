@@ -206,6 +206,57 @@ std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
   return {K0, u0, e0, K2, u2, e2};
 }
 
+/* Adds limit constraints on cliques 0 and 2 to the given model. */
+template <typename T>
+void AddLimitConstraints(IcfModel<T>* model) {
+  EXPECT_EQ(model->num_cliques(), 3);
+
+  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
+
+  // Cliques 0 and 2 will have limits. We'll resize the constraint pool
+  // accordingly before adding the limit constraints.
+  std::vector<int> limited_clique_sizes = {model->clique_size(0),
+                                           model->clique_size(2)};
+  std::vector<int> constraint_to_clique = {0, 2};
+  limits.Resize(limited_clique_sizes, constraint_to_clique);
+
+  const int nv = model->num_velocities();
+  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  // Limits on clique 0.
+  limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
+             -1.0);  // Above.
+  limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
+             1.0);  // Within.
+
+  // Limits on clique 2.
+  limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
+             1.5);  // Below.
+  limits.Set(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
+             0.5);  // Above.
+  limits.Set(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
+             1.5);  // Within.
+}
+
+/* Adds a coupler constraint to clique 1 of th given model. */
+template <typename T>
+void AddCouplerConstraint(IcfModel<T>* model) {
+  EXPECT_EQ(model->num_cliques(), 3);
+
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
+  couplers.Resize(1 /* one constraint */);
+
+  const int nv = model->num_velocities();
+  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  // Coupler on clique 1.
+  const VectorX<AutoDiffXd>& q0_c1 = model->clique_segment(1, q0);
+  const double rho1 = 2.5;
+  const double offset1 = 0.1;
+  couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+               q0_c1(1), q0_c1(3), rho1, offset1);
+}
+
 /* Checks that a default constructed model is empty. */
 GTEST_TEST(IcfModel, EmptyModel) {
   IcfModel<double> model;
@@ -701,38 +752,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   EXPECT_EQ(model.num_limit_constraints(), 0);
 
   // Add limit constraints.
-  auto& limits = model.limit_constraints_pool();
-
-  // Cliques 0 and 2 will have limits. We'll resize the constraint pool
-  // accordingly before adding the limit constraints.
-  std::vector<int> limited_clique_sizes = {model.clique_size(0),
-                                           model.clique_size(2)};
-  std::vector<int> constraint_to_clique = {0, 2};
-  limits.Resize(limited_clique_sizes, constraint_to_clique);
-
-  EXPECT_EQ(model.num_limit_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 2);
-
-  const int nv = model.num_velocities();
-  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
-
-  // Limits on clique 0.
-  limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
-             -1.0);  // Above.
-  limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
-             1.0);  // Within.
-
-  EXPECT_EQ(model.num_limit_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 2);
-
-  // Limits on clique 2.
-  limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
-             1.5);  // Below.
-  limits.Set(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
-             0.5);  // Above.
-  limits.Set(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
-             1.5);  // Within.
-
+  AddLimitConstraints(&model);
   EXPECT_EQ(model.num_limit_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 2);
 
@@ -740,6 +760,8 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   model.ResizeData(&data);
   EXPECT_EQ(data.num_limits(), 2);
 
+  const int nv = model.num_velocities();
+  const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_value, &v);
@@ -801,18 +823,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   EXPECT_EQ(model.num_coupler_constraints(), 0);
 
   // Add coupler constraints.
-  auto& couplers = model.coupler_constraints_pool();
-  couplers.Resize(1 /* one constraint */);
-
-  const int nv = model.num_velocities();
-  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
-
-  // Coupler on clique 1.
-  const auto q0_c1 = model.clique_segment(1, q0);
-  const double rho1 = 2.5;
-  const double offset1 = 0.1;
-  couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
-               q0_c1(1), q0_c1(3), rho1, offset1);
+  AddCouplerConstraint(&model);
   EXPECT_EQ(model.num_coupler_constraints(), 1);
   EXPECT_EQ(model.num_constraints(), 1);
 
@@ -820,12 +831,16 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   model.ResizeData(&data);
   EXPECT_EQ(data.num_couplers(), 1);
 
+  const int nv = model.num_velocities();
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_value, &v);
   model.CalcData(v, &data);
 
   const double dt = model.time_step().value();
+  const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  const double rho1 = 2.5;
+  const double offset1 = 0.1;
   VectorX<AutoDiffXd> q = q0 + dt * v;
   const auto q_c1 = model.clique_segment(1, q);
   const auto v_c1 = model.clique_segment(1, v);
