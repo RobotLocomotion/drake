@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
@@ -136,10 +137,15 @@ class IcfModel {
   /* Returns the maximum number of velocities in any clique. */
   int max_clique_size() const { return max_clique_size_; }
 
-  /* Returns the total number of constraints of any type in the problem.. */
-  int num_constraints() const {
-    // TODO(#23769): add constraints to the model.
-    return 0;
+  /* Returns the total number of constraints of any type in the problem. */
+  int num_constraints() const { return num_coupler_constraints(); }
+
+  CouplerConstraintsPool<T>& coupler_constraints_pool() {
+    return coupler_constraints_pool_;
+  }
+
+  int num_coupler_constraints() const {
+    return coupler_constraints_pool_.num_constraints();
   }
 
   /* Returns the time step δt. */
@@ -357,6 +363,9 @@ class IcfModel {
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
   std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
       sparsity_pattern_;
+
+  // Fixed set of constraints.
+  CouplerConstraintsPool<T> coupler_constraints_pool_;
 };
 
 }  // namespace internal

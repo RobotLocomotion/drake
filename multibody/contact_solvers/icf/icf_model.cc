@@ -13,7 +13,9 @@ using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::VectorBlock;
 
 template <typename T>
-IcfModel<T>::IcfModel() : params_{std::make_unique<IcfParameters<T>>()} {}
+IcfModel<T>::IcfModel()
+    : params_{std::make_unique<IcfParameters<T>>()},
+      coupler_constraints_pool_(this) {}
 
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
@@ -81,7 +83,8 @@ Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
 
 template <typename T>
 void IcfModel<T>::ResizeData(IcfData<T>* data) const {
-  data->Resize(num_bodies_, num_velocities_, max_clique_size_);
+  data->Resize(num_bodies_, num_velocities_, max_clique_size_,
+               coupler_constraints_pool_.num_constraints());
 }
 
 template <typename T>
@@ -96,9 +99,17 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   EigenPool<Vector6<T>>& V_WB = data->mutable_V_WB();
   CalcBodySpatialVelocities(v, &V_WB);
 
-  // TODO(#23769): Add constraint contributions as well. For now all we have is
-  // the unconstrained momentum contribution.
-  data->set_cost(data->momentum_cost());
+  // Compute constraint data.
+  coupler_constraints_pool_.CalcData(v,
+                                     &data->mutable_coupler_constraints_data());
+
+  // Accumulate gradient contributions from constraints.
+  VectorX<T>& gradient = data->mutable_gradient();
+  coupler_constraints_pool_.AccumulateGradient(*data, &gradient);
+
+  // Accumulate cost contributions from constraints.
+  data->set_cost(data->momentum_cost() +
+                 data->coupler_constraints_data().cost());
 }
 
 template <typename T>
@@ -112,7 +123,8 @@ IcfModel<T>::MakeHessian(const IcfData<T>& data) const {
 
 template <typename T>
 void IcfModel<T>::UpdateHessian(
-    const IcfData<T>&, BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+    const IcfData<T>& data,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
   hessian->SetZero();
 
   // Initialize hessian = A (block diagonal).
@@ -121,8 +133,8 @@ void IcfModel<T>::UpdateHessian(
     hessian->AddToBlock(c, c, A_clique);
   }
 
-  // TODO(#23769): Add constraints' contributions. IcfData will be used in this
-  // case.
+  // Add constraints' contributions.
+  coupler_constraints_pool_.AccumulateHessian(data, hessian);
 }
 
 template <typename T>
@@ -170,7 +182,19 @@ T IcfModel<T>::CalcCostAlongLine(
   *dcost_dalpha = a * alpha + b;
   *d2cost_dalpha2 = a;
 
-  // TODO(#23769): Add constraint contributions.
+  T constraint_dcost, constraint_d2cost;
+
+  // Add coupler constraints contributions:
+  {
+    coupler_constraints_pool_.CalcData(
+        v_alpha, &data.scratch().coupler_constraints_data);
+    coupler_constraints_pool_.ProjectAlongLine(
+        data.scratch().coupler_constraints_data, search_direction.w,
+        &constraint_dcost, &constraint_d2cost);
+    cost += data.scratch().coupler_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
 
   return cost;
 }
