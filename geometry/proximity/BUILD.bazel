@@ -1100,11 +1100,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "bvh_test",
-    args = select({
-        # TODO(#23855): This test is currently broken on macOS.
-        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
     deps = [
         ":bvh",
         ":make_ellipsoid_mesh",
