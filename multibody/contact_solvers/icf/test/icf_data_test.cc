@@ -33,8 +33,9 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   const int num_bodies = 5;
   const int num_velocities = 12;
   const int max_clique_size = 6;
+  const int num_couplers = 2;
 
-  data.Resize(num_bodies, num_velocities, max_clique_size);
+  data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers);
 
   // Main data elements
   EXPECT_EQ(data.num_velocities(), num_velocities);
@@ -49,6 +50,10 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
   EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
+  EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
+            num_couplers);
+  EXPECT_EQ(data.scratch().H_cc_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_cc_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_AA_pool[0].rows(), max_clique_size);
@@ -67,8 +72,9 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
   const int num_bodies = 3;
   const int num_velocities = 11;
   const int max_clique_size = 7;
+  const int num_couplers = 2;
 
-  data.Resize(num_bodies, num_velocities, max_clique_size);
+  data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers);
 
   // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
@@ -80,7 +86,7 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
     // Restoring the data to the original size and setting velocities should not
     // cause any new allocations.
     drake::test::LimitMalloc guard;
-    data.Resize(num_bodies, num_velocities, max_clique_size);
+    data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers);
     data.set_v(v);
   }
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
