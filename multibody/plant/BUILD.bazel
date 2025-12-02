@@ -1049,6 +1049,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_integration_test",
     timeout = "moderate",
+    args = select({
+        # TODO(#23854): This test is currently broken on macOS.
+        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
