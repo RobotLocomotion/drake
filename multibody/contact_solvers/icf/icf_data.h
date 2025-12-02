@@ -3,6 +3,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 
 namespace drake {
@@ -33,15 +34,20 @@ class IcfData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
-  /* Struct to store pre-allocated scratch space. Unlike the cache, this scratch
-  space is for intermediate computations, and is often cleared or overwritten as
-  needed. */
+  /* Struct to store pre-allocated scratch space. This scratch space is for
+  intermediate computations, and is often cleared or overwritten as needed. To
+  avoid nested function calls that accidentally overwrite the scratch space of
+  previous calls in the stack, we name these variables for their specific uses.
+
+  @warning Accidentally overwriting values in the scratch is not prevented by
+  this class. Calling code must ensure that scratch space is used safely. */
   struct Scratch {
     /* Clears all data without changing capacity. */
     void Clear();
 
     /* Resizes the scratch space, allocating memory as needed. */
-    void Resize(int num_bodies, int num_velocities, int max_clique_size);
+    void Resize(int num_bodies, int num_velocities, int max_clique_size,
+                int num_couplers);
 
     // Scratch space for CalcMomentumTerms. Holds at most one vector of size
     // num_velocities().
@@ -54,6 +60,13 @@ class IcfData {
     // Generalized velocities at v + α⋅w. Holds at most one vector of size
     // num_velocities().
     EigenPool<VectorX<T>> v_alpha;
+
+    // Scratch data pools for CalcCostAlongLine
+    CouplerConstraintsDataPool<T> coupler_constraints_data;
+
+    // Scratch space for coupler constraints Hessian accumulation. Holds at most
+    // one matrix of size max_clique_size() x max_clique_size().
+    EigenPool<MatrixX<T>> H_cc_pool;
 
     // Scratch space for Hessian accumulation. These pools will only hold at
     // most one element, but using pools instead of a single MatrixX<T> allows
@@ -76,8 +89,16 @@ class IcfData {
 
   @param num_bodies Total number of bodies in the model.
   @param num_velocities Total number of generalized velocities.
-  @param max_clique_size Maximum number of velocities in any clique. */
-  void Resize(int num_bodies, int num_velocities, int max_clique_size);
+  @param max_clique_size Maximum number of velocities in any clique.
+  @param num_couplers Number of coupler constraints.
+  @param gain_sizes Number of velocities for each gain constraint.
+  @param limit_sizes Number of velocities for each limit constraint.
+  @param patch_sizes Number of contact pairs for each patch constraint.
+
+  TODO(vincekurtz): consider fixing num_bodies and num_velocities at
+  construction, and only resizing based on patch_sizes here. */
+  void Resize(int num_bodies, int num_velocities, int max_clique_size,
+              int num_couplers);
 
   /* Returns the number of generalized velocities in the system. */
   int num_velocities() const { return v_.size(); }
@@ -116,6 +137,14 @@ class IcfData {
   const VectorX<T>& gradient() const { return gradient_; }
   VectorX<T>& mutable_gradient() { return gradient_; }
 
+  /* Returns the data pool for coupler constraints. */
+  const CouplerConstraintsDataPool<T>& coupler_constraints_data() const {
+    return coupler_constraints_data_;
+  }
+  CouplerConstraintsDataPool<T>& mutable_coupler_constraints_data() {
+    return coupler_constraints_data_;
+  }
+
   /* Returns a mutable scratch space for intermediate computations. We allow
   IcfModel to write on the scratch as needed. */
   Scratch& scratch() const { return scratch_; }
@@ -127,6 +156,9 @@ class IcfData {
   T momentum_cost_{0};          // 0.5 vᵀAv - rᵀv
   T cost_{0};                   // Total cost ℓ(v) = 0.5 vᵀA v - rᵀv + ℓᶜ(v)
   VectorX<T> gradient_;         // Total cost gradient ∇ℓ(v)
+
+  // Type-specific constraint pools.
+  CouplerConstraintsDataPool<T> coupler_constraints_data_;
 
   mutable Scratch scratch_;
 };
