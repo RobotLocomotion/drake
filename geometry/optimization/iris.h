@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -277,12 +276,6 @@ IrisOptions.termination_func for more details.
 HPolyhedron IrisNp(const multibody::MultibodyPlant<double>& plant,
                    const systems::Context<double>& context,
                    const IrisOptions& options = IrisOptions());
-
-DRAKE_DEPRECATED("2025-12-01", "Use IrisNp instead.")
-HPolyhedron IrisInConfigurationSpace(
-    const multibody::MultibodyPlant<double>& plant,
-    const systems::Context<double>& context,
-    const IrisOptions& options = IrisOptions());
 
 /** Modifies the @p iris_options to facilitate finding a region that contains
 the edge between x_1 and x_2. It sets @p iris_options.starting_ellipse to be a

@@ -82,7 +82,7 @@ class DirichletBoundaryCondition {
    @pre Indices of all DoFs associated with nodes subject to `this` BC are
    smaller than `tangent_matrix->cols()`. */
   void ApplyBoundaryConditionToTangentMatrix(
-      contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+      contact_solvers::internal::BlockSparseSymmetricMatrix3d* tangent_matrix)
       const;
 
   /* Modifies the given vector `v` (e.g, the residual of the system or the

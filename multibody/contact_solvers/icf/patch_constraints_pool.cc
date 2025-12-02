@@ -14,6 +14,8 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+using contact_solvers::internal::BlockSparseSymmetricMatrix;
+
 // Computes the soft norm ‖x‖_ε = sqrt(xᵀx + ε²) - ε.
 template <typename T>
 T SoftNorm(const Vector3<T>& x, const T& eps) {
@@ -428,7 +430,8 @@ void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
 template <typename T>
 void PatchConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
 
   auto& H_BB_pool = data.scratch().H_BB_pool;

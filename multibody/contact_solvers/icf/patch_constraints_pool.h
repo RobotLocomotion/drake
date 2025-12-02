@@ -133,7 +133,8 @@ class PatchConstraintsPool {
   Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
-      contact_solvers::internal::BlockSparseSymmetricMatrixT<T>* hessian) const;
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
 
   /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
   Used for exact line search.

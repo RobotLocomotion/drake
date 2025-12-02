@@ -12,6 +12,8 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
+using contact_solvers::internal::BlockSparseSymmetricMatrix;
+
 template <typename T>
 void LimitConstraintsPool<T>::Clear() {
   constraint_to_clique_.clear();
@@ -145,7 +147,8 @@ void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
 template <typename T>
 void LimitConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
+    const IcfData<T>& data,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {

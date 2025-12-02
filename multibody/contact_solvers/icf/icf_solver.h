@@ -178,7 +178,7 @@ class IcfSolver {
   between iterations and between subsequent solves (which is a valid
   strategy since the problem is convex). */
   std::unique_ptr<
-      contact_solvers::internal::BlockSparseSymmetricMatrixT<double>>
+      contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
       hessian_;
   contact_solvers::internal::BlockSparseCholeskySolver<Eigen::MatrixXd>
       hessian_factorization_;
