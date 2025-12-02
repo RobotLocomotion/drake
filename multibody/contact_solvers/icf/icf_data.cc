@@ -9,26 +9,15 @@ namespace icf {
 namespace internal {
 
 template <typename T>
-void IcfData<T>::Scratch::Clear() {
-  Av_minus_r.Clear();
-  V_WB_alpha.Clear();
-  v_alpha.Clear();
-  H_BB_pool.Clear();
-  H_AA_pool.Clear();
-  H_AB_pool.Clear();
-  H_BA_pool.Clear();
-  GJa_pool.Clear();
-  GJb_pool.Clear();
-}
-
-template <typename T>
 void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
-                                 int max_clique_size) {
-  Clear();
+                                 int max_clique_size, int num_couplers) {
   Av_minus_r.Resize(1, num_velocities, 1);
 
   V_WB_alpha.Resize(num_bodies, 6, 1);
   v_alpha.Resize(1, num_velocities, 1);
+
+  coupler_constraints_data.Resize(num_couplers);
+  H_cc_pool.Resize(1, max_clique_size, max_clique_size);
 
   H_BB_pool.Resize(1, max_clique_size, max_clique_size);
   H_AA_pool.Resize(1, max_clique_size, max_clique_size);
@@ -42,13 +31,14 @@ template <typename T>
 IcfData<T>::~IcfData() = default;
 
 template <typename T>
-void IcfData<T>::Resize(int num_bodies, int num_velocities,
-                        int max_clique_size) {
+void IcfData<T>::Resize(int num_bodies, int num_velocities, int max_clique_size,
+                        int num_couplers) {
   v_.resize(num_velocities);
   V_WB_.Resize(num_bodies, 6, 1);
   Av_.resize(num_velocities);
   gradient_.resize(num_velocities);
-  scratch_.Resize(num_bodies, num_velocities, max_clique_size);
+  coupler_constraints_data_.Resize(num_couplers);
+  scratch_.Resize(num_bodies, num_velocities, max_clique_size, num_couplers);
 }
 
 template <typename T>

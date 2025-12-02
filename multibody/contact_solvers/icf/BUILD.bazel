@@ -12,6 +12,7 @@ drake_cc_package_library(
     name = "icf",
     visibility = ["//visibility:public"],
     deps = [
+        ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":icf_data",
         ":icf_model",
@@ -30,11 +31,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "icf_data",
-    srcs = ["icf_data.cc"],
-    hdrs = ["icf_data.h"],
+    name = "coupler_constraints_data_pool",
+    srcs = ["coupler_constraints_data_pool.cc"],
+    hdrs = ["coupler_constraints_data_pool.h"],
     deps = [
-        ":eigen_pool",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -51,14 +51,29 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "icf_data",
+    srcs = ["icf_data.cc"],
+    hdrs = ["icf_data.h"],
+    deps = [
+        ":coupler_constraints_data_pool",
+        ":eigen_pool",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "icf_model",
     srcs = [
+        "coupler_constraints_pool.cc",
         "icf_model.cc",
     ],
     hdrs = [
+        "coupler_constraints_pool.h",
         "icf_model.h",
     ],
     deps = [
+        ":coupler_constraints_data_pool",
+        ":eigen_pool",
         ":icf_data",
         ":icf_search_direction_data",
         "//common:default_scalars",
