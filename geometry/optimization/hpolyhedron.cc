@@ -963,7 +963,7 @@ bool CheckIntersectionAndPointContainmentConstraints(
       intersecting_polytopes[i].AddPointInSetConstraints(&prog, x);
       prog.AddLinearConstraint(
           inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf),
-          inbody.b() - (intersection_padding - kConstraintTol) *
+          inbody.b() - (intersection_padding + kConstraintTol) *
                            inbody.A().rowwise().norm(),
           x);
       solvers::MathematicalProgramResult result = Solve(prog);
