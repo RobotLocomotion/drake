@@ -31,6 +31,12 @@ TEST_F(StandardOperationsTest, NextToward) {
   EXPECT_EQ(y, std::nexttoward(x.value(), 1.0));
 }
 
+TEST_F(StandardOperationsTest, CopySign) {
+  const AutoDiffDut x{0.5, 3, 0};
+  const AutoDiffDut y = copysign(x, -22.2);
+  EXPECT_EQ(y, -x);
+}
+
 TEST_F(StandardOperationsTest, Classify) {
   const AutoDiffDut a{0.5, 3, 0};
   const AutoDiffDut b{std::numeric_limits<double>::infinity(), 3, 0};
