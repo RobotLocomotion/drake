@@ -235,9 +235,9 @@ GTEST_TEST(IcfModel, PerBodyElements) {
     }
   }
 
-  // Our mutable vector now be filled with ones in each clique segment. Any
-  // zeros would indicate that a segment was missed, while twos would indicate
-  // that a segment was double counted.
+  // Our mutable vector should now be filled with ones in each clique segment.
+  // Any zeros would indicate that a segment was missed, while twos would
+  // indicate that a segment was double counted.
   EXPECT_TRUE(CompareMatrices(mutable_vector,
                               VectorXd::Ones(model.num_velocities()), kEpsilon,
                               MatrixCompareType::relative));
