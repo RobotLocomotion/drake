@@ -949,15 +949,17 @@ bool CheckIntersectionAndPointContainmentConstraints(
   }
 
   // Check intersection with each intersecting polytope
-  for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
-    if (keep_whole_intersection) {
+  if (keep_whole_intersection) {
+    for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
       const HPolyhedron intersection =
           circumbody.Intersection(intersecting_polytopes[i]);
       if (!intersection.ContainedIn(inbody, kConstraintTol)) {
         return false;
       }
-    } else {
-      MathematicalProgram prog;
+    }
+  } else {
+    MathematicalProgram prog;
+    for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
       solvers::VectorXDecisionVariable x =
           prog.NewContinuousVariables(inbody.ambient_dimension(), "x");
       intersecting_polytopes[i].AddPointInSetConstraints(&prog, x);
@@ -966,10 +968,10 @@ bool CheckIntersectionAndPointContainmentConstraints(
           inbody.b() - (intersection_padding + kConstraintTol) *
                            inbody.A().rowwise().norm(),
           x);
-      solvers::MathematicalProgramResult result = Solve(prog);
-      if (!result.is_success()) {
-        return false;
-      }
+    }
+    solvers::MathematicalProgramResult result = Solve(prog);
+    if (!result.is_success()) {
+      return false;
     }
   }
   return true;
