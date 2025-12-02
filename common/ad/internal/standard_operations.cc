@@ -216,6 +216,7 @@ AutoDiff pow(AutoDiff base_ad, const AutoDiff& exp_ad) {
   // If any of {base, exp, result} are NaN, then grad(result) is always NaN.
   if (std::isnan(result.value()) || std::isnan(base) || std::isnan(exp)) {
     result.partials().Mul(kNaN);
+    result.partials().AddScaled(kNaN, exp_ad.partials());
     return result;
   }
 
