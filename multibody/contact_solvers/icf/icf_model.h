@@ -190,12 +190,10 @@ class IcfModel {
   /* Returns the initial joint damping vector. */
   const VectorX<T>& D0() const { return params().D0; }
 
-  /* Returns the initial coriolis, centrifugal, and gravitational terms, k₀.
-   */
+  /* Returns the initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
 
-  /* Returns a reference to the spatial velocity Jacobian for the given body.
-   */
+  /* Returns a reference to the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().J_WB[body];
@@ -213,15 +211,15 @@ class IcfModel {
     return params().body_to_clique[body];
   }
 
-  /* Checks whether the given body is anchored to the world. Anchored bodies
-  are not included in the problem, and thus have a negative clique index. */
+  /* Checks whether the given body is anchored to the world. Anchored bodies are
+  not included in the problem, and thus have a negative clique index. */
   bool is_anchored(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return body_to_clique(body) < 0;
   }
 
-  /* Checks whether the given body is free floating, for optimizing
-  computations for identity Jacobians. */
+  /* Checks whether the given body is free floating, for optimizing computations
+  for identity Jacobians. */
   bool is_floating(int body) const {
     DRAKE_ASSERT(0 <= body && body < num_bodies());
     return params().body_is_floating[body] == 1;
@@ -267,9 +265,9 @@ class IcfModel {
     return clique_delassus_[clique];
   }
 
-  /* Returns the Hessian sparsity pattern. This is useful for detecting when
-  the sparsity pattern is the same (in which case we use UpdateHessian()), and
-  when it has changed (in which case we use MakeHessian()). */
+  /* Returns the Hessian sparsity pattern. This is useful for detecting when the
+  sparsity pattern is the same (in which case we use UpdateHessian()), and when
+  it has changed (in which case we use MakeHessian()). */
   const contact_solvers::internal::BlockSparsityPattern& sparsity_pattern()
       const {
     DRAKE_ASSERT(sparsity_pattern_ != nullptr);
@@ -284,9 +282,9 @@ class IcfModel {
   @pre `data` has been resized to fit this model via ResizeData(). */
   void CalcData(const VectorX<T>& v, IcfData<T>* data) const;
 
-  /* Makes a new Hessian matrix. If only `data` changes for the same ICF
-  model, calling UpdateHessian() to reuse the sparsity pattern of the Hessian
-  is cheaper, and incurs no memory allocations.
+  /* Makes a new Hessian matrix. If only `data` changes for the same ICF model,
+  calling UpdateHessian() to reuse the sparsity pattern of the Hessian is
+  cheaper, and incurs no memory allocations.
 
   The workflow to use the Hessian should be:
 
@@ -308,16 +306,15 @@ class IcfModel {
   if (slow convergence within Newton) {
      // The model did not change, we can reuse the sparsity within the Newton
      // iterations.
-     factorization.UpdateMatrix(*hessian);  // Update values, not the
-  sparsity. factorization.Factor();  // Perform actual factorization.
+     factorization.UpdateMatrix(*hessian);  // Update values, not the sparsity.
+     factorization.Factor();  // Perform actual factorization.
   }
 
   Note: For "dense" hessians, we can get one with
   BlockSparseSymmetricMatrix::MakeDenseMatrix(). The additional bookkeeping in
   this class is indeed necessary to build the matrix even if dense.
 
-  See documentation in internal::BlockSparseCholeskySolver for further
-  details.
+  See documentation in internal::BlockSparseCholeskySolver for further details.
   */
   std::unique_ptr<
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>>
@@ -330,8 +327,7 @@ class IcfModel {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
-  /* Pre-computes some quantities used to speed up CalcCostAlongLine() below.
-   */
+  /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
   void CalcSearchDirectionData(
       const IcfData<T>& data, const VectorX<T>& w,
       IcfSearchDirectionData<T>* search_direction_data) const;
@@ -363,13 +359,12 @@ class IcfModel {
   /* Checks that this model's parameters define a valid ICF problem. */
   void VerifyInvariants() const;
 
-  /* Computes result = A⋅v, where A is the (sparse) linearized dynamics
-   * matrix.
+  /* Computes result = A⋅v, where A is the (sparse) linearized dynamics matrix.
    */
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* result) const;
 
-  /* Computes the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms
-  that relate to momentum only (no constraints). */
+  /* Computes the cost (1/2 v'Av - r'v) and gradient (Av - r) for the terms that
+  relate to momentum only (no constraints). */
   void CalcMomentumTerms(const VectorX<T>& v, IcfData<T>* data) const;
 
   /* Computes spatial velocities V_WB for all bodies, given generalized

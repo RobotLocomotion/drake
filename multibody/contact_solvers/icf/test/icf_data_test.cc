@@ -52,8 +52,6 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   // N.B. scalar cost terms (cost, momentum cost) are considered undefined until
   // set explicitly.
 
-  // Constraint sizes
-
   // Scratch space
   EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);

@@ -257,7 +257,7 @@ GTEST_TEST(IcfModel, CalcGradients) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.num_patches(), model.num_constraints());
+  EXPECT_EQ(model.num_constraints(), 0);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
@@ -442,23 +442,28 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
+
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
   model_original.UpdateTimeStep(new_time_step);
   EXPECT_EQ(model_original.time_step(), new_time_step);
+
   // Allocate data.
   IcfData<double> data_original, data_new;
   model_original.ResizeData(&data_original);
   model_new.ResizeData(&data_new);
+
   // Compute data for an arbitrary velocity.
   const int nv = model_original.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
   model_original.CalcData(v, &data_original);
   model_new.CalcData(v, &data_new);
+
   // Cost and gradient should be the same.
   EXPECT_NEAR(data_original.cost(), data_new.cost(), 8 * kEpsilon);
   EXPECT_TRUE(CompareMatrices(data_original.gradient(), data_new.gradient(),
                               8 * kEpsilon, MatrixCompareType::relative));
+
   // Hessians should be the same.
   auto hessian_original = model_original.MakeHessian(data_original);
   auto hessian_new = model_new.MakeHessian(data_new);

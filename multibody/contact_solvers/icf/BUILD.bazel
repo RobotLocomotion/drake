@@ -181,7 +181,6 @@ drake_cc_googletest(
         ":eigen_pool",
         ":icf_model",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
         "//math:gradient",
     ],
