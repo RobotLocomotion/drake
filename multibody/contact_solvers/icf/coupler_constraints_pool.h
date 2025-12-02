@@ -26,17 +26,22 @@ class IcfModel;
 
 Coupler constraints only apply to joints within the same clique, so they do not
 change the sparsity structure of the problem.
-TODO(vincekurtz): consider relaxing this requirement. */
+TODO(vincekurtz): consider relaxing this requirement.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class CouplerConstraintsPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CouplerConstraintsPool);
 
   /* Constructs an empty pool. */
-  explicit CouplerConstraintsPool(const IcfModel<T>* parent_model)
-      : model_(parent_model) {
-    DRAKE_ASSERT(parent_model != nullptr);
-  }
+  explicit CouplerConstraintsPool(const IcfModel<T>* parent_model);
+
+  /* Returns a reference to the parent model. */
+  const IcfModel<T>& model() const { return *model_; }
+
+  /* Returns the total number of constraints stored in this pool. */
+  int num_constraints() const { return constraint_to_clique_.size(); }
 
   /* Resets, zeroing out the constraints while keeping memory allocated. */
   void Clear();
@@ -80,21 +85,19 @@ class CouplerConstraintsPool {
   void ProjectAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                         const VectorX<T>& w, T* dcost, T* d2cost) const;
 
-  /* Returns the total number of constraints stored in this pool. */
-  int num_constraints() const { return constraint_to_clique_.size(); }
-
-  /* Returns a reference to the parent model. */
-  const IcfModel<T>& model() const { return *model_; }
-
  private:
   const IcfModel<T>* model_{nullptr};  // The parent model.
 
-  // Clique for the k-th constraint. Of size num_constraints().
+  // Clique for the k-th constraint, of size num_constraints().
   std::vector<int> constraint_to_clique_;
-  std::vector<std::pair<int, int>> dofs_;  // (i, j) pair of coupled dofs.
+
+  // DOFs (i, j) for the k-th constraint, of size num_constraints().
+  std::vector<std::pair<int, int>> dofs_;
+
+  // Gear ratio ρ per constraint, of size num_constraints().
   std::vector<T> gear_ratio_;
 
-  // Regularization and bias per constraint.
+  // Regularization and bias per constraint, of size num_constraints().
   std::vector<T> v_hat_;  // scaled by dt
   std::vector<T> R_;
 };

@@ -14,6 +14,13 @@ namespace internal {
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 
 template <typename T>
+CouplerConstraintsPool<T>::CouplerConstraintsPool(
+    const IcfModel<T>* parent_model)
+    : model_(parent_model) {
+  DRAKE_ASSERT(parent_model != nullptr);
+}
+
+template <typename T>
 void CouplerConstraintsPool<T>::Clear() {
   constraint_to_clique_.clear();
   dofs_.clear();
@@ -152,7 +159,7 @@ void CouplerConstraintsPool<T>::ProjectAlongLine(
 
     const T wi = w_c(i);
     const T wj = w_c(j);
-    const T vw = wi - rho * wj;  // "constraint velocity" evaluated on w.
+    const T vw = wi - rho * wj;  // "Constraint velocity" evaluated on w.
 
     (*dcost) -= gamma * vw;
     (*d2cost) += vw * vw / R;

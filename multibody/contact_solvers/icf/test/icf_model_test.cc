@@ -863,7 +863,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const auto q_c1 = model.clique_segment(1, q);
   const auto v_c1 = model.clique_segment(1, v);
 
-  // Compute regularization.
+  // Compute regularization manually.
   const double beta =
       0.1;  // Keep in sync with hard-coded value in the implementation.
   const double m1 = 2.3;                     // "mass" for clique 1.
@@ -900,7 +900,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
 
-  // CalcCostAlongLine()
+  // Check that CalcCostAlongLine works for coupler constraints.
   // Allocate search direction.
   const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
       nv, 0.1, -0.2);  // Arbitrary search direction.
