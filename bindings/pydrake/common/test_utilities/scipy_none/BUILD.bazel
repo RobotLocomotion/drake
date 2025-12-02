@@ -1,0 +1,20 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
+
+package(default_visibility = ["//bindings/pydrake:__subpackages__"])
+
+# A library that force-disables scipy, even if it's installed system-wide.
+drake_py_library(
+    name = "scipy_none",
+    testonly = 1,
+    srcs = [
+        "scipy/__init__.py",
+    ],
+    # N.B. We don't use get_pybind_package_info; we aren't part of pydrake.
+    imports = ["."],
+)
+
+add_lint_tests_pydrake()
