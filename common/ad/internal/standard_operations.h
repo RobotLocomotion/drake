@@ -443,15 +443,12 @@ AutoDiff log(AutoDiff x);
 
 The resulting partial derivative ∂/∂vᵢ is undefined (i.e., NaN) for all of the
 following cases:
-- base is NaN
-- exp is NaN
-- pow(base, exp) is NaN
 - ∂base/∂vᵢ is non-zero and either:
-  - base is zero or not finite, or
-  - exp is not finite
+  - base, exp, or pow(base, exp) not finite, or
+  - base is 0 and exp < 0
 - ∂exp/∂vᵢ is non-zero and either:
-  - base is not positive-finite, or
-  - exp is not finite
+  - base, exp, or pow(base, exp) not finite, or
+  - base is < 0
 
 In all other cases, if the base and exp partial derivatives were well-defined
 then the resulting partial derivatives will also be well-defined. */
