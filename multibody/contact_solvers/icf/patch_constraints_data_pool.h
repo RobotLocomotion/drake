@@ -24,14 +24,17 @@ class PatchConstraintsDataPool {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PatchConstraintsDataPool);
 
+  /* Constructs an empty pool. */
+  PatchConstraintsDataPool() = default;
+
   /* Returns the number of patches in the pool. */
   int num_patches() const { return num_patches_; }
 
   /* Returns the total number of contact pairs among all patches. */
   int num_pairs() const { return num_pairs_; }
 
-  /* Constructs an empty pool. */
-  PatchConstraintsDataPool() = default;
+  /* Returns the number of constraints (patches) in the pool. */
+  int num_constraints() const { return num_patches_; }
 
   /* Resizes the data pool to hold constraints of the given sizes.
   @param patch_size Number of contact pairs for the k-th patch. */

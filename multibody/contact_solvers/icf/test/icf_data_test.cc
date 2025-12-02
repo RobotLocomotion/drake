@@ -20,6 +20,7 @@ GTEST_TEST(IcfData, DefaultConstructedIsEmpty) {
   EXPECT_EQ(data.V_WB().size(), 0);
   EXPECT_EQ(data.scratch().Av_minus_r.size(), 0);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
+  EXPECT_EQ(data.scratch().U_AbB_W.size(), 0);
   EXPECT_EQ(data.scratch().v_alpha.size(), 0);
   EXPECT_EQ(data.scratch().H_BB_pool.size(), 0);
   EXPECT_EQ(data.scratch().H_AA_pool.size(), 0);
@@ -55,9 +56,18 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   // Scratch space
   EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
+  EXPECT_EQ(data.scratch().U_AbB_W.size(), 4);  // num_patches()
   EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
+  EXPECT_EQ(data.scratch().Gw_gain.size(), num_velocities);
+  EXPECT_EQ(data.scratch().Gw_limit.size(), num_velocities);
   EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
             num_couplers);
+  EXPECT_EQ(data.scratch().gain_constraints_data.num_constraints(),
+            static_cast<int>(gain_sizes.size()));
+  EXPECT_EQ(data.scratch().limit_constraints_data.num_constraints(),
+            static_cast<int>(limit_sizes.size()));
+  EXPECT_EQ(data.scratch().patch_constraints_data.num_constraints(),
+            static_cast<int>(patch_sizes.size()));
   EXPECT_EQ(data.scratch().H_cc_pool[0].rows(), max_clique_size);
   EXPECT_EQ(data.scratch().H_cc_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);

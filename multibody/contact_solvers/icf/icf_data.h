@@ -54,18 +54,17 @@ class IcfData {
     // num_velocities().
     EigenPool<VectorX<T>> Av_minus_r;
 
-    // Scratch space for CalcCostAlongLine
-    // Body spatial velocities at v + α⋅w. Holds at most num_bodies() vectors.
-    EigenPool<Vector6<T>> V_WB_alpha;
+    // Spatial velocities for CalcCostAlongLine.
+    EigenPool<Vector6<T>> V_WB_alpha;  // Holds at most num_bodies() vectors.
+    EigenPool<Vector6<T>> U_AbB_W;     // Holds at most num_patches() vectors.
 
     // Generalized velocities at v + α⋅w. Holds at most one vector of size
     // num_velocities().
     EigenPool<VectorX<T>> v_alpha;
 
-    // Scratch space for constraint projection in CalcCostAlongLine
+    // Scratch space for constraint projection in CalcCostAlongLine.
     VectorX<T> Gw_gain;
     VectorX<T> Gw_limit;
-    EigenPool<Vector6<T>> U_AbB_W_pool;
 
     // Scratch data pools for CalcCostAlongLine
     CouplerConstraintsDataPool<T> coupler_constraints_data;

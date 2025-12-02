@@ -12,6 +12,7 @@ template <typename T>
 void IcfData<T>::Scratch::Clear() {
   Av_minus_r.Clear();
   V_WB_alpha.Clear();
+  U_AbB_W.Clear();
   v_alpha.Clear();
   H_cc_pool.Clear();
   H_BB_pool.Clear();
@@ -32,11 +33,11 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
   Av_minus_r.Resize(1, num_velocities, 1);
 
   V_WB_alpha.Resize(num_bodies, 6, 1);
+  U_AbB_W.Resize(ssize(patch_sizes), 6, 1);
   v_alpha.Resize(1, num_velocities, 1);
 
   Gw_gain.resize(num_velocities);
   Gw_limit.resize(num_velocities);
-  U_AbB_W_pool.Resize(ssize(patch_sizes), 6, 1);
 
   coupler_constraints_data.Resize(num_couplers);
   gain_constraints_data.Resize(gain_sizes);

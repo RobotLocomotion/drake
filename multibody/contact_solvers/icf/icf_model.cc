@@ -246,7 +246,7 @@ T IcfModel<T>::CalcCostAlongLine(
                                      &data.scratch().patch_constraints_data);
     patch_constraints_pool_.ProjectAlongLine(
         data.scratch().patch_constraints_data, search_direction.U,
-        &data.scratch().U_AbB_W_pool, &constraint_dcost, &constraint_d2cost);
+        &data.scratch().U_AbB_W, &constraint_dcost, &constraint_d2cost);
     cost += data.scratch().patch_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
