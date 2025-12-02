@@ -314,15 +314,29 @@ TYPED_TEST(BvhTest, TestCollide) {
   ASSERT_EQ(CountLeafNodes(tangent.root_node()), 16);
   ASSERT_EQ(CountAllNodes(tangent.root_node()), 31);
 
-  // The total number of collision candidates is an empirical observation only
-  // and differs by BvType. This encodes the two observed values. The
-  // significance here is that we get the same number in both cases. We
-  // assume that equal number implies same contents.
-  constexpr int kTotalCandidates = std::is_same_v<BvType, Obb> ? 100 : 32;
+  // TODO(SeanCurtis-TRI): This test is a proxy of *full* correctness. For full
+  // correctness, we would want to make sure that every *primitive* pair that
+  // intersects is reported in the collision candidates (i.e., we don't want
+  // actual collisions to be omitted). If problems crop up, we may need to
+  // articulate the full test (brute-force primitive-wise collision results vs
+  // culled collision results).
+
+  // We're not focusing on the *specific* number of collision candidates here.
+  // Instead, we're interested in the fact that the operation is commutative.
+  // A vs B should yield the same candidates as B vs A, (modulo ordering).
+  // We'll confirm that there's a non-empty set of candidates, but otherwise
+  // confirm that the two sets are equal.
   pairs = this->bvh_.GetCollisionCandidates(tangent, X_WV);
-  EXPECT_EQ(pairs.size(), kTotalCandidates);
-  pairs = tangent.GetCollisionCandidates(this->bvh_, X_WV);
-  EXPECT_EQ(pairs.size(), kTotalCandidates);
+  const std::set<std::pair<int, int>> first(pairs.begin(), pairs.end());
+  pairs = tangent.GetCollisionCandidates(this->bvh_, X_WV.inverse());
+  // Reverse index ordering to match the first set.
+  std::for_each(pairs.begin(), pairs.end(), [](std::pair<int, int>& p) {
+    std::swap(p.second, p.first);
+  });
+  const std::set<std::pair<int, int>> second(pairs.begin(), pairs.end());
+
+  EXPECT_GT(first.size(), 0);
+  EXPECT_EQ(first, second);
 }
 
 // Tests colliding while traversing through the bvh trees but with early exit.
