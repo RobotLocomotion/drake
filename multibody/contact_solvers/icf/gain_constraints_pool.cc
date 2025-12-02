@@ -87,8 +87,8 @@ void GainConstraintsPool<T>::AccumulateHessian(
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    ConstVectorXView Gk = gain_data.G(k);
-    hessian->diagonal_block(c).diagonal() += Gk;
+    const MatrixX<T> Gk = gain_data.G(k).asDiagonal();
+    hessian->AddToBlock(c, c, Gk);
   }
 }
 
