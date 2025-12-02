@@ -33,7 +33,8 @@ Matrix3<T> Skew(const Vector3<T>& p) {
   return S;
 }
 
-// Shifts the spatial force F by position p. Returns ϕᵀ⋅F, where ϕ = [pₓ; 𝕀₃].
+// Returns ϕ(p)ᵀ⋅F, where ϕ(p) = [-pₓ; 𝕀₃]. Used for shifting a spatial force F
+// by position p.
 template <typename T>
 Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
   const auto t = F.template head<3>();
@@ -44,7 +45,9 @@ Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
   return result;
 }
 
-// Helper method to shift Gk to Gp as G_p = ϕᵀ⋅Gₖ⋅ϕ, with ϕ = [pₓ; 𝕀₃].
+// Returns ϕ(p)ᵀ⋅G⋅ϕ(p), where ϕ(p) = [-pₓ; 𝕀₃]. This is useful adding the
+// Hessian contribution from a contact pair (Gₖ) to the contribution from a
+// whole patch (Gₚ), e.g., Gₚ += ϕ(p)ᵀ⋅Gₖ⋅ϕ(p).
 template <typename T>
 Matrix6<T> ShiftPairToPatch(const Matrix3<T>& G, const Vector3<T>& p) {
   const Matrix3<T> px = Skew(p);
@@ -57,7 +60,7 @@ Matrix6<T> ShiftPairToPatch(const Matrix3<T>& G, const Vector3<T>& p) {
   return Gp;
 }
 
-// Returns G⋅Φ(p).
+// Returns G⋅Φ(p), where Φ(p) = [𝕀₃, 0; -pₓ, 𝕀₃].
 template <typename T>
 Matrix6<T> ShiftFromTheRight(const Matrix6<T>& G, const Vector3<T>& p) {
   const auto Gw = G.template topLeftCorner<3, 3>();
@@ -75,7 +78,7 @@ Matrix6<T> ShiftFromTheRight(const Matrix6<T>& G, const Vector3<T>& p) {
   return R;
 }
 
-// Returns Φ(p)ᵀ⋅Gₚ
+// Returns Φ(p)ᵀ⋅G, where Φ(p) = [𝕀₃, 0; -pₓ, 𝕀₃]
 template <typename T>
 Matrix6<T> ShiftFromTheLeft(const Matrix6<T>& G, const Vector3<T>& p) {
   const auto Gw = G.template topLeftCorner<3, 3>();
@@ -477,9 +480,6 @@ void PatchConstraintsPool<T>::AccumulateHessian(
       auto H_AA = H_AA_pool[0];
       const Matrix6<T> G_Phi = ShiftFromTheRight(G_Bp, p_AB_W);  // = Gₚ⋅Φ
       const Matrix6<T> G_Ap = ShiftFromTheLeft(G_Phi, p_AB_W);   // = Φᵀ⋅Gₚ⋅Φ
-
-      // TODO(amcastro-tri): Consider using variants for the trivial case when a
-      // Jacobian is the identity (free body).
 
       // When c_a != c_b, we only write the lower triangular portion.
       // If c_a == c_b, we must compute both terms.

@@ -29,6 +29,10 @@ Each constraint (patch) adds a cost term ℓ_c(v) to the overall ICF cost. The
 gradient of this cost term is ∇ℓ_c = -Jᵀγ, where J is the contact Jacobian and
 γ are contact impulses.
 
+A unique feature of this constraint type is that all contacts are expressed
+between bodies in the world frame. This allows us to avoid expensive
+intermediate frame computations and reduce FLOP counts.
+
 @tparam_nonsymbolic_scalar */
 template <typename T>
 class PatchConstraintsPool {
