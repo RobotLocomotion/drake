@@ -1680,8 +1680,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation5) {
   EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
             min_volume_ratio);
   EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
-
-  // Check intersection constraint
+  // Check intersection constraint.
   EXPECT_TRUE(RadiusOfLargestBallInOnePolytopeCenteredInAnother(
                   inbody, intersecting_polytope) >=
               intersection_padding - kAffineTransformationConstraintTol);
@@ -1754,7 +1753,8 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
            -1, 0.7, 0.7;
   // clang-format on
 
-  const HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
+  // Check simplification with affine transformation.
+  HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
       min_volume_ratio, true, 10, points, intersecting_polytopes, false,
       intersection_padding);
   EXPECT_TRUE(
@@ -1765,8 +1765,24 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
   for (int i_point = 0; i_point < points.cols(); ++i_point) {
     EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
   }
+  // Check intersection constraint.
+  EXPECT_TRUE(RadiusOfLargestBallInOnePolytopeCenteredInAnother(
+                  inbody, intersecting_polytope) >=
+              intersection_padding - kAffineTransformationConstraintTol);
 
-  // Check intersection constraint
+  // Also check without affine transformation.
+  inbody = circumbody.SimplifyByIncrementalFaceTranslation(
+      min_volume_ratio, false, 10, points, intersecting_polytopes, false,
+      intersection_padding);
+  EXPECT_TRUE(
+      inbody.ContainedIn(circumbody, kAffineTransformationConstraintTol));
+  EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
+            min_volume_ratio);
+  EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
+  for (int i_point = 0; i_point < points.cols(); ++i_point) {
+    EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
+  }
+  // Check intersection constraint.
   EXPECT_TRUE(RadiusOfLargestBallInOnePolytopeCenteredInAnother(
                   inbody, intersecting_polytope) >=
               intersection_padding - kAffineTransformationConstraintTol);
