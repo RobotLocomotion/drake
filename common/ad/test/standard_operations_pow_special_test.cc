@@ -118,17 +118,16 @@ TEST_P(PowSpecial, AdsAds) {
   ASSERT_EQ(result.derivatives().size(), 3);
   const Eigen::Vector3d grad = result.derivatives();
 
+  // Neither base nor exp has an input gradient in the 0th index.
+  // That should remain true for the result as well.
+  EXPECT_EQ(grad[0], 0.0);
+
   // If the result was NaN, then the gradient should be NaN.
   if (pow_case.is_nan) {
-    EXPECT_THAT(grad[0], testing::IsNan());
     EXPECT_THAT(grad[1], testing::IsNan());
     EXPECT_THAT(grad[2], testing::IsNan());
     return;
   }
-
-  // Neither base nor exp has an input gradient in the 0th index.
-  // That should remain true for the result as well.
-  EXPECT_EQ(grad[0], 0.0);
 
   // The 1st grad index is the partial wrt base.
   if (pow_case.ignore_base_grad) {
