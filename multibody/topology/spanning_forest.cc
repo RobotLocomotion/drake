@@ -65,8 +65,9 @@ The algorithm has three phases:
   1 Produce the best tree structures we can in one pass. For example, when
     breaking loops we want to minimize the maximum branch length for better
     numerics, but we can't allow massless terminal bodies unless they are welded
-    to a massful body. Welded-together Links form a LinkComposite which can
-    (optionally) be modeled using a single mobilized body.
+    to a massful body. Welded-together Links form a WeldedLinksAssembly object
+    which will be modeled by one or more Mobods which may be a mix of
+    single-link and composite Mobods.
   2 Reorder the forest nodes (mobilized bodies) depth first for optimal
     computation. Each tree will consist only of consecutively-numbered nodes.
   3 Assign joint coordinates q and velocities v sequentially according
@@ -74,14 +75,15 @@ The algorithm has three phases:
 
   During execution of this algorithm, we opportunistically collect information
   that can be used for fast queries at run time, both for the graph and the
-  forest. For example: Which Links are welded together (LinkComposites)?
-  Which Mobods are welded together (WeldedMobod groups)? Which of
+  forest. For example: Which Links are welded together (WeldedLinksAssembly)?
+  Which Mobods are welded together (WeldedMobods groups)? Which of
   those are anchored to World? Which Tree does a given Mobod belong to? How
   many coordinates are inboard or outboard of a Mobod?
 
 ForestBuildingOptions (global or per-model instance) determine
-  - whether we produce a mobilized body for _each_ Link or just for each
-    _assembly_ of welded-together Links (a LinkComposite), and
+  - whether we produce a Mobod for _each_ Link in a WeldedLinksAssembly or
+    should produce a minimal number of Mobods by creating composite Mobods (as
+    permitted by options on individual weld joints), and
   - what kind of Joint we use to mobilize unconnected root Links: 0 dof fixed,
     6 dof roll-pitch-yaw floating, or 6 dof quaternion floating.
 
@@ -106,8 +108,8 @@ numbering here for clarification.
    1.5 While there are unprocessed _unjointed_ Links (single bodies)
      a) Each of these can be the base body of a new one-Mobod tree
      b) If a Link is in a "use fixed base" model instance, weld it to World.
-        If we're combining welded links it just joins the World LinkComposite
-        and does not form a new Tree.
+        If we're optimizing welded links it just follows the World Mobod
+        does not form a new Tree; otherwise it gets its own Mobod and Tree.
      c) Otherwise add a floating Joint to World (rpy or quaternion depending
         on options) and start a new Tree.
      d) Note that any unjointed _static_ Link, or a Link in a static model
@@ -118,7 +120,8 @@ numbering here for clarification.
       E.1 Extend each tree one level at a time.
       E.2 Process all level 1 (base) Links directly jointed to World.
       E.3 Then process all level 2 Links jointed to level 1 Links, etc.
-      E.4 Composites are (optionally) modeled with a single Mobod (one level).
+      E.4 WeldedLinksAssemblies are (optionally) modeled using composite Mobods
+          where permitted (one level per Mobod).
       E.5 If we encounter a Link that has already been processed there is a
           loop. Split the Link into primary and shadow Links, and allocate
           two Mobods, one for each of those to follow. Add a loop constraint to
@@ -144,22 +147,23 @@ bool SpanningForest::BuildForest() {
   SetBaseBodyChoicePolicy();
 
   /* Model the World (Link 0) with mobilized body 0. This also starts the 0th
-  LinkComposite in the graph and the 0th Welded Mobods group in the Forest.
-  (1.1) */
+  WeldedLinksAssembly in the graph and the 0th Welded Mobods group in the
+  Forest. (1.1) */
   Mobod& world = data_.mobods.emplace_back(MobodIndex(0), LinkOrdinal(0));
   world.has_massful_follower_link_ = true;  // World is heavy!
   data_.welded_mobods.emplace_back(std::vector{MobodIndex(0)});
   world.welded_mobods_index_ = WeldedMobodsIndex(0);
   mutable_graph().set_primary_mobod_for_link(LinkOrdinal(0), MobodIndex(0),
                                              JointIndex{});
-  mutable_graph().CreateWorldLinkComposite();
+  mutable_graph().CreateWorldWeldedLinksAssembly();
 
   data_.forest_height = 1;  // Just World so far.
 
-  /* Decide on forward/reverse mobilizers; combine LinkComposites so that all
-  the Links in a LinkComposite follow a single Mobod; choose links to serve
-  as base (root) bodies and add 6dof mobilizers for them; split loops; add
-  shadow bodies and weld constraints. (1.2-1.5) */
+  /* Decide on forward/reverse mobilizers; optionally optimize
+  WeldedLinksAssemblies so that all the Links in a WeldedLinksAssembly follow a
+  single Mobod; choose links to serve as base (root) bodies and add 6dof
+  mobilizers for them; split loops; add shadow bodies and weld constraints.
+  (1.2-1.5) */
   ChooseForestTopology();
 
   /* Determine the desired depth-first ordering and apply it. (Phase 2) */
@@ -180,8 +184,8 @@ void SpanningForest::ChooseForestTopology() {
 
   /* Every Static Link should be welded to World. If there is not an explicit
   Weld Joint in the LinkJointGraph we'll add one now. Typically these Joints
-  won't be modeled since they will be be interior to the World LinkComposite,
-  but they are necessary edges for graph analysis. */
+  won't be modeled since they will be be interior to the World
+  WeldedLinksAssembly, but they are necessary edges for graph analysis. */
 
   /* Look through the model instances to see if any of them are static and if so
   weld all their bodies to World. (1.2a) */
@@ -217,8 +221,8 @@ void SpanningForest::ChooseForestTopology() {
   of the non-trivial (articulated) subgraphs, we need to select one of its Links
   as the "best" base according to some policy, and then extend from there to
   build a spanning tree for that subgraph. Finally, we make each of the lone
-  free bodies its own "tree" (or add it to the World composite if appropriate).
-  (1.4-1.5) */
+  free bodies its own "tree" (or add it to the World WeldedLinksAssembly if
+  appropriate). (1.4-1.5) */
   ChooseBaseBodiesAndAddTrees(&num_unprocessed_links);
 
   DRAKE_DEMAND(num_unprocessed_links == 0);
@@ -371,8 +375,8 @@ void SpanningForest::AssignCoordinates() {
 
 /* Phase 1 steps 1.4 and 1.5. */
 void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
-  // TODO(sherm1) Consider whether a LinkComposite that is treated as a single
-  //  body (i.e., follows just one Mobod) should be allowed to be a base body or
+  // TODO(sherm1) Consider whether an optimized WeldedLinksAssembly (i.e.,
+  //  follows just one Mobod) should be allowed to be a base body or
   //  should wait along with the other unjointed Links.
 
   /* Partition the unmodeled links into jointed and unjointed. O(n) */
@@ -411,13 +415,13 @@ void SpanningForest::ChooseBaseBodiesAndAddTrees(int* num_unprocessed_links) {
   }
 
   /* Should be nothing left now except unjointed (single) Links. We'll attach
-  with either a floating joint or a weld joint depending on modeling options.
-  If a weld and we're optimizing composites, the Link will just join the World
-  Mobod. Otherwise it gets a new Mobod that serves as the base body of a new
-  Tree. Although static links and links belonging to a static model instance
-  get welded to World at the start of forest building, it is still possible
-  to need a weld here for a lone link that is in a "use fixed base" model
-  instance (that's not technically a static link). (1.5) */
+  with either a floating joint or a weld joint depending on modeling options. If
+  a weld and we're optimizing WeldedLinksAssemblies, the Link will just follow
+  the World Mobod. Otherwise it gets a new Mobod that serves as the base body of
+  a new Tree. Although static links and links belonging to a static model
+  instance get welded to World at the start of forest building, it is still
+  possible to need a weld here for a lone link that is in a "use fixed base"
+  model instance (that's not technically a static link). (1.5) */
   DRAKE_DEMAND(*num_unprocessed_links == ssize(unjointed_links));
 
   for (LinkOrdinal unjointed_link : unjointed_links) {
@@ -454,11 +458,12 @@ void SpanningForest::ExtendTrees(const std::vector<JointIndex>& joints_to_model,
 }
 
 /* Grows each Tree by one level with two exceptions:
-   1 If we're optimizing composites (by merging welded-together Links onto a
-     single Mobod), keep growing a LinkComposite as far as possible to build
-     the complete composite and model it with a single Mobod.
-   2 If we encounter a massless Link (or massless merged LinkComposite), we
-     don't want its Mobod to be a terminal body of a branch. In that case we
+   1 If we're optimizing WeldedLinksAssemblies (by merging welded-together
+     Links onto a single Mobod), keep growing a WeldedLinkAssembly as far
+     as possible to build the complete assembly and model it with a single
+     Mobod.
+   2 If we encounter a massless Link (or massless optimized WeldedLinkAssembly),
+     we don't want its Mobod to be a terminal body of a branch. In that case we
      keep growing that branch until we can end with something massful. If we
      fail, we have to mark this forest as unsuited for dynamics since its mass
      matrix will be singular.
@@ -473,20 +478,19 @@ system mass matrix singular.
 
 Definitions used below
 ----------------------
-- Given a link L, we denote the _merged_ LinkComposite it belongs to as L+.
-    If we're not merging (optimizing) LinkComposites, then L+ == L.
+- Given a link L, we denote the _optimized_ WeldedLinksAssembly it belongs to
+    as L+. If we're not optimizing WeldedLinksAssemblies, then L+ == L.
 - A joint connects two links, parent and child. Every joint of interest here
     has at least one of its links already in the forest; that is its "inboard"
     link I. The other link is the "outboard" link O and is usually not yet in
     the forest.
 - A "merged joint" is a weld joint that connects two links that should be part
-    of the same merged LinkComposite. Merged joints do not have a corresponding
-    mobilizer in the forest; they are unmodeled.
+    of the same optimized WeldedLinksAssembly. Merged joints do not have a
+    corresponding mobilizer in the forest; they are unmodeled.
 - Define Jₒₚₑₙ(L+) as the set of all not-yet-processed joints connected to any
     link in L+. These are "open" in the sense that only inboard link I of the
     joint is in L+; the other link O still needs to be dealt with. Open joints
     define the next level to be added to the forest outboard of L+.
-
 
 Algorithm A(Jᵢₙ, &Jₒᵤₜ)
 -----------------------
@@ -503,7 +507,7 @@ Note: Every j ∈ Jᵢₙ has at least one of its two links (parent and child) a
 Jₒᵤₜ = {}
 For each jᵢₙ ∈ Jᵢₙ:
   A.1 If jᵢₙ should be a merged joint (see above), then merge O+ with the
-      LinkComposite I+. Mark weld joint jᵢₙ as "unmodeled". We haven't yet
+      WeldedLinksAssembly I+. Mark weld joint jᵢₙ as "unmodeled". We haven't yet
       extended this branch by a level though, so we need to keep going.
       Set Jₗₑᵥₑₗ = Jₒₚₑₙ(O+). Otherwise (jᵢₙ not a merged joint), set
       Jₗₑᵥₑₗ = {jᵢₙ}.
@@ -513,7 +517,8 @@ For each jᵢₙ ∈ Jᵢₙ:
         jₗₑᵥₑₗ is a loop closing joint. Handle the loop. -> NEXT jₗₑᵥₑₗ
     A.3 Otherwise, add a new Mobod M to the forest whose body models link O and
         whose mobilizer models joint jₗₑᵥₑₗ.
-    A.4 Determine O+ (O or its composite) and make all links in O+ follow M.
+    A.4 Determine O+ (O or its WeldedLinksAssembly) and make all links in O+
+        follow M.
     A.5 If M is massful, set Jₒᵤₜ += Jₒₚₑₙ(O+). -> NEXT jₗₑᵥₑₗ
     A.6 (M is massless) Examine the joints in Jₒₚₑₙ(O+). If there aren't any
         open joints then we have to terminate this branch with a massless body
@@ -576,8 +581,8 @@ void SpanningForest::ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
       }
 
       /* There isn't a loop and the outboard link isn't part of the same
-      merged LinkComposite as the inboard link. That means we are going to
-      need a new Mobod. Note: a reference to this Mobod could be invalidated
+      optimized WeldedLinksAssembly as the inboard link. That means we are going
+      to need a new Mobod. Note: a reference to this Mobod could be invalidated
       below; refer to it by its stable index instead. (A.3)*/
       const MobodIndex new_mobod_index =
           AddNewMobod(j_level_outboard_link_ordinal, j_level_ordinal,
@@ -585,9 +590,9 @@ void SpanningForest::ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
               .index();
       --(*num_unprocessed_links);
 
-      /* We just put link O on the new Mobod. O might just be the active
-      link of a merged LinkComposite O+. If so we need to build O+ now and find
-      all its open joints. (A.4) */
+      /* We just put link O on the new Mobod. O might just be the active link of
+      an optimized WeldedLinksAssembly O+. If so we need to build O+ now and
+      find all its open joints. (A.4) */
       J_open.clear();
       const Link& j_level_outboard_link = links(j_level_outboard_link_ordinal);
       FindNextLevelJoints(new_mobod_index, j_level_outboard_link.joints(),
@@ -606,9 +611,9 @@ void SpanningForest::ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
         continue;  // -> NEXT jₗₑᵥₑₗ
       }
 
-      /* The Link or LinkComposite O+ we just added to the branch is massless
-      and articulated; we don't want to terminate the branch with it. We have
-      Jₒₚₑₙ(O+) in J_open. Three possibilities:
+      /* The Link or WeldedLinksAssembly O+ we just added to the branch is
+      massless and articulated; we don't want to terminate the branch with it.
+      We have Jₒₚₑₙ(O+) in J_open. Three possibilities:
       1 If Jₒₚₑₙ is empty we're stuck and will just have to declare this as a
         "no dynamics" model.
       2 If there is a joint in Jₒₚₑₙ that leads to a massful link, we'll
@@ -689,18 +694,18 @@ void SpanningForest::FindNextLevelJoints(MobodIndex inboard_mobod_index,
       continue;
     }
 
-    /* This has to be a merged joint with parent & child links part of the
-    same merged LinkComposite. We must grow the composite in the outboard
-    direction of the joint, which is the end that is _not_ already following
-    the inboard Mobod. */
+    /* This has to be a merged (unmodeled) joint with parent & child links part
+    of the same optimized WeldedLinksAssembly. We must grow the assembly in the
+    outboard direction of the joint, which is the end that is _not_ already
+    following the inboard Mobod. */
     const LinkIndex outboard_link_index =
         FindOutboardLink(inboard_mobod_index, j_in);
 
-    /* Adds the outboard link O to the inboard composite and keeps collecting
-    the welded links of O+ to the composite recursively, while collecting up
+    /* Adds the outboard link O to the inboard assembly and keeps collecting
+    the welded links of O+ to the assembly recursively, while collecting up
     all the further-outboard non-weld joints Jₒₚₑₙ(O+) into J_level. */
-    GrowCompositeMobod(&data_.mobods[inboard_mobod_index], outboard_link_index,
-                       j_in.ordinal(), &*J_level, &*num_unprocessed_links);
+    GrowAssemblyMobod(&data_.mobods[inboard_mobod_index], outboard_link_index,
+                      j_in.ordinal(), &*J_level, &*num_unprocessed_links);
   }
 }
 
@@ -769,11 +774,11 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
                                              new_mobod_index, joint.index());
   mutable_graph().set_mobod_for_joint(joint_ordinal, new_mobod_index);
 
-  /* Build up both WeldedMobods group (in forest) and LinkComposite (in graph)
-  if we have a Weld joint, starting a new group or composite as needed.
-  Note that if we get here we are _not_ merging LinkComposites or we wouldn't
-  have asked for a new Mobod! */
-  if (joint.traits_index() == LinkJointGraph::weld_joint_traits_index()) {
+  /* Build up both WeldedMobods group (in forest) and WeldedLinksAssembly (in
+  graph) if we have a Weld joint, starting a new group or assembly as needed.
+  Note that if we get here we are _not_ optimizing WeldedLinkAssemblies or we
+  wouldn't have asked for a new Mobod! */
+  if (joint.is_weld()) {
     if (!inboard_mobod.welded_mobods_index_.has_value()) {
       inboard_mobod.welded_mobods_index_ =
           WeldedMobodsIndex(ssize(welded_mobods()));
@@ -783,8 +788,8 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
     data_.welded_mobods[*inboard_mobod.welded_mobods_index_].push_back(
         new_mobod_index);
 
-    mutable_graph().AddToLinkComposite(inboard_mobod.link_ordinal(),
-                                       outboard_link_ordinal);
+    mutable_graph().AddToWeldedLinksAssembly(
+        inboard_mobod.link_ordinal(), outboard_link_ordinal, joint_ordinal);
   }
 
   return new_mobod;
@@ -861,9 +866,9 @@ void SpanningForest::HandleLoopClosure(JointOrdinal loop_joint_ordinal) {
   terminated with massful bodies (at 1/2 the mass each). However, if both
   bodies are massless this forest can only be used for kinematics. */
   const bool parent_is_massless =
-      graph().link_and_its_composite_are_massless(parent_ordinal);
+      graph().link_and_its_assembly_are_massless(parent_ordinal);
   const bool child_is_massless =
-      graph().link_and_its_composite_are_massless(child_ordinal);
+      graph().link_and_its_assembly_are_massless(child_ordinal);
 
   /* Save an explanation the first time we are forced to end a branch with
   a massless body. */
@@ -944,9 +949,10 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
   const Joint& weld_joint = joints(weld_joint_ordinal);
   DRAKE_DEMAND(weld_joint.traits_index() ==
                LinkJointGraph::weld_joint_traits_index());
-  const LinkCompositeIndex link_composite_index =
-      mutable_graph().AddToLinkComposite(inboard_mobod->link_ordinal(),
-                                         follower_link_ordinal);
+  const WeldedLinksAssemblyIndex assembly_index =
+      mutable_graph().AddToWeldedLinksAssembly(inboard_mobod->link_ordinal(),
+                                               follower_link_ordinal,
+                                               weld_joint_ordinal);
   mutable_graph().set_primary_mobod_for_link(
       follower_link_ordinal, inboard_mobod->index(), weld_joint.index());
   inboard_mobod->follower_link_ordinals_.push_back(follower_link_ordinal);
@@ -954,33 +960,34 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
   if (!follower_link.is_massless())
     inboard_mobod->has_massful_follower_link_ = true;
 
-  /* We're not going to model this weld Joint since it is interior to
-  a LinkComposite. We need to note the composite it is part of. */
-  mutable_graph().AddUnmodeledJointToComposite(weld_joint_ordinal,
-                                               link_composite_index);
+  /* We're not going to model this weld Joint since it is interior to an
+  optimized WeldedLinksAssembly. We need to note the assembly it is part of. */
+  mutable_graph().NoteUnmodeledJointInWeldedLinksAssembly(weld_joint_ordinal,
+                                                          assembly_index);
   return *inboard_mobod;
 }
 
-void SpanningForest::GrowCompositeMobod(
+void SpanningForest::GrowAssemblyMobod(
     Mobod* mobod, LinkIndex outboard_link_index,
     JointOrdinal weld_joint_ordinal,
     std::vector<JointIndex>* open_joint_indexes, int* num_unprocessed_links) {
   /* If the outboard_link has already been processed we're looking at a loop
-  of welds within this LinkComposite. That's harmless: we just add the Joint
-  to the composite and move on. */
+  of welds within this WeldedLinksAssembly. That's harmless: we just add the
+  Joint to the assembly and move on. */
   const LinkOrdinal outboard_link_ordinal =
       graph().index_to_ordinal(outboard_link_index);
   const Link& outboard_link = links(outboard_link_ordinal);
   if (link_is_already_in_forest(outboard_link_ordinal)) {
     const Link& inboard_link = links(mobod->link_ordinal());
-    DRAKE_DEMAND(outboard_link.composite() == inboard_link.composite());
-    mutable_graph().AddUnmodeledJointToComposite(weld_joint_ordinal,
-                                                 *outboard_link.composite());
+    DRAKE_DEMAND(outboard_link.welded_links_assembly() ==
+                 inboard_link.welded_links_assembly());
+    mutable_graph().AddUnmodeledJointToWeldedLinksAssembly(
+        weld_joint_ordinal, *outboard_link.welded_links_assembly());
     return;
   }
 
   /* At this point we know the outboard_link has not been processed yet. Add
-  it to the composite's Mobod. */
+  it to the assembly's Mobod. */
 
   JoinExistingMobod(&*mobod, outboard_link_ordinal, weld_joint_ordinal);
   --(*num_unprocessed_links);
@@ -1001,14 +1008,14 @@ void SpanningForest::GrowCompositeMobod(
     }
 
     /* We've found another unprocessed joint that needs merging onto this
-    composite. One of its links is the outboard_link (already in the forest
+    assembly. One of its links is the outboard_link (already in the forest
     at this point). Find the other link. */
     const LinkIndex other_link_index =
         joint.other_link_index(outboard_link_index);
 
-    /* Recursively extend the Composite along the new merge-weld joint. */
-    GrowCompositeMobod(&*mobod, other_link_index, joint_ordinal,
-                       &*open_joint_indexes, &*num_unprocessed_links);
+    /* Recursively extend the Assembly along the new merge-weld joint. */
+    GrowAssemblyMobod(&*mobod, other_link_index, joint_ordinal,
+                      &*open_joint_indexes, &*num_unprocessed_links);
   }
 }
 

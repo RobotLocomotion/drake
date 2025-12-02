@@ -29,10 +29,6 @@ using multibody::contact_solvers::icf::internal::IcfModel;
 using multibody::contact_solvers::icf::internal::IcfSolver;
 using multibody::contact_solvers::icf::internal::IcfSolverStats;
 using multibody::contact_solvers::icf::internal::LinearFeedbackGains;
-using multibody::contact_solvers::icf::internal::SearchDirectionData;
-using multibody::contact_solvers::internal::BlockSparseCholeskySolver;
-using multibody::contact_solvers::internal::BlockSparseSymmetricMatrixT;
-using multibody::contact_solvers::internal::BlockSparsityPattern;
 
 /**
  * An experimental implicit integrator that solves a convex ICF problem to

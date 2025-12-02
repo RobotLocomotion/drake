@@ -53,7 +53,7 @@ class TestMathematicalProgram(unittest.TestCase):
                 "/scipy_stub/",
                 scipy.__file__,
                 "The BUILD dependencies for this test MUST NOT depend on"
-                " :scipy_stub_py, either directly or transitively.",
+                " scipy_stub, either directly or transitively.",
             )
             self.fail("Somehow, the scipy_none dependency isn't working?!")
         except ModuleNotFoundError:

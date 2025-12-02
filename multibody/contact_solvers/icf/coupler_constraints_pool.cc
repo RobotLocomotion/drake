@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/unused.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -10,6 +9,15 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
+
+using contact_solvers::internal::BlockSparseSymmetricMatrix;
+
+template <typename T>
+CouplerConstraintsPool<T>::CouplerConstraintsPool(
+    const IcfModel<T>* parent_model)
+    : model_(parent_model) {
+  DRAKE_ASSERT(parent_model != nullptr);
+}
 
 template <typename T>
 void CouplerConstraintsPool<T>::Clear() {
@@ -93,11 +101,11 @@ template <typename T>
 void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                    VectorX<T>* gradient) const {
   const CouplerConstraintsDataPool<T>& coupler_data =
-      data.cache().coupler_constraints_data;
+      data.coupler_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
-    auto gradient_c = model().clique_segment(c, gradient);
+    auto gradient_c = model().mutable_clique_segment(c, gradient);
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
@@ -114,9 +122,8 @@ void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
 template <typename T>
 void CouplerConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data, BlockSparseSymmetricMatrixT<T>* hessian) const {
-  unused(data);
-
+    const IcfData<T>& data,
+    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
@@ -124,11 +131,17 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
     const T& rho = gear_ratio_[k];
     const T& R = R_[k];
 
-    auto& Hc = hessian->diagonal_block(c);
+    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch().H_cc_pool;
+    H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
+    typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
+    Hc.setZero();
+
     // clang-format off
     Hc(i, i) += 1.0 / R;  Hc(i, j) -= rho / R;
     Hc(j, i) -= rho / R;  Hc(j, j) += rho * rho / R;
     // clang-format on
+
+    hessian->AddToBlock(c, c, Hc);
   }
 }
 
@@ -149,7 +162,7 @@ void CouplerConstraintsPool<T>::ProjectAlongLine(
 
     const T wi = w_c(i);
     const T wj = w_c(j);
-    const T vw = wi - rho * wj;  // "constraint velocity" evaluated on w.
+    const T vw = wi - rho * wj;  // "Constraint velocity" evaluated on w.
 
     (*dcost) -= gamma * vw;
     (*d2cost) += vw * vw / R;

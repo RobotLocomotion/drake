@@ -44,7 +44,7 @@ void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToState(
 
 template <typename T>
 void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToTangentMatrix(
-    contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+    contact_solvers::internal::BlockSparseSymmetricMatrix3d* tangent_matrix)
     const {
   DRAKE_DEMAND(tangent_matrix != nullptr);
   if (node_to_boundary_state_.empty()) return;

@@ -10,10 +10,10 @@ config:
     publish_every_time_step: true
   # Config for `class MultibodyPlant`.
   plant_config:
-    # If mbp_time_step > 0, the fixed-time step period (in seconds) of discrete
+    # If time_step > 0, the fixed-time step period (in seconds) of discrete
     # updates for the plant (modeled as a discrete system).
     #
-    # If mbp_time_step = 0, the plant is modeled as a continuous system and no
+    # If time_step = 0, the plant is modeled as a continuous system and no
     # contact forces are displayed.
     time_step: 0.0
     # Use hydro contact. (Alternatively, you can use "point".)

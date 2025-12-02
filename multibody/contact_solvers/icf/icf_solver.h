@@ -8,6 +8,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
+#include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 
 namespace drake {
@@ -99,7 +100,7 @@ class IcfSolver {
   taken. */
   std::pair<double, int> PerformExactLineSearch(const IcfModel<double>& model,
                                                 const IcfData<double>& data,
-                                                const VectorXd& dv);
+                                                const Eigen::VectorXd& dv);
 
   /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
   Used for cubic linesearch initialization. */
@@ -118,7 +119,7 @@ class IcfSolver {
                              stored sparsity pattern. This gives an exact
                              Newton step, but avoids some allocations. */
   void ComputeSearchDirection(const IcfModel<double>& model,
-                              const IcfData<double>& data, VectorXd* dv,
+                              const IcfData<double>& data, Eigen::VectorXd* dv,
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
@@ -129,13 +130,17 @@ class IcfSolver {
   /* Stored Hessian and factorization objects. Allows for Hessian reuse
   between iterations and between subsequent solves (which is a valid
   strategy since the problem is convex). */
-  std::unique_ptr<BlockSparseSymmetricMatrixT<double>> hessian_;
-  BlockSparseCholeskySolver<MatrixXd> hessian_factorization_;
-  Eigen::LDLT<MatrixXd> dense_hessian_factorization_;
-  SearchDirectionData<double> search_direction_data_;
+  std::unique_ptr<
+      contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
+      hessian_;
+  contact_solvers::internal::BlockSparseCholeskySolver<Eigen::MatrixXd>
+      hessian_factorization_;
+  Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
+  IcfSearchDirectionData<double> search_direction_data_;
 
   // Track the sparsity pattern for Hessian reuse
-  std::unique_ptr<BlockSparsityPattern> previous_sparsity_pattern_;
+  std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
+      previous_sparsity_pattern_;
 
   // Flag for Hessian factorization re-use (changes between iterations)
   bool reuse_hessian_factorization_{true};
@@ -146,8 +151,9 @@ class IcfSolver {
   // Logging utilities
   IcfSolverStats stats_;
 
-  // Pre-allocated search direction Δv
-  VectorXd search_direction_;
+  // Pre-allocated decision variables v and search direction Δv
+  Eigen::VectorXd decision_variables_;
+  Eigen::VectorXd search_direction_;
 };
 
 }  // namespace internal

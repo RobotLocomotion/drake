@@ -7008,15 +7008,7 @@ Warning:
     "initialize" itself after changes to properties that will affect
     how a geometry appears. If changing a geometry's illustration
     properties doesn't seem to be affecting the visualization,
-    retrigger its initialization action.
-
-Warning:
-    Due to a bug (see issue `#13597
-    <https://github.com/RobotLocomotion/drake/issues/13597>`_),
-    changing the illustration roles or properties in a
-    systems::Context will not have any apparent effect in certain
-    viewers. Please change the illustration role in the model prior to
-    allocating the context.)""";
+    retrigger its initialization action.)""";
         } AssignRole;
         // Symbol: drake::geometry::SceneGraph::ChangeShape
         struct /* ChangeShape */ {
