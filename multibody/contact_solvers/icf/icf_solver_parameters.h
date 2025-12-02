@@ -7,7 +7,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 
-/** Parameters to configure the ICF convex solver. */
+/** (Advanced) Parameters to configure the ICF convex solver. See [Kurtz and
+ * Castro, 2025]*/
 struct IcfSolverParameters {
   /**
    * Passes this object to an Archive.
@@ -36,9 +37,10 @@ struct IcfSolverParameters {
    *    η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
    *
    * This provides a lower bound on the actual tolerance used, which is
-   * specified explicitly when calling the solver. CENIC uses this minimum
-   * tolerance in fixed step mode, and relaxes it in error-controlled mode based
-   * on the desired accuracy.
+   * specified explicitly when calling the solver.
+   *
+   * For instance, CENIC passes an adaptive tolerance based on the desired
+   * accuracy to the ICF solver, see Section VI.B of [Kurtz and Castro, 2025].
    */
   double min_tolerance{1e-8};
 
