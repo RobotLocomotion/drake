@@ -114,6 +114,36 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   model->ResetParameters(std::move(params));
 }
 
+/* Adds a coupler constraint to the given model. */
+template <typename T>
+void AddCouplerConstraint(IcfModel<T>* model) {
+  const bool single_clique = model->num_cliques() == 1;
+
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
+  couplers.Resize(1 /* one constraint */);
+
+  const int nv = model->num_velocities();
+  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  if (!single_clique) {
+    // This is a multi-clique model, so we'll put a coupler on clique 1.
+    const VectorX<T>& q0_clique = model->clique_segment(1, q0);
+    const double rho = 2.5;
+    const double offset = 0.1;
+    couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+                 q0_clique(1), q0_clique(3), rho, offset);
+  } else {
+    // This is a single-clique model, so we'll put a coupler on clique 0.
+    // However, we'll choose indices that would have belonged to clique 1 in the
+    // multi-clique version.
+    const VectorX<T>& q0_clique = model->clique_segment(0, q0);
+    const double rho = 2.5;
+    const double offset = 0.1;
+    couplers.Set(0 /* constraint index */, 0 /* clique */, 7 /* i */, 9 /* j */,
+                 q0_clique(7), q0_clique(9), rho, offset);
+  }
+}
+
 /* Checks that a default constructed model is empty. */
 GTEST_TEST(IcfModel, EmptyModel) {
   IcfModel<double> model;
@@ -229,7 +259,7 @@ GTEST_TEST(IcfModel, PerBodyElements) {
 
     EXPECT_GT(model.body_mass(b), 0.0);
     if (!model.is_anchored(b)) {
-      EXPECT_GT(model.clique_delassus_approx(c).minCoeff(), 0.0);
+      EXPECT_GT(model.clique_diagonal_mass_inverse(c).minCoeff(), 0.0);
       model.mutable_clique_segment(c, &mutable_vector) +=
           VectorXd::Ones(clique_nv);
     }
@@ -247,17 +277,19 @@ GTEST_TEST(IcfModel, PerBodyElements) {
   EXPECT_EQ(num_anchored, 1);
 }
 
-/* Checks that gradients are computed correctly for an unconstrained problem. */
+/* Checks that gradients are computed correctly, even in the presence of
+constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(data.num_velocities(), nv);
+  EXPECT_EQ(model.num_constraints(), 1);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
@@ -268,15 +300,15 @@ GTEST_TEST(IcfModel, CalcGradients) {
   const VectorXd cost_derivatives = data.cost().derivatives();
   const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
-  EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 8 * kEpsilon,
+  EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 100 * kEpsilon,
                               MatrixCompareType::relative));
 }
 
 /* Checks the Hessian for a problem with a single clique. */
 GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfModel<AutoDiffXd> model;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model, true /* single cliques */);
+  AddCouplerConstraint(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -316,14 +348,15 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
 break out the cliques. */
 GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_single;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model_single, true);
+  AddCouplerConstraint(&model_single);
   model_single.SetSparsityPattern();
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
 
   IcfModel<double> model_multiple;
   MakeUnconstrainedModel(&model_multiple, false);
+  AddCouplerConstraint(&model_multiple);
   model_multiple.SetSparsityPattern();
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
@@ -368,10 +401,12 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
 /* Checks that our exact linesearch computations are correct. */
 GTEST_TEST(IcfModel, CalcCostAlongLine) {
   IcfModel<AutoDiffXd> model;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+  model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 1);
 
   // Allocate data, and additional scratch.
   IcfData<AutoDiffXd> data, scratch;
@@ -426,22 +461,25 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
 model from scratch. */
 GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_original;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model_original, false, 0.02);
+  AddCouplerConstraint(&model_original);
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
   EXPECT_EQ(model_original.time_step(), 0.02);
+  EXPECT_EQ(model_original.num_constraints(), 1);
 
   const double new_time_step = 0.003;
 
   // Create a second model from scratch with the new time step.
   IcfModel<double> model_new;
   MakeUnconstrainedModel(&model_new, false, new_time_step);
+  AddCouplerConstraint(&model_new);
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
+  EXPECT_EQ(model_new.num_constraints(), 1);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
@@ -480,8 +518,107 @@ GTEST_TEST(IcfModel, ParamsAccessors) {
 
   const IcfParameters<double>* params1 = &model.params();
   std::unique_ptr<IcfParameters<double>> params2 = model.ReleaseParameters();
-
   EXPECT_EQ(params1, params2.get());
+}
+
+/* Verifies that the coupler constraint produces correct data. */
+GTEST_TEST(IcfModel, CouplerConstraint) {
+  IcfModel<AutoDiffXd> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 0);
+
+  IcfData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+
+  // At this point there should be no coupler constraints.
+  EXPECT_EQ(model.num_coupler_constraints(), 0);
+
+  // Add coupler constraints.
+  AddCouplerConstraint(&model);
+  EXPECT_EQ(model.num_coupler_constraints(), 1);
+  EXPECT_EQ(model.num_constraints(), 1);
+
+  // Resize data to include coupler constraints.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
+
+  const int nv = model.num_velocities();
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const double dt = model.time_step().value();
+  const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  const double rho = 2.5;
+  const double offset = 0.1;
+  VectorX<AutoDiffXd> q = q0 + dt * v;
+  const auto q_clique = model.clique_segment(1, q);
+  const auto v_clique = model.clique_segment(1, v);
+
+  // Compute regularization manually.
+  const double beta =
+      0.1;  // Keep in sync with hard-coded value in the implementation.
+  const double m = 2.3;                           // "mass" for clique 1.
+  const double w_delassus = (1 + rho * rho) / m;  // Delassus for clique 1.
+  const double m_effective = 1.0 / w_delassus;    // Effective mass.
+  const double omega_near_rigid =
+      2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
+  const double k = m_effective * omega_near_rigid * omega_near_rigid;
+  const double tau = beta / M_PI * dt;
+
+  const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
+      data.coupler_constraints_data();
+  EXPECT_EQ(couplers_data.num_constraints(), 1);
+
+  const VectorXd cost_gradient = couplers_data.cost().derivatives();
+
+  // Expected impulse.
+  const AutoDiffXd g0 = q_clique(1) - rho * q_clique(3) - offset;
+  const AutoDiffXd gdot0 = v_clique(1) - rho * v_clique(3);
+  const AutoDiffXd gamma0 = -dt * k * (g0 + tau * gdot0);
+  VectorXd tau_expected = VectorXd::Zero(nv);
+  tau_expected(6 + 1) = gamma0.value();
+  tau_expected(6 + 3) = -rho * gamma0.value();
+  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, 10 * kEpsilon,
+                              MatrixCompareType::relative));
+
+  const double gamma = couplers_data.gamma(0).value();
+  EXPECT_NEAR(gamma, gamma0.value(), std::abs(gamma) * kEpsilon);
+
+  // Verify contributions to Hessian.
+  auto hessian = model.MakeHessian(data);
+  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
+                              10 * kEpsilon, MatrixCompareType::relative));
+
+  // Check that CalcCostAlongLine works for coupler constraints.
+  // Allocate search direction.
+  const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
+      nv, 0.1, -0.2);  // Arbitrary search direction.
+  IcfSearchDirectionData<AutoDiffXd> search_data;
+
+  // Set data with constant value of v.
+  VectorX<AutoDiffXd> v_constant =
+      VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v_constant, &data);
+  model.CalcSearchDirectionData(data, w, &search_data);
+
+  const AutoDiffXd alpha = {
+      0.35 /* arbitrary value */,
+      VectorXd::Ones(1) /* This is the independent variable */};
+  AutoDiffXd dcost, d2cost;
+  const AutoDiffXd cost =
+      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+
+  const double scale = std::abs(dcost.value());
+  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
 }
 
 }  // namespace
