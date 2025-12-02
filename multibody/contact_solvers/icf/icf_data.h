@@ -113,16 +113,6 @@ class IcfData {
   /* Returns the number of generalized velocities in the system. */
   int num_velocities() const { return v_.size(); }
 
-  int num_patches() const { return patch_constraints_data_.num_patches(); }
-
-  int num_gains() const { return gain_constraints_data_.num_constraints(); }
-
-  int num_limits() const { return limit_constraints_data_.num_constraints(); }
-
-  int num_couplers() const {
-    return coupler_constraints_data_.num_constraints();
-  }
-
   /* Returns the generalized velocity vector v. */
   const VectorX<T>& v() const { return v_; }
 

@@ -656,8 +656,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.num_patches(), model.num_constraints());
-  EXPECT_EQ(data.num_gains(), 0);
+  EXPECT_EQ(data.gain_constraints_data().num_constraints(), 0);
 
   // At this point there should be no gain constraints.
   EXPECT_EQ(model.num_gain_constraints(), 0);
@@ -676,7 +675,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
 
   // Resize data to include gain constraints data.
   model.ResizeData(&data);
-  EXPECT_EQ(data.num_gains(), 2);
+  EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
 
   const int nv = model.num_velocities();
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
@@ -763,8 +762,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.num_patches(), model.num_constraints());
-  EXPECT_EQ(data.num_limits(), 0);
+  EXPECT_EQ(data.limit_constraints_data().num_constraints(), 0);
 
   // At this point there should be no gain constraints.
   EXPECT_EQ(model.num_limit_constraints(), 0);
@@ -776,7 +774,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
 
   // Resize data to include limit constraints data.
   model.ResizeData(&data);
-  EXPECT_EQ(data.num_limits(), 2);
+  EXPECT_EQ(data.limit_constraints_data().num_constraints(), 2);
 
   const int nv = model.num_velocities();
   const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
@@ -834,8 +832,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.num_patches(), model.num_constraints());
-  EXPECT_EQ(data.num_limits(), 0);
+  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 0);
 
   // At this point there should be no coupler constraints.
   EXPECT_EQ(model.num_coupler_constraints(), 0);
@@ -847,7 +844,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
 
   // Resize data to include limit constraints data.
   model.ResizeData(&data);
-  EXPECT_EQ(data.num_couplers(), 1);
+  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
 
   const int nv = model.num_velocities();
   VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
