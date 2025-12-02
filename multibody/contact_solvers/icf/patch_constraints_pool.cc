@@ -230,7 +230,7 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   const int num_pairs =
       std::accumulate(num_pairs_.begin(), num_pairs_.end(), 0);
 
-  // per-patch data.
+  // Per-patch data.
   num_cliques_.resize(num_patches);
   bodies_.resize(num_patches);
   p_AB_W_.Resize(num_patches, 3, 1);
@@ -239,7 +239,7 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   dynamic_friction_.resize(num_patches);
   Rt_.resize(num_patches);
 
-  // per-pair data.
+  // Per-pair data.
   p_BC_W_.Resize(num_pairs, 3, 1);
   normal_W_.Resize(num_pairs, 3, 1);
   stiffness_.resize(num_pairs);
@@ -247,7 +247,7 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   n0_.resize(num_pairs);
   net_friction_.resize(num_pairs);
 
-  // Start indexes for each patch
+  // Start indexes for each patch.
   pair_data_start_.resize(num_patches);
   int previous_total = 0;
   for (int i = 0; i < num_patches; ++i) {
