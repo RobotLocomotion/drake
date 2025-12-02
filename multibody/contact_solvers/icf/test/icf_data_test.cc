@@ -35,7 +35,7 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   const int num_bodies = 5;
   const int num_velocities = 12;
   const int max_clique_size = 6;
-  const int num_couplers = 4;
+  const int num_couplers = 2;
   const std::vector<int> gain_sizes = {3, 2};
   const std::vector<int> limit_sizes = {5, 4, 3};
   const std::vector<int> patch_sizes = {8, 6, 4, 2};
@@ -56,6 +56,10 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   EXPECT_EQ(data.scratch().Av_minus_r[0].size(), num_velocities);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
   EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
+  EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
+            num_couplers);
+  EXPECT_EQ(data.scratch().H_cc_pool[0].rows(), max_clique_size);
+  EXPECT_EQ(data.scratch().H_cc_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_AA_pool[0].rows(), max_clique_size);

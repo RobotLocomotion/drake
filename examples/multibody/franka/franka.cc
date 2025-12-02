@@ -37,7 +37,7 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::PackageMap;
 using drake::multibody::Parser;
-using drake::multibody::contact_solvers::icf::internal::IcfSolverParameters;
+using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;

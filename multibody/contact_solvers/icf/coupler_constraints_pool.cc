@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/unused.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -125,8 +124,6 @@ template <typename T>
 void CouplerConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data,
     BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
-  unused(data);
-
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
@@ -134,11 +131,17 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
     const T& rho = gear_ratio_[k];
     const T& R = R_[k];
 
-    auto& Hc = hessian->diagonal_block(c);
+    EigenPool<MatrixX<T>>& H_cc_pool = data.scratch().H_cc_pool;
+    H_cc_pool.Resize(1, model().clique_size(c), model().clique_size(c));
+    typename EigenPool<MatrixX<T>>::MatrixView Hc = H_cc_pool[0];
+    Hc.setZero();
+
     // clang-format off
     Hc(i, i) += 1.0 / R;  Hc(i, j) -= rho / R;
     Hc(j, i) -= rho / R;  Hc(j, j) += rho * rho / R;
     // clang-format on
+
+    hessian->AddToBlock(c, c, Hc);
   }
 }
 

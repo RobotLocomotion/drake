@@ -4,12 +4,12 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/name_value.h"
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
+#include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 
 namespace drake {
 namespace multibody {
@@ -17,55 +17,10 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Parameters to configure the ICF convex solver. */
-struct IcfSolverParameters {
-  /* Passes this object to an Archive.
-  Refer to @ref yaml_serialization "YAML Serialization" for background. */
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(max_iterations));
-    a->Visit(DRAKE_NVP(tolerance));
-    a->Visit(DRAKE_NVP(enable_hessian_reuse));
-    a->Visit(DRAKE_NVP(hessian_reuse_target_iterations));
-    a->Visit(DRAKE_NVP(use_dense_algebra));
-    a->Visit(DRAKE_NVP(max_ls_iterations));
-    a->Visit(DRAKE_NVP(ls_tolerance));
-    a->Visit(DRAKE_NVP(alpha_max));
-    a->Visit(DRAKE_NVP(print_solver_stats));
-  }
-
-  /* Outer solver iteration limit */
-  int max_iterations{100};
-
-  /* Tolerance ε for the convergence conditions
-       ‖D ∇ℓ‖ ≤ ε max(1, ‖D r‖),
-       η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖). */
-  // TODO(CENIC): rethink how/where this parameter is set. Currently it has no
-  // effect in error-controlled mode.
-  double tolerance{1e-8};
-
-  /* Whether hessian reuse between iterations and time steps is enabled. */
-  bool enable_hessian_reuse{false};
-
-  /* Target maximum number of iterations for Hessian reuse. The solver
-  effectively estimates the number of iterations to convergence. If the
-  estimate is larger than this target, the Hessian will be recomputed to
-  regain faster Newton-style convergence. See [Hairer, 1996], Ch. IV.8. */
-  int hessian_reuse_target_iterations{10};
-
-  /* Dense algebra (LDLT) for solving for the search direction H⁻¹ g.
-  This is primarily useful for debugging and testing: sparse algebra is
-  generally much faster. */
-  bool use_dense_algebra{false};
-
-  /* Parameters for exact linesearch */
-  int max_ls_iterations{100};
-  double ls_tolerance{1e-8};
-  double alpha_max{1.0};  // maximum step length
-
-  /* Whether to print stats to console. */
-  bool print_solver_stats{false};
-};
+using contact_solvers::internal::BlockSparseCholeskySolver;
+using contact_solvers::internal::BlockSparsityPattern;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 /* Statistics to track during the optimization process. */
 struct IcfSolverStats {
@@ -118,6 +73,7 @@ class IcfSolver {
   /* Solves the convex problem to compute next-step velocities v = min ℓ(v).
 
   @param model The ICF model defining the optimization problem.
+  @param tolerance The convergence tolerance ε to be used for this solve.
   @param data The ICF data structure to be updated with the solution. To
               begin, stores the initial guess for velocities v.
 
@@ -125,7 +81,8 @@ class IcfSolver {
 
   N.B. the caller must ensure that the model and data are compatible, i.e.,
   model.ResizeData(&data) has been called. */
-  bool SolveWithGuess(const IcfModel<double>& model, IcfData<double>* data);
+  bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
+                      IcfData<double>* data);
 
   /* Returns solver statistics from the most recent solve. */
   const IcfSolverStats& stats() const { return stats_; }
@@ -136,10 +93,6 @@ class IcfSolver {
   }
 
   const IcfSolverParameters& get_parameters() const { return parameters_; }
-
-  /* Updates only the convergence tolerance. Used by the integrator to set
-  convergence criteria based on integrator accuracy. */
-  void set_tolerance(const double tol) { parameters_.tolerance = tol; }
 
  private:
   /* Solves min_α ℓ(v + α Δ v) using a 1D Newton method with bisection

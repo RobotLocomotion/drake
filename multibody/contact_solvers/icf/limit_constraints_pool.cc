@@ -3,7 +3,6 @@
 #include <limits>
 #include <vector>
 
-#include "drake/common/unused.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -153,8 +152,11 @@ void LimitConstraintsPool<T>::AccumulateHessian(
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
-    hessian->diagonal_block(c).diagonal() += limit_data.G_lower(k);
-    hessian->diagonal_block(c).diagonal() += limit_data.G_upper(k);
+
+    const MatrixX<T> G_lower = limit_data.G_lower(k).asDiagonal();
+    const MatrixX<T> G_upper = limit_data.G_upper(k).asDiagonal();
+    hessian->AddToBlock(c, c, G_lower);
+    hessian->AddToBlock(c, c, G_upper);
   }
 }
 
