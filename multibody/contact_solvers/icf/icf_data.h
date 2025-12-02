@@ -73,6 +73,10 @@ class IcfData {
     LimitConstraintsDataPool<T> limit_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
 
+    // Scratch space for coupler constraints Hessian accumulation. Holds at most
+    // one matrix of size max_clique_size() x max_clique_size().
+    EigenPool<MatrixX<T>> H_cc_pool;
+
     // Scratch space for Hessian accumulation. These pools will only hold at
     // most one element, but using pools instead of a single MatrixX<T> allows
     // us to avoid extra heap allocations, as their sizes change frequently.

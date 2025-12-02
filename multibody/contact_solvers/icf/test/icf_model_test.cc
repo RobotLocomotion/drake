@@ -404,7 +404,7 @@ GTEST_TEST(IcfModel, CalcGradients) {
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  EXPECT_EQ(data.num_velocities(), nv);
   EXPECT_EQ(model.num_constraints(), 8);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);

@@ -153,7 +153,6 @@ drake_cc_library(
         ":icf_search_direction_data",
         "//common:default_scalars",
         "//common:essential",
-        "//common:unused",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )

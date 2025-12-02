@@ -13,6 +13,7 @@ void IcfData<T>::Scratch::Clear() {
   Av_minus_r.Clear();
   V_WB_alpha.Clear();
   v_alpha.Clear();
+  H_cc_pool.Clear();
   H_BB_pool.Clear();
   H_AA_pool.Clear();
   H_AB_pool.Clear();
@@ -41,6 +42,8 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
   gain_constraints_data.Resize(gain_sizes);
   limit_constraints_data.Resize(limit_sizes);
   patch_constraints_data.Resize(patch_sizes);
+
+  H_cc_pool.Resize(1, max_clique_size, max_clique_size);
 
   H_BB_pool.Resize(1, max_clique_size, max_clique_size);
   H_AA_pool.Resize(1, max_clique_size, max_clique_size);

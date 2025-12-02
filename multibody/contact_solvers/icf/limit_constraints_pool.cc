@@ -3,7 +3,6 @@
 #include <limits>
 #include <vector>
 
-#include "drake/common/unused.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
