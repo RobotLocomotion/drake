@@ -62,10 +62,8 @@ install(
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
-        "//bindings/pydrake/common/test_utilities:algebra_test_util_py",
-        "//bindings/pydrake/common/test_utilities:autodiffutils_test_util_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/common/test_utilities/algebra_test_util",
     ],
 )
 

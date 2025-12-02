@@ -37,7 +37,7 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     visibility = [
         "//bindings/pydrake:__pkg__",
-        "//bindings/pydrake/common/test_utilities:__pkg__",
+        "//bindings/pydrake/common/test_utilities:__subpackages__",
     ],
     deps = [
         # This `_init_py` is redundant since `pydrake:module_py` uses it, but
