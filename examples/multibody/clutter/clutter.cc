@@ -51,7 +51,7 @@ using drake::multibody::PackageMap;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UnitInertia;
-using drake::multibody::contact_solvers::icf::internal::IcfSolverParameters;
+using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;

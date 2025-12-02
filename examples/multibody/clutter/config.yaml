@@ -51,8 +51,9 @@ config:
     publish_proximity: false
   # Config for `class IcfSolver`. Only used when integration_scheme is "cenic".
   icf_solver_config:
-    # Main solver tolerance.
-    tolerance: 1e-8
+    # Main solver tolerance in fixed-step mode; minimum scaled tolerance with
+    # error control.
+    min_tolerance: 1e-8
     # Whether to reuse the Hessian factorization between iterations.
     enable_hessian_reuse: false
     # Maximum number of iterations before re-computing the Hessian.
