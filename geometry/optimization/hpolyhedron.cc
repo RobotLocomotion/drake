@@ -1151,7 +1151,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         }
 
         // Ensure `b_min_allowed` does not exceed `b(i)` (hyperplane does not
-        // move outward).  Can occur if `intersection_padding > 0.
+        // move outward due to adding kIntersectionFeasibilityPad).
         b_i_min_allowed = std::min(b_i_min_allowed, inbody.b()(i));
 
         // Find which hyperplanes become redundant if we move the hyperplane
