@@ -114,6 +114,98 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   model->ResetParameters(std::move(params));
 }
 
+/* Adds some dummy contact constraints to the model. */
+template <typename T>
+void AddContactConstraints(IcfModel<T>* model) {
+  // Add contact patches.
+  const T dissipation = 50.0;
+  const T stiffness = 1.0e6;
+  const T friction = 0.5;
+
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
+  // Resize to hold three patches with one contact pair each.
+  // N.B. num_pairs_per_patch is allocated on the heap.
+  const std::vector<int> num_pairs_per_patch = {1, 1, 1};
+  patches.Resize(num_pairs_per_patch);
+
+  // first patch
+  {
+    const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
+    patches.SetPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
+    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
+    const T fn0 = 1.5;
+    patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Single clique patch.
+  {
+    const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
+    patches.SetPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
+    const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
+    const T fn0 = 1.5;
+    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Third patch
+  {
+    const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
+    patches.SetPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
+    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
+    const T fn0 = 1.5;
+    patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+}
+
+/* Adds some dummy gain constraints to the model.
+
+@returns The (K, u, e) vectors used to set the gain constraints on each clique.
+*/
+template <typename T>
+std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
+  EXPECT_EQ(model->num_cliques(), 3);
+
+  GainConstraintsPool<T>& gain_constraints = model->gain_constraints_pool();
+
+  // Allocate space for two gain constraints (on cliques 0 and 2).
+  const std::vector<int> actuated_clique_sizes = {model->clique_size(0),
+                                                  model->clique_size(2)};
+  gain_constraints.Resize(actuated_clique_sizes);
+
+  // On clique 0:
+  const int nv0 = model->clique_size(0);
+  VectorX<T> K0 = 1.1 * VectorX<T>::Ones(nv0);
+  VectorX<T> u0 = -6.0 * VectorX<T>::Ones(nv0);
+  VectorX<T> e0 = 0.9 * VectorX<T>::Ones(nv0);
+  gain_constraints.Set(0, 0, K0, u0, e0);
+
+  // On clique 2:
+  const int nv2 = model->clique_size(2);
+  VectorX<T> K2 = 2.3 * VectorX<T>::Ones(nv2);
+  VectorX<T> u2 = -0.5 * VectorX<T>::Ones(nv2);
+  VectorX<T> e2 = 11.1 * VectorX<T>::Ones(nv2);
+
+  // Test cases with zero gain.
+  K2(1) = K2(2) = K2(4) = 0.0;
+  u2(1) = -13.5;  // bias below limit.
+  u2(2) = -5.5;   // bias within limits.
+  u2(4) = 15.2;   // bias above limits.
+  gain_constraints.Set(1, 2, K2, u2, e2);
+
+  return {K0, u0, e0, K2, u2, e2};
+}
+
 /* Checks that a default constructed model is empty. */
 GTEST_TEST(IcfModel, EmptyModel) {
   IcfModel<double> model;
@@ -250,14 +342,15 @@ GTEST_TEST(IcfModel, PerBodyElements) {
 /* Checks that gradients are computed correctly for an unconstrained problem. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model);
+  AddContactConstraints(&model);
+  model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(model.num_constraints(), 0);
+  EXPECT_EQ(model.num_constraints(), 3);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
@@ -275,8 +368,8 @@ GTEST_TEST(IcfModel, CalcGradients) {
 /* Checks the Hessian for a problem with a single clique. */
 GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfModel<AutoDiffXd> model;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model, true /* single cliques */);
+  AddContactConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -483,79 +576,13 @@ GTEST_TEST(IcfModel, ParamsAccessors) {
   EXPECT_EQ(params1, params2.get());
 }
 
-// Note: the functions below are separated out to prepare for landing the
-// unconstrained model first.
-
-/* Adds some dummy contact constraints to the model. */
-template <typename T>
-void AddContactConstraints(IcfModel<T>* model) {
-  // Add contact patches.
-  const T dissipation = 50.0;
-  const T stiffness = 1.0e6;
-  const T friction = 0.5;
-
-  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
-  // Resize to hold three patches with one contact pair each.
-  // N.B. num_pairs_per_patch is allocated on the heap.
-  const std::vector<int> num_pairs_per_patch = {1, 1, 1};
-  patches.Resize(num_pairs_per_patch);
-
-  // first patch
-  {
-    const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
-    patches.SetPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
-                     dissipation, friction, friction, p_AB_W);
-
-    const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
-    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
-    const T fn0 = 1.5;
-    patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
-                    fn0, stiffness);
-  }
-
-  // Single clique patch.
-  {
-    const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
-    patches.SetPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
-                     dissipation, friction, friction, p_AB_W);
-
-    const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
-    const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
-    const T fn0 = 1.5;
-    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
-                    fn0, stiffness);
-  }
-
-  // Third patch
-  {
-    const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
-    patches.SetPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
-                     dissipation, friction, friction, p_AB_W);
-
-    const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
-    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
-    const T fn0 = 1.5;
-    patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
-                    fn0, stiffness);
-  }
-
-  // N.B. SetSparsityPattern performs several heap allocations.
-  model->SetSparsityPattern();
-}
-
-/* Create a more complete model with basic contact constraints. */
-template <typename T>
-void MakeModel(IcfModel<T>* model, bool single_clique = false) {
-  MakeUnconstrainedModel(model, single_clique);
-  AddContactConstraints(model);
-}
-
 GTEST_TEST(IcfModel, GainConstraint) {
   IcfModel<AutoDiffXd> model;
-  MakeModel(&model, false /* multiple cliques */);
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
@@ -567,34 +594,16 @@ GTEST_TEST(IcfModel, GainConstraint) {
   EXPECT_EQ(model.num_gain_constraints(), 0);
 
   // Add gain constraints.
-  auto& gain_constraints = model.gain_constraints_pool();
-
-  // Allocate space for two gain constraints (on cliques 0 and 2).
-  const std::vector<int> actuated_clique_sizes = {model.clique_size(0),
-                                                  model.clique_size(2)};
-  gain_constraints.Resize(actuated_clique_sizes);
-
-  // On clique 0:
-  const int nv0 = model.clique_size(0);
-  VectorX<AutoDiffXd> K0 = 1.1 * VectorX<AutoDiffXd>::Ones(nv0);
-  VectorX<AutoDiffXd> u0 = -6.0 * VectorX<AutoDiffXd>::Ones(nv0);
-  VectorX<AutoDiffXd> e0 = 0.9 * VectorX<AutoDiffXd>::Ones(nv0);
-  gain_constraints.Set(0, 0, K0, u0, e0);
-
-  // On clique 2:
-  const int nv2 = model.clique_size(2);
-  VectorX<AutoDiffXd> K2 = 2.3 * VectorX<AutoDiffXd>::Ones(nv2);
-  VectorX<AutoDiffXd> u2 = -0.5 * VectorX<AutoDiffXd>::Ones(nv2);
-  VectorX<AutoDiffXd> e2 = 11.1 * VectorX<AutoDiffXd>::Ones(nv2);
-  // Test cases with zero gain.
-  K2(1) = K2(2) = K2(4) = 0.0;
-  u2(1) = -13.5;  // bias below limit.
-  u2(2) = -5.5;   // bias within limits.
-  u2(4) = 15.2;   // bias above limits.
-  gain_constraints.Set(1, 2, K2, u2, e2);
+  std::vector<VectorX<AutoDiffXd>> gains = AddGainConstraints(&model);
+  const VectorX<AutoDiffXd>& K0 = gains[0];
+  const VectorX<AutoDiffXd>& u0 = gains[1];
+  const VectorX<AutoDiffXd>& e0 = gains[2];
+  const VectorX<AutoDiffXd>& K2 = gains[3];
+  const VectorX<AutoDiffXd>& u2 = gains[4];
+  const VectorX<AutoDiffXd>& e2 = gains[5];
 
   EXPECT_EQ(model.num_gain_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 2);
 
   // Resize data to include gain constraints data.
   model.ResizeData(&data);
@@ -631,31 +640,31 @@ GTEST_TEST(IcfModel, GainConstraint) {
   EXPECT_GT(tau0_expected(4), -0.9);
   EXPECT_LT(tau0_expected(4), 0.9);
   EXPECT_LT(tau0_expected(5), -0.9);
-  // Apply the limit.
-  tau0_expected(0) = tau0_expected(1) = tau0_expected(2) = tau0_expected(3) =
-      0.9;
-  tau0_expected(5) = -0.9;
-  const VectorXd gamma0_expected = tau0_expected * model.time_step().value();
 
-  const VectorXd cost_gradient = gains_data.cost().derivatives();
+  // Apply the limits.
+  tau0_expected = tau0_expected.cwiseMax(-e0_value).cwiseMin(e0_value);
+  tau2_expected = tau2_expected.cwiseMax(-e2_value).cwiseMin(e2_value);
+  const VectorXd gamma0_expected = tau0_expected * model.time_step().value();
+  const VectorXd gamma2_expected = tau2_expected * model.time_step().value();
 
   const VectorX<AutoDiffXd> gamma0 = gains_data.gamma(0);
-  EXPECT_EQ(gamma0.size(), nv0);
+  const VectorX<AutoDiffXd> gamma2 = gains_data.gamma(1 /* constraint index */);
+  EXPECT_EQ(gamma0.size(), model.clique_size(0));
+  EXPECT_EQ(gamma2.size(), model.clique_size(2));
   const VectorXd gamma0_value = math::ExtractValue(gamma0);
+  const VectorXd gamma2_value = math::ExtractValue(gamma2);
   EXPECT_TRUE(CompareMatrices(gamma0_value, gamma0_expected, kEpsilon,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(gamma2_value, gamma2_expected, kEpsilon,
                               MatrixCompareType::relative));
 
   // Gradient of the cost.
+  const VectorXd cost_gradient = gains_data.cost().derivatives();
   const VectorXd minus_cost0_gradient = -cost_gradient.segment<6>(0);
-  EXPECT_TRUE(CompareMatrices(gamma0_value, minus_cost0_gradient, kEpsilon,
-                              MatrixCompareType::relative));
-
-  // Verify gradients for gain on clique 2.
-  const VectorX<AutoDiffXd> gamma2 = gains_data.gamma(1 /* constraint index */);
-  EXPECT_EQ(gamma2.size(), nv2);
-  const VectorXd gamma2_value = math::ExtractValue(gamma2);
   const VectorXd minus_cost2_gradient =
       -cost_gradient.segment<6>(12 /* first velocity index */);
+  EXPECT_TRUE(CompareMatrices(gamma0_value, minus_cost0_gradient, kEpsilon,
+                              MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(gamma2_value, minus_cost2_gradient, kEpsilon,
                               MatrixCompareType::relative));
 
@@ -676,10 +685,11 @@ GTEST_TEST(IcfModel, GainConstraint) {
 
 GTEST_TEST(IcfModel, LimitConstraint) {
   IcfModel<AutoDiffXd> model;
-  MakeModel(&model, false /* multiple cliques */);
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
@@ -701,7 +711,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   limits.Resize(limited_clique_sizes, constraint_to_clique);
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 2);
 
   const int nv = model.num_velocities();
   VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
@@ -713,7 +723,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
              1.0);  // Within.
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 2);
 
   // Limits on clique 2.
   limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
@@ -724,7 +734,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
              1.5);  // Within.
 
   EXPECT_EQ(model.num_limit_constraints(), 2);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 2);
 
   // Resize data to include limit constraints data.
   model.ResizeData(&data);
@@ -775,10 +785,11 @@ GTEST_TEST(IcfModel, LimitConstraint) {
 
 GTEST_TEST(IcfModel, CouplerConstraint) {
   IcfModel<AutoDiffXd> model;
-  MakeModel(&model, false /* multiple cliques */);
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.num_constraints(), 0);
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
@@ -803,7 +814,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
                q0_c1(1), q0_c1(3), rho1, offset1);
   EXPECT_EQ(model.num_coupler_constraints(), 1);
-  EXPECT_EQ(model.num_constraints(), 4);
+  EXPECT_EQ(model.num_constraints(), 1);
 
   // Resize data to include limit constraints data.
   model.ResizeData(&data);
