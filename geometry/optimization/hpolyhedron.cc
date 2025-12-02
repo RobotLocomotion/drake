@@ -992,6 +992,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   DRAKE_THROW_UNLESS(!circumbody.IsEmpty());
   DRAKE_THROW_UNLESS(circumbody.IsBounded());
 
+  // Check that circumbody satisfies point containment and intersection
+  // constraints.
   DRAKE_THROW_UNLESS(CheckIntersectionAndPointContainmentConstraints(
       circumbody, circumbody, points_to_contain, intersecting_polytopes,
       keep_whole_intersection, intersection_padding));
@@ -1127,6 +1129,9 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
             if (cost_multiplier * result.get_optimal_cost() +
                     kIntersectionFeasibilityPad >
                 b_i_min_allowed) {
+              // Face is backed out by an additional small
+              // `kIntersectionFeasibilityPad` distance to ensure that the LP
+              // continues to be feasible in future iterations.
               b_i_min_allowed = cost_multiplier * result.get_optimal_cost() +
                                 kIntersectionFeasibilityPad;
             }
