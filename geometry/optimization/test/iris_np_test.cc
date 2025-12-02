@@ -38,12 +38,9 @@ using symbolic::Variable;
 const double kInf = std::numeric_limits<double>::infinity();
 
 // Helper method for testing IrisNp from a urdf string.
-// TODO(cohnt): Remove the test_deprecated flag after the deprecated code is
-// removed on 2025-12-01.
 HPolyhedron IrisFromUrdf(const std::string urdf,
                          const Eigen::Ref<const Eigen::VectorXd>& sample,
-                         const IrisOptions& options,
-                         bool test_deprecated = false) {
+                         const IrisOptions& options) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -56,15 +53,7 @@ HPolyhedron IrisFromUrdf(const std::string urdf,
 
   auto context = diagram->CreateDefaultContext();
   plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
-  if (test_deprecated) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
-                                    options);
-#pragma GCC diagnostic pop
-  } else {
-    return IrisNp(plant, plant.GetMyContextFromRoot(*context), options);
-  }
+  return IrisNp(plant, plant.GetMyContextFromRoot(*context), options);
 }
 
 // One prismatic link with joint limits.  Iris should return the joint limits.

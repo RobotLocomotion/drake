@@ -453,6 +453,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "jacobian_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":gradient",
         ":jacobian",

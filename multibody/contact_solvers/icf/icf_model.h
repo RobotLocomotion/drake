@@ -19,11 +19,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-template <typename T>
-using BlockSparseSymmetricMatrixT =
-    contact_solvers::internal::BlockSparseLowerTriangularOrSymmetricMatrix<
-        MatrixX<T>, true>;
-
 /* A struct to hold the key parameters that define a convex ICF problem.
 
 These parameters are owned by the IcfModel, and are set externally by
@@ -285,13 +280,16 @@ class IcfModel {
 
   See documentation in internal::BlockSparseCholeskySolver for further details.
   */
-  std::unique_ptr<BlockSparseSymmetricMatrixT<T>> MakeHessian(
-      const IcfData<T>& data) const;
+  std::unique_ptr<
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>>
+  MakeHessian(const IcfData<T>& data) const;
 
   /* Updates the values of the Hessian for the input `data`.
   @pre The sparsity of the `hessian` matches the structure of `this` model. */
-  void UpdateHessian(const IcfData<T>& data,
-                     BlockSparseSymmetricMatrixT<T>* hessian) const;
+  void UpdateHessian(
+      const IcfData<T>& data,
+      contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
+          hessian) const;
 
   /* Pre-computes some quantities used to speed up CalcCostAlongLine() below. */
   void CalcSearchDirectionData(

@@ -184,8 +184,7 @@ class FemSolver {
      model. */
     void ReinitializeIfNeeded(const FemModel<T>& model);
 
-    copyable_unique_ptr<
-        contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+    copyable_unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
         tangent_matrix;
     VectorX<T> b;
     VectorX<T> dz;

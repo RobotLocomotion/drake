@@ -10,7 +10,7 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using contact_solvers::internal::BlockSparseSymmetricMatrix3d;
 using contact_solvers::internal::EigenBlock3x3SparseSymmetricMatrix;
 using contact_solvers::internal::SchurComplement;
 using LinearSolver =
@@ -123,7 +123,7 @@ int FemSolver<T>::SolveLinearModel(
   FemState<T>& state = *next_state_and_schur_complement_.state;
   VectorX<T>& b = scratch_.b;
   VectorX<T>& dz = scratch_.dz;
-  Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
+  BlockSparseSymmetricMatrix3d& tangent_matrix = *scratch_.tangent_matrix;
 
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
@@ -147,7 +147,7 @@ int FemSolver<T>::SolveNonlinearModel(
   DRAKE_DEMAND(!model_->is_linear());
   VectorX<T>& b = scratch_.b;
   VectorX<T>& dz = scratch_.dz;
-  Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
+  BlockSparseSymmetricMatrix3d& tangent_matrix = *scratch_.tangent_matrix;
   FemState<T>& state = *next_state_and_schur_complement_.state;
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);

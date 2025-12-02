@@ -71,6 +71,7 @@
 // #include "drake/common/string_unordered_set.h"
 // #include "drake/common/temp_directory.h"
 // #include "drake/common/text_logging.h"
+// #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
 // #include "drake/common/type_safe_index.h"
 // #include "drake/common/unused.h"
@@ -3166,7 +3167,7 @@ For example:
       } Warn;
       // Symbol: drake::logging::get_dist_sink
       struct /* get_dist_sink */ {
-        // Source: drake/common/text_logging.h
+        // Source: drake/common/text_logging_spdlog.h
         const char* doc =
 R"""((Advanced) Retrieves the default sink for all Drake logs. When spdlog
 is enabled, the return value can be cast to
