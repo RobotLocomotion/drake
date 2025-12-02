@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
@@ -136,10 +137,15 @@ class IcfModel {
   /* Returns the maximum number of velocities in any clique. */
   int max_clique_size() const { return max_clique_size_; }
 
-  /* Returns the total number of constraints of any type in the problem.. */
-  int num_constraints() const {
-    // TODO(#23769): add constraints to the model.
-    return 0;
+  /* Returns the total number of constraints of any type in the problem. */
+  int num_constraints() const { return num_coupler_constraints(); }
+
+  CouplerConstraintsPool<T>& coupler_constraints_pool() {
+    return coupler_constraints_pool_;
+  }
+
+  int num_coupler_constraints() const {
+    return coupler_constraints_pool_.num_constraints();
   }
 
   /* Returns the time step δt. */
@@ -220,13 +226,11 @@ class IcfModel {
   /* Returns the linear cost term r = A v₀ - δt k₀ */
   const VectorX<T>& r() const { return r_; }
 
-  /* Returns an approximation of the Delassus operator for the given clique.
-  The Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v,
-  i.e. the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
-  simplify this estimation as W = diag(M)⁻¹. */
-  ConstVectorXView clique_delassus_approx(int clique) const {
+  /* Returns diag(M)⁻¹. This is often used to approximate the Delassus operator
+  W = J⋅M⁻¹⋅Jᵀ ≈ J⋅diag(M)⁻¹⋅Jᵀ. */
+  ConstVectorXView clique_diagonal_mass_inverse(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
-    return clique_delassus_[clique];
+    return clique_diagonal_mass_inverse_[clique];
   }
 
   /* Returns the Hessian sparsity pattern. This is useful for detecting when the
@@ -343,7 +347,7 @@ class IcfModel {
   EigenPool<Vector6<T>> V_WB0_;  // Body spatial velocities at v₀, V = J_WB v₀.
   VectorX<T> scale_factor_;      // Scale diag(M)^{-1/2} for convergence check.
   EigenPool<MatrixX<T>> A_;  // Sparse linearized dynamics matrix A = M₀ + δtD₀.
-  EigenPool<VectorX<T>> clique_delassus_;  // Delassus estimate W = diag(M₀)⁻¹.
+  EigenPool<VectorX<T>> clique_diagonal_mass_inverse_;  // diag(M₀)⁻¹.
   VectorX<T> Av0_;  // Av₀ storage, used to recompute r with a new δt.
   VectorX<T> r_;    // Linear cost term r = Av₀ - δt k₀.
 
@@ -357,6 +361,9 @@ class IcfModel {
   // Sparsity pattern of the Hessian matrix. Defined on a per-clique basis.
   std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
       sparsity_pattern_;
+
+  // Fixed set of constraints.
+  CouplerConstraintsPool<T> coupler_constraints_pool_;
 };
 
 }  // namespace internal
