@@ -221,7 +221,7 @@ void AddLimitConstraints(IcfModel<T>* model) {
   limits.Resize(limited_clique_sizes, constraint_to_clique);
 
   const int nv = model->num_velocities();
-  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
   // Limits on clique 0.
   limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
@@ -247,10 +247,10 @@ void AddCouplerConstraint(IcfModel<T>* model) {
   couplers.Resize(1 /* one constraint */);
 
   const int nv = model->num_velocities();
-  VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
   // Coupler on clique 1.
-  const VectorX<AutoDiffXd>& q0_c1 = model->clique_segment(1, q0);
+  const VectorX<T>& q0_c1 = model->clique_segment(1, q0);
   const double rho1 = 2.5;
   const double offset1 = 0.1;
   couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
@@ -390,18 +390,22 @@ GTEST_TEST(IcfModel, PerBodyElements) {
   EXPECT_EQ(num_anchored, 1);
 }
 
-/* Checks that gradients are computed correctly for an unconstrained problem. */
+/* Checks that gradients are computed correctly for a problem with various
+ * constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   AddContactConstraints(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddCouplerConstraint(&model);
   model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.num_constraints(), 8);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
@@ -412,7 +416,7 @@ GTEST_TEST(IcfModel, CalcGradients) {
   const VectorXd cost_derivatives = data.cost().derivatives();
   const VectorXd gradient_value = math::ExtractValue(data.gradient());
 
-  EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 8 * kEpsilon,
+  EXPECT_TRUE(CompareMatrices(gradient_value, cost_derivatives, 100 * kEpsilon,
                               MatrixCompareType::relative));
 }
 
@@ -512,10 +516,15 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
 /* Checks that our exact linesearch computations are correct. */
 GTEST_TEST(IcfModel, CalcCostAlongLine) {
   IcfModel<AutoDiffXd> model;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model);
+  AddContactConstraints(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddCouplerConstraint(&model);
+  model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 8);
 
   // Allocate data, and additional scratch.
   IcfData<AutoDiffXd> data, scratch;
@@ -570,22 +579,31 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
 model from scratch. */
 GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_original;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model_original, false, 0.02);
+  AddContactConstraints(&model_original);
+  AddGainConstraints(&model_original);
+  AddLimitConstraints(&model_original);
+  AddCouplerConstraint(&model_original);
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
   EXPECT_EQ(model_original.time_step(), 0.02);
+  EXPECT_EQ(model_original.num_constraints(), 8);
 
   const double new_time_step = 0.003;
 
   // Create a second model from scratch with the new time step.
   IcfModel<double> model_new;
   MakeUnconstrainedModel(&model_new, false, new_time_step);
+  AddContactConstraints(&model_new);
+  AddGainConstraints(&model_new);
+  AddLimitConstraints(&model_new);
+  AddCouplerConstraint(&model_new);
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
+  EXPECT_EQ(model_new.num_constraints(), 8);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
