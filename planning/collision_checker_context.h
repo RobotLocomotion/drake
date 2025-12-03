@@ -85,7 +85,10 @@ class CollisionCheckerContext {
 
  private:
   /* The resulting object stores an alias to `model`; the passed model should
-   have a lifetime greater than the constructed object. */
+   have a lifetime greater than the constructed object.
+
+   @pre `model` is not null.
+   @pre `model_context` is not null and is allocated by `model`. */
   CollisionCheckerContext(
       const RobotDiagram<double>* model,
       std::unique_ptr<systems::Context<double>> model_context);
