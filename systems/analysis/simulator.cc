@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -13,27 +14,29 @@ namespace systems {
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
-    : Simulator(&system, nullptr, std::move(context)) {}
+    : Simulator(&system, nullptr, std::move(context), false) {}
 
 template <typename T>
 Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
                         std::unique_ptr<Context<T>> context)
-    : Simulator(nullptr, std::move(owned_system), std::move(context)) {}
+    : Simulator(nullptr, std::move(owned_system), std::move(context), true) {}
 
 template <typename T>
 std::unique_ptr<Simulator<T>> Simulator<T>::MakeWithSharedContext(
     const System<T>& system, std::shared_ptr<Context<T>> context) {
   // This slightly odd spelling allows access to the private constructor.
   return std::unique_ptr<Simulator<T>>(
-      new Simulator(&system, nullptr, std::move(context)));
+      new Simulator(&system, nullptr, std::move(context), false));
 }
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
-                        std::shared_ptr<Context<T>> context)
+                        std::shared_ptr<Context<T>> context,
+                        bool requires_owned_system)
     : owned_system_(std::move(owned_system)),
-      system_(owned_system_ ? *owned_system_ : *system),
+      system_(requires_owned_system ? DRAKE_DEREF(owned_system_)
+                                    : DRAKE_DEREF(system)),
       context_{std::move(context)} {
   // TODO(dale.mcconachie) move this default to SimulatorConfig
   constexpr double kDefaultInitialStepSizeTarget = 1e-4;
