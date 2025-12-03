@@ -46,7 +46,11 @@ class CouplerConstraintsPool {
   /* Resets, zeroing out the constraints while keeping memory allocated. */
   void Clear();
 
-  /* Resizes the constraints pool to store the given number of constraints. */
+  /* Resizes the constraints pool to store the given number of constraints.
+
+  After resizing, all constraints will hold invalid data until Set() is called
+  for each constraint index in [0, num_constraints()).
+  */
   void Resize(const int num_constraints);
 
   /* Sets the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
@@ -61,27 +65,35 @@ class CouplerConstraintsPool {
   @param qi The current position of the i-th DoF.
   @param qj The current position of the j-th DoF.
   @param gear_ratio The gear ratio ρ.
-  @param offset The offset Δq. */
+  @param offset The offset Δq.
+
+  Calling this function several times with the same `index` overwrites the
+  previous constraint for that index. */
   void Set(int index, int clique, int i, int j, const T& qi, const T& qj,
            T gear_ratio, T offset);
 
-  /* Computes problem data from the given generalized velocities v, and stores
-  in the given data struct. */
+  /* Computes problem data as a function of the generalized velocities v for the
+  full IcfModel. */
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
   /* Adds the gradient contribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
-  overall gradient. */
+  model-wide gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Adds the Hessian contribution of this constraint to the overall Hessian. */
+  /* Adds the contribution of this constraint to the model-wide Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
-  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
-  Used for exact line search. */
+  /* Computes the first and second derivatives of the constraint cost
+  ℓ̃ (α) = ℓ(v + α⋅w), for exact line search.
+
+  @param coupler_data Constraint data computed at v + α⋅w.
+  @param w The search direction.
+  @param[out] dcost the first derivative dℓ̃ /dα on output.
+  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
   void ProjectAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                         const VectorX<T>& w, T* dcost, T* d2cost) const;
 
@@ -98,7 +110,7 @@ class CouplerConstraintsPool {
   std::vector<T> gear_ratio_;
 
   // Regularization and bias per constraint, of size num_constraints().
-  std::vector<T> v_hat_;  // scaled by dt
+  std::vector<T> g_hat_;  // The true bias is v̂ = ĝ / δt.
   std::vector<T> R_;
 };
 

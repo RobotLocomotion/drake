@@ -106,8 +106,8 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
     // Restoring the data to the original size and setting velocities should not
     // cause any new allocations.
     drake::test::LimitMalloc guard;
-    data.scratch().Resize(num_bodies, num_velocities, max_clique_size,
-                          num_couplers, gain_sizes, limit_sizes, patch_sizes);
+    data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers,
+                gain_sizes, limit_sizes, patch_sizes);
     data.set_v(v);
   }
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);

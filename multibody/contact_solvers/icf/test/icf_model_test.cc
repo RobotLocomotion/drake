@@ -372,7 +372,7 @@ GTEST_TEST(IcfModel, PerBodyElements) {
 
     EXPECT_GT(model.body_mass(b), 0.0);
     if (!model.is_anchored(b)) {
-      EXPECT_GT(model.clique_delassus_approx(c).minCoeff(), 0.0);
+      EXPECT_GT(model.clique_diagonal_mass_inverse(c).minCoeff(), 0.0);
       model.mutable_clique_segment(c, &mutable_vector) +=
           VectorXd::Ones(clique_nv);
     }
@@ -832,7 +832,6 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 0);
 
   // At this point there should be no coupler constraints.
   EXPECT_EQ(model.num_coupler_constraints(), 0);

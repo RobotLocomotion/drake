@@ -256,13 +256,11 @@ class IcfModel {
   /* Returns the linear cost term r = A v₀ - δt k₀ */
   const VectorX<T>& r() const { return r_; }
 
-  /* Returns an approximation of the Delassus operator for the given clique.
-  The Delassus operator is W = J⋅M⁻¹⋅Jᵀ. For constraints for which vc = v,
-  i.e. the constraint Jacobian is the identity, we have W = M⁻¹. Further, we
-  simplify this estimation as W = diag(M)⁻¹. */
-  ConstVectorXView clique_delassus_approx(int clique) const {
+  /* Returns diag(M)⁻¹. This is often used to approximate the Delassus operator
+  W = J⋅M⁻¹⋅Jᵀ ≈ J⋅diag(M)⁻¹⋅Jᵀ. */
+  ConstVectorXView clique_diagonal_mass_inverse(int clique) const {
     DRAKE_ASSERT(0 <= clique && clique < num_cliques());
-    return clique_delassus_[clique];
+    return clique_diagonal_mass_inverse_[clique];
   }
 
   /* Returns the Hessian sparsity pattern. This is useful for detecting when the
@@ -379,7 +377,7 @@ class IcfModel {
   EigenPool<Vector6<T>> V_WB0_;  // Body spatial velocities at v₀, V = J_WB v₀.
   VectorX<T> scale_factor_;      // Scale diag(M)^{-1/2} for convergence check.
   EigenPool<MatrixX<T>> A_;  // Sparse linearized dynamics matrix A = M₀ + δtD₀.
-  EigenPool<VectorX<T>> clique_delassus_;  // Delassus estimate W = diag(M₀)⁻¹.
+  EigenPool<VectorX<T>> clique_diagonal_mass_inverse_;  // diag(M₀)⁻¹.
   VectorX<T> Av0_;  // Av₀ storage, used to recompute r with a new δt.
   VectorX<T> r_;    // Linear cost term r = Av₀ - δt k₀.
 

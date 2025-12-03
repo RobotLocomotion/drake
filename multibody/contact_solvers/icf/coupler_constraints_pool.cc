@@ -24,7 +24,7 @@ void CouplerConstraintsPool<T>::Clear() {
   constraint_to_clique_.clear();
   dofs_.clear();
   gear_ratio_.clear();
-  v_hat_.clear();
+  g_hat_.clear();
   R_.clear();
 }
 
@@ -33,7 +33,7 @@ void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
   constraint_to_clique_.resize(num_constraints);
   dofs_.resize(num_constraints);
   gear_ratio_.resize(num_constraints);
-  v_hat_.resize(num_constraints);
+  g_hat_.resize(num_constraints);
   R_.resize(num_constraints);
 }
 
@@ -49,6 +49,8 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   dofs_[index] = std::make_pair(i, j);
   gear_ratio_[index] = gear_ratio;
 
+  // Near-rigid regularization: this constraint acts as a very stiff
+  // critically-damped spring with time scale β⋅δt [Castro et al. 2022].
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
 
@@ -57,18 +59,18 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   // Eventually we will use
   //  v̂ = −g₀ / (δt (1 + β/π)),
   // However, since model.time_step() may change between now and when we
-  // actually solve the problem, we neglect the 1/δt factor for now, and will
-  // scale v̂ by 1/δt in CalcData().
-  v_hat_[index] = -g0 / (1.0 + beta / M_PI);
+  // actually solve the problem, we precompute ĝ = v̂⋅δt = −g₀/(1 + β/π), so that
+  // we can compute v̂ = ĝ/δt from the current time step in calls to CalcData().
+  g_hat_[index] = -g0 / (1.0 + beta / M_PI);
 
-  const auto w_clique = model().clique_delassus_approx(clique);
-  // Approximation of W = Jᵀ⋅M⁻¹⋅J, with
+  const auto w_clique = model().clique_diagonal_mass_inverse(clique);
+  // Approximation of W = Jᵀ⋅M⁻¹⋅J ≈ J⋅diag(M)⁻¹⋅Jᵀ, with
   //  J = [0 ... 1 ... -ρ ... 0]
   //             ↑      ↑
   //             i      j
   const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
-  R_[index] = eps * w;
+  R_[index] = eps * w;  // Near-rigid regularization [Castro et al. 2022].
 }
 
 template <typename T>
@@ -84,7 +86,7 @@ void CouplerConstraintsPool<T>::CalcData(
     const int i = dofs_[k].first;
     const int j = dofs_[k].second;
     const T& rho = gear_ratio_[k];
-    const T& v_hat = v_hat_[k] / model().time_step();
+    const T v_hat = g_hat_[k] / model().time_step();
     const T& R = R_[k];
 
     const T vi = vk(i);
@@ -114,6 +116,8 @@ void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
     //             ↑      ↑
     //             i      j
     // Thus: ∇ℓ = −Jᵀ⋅γ = [0 ... -γₖ ... ρ⋅γₖ ... 0]ᵀ.
+    //                            ↑      ↑
+    //                            i      j
     const T& gamma = coupler_data.gamma(k);
     gradient_c(i) -= gamma;
     gradient_c(j) += rho * gamma;

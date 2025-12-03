@@ -45,13 +45,13 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   const std::vector<int>& clique_sizes = this->params().clique_sizes;
   const int num_cliques = ssize(clique_sizes);
   A_.Resize(num_cliques, clique_sizes, clique_sizes);
-  clique_delassus_.Resize(num_cliques, clique_sizes);
+  clique_diagonal_mass_inverse_.Resize(num_cliques, clique_sizes);
   for (int c = 0; c < num_cliques_; ++c) {
     const int v_start = this->params().clique_start[c];
     const int nv = clique_sizes[c];
     A_[c] = M0().block(v_start, v_start, nv, nv);
     A_[c].diagonal() += time_step() * D0().segment(v_start, nv);
-    clique_delassus_[c] =
+    clique_diagonal_mass_inverse_[c] =
         M0().block(v_start, v_start, nv, nv).diagonal().cwiseInverse();
   }
 
@@ -253,8 +253,6 @@ T IcfModel<T>::CalcCostAlongLine(
   }
 
   return cost;
-
-  return cost;
 }
 
 template <typename T>
@@ -290,7 +288,7 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
     const int nv = params().clique_sizes[c];
     A_[c] = M0().block(v_start, v_start, nv, nv);
     A_[c].diagonal() += time_step * D0().segment(v_start, nv);
-    clique_delassus_[c] =
+    clique_diagonal_mass_inverse_[c] =
         M0().block(v_start, v_start, nv, nv).diagonal().cwiseInverse();
   }
 
@@ -325,7 +323,7 @@ void IcfModel<T>::VerifyInvariants() const {
   DRAKE_DEMAND(A_.size() == num_cliques_);
   DRAKE_DEMAND(r_.size() == num_velocities_);
   DRAKE_DEMAND(Av0_.size() == num_velocities_);
-  DRAKE_DEMAND(clique_delassus_.size() == num_cliques_);
+  DRAKE_DEMAND(clique_diagonal_mass_inverse_.size() == num_cliques_);
 
   DRAKE_DEMAND(ssize(params().clique_start) == num_cliques_ + 1);
   DRAKE_DEMAND(ssize(params().clique_sizes) == num_cliques_);
