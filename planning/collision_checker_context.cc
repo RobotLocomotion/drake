@@ -3,6 +3,8 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace planning {
 
@@ -10,17 +12,10 @@ using geometry::QueryObject;
 using std::unique_ptr;
 using systems::Context;
 
-namespace {
-template <typename T>
-T* NonNull(T* pointer) {
-  DRAKE_DEMAND(pointer != nullptr);
-  return pointer;
-}
-}  // namespace
-
 CollisionCheckerContext::CollisionCheckerContext(
     const RobotDiagram<double>* model)
-    : CollisionCheckerContext(NonNull(model), model->CreateDefaultContext()) {}
+    : CollisionCheckerContext(DRAKE_THROW_IF_NULL(model),
+                              model->CreateDefaultContext()) {}
 
 CollisionCheckerContext::~CollisionCheckerContext() = default;
 
@@ -42,8 +37,8 @@ unique_ptr<CollisionCheckerContext> CollisionCheckerContext::DoClone() const {
 CollisionCheckerContext::CollisionCheckerContext(
     const RobotDiagram<double>* model,
     unique_ptr<Context<double>> model_context)
-    : model_(*NonNull(model)),
-      model_context_(std::move(model_context)),
+    : model_(DRAKE_DEREF(model)),
+      model_context_(std::move(DRAKE_THROW_IF_NULL(model_context))),
       plant_context_(&model_.mutable_plant_context(model_context_.get())),
       scene_graph_context_(
           &model_.mutable_scene_graph_context(model_context_.get())) {}
