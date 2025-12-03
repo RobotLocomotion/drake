@@ -1350,7 +1350,7 @@ Precondition:
 Precondition:
     ``degree`` is a non-negative integer.)""";
         // Source: drake/common/symbolic/monomial_util.h
-        const char* doc_1args_constVariables =
+        const char* doc_1args_constdrakesymbolicVariables =
 R"""(Returns all monomials up to a given degree under the graded reverse
 lexicographic order.
 

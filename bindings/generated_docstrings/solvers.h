@@ -446,7 +446,7 @@ Returns:
       // Symbol: drake::solvers::AddLogarithmicSos2Constraint
       struct /* AddLogarithmicSos2Constraint */ {
         // Source: drake/solvers/mixed_integer_optimization_util.h
-        const char* doc_3args_MathematicalProgram_constEigenMatrixBase_conststdstring =
+        const char* doc_3args_drakesolversMathematicalProgram_constEigenMatrixBase_conststdstring =
 R"""(Adds the special ordered set 2 (SOS2) constraint,
 
 
