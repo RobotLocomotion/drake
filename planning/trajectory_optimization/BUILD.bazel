@@ -60,6 +60,7 @@ drake_cc_library(
     ],
     deps = [
         ":multiple_shooting",
+        "//common:essential",
         "//math:autodiff",
         "//math:gradient",
         "//systems/framework",

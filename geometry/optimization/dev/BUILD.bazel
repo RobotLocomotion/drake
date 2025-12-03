@@ -15,6 +15,7 @@ drake_cc_library(
     srcs = ["cspace_free_path.cc"],
     hdrs = ["cspace_free_path.h"],
     deps = [
+        "//common:essential",
         "//common:polynomial",
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",

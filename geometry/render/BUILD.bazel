@@ -170,6 +170,7 @@ drake_cc_googletest(
     name = "render_engine_test",
     deps = [
         ":render_engine",
+        "//common:essential",
         "//common/test_utilities",
         "//geometry:geometry_ids",
         "//geometry/test_utilities:dummy_render_engine",

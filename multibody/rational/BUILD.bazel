@@ -29,6 +29,7 @@ drake_cc_library(
         "rational_forward_kinematics_internal.h",
     ],
     deps = [
+        "//common:essential",
         "//common/symbolic:expression",
         "//common/symbolic:polynomial",
         "//common/symbolic:rational_function",

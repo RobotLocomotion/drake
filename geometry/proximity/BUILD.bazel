@@ -395,6 +395,7 @@ drake_cc_library(
         ":collision_filter",
         ":proximity_utilities",
         "//common:drake_export",
+        "//common:essential",
         "//common:sorted_pair",
         "@fcl_internal//:fcl",
         "@fmt",
@@ -871,6 +872,7 @@ drake_cc_library(
     hdrs = ["polygon_surface_mesh.h"],
     deps = [
         ":mesh_traits",
+        "//common:essential",
         "//math:geometric_transform",
     ],
 )
@@ -1270,6 +1272,7 @@ drake_cc_googletest(
     name = "distance_sphere_to_shape_test",
     deps = [
         ":distance_to_shape_callback",
+        "//common:essential",
         "//common/test_utilities",
         "//geometry:geometry_ids",
         "//geometry:utilities",

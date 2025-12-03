@@ -32,7 +32,10 @@ drake_cc_library(
     testonly = 1,
     srcs = [],
     hdrs = ["geometry_set_tester.h"],
-    deps = ["//geometry:geometry_set"],
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_set",
+    ],
 )
 
 drake_cc_library(

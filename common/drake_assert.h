@@ -258,6 +258,22 @@ template <typename... NamesAndValues>
   _GET_NTH_ARG(__VA_ARGS__ __VA_OPT__(, ) _e_4, _e_3, _e_2, _e_1, _e_0) \
   (__VA_ARGS__)
 
+/* Utility function for dereferencing a pointer with a runtime check against
+ being null.
+
+ The extraneous parameters are used to provide context in the thrown exception.
+
+ Note: if a pointer to a const type is passed in, a const reference comes out,
+ otherwise a non-const reference comes out. */
+template <typename T>
+T& SafeDereference(T* ptr, const char* condition, const char* func,
+                   const char* file, int line) {
+  if (ptr == nullptr) {
+    Throw(condition, func, file, line);
+  }
+  return *ptr;
+}
+
 }  // namespace internal
 }  // namespace drake
 
@@ -310,5 +326,31 @@ template <typename... NamesAndValues>
           __LINE__ __VA_OPT__(, ACCUMULATE(__VA_ARGS__)));                    \
     }                                                                         \
   } while (0)
+
+/// Provides a wrapper for safely dereferencing a pointer. If the provided
+/// pointer is null, an exception is thrown. Otherwise, it returns a reference
+/// to the objected being pointed to.
+///
+/// If the pointer points to a const type, a const reference is returned. If it
+/// points to a non-const type, a non-const reference is returned.
+///
+/// It will typically appear in a class's constructor when it aliases a an
+/// input parameter.
+///
+/// Example usage:
+///
+/// @code{cpp}
+///
+/// class Foo {
+///  public:
+///   Foo(const Bar* bar) : bar_(DRAKE_DEREF(bar)) {}
+///  private:
+///   const Bar& bar_;
+/// };
+///
+/// @endcode
+#define DRAKE_DEREF(ptr)                                                \
+  ::drake::internal::SafeDereference(ptr, #ptr " != nullptr", __func__, \
+                                     __FILE__, __LINE__)
 
 #endif  // DRAKE_DOXYGEN_CXX

@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -33,7 +34,7 @@ Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
                         std::shared_ptr<Context<T>> context)
     : owned_system_(std::move(owned_system)),
-      system_(owned_system_ ? *owned_system_ : *system),
+      system_(owned_system_ ? *owned_system_ : DRAKE_DEREF(system)),
       context_{std::move(context)} {
   // TODO(dale.mcconachie) move this default to SimulatorConfig
   constexpr double kDefaultInitialStepSizeTarget = 1e-4;

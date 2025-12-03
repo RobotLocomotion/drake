@@ -140,6 +140,7 @@ drake_cc_library(
         ":contact_wrench_evaluator",
         ":static_equilibrium_constraint",
         ":static_friction_cone_complementarity_constraint",
+        "//common:essential",
         "//solvers:mathematical_program_result",
     ],
 )

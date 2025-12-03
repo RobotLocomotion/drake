@@ -21,6 +21,7 @@ drake_cc_library(
     srcs = ["multibody_position_to_geometry_pose.cc"],
     hdrs = ["multibody_position_to_geometry_pose.h"],
     deps = [
+        "//common:essential",
         "//common:pointer_cast",
         "//geometry:kinematics_vector",
         "//multibody/plant",

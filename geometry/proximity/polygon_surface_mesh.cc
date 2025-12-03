@@ -13,6 +13,9 @@ std::unique_ptr<SurfacePolygon> SurfacePolygon::copy_to_unique() const {
       new SurfacePolygon(&mesh_face_data_, index_));
 }
 
+SurfacePolygon::SurfacePolygon(const std::vector<int>* face_data, int index)
+    : index_(index), mesh_face_data_(DRAKE_DEREF(face_data)) {}
+
 template <typename T>
 PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
                                           vector<Vector3<T>> vertices)
