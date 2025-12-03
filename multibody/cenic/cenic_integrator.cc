@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "drake/common/pointer_cast.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
@@ -15,7 +16,9 @@ using Eigen::VectorXd;
 using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
+using systems::DiagramContinuousState;
 using systems::IntegratorBase;
+using systems::SubsystemIndex;
 using systems::System;
 using systems::VectorBase;
 
@@ -37,7 +40,16 @@ const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
 template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
-    : IntegratorBase<T>(system, context), plant_(GetPlantFromDiagram(system)) {}
+    : IntegratorBase<T>(system, context), plant_(GetPlantFromDiagram(system)) {
+  const auto& diagram = static_cast<const Diagram<T>&>(system);
+  std::vector<const System<T>*> subsystems = diagram.GetSystems();
+  const SubsystemIndex plant_index = diagram.GetSystemIndexOrAbort(&plant_);
+  for (int i = 0; i < ssize(subsystems); ++i) {
+    if (subsystems[i]->num_continuous_states() > 0 && i != plant_index) {
+      non_plant_x_dot_subsystem_indices_.push_back(i);
+    }
+  }
+}
 
 template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
@@ -79,11 +91,13 @@ void CenicIntegrator<T>::DoInitialize() {
   // Allocate scratch variables
   scratch_.Resize(plant(), nz);
 
-  // Allocate intermediate states for error control
-  x_next_full_ = this->get_system().AllocateTimeDerivatives();
-  x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
-  x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
-  z_dot_ = this->get_system().AllocateTimeDerivatives();
+  // Allocate intermediate states for error control.
+  x_next_full_ = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
+      this->get_system().AllocateTimeDerivatives());
+  x_next_half_1_ = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
+      this->get_system().AllocateTimeDerivatives());
+  x_next_half_2_ = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
+      this->get_system().AllocateTimeDerivatives());
 }
 
 template <typename T>
@@ -193,7 +207,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 template <typename T>
 void CenicIntegrator<T>::ComputeNextContinuousState(
     const IcfModel<T>& model, const VectorX<T>& v_guess,
-    ContinuousState<T>* x_next) {
+    DiagramContinuousState<T>* x_next) {
   DRAKE_ASSERT(v_guess.size() == model.num_velocities());
   DRAKE_ASSERT(model.num_velocities() == plant().num_velocities());
   const T& h = model.time_step();
@@ -235,21 +249,22 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   x_next->get_mutable_generalized_velocity().SetFromVector(v);
 
   // Advance the non-plant state with explicit euler,
-  //   z = z₀ + h ż.
+  //   x = x₀ + h ẋ.
   // While we could use a more advanced integration scheme here, the non-plant
   // dynamics are usually pretty simple (e.g., the integral term from a PID
   // controller), so forward euler is sufficient.
-  if (x_next->num_z() > 0) {
-    VectorX<T>& z = scratch_.z;
+  const auto& diagram = static_cast<const Diagram<T>&>(this->get_system());
+  for (int subsystem_index : non_plant_x_dot_subsystem_indices_) {
+    const System<T>& subsystem = *diagram.GetSystems().at(subsystem_index);
+    const Context<T>& subcontext =
+        this->get_system().GetSubsystemContext(subsystem, context);
 
-    this->get_system().CalcMiscStateTimeDerivatives(context, z_dot_.get());
-    VectorX<T> z_dot = z_dot_->get_misc_continuous_state().CopyToVector();
+    VectorX<T> sub_x_next = subcontext.get_continuous_state().CopyToVector();
+    const VectorX<T> sub_xc_dot =
+        subsystem.EvalTimeDerivatives(subcontext).CopyToVector();
+    sub_x_next += h * sub_xc_dot;
 
-    z = context.get_continuous_state()
-            .get_misc_continuous_state()
-            .CopyToVector();
-    z += h * z_dot;
-    x_next->get_mutable_misc_continuous_state().SetFromVector(z);
+    x_next->get_mutable_substate(subsystem_index).SetFromVector(sub_x_next);
   }
 }
 
@@ -424,7 +439,6 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
   const int nq = plant.num_positions();
   v.resize(nv);
   q.resize(nq);
-  z.resize(nz);
   f_ext = std::make_unique<MultibodyForces<T>>(plant);
   actuation_feedback.resize(nv);
   external_feedback.resize(nv);

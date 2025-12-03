@@ -16,6 +16,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/framework/diagram_continuous_state.h"
 
 namespace drake {
 namespace multibody {
@@ -130,10 +131,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     // Resize to accommodate the given plant and external state size.
     void Resize(const MultibodyPlant<T>& plant, int nz);
 
-    // State-sized variables, x = [q; v; z]
+    // State-sized variables, x = [q; v] for the plant (not the diagram).
     VectorX<T> v;
     VectorX<T> q;
-    VectorX<T> z;
 
     // External forces
     std::unique_ptr<MultibodyForces<T>> f_ext;
@@ -169,7 +169,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
    */
   void ComputeNextContinuousState(const IcfModel<T>& model,
                                   const VectorX<T>& v_guess,
-                                  systems::ContinuousState<T>* x_next);
+                                  systems::DiagramContinuousState<T>* x_next);
 
   // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   // to handle quaternion DoFs properly.
@@ -209,6 +209,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   // The multibody plant used as the basis of the convex optimization problem.
   const MultibodyPlant<T>& plant_;
+  // Which subsystem indices in our Diagram have continuous state.
+  std::vector<int> non_plant_x_dot_subsystem_indices_;
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
@@ -231,10 +233,12 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   // Intermediate states for error control, which compares a single large
   // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
-  std::unique_ptr<systems::ContinuousState<T>> x_next_full_;    // x_{t+h}
-  std::unique_ptr<systems::ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
-  std::unique_ptr<systems::ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
-  std::unique_ptr<systems::ContinuousState<T>> z_dot_;  // Misc state derivs.
+  // x_{t+h}
+  std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full_;
+  // x_{t+h/2}
+  std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_1_;
+  // x_{t+h/2+h/2}
+  std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_2_;
 };
 
 }  // namespace multibody
