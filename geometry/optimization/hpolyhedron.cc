@@ -939,7 +939,7 @@ bool CheckIntersectionAndPointContainmentConstraints(
     const HPolyhedron& inbody, const HPolyhedron& circumbody,
     const Eigen::MatrixXd& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
-    const bool keep_whole_intersection, const double intersection_padding) {
+    bool keep_whole_intersection, double intersection_padding) {
   const double kConstraintTol = 1e-6;
   // Check that all given points are inside this HPolyhedron (the "inbody").
   for (int i_point = 0; i_point < points_to_contain.cols(); ++i_point) {
@@ -950,7 +950,7 @@ bool CheckIntersectionAndPointContainmentConstraints(
 
   // Check intersection with each intersecting polytope
   if (keep_whole_intersection) {
-    for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
+    for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
       const HPolyhedron intersection =
           circumbody.Intersection(intersecting_polytopes[i]);
       if (!intersection.ContainedIn(inbody, kConstraintTol)) {
@@ -959,7 +959,7 @@ bool CheckIntersectionAndPointContainmentConstraints(
     }
   } else {
     MathematicalProgram prog;
-    for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
+    for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
       solvers::VectorXDecisionVariable x =
           prog.NewContinuousVariables(inbody.ambient_dimension(), "x");
       intersecting_polytopes[i].AddPointInSetConstraints(&prog, x);
@@ -970,9 +970,7 @@ bool CheckIntersectionAndPointContainmentConstraints(
           x);
     }
     solvers::MathematicalProgramResult result = Solve(prog);
-    if (!result.is_success()) {
-      return false;
-    }
+    return result.is_success();
   }
   return true;
 }
@@ -1034,11 +1032,11 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   std::vector<drake::geometry::optimization::HPolyhedron>
       reduced_intersecting_polytopes;
   reduced_intersecting_polytopes.reserve(intersecting_polytopes.size());
-  for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
+  for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
     if (keep_whole_intersection) {
       reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
     } else {
-      bool trivially_satisfied =
+      const bool trivially_satisfied =
           CheckIntersectionAndPointContainmentConstraints(
               scaled_circumbody, circumbody, Eigen::MatrixXd(0, 0),
               std::vector<HPolyhedron>{intersecting_polytopes[i]},
@@ -1049,6 +1047,10 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     }
   }
 
+  // Hyperplanes are backed out by an additional small
+  // `kIntersectionFeasibilityPad` distance, relative to their minimum
+  // permissible RHS values, to ensure that the intersection LP continues to be
+  // feasible throughout the iterations.
   const double kIntersectionFeasibilityPad = 1e-5;
 
   // Initialize inbody as circumbody.

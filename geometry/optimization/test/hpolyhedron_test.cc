@@ -1492,7 +1492,7 @@ double RadiusOfLargestBallInOnePolytopeCenteredInAnother(
   // r ≥ 0.
   const double kInf = std::numeric_limits<double>::infinity();
   prog.AddBoundingBoxConstraint(0, kInf, r);
-  // polytope_2.AddPointInSetConstraints(&prog, x);
+  polytope_2.AddPointInSetConstraints(&prog, x);
   // aᵢᵀ x + |aᵢ| r ≤ bᵢ.
   Eigen::RowVectorXd a(polytope_1.A().cols() + 1);
   for (int i = 0; i < polytope_1.A().rows(); ++i) {

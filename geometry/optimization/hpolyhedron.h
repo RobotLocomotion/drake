@@ -145,10 +145,12 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
   parameter, the intersections may be reduced by the affine transformation step
   if `do_affine_transformation` is true.
-  @param intersection_padding is a minimum radius for a ball centered in each of
-  the `intersecting_polytopes` and contained in `inbody`.  In the case where
-  `keep_whole_intersection` is false, using a non-zero value for this parameter
-  prevents intersections from being single points.
+  @param intersection_padding limits reduction of interesections.  For each
+  polytope in `intersecting_polytopes`, there is a ball fully contained in
+  `inbody`, of radius `intersection_padding`, whose center is contained in the
+  intersecting polytope.  In the case where `keep_whole_intersection` is false,
+  using a non-zero value for this parameter prevents intersections from being
+  single points.
   @param random_seed is a seed for a random number generator used to shuffle
   the ordering of hyperplanes in between iterations.
   @pre `min_volume_ratio` > 0.
