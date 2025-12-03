@@ -8397,11 +8397,6 @@ EvalKineticEnergy() to avoid unnecessary recalculation.
 See also:
     EvalKineticEnergy() for more information.)""";
         } CalcKineticEnergy;
-        // Symbol: drake::systems::System::CalcMiscStateTimeDerivatives
-        struct /* CalcMiscStateTimeDerivatives */ {
-          // Source: drake/systems/framework/system.h
-          const char* doc = R"""()""";
-        } CalcMiscStateTimeDerivatives;
         // Symbol: drake::systems::System::CalcNextUpdateTime
         struct /* CalcNextUpdateTime */ {
           // Source: drake/systems/framework/system.h
@@ -8714,11 +8709,6 @@ See EvalKineticEnergy() for details on what you must compute here. In
 particular, your kinetic energy method must *not* depend explicitly on
 time or any input port values.)""";
         } DoCalcKineticEnergy;
-        // Symbol: drake::systems::System::DoCalcMiscStateTimeDerivatives
-        struct /* DoCalcMiscStateTimeDerivatives */ {
-          // Source: drake/systems/framework/system.h
-          const char* doc = R"""()""";
-        } DoCalcMiscStateTimeDerivatives;
         // Symbol: drake::systems::System::DoCalcNextUpdateTime
         struct /* DoCalcNextUpdateTime */ {
           // Source: drake/systems/framework/system.h
