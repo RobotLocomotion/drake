@@ -4025,11 +4025,11 @@ Parameter ``keep_whole_intersection``:
     transformation step if ``do_affine_transformation`` is true.
 
 Parameter ``intersection_padding``:
-    is a minimum radius for a ball centered in each of
-    the `intersecting_polytopes` and contained in `inbody`.  In the
-    case where `keep_whole_intersection` is false, using a non-zero
-    value for this parameter prevents intersections from being single
-    points.
+    is a distance by which each hyperplane is translated back outward
+    after satisfing intersection constraints, subject to not
+    surpassing the original hyperplane position. In the case where
+    ``keep_whole_intersection`` is false, using a non-zero value for
+    this parameter prevents intersections from being single points.
 
 Parameter ``random_seed``:
     is a seed for a random number generator used to shuffle the
