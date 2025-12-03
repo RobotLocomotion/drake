@@ -14,6 +14,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -31,6 +32,7 @@ using systems::DiagramBuilder;
 using systems::FirstOrderTaylorApproximation;
 using systems::Simulator;
 using systems::SimulatorConfig;
+using systems::SpringMassSystem;
 using systems::controllers::PidController;
 using visualization::AddDefaultVisualization;
 
@@ -676,6 +678,33 @@ GTEST_TEST(CenicTest, FloatingDoublePendulum) {
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.set_fixed_step_mode(true);
+  integrator.set_maximum_step_size(0.01);
+
+  simulator.Initialize();
+  simulator.AdvanceTo(1.0);
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
+}
+
+// Smoke test with an external system that has q,v,z continuous state.
+// Prior tests only had z state.
+GTEST_TEST(CenicTest, PositionVelocityExternalSystem) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelsFromString(double_pendulum_xml, "xml");
+  plant.Finalize();
+  builder.AddSystem<SpringMassSystem>(100.0, 1.0);
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  SimulatorConfig config;
+  config.target_realtime_rate = 0.0;
+  config.publish_every_time_step = true;
+  ApplySimulatorConfig(config, &simulator);
+
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.set_maximum_step_size(0.01);
 
   simulator.Initialize();
