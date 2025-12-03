@@ -10,11 +10,11 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/scene_graph_config.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -30,6 +30,7 @@ namespace {
 
 using drake::geometry::Meshcat;
 using drake::geometry::SceneGraphConfig;
+using drake::multibody::CenicIntegrator;
 using drake::multibody::JointActuator;
 using drake::multibody::JointActuatorIndex;
 using drake::multibody::ModelInstanceIndex;
@@ -41,7 +42,6 @@ using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
-using drake::systems::CenicIntegrator;
 using drake::systems::ConstantVectorSource;
 using drake::systems::DiagramBuilder;
 using drake::systems::IntegratorBase;

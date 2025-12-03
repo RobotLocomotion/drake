@@ -18,17 +18,15 @@
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
-namespace systems {
+namespace multibody {
 
-using multibody::MultibodyForces;
-using multibody::MultibodyPlant;
-using multibody::contact_solvers::icf::IcfSolverParameters;
-using multibody::contact_solvers::icf::internal::IcfBuilder;
-using multibody::contact_solvers::icf::internal::IcfData;
-using multibody::contact_solvers::icf::internal::IcfModel;
-using multibody::contact_solvers::icf::internal::IcfSolver;
-using multibody::contact_solvers::icf::internal::IcfSolverStats;
-using multibody::contact_solvers::icf::internal::LinearFeedbackGains;
+using contact_solvers::icf::IcfSolverParameters;
+using contact_solvers::icf::internal::IcfBuilder;
+using contact_solvers::icf::internal::IcfData;
+using contact_solvers::icf::internal::IcfModel;
+using contact_solvers::icf::internal::IcfSolver;
+using contact_solvers::icf::internal::IcfSolverStats;
+using contact_solvers::icf::internal::LinearFeedbackGains;
 
 /**
  * An experimental implicit integrator that solves a convex ICF problem to
@@ -40,7 +38,7 @@ using multibody::contact_solvers::icf::internal::LinearFeedbackGains;
  * specific.
  */
 template <class T>
-class CenicIntegrator final : public IntegratorBase<T> {
+class CenicIntegrator final : public systems::IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CenicIntegrator);
 
@@ -56,8 +54,8 @@ class CenicIntegrator final : public IntegratorBase<T> {
    *               object so must remain alive longer than the integrator.
    * @param context context for the overall system.
    */
-  explicit CenicIntegrator(const System<T>& system,
-                           Context<T>* context = nullptr);
+  explicit CenicIntegrator(const systems::System<T>& system,
+                           systems::Context<T>* context = nullptr);
 
   /**
    * Get a reference to the MultibodyPlant used to formulate the convex
@@ -171,7 +169,7 @@ class CenicIntegrator final : public IntegratorBase<T> {
    */
   void ComputeNextContinuousState(const IcfModel<T>& model,
                                   const VectorX<T>& v_guess,
-                                  ContinuousState<T>* x_next);
+                                  systems::ContinuousState<T>* x_next);
 
   // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   // to handle quaternion DoFs properly.
@@ -181,12 +179,12 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
   // generalized force input ports.
-  void CalcExternalForces(const Context<T>& context, VectorX<T>* tau);
+  void CalcExternalForces(const systems::Context<T>& context, VectorX<T>* tau);
 
   // Compute actuator forces τ = B u(x) from the plant's actuation input
   // ports (including the general actuation input port and any
   // model-instance-specific ports).
-  void CalcActuationForces(const Context<T>& context, VectorX<T>* tau);
+  void CalcActuationForces(const systems::Context<T>& context, VectorX<T>* tau);
 
   // (Partially) linearize all the external (controller) systems connected to
   // the plant with finite differences.
@@ -206,7 +204,8 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Overrides the typical state change norm (weighted infinity norm) to use
   // just the infinity norm of the position vector.
-  T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const final;
+  T CalcStateChangeNorm(
+      const systems::ContinuousState<T>& dx_state) const final;
 
   // The multibody plant used as the basis of the convex optimization problem.
   const MultibodyPlant<T>& plant_;
@@ -232,14 +231,14 @@ class CenicIntegrator final : public IntegratorBase<T> {
 
   // Intermediate states for error control, which compares a single large
   // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
-  std::unique_ptr<ContinuousState<T>> x_next_full_;    // x_{t+h}
-  std::unique_ptr<ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
-  std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
-  std::unique_ptr<ContinuousState<T>> z_dot_;          // Misc state derivs.
+  std::unique_ptr<systems::ContinuousState<T>> x_next_full_;    // x_{t+h}
+  std::unique_ptr<systems::ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
+  std::unique_ptr<systems::ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
+  std::unique_ptr<systems::ContinuousState<T>> z_dot_;  // Misc state derivs.
 };
 
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::CenicIntegrator);
+    class drake::multibody::CenicIntegrator);

@@ -9883,9 +9883,6 @@ to be zero.)""";
       struct /* contact_solvers */ {
       } contact_solvers;
     } multibody;
-    // Symbol: drake::systems
-    struct /* systems */ {
-    } systems;
   } drake;
 } pydrake_doc_multibody_plant;
 

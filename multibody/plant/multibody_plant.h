@@ -44,16 +44,12 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-
-namespace systems {
+namespace multibody {
 
 // Forward declaration for giving the convex integrator private access
 template <typename>
 class CenicIntegrator;
 
-}  // namespace systems
-
-namespace multibody {
 namespace internal {
 
 // Data stored in the cache entry for joint locking.
@@ -5823,7 +5819,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
 
   // Cenic integrator gets private access.
-  friend class systems::CenicIntegrator<T>;
+  friend class CenicIntegrator<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.

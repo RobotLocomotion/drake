@@ -1,0 +1,53 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "cenic",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cenic_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "cenic_integrator",
+    srcs = ["cenic_integrator.cc"],
+    hdrs = ["cenic_integrator.h"],
+    deps = [
+        "//multibody/contact_solvers:block_sparse_cholesky_solver",
+        "//multibody/contact_solvers/icf:icf_builder",
+        "//multibody/contact_solvers/icf:icf_model",
+        "//multibody/contact_solvers/icf:icf_solver",
+        "//multibody/plant",
+        "//systems/analysis:integrator_base",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cenic_integrator_test",
+    data = [
+        "@drake_models//:franka_description",
+    ],
+    deps = [
+        ":cenic_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:meshcat_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/analysis/test_utilities",
+        "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
+    ],
+)
+
+add_lint_tests()

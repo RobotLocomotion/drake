@@ -12,7 +12,6 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
-#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
@@ -270,27 +269,6 @@ PYBIND11_MODULE(analysis, m) {
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
-  // ICF Solver Parameters
-  // TODO(CENIC): wire up the docstrings properly
-  {
-    py::class_<IcfSolverParameters>(m, "IcfSolverParameters")
-        .def(py::init<>())
-        .def_readwrite("max_iterations", &IcfSolverParameters::max_iterations)
-        .def_readwrite("min_tolerance", &IcfSolverParameters::min_tolerance)
-        .def_readwrite(
-            "enable_hessian_reuse", &IcfSolverParameters::enable_hessian_reuse)
-        .def_readwrite("hessian_reuse_target_iterations",
-            &IcfSolverParameters::hessian_reuse_target_iterations)
-        .def_readwrite(
-            "use_dense_algebra", &IcfSolverParameters::use_dense_algebra)
-        .def_readwrite(
-            "max_ls_iterations", &IcfSolverParameters::max_ls_iterations)
-        .def_readwrite("ls_tolerance", &IcfSolverParameters::ls_tolerance)
-        .def_readwrite("alpha_max", &IcfSolverParameters::alpha_max)
-        .def_readwrite(
-            "print_solver_stats", &IcfSolverParameters::print_solver_stats);
-  }
-
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
@@ -303,22 +281,6 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
-
-    // TODO(vincekurtz): add bindings set IcfSolverParameters
-    DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
-        m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc)
-        .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
-            py::arg("context") = nullptr,
-            // Keep alive, reference: `self` keeps `system` alive.
-            py::keep_alive<1, 2>(),
-            // Keep alive, reference: `self` keeps `context` alive.
-            py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
-        .def("get_solver_parameters",
-            &CenicIntegrator<T>::get_solver_parameters,
-            doc.CenicIntegrator.get_solver_parameters.doc)
-        .def("set_solver_parameters",
-            &CenicIntegrator<T>::set_solver_parameters, py::arg("parameters"),
-            doc.CenicIntegrator.set_solver_parameters.doc);
 
     // See equivalent note about EventCallback in `framework_py_systems.cc`.
     using MonitorCallback =
@@ -612,7 +574,7 @@ Parameter ``interruptible``:
         py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),
         doc.analysis.RegionOfAttraction.doc);
   }
-}  // NOLINT(readability/fn_size)
+}
 
 }  // namespace pydrake
 }  // namespace drake
