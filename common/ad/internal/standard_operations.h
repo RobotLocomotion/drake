@@ -551,6 +551,9 @@ inline double nexttoward(const AutoDiff& from, long double to) {
   return std::nexttoward(from.value(), to);
 }
 
+/** ADL overload to mimic std::copysign from `<cmath>`. */
+AutoDiff copysign(const AutoDiff& mag, const AutoDiff& sgn);
+
 /** ADL overload to mimic std::isfinite from `<cmath>`.
 Because the return type is `bool`, the derivatives are not preserved. */
 inline bool isfinite(const AutoDiff& x) {

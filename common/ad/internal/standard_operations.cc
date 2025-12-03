@@ -277,5 +277,9 @@ AutoDiff sqrt(AutoDiff x) {
   return x;
 }
 
+AutoDiff copysign(const AutoDiff& mag, const AutoDiff& sgn) {
+  return std::signbit(mag.value()) == std::signbit(sgn.value()) ? mag : -mag;
+}
+
 }  // namespace ad
 }  // namespace drake
