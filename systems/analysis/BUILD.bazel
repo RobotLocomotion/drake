@@ -101,7 +101,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     implementation_deps = [
-        ":cenic_integrator",
+        "//multibody/cenic:cenic_integrator",
     ],
 )
 
@@ -111,24 +111,6 @@ drake_cc_library(
     hdrs = ["bogacki_shampine3_integrator.h"],
     deps = [
         ":integrator_base",
-    ],
-)
-
-drake_cc_library(
-    name = "cenic_integrator",
-    srcs = ["cenic_integrator.cc"],
-    hdrs = ["cenic_integrator.h"],
-    tags = [
-        # TODO(jwnimmer-tri) Move cenic_integrator into multibody somewhere.
-        "exclude_from_package",
-    ],
-    deps = [
-        ":integrator_base",
-        "//multibody/contact_solvers:block_sparse_cholesky_solver",
-        "//multibody/contact_solvers/icf:icf_builder",
-        "//multibody/contact_solvers/icf:icf_model",
-        "//multibody/contact_solvers/icf:icf_solver",
-        "//multibody/plant",
     ],
 )
 
@@ -454,7 +436,7 @@ drake_cc_library(
         "@fmt",
     ],
     implementation_deps = [
-        ":cenic_integrator",
+        "//multibody/cenic:cenic_integrator",
     ],
 )
 
@@ -625,26 +607,6 @@ drake_cc_googletest(
         "//math:geometric_transform",
         "//multibody/plant",
         "//systems/analysis/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "cenic_integrator_test",
-    data = [
-        "@drake_models//:franka_description",
-    ],
-    deps = [
-        ":cenic_integrator",
-        ":simulator",
-        ":simulator_config_functions",
-        ":simulator_print_stats",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//geometry:meshcat_visualizer",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//systems/analysis/test_utilities",
-        "//systems/framework:diagram",
-        "//visualization:visualization_config_functions",
     ],
 )
 

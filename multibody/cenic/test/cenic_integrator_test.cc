@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/cenic_integrator.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 
 #include <iostream>
 #include <limits>
@@ -21,19 +21,16 @@
 #include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
-namespace systems {
+namespace multibody {
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using multibody::AddMultibodyPlantSceneGraph;
-using multibody::Joint;
-using multibody::JointActuator;
-using multibody::JointActuatorIndex;
-using multibody::JointIndex;
-using multibody::Parser;
-using multibody::SpatialInertia;
 using systems::ConstantVectorSource;
+using systems::Context;
+using systems::DiagramBuilder;
 using systems::FirstOrderTaylorApproximation;
+using systems::Simulator;
+using systems::SimulatorConfig;
 using systems::controllers::PidController;
 using visualization::AddDefaultVisualization;
 
@@ -688,5 +685,5 @@ GTEST_TEST(CenicTest, FloatingDoublePendulum) {
   std::cout << std::endl;
 }
 
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake

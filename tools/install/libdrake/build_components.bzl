@@ -56,6 +56,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/kuka_iiwa_robot",
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
+    "//multibody/cenic",
     "//multibody/contact_solvers",
     "//multibody/contact_solvers/icf",
     "//multibody/contact_solvers/sap",
@@ -80,7 +81,6 @@ LIBDRAKE_COMPONENTS = [
     "//planning/trajectory_optimization",
     "//solvers",
     "//systems/analysis",
-    "//systems/analysis:cenic_integrator",  # unpackaged
     "//systems/controllers",
     "//systems/estimators",
     "//systems/framework",

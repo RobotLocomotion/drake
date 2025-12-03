@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/cenic_integrator.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 
 #include <algorithm>
 
@@ -6,14 +6,18 @@
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {
-namespace systems {
+namespace multibody {
 
+using contact_solvers::internal::Bracket;
+using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using multibody::Joint;
-using multibody::JointIndex;
-using multibody::contact_solvers::internal::Bracket;
-using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
+using systems::Context;
+using systems::ContinuousState;
+using systems::Diagram;
+using systems::IntegratorBase;
+using systems::System;
+using systems::VectorBase;
 
 namespace {
 
@@ -432,8 +436,8 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
   N.resize(nq, nv);
 }
 
-}  // namespace systems
+}  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::systems::CenicIntegrator);
+    class drake::multibody::CenicIntegrator);

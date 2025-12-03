@@ -122,7 +122,7 @@ drake_cc_library(
 drake_cc_library(
     name = "icf_solver_parameters",
     hdrs = ["icf_solver_parameters.h"],
-    deps = ["//common:essential"],
+    deps = ["//common:name_value"],
 )
 
 drake_cc_library(

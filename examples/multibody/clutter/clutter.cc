@@ -17,11 +17,11 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
-#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
@@ -45,6 +45,7 @@ using drake::math::RigidTransformd;
 using drake::math::RotationMatrixd;
 using drake::math::UniformlyRandomRotationMatrix;
 using drake::multibody::BodyIndex;
+using drake::multibody::CenicIntegrator;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::PackageMap;
@@ -55,7 +56,6 @@ using drake::multibody::contact_solvers::icf::IcfSolverParameters;
 using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::internal::CompliantContactManager;
-using drake::systems::CenicIntegrator;
 using drake::systems::Context;
 using drake::systems::DiagramBuilder;
 using drake::systems::IntegratorBase;

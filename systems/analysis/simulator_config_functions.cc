@@ -13,8 +13,8 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
-#include "drake/systems/analysis/cenic_integrator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/radau_integrator.h"
@@ -29,6 +29,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+using multibody::CenicIntegrator;
 using std::function;
 using std::pair;
 using std::string;
