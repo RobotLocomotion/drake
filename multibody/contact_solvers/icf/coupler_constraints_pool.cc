@@ -150,7 +150,7 @@ void CouplerConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
-void CouplerConstraintsPool<T>::ProjectAlongLine(
+void CouplerConstraintsPool<T>::CalcCostAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
     T* dcost, T* d2cost) const {
   *dcost = 0.0;

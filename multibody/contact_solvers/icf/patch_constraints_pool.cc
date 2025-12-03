@@ -524,7 +524,7 @@ void PatchConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
-void PatchConstraintsPool<T>::ProjectAlongLine(
+void PatchConstraintsPool<T>::CalcCostAlongLine(
     const PatchConstraintsDataPool<T>& patch_data,
     const EigenPool<Vector6<T>>& U_WB_pool,
     EigenPool<Vector6<T>>* U_AbB_W_pool_ptr, T* dcost, T* d2cost) const {

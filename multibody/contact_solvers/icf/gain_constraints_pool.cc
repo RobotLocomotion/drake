@@ -93,7 +93,7 @@ void GainConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
-void GainConstraintsPool<T>::ProjectAlongLine(
+void GainConstraintsPool<T>::CalcCostAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();

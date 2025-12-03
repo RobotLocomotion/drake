@@ -20,8 +20,8 @@ void LimitConstraintsPool<T>::Clear() {
   ql_.Clear();
   qu_.Clear();
   q0_.Clear();
-  vl_hat_.Clear();
-  vu_hat_.Clear();
+  gl_hat_.Clear();
+  gu_hat_.Clear();
   R_.Clear();
 }
 
@@ -34,8 +34,8 @@ void LimitConstraintsPool<T>::Resize(
   ql_.Resize(num_elements, constrained_clique_sizes);
   qu_.Resize(num_elements, constrained_clique_sizes);
   q0_.Resize(num_elements, constrained_clique_sizes);
-  vl_hat_.Resize(num_elements, constrained_clique_sizes);
-  vu_hat_.Resize(num_elements, constrained_clique_sizes);
+  gl_hat_.Resize(num_elements, constrained_clique_sizes);
+  gu_hat_.Resize(num_elements, constrained_clique_sizes);
   R_.Resize(num_elements, constrained_clique_sizes);
   constraint_sizes_.assign(constrained_clique_sizes.begin(),
                            constrained_clique_sizes.end());
@@ -51,8 +51,8 @@ void LimitConstraintsPool<T>::Resize(
     qu_[k].setConstant(std::numeric_limits<double>::infinity());
     q0_[k].setConstant(0.0);
     R_[k].setConstant(std::numeric_limits<double>::infinity());
-    vl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
-    vu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gl_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
+    gu_hat_[k].setConstant(-std::numeric_limits<double>::infinity());
   }
 }
 
@@ -63,9 +63,11 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   upper_limit(index, dof) = qu;
   configuration(index, dof) = q0;
 
+  // Near-rigid regularization [Castro et al., 2022].
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
+  // Approximation of W = Jᵀ⋅M⁻¹⋅J = M⁻¹ ≈ diag(M)⁻¹.
   const auto w_clique = model().clique_diagonal_mass_inverse(clique);
   regularization(index, dof) = eps * w_clique(dof);
 
@@ -73,10 +75,13 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
   //  v̂ₗ = (qₗ − q₀) / (δt (1 + β))
   //  v̂ᵤ = (q₀ − qᵤ) / (δt (1 + β))
   // However, since model.time_step() may change between now and when we
-  // actually solve the problem, we neglect the 1/δt factor for now, and
-  // will scale v̂ by 1/δt in CalcData().
-  vl_hat(index, dof) = (ql - q0) / (1.0 + beta);
-  vu_hat(index, dof) = (q0 - qu) / (1.0 + beta);
+  // actually solve the problem, we precompute
+  //  ĝₗ = v̂ₗ⋅δt = (qₗ − q₀) / (1 + β)
+  //  ĝᵤ = v̂ᵤ⋅δt = (q₀ − qᵤ) / (1 + β)
+  // so that we can compute v̂ = ĝ/δt from the current time step in calls to
+  // CalcData().
+  gl_hat(index, dof) = (ql - q0) / (1.0 + beta);
+  gu_hat(index, dof) = (q0 - qu) / (1.0 + beta);
 }
 
 template <typename T>
@@ -115,12 +120,12 @@ void LimitConstraintsPool<T>::CalcData(
     for (int i = 0; i < nv; ++i) {
       // i-th lower limit for constraint k (clique c).
       const T vl = vk(i);
-      cost += CalcLimitData(vl_hat(k, i) / dt, regularization(k, i), vl,
+      cost += CalcLimitData(gl_hat(k, i) / dt, regularization(k, i), vl,
                             &gamma_lower(i), &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
       const T vu = -vk(i);
-      cost += CalcLimitData(vu_hat(k, i) / dt, regularization(k, i), vu,
+      cost += CalcLimitData(gu_hat(k, i) / dt, regularization(k, i), vu,
                             &gamma_upper(i), &G_upper(i));
     }
   }
@@ -161,7 +166,7 @@ void LimitConstraintsPool<T>::AccumulateHessian(
 }
 
 template <typename T>
-void LimitConstraintsPool<T>::ProjectAlongLine(
+void LimitConstraintsPool<T>::CalcCostAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
     VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
   const int nv = model().num_velocities();

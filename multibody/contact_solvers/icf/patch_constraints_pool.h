@@ -81,7 +81,10 @@ class PatchConstraintsPool {
 
   /* Resizes to store the given patches and pairs.
 
-  @param num_pairs_per_patch Number of contact pairs for each patch.*/
+  @param num_pairs_per_patch Number of contact pairs for each patch.
+
+  @warning After resizing, all patches and pairs will hold invalid data until
+  SetPatch() and SetPair() are called for each patch and pair. */
   void Resize(std::span<const int> num_pairs_per_patch);
 
   /* Sets the contact patch between bodies A and B.
@@ -136,18 +139,18 @@ class PatchConstraintsPool {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
-  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
-  Used for exact line search.
+  /* Computes the first and second derivatives of the constraint cost
+  ℓ̃ (α) = ℓ(v + α⋅w).
 
-  @param patch_data The pre-computed patch constraint data.
+  @param patch_data The pre-computed patch constraint data at v + α⋅w.
   @param U_WB Body spatial velocities associated with u = v + αw.
-  @param U_AbB_W_pool Scratch space for body spatial velocities.
-  @param dcost The first derivative, dℓ/dα at α = 0.
-  @param d2cost The second derivative, d²ℓ/dα² at α = 0. */
-  void ProjectAlongLine(const PatchConstraintsDataPool<T>& patch_data,
-                        const EigenPool<Vector6<T>>& U_WB_pool,
-                        EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
-                        T* d2cost) const;
+  @param U_AbB_W_pool Scratch space for patch spatial velocities.
+  @param[out] dcost the first derivative dℓ̃ /dα on output.
+  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
+  void CalcCostAlongLine(const PatchConstraintsDataPool<T>& patch_data,
+                         const EigenPool<Vector6<T>>& U_WB_pool,
+                         EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
+                         T* d2cost) const;
 
  private:
   /* Returns the index into data per patch and per contact pair.

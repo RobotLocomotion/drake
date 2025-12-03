@@ -94,8 +94,8 @@ class CouplerConstraintsPool {
   @param w The search direction.
   @param[out] dcost the first derivative dℓ̃ /dα on output.
   @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
-  void ProjectAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
-                        const VectorX<T>& w, T* dcost, T* d2cost) const;
+  void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
+                         const VectorX<T>& w, T* dcost, T* d2cost) const;
 
  private:
   const IcfModel<T>* model_{nullptr};  // The parent model.

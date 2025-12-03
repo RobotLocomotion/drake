@@ -46,13 +46,16 @@ class LimitConstraintsPool {
 
   /* Sets the limit constraint parameters for the given clique and DoF.
 
-   @param index The index of this limit constraint in the pool.
-   @param clique The clique to which this limit constraint applies.
-   @param dof The degree of freedom within the clique to which this limit
-              constraint applies.
-   @param q0 The current configuration value for this DoF.
-   @param ql The lower limit for this DoF.
-   @param qu The upper limit for this DoF. */
+  @param index The index of this limit constraint in the pool.
+  @param clique The clique to which this limit constraint applies.
+  @param dof The degree of freedom within the clique to which this limit
+             constraint applies.
+  @param q0 The current configuration value for this DoF.
+  @param ql The lower limit for this DoF.
+  @param qu The upper limit for this DoF.
+
+  Calling this function several times with the same `index` overwrites the
+  previous constraint for that index. */
   void Set(int index, int clique, int dof, const T& q0, const T& ql,
            const T& qu);
 
@@ -69,11 +72,11 @@ class LimitConstraintsPool {
   T& regularization(int k, int dof) { return R_[k](dof); }
   const T regularization(int k, int dof) const { return R_[k](dof); }
 
-  /* Returns upper and lower bound velocity targets */
-  T& vl_hat(int k, int dof) { return vl_hat_[k](dof); }
-  T& vu_hat(int k, int dof) { return vu_hat_[k](dof); }
-  const T vl_hat(int k, int dof) const { return vl_hat_[k](dof); }
-  const T vu_hat(int k, int dof) const { return vu_hat_[k](dof); }
+  /* Returns upper and lower bound velocity targets, scaled by the time step. */
+  T& gl_hat(int k, int dof) { return gl_hat_[k](dof); }
+  T& gu_hat(int k, int dof) { return gu_hat_[k](dof); }
+  const T gl_hat(int k, int dof) const { return gl_hat_[k](dof); }
+  const T gu_hat(int k, int dof) const { return gu_hat_[k](dof); }
 
   /* Computes problem data for the given generalized velocities `v`. */
   void CalcData(const VectorX<T>& v,
@@ -89,11 +92,16 @@ class LimitConstraintsPool {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
-  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
-  Used for exact line search. */
-  void ProjectAlongLine(const LimitConstraintsDataPool<T>& limit_data,
-                        const VectorX<T>& w, VectorX<T>* v_sized_scratch,
-                        T* dcost, T* d2cost) const;
+  /* Computes the first and second derivatives of the constraint cost
+  ℓ̃ (α) = ℓ(v + α⋅w).
+
+  @param coupler_data Constraint data computed at v + α⋅w.
+  @param w The search direction.
+  @param[out] dcost the first derivative dℓ̃ /dα on output.
+  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
+  void CalcCostAlongLine(const LimitConstraintsDataPool<T>& limit_data,
+                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
+                         T* dcost, T* d2cost) const;
 
   /* Returns the total number of limit constraints. */
   int num_constraints() const { return constraint_to_clique_.size(); }
@@ -122,8 +130,8 @@ class LimitConstraintsPool {
   EigenPool<VectorX<T>> ql_;
   EigenPool<VectorX<T>> qu_;
   EigenPool<VectorX<T>> q0_;
-  EigenPool<VectorX<T>> vl_hat_;
-  EigenPool<VectorX<T>> vu_hat_;
+  EigenPool<VectorX<T>> gl_hat_;
+  EigenPool<VectorX<T>> gu_hat_;
   EigenPool<VectorX<T>> R_;
 };
 

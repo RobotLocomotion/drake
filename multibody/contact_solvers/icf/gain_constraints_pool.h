@@ -48,17 +48,23 @@ class GainConstraintsPool {
   /* Resets, zeroing out the constraints while keeping memory allocated. */
   void Clear();
 
-  /* Resizes this pool to store gain constraints of the given sizes. */
+  /* Resizes this pool to store gain constraints of the given sizes.
+
+  @warning After resizing, all constraints will hold invalid data until Set() is
+  called for each constraint index in [0, num_constraints()). */
   void Resize(std::span<const int> sizes);
 
   /* Sets the given gain constraint for the given clique.
 
-   @param index The index of this gain constraint in the pool.
-   @param clique The clique to which this gain constraint applies.
-   @param K The diagonal entries of gain matrix K. They must be >= 0.
-   @param b The bias term.
-   @param e The vector of effort limits for each DoF of the clique.
-   @pre K, b, e are of size model().clique_size(clique). */
+  @param index The index of this gain constraint in the pool.
+  @param clique The clique to which this gain constraint applies.
+  @param K The diagonal entries of gain matrix K. They must be >= 0.
+  @param b The bias term.
+  @param e The vector of effort limits for each DoF of the clique.
+  @pre K, b, e are of size model().clique_size(clique).
+
+  Calling this function several times with the same `index` overwrites the
+  previous constraint for that index. */
   void Set(const int index, int clique, const VectorX<T>& K,
            const VectorX<T>& b, const VectorX<T>& e);
 
@@ -76,11 +82,16 @@ class GainConstraintsPool {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
-  /* Computes the first and second derivatives of ℓ(α) = ℓ(v + αw) at α = 0.
-  Used for exact line search. */
-  void ProjectAlongLine(const GainConstraintsDataPool<T>& gain_data,
-                        const VectorX<T>& w, VectorX<T>* v_sized_scratch,
-                        T* dcost, T* d2cost) const;
+  /* Computes the first and second derivatives of the constraint cost
+  ℓ̃ (α) = ℓ(v + α⋅w).
+
+  @param coupler_data Constraint data computed at v + α⋅w.
+  @param w The search direction.
+  @param[out] dcost the first derivative dℓ̃ /dα on output.
+  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
+  void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
+                         const VectorX<T>& w, VectorX<T>* v_sized_scratch,
+                         T* dcost, T* d2cost) const;
 
   /* Returns the total number of gain constraints stored in this pool. */
   int num_constraints() const { return clique_.size(); }
