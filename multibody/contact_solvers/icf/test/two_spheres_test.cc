@@ -293,7 +293,6 @@ TEST_F(TwoSpheres, MakeData) {
   IcfData<double> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
-  EXPECT_EQ(data.num_patches(), 1);
 
   // Clear patch constraints and verify resizing data does not allocate.
   patch_constraints.Clear();
@@ -304,7 +303,6 @@ TEST_F(TwoSpheres, MakeData) {
     model.ResizeData(&data);
   }
   EXPECT_EQ(model.num_velocities(), nv);
-  EXPECT_EQ(data.num_patches(), 0);
 
   // Update problem. There should be no allocations for the same problem size.
   // TODO(amcastro-tri): Move this function within the guard. You'll need a
@@ -315,7 +313,6 @@ TEST_F(TwoSpheres, MakeData) {
     model.ResizeData(&data);
   }
   EXPECT_EQ(model.num_velocities(), nv);
-  EXPECT_EQ(data.num_patches(), 1);
 }
 
 GTEST_TEST(IcfBuilder, Limits) {
