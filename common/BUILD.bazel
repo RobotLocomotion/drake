@@ -878,6 +878,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "drake_deref_test",
+    deps = [
+        ":essential",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_cloneable_test",
     deps = [
         ":is_cloneable",
