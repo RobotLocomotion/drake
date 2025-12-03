@@ -1476,7 +1476,7 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
 }
 
 namespace {
-double RadiusOfLargestBallInOnePolytopeCenteredInAnother(
+double RadiusOfLargestBallInPolytopeWithCenterInOther(
     const HPolyhedron& polytope_1, const HPolyhedron& polytope_2) {
   // This function helps with testing whether
   // SimplifyByIncrementalFaceTranslation satisfies its intersection constraint.
@@ -1681,7 +1681,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation5) {
             min_volume_ratio);
   EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
   // Check intersection constraint.
-  EXPECT_TRUE(RadiusOfLargestBallInOnePolytopeCenteredInAnother(
+  EXPECT_TRUE(RadiusOfLargestBallInPolytopeWithCenterInOther(
                   inbody, intersecting_polytope) >=
               intersection_padding - kAffineTransformationConstraintTol);
 }
@@ -1766,7 +1766,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
     EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
   }
   // Check intersection constraint.
-  EXPECT_TRUE(RadiusOfLargestBallInOnePolytopeCenteredInAnother(
+  EXPECT_TRUE(RadiusOfLargestBallInPolytopeWithCenterInOther(
                   inbody, intersecting_polytope) >=
               intersection_padding - kAffineTransformationConstraintTol);
 
@@ -1783,7 +1783,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
     EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
   }
   // Check intersection constraint.
-  EXPECT_TRUE(RadiusOfLargestBallInOnePolytopeCenteredInAnother(
+  EXPECT_TRUE(RadiusOfLargestBallInPolytopeWithCenterInOther(
                   inbody, intersecting_polytope) >=
               intersection_padding - kAffineTransformationConstraintTol);
 }
