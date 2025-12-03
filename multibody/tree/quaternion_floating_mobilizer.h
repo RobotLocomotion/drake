@@ -28,7 +28,7 @@ namespace internal {
 //
 // The translational part of this mobilizer is characterized by generalized
 // positions p_FM_F = qₜ = [x, y, z]ᵀ (the position from frame F's origin Fo
-// to frame M's origin Mo, expresed in frame F) and generalized velocities
+// to frame M's origin Mo, expressed in frame F) and generalized velocities
 // v_FM_F = vₜ = [vx, vy, vz]ᵀ (the velocity of frame M's origin Mo, measured
 // and expressed in frame F).
 //
@@ -272,7 +272,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   bool is_velocity_equal_to_qdot() const final { return false; }
 
-  // This mobilizer can't use the default implementaion because it is
+  // This mobilizer can't use the default implementation because it is
   // required to preserve bit-identical state.
   std::pair<Eigen::Quaternion<T>, Vector3<T>> GetPosePair(
       const systems::Context<T>& context) const final;
@@ -299,7 +299,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // positions) to v (6 generalized velocities) as q̇ = N(q)⋅v, where
   // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   0₄₃ is the 4x3 zero matrix.
   //        ⎣ 0₃₃    I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
-  // Nᵣ(q) = 0.5 * QuaternionFloatingMobilizer::CalcQMatrix() is a 4x3 matrix.
+  // Nᵣ(q) = 0.5 * QuaternionFloatingMobilizer::CalcQMatrix(q) is a 4x3 matrix.
   // Note: The time-derivative of the quaternion qᵣ in context can be calculated
   // q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized velocities. For a
   // quaternion qᵣ, we prove q̇ᵣ satisfies the "orthogonality constraint".
@@ -329,12 +329,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // pseudo-inverse of Nᵣ(qᵣ). If q̇ᵣ is not "plausible", Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) ≠ I₃₃.
   // Contextual definition of the 3x4 matrix Nᵣ⁺(qᵣ): denoting q̂ = qᵣ / |qᵣ|,
   // w_FM_F = Nᵣ⁺(q̂ᵣ) * d/dt(q̂_FM) = Nᵣ⁺(qᵣ) * d/dt(qᵣ). Hence, using
-  // Nᵣ⁺(qᵣ) = QuaternionRateToAngularVelocityMatrix() accounts for a non-unit
+  // Nᵣ⁺(qᵣ) = QuaternionRateToAngularVelocityMatrix(qᵣ) accounts for a non-unit
   // qᵣ and its corresponding time-derivative q̇ᵣ.
-  // Now, considering this mobilizer entirety (both rotation and translation),
+  // Considering this mobilizer in its entirety (both rotation and translation),
   // this mobilizer's N⁺(q) matrix relates v (6 generalized velocities) to q̇
   // (time derivatives of 7 generalized positions) as v = N⁺(q)⋅q̇, where
-  // N⁺(q) = ⎡ Nᵣ⁺(q)  0₃₃ ⎤   0₃₃ is the 3x4 zero matrix.
+  // N⁺(q) = ⎡ Nᵣ⁺(q)  0₃₃ ⎤   0₃₃ is the 3x3 zero matrix.
   //         ⎣ 0₃₄     I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
@@ -379,6 +379,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // the quaternion q = [qw, qx, qy, qz] as shown below.
   // @param[in] q a generic quaternion which is not necessarily a unit
   // quaternion or a quaternion associated with a rotation matrix.
+  // For example, q may hold q̇_FM the time derivative of q_FM (described below).
   // @returns  ⌈ -qx   -qy   -qz ⌉
   //           |  qw    qz   -qy |
   //           | -qz    qw    qx |
