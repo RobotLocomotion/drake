@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "drake/common/pointer_cast.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
@@ -15,7 +16,9 @@ using Eigen::VectorXd;
 using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
+using systems::DiagramContinuousState;
 using systems::IntegratorBase;
+using systems::SubsystemIndex;
 using systems::System;
 using systems::VectorBase;
 
@@ -37,7 +40,16 @@ const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
 template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
-    : IntegratorBase<T>(system, context), plant_(GetPlantFromDiagram(system)) {}
+    : IntegratorBase<T>(system, context), plant_(GetPlantFromDiagram(system)) {
+  const auto& diagram = static_cast<const Diagram<T>&>(system);
+  std::vector<const System<T>*> subsystems = diagram.GetSystems();
+  const SubsystemIndex plant_index = diagram.GetSystemIndexOrAbort(&plant_);
+  for (int i = 0; i < ssize(subsystems); ++i) {
+    if (subsystems[i]->num_continuous_states() > 0 && i != plant_index) {
+      non_plant_xc_subsystem_indices_.push_back(i);
+    }
+  }
+}
 
 template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
@@ -45,19 +57,6 @@ void CenicIntegrator<T>::DoInitialize() {
 
   // CENIC works best at loose accuracies.
   const double kDefaultAccuracy = 1e-1;
-
-  // Get the plant context from the overall context. This will throw if plant()
-  // is not part of the system diagram.
-  const Context<T>& context = this->get_context();
-  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
-
-  // For now, CENIC only supports systems where the only second-order state (q,
-  // v) is from the MultibodyPlant.
-  const int nq = this->get_context().get_continuous_state().num_q();
-  const int nv = this->get_context().get_continuous_state().num_v();
-  const int nz = this->get_context().get_continuous_state().num_z();
-  DRAKE_THROW_UNLESS(nq == plant().num_positions());
-  DRAKE_THROW_UNLESS(nv == plant().num_velocities());
 
   // Set the initial time step and accuracy.
   if (isnan(this->get_initial_step_size_target())) {
@@ -74,16 +73,19 @@ void CenicIntegrator<T>::DoInitialize() {
 
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
-  builder_ = std::make_unique<IcfBuilder<T>>(plant(), plant_context);
+  builder_ = std::make_unique<IcfBuilder<T>>(
+      plant(), plant().GetMyContextFromRoot(this->get_context()));
 
   // Allocate scratch variables
-  scratch_.Resize(plant(), nz);
+  scratch_.Resize(plant());
 
-  // Allocate intermediate states for error control
-  x_next_full_ = this->get_system().AllocateTimeDerivatives();
-  x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
-  x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
-  z_dot_ = this->get_system().AllocateTimeDerivatives();
+  // Allocate intermediate states for error control.
+  x_next_full_ = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
+      this->get_system().AllocateTimeDerivatives());
+  x_next_half_1_ = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
+      this->get_system().AllocateTimeDerivatives());
+  x_next_half_2_ = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
+      this->get_system().AllocateTimeDerivatives());
 }
 
 template <typename T>
@@ -193,7 +195,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 template <typename T>
 void CenicIntegrator<T>::ComputeNextContinuousState(
     const IcfModel<T>& model, const VectorX<T>& v_guess,
-    ContinuousState<T>* x_next) {
+    DiagramContinuousState<T>* x_next) {
   DRAKE_ASSERT(v_guess.size() == model.num_velocities());
   DRAKE_ASSERT(model.num_velocities() == plant().num_velocities());
   const T& h = model.time_step();
@@ -230,26 +232,28 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   VectorX<T>& q = scratch_.q;
   AdvancePlantConfiguration(h, v, &q);
 
-  // Set the updated plant state
+  // Set the updated plant state.
+  // XXX This should only be setting the plant state, not the diagram state.
   x_next->get_mutable_generalized_position().SetFromVector(q);
   x_next->get_mutable_generalized_velocity().SetFromVector(v);
 
   // Advance the non-plant state with explicit euler,
-  //   z = z₀ + h ż.
+  //   x = x₀ + h ẋ.
   // While we could use a more advanced integration scheme here, the non-plant
   // dynamics are usually pretty simple (e.g., the integral term from a PID
   // controller), so forward euler is sufficient.
-  if (x_next->num_z() > 0) {
-    VectorX<T>& z = scratch_.z;
+  const auto& diagram = static_cast<const Diagram<T>&>(this->get_system());
+  for (int subsystem_index : non_plant_xc_subsystem_indices_) {
+    const System<T>& subsystem = *diagram.GetSystems().at(subsystem_index);
+    const Context<T>& subcontext =
+        this->get_system().GetSubsystemContext(subsystem, context);
 
-    this->get_system().CalcMiscStateTimeDerivatives(context, z_dot_.get());
-    VectorX<T> z_dot = z_dot_->get_misc_continuous_state().CopyToVector();
+    const VectorX<T> sub_xc_dot =
+        subsystem.EvalTimeDerivatives(subcontext).CopyToVector();
+    VectorX<T> sub_xc_next = subcontext.get_continuous_state().CopyToVector();
+    sub_xc_next += h * sub_xc_dot;
 
-    z = context.get_continuous_state()
-            .get_misc_continuous_state()
-            .CopyToVector();
-    z += h * z_dot;
-    x_next->get_mutable_misc_continuous_state().SetFromVector(z);
+    x_next->get_mutable_substate(subsystem_index).SetFromVector(sub_xc_next);
   }
 }
 
@@ -315,14 +319,8 @@ void CenicIntegrator<T>::LinearizeExternalSystem(
   DRAKE_ASSERT(Ke.size() == plant().num_velocities());
   DRAKE_ASSERT(be.size() == plant().num_velocities());
 
-  // Get some useful sizes
-  const Context<T>& context = this->get_context();
-  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
-  const ContinuousState<T>& state = context.get_continuous_state();
-  const int nq = state.num_q();
-  const int nv = state.num_v();
-
   // Get references to pre-allocated variables
+  VectorX<T>& v0 = scratch_.v0;
   VectorX<T>& gu0 = scratch_.gu0;
   VectorX<T>& ge0 = scratch_.ge0;
   VectorX<T>& gu_prime = scratch_.gu_prime;
@@ -332,30 +330,33 @@ void CenicIntegrator<T>::LinearizeExternalSystem(
 
   // Compute some quantities that depend on the current state, before messing
   // with the state with finite differences
-  N = plant().MakeVelocityToQDotMap(plant_context);
-  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  CalcActuationForces(plant_context, &gu0);
-  CalcExternalForces(plant_context, &ge0);
+  const Context<T>& current_plant_context =
+      plant().GetMyContextFromRoot(this->get_context());
+  N = plant().MakeVelocityToQDotMap(current_plant_context);
+  v0 = plant_.GetVelocities(current_plant_context);
+  CalcActuationForces(current_plant_context, &gu0);
+  CalcExternalForces(current_plant_context, &ge0);
 
   // Initialize the perturbed state x = [q; v; z] and outputs
   //    gu(x) = B u(x),
   //    ge(x) = τₑₓₜ(x)
-  const VectorX<T> x = state.CopyToVector();
+  const VectorX<T> x = plant_.GetPositionsAndVelocities(current_plant_context);
   x_prime = x;
   gu_prime = gu0;
   ge_prime = ge0;
 
   // We'll want to perturb q and v separately, so we'll go ahead and grab these
   // references.
+  const int nq = plant_.num_positions();
+  const int nv = plant_.num_velocities();
   auto q = x.head(nq);
   auto v = x.segment(nq, nv);
   auto q_prime = x_prime.head(nq);
   auto v_prime = x_prime.segment(nq, nv);
 
   // Compute τ = D(v − v₀) + g₀ with forward differences differences
-  Context<T>* mutable_context = this->get_mutable_context();
-  ContinuousState<T>& mutable_state =
-      mutable_context->get_mutable_continuous_state();
+  Context<T>& mutable_plant_context =
+      plant().GetMyMutableContextFromRoot(this->get_mutable_context());
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
   for (int i = 0; i < nv; ++i) {
@@ -376,17 +377,16 @@ void CenicIntegrator<T>::LinearizeExternalSystem(
     q_prime = q + h * N * (v_prime - v);
 
     // Put x' in the context and mark the state as stale
-    mutable_state.SetFromVector(x_prime);
-    mutable_context->NoteContinuousStateChange();
+    plant_.SetPositionsAndVelocities(&mutable_plant_context, x_prime);
 
     // Compute the relevant matrix entries for actuation inputs:
     //   Ku = -dgu/dv
-    CalcActuationForces(plant_context, &gu_prime);
+    CalcActuationForces(mutable_plant_context, &gu_prime);
     Ku(i) = -(gu_prime(i) - gu0(i)) / dvi;
 
     // Same thing, but for external systems:
     //  Ke = -dge/dv
-    CalcExternalForces(plant_context, &ge_prime);
+    CalcExternalForces(mutable_plant_context, &ge_prime);
     Ke(i) = -(ge_prime(i) - ge0(i)) / dvi;
 
     // Reset the state for the next iteration
@@ -394,8 +394,7 @@ void CenicIntegrator<T>::LinearizeExternalSystem(
   }
 
   // Reset the context back to how we found it
-  mutable_state.SetFromVector(x);
-  mutable_context->NoteContinuousStateChange();
+  plant_.SetPositionsAndVelocities(&mutable_plant_context, x);
 
   // Use the diagonal projection for both K and b ensures that any
   // non-convex portion of the dynamics is treated explicitly.
@@ -418,21 +417,20 @@ T CenicIntegrator<T>::CalcStateChangeNorm(
 }
 
 template <typename T>
-void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
-                                         int nz) {
+void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
   const int nv = plant.num_velocities();
   const int nq = plant.num_positions();
   v.resize(nv);
   q.resize(nq);
-  z.resize(nz);
   f_ext = std::make_unique<MultibodyForces<T>>(plant);
   actuation_feedback.resize(nv);
   external_feedback.resize(nv);
+  v0.resize(nv);
   gu0.resize(nv);
   ge0.resize(nv);
   gu_prime.resize(nv);
   ge_prime.resize(nv);
-  x_prime.resize(nq + nv + nz);
+  x_prime.resize(nq + nv);
   N.resize(nq, nv);
 }
 

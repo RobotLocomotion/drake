@@ -534,9 +534,6 @@ class System : public SystemBase {
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const;
 
-  void CalcMiscStateTimeDerivatives(const Context<T>& context,
-                                    ContinuousState<T>* derivatives) const;
-
   /** Evaluates the implicit form of the %System equations and returns the
   residual.
 
@@ -1691,9 +1688,6 @@ class System : public SystemBase {
   size zero and aborts otherwise. */
   virtual void DoCalcTimeDerivatives(const Context<T>& context,
                                      ContinuousState<T>* derivatives) const;
-
-  virtual void DoCalcMiscStateTimeDerivatives(
-      const Context<T>& context, ContinuousState<T>* derivatives) const;
 
   /** Override this if you have an efficient way to evaluate the implicit
   time derivatives residual for this System. Otherwise the default
