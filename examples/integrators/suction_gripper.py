@@ -2,6 +2,7 @@ import time
 import argparse
 from pydrake.all import *
 import numpy as np
+from pydrake.multibody.cenic import IcfSolverParameters
 
 ##
 #
@@ -242,7 +243,12 @@ def add_gripper_mbp_elements(plant, scene_graph):
 
 
 def run_simulation(
-    mbp_time_step, integrator, accuracy, use_error_control, max_time_step
+    mbp_time_step, 
+    integrator, 
+    accuracy,
+    use_error_control,
+    max_time_step,
+    visualize
 ):
     """Run the simulation with the given parameters."""
 
@@ -319,7 +325,8 @@ def run_simulation(
     scene_graph.set_config(sg_config)
 
     # Connect to meshcat
-    AddDefaultVisualization(builder, meshcat)
+    if visualize:
+        AddDefaultVisualization(builder, meshcat)
 
     # Build the diagram
     diagram = builder.Build()
@@ -353,8 +360,9 @@ def run_simulation(
     meshcat.StartRecording()
     simulator.Initialize()
 
-    print("Waiting for meshcat... press [ENTER] to continue.")
-    input()
+    if visualize:
+        print("Waiting for meshcat... press [ENTER] to continue.")
+        input()
 
     # Simulate
     st = time.time()
@@ -401,6 +409,11 @@ if __name__ == "__main__":
         default=0.1,
         help="The maximum time step to use. default: 0.1",
     )
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="If specified, do not visualize in meshcat.",
+    )
     args = parser.parse_args()
 
     # Run the simulation
@@ -410,4 +423,5 @@ if __name__ == "__main__":
         accuracy=args.accuracy,
         use_error_control=not args.no_error_control,
         max_time_step=args.max_time_step,
+        visualize=not args.headless
     )
