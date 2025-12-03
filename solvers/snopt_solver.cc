@@ -19,6 +19,7 @@
 // NOLINTNEXTLINE(build/include)
 #include "snopt.h"
 
+#include "drake/common/safe_dereference.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
@@ -233,7 +234,8 @@ class SnoptUserFunInfo {
   // are retained internally, so the supplied objects must have lifetimes longer
   // than the SnoptUserFuncInfo object.
   explicit SnoptUserFunInfo(const MathematicalProgram* prog)
-      : this_pointer_as_int_array_(MakeThisAsInts()), prog_(*prog) {}
+      : this_pointer_as_int_array_(MakeThisAsInts()),
+        prog_(SafeDereference("prog", prog)) {}
 
   const MathematicalProgram& mathematical_program() const { return prog_; }
 

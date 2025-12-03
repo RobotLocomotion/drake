@@ -934,6 +934,7 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     implementation_deps_enabled = [
+        "//common:safe_dereference",
         "//common:scope_exit",
         "//math:autodiff",
         "@snopt//:snopt_cwrap",

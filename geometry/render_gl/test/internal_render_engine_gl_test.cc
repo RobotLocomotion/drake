@@ -24,6 +24,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/safe_dereference.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -63,9 +64,7 @@ class RenderEngineGlTester {
    the given `engine`; the engine must stay alive at least as long as the
    tester.  */
   explicit RenderEngineGlTester(const RenderEngineGl* engine)
-      : engine_(*engine) {
-    DRAKE_DEMAND(engine != nullptr);
-  }
+      : engine_(SafeDereference("engine", engine)) {}
 
   const internal::OpenGlContext& opengl_context() const {
     return *engine_.opengl_context_;

@@ -14,6 +14,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/overloaded.h"
+#include "drake/common/safe_dereference.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
@@ -145,10 +146,8 @@ class MaterialLibraryServer final : public tinyobj::MaterialReader {
   // aliased and must remain valid for at least as long as `this`.
   MaterialLibraryServer(const MeshSource* mesh_source,
                         const DiagnosticPolicy* policy)
-      : source_(*mesh_source), policy_(*policy) {
-    DRAKE_DEMAND(mesh_source != nullptr);
-    DRAKE_DEMAND(policy != nullptr);
-  }
+      : source_(SafeDereference("mesh_source", mesh_source)),
+        policy_(SafeDereference("policy", policy)) {}
 
   // The virtual interface for loading .mtl data; note the parameter names
   // reflect those used in tinyobjloader itself.

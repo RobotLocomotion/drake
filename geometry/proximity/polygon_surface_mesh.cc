@@ -2,6 +2,8 @@
 
 #include <limits>
 
+#include "drake/common/safe_dereference.h"
+
 namespace drake {
 namespace geometry {
 
@@ -12,6 +14,9 @@ std::unique_ptr<SurfacePolygon> SurfacePolygon::copy_to_unique() const {
   return std::unique_ptr<SurfacePolygon>(
       new SurfacePolygon(&mesh_face_data_, index_));
 }
+
+SurfacePolygon::SurfacePolygon(const std::vector<int>* face_data, int index)
+    : index_(index), mesh_face_data_(SafeDereference("face_data", face_data)) {}
 
 template <typename T>
 PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,

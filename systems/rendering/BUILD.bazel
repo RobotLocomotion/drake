@@ -26,6 +26,9 @@ drake_cc_library(
         "//multibody/plant",
         "//systems/framework:leaf_system",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_googletest(

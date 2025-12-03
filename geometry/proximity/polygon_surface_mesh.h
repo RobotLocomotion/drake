@@ -62,10 +62,7 @@ class SurfacePolygon {
                      this polygon. It is _not_ the publicly visible index of the
                      polygon.
    */
-  SurfacePolygon(const std::vector<int>* face_data, int index)
-      : index_(index), mesh_face_data_(*face_data) {
-    DRAKE_DEMAND(face_data != nullptr);
-  }
+  SurfacePolygon(const std::vector<int>* face_data, int index);
 
   /* The index of *this* polygon in the polygonal surface. The index points to
    the first entry, which contains the vertex count. */

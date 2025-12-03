@@ -2,10 +2,16 @@
 
 #include <utility>
 
+#include "drake/common/safe_dereference.h"
 #include "drake/multibody/plant/multibody_plant_model_attorney.h"
 
 namespace drake {
 namespace multibody {
+
+template <typename T>
+PhysicalModel<T>::PhysicalModel(MultibodyPlant<T>* owning_plant)
+    : owning_plant_(SafeDereference("owning_plant", owning_plant)),
+      mutable_owning_plant_(owning_plant) {}
 
 template <typename T>
 PhysicalModel<T>::~PhysicalModel() = default;

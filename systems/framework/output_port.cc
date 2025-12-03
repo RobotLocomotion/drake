@@ -1,6 +1,22 @@
 #include "drake/systems/framework/output_port.h"
 
+#include "drake/common/safe_dereference.h"
+
 namespace drake::systems {
+
+template <typename T>
+OutputPort<T>::OutputPort(const System<T>* system,
+                          internal::SystemMessageInterface* system_interface,
+                          internal::SystemId system_id, std::string name,
+                          OutputPortIndex index, DependencyTicket ticket,
+                          PortDataType data_type, int size)
+    : OutputPortBase(system_interface, system_id, std::move(name), index,
+                     ticket, data_type, size),
+      system_{SafeDereference("system", system)} {
+  // Check the precondition on identical parameters; note that comparing as
+  // void* is only valid because we have single inheritance.
+  DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
+}
 
 template <typename T>
 OutputPort<T>::~OutputPort() = default;

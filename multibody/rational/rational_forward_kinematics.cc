@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/safe_dereference.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
@@ -57,8 +58,7 @@ RationalForwardKinematics::Pose<Scalar2> CalcChildPose(
 
 RationalForwardKinematics::RationalForwardKinematics(
     const MultibodyPlant<double>* plant)
-    : plant_(*plant) {
-  DRAKE_DEMAND(plant != nullptr);
+    : plant_(SafeDereference("plant", plant)) {
   const internal::MultibodyTree<double>& tree = GetInternalTree(plant_);
   const internal::SpanningForest& forest = tree.forest();
   // Initialize map_mobilizer_to_s_index_ to -1, where -1 indicates "no s

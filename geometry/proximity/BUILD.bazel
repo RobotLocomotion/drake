@@ -148,6 +148,7 @@ drake_cc_library(
         ":bv",
         ":bvh",
         "//common:essential",
+        "//common:safe_dereference",
     ],
 )
 
@@ -398,6 +399,9 @@ drake_cc_library(
         "//common:sorted_pair",
         "@fcl_internal//:fcl",
         "@fmt",
+    ],
+    implementation_deps = [
+        "//common:safe_dereference",
     ],
 )
 
@@ -873,6 +877,9 @@ drake_cc_library(
         ":mesh_traits",
         "//math:geometric_transform",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_library(
@@ -1275,6 +1282,7 @@ drake_cc_googletest(
     name = "distance_sphere_to_shape_test",
     deps = [
         ":distance_to_shape_callback",
+        "//common:safe_dereference",
         "//common/test_utilities",
         "//geometry:geometry_ids",
         "//geometry:utilities",

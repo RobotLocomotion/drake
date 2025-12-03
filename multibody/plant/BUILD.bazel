@@ -165,6 +165,7 @@ drake_cc_library(
     implementation_deps = [
         ":contact_properties",
         ":hydroelastic_traction_calculator",
+        "//common:safe_dereference",
     ],
 )
 

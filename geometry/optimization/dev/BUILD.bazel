@@ -26,6 +26,9 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:solve",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_library(

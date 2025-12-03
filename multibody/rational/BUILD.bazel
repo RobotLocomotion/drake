@@ -35,6 +35,9 @@ drake_cc_library(
         "//common/symbolic:trigonometric_polynomial",
         "//multibody/plant",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_library(

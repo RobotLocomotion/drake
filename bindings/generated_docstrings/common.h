@@ -59,6 +59,7 @@
 // #include "drake/common/random.h"
 // #include "drake/common/reset_after_move.h"
 // #include "drake/common/reset_on_copy.h"
+// #include "drake/common/safe_dereference.h"
 // #include "drake/common/scope_exit.h"
 // #include "drake/common/scoped_singleton.h"
 // #include "drake/common/sha256.h"
@@ -1899,6 +1900,16 @@ R"""(The absolute path to the resource_path runfile.)""";
         const char* doc = R"""(The error message.)""";
       } error;
     } RlocationOrError;
+    // Symbol: drake::SafeDereference
+    struct /* SafeDereference */ {
+      // Source: drake/common/safe_dereference.h
+      const char* doc =
+R"""(Utility function for dereferencing a pointer with a runtime check
+against being null.
+
+Note: if a pointer to a const type is passed in, a const reference
+comes out, otherwise a non-const reference comes out.)""";
+    } SafeDereference;
     // Symbol: drake::ScopeExit
     struct /* ScopeExit */ {
       // Source: drake/common/scope_exit.h

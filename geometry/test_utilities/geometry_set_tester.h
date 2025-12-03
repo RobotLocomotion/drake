@@ -2,6 +2,7 @@
 
 #include <unordered_set>
 
+#include "drake/common/safe_dereference.h"
 #include "drake/geometry/geometry_set.h"
 
 namespace drake {
@@ -10,7 +11,8 @@ namespace geometry {
 // Utility class for testing the implementation details of the GeometrySet.
 class GeometrySetTester {
  public:
-  explicit GeometrySetTester(const GeometrySet* set) : set_(*set) {}
+  explicit GeometrySetTester(const GeometrySet* set)
+      : set_(SafeDereference("set", set)) {}
 
   const std::unordered_set<FrameId> frames() const { return set_.frames(); }
 

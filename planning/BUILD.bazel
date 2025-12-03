@@ -92,6 +92,9 @@ drake_cc_library(
         ":robot_diagram",
         "//common:essential",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_library(

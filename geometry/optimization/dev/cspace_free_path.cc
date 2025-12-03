@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/safe_dereference.h"
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/geometry/optimization/cspace_free_internal.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
@@ -82,7 +83,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const Eigen::Ref<const Eigen::VectorXd>& q_star,
                                int maximum_path_degree, int plane_degree)
     : rational_forward_kin_(plant),
-      scene_graph_{*scene_graph},
+      scene_graph_{SafeDereference("scene_graph", scene_graph)},
       q_star_{q_star},
       link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
       plane_degree_{plane_degree},

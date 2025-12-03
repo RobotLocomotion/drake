@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 
+#include "drake/common/safe_dereference.h"
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/bvh.h"
 
@@ -40,10 +41,8 @@ class BvhUpdater {
    @pre bvh_M was constructed on mesh_M.
    @pre mesh_M != nullptr and bvh_M != nullptr. */
   BvhUpdater(const MeshType* mesh_M, Bvh<Aabb, MeshType>* bvh_M)
-      : mesh_(*mesh_M), bvh_(*bvh_M) {
-    DRAKE_DEMAND(mesh_M != nullptr);
-    DRAKE_DEMAND(bvh_M != nullptr);
-  }
+      : mesh_(SafeDereference("mesh_M", mesh_M)),
+        bvh_(SafeDereference("bvh_M", bvh_M)) {}
 
   const MeshType& mesh() const { return mesh_; }
   const Bvh<Aabb, MeshType>& bvh() const { return bvh_; }

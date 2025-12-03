@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/safe_dereference.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
@@ -18,7 +19,8 @@ namespace render {
 
 class RenderEngineTester {
  public:
-  explicit RenderEngineTester(const RenderEngine* engine) : engine_(*engine) {}
+  explicit RenderEngineTester(const RenderEngine* engine)
+      : engine_(SafeDereference("engine", engine)) {}
 
   int num_geometries() const {
     return static_cast<int>(engine_.update_ids_.size() +

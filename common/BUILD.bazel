@@ -60,6 +60,7 @@ drake_cc_package_library(
         ":random",
         ":reset_after_move",
         ":reset_on_copy",
+        ":safe_dereference",
         ":scope_exit",
         ":scoped_singleton",
         ":sha256",
@@ -120,6 +121,14 @@ drake_cc_library(
         "@eigen",
         "@fmt",
         "@spdlog",
+    ],
+)
+
+drake_cc_library(
+    name = "safe_dereference",
+    hdrs = ["safe_dereference.h"],
+    deps = [
+        ":essential",
     ],
 )
 

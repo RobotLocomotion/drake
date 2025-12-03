@@ -142,6 +142,9 @@ drake_cc_library(
         ":static_friction_cone_complementarity_constraint",
         "//solvers:mathematical_program_result",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_library(

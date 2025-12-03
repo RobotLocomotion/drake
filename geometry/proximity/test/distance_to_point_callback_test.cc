@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/safe_dereference.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -67,7 +68,9 @@ class PointShapeAutoDiffSignedDistanceTester {
   PointShapeAutoDiffSignedDistanceTester(const Shape* shape,
                                          const RigidTransformd& X_WG,
                                          double tolerance)
-      : shape_(*shape), X_WG_(X_WG), tolerance_(tolerance) {}
+      : shape_(SafeDereference("shape", shape)),
+        X_WG_(X_WG),
+        tolerance_(tolerance) {}
 
   // Perform the test with the particular N and Q.
   ::testing::AssertionResult Test(const Vector3d& p_GN_G,

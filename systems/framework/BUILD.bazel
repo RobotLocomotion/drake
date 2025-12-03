@@ -426,6 +426,9 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
     ],
+    implementation_deps = [
+        "//common:safe_dereference",
+    ],
 )
 
 drake_cc_library(
@@ -442,6 +445,9 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:value",
+    ],
+    implementation_deps = [
+        "//common:safe_dereference",
     ],
 )
 

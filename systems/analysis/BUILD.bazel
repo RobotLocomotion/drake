@@ -472,6 +472,7 @@ drake_cc_library(
     implementation_deps = [
         ":runge_kutta3_integrator",
         ":simulator_python_internal_header",
+        "//common:safe_dereference",
     ],
 )
 

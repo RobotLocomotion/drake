@@ -114,6 +114,7 @@ drake_cc_library(
         "//geometry/proximity:triangle_surface_mesh",
     ],
     implementation_deps = [
+        "//common:safe_dereference",
         "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
@@ -170,6 +171,7 @@ drake_cc_googletest(
     name = "render_engine_test",
     deps = [
         ":render_engine",
+        "//common:safe_dereference",
         "//common/test_utilities",
         "//geometry:geometry_ids",
         "//geometry/test_utilities:dummy_render_engine",
