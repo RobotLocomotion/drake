@@ -766,9 +766,11 @@ class Simulator {
   };
 
   // All constructors delegate to here.
+  // @param use_owned_system  If true, `owned_system` must not be null. If
+  //                          false, `system` must not be null.
   Simulator(const System<T>* system,
             std::unique_ptr<const System<T>> owned_system,
-            std::shared_ptr<Context<T>> context);
+            std::shared_ptr<Context<T>> context, bool use_owned_system);
 
   [[nodiscard]] EventStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
