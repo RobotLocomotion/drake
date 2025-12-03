@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -258,6 +259,23 @@ template <typename... NamesAndValues>
   _GET_NTH_ARG(__VA_ARGS__ __VA_OPT__(, ) _e_4, _e_3, _e_2, _e_1, _e_0) \
   (__VA_ARGS__)
 
+/* Dereferences a pointer, throwing an exception for null.
+
+ The extraneous parameters are used to provide context in the thrown exception.
+
+ Note: if a pointer to a const type is passed in, a const reference comes out,
+ otherwise a non-const reference comes out. */
+template <typename PtrType>
+auto SafeDereference(PtrType& ptr, const char* condition, const char* func,
+                     const char* file, int line) -> decltype(*ptr)
+  requires std::is_reference_v<decltype(*ptr)>
+{
+  if (ptr == nullptr) {
+    Throw(condition, func, file, line);
+  }
+  return *ptr;
+}
+
 }  // namespace internal
 }  // namespace drake
 
@@ -310,5 +328,35 @@ template <typename... NamesAndValues>
           __LINE__ __VA_OPT__(, ACCUMULATE(__VA_ARGS__)));                    \
     }                                                                         \
   } while (0)
+
+/// Derferences a pointer, with null checking. If the provided pointer is null,
+/// throws an exception. Otherwise, returns a reference to the object being
+/// pointed to.
+///
+/// If the pointer points to a const type, a const reference is returned. If it
+/// points to a non-const type, a non-const reference is returned.
+///
+/// It will typically appear in a class's constructor when it aliases a an
+/// input parameter.
+///
+/// Example usage:
+///
+/// @code{cpp}
+///
+/// class Foo {
+///  public:
+///   Foo(const Bar* bar) : bar_(DRAKE_DEREF(bar)) {}
+///  private:
+///   const Bar& bar_;
+/// };
+///
+/// @warning The pointer passed must be an l-value; do not pass in temporaries.
+/// E.g., this includes function calls that return pointers and pointers to
+/// arrays (&x[0]).
+///
+/// @endcode
+#define DRAKE_DEREF(ptr)                                                \
+  ::drake::internal::SafeDereference(ptr, #ptr " != nullptr", __func__, \
+                                     __FILE__, __LINE__)
 
 #endif  // DRAKE_DOXYGEN_CXX
