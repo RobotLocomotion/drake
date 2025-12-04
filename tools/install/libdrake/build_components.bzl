@@ -9,6 +9,7 @@
 # should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
     "//common",
+    "//common/ad",
     "//common/proto",
     "//common/schema",
     "//common/symbolic",

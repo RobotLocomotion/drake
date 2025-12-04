@@ -3,12 +3,13 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 #if EIGEN_VERSION_AT_LEAST(5, 0, 1)
 // Eigen 5.0.1's implementation of fixed-size AutoDiff doesn't compile vs
 // HouseholderQR's linear solver. We need to shim in overloads for sqrt
@@ -36,6 +37,7 @@ auto operator+(const Eigen::AutoDiffScalar<Eigen::Vector3d>& a,
 }
 }  // namespace Eigen
 #endif  // EIGEN_VERSION_AT_LEAST
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
 namespace drake {
 namespace math {
@@ -212,6 +214,7 @@ class LinearSolveTest : public ::testing::Test {
     const symbolic::Variable sym_v("v");
     b_sym_ << sym_u, 1, sym_v, -sym_u + sym_v, 3, 2;
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
     for (int i = 0; i < 2; ++i) {
       for (int j = 0; j < 2; ++j) {
         A_ad_fixed_der_size_(i, j).value() = A_ad_(i, j).value();
@@ -225,6 +228,7 @@ class LinearSolveTest : public ::testing::Test {
             b_mat_ad_(i, j).derivatives();
       }
     }
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
   }
 
  protected:
@@ -236,11 +240,13 @@ class LinearSolveTest : public ::testing::Test {
   Eigen::Matrix<AutoDiffXd, 2, 3> b_mat_ad_;
   Eigen::Matrix<symbolic::Expression, 2, 2> A_sym_;
   Eigen::Matrix<symbolic::Expression, 2, 3> b_sym_;
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
   // Use fixed-sized AutoDiffScalar.
   Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector3d>, 2, 2>
       A_ad_fixed_der_size_;
   Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector3d>, 2, 3>
       b_ad_fixed_der_size_;
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 };
 
 TEST_F(LinearSolveTest, TestDoubleAandb) {
@@ -344,6 +350,7 @@ TEST_F(LinearSolveTest, TestAwithGrad) {
   TestSolveLinearSystem<PartialPivLU>(A_ad_, b_mat_val_.cast<AutoDiffXd>());
 }
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 TEST_F(LinearSolveTest, TestFixedDerivativeSize) {
   // Test SolveLinearSystem with either or both A and b containing
   // AutoDiffScalar, The AutoDiffScalar has a fixed derivative size.
@@ -369,6 +376,7 @@ TEST_F(LinearSolveTest, TestFixedDerivativeSize) {
   TestSolveLinearSystem<ColPivHouseholderQR>(A_ad_fixed_der_size_, b_mat_val_);
   TestSolveLinearSystem<PartialPivLU>(A_ad_fixed_der_size_, b_mat_val_);
 }
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
 TEST_F(LinearSolveTest, TestAbWithGrad) {
   // Test SolveLinearSystem with both A and b containing gradient.
