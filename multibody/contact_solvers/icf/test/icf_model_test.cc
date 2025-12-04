@@ -78,7 +78,7 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   }
   params->body_mass = {1.0e20, 0.3, 2.3, 1.5};  // First body is the world.
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
-  const Matrix6<T> J_WB1 = 1.5 * J_WB0 + 0.1 * Matrix6<T>::Identity();
+  const Matrix6<T> J_WB1 = Matrix6<T>::Identity();
   const Matrix6<T> J_WB2 = J_WB0.transpose();
 
   if (single_clique) {
@@ -142,6 +142,64 @@ void AddCouplerConstraint(IcfModel<T>* model) {
     couplers.Set(0 /* constraint index */, 0 /* clique */, 7 /* i */, 9 /* j */,
                  q0_clique(7), q0_clique(9), rho, offset);
   }
+}
+
+/* Adds some dummy gain constraints to the model.
+
+@returns The (K, u, e) vectors used to set the gain constraints on two cliques.
+*/
+template <typename T>
+std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
+  const bool single_clique = model->num_cliques() == 1;
+  GainConstraintsPool<T>& gain_constraints = model->gain_constraints_pool();
+
+  // Define the constraint coefficients for two gain constraints.
+  VectorX<T> K0 = 1.1 * VectorX<T>::Ones(6);
+  VectorX<T> u0 = -6.0 * VectorX<T>::Ones(6);
+  VectorX<T> e0 = 0.9 * VectorX<T>::Ones(6);
+
+  VectorX<T> K1 = 2.3 * VectorX<T>::Ones(6);
+  VectorX<T> u1 = -0.5 * VectorX<T>::Ones(6);
+  VectorX<T> e1 = 11.1 * VectorX<T>::Ones(6);
+
+  // Test cases with zero gain.
+  K1(1) = K1(2) = K1(4) = 0.0;
+  u1(1) = -13.5;  // bias below limit.
+  u1(2) = -5.5;   // bias within limits.
+  u1(4) = 15.2;   // bias above limits.
+
+  if (!single_clique) {
+    // We'll put the constraints on cliques 0 and 2.
+    DRAKE_DEMAND(model->clique_size(0) == 6);
+    DRAKE_DEMAND(model->clique_size(2) == 6);
+    const std::vector<int> actuated_clique_sizes = {6, 6};
+
+    gain_constraints.Resize(actuated_clique_sizes);
+    gain_constraints.Set(0, 0, K0, u0, e0);
+    gain_constraints.Set(1, 2, K1, u1, e1);
+
+  } else {
+    // We'll put the constraints on clique 0 only, since there is only one
+    // clique. However, we'll define them such that the constraints are the same
+    // as in the multi-clique version.
+    DRAKE_DEMAND(model->clique_size(0) == 18);
+    const std::vector<int> actuated_clique_sizes = {18};
+
+    VectorX<T> K = VectorX<T>::Zero(18);
+    VectorX<T> u = VectorX<T>::Zero(18);
+    VectorX<T> e = VectorX<T>::Zero(18);
+    K.template segment<6>(0) = K0;
+    K.template segment<6>(12) = K1;
+    u.template segment<6>(0) = u0;
+    u.template segment<6>(12) = u1;
+    e.template segment<6>(0) = e0;
+    e.template segment<6>(12) = e1;
+
+    gain_constraints.Resize(actuated_clique_sizes);
+    gain_constraints.Set(0, 0, K, u, e);
+  }
+
+  return {K0, u0, e0, K1, u1, e1};
 }
 
 /* Checks that a default constructed model is empty. */
@@ -283,13 +341,14 @@ GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
   model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), nv);
-  EXPECT_EQ(model.num_constraints(), 1);
+  EXPECT_EQ(model.num_constraints(), 3);
 
   VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
   VectorX<AutoDiffXd> v(nv);
@@ -309,6 +368,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model, true /* single cliques */);
   AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -350,6 +410,7 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_single;
   MakeUnconstrainedModel(&model_single, true);
   AddCouplerConstraint(&model_single);
+  AddGainConstraints(&model_single);
   model_single.SetSparsityPattern();
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
@@ -357,6 +418,7 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_multiple;
   MakeUnconstrainedModel(&model_multiple, false);
   AddCouplerConstraint(&model_multiple);
+  AddGainConstraints(&model_multiple);
   model_multiple.SetSparsityPattern();
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
@@ -403,10 +465,11 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 1);
+  EXPECT_EQ(model.num_constraints(), 3);
 
   // Allocate data, and additional scratch.
   IcfData<AutoDiffXd> data, scratch;
@@ -463,11 +526,12 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_original;
   MakeUnconstrainedModel(&model_original, false, 0.02);
   AddCouplerConstraint(&model_original);
+  AddGainConstraints(&model_original);
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
   EXPECT_EQ(model_original.time_step(), 0.02);
-  EXPECT_EQ(model_original.num_constraints(), 1);
+  EXPECT_EQ(model_original.num_constraints(), 3);
 
   const double new_time_step = 0.003;
 
@@ -475,11 +539,12 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_new;
   MakeUnconstrainedModel(&model_new, false, new_time_step);
   AddCouplerConstraint(&model_new);
+  AddGainConstraints(&model_new);
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
-  EXPECT_EQ(model_new.num_constraints(), 1);
+  EXPECT_EQ(model_new.num_constraints(), 3);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
@@ -619,6 +684,113 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const double scale = std::abs(dcost.value());
   EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
   EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
+}
+
+/* Verifies that gain constraints produce correct data. */
+GTEST_TEST(IcfModel, GainConstraint) {
+  IcfModel<AutoDiffXd> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 0);
+
+  IcfData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  EXPECT_EQ(data.gain_constraints_data().num_constraints(), 0);
+
+  // At this point there should be no gain constraints.
+  EXPECT_EQ(model.num_gain_constraints(), 0);
+
+  // Add gain constraints.
+  std::vector<VectorX<AutoDiffXd>> gains = AddGainConstraints(&model);
+  const VectorX<AutoDiffXd>& K0 = gains[0];
+  const VectorX<AutoDiffXd>& u0 = gains[1];
+  const VectorX<AutoDiffXd>& e0 = gains[2];
+  const VectorX<AutoDiffXd>& K2 = gains[3];
+  const VectorX<AutoDiffXd>& u2 = gains[4];
+  const VectorX<AutoDiffXd>& e2 = gains[5];
+
+  EXPECT_EQ(model.num_gain_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 2);
+
+  // Resize data to include gain constraints data.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
+
+  const int nv = model.num_velocities();
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const GainConstraintsDataPool<AutoDiffXd>& gains_data =
+      data.gain_constraints_data();
+  EXPECT_EQ(gains_data.num_constraints(), 2);
+
+  const VectorXd K0_value = math::ExtractValue(K0);
+  const VectorXd u0_value = math::ExtractValue(u0);
+  const VectorXd e0_value = math::ExtractValue(e0);
+  const VectorXd v0_value = v_value.segment<6>(0);  // Clique 0's values.
+  VectorXd tau0_expected = -K0_value.cwiseProduct(v0_value) + u0_value;
+
+  const VectorXd K2_value = math::ExtractValue(K2);
+  const VectorXd u2_value = math::ExtractValue(u2);
+  const VectorXd e2_value = math::ExtractValue(e2);
+  const VectorXd v2_value = v_value.segment<6>(12);  // Clique 2's values.
+  VectorXd tau2_expected = -K2_value.cwiseProduct(v2_value) + u2_value;
+
+  // For this test we verify some values are below, within and above effort
+  // limits.
+  EXPECT_GT(tau0_expected(0), 0.9);
+  EXPECT_GT(tau0_expected(1), 0.9);
+  EXPECT_GT(tau0_expected(2), 0.9);
+  EXPECT_GT(tau0_expected(3), 0.9);
+  EXPECT_GT(tau0_expected(4), -0.9);
+  EXPECT_LT(tau0_expected(4), 0.9);
+  EXPECT_LT(tau0_expected(5), -0.9);
+
+  // Apply the limits.
+  tau0_expected = tau0_expected.cwiseMax(-e0_value).cwiseMin(e0_value);
+  tau2_expected = tau2_expected.cwiseMax(-e2_value).cwiseMin(e2_value);
+  const VectorXd gamma0_expected = tau0_expected * model.time_step().value();
+  const VectorXd gamma2_expected = tau2_expected * model.time_step().value();
+
+  const VectorX<AutoDiffXd> gamma0 = gains_data.gamma(0);
+  const VectorX<AutoDiffXd> gamma2 = gains_data.gamma(1 /* constraint index */);
+  EXPECT_EQ(gamma0.size(), model.clique_size(0));
+  EXPECT_EQ(gamma2.size(), model.clique_size(2));
+  const VectorXd gamma0_value = math::ExtractValue(gamma0);
+  const VectorXd gamma2_value = math::ExtractValue(gamma2);
+  EXPECT_TRUE(CompareMatrices(gamma0_value, gamma0_expected, kEpsilon,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(gamma2_value, gamma2_expected, kEpsilon,
+                              MatrixCompareType::relative));
+
+  // Gradient of the cost.
+  const VectorXd cost_gradient = gains_data.cost().derivatives();
+  const VectorXd minus_cost0_gradient = -cost_gradient.segment<6>(0);
+  const VectorXd minus_cost2_gradient =
+      -cost_gradient.segment<6>(12 /* first velocity index */);
+  EXPECT_TRUE(CompareMatrices(gamma0_value, minus_cost0_gradient, kEpsilon,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(gamma2_value, minus_cost2_gradient, kEpsilon,
+                              MatrixCompareType::relative));
+
+  // Verify accumulated total cost and gradients.
+  const VectorXd total_cost_derivatives = data.cost().derivatives();
+  const VectorXd total_gradient_value = math::ExtractValue(data.gradient());
+
+  EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
+                              2 * kEpsilon, MatrixCompareType::relative));
+
+  // Verify contributions to Hessian.
+  auto hessian = model.MakeHessian(data);
+  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
+                              10 * kEpsilon, MatrixCompareType::relative));
 }
 
 }  // namespace
