@@ -21,7 +21,13 @@ namespace internal {
 template <typename T>
 class IcfModel;
 
-/* A pool of limit constraints, qu ≥ q ≥ ql. */
+/* A pool of joint limit constraints, qu ≥ q ≥ ql.
+
+Each limit constraint is associated with a convex cost ℓ(v) that is added to
+the overall ICF cost. The gradient of this cost produces an impulse γ = -∇ℓ(v)
+that enforces the constraint when the convex ICF problem is solved.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class LimitConstraintsPool {
  public:
@@ -31,14 +37,34 @@ class LimitConstraintsPool {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
 
   /* Constructs an empty pool. */
-  explicit LimitConstraintsPool(const IcfModel<T>* parent_model)
-      : model_(parent_model) {
-    DRAKE_ASSERT(parent_model != nullptr);
+  explicit LimitConstraintsPool(const IcfModel<T>* parent_model);
+
+  ~LimitConstraintsPool();
+
+  /* Returns a reference to the parent model. */
+  const IcfModel<T>& model() const { return *model_; }
+
+  /* Returns the total number of limit constraints. */
+  int num_constraints() const { return clique_.size(); }
+
+  /* Returns the number of generalized velocities associated with each limit
+  constraint. */
+  std::span<const int> constraint_sizes() const {
+    return std::span<const int>(constraint_size_);
   }
 
-  /* Re-allocates memory as needed, setting all constraints as infinite by
-  default so they are disabled to start with. */
-  void Resize(std::span<const int> constrained_clique_sizes,
+  /* Resizes this pool to store limit constraints of the given sizes.
+
+  Sets all constraints as infinite (e.g., disabled) by default. Constraints must
+  be explicitly enabled for each DoF by calling Set().
+
+  @param sizes The number of velocities associated with each limit constraint in
+               the pool.
+  @param constraint_to_clique The mapping from constraint index to clique
+                              index for each limit constraint.
+
+  @pre `sizes` and `constraint_to_clique` must have the same length. */
+  void Resize(std::span<const int> sizes,
               std::span<const int> constraint_to_clique);
 
   /* Sets the limit constraint parameters for the given clique and DoF.
@@ -56,34 +82,15 @@ class LimitConstraintsPool {
   void Set(int index, int clique, int dof, const T& q0, const T& ql,
            const T& qu);
 
-  /* Returns the lower limit for the given constraint and DoF. */
-  T& lower_limit(int k, int dof) { return ql_[k](dof); }
-
-  /* Returns the upper limit for the given constraint and DoF. */
-  T& upper_limit(int k, int dof) { return qu_[k](dof); }
-
-  /* Returns the initial configuration q0 for the given constraint and DoF. */
-  T& configuration(int k, int dof) { return q0_[k](dof); }
-
-  /* Returns the near-rigid regularization parameter R. */
-  T& regularization(int k, int dof) { return R_[k](dof); }
-  const T regularization(int k, int dof) const { return R_[k](dof); }
-
-  /* Returns upper and lower bound velocity targets, scaled by the time step. */
-  T& gl_hat(int k, int dof) { return gl_hat_[k](dof); }
-  T& gu_hat(int k, int dof) { return gu_hat_[k](dof); }
-  const T gl_hat(int k, int dof) const { return gl_hat_[k](dof); }
-  const T gu_hat(int k, int dof) const { return gu_hat_[k](dof); }
-
   /* Computes problem data for the given generalized velocities `v`. */
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
 
-  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
-  gradient. */
+  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the
+  model-wide gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Adds the Hessian contribution of this constraint to the overall Hessian. */
+  /* Adds the contribution of this constraint to the model-wide Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
@@ -101,36 +108,31 @@ class LimitConstraintsPool {
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
 
-  /* Returns the total number of limit constraints. */
-  int num_constraints() const { return constraint_to_clique_.size(); }
-
-  /* Returns the number of velocities for each limit constraint. */
-  std::span<const int> constraint_sizes() const {
-    return std::span<const int>(constraint_sizes_);
-  }
-
-  /* Returns a reference to the parent model. */
-  const IcfModel<T>& model() const { return *model_; }
-
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit
-  constraint. */
+  constraint.
+
+  @param v_hat The target velocity.
+  @param R Near-rigid regularization parameter.
+  @param v The current velocity.
+  @param[out] gamma The computed impulse on output.
+  @param[out] G The computed Hessian diagonal on output.
+
+  @returns The cost associated with this limit constraint. */
   T CalcLimitData(const T& v_hat, const T& R, const T& v, T* gamma, T* G) const;
 
-  const IcfModel<T>* model_{nullptr};  // The parent model.
+  const IcfModel<T>* const model_;  // The parent model.
 
-  // Clique for the k-th constraint. Of size num_constraints().
-  std::vector<int> constraint_to_clique_;
-
-  // Clique size for the k-th constraint. Of size num_constraints().
-  std::vector<int> constraint_sizes_;
-
-  EigenPool<VectorX<T>> ql_;
-  EigenPool<VectorX<T>> qu_;
-  EigenPool<VectorX<T>> q0_;
-  EigenPool<VectorX<T>> gl_hat_;
-  EigenPool<VectorX<T>> gu_hat_;
-  EigenPool<VectorX<T>> R_;
+  // We always add limit constraints per-clique. Each of the following has size
+  // num_constraints().
+  std::vector<int> clique_;           // Clique the k-th limit belongs to.
+  std::vector<int> constraint_size_;  // Clique size for the k-th constraint.
+  EigenPool<VectorX<T>> ql_;          // Lower limit.
+  EigenPool<VectorX<T>> qu_;          // Upper limit.
+  EigenPool<VectorX<T>> q0_;          // Initial configuration.
+  EigenPool<VectorX<T>> gl_hat_;  // Lower bound velocity target scaled by dt.
+  EigenPool<VectorX<T>> gu_hat_;  // Upper bound velocity target scaled by dt.
+  EigenPool<VectorX<T>> R_;       // Near-rigid regularization parameter.
 };
 
 }  // namespace internal

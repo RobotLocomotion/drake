@@ -11,6 +11,7 @@ namespace icf {
 namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
+using Eigen::VectorBlock;
 
 template <typename T>
 GainConstraintsPool<T>::GainConstraintsPool(const IcfModel<T>* parent_model)
@@ -24,7 +25,7 @@ GainConstraintsPool<T>::~GainConstraintsPool() = default;
 template <typename T>
 void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
-  constraint_sizes_.resize(sizes.size());
+  constraint_size_.resize(sizes.size());
   const int num_elements = ssize(sizes);
   K_.Resize(num_elements, sizes);
   b_.Resize(num_elements, sizes);
@@ -42,7 +43,7 @@ void GainConstraintsPool<T>::Set(const int index, int clique,
   DRAKE_DEMAND(b.size() == nv);
   DRAKE_DEMAND(e.size() == nv);
   clique_[index] = clique;
-  constraint_sizes_[index] = nv;
+  constraint_size_[index] = nv;
   K_[index] = K;
   b_[index] = b;
   le_[index] = -e;
@@ -58,7 +59,7 @@ void GainConstraintsPool<T>::CalcData(
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    auto vk = model().clique_segment(c, v);
+    VectorBlock<const VectorX<T>> vk = model().clique_segment(c, v);
     VectorXView gk = gain_data->mutable_gamma(k);
     VectorXView Gk = gain_data->mutable_G(k);
     cost += Clamp(k, vk, &gk, &Gk);
@@ -72,7 +73,8 @@ void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    auto gradient_c = model().mutable_clique_segment(c, gradient);
+    VectorBlock<VectorX<T>> gradient_c =
+        model().mutable_clique_segment(c, gradient);
     ConstVectorXView gk = gain_data.gamma(k);
     gradient_c -= gk;
   }
@@ -102,7 +104,7 @@ void GainConstraintsPool<T>::CalcCostAlongLine(
   *d2cost = 0.0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
-    auto w_c = model().clique_segment(c, w);
+    VectorBlock<const VectorX<T>> w_c = model().clique_segment(c, w);
     Gw_pool.Resize(1, model().clique_size(c), 1);
     VectorXView G_times_w = Gw_pool[0];
 

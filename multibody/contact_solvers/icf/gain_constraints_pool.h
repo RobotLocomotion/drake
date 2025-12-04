@@ -59,10 +59,12 @@ class GainConstraintsPool {
 
   /* Returns the number of velocities for each gain constraint. */
   std::span<const int> constraint_sizes() const {
-    return std::span<const int>(constraint_sizes_);
+    return std::span<const int>(constraint_size_);
   }
 
   /* Resizes this pool to store gain constraints of the given sizes.
+
+  @param sizes The number of velocities associated with each gain constraint.
 
   @warning After resizing, constraints may hold invalid data until Set() is
   called for each constraint index in [0, num_constraints()). */
@@ -110,18 +112,23 @@ class GainConstraintsPool {
                          T* dcost, T* d2cost) const;
 
  private:
-  /* For the k-th gain constraint, compute:
-    - The clamped cost ℓ(v)
-    - The clamped gradient/impulse γ = -∇ℓ(v) = clamp(−K⋅v + b, e)
-    - The clamped Hessian G = -∂γ/∂v (diagonal) */
+  /* Computes the cost, gradient, and Hessian contribution for a single gain
+  constraint.
+
+  @param k The index of the gain constraint.
+  @param v The velocity associated with the corresponding clique.
+  @param[out] gamma The computed impulse γ = -∇ℓ(v) on output.
+  @param[out] G The computed (diagonal) Hessian G = -∂γ/∂v on output.
+  @returns The cost ℓ(v) associated with this gain constraint. */
   T Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
           EigenPtr<VectorX<T>> gamma, EigenPtr<VectorX<T>> G) const;
 
   const IcfModel<T>* const model_;  // The parent model.
 
-  // We always add gain constraints per-clique.
-  std::vector<int> clique_;            // Clique the k-th gain belongs to.
-  std::vector<int> constraint_sizes_;  // Clique size for the k-th constraint.
+  // We always add gain constraints per-clique. Each of the following has size
+  // num_constraints().
+  std::vector<int> clique_;           // Clique the k-th gain belongs to.
+  std::vector<int> constraint_size_;  // Clique size for the k-th constraint.
   EigenPool<VectorX<T>> K_;
   EigenPool<VectorX<T>> b_;
   EigenPool<VectorX<T>> le_;  // Lower effort limit.

@@ -7,6 +7,9 @@ namespace icf {
 namespace internal {
 
 template <typename T>
+LimitConstraintsDataPool<T>::~LimitConstraintsDataPool() = default;
+
+template <typename T>
 void LimitConstraintsDataPool<T>::Resize(std::span<const int> constraint_size) {
   const int num_elements = ssize(constraint_size);
   gamma_lower_pool_.Resize(num_elements, constraint_size);
