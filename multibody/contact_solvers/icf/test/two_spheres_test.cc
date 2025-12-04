@@ -296,7 +296,7 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(data.patch_constraints_data().num_constraints(), 1);
 
   // Clear patch constraints and verify resizing data does not allocate.
-  patch_constraints.Clear();
+  patch_constraints.Resize({});
   EXPECT_EQ(model.num_velocities(), nv);
   EXPECT_EQ(model.num_patch_constraints(), 0);
   {

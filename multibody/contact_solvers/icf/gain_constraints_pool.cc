@@ -13,16 +13,6 @@ namespace internal {
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 
 template <typename T>
-void GainConstraintsPool<T>::Clear() {
-  clique_.clear();
-  constraint_sizes_.clear();
-  K_.Clear();
-  b_.Clear();
-  le_.Clear();
-  ue_.Clear();
-}
-
-template <typename T>
 void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());

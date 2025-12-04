@@ -14,18 +14,6 @@ namespace internal {
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 
 template <typename T>
-void LimitConstraintsPool<T>::Clear() {
-  constraint_to_clique_.clear();
-  constraint_sizes_.clear();
-  ql_.Clear();
-  qu_.Clear();
-  q0_.Clear();
-  gl_hat_.Clear();
-  gu_hat_.Clear();
-  R_.Clear();
-}
-
-template <typename T>
 void LimitConstraintsPool<T>::Resize(
     std::span<const int> constrained_clique_sizes,
     std::span<const int> constraint_to_clique) {

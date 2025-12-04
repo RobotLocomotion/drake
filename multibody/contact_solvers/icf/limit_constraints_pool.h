@@ -36,9 +36,6 @@ class LimitConstraintsPool {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Resets, zeroing out the constraints while keeping memory allocated. */
-  void Clear();
-
   /* Re-allocates memory as needed, setting all constraints as infinite by
   default so they are disabled to start with. */
   void Resize(std::span<const int> constrained_clique_sizes,

@@ -204,27 +204,6 @@ PatchConstraintsPool<T>::PatchConstraintsPool(const IcfModel<T>* parent_model)
 }
 
 template <typename T>
-void PatchConstraintsPool<T>::Clear() {
-  // Data per patch.
-  num_pairs_.clear();
-  num_cliques_.clear();
-  bodies_.clear();
-  p_AB_W_.Clear();
-  dissipation_.clear();
-  static_friction_.clear();
-  dynamic_friction_.clear();
-  pair_data_start_.clear();
-
-  // Data per pair.
-  p_BC_W_.Clear();
-  normal_W_.Clear();
-  stiffness_.clear();
-  fn0_.clear();
-  n0_.clear();
-  net_friction_.clear();
-}
-
-template <typename T>
 void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   num_pairs_.assign(num_pairs_per_patch.begin(), num_pairs_per_patch.end());
 

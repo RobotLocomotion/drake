@@ -75,10 +75,6 @@ class PatchConstraintsPool {
     stiction_tolerance_ = stiction_tolerance;
   }
 
-  /* Clears the constraints without freeing memory (capacity remains the same).
-  After this call num_patches() and num_pairs() are zero. */
-  void Clear();
-
   /* Resizes to store the given patches and pairs.
 
   @param num_pairs_per_patch Number of contact pairs for each patch.

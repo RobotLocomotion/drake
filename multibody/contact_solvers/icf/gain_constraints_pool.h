@@ -45,9 +45,6 @@ class GainConstraintsPool {
     DRAKE_ASSERT(parent_model != nullptr);
   }
 
-  /* Resets, zeroing out the constraints while keeping memory allocated. */
-  void Clear();
-
   /* Resizes this pool to store gain constraints of the given sizes.
 
   @warning After resizing, all constraints will hold invalid data until Set() is
