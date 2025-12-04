@@ -977,11 +977,11 @@ bool CheckIntersectionAndPointContainmentConstraints(
 }  // namespace
 
 HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
-    const double min_volume_ratio, const bool do_affine_transformation,
-    const int max_iterations, const Eigen::MatrixXd& points_to_contain,
+    double min_volume_ratio, bool do_affine_transformation, int max_iterations,
+    const Eigen::MatrixXd& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
-    const bool keep_whole_intersection, const double intersection_padding,
-    const int random_seed) const {
+    bool keep_whole_intersection, double intersection_padding,
+    int random_seed) const {
   DRAKE_THROW_UNLESS(min_volume_ratio > 0);
   DRAKE_THROW_UNLESS(max_iterations > 0);
   DRAKE_THROW_UNLESS(intersection_padding >= 0);
@@ -1018,11 +1018,6 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   const double face_scale_ratio =
       1 - std::pow(min_volume_ratio, 1.0 / ambient_dimension());
 
-  // A multiplier for cost in LPs that find how far a face can be moved inward
-  // before losing an intersection.  LP and interpretation of the optimal cost
-  // vary depending on `keep_whole_intersection` parameter value.
-  const int cost_multiplier = keep_whole_intersection ? -1 : 1;
-
   // If scaled circumbody still meets the intersection constraint with a
   // polytope in `intersecting_polytopes`, then we don't need to worry about
   // losing this intersection in the face translation algorithm because the
@@ -1046,12 +1041,6 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
       }
     }
   }
-
-  // Hyperplanes are backed out by an additional small
-  // `kIntersectionFeasibilityPad` distance, relative to their minimum
-  // permissible RHS values, to ensure that the intersection LP continues to be
-  // feasible throughout the iterations.
-  const double kIntersectionFeasibilityPad = 1e-5;
 
   // Initialize inbody as circumbody.
   HPolyhedron inbody = circumbody;
@@ -1129,13 +1118,18 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
           solvers::MathematicalProgramResult result = Solve(prog);
 
+          // A numerical tolerance used to ensure that the intersection LP
+          // continues to be feasible throughout the iterations.
+          const double kIntersectionFeasibilityPad = 1e-5;
           if (result.is_success()) {
+            // A multiplier for cost in LPs that find how far a face can be
+            // moved inward before losing an intersection.  Interpretation of
+            // the optimal cost varies depending on `keep_whole_intersection`
+            // parameter value.
+            const int cost_multiplier = keep_whole_intersection ? -1 : 1;
             if (cost_multiplier * result.get_optimal_cost() +
                     kIntersectionFeasibilityPad >
                 b_i_min_allowed) {
-              // Face is backed out by an additional small
-              // `kIntersectionFeasibilityPad` distance to ensure that the LP
-              // continues to be feasible in future iterations.
               b_i_min_allowed = cost_multiplier * result.get_optimal_cost() +
                                 kIntersectionFeasibilityPad;
             }
