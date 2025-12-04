@@ -27,23 +27,22 @@ struct PowCase {
   PowCase(double base_in, double exp_in) : base(base_in), exp(exp_in) {
     expected_value = std::pow(base, exp);
 
-    // Whether any of {base, exp, result} is a NaN.
-    is_nan = std::isnan(base) || std::isnan(exp) || std::isnan(expected_value);
+    // From the header doc:
+    //
+    // The resulting partial derivative ∂/∂vᵢ is undefined (i.e., NaN) for all
+    // of the following cases:
+    //
+    // - ∂base/∂vᵢ is non-zero and either:
+    //   - base, exp, or pow(base, exp) not finite, or
+    //   - base is 0 and exp < 0
+    const bool non_finite = !std::isfinite(base) || !std::isfinite(exp) ||
+                            !std::isfinite(expected_value);
+    ill_defined_base_grad = non_finite || ((base == 0) && (exp < 0));
 
-    // In some cases, any non-zero element in the grad(base) leads to an
-    // ill-defined (i.e., NaN) corresponding element in the grad(result).
-    ill_defined_base_grad =
-        (base == 0.0) || (!std::isfinite(base)) || (!std::isfinite(exp));
-
-    // In some cases, the grad(base) is unconditionally zeroed out because
-    // the result is a constant, and stays the same constant for infinitesimally
-    // small changes to the base.
-    ignore_base_grad = !ill_defined_base_grad && (exp == 0);
-
-    // In some cases, any non-zero element in the grad(exp) leads to an
-    // ill-defined (i.e., NaN) corresponding element in the grad(result).
-    ill_defined_exp_grad =
-        (base <= 0.0) || (!std::isfinite(base)) || (!std::isfinite(exp));
+    // - ∂exp/∂vᵢ is non-zero and either:
+    //   - base, exp, or pow(base, exp) not finite, or
+    //   - base < 0.
+    ill_defined_exp_grad = non_finite || (base < 0);
   }
 
   double base{};
@@ -51,9 +50,7 @@ struct PowCase {
 
   double expected_value{};
 
-  bool is_nan{};
   bool ill_defined_base_grad{};
-  bool ignore_base_grad{};
   bool ill_defined_exp_grad{};
 };
 
@@ -66,8 +63,8 @@ std::vector<PowCase> SweepAllCases() {
 
   // A representative sampling of both special and non-special values.
   std::initializer_list<double> sweep = {
-      -kInf, -2.5, -2.0, -1.5, -1.0, -0.5, -0.0, +0.0,
-      0.5,   1.0,  1.5,  2.0,  2.5,  kInf, kNaN,
+      -kInf, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, -0.0, +0.0,
+      0.5,   1.0,  1.5,  2.0,  2.5,  3.0,  kInf, kNaN,
   };
 
   // Let's do all-pairs testing!
@@ -109,8 +106,10 @@ std::string CalcTestName(const testing::TestParamInfo<PowCase>& info) {
 // as one-line wrappers the AD,AD function.
 TEST_P(PowSpecial, AdsAds) {
   const PowCase& pow_case = GetParam();
-  const AutoDiffDut base(pow_case.base, 3, 1);
-  const AutoDiffDut exp(pow_case.exp, 3, 2);
+  const double b = pow_case.base;
+  const double x = pow_case.exp;
+  const AutoDiffDut base(b, 3, 1);
+  const AutoDiffDut exp(x, 3, 2);
 
   const AutoDiffDut result = pow(base, exp);
   EXPECT_THAT(result.value(),
@@ -118,26 +117,15 @@ TEST_P(PowSpecial, AdsAds) {
   ASSERT_EQ(result.derivatives().size(), 3);
   const Eigen::Vector3d grad = result.derivatives();
 
-  // If the result was NaN, then the gradient should be NaN.
-  if (pow_case.is_nan) {
-    EXPECT_THAT(grad[0], testing::IsNan());
-    EXPECT_THAT(grad[1], testing::IsNan());
-    EXPECT_THAT(grad[2], testing::IsNan());
-    return;
-  }
-
   // Neither base nor exp has an input gradient in the 0th index.
   // That should remain true for the result as well.
   EXPECT_EQ(grad[0], 0.0);
 
   // The 1st grad index is the partial wrt base.
-  if (pow_case.ignore_base_grad) {
-    EXPECT_EQ(grad[1], 0.0);
-  } else if (pow_case.ill_defined_base_grad) {
+  if (pow_case.ill_defined_base_grad) {
     EXPECT_THAT(grad[1], testing::IsNan());
   } else {
-    const double expected =
-        pow_case.exp * std::pow(pow_case.base, pow_case.exp - 1);
+    const double expected = (x == 0) ? 0.0 : x * std::pow(b, x - 1);
     EXPECT_NEAR(grad[1], expected, kTol);
   }
 
@@ -145,7 +133,10 @@ TEST_P(PowSpecial, AdsAds) {
   if (pow_case.ill_defined_exp_grad) {
     EXPECT_THAT(grad[2], testing::IsNan());
   } else {
-    const double expected = pow_case.expected_value * std::log(pow_case.base);
+    const double expected = (b == 0 && x == 0) ? -kInf
+                            : (b == 0 && x > 0)
+                                ? 0.0
+                                : pow_case.expected_value * std::log(b);
     EXPECT_NEAR(grad[2], expected, kTol);
   }
 }
