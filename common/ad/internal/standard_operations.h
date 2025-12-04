@@ -16,8 +16,8 @@ A few functions for Eigen::numext are also added to argument-dependent lookup.
 Functions that cannot preserve gradients will return a primitive type (`bool`
 or `double`) instead of an AutoDiff.
 
-NOTE: This file should never be included directly, rather only from
-auto_diff.h in a very specific order. */
+NOTE: This file should never be included directly, rather only from auto_diff.h
+in a very specific order. */
 
 namespace drake {
 namespace ad {
