@@ -37,6 +37,7 @@
 // #include "drake/multibody/plant/internal_geometry_names.h"
 // #include "drake/multibody/plant/make_discrete_update_manager.h"
 // #include "drake/multibody/plant/multibody_plant.h"
+// #include "drake/multibody/plant/multibody_plant_cenic_attorney.h"
 // #include "drake/multibody/plant/multibody_plant_config.h"
 // #include "drake/multibody/plant/multibody_plant_config_functions.h"
 // #include "drake/multibody/plant/multibody_plant_discrete_update_manager_attorney.h"

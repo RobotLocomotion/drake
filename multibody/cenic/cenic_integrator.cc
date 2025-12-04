@@ -5,6 +5,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
+#include "drake/multibody/plant/multibody_plant_cenic_attorney.h"
 
 namespace drake {
 namespace multibody {
@@ -13,6 +14,7 @@ using contact_solvers::internal::Bracket;
 using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using internal::MultibodyPlantCenicAttorney;
 using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
@@ -309,8 +311,10 @@ void CenicIntegrator<T>::CalcExternalForces(const Context<T>& context,
                                             VectorX<T>* tau) {
   MultibodyForces<T>& forces = *scratch_.f_ext;
   forces.SetZero();
-  plant().AddAppliedExternalSpatialForces(context, &forces);
-  plant().AddAppliedExternalGeneralizedForces(context, &forces);
+  MultibodyPlantCenicAttorney<T>::AddAppliedExternalSpatialForces(
+      plant(), context, &forces);
+  MultibodyPlantCenicAttorney<T>::AddAppliedExternalGeneralizedForces(
+      plant(), context, &forces);
   plant().CalcGeneralizedForces(context, forces, tau);
 }
 
@@ -318,7 +322,8 @@ template <typename T>
 void CenicIntegrator<T>::CalcActuationForces(const Context<T>& context,
                                              VectorX<T>* tau) {
   tau->setZero();
-  plant().AddJointActuationForces(context, tau);
+  MultibodyPlantCenicAttorney<T>::AddJointActuationForces(plant(), context,
+                                                          tau);
 }
 
 template <typename T>

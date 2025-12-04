@@ -45,11 +45,6 @@
 
 namespace drake {
 namespace multibody {
-
-// Forward declaration for giving the convex integrator private access
-template <typename>
-class CenicIntegrator;
-
 namespace internal {
 
 // Data stored in the cache entry for joint locking.
@@ -121,14 +116,17 @@ class DiscreteUpdateManager;
 template <typename>
 class GeometryContactData;
 // Forward declarations for hydroelastic_contact_forces_continuous_cache_data.h.
-template <typename T>
-struct HydroelasticContactForcesContinuousCacheData;
-// Forward declarations for plant_model_attorney.h.
 template <typename>
-class MultibodyPlantModelAttorney;
+struct HydroelasticContactForcesContinuousCacheData;
+// Forward declarations for multibody_plant_cenic_attorney.h.
+template <typename>
+class MultibodyPlantCenicAttorney;
 // Forward declarations for multibody_plant_discrete_update_manager_attorney.h.
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
+// Forward declarations for multibody_plant_model_attorney.h.
+template <typename>
+class MultibodyPlantModelAttorney;
 
 }  // namespace internal
 
@@ -5815,11 +5813,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   // Friend attorney class to provide private access to those internal::
   // implementations that need it.
-  friend class internal::MultibodyPlantModelAttorney<T>;
+  friend class internal::MultibodyPlantCenicAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
-
-  // Cenic integrator gets private access.
-  friend class CenicIntegrator<T>;
+  friend class internal::MultibodyPlantModelAttorney<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.

@@ -32,7 +32,7 @@ N.B. Although this is an implicit integration scheme, we inherit from
 IntegratorBase rather than ImplicitIntegrator because the way we
 compute the Jacobian (Hessian) is completely different, and
 MultibodyPlant specific.)""";
-        // Symbol: drake::multibody::CenicIntegrator::CenicIntegrator<type-parameter-0-0>
+        // Symbol: drake::multibody::CenicIntegrator::CenicIntegrator<T>
         struct /* ctor */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
