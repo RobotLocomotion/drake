@@ -1004,8 +1004,6 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
   }
   auto cost_binding = prog.AddLinearCost(-polytope.A().row(0), 0, x);
   witness_points.reserve(num_cons);
-  const double kHyperplaneShift = 0.01;
-  const VectorXd hyperplane_shift_vec = VectorXd::Constant(1, kHyperplaneShift);
   for (int i = 0; i < num_cons; ++i) {
     if (inds_to_not_check.contains(i)) {
       // Use zero as a placeholder for witness points that don't need to be
@@ -1015,6 +1013,10 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
       // Instead of removing the constraint like FindRedundant does, shift the
       // hyperplane slightly outward, to ensure that the polytope stays bounded
       // and we get a valid witness point.
+      const double kHyperplaneShift = 0.01;
+      const VectorXd hyperplane_shift_vec =
+          VectorXd::Constant(1, kHyperplaneShift);
+
       bindings_vec[i].evaluator()->UpdateUpperBound(
           bindings_vec[i].evaluator()->upper_bound() + hyperplane_shift_vec);
       cost_binding.evaluator()->UpdateCoefficients(-polytope.A().row(i), 0);
