@@ -1117,16 +1117,15 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           }
 
           solvers::MathematicalProgramResult result = Solve(prog);
-
-          // A numerical tolerance used to ensure that the intersection LP
-          // continues to be feasible throughout the iterations.
-          const double kIntersectionFeasibilityPad = 1e-5;
           if (result.is_success()) {
             // A multiplier for cost in LPs that find how far a face can be
             // moved inward before losing an intersection.  Interpretation of
             // the optimal cost varies depending on `keep_whole_intersection`
             // parameter value.
             const int cost_multiplier = keep_whole_intersection ? -1 : 1;
+            // A numerical tolerance used to ensure that the intersection LP
+            // continues to be feasible throughout the iterations.
+            const double kIntersectionFeasibilityPad = 1e-5;
             if (cost_multiplier * result.get_optimal_cost() +
                     kIntersectionFeasibilityPad >
                 b_i_min_allowed) {
