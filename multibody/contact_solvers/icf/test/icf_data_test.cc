@@ -58,8 +58,8 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
   EXPECT_EQ(data.scratch().U_AbB_W.size(), 4);  // num_patches()
   EXPECT_EQ(data.scratch().v_alpha[0].size(), num_velocities);
-  EXPECT_EQ(data.scratch().Gw_gain.size(), num_velocities);
-  EXPECT_EQ(data.scratch().Gw_limit.size(), num_velocities);
+  EXPECT_EQ(data.scratch().Gw_gain[0].size(), max_clique_size);
+  EXPECT_EQ(data.scratch().Gw_limit[0].size(), max_clique_size);
   EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
             num_couplers);
   EXPECT_EQ(data.scratch().gain_constraints_data.num_constraints(),
@@ -106,9 +106,7 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
   {
     // Restoring the data to the original size and setting velocities should not
     // cause any new allocations.
-    // TODO(vincekurtz): switch data.scratch().Gw_gain and
-    // data.scratch().Gw_limit to EigenPool to avoid their allocations as well.
-    drake::test::LimitMalloc guard({.max_num_allocations = 2});
+    drake::test::LimitMalloc guard;
     data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers,
                 gain_sizes, limit_sizes, patch_sizes);
     data.set_v(v);

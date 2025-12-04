@@ -20,8 +20,8 @@ void IcfData<T>::Scratch::Resize(int num_bodies, int num_velocities,
   U_AbB_W.Resize(ssize(patch_sizes), 6, 1);
   v_alpha.Resize(1, num_velocities, 1);
 
-  Gw_gain.resize(num_velocities);
-  Gw_limit.resize(num_velocities);
+  Gw_gain.Resize(1, max_clique_size, 1);
+  Gw_limit.Resize(1, max_clique_size, 1);
 
   coupler_constraints_data.Resize(num_couplers);
   gain_constraints_data.Resize(gain_sizes);

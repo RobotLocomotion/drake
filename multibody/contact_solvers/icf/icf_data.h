@@ -63,11 +63,12 @@ class IcfData {
     // num_velocities().
     EigenPool<VectorX<T>> v_alpha;
 
-    // Scratch space for constraint projection in CalcCostAlongLine.
-    VectorX<T> Gw_gain;
-    VectorX<T> Gw_limit;
+    // Scratch space for constraint projection in CalcCostAlongLine. Each of
+    // these pools holds at most one vector of size max_clique_size().
+    EigenPool<VectorX<T>> Gw_gain;
+    EigenPool<VectorX<T>> Gw_limit;
 
-    // Scratch data pools for CalcCostAlongLine
+    // Scratch data pools for CalcCostAlongLine.
     CouplerConstraintsDataPool<T> coupler_constraints_data;
     GainConstraintsDataPool<T> gain_constraints_data;
     LimitConstraintsDataPool<T> limit_constraints_data;

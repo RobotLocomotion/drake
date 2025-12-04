@@ -85,22 +85,21 @@ void GainConstraintsPool<T>::AccumulateHessian(
 template <typename T>
 void GainConstraintsPool<T>::CalcCostAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
-    VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
-  const int nv = model().num_velocities();
-  DRAKE_ASSERT(v_sized_scratch != nullptr);
-  DRAKE_ASSERT(v_sized_scratch->size() == nv);
+    EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(Gw_scratch != nullptr);
+  EigenPool<VectorX<T>>& Gw_pool = *Gw_scratch;
 
   *dcost = 0.0;
   *d2cost = 0.0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
     auto w_c = model().clique_segment(c, w);
+    Gw_pool.Resize(1, model().clique_size(c), 1);
+    VectorXView G_times_w = Gw_pool[0];
+
     ConstVectorXView gk = gain_data.gamma(k);
     ConstVectorXView Gk = gain_data.G(k);
-
-    auto G_times_w = model().mutable_clique_segment(c, v_sized_scratch);
-    G_times_w.noalias() = Gk.asDiagonal() * w_c;
-
+    G_times_w = Gk.asDiagonal() * w_c;
     (*dcost) -= w_c.dot(gk);
     (*d2cost) += w_c.dot(G_times_w);
   }

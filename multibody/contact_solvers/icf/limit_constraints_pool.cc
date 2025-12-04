@@ -156,29 +156,29 @@ void LimitConstraintsPool<T>::AccumulateHessian(
 template <typename T>
 void LimitConstraintsPool<T>::CalcCostAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
-    VectorX<T>* v_sized_scratch, T* dcost, T* d2cost) const {
-  const int nv = model().num_velocities();
-  DRAKE_ASSERT(v_sized_scratch != nullptr);
-  DRAKE_ASSERT(v_sized_scratch->size() == nv);
+    EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(Gw_scratch != nullptr);
+  EigenPool<VectorX<T>>& Gw_pool = *Gw_scratch;
 
   *dcost = 0.0;
   *d2cost = 0.0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     auto w_c = model().clique_segment(c, w);
-    auto G_times_w = model().mutable_clique_segment(c, v_sized_scratch);
+    Gw_pool.Resize(1, model().clique_size(c), 1);
+    VectorXView G_times_w = Gw_pool[0];
 
     // Lower limit contribution.
     ConstVectorXView gamma_lower = limit_data.gamma_lower(k);
     ConstVectorXView G_lower = limit_data.G_lower(k);
-    G_times_w.noalias() = G_lower.asDiagonal() * w_c;
+    G_times_w = G_lower.asDiagonal() * w_c;
     (*dcost) -= w_c.dot(gamma_lower);
     (*d2cost) += w_c.dot(G_times_w);
 
     // Upper limit contribution.
     ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
     ConstVectorXView G_upper = limit_data.G_upper(k);
-    G_times_w.noalias() = G_upper.asDiagonal() * w_c;
+    G_times_w = G_upper.asDiagonal() * w_c;
     (*dcost) += w_c.dot(gamma_upper);
     (*d2cost) += w_c.dot(G_times_w);
   }
