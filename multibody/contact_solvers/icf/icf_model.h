@@ -151,16 +151,20 @@ class IcfModel {
     return coupler_constraints_pool_;
   }
 
-  PatchConstraintsPool<T>& patch_constraints_pool() {
-    return patch_constraints_pool_;
-  }
-
+  /* Provides mutable access to the pool of all gain (e.g., actuation)
+  constraints. */
   GainConstraintsPool<T>& gain_constraints_pool() {
     return gain_constraints_pool_;
   }
 
+  /* Provides mutable access to the pool of all joint limit constraints. */
   LimitConstraintsPool<T>& limit_constraints_pool() {
     return limit_constraints_pool_;
+  }
+
+  /* Provides mutable access to the pool of all patch (contact) constraints. */
+  PatchConstraintsPool<T>& patch_constraints_pool() {
+    return patch_constraints_pool_;
   }
 
   int num_patch_constraints() const {

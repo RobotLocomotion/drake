@@ -28,24 +28,29 @@ class GainConstraintsDataPool {
   /* Constructs an empty pool. */
   GainConstraintsDataPool() = default;
 
+  ~GainConstraintsDataPool();
+
   /* Resizes the data pool to hold constraints of the given sizes.
   @param constraint_size The number of velocities for each gain constraint. */
   void Resize(std::span<const int> constraint_size);
 
-  /* Returns the number of gain constraints. */
+  /* Returns the number of gain constraints this data pool is for. */
   int num_constraints() const { return gamma_pool_.size(); }
 
-  /* Returns the Hessian block G = -∂γ/∂v (diagonal). */
-  ConstVectorXView G(int k) const { return G_pool_[k]; }
-  VectorXView G(int k) { return G_pool_[k]; }
-
-  /* Returns the constraint impulse γ = -∇ℓ(v). */
-  ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
-  VectorXView gamma(int k) { return gamma_pool_[k]; }
-
-  /* Returns the constraint cost ℓ_c(v). */
+  /* Returns the total constraint cost ℓ(v) for all gain constraints in the
+  pool. See GainConstraintsPool for details. */
   const T& cost() const { return cost_; }
-  T& cost() { return cost_; }
+  T& mutable_cost() { return cost_; }
+
+  /* Returns the constraint impulse γ = -∇ℓ(v) for the k-th constraint in the
+  pool.*/
+  ConstVectorXView gamma(int k) const { return gamma_pool_[k]; }
+  VectorXView mutable_gamma(int k) { return gamma_pool_[k]; }
+
+  /* Returns the (diagonal) Hessian block G = -∂γ/∂v for the k-th constraint in
+  the pool. */
+  ConstVectorXView G(int k) const { return G_pool_[k]; }
+  VectorXView mutable_G(int k) { return G_pool_[k]; }
 
  private:
   T cost_{0.0};                       // Total cost over all gain constraints.

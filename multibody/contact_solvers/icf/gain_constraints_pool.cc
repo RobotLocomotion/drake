@@ -13,6 +13,15 @@ namespace internal {
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 
 template <typename T>
+GainConstraintsPool<T>::GainConstraintsPool(const IcfModel<T>* parent_model)
+    : model_(parent_model) {
+  DRAKE_ASSERT(parent_model != nullptr);
+}
+
+template <typename T>
+GainConstraintsPool<T>::~GainConstraintsPool() = default;
+
+template <typename T>
 void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
   clique_.resize(sizes.size());
   constraint_sizes_.resize(sizes.size());
@@ -45,13 +54,13 @@ void GainConstraintsPool<T>::CalcData(
     const VectorX<T>& v, GainConstraintsDataPool<T>* gain_data) const {
   DRAKE_ASSERT(gain_data != nullptr);
 
-  T& cost = gain_data->cost();
+  T& cost = gain_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
     auto vk = model().clique_segment(c, v);
-    VectorXView gk = gain_data->gamma(k);
-    VectorXView Gk = gain_data->G(k);
+    VectorXView gk = gain_data->mutable_gamma(k);
+    VectorXView Gk = gain_data->mutable_G(k);
     cost += Clamp(k, vk, &gk, &Gk);
   }
 }

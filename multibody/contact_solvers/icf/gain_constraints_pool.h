@@ -23,14 +23,21 @@ class IcfModel;
 
 /* A pool of gain constraints organized by cliques.
 
-A clique can have a gain constraint that models generalized forces on the
-clique according to:
+A gain constraint models generalized forces acting on a given clique as
 
  τ = clamp(−K⋅v + b, e)
 
-where K is a positive semi-definite diagonal gain matrix, b is a bias term
-and e is an effort limit. Generalized impulses for that clique are thus γ =
-δt⋅τ. */
+where K is a non-negative diagonal gain matrix, b is a bias term, and e is an
+effort limit.
+
+Each gain constraint is associated with a convex cost ℓ(v) that is added to the
+overall ICF cost. The gradient of this cost produces an impulse
+
+  γ = -∇ℓ(v) = -δt⋅τ
+
+that enforces the constraint when the convex ICF problem is solved.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class GainConstraintsPool {
  public:
@@ -40,28 +47,39 @@ class GainConstraintsPool {
   using ConstVectorXView = typename EigenPool<VectorX<T>>::ConstMatrixView;
 
   /* Constructs an empty pool. */
-  explicit GainConstraintsPool(const IcfModel<T>* parent_model)
-      : model_(parent_model) {
-    DRAKE_ASSERT(parent_model != nullptr);
+  explicit GainConstraintsPool(const IcfModel<T>* parent_model);
+
+  ~GainConstraintsPool();
+
+  /* Returns a reference to the parent model. */
+  const IcfModel<T>& model() const { return *model_; }
+
+  /* Returns the total number of gain constraints stored in this pool. */
+  int num_constraints() const { return clique_.size(); }
+
+  /* Returns the number of velocities for each gain constraint. */
+  std::span<const int> constraint_sizes() const {
+    return std::span<const int>(constraint_sizes_);
   }
 
   /* Resizes this pool to store gain constraints of the given sizes.
 
-  @warning After resizing, all constraints will hold invalid data until Set() is
+  @warning After resizing, constraints may hold invalid data until Set() is
   called for each constraint index in [0, num_constraints()). */
   void Resize(std::span<const int> sizes);
 
-  /* Sets the given gain constraint for the given clique.
+  /* Defines the gain constraint τ = clamp(−K⋅v + b, e) for the given clique.
 
   @param index The index of this gain constraint in the pool.
   @param clique The clique to which this gain constraint applies.
   @param K The diagonal entries of gain matrix K. They must be >= 0.
   @param b The bias term.
   @param e The vector of effort limits for each DoF of the clique.
-  @pre K, b, e are of size model().clique_size(clique).
 
   Calling this function several times with the same `index` overwrites the
-  previous constraint for that index. */
+  previous constraint for that index.
+
+  @pre K, b, e are of size model().clique_size(clique). */
   void Set(const int index, int clique, const VectorX<T>& K,
            const VectorX<T>& b, const VectorX<T>& e);
 
@@ -69,11 +87,11 @@ class GainConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
 
-  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the overall
-  gradient. */
+  /* Adds the gradient contribution of this constraint, ∇ℓ = −γ, to the
+  model-wide gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
-  /* Adds the Hessian contribution of this constraint to the overall Hessian. */
+  /* Adds the contribution of this constraint to the model-wide Hessian. */
   void AccumulateHessian(
       const IcfData<T>& data,
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
@@ -91,17 +109,6 @@ class GainConstraintsPool {
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
 
-  /* Returns the total number of gain constraints stored in this pool. */
-  int num_constraints() const { return clique_.size(); }
-
-  /* Returns the number of velocities for each gain constraint. */
-  std::span<const int> constraint_sizes() const {
-    return std::span<const int>(constraint_sizes_);
-  }
-
-  /* Returns a reference to the parent model. */
-  const IcfModel<T>& model() const { return *model_; }
-
  private:
   /* For the k-th gain constraint, compute:
     - The clamped cost ℓ(v)
@@ -110,7 +117,7 @@ class GainConstraintsPool {
   T Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
           EigenPtr<VectorX<T>> gamma, EigenPtr<VectorX<T>> G) const;
 
-  const IcfModel<T>* model_{nullptr};  // The parent model.
+  const IcfModel<T>* const model_;  // The parent model.
 
   // We always add gain constraints per-clique.
   std::vector<int> clique_;            // Clique the k-th gain belongs to.

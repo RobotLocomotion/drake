@@ -7,6 +7,9 @@ namespace icf {
 namespace internal {
 
 template <typename T>
+GainConstraintsDataPool<T>::~GainConstraintsDataPool() = default;
+
+template <typename T>
 void GainConstraintsDataPool<T>::Resize(std::span<const int> constraint_size) {
   const int num_elements = ssize(constraint_size);
   gamma_pool_.Resize(num_elements, constraint_size);
