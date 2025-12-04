@@ -1,5 +1,6 @@
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -12,6 +13,7 @@ load(
     "drake_py_binary",
     "drake_py_unittest",
 )
+load("//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -185,19 +187,49 @@ drake_cc_library(
     hdrs = ["double_overloads.h"],
 )
 
+config_setting(
+    name = "flag_use_eigen_legacy_autodiff_true",
+    flag_values = {
+        "//tools/flags:use_eigen_legacy_autodiff": "True",
+    },
+)
+
+generate_file(
+    name = "autodiff_config.h",
+    content = select({
+        ":flag_use_eigen_legacy_autodiff_true": (
+            "#define DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF 1\n"
+        ),
+        "//conditions:default": (
+            "#define DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF 0\n"
+        ),
+    }),
+)
+
 drake_cc_library(
     name = "autodiff",
     hdrs = [
         "autodiff.h",
-        "autodiff_overloads.h",
-        "autodiffxd.h",
-        "eigen_autodiff_types.h",
-    ],
+        ":autodiff_config.h",
+    ] + select({
+        ":flag_use_eigen_legacy_autodiff_true": [
+            "autodiff_overloads.h",
+            "autodiffxd.h",
+            "eigen_autodiff_types.h",
+        ],
+        "//conditions:default": [
+        ],
+    }),
     deps = [
         ":cond",
         ":dummy_value",
         ":essential",
-    ],
+    ] + select({
+        ":flag_use_eigen_legacy_autodiff_true": [],
+        "//conditions:default": [
+            "//common/ad",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -677,6 +709,21 @@ install(
 
 # === test/ ===
 
+# TODO(jwnimmer-tri) Remove this rule when we drop support for autodiffxd.h.
+generate_file(
+    name = "test/drake/common/autodiff_config.h",
+    content = "#define DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF 1\n",
+)
+
+cc_library(
+    name = "autodiff_config_legacy",
+    testonly = True,
+    hdrs = [":test/drake/common/autodiff_config.h"],
+    strip_include_prefix = "test",
+    visibility = ["//visibility:private"],
+)
+
+# TODO(jwnimmer-tri) Remove this test when we drop support for autodiffxd.h.
 drake_cc_googletest(
     name = "autodiffxd_test",
     # The following `autodiffxd_*_test.cc` files were in a single
@@ -684,6 +731,10 @@ drake_cc_googletest(
     # this test. So we split it into multiple .cc files. We observed about
     # 8x speed-up.
     srcs = [
+        "autodiff.h",
+        "autodiff_overloads.h",
+        "autodiffxd.h",
+        "eigen_autodiff_types.h",
         "test/autodiffxd_abs2_test.cc",
         "test/autodiffxd_abs_test.cc",
         "test/autodiffxd_acos_test.cc",
@@ -714,7 +765,13 @@ drake_cc_googletest(
         "-DStandardOperationsTest=AutoDiffXdTest",
     ],
     deps = [
-        ":autodiff",
+        # We must not use ":autodiff" but instead use ":autodiff_config_legacy"
+        # and put all of the autodiff headers in `srcs` because this test should
+        # always check the legacy AutoDiffXd, even if the build has enabled the
+        # new AutoDiffXd.
+        ":autodiff_config_legacy",
+        ":cond",
+        ":dummy_value",
         "//common/ad:standard_operations_test_h",
         "//common/test_utilities:eigen_matrix_compare",
     ],

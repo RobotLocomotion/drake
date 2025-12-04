@@ -13,6 +13,7 @@
 #endif
 
 // #include "drake/common/autodiff.h"
+// #include "drake/common/autodiff_config.h"
 // #include "drake/common/autodiff_overloads.h"
 // #include "drake/common/autodiffxd.h"
 // #include "drake/common/bit_cast.h"
