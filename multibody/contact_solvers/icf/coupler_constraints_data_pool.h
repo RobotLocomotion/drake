@@ -13,7 +13,9 @@ namespace internal {
 
 /* Stores data for coupler constraints. This data is updated at each solver
 iteration, as opposed to the CouplerConstraintsPool, which helps define the
-optimization problem. */
+optimization problem.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class CouplerConstraintsDataPool {
  public:
@@ -41,7 +43,7 @@ class CouplerConstraintsDataPool {
   T& mutable_cost() { return cost_; }
 
  private:
-  T cost_{0.0};                // Total cost over all coupler constraints.
+  T cost_{NAN};                // Total cost over all coupler constraints.
   std::vector<T> gamma_pool_;  // Constraint impulses
 };
 
