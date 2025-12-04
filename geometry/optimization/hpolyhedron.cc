@@ -944,9 +944,8 @@ bool CheckIntersectionAndPointContainmentConstraints(
     const HPolyhedron& inbody, const HPolyhedron& circumbody,
     const Eigen::MatrixXd& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
-    const bool keep_whole_intersection, const double intersection_padding) {
+    bool keep_whole_intersection, double intersection_padding) {
   const double kConstraintTol = 1e-6;
-
   // Check that all given points are inside this HPolyhedron (the "inbody").
   for (int i_point = 0; i_point < points_to_contain.cols(); ++i_point) {
     if (!inbody.PointInSet(points_to_contain.col(i_point), kConstraintTol)) {
@@ -955,29 +954,28 @@ bool CheckIntersectionAndPointContainmentConstraints(
   }
 
   // Check intersection with each intersecting polytope
-  for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
-    if (keep_whole_intersection) {
+  if (keep_whole_intersection) {
+    for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
       const HPolyhedron intersection =
           circumbody.Intersection(intersecting_polytopes[i]);
       if (!intersection.ContainedIn(inbody, kConstraintTol)) {
         return false;
       }
-    } else {
-      MathematicalProgram prog;
+    }
+  } else {
+    MathematicalProgram prog;
+    for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
       solvers::VectorXDecisionVariable x =
           prog.NewContinuousVariables(inbody.ambient_dimension(), "x");
       intersecting_polytopes[i].AddPointInSetConstraints(&prog, x);
       prog.AddLinearConstraint(
           inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf),
-          inbody.b() -
-              VectorXd::Constant(inbody.b().rows(),
-                                 intersection_padding - kConstraintTol),
+          inbody.b() - (intersection_padding + kConstraintTol) *
+                           inbody.A().rowwise().norm(),
           x);
-      solvers::MathematicalProgramResult result = Solve(prog);
-      if (!result.is_success()) {
-        return false;
-      }
     }
+    solvers::MathematicalProgramResult result = Solve(prog);
+    return result.is_success();
   }
   return true;
 }
@@ -988,7 +986,9 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
   // `SimplifyByIncrementalFaceTranslation`, to optionally take
   // `inds_to_not_check`, which dictates certain faces to skip.  This method is
   // also adapted to to return `witness_points`, which contains a point that
-  // certifies that each non-redundant face is non-redundant (the witess point is on the "wrong" side of the face it certifies, but the "right" side of all other faces).
+  // certifies that each non-redundant face is non-redundant (the witess point
+  // is on the "wrong" side of the face it certifies, but the "right" side of
+  // all other faces).
   std::set<int> redundant_indices;
   std::vector<VectorXd> witness_points;
 
@@ -1022,7 +1022,8 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
       if ((result.is_success() &&
            -result.get_optimal_cost() > polytope.b()[i]) ||
           !result.is_success()) {
-        // Bring back the constraint, it is not redundant (or if the program fails for some reason, it is safer to treat it as non-redundant).
+        // Bring back the constraint, it is not redundant (or if the program
+        // fails for some reason, it is safer to treat it as non-redundant).
         bindings_vec[i].evaluator()->UpdateUpperBound(
             bindings_vec[i].evaluator()->upper_bound() - hyperplane_shift_vec);
         if (result.is_success()) {
@@ -1048,11 +1049,11 @@ std::pair<std::set<int>, std::vector<VectorXd>> FindRedundantWithWitnessPoints(
 }  // namespace
 
 HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
-    const double min_volume_ratio, const bool do_affine_transformation,
-    const int max_iterations, const Eigen::MatrixXd& points_to_contain,
+    double min_volume_ratio, bool do_affine_transformation, int max_iterations,
+    const Eigen::MatrixXd& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
-    const bool keep_whole_intersection, const double intersection_padding,
-    const int random_seed) const {
+    bool keep_whole_intersection, double intersection_padding,
+    int random_seed) const {
   DRAKE_THROW_UNLESS(min_volume_ratio > 0);
   DRAKE_THROW_UNLESS(max_iterations > 0);
   DRAKE_THROW_UNLESS(intersection_padding >= 0);
@@ -1060,19 +1061,20 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   DRAKE_THROW_UNLESS(!IsEmpty());
   DRAKE_THROW_UNLESS(IsBounded());
 
-  for (int i = 0; i < points_to_contain.cols(); ++i) {
-    DRAKE_DEMAND(PointInSet(points_to_contain.col(i)));
-  }
+  // Check that circumbody satisfies point containment and intersection
+  // constraints.
+  DRAKE_THROW_UNLESS(CheckIntersectionAndPointContainmentConstraints(
+      *this, *this, points_to_contain, intersecting_polytopes,
+      keep_whole_intersection, intersection_padding));
 
   if (A_.cols() == 0) {
     // All inequalities are redundant in a 0-dimensional space.
     return HPolyhedron(Eigen::MatrixXd(1, 0), Eigen::VectorXd::Constant(1, 1));
   }
 
+  // Ensure rows are normalized.
   MatrixXd A_initial = A_;
   VectorXd b_initial = b_;
-
-  // Ensure rows are normalized.
   for (int i = 0; i < A_initial.rows(); ++i) {
     const double initial_row_norm = A_initial.row(i).norm();
     A_initial.row(i) /= initial_row_norm;
@@ -1090,7 +1092,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   std::set<int> i_redundant_initial = redundancy_info.first;
   std::vector<VectorXd> witness_points_before_reducing = redundancy_info.second;
 
-  // Remove redundant hyperplanes and their corresponding witness points, and define the circumbody.
+  // Remove redundant hyperplanes and their corresponding witness points, and
+  // define the circumbody.
   std::vector<VectorXd> witness_points;
   MatrixXd circumbody_A(b_.rows() - i_redundant_initial.size(),
                         ambient_dimension());
@@ -1121,11 +1124,6 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   const double face_scale_ratio =
       1 - std::pow(min_volume_ratio, 1.0 / ambient_dimension());
 
-  // A multiplier for cost in LPs that find how far a face can be moved inward
-  // before losing an intersection.  LP and interpretation of the optimal cost
-  // vary depending on `keep_whole_intersection` parameter value.
-  const int cost_multiplier = keep_whole_intersection ? -1 : 1;
-
   // If scaled circumbody still meets the intersection constraint with a
   // polytope in `intersecting_polytopes`, then we don't need to worry about
   // losing this intersection in the face translation algorithm because the
@@ -1135,23 +1133,20 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   std::vector<drake::geometry::optimization::HPolyhedron>
       reduced_intersecting_polytopes;
   reduced_intersecting_polytopes.reserve(intersecting_polytopes.size());
-  for (size_t i = 0; i < intersecting_polytopes.size(); ++i) {
-    DRAKE_DEMAND(circumbody.IntersectsWith(intersecting_polytopes[i]));
+  for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
     if (keep_whole_intersection) {
       reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
     } else {
-      bool trivially_satisfied =
+      const bool trivially_satisfied =
           CheckIntersectionAndPointContainmentConstraints(
               scaled_circumbody, circumbody, Eigen::MatrixXd(0, 0),
               std::vector<HPolyhedron>{intersecting_polytopes[i]},
               keep_whole_intersection, intersection_padding);
-      if (trivially_satisfied) {
+      if (!trivially_satisfied) {
         reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
       }
     }
   }
-
-  const double kIntersectionFeasibilityPad = 1e-5;
 
   // Initialize inbody as circumbody.
   HPolyhedron inbody = circumbody;
@@ -1232,8 +1227,15 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
           }
 
           solvers::MathematicalProgramResult result = Solve(prog);
-
           if (result.is_success()) {
+            // A multiplier for cost in LPs that find how far a face can be
+            // moved inward before losing an intersection.  Interpretation of
+            // the optimal cost varies depending on `keep_whole_intersection`
+            // parameter value.
+            const int cost_multiplier = keep_whole_intersection ? -1 : 1;
+            // A numerical tolerance used to ensure that the intersection LP
+            // continues to be feasible throughout the iterations.
+            const double kIntersectionFeasibilityPad = 1e-5;
             if (cost_multiplier * result.get_optimal_cost() +
                     kIntersectionFeasibilityPad >
                 b_i_min_allowed) {
@@ -1256,7 +1258,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         }
 
         // Ensure `b_min_allowed` does not exceed `b(i)` (hyperplane does not
-        // move outward).  Can occur if `intersection_padding > 0.
+        // move outward due to adding kIntersectionFeasibilityPad).
         b_i_min_allowed = std::min(b_i_min_allowed, inbody.b()(i));
 
         // Find which hyperplanes become redundant if we move the hyperplane
