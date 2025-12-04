@@ -78,7 +78,7 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   }
   params->body_mass = {1.0e20, 0.3, 2.3, 1.5};  // First body is the world.
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
-  const Matrix6<T> J_WB1 = 1.5 * J_WB0 + 0.1 * Matrix6<T>::Identity();
+  const Matrix6<T> J_WB1 = Matrix6<T>::Identity();
   const Matrix6<T> J_WB2 = J_WB0.transpose();
 
   if (single_clique) {
@@ -114,9 +114,148 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   model->ResetParameters(std::move(params));
 }
 
+/* Adds a coupler constraint to the given model. */
+template <typename T>
+void AddCouplerConstraint(IcfModel<T>* model) {
+  const bool single_clique = model->num_cliques() == 1;
+
+  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
+  couplers.Resize(1 /* one constraint */);
+
+  const int nv = model->num_velocities();
+  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  if (!single_clique) {
+    // This is a multi-clique model, so we'll put a coupler on clique 1.
+    const VectorX<T>& q0_clique = model->clique_segment(1, q0);
+    const double rho = 2.5;
+    const double offset = 0.1;
+    couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+                 q0_clique(1), q0_clique(3), rho, offset);
+  } else {
+    // This is a single-clique model, so we'll put a coupler on clique 0.
+    // However, we'll choose indices that would have belonged to clique 1 in the
+    // multi-clique version.
+    const VectorX<T>& q0_clique = model->clique_segment(0, q0);
+    const double rho = 2.5;
+    const double offset = 0.1;
+    couplers.Set(0 /* constraint index */, 0 /* clique */, 7 /* i */, 9 /* j */,
+                 q0_clique(7), q0_clique(9), rho, offset);
+  }
+}
+
+/* Adds some dummy gain constraints to the model.
+
+@returns The (K, u, e) vectors used to set the gain constraints on two cliques.
+*/
+template <typename T>
+std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
+  const bool single_clique = model->num_cliques() == 1;
+  GainConstraintsPool<T>& gain_constraints = model->gain_constraints_pool();
+
+  // Define the constraint coefficients for two gain constraints.
+  VectorX<T> K0 = 1.1 * VectorX<T>::Ones(6);
+  VectorX<T> u0 = -6.0 * VectorX<T>::Ones(6);
+  VectorX<T> e0 = 0.9 * VectorX<T>::Ones(6);
+
+  VectorX<T> K1 = 2.3 * VectorX<T>::Ones(6);
+  VectorX<T> u1 = -0.5 * VectorX<T>::Ones(6);
+  VectorX<T> e1 = 11.1 * VectorX<T>::Ones(6);
+
+  // Test cases with zero gain.
+  K1(1) = K1(2) = K1(4) = 0.0;
+  u1(1) = -13.5;  // bias below limit.
+  u1(2) = -5.5;   // bias within limits.
+  u1(4) = 15.2;   // bias above limits.
+
+  if (!single_clique) {
+    // We'll put the constraints on cliques 0 and 2.
+    DRAKE_DEMAND(model->clique_size(0) == 6);
+    DRAKE_DEMAND(model->clique_size(2) == 6);
+    const std::vector<int> actuated_clique_sizes = {6, 6};
+
+    gain_constraints.Resize(actuated_clique_sizes);
+    gain_constraints.Set(0, 0, K0, u0, e0);
+    gain_constraints.Set(1, 2, K1, u1, e1);
+
+  } else {
+    // We'll put the constraints on clique 0 only, since there is only one
+    // clique. However, we'll define them such that the constraints are the same
+    // as in the multi-clique version.
+    DRAKE_DEMAND(model->clique_size(0) == 18);
+    const std::vector<int> actuated_clique_sizes = {18};
+
+    VectorX<T> K = VectorX<T>::Zero(18);
+    VectorX<T> u = VectorX<T>::Zero(18);
+    VectorX<T> e = VectorX<T>::Zero(18);
+    K.template segment<6>(0) = K0;
+    K.template segment<6>(12) = K1;
+    u.template segment<6>(0) = u0;
+    u.template segment<6>(12) = u1;
+    e.template segment<6>(0) = e0;
+    e.template segment<6>(12) = e1;
+
+    gain_constraints.Resize(actuated_clique_sizes);
+    gain_constraints.Set(0, 0, K, u, e);
+  }
+
+  return {K0, u0, e0, K1, u1, e1};
+}
+
+/* Adds limit constraints on cliques 0 and 2 to the given model. */
+template <typename T>
+void AddLimitConstraints(IcfModel<T>* model) {
+  const bool single_clique = model->num_cliques() == 1;
+  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
+
+  const int nv = model->num_velocities();
+  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+
+  if (!single_clique) {
+    DRAKE_DEMAND(model->clique_size(0) == 6);
+    DRAKE_DEMAND(model->clique_size(2) == 6);
+    // Cliques 0 and 2 will have limits. We'll resize the constraint pool
+    // accordingly before adding the limit constraints.
+    std::vector<int> limited_clique_sizes = {model->clique_size(0),
+                                             model->clique_size(2)};
+    std::vector<int> constraint_to_clique = {0, 2};
+    limits.Resize(limited_clique_sizes, constraint_to_clique);
+
+    // Limits on clique 0.
+    limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
+               -1.0);  // Above.
+    limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
+               1.0);  // Within.
+
+    // Limits on clique 2.
+    limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
+               1.5);  // Below.
+    limits.Set(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
+               0.5);  // Above.
+    limits.Set(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
+               1.5);  // Within.
+  } else {
+    DRAKE_DEMAND(model->clique_size(0) == 18);
+    // All limits will be on clique 0, but the same as in the multi-clique case.
+    std::vector<int> limited_clique_sizes = {model->clique_size(0)};
+    std::vector<int> constraint_to_clique = {0};
+    limits.Resize(limited_clique_sizes, constraint_to_clique);
+    limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
+               -1.0);  // Above.
+    limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
+               1.0);  // Within.
+    limits.Set(0 /* constraint */, 0 /* clique */, 12 /* dof */, q0(12), 0.5,
+               1.5);  // Below.
+    limits.Set(0 /* constraint */, 0 /* clique */, 14 /* dof */, q0(14), -1.0,
+               0.5);  // Above.
+    limits.Set(0 /* constraint */, 0 /* clique */, 17 /* dof */, q0(17), 0.5,
+               1.5);  // Within.
+  }
+}
+
 /* Adds some dummy contact constraints to the model. */
 template <typename T>
-void AddContactConstraints(IcfModel<T>* model) {
+void AddPatchConstraints(IcfModel<T>* model) {
   // Add contact patches.
   const T dissipation = 50.0;
   const T stiffness = 1.0e6;
@@ -165,106 +304,6 @@ void AddContactConstraints(IcfModel<T>* model) {
     const T fn0 = 1.5;
     patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
-  }
-}
-
-/* Adds some dummy gain constraints to the model.
-
-@returns The (K, u, e) vectors used to set the gain constraints on each clique.
-*/
-template <typename T>
-std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
-  EXPECT_EQ(model->num_cliques(), 3);
-
-  GainConstraintsPool<T>& gain_constraints = model->gain_constraints_pool();
-
-  // Allocate space for two gain constraints (on cliques 0 and 2).
-  const std::vector<int> actuated_clique_sizes = {model->clique_size(0),
-                                                  model->clique_size(2)};
-  gain_constraints.Resize(actuated_clique_sizes);
-
-  // On clique 0:
-  const int nv0 = model->clique_size(0);
-  VectorX<T> K0 = 1.1 * VectorX<T>::Ones(nv0);
-  VectorX<T> u0 = -6.0 * VectorX<T>::Ones(nv0);
-  VectorX<T> e0 = 0.9 * VectorX<T>::Ones(nv0);
-  gain_constraints.Set(0, 0, K0, u0, e0);
-
-  // On clique 2:
-  const int nv2 = model->clique_size(2);
-  VectorX<T> K2 = 2.3 * VectorX<T>::Ones(nv2);
-  VectorX<T> u2 = -0.5 * VectorX<T>::Ones(nv2);
-  VectorX<T> e2 = 11.1 * VectorX<T>::Ones(nv2);
-
-  // Test cases with zero gain.
-  K2(1) = K2(2) = K2(4) = 0.0;
-  u2(1) = -13.5;  // bias below limit.
-  u2(2) = -5.5;   // bias within limits.
-  u2(4) = 15.2;   // bias above limits.
-  gain_constraints.Set(1, 2, K2, u2, e2);
-
-  return {K0, u0, e0, K2, u2, e2};
-}
-
-/* Adds limit constraints on cliques 0 and 2 to the given model. */
-template <typename T>
-void AddLimitConstraints(IcfModel<T>* model) {
-  EXPECT_EQ(model->num_cliques(), 3);
-
-  LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
-
-  // Cliques 0 and 2 will have limits. We'll resize the constraint pool
-  // accordingly before adding the limit constraints.
-  std::vector<int> limited_clique_sizes = {model->clique_size(0),
-                                           model->clique_size(2)};
-  std::vector<int> constraint_to_clique = {0, 2};
-  limits.Resize(limited_clique_sizes, constraint_to_clique);
-
-  const int nv = model->num_velocities();
-  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
-
-  // Limits on clique 0.
-  limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
-             -1.0);  // Above.
-  limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
-             1.0);  // Within.
-
-  // Limits on clique 2.
-  limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
-             1.5);  // Below.
-  limits.Set(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
-             0.5);  // Above.
-  limits.Set(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
-             1.5);  // Within.
-}
-
-/* Adds a coupler constraint to the given model. */
-template <typename T>
-void AddCouplerConstraint(IcfModel<T>* model) {
-  const bool single_clique = model->num_cliques() == 1;
-
-  CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
-  couplers.Resize(1 /* one constraint */);
-
-  const int nv = model->num_velocities();
-  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
-
-  if (!single_clique) {
-    // This is a multi-clique model, so we'll put a coupler on clique 1.
-    const VectorX<T>& q0_clique = model->clique_segment(1, q0);
-    const double rho = 2.5;
-    const double offset = 0.1;
-    couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
-                 q0_clique(1), q0_clique(3), rho, offset);
-  } else {
-    // This is a single-clique model, so we'll put a coupler on clique 0.
-    // However, we'll choose indices that would have belonged to clique 1 in the
-    // multi-clique version.
-    const VectorX<T>& q0_clique = model->clique_segment(0, q0);
-    const double rho = 2.5;
-    const double offset = 0.1;
-    couplers.Set(0 /* constraint index */, 0 /* clique */, 7 /* i */, 9 /* j */,
-                 q0_clique(7), q0_clique(9), rho, offset);
   }
 }
 
@@ -406,10 +445,10 @@ constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
-  AddContactConstraints(&model);
+  AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
-  AddCouplerConstraint(&model);
+  AddPatchConstraints(&model);
   model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
@@ -435,8 +474,10 @@ GTEST_TEST(IcfModel, CalcGradients) {
 GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model, true /* single cliques */);
-  AddContactConstraints(&model);
   AddCouplerConstraint(&model);
+  AddGainConstraints(&model);
+  AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -478,6 +519,9 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_single;
   MakeUnconstrainedModel(&model_single, true);
   AddCouplerConstraint(&model_single);
+  AddGainConstraints(&model_single);
+  AddLimitConstraints(&model_single);
+  AddPatchConstraints(&model_single);
   model_single.SetSparsityPattern();
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
@@ -485,6 +529,9 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_multiple;
   MakeUnconstrainedModel(&model_multiple, false);
   AddCouplerConstraint(&model_multiple);
+  AddGainConstraints(&model_multiple);
+  AddLimitConstraints(&model_multiple);
+  AddPatchConstraints(&model_multiple);
   model_multiple.SetSparsityPattern();
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
@@ -530,10 +577,10 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
 GTEST_TEST(IcfModel, CalcCostAlongLine) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
-  AddContactConstraints(&model);
+  AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
-  AddCouplerConstraint(&model);
+  AddPatchConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -593,10 +640,10 @@ model from scratch. */
 GTEST_TEST(IcfModel, UpdateTimeStep) {
   IcfModel<double> model_original;
   MakeUnconstrainedModel(&model_original, false, 0.02);
-  AddContactConstraints(&model_original);
+  AddCouplerConstraint(&model_original);
   AddGainConstraints(&model_original);
   AddLimitConstraints(&model_original);
-  AddCouplerConstraint(&model_original);
+  AddPatchConstraints(&model_original);
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
@@ -608,10 +655,10 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   // Create a second model from scratch with the new time step.
   IcfModel<double> model_new;
   MakeUnconstrainedModel(&model_new, false, new_time_step);
-  AddContactConstraints(&model_new);
+  AddCouplerConstraint(&model_new);
   AddGainConstraints(&model_new);
   AddLimitConstraints(&model_new);
-  AddCouplerConstraint(&model_new);
+  AddPatchConstraints(&model_new);
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
@@ -658,6 +705,107 @@ GTEST_TEST(IcfModel, ParamsAccessors) {
   EXPECT_EQ(params1, params2.get());
 }
 
+/* Verifies that the coupler constraint produces correct data. */
+GTEST_TEST(IcfModel, CouplerConstraint) {
+  IcfModel<AutoDiffXd> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 0);
+
+  IcfData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+
+  // At this point there should be no coupler constraints.
+  EXPECT_EQ(model.num_coupler_constraints(), 0);
+
+  // Add coupler constraints.
+  AddCouplerConstraint(&model);
+  EXPECT_EQ(model.num_coupler_constraints(), 1);
+  EXPECT_EQ(model.num_constraints(), 1);
+
+  // Resize data to include coupler constraints.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
+
+  const int nv = model.num_velocities();
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const double dt = model.time_step().value();
+  const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  const double rho = 2.5;
+  const double offset = 0.1;
+  VectorX<AutoDiffXd> q = q0 + dt * v;
+  const auto q_clique = model.clique_segment(1, q);
+  const auto v_clique = model.clique_segment(1, v);
+
+  // Compute regularization manually.
+  const double beta =
+      0.1;  // Keep in sync with hard-coded value in the implementation.
+  const double m = 2.3;                           // "mass" for clique 1.
+  const double w_delassus = (1 + rho * rho) / m;  // Delassus for clique 1.
+  const double m_effective = 1.0 / w_delassus;    // Effective mass.
+  const double omega_near_rigid =
+      2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
+  const double k = m_effective * omega_near_rigid * omega_near_rigid;
+  const double tau = beta / M_PI * dt;
+
+  const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
+      data.coupler_constraints_data();
+  EXPECT_EQ(couplers_data.num_constraints(), 1);
+
+  const VectorXd cost_gradient = couplers_data.cost().derivatives();
+
+  // Expected impulse.
+  const AutoDiffXd g0 = q_clique(1) - rho * q_clique(3) - offset;
+  const AutoDiffXd gdot0 = v_clique(1) - rho * v_clique(3);
+  const AutoDiffXd gamma0 = -dt * k * (g0 + tau * gdot0);
+  VectorXd tau_expected = VectorXd::Zero(nv);
+  tau_expected(6 + 1) = gamma0.value();
+  tau_expected(6 + 3) = -rho * gamma0.value();
+  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, 10 * kEpsilon,
+                              MatrixCompareType::relative));
+
+  const double gamma = couplers_data.gamma(0).value();
+  EXPECT_NEAR(gamma, gamma0.value(), std::abs(gamma) * kEpsilon);
+
+  // Verify contributions to Hessian.
+  auto hessian = model.MakeHessian(data);
+  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
+  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
+  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
+                              10 * kEpsilon, MatrixCompareType::relative));
+
+  // Check that CalcCostAlongLine works for coupler constraints.
+  // Allocate search direction.
+  const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
+      nv, 0.1, -0.2);  // Arbitrary search direction.
+  IcfSearchDirectionData<AutoDiffXd> search_data;
+
+  // Set data with constant value of v.
+  VectorX<AutoDiffXd> v_constant =
+      VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v_constant, &data);
+  model.CalcSearchDirectionData(data, w, &search_data);
+
+  const AutoDiffXd alpha = {
+      0.35 /* arbitrary value */,
+      VectorXd::Ones(1) /* This is the independent variable */};
+  AutoDiffXd dcost, d2cost;
+  const AutoDiffXd cost =
+      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+
+  const double scale = std::abs(dcost.value());
+  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
+}
+
+/* Verifies that gain constraints produce correct data. */
 GTEST_TEST(IcfModel, GainConstraint) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
@@ -764,6 +912,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
                               10 * kEpsilon, MatrixCompareType::relative));
 }
 
+/* Verifies that limit constraints produce correct data. */
 GTEST_TEST(IcfModel, LimitConstraint) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
@@ -832,106 +981,6 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
-}
-
-/* Verifies that the coupler constraint produces correct data. */
-GTEST_TEST(IcfModel, CouplerConstraint) {
-  IcfModel<AutoDiffXd> model;
-  MakeUnconstrainedModel(&model);
-  model.SetSparsityPattern();
-  EXPECT_EQ(model.num_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 0);
-
-  IcfData<AutoDiffXd> data;
-  model.ResizeData(&data);
-  EXPECT_EQ(data.num_velocities(), model.num_velocities());
-
-  // At this point there should be no coupler constraints.
-  EXPECT_EQ(model.num_coupler_constraints(), 0);
-
-  // Add coupler constraints.
-  AddCouplerConstraint(&model);
-  EXPECT_EQ(model.num_coupler_constraints(), 1);
-  EXPECT_EQ(model.num_constraints(), 1);
-
-  // Resize data to include coupler constraints.
-  model.ResizeData(&data);
-  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
-
-  const int nv = model.num_velocities();
-  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
-  VectorX<AutoDiffXd> v(nv);
-  math::InitializeAutoDiff(v_value, &v);
-  model.CalcData(v, &data);
-
-  const double dt = model.time_step().value();
-  const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
-  const double rho = 2.5;
-  const double offset = 0.1;
-  VectorX<AutoDiffXd> q = q0 + dt * v;
-  const auto q_clique = model.clique_segment(1, q);
-  const auto v_clique = model.clique_segment(1, v);
-
-  // Compute regularization manually.
-  const double beta =
-      0.1;  // Keep in sync with hard-coded value in the implementation.
-  const double m = 2.3;                           // "mass" for clique 1.
-  const double w_delassus = (1 + rho * rho) / m;  // Delassus for clique 1.
-  const double m_effective = 1.0 / w_delassus;    // Effective mass.
-  const double omega_near_rigid =
-      2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
-  const double k = m_effective * omega_near_rigid * omega_near_rigid;
-  const double tau = beta / M_PI * dt;
-
-  const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
-      data.coupler_constraints_data();
-  EXPECT_EQ(couplers_data.num_constraints(), 1);
-
-  const VectorXd cost_gradient = couplers_data.cost().derivatives();
-
-  // Expected impulse.
-  const AutoDiffXd g0 = q_clique(1) - rho * q_clique(3) - offset;
-  const AutoDiffXd gdot0 = v_clique(1) - rho * v_clique(3);
-  const AutoDiffXd gamma0 = -dt * k * (g0 + tau * gdot0);
-  VectorXd tau_expected = VectorXd::Zero(nv);
-  tau_expected(6 + 1) = gamma0.value();
-  tau_expected(6 + 3) = -rho * gamma0.value();
-  EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, 10 * kEpsilon,
-                              MatrixCompareType::relative));
-
-  const double gamma = couplers_data.gamma(0).value();
-  EXPECT_NEAR(gamma, gamma0.value(), std::abs(gamma) * kEpsilon);
-
-  // Verify contributions to Hessian.
-  auto hessian = model.MakeHessian(data);
-  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
-  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
-                              10 * kEpsilon, MatrixCompareType::relative));
-
-  // Check that CalcCostAlongLine works for coupler constraints.
-  // Allocate search direction.
-  const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
-      nv, 0.1, -0.2);  // Arbitrary search direction.
-  IcfSearchDirectionData<AutoDiffXd> search_data;
-
-  // Set data with constant value of v.
-  VectorX<AutoDiffXd> v_constant =
-      VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
-  model.CalcData(v_constant, &data);
-  model.CalcSearchDirectionData(data, w, &search_data);
-
-  const AutoDiffXd alpha = {
-      0.35 /* arbitrary value */,
-      VectorXd::Ones(1) /* This is the independent variable */};
-  AutoDiffXd dcost, d2cost;
-  const AutoDiffXd cost =
-      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
-
-  const double scale = std::abs(dcost.value());
-  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
-  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
 }
 
 }  // namespace
