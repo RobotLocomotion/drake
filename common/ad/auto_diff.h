@@ -105,6 +105,7 @@ class AutoDiff {
 // clang-format off
 #include "drake/common/ad/internal/standard_operations.h"
 #include "drake/common/ad/internal/eigen_specializations.h"
+#include "drake/common/ad/internal/drake_operations.h"
 // clang-format on
 
 /* Formats the `value()` part of x to the stream.
