@@ -37,13 +37,14 @@ class IcfData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfData);
 
-  /* Struct to store pre-allocated scratch space. Unlike the cache, this scratch
-  space is for intermediate computations, and is often cleared or overwritten as
-  needed. */
-  struct Scratch {
-    /* Clears all data without changing capacity. */
-    void Clear();
+  /* Struct to store pre-allocated scratch space. This scratch space is for
+  intermediate computations, and is often cleared or overwritten as needed. To
+  avoid nested function calls that accidentally overwrite the scratch space of
+  previous calls in the stack, we name these variables for their specific uses.
 
+  @warning Accidentally overwriting values in the scratch is not prevented by
+  this class. Calling code must ensure that scratch space is used safely. */
+  struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
                 int num_couplers, std::span<const int> gain_sizes,
@@ -101,10 +102,7 @@ class IcfData {
   @param num_couplers Number of coupler constraints.
   @param gain_sizes Number of velocities for each gain constraint.
   @param limit_sizes Number of velocities for each limit constraint.
-  @param patch_sizes Number of contact pairs for each patch constraint.
-
-  TODO(vincekurtz): consider fixing num_bodies and num_velocities at
-  construction, and only resizing based on patch_sizes here. */
+  @param patch_sizes Number of contact pairs for each patch constraint. */
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
               int num_couplers, std::span<const int> gain_sizes,
               std::span<const int> limit_sizes,

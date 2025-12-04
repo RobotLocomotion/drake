@@ -146,6 +146,7 @@ class IcfModel {
            num_limit_constraints() + num_coupler_constraints();
   }
 
+  /* Provides mutable access to the pool of all coupler constraints. */
   CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
   }

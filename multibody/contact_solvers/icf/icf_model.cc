@@ -201,15 +201,16 @@ T IcfModel<T>::CalcCostAlongLine(
   *dcost_dalpha = a * alpha + b;
   *d2cost_dalpha2 = a;
 
-  T constraint_dcost, constraint_d2cost;
-
   // Add coupler constraints contributions:
   {
+    T constraint_dcost, constraint_d2cost;
+
     coupler_constraints_pool_.CalcData(
         v_alpha, &data.scratch().coupler_constraints_data);
     coupler_constraints_pool_.CalcCostAlongLine(
         data.scratch().coupler_constraints_data, search_direction.w,
         &constraint_dcost, &constraint_d2cost);
+
     cost += data.scratch().coupler_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
@@ -217,11 +218,14 @@ T IcfModel<T>::CalcCostAlongLine(
 
   // Add gain constraints contributions:
   {
+    T constraint_dcost, constraint_d2cost;
+
     gain_constraints_pool_.CalcData(v_alpha,
                                     &data.scratch().gain_constraints_data);
     gain_constraints_pool_.CalcCostAlongLine(
         data.scratch().gain_constraints_data, search_direction.w,
         &data.scratch().Gw_gain, &constraint_dcost, &constraint_d2cost);
+
     cost += data.scratch().gain_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
@@ -229,11 +233,14 @@ T IcfModel<T>::CalcCostAlongLine(
 
   // Add limit constraints contributions:
   {
+    T constraint_dcost, constraint_d2cost;
+
     limit_constraints_pool_.CalcData(v_alpha,
                                      &data.scratch().limit_constraints_data);
     limit_constraints_pool_.CalcCostAlongLine(
         data.scratch().limit_constraints_data, search_direction.w,
         &data.scratch().Gw_limit, &constraint_dcost, &constraint_d2cost);
+
     cost += data.scratch().limit_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;
@@ -241,12 +248,15 @@ T IcfModel<T>::CalcCostAlongLine(
 
   // Add patch constraints contributions:
   {
+    T constraint_dcost, constraint_d2cost;
+
     CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
     patch_constraints_pool_.CalcData(V_WB_alpha,
                                      &data.scratch().patch_constraints_data);
     patch_constraints_pool_.CalcCostAlongLine(
         data.scratch().patch_constraints_data, search_direction.U,
         &data.scratch().U_AbB_W, &constraint_dcost, &constraint_d2cost);
+
     cost += data.scratch().patch_constraints_data.cost();
     *dcost_dalpha += constraint_dcost;
     *d2cost_dalpha2 += constraint_d2cost;

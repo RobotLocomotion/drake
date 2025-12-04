@@ -20,6 +20,9 @@ CouplerConstraintsPool<T>::CouplerConstraintsPool(
 }
 
 template <typename T>
+CouplerConstraintsPool<T>::~CouplerConstraintsPool() = default;
+
+template <typename T>
 void CouplerConstraintsPool<T>::Clear() {
   constraint_to_clique_.clear();
   dofs_.clear();
@@ -50,7 +53,7 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   gear_ratio_[index] = gear_ratio;
 
   // Near-rigid regularization: this constraint acts as a very stiff
-  // critically-damped spring with time scale β⋅δt [Castro et al. 2022].
+  // critically-damped spring with time scale β⋅δt [Castro et al., 2022].
   const double beta = 0.1;
   const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
 
@@ -70,7 +73,7 @@ void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
   //             i      j
   const T w = w_clique(i) + gear_ratio * gear_ratio * w_clique(j);
 
-  R_[index] = eps * w;  // Near-rigid regularization [Castro et al. 2022].
+  R_[index] = eps * w;  // Near-rigid regularization [Castro et al., 2022].
 }
 
 template <typename T>
@@ -78,7 +81,7 @@ void CouplerConstraintsPool<T>::CalcData(
     const VectorX<T>& v, CouplerConstraintsDataPool<T>* coupler_data) const {
   DRAKE_ASSERT(coupler_data != nullptr);
 
-  T& cost = coupler_data->cost();
+  T& cost = coupler_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
@@ -94,7 +97,7 @@ void CouplerConstraintsPool<T>::CalcData(
     const T vc = vi - rho * vj;  // Constraint velocity.
 
     const T gamma = -(vc - v_hat) / R;
-    coupler_data->gamma(k) = gamma;
+    coupler_data->mutable_gamma(k) = gamma;
     cost += 0.5 * (v_hat - vc) * gamma;
   }
 }

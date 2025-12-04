@@ -24,6 +24,10 @@ class IcfModel;
 /* A pool of coupler constraints (qᵢ - ρqⱼ = Δq) linking generalized positions
 (qᵢ, qⱼ) with gear ratio ρ and offset Δq.
 
+Each coupler constraint is associated with a convex cost ℓ(v) that is added to
+the overall ICF cost. The gradient of this cost produces an impulse γ = -∇ℓ(v)
+that enforces the constraint when the convex ICF problem is solved.
+
 Coupler constraints only apply to joints within the same clique, so they do not
 change the sparsity structure of the problem.
 TODO(vincekurtz): consider relaxing this requirement.
@@ -37,33 +41,34 @@ class CouplerConstraintsPool {
   /* Constructs an empty pool. */
   explicit CouplerConstraintsPool(const IcfModel<T>* parent_model);
 
+  ~CouplerConstraintsPool();
+
   /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
   /* Returns the total number of constraints stored in this pool. */
   int num_constraints() const { return constraint_to_clique_.size(); }
 
-  /* Resets, zeroing out the constraints while keeping memory allocated. */
+  /* Removes all constraints from this pool while keeping memory allocated. */
   void Clear();
 
   /* Resizes the constraints pool to store the given number of constraints.
 
-  After resizing, all constraints will hold invalid data until Set() is called
-  for each constraint index in [0, num_constraints()).
-  */
+  @warning After resizing, constraints may hold invalid data until Set() is
+  called for each constraint index in [0, num_constraints()). */
   void Resize(const int num_constraints);
 
-  /* Sets the given coupler constraint, qᵢ − ρqⱼ−Δq = 0, between the i-th and
-  j-th DoFs of the given clique.
+  /* Sets the given coupler constraint, qᵢ − ρqⱼ = Δq between two DoFs (i, j) in
+  the given clique.
 
   @param index The index of the constraint within the pool,
                must be in [0, num_constraints()).
   @param clique The clique index where the constraint is applied. Both DoFs
                 must belong to the same clique.
-  @param i The index of the first DoF within `clique`.
-  @param j The index of the second DoF within `clique`.
-  @param qi The current position of the i-th DoF.
-  @param qj The current position of the j-th DoF.
+  @param i The clique-local index of the first DoF.
+  @param j The clique-local index of the second DoF.
+  @param qi The current position of the first DoF.
+  @param qj The current position of the second DoF.
   @param gear_ratio The gear ratio ρ.
   @param offset The offset Δq.
 
@@ -77,7 +82,7 @@ class CouplerConstraintsPool {
   void CalcData(const VectorX<T>& v,
                 CouplerConstraintsDataPool<T>* coupler_data) const;
 
-  /* Adds the gradient contribution of this constraint, ∇ℓ = −Jᵀ⋅γ, to the
+  /* Adds the gradient contribution of this constraint, ∇ℓ(v) = −γ, to the
   model-wide gradient. */
   void AccumulateGradient(const IcfData<T>& data, VectorX<T>* gradient) const;
 
@@ -88,17 +93,19 @@ class CouplerConstraintsPool {
           hessian) const;
 
   /* Computes the first and second derivatives of the constraint cost
-  ℓ̃ (α) = ℓ(v + α⋅w), for exact line search.
+  ℓ̃ (α) = ℓ(v + α⋅w).
 
   @param coupler_data Constraint data computed at v + α⋅w.
   @param w The search direction.
   @param[out] dcost the first derivative dℓ̃ /dα on output.
-  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
+  @param[out] d2cost the second derivative d²ℓ̃ /dα² on output.
+
+  TODO(vincekurtz): factor out common documentation among constraints. */
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                          const VectorX<T>& w, T* dcost, T* d2cost) const;
 
  private:
-  const IcfModel<T>* model_{nullptr};  // The parent model.
+  const IcfModel<T>* const model_;  // The parent model.
 
   // Clique for the k-th constraint, of size num_constraints().
   std::vector<int> constraint_to_clique_;

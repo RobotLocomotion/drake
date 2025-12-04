@@ -82,7 +82,8 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   EXPECT_EQ(data.scratch().GJb_pool[0].cols(), max_clique_size);
 }
 
-/* Checks that calling Resize doesn't cost extra heap allocations. */
+/* Checks that calling Resize doesn't cost heap allocations when the new size is
+no larger than it has been previously. */
 GTEST_TEST(IcfData, LimitMallocOnResize) {
   IcfData<double> data;
   const int num_bodies = 3;
@@ -98,14 +99,16 @@ GTEST_TEST(IcfData, LimitMallocOnResize) {
 
   // Clearing pools changes size but shouldn't change capacity.
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), num_bodies);
-  data.scratch().Clear();
+  data.scratch().Resize(0, 0, 0, 0, gain_sizes, limit_sizes, patch_sizes);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
 
   VectorX<double> v = VectorX<double>::LinSpaced(num_velocities, 1.0, 11.0);
   {
     // Restoring the data to the original size and setting velocities should not
     // cause any new allocations.
-    drake::test::LimitMalloc guard;
+    // TODO(vincekurtz): switch data.scratch().Gw_gain and
+    // data.scratch().Gw_limit to EigenPool to avoid their allocations as well.
+    drake::test::LimitMalloc guard({.max_num_allocations = 2});
     data.Resize(num_bodies, num_velocities, max_clique_size, num_couplers,
                 gain_sizes, limit_sizes, patch_sizes);
     data.set_v(v);

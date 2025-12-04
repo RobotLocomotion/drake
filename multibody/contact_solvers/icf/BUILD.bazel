@@ -41,7 +41,6 @@ drake_cc_library(
     srcs = ["coupler_constraints_data_pool.cc"],
     hdrs = ["coupler_constraints_data_pool.h"],
     deps = [
-        ":eigen_pool",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -101,7 +100,6 @@ drake_cc_library(
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
         "//common:essential",
-        "//multibody/contact_solvers:block_sparse_cholesky_solver",
     ],
 )
 
@@ -136,6 +134,7 @@ drake_cc_library(
         ":icf_solver_parameters",
         "//common:essential",
         "//common:name_value",
+        "//multibody/contact_solvers:block_sparse_cholesky_solver",
         "//multibody/contact_solvers:newton_with_bisection",
     ],
 )
@@ -157,6 +156,8 @@ drake_cc_library(
         "patch_constraints_pool.h",
     ],
     deps = [
+        ":coupler_constraints_data_pool",
+        ":eigen_pool",
         ":icf_data",
         ":icf_search_direction_data",
         "//common:default_scalars",

@@ -22,19 +22,23 @@ class CouplerConstraintsDataPool {
   /* Constructs an empty pool. */
   CouplerConstraintsDataPool() = default;
 
+  ~CouplerConstraintsDataPool();
+
   /* Resizes the pool, allocating memory only as necessary. */
   void Resize(int num_couplers) { gamma_pool_.resize(num_couplers); }
 
   /* Returns the number of gain constraints this data is for. */
-  int num_constraints() const { return gamma_pool_.size(); }
+  int num_constraints() const { return ssize(gamma_pool_); }
 
-  /* Returns the constraint impulse γ = -∇ℓ_c(v) */
+  /* Returns the constraint impulse γ = -∇ℓ(v) for the k-th constraint in the
+  pool. See CouplerConstraintsPool for details. */
   const T& gamma(int k) const { return gamma_pool_[k]; }
-  T& gamma(int k) { return gamma_pool_[k]; }
+  T& mutable_gamma(int k) { return gamma_pool_[k]; }
 
-  /* Returns the constraint cost ℓ_c(v) */
+  /* Returns the total constraint cost ℓ(v) for all coupler constraints in the
+  pool. */
   const T& cost() const { return cost_; }
-  T& cost() { return cost_; }
+  T& mutable_cost() { return cost_; }
 
  private:
   T cost_{0.0};                // Total cost over all coupler constraints.

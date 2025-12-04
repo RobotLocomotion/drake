@@ -238,10 +238,10 @@ void AddLimitConstraints(IcfModel<T>* model) {
              1.5);  // Within.
 }
 
-/* Adds a coupler constraint to clique 1 of th given model. */
+/* Adds a coupler constraint to the given model. */
 template <typename T>
 void AddCouplerConstraint(IcfModel<T>* model) {
-  EXPECT_EQ(model->num_cliques(), 3);
+  const bool single_clique = model->num_cliques() == 1;
 
   CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
   couplers.Resize(1 /* one constraint */);
@@ -249,12 +249,23 @@ void AddCouplerConstraint(IcfModel<T>* model) {
   const int nv = model->num_velocities();
   VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
-  // Coupler on clique 1.
-  const VectorX<T>& q0_c1 = model->clique_segment(1, q0);
-  const double rho1 = 2.5;
-  const double offset1 = 0.1;
-  couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
-               q0_c1(1), q0_c1(3), rho1, offset1);
+  if (!single_clique) {
+    // This is a multi-clique model, so we'll put a coupler on clique 1.
+    const VectorX<T>& q0_clique = model->clique_segment(1, q0);
+    const double rho = 2.5;
+    const double offset = 0.1;
+    couplers.Set(0 /* constraint index */, 1 /* clique */, 1 /* i */, 3 /* j */,
+                 q0_clique(1), q0_clique(3), rho, offset);
+  } else {
+    // This is a single-clique model, so we'll put a coupler on clique 0.
+    // However, we'll choose indices that would have belonged to clique 1 in the
+    // multi-clique version.
+    const VectorX<T>& q0_clique = model->clique_segment(0, q0);
+    const double rho = 2.5;
+    const double offset = 0.1;
+    couplers.Set(0 /* constraint index */, 0 /* clique */, 7 /* i */, 9 /* j */,
+                 q0_clique(7), q0_clique(9), rho, offset);
+  }
 }
 
 /* Checks that a default constructed model is empty. */
@@ -390,8 +401,8 @@ GTEST_TEST(IcfModel, PerBodyElements) {
   EXPECT_EQ(num_anchored, 1);
 }
 
-/* Checks that gradients are computed correctly for a problem with various
- * constraints. */
+/* Checks that gradients are computed correctly, even in the presence of
+constraints. */
 GTEST_TEST(IcfModel, CalcGradients) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
@@ -425,6 +436,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model, true /* single cliques */);
   AddContactConstraints(&model);
+  AddCouplerConstraint(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -464,14 +476,15 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
 break out the cliques. */
 GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   IcfModel<double> model_single;
-  // TODO(vincekurtz): run this test with constraints once they land.
   MakeUnconstrainedModel(&model_single, true);
+  AddCouplerConstraint(&model_single);
   model_single.SetSparsityPattern();
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
 
   IcfModel<double> model_multiple;
   MakeUnconstrainedModel(&model_multiple, false);
+  AddCouplerConstraint(&model_multiple);
   model_multiple.SetSparsityPattern();
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
@@ -821,6 +834,7 @@ GTEST_TEST(IcfModel, LimitConstraint) {
                               10 * kEpsilon, MatrixCompareType::relative));
 }
 
+/* Verifies that the coupler constraint produces correct data. */
 GTEST_TEST(IcfModel, CouplerConstraint) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
@@ -841,7 +855,7 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   EXPECT_EQ(model.num_coupler_constraints(), 1);
   EXPECT_EQ(model.num_constraints(), 1);
 
-  // Resize data to include limit constraints data.
+  // Resize data to include coupler constraints.
   model.ResizeData(&data);
   EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
 
@@ -853,22 +867,22 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
 
   const double dt = model.time_step().value();
   const VectorX<AutoDiffXd> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
-  const double rho1 = 2.5;
-  const double offset1 = 0.1;
+  const double rho = 2.5;
+  const double offset = 0.1;
   VectorX<AutoDiffXd> q = q0 + dt * v;
-  const auto q_c1 = model.clique_segment(1, q);
-  const auto v_c1 = model.clique_segment(1, v);
+  const auto q_clique = model.clique_segment(1, q);
+  const auto v_clique = model.clique_segment(1, v);
 
   // Compute regularization manually.
   const double beta =
       0.1;  // Keep in sync with hard-coded value in the implementation.
-  const double m1 = 2.3;                     // "mass" for clique 1.
-  const double w1 = (1 + rho1 * rho1) / m1;  // Delassus for clique 1.
-  const double m1_eff = 1.0 / w1;            // "Effective" mass for clique 1.
+  const double m = 2.3;                           // "mass" for clique 1.
+  const double w_delassus = (1 + rho * rho) / m;  // Delassus for clique 1.
+  const double m_effective = 1.0 / w_delassus;    // Effective mass.
   const double omega_near_rigid =
       2 * M_PI / (beta * dt);  // period_nr = beta * dt, by definition.
-  const double k1 = m1_eff * omega_near_rigid * omega_near_rigid;
-  const double tau1 = beta / M_PI * dt;
+  const double k = m_effective * omega_near_rigid * omega_near_rigid;
+  const double tau = beta / M_PI * dt;
 
   const CouplerConstraintsDataPool<AutoDiffXd>& couplers_data =
       data.coupler_constraints_data();
@@ -877,12 +891,12 @@ GTEST_TEST(IcfModel, CouplerConstraint) {
   const VectorXd cost_gradient = couplers_data.cost().derivatives();
 
   // Expected impulse.
-  const AutoDiffXd g0 = q_c1(1) - rho1 * q_c1(3) - offset1;
-  const AutoDiffXd gdot0 = v_c1(1) - rho1 * v_c1(3);
-  const AutoDiffXd gamma0 = -dt * k1 * (g0 + tau1 * gdot0);
+  const AutoDiffXd g0 = q_clique(1) - rho * q_clique(3) - offset;
+  const AutoDiffXd gdot0 = v_clique(1) - rho * v_clique(3);
+  const AutoDiffXd gamma0 = -dt * k * (g0 + tau * gdot0);
   VectorXd tau_expected = VectorXd::Zero(nv);
   tau_expected(6 + 1) = gamma0.value();
-  tau_expected(6 + 3) = -rho1 * gamma0.value();
+  tau_expected(6 + 3) = -rho * gamma0.value();
   EXPECT_TRUE(CompareMatrices(-cost_gradient, tau_expected, 10 * kEpsilon,
                               MatrixCompareType::relative));
 
