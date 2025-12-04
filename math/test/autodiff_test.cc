@@ -221,7 +221,9 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
   // Since value was fixed size, ad_return should be also.
   EXPECT_EQ(decltype(ad4_return)::ColsAtCompileTime, 2);
   EXPECT_EQ(decltype(ad4_return)::RowsAtCompileTime, 2);
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
   EXPECT_EQ(decltype(ad4_return)::Scalar::DerType::RowsAtCompileTime, 4);
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
   EXPECT_TRUE(CompareMatrices(ExtractValue(ad4_return), value));
   EXPECT_TRUE(CompareMatrices(ExtractGradient(ad4_return),
                               Eigen::Matrix4d::Identity()));
@@ -294,6 +296,7 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
       (Eigen::Matrix2d() << 1.0, 2.0, 3.0, 4.0).finished();
   const Eigen::Matrix4d gradient = 2 * Eigen::Matrix4d::Identity();
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
   // Fixed-size value, fixed-size gradient.
   Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector4d>, 2, 2> autodiff2;
   // This is the general method. The other (value, gradient) signature just
@@ -310,6 +313,7 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
   EXPECT_EQ(decltype(ad2_return)::Scalar::DerType::RowsAtCompileTime, 4);
   EXPECT_TRUE(CompareMatrices(ExtractValue(ad2_return), value));
   EXPECT_TRUE(CompareMatrices(ExtractGradient(ad2_return), gradient));
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
   // Repeat the last two tests using dynamically-sized matrices. This should
   // produce dynamically-sized results.
@@ -359,8 +363,10 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   // This is the expected type of the derivatives vector (in every element).
   const Eigen::Matrix<double, 12, 1>& deriv_12 =
       std::get<1>(tuple).coeffRef(2).derivatives();
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
   // Check that we didn't create a new copy (i.e. we got the right type).
   EXPECT_EQ(&deriv_12, &std::get<1>(tuple).coeffRef(2).derivatives());
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
   // Since vec3[2] is the 7th variable, we expect only element 7 of its
   // derivatives vector to be 1.
@@ -393,6 +399,7 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   EXPECT_EQ(deriv_12d, expected);
 }
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 // See note in class documentation for our AutoDiffXd specialization in
 // common/autodiffxd.h for why we initialize the value field even though
 // that is not part of the Eigen::AutoDiffScalar contract.
@@ -400,6 +407,7 @@ GTEST_TEST(AdditionalAutodiffTest, ValueIsInitializedToNaN) {
   AutoDiffXd autodiff;
   EXPECT_TRUE(std::isnan(autodiff.value()));
 }
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
 GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   // Test the double case:

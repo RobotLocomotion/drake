@@ -23,8 +23,13 @@ inline constexpr bool is_double_or_symbolic_v =
 template <typename T>
 struct is_autodiff : std::false_type {};
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 template <int N>
 struct is_autodiff<drake::AutoDiffd<N>> : std::true_type {};
+#else
+template <>
+struct is_autodiff<drake::AutoDiffXd> : std::true_type {};
+#endif
 
 template <typename T>
 inline constexpr bool is_autodiff_v = is_autodiff<T>::value;

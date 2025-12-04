@@ -90,6 +90,7 @@ string NiceTypeName::Canonicalize(const string& demangled) {
       // ... AutoDiff.
       SPair(std::regex("Eigen::AutoDiffScalar<Eigen::VectorXd>"),
             "drake::AutoDiffXd"),
+      SPair(std::regex("drake::ad::AutoDiff"), "drake::AutoDiffXd"),
 
       // Recognize Identifier ...
       // Change e.g., "drake::Identifier<drake::package::FooTag>" to

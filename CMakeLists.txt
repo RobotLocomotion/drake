@@ -746,6 +746,14 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
+option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." ON)
+
+if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
+endif()
+
 if(DRAKE_CI_ENABLE_PACKAGING)
   string(APPEND BAZEL_CONFIG " --config=packaging")
 endif()

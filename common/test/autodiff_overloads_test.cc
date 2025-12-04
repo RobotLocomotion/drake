@@ -396,6 +396,7 @@ GTEST_TEST(AutodiffOverloadsTest, DummyValue) {
   EXPECT_EQ(derivatives.rows(), 0);
 }
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 GTEST_TEST(AutodiffOverloadsTest, DummyValue2) {
   using T = Eigen::AutoDiffScalar<Vector2d>;
   const T dummy_2d = dummy_value<T>::get();
@@ -406,6 +407,7 @@ GTEST_TEST(AutodiffOverloadsTest, DummyValue2) {
   EXPECT_TRUE(std::isnan(derivatives(0)));
   EXPECT_TRUE(std::isnan(derivatives(1)));
 }
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
 }  // namespace
 }  // namespace common
