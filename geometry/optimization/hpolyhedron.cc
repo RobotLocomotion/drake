@@ -1268,6 +1268,9 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         // moves in.
         VectorXd b_proposed = inbody.b();
         b_proposed(i) = b_i_min_allowed;
+
+        // A set of indices corresponding to faces that can be sure are still
+        // non-redundant without solving an additional LP.
         std::set<int> indices_to_not_check;
         for (int ind = 0; ind < b_proposed.rows(); ++ind) {
           if (face_moved_in[ind] ||
@@ -1275,6 +1278,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
             indices_to_not_check.insert(ind);
           }
         }
+        indices_to_not_check.insert(i);
 
         const HPolyhedron inbody_proposed = HPolyhedron(inbody.A(), b_proposed);
         redundancy_info = FindRedundantWithWitnessPoints(inbody_proposed,
@@ -1285,8 +1289,8 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
         const std::vector<VectorXd> updated_witness_points =
             redundancy_info.second;
         // update the witness points that have changed
-        for (size_t i_witness_point = 0;
-             i_witness_point < witness_points.size(); ++i_witness_point) {
+        for (int i_witness_point = 0; i_witness_point < ssize(witness_points);
+             ++i_witness_point) {
           if (!indices_to_not_check.contains(i_witness_point)) {
             witness_points[i_witness_point] =
                 updated_witness_points[i_witness_point];
