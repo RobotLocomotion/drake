@@ -428,6 +428,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   Ndot->template block<3, 3>(4, 3).setZero();      // Lower-right block.
 }
 
+// TODO(Mitiguy) Ensure this function properly accounts any scaling or other
+//  distortions, similar to DoCalcNplusMatrix().
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> NplusDot) const {
@@ -493,6 +495,8 @@ void QuaternionFloatingMobilizer<T>::DoMapQDotToVelocity(
   v->template tail<3>() = qdot.template tail<3>();
 }
 
+// TODO(Mitiguy) Ensure this function properly accounts any scaling or other
+//  distortions, similar to DoMapVelocityToQDot().
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
     const systems::Context<T>& context,
@@ -525,6 +529,8 @@ void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
   qddot->template tail<3>() = vdot.template tail<3>();
 }
 
+// TODO(Mitiguy) Ensure this function properly accounts any scaling or other
+//  distortions, similar to DoMapQDotToVelocity().
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoMapQDDotToAcceleration(
     const systems::Context<T>& context,
