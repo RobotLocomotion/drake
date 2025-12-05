@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":icf_data",
         ":icf_model",
         ":icf_search_direction_data",
+        ":limit_constraints_data_pool",
     ],
 )
 
@@ -53,6 +54,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "limit_constraints_data_pool",
+    srcs = ["limit_constraints_data_pool.cc"],
+    hdrs = ["limit_constraints_data_pool.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "icf_search_direction_data",
     hdrs = ["icf_search_direction_data.h"],
     deps = [
@@ -70,6 +82,7 @@ drake_cc_library(
         ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":gain_constraints_data_pool",
+        ":limit_constraints_data_pool",
         "//common:essential",
     ],
 )
@@ -80,17 +93,20 @@ drake_cc_library(
         "coupler_constraints_pool.cc",
         "gain_constraints_pool.cc",
         "icf_model.cc",
+        "limit_constraints_pool.cc",
     ],
     hdrs = [
         "coupler_constraints_pool.h",
         "gain_constraints_pool.h",
         "icf_model.h",
+        "limit_constraints_pool.h",
     ],
     deps = [
         ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":icf_data",
         ":icf_search_direction_data",
+        ":limit_constraints_data_pool",
         "//common:default_scalars",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
