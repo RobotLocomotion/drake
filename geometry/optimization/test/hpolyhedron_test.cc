@@ -1476,7 +1476,7 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
 }
 
 namespace {
-double RadiusOfLargestBallInPolytopeWithCenterInOther(
+double ComputeRadiusOfLargestBallInOneWithCenterInTwo(
     const HPolyhedron& polytope_1, const HPolyhedron& polytope_2) {
   // This function helps with testing whether
   // SimplifyByIncrementalFaceTranslation satisfies its intersection constraint.
@@ -1681,9 +1681,9 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation5) {
             min_volume_ratio);
   EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
   // Check intersection constraint.
-  EXPECT_TRUE(RadiusOfLargestBallInPolytopeWithCenterInOther(
-                  inbody, intersecting_polytope) >=
-              intersection_padding - kAffineTransformationConstraintTol);
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody, intersecting_polytope),
+            intersection_padding - kAffineTransformationConstraintTol);
 }
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation6) {
@@ -1755,8 +1755,8 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
 
   // Check simplification with affine transformation.
   HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
-      min_volume_ratio, true, 10, points, intersecting_polytopes, false,
-      intersection_padding);
+      min_volume_ratio, /* do_affine_transformation= */ true, 10, points,
+      intersecting_polytopes, false, intersection_padding);
   EXPECT_TRUE(
       inbody.ContainedIn(circumbody, kAffineTransformationConstraintTol));
   EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
@@ -1766,14 +1766,14 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
     EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
   }
   // Check intersection constraint.
-  EXPECT_TRUE(RadiusOfLargestBallInPolytopeWithCenterInOther(
-                  inbody, intersecting_polytope) >=
-              intersection_padding - kAffineTransformationConstraintTol);
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody, intersecting_polytope),
+            intersection_padding - kAffineTransformationConstraintTol);
 
   // Also check without affine transformation.
   inbody = circumbody.SimplifyByIncrementalFaceTranslation(
-      min_volume_ratio, false, 10, points, intersecting_polytopes, false,
-      intersection_padding);
+      min_volume_ratio, /* do_affine_transformation= */ false, 10, points,
+      intersecting_polytopes, false, intersection_padding);
   EXPECT_TRUE(
       inbody.ContainedIn(circumbody, kAffineTransformationConstraintTol));
   EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
@@ -1783,9 +1783,9 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
     EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
   }
   // Check intersection constraint.
-  EXPECT_TRUE(RadiusOfLargestBallInPolytopeWithCenterInOther(
-                  inbody, intersecting_polytope) >=
-              intersection_padding - kAffineTransformationConstraintTol);
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody, intersecting_polytope),
+            intersection_padding - kAffineTransformationConstraintTol);
 }
 
 GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformationTest1) {
