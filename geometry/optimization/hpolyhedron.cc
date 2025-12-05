@@ -937,7 +937,7 @@ HPolyhedron MoveFaceAndCull(const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
 
 bool CheckIntersectionAndPointContainmentConstraints(
     const HPolyhedron& inbody, const HPolyhedron& circumbody,
-    const Eigen::MatrixXd& points_to_contain,
+    const Eigen::Ref<const Eigen::MatrixXd>& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
     bool keep_whole_intersection, double intersection_padding) {
   const double kConstraintTol = 1e-6;
