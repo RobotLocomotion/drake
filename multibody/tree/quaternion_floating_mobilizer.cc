@@ -297,6 +297,51 @@ template <typename T>
 Eigen::Matrix<T, 3, 4>
 QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
+  // Background: For a quaternion q associated with a rotation matrix, Drake's
+  // algorithms are designed to effectively ignore a quaternion’s magnitude
+  // (i.e., the algorithms only rely on the quaternion’s direction). In other
+  // words, the algorithms ensure the quaternion’s magnitude does not contribute
+  // to physics in any way. For example, before converting a user-supplied
+  // quaternion q to form a rotation matrix, we normalize it locally so |q|= 1
+  // (which guarantees an orthogonal rotation matrix). Regardless of whether the
+  // magnitude of the user-supplied quaternion is 1.0, 1.23, 5.67, etc., we get
+  // the same rotation matrix, and thus the same orientation.
+  //
+  // Instead of the mathematically useful, but physically nebulous q̇ ≜ dq/dt
+  // (which is a 4-vector, with one scalar constraint between its 4 elements) to
+  // describe how orientation changes, we rely on angular velocity ω (which is a
+  // 3-vector with direct physical meaning) to represent time-rate-of-change of
+  // orientation and use ω to calculate q̇ ≜ dq/dt as shown in eqn(1).
+  // Note: One provable property of eqn(1) and N(q) is that they produce a q̇
+  // that is perpendicular to q, i.e., dot(q, q̇) = 0, which guarantees |q|²
+  // (and hence |q|) is unchanged with a perfect integrator (even if |q| ≠ 1).
+  // Proof: 2 q̇ ⋅ q = d/dt (q ⋅ q) = d/dt( |q|² ) = 0.  Hence, a perfect
+  // integrator only affects a quaternion's direction (not its magnitude).
+  //
+  // (1)  q̇(q,ω) = N(q) ω
+  //
+  // The elements of the 4x3 matrix function N(q) are just ± elements of q
+  // (which is unnormalized), see “Details” below.  Denoting q as a non-unit
+  // quaternion, q̂ as its associated unit quaternion, then
+  // q = |q| q̂̇,  N(q) = |q| N(q̂),  q̇ = N(q) ω = |q| q̂',  (where q̂' ≜ dq̂/dt).
+  // Note that eqn(1) applies to an arbitrary, user supplied angular velocity ω,
+  // so any ω generates a valid q̇ for a given q, with scaling of q̇ matching |q|.
+  //
+  // We also need to provide the inverse operator via a “pseudoinverse-like”
+  // matrix N⁺(q), such that for an arbitrary, user supplied q̇,
+  //
+  // (2)  ω(q,q̇) = N⁺(q) q̇
+  //
+  // An arbitrary user supplied q̇ might have a spurious non-zero component q̇∥ of
+  // q̇ that is parallel to q (note q̇∥ is a derivative of the magnitude of q).
+  // But since we do not allow |q| to affect physics, q̇∥ must not be allowed to
+  // influence the resulting angular velocity ω (a physical quantity).
+  // Similarly, we can’t allow |q| to affect ω. Thus we need to work with both
+  // q/|q| and q̇/|q| to avoid introducing non-physical quantities into the
+  // physical ω, and we have to ignore any q̇∥ component of q̇.
+  // To account for |q| ≠ 1, q̇∥, etc., computing the N⁺ matrix in eqn(2) is
+  // more complicated than computing the N matrix in eqn(1). What’s in it?
+
   const T q_norm = q_FM.norm();
   // This function accounts for a non-unit input quaternion q_FM.
   // We denote the normalized quaternion as q_unit = q_FM / |q_FM|.
@@ -304,16 +349,14 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
       Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z()) / q_norm;
 
   // Given q_unit = q_FM / |q_FM|, calculate q̇_unit so that when this function
-  // returns, it is ready to multiply by q̇_FM to produce w_FM_F.
+  // returns, it is ready to multiply by q̇_FM to produce w_FM_F, where w_FM_F is
+  // this mobilizer's F frame's angular velocity in frame M, expressed in F.
   // q̇_unit = ( [I₄₄] - q_unit * q_unitᵀ) * q̇_FM
   //        = dqnorm_dq * q̇_FM
   // Note: If the returned matrix is multiplied by s * q̇_FM (where s is any
   // real number and q̇_FM is truly the time-derivative of q_FM), then we can
   // prove q_unitᵀ q̇_FM = 0, which means that the q_unit * q_unit.transpose()
   // term in dqnorm_dq is necessary, i.e., q_unit * q_unitᵀ * q̇_FM is zero.
-  /* const Matrix4<T> dqnorm_dq =
-      (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm; */
-  // const Matrix4<T> dqnorm_dq = Matrix4<T>::Identity() / q_norm;
   const Matrix4<T> dqnorm_dq =
       (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm;
 
