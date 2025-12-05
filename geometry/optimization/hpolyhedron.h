@@ -145,9 +145,10 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedrons in `intersecting_polytopes`.  Regardless of the value of this
   parameter, the intersections may be reduced by the affine transformation step
   if `do_affine_transformation` is true.
-  @param intersection_padding limits reduction of interesections.  For each
-  polytope in `intersecting_polytopes`, there is a ball fully contained in
-  `inbody`, of radius `intersection_padding`, whose center is contained in the
+  @param intersection_padding limits how much the intersection between the
+  inbody and each polytope in `intersection_polytopes` can be reduced. For each
+  polytope in `intersecting_polytopes`, there is a ball fully contained in the
+  inbody, of radius `intersection_padding`, whose center is contained in the
   intersecting polytope.  In the case where `keep_whole_intersection` is false,
   using a non-zero value for this parameter prevents intersections from being
   single points.
@@ -162,7 +163,8 @@ class HPolyhedron final : public ConvexSet {
   [[nodiscard]] HPolyhedron SimplifyByIncrementalFaceTranslation(
       double min_volume_ratio = 0.1, bool do_affine_transformation = true,
       int max_iterations = 10,
-      const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& points_to_contain =
+          Eigen::MatrixXd(),
       const std::vector<drake::geometry::optimization::HPolyhedron>&
           intersecting_polytopes = std::vector<HPolyhedron>(),
       bool keep_whole_intersection = false, double intersection_padding = 1e-4,

@@ -950,19 +950,19 @@ bool CheckIntersectionAndPointContainmentConstraints(
 
   // Check intersection with each intersecting polytope
   if (keep_whole_intersection) {
-    for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
+    for (const HPolyhedron& intersecting_polytope : intersecting_polytopes) {
       const HPolyhedron intersection =
-          circumbody.Intersection(intersecting_polytopes[i]);
+          circumbody.Intersection(intersecting_polytope);
       if (!intersection.ContainedIn(inbody, kConstraintTol)) {
         return false;
       }
     }
   } else {
     MathematicalProgram prog;
-    for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
+    for (const HPolyhedron& intersecting_polytope : intersecting_polytopes) {
       solvers::VectorXDecisionVariable x =
           prog.NewContinuousVariables(inbody.ambient_dimension(), "x");
-      intersecting_polytopes[i].AddPointInSetConstraints(&prog, x);
+      intersecting_polytope.AddPointInSetConstraints(&prog, x);
       prog.AddLinearConstraint(
           inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf),
           inbody.b() - (intersection_padding + kConstraintTol) *
@@ -978,7 +978,7 @@ bool CheckIntersectionAndPointContainmentConstraints(
 
 HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
     double min_volume_ratio, bool do_affine_transformation, int max_iterations,
-    const Eigen::MatrixXd& points_to_contain,
+    const Eigen::Ref<const Eigen::MatrixXd>& points_to_contain,
     const std::vector<HPolyhedron>& intersecting_polytopes,
     bool keep_whole_intersection, double intersection_padding,
     int random_seed) const {
@@ -1027,17 +1027,18 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
   std::vector<drake::geometry::optimization::HPolyhedron>
       reduced_intersecting_polytopes;
   reduced_intersecting_polytopes.reserve(intersecting_polytopes.size());
-  for (int i = 0; i < ssize(intersecting_polytopes); ++i) {
+  for (const HPolyhedron& intersecting_polytope : intersecting_polytopes) {
     if (keep_whole_intersection) {
-      reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
+      reduced_intersecting_polytopes.push_back(intersecting_polytope);
     } else {
       const bool trivially_satisfied =
           CheckIntersectionAndPointContainmentConstraints(
-              scaled_circumbody, circumbody, Eigen::MatrixXd(0, 0),
-              std::vector<HPolyhedron>{intersecting_polytopes[i]},
+              scaled_circumbody, circumbody,
+              Eigen::MatrixXd(ambient_dimension(), 0),
+              std::vector<HPolyhedron>{intersecting_polytope},
               keep_whole_intersection, intersection_padding);
       if (!trivially_satisfied) {
-        reduced_intersecting_polytopes.push_back(intersecting_polytopes[i]);
+        reduced_intersecting_polytopes.push_back(intersecting_polytope);
       }
     }
   }
@@ -1082,16 +1083,15 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
 
         // Loop through intersecting hyperplanes and update `b_i_min_allowed`
         // based on how far each intersection allows the hyperplane to move.
-        for (int intersection_ind = 0;
-             intersection_ind < ssize(reduced_intersecting_polytopes);
-             ++intersection_ind) {
+        for (const HPolyhedron& intersecting_polytope :
+             reduced_intersecting_polytopes) {
           MathematicalProgram prog;
           solvers::VectorXDecisionVariable x =
               prog.NewContinuousVariables(ambient_dimension(), "x");
 
           if (keep_whole_intersection) {
-            const HPolyhedron intersection = inbody.Intersection(
-                reduced_intersecting_polytopes[intersection_ind]);
+            const HPolyhedron intersection =
+                inbody.Intersection(intersecting_polytope);
 
             prog.AddLinearCost(-inbody.A().row(i), 0, x);
             intersection.AddPointInSetConstraints(&prog, x);
@@ -1099,8 +1099,7 @@ HPolyhedron HPolyhedron::SimplifyByIncrementalFaceTranslation(
             solvers::VectorXDecisionVariable b_i =
                 prog.NewContinuousVariables(1);
 
-            reduced_intersecting_polytopes[intersection_ind]
-                .AddPointInSetConstraints(&prog, x);
+            intersecting_polytope.AddPointInSetConstraints(&prog, x);
             prog.AddLinearConstraint(
                 inbody.A(), VectorXd::Constant(inbody.b().rows(), -kInf),
                 inbody.b() -
