@@ -13,6 +13,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
+#include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 
 namespace drake {
 namespace multibody {
@@ -138,15 +139,26 @@ class IcfModel {
   int max_clique_size() const { return max_clique_size_; }
 
   /* Returns the total number of constraints of any type in the problem. */
-  int num_constraints() const { return num_coupler_constraints(); }
+  int num_constraints() const {
+    return num_coupler_constraints() + num_limit_constraints();
+  }
 
   /* Provides mutable access to the pool of all coupler constraints. */
   CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
   }
 
+  /* Provides mutable access to the pool of all joint limit constraints. */
+  LimitConstraintsPool<T>& limit_constraints_pool() {
+    return limit_constraints_pool_;
+  }
+
   int num_coupler_constraints() const {
     return coupler_constraints_pool_.num_constraints();
+  }
+
+  int num_limit_constraints() const {
+    return limit_constraints_pool_.num_constraints();
   }
 
   /* Returns the time step δt. */
@@ -365,6 +377,7 @@ class IcfModel {
 
   // Fixed set of constraints.
   CouplerConstraintsPool<T> coupler_constraints_pool_;
+  LimitConstraintsPool<T> limit_constraints_pool_;
 };
 
 }  // namespace internal
