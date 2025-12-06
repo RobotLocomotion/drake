@@ -213,6 +213,8 @@ MODULE_SETTINGS = {
             "VTK_SMP_ENABLE_STDTHREAD",
             "VTK_SMP_ENABLE_TBB",
             "VTK_USE_WIN32_THREADS",
+            "VTK_WEBASSEMBLY_THREADS",
+            "VTK_WEBASSEMBLY_SMP_THREAD_POOL_SIZE",
             # Library API choices.
             "VTK_BUILD_SHARED_LIBS",
             "VTK_DEBUG_LEAKS",
@@ -220,10 +222,10 @@ MODULE_SETTINGS = {
             "VTK_DISPATCH_AFFINE_ARRAYS",
             "VTK_DISPATCH_CONSTANT_ARRAYS",
             "VTK_DISPATCH_STD_FUNCTION_ARRAYS",
+            "VTK_DISPATCH_STRIDED_ARRAYS",
             "VTK_DISPATCH_STRUCTURED_POINT_ARRAYS",
             "VTK_LEGACY_SILENT",
             "VTK_USE_MEMKIND",
-            "VTK_USE_SCALED_SOA_ARRAYS",
         ],
     },
     "VTK::CommonDataModel": {
