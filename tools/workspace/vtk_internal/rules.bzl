@@ -451,12 +451,12 @@ def generate_common_core_vtk_type_arrays():
         preferred_class = _ctype_to_vtk_camel_type(preferred_ctype)
         fallback_class = _ctype_to_vtk_camel_type(fallback_ctype)
         srcs = [
-            "Common/Core/vtkTypedArray.h.in",
-            "Common/Core/vtkTypedArray.cxx.in",
+            "Common/Core/vtkAOSTypedArray.h.in",
+            "Common/Core/vtkAOSTypedArray.cxx.in",
         ]
         outs = [
-            "Common/Core/vtkType{}Array.h".format(vtk_type),
-            "Common/Core/vtkType{}Array.cxx".format(vtk_type),
+            "Common/Core/vtkAOSType{}Array.h".format(vtk_type),
+            "Common/Core/vtkAOSType{}Array.cxx".format(vtk_type),
         ]
         cmake_configure_files(
             name = "_common_core_vtk_type_arrays_" + vtk_type,
@@ -529,7 +529,7 @@ def generate_common_core_array_instantiations():
             "vtkStdFunctionArrayInstantiate",
             "vtkStructuredPointArrayInstantiate",
             "vtkTypedDataArrayInstantiate",
-            "vtkTypeArrayInstantiate",
+            "vtkAOSDataArrayTemplateInstantiate",
             # This one is only instantiated iff "long" is part of the ctype.
             "vtkGenericDataArrayValueRangeInstantiate",
         ):
