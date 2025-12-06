@@ -7,6 +7,10 @@ directly.
 """
 
 load(
+    "@rules_cc//cc:cc_static_library.bzl",
+    _cc_static_library = "cc_static_library",
+)
+load(
     "@rules_cc//cc:defs.bzl",
     _CcInfo = "CcInfo",
     _cc_binary = "cc_binary",
@@ -99,6 +103,9 @@ def cc_library(**kwargs):
 
 def cc_shared_library(**kwargs):
     _cc_shared_library(**kwargs)
+
+def cc_static_library(**kwargs):
+    _cc_static_library(**kwargs)
 
 def cc_test(**kwargs):
     _cc_test(**kwargs)
