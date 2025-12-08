@@ -16,7 +16,9 @@ namespace internal {
 /* Data pool for torque-limited actuation constraints τ = clamp(−K⋅v + b, e).
 This data is updated at each solver iteration, as opposed to the
 GainConstraintsPool, which defines the constraints themselves and is fixed for
-the lifetime of the optimization problem. */
+the lifetime of the optimization problem.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class GainConstraintsDataPool {
  public:
@@ -53,7 +55,7 @@ class GainConstraintsDataPool {
   VectorXView mutable_G(int k) { return G_pool_[k]; }
 
  private:
-  T cost_{0.0};                       // Total cost over all gain constraints.
+  T cost_{NAN};                       // Total cost over all gain constraints.
   EigenPool<VectorX<T>> gamma_pool_;  // Generalized impulses per constraint.
   EigenPool<VectorX<T>> G_pool_;      // Diagonal Hessians G = -∂γ/∂v ≥ 0.
 };

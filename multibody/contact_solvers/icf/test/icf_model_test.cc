@@ -78,7 +78,7 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
   }
   params->body_mass = {1.0e20, 0.3, 2.3, 1.5};  // First body is the world.
   const Matrix6<T> J_WB0 = VectorX<T>::LinSpaced(36, -1.0, 1.0).reshaped(6, 6);
-  const Matrix6<T> J_WB1 = Matrix6<T>::Identity();
+  const Matrix6<T> J_WB1 = Matrix6<T>::Identity();  // For floating body.
   const Matrix6<T> J_WB2 = J_WB0.transpose();
 
   if (single_clique) {
@@ -117,13 +117,14 @@ void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
 /* Adds a coupler constraint to the given model. */
 template <typename T>
 void AddCouplerConstraint(IcfModel<T>* model) {
+  DRAKE_DEMAND(model != nullptr);
   const bool single_clique = model->num_cliques() == 1;
 
   CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
   couplers.Resize(1 /* one constraint */);
 
   const int nv = model->num_velocities();
-  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  const VectorX<T> q0 = VectorX<T>::LinSpaced(nv, -1.0, 1.0);
 
   if (!single_clique) {
     // This is a multi-clique model, so we'll put a coupler on clique 1.
@@ -150,23 +151,22 @@ void AddCouplerConstraint(IcfModel<T>* model) {
 */
 template <typename T>
 std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
+  DRAKE_DEMAND(model != nullptr);
   const bool single_clique = model->num_cliques() == 1;
   GainConstraintsPool<T>& gain_constraints = model->gain_constraints_pool();
 
-  // Define the constraint coefficients for two gain constraints.
-  VectorX<T> K0 = 1.1 * VectorX<T>::Ones(6);
-  VectorX<T> u0 = -6.0 * VectorX<T>::Ones(6);
-  VectorX<T> e0 = 0.9 * VectorX<T>::Ones(6);
+  // Define the constraint coefficients for two gain constraints. We'll define
+  // the coefficients such that some constraints have values below, above, and
+  // within the limits.
+  const VectorX<T> K0 = VectorX<T>::Constant(6, 1.1);
+  const VectorX<T> u0 = VectorX<T>::Constant(6, -6.0);
+  const VectorX<T> e0 = VectorX<T>::Constant(6, 0.9);
 
-  VectorX<T> K1 = 2.3 * VectorX<T>::Ones(6);
-  VectorX<T> u1 = -0.5 * VectorX<T>::Ones(6);
-  VectorX<T> e1 = 11.1 * VectorX<T>::Ones(6);
-
-  // Test cases with zero gain.
-  K1(1) = K1(2) = K1(4) = 0.0;
-  u1(1) = -13.5;  // bias below limit.
-  u1(2) = -5.5;   // bias within limits.
-  u1(4) = 15.2;   // bias above limits.
+  const VectorX<T> K1(
+      (VectorX<T>(6) << 2.3, 0.0, 0.0, 2.3, 0.0, 2.3).finished());
+  const VectorX<T> u1(
+      (VectorX<T>(6) << -0.5, -13.5, -5.5, -0.5, 15.2, -0.5).finished());
+  const VectorX<T> e1 = VectorX<T>::Constant(6, 11.1);
 
   if (!single_clique) {
     // We'll put the constraints on cliques 0 and 2.
@@ -325,7 +325,7 @@ GTEST_TEST(IcfModel, EmptyModel) {
   EXPECT_EQ(model.r().size(), 0);
 }
 
-/* Checks that the model can be constructed with minimal heap allocations. */
+/* Checks that an empty model is constructed with minimal heap allocations. */
 GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);  // Memory is allocated here.
@@ -352,15 +352,43 @@ GTEST_TEST(IcfModel, LimitMallocOnModelUpdate) {
   }
 }
 
-/* Checks that model.CalcData does not incur any heap allocations. */
-GTEST_TEST(IcfModel, LimitMallocOnCalcData) {
+/* Checks that model.CalcData does not incur any heap allocations on a problem
+with coupler constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnCouplerConstrainedCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 1);
+  EXPECT_EQ(model.num_coupler_constraints(), 1);
 
   IcfData<double> data;
   model.ResizeData(&data);
+  EXPECT_EQ(data.coupler_constraints_data().num_constraints(), 1);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+
+  // Computing data should not cause any new allocations.
+  {
+    drake::test::LimitMalloc guard;
+    model.CalcData(v, &data);
+  }
+}
+
+/* Checks that model.CalcData does not incur any heap allocations on a problem
+with gain constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnGainConstrainedCalcData) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddGainConstraints(&model);
+  EXPECT_EQ(model.num_constraints(), 2);
+  EXPECT_EQ(model.num_gain_constraints(), 2);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
 
   const int nv = model.num_velocities();
   const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);

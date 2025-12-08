@@ -55,9 +55,12 @@ class IcfData {
     // num_velocities().
     EigenPool<VectorX<T>> Av_minus_r;
 
-    // Spatial velocities for CalcCostAlongLine.
-    EigenPool<Vector6<T>> V_WB_alpha;  // Holds at most num_bodies() vectors.
-    EigenPool<Vector6<T>> U_AbB_W;     // Holds at most num_patches() vectors.
+    // Scratch space for CalcCostAlongLine.
+    // Body spatial velocities at v + α⋅w. Holds at most num_bodies() vectors.
+    EigenPool<Vector6<T>> V_WB_alpha;
+
+    // Patch spatial velocities, holds at most num_patches() vectors.
+    EigenPool<Vector6<T>> U_AbB_W;
 
     // Generalized velocities at v + α⋅w. Holds at most one vector of size
     // num_velocities().

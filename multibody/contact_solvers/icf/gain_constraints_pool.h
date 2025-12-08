@@ -25,10 +25,10 @@ class IcfModel;
 
 A gain constraint models generalized forces acting on a given clique as
 
- τ = clamp(−K⋅v + b, e)
+ τ = clamp(-K⋅v + b, -e, e)
 
-where K is a non-negative diagonal gain matrix, b is a bias term, and e is an
-effort limit.
+where K is a non-negative diagonal gain matrix, b is a bias term, and e is a
+double-sided effort limit.
 
 Each gain constraint is associated with a convex cost ℓ(v) that is added to the
 overall ICF cost. The gradient of this cost produces an impulse
@@ -70,22 +70,23 @@ class GainConstraintsPool {
   called for each constraint index in [0, num_constraints()). */
   void Resize(std::span<const int> sizes);
 
-  /* Defines the gain constraint τ = clamp(−K⋅v + b, e) for the given clique.
+  /* Defines the gain constraint τ = clamp(-K⋅v + b, -e, e) for a given clique.
 
   @param index The index of this gain constraint in the pool.
   @param clique The clique to which this gain constraint applies.
   @param K The diagonal entries of gain matrix K. They must be >= 0.
   @param b The bias term.
-  @param e The vector of effort limits for each DoF of the clique.
+  @param e The vector of double-sided effort limits for each DoF of the clique.
 
   Calling this function several times with the same `index` overwrites the
   previous constraint for that index.
 
   @pre K, b, e are of size model().clique_size(clique). */
-  void Set(const int index, int clique, const VectorX<T>& K,
-           const VectorX<T>& b, const VectorX<T>& e);
+  void Set(int index, int clique, const VectorX<T>& K, const VectorX<T>& b,
+           const VectorX<T>& e);
 
-  /* Computes problem data for the given generalized velocities `v`. */
+  /* Computes problem data as a function of the generalized velocities `v` for
+  the full plant. */
   void CalcData(const VectorX<T>& v,
                 GainConstraintsDataPool<T>* gain_data) const;
 
@@ -100,9 +101,9 @@ class GainConstraintsPool {
           hessian) const;
 
   /* Computes the first and second derivatives of the constraint cost
-  ℓ̃ (α) = ℓ(v + α⋅w).
+  ℓ̃(α) = ℓ(v + α⋅w).
 
-  @param coupler_data Constraint data computed at v + α⋅w.
+  @param gain_data Constraint data computed at v + α⋅w.
   @param w The search direction.
   @param Gw_scratch Scratch space for intermediate values for each clique.
   @param[out] dcost The first derivative dℓ̃ /dα on output.

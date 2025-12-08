@@ -167,10 +167,6 @@ class IcfModel {
     return patch_constraints_pool_;
   }
 
-  int num_patch_constraints() const {
-    return patch_constraints_pool_.num_patches();
-  }
-
   int num_coupler_constraints() const {
     return coupler_constraints_pool_.num_constraints();
   }
@@ -181,6 +177,10 @@ class IcfModel {
 
   int num_limit_constraints() const {
     return limit_constraints_pool_.num_constraints();
+  }
+
+  int num_patch_constraints() const {
+    return patch_constraints_pool_.num_patches();
   }
 
   /* Returns the time step δt. */

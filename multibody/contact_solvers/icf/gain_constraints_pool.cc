@@ -16,7 +16,7 @@ using Eigen::VectorBlock;
 template <typename T>
 GainConstraintsPool<T>::GainConstraintsPool(const IcfModel<T>* parent_model)
     : model_(parent_model) {
-  DRAKE_ASSERT(parent_model != nullptr);
+  DRAKE_DEMAND(parent_model != nullptr);
 }
 
 template <typename T>
@@ -34,14 +34,13 @@ void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
 }
 
 template <typename T>
-void GainConstraintsPool<T>::Set(const int index, int clique,
-                                 const VectorX<T>& K, const VectorX<T>& b,
-                                 const VectorX<T>& e) {
-  DRAKE_ASSERT(index >= 0 && index < num_constraints());
+void GainConstraintsPool<T>::Set(int index, int clique, const VectorX<T>& K,
+                                 const VectorX<T>& b, const VectorX<T>& e) {
+  DRAKE_ASSERT(0 <= index && index < num_constraints());
   const int nv = model().clique_size(clique);
-  DRAKE_DEMAND(K.size() == nv);
-  DRAKE_DEMAND(b.size() == nv);
-  DRAKE_DEMAND(e.size() == nv);
+  DRAKE_ASSERT(K.size() == nv);
+  DRAKE_ASSERT(b.size() == nv);
+  DRAKE_ASSERT(e.size() == nv);
   clique_[index] = clique;
   constraint_size_[index] = nv;
   K_[index] = K;
@@ -60,23 +59,24 @@ void GainConstraintsPool<T>::CalcData(
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
     VectorBlock<const VectorX<T>> vk = model().clique_segment(c, v);
-    VectorXView gk = gain_data->mutable_gamma(k);
+    VectorXView gamma_k = gain_data->mutable_gamma(k);
     VectorXView Gk = gain_data->mutable_G(k);
-    cost += Clamp(k, vk, &gk, &Gk);
+    cost += Clamp(k, vk, &gamma_k, &Gk);
   }
 }
 
 template <typename T>
 void GainConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                 VectorX<T>* gradient) const {
-  const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
+  DRAKE_ASSERT(gradient != nullptr);
 
+  const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
     VectorBlock<VectorX<T>> gradient_c =
         model().mutable_clique_segment(c, gradient);
-    ConstVectorXView gk = gain_data.gamma(k);
-    gradient_c -= gk;
+    ConstVectorXView gamma_k = gain_data.gamma(k);
+    gradient_c -= gamma_k;
   }
 }
 
@@ -84,10 +84,13 @@ template <typename T>
 void GainConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data,
     BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
-  const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
+  DRAKE_ASSERT(hessian != nullptr);
 
+  const GainConstraintsDataPool<T>& gain_data = data.gain_constraints_data();
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = clique_[k];
+
+    // TODO(vincekurtz): use data.scratch() to avoid allocating Gk here.
     const MatrixX<T> Gk = gain_data.G(k).asDiagonal();
     hessian->AddToBlock(c, c, Gk);
   }
@@ -98,6 +101,8 @@ void GainConstraintsPool<T>::CalcCostAlongLine(
     const GainConstraintsDataPool<T>& gain_data, const VectorX<T>& w,
     EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
   DRAKE_ASSERT(Gw_scratch != nullptr);
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
   EigenPool<VectorX<T>>& Gw_pool = *Gw_scratch;
 
   *dcost = 0.0;
@@ -108,10 +113,10 @@ void GainConstraintsPool<T>::CalcCostAlongLine(
     Gw_pool.Resize(1, model().clique_size(c), 1);
     VectorXView G_times_w = Gw_pool[0];
 
-    ConstVectorXView gk = gain_data.gamma(k);
+    ConstVectorXView gamma_k = gain_data.gamma(k);
     ConstVectorXView Gk = gain_data.G(k);
     G_times_w = Gk.asDiagonal() * w_c;
-    (*dcost) -= w_c.dot(gk);
+    (*dcost) -= w_c.dot(gamma_k);
     (*d2cost) += w_c.dot(G_times_w);
   }
 }
@@ -120,52 +125,52 @@ template <typename T>
 T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
                                 EigenPtr<VectorX<T>> gamma,
                                 EigenPtr<VectorX<T>> G) const {
-  const int n = v.size();
-  DRAKE_ASSERT(gamma->size() == n);
-  DRAKE_ASSERT(G->size() == n);
+  const int nv = v.size();
+  DRAKE_DEMAND(gamma->size() == nv);
+  DRAKE_DEMAND(G->size() == nv);
   using std::max;
   using std::min;
 
   const T& dt = model().time_step();
 
   T cost = 0;
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < nv; ++i) {
     const T& ki = K_[k][i];
     const T& bi = b_[k][i];
     const T& lei = le_[k][i];
     const T& uei = ue_[k][i];
     const T& vi = v[i];
-    T& gi = (*gamma)[i];
+    T& gamma_i = (*gamma)[i];
     T& Gi = (*G)[i];
 
     const T yi = -ki * vi + bi;
 
     if (yi < lei) {
       // Below lower limit.
-      gi = dt * lei;
+      gamma_i = dt * lei;
       Gi = 0.0;
       if (ki > 0) {
-        cost += gi * (yi - 0.5 * lei) / ki;
+        cost += gamma_i * (yi - 0.5 * lei) / ki;
       } else {
-        cost -= gi * vi;  // Zero gain case.
+        cost -= gamma_i * vi;  // Zero gain case.
       }
     } else if (yi > uei) {
       // Above upper limit.
-      gi = dt * uei;
+      gamma_i = dt * uei;
       Gi = 0.0;
       if (ki > 0) {
-        cost += gi * (yi - 0.5 * uei) / ki;
+        cost += gamma_i * (yi - 0.5 * uei) / ki;
       } else {
-        cost -= gi * vi;  // Zero gain case.
+        cost -= gamma_i * vi;  // Zero gain case.
       }
     } else {
       // Within limit.
-      gi = dt * yi;
+      gamma_i = dt * yi;
       Gi = dt * ki;
       if (ki > 0) {
         cost += 0.5 * yi * yi * dt / ki;
       } else {
-        cost -= gi * vi;  // Zero gain case.
+        cost -= gamma_i * vi;  // Zero gain case.
       }
     }
   }
