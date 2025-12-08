@@ -53,14 +53,16 @@ class IcfBuilder {
          actuation forces τ = clamp(-Kᵤ⋅v + b, e).
   @param external_feedback Optional linearization data (Kₑ, bₑ) for external
          forces τ = -Kₑ⋅v + bₑ.
-  @param model The IcfModel to update. */
+  @param model The IcfModel to update.
+
+  TODO(CENIC): make sure to test that UpdateModel limits heap allocations. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    const LinearFeedbackGains<T>* actuation_feedback,
                    const LinearFeedbackGains<T>* external_feedback,
                    IcfModel<T>* model);
 
   /* Updates the IcfModel for a problem without actuation or external force
-   * constraints. */
+  constraints. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    IcfModel<T>* model) {
     UpdateModel(context, time_step, nullptr, nullptr, model);
