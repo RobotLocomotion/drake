@@ -219,9 +219,9 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
 template <typename T>
 void IcfBuilder<T>::UpdateModel(
     const systems::Context<T>& context, const T& time_step,
-    std::optional<LinearFeedbackGains<T>> actuation_feedback,
-    std::optional<LinearFeedbackGains<T>> external_feedback,
-    IcfModel<T>* model) {
+    const LinearFeedbackGains<T>* actuation_feedback,
+    const LinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) {
+  DRAKE_ASSERT(model != nullptr);
   const SpanningForest& forest = GetInternalTree(plant()).forest();
   const int nv = plant().num_velocities();
 
@@ -314,19 +314,19 @@ void IcfBuilder<T>::UpdateModel(
 
   // Gain and external force constraints
   // N.B. external forces must come first, followed by actuation
-  AllocateGainConstraints(model, actuation_feedback.has_value(),
-                          external_feedback.has_value());
-  if (external_feedback) {
+  AllocateGainConstraints(model, actuation_feedback != nullptr,
+                          external_feedback != nullptr);
+  if (external_feedback != nullptr) {
     const VectorX<T>& Ke = external_feedback->K;
     const VectorX<T>& be = external_feedback->b;
     SetExternalGainConstraints(Ke, be, model);
   }
-  if (actuation_feedback) {
+  if (actuation_feedback != nullptr) {
     const VectorX<T>& Ku = actuation_feedback->K;
     const VectorX<T>& bu = actuation_feedback->b;
     // N.B. actuation constraint indices in the pool depend on whether external
     // or not external forces are present in the model.
-    SetActuationGainConstraints(Ku, bu, external_feedback.has_value(), model);
+    SetActuationGainConstraints(Ku, bu, external_feedback != nullptr, model);
   }
 
   // Define the sparsity pattern, which defines which cliques are connected by
@@ -336,7 +336,36 @@ void IcfBuilder<T>::UpdateModel(
 
 template <typename T>
 void IcfBuilder<T>::UpdateModel(const T& time_step, IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
   model->UpdateTimeStep(time_step);
+}
+
+template <typename T>
+void IcfBuilder<T>::UpdateModel(
+    const T& time_step, const LinearFeedbackGains<T>* actuation_feedback,
+    const LinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+
+  model->UpdateTimeStep(time_step);
+
+  // N.B. external forces must come first, followed by actuation.
+  auto& gain_constraints = model->gain_constraints_pool();
+  DRAKE_DEMAND(gain_constraints.num_constraints() ==
+               model->num_cliques() *
+                   ((external_feedback != nullptr ? 1 : 0) +
+                    (actuation_feedback != nullptr ? 1 : 0)));
+  if (external_feedback != nullptr) {
+    const VectorX<T>& Ke = external_feedback->K;
+    const VectorX<T>& be = external_feedback->b;
+    SetExternalGainConstraints(Ke, be, model);
+  }
+  if (actuation_feedback != nullptr) {
+    const VectorX<T>& Ku = actuation_feedback->K;
+    const VectorX<T>& bu = actuation_feedback->b;
+    // N.B. actuation constraint indices in the pool depend on whether external
+    // or not external forces are present in the model.
+    SetActuationGainConstraints(Ku, bu, external_feedback != nullptr, model);
+  }
 }
 
 template <typename T>

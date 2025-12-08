@@ -55,19 +55,28 @@ class IcfBuilder {
          forces τ = -Kₑ⋅v + bₑ.
   @param model The IcfModel to update. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
-                   std::optional<LinearFeedbackGains<T>> actuation_feedback,
-                   std::optional<LinearFeedbackGains<T>> external_feedback,
+                   const LinearFeedbackGains<T>* actuation_feedback,
+                   const LinearFeedbackGains<T>* external_feedback,
                    IcfModel<T>* model);
 
   /* Updates the IcfModel for a problem without actuation or external force
    * constraints. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    IcfModel<T>* model) {
-    UpdateModel(context, time_step, std::nullopt, std::nullopt, model);
+    UpdateModel(context, time_step, nullptr, nullptr, model);
   }
 
   /* Updates only the time step δt. All other model data remains unchanged. */
   void UpdateModel(const T& time_step, IcfModel<T>* model) const;
+
+  /* Updates only the time step δt and feedback gains. All other model data
+  remains unchanged.
+  @pre The existence (i.e., nullness) of the two feedbacks values must match the
+  existence of the most recent prior call to UpdateModel(). */
+  void UpdateModel(const T& time_step,
+                   const LinearFeedbackGains<T>* actuation_feedback,
+                   const LinearFeedbackGains<T>* external_feedback,
+                   IcfModel<T>* model) const;
 
  private:
   /* Scratch workspace data to build the model. */
