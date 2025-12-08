@@ -7,6 +7,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
@@ -47,18 +48,24 @@ class IcfData {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
                 int num_couplers, std::span<const int> gain_sizes,
-                std::span<const int> limit_sizes);
+                std::span<const int> limit_sizes,
+                std::span<const int> patch_sizes);
 
     // Scratch space for CalcMomentumTerms. Holds at most one vector of size
-    // num_velocities().
+    // IcfModel::num_velocities().
     EigenPool<VectorX<T>> Av_minus_r;
 
     // Scratch space for CalcCostAlongLine.
-    // Body spatial velocities at v + α⋅w. Holds at most num_bodies() vectors.
+    // Body spatial velocities at v + α⋅w. Holds at most IcfModel::num_bodies()
+    // vectors.
     EigenPool<Vector6<T>> V_WB_alpha;
 
+    // Patch spatial velocities, holds at most
+    // PatchConstraintsPool::num_patches() vectors.
+    EigenPool<Vector6<T>> U_AbB_W;
+
     // Generalized velocities at v + α⋅w. Holds at most one vector of size
-    // num_velocities().
+    // IcfModel::num_velocities().
     EigenPool<VectorX<T>> v_alpha;
 
     // Scratch space for constraint projection in CalcCostAlongLine. Each of
@@ -70,6 +77,7 @@ class IcfData {
     CouplerConstraintsDataPool<T> coupler_constraints_data;
     GainConstraintsDataPool<T> gain_constraints_data;
     LimitConstraintsDataPool<T> limit_constraints_data;
+    PatchConstraintsDataPool<T> patch_constraints_data;
 
     // Scratch space for coupler constraints Hessian accumulation. Holds at most
     // one matrix of size max_clique_size() x max_clique_size().
@@ -99,10 +107,13 @@ class IcfData {
   @param max_clique_size Maximum number of velocities in any clique.
   @param num_couplers Number of coupler constraints.
   @param gain_sizes Number of velocities for each gain constraint.
-  @param limit_sizes Number of velocities for each limit constraint. */
+  @param limit_sizes Number of velocities for each limit constraint.
+  @param patch_sizes Number of contact pairs for each patch constraint, of size
+                     equal to the number of patches. */
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
               int num_couplers, std::span<const int> gain_sizes,
-              std::span<const int> limit_sizes);
+              std::span<const int> limit_sizes,
+              std::span<const int> patch_sizes);
 
   /* Returns the number of generalized velocities in the system. */
   int num_velocities() const { return v_.size(); }
@@ -165,6 +176,14 @@ class IcfData {
     return limit_constraints_data_;
   }
 
+  /* Returns the data pool for contact constraints. */
+  const PatchConstraintsDataPool<T>& patch_constraints_data() const {
+    return patch_constraints_data_;
+  }
+  PatchConstraintsDataPool<T>& mutable_patch_constraints_data() {
+    return patch_constraints_data_;
+  }
+
   /* Returns a mutable scratch space for intermediate computations. We allow
   IcfModel to write on the scratch as needed. */
   Scratch& scratch() const { return scratch_; }
@@ -181,6 +200,7 @@ class IcfData {
   CouplerConstraintsDataPool<T> coupler_constraints_data_;
   GainConstraintsDataPool<T> gain_constraints_data_;
   LimitConstraintsDataPool<T> limit_constraints_data_;
+  PatchConstraintsDataPool<T> patch_constraints_data_;
 
   mutable Scratch scratch_;
 };
