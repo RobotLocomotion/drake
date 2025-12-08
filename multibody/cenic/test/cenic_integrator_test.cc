@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -130,12 +131,12 @@ class CenicTester {
  public:
   CenicTester() = delete;
 
-  static void LinearizeExternalSystem(
-      CenicIntegrator<double>* integrator, const double h,
+  static std::tuple<bool, bool> LinearizeExternalSystem(
+      CenicIntegrator<double>* integrator, double h,
       LinearFeedbackGains<double>* actuation_feedback,
       LinearFeedbackGains<double>* external_feedback) {
-    integrator->LinearizeExternalSystem(h, actuation_feedback,
-                                        external_feedback);
+    return integrator->LinearizeExternalSystem(h, actuation_feedback,
+                                               external_feedback);
   }
 };
 
@@ -322,8 +323,13 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   LinearFeedbackGains<double> external_feedback;  // unused here
   actuation_feedback.resize(nv);
   external_feedback.resize(nv);
-  CenicTester::LinearizeExternalSystem(&integrator, h, &actuation_feedback,
-                                       &external_feedback);
+  bool has_actuation_forces;
+  bool has_feedback_forces;
+  std::tie(has_actuation_forces, has_feedback_forces) =
+      CenicTester::LinearizeExternalSystem(&integrator, h, &actuation_feedback,
+                                           &external_feedback);
+  ASSERT_TRUE(has_actuation_forces);
+  unused(has_feedback_forces);
   const VectorXd& K = actuation_feedback.K;
   const VectorXd& b = actuation_feedback.b;
 
@@ -377,7 +383,7 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   IcfBuilder<double>& icf_builder = integrator.builder();
   IcfModel<double> model;
   IcfData<double> data;
-  icf_builder.UpdateModel(plant_context, h, actuation_feedback, std::nullopt,
+  icf_builder.UpdateModel(plant_context, h, &actuation_feedback, nullptr,
                           &model);
   model.ResizeData(&data);
   model.CalcData(v, &data);
