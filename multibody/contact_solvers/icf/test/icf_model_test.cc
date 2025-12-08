@@ -262,15 +262,14 @@ void AddPatchConstraints(IcfModel<T>* model) {
   const T friction = 0.5;
 
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
-  // Resize to hold three patches with one contact pair each.
-  // N.B. num_pairs_per_patch is allocated on the heap.
+  // Resize to hold four patches with one contact pair each.
   const std::vector<int> num_pairs_per_patch = {1, 1, 1};
   patches.Resize(num_pairs_per_patch);
 
-  // first patch
+  // First patch is between two non-anchored bodies, with body A floating.
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
-    patches.SetPatch(0 /* patch index */, 1 /* body A */, 2 /* body B */,
+    patches.SetPatch(0 /* patch index */, 2 /* body A */, 1 /* body B */,
                      dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
@@ -280,29 +279,29 @@ void AddPatchConstraints(IcfModel<T>* model) {
                     fn0, stiffness);
   }
 
-  // Single clique patch.
-  {
-    const Vector3<T> p_AB_W(0.0, 0.05, 0.0);  // A = World.
-    patches.SetPatch(1 /* patch index */, 0 /* World */, 2 /* body B */,
-                     dissipation, friction, friction, p_AB_W);
-
-    const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
-    const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
-    const T fn0 = 1.5;
-    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
-                    fn0, stiffness);
-  }
-
-  // Third patch
+  // Second patch is between two non-anchored bodies, with body B floating.
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
-    patches.SetPatch(2 /* patch index */, 3 /* World */, 2 /* body B */,
+    patches.SetPatch(2 /* patch index */, 1 /* body A */, 2 /* body B */,
                      dissipation, friction, friction, p_AB_W);
 
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
     patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Third patch is between an anchored body (the world) and a dynamic body.
+  {
+    const Vector3<T> p_AB_W(0.0, 0.05, 0.0);
+    patches.SetPatch(1 /* patch index */, 0 /* World */, 3 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
+    const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
+    const T fn0 = 1.5;
+    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
 }
@@ -417,7 +416,7 @@ GTEST_TEST(IcfModel, LimitMallocOnPatchConstrainedCalcData) {
   EXPECT_EQ(data.patch_constraints_data().num_constraints(), 3);
 
   const int nv = model.num_velocities();
-  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
@@ -511,7 +510,7 @@ GTEST_TEST(IcfModel, CalcGradients) {
   EXPECT_EQ(data.num_velocities(), nv);
   EXPECT_EQ(model.num_constraints(), 8);
 
-  VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorXd v_values = VectorXd::LinSpaced(nv, -10.0, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
