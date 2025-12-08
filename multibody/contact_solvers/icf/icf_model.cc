@@ -15,7 +15,8 @@ using Eigen::VectorBlock;
 template <typename T>
 IcfModel<T>::IcfModel()
     : params_{std::make_unique<IcfParameters<T>>()},
-      coupler_constraints_pool_(this) {}
+      coupler_constraints_pool_(this),
+      gain_constraints_pool_(this) {}
 
 template <typename T>
 void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
@@ -84,7 +85,8 @@ Eigen::VectorBlock<VectorX<T>> IcfModel<T>::mutable_clique_segment(
 template <typename T>
 void IcfModel<T>::ResizeData(IcfData<T>* data) const {
   data->Resize(num_bodies_, num_velocities_, max_clique_size_,
-               coupler_constraints_pool_.num_constraints());
+               coupler_constraints_pool_.num_constraints(),
+               gain_constraints_pool_.constraint_sizes());
 }
 
 template <typename T>
@@ -102,14 +104,17 @@ void IcfModel<T>::CalcData(const VectorX<T>& v, IcfData<T>* data) const {
   // Compute constraint data.
   coupler_constraints_pool_.CalcData(v,
                                      &data->mutable_coupler_constraints_data());
+  gain_constraints_pool_.CalcData(v, &data->mutable_gain_constraints_data());
 
   // Accumulate gradient contributions from constraints.
   VectorX<T>& gradient = data->mutable_gradient();
   coupler_constraints_pool_.AccumulateGradient(*data, &gradient);
+  gain_constraints_pool_.AccumulateGradient(*data, &gradient);
 
   // Accumulate cost contributions from constraints.
   data->set_cost(data->momentum_cost() +
-                 data->coupler_constraints_data().cost());
+                 data->coupler_constraints_data().cost() +
+                 data->gain_constraints_data().cost());
 }
 
 template <typename T>
@@ -135,6 +140,7 @@ void IcfModel<T>::UpdateHessian(
 
   // Add constraints' contributions.
   coupler_constraints_pool_.AccumulateHessian(data, hessian);
+  gain_constraints_pool_.AccumulateHessian(data, hessian);
 }
 
 template <typename T>
@@ -197,6 +203,21 @@ T IcfModel<T>::CalcCostAlongLine(
     *d2cost_dalpha2 += constraint_d2cost;
   }
 
+  // Add gain constraints contributions:
+  {
+    T constraint_dcost, constraint_d2cost;
+
+    gain_constraints_pool_.CalcData(v_alpha,
+                                    &data.scratch().gain_constraints_data);
+    gain_constraints_pool_.CalcCostAlongLine(
+        data.scratch().gain_constraints_data, search_direction.w,
+        &data.scratch().Gw_gain, &constraint_dcost, &constraint_d2cost);
+
+    cost += data.scratch().gain_constraints_data.cost();
+    *dcost_dalpha += constraint_dcost;
+    *d2cost_dalpha2 += constraint_d2cost;
+  }
+
   return cost;
 }
 
@@ -213,9 +234,6 @@ void IcfModel<T>::SetSparsityPattern() {
   for (int i = 0; i < num_cliques_; ++i) {
     sparsity[i].emplace_back(i);
   }
-
-  // TODO(#23769): Build off-diagonal entries in the sparsity pattern from
-  // constraints.
 
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
