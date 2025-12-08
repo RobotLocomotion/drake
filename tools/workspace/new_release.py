@@ -66,6 +66,7 @@ _SCRIPTED_RULE_TYPE = "scripted"
 _IGNORED_REPOSITORIES = [
     "clang_cindex_python3_internal",  # Uses a non-default branch.
     "mosek",  # Requires special, non-automated care during upgrades.
+    "mypy_internal",  # Pinned as Drake lacks supporting infrastructure.
     "pybind11",  # Uses a non-default branch.
     "usockets_internal",  # Pinned due to upstream regression.
     "uwebsockets_internal",  # Pinned due to upstream regression.
