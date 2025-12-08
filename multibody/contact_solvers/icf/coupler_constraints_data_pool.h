@@ -29,7 +29,7 @@ class CouplerConstraintsDataPool {
   /* Resizes the pool, allocating memory only as necessary. */
   void Resize(int num_couplers) { gamma_pool_.resize(num_couplers); }
 
-  /* Returns the number of gain constraints this data is for. */
+  /* Returns the number of coupler constraints this data is for. */
   int num_constraints() const { return ssize(gamma_pool_); }
 
   /* Returns the constraint impulse γ = -∇ℓ(v) for the k-th constraint in the

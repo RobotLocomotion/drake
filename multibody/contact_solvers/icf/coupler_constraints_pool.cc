@@ -23,15 +23,6 @@ template <typename T>
 CouplerConstraintsPool<T>::~CouplerConstraintsPool() = default;
 
 template <typename T>
-void CouplerConstraintsPool<T>::Clear() {
-  constraint_to_clique_.clear();
-  dofs_.clear();
-  gear_ratio_.clear();
-  g_hat_.clear();
-  R_.clear();
-}
-
-template <typename T>
 void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
   constraint_to_clique_.resize(num_constraints);
   dofs_.resize(num_constraints);
