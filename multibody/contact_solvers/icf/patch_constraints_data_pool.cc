@@ -7,6 +7,9 @@ namespace icf {
 namespace internal {
 
 template <typename T>
+PatchConstraintsDataPool<T>::~PatchConstraintsDataPool() = default;
+
+template <typename T>
 void PatchConstraintsDataPool<T>::Resize(std::span<const int> patch_size) {
   num_patches_ = ssize(patch_size);
   num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);

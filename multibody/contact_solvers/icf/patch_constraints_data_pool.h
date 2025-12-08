@@ -18,7 +18,9 @@ namespace internal {
 /* Data pool for contact constraints. This data is updated at each solver
 iteration, as opposed to the PatchConstraintsPool, which defines the
 constraints themselves and is fixed for the lifetime of the optimization
-problem. */
+problem.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class PatchConstraintsDataPool {
  public:
@@ -26,6 +28,8 @@ class PatchConstraintsDataPool {
 
   /* Constructs an empty pool. */
   PatchConstraintsDataPool() = default;
+
+  ~PatchConstraintsDataPool();
 
   /* Returns the number of patches in the pool. */
   int num_patches() const { return num_patches_; }
@@ -41,30 +45,29 @@ class PatchConstraintsDataPool {
   void Resize(std::span<const int> patch_size);
 
   /* Returns the Hessian block for each patch. */
-  EigenPool<Matrix6<T>>& G_Bp_pool() { return G_Bp_pool_; }
   const EigenPool<Matrix6<T>>& G_Bp_pool() const { return G_Bp_pool_; }
+  EigenPool<Matrix6<T>>& mutable_G_Bp_pool() { return G_Bp_pool_; }
 
   /* Returns contact velocities for each pair. */
-  EigenPool<Vector3<T>>& v_AcBc_W_pool() { return v_AcBc_W_; }
   const EigenPool<Vector3<T>>& v_AcBc_W_pool() const { return v_AcBc_W_; }
+  EigenPool<Vector3<T>>& mutable_v_AcBc_W_pool() { return v_AcBc_W_; }
 
   /* Returns constraint impulses (gradients) for each patch. */
-  EigenPool<Vector6<T>>& Gamma_Bo_W_pool() { return Gamma_Bo_W_; }
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool() const { return Gamma_Bo_W_; }
+  EigenPool<Vector6<T>>& mutable_Gamma_Bo_W_pool() { return Gamma_Bo_W_; }
 
   /* Returns the cost contribution for each patch. */
   const std::vector<T>& cost_pool() const { return cost_pool_; }
-  std::vector<T>& cost_pool() { return cost_pool_; }
+  std::vector<T>& mutable_cost_pool() { return cost_pool_; }
 
   /* Returns the total cost over all patches. */
   const T& cost() const { return cost_; }
-  T& cost() { return cost_; }
+  T& mutable_cost() { return cost_; }
 
  private:
   int num_patches_{0};
   int num_pairs_{0};
-
-  T cost_{0.0};
+  T cost_{NAN};
 
   // Data per patch.
   std::vector<T> cost_pool_;

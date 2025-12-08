@@ -23,15 +23,19 @@ template <typename T>
 class IcfModel;
 
 /* A pool of contact constraints organized by patches. Each patch involves two
-bodies and one (point contact) or more (hydroelastic) contact pairs.
+bodies and one or more contact pairs.
 
-Each constraint (patch) adds a cost term ℓ_c(v) to the overall ICF cost. The
-gradient of this cost term is ∇ℓ_c = -Jᵀγ, where J is the contact Jacobian and
+Each constraint (patch) adds a cost term ℓ(v) to the overall ICF cost. The
+gradient of this cost term is ∇ℓ = -Jᵀγ, where J is the contact Jacobian and
 γ are contact impulses.
 
 A unique feature of this constraint type is that all contacts are expressed
 between bodies in the world frame. This allows us to avoid expensive
 intermediate frame computations and reduce FLOP counts.
+
+Additionally, contact pairs between the same two bodies are grouped into a
+single patch constraint, limiting the number of constraints in the problem as a
+whole.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -45,20 +49,13 @@ class PatchConstraintsPool {
   /* Constructs an empty pool. */
   explicit PatchConstraintsPool(const IcfModel<T>* parent_model);
 
+  ~PatchConstraintsPool();
+
   /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
   /* Returns the number of patches (pairs of contacting bodies) in the pool. */
   int num_patches() const { return ssize(num_pairs_); }
-
-  /* Returns the number of constraints in the pool. We introduce one constraint
-  for each patch. */
-  int num_constraints() const { return num_patches(); }
-
-  /* Returns the number of pairs in each patch. */
-  std::span<const int> patch_sizes() const {
-    return std::span<const int>(num_pairs_);
-  }
 
   /* Returns the number of pairs in the given patch. */
   int num_pairs(int patch_index) const {
@@ -66,21 +63,35 @@ class PatchConstraintsPool {
     return num_pairs_[patch_index];
   }
 
+  /* Returns the number of pairs in each patch. */
+  std::span<const int> patch_sizes() const {
+    return std::span<const int>(num_pairs_);
+  }
+
   /* Returns the total number of pairs across all patches. */
   int total_num_pairs() const { return ssize(fn0_); }
 
-  /* Sets the stiction tolerance used for friction regularization. */
+  /* Returns the number of constraints in the pool. We introduce one constraint
+  for each patch. */
+  int num_constraints() const { return num_patches(); }
+
+  /* Sets the stiction tolerance used for friction regularization.
+
+  This is a velocity, in m/s. Objects in stiction may slide tangentially at
+  velocities up to this value. Additionally, we transition smoothly from static
+  to dynamic friction coefficients at around 10× this velocity. See
+  [Kurtz and Castro, 2025] for details. */
   void set_stiction_tolerance(double stiction_tolerance) {
     DRAKE_DEMAND(stiction_tolerance > 0.0);
     stiction_tolerance_ = stiction_tolerance;
   }
 
-  /* Resizes to store the given patches and pairs.
+  /* Resizes this constraint pool to store the given patches and pairs.
 
   @param num_pairs_per_patch Number of contact pairs for each patch.
 
-  @warning After resizing, all patches and pairs will hold invalid data until
-  SetPatch() and SetPair() are called for each patch and pair. */
+  @warning After resizing, constraints may hold invalid data until SetPatch()
+  and SetPair() are called for each patch and pair. */
   void Resize(std::span<const int> num_pairs_per_patch);
 
   /* Sets the contact patch between bodies A and B.
@@ -136,7 +147,7 @@ class PatchConstraintsPool {
           hessian) const;
 
   /* Computes the first and second derivatives of the constraint cost
-  ℓ̃ (α) = ℓ(v + α⋅w).
+  ℓ̃(α) = ℓ(v + α⋅w).
 
   @param patch_data The pre-computed patch constraint data at v + α⋅w.
   @param U_WB Body spatial velocities associated with u = v + αw.
@@ -181,7 +192,7 @@ class PatchConstraintsPool {
                            EigenPool<Matrix6<T>>* patch_hessians_pool) const;
 
   // The parent model.
-  const IcfModel<T>* model_{nullptr};
+  const IcfModel<T>* const model_;
 
   // The stiction tolerance vₛ (m/s) for regularized friction.
   double stiction_tolerance_{1.0e-4};
@@ -192,7 +203,7 @@ class PatchConstraintsPool {
   // the normal impulse from the previous time step.
   double sigma_{1.0e-3};
 
-  // Data per patch. Indexed by patch index p < num_patches()
+  // Data per patch. Indexed by patch index p < num_patches().
   std::vector<int> num_pairs_;    // Number of pairs per patch.
   std::vector<int> num_cliques_;  // Number of cliques (one or two).
   std::vector<T> Rt_;             // Friction regularization Rₜ = σ⋅wₜ

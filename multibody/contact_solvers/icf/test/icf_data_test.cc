@@ -63,11 +63,11 @@ GTEST_TEST(IcfData, ResizeAndAccessors) {
   EXPECT_EQ(data.scratch().coupler_constraints_data.num_constraints(),
             num_couplers);
   EXPECT_EQ(data.scratch().gain_constraints_data.num_constraints(),
-            static_cast<int>(gain_sizes.size()));
+            ssize(gain_sizes));
   EXPECT_EQ(data.scratch().limit_constraints_data.num_constraints(),
-            static_cast<int>(limit_sizes.size()));
+            ssize(limit_sizes));
   EXPECT_EQ(data.scratch().patch_constraints_data.num_constraints(),
-            static_cast<int>(patch_sizes.size()));
+            ssize(patch_sizes));
   EXPECT_EQ(data.scratch().H_cc_pool[0].rows(), max_clique_size);
   EXPECT_EQ(data.scratch().H_cc_pool[0].cols(), max_clique_size);
   EXPECT_EQ(data.scratch().H_BB_pool[0].rows(), max_clique_size);

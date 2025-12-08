@@ -372,6 +372,32 @@ GTEST_TEST(IcfModel, LimitMallocOnCalcData) {
   }
 }
 
+/* Checks that model.CalcData does not incur any heap allocations for a model
+with contact constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnPatchConstrainedCalcData) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.patch_constraints_pool().num_constraints(), 3);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.patch_constraints_data().num_constraints(), 3);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+
+  // Computing data should not cause any new allocations.
+  {
+    drake::test::LimitMalloc guard;
+    model.CalcData(v, &data);
+  }
+}
+
 /* Iterates over each body to check sizes and such. */
 GTEST_TEST(IcfModel, PerBodyElements) {
   IcfModel<double> model;

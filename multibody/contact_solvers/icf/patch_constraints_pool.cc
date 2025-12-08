@@ -204,6 +204,9 @@ PatchConstraintsPool<T>::PatchConstraintsPool(const IcfModel<T>* parent_model)
 }
 
 template <typename T>
+PatchConstraintsPool<T>::~PatchConstraintsPool() = default;
+
+template <typename T>
 void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   num_pairs_.assign(num_pairs_per_patch.begin(), num_pairs_per_patch.end());
 
@@ -243,9 +246,9 @@ void PatchConstraintsPool<T>::SetPatch(int patch_index, int bodyA, int bodyB,
                                        const T& static_friction,
                                        const T& dynamic_friction,
                                        const Vector3<T>& p_AB_W) {
-  DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
-  DRAKE_DEMAND(bodyA != bodyB);               // Same body never makes sense.
-  DRAKE_DEMAND(!model().is_anchored(bodyB));  // B is never anchored.
+  DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
+  DRAKE_ASSERT(bodyA != bodyB);               // Same body never makes sense.
+  DRAKE_ASSERT(!model().is_anchored(bodyB));  // B is never anchored.
 
   bodies_[patch_index] =
       std::make_pair(bodyB, bodyA);  // Dynamic body B always first.
@@ -280,8 +283,8 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
                                       const Vector3<T>& normal_W, const T& fn0,
                                       const T& stiffness) {
   using std::max;
-  DRAKE_ASSERT(patch_index >= 0 && patch_index < num_patches());
-  DRAKE_ASSERT(pair_index >= 0 && pair_index < num_pairs_[patch_index]);
+  DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
+  DRAKE_ASSERT(0 <= pair_index && pair_index < num_pairs_[patch_index]);
   const int i = patch_pair_index(patch_index, pair_index);
 
   p_BC_W_[i] = p_BoC_W;
@@ -337,6 +340,7 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
 template <typename T>
 void PatchConstraintsPool<T>::CalcSparsityPattern(
     std::vector<std::vector<int>>* sparsity) const {
+  DRAKE_ASSERT(sparsity != nullptr);
   for (int p = 0; p < num_patches(); ++p) {
     // We only need to add to the sparsity if body_a is not anchored.
     const int body_a = bodies_[p].second;
@@ -357,16 +361,19 @@ template <typename T>
 void PatchConstraintsPool<T>::CalcData(
     const EigenPool<Vector6<T>>& V_WB,
     PatchConstraintsDataPool<T>* patch_data) const {
-  CalcContactVelocities(V_WB, &patch_data->v_AcBc_W_pool());
-  CalcPatchQuantities(patch_data->v_AcBc_W_pool(), &patch_data->cost_pool(),
-                      &patch_data->Gamma_Bo_W_pool(), &patch_data->G_Bp_pool());
-  patch_data->cost() = std::accumulate(patch_data->cost_pool().begin(),
-                                       patch_data->cost_pool().end(), T(0.0));
+  DRAKE_ASSERT(patch_data != nullptr);
+  CalcContactVelocities(V_WB, &patch_data->mutable_v_AcBc_W_pool());
+  CalcPatchQuantities(
+      patch_data->mutable_v_AcBc_W_pool(), &patch_data->mutable_cost_pool(),
+      &patch_data->mutable_Gamma_Bo_W_pool(), &patch_data->mutable_G_Bp_pool());
+  patch_data->mutable_cost() = std::accumulate(
+      patch_data->cost_pool().begin(), patch_data->cost_pool().end(), T(0.0));
 }
 
 template <typename T>
 void PatchConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                  VectorX<T>* gradient) const {
+  DRAKE_ASSERT(gradient != nullptr);
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
   const EigenPool<Vector6<T>>& Gamma_Bo_W_pool = patch_data.Gamma_Bo_W_pool();
 
@@ -411,6 +418,8 @@ template <typename T>
 void PatchConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data,
     BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
   const PatchConstraintsDataPool<T>& patch_data = data.patch_constraints_data();
 
   auto& H_BB_pool = data.scratch().H_BB_pool;
@@ -507,6 +516,9 @@ void PatchConstraintsPool<T>::CalcCostAlongLine(
     const PatchConstraintsDataPool<T>& patch_data,
     const EigenPool<Vector6<T>>& U_WB_pool,
     EigenPool<Vector6<T>>* U_AbB_W_pool_ptr, T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(U_AbB_W_pool_ptr != nullptr);
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
   auto& U_AbB_W_pool = *U_AbB_W_pool_ptr;
   DRAKE_ASSERT(U_AbB_W_pool.size() == num_patches());
   CalcConstraintVelocities(U_WB_pool, &U_AbB_W_pool);
