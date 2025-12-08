@@ -5,10 +5,6 @@ load(
     "cmake_configure_file",
 )
 load(
-    "//third_party:com_github_bazelbuild_rules_cc/cc_static_libary.bzl",
-    "cc_static_library",
-)
-load(
     "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
     "cc_whole_archive_library",
 )
@@ -19,7 +15,7 @@ load(
     "install_files",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load("//tools/skylark:cc.bzl", "cc_binary", "cc_library", "cc_static_library")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -278,7 +274,7 @@ install_files(
     dest = "lib",
     files = [":libdrake_static_archive"],
     rename = {
-        "lib/libdrake_static_archive.a": "libdrake.a",
+        "lib/liblibdrake_static_archive.a": "libdrake.a",
     },
 )
 
