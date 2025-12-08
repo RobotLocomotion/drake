@@ -80,7 +80,6 @@ _SRCS = [
     "lib/easygetopt.c",
     "lib/easyoptions.c",
     "lib/escape.c",
-    "lib/fopen.c",
     "lib/formdata.c",
     "lib/getenv.c",
     "lib/getinfo.c",
