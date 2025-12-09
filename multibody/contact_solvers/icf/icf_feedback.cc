@@ -1,0 +1,188 @@
+#include "drake/multibody/contact_solvers/icf/icf_feedback.h"
+
+#include <cmath>
+#include <limits>
+
+#include "drake/common/drake_assert.h"
+#include "drake/multibody/plant/multibody_plant_icf_attorney.h"
+
+namespace drake {
+namespace multibody {
+namespace contact_solvers {
+namespace icf {
+namespace internal {
+
+using multibody::internal::MultibodyPlantIcfAttorney;
+using systems::Context;
+
+template <typename T>
+IcfFeedback<T>::IcfFeedback(const MultibodyPlant<T>* plant)
+    : plant_(DRAKE_DEREF(plant)), scratch_(plant_) {}
+
+template <typename T>
+IcfFeedback<T>::~IcfFeedback() = default;
+
+template <typename T>
+std::tuple<bool, bool> IcfFeedback<T>::LinearizeExternalSystem(
+    const T& h, Context<T>& mutable_plant_context,
+    IcfLinearFeedbackGains<T>* actuation_feedback,
+    IcfLinearFeedbackGains<T>* external_feedback) const {
+  using std::abs;
+  DRAKE_ASSERT(actuation_feedback != nullptr);
+  DRAKE_ASSERT(external_feedback != nullptr);
+  const Context<T>& plant_context = mutable_plant_context;
+  plant_.ValidateContext(plant_context);
+
+  // Extract the feedback gains that we'll set.
+  VectorX<T>& Ku = actuation_feedback->K;
+  VectorX<T>& bu = actuation_feedback->b;
+  VectorX<T>& Ke = external_feedback->K;
+  VectorX<T>& be = external_feedback->b;
+  DRAKE_ASSERT(Ku.size() == plant_.num_velocities());
+  DRAKE_ASSERT(bu.size() == plant_.num_velocities());
+  DRAKE_ASSERT(Ke.size() == plant_.num_velocities());
+  DRAKE_ASSERT(be.size() == plant_.num_velocities());
+
+  // Check which (or both) of the two feedback values we actually need.
+  const bool has_actuation_forces = plant_.num_actuators() > 0;
+  const bool has_external_forces =
+      plant_.get_applied_generalized_force_input_port().HasValue(
+          plant_context) ||
+      plant_.get_applied_spatial_force_input_port().HasValue(plant_context);
+
+  // Maybe there's nothing to do.
+  if (!has_actuation_forces && !has_external_forces) {
+    return {false, false};
+  }
+
+  // Get references to pre-allocated variables.
+  VectorX<T>& gu0 = scratch_.gu0;
+  VectorX<T>& ge0 = scratch_.ge0;
+  VectorX<T>& x_prime = scratch_.x_prime;
+  VectorX<T>& gu_prime = scratch_.gu_prime;
+  VectorX<T>& ge_prime = scratch_.ge_prime;
+  MatrixX<T>& N = scratch_.N;
+
+  // Compute some quantities that depend on the current state, before messing
+  // with the state with finite differences.
+  N = plant_.MakeVelocityToQDotMap(plant_context);
+  if (has_actuation_forces) {
+    CalcActuationForces(plant_context, &gu0);
+  }
+  if (has_external_forces) {
+    CalcExternalForces(plant_context, &ge0);
+  }
+
+  // Initialize the perturbed state x = [q; v] and outputs
+  //    gu(x) = B u(x),
+  //    ge(x) = τₑₓₜ(x).
+  const VectorX<T> x =
+      plant_context.get_continuous_state_vector().CopyToVector();
+  x_prime = x;
+
+  // We'll want to perturb q and v separately, so we'll go ahead and grab these
+  // references.
+  const int nq = plant_.num_positions();
+  const int nv = plant_.num_velocities();
+  auto q = x.head(nq);
+  auto v = x.segment(nq, nv);
+  auto q_prime = x_prime.head(nq);
+  auto v_prime = x_prime.segment(nq, nv);
+
+  // Compute τ = D(v − v₀) + g₀ with forward differences.
+  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+  for (int i = 0; i < nv; ++i) {
+    // Choose a step size (the same way as how implicit_integrator.cc does it).
+    const T abs_vi = abs(v(i));
+    T dvi = (abs_vi <= 1) ? T{eps} : eps * abs_vi;
+
+    // Ensure that v' and v differ by an exactly representable number.
+    v_prime(i) = v(i) + dvi;
+    dvi = v_prime(i) - v(i);
+
+    // Perturb q as well, using the fact that q' = q + h N dv.
+    // TODO(jwnimmer-tri) This seems wasteful; the (v_prime - v) is sparse (only
+    // one element is non-zero) and typically N is also sparse.
+    q_prime = q + h * N * (v_prime - v);
+
+    // Put x' in the context and mark the state as stale.
+    mutable_plant_context.SetContinuousState(x_prime);
+
+    if (has_actuation_forces) {
+      // Compute the relevant matrix entries for actuation inputs:
+      //   Ku = -dgu/dv
+      CalcActuationForces(mutable_plant_context, &gu_prime);
+      Ku(i) = -(gu_prime(i) - gu0(i)) / dvi;
+    }
+
+    if (has_external_forces) {
+      // Same thing, but for external forces:
+      //  Ke = -dge/dv
+      CalcExternalForces(mutable_plant_context, &ge_prime);
+      Ke(i) = -(ge_prime(i) - ge0(i)) / dvi;
+    }
+
+    // Reset the state for the next iteration.
+    v_prime(i) = v(i);
+  }
+
+  // Reset the context back to how we found it.
+  mutable_plant_context.SetContinuousState(x);
+
+  // Use the diagonal projection for both K and b ensures that any non-convex
+  // portion of the dynamics is treated explicitly.
+  if (has_actuation_forces) {
+    Ku = Ku.cwiseMax(0);
+    bu = gu0 + Ku.asDiagonal() * v;
+  }
+  if (has_external_forces) {
+    Ke = Ke.cwiseMax(0);
+    be = ge0 + Ke.asDiagonal() * v;
+  }
+
+  return {has_actuation_forces, has_external_forces};
+}
+
+template <typename T>
+IcfFeedback<T>::Scratch::Scratch(const MultibodyPlant<T>& plant) {
+  const int nv = plant.num_velocities();
+  const int nq = plant.num_positions();
+  f_ext = std::make_unique<MultibodyForces<T>>(plant);
+  gu0.resize(nv);
+  ge0.resize(nv);
+  x_prime.resize(nq + nv);
+  gu_prime.resize(nv);
+  ge_prime.resize(nv);
+  N.resize(nq, nv);
+}
+
+template <typename T>
+IcfFeedback<T>::Scratch::~Scratch() = default;
+
+template <typename T>
+void IcfFeedback<T>::CalcExternalForces(const Context<T>& context,
+                                        VectorX<T>* tau) const {
+  MultibodyForces<T>& forces = *scratch_.f_ext;
+  forces.SetZero();
+  MultibodyPlantIcfAttorney<T>::AddAppliedExternalSpatialForces(plant_, context,
+                                                                &forces);
+  MultibodyPlantIcfAttorney<T>::AddAppliedExternalGeneralizedForces(
+      plant_, context, &forces);
+  plant_.CalcGeneralizedForces(context, forces, tau);
+}
+
+template <typename T>
+void IcfFeedback<T>::CalcActuationForces(const Context<T>& context,
+                                         VectorX<T>* tau) const {
+  tau->setZero();
+  MultibodyPlantIcfAttorney<T>::AddJointActuationForces(plant_, context, tau);
+}
+
+}  // namespace internal
+}  // namespace icf
+}  // namespace contact_solvers
+}  // namespace multibody
+}  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::icf::internal::IcfFeedback);

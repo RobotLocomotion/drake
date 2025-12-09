@@ -219,8 +219,8 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
 template <typename T>
 void IcfBuilder<T>::UpdateModel(
     const systems::Context<T>& context, const T& time_step,
-    const LinearFeedbackGains<T>* actuation_feedback,
-    const LinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) {
+    const IcfLinearFeedbackGains<T>* actuation_feedback,
+    const IcfLinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) {
   DRAKE_ASSERT(model != nullptr);
   const SpanningForest& forest = GetInternalTree(plant()).forest();
   const int nv = plant().num_velocities();
@@ -342,8 +342,9 @@ void IcfBuilder<T>::UpdateModel(const T& time_step, IcfModel<T>* model) const {
 
 template <typename T>
 void IcfBuilder<T>::UpdateModel(
-    const T& time_step, const LinearFeedbackGains<T>* actuation_feedback,
-    const LinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) const {
+    const T& time_step, const IcfLinearFeedbackGains<T>* actuation_feedback,
+    const IcfLinearFeedbackGains<T>* external_feedback,
+    IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
   model->UpdateTimeStep(time_step);
