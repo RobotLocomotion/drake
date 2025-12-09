@@ -114,6 +114,7 @@ struct GridData {
   /* Resets all floating point data to zero and the index to be inactive.*/
   void reset() { *this = {}; }
 
+  // XXX For autodiff, we need to use value-equality, not memcmp.
   /* Returns true iff `this` GridData is bit-wise equal to `other`. */
   bool operator==(const GridData<T>& other) const {
     return std::memcmp(this, &other, sizeof(GridData<T>)) == 0;
