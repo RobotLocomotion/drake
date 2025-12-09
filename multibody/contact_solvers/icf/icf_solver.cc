@@ -28,48 +28,54 @@ void IcfSolverStats::Clear() {
   step_norm.clear();
 }
 
-void IcfSolverStats::Reserve(int size) {
-  cost.reserve(size);
-  gradient_norm.reserve(size);
-  ls_iterations.reserve(size);
-  alpha.reserve(size);
-  step_norm.reserve(size);
+void IcfSolverStats::Reserve(int max_iterations) {
+  cost.reserve(max_iterations);
+  gradient_norm.reserve(max_iterations);
+  ls_iterations.reserve(max_iterations);
+  alpha.reserve(max_iterations);
+  step_norm.reserve(max_iterations);
 }
+
+IcfSolver::~IcfSolver() = default;
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                const double tolerance, IcfData<double>* data) {
+  DRAKE_ASSERT(data != nullptr);
+  DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
+
+  // Retrieve scratch space for decision variables vₖ and search direction Δvₖ.
   VectorXd& v = decision_variables_;
   VectorXd& dv = search_direction_;
   v.resize(model.num_velocities());
   dv.resize(model.num_velocities());
 
-  // Set the initial guess as stored in data
+  // Set the initial guess as stored in data.
   v = data->v();
 
-  // Convergence tolerances are scaled by D = diag(M)^{-1/2}, so that all
-  // entries of g̃ = Dg and ṽ = D⁻¹v have the same units [Castro 2021, IV.E].
+  // Convergence tolerances are scaled by D = diag(M)⁻¹/², so that all
+  // entries of g̃ = D⋅g and ṽ = D⁻¹⋅v have the same units [Castro et al., 2021].
   //
   // Convergence is achieved when either the (normalized) gradient is small
-  //   ‖D g‖ ≤ ε max(1, ‖D r‖),
+  //   ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
   // or the normalized) step size is sufficiently small,
-  //   η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖).
-  // where η = θ / (1 − θ), θ = ‖D⁻¹ Δvₖ‖ / ‖D⁻¹ Δvₖ₋₁‖, as per [Hairer, 1996].
+  //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖).
+  // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer, 1996].
   const VectorXd& D = model.scale_factor();
   const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
   const double epsilon = std::max(tolerance, parameters_.min_tolerance);
   const double scaled_tolerance = epsilon * scale;
 
-  double alpha{NAN};
-  int ls_iterations{0};
-  double eta = 1.0;
+  double alpha{NAN};     // Linesearch parameter α.
+  int ls_iterations{0};  // Count of linesearch iterations taken.
+  double eta = 1.0;      // Convergence scaling factor η.
   stats_.Clear();
 
   if (parameters_.print_solver_stats) {
     fmt::print("IcfSolver: starting convex solve\n");
   }
   for (int k = 0; k < parameters_.max_iterations; ++k) {
-    // Compute the cost and gradient
+    // Compute the cost and gradient.
     model.CalcData(v, data);
     const double grad_norm = (D.asDiagonal() * data->gradient()).norm();
 

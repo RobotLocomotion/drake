@@ -22,40 +22,39 @@ using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-/* Statistics to track during the optimization process. */
+/* Statistics to track during the optimization process.
+
+For quantities that are recorded at each iteration, we count k = 0 as the first
+iteration so vectors have size() == num_iterations. If the solver exits
+early (e.g., the initial guess solves the problem to tolerances), then we have
+`num_iterations = 0` and vector elements are empty. */
 struct IcfSolverStats {
-  /* The number of solver iterations.
-  Iterations are counted starting from k = 0 as the first iteration. All
-  std::vectors below will have size() == num_iterations. */
+  /* The number of solver iterations. */
   int num_iterations;
 
   /* The total number of Hessian factorizations. */
   int num_factorizations;
 
-  /* The cost ℓ(v) at each iteration.
-  Note that all std::vectors below have size() == num_iterations, so cost[0] is
-  the cost at the first iteration. If the solver exits early (e.g., the initial
-  guess solves the problem to tolerances), then we have `num_iterations = 0` and
-  these vectors are empty. */
+  /* The cost ℓ(vₖ) at each iteration. */
   std::vector<double> cost;
 
-  /* The gradient norm ||∇ℓ(v)|| at each iteration. */
+  /* The gradient norm ||∇ℓ(vₖ)|| at each iteration. */
   std::vector<double> gradient_norm;
 
-  /* The number of linesearch iterations at each solver iteration. */
+  /* The number of linesearch iterations performed at each solver iteration. */
   std::vector<int> ls_iterations;
 
   /* The linesearch parameter α at each iteration. */
   std::vector<double> alpha;
 
-  /* The step size at this iteration, ||Δvₖ|| */
+  /* The step size ||Δvₖ|| at each iteration. */
   std::vector<double> step_norm;
 
   /* Resets the stats to start a new solve. */
   void Clear();
 
   /* Reserves space for the vectors to avoid reallocations. */
-  void Reserve(int size);
+  void Reserve(int max_iterations);
 };
 
 /* A solver for convex Irrotational Contact Fields (ICF) problems,
@@ -63,12 +62,43 @@ struct IcfSolverStats {
     min_v ℓ(v; q₀, v₀, h)
 
 where (q₀, v₀) is the initial state, h is the time step, and ℓ(v) is the
-convex cost. */
+convex cost.
+
+This solver uses a Newton method with exact linesearch to find the
+optimal next-step velocities v. That is, at each iteration k, we compute the
+search direction Δvₖ by solving the linear system
+
+    Hₖ⋅Δvₖ = -gₖ
+
+where Hₖ = ∇²ℓ(vₖ) is the Hessian at vₖ and gₖ = ∇ℓ(vₖ) is the gradient. We then
+perform an exact linesearch to find the optimal step size αₖ that minimizes
+
+    min_α ℓ̃(α) = ℓ(vₖ + α Δvₖ),  α ∈ [0, α_max]
+
+and update the decision variables
+
+    vₖ₊₁ = vₖ + αₖ Δvₖ.
+
+This process repeats until convergence.
+
+Additionally, this solver supports optional Hessian reuse to avoid the cost of
+recomputing and refactoring the Hessian at each iteration. Since ℓ(v) is convex,
+any positive definite approximation of Hₖ can be used to compute the search
+direction, and the problem will still be guaranteed to converge (albeit more
+slowly). Hessian reuse takes advantage of this fact by reusing Hₖ from a
+previous iteration (or even a previous solve!) when convergence is sufficiently
+fast. The solver monitors convergence and automatically recomputes the Hessian
+only when necessary to regain fast (Newton-like) convergence.
+
+See IcfSolverParameters for further details. */
 class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
 
+  /* Instantiates a solver with default parameters. */
   IcfSolver() { stats_.Reserve(parameters_.max_iterations); }
+
+  ~IcfSolver();
 
   /* Solves the convex problem to compute next-step velocities v = min ℓ(v).
 
@@ -77,7 +107,7 @@ class IcfSolver {
   @param data The ICF data structure to be updated with the solution. To
               begin, stores the initial guess for velocities v.
 
-  @return true if and only if the optimizer converged.
+  @return true if and only if the optimizer converged to tolerance ε.
 
   N.B. the caller must ensure that the model and data are compatible, i.e.,
   model.ResizeData(&data) has been called. */
