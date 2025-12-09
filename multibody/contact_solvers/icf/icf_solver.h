@@ -90,7 +90,7 @@ previous iteration (or even a previous solve!) when convergence is sufficiently
 fast. The solver monitors convergence and automatically recomputes the Hessian
 only when necessary to regain fast (Newton-like) convergence.
 
-See IcfSolverParameters for further details. */
+See IcfSolverParameters and README.md for further details. */
 class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
@@ -117,23 +117,31 @@ class IcfSolver {
   /* Returns solver statistics from the most recent solve. */
   const IcfSolverStats& stats() const { return stats_; }
 
+  /* Sets solver parameters, reallocating space for statistics as needed. */
   void set_parameters(const IcfSolverParameters& parameters) {
     parameters_ = parameters;
     stats_.Reserve(parameters_.max_iterations);
   }
 
+  /* Returns the current set of solver parameters. */
   const IcfSolverParameters& get_parameters() const { return parameters_; }
 
  private:
-  /* Solves min_α ℓ(v + α Δ v) using a 1D Newton method with bisection
-  fallback. Returns the linesearch parameter α and the number of iterations
-  taken. */
+  /* Solves min_α ℓ̃(α) = ℓ(v + α Δ v) using a 1D Newton method with bisection
+  fallback.
+
+  @param model The ICF model, used to evaluate ℓ̃(α) and its derivatives.
+  @param data The ICF data at the current iterate v.
+  @param dv The search direction Δv.
+
+  @returns A pair containing the optimal linesearch parameter α and the number
+  of linesearch iterations taken. */
   std::pair<double, int> PerformExactLineSearch(const IcfModel<double>& model,
                                                 const IcfData<double>& data,
                                                 const Eigen::VectorXd& dv);
 
   /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
-  Used for cubic linesearch initialization. */
+  @pre The equation in question must have exactly one real root in [0, 1]. */
   double SolveQuadraticInUnitInterval(const double a, const double b,
                                       const double c) const;
 
@@ -153,35 +161,37 @@ class IcfSolver {
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 
-  /* Indicates whether a change in problem structure requires a Hessian with a
-  new sparsity pattern. */
+  /* Indicates whether the model's sparsity pattern has changed since the last
+  time the Hessian was computed. */
   bool SparsityPatternChanged(const IcfModel<double>& model) const;
 
-  /* Stored Hessian and factorization objects. Allows for Hessian reuse
-  between iterations and between subsequent solves (which is a valid
-  strategy since the problem is convex). */
+  // Stored Hessian and factorization objects. Allows for Hessian reuse
+  // between iterations and between subsequent solves (which is a valid
+  // strategy since the problem is convex).
   std::unique_ptr<
       contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
       hessian_;
   contact_solvers::internal::BlockSparseCholeskySolver<Eigen::MatrixXd>
       hessian_factorization_;
   Eigen::LDLT<Eigen::MatrixXd> dense_hessian_factorization_;
+
+  // Data used during linesearch.
   IcfSearchDirectionData<double> search_direction_data_;
 
-  // Track the sparsity pattern for Hessian reuse
+  // Track the sparsity pattern for triggering Hessian reuse.
   std::unique_ptr<contact_solvers::internal::BlockSparsityPattern>
       previous_sparsity_pattern_;
 
-  // Flag for Hessian factorization re-use (changes between iterations)
+  // Flag for Hessian factorization re-use (changes between iterations).
   bool reuse_hessian_factorization_{true};
 
-  // Iteration limits, tolerances, and other parameters
+  // Iteration limits, tolerances, and other parameters.
   IcfSolverParameters parameters_;
 
-  // Logging utilities
+  // Statistics for logging and tracking convergence.
   IcfSolverStats stats_;
 
-  // Pre-allocated decision variables v and search direction Δv
+  // Pre-allocated decision variables v and search direction Δv.
   Eigen::VectorXd decision_variables_;
   Eigen::VectorXd search_direction_;
 };

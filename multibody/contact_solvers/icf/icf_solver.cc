@@ -180,40 +180,43 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
     const VectorXd& dv) {
   const double alpha_max = parameters_.alpha_max;
 
-  // Set up prerequisites for an efficient CalcCostAlongLine
+  // Set up prerequisites for efficiently computing ℓ̃(α) and its derivatives.
   IcfSearchDirectionData<double>& search_data = search_direction_data_;
   model.CalcSearchDirectionData(data, dv, &search_data);
 
-  // Allocate first and second derivatives of ℓ(α)
-  double dell{NAN};
-  double d2ell{NAN};
+  // Allocate first and second derivatives of ℓ̃(α).
+  double dell{NAN};   // First derivative ∂ℓ̃/∂α.
+  double d2ell{NAN};  // Second derivative ∂²ℓ̃/∂α².
 
-  // First we'll evaluate ∂ℓ/∂α at α = 0. This should be strictly negative,
+  // First we'll evaluate ∂ℓ̃/∂α at α = 0. This should be strictly negative,
   // since the Hessian is positive definite. This is cheap since we already have
   // the gradient at α = 0 cached from solving for the search direction earlier.
-  // N.B. We use a new dell0 rather than dell declared above, b/c both dell and
-  // dell0 will be used to generate an initial guess.
-  const double ell0 = data.cost();
-  const double dell0 = data.gradient().dot(dv);
+  // N.B. We use a new dell0 rather than dell declared above, because both dell
+  // and dell0 will be used below to generate an initial guess via cubic
+  // interpolation.
+  const double ell0 = data.cost();               // Cost ℓ̃(0).
+  const double dell0 = data.gradient().dot(dv);  // Derivative ∂ℓ̃/∂α at α = 0.
   if (dell0 >= 0) {
     throw std::logic_error(
-        "CenicIntegrator: the cost does not decrease along the search "
+        "IcfSolver: the cost does not decrease along the search "
         "direction. This is usually caused by an excessive accumulation of "
         "round-off errors for ill-conditioned systems. Consider revisiting "
         "your model.");
   }
 
-  // Next we'll evaluate ℓ, ∂ℓ/∂α, and ∂²ℓ/∂α² at α = α_max. If the cost is
-  // still decreasing here, we just accept α_max.
+  // Next we'll evaluate ℓ̃, ∂ℓ̃/∂α, and ∂²ℓ̃/∂α² at α = α_max. If the cost is
+  // still decreasing here, we just accept α_max to take the largest step
+  // possible.
   const double ell =
       model.CalcCostAlongLine(alpha_max, data, search_data, &dell, &d2ell);
   if (dell <= std::numeric_limits<double>::epsilon()) {
     return std::make_pair(alpha_max, 0);
   }
 
-  // TODO(vincekurtz): add a check to enable full Newton steps very close to
-  // machine epsilon, as in SapSolver. We'll need to be mindful of the fact that
-  // the cost can be negative in the pooled ICF formulation.
+  // TODO(vincekurtz): consider adding a check to enable full Newton steps when
+  // tolerances are very close to machine epsilon, as in SapSolver. We'll need
+  // to be mindful of the fact that the cost can be negative in the pooled ICF
+  // formulation.
 
   // Set the initial guess for linesearch based on a cubic hermite spline
   // between α = 0 and α = α_max. This spline takes the form
@@ -222,19 +225,22 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   //   p(1) = ℓ(α_max),
   //   p'(0) = α_max⋅ℓ'(0),
   //   p'(1) = α_max⋅ℓ'(α_max).
-  // We can then find the analytical minimum in [0, α_max], and use that to
-  // establish an initial guess for linesearch.
+  // We can then find the analytical minimum in [0, α_max] by setting p'(t) = 0
+  // and use that to establish an initial guess for linesearch.
   const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
   const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
   const double c = dell0 * alpha_max;
-  // N.B. throws if a solution cannot be found in [0, 1]
+  // This will throw if a solution to p'(t) = 0 cannot be found in [0, 1]. We
+  // know that such a solution must exist because we have already checked that
+  // ℓ̃(0) < 0 and ℓ̃(α_max) > 0.
   const double alpha_guess =
       alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
 
   // We've exhausted all of the early exit conditions, so now we move on to the
   // Newton method with bisection fallback. To do so, we define an anonymous
-  // function that computes the value and gradient of f(α) = −ℓ'(α)/ℓ'₀.
-  // Normalizing in this way reduces round-off errors, ensuring f(0) = -1.
+  // function that computes the value and gradient of f(α) = −ℓ̃'(α)/ℓ̃'₀, where
+  // ℓ̃'(α) = ∂ℓ̃/∂α and ℓ̃'₀ = ℓ̃'(0). Normalizing in this way reduces
+  // round-off errors, ensuring f(0) = -1.
   const double dell_scale = -dell0;
   auto cost_and_gradient = [&model, &data, &search_data,
                             &dell_scale](double x) {
@@ -244,13 +250,13 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
     return std::make_pair(dell_dalpha / dell_scale, d2ell_dalpha2 / dell_scale);
   };
 
-  // The initial bracket is [0, α_max], since we already know that ℓ'(0) < 0 and
-  // ℓ'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1 (by
+  // The initial bracket is [0, α_max], since we already know that ℓ̃'(0) < 0 and
+  // ℓ̃'(α_max) > 0. Values at the endpoints of the bracket are f(0) = -1 (by
   // definition) and f(α_max) = dell / dell_scale, because we just set dell =
-  // ℓ'(α_max) above.
+  // ℓ̃'(α_max) above.
   const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
-  // TODO(vincekurtz): scale linesearch tolerance based on accuracy?
+  // Finally, solve for f(α) = 0 using Newton with bisection fallback.
   const double alpha_tolerance = parameters_.ls_tolerance;
   return DoNewtonWithBisectionFallback(
       cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
@@ -274,9 +280,9 @@ double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
     s = -c / b;
   } else {
     // Use the numerically stable root-finding method described here:
-    // https://math.stackexchange.com/questions/866331/
+    // https://math.stackexchange.com/questions/866331/.
     const double discriminant = b * b - 4 * a * c;
-    DRAKE_DEMAND(discriminant >= 0);  // must have a real root
+    DRAKE_DEMAND(discriminant >= 0);  // Must have a real root.
     s = -b - sign(b) * sqrt(discriminant);
     s /= 2 * a;
     // If the first root is outside [0, 1], try the second root.
@@ -288,8 +294,7 @@ double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
   // The solution must be in [0, 1], modulo some numerical slop.
   constexpr double slop = 1e-8;
   if (s < -slop || s > 1.0 + slop) {
-    throw std::runtime_error(
-        "CenicIntegrator: quadratic root falls outside [0, 1].");
+    throw std::runtime_error("IcfSolver: quadratic root falls outside [0, 1].");
   }
 
   return clamp(s, 0.0, 1.0);  // Ensure s ∈ [0, 1].
@@ -303,33 +308,43 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
 
   if (parameters_.use_dense_algebra) {
     if (!reuse_factorization) {
-      MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
+      // Compute and factorize the dense Hessian.
+      // N.B. Dense algebra is just for testing and debugging, so we don't mind
+      // this expensive heap allocation.
+      const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
       dense_hessian_factorization_ = H.ldlt();
       stats_.num_factorizations++;
+
+      // The factorization is now fresh, so we should try to reuse it next time.
       reuse_hessian_factorization_ = true;
     }
+
+    // Compute the search direction dv = -H⁻¹ g with dense algebra.
     *dv = dense_hessian_factorization_.solve(-data.gradient());
 
-  } else {
+  } else {  // Use sparse algebra.
     if (!reuse_factorization) {
-      // Compute H and set up the factorization.
       if (reuse_sparsity_pattern) {
+        // Compute the sparse Hessian, reusing the existing sparsity pattern.
         model.UpdateHessian(data, hessian_.get());
         hessian_factorization_.UpdateMatrix(*hessian_);
       } else {
+        // Compute the sparse Hessian from scratch.
         hessian_ = model.MakeHessian(data);
         hessian_factorization_.SetMatrix(*hessian_);
       }
 
-      // Factorize H
+      // Perform a sparse Cholesky factorization of the Hessian.
       if (!hessian_factorization_.Factor()) {
         throw std::runtime_error("IcfSolver: Hessian factorization failed!");
       }
       stats_.num_factorizations++;
+
+      // The factorization is now fresh, so we should try to reuse it next time.
       reuse_hessian_factorization_ = true;
     }
 
-    // Compute the search direction dv = -H⁻¹ g
+    // Compute the search direction dv = -H⁻¹ g with sparse algebra.
     *dv = -data.gradient();
     hessian_factorization_.SolveInPlace(dv);
   }
