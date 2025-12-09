@@ -8,16 +8,15 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
-#include "drake/multibody/plant/multibody_plant_cenic_attorney.h"
 
 namespace drake {
 namespace multibody {
 
+using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using contact_solvers::internal::Bracket;
 using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using internal::MultibodyPlantCenicAttorney;
 using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
@@ -65,7 +64,8 @@ CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
           static_cast<const Diagram<T>&>(system).GetSystemIndexOrAbort(
               &plant_)),
       non_plant_xc_subsystem_indices_(CalcNonPlantXcSubsystemIndices(
-          static_cast<const Diagram<T>&>(system), plant_subsystem_index_)) {}
+          static_cast<const Diagram<T>&>(system), plant_subsystem_index_)),
+      icf_feedback_(&plant_) {}
 
 template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
@@ -121,17 +121,21 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   // reuse the same linearization, but that's a bit challenging because it
   // depends on `q_prime` which depends on `h`. Only if the controller is
   // (nearly?) insensitive to `q` could we reuse its linearization.
-  LinearFeedbackGains<T>& actuation_feedback_storage =
+  Context<T>& mutable_plant_context =
+      plant().GetMyMutableContextFromRoot(this->get_mutable_context());
+  IcfLinearFeedbackGains<T>& actuation_feedback_storage =
       scratch_.actuation_feedback;
-  LinearFeedbackGains<T>& external_feedback_storage =
+  IcfLinearFeedbackGains<T>& external_feedback_storage =
       scratch_.external_feedback;
   bool has_actuation_forces;
   bool has_external_forces;
-  std::tie(has_actuation_forces, has_external_forces) = LinearizeExternalSystem(
-      h, &actuation_feedback_storage, &external_feedback_storage);
-  const LinearFeedbackGains<T>* const actuation_feedback =
+  std::tie(has_actuation_forces, has_external_forces) =
+      icf_feedback_.LinearizeExternalSystem(h, mutable_plant_context,
+                                            &actuation_feedback_storage,
+                                            &external_feedback_storage);
+  const IcfLinearFeedbackGains<T>* const actuation_feedback =
       has_actuation_forces ? &actuation_feedback_storage : nullptr;
-  const LinearFeedbackGains<T>* const external_feedback =
+  const IcfLinearFeedbackGains<T>* const external_feedback =
       has_external_forces ? &external_feedback_storage : nullptr;
 
   // Set up the convex ICF model ℓ(v; q₀, v₀, h) for the full step.
@@ -309,149 +313,6 @@ void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
 }
 
 template <typename T>
-void CenicIntegrator<T>::CalcExternalForces(const Context<T>& context,
-                                            VectorX<T>* tau) {
-  MultibodyForces<T>& forces = *scratch_.f_ext;
-  forces.SetZero();
-  MultibodyPlantCenicAttorney<T>::AddAppliedExternalSpatialForces(
-      plant(), context, &forces);
-  MultibodyPlantCenicAttorney<T>::AddAppliedExternalGeneralizedForces(
-      plant(), context, &forces);
-  plant().CalcGeneralizedForces(context, forces, tau);
-}
-
-template <typename T>
-void CenicIntegrator<T>::CalcActuationForces(const Context<T>& context,
-                                             VectorX<T>* tau) {
-  tau->setZero();
-  MultibodyPlantCenicAttorney<T>::AddJointActuationForces(plant(), context,
-                                                          tau);
-}
-
-template <typename T>
-std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
-    const T& h, LinearFeedbackGains<T>* actuation_feedback,
-    LinearFeedbackGains<T>* external_feedback) {
-  using std::abs;
-  DRAKE_ASSERT(actuation_feedback != nullptr);
-  DRAKE_ASSERT(external_feedback != nullptr);
-
-  // Extract the feedback gains that we'll set.
-  VectorX<T>& Ku = actuation_feedback->K;
-  VectorX<T>& bu = actuation_feedback->b;
-  VectorX<T>& Ke = external_feedback->K;
-  VectorX<T>& be = external_feedback->b;
-  DRAKE_ASSERT(Ku.size() == plant().num_velocities());
-  DRAKE_ASSERT(bu.size() == plant().num_velocities());
-  DRAKE_ASSERT(Ke.size() == plant().num_velocities());
-  DRAKE_ASSERT(be.size() == plant().num_velocities());
-
-  // Check which (or both) of the two feedback values we actually need.
-  const Context<T>& plant_context =
-      plant().GetMyContextFromRoot(this->get_context());
-  const bool has_actuation_forces = plant().num_actuators() > 0;
-  const bool has_external_forces =
-      plant().get_applied_generalized_force_input_port().HasValue(
-          plant_context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(plant_context);
-
-  // Maybe there's nothing to do.
-  if (!has_actuation_forces && !has_external_forces) {
-    return {false, false};
-  }
-
-  // Get references to pre-allocated variables.
-  VectorX<T>& v0 = scratch_.v0;
-  VectorX<T>& gu0 = scratch_.gu0;
-  VectorX<T>& ge0 = scratch_.ge0;
-  VectorX<T>& gu_prime = scratch_.gu_prime;
-  VectorX<T>& ge_prime = scratch_.ge_prime;
-  VectorX<T>& x_prime = scratch_.x_prime;
-  MatrixX<T>& N = scratch_.N;
-
-  // Compute some quantities that depend on the current state, before messing
-  // with the state with finite differences.
-  N = plant().MakeVelocityToQDotMap(plant_context);
-  v0 = plant_.GetVelocities(plant_context);
-  if (has_actuation_forces) {
-    CalcActuationForces(plant_context, &gu0);
-  }
-  if (has_external_forces) {
-    CalcExternalForces(plant_context, &ge0);
-  }
-
-  // Initialize the perturbed state x = [q; v; z] and outputs
-  //    gu(x) = B u(x),
-  //    ge(x) = τₑₓₜ(x).
-  const VectorX<T> x =
-      plant_context.get_continuous_state_vector().CopyToVector();
-  x_prime = x;
-
-  // We'll want to perturb q and v separately, so we'll go ahead and grab these
-  // references.
-  const int nq = plant_.num_positions();
-  const int nv = plant_.num_velocities();
-  auto q = x.head(nq);
-  auto v = x.segment(nq, nv);
-  auto q_prime = x_prime.head(nq);
-  auto v_prime = x_prime.segment(nq, nv);
-
-  // Compute τ = D(v − v₀) + g₀ with forward differences.
-  Context<T>& mutable_plant_context =
-      plant().GetMyMutableContextFromRoot(this->get_mutable_context());
-  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
-
-  for (int i = 0; i < nv; ++i) {
-    // Choose a step size (the same way as how implicit_integrator.cc does it).
-    const T abs_vi = abs(v(i));
-    T dvi = (abs_vi <= 1) ? T{eps} : eps * abs_vi;
-
-    // Ensure that v' and v differ by an exactly representable number.
-    v_prime(i) = v(i) + dvi;
-    dvi = v_prime(i) - v(i);
-
-    // Perturb q as well, using the fact that q' = q + h N dv.
-    q_prime = q + h * N * (v_prime - v);
-
-    // Put x' in the context and mark the state as stale.
-    mutable_plant_context.SetContinuousState(x_prime);
-
-    if (has_actuation_forces) {
-      // Compute the relevant matrix entries for actuation inputs:
-      //   Ku = -dgu/dv
-      CalcActuationForces(mutable_plant_context, &gu_prime);
-      Ku(i) = -(gu_prime(i) - gu0(i)) / dvi;
-    }
-
-    if (has_external_forces) {
-      // Same thing, but for external systems:
-      //  Ke = -dge/dv
-      CalcExternalForces(mutable_plant_context, &ge_prime);
-      Ke(i) = -(ge_prime(i) - ge0(i)) / dvi;
-    }
-
-    // Reset the state for the next iteration.
-    v_prime(i) = v(i);
-  }
-
-  // Reset the context back to how we found it.
-  mutable_plant_context.SetContinuousState(x);
-
-  // Use the diagonal projection for both K and b ensures that any non-convex
-  // portion of the dynamics is treated explicitly.
-  if (has_actuation_forces) {
-    Ku = Ku.cwiseMax(0);
-    bu = gu0 + Ku.asDiagonal() * v0;
-  }
-  if (has_external_forces) {
-    Ke = Ke.cwiseMax(0);
-    be = ge0 + Ke.asDiagonal() * v0;
-  }
-
-  return {has_actuation_forces, has_external_forces};
-}
-
-template <typename T>
 T CenicIntegrator<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   // Simple infinity norm of the generalized position change.
@@ -471,16 +332,8 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
   const int nq = plant.num_positions();
   v.resize(nv);
   q.resize(nq);
-  f_ext = std::make_unique<MultibodyForces<T>>(plant);
-  actuation_feedback.resize(nv);
-  external_feedback.resize(nv);
-  v0.resize(nv);
-  gu0.resize(nv);
-  ge0.resize(nv);
-  gu_prime.resize(nv);
-  ge_prime.resize(nv);
-  x_prime.resize(nq + nv);
-  N.resize(nq, nv);
+  actuation_feedback.Resize(nv);
+  external_feedback.Resize(nv);
 }
 
 }  // namespace multibody

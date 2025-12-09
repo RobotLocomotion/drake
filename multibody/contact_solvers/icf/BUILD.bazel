@@ -17,6 +17,8 @@ drake_cc_package_library(
         ":gain_constraints_data_pool",
         ":icf_builder",
         ":icf_data",
+        ":icf_feedback",
+        ":icf_linear_feedback_gains",
         ":icf_model",
         ":icf_search_direction_data",
         ":icf_solver",
@@ -108,12 +110,33 @@ drake_cc_library(
     srcs = ["icf_builder.cc"],
     hdrs = ["icf_builder.h"],
     deps = [
+        ":icf_linear_feedback_gains",
         ":icf_model",
         "//common:essential",
         "//multibody/plant",
     ],
     implementation_deps = [
         "//multibody/plant:contact_properties",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_feedback",
+    srcs = ["icf_feedback.cc"],
+    hdrs = ["icf_feedback.h"],
+    deps = [
+        ":icf_linear_feedback_gains",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_linear_feedback_gains",
+    srcs = ["icf_linear_feedback_gains.cc"],
+    hdrs = ["icf_linear_feedback_gains.h"],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 

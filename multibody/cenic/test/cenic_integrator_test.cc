@@ -25,6 +25,7 @@
 namespace drake {
 namespace multibody {
 
+using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using systems::ConstantVectorSource;
@@ -126,19 +127,6 @@ const char floating_double_pendulum_xml[] = R"""(
   </worldbody>
 </mujoco>
 )""";
-
-class CenicTester {
- public:
-  CenicTester() = delete;
-
-  static std::tuple<bool, bool> LinearizeExternalSystem(
-      CenicIntegrator<double>* integrator, double h,
-      LinearFeedbackGains<double>* actuation_feedback,
-      LinearFeedbackGains<double>* external_feedback) {
-    return integrator->LinearizeExternalSystem(h, actuation_feedback,
-                                               external_feedback);
-  }
-};
 
 GTEST_TEST(CenicTest, TestConstruction) {
   // Create a simple system
@@ -319,15 +307,17 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
 
   // Linearize the non-plant system dynamics around the current state
   const int nv = plant.num_velocities();
-  LinearFeedbackGains<double> actuation_feedback;
-  LinearFeedbackGains<double> external_feedback;  // unused here
-  actuation_feedback.resize(nv);
-  external_feedback.resize(nv);
-  bool has_actuation_forces;
-  bool has_feedback_forces;
+  IcfLinearFeedbackGains<double> actuation_feedback;
+  IcfLinearFeedbackGains<double> external_feedback;  // unused here
+  actuation_feedback.Resize(nv);
+  external_feedback.Resize(nv);
+  bool has_actuation_forces{};
+  bool has_feedback_forces{};
+#if 0
   std::tie(has_actuation_forces, has_feedback_forces) =
-      CenicTester::LinearizeExternalSystem(&integrator, h, &actuation_feedback,
-                                           &external_feedback);
+      LinearizeExternalSystem(&integrator, h,
+                              &actuation_feedback, &external_feedback);
+#endif
   ASSERT_TRUE(has_actuation_forces);
   unused(has_feedback_forces);
   const VectorXd& K = actuation_feedback.K;
