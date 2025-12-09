@@ -38,8 +38,6 @@ class IcfBuilder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfBuilder);
 
-  explicit IcfBuilder(const MultibodyPlant<T>& plant);
-
   IcfBuilder(const MultibodyPlant<T>& plant,
              const systems::Context<T>& context);
 
