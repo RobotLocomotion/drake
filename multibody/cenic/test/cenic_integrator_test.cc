@@ -25,6 +25,7 @@
 namespace drake {
 namespace multibody {
 
+using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using systems::ConstantVectorSource;
@@ -126,19 +127,6 @@ const char floating_double_pendulum_xml[] = R"""(
   </worldbody>
 </mujoco>
 )""";
-
-class CenicTester {
- public:
-  CenicTester() = delete;
-
-  static std::tuple<bool, bool> LinearizeExternalSystem(
-      CenicIntegrator<double>* integrator, double h,
-      LinearFeedbackGains<double>* actuation_feedback,
-      LinearFeedbackGains<double>* external_feedback) {
-    return integrator->LinearizeExternalSystem(h, actuation_feedback,
-                                               external_feedback);
-  }
-};
 
 GTEST_TEST(CenicTest, TestConstruction) {
   // Create a simple system
@@ -317,45 +305,19 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   plant.SetVelocities(&plant_context, v0);
   simulator.Initialize();
 
-  // Linearize the non-plant system dynamics around the current state
-  const int nv = plant.num_velocities();
-  LinearFeedbackGains<double> actuation_feedback;
-  LinearFeedbackGains<double> external_feedback;  // unused here
-  actuation_feedback.resize(nv);
-  external_feedback.resize(nv);
-  bool has_actuation_forces;
-  bool has_feedback_forces;
-  std::tie(has_actuation_forces, has_feedback_forces) =
-      CenicTester::LinearizeExternalSystem(&integrator, h, &actuation_feedback,
-                                           &external_feedback);
-  ASSERT_TRUE(has_actuation_forces);
-  unused(has_feedback_forces);
-  const VectorXd& K = actuation_feedback.K;
-  const VectorXd& b = actuation_feedback.b;
-
-  // Reference linearization via autodiff
+  // Compute the expected linearization via autodiff.
   const Context<double>& ctrl_context =
       ctrl->GetMyContextFromRoot(simulator.get_context());
   auto true_linearization = FirstOrderTaylorApproximation(
       *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
       ctrl->get_output_port().get_index());
-
   const MatrixXd B = plant.MakeActuationMatrix();
   const MatrixXd& D = true_linearization->D();
   const MatrixXd Du = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
   const VectorXd u0 = plant.get_actuation_input_port().Eval(plant_context) -
                       Du * plant.GetVelocities(plant_context);
-
   const VectorXd K_ref = -(B * Du).diagonal();
   const VectorXd b_ref = B * u0;
-
-  // Confirm that our finite difference linearization is close to the reference
-  const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
-
-  EXPECT_TRUE(
-      CompareMatrices(K, K_ref, kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(
-      CompareMatrices(b, b_ref, kTolerance, MatrixCompareType::relative));
 
   // Compute the cost, gradient and Hessian analytically, and check that
   // these match what we get from the ICF model.
@@ -364,6 +326,7 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   //         = 1/2 v'Mv − r v + h (1/2 v'Kv - b v) + h/2 b'K⁻¹b
   // Gradient: dℓ/dv = Mv − r + h (Kv - b)
   // Hessian: d²ℓ/dv² = M + h K
+  const int nv = plant.num_velocities();
   const VectorXd v = v0;
   MatrixXd M(nv, nv);
   plant.CalcMassMatrix(plant_context, &M);
@@ -383,6 +346,9 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   IcfBuilder<double>& icf_builder = integrator.builder();
   IcfModel<double> model;
   IcfData<double> data;
+  IcfLinearFeedbackGains<double> actuation_feedback;
+  actuation_feedback.K = K_ref;
+  actuation_feedback.b = b_ref;
   icf_builder.UpdateModel(plant_context, h, &actuation_feedback, nullptr,
                           &model);
   model.ResizeData(&data);
@@ -391,6 +357,7 @@ GTEST_TEST(CenicTest, ActuatedPendulum) {
   const double l = data.cost();
   const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
 
+  const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
   EXPECT_TRUE(
       CompareMatrices(dl, dl_ref, kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(
