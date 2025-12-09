@@ -20,9 +20,10 @@ GTEST_TEST(IcfData, DefaultConstructedIsEmpty) {
   EXPECT_EQ(data.V_WB().size(), 0);
   EXPECT_EQ(data.scratch().Av_minus_r.size(), 0);
   EXPECT_EQ(data.scratch().V_WB_alpha.size(), 0);
-  EXPECT_EQ(data.scratch().U_AbB_W.size(), 0);
   EXPECT_EQ(data.scratch().v_alpha.size(), 0);
   EXPECT_EQ(data.scratch().Gw_gain.size(), 0);
+  EXPECT_EQ(data.scratch().Gw_limit.size(), 0);
+  EXPECT_EQ(data.scratch().U_AbB_W.size(), 0);
   EXPECT_EQ(data.scratch().H_BB_pool.size(), 0);
   EXPECT_EQ(data.scratch().H_AA_pool.size(), 0);
   EXPECT_EQ(data.scratch().H_AB_pool.size(), 0);

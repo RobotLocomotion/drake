@@ -24,20 +24,18 @@ template <typename T>
 LimitConstraintsPool<T>::~LimitConstraintsPool() = default;
 
 template <typename T>
-void LimitConstraintsPool<T>::Resize(
-    std::span<const int> sizes, std::span<const int> constraint_to_clique) {
-  DRAKE_DEMAND(sizes.size() == constraint_to_clique.size());
-  const int num_elements = ssize(sizes);
-  ql_.Resize(num_elements, sizes);
-  qu_.Resize(num_elements, sizes);
-  q0_.Resize(num_elements, sizes);
-  gl_hat_.Resize(num_elements, sizes);
-  gu_hat_.Resize(num_elements, sizes);
-  R_.Resize(num_elements, sizes);
+void LimitConstraintsPool<T>::Resize(std::span<const int> sizes) {
+  const int num_limit_constraints = ssize(sizes);
+  ql_.Resize(num_limit_constraints, sizes);
+  qu_.Resize(num_limit_constraints, sizes);
+  q0_.Resize(num_limit_constraints, sizes);
+  gl_hat_.Resize(num_limit_constraints, sizes);
+  gu_hat_.Resize(num_limit_constraints, sizes);
+  R_.Resize(num_limit_constraints, sizes);
   constraint_size_.assign(sizes.begin(), sizes.end());
-  clique_.assign(constraint_to_clique.begin(), constraint_to_clique.end());
+  clique_.resize(num_limit_constraints);
 
-  // All constraints are disabled (e.g., infinite bounds) by default. This
+  // All constraints are disabled (i.e., infinite bounds) by default. This
   // allows us to add a limit constraint on only one DoF in a multi-DoF
   // clique, for example.
   // TODO(vincekurtz): consider a setConstant method in EigenPool.
@@ -54,15 +52,21 @@ void LimitConstraintsPool<T>::Resize(
 template <typename T>
 void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
                                   const T& ql, const T& qu) {
+  DRAKE_ASSERT(0 <= index && index < num_constraints());
+  DRAKE_ASSERT(0 <= dof && dof < model().clique_size(clique));
+  DRAKE_ASSERT(ql <= q0 && q0 <= qu);
+
+  clique_[index] = clique;
   ql_[index](dof) = ql;
   qu_[index](dof) = qu;
   q0_[index](dof) = q0;
 
   // Near-rigid regularization [Castro et al., 2022].
-  const double beta = 0.1;
-  const double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
+  constexpr double beta = 0.1;
+  constexpr double eps = beta * beta / (4 * M_PI * M_PI) * (1 + beta / M_PI);
 
-  // Approximation of W = Jᵀ⋅M⁻¹⋅J = M⁻¹ ≈ diag(M)⁻¹.
+  // Approximation of W = J⋅M⁻¹⋅Jᵀ = M⁻¹ ≈ diag(M)⁻¹. The Jacobian J = Iₙ for
+  // lower limits, and J = -Iₙ for upper limits.
   ConstVectorXView w_clique = model().clique_diagonal_mass_inverse(clique);
   R_[index](dof) = eps * w_clique(dof);
 
@@ -102,6 +106,9 @@ void LimitConstraintsPool<T>::CalcData(
                             &G_lower(i));
 
       // i-th upper limit for constraint k (clique c).
+      // N.B. The negative sign comes from the constraint velocity defined as
+      // positive when moving away from the limit. Impulses are similarly
+      // defined as positive when pushing away from the limit.
       const T vu = -vk(i);
       cost += CalcLimitData(gu_hat_[k](i) / dt, R_[k](i), vu, &gamma_upper(i),
                             &G_upper(i));
@@ -112,6 +119,8 @@ void LimitConstraintsPool<T>::CalcData(
 template <typename T>
 void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                  VectorX<T>* gradient) const {
+  DRAKE_ASSERT(gradient != nullptr);
+
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
@@ -121,7 +130,7 @@ void LimitConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
     ConstVectorXView gamma_lower = limit_data.gamma_lower(k);
     ConstVectorXView gamma_upper = limit_data.gamma_upper(k);
 
-    // For this constraint vc = [v; -v], i.e. J = [1; -1]^ᵀ.
+    // For this constraint vₖ = [vc; -vc], i.e. J = [I; -I]^ᵀ.
     // Therefore ∇ℓ = γᵤ − γₗ:
     gradient_c += gamma_upper;
     gradient_c -= gamma_lower;
@@ -132,6 +141,8 @@ template <typename T>
 void LimitConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data,
     BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
   const LimitConstraintsDataPool<T>& limit_data = data.limit_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
@@ -149,6 +160,8 @@ void LimitConstraintsPool<T>::CalcCostAlongLine(
     const LimitConstraintsDataPool<T>& limit_data, const VectorX<T>& w,
     EigenPool<VectorX<T>>* Gw_scratch, T* dcost, T* d2cost) const {
   DRAKE_ASSERT(Gw_scratch != nullptr);
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
   EigenPool<VectorX<T>>& Gw_pool = *Gw_scratch;
 
   (*dcost) = 0.0;

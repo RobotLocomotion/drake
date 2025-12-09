@@ -13,10 +13,12 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Data pool for joint limit constraints (qu ≥ q ≥ ql). This data is updated at
-each solver iteration, as opposed to the LimitConstraintsPool, which defines
-the constraints themselves and is fixed for the lifetime of the optimization
-problem. */
+/* Data pool for joint limit constraints (qu ≥ q ≥ ql) as defined in
+LimitConstraintsPool. This data is updated at each solver iteration, as opposed
+to the LimitConstraintsPool, which defines the constraints themselves and is
+fixed for the lifetime of the optimization problem.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class LimitConstraintsDataPool {
  public:
@@ -60,7 +62,7 @@ class LimitConstraintsDataPool {
   VectorXView mutable_G_upper(int k) { return G_upper_pool_[k]; }
 
  private:
-  T cost_{0.0};
+  T cost_{NAN};
   EigenPool<VectorX<T>> gamma_lower_pool_;
   EigenPool<VectorX<T>> gamma_upper_pool_;
   EigenPool<VectorX<T>> G_lower_pool_;  // G = -∂γ/∂v ≥ 0 is Diagonal.

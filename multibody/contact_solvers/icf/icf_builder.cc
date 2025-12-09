@@ -456,7 +456,7 @@ void IcfBuilder<T>::AllocateLimitConstraints(IcfModel<T>* model) const {
 
   LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
-  limits.Resize(limited_clique_sizes_, limit_constraint_to_clique_);
+  limits.Resize(limited_clique_sizes_);
 }
 
 template <typename T>

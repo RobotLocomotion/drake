@@ -76,6 +76,9 @@ build --test_env=MPLBACKEND=Template
 
 ### A configuration that enables all optional dependencies. ###
 build:everything --test_tag_filters=-no_everything
+# We'll also use it to test our custom AutoDiff until 2026-04-01 when this flag
+# gets flipped.
+build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set

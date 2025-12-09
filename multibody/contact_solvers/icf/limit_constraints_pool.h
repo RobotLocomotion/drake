@@ -24,8 +24,22 @@ class IcfModel;
 /* A pool of joint limit constraints, qu ≥ q ≥ ql.
 
 Each limit constraint is associated with a convex cost ℓ(v) that is added to
-the overall ICF cost. The gradient of this cost produces an impulse γ = -∇ℓ(v)
+the overall ICF cost. The gradient of this cost ∇ℓ(v) = J'γ produces impulses
 that enforces the constraint when the convex ICF problem is solved.
+
+Each limit constraint involves all DoFs in a clique. By default, all limits are
+disabled (infinite). This allows us to handle the fairly common case (e.g., a
+robot arm on a mobile base) where many joints in a clique have limits while
+others do not.
+
+Additionally, each limit constraint enforces both the lower and upper bounds.
+The resulting impulse γ acts to push the configuration q back within the limits
+when either bound would be violated.
+
+By convention, we define velocities and impulses as positive when they move away
+from the limit. Putting together both lower and upper limits (each constraint
+enforces a two-sided limit), this produces the the Jacobian J = [Iₙ;-Iₙ], where
+Iₙ is the identity matrix of size n, the number of DoFs in the clique.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -44,28 +58,24 @@ class LimitConstraintsPool {
   /* Returns a reference to the parent model. */
   const IcfModel<T>& model() const { return *model_; }
 
-  /* Returns the total number of limit constraints. */
+  /* Returns the total number of limit constraints. Each limit constraint
+  enforces both lower and upper bounds on all DoFs in a clique. */
   int num_constraints() const { return clique_.size(); }
 
-  /* Returns the number of generalized velocities associated with each limit
-  constraint. */
+  /* Returns the number of generalized velocities associated with the clique of
+  each limit constraint. */
   std::span<const int> constraint_sizes() const {
     return std::span<const int>(constraint_size_);
   }
 
   /* Resizes this pool to store limit constraints of the given sizes.
 
-  Sets all constraints as infinite (e.g., disabled) by default. Constraints must
+  Sets all constraints as infinite (i.e., disabled) by default. Constraints must
   be explicitly enabled for each DoF by calling Set().
 
-  @param sizes The number of velocities associated with each limit constraint in
-               the pool.
-  @param constraint_to_clique The mapping from constraint index to clique
-                              index for each limit constraint.
-
-  @pre `sizes` and `constraint_to_clique` must have the same length. */
-  void Resize(std::span<const int> sizes,
-              std::span<const int> constraint_to_clique);
+  @param sizes The number of velocities in the clique associated with each limit
+               constraint in the pool. */
+  void Resize(std::span<const int> sizes);
 
   /* Sets the limit constraint parameters for the given clique and DoF.
 
@@ -73,16 +83,19 @@ class LimitConstraintsPool {
   @param clique The clique to which this limit constraint applies.
   @param dof The degree of freedom within the clique to which this limit
              constraint applies.
-  @param q0 The current configuration value for this DoF.
+  @param q0 The initial configuration value for this DoF.
   @param ql The lower limit for this DoF.
   @param qu The upper limit for this DoF.
 
   Calling this function several times with the same `index` overwrites the
-  previous constraint for that index. */
+  previous constraint for that index.
+
+  @pre ql <= q0 <= qu. */
   void Set(int index, int clique, int dof, const T& q0, const T& ql,
            const T& qu);
 
-  /* Computes problem data for the given generalized velocities `v`. */
+  /* Computes problem data as a function of the generalized velocities `v` for
+  the full plant. */
   void CalcData(const VectorX<T>& v,
                 LimitConstraintsDataPool<T>* limit_data) const;
 
@@ -96,10 +109,10 @@ class LimitConstraintsPool {
       contact_solvers::internal::BlockSparseSymmetricMatrix<MatrixX<T>>*
           hessian) const;
 
-  /* Computes the first and second derivatives of the constraint cost
-  ℓ̃ (α) = ℓ(v + α⋅w).
+  /* Computes the constraint cost ℓ̃(α) = ℓ(v + α⋅w) and its first and second
+  derivatives along the line defined by the search direction `w`.
 
-  @param coupler_data Constraint data computed at v + α⋅w.
+  @param limit_data Constraint data computed at v + α⋅w.
   @param w The search direction.
   @param Gw_scratch Scratch space for intermediate values for each clique.
   @param[out] dcost The first derivative dℓ̃ /dα on output.

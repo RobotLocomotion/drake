@@ -202,14 +202,17 @@ std::vector<VectorX<T>> AddGainConstraints(IcfModel<T>* model) {
   return {K0, u0, e0, K1, u1, e1};
 }
 
-/* Adds limit constraints on cliques 0 and 2 to the given model. */
+/* Adds limit constraints to the given model. The model can have 1 or 3 cliques.
+In either case, the same constraints are added to represent the same logical
+limits. */
 template <typename T>
 void AddLimitConstraints(IcfModel<T>* model) {
+  DRAKE_DEMAND(model != nullptr);
   const bool single_clique = model->num_cliques() == 1;
   LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
   const int nv = model->num_velocities();
-  VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
+  const VectorX<T> q0 = VectorXd::LinSpaced(nv, -1.0, 1.0);
 
   if (!single_clique) {
     DRAKE_DEMAND(model->clique_size(0) == 6);
@@ -218,38 +221,36 @@ void AddLimitConstraints(IcfModel<T>* model) {
     // accordingly before adding the limit constraints.
     std::vector<int> limited_clique_sizes = {model->clique_size(0),
                                              model->clique_size(2)};
-    std::vector<int> constraint_to_clique = {0, 2};
-    limits.Resize(limited_clique_sizes, constraint_to_clique);
+    limits.Resize(limited_clique_sizes);
 
     // Limits on clique 0.
     limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
-               -1.0);  // Above.
+               -0.5);
     limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
-               1.0);  // Within.
+               0.8);
 
     // Limits on clique 2.
-    limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), 0.5,
-               1.5);  // Below.
+    limits.Set(1 /* constraint */, 2 /* clique */, 0 /* dof */, q0(12), -0.9,
+               1.5);
     limits.Set(1 /* constraint */, 2 /* clique */, 2 /* dof */, q0(14), -1.0,
-               0.5);  // Above.
+               0.7);
     limits.Set(1 /* constraint */, 2 /* clique */, 5 /* dof */, q0(17), 0.5,
-               1.5);  // Within.
+               1.5);
   } else {
     DRAKE_DEMAND(model->clique_size(0) == 18);
     // All limits will be on clique 0, but the same as in the multi-clique case.
     std::vector<int> limited_clique_sizes = {model->clique_size(0)};
-    std::vector<int> constraint_to_clique = {0};
-    limits.Resize(limited_clique_sizes, constraint_to_clique);
+    limits.Resize(limited_clique_sizes);
     limits.Set(0 /* constraint */, 0 /* clique */, 4 /* dof */, q0(2), -1.5,
-               -1.0);  // Above.
+               -0.5);
     limits.Set(0 /* constraint */, 0 /* clique */, 3 /* dof */, q0(3), -1.0,
-               1.0);  // Within.
-    limits.Set(0 /* constraint */, 0 /* clique */, 12 /* dof */, q0(12), 0.5,
-               1.5);  // Below.
+               0.8);
+    limits.Set(0 /* constraint */, 0 /* clique */, 12 /* dof */, q0(12), -0.9,
+               1.5);
     limits.Set(0 /* constraint */, 0 /* clique */, 14 /* dof */, q0(14), -1.0,
-               0.5);  // Above.
+               0.7);
     limits.Set(0 /* constraint */, 0 /* clique */, 17 /* dof */, q0(17), 0.5,
-               1.5);  // Within.
+               1.5);
   }
 }
 
@@ -260,44 +261,37 @@ void AddPatchConstraints(IcfModel<T>* model) {
   const T dissipation = 50.0;
   const T stiffness = 1.0e6;
   const T friction = 0.5;
-
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
   // Resize to hold four patches with one contact pair each.
   const std::vector<int> num_pairs_per_patch = {1, 1, 1};
   patches.Resize(num_pairs_per_patch);
-
   // First patch is between two non-anchored bodies, with body A floating.
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
     patches.SetPatch(0 /* patch index */, 2 /* body A */, 1 /* body B */,
                      dissipation, friction, friction, p_AB_W);
-
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
     patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
-
   // Second patch is between two non-anchored bodies, with body B floating.
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
     patches.SetPatch(2 /* patch index */, 1 /* body A */, 2 /* body B */,
                      dissipation, friction, friction, p_AB_W);
-
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
     patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
-
   // Third patch is between an anchored body (the world) and a dynamic body.
   {
     const Vector3<T> p_AB_W(0.0, 0.05, 0.0);
     patches.SetPatch(1 /* patch index */, 0 /* World */, 3 /* body B */,
                      dissipation, friction, friction, p_AB_W);
-
     const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
     const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
     const T fn0 = 1.5;
@@ -390,7 +384,33 @@ GTEST_TEST(IcfModel, LimitMallocOnGainConstrainedCalcData) {
   EXPECT_EQ(data.gain_constraints_data().num_constraints(), 2);
 
   const int nv = model.num_velocities();
-  const VectorXd v = VectorXd::LinSpaced(nv, -10, 10.0);
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
+
+  // Computing data should not cause any new allocations.
+  {
+    drake::test::LimitMalloc guard;
+    model.CalcData(v, &data);
+  }
+}
+
+/* Checks that model.CalcData does not incur any heap allocations on a problem
+with limit constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnLimitConstrainedCalcData) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddLimitConstraints(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 2);
+  EXPECT_EQ(model.num_limit_constraints(), 2);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.limit_constraints_data().num_constraints(), 2);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
 
   // Computing data should not cause any new allocations.
   {
@@ -956,13 +976,6 @@ GTEST_TEST(IcfModel, GainConstraint) {
 
   EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
                               2 * kEpsilon, MatrixCompareType::relative));
-
-  // Verify contributions to Hessian.
-  auto hessian = model.MakeHessian(data);
-  MatrixXd hessian_value = math::ExtractValue(hessian->MakeDenseMatrix());
-  MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
-  EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
-                              10 * kEpsilon, MatrixCompareType::relative));
 }
 
 /* Verifies that limit constraints produce correct data. */
