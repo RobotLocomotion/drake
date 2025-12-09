@@ -8,6 +8,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
+#include "drake/multibody/contact_solvers/icf/icf_feedback.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver.h"
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
@@ -21,10 +22,11 @@ namespace multibody {
 using contact_solvers::icf::IcfSolverParameters;
 using contact_solvers::icf::internal::IcfBuilder;
 using contact_solvers::icf::internal::IcfData;
+using contact_solvers::icf::internal::IcfFeedback;
+using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using contact_solvers::icf::internal::IcfModel;
 using contact_solvers::icf::internal::IcfSolver;
 using contact_solvers::icf::internal::IcfSolverStats;
-using contact_solvers::icf::internal::LinearFeedbackGains;
 
 /**
  * An experimental implicit integrator that solves a convex ICF problem to
@@ -121,8 +123,6 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   int get_error_estimate_order() const final { return 2; }
 
  private:
-  friend class CenicTester;
-
   // Preallocated scratch space
   struct Scratch {
     // Resize to accommodate the given plant.
@@ -132,21 +132,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     VectorX<T> v;
     VectorX<T> q;
 
-    // External forces
-    std::unique_ptr<MultibodyForces<T>> f_ext;
-
     // Linearized external system gains (sized to the plant's num_velocities):
-    LinearFeedbackGains<T> actuation_feedback;  // τ = clamp(−Ku⋅v + bu)
-    LinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
-
-    // External system linearization
-    VectorX<T> v0;        // Unperturbed plant velocities.
-    VectorX<T> gu0;       // Actuation gu(x) = B u(x) at x₀
-    VectorX<T> ge0;       // External forces ge(x) = τ_ext(x) at x₀
-    VectorX<T> gu_prime;  // Perturbed actuation gu(x') = B u(x')
-    VectorX<T> ge_prime;  // Perturbed external forces ge(x') = τ_ext(x')
-    VectorX<T> x_prime;   // Perturbed plant state x' for finite differences
-    MatrixX<T> N;         // Kinematic map q̇ = N v
+    IcfLinearFeedbackGains<T> actuation_feedback;  // τ = clamp(−Ku⋅v + bu)
+    IcfLinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
   };
 
   // Perform final checks and allocations before beginning integration.
@@ -175,34 +163,6 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
-  // generalized force input ports.
-  void CalcExternalForces(const systems::Context<T>& context, VectorX<T>* tau);
-
-  // Compute actuator forces τ = B u(x) from the plant's actuation input
-  // ports (including the general actuation input port and any
-  // model-instance-specific ports).
-  void CalcActuationForces(const systems::Context<T>& context, VectorX<T>* tau);
-
-  // (Partially) linearize all the external (controller) systems connected to
-  // the plant with finite differences.
-  //
-  // Torques from externally connected systems are given by
-  //     τ = B u(x) + τₑₓₜ(x),
-  // which we will approximate as
-  //     τ ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-  // where Kᵤ, Kₑ are diagonal and positive semi-definite.
-  //
-  // Note that contributions due to controls u(x) will be clamped to effort
-  // limits, while contributions due to external generalized and spatial forces
-  // τₑₓₜ(x) will not be.
-  //
-  // @return [has_actuation_forces, has_external_forces] where a given tuple
-  //   element is true iff any input is connected for the corresponding type.
-  std::tuple<bool, bool> LinearizeExternalSystem(
-      const T& h, LinearFeedbackGains<T>* actuation_feedback,
-      LinearFeedbackGains<T>* external_feedback);
-
   // Overrides the typical state change norm (weighted infinity norm) to use
   // just the infinity norm of the position vector.
   T CalcStateChangeNorm(
@@ -213,6 +173,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   const systems::SubsystemIndex plant_subsystem_index_;
   // Which subsystems in our Diagram have continuous state beyond the MbP.
   const std::vector<int> non_plant_xc_subsystem_indices_;
+
+  // Helper class that linearizes torques dτ/dv from plant input ports.
+  const IcfFeedback<T> icf_feedback_;
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
   std::unique_ptr<IcfBuilder<T>> builder_;
