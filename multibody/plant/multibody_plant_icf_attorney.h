@@ -5,22 +5,28 @@
 namespace drake {
 namespace multibody {
 
+namespace contact_solvers {
+namespace icf {
+namespace internal {
 // Forward declaration for friendship, below.
 template <typename T>
-class CenicIntegrator;
+class IcfFeedback;
+}  // namespace internal
+}  // namespace icf
+}  // namespace contact_solvers
 
 namespace internal {
 
 /* This class is used to grant access to a selected collection of
-MultibodyPlant's private methods to CenicIntegrator.
+MultibodyPlant's private methods to //multibody/contact_solvers/icf.
 
 @tparam_default_scalar */
 template <typename T>
-class MultibodyPlantCenicAttorney {
+class MultibodyPlantIcfAttorney {
  private:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantCenicAttorney);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantIcfAttorney);
 
-  friend class CenicIntegrator<T>;
+  friend class contact_solvers::icf::internal::IcfFeedback<T>;
 
   static void AddAppliedExternalGeneralizedForces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context,
