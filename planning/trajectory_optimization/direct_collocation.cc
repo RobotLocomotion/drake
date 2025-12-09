@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
@@ -106,7 +107,7 @@ DirectCollocationConstraint::DirectCollocationConstraint(
                  Eigen::VectorXd::Zero(num_states)),
       owned_system_(std::move(owned_pair.first)),
       owned_context_(std::move(owned_pair.second)),
-      system_(owned_system_ ? *owned_system_ : *system),
+      system_(owned_system_ ? *owned_system_ : DRAKE_DEREF(system)),
       context_sample_(owned_context_ ? owned_context_.get() : context_sample),
       context_next_sample_(owned_context_ ? owned_context_.get()
                                           : context_next_sample),

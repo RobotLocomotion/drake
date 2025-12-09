@@ -2,24 +2,17 @@
 
 #include <vector>
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-template <typename T>
-const T& SafeDeference(std::string_view variable_name, const T* ptr) {
-  if (ptr == nullptr) {
-    throw std::runtime_error(
-        fmt::format("Condition '{} != nullptr' failed.", variable_name));
-  }
-  return *ptr;
-}
-
 DenseSuperNodalSolver::DenseSuperNodalSolver(
     const std::vector<MatrixX<double>>* A, const BlockSparseMatrix<double>* J)
-    : A_(SafeDeference("A", A)),
-      J_(SafeDeference("J", J)),
+    : A_(DRAKE_DEREF(A)),
+      J_(DRAKE_DEREF(J)),
       H_(Eigen::MatrixXd::Zero(J->cols(), J->cols())),
       Hldlt_(H_) {
   const int nv = [this]() {
