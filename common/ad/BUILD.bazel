@@ -19,11 +19,13 @@ drake_cc_package_library(
 drake_cc_library(
     name = "auto_diff",
     srcs = [
+        "internal/derivatives_xpr.cc",
         "internal/partials.cc",
         "internal/standard_operations.cc",
     ],
     hdrs = [
         "auto_diff.h",
+        "internal/derivatives_xpr.h",
         "internal/drake_operations.h",
         "internal/eigen_specializations.h",
         "internal/partials.h",
@@ -61,8 +63,17 @@ drake_cc_googletest(
     name = "partials_test",
     deps = [
         ":auto_diff",
+        "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partials_heap_test",
+    deps = [
+        "//common/ad:auto_diff",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
