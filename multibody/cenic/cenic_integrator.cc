@@ -336,7 +336,7 @@ std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
   DRAKE_ASSERT(actuation_feedback != nullptr);
   DRAKE_ASSERT(external_feedback != nullptr);
 
-  // Extract the feedback gains that we'll set
+  // Extract the feedback gains that we'll set.
   VectorX<T>& Ku = actuation_feedback->K;
   VectorX<T>& bu = actuation_feedback->b;
   VectorX<T>& Ke = external_feedback->K;
@@ -360,7 +360,7 @@ std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
     return {false, false};
   }
 
-  // Get references to pre-allocated variables
+  // Get references to pre-allocated variables.
   VectorX<T>& v0 = scratch_.v0;
   VectorX<T>& gu0 = scratch_.gu0;
   VectorX<T>& ge0 = scratch_.ge0;
@@ -370,7 +370,7 @@ std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
   MatrixX<T>& N = scratch_.N;
 
   // Compute some quantities that depend on the current state, before messing
-  // with the state with finite differences
+  // with the state with finite differences.
   N = plant().MakeVelocityToQDotMap(plant_context);
   v0 = plant_.GetVelocities(plant_context);
   if (has_actuation_forces) {
@@ -382,7 +382,7 @@ std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
 
   // Initialize the perturbed state x = [q; v; z] and outputs
   //    gu(x) = B u(x),
-  //    ge(x) = τₑₓₜ(x)
+  //    ge(x) = τₑₓₜ(x).
   const VectorX<T> x =
       plant_context.get_continuous_state_vector().CopyToVector();
   x_prime = x;
@@ -396,24 +396,24 @@ std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
   auto q_prime = x_prime.head(nq);
   auto v_prime = x_prime.segment(nq, nv);
 
-  // Compute τ = D(v − v₀) + g₀ with forward differences differences
+  // Compute τ = D(v − v₀) + g₀ with forward differences.
   Context<T>& mutable_plant_context =
       plant().GetMyMutableContextFromRoot(this->get_mutable_context());
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
   for (int i = 0; i < nv; ++i) {
-    // Choose a step size (following implicit_integrator.cc)
+    // Choose a step size (the same way as how implicit_integrator.cc does it).
     const T abs_vi = abs(v(i));
     T dvi = (abs_vi <= 1) ? T{eps} : eps * abs_vi;
 
-    // Ensure that v' and v differ by an exactly representable number
+    // Ensure that v' and v differ by an exactly representable number.
     v_prime(i) = v(i) + dvi;
     dvi = v_prime(i) - v(i);
 
-    // Perturb q as well, using the fact that q' = q + h N dv
+    // Perturb q as well, using the fact that q' = q + h N dv.
     q_prime = q + h * N * (v_prime - v);
 
-    // Put x' in the context and mark the state as stale
+    // Put x' in the context and mark the state as stale.
     mutable_plant_context.SetContinuousState(x_prime);
 
     if (has_actuation_forces) {
@@ -430,15 +430,15 @@ std::tuple<bool, bool> CenicIntegrator<T>::LinearizeExternalSystem(
       Ke(i) = -(ge_prime(i) - ge0(i)) / dvi;
     }
 
-    // Reset the state for the next iteration
+    // Reset the state for the next iteration.
     v_prime(i) = v(i);
   }
 
-  // Reset the context back to how we found it
+  // Reset the context back to how we found it.
   mutable_plant_context.SetContinuousState(x);
 
-  // Use the diagonal projection for both K and b ensures that any
-  // non-convex portion of the dynamics is treated explicitly.
+  // Use the diagonal projection for both K and b ensures that any non-convex
+  // portion of the dynamics is treated explicitly.
   if (has_actuation_forces) {
     Ku = Ku.cwiseMax(0);
     bu = gu0 + Ku.asDiagonal() * v0;

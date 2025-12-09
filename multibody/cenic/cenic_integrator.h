@@ -197,8 +197,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   // limits, while contributions due to external generalized and spatial forces
   // τₑₓₜ(x) will not be.
   //
-  // If there is no input connected for one or the other type, the corresponding
-  // `foo_feedback` output will be set to nullopt.
+  // @return [has_actuation_forces, has_external_forces] where a given tuple
+  //   element is true iff any input is connected for the corresponding type.
   std::tuple<bool, bool> LinearizeExternalSystem(
       const T& h, LinearFeedbackGains<T>* actuation_feedback,
       LinearFeedbackGains<T>* external_feedback);
