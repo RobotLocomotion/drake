@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/multibody/contact_solvers/icf/icf_linear_feedback_gains.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -18,20 +19,6 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
-
-/* Represents a linear feedback law of the form
-    τ = −K⋅v + b,
-where K is non-negative and diagonal. */
-template <typename T>
-struct LinearFeedbackGains {
-  VectorX<T> K;
-  VectorX<T> b;
-
-  void resize(int nv) {
-    K.resize(nv);
-    b.resize(nv);
-  }
-};
 
 template <typename T>
 class IcfBuilder {
@@ -57,8 +44,8 @@ class IcfBuilder {
 
   TODO(CENIC): make sure to test that UpdateModel limits heap allocations. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
-                   const LinearFeedbackGains<T>* actuation_feedback,
-                   const LinearFeedbackGains<T>* external_feedback,
+                   const IcfLinearFeedbackGains<T>* actuation_feedback,
+                   const IcfLinearFeedbackGains<T>* external_feedback,
                    IcfModel<T>* model);
 
   /* Updates the IcfModel for a problem without actuation or external force
@@ -76,8 +63,8 @@ class IcfBuilder {
   @pre The existence (i.e., nullness) of the two feedbacks values must match the
   existence of the most recent prior call to UpdateModel(). */
   void UpdateModel(const T& time_step,
-                   const LinearFeedbackGains<T>* actuation_feedback,
-                   const LinearFeedbackGains<T>* external_feedback,
+                   const IcfLinearFeedbackGains<T>* actuation_feedback,
+                   const IcfLinearFeedbackGains<T>* external_feedback,
                    IcfModel<T>* model) const;
 
  private:
