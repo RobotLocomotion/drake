@@ -10,6 +10,60 @@ load("//tools/workspace:generate_file.bzl", "generate_file")
 # You can manually set this to True, to get some feedback during upgrades.
 _VERBOSE = False
 
+# See vtkTypeLists.cmake.
+_VTK_FIXED_SIZE_NUMERIC_TYPES = [
+    ("vtkTypeInt8", "char", "signed char"),
+    ("vtkTypeUInt8", "unsigned char", None),
+    ("vtkTypeInt16", "short", None),
+    ("vtkTypeUInt16", "unsigned short", None),
+    ("vtkTypeInt32", "int", None),
+    ("vtkTypeUInt32", "unsigned int", None),
+    ("vtkTypeInt64", "long", "long long"),
+    ("vtkTypeUInt64", "unsigned long", "unsigned long long"),
+    ("vtkTypeFloat32", "float", None),
+    ("vtkTypeFloat64", "double", None),
+]
+
+# See Common/Core/vtkTypeLists.cmake.
+_VTK_NUMERIC_TYPES = [
+    "char",
+    "double",
+    "float",
+    "int",
+    "long",
+    "long long",
+    "short",
+    "signed char",
+    "unsigned char",
+    "unsigned int",
+    "unsigned long",
+    "unsigned long long",
+    "unsigned short",
+    "vtkIdType",
+]
+
+# See Common/Core/CMakeLists.txt.
+_VTK_INSTANTIATION_TYPES = [
+    "vtkAffineImplicitBackendInstantiate",
+    "vtkCompositeImplicitBackendInstantiate",
+    "vtkConstantImplicitBackendInstantiate",
+    "vtkIndexedImplicitBackendInstantiate",
+    "vtkStridedImplicitBackendInstantiate",
+    "vtkStructuredPointBackendInstantiate",
+    "vtkAffineArrayInstantiate",
+    "vtkCompositeArrayInstantiate",
+    "vtkConstantArrayInstantiate",
+    "vtkIndexedArrayInstantiate",
+    "vtkSOADataArrayTemplateInstantiate",
+    "vtkScaledSOADataArrayTemplateInstantiate",
+    "vtkStdFunctionArrayInstantiate",
+    "vtkStridedArrayInstantiate",
+    "vtkStructuredPointArrayInstantiate",
+    "vtkTypedDataArrayInstantiate",
+    "vtkAOSDataArrayTemplateInstantiate",
+    "vtkGenericDataArrayValueRangeInstantiate",
+]
+
 def _bazelize_module_name(name):
     """Transforms e.g. `VTK::IOCore` => `VTK__IOCore` to make Bazel happy."""
     return name.replace(":", "_")
@@ -352,20 +406,10 @@ namespace vtkArrayDispatch {
 VTK_ABI_NAMESPACE_BEGIN
 typedef vtkTypeList::Unique<
   vtkTypeList::Create<
-    vtkAOSDataArrayTemplate<char>,
-    vtkAOSDataArrayTemplate<double>,
-    vtkAOSDataArrayTemplate<float>,
-    vtkAOSDataArrayTemplate<int>,
-    vtkAOSDataArrayTemplate<long>,
-    vtkAOSDataArrayTemplate<long long>,
-    vtkAOSDataArrayTemplate<short>,
-    vtkAOSDataArrayTemplate<signed char>,
-    vtkAOSDataArrayTemplate<unsigned char>,
-    vtkAOSDataArrayTemplate<unsigned int>,
-    vtkAOSDataArrayTemplate<unsigned long>,
-    vtkAOSDataArrayTemplate<unsigned long long>,
-    vtkAOSDataArrayTemplate<unsigned short>,
-    vtkAOSDataArrayTemplate<vtkIdType>
+""" + "\n".join([
+        "vtkAOSDataArrayTemplate<{}>,".format(ctype)
+        for ctype in _VTK_NUMERIC_TYPES
+    ])[:-1] + """
   >
 >::Result Arrays;
 typedef vtkTypeList::Unique<
@@ -436,18 +480,8 @@ def generate_common_core_aos_typed_arrays():
     name = "common_core_aos_type_arrays"
     result_hdrs = []
     result_srcs = []
-    for vtk_type, preferred_ctype, fallback_ctype in (
-        ("Int8", "char", "signed char"),
-        ("UInt8", "unsigned char", None),
-        ("Int16", "short", None),
-        ("UInt16", "unsigned short", None),
-        ("Int32", "int", None),
-        ("UInt32", "unsigned int", None),
-        ("Int64", "long", "long long"),
-        ("UInt64", "unsigned long", "unsigned long long"),
-        ("Float32", "float", None),
-        ("Float64", "double", None),
-    ):
+    for vtk_type, preferred_ctype, fallback_ctype in _VTK_FIXED_SIZE_NUMERIC_TYPES:
+        without_vtk_type_prefix = vtk_type.removeprefix("vtkType")
         preferred_ctype_upper = preferred_ctype.replace(" ", "_").upper()
         preferred_class = _ctype_to_vtk_camel_type(preferred_ctype)
         fallback_class = _ctype_to_vtk_camel_type(fallback_ctype)
@@ -456,15 +490,15 @@ def generate_common_core_aos_typed_arrays():
             "Common/Core/vtkAOSTypedArray.cxx.in",
         ]
         outs = [
-            "Common/Core/vtkType{}Array.h".format(vtk_type),
-            "Common/Core/vtkType{}Array.cxx".format(vtk_type),
+            "Common/Core/vtkType{}Array.h".format(without_vtk_type_prefix),
+            "Common/Core/vtkType{}Array.cxx".format(without_vtk_type_prefix),
         ]
         cmake_configure_files(
-            name = "_common_core_aos_type_arrays_" + vtk_type,
+            name = "_common_core_aos_type_arrays_" + without_vtk_type_prefix,
             srcs = srcs,
             outs = outs,
             defines = [
-                "VTK_TYPE_NAME={}".format(vtk_type),
+                "VTK_TYPE_NAME={}".format(without_vtk_type_prefix),
                 "VTK_TYPE_NATIVE=" + """
 #if VTK_TYPE_{vtk_type_upper} == VTK_{preferred_ctype_upper}
 # include \"{preferred_class}Array.h\"
@@ -474,7 +508,7 @@ def generate_common_core_aos_typed_arrays():
 # define vtkTypeArrayBase {fallback_class}Array
 #endif
                 """.format(
-                    vtk_type_upper = vtk_type.upper(),
+                    vtk_type_upper = without_vtk_type_prefix.upper(),
                     preferred_ctype_upper = preferred_ctype_upper,
                     preferred_class = preferred_class,
                     fallback_class = fallback_class or "_ERROR_",
@@ -499,44 +533,13 @@ def generate_common_core_array_instantiations(bulk_srcs):
     """
     name = "common_core_array_instantiations"
     result = []
-    for ctype in (
-        "char",
-        "signed char",
-        "unsigned char",
-        "short",
-        "unsigned short",
-        "int",
-        "unsigned int",
-        "long",
-        "unsigned long",
-        "long long",
-        "unsigned long long",
-        "float",
-        "double",
-    ):
+    for ctype in _VTK_NUMERIC_TYPES:
         snake = ctype.replace(" ", "_")
-        for stem in (
-            "vtkAffineImplicitBackendInstantiate",
-            "vtkCompositeImplicitBackendInstantiate",
-            "vtkConstantImplicitBackendInstantiate",
-            "vtkIndexedImplicitBackendInstantiate",
-            "vtkStridedImplicitBackendInstantiate",
-            "vtkStructuredPointBackendInstantiate",
-            "vtkAffineArrayInstantiate",
-            "vtkCompositeArrayInstantiate",
-            "vtkConstantArrayInstantiate",
-            "vtkIndexedArrayInstantiate",
-            "vtkSOADataArrayTemplateInstantiate",
-            "vtkScaledSOADataArrayTemplateInstantiate",
-            "vtkStdFunctionArrayInstantiate",
-            "vtkStridedArrayInstantiate",
-            "vtkStructuredPointArrayInstantiate",
-            "vtkTypedDataArrayInstantiate",
-            "vtkAOSDataArrayTemplateInstantiate",
-            # This one is only instantiated iff "long" is part of the ctype.
-            "vtkGenericDataArrayValueRangeInstantiate",
-        ):
+        for stem in _VTK_INSTANTIATION_TYPES:
             if "Generic" in stem and "long" not in ctype:
+                # N.B. Only instantiate
+                # `vtkGenericDataArrayValueRangeInstantiate` iff "long" is part
+                # of the ctype.
                 continue
 
             # The CMakeLists.txt generates `*.cxx` files, but we don't want
@@ -571,18 +574,7 @@ def generate_common_core_typed_arrays(bulk_srcs):
     name = "common_core_typed_arrays"
     result_hdrs = []
     result_srcs = []
-    for vtk_type, ctype in (
-        ("vtkTypeInt8", "char"),
-        ("vtkTypeUInt8", "unsigned char"),
-        ("vtkTypeInt16", "short"),
-        ("vtkTypeUInt16", "unsigned short"),
-        ("vtkTypeInt32", "int"),
-        ("vtkTypeUInt32", "unsigned int"),
-        ("vtkTypeInt64", "long"),
-        ("vtkTypeUInt64", "unsigned long"),
-        ("vtkTypeFloat32", "float"),
-        ("vtkTypeFloat64", "double"),
-    ):
+    for vtk_type, ctype, _ in _VTK_FIXED_SIZE_NUMERIC_TYPES:
         snake = ctype.replace(" ", "_")
         for backend in (
             "Affine",
@@ -648,18 +640,7 @@ def generate_bulk_instantiation_srcs(bulk_srcs):
     Generates a `.cxx` file for each primitive numeric C type which includes
     the corresponding `.cxx` files in the given mapping of `bulk_srcs`.
     """
-    for ctype in (
-        "char",
-        "unsigned char",
-        "short",
-        "unsigned short",
-        "int",
-        "unsigned int",
-        "long",
-        "unsigned long",
-        "float",
-        "double",
-    ):
+    for ctype in _VTK_NUMERIC_TYPES:
         snake = ctype.replace(" ", "_")
         cmake_configure_files(
             name = "_genrule_bulk_srcs_" + snake,
