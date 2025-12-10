@@ -68,6 +68,9 @@ CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
       external_systems_linearizer_(&plant_) {}
 
 template <typename T>
+CenicIntegrator<T>::~CenicIntegrator() = default;
+
+template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
   using std::isnan;
 

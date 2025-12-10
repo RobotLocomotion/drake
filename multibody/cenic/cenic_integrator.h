@@ -29,20 +29,71 @@ using contact_solvers::icf::internal::IcfSolver;
 using contact_solvers::icf::internal::IcfSolverStats;
 
 /**
- * An experimental implicit integrator that solves a convex ICF problem to
- * advance the state, rather than relying on non-convex Newton-Raphson.
+ * Convex Error-controlled Numerical Integration for Contact (CENIC) is a
+ * specialized error-controlled implicit integrator for contact-rich robotics
+ * simulations [Kurtz et al., 2025].
  *
- * N.B. Although this is an implicit integration scheme, we inherit from
- * IntegratorBase rather than ImplicitIntegrator because the way we compute
- * the Jacobian (Hessian) is completely different, and MultibodyPlant
- * specific.
+ * CENIC provides variable-step error-controlled integration for multibody
+ * systems with stiff contact interactions, while maintaining the high speeds
+ * characteristic of discrete-time solvers and required for modern robotics
+ * workflows.
+ *
+ * Benefits of CENIC include:
+ *
+ * - Guaranteed convergence. Unlike traditional implicit integrators that rely
+ *   on non-convex Newton-Raphson solves, CENIC's convex formulation eliminates
+ *   step rejections due to convergence failures.
+ *
+ * - Guaranteed accuracy. CENIC inherits the well-studied accuracy guarantees
+ *   associated with error-controlled integration [Hairer et. al., 1996],
+ * avoiding discretization artifacts common in fixed-step discrete-time methods.
+ *
+ * - Automatic time step selection. Users specify a desired accuracy rather than
+ *   a fixed time step, eliminating a common pain point in authoring multibody
+ *   simulations.
+ *
+ * - Implicit treatment of external systems. This means that users can connect
+ *   arbitrary stiff controllers (e.g., custom `LeafSystem`s) to the
+ *   `MultibodyPlant` and have them treated implicitly in CENIC's convex
+ *   formulation. This allows for larger time steps, leading to faster and more
+ *   stable simulations.
+ *
+ * - Principled static/dynamic friction modeling. Unlike discrete solvers, CENIC
+ *   can simulate frictional contact with different static and dynamic friction
+ *   coefficients.
+ *
+ * - Speed. CENIC consistently outperforms general-purpose integrators by orders
+ *   of magnitude on contact-rich problems. Error-controlled CENIC is often (but
+ *   not always) faster than discrete-time simulation, depending on the
+ *   simulation in question and the requested accuracy.
+ *
+ * CENIC works by solving a convex Irrotational Contact Fields (ICF)
+ * optimization problem [Castro et al., 2023] to advance the system state at
+ * each time step. A simple half-stepping strategy provides a second-order error
+ * estimate for automatic step-size selection.
+ *
+ * Because CENIC is specific to multibody systems, this integrator requires a
+ * system diagram with a `MultibodyPlant` subsystem named `"plant"`.
+ *
+ * Running CENIC in fixed-step mode (with error-control disabled) recovers the
+ * "Lagged" variant of discrete-time ICF simulation from [Castro, 2023].
+ *
+ * References:
+ *
+ *   Kurtz V. and Castro A., 2025. CENIC: Convex Error-controlled
+ *   Numerical Integration for Contact. https://arxiv.org/abs/2511.08771.
+ *
+ *   Castro A., Han X., and Masterjohn J., 2023. Irrotational
+ *   Contact Fields. https://arxiv.org/abs/2312.03908.
+ *
+ *   Hairer E. and Wanner G., 1996. Solving Ordinary Differential
+ *   Equations II: Stiff and Differential-Algebraic Problems. Springer Series in
+ *   Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd edition.
  */
 template <class T>
 class CenicIntegrator final : public systems::IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CenicIntegrator);
-
-  ~CenicIntegrator() override = default;
 
   /**
    * Constructs the integrator.
@@ -57,54 +108,55 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
 
+  ~CenicIntegrator() override;
+
   /**
-   * Get a reference to the MultibodyPlant used to formulate the convex
+   * Gets a reference to the MultibodyPlant used to formulate the convex
    * optimization problem.
    */
   const MultibodyPlant<T>& plant() const { return plant_; }
 
   /**
-   * Get a reference to the ICF builder, used to set up the convex problem.
-   *
-   * N.B. this is not const because the builder caches geometry data.
+   * Gets a reference to the ICF builder used to set up the convex problem.
    */
   IcfBuilder<T>& builder() {
+    // N.B. this is not const because the builder caches geometry data.
     DRAKE_ASSERT(builder_ != nullptr);
     return *builder_;
   }
 
   /**
-   * Get the current convex solver tolerances and iteration limits.
+   * Gets the current convex solver tolerances and iteration limits.
    */
   const IcfSolverParameters& get_solver_parameters() const {
     return solver_.get_parameters();
   }
 
   /**
-   * Set the convex solver tolerances and iteration limits.
+   * Sets the convex solver tolerances and iteration limits.
    */
   void set_solver_parameters(const IcfSolverParameters& parameters) {
     solver_.set_parameters(parameters);
   }
 
   /**
-   * Get the current convex solver statistics.
+   * Gets the current convex solver statistics.
    */
   const IcfSolverStats& get_solver_stats() const { return solver_.stats(); }
 
   /**
-   * Get the current total number of solver iterations across all time steps.
+   * Gets the current total number of solver iterations across all time steps.
    */
   int get_total_solver_iterations() const { return total_solver_iterations_; }
 
   /**
-   * Get the current total number of linesearch iterations, across all time
+   * Gets the current total number of linesearch iterations, across all time
    * steps and solver iterations.
    */
   int get_total_ls_iterations() const { return total_ls_iterations_; }
 
   /**
-   * Get the current total number of Hessian factorizations performed, across
+   * Gets the current total number of Hessian factorizations performed, across
    * all time steps and solver iterations.
    */
   int get_total_hessian_factorizations() const {
@@ -125,7 +177,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
  private:
   // Preallocated scratch space
   struct Scratch {
-    // Resize to accommodate the given plant.
+    /* Resizes the scratch space to accommodate the given plant. */
     void Resize(const MultibodyPlant<T>& plant);
 
     // State-sized variables, x = [q; v] for the plant (not the diagram).
@@ -137,34 +189,38 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     IcfLinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
   };
 
-  // Perform final checks and allocations before beginning integration.
+  /* Performs final checks and allocations before beginning integration. */
   void DoInitialize() final;
 
-  // Perform the main integration step, setting x_{t+h} and the error
-  // estimate.
+  /* Performs the main integration step, setting x_{t+h} and the error estimate.
+  @param h The time step to take.
+  @returns `true` if the step was successful, `false` otherwise. */
   bool DoStep(const T& h) override;
 
-  /**
-   * Solve the ICF problem to compute x_{t+h} at a given step size. This will be
-   * called multiple times for each DoStep to compute the error estimate.
-   *
-   * @param model the ICF model for the convex problem min_v ℓ(v; q₀, v₀, h).
-   * @param v_guess the initial guess for the MbP plant velocities.
-   * @param x_next the output continuous state, includes state for both the
-   *               plant and any external systems.
-   */
+  /* Solves the ICF problem to compute x_{t+h}.
+
+  @param model The ICF model for the convex problem min_v ℓ(v; q₀, v₀, h).
+  @param v_guess The initial guess for the MbP plant velocities.
+  @param x_next The output continuous state, includes state for both the
+                plant and any external systems. */
   void ComputeNextContinuousState(const IcfModel<T>& model,
                                   const VectorX<T>& v_guess,
                                   systems::DiagramContinuousState<T>* x_next);
 
-  // Advance the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
-  // to handle quaternion DoFs properly.
-  // N.B. q₀ is stored in this->get_context().
+  /* Advances the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
+  to handle quaternion DoFs properly.
+
+  @param h The time step size.
+  @param v The next-step generalized velocities v.
+  @param[out] q The output next-step generalized positions q.
+
+  N.B. q₀ is stored in this->get_context(). */
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  // Overrides the typical state change norm (weighted infinity norm) to use
-  // just the infinity norm of the position vector.
+  /* Overrides the typical state change norm (weighted infinity norm) to use
+  just the infinity norm of the position vector, as discussed in Sec. V.E of
+  [Kurtz et al., 2025]. */
   T CalcStateChangeNorm(
       const systems::ContinuousState<T>& dx_state) const final;
 
