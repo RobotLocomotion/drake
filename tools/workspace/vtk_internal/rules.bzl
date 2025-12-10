@@ -428,11 +428,12 @@ def generate_common_core_type_list_macros():
         srcs = [hdr],
     )
 
-def generate_common_core_vtk_type_arrays():
-    """Mimics the vtkTypeArrays.cmake logic, assuming a 64-bit platform.
-    Generates an `*.h` and `*.cxx` file for each of VTK's primitive types.
+def generate_common_core_aos_typed_arrays():
+    """Mimics a subset of the vtkTypeArrays.cmake logic, assuming a 64-bit
+    platform. Generates an `*.h` and `*.cxx` file for each of VTK's primitive
+    types.
     """
-    name = "common_core_vtk_type_arrays"
+    name = "common_core_aos_type_arrays"
     result_hdrs = []
     result_srcs = []
     for vtk_type, preferred_ctype, fallback_ctype in (
@@ -459,7 +460,7 @@ def generate_common_core_vtk_type_arrays():
             "Common/Core/vtkType{}Array.cxx".format(vtk_type),
         ]
         cmake_configure_files(
-            name = "_common_core_vtk_type_arrays_" + vtk_type,
+            name = "_common_core_aos_type_arrays_" + vtk_type,
             srcs = srcs,
             outs = outs,
             defines = [
@@ -492,8 +493,8 @@ def generate_common_core_vtk_type_arrays():
         srcs = result_srcs,
     )
 
-def generate_common_core_array_instantiations():
-    """Mimic the instantiation_sources in Common/Core/CMakeLists.
+def generate_common_core_array_instantiations(bulk_srcs):
+    """Mimics the instantiation_sources in Common/Core/CMakeLists.
     Generates a pile of headers.
     """
     name = "common_core_array_instantiations"
@@ -514,7 +515,6 @@ def generate_common_core_array_instantiations():
         "double",
     ):
         snake = ctype.replace(" ", "_")
-        bulk_srcs = []
         for stem in (
             "vtkAffineImplicitBackendInstantiate",
             "vtkCompositeImplicitBackendInstantiate",
@@ -554,56 +554,84 @@ def generate_common_core_array_instantiations():
                 ],
                 strict = True,
             )
-            bulk_srcs.append(out)
+            if ctype not in bulk_srcs:
+                bulk_srcs[ctype] = []
+            bulk_srcs[ctype].append(out)
             result.append(out)
-        out = "Common/Core/vtkArrayBulkInstantiate_" + snake + ".cxx"
-        cmake_configure_files(
-            name = "_genrule_bulk_srcs_" + snake,
-            srcs = ["Common/Core/vtkArrayBulkInstantiate.cxx.in"],
-            outs = [out],
-            defines = [
-                "BULK_INSTANTIATION_SOURCES=" + "\n".join([
-                    "#include \"{}\"".format(x)
-                    for x in bulk_srcs
-                ]),
-            ],
-            strict = True,
-        )
-        result.append(out)
     native.filegroup(
         name = name,
         srcs = result,
     )
 
-def generate_common_core_implicit_arrays():
-    """Mimics a subset of the vtkImplicitArrays.cmake logic.
-    Generates `*.h` and `*.cxx` files.
+def generate_common_core_typed_arrays(bulk_srcs):
+    """Mimics a subset of the vtkTypeArrays.cmake logic, assuming a 64-bit
+    platform. Generates an `*.h` and `*.cxx` file for each combination of VTK's
+    primitive types and array backend types.
     """
-    name = "common_core_implicit_arrays"
+    name = "common_core_typed_arrays"
     result_hdrs = []
     result_srcs = []
-    for backend in ["Constant"]:
-        for ctype in (
-            "unsigned char",
+    for vtk_type, ctype in (
+        ("vtkTypeInt8", "char"),
+        ("vtkTypeUInt8", "unsigned char"),
+        ("vtkTypeInt16", "short"),
+        ("vtkTypeUInt16", "unsigned short"),
+        ("vtkTypeInt32", "int"),
+        ("vtkTypeUInt32", "unsigned int"),
+        ("vtkTypeInt64", "long"),
+        ("vtkTypeUInt64", "unsigned long"),
+        ("vtkTypeFloat32", "float"),
+        ("vtkTypeFloat64", "double"),
+    ):
+        snake = ctype.replace(" ", "_")
+        for backend in (
+            "Affine",
+            "Composite",
+            "Constant",
+            "Indexed",
+            "ScaledSOA",
+            "SOA",
+            "StdFunction",
+            "Strided",
         ):
-            cased_type = _ctype_to_vtk_camel_type(ctype)[len("vtk"):]
-            class_name = "vtk{}{}Array".format(backend, cased_type)
+            without_vtk_prefix = vtk_type[len("vtk"):]
+            class_name = "vtk{}{}Array".format(backend, without_vtk_prefix)
             in_hdr = "Common/Core/vtk{}TypedArray.h.in".format(backend)
             out_hdr = "Common/Core/{}.h".format(class_name)
             in_src = "Common/Core/vtk{}TypedArray.cxx.in".format(backend)
             out_src = "Common/Core/{}.cxx".format(class_name)
+            defines = [
+                "CONCRETE_TYPE={}".format(vtk_type),
+                "VTK_TYPE_NAME={}".format(without_vtk_prefix),
+            ]
+            if backend in (
+                "Affine",
+                "Composite",
+                "Constant",
+                "Indexed",
+            ):
+                # N.B. These types are deprecated in VTK 9.6 under the ctype
+                # variants. This loop as currently written avoids the deprecated
+                # configuration entirely (since it only generates sources for
+                # vtk_types), and VTK itself has moved to their replacements.
+                # However, VTK_DEPRECATION still appears in the .in files, so we
+                # define it as empty.
+                defines.append(
+                    "VTK_DEPRECATION="
+                )
             cmake_configure_files(
-                name = "_genrule_implicit_arrays_{}".format(class_name),
+                name = "_common_core_typed_arrays_{}_{}".format(
+                    class_name, vtk_type),
                 srcs = [in_hdr, in_src],
                 outs = [out_hdr, out_src],
-                defines = [
-                    "CONCRETE_TYPE={}".format(ctype),
-                    "VTK_TYPE_NAME={}".format(cased_type),
-                ],
+                defines = defines,
                 strict = True,
             )
             result_hdrs.append(out_hdr)
             result_srcs.append(out_src)
+            if ctype not in bulk_srcs:
+                bulk_srcs[ctype] = []
+            bulk_srcs[ctype].append(out_src)
     native.filegroup(
         name = name + "_hdrs",
         srcs = result_hdrs,
@@ -613,12 +641,45 @@ def generate_common_core_implicit_arrays():
         srcs = result_srcs,
     )
 
+def generate_bulk_instantiation_srcs(bulk_srcs):
+    """Mimics the generation of instantiated sources in Common/Core/CMakeLists.
+    Generates a `.cxx` file for each primitive numeric C type which includes
+    the corresponding `.cxx` files in the given mapping of `bulk_srcs`.
+    """
+    for ctype in (
+        "char",
+        "unsigned char",
+        "short",
+        "unsigned short",
+        "int",
+        "unsigned int",
+        "long",
+        "unsigned long",
+        "float",
+        "double",
+    ):
+        snake = ctype.replace(" ", "_")
+        cmake_configure_files(
+            name = "_genrule_bulk_srcs_" + snake,
+            srcs = ["Common/Core/vtkArrayBulkInstantiate.cxx.in"],
+            outs = ["Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(snake)],
+            defines = [
+                "BULK_INSTANTIATION_SOURCES=" + "\n".join([
+                    "#include \"{}\"".format(x)
+                    for x in bulk_srcs[ctype]
+                ]),
+            ],
+            strict = True,
+        )
+
 def generate_common_core_sources():
     generate_common_core_array_dispatch_array_list()
     generate_common_core_type_list_macros()
-    generate_common_core_vtk_type_arrays()
-    generate_common_core_array_instantiations()
-    generate_common_core_implicit_arrays()
+    generate_common_core_aos_typed_arrays()
+    bulk_srcs = {}
+    generate_common_core_array_instantiations(bulk_srcs)
+    generate_common_core_typed_arrays(bulk_srcs)
+    generate_bulk_instantiation_srcs(bulk_srcs)
 
 def _path_stem(src):
     """Returns e.g. "quux" when given "foo/bar/quux.ext".
