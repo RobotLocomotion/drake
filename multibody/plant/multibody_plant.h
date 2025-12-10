@@ -118,12 +118,12 @@ class GeometryContactData;
 // Forward declarations for hydroelastic_contact_forces_continuous_cache_data.h.
 template <typename>
 struct HydroelasticContactForcesContinuousCacheData;
-// Forward declarations for multibody_plant_cenic_attorney.h.
-template <typename>
-class MultibodyPlantCenicAttorney;
 // Forward declarations for multibody_plant_discrete_update_manager_attorney.h.
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
+// Forward declarations for multibody_plant_icf_attorney.h.
+template <typename>
+class MultibodyPlantIcfAttorney;
 // Forward declarations for multibody_plant_model_attorney.h.
 template <typename>
 class MultibodyPlantModelAttorney;
@@ -5813,8 +5813,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   // Friend attorney class to provide private access to those internal::
   // implementations that need it.
-  friend class internal::MultibodyPlantCenicAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
+  friend class internal::MultibodyPlantIcfAttorney<T>;
   friend class internal::MultibodyPlantModelAttorney<T>;
 
   // This struct stores in one single place the index of all of our inputs.
