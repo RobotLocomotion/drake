@@ -7,6 +7,7 @@
 namespace drake {
 namespace pydrake {
 
+using multibody::contact_solvers::icf::IcfSolverParameters;
 using systems::Context;
 using systems::IntegratorBase;
 using systems::System;

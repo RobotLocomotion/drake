@@ -12,7 +12,14 @@
 namespace drake {
 namespace multibody {
 
+using contact_solvers::icf::IcfSolverParameters;
+using contact_solvers::icf::internal::IcfBuilder;
+using contact_solvers::icf::internal::IcfData;
+using contact_solvers::icf::internal::IcfExternalSystemsLinearizer;
 using contact_solvers::icf::internal::IcfLinearFeedbackGains;
+using contact_solvers::icf::internal::IcfModel;
+using contact_solvers::icf::internal::IcfSolver;
+using contact_solvers::icf::internal::IcfSolverStats;
 using contact_solvers::internal::Bracket;
 using contact_solvers::internal::DoNewtonWithBisectionFallback;
 using Eigen::MatrixXd;
@@ -56,6 +63,16 @@ std::vector<int> CalcNonPlantXcSubsystemIndices(
 }  // namespace
 
 template <typename T>
+void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
+  const int nv = plant.num_velocities();
+  const int nq = plant.num_positions();
+  v.resize(nv);
+  q.resize(nq);
+  actuation_feedback.Resize(nv);
+  external_feedback.Resize(nv);
+}
+
+template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
     : IntegratorBase<T>(system, context),
@@ -75,7 +92,7 @@ void CenicIntegrator<T>::DoInitialize() {
   using std::isnan;
 
   // CENIC works best at loose accuracies.
-  const double kDefaultAccuracy = 1e-1;
+  const double kDefaultAccuracy = 1e-3;
 
   // Set the initial time step and accuracy.
   if (isnan(this->get_initial_step_size_target())) {
@@ -95,7 +112,7 @@ void CenicIntegrator<T>::DoInitialize() {
   builder_ = std::make_unique<IcfBuilder<T>>(
       plant(), plant().GetMyContextFromRoot(this->get_context()));
 
-  // Allocate scratch variables
+  // Allocate scratch variables.
   scratch_.Resize(plant());
 
   // Allocate intermediate states for error control.
@@ -115,17 +132,19 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const T t0 = context.get_time();
 
-  // Linearize any external systems (e.g., controllers, external force elements)
+  // Linearize any external systems (e.g., controllers, external force elements,
+  // etc.) as
+  //
   //     τ = actuation_feedback + external_feedback,
   //       = B u(x) + τₑₓₜ(x),
-  //     ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ.
+  //       ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ.
   //
   // TODO(vincekurtz) If error control is retrying a step, ideally we would
   // reuse the same linearization, but that's a bit challenging because it
   // depends on `q_prime` which depends on `h`. Only if the controller is
   // (nearly?) insensitive to `q` could we reuse its linearization.
   Context<T>& mutable_plant_context =
-      plant().GetMyMutableContextFromRoot(this->get_mutable_context());
+      plant().GetMyMutableContextFromRoot(&context);
   IcfLinearFeedbackGains<T>& actuation_feedback_storage =
       scratch_.actuation_feedback;
   IcfLinearFeedbackGains<T>& external_feedback_storage =
@@ -147,7 +166,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   // geometry queries from the previous solve.
   //
   // TODO(vincekurtz): consider having IntegratorBase tell us about the
-  // rejection instead of doing this "time at last solve" bookeeping.
+  // rejection instead of doing this "time at last solve" bookkeeping.
   if (t0 == time_at_last_solve_) {
     // The last time we updated the model, we used the initial state (q₀, v₀),
     // so all we need to update is the time step and the external system
@@ -215,26 +234,27 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
   }
 
-  return true;  // step was successful
+  return true;  // Step was successful.
 }
 
 template <typename T>
 void CenicIntegrator<T>::ComputeNextContinuousState(
     const IcfModel<T>& model, const VectorX<T>& v_guess,
     DiagramContinuousState<T>* x_next) {
+  DRAKE_ASSERT(x_next != nullptr);
   DRAKE_ASSERT(v_guess.size() == model.num_velocities());
   DRAKE_ASSERT(model.num_velocities() == plant().num_velocities());
   const T& h = model.time_step();
   const Context<T>& context = this->get_context();
 
-  // Set convergence tolerance based on integrator accuracy
-  // TODO(vincekurtz): consider exposing kappa as a user-settable parameter
+  // Set convergence tolerance based on integrator accuracy.
+  // TODO(vincekurtz): consider exposing kappa as a user-settable parameter.
   const double kappa = 0.001;
   const double tolerance = this->get_fixed_step_mode()
                                ? get_solver_parameters().min_tolerance
                                : kappa * this->get_accuracy_in_use();
 
-  // Solve the optimization problem for next-step velocities
+  // Solve the optimization problem for next-step velocities,
   // v = min ℓ(v; q₀, v₀, h).
   model.ResizeData(&data_);
   data_.set_v(v_guess);
@@ -245,20 +265,20 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
     throw std::runtime_error("CenicIntegrator: optimization failed.");
   }
 
-  // Accumulate solver statistics
+  // Accumulate solver statistics.
   total_solver_iterations_ += solver_.stats().num_iterations;
   total_hessian_factorizations_ += solver_.stats().num_factorizations;
   total_ls_iterations_ +=
       std::accumulate(solver_.stats().ls_iterations.begin(),
                       solver_.stats().ls_iterations.end(), 0);
 
-  // Compute next-step positions
-  // q = q₀ + h N(q₀) v
+  // Compute next-step positions,
+  // q = q₀ + h N(q₀) v.
   const VectorX<T>& v = data_.v();
   VectorX<T>& q = scratch_.q;
   AdvancePlantConfiguration(h, v, &q);
 
-  // Set the updated plant state.
+  // Set the updated plant state, x = [q; v].
   x_next->get_mutable_substate(plant_subsystem_index_)
       .get_mutable_generalized_position()
       .SetFromVector(q);
@@ -277,6 +297,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
     const Context<T>& subcontext =
         this->get_system().GetSubsystemContext(subsystem, context);
 
+    // TODO(vincekurtz): eliminate these heap allocations.
     const VectorX<T> sub_xc_dot =
         subsystem.EvalTimeDerivatives(subcontext).CopyToVector();
     VectorX<T> sub_xc_next = subcontext.get_continuous_state().CopyToVector();
@@ -290,11 +311,12 @@ template <typename T>
 void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
                                                    const VectorX<T>& v,
                                                    VectorX<T>* q) const {
+  DRAKE_ASSERT(q != nullptr);
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
   const VectorX<T>& q0 = plant().GetPositions(plant_context);
 
-  // q = q₀ + h N(q₀) v
+  // q = q₀ + h N(q₀) v.
   plant().MapVelocityToQDot(plant_context, h * v, q);  // δq = h N(q₀) v
   *q += q0;                                            // q = q₀ + δq
 
@@ -319,24 +341,14 @@ template <typename T>
 T CenicIntegrator<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   // Simple infinity norm of the generalized position change.
+  using std::isnan;
   const VectorBase<T>& dgq =
       dynamic_cast<const DiagramContinuousState<T>&>(dx_state)
           .get_substate(plant_subsystem_index_)
           .get_generalized_position();
   const T x_norm = dgq.CopyToVector().template lpNorm<Eigen::Infinity>();
-  using std::isnan;
   if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
   return x_norm;
-}
-
-template <typename T>
-void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
-  const int nv = plant.num_velocities();
-  const int nq = plant.num_positions();
-  v.resize(nv);
-  q.resize(nq);
-  actuation_feedback.Resize(nv);
-  external_feedback.Resize(nv);
 }
 
 }  // namespace multibody

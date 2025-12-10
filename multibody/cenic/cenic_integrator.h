@@ -19,15 +19,6 @@
 namespace drake {
 namespace multibody {
 
-using contact_solvers::icf::IcfSolverParameters;
-using contact_solvers::icf::internal::IcfBuilder;
-using contact_solvers::icf::internal::IcfData;
-using contact_solvers::icf::internal::IcfExternalSystemsLinearizer;
-using contact_solvers::icf::internal::IcfLinearFeedbackGains;
-using contact_solvers::icf::internal::IcfModel;
-using contact_solvers::icf::internal::IcfSolver;
-using contact_solvers::icf::internal::IcfSolverStats;
-
 /**
  * Convex Error-controlled Numerical Integration for Contact (CENIC) is a
  * specialized error-controlled implicit integrator for contact-rich robotics
@@ -119,7 +110,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /**
    * Gets a reference to the ICF builder used to set up the convex problem.
    */
-  IcfBuilder<T>& builder() {
+  contact_solvers::icf::internal::IcfBuilder<T>& builder() {
     // N.B. this is not const because the builder caches geometry data.
     DRAKE_ASSERT(builder_ != nullptr);
     return *builder_;
@@ -128,21 +119,18 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /**
    * Gets the current convex solver tolerances and iteration limits.
    */
-  const IcfSolverParameters& get_solver_parameters() const {
+  const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
+      const {
     return solver_.get_parameters();
   }
 
   /**
    * Sets the convex solver tolerances and iteration limits.
    */
-  void set_solver_parameters(const IcfSolverParameters& parameters) {
+  void set_solver_parameters(
+      const contact_solvers::icf::IcfSolverParameters& parameters) {
     solver_.set_parameters(parameters);
   }
-
-  /**
-   * Gets the current convex solver statistics.
-   */
-  const IcfSolverStats& get_solver_stats() const { return solver_.stats(); }
 
   /**
    * Gets the current total number of solver iterations across all time steps.
@@ -185,8 +173,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     VectorX<T> q;
 
     // Linearized external system gains (sized to the plant's num_velocities):
-    IcfLinearFeedbackGains<T> actuation_feedback;  // τ = clamp(−Ku⋅v + bu)
-    IcfLinearFeedbackGains<T> external_feedback;   // τ = −Ke⋅v + be
+    // Torque-limited actuation, τ = clamp(−Ku⋅v + bu).
+    contact_solvers::icf::internal::IcfLinearFeedbackGains<T>
+        actuation_feedback;
+    // Non-limited external forces, τ = −Ke⋅v + be.
+    contact_solvers::icf::internal::IcfLinearFeedbackGains<T> external_feedback;
   };
 
   /* Performs final checks and allocations before beginning integration. */
@@ -203,9 +194,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   @param v_guess The initial guess for the MbP plant velocities.
   @param x_next The output continuous state, includes state for both the
                 plant and any external systems. */
-  void ComputeNextContinuousState(const IcfModel<T>& model,
-                                  const VectorX<T>& v_guess,
-                                  systems::DiagramContinuousState<T>* x_next);
+  void ComputeNextContinuousState(
+      const contact_solvers::icf::internal::IcfModel<T>& model,
+      const VectorX<T>& v_guess, systems::DiagramContinuousState<T>* x_next);
 
   /* Advances the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   to handle quaternion DoFs properly.
@@ -231,14 +222,17 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   const std::vector<int> non_plant_xc_subsystem_indices_;
 
   // Helper class that linearizes torques dτ/dv from plant input ports.
-  const IcfExternalSystemsLinearizer<T> external_systems_linearizer_;
+  const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>
+      external_systems_linearizer_;
 
   // Pre-allocated objects used to formulate and solve the optimization problem.
-  std::unique_ptr<IcfBuilder<T>> builder_;
-  IcfSolver solver_;
-  IcfModel<T> model_at_x0_;  // for the full step and first half-step
-  IcfModel<T> model_at_xh_;  // for the second half-step (at t + h/2)
-  IcfData<T> data_;          // reusable data for the solver
+  std::unique_ptr<contact_solvers::icf::internal::IcfBuilder<T>> builder_;
+  contact_solvers::icf::internal::IcfSolver solver_;
+  // For the full step and first half-step.
+  contact_solvers::icf::internal::IcfModel<T> model_at_x0_;
+  // For the second half-step (at t + h/2).
+  contact_solvers::icf::internal::IcfModel<T> model_at_xh_;
+  contact_solvers::icf::internal::IcfData<T> data_;
 
   // Track whether solves are initialized at the same time as a previous
   // rejected step, to enable model (e.g., constraints, geometry) reuse.

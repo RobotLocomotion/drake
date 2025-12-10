@@ -25,7 +25,11 @@
 namespace drake {
 namespace multibody {
 
+using contact_solvers::icf::IcfSolverParameters;
+using contact_solvers::icf::internal::IcfBuilder;
+using contact_solvers::icf::internal::IcfData;
 using contact_solvers::icf::internal::IcfLinearFeedbackGains;
+using contact_solvers::icf::internal::IcfModel;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using systems::ConstantVectorSource;

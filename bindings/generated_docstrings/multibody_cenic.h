@@ -122,12 +122,6 @@ See ImplicitEulerIntegrator for details.)""";
           const char* doc =
 R"""(Gets the current convex solver tolerances and iteration limits.)""";
         } get_solver_parameters;
-        // Symbol: drake::multibody::CenicIntegrator::get_solver_stats
-        struct /* get_solver_stats */ {
-          // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Gets the current convex solver statistics.)""";
-        } get_solver_stats;
         // Symbol: drake::multibody::CenicIntegrator::get_total_hessian_factorizations
         struct /* get_total_hessian_factorizations */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
