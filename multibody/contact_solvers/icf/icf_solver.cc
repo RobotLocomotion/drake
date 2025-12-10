@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "drake/common/text_logging.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {
@@ -73,7 +74,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   stats_.Clear();
 
   if (parameters_.print_solver_stats) {
-    fmt::print("IcfSolver: starting convex solve\n");
+    drake::log()->info("IcfSolver starting convex solve:");
   }
   for (int k = 0; k < parameters_.max_iterations; ++k) {
     // Compute the cost and gradient.
@@ -85,9 +86,9 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     // enough that no iterations are performed.
     if (parameters_.print_solver_stats) {
       const double step_norm = (k == 0) ? NAN : stats_.step_norm.back();
-      fmt::print(
-          "  k: {}, cost: {}, gradient: {:e}, step: {:e}, ls_iterations: {}, "
-          "alpha: {}\n",
+      drake::log()->info(
+          "  k: {}, cost: {:.6f}, gradient: {:e}, step: {:e}, ls_iterations: "
+          "{}, alpha: {:.6f}",
           k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
     }
 
