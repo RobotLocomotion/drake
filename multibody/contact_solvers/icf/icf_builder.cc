@@ -345,11 +345,16 @@ void IcfBuilder<T>::UpdateModel(
   model->UpdateTimeStep(time_step);
 
   // N.B. external forces must come first, followed by actuation.
+#if 0
+  // This DRAKE_DEMAND is not correct. We only add gain constraints for cliques
+  // that are actuated (see line 685), so it's sometimes the case that the 0 <
+  // gain_constraints.num_constraints() < model->num_cliques().
   auto& gain_constraints = model->gain_constraints_pool();
   DRAKE_DEMAND(gain_constraints.num_constraints() ==
                model->num_cliques() *
                    ((external_feedback != nullptr ? 1 : 0) +
                     (actuation_feedback != nullptr ? 1 : 0)));
+#endif
   if (external_feedback != nullptr) {
     const VectorX<T>& Ke = external_feedback->K;
     const VectorX<T>& be = external_feedback->b;
