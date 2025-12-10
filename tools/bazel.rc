@@ -12,6 +12,9 @@ common --@@spdlog+//:header_only=False
 # implicit loads built-in to Bazel itself to take effect.
 common --incompatible_autoload_externally=
 
+# Use cloudflare's mirror for improved reliability of external downloads.
+common --module_mirrors=https://bcr.cloudflaremirrors.com
+
 # Default to an optimized build.
 build -c opt
 build --features=prefer_pic_for_opt_binaries
