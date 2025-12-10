@@ -302,45 +302,80 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // (i.e., the algorithms only rely on the quaternion’s direction). In other
   // words, the algorithms ensure the quaternion’s magnitude does not contribute
   // to physics in any way. For example, before converting a user-supplied
-  // quaternion q to form a rotation matrix, we normalize it locally so |q|= 1
+  // quaternion q to form a rotation matrix, we normalize it locally so |q| = 1
   // (which guarantees an orthogonal rotation matrix). Regardless of whether the
-  // magnitude of the user-supplied quaternion is 1.0, 1.23, 5.67, etc., we get
-  // the same rotation matrix, and thus the same orientation.
+  // magnitude |q| of the user-supplied quaternion is 1.0 or 3.45 or other, we
+  // get the same rotation matrix, and thus the same orientation.
   //
-  // Instead of the mathematically useful, but physically nebulous q̇ ≜ dq/dt
-  // (which is a 4-vector, with one scalar constraint between its 4 elements) to
-  // describe how orientation changes, we rely on angular velocity ω (which is a
-  // 3-vector with direct physical meaning) to represent time-rate-of-change of
-  // orientation and use ω to calculate q̇ ≜ dq/dt as shown in eqn(1).
+  // To describe the time-rate-of-change of orientation, we rely on angular
+  // velocity ω (which is a 3-vector with direct physical meaning) instead of
+  // the mathematically useful, but physically nebulous q̇ ≜ dq/dt (which is a
+  // 4-vector, with one scalar constraint between its 4 elements). We calculate
+  // q̇ from ω as shown in eqn(1).
   // Note: One provable property of eqn(1) and N(q) is that they produce a q̇
   // that is perpendicular to q, i.e., dot(q, q̇) = 0, which guarantees |q|²
   // (and hence |q|) is unchanged with a perfect integrator (even if |q| ≠ 1).
   // Proof: 2 q̇ ⋅ q = d/dt (q ⋅ q) = d/dt( |q|² ) = 0.  Hence, a perfect
   // integrator only affects a quaternion's direction (not its magnitude).
   //
-  // (1)  q̇(q,ω) = N(q) ω
+  //                            ⌈ q̇w ⌉       ⌈ -qx   -qy   -qz ⌉ ⌈ ωx ⌉
+  // (1)  q̇(q,ω) = N(q) ω  or   | q̇x | = 0.5 |  qw    qz   -qy | | ωy |
+  //                            | q̇y |       | -qz    qw    qx | ⌊ ωz ⌋
+  //                            ⌊ q̇z ⌋       ⌊  qy   -qx    qw ⌋
   //
-  // The elements of the 4x3 matrix function N(q) are just ± elements of q
-  // (which is unnormalized), see “Details” below.  Denoting q as a non-unit
-  // quaternion, q̂ as its associated unit quaternion, then
-  // q = |q| q̂̇,  N(q) = |q| N(q̂),  q̇ = N(q) ω = |q| q̂',  (where q̂' ≜ dq̂/dt).
+  // The elements of the 4x3 matrix N(q) are ± 0.5 times the 4 elements qw, qx,
+  // qy, qz of q (which is unnormalized). Denoting q as a non-unit quaternion,
+  // q̂ = q / |q| as its associated unit quaternion, and q̂' ≜ dq̂/dt, then,
+  //
+  // (2) q = |q| q̂,  N(q) = |q| N(q̂),  q̇ = N(q) ω = |q| N(q̂) ω,  so  q̇ = |q| q̂'
+  //
   // Note that eqn(1) applies to an arbitrary, user supplied angular velocity ω,
   // so any ω generates a valid q̇ for a given q, with scaling of q̇ matching |q|.
   //
   // We also need to provide the inverse operator via a “pseudoinverse-like”
   // matrix N⁺(q), such that for an arbitrary, user supplied q̇,
   //
-  // (2)  ω(q,q̇) = N⁺(q) q̇
+  // (3)  ω(q,q̇) = N⁺(q) q̇
   //
-  // An arbitrary user supplied q̇ might have a spurious non-zero component q̇∥ of
-  // q̇ that is parallel to q (note q̇∥ is a derivative of the magnitude of q).
-  // But since we do not allow |q| to affect physics, q̇∥ must not be allowed to
-  // influence the resulting angular velocity ω (a physical quantity).
-  // Similarly, we can’t allow |q| to affect ω. Thus we need to work with both
-  // q/|q| and q̇/|q| to avoid introducing non-physical quantities into the
-  // physical ω, and we have to ignore any q̇∥ component of q̇.
-  // To account for |q| ≠ 1, q̇∥, etc., computing the N⁺ matrix in eqn(2) is
-  // more complicated than computing the N matrix in eqn(1). What’s in it?
+  // Any q̇ can be written as q̇ = q̇⊥ + q̇∥, where q̇⊥ is the component of q̇ that is
+  // perpendicular to q (q̇⊥ ⋅ q = 0) which as proved above does not change |q|,
+  // and q̇∥ is the component of q̇ that is parallel to q.
+  // Proof: d/dt( |q| ) = d/dt( √(q⋅q) ) = q̇⋅q / √(q⋅q) = q̇⋅q̂. So q̇∥ = (q̇⋅q̂) q.
+  // An arbitrary user-supplied q̇ may have a spurious non-zero component q̇∥.
+  // We design algorithms so neither |q| nor d/dt(|q|) affect the resulting
+  // angular velocity ω (a physical quantity).
+  // To account for |q| ≠ 1, q̇∥, etc., computing the N⁺ matrix in eqn(3) is
+  // more complicated than computing the N matrix in eqn(1).
+  //
+  // One way to form N⁺(q) is to rewrite eqn(3) for the ideal case |q|(t) = 1.
+  //
+  //                              ⌈ ŵx ⌉       ⌈ -q̂x   q̂w  -q̂z  -q̂y ⌉ ⌈ q̂̇w ⌉
+  // (4)  ŵ(q̂,q̂') = N̂⁺(q̂) q̂'  or  | ŵy | = 2.0 | -q̂y   q̂z   q̂w  -q̂x | | q̂̇x |
+  //                              ⌊ ŵz ⌋       ⌊ -q̂z  -q̂y   q̂x   q̂w ⌋ | q̂̇y |
+  //                                                                  ⌊ q̂̇z ⌋
+  //
+  // Relationships similar to eqn(2) which will be useful momentarily are
+  //
+  //                                     ⌈ -qx   qw  -qz  -qy ⌉
+  //  N̂⁺(q̂) =  N̂⁺(q) / |q| =  2.0 / |q|  | -qy   qz   qw  -qx |
+  //                                     ⌊ -qz  -qy   qx   qw ⌋
+  //
+  // PAUL RESTART HERE!
+  //  q̂'
+  //
+  // ⌈ ŵx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̂'w ⌉
+  // | ŵy | = 2.0 | -qy    qz    qw  -qx | | q̂'x |
+  // ⌊ ŵz ⌋       | -qz   -qy    qx   qw | | q̂'y |
+  //                                       ⌊ q̂'z ⌋
+  //
+  // Ideally, the
+  // ⌈ ωx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̂̇w ⌉
+  // | ωy | = 2.0 | -qy    qz    qw  -qx | | q̂̇x |
+  // ⌊ ωz ⌋       | -qz   -qy    qx   qw | | q̂̇y |
+  //                                       ⌊ q̂̇z ⌋
+  //
+  // (3)  ω(q,q̇) = N⁺(q) q̇
+  //
 
   const T q_norm = q_FM.norm();
   // This function accounts for a non-unit input quaternion q_FM.
