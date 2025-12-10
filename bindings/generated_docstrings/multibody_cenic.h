@@ -24,14 +24,69 @@ constexpr struct /* pydrake_doc_multibody_cenic */ {
       struct /* CenicIntegrator */ {
         // Source: drake/multibody/cenic/cenic_integrator.h
         const char* doc =
-R"""(An experimental implicit integrator that solves a convex ICF problem
-to advance the state, rather than relying on non-convex
-Newton-Raphson.
+R"""(Convex Error-controlled Numerical Integration for Contact (CENIC) is a
+specialized error-controlled implicit integrator for contact-rich
+robotics simulations [Kurtz et al., 2025].
 
-N.B. Although this is an implicit integration scheme, we inherit from
-IntegratorBase rather than ImplicitIntegrator because the way we
-compute the Jacobian (Hessian) is completely different, and
-MultibodyPlant specific.)""";
+CENIC provides variable-step error-controlled integration for
+multibody systems with stiff contact interactions, while maintaining
+the high speeds characteristic of discrete-time solvers and required
+for modern robotics workflows.
+
+Benefits of CENIC include:
+
+- Guaranteed convergence. Unlike traditional implicit integrators that rely
+  on non-convex Newton-Raphson solves, CENIC's convex formulation eliminates
+  step rejections due to convergence failures.
+
+- Guaranteed accuracy. CENIC inherits the well-studied accuracy guarantees
+  associated with error-controlled integration [Hairer et. al., 1996],
+avoiding discretization artifacts common in fixed-step discrete-time methods.
+
+- Automatic time step selection. Users specify a desired accuracy rather than
+  a fixed time step, eliminating a common pain point in authoring multibody
+  simulations.
+
+- Implicit treatment of external systems. This means that users can connect
+  arbitrary stiff controllers (e.g., custom ``LeafSystem`s) to the
+  `MultibodyPlant`` and have them treated implicitly in CENIC's convex
+  formulation. This allows for larger time steps, leading to faster and more
+  stable simulations.
+
+- Principled static/dynamic friction modeling. Unlike discrete solvers, CENIC
+  can simulate frictional contact with different static and dynamic friction
+  coefficients.
+
+- Speed. CENIC consistently outperforms general-purpose integrators by orders
+  of magnitude on contact-rich problems. Error-controlled CENIC is often (but
+  not always) faster than discrete-time simulation, depending on the
+  simulation in question and the requested accuracy.
+
+CENIC works by solving a convex Irrotational Contact Fields (ICF)
+optimization problem [Castro et al., 2023] to advance the system state
+at each time step. A simple half-stepping strategy provides a
+second-order error estimate for automatic step-size selection.
+
+Because CENIC is specific to multibody systems, this integrator
+requires a system diagram with a ``MultibodyPlant`` subsystem named
+``"plant"``.
+
+Running CENIC in fixed-step mode (with error-control disabled)
+recovers the "Lagged" variant of discrete-time ICF simulation from
+[Castro, 2023].
+
+References:
+
+Kurtz V. and Castro A., 2025. CENIC: Convex Error-controlled Numerical
+Integration for Contact. https://arxiv.org/abs/2511.08771.
+
+Castro A., Han X., and Masterjohn J., 2023. Irrotational Contact
+Fields. https://arxiv.org/abs/2312.03908.
+
+Hairer E. and Wanner G., 1996. Solving Ordinary Differential Equations
+II: Stiff and Differential-Algebraic Problems. Springer Series in
+Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd
+edition.)""";
         // Symbol: drake::multibody::CenicIntegrator::CenicIntegrator<T>
         struct /* ctor */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
@@ -52,9 +107,7 @@ Parameter ``context``:
         struct /* builder */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get a reference to the ICF builder, used to set up the convex problem.
-
-N.B. this is not const because the builder caches geometry data.)""";
+R"""(Gets a reference to the ICF builder used to set up the convex problem.)""";
         } builder;
         // Symbol: drake::multibody::CenicIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
@@ -67,47 +120,47 @@ See ImplicitEulerIntegrator for details.)""";
         struct /* get_solver_parameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get the current convex solver tolerances and iteration limits.)""";
+R"""(Gets the current convex solver tolerances and iteration limits.)""";
         } get_solver_parameters;
         // Symbol: drake::multibody::CenicIntegrator::get_solver_stats
         struct /* get_solver_stats */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get the current convex solver statistics.)""";
+R"""(Gets the current convex solver statistics.)""";
         } get_solver_stats;
         // Symbol: drake::multibody::CenicIntegrator::get_total_hessian_factorizations
         struct /* get_total_hessian_factorizations */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get the current total number of Hessian factorizations performed,
+R"""(Gets the current total number of Hessian factorizations performed,
 across all time steps and solver iterations.)""";
         } get_total_hessian_factorizations;
         // Symbol: drake::multibody::CenicIntegrator::get_total_ls_iterations
         struct /* get_total_ls_iterations */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get the current total number of linesearch iterations, across all time
-steps and solver iterations.)""";
+R"""(Gets the current total number of linesearch iterations, across all
+time steps and solver iterations.)""";
         } get_total_ls_iterations;
         // Symbol: drake::multibody::CenicIntegrator::get_total_solver_iterations
         struct /* get_total_solver_iterations */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get the current total number of solver iterations across all time
+R"""(Gets the current total number of solver iterations across all time
 steps.)""";
         } get_total_solver_iterations;
         // Symbol: drake::multibody::CenicIntegrator::plant
         struct /* plant */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Get a reference to the MultibodyPlant used to formulate the convex
+R"""(Gets a reference to the MultibodyPlant used to formulate the convex
 optimization problem.)""";
         } plant;
         // Symbol: drake::multibody::CenicIntegrator::set_solver_parameters
         struct /* set_solver_parameters */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
           const char* doc =
-R"""(Set the convex solver tolerances and iteration limits.)""";
+R"""(Sets the convex solver tolerances and iteration limits.)""";
         } set_solver_parameters;
         // Symbol: drake::multibody::CenicIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
