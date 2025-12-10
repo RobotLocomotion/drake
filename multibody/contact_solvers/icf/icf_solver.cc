@@ -201,13 +201,7 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   // interpolation.
   const double ell0 = data.cost();              // Cost ℓ̃(0).
   const double dell0 = data.gradient().dot(w);  // Derivative ∂ℓ̃/∂α at α = 0.
-  if (dell0 >= 0) {
-    throw std::logic_error(
-        "IcfSolver: the cost does not decrease along the search "
-        "direction. This is usually caused by an excessive accumulation of "
-        "round-off errors for ill-conditioned systems. Consider revisiting "
-        "your model.");
-  }
+  DRAKE_THROW_UNLESS(dell0 < 0, dell0);
 
   // Next we'll evaluate ℓ̃, ∂ℓ̃/∂α, and ∂²ℓ̃/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max to take the largest step
@@ -298,9 +292,7 @@ double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
 
   // The solution must be in [0, 1], modulo some numerical slop.
   constexpr double slop = 1e-8;
-  if (s < -slop || s > 1.0 + slop) {
-    throw std::runtime_error("IcfSolver: quadratic root falls outside [0, 1].");
-  }
+  DRAKE_THROW_UNLESS(s >= -slop && s <= 1.0 + slop, s);
 
   return clamp(s, 0.0, 1.0);  // Ensure s ∈ [0, 1].
 }
@@ -340,9 +332,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       }
 
       // Perform a sparse Cholesky factorization of the Hessian.
-      if (!hessian_factorization_.Factor()) {
-        throw std::runtime_error("IcfSolver: Hessian factorization failed!");
-      }
+      DRAKE_THROW_UNLESS(hessian_factorization_.Factor());
       stats_.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
