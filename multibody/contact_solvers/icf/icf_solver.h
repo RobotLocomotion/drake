@@ -66,18 +66,19 @@ convex cost.
 
 This solver uses a Newton method with exact linesearch to find the
 optimal next-step velocities v. That is, at each iteration k, we compute the
-search direction Δvₖ by solving the linear system
+search direction wₖ by solving the linear system
 
-    Hₖ⋅Δvₖ = -gₖ
+    Hₖ⋅wₖ = -gₖ
 
 where Hₖ = ∇²ℓ(vₖ) is the Hessian at vₖ and gₖ = ∇ℓ(vₖ) is the gradient. We then
 perform an exact linesearch to find the optimal step size αₖ that minimizes
 
-    min_α ℓ̃(α) = ℓ(vₖ + α Δvₖ),  α ∈ [0, α_max]
+    min_α ℓ̃(α) = ℓ(vₖ + α⋅wₖ),  α ∈ [0, α_max]
 
 and update the decision variables
 
-    vₖ₊₁ = vₖ + αₖ Δvₖ.
+    vₖ₊₁ = vₖ + Δvₖ,
+    Δvₖ = αₖ⋅wₖ.
 
 This process repeats until convergence.
 
@@ -90,7 +91,25 @@ previous iteration (or even a previous solve!) when convergence is sufficiently
 fast. The solver monitors convergence and automatically recomputes the Hessian
 only when necessary to regain fast (Newton-like) convergence.
 
-See IcfSolverParameters and README.md for further details. */
+The ICF formulation was first described in [Castro et al., 2023]. This
+implementation follows the details described in [Kurtz et al., 2025]. Hessian
+reuse strategy is described in Section VI.C of [Kurtz et al., 2025] and is an
+adaptation of techniques from [Hairer, 1996], chapter IV.8.
+
+See IcfSolverParameters and icf/README.md for further details.
+
+References:
+
+  [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
+  Contact Fields. https://arxiv.org/abs/2312.03908
+
+  [Kurtz et al., 2025] Kurtz V. and Castro A., 2025. CENIC: Convex
+  Error-controlled Numerical Integration for Contact.
+  https://arxiv.org/abs/2511.08771
+
+  [Hairer, 1996] Hairer E. and Wanner G., 1996. Solving Ordinary Differential
+  Equations II: Stiff and Differential-Algebraic Problems. Springer Series in
+  Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd edition. */
 class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
@@ -127,25 +146,25 @@ class IcfSolver {
   const IcfSolverParameters& get_parameters() const { return parameters_; }
 
  private:
-  /* Solves min_α ℓ̃(α) = ℓ(v + α Δ v) using a 1D Newton method with bisection
-  fallback.
+  /* Solves min_α ℓ̃(α) = ℓ(v + α⋅w) using a 1D Newton method with bisection
+  fallback. The initial guess is generated using cubic spline interpolation.
 
   @param model The ICF model, used to evaluate ℓ̃(α) and its derivatives.
   @param data The ICF data at the current iterate v.
-  @param dv The search direction Δv.
+  @param w The search direction.
 
   @returns A pair containing the optimal linesearch parameter α and the number
   of linesearch iterations taken. */
   std::pair<double, int> PerformExactLineSearch(const IcfModel<double>& model,
                                                 const IcfData<double>& data,
-                                                const Eigen::VectorXd& dv);
+                                                const Eigen::VectorXd& w);
 
   /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
   @pre The equation in question must have exactly one real root in [0, 1]. */
   double SolveQuadraticInUnitInterval(const double a, const double b,
                                       const double c) const;
 
-  /* Solves for the Newton search direction Δv = −H⁻¹g, with flags for several
+  /* Solves for the Newton search direction w = −H⁻¹ g, with flags for several
   levels of Hessian reuse:
 
    - reuse_factorization: reuse the exact same factorization of H as in the
@@ -157,7 +176,7 @@ class IcfSolver {
                              stored sparsity pattern. This gives an exact
                              Newton step, but avoids some allocations. */
   void ComputeSearchDirection(const IcfModel<double>& model,
-                              const IcfData<double>& data, Eigen::VectorXd* dv,
+                              const IcfData<double>& data, Eigen::VectorXd* w,
                               bool reuse_factorization = false,
                               bool reuse_sparsity_pattern = false);
 

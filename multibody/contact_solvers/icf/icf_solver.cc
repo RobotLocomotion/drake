@@ -44,9 +44,9 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
 
-  // Retrieve scratch space for decision variables vₖ and search direction Δvₖ.
+  // Retrieve scratch space for decision variables vₖ and search direction wₖ.
   VectorXd& v = decision_variables_;
-  VectorXd& dv = search_direction_;
+  VectorXd& dv = search_direction_;  // Also stores Δvₖ = αₖ⋅wₖ.
   v.resize(model.num_velocities());
   dv.resize(model.num_velocities());
 
@@ -80,8 +80,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     const double grad_norm = (D.asDiagonal() * data->gradient()).norm();
 
     // We'll print solver stats before doing any convergence checks.
-    // That ensures that we get a printout even when v_guess is good enough
-    // that no iterations are performed.
+    // That ensures that we get a printout even when the initial guess is good
+    // enough that no iterations are performed.
     if (parameters_.print_solver_stats) {
       const double step_norm = (k == 0) ? NAN : stats_.step_norm.back();
       fmt::print(
@@ -90,17 +90,17 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
           k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
     }
 
-    // Gradient-based convergence check. Allows for early exit if v_guess is
-    // already close enough to the solution.
+    // Gradient-based convergence check. Allows for early exit if v is already
+    // close enough to the solution.
     if (grad_norm < scaled_tolerance) {
       return true;
     }
 
     // Step-size-based convergence check. This is only valid after the first
-    // iteration has been completed, since we need the step size ||D⁻¹ Δvₖ||
+    // iteration has been completed, since we need the step size ||D⁻¹⋅Δvₖ||
     if (k > 0) {
-      // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹ Δvₖ|| < tol.
-      // Otherwise we use η = θ/(1−θ) as set below (see Hairer 1996, p.120).
+      // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹⋅Δvₖ|| < tol.
+      // Otherwise we use η = θ/(1−θ) as set below (see [Hairer, 1996], p.120).
       if (eta * stats_.step_norm.back() < scaled_tolerance) {
         return true;
       }
@@ -108,19 +108,21 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
 
     // Choose whether to re-compute the Hessian factorization using Equation
     // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
-    // converge within (k_max - k) iterations, assuming linear convergence.
+    // converge in the next few iterations, assuming linear convergence.
     if (k > 1) {
-      const double dvk = stats_.step_norm[k - 1];    // ||D⁻¹ Δvₖ||
-      const double dvkm1 = stats_.step_norm[k - 2];  // ||D⁻¹ Δvₖ₋₁||
+      const double dvk = stats_.step_norm[k - 1];    // ||D⁻¹⋅Δvₖ||
+      const double dvkm1 = stats_.step_norm[k - 2];  // ||D⁻¹⋅Δvₖ₋₁||
       const double theta = dvk / dvkm1;
 
-      // For the step-size-based convergence check η ‖D⁻¹ Δv‖ ≤ ε max(1, ‖D r‖),
+      // For the step-size-based convergence check η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
       // we need η \in (0, 1]. Therefore we only use η = θ/(1−θ) when θ < 1.0,
       // and otherwise make the (conservative) choice of η = 1.0.
       // N.B. unlike in the Newton-Raphson steps discussed in [Hairer, 1996],
-      // it is possible that θ ≥ 1 without diverging, thanks to linesearch.
+      // it is possible that θ ≥ 1 without divergence, thanks to linesearch.
       eta = (theta < 1.0) ? theta / (1.0 - theta) : 1.0;
 
+      // Predict the residual after a total of k_max iterations, assuming
+      // linear convergence at the current rate θ.
       const int k_max = parameters_.hessian_reuse_target_iterations;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
@@ -138,15 +140,16 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     // full check when k = 0.
     bool reuse_sparsity_pattern = (k > 0) || !SparsityPatternChanged(model);
 
-    // Hessian reuse is enabled when all of the following hold:
-    //   1. reuse is enabled in the solver parameters,
-    //   2. the sparsity pattern is unchanged,
-    //   3. the "anticipated residual" heuristics indicate that we'll converge
+    // We reuse the previous hessian when all of the following hold:
+    //   1. Reuse is enabled in the solver parameters.
+    //   2. The sparsity pattern is unchanged from the last time the Hessian was
+    //      computed.
+    //   3. The "anticipated residual" heuristics indicate that we'll converge
     //      in time under a linear convergence assumption.
     bool reuse_hessian = parameters_.enable_hessian_reuse &&
                          reuse_sparsity_pattern && reuse_hessian_factorization_;
 
-    // Compute the search direction dv = -H⁻¹ g
+    // Compute the search direction wₖ = -Hₖ⁻¹⋅gₖ.
     ComputeSearchDirection(model, *data, &dv, reuse_hessian,
                            reuse_sparsity_pattern);
 
@@ -156,14 +159,14 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
           std::make_unique<BlockSparsityPattern>(model.sparsity_pattern());
     }
 
-    // Compute the step size with linesearch
+    // Compute the optimal step size αₖ = min_α ℓ(vₖ + α⋅wₖ).
     std::tie(alpha, ls_iterations) = PerformExactLineSearch(model, *data, dv);
 
-    // Update the decision variables (velocities)
-    dv *= alpha;
+    // Update the decision variables (velocities), vₖ₊₁ = vₖ + αₖ⋅wₖ.
+    dv *= alpha;  // Store Δvₖ = αₖ⋅wₖ for recording the step size later.
     v += dv;
 
-    // Finalize solver stats now that we've finished the iteration
+    // Finalize solver stats now that we've finished the iteration.
     stats_.num_iterations++;
     stats_.cost.push_back(data->cost());
     stats_.gradient_norm.push_back(data->gradient().norm());
@@ -177,12 +180,12 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
 
 std::pair<double, int> IcfSolver::PerformExactLineSearch(
     const IcfModel<double>& model, const IcfData<double>& data,
-    const VectorXd& dv) {
+    const VectorXd& w) {
   const double alpha_max = parameters_.alpha_max;
 
   // Set up prerequisites for efficiently computing ℓ̃(α) and its derivatives.
   IcfSearchDirectionData<double>& search_data = search_direction_data_;
-  model.CalcSearchDirectionData(data, dv, &search_data);
+  model.CalcSearchDirectionData(data, w, &search_data);
 
   // Allocate first and second derivatives of ℓ̃(α).
   double dell{NAN};   // First derivative ∂ℓ̃/∂α.
@@ -194,8 +197,8 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   // N.B. We use a new dell0 rather than dell declared above, because both dell
   // and dell0 will be used below to generate an initial guess via cubic
   // interpolation.
-  const double ell0 = data.cost();               // Cost ℓ̃(0).
-  const double dell0 = data.gradient().dot(dv);  // Derivative ∂ℓ̃/∂α at α = 0.
+  const double ell0 = data.cost();              // Cost ℓ̃(0).
+  const double dell0 = data.gradient().dot(w);  // Derivative ∂ℓ̃/∂α at α = 0.
   if (dell0 >= 0) {
     throw std::logic_error(
         "IcfSolver: the cost does not decrease along the search "
@@ -301,10 +304,10 @@ double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
 }
 
 void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
-                                       const IcfData<double>& data,
-                                       VectorXd* dv, bool reuse_factorization,
+                                       const IcfData<double>& data, VectorXd* w,
+                                       bool reuse_factorization,
                                        bool reuse_sparsity_pattern) {
-  DRAKE_ASSERT(dv != nullptr);
+  DRAKE_ASSERT(w != nullptr);
 
   if (parameters_.use_dense_algebra) {
     if (!reuse_factorization) {
@@ -319,8 +322,8 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       reuse_hessian_factorization_ = true;
     }
 
-    // Compute the search direction dv = -H⁻¹ g with dense algebra.
-    *dv = dense_hessian_factorization_.solve(-data.gradient());
+    // Compute the search direction w = -H⁻¹ g with dense algebra.
+    *w = dense_hessian_factorization_.solve(-data.gradient());
 
   } else {  // Use sparse algebra.
     if (!reuse_factorization) {
@@ -344,9 +347,9 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       reuse_hessian_factorization_ = true;
     }
 
-    // Compute the search direction dv = -H⁻¹ g with sparse algebra.
-    *dv = -data.gradient();
-    hessian_factorization_.SolveInPlace(dv);
+    // Compute the search direction w = -H⁻¹ g with sparse algebra.
+    *w = -data.gradient();
+    hessian_factorization_.SolveInPlace(w);
   }
 }
 
