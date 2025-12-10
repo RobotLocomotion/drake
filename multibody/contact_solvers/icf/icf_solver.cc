@@ -42,6 +42,7 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                const double tolerance, IcfData<double>* data) {
   DRAKE_ASSERT(data != nullptr);
   DRAKE_ASSERT(tolerance > 0);
+  DRAKE_ASSERT(model.num_velocities() > 0);
   DRAKE_ASSERT(model.num_velocities() == data->num_velocities());
 
   // Retrieve scratch space for decision variables vₖ and search direction wₖ.

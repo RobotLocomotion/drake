@@ -196,6 +196,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "icf_solver_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "two_spheres_test",
     deps = [
         ":icf_builder",
