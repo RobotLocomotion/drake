@@ -455,8 +455,8 @@ def generate_common_core_vtk_type_arrays():
             "Common/Core/vtkAOSTypedArray.cxx.in",
         ]
         outs = [
-            "Common/Core/vtkAOSType{}Array.h".format(vtk_type),
-            "Common/Core/vtkAOSType{}Array.cxx".format(vtk_type),
+            "Common/Core/vtkType{}Array.h".format(vtk_type),
+            "Common/Core/vtkType{}Array.cxx".format(vtk_type),
         ]
         cmake_configure_files(
             name = "_common_core_vtk_type_arrays_" + vtk_type,
@@ -520,13 +520,16 @@ def generate_common_core_array_instantiations():
             "vtkCompositeImplicitBackendInstantiate",
             "vtkConstantImplicitBackendInstantiate",
             "vtkIndexedImplicitBackendInstantiate",
+            "vtkStridedImplicitBackendInstantiate",
             "vtkStructuredPointBackendInstantiate",
             "vtkAffineArrayInstantiate",
             "vtkCompositeArrayInstantiate",
             "vtkConstantArrayInstantiate",
             "vtkIndexedArrayInstantiate",
             "vtkSOADataArrayTemplateInstantiate",
+            "vtkScaledSOADataArrayTemplateInstantiate",
             "vtkStdFunctionArrayInstantiate",
+            "vtkStridedArrayInstantiate",
             "vtkStructuredPointArrayInstantiate",
             "vtkTypedDataArrayInstantiate",
             "vtkAOSDataArrayTemplateInstantiate",
