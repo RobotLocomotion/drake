@@ -82,7 +82,7 @@ TEST_F(IcfSolverTest, UnconstrainedProblem) {
   model_.SetSparsityPattern();
   model_.ResizeData(&data_);
 
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats& stats = solver_.stats();
 
   EXPECT_GE(stats.step_norm[0], 0.0);
@@ -92,7 +92,7 @@ TEST_F(IcfSolverTest, UnconstrainedProblem) {
 
 /* Checks convergence under nominal operating conditions.*/
 TEST_F(IcfSolverTest, Convergence) {
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats& stats = solver_.stats();
 
   // The problem should be difficult enough that it takes quite a few
@@ -122,7 +122,7 @@ TEST_F(IcfSolverTest, DenseVsSparseAlgebra) {
 
   // Solve with sparse algebra.
   EXPECT_FALSE(solver_.get_parameters().use_dense_algebra);
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats sparse_stats = solver_.stats();
   const VectorXd sparse_solution = data_.v();
 
@@ -132,7 +132,7 @@ TEST_F(IcfSolverTest, DenseVsSparseAlgebra) {
   solver_.set_parameters(solver_params);
   EXPECT_TRUE(solver_.get_parameters().use_dense_algebra);
   data_.set_v(v_guess);  // Reset the initial guess.
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats dense_stats = solver_.stats();
   const VectorXd dense_solution = data_.v();
 
@@ -153,7 +153,7 @@ TEST_F(IcfSolverTest, HessianReuse) {
   // Solve without Hessian reuse.
   solver_params.enable_hessian_reuse = false;
   solver_.set_parameters(solver_params);
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats no_reuse_stats = solver_.stats();
   const VectorXd no_reuse_solution = data_.v();
 
@@ -161,7 +161,7 @@ TEST_F(IcfSolverTest, HessianReuse) {
   solver_params.enable_hessian_reuse = true;
   solver_.set_parameters(solver_params);
   data_.set_v(v_guess);  // Reset the initial guess.
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats reuse_stats = solver_.stats();
   const VectorXd reuse_solution = data_.v();
 
@@ -184,13 +184,61 @@ TEST_F(IcfSolverTest, HessianReuse) {
 problem to the requested tolerance. */
 TEST_F(IcfSolverTest, EarlyExit) {
   // Solve the problem once, writing the solution to data_.
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   EXPECT_GT(solver_.stats().num_iterations, 5);
 
   // Solve the problem again, with the solution as the initial guess (already
   // stored in data_).
-  solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   EXPECT_EQ(solver_.stats().num_iterations, 0);
+}
+
+/* Verifies that the solver run properly with printouts enabled. */
+TEST_F(IcfSolverTest, PrintStatsSmokeTest) {
+  IcfSolverParameters solver_params = solver_.get_parameters();
+  solver_params.print_solver_stats = true;
+  solver_.set_parameters(solver_params);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+}
+
+/* Checks that the solver works with several reasonable linesearch step size
+limits. */
+TEST_F(IcfSolverTest, LinesearchStepSizeLimits) {
+  const VectorXd v_guess = data_.v();
+  IcfSolverParameters solver_params = solver_.get_parameters();
+
+  // Test several values for alpha_max.
+  const std::vector<double> alpha_max_values = {0.5, 1.0, 1.5};
+  for (const double alpha_max : alpha_max_values) {
+    solver_params.alpha_max = alpha_max;
+    solver_.set_parameters(solver_params);
+    data_.set_v(v_guess);
+    EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  }
+}
+
+/* Checks that we can converge to different tolerances. */
+TEST_F(IcfSolverTest, ConvergenceTolerances) {
+  const VectorXd v_guess = data_.v();
+
+  // Solve with a very loose tolerance.
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, 1e-1, &data_));
+  const int loose_tolerance_iterations = solver_.stats().num_iterations;
+
+  // Solve with a tight tolerance, from the same initial guess.
+  data_.set_v(v_guess);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, 1e-6, &data_));
+  const int tight_tolerance_iterations = solver_.stats().num_iterations;
+
+  EXPECT_LT(loose_tolerance_iterations, tight_tolerance_iterations);
+}
+
+/* Verify that the solver returns false if it fails to converge. */
+TEST_F(IcfSolverTest, ConvergenceFailure) {
+  IcfSolverParameters solver_params = solver_.get_parameters();
+  solver_params.max_iterations = 2;  // Too low for this problem.
+  solver_.set_parameters(solver_params);
+  EXPECT_FALSE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
 }
 
 }  // namespace
