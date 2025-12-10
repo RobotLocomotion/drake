@@ -86,7 +86,7 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-class TwoSpheres : public testing::Test {
+class TwoSpheres : public testing::TestWithParam<ContactModel> {
  public:
   TwoSpheres() {
     systems::DiagramBuilder<double> builder{};
@@ -130,9 +130,8 @@ class TwoSpheres : public testing::Test {
       parser.AddModelsFromString(xml, "xml");
     }
 
-    // TODO(amcastro-tri): parameterize test.
-    plant_->set_contact_model(ContactModel::kHydroelastic);
-    discrete_.plant->set_contact_model(ContactModel::kHydroelastic);
+    plant_->set_contact_model(GetParam());
+    discrete_.plant->set_contact_model(GetParam());
 
     plant_->Finalize();
     discrete_.plant->Finalize();
@@ -220,7 +219,7 @@ std::vector<geometry::ContactSurface<T>> CalcContactSurfaces(
       geometry::HydroelasticContactRepresentation::kPolygon);
 }
 
-TEST_F(TwoSpheres, GetContact) {
+TEST_P(TwoSpheres, GetContact) {
   SetInContact(0.001);
 
   const double time_step = 0.01;
@@ -258,7 +257,7 @@ TEST_F(TwoSpheres, GetContact) {
   fmt::print("Acc. ratio : {}\n", accel_ratio);
   fmt::print("Mass ratio : {}\n", mass_ratio);
 
-  IcfBuilder<double> builder(*plant_);
+  IcfBuilder<double> builder(*plant_, *plant_context_);
   IcfModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
@@ -266,7 +265,7 @@ TEST_F(TwoSpheres, GetContact) {
   EXPECT_EQ(model.num_patch_constraints(), 1);
 }
 
-TEST_F(TwoSpheres, MakeData) {
+TEST_P(TwoSpheres, MakeData) {
   const double penetration = 0.002;
   const double time_step = 0.01;
   SetInContact(penetration);
@@ -275,7 +274,7 @@ TEST_F(TwoSpheres, MakeData) {
   const int num_pairs =
       plant_->get_contact_model() == ContactModel::kPoint ? 1 : 4;
 
-  IcfBuilder<double> builder(*plant_);
+  IcfBuilder<double> builder(*plant_, *plant_context_);
   IcfModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
@@ -318,6 +317,14 @@ TEST_F(TwoSpheres, MakeData) {
   EXPECT_EQ(data.patch_constraints_data().num_constraints(), 1);
 }
 
+INSTANTIATE_TEST_SUITE_P(
+    TestContactModels, TwoSpheres,
+    testing::Values(ContactModel::kHydroelastic, ContactModel::kPoint,
+                    ContactModel::kHydroelasticWithFallback),
+    [](const testing::TestParamInfo<TwoSpheres::ParamType>& stuff) {
+      return multibody::internal::GetStringFromContactModel(stuff.param);
+    });
+
 GTEST_TEST(IcfBuilder, Limits) {
   const char xml[] = R"""(
   <?xml version="1.0"?>
@@ -353,7 +360,7 @@ GTEST_TEST(IcfBuilder, Limits) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   const double time_step = 0.01;
-  IcfBuilder<double> builder(plant);
+  IcfBuilder<double> builder(plant, plant_context);
   IcfModel<double> model;
   builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
@@ -394,7 +401,7 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   const double time_step = 0.01;
-  IcfBuilder<double> builder(plant);
+  IcfBuilder<double> builder(plant, plant_context);
   IcfModel<double> model;
   builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 1);

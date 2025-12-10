@@ -75,29 +75,6 @@ void IcfBuilder<T>::CalcGeometryContactData(
 template <typename T>
 IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
                           const systems::Context<T>& context)
-    : IcfBuilder(plant) {
-  // Retrieve constant model parameters.
-  // TODO(amcastro-tri): This should be retrieved from the default contact
-  // properties.
-  const double kDefaultDissipation = 50.0;
-  const double kDefaultStiffness = 1.0e6;
-
-  const geometry::SceneGraphInspector<T>& inspector =
-      plant.EvalSceneGraphInspector(context);
-
-  const std::vector<geometry::GeometryId> geometries =
-      inspector.GetAllGeometryIds(geometry::Role::kProximity);
-
-  for (geometry::GeometryId id : geometries) {
-    stiffness_[id] = GetPointContactStiffness(id, kDefaultStiffness, inspector);
-    friction_[id] = GetCoulombFriction(id, inspector);
-    dissipation_[id] =
-        GetHuntCrossleyDissipation(id, kDefaultDissipation, inspector);
-  }
-}
-
-template <typename T>
-IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
     : plant_(&plant), scratch_(plant) {
   using std::isinf;
   const int nv = plant.num_velocities();
@@ -213,6 +190,25 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
     limited_clique_sizes_.push_back(clique_nv);
     limit_constraint_to_clique_.push_back(clique);
     clique_to_limit_constraint_[clique] = limited_clique_sizes_.size() - 1;
+  }
+
+  // Retrieve constant model parameters.
+  // TODO(amcastro-tri): This should be retrieved from the default contact
+  // properties.
+  const double kDefaultDissipation = 50.0;
+  const double kDefaultStiffness = 1.0e6;
+
+  const geometry::SceneGraphInspector<T>& inspector =
+      plant.EvalSceneGraphInspector(context);
+
+  const std::vector<geometry::GeometryId> geometries =
+      inspector.GetAllGeometryIds(geometry::Role::kProximity);
+
+  for (geometry::GeometryId id : geometries) {
+    stiffness_[id] = GetPointContactStiffness(id, kDefaultStiffness, inspector);
+    friction_[id] = GetCoulombFriction(id, inspector);
+    dissipation_[id] =
+        GetHuntCrossleyDissipation(id, kDefaultDissipation, inspector);
   }
 }
 
