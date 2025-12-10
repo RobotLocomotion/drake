@@ -617,11 +617,13 @@ def generate_common_core_typed_arrays(bulk_srcs):
                 # However, VTK_DEPRECATION still appears in the .in files, so we
                 # define it as empty.
                 defines.append(
-                    "VTK_DEPRECATION="
+                    "VTK_DEPRECATION=",
                 )
             cmake_configure_files(
                 name = "_common_core_typed_arrays_{}_{}".format(
-                    class_name, vtk_type),
+                    class_name,
+                    vtk_type,
+                ),
                 srcs = [in_hdr, in_src],
                 outs = [out_hdr, out_src],
                 defines = defines,
