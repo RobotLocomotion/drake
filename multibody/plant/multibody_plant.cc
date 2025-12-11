@@ -534,12 +534,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently distance constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
   // TAMSI does not support distance constraints. For all other solvers, we let
   // the discrete update manager throw an exception at finalize time.
   if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
@@ -645,12 +639,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently ball constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
   // TAMSI does not support ball constraints. For all other solvers, we let
   // the discrete update manager throw an exception at finalize time.
   if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
@@ -687,12 +675,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
   // N.B. The manager is set up at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
-
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently weld constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
 
   // TAMSI does not support weld constraints. For all other solvers, we let
   // the discrete update manager throw an exception at finalize time.
@@ -733,12 +715,6 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
   // N.B. The manager is set up at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
-
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently tendon constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
 
   // TAMSI does not support tendon constraints. For all other solvers, we
   // let the discrete update manager throw an exception at finalize time.

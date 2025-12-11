@@ -313,19 +313,6 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
                               ".*TAMSI does not support ball constraints.*");
 }
 
-GTEST_TEST(BallConstraintTests, FailOnContinuous) {
-  MultibodyPlant<double> plant{0.0};
-  const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
-  const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
-                              Vector3d{0, 0, 0}),
-      ".*Currently ball constraints are only supported for discrete "
-      "MultibodyPlant models.*");
-}
-
 GTEST_TEST(BallConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
