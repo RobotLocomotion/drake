@@ -39,7 +39,7 @@ class Partials {
   /* Constructs a single partial derivative of `coeff` at the given `offset` in
   a vector of `size` otherwise-zero derivatives.
   @throws std::exception if offset >= size */
-  Partials(Eigen::Index size, Eigen::Index offset, double coeff = 1.0);
+  Partials(Eigen::Index size, Eigen::Index offset);
 
   /* Constructs a vector with a copy of the given value. */
   explicit Partials(const Eigen::Ref<const Eigen::VectorXd>& value);
