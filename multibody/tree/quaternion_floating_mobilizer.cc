@@ -480,7 +480,7 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   const Vector4<T> qdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
   const Quaternion<T> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
 
-  // TODO(Mitiguy) The next comment is not correct and is misleading.
+  // TODO(Mitiguy) The next comment is incorrect and misleading.
   //  Fix the normalization to mimic what was done in DoCalcNPlusMatrix().
   // In view of the documentation in CalcQMatrix(), since
   // Nᵣ⁺(qᵣ) = 2 * (Q_FM)ᵀ, where Q_FM is linear in the elements of
