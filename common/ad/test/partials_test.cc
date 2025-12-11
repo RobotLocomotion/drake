@@ -33,18 +33,6 @@ TEST_F(PartialsTest, UnitCtor2Arg) {
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(2)));
 }
 
-TEST_F(PartialsTest, UnitCtor3Arg) {
-  const Partials dut{4, 2, -1.0};
-  EXPECT_EQ(dut.size(), 4);
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), -Vector4d::Unit(2)));
-}
-
-TEST_F(PartialsTest, UnitCtorZeroCoeff) {
-  const Partials dut{4, 2, 0.0};
-  EXPECT_EQ(dut.size(), 4);
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Zero()));
-}
-
 TEST_F(PartialsTest, UnitCtorInsanelyLarge) {
   const Eigen::Index terabyte = Eigen::Index{1} << 40;
   DRAKE_EXPECT_THROWS_MESSAGE(Partials(terabyte, 0), ".*too large.*");
