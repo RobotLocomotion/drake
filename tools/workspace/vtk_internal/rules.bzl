@@ -51,17 +51,22 @@ _VTK_INSTANTIATION_TYPES = [
     "vtkStridedImplicitBackendInstantiate",
     "vtkStructuredPointBackendInstantiate",
     "vtkAffineArrayInstantiate",
+    "vtkAOSDataArrayTemplateInstantiate",
     "vtkCompositeArrayInstantiate",
     "vtkConstantArrayInstantiate",
     "vtkIndexedArrayInstantiate",
-    "vtkSOADataArrayTemplateInstantiate",
     "vtkScaledSOADataArrayTemplateInstantiate",
+    "vtkSOADataArrayTemplateInstantiate",
     "vtkStdFunctionArrayInstantiate",
     "vtkStridedArrayInstantiate",
     "vtkStructuredPointArrayInstantiate",
     "vtkTypedDataArrayInstantiate",
-    "vtkAOSDataArrayTemplateInstantiate",
     "vtkGenericDataArrayValueRangeInstantiate",
+]
+
+_VTK_BULK_INSTANTIATION_RESULT_FILES = [
+    "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(ctype.replace(" ", "_"))
+    for ctype in _VTK_NUMERIC_TYPES
 ]
 
 def _bazelize_module_name(name):
@@ -472,7 +477,7 @@ def generate_common_core_type_list_macros():
         srcs = [hdr],
     )
 
-def generate_common_core_aos_typed_arrays():
+def generate_common_core_aos_typed_arrays(bulk_srcs):
     """Mimics a subset of the vtkTypeArrays.cmake logic, assuming a 64-bit
     platform. Generates an `*.h` and `*.cxx` file for each of VTK's primitive
     types.
@@ -490,8 +495,8 @@ def generate_common_core_aos_typed_arrays():
             "Common/Core/vtkAOSTypedArray.cxx.in",
         ]
         outs = [
-            "Common/Core/vtkType{}Array.h".format(without_vtk_type_prefix),
-            "Common/Core/vtkType{}Array.cxx".format(without_vtk_type_prefix),
+            "Common/Core/{}Array.h".format(vtk_type),
+            "Common/Core/{}Array.cxx".format(vtk_type),
         ]
         cmake_configure_files(
             name = "_common_core_aos_type_arrays_" + without_vtk_type_prefix,
@@ -518,6 +523,9 @@ def generate_common_core_aos_typed_arrays():
         )
         result_hdrs.append(outs[0])
         result_srcs.append(outs[1])
+        if preferred_ctype not in bulk_srcs:
+            bulk_srcs[preferred_ctype] = []
+        bulk_srcs[preferred_ctype].append(outs[1])
     native.filegroup(
         name = name + "_hdrs",
         srcs = result_hdrs,
@@ -525,6 +533,7 @@ def generate_common_core_aos_typed_arrays():
     native.filegroup(
         name = name + "_srcs",
         srcs = result_srcs,
+        data = _VTK_BULK_INSTANTIATION_RESULT_FILES,
     )
 
 def generate_common_core_array_instantiations(bulk_srcs):
@@ -564,6 +573,7 @@ def generate_common_core_array_instantiations(bulk_srcs):
     native.filegroup(
         name = name,
         srcs = result,
+        data = _VTK_BULK_INSTANTIATION_RESULT_FILES,
     )
 
 def generate_common_core_typed_arrays(bulk_srcs):
@@ -633,6 +643,7 @@ def generate_common_core_typed_arrays(bulk_srcs):
     native.filegroup(
         name = name + "_srcs",
         srcs = result_srcs,
+        data = _VTK_BULK_INSTANTIATION_RESULT_FILES,
     )
 
 def generate_bulk_instantiation_srcs(bulk_srcs):
@@ -658,8 +669,8 @@ def generate_bulk_instantiation_srcs(bulk_srcs):
 def generate_common_core_sources():
     generate_common_core_array_dispatch_array_list()
     generate_common_core_type_list_macros()
-    generate_common_core_aos_typed_arrays()
     bulk_srcs = {}
+    generate_common_core_aos_typed_arrays(bulk_srcs)
     generate_common_core_array_instantiations(bulk_srcs)
     generate_common_core_typed_arrays(bulk_srcs)
     generate_bulk_instantiation_srcs(bulk_srcs)
