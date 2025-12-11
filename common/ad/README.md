@@ -13,3 +13,6 @@ Users should continue to `#include <drake/common/autodiff.h>` and refer to
 
 Once we are confident with our replacement implementation, we will switch that
 alias to refer to this new code instead of Eigen's AutoDiffScalar.
+
+In the meantime, you can opt-in using by passing the Bazel command line flag
+`--@drake//tools/flags:use_eigen_legacy_autodiff=False`.
