@@ -200,6 +200,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "icf_builder_test",
+    deps = [
+        ":icf_builder",
+        "//common/test_utilities",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "icf_data_test",
     deps = [
         ":icf_data",

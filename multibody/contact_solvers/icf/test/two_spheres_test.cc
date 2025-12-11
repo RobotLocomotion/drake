@@ -7,34 +7,18 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/geometry/scene_graph_inspector.h"
-#include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
-#include "drake/multibody/contact_solvers/icf/icf_model.h"
-#include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
-#include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
-#include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/sap_driver.h"
-#include "drake/systems/framework/diagram_builder.h"
 
-using drake::geometry::FrameId;
-using drake::geometry::SceneGraphInspector;
 using drake::math::RigidTransformd;
-using drake::multibody::Parser;
-using drake::multibody::contact_solvers::internal::ContactConfiguration;
-using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
-using drake::multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
-using drake::multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
-using drake::multibody::contact_solvers::internal::SapModel;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
@@ -42,8 +26,6 @@ using drake::multibody::internal::CompliantContactManager;
 using drake::multibody::internal::ContactProblemCache;
 using drake::multibody::internal::SapDriver;
 using drake::systems::Context;
-using Eigen::Matrix3d;
-using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
@@ -259,7 +241,11 @@ TEST_P(TwoSpheres, GetContact) {
 
   IcfBuilder<double> builder(*plant_, *plant_context_);
   IcfModel<double> model;
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  IcfLinearFeedbackGains<double> no_feedback;
+  no_feedback.K.setZero(plant_->num_velocities());
+  no_feedback.b.setZero(plant_->num_velocities());
+  builder.UpdateModel(*plant_context_, time_step, &no_feedback, &no_feedback,
+                      &model);
   EXPECT_EQ(model.num_cliques(), 2);
   EXPECT_EQ(model.num_velocities(), plant_->num_velocities());
   EXPECT_EQ(model.num_patch_constraints(), 1);
@@ -306,9 +292,16 @@ TEST_P(TwoSpheres, MakeData) {
   EXPECT_EQ(data.patch_constraints_data().num_constraints(), 0);
 
   // Update problem. There should be no allocations for the same problem size.
-  // TODO(amcastro-tri): Move this function within the guard. You'll need a
-  // pre-allocated workspace for this function.
-  builder.UpdateModel(*plant_context_, time_step, &model);
+  {
+    // TODO(amcastro-tri): Fix this function to not allocate. You'll need a
+    // pre-allocated workspace for this function.
+    drake::test::LimitMalloc guard({
+        .max_num_allocations = 352,
+        .min_num_allocations = 0,
+        .ignore_realloc_noops = true,
+    });
+    builder.UpdateModel(*plant_context_, time_step, &model);
+  }
   {
     drake::test::LimitMalloc guard;
     model.ResizeData(&data);
@@ -324,97 +317,6 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<TwoSpheres::ParamType>& stuff) {
       return multibody::internal::GetStringFromContactModel(stuff.param);
     });
-
-GTEST_TEST(IcfBuilder, Limits) {
-  const char xml[] = R"""(
-  <?xml version="1.0"?>
-  <mujoco model="robot">
-    <worldbody>
-      <body>
-        <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
-        <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
-        <body>
-          <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
-          <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" range="-45.0 45.0"/>
-        </body>
-      </body>
-    </worldbody>
-  </mujoco>
-  )""";
-
-  systems::DiagramBuilder<double> diagram_builder{};
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
-
-  MultibodyPlant<double>& plant =
-      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
-
-  Parser(&plant, "Pendulum1").AddModelsFromString(xml, "xml");
-  Parser(&plant, "Pendulum2").AddModelsFromString(xml, "xml");
-  plant.Finalize();
-  EXPECT_EQ(plant.num_model_instances(), 4);  // Default, world, pendulums 1&2.
-  EXPECT_EQ(plant.num_velocities(), 4);
-
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
-
-  const double time_step = 0.01;
-  IcfBuilder<double> builder(plant, plant_context);
-  IcfModel<double> model;
-  builder.UpdateModel(plant_context, time_step, &model);
-  EXPECT_EQ(model.num_cliques(), 2);
-  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
-  EXPECT_EQ(model.num_limit_constraints(), 2);
-}
-
-GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
-  const char xml[] = R"""(
-  <?xml version="1.0"?>
-  <mujoco model="robot">
-    <worldbody>
-      <body>
-        <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
-        <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
-        <body>
-          <inertial mass="0.1" diaginertia="0.1 0.1 0.1"/>
-          <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" range="-45.0 45.0"/>
-        </body>
-      </body>
-    </worldbody>
-  </mujoco>
-  )""";
-
-  systems::DiagramBuilder<double> diagram_builder{};
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
-
-  MultibodyPlant<double>& plant =
-      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
-
-  Parser(&plant, "Pendulum").AddModelsFromString(xml, "xml");
-  plant.Finalize();
-  EXPECT_EQ(plant.num_velocities(), 2);
-
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
-
-  const double time_step = 0.01;
-  IcfBuilder<double> builder(plant, plant_context);
-  IcfModel<double> model;
-  builder.UpdateModel(plant_context, time_step, &model);
-  EXPECT_EQ(model.num_cliques(), 1);
-  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
-  EXPECT_EQ(model.num_limit_constraints(), 1);
-  EXPECT_EQ(model.time_step(), time_step);
-
-  builder.UpdateModel(time_step * 2, &model);
-  EXPECT_EQ(model.num_cliques(), 1);
-  EXPECT_EQ(model.num_velocities(), plant.num_velocities());
-  EXPECT_EQ(model.num_limit_constraints(), 1);
-  EXPECT_EQ(model.time_step(), time_step * 2);
-}
 
 }  // namespace internal
 }  // namespace icf
