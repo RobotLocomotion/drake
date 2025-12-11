@@ -67,6 +67,18 @@ Simulator<T>::Simulator(const System<T>* system,
 }
 
 template <typename T>
+IntegratorBase<T>& Simulator<T>::reset_integrator(
+    std::unique_ptr<IntegratorBase<T>> integrator) {
+  DRAKE_THROW_UNLESS(integrator != nullptr);
+  DRAKE_THROW_UNLESS(&integrator->get_system() == &this->get_system());
+  integrator->reset_context(&this->get_mutable_context());
+  IntegratorBase<T>* result = integrator.get();
+  integrator_ = std::move(integrator);
+  initialization_done_ = false;
+  return *result;
+}
+
+template <typename T>
 SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
