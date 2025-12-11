@@ -5140,7 +5140,7 @@ R"""((Deprecated.)
 
 Deprecated:
     Use GetDefaultFloatingBaseBodyPose() instead. This will be removed
-    from Drake on or after 2026-01-01.)""";
+    from Drake on or after 2026-06-01.)""";
         } GetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultPositions
         struct /* GetDefaultPositions */ {
@@ -5701,7 +5701,7 @@ R"""((Deprecated.)
 
 Deprecated:
     Use GetUniqueFloatingBaseBodyOrThrow() instead. This will be
-    removed from Drake on or after 2026-01-01.)""";
+    removed from Drake on or after 2026-06-01.)""";
         } GetUniqueFreeBaseBodyOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocities
         struct /* GetVelocities */ {
@@ -5972,7 +5972,7 @@ R"""((Deprecated.)
 
 Deprecated:
     Use HasUniqueFloatingBaseBody() instead. This will be removed from
-    Drake on or after 2026-01-01.)""";
+    Drake on or after 2026-06-01.)""";
         } HasUniqueFreeBaseBody;
         // Symbol: drake::multibody::MultibodyPlant::IsAnchored
         struct /* IsAnchored */ {
@@ -6610,7 +6610,7 @@ R"""((Deprecated.)
 
 Deprecated:
     Use SetDefaultFloatingBaseBodyPose() instead. This will be removed
-    from Drake on or after 2026-01-01.)""";
+    from Drake on or after 2026-06-01.)""";
         } SetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultPositions
         struct /* SetDefaultPositions */ {
@@ -6784,7 +6784,7 @@ R"""((Deprecated.)
 
 Deprecated:
     Use SetFloatingBaseBodyPoseInAnchoredFrame() instead. This will be
-    removed from Drake on or after 2026-01-01.)""";
+    removed from Drake on or after 2026-06-01.)""";
         } SetFreeBodyPoseInAnchoredFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInWorldFrame
         struct /* SetFreeBodyPoseInWorldFrame */ {
@@ -6794,7 +6794,7 @@ R"""((Deprecated.)
 
 Deprecated:
     Use SetFloatingBaseBodyPoseInWorldFrame() instead. This will be
-    removed from Drake on or after 2026-01-01.)""";
+    removed from Drake on or after 2026-06-01.)""";
         } SetFreeBodyPoseInWorldFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomAnglesDistribution
         struct /* SetFreeBodyRandomAnglesDistribution */ {
