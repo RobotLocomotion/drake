@@ -97,20 +97,28 @@ GTEST_TEST(IcfExternalSystemsLinearizerTest, Basic) {
   const VectorXd& K = actuation_feedback.K;
   const VectorXd& b = actuation_feedback.b;
 
-  // Compute an expected linearization via autodiff.
+  // Compute linearization τ = D⋅x + y around x₀ via autodiff.
   auto expected_linearization = FirstOrderTaylorApproximation(
       *pid_controller, pid_controller_context,
       pid_controller->get_input_port_estimated_state().get_index(),
       pid_controller->get_output_port().get_index());
-
-  const MatrixXd B = plant.MakeActuationMatrix();
   const MatrixXd& D = expected_linearization->D();
-  const MatrixXd Du = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
-  const VectorXd u0 = plant.get_actuation_input_port().Eval(plant_context) -
-                      Du * plant.GetVelocities(plant_context);
+  const VectorXd& y = expected_linearization->y0();
+  const MatrixXd dtau_dq = D.leftCols(2);
+  const MatrixXd dtau_dv = D.rightCols(2);
+  const MatrixXd dtau_tilde_dv = dtau_dv + h * dtau_dq;  // N(q) = I
 
-  const VectorXd K_ref = -(B * Du).diagonal();
-  const VectorXd b_ref = B * u0;
+  // Since the linearization is exact for a PID controller, we can compute
+  // τ(x̃₀) = D⋅x̃₀ + y.
+  const VectorXd x0 = plant.GetPositionsAndVelocities(plant_context);
+  const VectorXd v0 = x0.tail(nv);
+  VectorXd x_tilde0 = x0;
+  x_tilde0.head(nv) += h * v0;
+  const VectorXd tau_tilde0 = y + D * x_tilde0;
+
+  // And thus the expected linearization τ(v) = b -  K⋅v is
+  const VectorXd K_ref = -dtau_tilde_dv.diagonal();
+  const VectorXd b_ref = tau_tilde0 + K_ref.asDiagonal() * v0;
 
   // Confirm that our finite difference linearization is close to the reference.
   const double kTol = std::sqrt(std::numeric_limits<double>::epsilon());
