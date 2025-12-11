@@ -372,15 +372,6 @@ TEST_F(SimplePlant, FailOnTAMSI) {
       ".*TAMSI does not support tendon constraints.*");
 }
 
-TEST_F(SimplePlant, FailOnContinuous) {
-  MakePlant(0.0);  // Continuous plant.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
-                                  {}, {}, {}),
-      ".*Currently tendon constraints are only supported for discrete "
-      "MultibodyPlant models.*");
-}
-
 TEST_F(SimplePlant, FailOnFinalized) {
   MakePlant();
   plant_->Finalize();

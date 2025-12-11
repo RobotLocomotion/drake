@@ -44,6 +44,19 @@ T CombineHuntCrossleyDissipation(const T& stiffness_A, const T& stiffness_B,
 }
 
 template <typename T>
+void IcfBuilder<T>::ValidatePlant() {
+  if (plant_->num_constraints() - plant_->num_coupler_constraints() > 0) {
+    throw std::runtime_error(fmt::format(
+        "The CENIC integrator does not yet support some constraints, but "
+        "they are present in the given MultibodyPlant: {} distance "
+        "constraint(s), {} ball constraint(s), {} weld constraint(s), {} "
+        "tendon constraint(s)",
+        plant_->num_distance_constraints(), plant_->num_ball_constraints(),
+        plant_->num_weld_constraints(), plant_->num_tendon_constraints()));
+  }
+}
+
+template <typename T>
 void IcfBuilder<T>::CalcGeometryContactData(
     const systems::Context<T>& context) {
   surfaces_.clear();
@@ -76,12 +89,14 @@ template <typename T>
 IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
                           const systems::Context<T>& context)
     : plant_(&plant), scratch_(plant) {
+  ValidatePlant();
+
   using std::isinf;
   const int nv = plant.num_velocities();
 
-  // Define problem cliques based on the spanning forest of the plant. Each tree
-  // gets its own clique, and only trees with a non-zero number of velocities
-  // are included.
+  // Define problem cliques based on the spanning forest of the plant. Each
+  // tree gets its own clique, and only trees with a non-zero number of
+  // velocities are included.
   const SpanningForest& forest = GetInternalTree(plant).forest();
   const LinkJointGraph& graph = GetInternalTree(plant).graph();
   DRAKE_DEMAND(graph.forest_is_valid());
@@ -320,8 +335,8 @@ void IcfBuilder<T>::UpdateModel(
   if (actuation_feedback != nullptr) {
     const VectorX<T>& Ku = actuation_feedback->K;
     const VectorX<T>& bu = actuation_feedback->b;
-    // N.B. actuation constraint indices in the pool depend on whether external
-    // or not external forces are present in the model.
+    // N.B. actuation constraint indices in the pool depend on whether
+    // external or not external forces are present in the model.
     SetActuationGainConstraints(Ku, bu, external_feedback != nullptr, model);
   }
 
@@ -364,8 +379,8 @@ void IcfBuilder<T>::UpdateModel(
   if (actuation_feedback != nullptr) {
     const VectorX<T>& Ku = actuation_feedback->K;
     const VectorX<T>& bu = actuation_feedback->b;
-    // N.B. actuation constraint indices in the pool depend on whether external
-    // or not external forces are present in the model.
+    // N.B. actuation constraint indices in the pool depend on whether
+    // external or not external forces are present in the model.
     SetActuationGainConstraints(Ku, bu, external_feedback != nullptr, model);
   }
 }
@@ -377,8 +392,8 @@ void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
   const int num_surfaces = surfaces_.size();
 
-  // First we'll get the number of contact pairs for point contact. There is one
-  // pair per contact patch with point contact.
+  // First we'll get the number of contact pairs for point contact. There is
+  // one pair per contact patch with point contact.
   const int num_point_contacts = point_pairs_.size();
   std::vector<int> num_pairs_per_patch(num_point_contacts, 1);
 
