@@ -296,7 +296,7 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcQMatrix(
 template <typename T>
 Eigen::Matrix<T, 3, 4>
 QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
-    const Quaternion<T>& q_FM) {
+    const Quaternion<T>& q) {
   // Background: For a quaternion q associated with a rotation matrix, Drake's
   // algorithms are designed to effectively ignore a quaternion’s magnitude
   // (i.e., the algorithms only rely on the quaternion’s direction). In other
@@ -340,69 +340,64 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // Any q̇ can be written as q̇ = q̇⊥ + q̇∥, where q̇⊥ is the component of q̇ that is
   // perpendicular to q (q̇⊥ ⋅ q = 0) which as proved above does not change |q|,
   // and q̇∥ is the component of q̇ that is parallel to q.
-  // Proof: d/dt( |q| ) = d/dt( √(q⋅q) ) = q̇⋅q / √(q⋅q) = q̇⋅q̂. So q̇∥ = (q̇⋅q̂) q.
+  // Proof: d/dt( |q| ) = d/dt( √(q⋅q) ) = q̇⋅q / √(q⋅q) = q̇⋅q̂. So q̇∥ = (q̇⋅q̂) q̂.
   // An arbitrary user-supplied q̇ may have a spurious non-zero component q̇∥.
   // We design algorithms so neither |q| nor d/dt(|q|) affect the resulting
   // angular velocity ω (a physical quantity).
   // To account for |q| ≠ 1, q̇∥, etc., computing the N⁺ matrix in eqn(3) is
   // more complicated than computing the N matrix in eqn(1).
   //
-  // One way to form N⁺(q) is to rewrite eqn(3) for the ideal case |q|(t) = 1.
+  // One way to form N⁺(q) is to rewrite eqn(3) for the ideal case |q|(t) = 1,
+  // which means q = q̂ and q̂' ≜ d/dt(q̂) is perpendicular to q i.e., (q̂'⋅q = 0).
   //
   //                              ⌈ ŵx ⌉       ⌈ -q̂x   q̂w  -q̂z  -q̂y ⌉ ⌈ q̂̇w ⌉
   // (4)  ŵ(q̂,q̂') = N̂⁺(q̂) q̂'  or  | ŵy | = 2.0 | -q̂y   q̂z   q̂w  -q̂x | | q̂̇x |
   //                              ⌊ ŵz ⌋       ⌊ -q̂z  -q̂y   q̂x   q̂w ⌋ | q̂̇y |
   //                                                                  ⌊ q̂̇z ⌋
   //
-  // Relationships similar to eqn(2) which will be useful momentarily are
+  // We want to rewrite eqn(4) in terms of a user-supplied q and q̇.  Eqn(5)
+  // shows it is relatively easy to form N̂⁺(q̂) in terms of a user-supplied q
+  // and eqn(6) (proved below) relates q̂' to a user-supplied q̇ = q̇⊥ + q̇∥.
   //
-  //                                     ⌈ -qx   qw  -qz  -qy ⌉
-  //  N̂⁺(q̂) =  N̂⁺(q) / |q| =  2.0 / |q|  | -qy   qz   qw  -qx |
-  //                                     ⌊ -qz  -qy   qx   qw ⌋
+  //                                         ⌈ -qx   qw  -qz  -qy ⌉
+  // (5)  N̂⁺(q̂) =  N̂⁺(q) / |q| =  2.0 / |q|  | -qy   qz   qw  -qx |
+  //                                         ⌊ -qz  -qy   qx   qw ⌋
   //
-  // PAUL RESTART HERE!
-  //  q̂'
+  // (6)  q̂' = (I₄₄ − q̂ q̂ᵀ) / |q| q̇  where I₄₄ is the 4x4 identity matrix.
   //
-  // ⌈ ŵx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̂'w ⌉
-  // | ŵy | = 2.0 | -qy    qz    qw  -qx | | q̂'x |
-  // ⌊ ŵz ⌋       | -qz   -qy    qx   qw | | q̂'y |
-  //                                       ⌊ q̂'z ⌋
+  // Substituting eqn(5) and eqn(6) into eqn(4) and using q̇∥ = (q̇⋅q̂) q̂, produces
   //
-  // Ideally, the
-  // ⌈ ωx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̂̇w ⌉
-  // | ωy | = 2.0 | -qy    qz    qw  -qx | | q̂̇x |
-  // ⌊ ωz ⌋       | -qz   -qy    qx   qw | | q̂̇y |
-  //                                       ⌊ q̂̇z ⌋
+  // (7)  ŵ(q̂,q̂') = N̂⁺(q) / |q|² (I₄₄ − q̂ q̂ᵀ) q̇  =  N̂⁺(q) / |q|² (q̇ − q̇∥)
+  //              = N̂⁺(q̂) / |q|  (I₄₄ − q̂ q̂ᵀ) q̇  =  N̂⁺(q̂) / |q|  (q̇ − q̇∥)
   //
-  // (3)  ω(q,q̇) = N⁺(q) q̇
-  //
+  // The proof of eqn(6) starts with q̂ = q / |q| = q |q|⁻¹
+  // q̂' ≜ dq̂/dt = q̇ |q|⁻¹ - q |q|⁻² d/dt( |q| ), where as proved above
+  // d/dt( |q| ) = q̂⋅q̇ = (q⋅q̇) / |q|.  Substituting into the previous q̂' gives
+  // q̂' = q̇ / |q| - q (q⋅q̇) / |q|³ = ( q̇ - q̂ (q̂⋅q̇) ) / |q|
+  //    = ( I₄₄ q̇ - q̂ q̂ᵀ q̇) / |q|  = ( I₄₄ - q̂ q̂ᵀ̇) q̇ / |q|
 
-  const T q_norm = q_FM.norm();
-  // This function accounts for a non-unit input quaternion q_FM.
-  // We denote the normalized quaternion as q_unit = q_FM / |q_FM|.
-  const Vector4<T> q_unit =
-      Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z()) / q_norm;
+  const T q_norm = q.norm();
+  // This function accounts for a non-unit input quaternion q.
+  // We denote the normalized quaternion as q_unit = q̂ = q / |q|.
+  const Vector4<T> q_unit = Vector4<T>(q.w(), q.x(), q.y(), q.z()) / q_norm;
 
-  // Given q_unit = q_FM / |q_FM|, calculate q̇_unit so that when this function
-  // returns, it is ready to multiply by q̇_FM to produce w_FM_F, where w_FM_F is
-  // this mobilizer's F frame's angular velocity in frame M, expressed in F.
-  // q̇_unit = ( [I₄₄] - q_unit * q_unitᵀ) * q̇_FM
-  //        = dqnorm_dq * q̇_FM
-  // Note: If the returned matrix is multiplied by s * q̇_FM (where s is any
-  // real number and q̇_FM is truly the time-derivative of q_FM), then we can
-  // prove q_unitᵀ q̇_FM = 0, which means that the q_unit * q_unit.transpose()
-  // term in dqnorm_dq is necessary, i.e., q_unit * q_unitᵀ * q̇_FM is zero.
+  // Calculate q̇_unit = q̂' so that when this function returns, it is ready to
+  // multiply by q̇ to produce angular velocity ω.
+  // q̇_unit = ( I₄₄ - q_unit * q_unitᵀ) / |q| * q̇
+  //        = dqnorm_dq * q̇
+  // Note: If q̇ is truly the time-derivative of q so |q| is constant, then we
+  // can prove q_unitᵀ q̇ = 0, which means that the q_unit * q_unit.transpose()
+  // term in dqnorm_dq is unnecessary, i.e., q_unit * q_unitᵀ * q̇ is zero.
   const Matrix4<T> dqnorm_dq =
       (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm;
 
-  // From documentation in CalcQMatrix(), Nᵣ⁺(q_unit) = 2 * Q(q_unit)ᵀ.
-  const Eigen::Matrix<T, 3, 4> NrPlus_q_unit = CalcTwoTimesQMatrixTranspose(
+  // From documentation in CalcQMatrix(), N̂ᵣ⁺(q̂) = N̂ᵣ⁺(q_unit) = 2 * Q(q_unit)ᵀ.
+  const Eigen::Matrix<T, 3, 4> NrHatPlus_q_unit = CalcTwoTimesQMatrixTranspose(
       {q_unit[0], q_unit[1], q_unit[2], q_unit[3]});
 
-  // Returns the matrix that when multiplied by q̇_FM produces w_FM_F
-  // (M's angular velocity in F, expressed in F). Note: When q_FM is a unit
-  // quaternion (so q_norm = 1), the returned value is denoted Nᵣ⁺(q̂_FM).
-  return NrPlus_q_unit * dqnorm_dq;
+  // Returns the matrix that when multiplied by q̇ produces angular velocity ω.
+  // Note: When |q| = 1, the returned value is denoted Nᵣ⁺(q̂), but not N̂ᵣ⁺(q̂).
+  return NrHatPlus_q_unit * dqnorm_dq;
 }
 
 template <typename T>
@@ -463,7 +458,7 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   Ndot->template block<3, 3>(4, 3).setZero();      // Lower-right block.
 }
 
-// TODO(Mitiguy) Ensure this function properly accounts any scaling or other
+// TODO(Mitiguy) Ensure this function properly accounts for any scaling or other
 //  distortions, similar to DoCalcNplusMatrix().
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
@@ -485,7 +480,7 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   const Vector4<T> qdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
   const Quaternion<T> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
 
-  // TODO(Mitiguy) The next comment is not fully correct and is misleading.
+  // TODO(Mitiguy) The next comment is not correct and is misleading.
   //  Fix the normalization to mimic what was done in DoCalcNPlusMatrix().
   // In view of the documentation in CalcQMatrix(), since
   // Nᵣ⁺(qᵣ) = 2 * (Q_FM)ᵀ, where Q_FM is linear in the elements of

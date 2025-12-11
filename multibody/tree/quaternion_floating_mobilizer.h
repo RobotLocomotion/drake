@@ -445,7 +445,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @note This function is only documented for use with q_FM, not q_MF.
   // TODO(Mitiguy) Improve the name of this function, maybe CalcNrPlus_F().
   static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(
-      const Quaternion<T>& q_FM);
+      const Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
