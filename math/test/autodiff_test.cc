@@ -391,8 +391,10 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
   // This is the expected type of the derivatives vector (in every element).
   const Eigen::Matrix<double, Eigen::Dynamic, 1>& deriv_12d =
       std::get<1>(tupled).coeffRef(2).derivatives();
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
   // Check that we didn't create a new copy (i.e. we got the right type).
   EXPECT_EQ(&deriv_12d, &std::get<1>(tupled).coeffRef(2).derivatives());
+#endif  // DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF
 
   // We should still get the same value at run time.
   expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0;
