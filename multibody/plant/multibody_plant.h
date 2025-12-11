@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
@@ -3062,8 +3061,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Sets `state` according to defaults set by the user for joints (e.g.
   /// RevoluteJoint::set_default_angle()) and free bodies
-  /// (SetDefaultFreeBodyPose()). If the user does not specify defaults, the
-  /// state corresponds to zero generalized positions and velocities.
+  /// (SetDefaultFloatingBaseBodyPose()). If the user does not specify
+  /// defaults, the state corresponds to zero generalized positions and
+  /// velocities.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
@@ -3668,49 +3668,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       const math::RollPitchYaw<symbolic::Expression>& angles) {
     this->mutable_tree().SetFreeBodyRandomAnglesDistributionOrThrow(body,
                                                                     angles);
-  }
-
-  DRAKE_DEPRECATED("2026-01-01",
-                   "Use SetFloatingBaseBodyPoseInWorldFrame() instead.")
-  void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
-                                   const RigidBody<T>& body,
-                                   const math::RigidTransform<T>& X_WB) const {
-    SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
-  }
-
-  DRAKE_DEPRECATED("2026-01-01",
-                   "Use SetFloatingBaseBodyPoseInAnchoredFrame() instead.")
-  void SetFreeBodyPoseInAnchoredFrame(
-      systems::Context<T>* context, const Frame<T>& frame_F,
-      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const {
-    SetFloatingBaseBodyPoseInAnchoredFrame(context, frame_F, body, X_FB);
-  }
-
-  DRAKE_DEPRECATED("2026-01-01",
-                   "Use GetUniqueFloatingBaseBodyOrThrow() instead.")
-  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
-      ModelInstanceIndex model_instance) const {
-    return GetUniqueFloatingBaseBodyOrThrow(model_instance);
-  }
-
-  DRAKE_DEPRECATED("2026-01-01",
-                   "Use SetDefaultFloatingBaseBodyPose() instead.")
-  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
-                              const math::RigidTransform<double>& X_PB) {
-    SetDefaultFloatingBaseBodyPose(body, X_PB);
-  }
-
-  DRAKE_DEPRECATED("2026-01-01",
-                   "Use GetDefaultFloatingBaseBodyPose() instead.")
-  math::RigidTransform<double> GetDefaultFreeBodyPose(
-      const RigidBody<T>& body) const {
-    return GetDefaultFloatingBaseBodyPose(body);
-  }
-
-  DRAKE_DEPRECATED("2026-01-01", "Use HasUniqueFloatingBaseBody() instead.")
-  bool HasUniqueFreeBaseBody(ModelInstanceIndex model_instance) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);
   }
 
   /// @} <!-- Working with free bodies -->

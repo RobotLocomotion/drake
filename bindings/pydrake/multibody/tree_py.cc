@@ -403,14 +403,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetSpatialInertiaInBodyFrame",
             &Class::SetSpatialInertiaInBodyFrame, py::arg("context"),
             py::arg("M_Bo_B"), cls_doc.SetSpatialInertiaInBodyFrame.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("is_floating",
-            WrapDeprecated(
-                cls_doc.is_floating.doc_deprecated, &Class::is_floating),
-            cls_doc.is_floating.doc_deprecated);
-#pragma GCC diagnostic pop
 
     // Aliases for backwards compatibility (dispreferred).
     m.attr("Body") = m.attr("RigidBody");

@@ -6,7 +6,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/frame.h"
@@ -309,9 +308,6 @@ class RigidBody : public MultibodyElement<T> {
     ThrowIfNotFinalized(__func__);
     return is_floating_base_body_;
   }
-
-  DRAKE_DEPRECATED("2026-01-01", "Use is_floating_base_body() instead.")
-  bool is_floating() const { return is_floating_base_body(); }
 
   /// (Advanced) If `true`, this body's generalized position coordinates q
   /// include a quaternion, which occupies the first four elements of q. Note

@@ -602,51 +602,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodySpatialVelocityInWorld.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const char* X_PB_parameter_name_deprecated =
-        "X_PB parameter name for SetFreeBodyPose() is deprecated and will be "
-        "removed 2026-01-01. Use X_JpJc instead.";
-    const char* V_PB_parameter_name_deprecated =
-        "The parameter order and V_PB parameter name for "
-        "SetFreeBodySpatialVelocity() are deprecated and will be removed "
-        "2026-01-01. Use context, body, V_JpJc instead.";
-    cls  // BR
-        .def("SetDefaultFreeBodyPose",
-            WrapDeprecated(cls_doc.SetDefaultFreeBodyPose.doc_deprecated,
-                &Class::SetDefaultFreeBodyPose),
-            py::arg("body"), py::arg("X_PB"),
-            cls_doc.SetDefaultFreeBodyPose.doc_deprecated)
-        .def("GetDefaultFreeBodyPose",
-            WrapDeprecated(cls_doc.GetDefaultFreeBodyPose.doc_deprecated,
-                &Class::GetDefaultFreeBodyPose),
-            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc_deprecated)
-        .def("HasUniqueFreeBaseBody",
-            WrapDeprecated(cls_doc.HasUniqueFreeBaseBody.doc_deprecated,
-                &Class::HasUniqueFreeBaseBody),
-            py::arg("model_instance"),
-            cls_doc.HasUniqueFreeBaseBody.doc_deprecated)
-        .def("GetUniqueFreeBaseBodyOrThrow",
-            WrapDeprecated(cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated,
-                &Class::GetUniqueFreeBaseBodyOrThrow),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc_deprecated)
-        .def("SetFreeBodyPose",
-            WrapDeprecated(X_PB_parameter_name_deprecated,
-                overload_cast_explicit<void, Context<T>*, const RigidBody<T>&,
-                    const RigidTransform<T>&>(&Class::SetFreeBodyPose)),
-            py::arg("context"), py::arg("body"), py::arg("X_PB"),
-            X_PB_parameter_name_deprecated)
-        .def("SetFreeBodySpatialVelocity",
-            WrapDeprecated(V_PB_parameter_name_deprecated,
-                [](const Class* self, const RigidBody<T>& body,
-                    const SpatialVelocity<T>& V_PB, Context<T>* context) {
-                  self->SetFreeBodySpatialVelocity(context, body, V_PB);
-                }),
-            py::arg("body"), py::arg("V_PB"), py::arg("context"),
-            V_PB_parameter_name_deprecated);
-#pragma GCC diagnostic pop
-
     auto CalcJacobianSpatialVelocity =
         [](const Class* self, const systems::Context<T>& context,
             JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,

@@ -15,7 +15,6 @@ from pydrake.common.cpp_param import List
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -667,9 +666,6 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body.is_floating_base_body(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.default_mass(), float)
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertIsInstance(body.is_floating(), bool)
-            self.assertIn("Use is_floating_base_body", str(w[0].message))
         # Other APIs can't be called on a Body that isn't part of
         # a multibody system.
 
@@ -1561,9 +1557,6 @@ class TestPlant(unittest.TestCase):
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()),
         )
-        with catch_drake_warnings(expected_count=1) as w:
-            plant.SetFreeBodyPose(context=context, body=base, X_PB=X_WB_desired)
-            self.assertIn("Use X_JpJc instead", str(w[0].message))
 
         # Compute spatial accelerations for base.
         if T == Expression and plant.time_step() != 0:
@@ -1589,11 +1582,6 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             V_base.translational(), numpy_compare.to_float(V_WB.translational())
         )
-        with catch_drake_warnings(expected_count=1) as w:
-            plant.SetFreeBodySpatialVelocity(base, V_PB=V_WB, context=context)
-            self.assertIn(
-                "Use context, body, V_JpJc instead", str(w[0].message)
-            )
 
         # Compute accelerations.
         vdot = np.zeros(nv)
@@ -1759,23 +1747,10 @@ class TestPlant(unittest.TestCase):
         plant.Finalize()
         X_WB_default = RigidTransform_[float]([1, 2, 3])
         plant.SetDefaultFloatingBaseBodyPose(body=body, X_WB=X_WB_default)
-        with catch_drake_warnings(expected_count=1) as w:
-            plant.SetDefaultFreeBodyPose(body=body, X_PB=X_WB_default)
-            self.assertIn(
-                "Use SetDefaultFloatingBaseBodyPose", str(w[0].message)
-            )
         numpy_compare.assert_float_equal(
             plant.GetDefaultFloatingBaseBodyPose(body=body).GetAsMatrix4(),
             X_WB_default.GetAsMatrix4(),
         )
-        with catch_drake_warnings(expected_count=1) as w:
-            numpy_compare.assert_float_equal(
-                plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
-                X_WB_default.GetAsMatrix4(),
-            )
-            self.assertIn(
-                "Use GetDefaultFloatingBaseBodyPose", str(w[0].message)
-            )
 
     @numpy_compare.check_all_types
     def test_port_access(self, T):
@@ -3406,9 +3381,6 @@ class TestPlant(unittest.TestCase):
             link2.GetForceInWorld(context, forces), SpatialForce
         )
         self.assertFalse(link2.is_floating_base_body())
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertFalse(link2.is_floating())
-            self.assertIn("Use is_floating_base_body", str(w[0].message))
 
         forces.SetZero()
         F_expected = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
@@ -3876,19 +3848,6 @@ class TestPlant(unittest.TestCase):
             model_instance=model_instance
         )
         self.assertEqual(body.index(), added_body.index())
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertTrue(
-                plant.HasUniqueFreeBaseBody(model_instance=model_instance)
-            )
-            self.assertIn("Use HasUniqueFloatingBaseBody", str(w[0].message))
-        with catch_drake_warnings(expected_count=1) as w:
-            body = plant.GetUniqueFreeBaseBodyOrThrow(
-                model_instance=model_instance
-            )
-            self.assertEqual(body.index(), added_body.index())
-            self.assertIn(
-                "Use GetUniqueFloatingBaseBodyOrThrow", str(w[0].message)
-            )
 
     @numpy_compare.check_all_types
     def test_deformable_contact_info(self, T):

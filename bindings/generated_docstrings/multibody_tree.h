@@ -7609,16 +7609,6 @@ See also:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc = R"""(Returns this element's unique index.)""";
         } index;
-        // Symbol: drake::multibody::RigidBody::is_floating
-        struct /* is_floating */ {
-          // Source: drake/multibody/tree/rigid_body.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use is_floating_base_body() instead. This will be removed from
-    Drake on or after 2026-01-01.)""";
-        } is_floating;
         // Symbol: drake::multibody::RigidBody::is_floating_base_body
         struct /* is_floating_base_body */ {
           // Source: drake/multibody/tree/rigid_body.h
