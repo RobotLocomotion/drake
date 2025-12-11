@@ -28,13 +28,13 @@ int IndexToInt(Eigen::Index index) {
 
 }  // namespace
 
-Partials::Partials(Eigen::Index size, Eigen::Index offset, double coeff)
+Partials::Partials(Eigen::Index size, Eigen::Index offset)
     : derivatives_{VectorXd::Zero(IndexToInt(size))} {
   if (IndexToInt(offset) >= size) {
     throw std::out_of_range(fmt::format(
         "AutoDiff offset {} must be strictly less than size {}", offset, size));
   }
-  derivatives_[offset] = coeff;
+  derivatives_[offset] = 1.0;
 }
 
 Partials::Partials(const Eigen::Ref<const VectorXd>& value)
