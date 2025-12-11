@@ -13,20 +13,49 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-/* Helper class that linearizes torques dτ/dv from plant input ports using
+/* Helper class that linearizes generalized torques from plant input ports using
 finite differences. The linerization is approximate because it only keeps
 diagonal terms and forces them to be non-negative, so that the ICF problem
 remains convex.
 
-Torques from externally connected systems are given by
+Generalized forces from externally connected systems are given by
     τ = B u(x) + τₑₓₜ(x),
 which we will approximate as
     τ ≈ clamp(-Kᵤ v + bᵤ) - Kₑ v + bₑ,
-where Kᵤ, Kₑ are diagonal and positive semi-definite.
+where Kᵤ, Kₑ are positive diagonal matrices. Moreover, within ICF, actuation
+is clamped to satisfy effort limits.
 
-Note that contributions due to controls u(x) will be clamped to effort limits,
-while contributions due to external generalized and spatial forces τₑₓₜ(x) will
-not be.
+The linearization is used in the ICF momentuntum balance, which is equivalent to
+a convex optimization problem whenever we use an SPD approximation of the
+gradients. Without loss of generality, we can ignore contact and other
+constraints to write the discrete ICF balance as
+  M⋅(v−v₀) = h⋅k₀ + h⋅τ(q, v),
+  q = q₀ +h⋅v.
+It is important to note that:
+ 1. We evaluate actuation and external forces τ(q, v) implicitly for stability
+    and,
+ 2. the scheme is symplectic given the semi-implicit update in q, also for
+    better stability and energy conservation properties.
+
+We define x̃(v) = [q₀ + h⋅v; v], and approximate the external generalized forces
+as
+  τ(v) = τ(x̃(v)) ≈  τ(x̃₀) + dτ/dv(x̃₀)⋅(v − v₀),
+  with x̃₀ = [q₀ + h⋅v₀; v₀].
+
+Further, we make the approximation:
+  (Implicit) τᵢ ≈  τᵢ(x̃₀) - max(0, -dτᵢ/dvᵢ)⋅(v − v₀), when dτᵢ/dvᵢ < 0 and,
+  (Explicit) τᵢ ≈  τᵢ(x₀), when dτᵢ/dvᵢ ≥ 0.  
+That is, this approximation is implicit for stabilazing force terms (such as
+controllers) and explicit otherwise. Within the CENIC framework, error-control
+is able to stabilize explicit terms in the scheme when needed.
+    
+Finally, we write the expression above as
+  τ(v) = b -  K⋅(v − v₀),
+where K is a positive diagonal matrix with entries
+  K = max(0, -diag(dτ/dv)),
+and bias term
+  bᵢ = τᵢ(x̃₀), for dτᵢ/dvᵢ < 0,
+  bᵢ = τᵢ(x₀), otherwise.
 
 @tparam_nonsymbolic_scalar */
 template <class T>
@@ -46,8 +75,8 @@ class IcfExternalSystemsLinearizer {
     TODO(jwnimmer-tri) Explain / clarify with paper citations.
   @param[in,out] mutable_plant_context The plant context to linearize around,
     used both as input (for the current state and inputs) and to mutate during
-    differencing while computing changes in torque due to changes in state, but
-    all mutations are undone prior to returning.
+    differencing while computing changes in generalized forces due to changes in
+    state. All mutations are undone prior to returning.
   @param[out] actuation_feedback The linearization of actuation torques, valid
     iff the `has_actuation_forces` return value is true.
   @param[out] actuation_feedback The linearization of external torques, valid
@@ -69,10 +98,12 @@ class IcfExternalSystemsLinearizer {
     std::unique_ptr<MultibodyForces<T>> f_ext;
     VectorX<T> gu0;       // Actuation gu(x) = B u(x) at x₀.
     VectorX<T> ge0;       // External forces ge(x) = τ_ext(x) at x₀.
+    VectorX<T> gu_tilde0; // Actuation at gu(x̃₀) at x̃₀ = x̃(v₀).
+    VectorX<T> ge_tilde0; // External forces ge(x̃₀) at x̃₀ = x̃(v₀).
     VectorX<T> x_prime;   // Perturbed plant state x' for finite differences.
     VectorX<T> gu_prime;  // Perturbed actuation gu(x') = B u(x').
     VectorX<T> ge_prime;  // Perturbed external forces ge(x') = τ_ext(x').
-    MatrixX<T> N;         // Kinematic map q̇ = N v.
+    MatrixX<T> N0;         // Kinematic map (q̇ = N v) at q₀.
   };
 
   /* Computes external forces τ = τₑₓₜ(x) from the plant's spatial and
@@ -82,7 +113,7 @@ class IcfExternalSystemsLinearizer {
                           VectorX<T>* tau) const;
 
   /* Computes actuator forces τ = B u(x) from the plant's actuation input ports
-  (including the general actuation input port and any model-instance-specific
+  (including the plant-wide actuation input port and any model-instance-specific
   input ports).
   @param[out] tau Output storage for τ. */
   void CalcActuationForces(const systems::Context<T>& plant_context,
