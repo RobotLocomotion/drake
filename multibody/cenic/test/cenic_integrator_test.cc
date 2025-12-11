@@ -56,7 +56,7 @@ const char double_pendulum_xml[] = R"""(
   </body>
   </body>
 </worldbody>
-</mujoco> 
+</mujoco>
 )""";
 
 // MJCF model of an actuated double pendulum
