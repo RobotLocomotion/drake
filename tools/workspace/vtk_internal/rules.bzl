@@ -12,7 +12,7 @@ _VERBOSE = False
 
 # See vtkTypeLists.cmake.
 _VTK_FIXED_SIZE_NUMERIC_TYPES = [
-    ("vtkTypeInt8", "char", "signed char"),
+    ("vtkTypeInt8", "signed char", None),
     ("vtkTypeUInt8", "unsigned char", None),
     ("vtkTypeInt16", "short", None),
     ("vtkTypeUInt16", "unsigned short", None),
@@ -523,6 +523,7 @@ def generate_common_core_aos_typed_arrays(bulk_srcs):
         )
         result_hdrs.append(outs[0])
         result_srcs.append(outs[1])
+        # TODO: some also use fallback_ctype, should fix
         if preferred_ctype not in bulk_srcs:
             bulk_srcs[preferred_ctype] = []
         bulk_srcs[preferred_ctype].append(outs[1])
