@@ -36,12 +36,12 @@ class VoxelTaggedObjectOccupancyMap {
   /// Construct a VoxelTaggedObjectOccupancyMap filled with cells of
   /// `default_occupancy` and `default_object_id`. `parent_body_name` specifies
   /// the name of the parent body, and `X_PG` specifies the pose of the origin
-  /// of the voxel grid relative to the parent body frame. `grid_sizes`
+  /// of the voxel grid relative to the parent body frame. `grid_counts`
   /// specifies the number of voxels for each axis of the voxel grid, and
   /// `grid_resolution` specifies the size of an individual voxel.
   VoxelTaggedObjectOccupancyMap(const std::string& parent_body_name,
                                 const math::RigidTransformd& X_PG,
-                                const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
+                                const Eigen::Matrix<int64_t, 3, 1>& grid_counts,
                                 double grid_resolution, float default_occupancy,
                                 uint32_t default_object_id);
 
