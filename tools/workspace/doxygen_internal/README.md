@@ -26,7 +26,14 @@ Use the following steps as a rough guide when upgrading to a new version of
 Doxygen. This document is not meant to be a comprehensive set of all steps, but
 an outline of some tools and knowledge that can be useful.
 
-# Updating the Binary
+Before updating, it's a good idea to check the
+[changelog](https://www.doxygen.nl/manual/changelog.html) for any new features
+or fixes. There might be new things to be taken advantage of or keep up with
+that aren't immediately obvious from just trudging along with the upgrade.
+
+This process is only supported on Ubuntu 24.04 "Noble".
+
+## Updating the Binary
 
 1. Download the official source code of the latest release from
    https://github.com/doxygen/doxygen/releases. Upload the source tarball
@@ -35,9 +42,9 @@ an outline of some tools and knowledge that can be useful.
    fields such as `DOXYGEN_VERSION` and `DOXYGEN_SHA256` should be updated.
    `UBUNTU_CODENAME` may also be updated to the primary developer platform at
    the time of running (currently Ubuntu 24.04 "Noble").
-3. Run the `Dockerfile`. In short, this downloads, untars, and builds the
-   previously uploaded sources and should produce a tarball with a working
-   binary inside.
+3. Run `tools/workspace/doxygen_internal/build_binaries_with_docker`. In short,
+   this downloads, untars, and builds the previously-uploaded sources and should
+   produce a tarball with a working binary inside.
     * At this point, as a sanity check, it might not be a bad idea to untar
       the produced tarball and run `./doxygen --version`, just to make sure
       everything worked as expected.
@@ -63,6 +70,7 @@ section.
       https://www.doxygen.nl/manual/config.html for details.
     * Update the version at the top of the file; this is inserted manually by
       the project maintainers for clarity and history.
+    * Remove any spurious changes, such as removed comments, quotes, etc.
 6. Run `./doxygen -l` to generate a new `DoxygenLayout.xml` file. Drake's copy
    currently lives in `doc/doxygen_cxx/DoxygenLayout.xml`. Unlike the
    `Doxyfile_CXX.in`, there is no "update" command for this file to maintain
