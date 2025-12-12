@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/ad/internal/derivatives_xpr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -7,7 +8,57 @@ namespace drake {
 namespace ad {
 namespace internal {
 
-/* A vector of partial derivatives, for use with Drake's AutoDiff.
+/* Heap storage for an array of doubles, for use by the Partials class later in
+this file. The storage can be empty (null). */
+class StorageVec {
+ public:
+  /* Allocates new storage of the given size, but does not initialize it.
+  If the size is zero, the storage will be empty (null). */
+  static StorageVec Allocate(int size);
+
+  /* Creates empty (null) storage. */
+  StorageVec() = default;
+
+  /* Steals the storage from `other`. */
+  StorageVec(StorageVec&& other) noexcept {
+    size_ = other.size_;
+    data_ = other.data_;
+    other.size_ = 0;
+    other.data_ = nullptr;
+  }
+
+  /* Steals the storage from `other`. */
+  StorageVec& operator=(StorageVec&& other) noexcept {
+    if (this != &other) {
+      size_ = other.size_;
+      data_ = other.data_;
+      other.size_ = 0;
+      other.data_ = nullptr;
+    }
+    return *this;
+  }
+
+  /* Copies the storage from `other`. */
+  StorageVec(const StorageVec& other) noexcept;
+
+  /* Copies the storage from `other`. */
+  StorageVec& operator=(const StorageVec& other) noexcept;
+
+  ~StorageVec();
+
+  /* Returns ... XXX. */
+  int size() const { return size_; }
+
+  /* Returns the double array storage (or null, when empty). */
+  const double* data() const { return data_; }
+  double* mutable_data() { return data_; }
+
+ private:
+  int size_{0};
+  double* data_{nullptr};
+};
+
+/* A vector of partial derivatives, optimized for use with Drake's AutoDiff.
 
 Partials are dynamically sized, and can have size() == 0.
 
@@ -28,7 +79,13 @@ vector was all zeros.
 When a scale factor is applied to a Partials object (e.g., with Mul, Div, or
 AddScaled), any zero values will remain zero, even if the factor is ±∞ or NaN.
 We treat them as "missing" (i.e., sparse), not IEEE zero, so multiplication by
-non-finite numbers is still well-defined. */
+non-finite numbers is still well-defined.
+
+A large portion of this class definition appears inline, because AutoDiff is
+used heavily in inner loops. The general approach is that simple word-sized
+sets, gets, and branches appear inline; functions that do more than a couple
+branches or touch more than a couple words (and all functions that allocate)
+are out-of-line (in the cc file). */
 class Partials {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Partials);
@@ -47,7 +104,7 @@ class Partials {
   ~Partials() = default;
 
   /* Returns the size of this vector. */
-  int size() const { return derivatives_.size(); }
+  int size() const { return storage_.size(); }
 
   /* Updates `this` to be the same size as `other`.
   If `this` and `other` are already the same size then does nothing.
@@ -58,7 +115,7 @@ class Partials {
   void MatchSizeOf(const Partials& other);
 
   /* Set this to zero. */
-  void SetZero() { derivatives_.setZero(); }
+  void SetZero();
 
   /* Scales this vector by the given amount. */
   void Mul(double factor);
@@ -72,20 +129,41 @@ class Partials {
   /* Adds `scale * other` into `this`. */
   void AddScaled(double scale, const Partials& other);
 
-  /* Returns the underlying storage vector (readonly).
-  TODO(jwnimmer-tri) Use a more Xpr-like return type. By "Xpr", we mean what
-  Eigen calls an XprType, e.g., something like Eigen::CwiseBinaryOp. */
-  const Eigen::VectorXd& make_const_xpr() const { return derivatives_; }
+  /* Returns an Eigen-compatible view into this vector. */
+  ad::DerivativesConstXpr make_const_xpr() const;
 
-  /* Returns the underlying storage vector (mutable). */
-  Eigen::VectorXd& get_raw_storage_mutable() { return derivatives_; }
+  /* Returns an Eigen-compatible mutable view into this vector, including
+  resizing. This is expensive (makes a copy). */
+  ad::DerivativesMutableXpr MakeMutableXpr();
 
  private:
   void ThrowIfDifferentSize(const Partials& other);
 
-  // TODO(jwnimmer-tri) Replace this implementation with a more efficient
-  // representation.
-  Eigen::VectorXd derivatives_;
+  Eigen::Map<const Eigen::VectorXd> storage_view() const {
+    return Eigen::Map<const Eigen::VectorXd>(storage_.data(), storage_.size());
+  }
+  Eigen::Map<Eigen::VectorXd> mutable_storage_view() {
+    return Eigen::Map<Eigen::VectorXd>(storage_.mutable_data(),
+                                       storage_.size());
+  }
+
+  // Our MutableXpr type is allowed to set us via a backreference.
+  friend ad::DerivativesMutableXpr;
+  ad::DerivativesMutableXpr SetFrom(
+      const Eigen::Ref<const Eigen::VectorXd>& other);
+
+  // Our effective value is `coeff_ * storage_`; we store them separately so
+  // that re-scaling is fast (we can just scale the coeff).
+  //
+  // We maintain an invariant that `coeff_` is always finite. If a modification
+  // to it (e.g., multiplication by a factor) would cause it to become non-
+  // finite, then instead of multiplying the factor into `coeff_`, instead we
+  // "sparse" multiply it through the `storage_` (i.e., only multiplying it
+  // through the non-zero terms in `storage_`). This is required to meet our API
+  // contract of "any zero values will remain zero, even if the factor is ±∞ or
+  // NaN" per our class overview.
+  double coeff_{0.0};
+  StorageVec storage_;
 };
 
 }  // namespace internal
