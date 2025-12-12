@@ -4025,9 +4025,10 @@ Parameter ``keep_whole_intersection``:
     transformation step if ``do_affine_transformation`` is true.
 
 Parameter ``intersection_padding``:
-    is a distance by which each hyperplane is translated back outward
-    after satisfing intersection constraints, subject to not
-    surpassing the original hyperplane position. In the case where
+    limits reduction of interesections. For each polytope in
+    ``intersecting_polytopes``, there is a ball fully contained in
+    ``inbody``, of radius ``intersection_padding``, whose center is
+    contained in the intersecting polytope. In the case where
     ``keep_whole_intersection`` is false, using a non-zero value for
     this parameter prevents intersections from being single points.
 
