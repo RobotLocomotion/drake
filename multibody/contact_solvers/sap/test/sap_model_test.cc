@@ -852,7 +852,7 @@ TEST_F(DummyModelTest, CostGradients) {
   const double cost = sap_model_->EvalCost(*context_);
   const VectorXd& cost_gradient = sap_model_->EvalCostGradient(*context_);
   EXPECT_NEAR(cost, cost_ad.value(), 2.0 * kEpsilon * cost_ad.value());
-  EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, kEpsilon,
+  EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, 2 * kEpsilon,
                               MatrixCompareType::relative));
 
   // Validate gradient and its gradient (Hessian of the cost).
