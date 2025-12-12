@@ -4649,7 +4649,7 @@ Note:
     System&, Context*); this constructor is usually associated with
     error-controlled integrators.)""";
           // Source: drake/systems/analysis/simulator.h
-          const char* doc_1args =
+          const char* doc_1args_constT =
 R"""(Resets the integrator with a new one using factory construction and a
 maximum step size argument (which is required for constructing
 fixed-step integrators).
@@ -4676,6 +4676,16 @@ Note:
     System&, const T&, Context*); this constructor is usually
     associated with fixed-step integrators (i.e., integrators which do
     not support error estimation).)""";
+          // Source: drake/systems/analysis/simulator.h
+          const char* doc_1args_integrator =
+R"""((Advanced) Resets the integrator to the given object.
+
+See also:
+    argument-less version of reset_integrator() for note about
+    initialization.
+
+Precondition:
+    integrator->get_system() is the same object as this->get_system().)""";
         } reset_integrator;
         // Symbol: drake::systems::Simulator::set_monitor
         struct /* set_monitor */ {
