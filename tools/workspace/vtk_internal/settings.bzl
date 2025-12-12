@@ -149,6 +149,7 @@ MODULE_SETTINGS = {
             ":common_core_array_instantiations",
             ":common_core_typed_arrays_srcs",
             ":common_core_aos_type_arrays_srcs",
+            ":common_core_bulk_instantiation_srcs",
         ],
         "srcs_glob_exclude": [
             # Optional files that we choose not to enable.

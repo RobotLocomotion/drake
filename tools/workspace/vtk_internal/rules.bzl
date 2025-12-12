@@ -523,7 +523,6 @@ def generate_common_core_aos_typed_arrays(bulk_srcs):
         )
         result_hdrs.append(outs[0])
         result_srcs.append(outs[1])
-        # TODO: some also use fallback_ctype, should fix
         if preferred_ctype not in bulk_srcs:
             bulk_srcs[preferred_ctype] = []
         bulk_srcs[preferred_ctype].append(outs[1])
@@ -534,7 +533,6 @@ def generate_common_core_aos_typed_arrays(bulk_srcs):
     native.filegroup(
         name = name + "_srcs",
         srcs = result_srcs,
-        data = _VTK_BULK_INSTANTIATION_RESULT_FILES,
     )
 
 def generate_common_core_array_instantiations(bulk_srcs):
@@ -574,7 +572,6 @@ def generate_common_core_array_instantiations(bulk_srcs):
     native.filegroup(
         name = name,
         srcs = result,
-        data = _VTK_BULK_INSTANTIATION_RESULT_FILES,
     )
 
 def generate_common_core_typed_arrays(bulk_srcs):
@@ -644,7 +641,6 @@ def generate_common_core_typed_arrays(bulk_srcs):
     native.filegroup(
         name = name + "_srcs",
         srcs = result_srcs,
-        data = _VTK_BULK_INSTANTIATION_RESULT_FILES,
     )
 
 def generate_bulk_instantiation_srcs(bulk_srcs):
@@ -666,6 +662,15 @@ def generate_bulk_instantiation_srcs(bulk_srcs):
             ],
             strict = True,
         )
+    native.filegroup(
+        name = "common_core_bulk_instantiation_srcs",
+        srcs = _VTK_BULK_INSTANTIATION_RESULT_FILES,
+        data = [
+            ":common_core_array_instantiations",
+            ":common_core_typed_arrays_srcs",
+            ":common_core_aos_type_arrays_srcs",
+        ],
+    )
 
 def generate_common_core_sources():
     generate_common_core_array_dispatch_array_list()
