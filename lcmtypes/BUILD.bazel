@@ -119,44 +119,6 @@ install(
     hdr_dest = "include",
 )
 
-# === C++ deprecation (remove on 2026-06-01) ===
-
-LCMTYPES_CC = [
-    ":acrobot",
-    ":allegro",
-    ":call_python",
-    ":point",
-    ":point_cloud",
-    ":header",
-    ":quaternion",
-    ":image",
-    ":image_array",
-    ":contact_results_for_viz",
-    ":drake_signal",
-    ":hydroelastic_contact_surface_for_viz",
-    ":iiwa",
-    ":jaco",
-    ":panda",
-    ":planar_manipuland_status",
-    ":planar_gripper",
-    ":point_pair_contact_info_for_viz",
-    ":robot_plan",
-    ":schunk",
-    ":scope",
-    ":viewer",
-]
-
-[
-    cc_library(
-        name = colon_name[1:],
-        deprecation = "DRAKE DEPRECATED: The fine-grained LCM message library \"@drake//lcmtypes:{}\" is deprecated for removal. Instead, you should depend on the all-messages library \"@drake//lcmtypes:lcmtypes_drake_cc\". The deprecated code will be removed from Drake on or after 2026-01-01.",  # noqa
-        tags = ["manual"],
-        visibility = ["//visibility:public"],
-        deps = [":lcmtypes_drake_cc"],
-    )
-    for colon_name in LCMTYPES_CC
-]
-
 # === Python ===
 
 lcm_py_library_srcs(
