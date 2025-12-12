@@ -67,16 +67,11 @@ class AutoDiff {
   Instead of mutating the derivatives after construction, it's generally
   preferable to set them directly in the constructor if possible.
 
-  Do not presume any specific C++ type for the the return value. It will act
-  like a mutable Eigen column-vector expression (e.g., Eigen::Block<VectorXd>)
-  that also allows for assignment and resizing, but we reserve the right to
-  change the return type for efficiency down the road.
-
   @note This function name is kept for compatibility with Eigen::AutoDiffScalar
   but it does NOT run in constant-time even though its name is lowercase.
   Calling this function often needs to finalize the derivatives prior to
   returning the reference, so is O(N) in the size of the derivatives. */
-  Eigen::VectorXd& derivatives() { return partials_.GetRawStorageMutable(); }
+  DerivativesMutableXpr derivatives() { return partials_.MakeMutableXpr(); }
 
   /// @name Internal use only
   //@{
