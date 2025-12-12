@@ -45,7 +45,7 @@ if (@WITH_USER_SPDLOG@)
 else()
   list(APPEND _drake_interface_compile_definitions @BAZEL_SPDLOG_DEFINES@)
 endif()
-set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp drake::drake-marker)
+set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp)
 if(@DRAKE_INSTALL_JAVA@)
   list(APPEND _expectedTargets drake::drake-lcmtypes-java)
 endif()
@@ -111,13 +111,6 @@ if(@DRAKE_INSTALL_JAVA@)
     JAR_FILE "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/share/java/lcmtypes_drake.jar"
   )
 endif()
-
-add_library(drake::drake-marker SHARED IMPORTED)
-set_target_properties(drake::drake-marker PROPERTIES
-  IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_marker.so"
-  IMPORTED_SONAME "${_apple_soname_prologue}libdrake_marker.so"
-  DEPRECATION "The drake::drake-marker target is intended for internal use only by Drake and will be removed on or after 2026-01-01."
-)
 
 unset(_drake_library_type)
 unset(_drake_library_name)

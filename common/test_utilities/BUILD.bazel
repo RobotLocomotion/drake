@@ -83,13 +83,7 @@ drake_cc_library(
         "fmt_format_printer.h",
     ],
     tags = ["exclude_from_package"],
-    visibility = [
-        # We allow two spellings for where gtest came from -- the bazel central
-        # registry @googletest, or our traditional module extension @gtest.
-        "@googletest//:__pkg__",
-        # Remove on 2026-01-01 per @gtest deprecation.
-        "@gtest//:__pkg__",
-    ],
+    visibility = ["@googletest//:__pkg__"],
     deps = [
         "//common:fmt",
         "@eigen",
