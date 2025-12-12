@@ -1,17 +1,39 @@
+load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
+
 def _impl(repo_ctx):
+    repository = repo_ctx.attr.repository
+    commit = repo_ctx.attr.commit
+    platform = repo_ctx.attr.platform
+    sha256 = repo_ctx.attr.sha256
+    mirrors = repo_ctx.attr.mirrors
+
+    # Add the BUILD file.
     repo_ctx.symlink(
         Label("@drake//tools/workspace/doxygen_internal:package.BUILD.bazel"),
         "BUILD.bazel",
     )
 
+    # Provide upgrade details to our new_release script.
+    generate_repository_metadata(
+        repo_ctx,
+        repository_rule_type = "github",
+        upgrade_advice = """
+        See tools/workspace/doxygen_internal/README.md to upgrade.
+        """,
+        repository = repository,
+        commit = commit,
+    )
+
     if repo_ctx.os.name == "linux":
+        # Parse the version string from the commit.
+        version = commit.removeprefix("Release_").replace("_", ".")
+
         # Download and extract Drake's pre-compiled Doxygen binary.
-        archive = "doxygen-1.14.0-noble-x86_64.tar.gz"
+        archive = "doxygen-{}-{}-x86_64.tar.gz".format(version, platform)
         url = [
             pattern.format(archive = archive)
-            for pattern in repo_ctx.attr.mirrors.get("doxygen")
+            for pattern in mirrors.get("doxygen")
         ]
-        sha256 = "db31e8e25e0c6eae5c90a7a291bf6b65667335c60a7ce69f7d63d1459b2ef8b7"  # noqa
         repo_ctx.download_and_extract(
             url = url,
             sha256 = sha256,
@@ -22,10 +44,38 @@ def _impl(repo_ctx):
         # provide a dummy binary.
         repo_ctx.file("doxygen", "# Doxygen is not supported on this platform")
 
-doxygen_internal_repository = repository_rule(
+_doxygen_internal_repository_impl = repository_rule(
     doc = """Provides a :doxygen binary only supported on Ubuntu.""",
-    attrs = {
-        "mirrors": attr.string_list_dict(),
-    },
     implementation = _impl,
+    attrs = {
+        "repository": attr.string(
+            mandatory = True,
+        ),
+        "commit": attr.string(
+            mandatory = True,
+        ),
+        "platform": attr.string(
+            mandatory = True,
+        ),
+        "sha256": attr.string(
+            mandatory = False,
+            default = "0" * 64,
+        ),
+        "mirrors": attr.string_list_dict(
+            mandatory = True,
+            allow_empty = False,
+        ),
+    },
 )
+
+def doxygen_internal_repository(
+        name,
+        mirrors = None):
+    _doxygen_internal_repository_impl(
+        name = name,
+        repository = "doxygen/doxygen",
+        commit = "Release_1_14_0",
+        platform = "noble",
+        sha256 = "db31e8e25e0c6eae5c90a7a291bf6b65667335c60a7ce69f7d63d1459b2ef8b7",  # noqa
+        mirrors = mirrors,
+    )
