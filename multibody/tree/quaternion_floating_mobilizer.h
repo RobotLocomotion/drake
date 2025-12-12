@@ -300,19 +300,24 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   0₄₃ is the 4x3 zero matrix.
   //        ⎣ 0₃₃    I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
   // Nᵣ(q) = 0.5 * QuaternionFloatingMobilizer::CalcQMatrix(q) is a 4x3 matrix.
-  // Note: The time-derivative of the quaternion qᵣ in context can be calculated
-  // q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized velocities. For a
-  // quaternion qᵣ, we prove q̇ᵣ satisfies the "orthogonality constraint".
-  // Mathematically, the derivative of a unit or constant-length quaternion
-  // i.e.,  qᵣ ⋅ qᵣ = constant  is  d/dt(qᵣ ⋅ qᵣ = constant)  =>  qᵣ ⋅ q̇ᵣ = 0.
-  // With q̇ᵣ = Nᵣ(q) vᵣ, we prove q̇ᵣ satisfies the orthogonality constraint via
-  // qᵣ ⋅ q̇ᵣ = qᵣ ⋅ Nᵣ(qᵣ) vᵣ = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) vᵣ
-  //         = |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) vᵣ = |qᵣ|² [0 0 0] vᵣ = 0, since we can prove
-  // q̂ᵣ ⋅ Nᵣ(q̂ᵣ) = [0 0 0], where  q̂ᵣ is a unit quaternion.
-  // Summary: If the quaternion in context is a unit quaternion q̂ᵣ, then its
-  // time-derivative can be calculated as d/dt(q̂ᵣ) = Nᵣ(q̂ᵣ) vᵣ.
-  // If the quaternion is context is a non-unit quaternion, then its time-
-  // derivative can be calculated d/dt(qᵣ) = Nᵣ(qᵣ) vᵣ = |qᵣ| Nᵣ(q̂ᵣ) vᵣ.
+  // Lemma: If q̇ᵣ (the time-derivative of the quaternion qᵣ in context) are
+  // calculated as q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized
+  // velocities, then q̇ᵣ satisfies the "orthogonality constraint" qᵣ ⋅ q̇ᵣ = 0.
+  // Proof: qᵣ ⋅ q̇ᵣ = qᵣ ⋅ Nᵣ(qᵣ) vᵣ = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) vᵣ
+  //                = |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) vᵣ = |qᵣ|² [0 0 0] vᵣ = 0, where
+  // q̂ᵣ is a unit quaternion (|q̂ᵣ|² = q̂w² + q̂x² + q̂y² + q̂z² = 1) and
+  //
+  //       ⌈ q̂w ⌉                  ⌈ -qx   -qy   -qz ⌉
+  //  q̂ᵣ = | q̂x | and Nᵣ(q̂ᵣ) = 0.5 |  qw    qz   -qy | so q̂ᵣ ⋅ Nᵣ(q̂ᵣ) = [0 0 0]
+  //       | q̂y |                  | -qz    qw    qx |
+  //       ⌊ q̂z ⌋                  ⌊  qy   -qx    qw ⌋
+  //
+  // Lemma: If qᵣ ⋅ q̇ᵣ = 0, |qᵣ| (and hence |qᵣ|² = qᵣ ⋅ qᵣ) are constant.
+  // Proof: 2 qᵣ ⋅ q̇ᵣ = d/dt(qᵣ ⋅ qᵣ) = 0, so qᵣ ⋅ qᵣ = |qᵣ|² is constant.
+  // Summary: When the time derivative q̇ᵣ of the quaternion qᵣ in context is
+  // calculated as q̇ᵣ = Nᵣ(qᵣ) vᵣ = |qᵣ| Nᵣ(q̂ᵣ) vᵣ, then q̇ᵣ is orthogonal
+  // (perpendicular) to qᵣ (i.e., qᵣ ⋅ q̇ᵣ = 0) and a perfect numerical
+  // integrator would ensure |qᵣ| would stay constant.
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
