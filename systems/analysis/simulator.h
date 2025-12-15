@@ -707,7 +707,7 @@ class Simulator {
   ///       constructor is usually associated with fixed-step integrators (i.e.,
   ///       integrators which do not support error estimation).
   template <class Integrator>
-  Integrator& reset_integrator(const T max_step_size) {
+  Integrator& reset_integrator(const T& max_step_size) {
     static_assert(
         std::is_constructible_v<Integrator, const System<T>&, double,
                                 Context<T>*>,
@@ -719,6 +719,13 @@ class Simulator {
     initialization_done_ = false;
     return *static_cast<Integrator*>(integrator_.get());
   }
+
+  /// (Advanced) Resets the integrator to the given object.
+  /// @see argument-less version of reset_integrator() for note about
+  ///      initialization.
+  /// @pre integrator->get_system() is the same object as this->get_system().
+  IntegratorBase<T>& reset_integrator(
+      std::unique_ptr<IntegratorBase<T>> integrator);
 
   /// Gets the length of the interval used for witness function time isolation.
   /// The length of the interval is computed differently, depending on context,
