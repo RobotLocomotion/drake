@@ -75,6 +75,9 @@ class IcfBuilder {
     MultibodyForces<T> forces;
   };
 
+  /* Throws if the plant provided at construction is not compatible with ICF. */
+  void ValidatePlant();
+
   /* Computes geometry data and store it internally for later use. */
   void CalcGeometryContactData(const systems::Context<T>& context);
 

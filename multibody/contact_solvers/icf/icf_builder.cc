@@ -77,6 +77,8 @@ template <typename T>
 IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
                           const systems::Context<T>& context)
     : plant_(&plant), scratch_(plant) {
+  ValidatePlant();
+
   using std::isinf;
   const int nv = plant.num_velocities();
 
@@ -368,6 +370,21 @@ void IcfBuilder<T>::UpdateModel(
     // N.B. actuation constraint indices in the pool depend on whether external
     // or not external forces are present in the model.
     SetActuationGainConstraints(Ku, bu, external_feedback != nullptr, model);
+  }
+}
+
+template <typename T>
+void IcfBuilder<T>::ValidatePlant() {
+  // Revisit this condition as constraints are implemented. See issues #23759,
+  // #23760, #23762, #23763.
+  if (plant_->num_constraints() - plant_->num_coupler_constraints() > 0) {
+    throw std::runtime_error(fmt::format(
+        "The CENIC integrator does not yet support some constraints, but "
+        "they are present in the given MultibodyPlant: {} distance "
+        "constraint(s), {} ball constraint(s), {} weld constraint(s), {} "
+        "tendon constraint(s)",
+        plant_->num_distance_constraints(), plant_->num_ball_constraints(),
+        plant_->num_weld_constraints(), plant_->num_tendon_constraints()));
   }
 }
 

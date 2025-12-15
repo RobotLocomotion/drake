@@ -49,8 +49,7 @@ GTEST_TEST(IcfBuilder, Limits) {
 
   auto diagram = diagram_builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
 
   const double time_step = 0.01;
   IcfBuilder<double> builder(plant, plant_context);
@@ -74,8 +73,7 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
 
   auto diagram = diagram_builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
 
   const double time_step = 0.01;
   IcfBuilder<double> builder(plant, plant_context);
@@ -91,6 +89,94 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
   EXPECT_EQ(model.num_velocities(), plant.num_velocities());
   EXPECT_EQ(model.num_limit_constraints(), 1);
   EXPECT_EQ(model.time_step(), time_step * 2);
+}
+
+GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(robot_xml, "xml");
+
+  plant.AddBallConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
+                          plant.get_body(BodyIndex(1)));
+
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+                              ".*not.*support.*1 ball constraint\\(s\\).*");
+}
+
+GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(robot_xml, "xml");
+
+  plant.AddDistanceConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
+                              plant.get_body(BodyIndex(1)), Vector3d::Zero(),
+                              0.01);
+
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+                              ".*not.*support.*1 distance constraint\\(s\\).*");
+}
+
+GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(robot_xml, "xml");
+
+  plant.AddTendonConstraint({JointIndex{0}}, {0.01}, {}, {{-1.0}}, {}, {}, {});
+
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+                              ".*not.*support.*1 tendon constraint\\(s\\).*");
+}
+
+GTEST_TEST(IcfBuilder, WeldConstraintUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(robot_xml, "xml");
+
+  plant.AddWeldConstraint(plant.get_body(BodyIndex(0)), RigidTransformd(),
+                          plant.get_body(BodyIndex(1)), RigidTransformd());
+
+  plant.Finalize();
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+                              ".*not.*support.*1 weld constraint\\(s\\).*");
 }
 
 }  // namespace

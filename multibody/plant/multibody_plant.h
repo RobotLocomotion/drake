@@ -3673,7 +3673,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                                     angles);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use SetFloatingBaseBodyPoseInWorldFrame() instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const RigidBody<T>& body,
@@ -3681,7 +3681,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use SetFloatingBaseBodyPoseInAnchoredFrame() instead.")
   void SetFreeBodyPoseInAnchoredFrame(
       systems::Context<T>* context, const Frame<T>& frame_F,
@@ -3689,28 +3689,28 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     SetFloatingBaseBodyPoseInAnchoredFrame(context, frame_F, body, X_FB);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use GetUniqueFloatingBaseBodyOrThrow() instead.")
   const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
       ModelInstanceIndex model_instance) const {
     return GetUniqueFloatingBaseBodyOrThrow(model_instance);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use SetDefaultFloatingBaseBodyPose() instead.")
   void SetDefaultFreeBodyPose(const RigidBody<T>& body,
                               const math::RigidTransform<double>& X_PB) {
     SetDefaultFloatingBaseBodyPose(body, X_PB);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use GetDefaultFloatingBaseBodyPose() instead.")
   math::RigidTransform<double> GetDefaultFreeBodyPose(
       const RigidBody<T>& body) const {
     return GetDefaultFloatingBaseBodyPose(body);
   }
 
-  DRAKE_DEPRECATED("2026-01-01", "Use HasUniqueFloatingBaseBody() instead.")
+  DRAKE_DEPRECATED("2026-06-01", "Use HasUniqueFloatingBaseBody() instead.")
   bool HasUniqueFreeBaseBody(ModelInstanceIndex model_instance) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);

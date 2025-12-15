@@ -606,11 +606,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const char* X_PB_parameter_name_deprecated =
         "X_PB parameter name for SetFreeBodyPose() is deprecated and will be "
-        "removed 2026-01-01. Use X_JpJc instead.";
+        "removed 2026-06-01. Use X_JpJc instead.";
     const char* V_PB_parameter_name_deprecated =
         "The parameter order and V_PB parameter name for "
         "SetFreeBodySpatialVelocity() are deprecated and will be removed "
-        "2026-01-01. Use context, body, V_JpJc instead.";
+        "2026-06-01. Use context, body, V_JpJc instead.";
     cls  // BR
         .def("SetDefaultFreeBodyPose",
             WrapDeprecated(cls_doc.SetDefaultFreeBodyPose.doc_deprecated,
