@@ -42,12 +42,12 @@ struct IcfSolverParameters {
     ‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖),
     η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
 
-  as detailed in Section VI.B of [Kurtz and Castro, 2025].
+  as detailed in Section VI.B of [Kurtz et. al., 2025].
 
   This provides a lower bound on the actual tolerance used, which is specified
   explicitly when calling the solver. For instance, CENIC passes an adaptive
   tolerance based on the desired accuracy to the ICF solver, see Section VI.B of
-  [Kurtz and Castro, 2025]. */
+  [Kurtz et. al., 2025]. */
   double min_tolerance{1e-8};
 
   /** Whether hessian reuse between iterations and time steps is enabled. */

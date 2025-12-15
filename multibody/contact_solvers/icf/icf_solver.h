@@ -17,11 +17,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using contact_solvers::internal::BlockSparseCholeskySolver;
-using contact_solvers::internal::BlockSparsityPattern;
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-
 /* Statistics to track during the optimization process.
 
 For quantities that are recorded at each iteration, we count k = 0 as the first
@@ -87,14 +82,14 @@ recomputing and refactoring the Hessian at each iteration. Since ℓ(v) is conve
 any positive definite approximation of Hₖ can be used to compute the search
 direction, and the problem will still be guaranteed to converge (albeit more
 slowly). Hessian reuse takes advantage of this fact by reusing Hₖ from a
-previous iteration (or even a previous solve!) when convergence is sufficiently
+previous iteration (or even a previous solve) when convergence is sufficiently
 fast. The solver monitors convergence and automatically recomputes the Hessian
 only when necessary to regain fast (Newton-like) convergence.
 
 The ICF formulation was first described in [Castro et al., 2023]. This
-implementation follows the details described in [Kurtz et al., 2025]. Hessian
-reuse strategy is described in Section VI.C of [Kurtz et al., 2025] and is an
-adaptation of techniques from [Hairer, 1996], chapter IV.8.
+implementation follows the details described in [Kurtz et al., 2025]. The
+Hessian reuse strategy is described in Section VI.C of [Kurtz et al., 2025] and
+is an adaptation of techniques from [Hairer, 1996], chapter IV.8.
 
 See IcfSolverParameters and icf/README.md for further details.
 
@@ -119,17 +114,15 @@ class IcfSolver {
 
   ~IcfSolver();
 
-  /* Solves the convex problem to compute next-step velocities v = min ℓ(v).
+  /* Solves the convex problem to compute next-step velocities, argmin ℓ(v).
 
   @param model The ICF model defining the optimization problem.
   @param tolerance The convergence tolerance ε to be used for this solve.
-  @param data The ICF data structure to be updated with the solution. To
-              begin, stores the initial guess for velocities v.
+  @param[out] data The ICF data structure to be updated with the solution. To
+                   begin, stores the initial guess for velocities v.
 
   @return true if and only if the optimizer converged to tolerance ε.
-
-  N.B. the caller must ensure that the model and data are compatible, i.e.,
-  model.ResizeData(&data) has been called. */
+  @pre The model and data must compatible, e.g., via model.ResizeData(&data). */
   bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
                       IcfData<double>* data);
 
@@ -164,17 +157,21 @@ class IcfSolver {
   double SolveQuadraticInUnitInterval(const double a, const double b,
                                       const double c) const;
 
-  /* Solves for the Newton search direction w = −H⁻¹ g, with flags for several
+  /* Solves for the Newton search direction w = −H⁻¹⋅g, with flags for several
   levels of Hessian reuse:
 
-   - reuse_factorization: reuse the exact same factorization of H as in the
-                          previous iteration. Do not compute the new
-                          Hessian at all. This is the fastest option, but
-                          gives a lower-quality search direction.
+   reuse_factorization: reuse the exact same factorization of H as in the
+                        previous iteration. Do not compute the new
+                        Hessian at all. This is the fastest option, but
+                        gives a lower-quality search direction.
 
-   - reuse_sparsity_pattern: recompute H and its factorization, but reuse the
-                             stored sparsity pattern. This gives an exact
-                             Newton step, but avoids some allocations. */
+   reuse_sparsity_pattern: recompute H and its factorization, but reuse the
+                           stored sparsity pattern. This gives an exact
+                           Newton step, but avoids some allocations.
+
+  If both of these flags are `false`, computes H from scratch and factors it
+  anew. The `reuse_factorization` flag takes precedence over
+  `reuse_sparsity_pattern`. */
   void ComputeSearchDirection(const IcfModel<double>& model,
                               const IcfData<double>& data, Eigen::VectorXd* w,
                               bool reuse_factorization = false,
@@ -184,9 +181,8 @@ class IcfSolver {
   time the Hessian was computed. */
   bool SparsityPatternChanged(const IcfModel<double>& model) const;
 
-  // Stored Hessian and factorization objects. Allows for Hessian reuse
-  // between iterations and between subsequent solves (which is a valid
-  // strategy since the problem is convex).
+  // Stored Hessian and factorization objects. Allows for Hessian reuse between
+  // iterations and between subsequent solves.
   std::unique_ptr<
       contact_solvers::internal::BlockSparseSymmetricMatrix<Eigen::MatrixXd>>
       hessian_;
@@ -210,7 +206,7 @@ class IcfSolver {
   // Statistics for logging and tracking convergence.
   IcfSolverStats stats_;
 
-  // Pre-allocated decision variables v and search direction Δv.
+  // Pre-allocated decision variables v and search direction w.
   Eigen::VectorXd decision_variables_;
   Eigen::VectorXd search_direction_;
 };

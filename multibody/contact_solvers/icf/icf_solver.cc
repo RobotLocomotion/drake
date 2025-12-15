@@ -256,9 +256,8 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   const Bracket bracket(0.0, -1.0, alpha_max, dell / dell_scale);
 
   // Finally, solve for f(α) = 0 using Newton with bisection fallback.
-  const double alpha_tolerance = parameters_.ls_tolerance;
   return DoNewtonWithBisectionFallback(
-      cost_and_gradient, bracket, alpha_guess, alpha_tolerance,
+      cost_and_gradient, bracket, alpha_guess, parameters_.ls_tolerance,
       parameters_.ls_tolerance, parameters_.max_ls_iterations);
 }
 
@@ -316,7 +315,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       reuse_hessian_factorization_ = true;
     }
 
-    // Compute the search direction w = -H⁻¹ g with dense algebra.
+    // Compute the search direction w = -H⁻¹⋅g with dense algebra.
     *w = dense_hessian_factorization_.solve(-data.gradient());
 
   } else {  // Use sparse algebra.
@@ -339,7 +338,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       reuse_hessian_factorization_ = true;
     }
 
-    // Compute the search direction w = -H⁻¹ g with sparse algebra.
+    // Compute the search direction w = -H⁻¹⋅g with sparse algebra.
     *w = -data.gradient();
     hessian_factorization_.SolveInPlace(w);
   }

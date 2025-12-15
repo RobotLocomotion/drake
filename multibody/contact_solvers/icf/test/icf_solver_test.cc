@@ -17,6 +17,9 @@ namespace icf {
 namespace internal {
 namespace {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+
 constexpr double kConvergenceTolerance = 1e-8;
 
 class IcfSolverTest : public ::testing::Test {
@@ -169,10 +172,10 @@ TEST_F(IcfSolverTest, HessianReuse) {
   EXPECT_EQ(no_reuse_stats.num_factorizations, no_reuse_stats.num_iterations);
 
   // With reuse, we should perform fewer factorizations than iterations.
-  // However, we should have forced at least two factorization total: one at
+  // However, we should have forced at least two factorizations total: one at
   // the first time step, and at least one other when convergence stalled.
   EXPECT_LT(reuse_stats.num_factorizations, reuse_stats.num_iterations);
-  EXPECT_LT(1, reuse_stats.num_factorizations);
+  EXPECT_GE(reuse_stats.num_factorizations, 2);
 
   // Solutions should be the same, up to the convergence tolerance used.
   EXPECT_TRUE(CompareMatrices(reuse_solution, no_reuse_solution,
@@ -193,7 +196,7 @@ TEST_F(IcfSolverTest, EarlyExit) {
   EXPECT_EQ(solver_.stats().num_iterations, 0);
 }
 
-/* Verifies that the solver run properly with printouts enabled. */
+/* Verifies that the solver runs properly with printouts enabled. */
 TEST_F(IcfSolverTest, PrintStatsSmokeTest) {
   IcfSolverParameters solver_params = solver_.get_parameters();
   solver_params.print_solver_stats = true;
