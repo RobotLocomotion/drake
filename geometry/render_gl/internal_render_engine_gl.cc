@@ -10,6 +10,7 @@
 #include <tiny_gltf.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
@@ -1416,7 +1417,7 @@ class RenderEngineGl::GltfMeshExtractor {
   GltfMeshExtractor(const MeshSource* mesh_source,
                     std::vector<OpenGlGeometry>* geometries,
                     TextureLibrary* texture_library)
-      : mesh_source_(*mesh_source),
+      : mesh_source_(DRAKE_DEREF(mesh_source)),
         description_(mesh_source_.is_path()
                          ? fmt::format("the on-disk glTF file: '{}'",
                                        mesh_source_.description())

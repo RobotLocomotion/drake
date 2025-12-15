@@ -67,15 +67,20 @@ _IGNORED_REPOSITORIES = [
     "clang_cindex_python3_internal",  # Uses a non-default branch.
     "mosek",  # Requires special, non-automated care during upgrades.
     "pybind11",  # Uses a non-default branch.
-    "usockets_internal",  # Pinned due to upstream regression.
-    "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
-# These repositories cannot be auto-upgraded. When checking for new releases,
-# print a reminder to manually check for upgrades.
+# These repositories cannot be automatically upgraded, but can be automatically
+# checked for possible upgrades. When checking for new releases, print a
+# reminder to check for upgrades, but don't do anything.
+_CHECK_ONLY_REPOSITORIES = [
+    "doxygen_internal",
+]
+
+# These repositories cannot be automatically upgraded nor automatically checked
+# for possible upgrades. When checking for new releases, always print a reminder
+# to manually check for upgrades.
 _OTHER_REPOSITORIES = [
     "python",
-    "doxygen_internal",
 ]
 
 # For these repositories, ignore any tags that match the specified regex.
@@ -93,6 +98,7 @@ _IGNORED_TAGS = {
 # group in the regex denotes the portion of the tag to lock as invariant.
 # (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
+    "doxygen_internal": "",
     "github3_py_internal": r"^(\d+.)",
     "gz_math_internal": r"^(gz)",
     "gz_utils_internal": r"^(gz)",
@@ -254,10 +260,13 @@ def _check_for_upgrades(gh, args, metadata):
         if old_commit == new_commit:
             continue
         elif new_commit is not None:
-            info(
+            info_message = (
                 f"{workspace_name} needs upgrade"
                 f" from {old_commit} to {new_commit}"
             )
+            if workspace_name in _CHECK_ONLY_REPOSITORIES:
+                info_message += ", but cannot be auto-upgraded"
+            info(info_message)
         else:
             warn(
                 f"{workspace_name} version {old_commit} needs manual inspection"
@@ -440,14 +449,26 @@ def _do_upgrade_scripted(
 
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     """Returns an `UpgradeResult` describing what (if anything) was done."""
-    if workspace_name in _OTHER_REPOSITORIES:
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    elif workspace_name not in metadata:
+    if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
 
     data = metadata[workspace_name]
     rule_type = data["repository_rule_type"]
     bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+
+    if workspace_name in _OTHER_REPOSITORIES + _CHECK_ONLY_REPOSITORIES:
+        upgrade_advice = data.get("upgrade_advice", "")
+        error_message = f"Cannot auto-upgrade {workspace_name}"
+        if len(upgrade_advice):
+            error_message += "\n".join(
+                [
+                    "",
+                    "*" * 72,
+                    upgrade_advice,
+                    "*" * 72,
+                ]
+            )
+        raise RuntimeError(error_message)
 
     if rule_type == _SCRIPTED_RULE_TYPE:
         # Determine if we should and can commit the changes made.
@@ -693,7 +714,14 @@ def main():
     # Grab the workspace metadata.
     info("Collecting bazel repository details...")
     metadata = read_repository_metadata()
-    logging.debug(json.dumps(metadata, sort_keys=True, indent=2))
+    if args.verbose:
+        metadata_json = os.path.join(
+            os.path.realpath("."),
+            "debug_repository_metadata.json",
+        )
+        with open(metadata_json, "w", encoding="utf-8") as f:
+            logging.debug(f"Writing repository metadata to '{metadata_json}'.")
+            json.dump(metadata, f, sort_keys=True, indent=2)
 
     if workspaces is not None:
         visited_workspaces = set()

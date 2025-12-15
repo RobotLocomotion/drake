@@ -984,10 +984,14 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   // Simulate for 1/2 second.
   simulator.AdvanceTo(0.5);
 
-  // Reset the integrator.
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
+  // Confirm that the step size `h` was obeyed.
+  EXPECT_EQ(simulator.get_num_steps_taken(), 500);
 
-  // Simulate to 1 second..
+  // Reset the integrator with the advanced spelling.
+  simulator.reset_integrator(
+      std::make_unique<RungeKutta2Integrator<double>>(spring_mass, h));
+
+  // Simulate to 1 second.
   simulator.AdvanceTo(1.0);
 
   EXPECT_NEAR(context.get_time(), 1.0, 1e-8);

@@ -49,9 +49,6 @@ class CouplerConstraintsPool {
   /* Returns the total number of constraints stored in this pool. */
   int num_constraints() const { return constraint_to_clique_.size(); }
 
-  /* Removes all constraints from this pool while keeping memory allocated. */
-  void Clear();
-
   /* Resizes the constraints pool to store the given number of constraints.
 
   @warning After resizing, constraints may hold invalid data until Set() is

@@ -16,20 +16,11 @@ template <typename T>
 CouplerConstraintsPool<T>::CouplerConstraintsPool(
     const IcfModel<T>* parent_model)
     : model_(parent_model) {
-  DRAKE_ASSERT(parent_model != nullptr);
+  DRAKE_DEMAND(parent_model != nullptr);
 }
 
 template <typename T>
 CouplerConstraintsPool<T>::~CouplerConstraintsPool() = default;
-
-template <typename T>
-void CouplerConstraintsPool<T>::Clear() {
-  constraint_to_clique_.clear();
-  dofs_.clear();
-  gear_ratio_.clear();
-  g_hat_.clear();
-  R_.clear();
-}
 
 template <typename T>
 void CouplerConstraintsPool<T>::Resize(const int num_constraints) {
@@ -44,9 +35,9 @@ template <typename T>
 void CouplerConstraintsPool<T>::Set(int index, int clique, int i, int j,
                                     const T& qi, const T& qj, T gear_ratio,
                                     T offset) {
-  DRAKE_ASSERT(index >= 0 && index < num_constraints());
-  DRAKE_ASSERT(i >= 0 && i < model().clique_size(clique));
-  DRAKE_ASSERT(j >= 0 && j < model().clique_size(clique));
+  DRAKE_ASSERT(0 <= index && index < num_constraints());
+  DRAKE_ASSERT(0 <= i && i < model().clique_size(clique));
+  DRAKE_ASSERT(0 <= j && j < model().clique_size(clique));
 
   constraint_to_clique_[index] = clique;
   dofs_[index] = std::make_pair(i, j);
@@ -105,6 +96,8 @@ void CouplerConstraintsPool<T>::CalcData(
 template <typename T>
 void CouplerConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
                                                    VectorX<T>* gradient) const {
+  DRAKE_ASSERT(gradient != nullptr);
+
   const CouplerConstraintsDataPool<T>& coupler_data =
       data.coupler_constraints_data();
 
@@ -131,6 +124,8 @@ template <typename T>
 void CouplerConstraintsPool<T>::AccumulateHessian(
     const IcfData<T>& data,
     BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
   for (int k = 0; k < num_constraints(); ++k) {
     const int c = constraint_to_clique_[k];
     const int i = dofs_[k].first;
@@ -156,6 +151,8 @@ template <typename T>
 void CouplerConstraintsPool<T>::CalcCostAlongLine(
     const CouplerConstraintsDataPool<T>& coupler_data, const VectorX<T>& w,
     T* dcost, T* d2cost) const {
+  DRAKE_ASSERT(dcost != nullptr);
+  DRAKE_ASSERT(d2cost != nullptr);
   *dcost = 0.0;
   *d2cost = 0.0;
   for (int k = 0; k < num_constraints(); ++k) {

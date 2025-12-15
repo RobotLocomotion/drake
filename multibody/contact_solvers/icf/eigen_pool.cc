@@ -47,6 +47,8 @@ EigenPoolDynamicSizeStorage<EigenType>::~EigenPoolDynamicSizeStorage() =
 template <typename EigenType>
 void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_matrices, int rows,
                                                     int cols) {
+  DRAKE_DEMAND(rows >= 0);
+  DRAKE_DEMAND(cols >= 0);
   Clear();
   data_.reserve(num_matrices * rows * cols);
   blocks_.reserve(num_matrices);
@@ -68,6 +70,9 @@ void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_matrices,
     const int fixed_dim = (fixed_rows >= 0) ? fixed_rows : fixed_cols;
     const std::span<const int>& dynamic_dims = (fixed_rows >= 0) ? cols : rows;
     DRAKE_DEMAND(ssize(dynamic_dims) == num_matrices);
+    for (int dynamic_dim : dynamic_dims) {
+      DRAKE_DEMAND(dynamic_dim >= 0);
+    }
     const int total_size = fixed_dim * std::accumulate(dynamic_dims.begin(),
                                                        dynamic_dims.end(), 0);
     data_.reserve(total_size);
@@ -83,6 +88,8 @@ void EigenPoolDynamicSizeStorage<EigenType>::Resize(int num_matrices,
     DRAKE_DEMAND(ssize(cols) == num_matrices);
     int total_size = 0;
     for (int i = 0; i < num_matrices; ++i) {
+      DRAKE_DEMAND(rows[i] >= 0);
+      DRAKE_DEMAND(cols[i] >= 0);
       total_size += rows[i] * cols[i];
     }
     data_.reserve(total_size);
