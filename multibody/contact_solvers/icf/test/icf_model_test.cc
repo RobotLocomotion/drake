@@ -254,6 +254,59 @@ void AddLimitConstraints(IcfModel<T>* model) {
   }
 }
 
+/* Adds some dummy contact constraints to the model. */
+template <typename T>
+void AddPatchConstraints(IcfModel<T>* model) {
+  // Add contact patches.
+  const T dissipation = 50.0;
+  const T stiffness = 1.0e6;
+  const T friction = 0.5;
+
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
+  // Resize to hold three patches with one contact pair each.
+  const std::vector<int> num_pairs_per_patch = {1, 1, 1};
+  patches.Resize(num_pairs_per_patch);
+
+  // First patch is between two non-anchored bodies, with body A floating.
+  {
+    const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
+    patches.SetPatch(0 /* patch index */, 2 /* body A */, 1 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
+    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
+    const T fn0 = 1.5;
+    patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Second patch is between two non-anchored bodies, with body B floating.
+  {
+    const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
+    patches.SetPatch(2 /* patch index */, 1 /* body A */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
+    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
+    const T fn0 = 1.5;
+    patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Third patch is between an anchored body (the world) and a dynamic body.
+  {
+    const Vector3<T> p_AB_W(0.0, 0.05, 0.0);
+    patches.SetPatch(1 /* patch index */, 0 /* World */, 3 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
+    const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
+    const T fn0 = 1.5;
+    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+}
+
 /* Checks that a default constructed model is empty. */
 GTEST_TEST(IcfModel, EmptyModel) {
   IcfModel<double> model;
@@ -373,6 +426,32 @@ GTEST_TEST(IcfModel, LimitMallocOnLimitConstrainedCalcData) {
   }
 }
 
+/* Checks that model.CalcData does not incur any heap allocations for a model
+with contact constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnPatchConstrainedCalcData) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.patch_constraints_pool().num_constraints(), 3);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.patch_constraints_data().num_constraints(), 3);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
+
+  // Computing data should not cause any new allocations.
+  {
+    drake::test::LimitMalloc guard;
+    model.CalcData(v, &data);
+  }
+}
+
 /* Iterates over each body to check sizes and such. */
 GTEST_TEST(IcfModel, PerBodyElements) {
   IcfModel<double> model;
@@ -449,15 +528,16 @@ GTEST_TEST(IcfModel, CalcGradients) {
   AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
   model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), nv);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 8);
 
-  VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorXd v_values = VectorXd::LinSpaced(nv, -10.0, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
@@ -477,6 +557,7 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -520,6 +601,7 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   AddCouplerConstraint(&model_single);
   AddGainConstraints(&model_single);
   AddLimitConstraints(&model_single);
+  AddPatchConstraints(&model_single);
   model_single.SetSparsityPattern();
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
@@ -529,6 +611,7 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   AddCouplerConstraint(&model_multiple);
   AddGainConstraints(&model_multiple);
   AddLimitConstraints(&model_multiple);
+  AddPatchConstraints(&model_multiple);
   model_multiple.SetSparsityPattern();
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
@@ -577,10 +660,11 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 8);
 
   // Allocate data, and additional scratch.
   IcfData<AutoDiffXd> data, scratch;
@@ -639,11 +723,12 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   AddCouplerConstraint(&model_original);
   AddGainConstraints(&model_original);
   AddLimitConstraints(&model_original);
+  AddPatchConstraints(&model_original);
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
   EXPECT_EQ(model_original.time_step(), 0.02);
-  EXPECT_EQ(model_original.num_constraints(), 5);
+  EXPECT_EQ(model_original.num_constraints(), 8);
 
   const double new_time_step = 0.003;
 
@@ -653,11 +738,12 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   AddCouplerConstraint(&model_new);
   AddGainConstraints(&model_new);
   AddLimitConstraints(&model_new);
+  AddPatchConstraints(&model_new);
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
-  EXPECT_EQ(model_new.num_constraints(), 5);
+  EXPECT_EQ(model_new.num_constraints(), 8);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
