@@ -10,21 +10,7 @@ load("//tools/workspace:generate_file.bzl", "generate_file")
 # You can manually set this to True, to get some feedback during upgrades.
 _VERBOSE = False
 
-# See vtkTypeLists.cmake.
-_VTK_FIXED_SIZE_NUMERIC_TYPES = [
-    ("vtkTypeInt8", "signed char", None),
-    ("vtkTypeUInt8", "unsigned char", None),
-    ("vtkTypeInt16", "short", None),
-    ("vtkTypeUInt16", "unsigned short", None),
-    ("vtkTypeInt32", "int", None),
-    ("vtkTypeUInt32", "unsigned int", None),
-    ("vtkTypeInt64", "long", "long long"),
-    ("vtkTypeUInt64", "unsigned long", "unsigned long long"),
-    ("vtkTypeFloat32", "float", None),
-    ("vtkTypeFloat64", "double", None),
-]
-
-# See Common/Core/vtkTypeLists.cmake.
+# This list matches `vtk_numeric_types` in CMake/vtkTypeLists.cmake.
 _VTK_NUMERIC_TYPES = [
     "char",
     "double",
@@ -42,7 +28,26 @@ _VTK_NUMERIC_TYPES = [
     "vtkIdType",
 ]
 
-# See Common/Core/CMakeLists.txt.
+# This list matches `vtk_fixed_size_numeric_types` in CMake/vtkTypeLists.cmake.
+# Each item is a tuple of (vtk_type, preferred_ctype, fallback_ctype).
+#
+# The {preferred,fallback}_ctype vs matches Common/Core/vtkTypeArrays.cmake's
+# calls to `vtk_type_native` and `vtk_type_native_choice`.
+_VTK_FIXED_SIZE_NUMERIC_TYPES = [
+    ("vtkTypeFloat32", "float", None),
+    ("vtkTypeFloat64", "double", None),
+    ("vtkTypeInt8", "signed char", None),
+    ("vtkTypeInt16", "short", None),
+    ("vtkTypeInt32", "int", None),
+    ("vtkTypeInt64", "long", "long long"),
+    ("vtkTypeUInt8", "unsigned char", None),
+    ("vtkTypeUInt16", "unsigned short", None),
+    ("vtkTypeUInt32", "unsigned int", None),
+    ("vtkTypeUInt64", "unsigned long", "unsigned long long"),
+]
+
+# This list matches Common/Core/CMakeLists.txt near the comment "Order of this
+# list is important with bulk instantiation".
 _VTK_INSTANTIATION_TYPES = [
     "vtkAffineImplicitBackendInstantiate",
     "vtkCompositeImplicitBackendInstantiate",
@@ -56,12 +61,11 @@ _VTK_INSTANTIATION_TYPES = [
     "vtkConstantArrayInstantiate",
     "vtkIndexedArrayInstantiate",
     "vtkScaledSOADataArrayTemplateInstantiate",
+    "vtkStridedArrayInstantiate",
     "vtkSOADataArrayTemplateInstantiate",
     "vtkStdFunctionArrayInstantiate",
-    "vtkStridedArrayInstantiate",
     "vtkStructuredPointArrayInstantiate",
     "vtkTypedDataArrayInstantiate",
-    "vtkGenericDataArrayValueRangeInstantiate",
 ]
 
 _VTK_BULK_INSTANTIATION_RESULT_FILES = [
@@ -543,11 +547,13 @@ def generate_common_core_array_instantiations(bulk_srcs):
     result = []
     for ctype in _VTK_NUMERIC_TYPES:
         snake = ctype.replace(" ", "_")
-        for stem in _VTK_INSTANTIATION_TYPES:
+        for stem in _VTK_INSTANTIATION_TYPES + (
+            # This one is only instantiated iff "long" is part of the ctype.
+            "vtkGenericDataArrayValueRangeInstantiate",
+        ):
             if "Generic" in stem and "long" not in ctype:
-                # N.B. Only instantiate
-                # `vtkGenericDataArrayValueRangeInstantiate` iff "long" is part
-                # of the ctype.
+                # This matches Common/Core/CMakeLists.txt near the comment "see
+                # comments in vtkGenericDataArray.h for explanation".
                 continue
 
             # The CMakeLists.txt generates `*.cxx` files, but we don't want
