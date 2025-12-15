@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 
@@ -579,6 +580,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
 template <typename T>
 void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
     const systems::Context<T>& context, IcfModel<T>* model) const {
+  using std::max;
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
 
@@ -661,7 +663,11 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
                        : s.poly_e_MN().EvaluateCartesian(face, p_WC);
 
       const T fn0 = Ae * p0;
-      const T k = Ae * g;
+
+      // For hydroelastic contact, it is sometimes (though rarely) the case that
+      // Ae * g < 0 due to numerical issues. We therefore clamp the stiffness to
+      // ensure that the problem is always convex.
+      const T k = max(Ae * g, 0.0);
 
       patches.SetPair(patch_index, face, p_BoC_W, nhat_AB_W, fn0, k);
     }
