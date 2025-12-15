@@ -22,6 +22,10 @@ def _impl(repo_ctx):
         """,
         repository = repository,
         commit = commit,
+        # Opt out of mirroring the Doxygen source to S3. mirror_to_s3 globs all
+        # repository metadata when looking for sources to mirror, but that
+        # won't (and shouldn't) work here, because Doxygen comes from S3 itself.
+        mirror_to_s3 = False,
     )
 
     if repo_ctx.os.name == "linux":
