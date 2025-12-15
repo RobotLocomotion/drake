@@ -35,6 +35,8 @@ CHUNK_SIZE = 65536
 def main(argv):
     transformed_metadata = []
     for key, value in read_repository_metadata().items():
+        if "mirror_to_s3" in value and not value["mirror_to_s3"]:
+            continue
         rule_type = value["repository_rule_type"]
         if rule_type in ("alias", "pkg_config"):
             continue
