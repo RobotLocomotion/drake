@@ -24,6 +24,7 @@ filegroup(
         "@csdp_internal//:drake_repository_metadata.json",
         "@curl_internal//:drake_repository_metadata.json",
         "@dm_control_internal//:drake_repository_metadata.json",
+        "@doxygen_internal//:drake_repository_metadata.json",
         "@drake_models//:drake_repository_metadata.json",
         "@fcl_internal//:drake_repository_metadata.json",
         "@github3_py_internal//:drake_repository_metadata.json",
