@@ -24,3 +24,8 @@ python_repository(
 )
 
 register_toolchains("@python//:all")
+
+single_version_override(
+    module_name = "rules_cc",
+    patches = ["//:cc-as-gcc.patch"],
+)
