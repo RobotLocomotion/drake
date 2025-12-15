@@ -13,6 +13,7 @@
 #endif
 
 // #include "drake/multibody/cenic/cenic_integrator.h"
+// #include "drake/multibody/cenic/make_cenic_integrator.h"
 
 // Symbol: pydrake_doc_multibody_cenic
 constexpr struct /* pydrake_doc_multibody_cenic */ {
@@ -163,6 +164,22 @@ R"""(Sets the convex solver tolerances and iteration limits.)""";
 R"""(Error estimation is supported via half-stepping.)""";
         } supports_error_estimation;
       } CenicIntegrator;
+      // Symbol: drake::multibody::MakeCenicIntegrator
+      struct /* MakeCenicIntegrator */ {
+        // Source: drake/multibody/cenic/make_cenic_integrator.h
+        const char* doc =
+R"""(Constructs a CenicIntegrator.
+
+Parameter ``system``:
+    The overall Diagram to simulate. Must include a MultibodyPlant and
+    associated SceneGraph, with the plant found as a direct child of
+    the ``system`` diagram using the subsystem name ``"plant"``. This
+    system is aliased by this object so must remain alive longer than
+    the integrator.
+
+Parameter ``context``:
+    Context for ``system``.)""";
+      } MakeCenicIntegrator;
     } multibody;
   } drake;
 } pydrake_doc_multibody_cenic;

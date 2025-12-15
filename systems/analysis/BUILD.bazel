@@ -101,7 +101,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     implementation_deps = [
-        "//multibody/cenic:cenic_integrator",
+        "//multibody/cenic:make_cenic_integrator",
     ],
 )
 
