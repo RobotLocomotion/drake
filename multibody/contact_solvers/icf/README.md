@@ -50,7 +50,7 @@ where $N(q_n)$ is the kinematic map such that $\dot{q} = N(q)v$.
 
 In addition to contact, ICF can support other constraint types (e.g., joint
 limits, couplers, etc.) via appropriately designed convex potentials. For full
-details, see [Castro et al., 2023] and [Kurtz et al., 2025].
+details, see [Castro et al., 2023] and [Kurtz and Castro, 2025].
 
 ## About this Implementation
 
@@ -71,7 +71,7 @@ Key components and how they talk to each other:
      decision variables $v$.
    - `IcfData`: Holds all variable data that changes during the optimization
      process, e.g., $v$ and derived quantities.
-   - TODO(#23769): `IcfSolver`: Solves the convex problem itself, e.g., does
+   - `IcfSolver`: Solves the convex problem itself, e.g., does
      Newton iterations.
    - TODO(#23769): `IcfBuilder`: Constructs the optimization problem. The
      builder is the only component that knows about `MultibodyPlant`.
@@ -79,10 +79,10 @@ Key components and how they talk to each other:
 Other components:
 
    - Constraint pools (`CouplerConstraintsPool`, `GainConstraintsPool`,
-     `LimitConstraintsPool`, TODO(#23769): `PatchConstraintsPool`) are part of
+     `LimitConstraintsPool`, `PatchConstraintsPool`) are part of
      `IcfModel`, and hold constraints of various types.
    - Similarly, constraint data pools (`CouplerConstraintsDataPool`,
-     `GainConstraintsDataPool`, `LimitConstraintsDataPool`, TODO(#23769):
+     `GainConstraintsDataPool`, `LimitConstraintsDataPool`,
      `PatchConstraintsDataPool`) are part of `IcfData`, and hold data that
      change with $v$ for the corresponding constraints.
    - The underlying `EigenPool` datatype is used to store constraint quantities
@@ -92,8 +92,17 @@ Other components:
 ## References:
 
 [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
-Contact Fields. https://arxiv.org/abs/2312.03908
+Contact Fields. https://arxiv.org/abs/2312.03908.
 
-[Kurtz et al., 2025] Kurtz V. and Castro A., 2025. CENIC: Convex
+[Hairer and Wanner, 1996] Hairer E. and Wanner G., 1996. Solving Ordinary
+Differential Equations II: Stiff and Differential-Algebraic Problems. Springer
+Series in Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd
+edition.
+
+[Kurtz and Castro, 2025] Kurtz V. and Castro A., 2025. CENIC: Convex
 Error-controlled Numerical Integration for Contact.
-https://arxiv.org/abs/2511.08771
+https://arxiv.org/abs/2511.08771.
+
+[Masterjohn et al., 2022] Masterjohn, J., Guoy, D., Shepherd, J. and Castro,
+A., 2022. Velocity level approximation of pressure field contact patches. IEEE
+Robotics and Automation Letters, 7(4), pp.11593-11600.
