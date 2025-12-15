@@ -18,6 +18,8 @@ drake_cc_package_library(
         ":icf_data",
         ":icf_model",
         ":icf_search_direction_data",
+        ":icf_solver",
+        ":icf_solver_parameters",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
     ],
@@ -101,6 +103,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "icf_solver_parameters",
+    hdrs = ["icf_solver_parameters.h"],
+    deps = ["//common:name_value"],
+)
+
+drake_cc_library(
+    name = "icf_solver",
+    srcs = ["icf_solver.cc"],
+    hdrs = ["icf_solver.h"],
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        ":icf_solver_parameters",
+        "//common:essential",
+        "//common:name_value",
+        "//multibody/contact_solvers:block_sparse_cholesky_solver",
+        "//multibody/contact_solvers:newton_with_bisection",
+    ],
+)
+
+drake_cc_library(
     name = "icf_model",
     srcs = [
         "coupler_constraints_pool.cc",
@@ -153,6 +177,16 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_solver_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_solver",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -71,7 +71,7 @@ Key components and how they talk to each other:
      decision variables $v$.
    - `IcfData`: Holds all variable data that changes during the optimization
      process, e.g., $v$ and derived quantities.
-   - TODO(#23769): `IcfSolver`: Solves the convex problem itself, e.g., does
+   - `IcfSolver`: Solves the convex problem itself, e.g., does
      Newton iterations.
    - TODO(#23769): `IcfBuilder`: Constructs the optimization problem. The
      builder is the only component that knows about `MultibodyPlant`.
@@ -79,10 +79,10 @@ Key components and how they talk to each other:
 Other components:
 
    - Constraint pools (`CouplerConstraintsPool`, `GainConstraintsPool`,
-     `LimitConstraintsPool`, TODO(#23769): `PatchConstraintsPool`) are part of
+     `LimitConstraintsPool`, `PatchConstraintsPool`) are part of
      `IcfModel`, and hold constraints of various types.
    - Similarly, constraint data pools (`CouplerConstraintsDataPool`,
-     `GainConstraintsDataPool`, `LimitConstraintsDataPool`, TODO(#23769):
+     `GainConstraintsDataPool`, `LimitConstraintsDataPool`,
      `PatchConstraintsDataPool`) are part of `IcfData`, and hold data that
      change with $v$ for the corresponding constraints.
    - The underlying `EigenPool` datatype is used to store constraint quantities
