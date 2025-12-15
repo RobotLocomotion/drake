@@ -68,11 +68,6 @@ _VTK_INSTANTIATION_TYPES = [
     "vtkTypedDataArrayInstantiate",
 ]
 
-_VTK_BULK_INSTANTIATION_RESULT_FILES = [
-    "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(ctype.replace(" ", "_"))
-    for ctype in _VTK_NUMERIC_TYPES
-]
-
 def _bazelize_module_name(name):
     """Transforms e.g. `VTK::IOCore` => `VTK__IOCore` to make Bazel happy."""
     return name.replace(":", "_")
@@ -670,7 +665,10 @@ def generate_bulk_instantiation_srcs(bulk_srcs):
         )
     native.filegroup(
         name = "common_core_bulk_instantiation_srcs",
-        srcs = _VTK_BULK_INSTANTIATION_RESULT_FILES,
+        srcs = [
+            "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(ctype.replace(" ", "_"))
+            for ctype in _VTK_NUMERIC_TYPES
+        ],
         data = [
             ":common_core_array_instantiations",
             ":common_core_typed_arrays_srcs",
