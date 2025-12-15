@@ -20,6 +20,10 @@ iteration, as opposed to the PatchConstraintsPool, which defines the
 constraints themselves and is fixed for the lifetime of the optimization
 problem.
 
+Per-patch data holds num_patches() elements. Per-pair data is indexed by global
+pair index, and holds num_pairs() >= num_patches() elements. See
+PatchConstraintsPool for further indexing details.
+
 @tparam_nonsymbolic_scalar */
 template <typename T>
 class PatchConstraintsDataPool {
@@ -42,7 +46,7 @@ class PatchConstraintsDataPool {
 
   /* Resizes the data pool to hold constraints of the given sizes.
   @param patch_size Number of contact pairs for the k-th patch. */
-  void Resize(std::span<const int> patch_size);
+  void Resize(std::span<const int> patch_sizes);
 
   /* Returns the Hessian block for each patch. */
   const EigenPool<Matrix6<T>>& G_Bp_pool() const { return G_Bp_pool_; }
@@ -71,7 +75,7 @@ class PatchConstraintsDataPool {
 
   // Data per patch.
   std::vector<T> cost_pool_;
-  EigenPool<Matrix6<T>> G_Bp_pool_;
+  EigenPool<Matrix6<T>> G_Bp_pool_;   // Constraint Hessian for patch p.
   EigenPool<Vector6<T>> Gamma_Bo_W_;  // Spatial impulse on body B.
 
   // Data per patch and per pair.

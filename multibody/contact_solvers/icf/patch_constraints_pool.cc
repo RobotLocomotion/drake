@@ -16,7 +16,7 @@ namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 
-// Computes the soft norm ‖x‖_ε = sqrt(xᵀx + ε²) - ε.
+// Computes the soft norm ‖x‖ₛ = sqrt(xᵀx + ε²) - ε.
 template <typename T>
 T SoftNorm(const Vector3<T>& x, const T& eps) {
   using std::sqrt;
@@ -35,8 +35,14 @@ Matrix3<T> Skew(const Vector3<T>& p) {
   return S;
 }
 
-// Returns ϕ(p)ᵀ⋅F, where ϕ(p) = [-pₓ; 𝕀₃]. Used for shifting a spatial force F
-// by position p.
+// Given spatial force F_Bo applied at B and the relative position p_AB of B
+// from A, computes the spatial force F_Ao shifted to A. Mathematically, F_Ao =
+// ϕ(p_AB)ᵀ⋅F_Bo, where ϕ(p) = [-pₓ; 𝕀₃]. All quantities must be expressed in
+// the same common frame.
+//
+// @param F The spatial force F_Bo.
+// @param p The relative position p_AB.
+// @returns The shifted spatial force F_Ao.
 template <typename T>
 Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
   const auto t = F.template head<3>();
@@ -47,11 +53,16 @@ Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
   return result;
 }
 
-// Returns ϕ(p)ᵀ⋅G⋅ϕ(p), where ϕ(p) = [-pₓ; 𝕀₃]. This is useful adding the
-// Hessian contribution from a contact pair (Gₖ) to the contribution from a
-// whole patch (Gₚ), e.g., Gₚ += ϕ(p)ᵀ⋅Gₖ⋅ϕ(p).
+// Shifts a second-order tensor G_Bo computed about B to tensor G_Ao computed
+// about A, given the relative position p_AB of B from A. Mathematically, G_Ao =
+// ϕ(p_AB)ᵀ⋅G_Bo⋅ϕ(p_AB), where ϕ(p) = [-pₓ; 𝕀₃]. All quantities must be
+// expressed in the same common frame.
+//
+// @param G The second-order tensor G_Bo.
+// @param p The relative position p_AB.
+// @returns The shifted second-order tensor G_Ao.
 template <typename T>
-Matrix6<T> ShiftPairToPatch(const Matrix3<T>& G, const Vector3<T>& p) {
+Matrix6<T> ShiftSecondOrderTensor(const Matrix3<T>& G, const Vector3<T>& p) {
   const Matrix3<T> px = Skew(p);
   const Matrix3<T> pxG = px * G;
   Matrix6<T> Gp;
@@ -101,17 +112,17 @@ Matrix6<T> ShiftFromTheLeft(const Matrix6<T>& G, const Vector3<T>& p) {
 /* Computes the normal impulse and derivative associated with an individual
 contact using a discrete Hunt-Crossley model. The normal impulse is
 
-  γₙ(vₙ) = δt⋅(k⋅(ϕ₀ − δt⋅vₙ))₊⋅(1 - d⋅vₙ)₊
+  γₙ(vₙ) = δt⋅(k⋅(-ϕ₀ − δt⋅vₙ))₊⋅(1 - d⋅vₙ)₊
          = δt⋅(fₑ₀ - δt⋅k⋅vₙ)₊⋅(1 - d⋅vₙ)₊,
 
 where (x)₊ = max(0, x), vₙ is the normal contact velocity, ϕ₀ is the initial
-signed distance, fₑ₀ = k⋅ϕ₀ is the previous-step elastic force contribution, k
+signed distance, fₑ₀ = -k⋅ϕ₀ is the previous-step elastic force contribution, k
 is the contact stiffness, d is the dissipation coefficient, and δt is the time
 step.
 
 @param dt Time step δt.
 @param vn Normal contact velocity vₙ.
-@param fe0 Previous time step normal force fₑ₀.
+@param fe0 Previous time step normal force elastic contribution fₑ₀.
 @param k Contact stiffness.
 @param d Dissipation coefficient.
 
@@ -148,7 +159,7 @@ define the constraint cost ℓ_c(v).
 
 @param dt Time step δt.
 @param vn Normal contact velocity vₙ.
-@param fe0 Previous time step normal force fₑ₀.
+@param fe0 Previous time step normal force elastic contribution fₑ₀.
 @param k Contact stiffness.
 @param d Dissipation coefficient.
 
@@ -162,14 +173,14 @@ T CalcDiscreteHuntCrossleyAntiderivative(const T& dt, const T& vn, const T& fe0,
   // The discrete impulse is modeled as:
   //   γₙ(v) = δt⋅(fₑ₀ - δt⋅k⋅v)₊⋅(1 - d⋅v)₊.
   // We see that γₙ(v) = 0 for v ≥ v̂, with v̂ = min(vx, vd) and:
-  //  vx = ϕ₀/δt = fₑ₀/(δt⋅k)
-  //  vd = 1/d
+  //  vx = -ϕ₀/δt = fₑ₀/(δt⋅k),
+  //  vd = 1/d.
   // Then for v < v̂, γₙ(v) is positive and we can verify that:
   //   N⁺(v) = δt⋅[v⋅(fₑ₀ + 1/2⋅Δf)-d⋅v²/2⋅(fₑ₀ + 2/3⋅Δf)],
   // is its antiderivative with Δf = -δt⋅k⋅v.
   // Since γₙ(v) = 0 for v ≥ v̂, then N(v) must be constant for v ≥ v̂.
   // Therefore we define it as:
-  //   N(v) = N⁺(min(vn, v̂))
+  //   N(v) = N⁺(min(vn, v̂)).
 
   // We define the "dissipation" velocity vd at which the dissipation term
   // vanishes using a small tolerance so that vd goes to a very large number in
@@ -227,8 +238,8 @@ void PatchConstraintsPool<T>::Resize(std::span<const int> num_pairs_per_patch) {
   p_BC_W_.Resize(num_pairs, 3, 1);
   normal_W_.Resize(num_pairs, 3, 1);
   stiffness_.resize(num_pairs);
+  fe0_.resize(num_pairs);
   fn0_.resize(num_pairs);
-  n0_.resize(num_pairs);
   net_friction_.resize(num_pairs);
 
   // Start indexes for each patch.
@@ -280,7 +291,7 @@ template <typename T>
 void PatchConstraintsPool<T>::SetPair(const int patch_index,
                                       const int pair_index,
                                       const Vector3<T>& p_BoC_W,
-                                      const Vector3<T>& normal_W, const T& fn0,
+                                      const Vector3<T>& normal_W, const T& fe0,
                                       const T& stiffness) {
   using std::max;
   DRAKE_ASSERT(0 <= patch_index && patch_index < num_patches());
@@ -289,7 +300,7 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
 
   p_BC_W_[i] = p_BoC_W;
   normal_W_[i] = normal_W;
-  fn0_[i] = fn0;
+  fe0_[i] = fe0;
   stiffness_[i] = stiffness;
 
   // Pre-computed quantities.
@@ -310,15 +321,16 @@ void PatchConstraintsPool<T>::SetPair(const int patch_index,
     v_AcBc_W -= (v_WA + w_WA.cross(p_AC_W));
   }
 
-  // N.B. the normal component is n₀ = (δt fₙ₀))₊(1−dvₙ₀)₊, where
-  // (·)₊ = max(0, ·). However, model.time_step() may change between when the
-  // constraint is set and when the problem is solved. Thus we only store
-  // n₀ = (fₙ₀)₊(1−dvₙ₀)₊ here and scale by δt later in CalcData.
+  // N.B. the normal impulse is n₀ = (δt⋅fₑ₀))₊(1−dvₙ₀)₊, where (·)₊ = max(0,·).
+  // However, model.time_step() may change between when the constraint is set
+  // and when the problem is solved. Thus we only store the normal force fₙ₀ =
+  // (fₑ₀)₊(1−dvₙ₀)₊ here and compute the impulse n₀ = δt⋅fₙ₀ later in
+  // CalcData().
   const T& d = dissipation_[patch_index];
   const T vn0 = v_AcBc_W.dot(normal_W);
   const T damping = max(0.0, 1.0 - d * vn0);
-  const T n0 = max(0.0, fn0) * damping;
-  n0_[i] = n0;
+  const T fn0 = max(0.0, fe0) * damping;
+  fn0_[i] = fn0;
 
   // Coefficient of friction is determined based on previous velocity. This
   // allows us to consider a Streibeck-like curve while maintaining a convex
@@ -552,8 +564,8 @@ T PatchConstraintsPool<T>::CalcLaggedHuntCrossleyModel(
   const T& mu = net_friction_[pk];
   const T& d = dissipation_[p];
   const T& stiffness = stiffness_[pk];
-  const T& n0 = n0_[pk] * dt;
-  const T& fe0 = fn0_[pk];
+  const T& n0 = fn0_[pk] * dt;
+  const T& fe0 = fe0_[pk];
 
   // Regularization for the stiction tolerance
   const T sap_stiction_tolerance = mu * Rt_[p] * n0;
@@ -697,7 +709,7 @@ void PatchConstraintsPool<T>::CalcPatchQuantities(
       Gamma_Bo_W.template tail<3>() += gamma_Bc_W;
 
       // Accumulate onto the path Hessian Gp.
-      G_Bp += ShiftPairToPatch(Gk, p_BC_W);
+      G_Bp += ShiftSecondOrderTensor(Gk, p_BC_W);
     }
   }
 }

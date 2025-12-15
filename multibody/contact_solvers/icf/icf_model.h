@@ -142,8 +142,8 @@ class IcfModel {
 
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
-    return num_patch_constraints() + num_gain_constraints() +
-           num_limit_constraints() + num_coupler_constraints();
+    return num_coupler_constraints() + num_gain_constraints() +
+           num_limit_constraints() + num_patch_constraints();
   }
 
   /* Provides mutable access to the pool of all coupler constraints. */

@@ -189,9 +189,6 @@ T IcfModel<T>::CalcCostAlongLine(
   const T& b = search_direction.b;
   const T& c = search_direction.c;
 
-  EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
-  DRAKE_ASSERT(V_WB_alpha.size() == num_bodies_);
-
   VectorXView v_alpha = data.scratch().v_alpha[0];
   DRAKE_ASSERT(v_alpha.size() == num_velocities_);
   v_alpha.noalias() = data.v() + alpha * search_direction.w;
@@ -250,6 +247,9 @@ T IcfModel<T>::CalcCostAlongLine(
   {
     T constraint_dcost, constraint_d2cost;
 
+    EigenPool<Vector6<T>>& V_WB_alpha = data.scratch().V_WB_alpha;
+    DRAKE_ASSERT(V_WB_alpha.size() == num_bodies_);
+
     CalcBodySpatialVelocities(v_alpha, &V_WB_alpha);
     patch_constraints_pool_.CalcData(V_WB_alpha,
                                      &data.scratch().patch_constraints_data);
@@ -279,8 +279,7 @@ void IcfModel<T>::SetSparsityPattern() {
     sparsity[i].emplace_back(i);
   }
 
-  // Build off-diagonal entries in the sparsity pattern. Currently contact
-  // constraints are the only ones that can create off-diagonal entries.
+  // Build off-diagonal entries in the sparsity pattern.
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
 
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(

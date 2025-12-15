@@ -23,19 +23,32 @@ template <typename T>
 class IcfModel;
 
 /* A pool of contact constraints organized by patches. Each patch involves two
-bodies and one or more contact pairs.
+bodies A and B, with one or more contact pairs per patch. We can think of each
+patch as corresponding to a physical "contact surface" between the two bodies.
 
 Each constraint (patch) adds a cost term ℓ(v) to the overall ICF cost. The
-gradient of this cost term is ∇ℓ = -Jᵀγ, where J is the contact Jacobian and
-γ are contact impulses.
+gradient of this cost term is ∇ℓ = -Jᵀγ, where J = J_AbB is the Jacobian for the
+relative spatial velocity of body B with respect to the spatial velocity of body
+A shifted to B's center. That is, V_AbB_W = J⋅v, with v the generalized
+velocities of the model. With this Jacobian definition, impulses γ correspond to
+the spatial impulse on body B, expressed in the world frame.
 
-A unique feature of this constraint type is that all contacts are expressed
-between bodies in the world frame. This allows us to avoid expensive
-intermediate frame computations and reduce FLOP counts.
+This constraint type includes several optimizations for speeding up contact-rich
+simulations:
 
-Additionally, contact pairs between the same two bodies are grouped into a
-single patch constraint, limiting the number of constraints in the problem as a
-whole.
+  - All spatial quantities (relative contact velocities, normals, tangents,
+    spatial velocities, etc.) are expressed in the world frame. This allows us
+    to avoid expensive intermediate frame computations and reduce FLOP counts.
+
+  - Computations are optimized for the common case of a single clique (a moving
+    body interacts with an anchored body). The two-clique case (two moving
+    bodies) is handled by shifting single-body quantities, allowing reuse of
+    expensive-to-compute spatial quantities.
+
+  - Contact pairs between the same two bodies are grouped into a single patch
+    constraint. This improves memory locality by allowing the solver to process
+    an entire patch with a coherent access pattern, reducing cache misses and
+    allowing us to load per-body-pair data only once.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -69,7 +82,7 @@ class PatchConstraintsPool {
   }
 
   /* Returns the total number of pairs across all patches. */
-  int total_num_pairs() const { return ssize(fn0_); }
+  int total_num_pairs() const { return ssize(fe0_); }
 
   /* Returns the number of constraints in the pool. We introduce one constraint
   for each patch. */
@@ -99,7 +112,7 @@ class PatchConstraintsPool {
   @param patch_index The index of the patch within the pool.
   @param bodyA The index of body A (may be anchored).
   @param bodyB The index of body B (must be dynamic).
-  @param dissipation The dissipation coefficient for the patch.
+  @param dissipation The Hunt & Crossley dissipation coefficient for the patch.
   @param static_friction The static friction coefficient for the patch.
   @param dynamic_friction The dynamic friction coefficient for the patch.
   @param p_AB_W The position of body B relative to body A.
@@ -116,12 +129,16 @@ class PatchConstraintsPool {
   @param p_BoC_W The position of the contact point C relative to body B.
   @param normal_W Contact normal, from A into B by convention.
   @param fn0 The previous-step normal contact force (lagged for convexity.)
-  @param stiffness The contact stiffness for the pair.
+  @param stiffness Contact stiffness, in N/m. See [Masterjohn et al., 2022].
 
   @note As required by SetPatch(), body B is always dynamic (not anchored).
         Therefore we provide the position of the contact point relative to B
         and, if needed, the position relative to A is inferred from p_AB_W
-        provided to SetPatch(). */
+        provided to SetPatch().
+
+  [Masterjohn et al., 2022] Masterjohn, J., Guoy, D., Shepherd, J. and Castro,
+  A., 2022. Velocity level approximation of pressure field contact patches. IEEE
+  Robotics and Automation Letters, 7(4), pp.11593-11600. */
   void SetPair(const int patch_index, const int pair_index,
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
@@ -150,7 +167,8 @@ class PatchConstraintsPool {
   ℓ̃(α) = ℓ(v + α⋅w).
 
   @param patch_data The pre-computed patch constraint data at v + α⋅w.
-  @param U_WB Body spatial velocities associated with u = v + αw.
+  @param U_WB Body spatial velocity when the generalized velocities equal w.
+         I.e., U_WB = J⋅w.
   @param U_AbB_W_pool Scratch space for patch spatial velocities.
   @param[out] dcost the first derivative dℓ̃ /dα on output.
   @param[out] d2cost the second derivative d²ℓ̃ /dα² on output. */
@@ -200,7 +218,8 @@ class PatchConstraintsPool {
   // SAP regularization parameter σ. Each frictional contact is regularized by
   // εₛ = max(vₛ, μ⋅σ⋅wₜ⋅n₀), where vₛ is the stiction tolerance, μ is the
   // friction coefficient, wₜ is the Delassus operator approximation, and n₀ is
-  // the normal impulse from the previous time step.
+  // the normal impulse from the previous time step. See the ICF paper [Castro
+  // et al., 2025] for further details.
   double sigma_{1.0e-3};
 
   // Data per patch. Indexed by patch index p < num_patches().
@@ -220,13 +239,18 @@ class PatchConstraintsPool {
   std::vector<T> static_friction_;
   std::vector<T> dynamic_friction_;
 
+  // Starting index for each patch. Holds the global pair index of the first
+  // pair in each patch, of size num_patches().
+  std::vector<int> pair_data_start_;
+
   // Data per pair. Indexed by patch_pair_index(p, k).
-  std::vector<int> pair_data_start_;  // Starting index for each patch.
-  EigenPool<Vector3<T>> p_BC_W_;      // Position of contact point from body A.
-  EigenPool<Vector3<T>> normal_W_;    // Contact normals.
-  std::vector<T> stiffness_;          // Linear stiffness, N/m.
-  std::vector<T> fn0_;                // Previous time step normal force.
-  std::vector<T> n0_;                 // Previous time step impulse.
+  EigenPool<Vector3<T>> p_BC_W_;    // Position of contact point from body B.
+  EigenPool<Vector3<T>> normal_W_;  // Contact normals.
+  std::vector<T> stiffness_;        // Linear stiffness, N/m.
+  // Elastic component of the normal force at the previous step, in N.
+  std::vector<T> fe0_;
+  // Normal force (elastic and damping) at the previous step, in N.
+  std::vector<T> fn0_;
 
   // The net friction coefficient for each pair. Computed by interpolating
   // between static and dynamic coefficients based on the relative contact

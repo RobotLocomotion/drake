@@ -261,37 +261,44 @@ void AddPatchConstraints(IcfModel<T>* model) {
   const T dissipation = 50.0;
   const T stiffness = 1.0e6;
   const T friction = 0.5;
+
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
-  // Resize to hold four patches with one contact pair each.
+  // Resize to hold three patches with one contact pair each.
   const std::vector<int> num_pairs_per_patch = {1, 1, 1};
   patches.Resize(num_pairs_per_patch);
+
   // First patch is between two non-anchored bodies, with body A floating.
   {
     const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
     patches.SetPatch(0 /* patch index */, 2 /* body A */, 1 /* body B */,
                      dissipation, friction, friction, p_AB_W);
+
     const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
     patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
+
   // Second patch is between two non-anchored bodies, with body B floating.
   {
     const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
     patches.SetPatch(2 /* patch index */, 1 /* body A */, 2 /* body B */,
                      dissipation, friction, friction, p_AB_W);
+
     const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
     const Vector3<T> p_BC_W = -0.5 * p_AB_W;
     const T fn0 = 1.5;
     patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
                     fn0, stiffness);
   }
+
   // Third patch is between an anchored body (the world) and a dynamic body.
   {
     const Vector3<T> p_AB_W(0.0, 0.05, 0.0);
     patches.SetPatch(1 /* patch index */, 0 /* World */, 3 /* body B */,
                      dissipation, friction, friction, p_AB_W);
+
     const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
     const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
     const T fn0 = 1.5;
@@ -897,6 +904,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
 
   // Add gain constraints.
   std::vector<VectorX<AutoDiffXd>> gains = AddGainConstraints(&model);
+  DRAKE_DEMAND(ssize(gains) == 6);
   const VectorX<AutoDiffXd>& K0 = gains[0];
   const VectorX<AutoDiffXd>& u0 = gains[1];
   const VectorX<AutoDiffXd>& e0 = gains[2];
@@ -934,7 +942,7 @@ GTEST_TEST(IcfModel, GainConstraint) {
   VectorXd tau2_expected = -K2_value.cwiseProduct(v2_value) + u2_value;
 
   // For this test we verify some values are below, within and above effort
-  // limits.
+  // limits (+/- 0.9).
   EXPECT_GT(tau0_expected(0), 0.9);
   EXPECT_GT(tau0_expected(1), 0.9);
   EXPECT_GT(tau0_expected(2), 0.9);
@@ -992,10 +1000,11 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   EXPECT_EQ(data.num_velocities(), model.num_velocities());
   EXPECT_EQ(data.limit_constraints_data().num_constraints(), 0);
 
-  // At this point there should be no gain constraints.
+  // At this point there should be no limit constraints.
   EXPECT_EQ(model.num_limit_constraints(), 0);
+  EXPECT_EQ(model.num_constraints(), 0);
 
-  // Add limit constraints.
+  // Add a few limit constraints to the model.
   AddLimitConstraints(&model);
   EXPECT_EQ(model.num_limit_constraints(), 2);
   EXPECT_EQ(model.num_constraints(), 2);
@@ -1037,6 +1046,10 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   tau.segment<6>(0) = tau0;
   tau.segment<6>(12) = tau1;
 
+  // Verify that the impulses are non-zero, e.g., at least one limit is active.
+  EXPECT_TRUE(tau.norm() > 1e-6);
+
+  // Verify that the cost gradient matches the expected impulse.
   const VectorXd tau_value = math::ExtractValue(tau);
   EXPECT_TRUE(CompareMatrices(cost_gradient, -tau_value, kEpsilon,
                               MatrixCompareType::relative));

@@ -10,9 +10,9 @@ template <typename T>
 PatchConstraintsDataPool<T>::~PatchConstraintsDataPool() = default;
 
 template <typename T>
-void PatchConstraintsDataPool<T>::Resize(std::span<const int> patch_size) {
-  num_patches_ = ssize(patch_size);
-  num_pairs_ = std::accumulate(patch_size.begin(), patch_size.end(), 0);
+void PatchConstraintsDataPool<T>::Resize(std::span<const int> patch_sizes) {
+  num_patches_ = ssize(patch_sizes);
+  num_pairs_ = std::accumulate(patch_sizes.begin(), patch_sizes.end(), 0);
 
   // Data per patch.
   cost_pool_.resize(num_patches_);
