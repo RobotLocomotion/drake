@@ -24,6 +24,13 @@ bazel_dep(name = "rules_python", version = "1.7.0")  # Keep this in sync with cm
 bazel_dep(name = "rules_rust", version = "0.67.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
+single_version_override(
+    module_name = "rules_cc",
+    patches = [
+        "@drake//tools/workspace/rules_cc:patches/upstream/cc-as-gcc.patch",
+    ],
+)
+
 # Customize our toolchains.
 
 cc_configure = use_extension(
