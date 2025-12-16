@@ -57,6 +57,7 @@ def _generate_common_core_array_dispatch_array_list():
     Generates Common/Core/vtkArrayDispatchArrayList.h.
     """
     name = "common_core_array_dispatch_array_list"
+
     # This is hard-coded to use the default upstream options (e.g.,
     # VTK_DISPATCH_AOS_ARRAYS=ON, VTK_DISPATCH_SOA_ARRAYS=OFF, etc.).
     # We could parameterize this function with options if we ever need more.
@@ -254,6 +255,7 @@ def _generate_common_core_array_instantiations():
                 # See comment immediately above.
                 continue
             src = "Common/Core/{prefix}.cxx.in".format(prefix = prefix)
+
             # The CMakeLists.txt generates `*.cxx` files, but we don't want
             # Bazel to compile them so we use `*.inc` here.
             out = "Common/Core/{prefix}_{suffix}.inc".format(
@@ -305,6 +307,7 @@ def _generate_common_core_typed_arrays():
             in_hdr = "Common/Core/vtk{}TypedArray.h.in".format(backend)
             out_hdr = "Common/Core/{}.h".format(class_name)
             in_src = "Common/Core/vtk{}TypedArray.cxx.in".format(backend)
+
             # The CMakeLists.txt generates `*.cxx` files, but we don't want
             # Bazel to compile them so we use `*.inc` here.
             out_src = "Common/Core/{}.inc".format(class_name)
@@ -369,7 +372,7 @@ def _generate_bulk_instantiation_srcs(bulk_instantiation_srcs):
     for ctype in _VTK_NUMERIC_TYPES:
         src = "Common/Core/vtkArrayBulkInstantiate.cxx.in"
         out = "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(
-            ctype.replace(" ", "_")
+            ctype.replace(" ", "_"),
         )
         cmake_configure_files(
             name = "_genrule_bulk_instantiation_srcs_" + ctype,
