@@ -5,7 +5,7 @@ load(
 load("//tools/workspace:generate_file.bzl", "generate_file")
 
 # This list matches `vtk_numeric_types` in CMake/vtkTypeLists.cmake.
-_VTK_NUMERIC_TYPES = [
+_VTK_NUMERIC_TYPES = (
     "char",
     "double",
     "float",
@@ -20,7 +20,7 @@ _VTK_NUMERIC_TYPES = [
     "unsigned long long",
     "unsigned short",
     "vtkIdType",
-]
+)
 
 # This list matches `vtk_fixed_size_numeric_types` in CMake/vtkTypeLists.cmake.
 _VTK_FIXED_SIZE_NUMERIC_TYPES = (
@@ -76,11 +76,11 @@ _VTK_INSTANTIATION_TYPES = (
 
 def _generate_common_core_array_dispatch_array_list():
     """Mimics the vtkCreateArrayDispatchArrayList.cmake logic.
-    Generates an `*.h` file.
+    Generates Common/Core/vtkArrayDispatchArrayList.h.
     """
     name = "common_core_array_dispatch_array_list"
-
-    # This is hard-coded to the default upstream options (AOS yes; SOA no).
+    # This is hard-coded to use the default upstream options (e.g.,
+    # VTK_DISPATCH_AOS_ARRAYS=ON, VTK_DISPATCH_SOA_ARRAYS=OFF, etc.).
     # We could parameterize this function with options if we ever need more.
     content = """
 #pragma once
@@ -89,25 +89,41 @@ def _generate_common_core_array_dispatch_array_list():
 #include "vtkStructuredPointArray.h"
 namespace vtkArrayDispatch {
 VTK_ABI_NAMESPACE_BEGIN
-typedef vtkTypeList::Unique<
-  vtkTypeList::Create<
+using AOSArrays = vtkTypeList::Unique<vtkTypeList::Create<
 """ + "\n".join([
         "vtkAOSDataArrayTemplate<{}>,".format(ctype)
         for ctype in _VTK_NUMERIC_TYPES
     ])[:-1] + """
-  >
->::Result Arrays;
-typedef vtkTypeList::Unique<
-  vtkTypeList::Create<
-    vtkStructuredPointArray<double>
-  >
->::Result ReadOnlyArrays;
-typedef vtkTypeList::Unique<
-  vtkTypeList::Append<
-    Arrays,
-    ReadOnlyArrays
-  >::Result
->::Result AllArrays;
+>>::Result;
+using SOAArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using ScaledSOAArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using ExtraArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using Arrays = vtkTypeList::Append<
+  AOSArrays,
+  SOAArrays,
+  ScaledSOAArrays,
+  ExtraArrays
+>::Result;
+using AffineArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using ConstantArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using StdFunctionArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using StridedArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using StructuredPointArrays = vtkTypeList::Unique<vtkTypeList::Create<
+""" + "\n".join([
+        "vtkStructuredPointArray<{}>,".format(ctype)
+        for ctype in _VTK_NUMERIC_TYPES
+    ])[:-1] + """
+>>::Result;
+using ImplicitExtraArrays = vtkTypeList::Unique<vtkTypeList::Create<>>::Result;
+using ReadOnlyArrays = vtkTypeList::Append<
+  AffineArrays,
+  ConstantArrays,
+  StdFunctionArrays,
+  StridedArrays,
+  StructuredPointArrays,
+  ImplicitExtraArrays
+>::Result;
+using AllArrays = vtkTypeList::Append<Arrays, ReadOnlyArrays>::Result;
 VTK_ABI_NAMESPACE_END
 }
 """
@@ -130,7 +146,7 @@ def _ctype_to_vtk_camel_type(ctype):
 
 def _generate_common_core_type_list_macros():
     """Mimics the vtkCreateTypeListMacros.cmake logic.
-    Generates an `*.h` file.
+    Generates Common/Core/vtkTypeListMacros.h.
     """
     name = "common_core_type_list_macros"
     max = 99
