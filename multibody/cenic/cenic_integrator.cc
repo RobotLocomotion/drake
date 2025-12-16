@@ -159,6 +159,8 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
       has_actuation_forces ? &actuation_feedback_storage : nullptr;
   const IcfLinearFeedbackGains<T>* const external_feedback =
       has_external_forces ? &external_feedback_storage : nullptr;
+  // TODO(#12647) If either of the feedback models has a NaN, reject the step
+  // and try again.
 
   // Set up the convex ICF model ℓ(v; q₀, v₀, h) for the full step.
   //
