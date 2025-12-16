@@ -344,16 +344,20 @@ def _generate_common_core_typed_arrays(bulk_srcs):
     )
 
 def _generate_bulk_instantiation_srcs(bulk_srcs):
-    """Mimics the generation of instantiated sources in Common/Core/CMakeLists.
-    Generates a `.cxx` file for each primitive numeric C type which includes
-    the corresponding `.cxx` files in the given mapping of `bulk_srcs`.
+    """Mimics Common/Core/CMakeLists.txt codegen of bulk instantiation source
+    files Common/Core/vtkArrayBulkInstantiate_{suffix}.cxx. Search for
+    BULK_INSTANTIATION_SOURCES to find the relevant loop.
     """
+    all_outs = []
     for ctype in _VTK_NUMERIC_TYPES:
-        snake = ctype.replace(" ", "_")
+        src = "Common/Core/vtkArrayBulkInstantiate.cxx.in"
+        out = "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(
+            ctype.replace(" ", "_")
+        )
         cmake_configure_files(
-            name = "_genrule_bulk_srcs_" + snake,
-            srcs = ["Common/Core/vtkArrayBulkInstantiate.cxx.in"],
-            outs = ["Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(snake)],
+            name = "_genrule_bulk_srcs_" + ctype,
+            srcs = [src],
+            outs = [out],
             defines = [
                 "BULK_INSTANTIATION_SOURCES=" + "\n".join([
                     "#include \"{}\"".format(x)
@@ -362,17 +366,10 @@ def _generate_bulk_instantiation_srcs(bulk_srcs):
             ],
             strict = True,
         )
+        all_outs.append(out)
     native.filegroup(
         name = "common_core_bulk_instantiation_srcs",
-        srcs = [
-            "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(ctype.replace(" ", "_"))
-            for ctype in _VTK_NUMERIC_TYPES
-        ],
-        data = [
-            ":common_core_array_instantiations",
-            ":common_core_typed_arrays_srcs",
-            ":common_core_aos_type_arrays_srcs",
-        ],
+        srcs = all_outs,
     )
 
 def generate_common_core_sources():
