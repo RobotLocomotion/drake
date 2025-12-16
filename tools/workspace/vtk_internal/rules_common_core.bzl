@@ -173,7 +173,9 @@ def _generate_common_core_aos_typed_arrays():
         ]
         outs = [
             "Common/Core/{}Array.h".format(vtk_type),
-            "Common/Core/{}Array.cxx".format(vtk_type),
+            # The CMakeLists.txt generates `*.cxx` files, but we don't want
+            # Bazel to compile them so we use `*.inc` here.
+            "Common/Core/{}Array.inc".format(vtk_type),
         ]
         cmake_configure_files(
             name = "_common_core_aos_type_arrays_" + without_vtk_type_prefix,
@@ -303,7 +305,9 @@ def _generate_common_core_typed_arrays():
             in_hdr = "Common/Core/vtk{}TypedArray.h.in".format(backend)
             out_hdr = "Common/Core/{}.h".format(class_name)
             in_src = "Common/Core/vtk{}TypedArray.cxx.in".format(backend)
-            out_src = "Common/Core/{}.cxx".format(class_name)
+            # The CMakeLists.txt generates `*.cxx` files, but we don't want
+            # Bazel to compile them so we use `*.inc` here.
+            out_src = "Common/Core/{}.inc".format(class_name)
             defines = [
                 "CONCRETE_TYPE={}".format(vtk_type),
                 "VTK_TYPE_NAME={}".format(without_vtk_prefix),
