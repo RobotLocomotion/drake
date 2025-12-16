@@ -10,64 +10,6 @@ load("//tools/workspace:generate_file.bzl", "generate_file")
 # You can manually set this to True, to get some feedback during upgrades.
 _VERBOSE = False
 
-# This list matches `vtk_numeric_types` in CMake/vtkTypeLists.cmake.
-_VTK_NUMERIC_TYPES = [
-    "char",
-    "double",
-    "float",
-    "int",
-    "long",
-    "long long",
-    "short",
-    "signed char",
-    "unsigned char",
-    "unsigned int",
-    "unsigned long",
-    "unsigned long long",
-    "unsigned short",
-    "vtkIdType",
-]
-
-# This list matches `vtk_fixed_size_numeric_types` in CMake/vtkTypeLists.cmake.
-# Each item is a tuple of (vtk_type, preferred_ctype, fallback_ctype).
-#
-# The {preferred,fallback}_ctype vs matches Common/Core/vtkTypeArrays.cmake's
-# calls to `vtk_type_native` and `vtk_type_native_choice`.
-_VTK_FIXED_SIZE_NUMERIC_TYPES = [
-    ("vtkTypeFloat32", "float", None),
-    ("vtkTypeFloat64", "double", None),
-    ("vtkTypeInt8", "signed char", None),
-    ("vtkTypeInt16", "short", None),
-    ("vtkTypeInt32", "int", None),
-    ("vtkTypeInt64", "long", "long long"),
-    ("vtkTypeUInt8", "unsigned char", None),
-    ("vtkTypeUInt16", "unsigned short", None),
-    ("vtkTypeUInt32", "unsigned int", None),
-    ("vtkTypeUInt64", "unsigned long", "unsigned long long"),
-]
-
-# This list matches Common/Core/CMakeLists.txt near the comment "Order of this
-# list is important with bulk instantiation".
-_VTK_INSTANTIATION_TYPES = [
-    "vtkAffineImplicitBackendInstantiate",
-    "vtkCompositeImplicitBackendInstantiate",
-    "vtkConstantImplicitBackendInstantiate",
-    "vtkIndexedImplicitBackendInstantiate",
-    "vtkStridedImplicitBackendInstantiate",
-    "vtkStructuredPointBackendInstantiate",
-    "vtkAffineArrayInstantiate",
-    "vtkAOSDataArrayTemplateInstantiate",
-    "vtkCompositeArrayInstantiate",
-    "vtkConstantArrayInstantiate",
-    "vtkIndexedArrayInstantiate",
-    "vtkScaledSOADataArrayTemplateInstantiate",
-    "vtkStridedArrayInstantiate",
-    "vtkSOADataArrayTemplateInstantiate",
-    "vtkStdFunctionArrayInstantiate",
-    "vtkStructuredPointArrayInstantiate",
-    "vtkTypedDataArrayInstantiate",
-]
-
 def _bazelize_module_name(name):
     """Transforms e.g. `VTK::IOCore` => `VTK__IOCore` to make Bazel happy."""
     return name.replace(":", "_")
