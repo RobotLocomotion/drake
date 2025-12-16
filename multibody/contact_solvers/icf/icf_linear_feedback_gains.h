@@ -15,7 +15,7 @@ where K is non-negative and diagonal.
 @tparam_nonsymbolic_scalar */
 template <typename T>
 struct IcfLinearFeedbackGains {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfLinearFeedbackGains);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IcfLinearFeedbackGains);
   IcfLinearFeedbackGains();
   ~IcfLinearFeedbackGains();
 
