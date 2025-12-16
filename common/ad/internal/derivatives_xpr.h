@@ -57,5 +57,60 @@ class DerivativesConstXpr final : public internal::DerivativesConstXprBase {
                                int stride);
 };
 
+/** The return type for AutoDiff::derivatives() when the AutoDiff is mutable.
+
+The underlying type is `Eigen::Map<Eigen::VectorXd>` which includes all of the
+usual functions for element access and arithmetic.
+
+@note Unlike a typical Map, this class also provides the capability to resize()
+the underlying data as well as assign through from a vector of different size.
+
+@warning After resizing or assigning to this object, `this` is no longer valid.
+Always use those functions' return value as the ongoing means of access. */
+class DerivativesMutableXpr final : public Eigen::Map<Eigen::VectorXd> {
+ public:
+  /** This class is copyable and copy-assignable. */
+  DerivativesMutableXpr(const DerivativesMutableXpr&) = default;
+  // N.B. `operator=(const DerivativesMutableXpr&)` is subsumbed by the
+  // templated assignment operator, below.
+
+  /** Sets the AutoDiff::derivatives() to a new value and returns a new Xpr.
+  @warning After calling this object, `this` is no longer valid. Always use the
+  return value as the ongoing means of access, or call AutoDiff::derivatives()
+  again to obtain a new reference. */
+  template <typename Derived>
+  DerivativesMutableXpr operator=(const DenseBase<Derived>& other) {
+    return SetFrom(other);
+  }
+
+  /** Like MatrixBase::resize(), discards any existing data and resizes the
+  derivatives vector.
+  @warning After calling this object, `this` is no longer valid. Always use the
+  return value as the ongoing means of access.
+  @pre rows >= 0
+  @throws std::exception when cols != 1 */
+  DerivativesMutableXpr resize(Eigen::Index rows, Eigen::Index cols = 1);
+
+  /** Like MatrixBase::conservativeResize(), changes the size() of this while
+  keeping existing data intact. New values are filled with zeros.
+  @warning After calling this object, `this` is no longer valid. Always use the
+  return value as the ongoing means of access.
+  @pre rows >= 0
+  @throws std::exception when cols != 1 */
+  DerivativesMutableXpr conservativeResize(Eigen::Index rows,
+                                           Eigen::Index cols = 1);
+
+ private:
+  // We can only be constructed by class Partials.
+  friend internal::Partials;
+  explicit DerivativesMutableXpr(internal::Partials* backrefrence, double* data,
+                                 int size);
+
+  // Implementation of operator=.
+  DerivativesMutableXpr SetFrom(const Eigen::Ref<const Eigen::VectorXd>& other);
+
+  internal::Partials* backreference_{};
+};
+
 }  // namespace ad
 }  // namespace drake
