@@ -280,7 +280,7 @@ TEST_F(PartialsTest, AddScaledEquivalenceToEigen) {
       Twins result(*this);
       if (prescale) {
         // Force the partials into canonical form.
-        result.partials.GetRawStorageMutable();
+        result.partials.MakeMutableXpr();
       }
       result.partials.AddScaled(scale, other.partials);
       result.twin.noalias() += scale * other.twin;
@@ -393,37 +393,37 @@ TEST_F(PartialsTest, AddScaledDifferentSizes) {
 
 TEST_F(PartialsTest, MutableAssignmentFromDefaultCtor) {
   Partials dut;
-  EXPECT_EQ(dut.GetRawStorageMutable().size(), 0);
+  EXPECT_EQ(dut.make_const_xpr().size(), 0);
 
-  dut.GetRawStorageMutable() = Vector4d::Unit(3);
+  dut.MakeMutableXpr() = Vector4d::Unit(3);
   EXPECT_EQ(dut.size(), 4);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
 
-  dut.GetRawStorageMutable().resize(1);
+  dut.MakeMutableXpr().resize(1);
   EXPECT_EQ(dut.size(), 1);
 }
 
 TEST_F(PartialsTest, MutableAssignmentFromUnitCtor) {
   Partials dut{2, 1};
-  EXPECT_TRUE(CompareMatrices(dut.GetRawStorageMutable(), Vector2d::Unit(1)));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d::Unit(1)));
 
-  dut.GetRawStorageMutable() = Vector4d::Unit(3);
+  dut.MakeMutableXpr() = Vector4d::Unit(3);
   EXPECT_EQ(dut.size(), 4);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
 
-  dut.GetRawStorageMutable().resize(1);
+  dut.MakeMutableXpr().resize(1);
   EXPECT_EQ(dut.size(), 1);
 }
 
 TEST_F(PartialsTest, MutableAssignmentFromFullCtor) {
   Partials dut{Vector2d{1.0, 2.0}};
-  EXPECT_TRUE(CompareMatrices(dut.GetRawStorageMutable(), Vector2d{1.0, 2.0}));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d{1.0, 2.0}));
 
-  dut.GetRawStorageMutable() = Vector4d::Unit(3);
+  dut.MakeMutableXpr() = Vector4d::Unit(3);
   EXPECT_EQ(dut.size(), 4);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
 
-  dut.GetRawStorageMutable().resize(1);
+  dut.MakeMutableXpr().resize(1);
   EXPECT_EQ(dut.size(), 1);
 }
 
