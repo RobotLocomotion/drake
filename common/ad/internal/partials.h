@@ -8,6 +8,59 @@ namespace drake {
 namespace ad {
 namespace internal {
 
+/* Heap storage for an array of doubles, for use by the Partials class later in
+this file. The storage can be empty (null).
+
+Note that this class is not directly unit tested; instead, it's test coverage
+comes from partial_test indirectly. */
+class StorageVec {
+ public:
+  /* Allocates new storage of the given size, but does not initialize it.
+  If the size is zero, the storage will be empty (null). */
+  static StorageVec Allocate(int size);
+
+  /* Creates empty (null) storage. */
+  StorageVec() = default;
+
+  /* Steals the storage from `other`. */
+  StorageVec(StorageVec&& other) noexcept {
+    size_ = other.size_;
+    data_ = other.data_;
+    other.size_ = 0;
+    other.data_ = nullptr;
+  }
+
+  /* Steals the storage from `other`. */
+  StorageVec& operator=(StorageVec&& other) noexcept {
+    if (this != &other) {
+      size_ = other.size_;
+      data_ = other.data_;
+      other.size_ = 0;
+      other.data_ = nullptr;
+    }
+    return *this;
+  }
+
+  /* Copies the storage from `other`. */
+  StorageVec(const StorageVec& other) noexcept;
+
+  /* Copies the storage from `other`. */
+  StorageVec& operator=(const StorageVec& other) noexcept;
+
+  ~StorageVec();
+
+  /* Returns the size. */
+  int size() const { return size_; }
+
+  /* Returns the double array storage (or null, when empty). */
+  const double* data() const { return data_; }
+  double* mutable_data() { return data_; }
+
+ private:
+  int size_{0};
+  double* data_{nullptr};
+};
+
 /* A vector of partial derivatives, optimized for use with Drake's AutoDiff.
 
 Partials are dynamically sized, and can have size() == 0.
@@ -82,12 +135,30 @@ class Partials {
   /* Returns an Eigen-compatible view into this vector. */
   ad::DerivativesConstXpr make_const_xpr() const;
 
-  /* Returns the underlying storage vector (mutable). This may involve O(size)
-  multiplications. */
-  Eigen::VectorXd& GetRawStorageMutable();
+  /* Returns an Eigen-compatible mutable view into this vector, including
+  resizing. This runs in linear time O(size). */
+  ad::DerivativesMutableXpr MakeMutableXpr();
 
  private:
   void ThrowIfDifferentSize(const Partials& other);
+
+  /* Returns a const Eigen view of the current storage (i.e., without scaling
+  by the `coeff_`). */
+  Eigen::Map<const Eigen::VectorXd> storage_view() const {
+    return Eigen::Map<const Eigen::VectorXd>(storage_.data(), storage_.size());
+  }
+
+  /* Returns a mutable Eigen view of the current storage (i.e., without scaling
+  by the `coeff_`). */
+  Eigen::Map<Eigen::VectorXd> mutable_storage_view() {
+    return Eigen::Map<Eigen::VectorXd>(storage_.mutable_data(),
+                                       storage_.size());
+  }
+
+  // Our MutableXpr type is allowed to set us via a backreference.
+  friend ad::DerivativesMutableXpr;
+  ad::DerivativesMutableXpr SetFrom(
+      const Eigen::Ref<const Eigen::VectorXd>& other);
 
   // Our effective value is `coeff_ * storage_`; we store them separately so
   // that re-scaling is fast (we can just scale the coeff).
@@ -100,7 +171,7 @@ class Partials {
   // contract of "any zero values will remain zero, even if the factor is ±∞ or
   // NaN" per our class overview.
   double coeff_{0.0};
-  Eigen::VectorXd storage_;
+  StorageVec storage_;
 };
 
 }  // namespace internal
