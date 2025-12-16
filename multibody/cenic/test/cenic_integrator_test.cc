@@ -1,6 +1,5 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
@@ -10,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -24,672 +24,532 @@
 
 namespace drake {
 namespace multibody {
+namespace cenic {
+namespace {
 
-using contact_solvers::icf::IcfSolverParameters;
-using contact_solvers::icf::internal::IcfBuilder;
-using contact_solvers::icf::internal::IcfData;
-using contact_solvers::icf::internal::IcfLinearFeedbackGains;
-using contact_solvers::icf::internal::IcfModel;
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+
+using common::MaybePauseForUser;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using geometry::Meshcat;
+using geometry::SceneGraph;
 using systems::ConstantVectorSource;
 using systems::Context;
+using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::FirstOrderTaylorApproximation;
 using systems::Simulator;
 using systems::SimulatorConfig;
 using systems::SpringMassSystem;
 using systems::controllers::PidController;
-using visualization::AddDefaultVisualization;
+using visualization::ApplyVisualizationConfig;
+using visualization::VisualizationConfig;
 
-// MJCF model of a simple double pendulum
-const char double_pendulum_xml[] = R"""(
-<?xml version="1.0"?>
-<mujoco model="double_pendulum">
-<worldbody>
-  <body>
-  <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="0.001"/>
-  <geom type="capsule" size="0.01 0.1"/>
-  <body>
-    <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="0.001"/>
-    <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
-  </body>
-  </body>
-</worldbody>
-</mujoco>
-)""";
+class DoublePendulum : public testing::Test {
+ public:
+  DoublePendulum() {
+    meshcat_ = std::make_shared<Meshcat>();
+    builder_ = std::make_unique<DiagramBuilder<double>>();
+    std::tie(plant_, scene_graph_) =
+        AddMultibodyPlantSceneGraph(builder_.get(), 0.0);
+    Parser(plant_, scene_graph_).AddModelsFromString(xml_, "xml");
+  }
 
-// MJCF model of an actuated double pendulum
-const char actuated_pendulum_xml[] = R"""(
-<?xml version="1.0"?>
-<mujoco model="robot">
-  <worldbody>
-    <body>
-      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
-      <geom type="capsule" size="0.01 0.1"/>
-      <body>
-        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1"/>
-        <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
-      </body>
-    </body>
-  </worldbody>
-  <actuator>
-    <motor joint="joint1" ctrlrange="-2 2"/>
-    <motor joint="joint2" ctrlrange="-3 3"/>
-  </actuator>
-</mujoco>
-)""";
+  /* Creates the system diagram and sets initial conditions. */
+  Context<double>& Finalize() {
+    plant_->Finalize();
 
-// MJCF of a simple pendulum with joint limits
-const char limited_pendulum_xml[] = R"""(
-<?xml version="1.0"?>
-<mujoco model="robot">
-  <worldbody>
-    <body>
-      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1" range="10 90"/>
-      <geom type="capsule" size="0.01 0.1"/>
-    </body>
-  </worldbody>
-</mujoco>
-)""";
+    VisualizationConfig vis_config;
+    // Don't create visualizer events that interfere with the integrator's step
+    // size selection.
+    vis_config.publish_period = 1e9;
+    ApplyVisualizationConfig(vis_config, builder_.get(), nullptr, plant_,
+                             scene_graph_, meshcat_);
 
-// MJCF of a double pendulum with actuation only on joint2.
-const char joint2_actuation_pendulum_xml[] = R"""(
-<?xml version="1.0"?>
-<mujoco model="robot">
-  <worldbody>
-    <body>
-      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
-      <geom type="capsule" size="0.01 0.1"/>
-      <body>
-        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1"/>
-        <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
-      </body>
-    </body>
-  </worldbody>
-  <actuator>
-    <motor joint="joint2" ctrlrange="-3 3"/>
-  </actuator>
-</mujoco>
-)""";
+    diagram_ = builder_->Build();
+    context_ = diagram_->CreateDefaultContext();
+    Context<double>& plant_context =
+        plant_->GetMyMutableContextFromRoot(context_.get());
+    plant_->SetPositions(&plant_context, Eigen::Vector2d(M_PI / 4, M_PI / 2));
+    plant_->SetVelocities(&plant_context, Eigen::Vector2d(0.1, 0.2));
+    return plant_context;
+  }
 
-// MJCF of a double pendulum with a quaternion floating base. Used to test
-// non-SPD Hessian issues.
-const char floating_double_pendulum_xml[] = R"""(
-<?xml version="1.0"?>
-<mujoco model="robot">
-  <worldbody>
-    <geom name="floor" type="plane" pos="0 0 0" size="5 5 0.1" rgba="0.8 0.9 0.8 1"/>
-    <body name="link1" pos="0 0 1.0">
-      <joint name="joint1" type="free"/>
-      <geom name="geom1" type="capsule" size="0.1 0.5" pos="0 0 0" rgba="0.9 0.1 0.1 1"/>
-      <body name="link2" pos="0 0 0.5">
-        <joint name="joint2" type="hinge" axis="1 0 0" range="-90 90" damping="1"/>
-        <geom name="geom2" type="capsule" size="0.1 0.5" pos="0 0.0 0.5" rgba="0.1 0.1 0.9 1"/>
-      </body>
-    </body>
-  </worldbody>
-</mujoco>
-)""";
+ protected:
+  std::string xml_ = R"""(
+      <?xml version="1.0"?>
+      <mujoco model="double_pendulum">
+      <worldbody>
+        <body>
+        <joint type="hinge" name="joint1" axis="0 1 0" pos="0 0 0.1" damping="0.001"/>
+        <geom type="capsule" size="0.01 0.1"/>
+        <body>
+          <joint type="hinge" name="joint2" axis="0 1 0" pos="0 0 -0.1" damping="0.001"/>
+          <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
+        </body>
+        </body>
+      </worldbody>
+      </mujoco>
+      )""";
+  std::unique_ptr<DiagramBuilder<double>> builder_;
+  MultibodyPlant<double>* plant_;
+  SceneGraph<double>* scene_graph_;
+  std::unique_ptr<Diagram<double>> diagram_;
+  std::unique_ptr<Context<double>> context_;
+  std::shared_ptr<Meshcat> meshcat_;
+};
 
-GTEST_TEST(CenicTest, TestConstruction) {
-  // Create a simple system
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph).AddModelsFromString(double_pendulum_xml, "xml");
-  plant.Finalize();
-  auto diagram = builder.Build();
-  auto context = diagram->CreateDefaultContext();
+/* Checks that a double pendulum simulation in fixed-step mode matches the
+discrete solver. */
+TEST_F(DoublePendulum, FixedStep) {
+  const double time_step = 1e-2;
+  const double simulation_time = 0.5;
+  Context<double>& plant_context = Finalize();
+  const VectorXd x0 = plant_->GetPositionsAndVelocities(plant_context);
 
-  // Set up the integrator.
-  CenicIntegrator<double> integrator(*diagram, context.get());
-  integrator.set_maximum_step_size(0.01);
-  integrator.Initialize();
-}
-
-GTEST_TEST(CenicTest, TestStep) {
-  // TODO(vincekurtz): update this test to include joint damping
-  // Create a simple system
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph).AddModelsFromString(double_pendulum_xml, "xml");
-  plant.Finalize();
-  auto diagram = builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  Context<double>& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
-
-  // Set up the integrator
-  CenicIntegrator<double> integrator(*diagram, diagram_context.get());
-  integrator.set_maximum_step_size(0.01);
-  integrator.set_fixed_step_mode(true);
-  integrator.Initialize();
-
-  // Set initial conditions
-  VectorXd q0(2);
-  VectorXd v0(2);
-  q0 << 0.1, 0.2;
-  v0 << 0.3, 0.4;
-  plant.SetPositions(&plant_context, q0);
-  plant.SetVelocities(&plant_context, v0);
-
-  // Perform a step
-  const double dt = 0.01;
-  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(dt));
-  EXPECT_NEAR(plant_context.get_time(), dt,
-              std::numeric_limits<double>::epsilon());
-
-  // Discrete-time reference
-  MultibodyPlant<double> reference_plant(dt);
-  Parser(&reference_plant).AddModelsFromString(double_pendulum_xml, "xml");
-  reference_plant.Finalize();
-  auto reference_context = reference_plant.CreateDefaultContext();
-  reference_plant.SetPositions(reference_context.get(), q0);
-  reference_plant.SetVelocities(reference_context.get(), v0);
-
-  Simulator<double> simulator(reference_plant, std::move(reference_context));
-  simulator.Initialize();
-  simulator.AdvanceTo(dt);
-  EXPECT_NEAR(simulator.get_context().get_time(), dt,
-              std::numeric_limits<double>::epsilon());
-
-  const VectorXd& q_ref = reference_plant.GetPositions(simulator.get_context());
-  const VectorXd& q = plant.GetPositions(plant_context);
-  const double kTol = std::sqrt(std::numeric_limits<double>::epsilon());
-
-  EXPECT_TRUE(CompareMatrices(q, q_ref, kTol, MatrixCompareType::relative));
-}
-
-/* A single free body spins away with a massive angular velocity. The quaternion
-portion of the state should remain normalized. */
-GTEST_TEST(CenicTest, TestQuaternions) {
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-
-  // Add a free body with a quaternion state.
-  SpatialInertia<double> M_BBcm =
-      SpatialInertia<double>::SolidSphereWithMass(0.1, 0.1);
-  plant.AddRigidBody("Ball", M_BBcm);
-  plant.Finalize();
-  auto diagram = builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  Context<double>& plant_context =
-      plant.GetMyMutableContextFromRoot(diagram_context.get());
-
-  // Set initial velocity to be spinning fast
-  VectorXd v0(6);
-  v0 << 1e3, 2e3, 3e3, 0, 0, 0;
-  plant.SetVelocities(&plant_context, v0);
-  fmt::print("Initial velocity: {}\n", fmt_eigen(v0.transpose()));
-
-  VectorXd q0(7);
-  q0 << 0.707, 0.707, 0, 0, 0, 0, 0;
-  plant.SetPositions(&plant_context, q0);
-
-  // Set up the integrator
-  Simulator<double> simulator(*diagram, std::move(diagram_context));
+  // Simulate with the integrator in fixed-step mode
+  Simulator<double> simulator(*diagram_, std::move(context_));
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
-  integrator.set_maximum_step_size(0.1);  // fairly large dt
+  integrator.set_maximum_step_size(time_step);
   integrator.set_fixed_step_mode(true);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.AdvanceTo(simulation_time);
+  EXPECT_EQ(integrator.get_num_steps_taken(),
+            static_cast<int>(simulation_time / time_step));
 
-  // Simulate for a few seconds
-  simulator.Initialize();
-  simulator.AdvanceTo(5.0);
+  const VectorXd xT = plant_->GetPositionsAndVelocities(plant_context);
 
-  VectorXd v = plant.GetVelocities(plant_context);
-  VectorXd q = plant.GetPositions(plant_context);
-  fmt::print("Final velocity: {}\n", fmt_eigen(v.transpose()));
-  fmt::print("Final position: {}\n", fmt_eigen(q.transpose()));
+  // Simulate in discrete mode with the same time step.
+  MultibodyPlant<double> reference_plant(time_step);
+  Parser(&reference_plant).AddModelsFromString(xml_, "xml");
+  reference_plant.Finalize();
+  auto reference_context = reference_plant.CreateDefaultContext();
+  reference_plant.SetPositionsAndVelocities(reference_context.get(), x0);
+  Simulator<double> reference_simulator(reference_plant,
+                                        std::move(reference_context));
+  reference_simulator.Initialize();
+  reference_simulator.AdvanceTo(simulation_time);
 
-  VectorXd quat = q.head(4);
-  fmt::print("Quat norm: {}\n", quat.norm());
-  EXPECT_NEAR(quat.norm(), 1.0, 1e-6);
+  const VectorXd xT_reference = reference_plant.GetPositionsAndVelocities(
+      reference_simulator.get_context());
+
+  EXPECT_TRUE(CompareMatrices(xT, xT_reference, 100 * kEpsilon,
+                              MatrixCompareType::relative));
 }
 
-// Run tests with an actuated pendulum and an external (PID) controller
-GTEST_TEST(CenicTest, ActuatedPendulum) {
-  // Some options
-  const double h = 0.01;
-  VectorXd Kp(2), Kd(2), Ki(2);
-  Kp << 0.24, 0.19;
-  Kd << 0.35, 0.3;
-  Ki << 0.0, 0.0;
+/* Verifies that energy conservation for an undamped double pendulum is improved
+with tightened accuracy. */
+TEST_F(DoublePendulum, EnergyConservation) {
+  const double simulation_time = 2.0;
 
-  // Start meshcat
-  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
+  // Remove joint damping for this test.
+  for (multibody::JointIndex i : plant_->GetJointIndices()) {
+    multibody::Joint<double>& joint = plant_->get_mutable_joint(i);
+    joint.set_default_damping_vector(Eigen::VectorXd::Zero(1));
+  }
+  Context<double>& plant_context = Finalize();
 
-  // Set up the system diagram
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph)
-      .AddModelsFromString(actuated_pendulum_xml, "xml");
-  plant.Finalize();
+  // Record the initial system energy (kinetic + potential).
+  const VectorXd x0 = plant_->GetPositionsAndVelocities(plant_context);
+  const double e0 = plant_->CalcPotentialEnergy(plant_context) +
+                    plant_->CalcKineticEnergy(plant_context);
 
-  AddDefaultVisualization(&builder, meshcat);
+  // Simulate with error control at loose accuracy.
+  Simulator<double> simulator(*diagram_, std::move(context_));
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(false);
+  integrator.set_target_accuracy(1e-1);  // Very loose accuracy.
+  simulator.set_target_realtime_rate(0.0);
+  simulator.AdvanceTo(simulation_time);
 
-  VectorXd x_nom(4);
-  x_nom << M_PI_2, M_PI_2, 0.0, 0.0;
-  auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
+  const int num_steps_loose = integrator.get_num_steps_taken();
+  const double eT_loose = plant_->CalcPotentialEnergy(plant_context) +
+                          plant_->CalcKineticEnergy(plant_context);
 
-  // PD controller is an external system
-  auto ctrl = builder.AddSystem<PidController>(Kp, Ki, Kd);
+  // Simulate again with a tighter accuracy.
+  simulator.get_mutable_context().SetTime(0.0);
+  plant_->SetPositionsAndVelocities(&plant_context, x0);
+  integrator.set_target_accuracy(1e-5);  // Much tighter accuracy.
+  simulator.Initialize();
+  simulator.AdvanceTo(simulation_time);
 
-  builder.Connect(target_state->get_output_port(),
-                  ctrl->get_input_port_desired_state());
-  builder.Connect(plant.get_state_output_port(),
-                  ctrl->get_input_port_estimated_state());
-  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
+  const int num_steps_tight = integrator.get_num_steps_taken();
+  const double eT_tight = plant_->CalcPotentialEnergy(plant_context) +
+                          plant_->CalcKineticEnergy(plant_context);
 
-  auto diagram = builder.Build();
+  const double energy_error_tight = std::abs(eT_tight - e0) / e0;
+  const double energy_error_loose = std::abs(eT_loose - e0) / e0;
+  EXPECT_LT(energy_error_tight, energy_error_loose);
+  EXPECT_GT(num_steps_tight, num_steps_loose);
+}
 
-  // Set up the simulator
-  Simulator<double> simulator(*diagram);
+/* Simulates the double pendulum with PID actuation. */
+TEST_F(DoublePendulum, ExternalActuation) {
+  const double simulation_time = 10.0;
+
+  // Add joint actuators to the plant.
+  for (multibody::JointIndex i : plant_->GetJointIndices()) {
+    multibody::Joint<double>& joint = plant_->get_mutable_joint(i);
+    plant_->AddJointActuator(joint.name() + "_actuator", joint);
+  }
+  plant_->Finalize();
+  EXPECT_EQ(plant_->num_actuators(), 2);
+
+  // Set up a PID controller
+  const Eigen::Vector2d q_nom(-M_PI / 4, M_PI / 2);
+  const Eigen::Vector2d Kp(1.24, 0.79);
+  const Eigen::Vector2d Kd(0.15, 0.03);
+  const Eigen::Vector2d Ki(0.5, 0.4);
+  const Eigen::Vector4d x_nom(M_PI_2, -M_PI_2, 0.0, 0.0);
+
+  auto target_sender = builder_->AddSystem<ConstantVectorSource<double>>(x_nom);
+  auto pid_controller = builder_->AddSystem<PidController<double>>(Kp, Ki, Kd);
+
+  builder_->Connect(target_sender->get_output_port(),
+                    pid_controller->get_input_port_desired_state());
+  builder_->Connect(plant_->get_state_output_port(),
+                    pid_controller->get_input_port_estimated_state());
+  builder_->Connect(pid_controller->get_output_port(),
+                    plant_->get_actuation_input_port());
+
+  VisualizationConfig vis_config;
+  vis_config.publish_period = 1e9;
+  ApplyVisualizationConfig(vis_config, builder_.get(), nullptr, plant_,
+                           scene_graph_, meshcat_);
+
+  // Finalize the diagram and set initial conditions.
+  diagram_ = builder_->Build();
+  context_ = diagram_->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(context_.get());
+  plant_->SetPositions(&plant_context, Eigen::Vector2d(M_PI_4, M_PI_2));
+  plant_->SetVelocities(&plant_context, Eigen::Vector2d(0.1, 0.2));
+
+  // Run the simulation with error-control.
+  Simulator<double> simulator(*diagram_, std::move(context_));
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(false);
+  integrator.set_target_accuracy(1e-3);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.set_publish_every_time_step(true);
+
+  meshcat_->StartRecording();
+  simulator.AdvanceTo(simulation_time);
+  meshcat_->StopRecording();
+  meshcat_->PublishRecording();
+  MaybePauseForUser();
+
+  // We should get close-ish to the target state.
+  const VectorXd xT = plant_->GetPositionsAndVelocities(plant_context);
+  EXPECT_TRUE(CompareMatrices(xT, x_nom, 1e-2, MatrixCompareType::absolute));
+
+  // The PID controller's external state (due to integral terms) should have
+  // advanced.
+  const VectorXd z = simulator.get_context()
+                         .get_continuous_state()
+                         .get_misc_continuous_state()
+                         .CopyToVector();
+  EXPECT_TRUE(z(0) != 0.0 && z(1) != 0.0);
+}
+
+/* Checks integration of an external (non-plant) system with second-order (q, v)
+continuous state.*/
+TEST_F(DoublePendulum, PositionVelocityExternalSystem) {
+  auto spring_mass_system = builder_->AddSystem<SpringMassSystem>(100.0, 1.0);
+  Finalize();
+
+  const double q0 = 0.2;
+  const double v0 = 0.1;
+  Context<double>& spring_mass_context =
+      spring_mass_system->GetMyMutableContextFromRoot(context_.get());
+  spring_mass_system->set_position(&spring_mass_context, q0);
+  spring_mass_system->set_velocity(&spring_mass_context, v0);
+
+  Simulator<double> simulator(*diagram_, std::move(context_));
   SimulatorConfig config;
-  config.target_realtime_rate = 1.0;
+  config.target_realtime_rate = 0.0;
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
 
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
-  IcfSolverParameters solver_params;
-  solver_params.enable_hessian_reuse = true;
-  solver_params.print_solver_stats = false;
-  integrator.set_solver_parameters(solver_params);
+  integrator.set_maximum_step_size(0.001);
   integrator.set_fixed_step_mode(true);
-  integrator.set_maximum_step_size(h);
 
-  // Set an interesting initial state
-  VectorXd q0(2), v0(2);
-  q0 << 0.1, 0.2;
-  v0 << 0.3, 0.4;
-  Context<double>& plant_context =
-      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
-  plant.SetPositions(&plant_context, q0);
-  plant.SetVelocities(&plant_context, v0);
   simulator.Initialize();
+  simulator.AdvanceTo(0.1);
 
-  // Compute the expected linearization via autodiff.
-  const Context<double>& ctrl_context =
-      ctrl->GetMyContextFromRoot(simulator.get_context());
-  auto true_linearization = FirstOrderTaylorApproximation(
-      *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
-      ctrl->get_output_port().get_index());
-  const MatrixXd B = plant.MakeActuationMatrix();
-  const MatrixXd& D = true_linearization->D();
-  const MatrixXd Du = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
-  const VectorXd u0 = plant.get_actuation_input_port().Eval(plant_context) -
-                      Du * plant.GetVelocities(plant_context);
-  const VectorXd K_ref = -(B * Du).diagonal();
-  const VectorXd b_ref = B * u0;
+  const double qf = spring_mass_system->get_position(spring_mass_context);
+  const double vf = spring_mass_system->get_velocity(spring_mass_context);
+  double qf_expected;
+  double vf_expected;
+  spring_mass_system->GetClosedFormSolution(q0, v0, 0.1, &qf_expected,
+                                            &vf_expected);
 
-  // Compute the cost, gradient and Hessian analytically, and check that
-  // these match what we get from the ICF model.
-  //
-  // Cost: ℓ = 1/2 v'Mv − r v + h/2 ∑(kᵢvᵢ−bᵢ)²/kᵢ =
-  //         = 1/2 v'Mv − r v + h (1/2 v'Kv - b v) + h/2 b'K⁻¹b
-  // Gradient: dℓ/dv = Mv − r + h (Kv - b)
-  // Hessian: d²ℓ/dv² = M + h K
-  const int nv = plant.num_velocities();
-  const VectorXd v = v0;
-  MatrixXd M(nv, nv);
-  plant.CalcMassMatrix(plant_context, &M);
-  MultibodyForces<double> f_ext(plant);
-  plant.CalcForceElementsContribution(plant_context, &f_ext);
-  const VectorXd r =
-      -h * plant.CalcInverseDynamics(plant_context, -v0 / h, f_ext);
-
-  const VectorXd K_inv = K_ref.cwiseInverse();
-  const double l_ref =
-      0.5 * v.dot(M * v) - r.dot(v) + h * 0.5 * v.dot(K_ref.asDiagonal() * v) -
-      h * b_ref.dot(v) + 0.5 * h * b_ref.dot(K_inv.asDiagonal() * b_ref);
-  const VectorXd dl_ref = M * v - r + h * K_ref.asDiagonal() * v - h * b_ref;
-  const MatrixXd H_ref =
-      M + h * K_ref.asDiagonal() * MatrixXd::Identity(nv, nv);
-
-  IcfBuilder<double>& icf_builder = integrator.builder();
-  IcfModel<double> model;
-  IcfData<double> data;
-  IcfLinearFeedbackGains<double> actuation_feedback;
-  actuation_feedback.K = K_ref;
-  actuation_feedback.b = b_ref;
-  icf_builder.UpdateModel(plant_context, h, &actuation_feedback, nullptr,
-                          &model);
-  model.ResizeData(&data);
-  model.CalcData(v, &data);
-  const VectorXd dl = data.gradient();
-  const double l = data.cost();
-  const MatrixXd H = model.MakeHessian(data)->MakeDenseMatrix();
-
-  const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
-  EXPECT_TRUE(
-      CompareMatrices(dl, dl_ref, kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(
-      CompareMatrices(H, H_ref, kTolerance, MatrixCompareType::relative));
-  EXPECT_NEAR(l, l_ref, kTolerance);
-
-  // Simulate for a few seconds to make sure nothing breaks
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  simulator.set_target_realtime_rate(0.0);
-  simulator.AdvanceTo(2.0);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  EXPECT_NEAR(qf, qf_expected, 1e-2);
+  EXPECT_NEAR(vf, vf_expected, 1e-2);
 }
 
-// Test implicit joint effort limits
-GTEST_TEST(CenicTest, EffortLimits) {
-  // Set up the a system model with effort limits
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph)
-      .AddModelsFromString(actuated_pendulum_xml, "xml");
-  plant.Finalize();
-
-  // Connect a high-gain PD controller
-  VectorXd Kp(2), Kd(2), Ki(2);
-  Kp << 1e3, 1e3;
-  Kd << 0.1, 0.1;
-  Ki << 0.0, 0.0;
-  auto ctrl = builder.AddSystem<PidController>(Kp, Ki, Kd);
-
-  VectorXd x_nom(4);
-  x_nom << M_PI_2, M_PI_2, 0.0, 0.0;
-  auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
-
-  builder.Connect(target_state->get_output_port(),
-                  ctrl->get_input_port_desired_state());
-  builder.Connect(plant.get_state_output_port(),
-                  ctrl->get_input_port_estimated_state());
-  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
-
-  // Compile the system diagram
-  auto diagram = builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
-
-  // Get the actuator effort limits
-  VectorXd effort_limits(2);
-  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
-    const JointActuator<double>& actuator = plant.get_joint_actuator(a);
-    const int i = actuator.input_start();
-    const int n = actuator.num_inputs();
-    effort_limits.segment(i, n) =
-        VectorXd::Constant(n, actuator.effort_limit());
+/* Checks that the integrator can enforce joint limits. */
+TEST_F(DoublePendulum, JointLimits) {
+  // Add joint limits to the plant.
+  for (multibody::JointIndex i : plant_->GetJointIndices()) {
+    multibody::Joint<double>& joint = plant_->get_mutable_joint(i);
+    joint.set_position_limits(VectorXd::Constant(1, 0.2),
+                              VectorXd::Constant(1, 3.1));
   }
+  Context<double>& plant_context = Finalize();
 
-  // Set up the integrator
-  CenicIntegrator<double> integrator(*diagram, diagram_context.get());
+  // Run the simulation with error-control.
+  Simulator<double> simulator(*diagram_, std::move(context_));
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(false);
+  integrator.set_target_accuracy(1e-3);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.set_publish_every_time_step(true);
+
+  meshcat_->StartRecording();
+  simulator.AdvanceTo(1.0);
+  meshcat_->StopRecording();
+  meshcat_->PublishRecording();
+  MaybePauseForUser();
+
+  // The final configuration should be resting on the lower joint limits.
+  const VectorXd q = plant_->GetPositions(plant_context);
+  EXPECT_NEAR(q(0), 0.2, 1e-5);
+  EXPECT_NEAR(q(1), 0.2, 1e-5);
+}
+
+/* Checks that effort limits are enforced by the integrator. */
+TEST_F(DoublePendulum, EffortLimits) {
+  // Add joint actuators with effort limits to the plant.
+  for (multibody::JointIndex i : plant_->GetJointIndices()) {
+    multibody::Joint<double>& joint = plant_->get_mutable_joint(i);
+    plant_->AddJointActuator(joint.name() + "_actuator", joint, 0.1);
+    joint.set_default_damping_vector(Eigen::VectorXd::Zero(1));
+  }
+  Context<double>& plant_context = Finalize();
+  const VectorXd q0 = plant_->GetPositions(plant_context);
+  const VectorXd v0 = plant_->GetVelocities(plant_context);
+
+  // Apply a large constant torque to both joints.
+  plant_->get_actuation_input_port().FixValue(&plant_context,
+                                              VectorXd::Constant(2, 10.0));
+
+  // Set up the integrator.
+  CenicIntegrator<double> integrator(*diagram_, context_.get());
   integrator.set_maximum_step_size(0.1);
   integrator.set_fixed_step_mode(true);
   integrator.Initialize();
 
-  const VectorXd q0 = plant.GetPositions(plant_context);
-  const VectorXd v0 = plant.GetVelocities(plant_context);
-
-  // Compute some dynamics terms
+  // Compute some dynamics terms.
   MatrixXd M(2, 2);
   VectorXd k(2);
-  MultibodyForces<double> f_ext(plant);
-  plant.CalcMassMatrix(plant_context, &M);
-  plant.CalcForceElementsContribution(plant_context, &f_ext);
-  k = plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
+  MultibodyForces<double> f_ext(*plant_);
+  plant_->CalcMassMatrix(plant_context, &M);
+  plant_->CalcForceElementsContribution(plant_context, &f_ext);
+  k = plant_->CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
 
-  // Simulate for a step
+  // Simulate for a single step.
   const double h = 0.01;
   EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
 
-  // Compare requested and applied actuator forces
-  const VectorXd u_req = plant.get_actuation_input_port().Eval(plant_context);
-  EXPECT_TRUE(u_req[0] > effort_limits[0]);
-  EXPECT_TRUE(u_req[1] > effort_limits[1]);
+  // Requested actuation should exceed effort limits.
+  const VectorXd u_req = plant_->get_actuation_input_port().Eval(plant_context);
+  EXPECT_TRUE(u_req[0] > 0.1);
+  EXPECT_TRUE(u_req[1] > 0.1);
 
-  // TODO(vincekurtz): report u_app in plant.get_net_actuation_output_port()
-  const VectorXd v = plant.GetVelocities(plant_context);
+  // Applied actuation should be clamped to effort limits.
+  // TODO(vincekurtz): report u_app in plant.get_net_actuation_output_port().
+  const VectorXd v = plant_->GetVelocities(plant_context);
   const VectorXd u_app = M * (v - v0) / h + k;
 
-  const double kTol = std::sqrt(std::numeric_limits<double>::epsilon());
-  EXPECT_TRUE(u_app[0] <= effort_limits[0] + kTol);
-  EXPECT_TRUE(u_app[1] <= effort_limits[1] + kTol);
+  EXPECT_TRUE(u_app[0] <= 0.1 + 100 * kEpsilon);
+  EXPECT_TRUE(u_app[1] <= 0.1 + 100 * kEpsilon);
 }
 
-// Check that we can enforce joint limits
-GTEST_TEST(CenicTest, JointLimits) {
-  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
+/* Checks that coupler constraints are handled correctly by the integrator. */
+TEST_F(DoublePendulum, CoupledJoints) {
+  const double gear_ratio = 0.5;
+  plant_->AddCouplerConstraint(plant_->GetJointByName("joint1"),
+                               plant_->GetJointByName("joint2"), gear_ratio);
+  Context<double>& plant_context = Finalize();
+  const VectorXd q0 = plant_->GetPositions(plant_context);
 
-  // Set up the a system model with joint limits
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph).AddModelsFromString(limited_pendulum_xml, "xml");
-  plant.Finalize();
+  // Initial conditions should satisfy the coupler constraint.
+  EXPECT_NEAR(q0(0), gear_ratio * q0(1), 1e-5);
 
-  AddDefaultVisualization(&builder, meshcat);
+  // Run the simulation briefly.
+  Simulator<double> simulator(*diagram_, std::move(context_));
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(false);
+  integrator.set_target_accuracy(1e-3);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.set_publish_every_time_step(true);
+  meshcat_->StartRecording();
+  simulator.AdvanceTo(1.0);
+  meshcat_->StopRecording();
+  meshcat_->PublishRecording();
+  MaybePauseForUser();
 
-  // Compile the system diagram
-  auto diagram = builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+  // Verify that the constraint is satisfied at the end of the simulation.
+  const VectorXd q = plant_->GetPositions(plant_context);
+  EXPECT_NEAR(q(0), gear_ratio * q(1), 1e-5);
+}
 
-  plant.SetPositions(&plant_context, Vector1d(M_PI_2));
+class BallOnTable : public testing::Test {
+ public:
+  BallOnTable() {
+    meshcat_ = std::make_shared<Meshcat>();
+    builder_ = std::make_unique<DiagramBuilder<double>>();
+    std::tie(plant_, scene_graph_) =
+        AddMultibodyPlantSceneGraph(builder_.get(), 0.0);
+    Parser(plant_, scene_graph_).AddModelsFromString(xml_, "xml");
+  }
 
-  // Set up the simulator
-  Simulator<double> simulator(*diagram, std::move(diagram_context));
-  SimulatorConfig config;
-  config.target_realtime_rate = 1.0;
-  config.publish_every_time_step = true;
-  ApplySimulatorConfig(config, &simulator);
+  /* Creates the system diagram and sets initial conditions. */
+  Context<double>& Finalize() {
+    plant_->Finalize();
 
-  // Set the integrator
+    VisualizationConfig vis_config;
+    // Don't create visualizer events that interfere with the integrator's step
+    // size selection.
+    vis_config.publish_period = 1e9;
+    ApplyVisualizationConfig(vis_config, builder_.get(), nullptr, plant_,
+                             scene_graph_, meshcat_);
+
+    diagram_ = builder_->Build();
+    context_ = diagram_->CreateDefaultContext();
+    Context<double>& plant_context =
+        plant_->GetMyMutableContextFromRoot(context_.get());
+    return plant_context;
+  }
+
+ protected:
+  std::string xml_ = R"""(
+    <?xml version="1.0"?>
+    <mujoco model="robot">
+      <worldbody>
+        <geom name="floor" type="plane" pos="0 0 0" size="5 5 0.1" />
+        <body name="link1" pos="0 0 1.0">
+          <joint name="joint1" type="free"/>
+          <geom type="sphere" size="0.1" pos="0 0 0"/>
+        </body>
+      </worldbody>
+    </mujoco>
+    )""";
+  std::unique_ptr<DiagramBuilder<double>> builder_;
+  MultibodyPlant<double>* plant_;
+  SceneGraph<double>* scene_graph_;
+  std::unique_ptr<Diagram<double>> diagram_;
+  std::unique_ptr<Context<double>> context_;
+  std::shared_ptr<Meshcat> meshcat_;
+};
+
+/* Checks that a ball will fall and roll along the table. */
+TEST_F(BallOnTable, FreeFall) {
+  // Set a non-zero initial velocity.
+  Context<double>& plant_context = Finalize();
+  VectorXd v0(6);
+  v0 << 0.0, 0.0, 0.0, 0.8, 0.0, 0.0;
+  plant_->SetVelocities(&plant_context, v0);
+
+  // Run the simulation briefly.
+  Simulator<double> simulator(*diagram_, std::move(context_));
+  CenicIntegrator<double>& integrator =
+      simulator.reset_integrator<CenicIntegrator<double>>();
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(false);
+  integrator.set_target_accuracy(1e-3);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.set_publish_every_time_step(true);
+  meshcat_->StartRecording();
+  simulator.AdvanceTo(1.0);
+  meshcat_->StopRecording();
+  meshcat_->PublishRecording();
+  MaybePauseForUser();
+
+  // The ball should be on the table, and have moved in the +x direction.
+  const VectorXd q = plant_->GetPositions(plant_context);
+  EXPECT_TRUE(0.09 <= q[6] && q[6] <= 0.1);  // height
+  EXPECT_GT(q[4], 0.5);                      // x position
+
+  // Hitting the ground should have triggered at least one step size reduction.
+  EXPECT_GT(integrator.get_num_step_shrinkages_from_error_control(), 0);
+  EXPECT_EQ(integrator.get_num_step_shrinkages_from_substep_failures(), 0);
+}
+
+/* Checks that quaternions always remain normalized. */
+TEST_F(BallOnTable, QuaternionNormalization) {
+  // Set initial velocities that will yeet the ball into the distance while
+  // spinning wildly.
+  Context<double>& plant_context = Finalize();
+  VectorXd v0(6);
+  v0 << 100.0, -218.0, -82.0, 10.0, 20.0, 500.0;
+  plant_->SetVelocities(&plant_context, v0);
+
+  // Run the simulation briefly with fixed (large) steps.
+  Simulator<double> simulator(*diagram_, std::move(context_));
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
   integrator.set_maximum_step_size(0.1);
   integrator.set_fixed_step_mode(true);
-  simulator.Initialize();
-
-  // Simulate for a few seconds
-  const int fps = 64;
-  meshcat->StartRecording(fps);
-  simulator.AdvanceTo(0.5);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
-
-  // Check that the final joint position is right at the limit
-  const VectorXd q = plant.GetPositions(plant_context);
-  const double q_min =
-      plant.GetJointByName("joint1").position_lower_limits()[0];
-  EXPECT_NEAR(q[0], q_min, 1e-3);
-
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
-}
-
-GTEST_TEST(CenicTest, PendulumWithCoupler) {
-  // Some options
-  const double h = 0.01;
-  VectorXd Kp(1), Kd(1), Ki(1);
-  Kp << 1000.0;
-  Kd << 30.0;
-  Ki << 0.0;
-  // Projection matrix to control only states on Joint 2.
-  MatrixXd Px(2, 4);
-  // clang-format off
-  Px << 0, 1, 0, 0,
-        0, 0, 0, 1;
-  // clang-format on
-
-  // Start meshcat
-  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
-
-  // Set up the system diagram
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph)
-      .AddModelsFromString(joint2_actuation_pendulum_xml, "xml");
-  plant.AddCouplerConstraint(plant.GetJointByName("joint1"),
-                             plant.GetJointByName("joint2"), -2);
-  plant.Finalize();
-
-  AddDefaultVisualization(&builder, meshcat);
-
-  VectorXd x_nom(2);
-  x_nom << M_PI_2, 0.0;
-  auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
-
-  // PD controller is an external system
-  auto ctrl = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
-
-  builder.Connect(target_state->get_output_port(),
-                  ctrl->get_input_port_desired_state());
-  builder.Connect(plant.get_state_output_port(),
-                  ctrl->get_input_port_estimated_state());
-  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
-
-  auto diagram = builder.Build();
-
-  // Set up the simulator
-  Simulator<double> simulator(*diagram);
-  SimulatorConfig config;
-  config.target_realtime_rate = 1.0;
-  config.publish_every_time_step = true;
-  ApplySimulatorConfig(config, &simulator);
-
-  CenicIntegrator<double>& integrator =
-      simulator.reset_integrator<CenicIntegrator<double>>();
-  IcfSolverParameters solver_params;
-  solver_params.enable_hessian_reuse = false;
-  solver_params.print_solver_stats = false;
-  integrator.set_solver_parameters(solver_params);
-  integrator.set_fixed_step_mode(true);
-  integrator.set_maximum_step_size(h);
-
-  // Set an interesting initial state
-  VectorXd q0(2), v0(2);
-  q0 << 0.1, 0.2;
-  v0 << 0.3, 0.4;
-  Context<double>& plant_context =
-      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
-  plant.SetPositions(&plant_context, q0);
-  plant.SetVelocities(&plant_context, v0);
-  simulator.Initialize();
-
-  // Simulate for a few seconds to make sure nothing breaks
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  simulator.set_target_realtime_rate(0.5);
-  simulator.AdvanceTo(2.0);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
-
-  // Sanity check steady state verifies coupler constraint.
-  const VectorXd q = plant.GetPositions(plant_context);
-  const double g = q[0] + 2.0 * q[1];
-  EXPECT_NEAR(g, 0.0, 4e-6);
-}
-
-// Smoke test for letting a franka arm just flop down freely under gravity.
-GTEST_TEST(CenicTest, FrankaFreeFall) {
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  const std::string panda_url =
-      "package://drake_models/franka_description/urdf/panda_arm.urdf";
-  Parser(&plant).AddModelsFromUrl(panda_url);
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("panda_link0"));
-  plant.Finalize();
-  auto diagram = builder.Build();
-
-  Simulator<double> simulator(*diagram);
-  SimulatorConfig config;
-  config.target_realtime_rate = 1.0;
-  config.publish_every_time_step = true;
-  ApplySimulatorConfig(config, &simulator);
-
-  CenicIntegrator<double>& integrator =
-      simulator.reset_integrator<CenicIntegrator<double>>();
-  IcfSolverParameters solver_params;
-  solver_params.enable_hessian_reuse = true;
-  solver_params.print_solver_stats = false;
-  integrator.set_solver_parameters(solver_params);
-  integrator.set_fixed_step_mode(true);
-  integrator.set_maximum_step_size(0.01);
-
-  VectorXd q0 = VectorXd::Zero(plant.num_positions());
-  q0(1) = -M_PI_4;
-  q0(3) = -M_PI_2;
-  q0(5) = M_PI_4;
-  q0(6) = -M_PI_4;
-  Context<double>& plant_context =
-      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
-  plant.SetPositions(&plant_context, q0);
-  simulator.Initialize();
   simulator.set_target_realtime_rate(0.0);
-
+  simulator.set_publish_every_time_step(true);
+  meshcat_->StartRecording();
   simulator.AdvanceTo(1.0);
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  meshcat_->StopRecording();
+  meshcat_->PublishRecording();
+  MaybePauseForUser();
+
+  // Quaternions should remain normalized.
+  const VectorXd q = plant_->GetPositions(plant_context);
+  const Eigen::Vector4d quat = q.segment<4>(0);
+  const double quat_norm = quat.norm();
+  EXPECT_NEAR(quat_norm, 1.0, 10 * kEpsilon);
 }
 
-// Smoke test for a floating double pendulum, to test non-SPD Hessian issues.
-GTEST_TEST(CenicTest, FloatingDoublePendulum) {
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant).AddModelsFromString(floating_double_pendulum_xml, "xml");
-  plant.Finalize();
-  auto diagram = builder.Build();
+/* Verifies that we can simulate non-actuator external forces. */
+TEST_F(BallOnTable, ExternalForces) {
+  Context<double>& plant_context = Finalize();
+  const double initial_height = plant_->GetPositions(plant_context)[6];
 
-  Simulator<double> simulator(*diagram);
-  SimulatorConfig config;
-  config.target_realtime_rate = 0.0;
-  config.publish_every_time_step = true;
-  ApplySimulatorConfig(config, &simulator);
+  // Apply a constant upward force.
+  VectorXd f_ext = VectorXd::Zero(plant_->num_velocities());
+  f_ext[5] = 50.0;  // +z direction
+  plant_->get_applied_generalized_force_input_port().FixValue(&plant_context,
+                                                              f_ext);
 
+  // Run the simulation briefly with fixed (large) steps.
+  Simulator<double> simulator(*diagram_, std::move(context_));
   CenicIntegrator<double>& integrator =
       simulator.reset_integrator<CenicIntegrator<double>>();
-  integrator.set_fixed_step_mode(true);
-  integrator.set_maximum_step_size(0.01);
-
-  simulator.Initialize();
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(false);
+  integrator.set_target_accuracy(1e-3);
+  simulator.set_target_realtime_rate(0.0);
+  simulator.set_publish_every_time_step(true);
+  meshcat_->StartRecording();
   simulator.AdvanceTo(1.0);
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  meshcat_->StopRecording();
+  meshcat_->PublishRecording();
+  MaybePauseForUser();
+
+  // The ball should have moved upward, overcoming gravity.
+  const double final_height = plant_->GetPositions(plant_context)[6];
+  EXPECT_GT(final_height, initial_height);
 }
 
-// Smoke test with an external system that has q,v,z continuous state.
-// Prior tests only had z state.
-GTEST_TEST(CenicTest, PositionVelocityExternalSystem) {
-  DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant).AddModelsFromString(double_pendulum_xml, "xml");
-  plant.Finalize();
-  builder.AddSystem<SpringMassSystem>(100.0, 1.0);
-  auto diagram = builder.Build();
-
-  Simulator<double> simulator(*diagram);
-  SimulatorConfig config;
-  config.target_realtime_rate = 0.0;
-  config.publish_every_time_step = true;
-  ApplySimulatorConfig(config, &simulator);
-
-  CenicIntegrator<double>& integrator =
-      simulator.reset_integrator<CenicIntegrator<double>>();
-  integrator.set_maximum_step_size(0.01);
-
-  simulator.Initialize();
-  simulator.AdvanceTo(1.0);
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
-}
-
+}  // namespace
+}  // namespace cenic
 }  // namespace multibody
 }  // namespace drake
