@@ -6,13 +6,14 @@ title: Getting Help
 
 If you need help with Drake, please first review the documentation on this
 website for things such as [installation](/installation.html),
-the [C++ API](https://drake.mit.edu/doxygen_cxx/index.html), or
+the [C++ API](/doxygen_cxx/index.html), or
 [Using Drake from Python](/python_bindings.html).
 
 Please also briefly review
 [Drake's open and closed GitHub issues](https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue)
+and [discussions](https://github.com/RobotLocomotion/drake/discussions?discussions_q=)
 and [StackOverflow posts tagged for Drake](https://stackoverflow.com/questions/tagged/drake)
-to see if your issue has been encountered by someone else before.
+to see if your question has been encountered by someone else before.
 
 # Asking Your Question
 
@@ -20,13 +21,11 @@ If you know your question is a bug or feature request, please
 [post a GitHub issue](https://github.com/RobotLocomotion/drake/issues/new).
 
 Otherwise, if you are seeking troubleshooting advice or other assistance with
-how to apply Drake to specific purposes (e.g., tutorials or a brief example),
-then please
-[post a question on StackOverflow](https://stackoverflow.com/questions/ask?tags=drake)
-with the ``drake`` tag.
+how to apply Drake to specific purposes then please
+[open a new discussion](https://github.com/RobotLocomotion/drake/discussions/new/choose).
 
 If you are actively developing with Drake and may need more active discussions
-than what StackOverflow and GitHub may offer, consider asking for access to the
+than what GitHub may offer, consider asking for access to the
 Drake Developers Slack Channel. To do so, please email Russ Tedrake for access.
 Please note that this access may not always be readily granted. (Note: If you
 are a Drake developer wanting to invite someone, it will be faster to grant
