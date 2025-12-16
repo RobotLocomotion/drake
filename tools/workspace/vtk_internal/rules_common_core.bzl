@@ -52,28 +52,6 @@ _VTK_TYPE_NATIVE = {
     "vtkTypeFloat64": ("double", None),
 }
 
-# This list matches Common/Core/CMakeLists.txt near the comment "Order of this
-# list is important with bulk instantiation".
-_VTK_INSTANTIATION_TYPES = (
-    "vtkAffineImplicitBackendInstantiate",
-    "vtkCompositeImplicitBackendInstantiate",
-    "vtkConstantImplicitBackendInstantiate",
-    "vtkIndexedImplicitBackendInstantiate",
-    "vtkStridedImplicitBackendInstantiate",
-    "vtkStructuredPointBackendInstantiate",
-    "vtkAffineArrayInstantiate",
-    "vtkAOSDataArrayTemplateInstantiate",
-    "vtkCompositeArrayInstantiate",
-    "vtkConstantArrayInstantiate",
-    "vtkIndexedArrayInstantiate",
-    "vtkScaledSOADataArrayTemplateInstantiate",
-    "vtkStridedArrayInstantiate",
-    "vtkSOADataArrayTemplateInstantiate",
-    "vtkStdFunctionArrayInstantiate",
-    "vtkStructuredPointArrayInstantiate",
-    "vtkTypedDataArrayInstantiate",
-)
-
 def _generate_common_core_array_dispatch_array_list():
     """Mimics the vtkCreateArrayDispatchArrayList.cmake logic.
     Generates Common/Core/vtkArrayDispatchArrayList.h.
@@ -234,44 +212,66 @@ def _generate_common_core_aos_typed_arrays():
     return bulk_instantiation_srcs
 
 def _generate_common_core_array_instantiations():
-    """Mimics the instantiation_sources in Common/Core/CMakeLists.
-    Generates a pile of headers.
-    Returns the bulk_instantiation_srcs dictionary of generated files.
+    """Mimics the Common/Core/CMakeLists.txt logic for {...}Instantiate.cxx.in
+    codegen. Search for vtkAffineImplicitBackendInstantiate to find the relevant
+    loop. Returns the bulk_instantiation_srcs dictionary of generated files.
     """
     name = "common_core_array_instantiations"
-    result = []
+    all_outs = []
     bulk_instantiation_srcs = {}
     for ctype in _VTK_NUMERIC_TYPES:
-        snake = ctype.replace(" ", "_")
-        for stem in _VTK_INSTANTIATION_TYPES + (
+        if ctype == "vtkIdType":
+            continue
+        suffix = ctype.replace(" ", "_")
+        for prefix in (
+            # This list matches Common/Core/CMakeLists.txt near the comment
+            # "Order of this list is important with bulk instantiation".
+            "vtkAffineImplicitBackendInstantiate",
+            "vtkCompositeImplicitBackendInstantiate",
+            "vtkConstantImplicitBackendInstantiate",
+            "vtkIndexedImplicitBackendInstantiate",
+            "vtkStridedImplicitBackendInstantiate",
+            "vtkStructuredPointBackendInstantiate",
+            "vtkAffineArrayInstantiate",
+            "vtkAOSDataArrayTemplateInstantiate",
+            "vtkCompositeArrayInstantiate",
+            "vtkConstantArrayInstantiate",
+            "vtkIndexedArrayInstantiate",
+            "vtkScaledSOADataArrayTemplateInstantiate",
+            "vtkStridedArrayInstantiate",
+            "vtkSOADataArrayTemplateInstantiate",
+            "vtkStdFunctionArrayInstantiate",
+            "vtkStructuredPointArrayInstantiate",
+            "vtkTypedDataArrayInstantiate",
             # This one is only instantiated iff "long" is part of the ctype.
+            # This matches Common/Core/CMakeLists.txt near the comment "see
+            # comments in vtkGenericDataArray.h for explanation".
             "vtkGenericDataArrayValueRangeInstantiate",
         ):
-            if "Generic" in stem and "long" not in ctype:
-                # This matches Common/Core/CMakeLists.txt near the comment "see
-                # comments in vtkGenericDataArray.h for explanation".
+            if "Generic" in prefix and "long" not in ctype:
+                # See comment immediately above.
                 continue
-
+            src = "Common/Core/{prefix}.cxx.in".format(prefix = prefix)
             # The CMakeLists.txt generates `*.cxx` files, but we don't want
             # Bazel to compile them so we use `*.inc` here.
-            out = "Common/Core/{stem}_{snake}.inc".format(
-                stem = stem,
-                snake = snake,
+            out = "Common/Core/{prefix}_{suffix}.inc".format(
+                prefix = prefix,
+                suffix = suffix,
             )
             cmake_configure_files(
-                name = "_genrule_" + stem + "_" + snake,
-                srcs = ["Common/Core/" + stem + ".cxx.in"],
+                name = "_genrule_" + prefix + "_" + suffix,
+                srcs = [src],
                 outs = [out],
                 defines = [
                     "INSTANTIATION_VALUE_TYPE=" + ctype,
                 ],
                 strict = True,
             )
+            all_outs.append(out)
             bulk_instantiation_srcs.setdefault(ctype, []).append(out)
-            result.append(out)
     native.filegroup(
         name = name,
-        srcs = result,
+        srcs = all_outs,
     )
     return bulk_instantiation_srcs
 
@@ -374,7 +374,7 @@ def _generate_bulk_instantiation_srcs(bulk_instantiation_srcs):
             defines = [
                 "BULK_INSTANTIATION_SOURCES=" + "\n".join([
                     "#include \"{}\"".format(x)
-                    for x in bulk_instantiation_srcs[ctype]
+                    for x in bulk_instantiation_srcs.get(ctype, [])
                 ]),
             ],
             strict = True,
