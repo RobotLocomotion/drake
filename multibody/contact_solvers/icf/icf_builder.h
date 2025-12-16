@@ -40,7 +40,7 @@ class IcfBuilder {
          forces τ = -Kₑ⋅v + bₑ.
   @param model The IcfModel to update.
 
-  TODO(CENIC): make sure to test that UpdateModel limits heap allocations. */
+  TODO(#23912): make sure to test that UpdateModel limits heap allocations. */
   void UpdateModel(const systems::Context<T>& context, const T& time_step,
                    const IcfLinearFeedbackGains<T>* actuation_feedback,
                    const IcfLinearFeedbackGains<T>* external_feedback,
@@ -129,16 +129,14 @@ class IcfBuilder {
                                    bool has_external_forces,
                                    IcfModel<T>* model) const;
 
-  /* Returns the multibody plant used to build the model. */
-  const MultibodyPlant<T>& plant() const { return *plant_; }
-  const MultibodyPlant<T>* plant_{nullptr};
-
   /* Maps a tree index to a clique index. Cliques are trees with nv > 0. If a
   tree has nv == 0, its clique index is -1. */
   int tree_to_clique(int tree_index) const {
     DRAKE_ASSERT(tree_index >= 0 && tree_index < ssize(tree_to_clique_));
     return tree_to_clique_[tree_index];
   }
+
+  const MultibodyPlant<T>& plant_;
 
   // Model properties that do not change unless the system changes.
   std::map<geometry::GeometryId, CoulombFriction<double>> friction_;

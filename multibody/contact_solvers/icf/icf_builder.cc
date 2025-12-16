@@ -50,23 +50,22 @@ void IcfBuilder<T>::CalcGeometryContactData(
   surfaces_.clear();
   point_pairs_.clear();
 
-  auto& query_object = plant()
-                           .get_geometry_query_input_port()
+  auto& query_object = plant_.get_geometry_query_input_port()
                            .template Eval<geometry::QueryObject<T>>(context);
 
-  switch (plant().get_contact_model()) {
+  switch (plant_.get_contact_model()) {
     case ContactModel::kPoint: {
       point_pairs_ = query_object.ComputePointPairPenetration();
       break;
     }
     case ContactModel::kHydroelastic: {
       surfaces_ = query_object.ComputeContactSurfaces(
-          plant().get_contact_surface_representation());
+          plant_.get_contact_surface_representation());
       break;
     }
     case ContactModel::kHydroelasticWithFallback: {
       query_object.ComputeContactSurfacesWithFallback(
-          plant().get_contact_surface_representation(), &surfaces_,
+          plant_.get_contact_surface_representation(), &surfaces_,
           &point_pairs_);
       break;
     }
@@ -76,7 +75,7 @@ void IcfBuilder<T>::CalcGeometryContactData(
 template <typename T>
 IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
                           const systems::Context<T>& context)
-    : plant_(&plant), scratch_(plant) {
+    : plant_(plant), scratch_(plant) {
   ValidatePlant();
 
   using std::isinf;
@@ -221,30 +220,30 @@ void IcfBuilder<T>::UpdateModel(
     const IcfLinearFeedbackGains<T>* actuation_feedback,
     const IcfLinearFeedbackGains<T>* external_feedback, IcfModel<T>* model) {
   DRAKE_ASSERT(model != nullptr);
-  const SpanningForest& forest = GetInternalTree(plant()).forest();
-  const int nv = plant().num_velocities();
+  const SpanningForest& forest = GetInternalTree(plant_).forest();
+  const int nv = plant_.num_velocities();
 
   std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
 
   // Set the time step δt and initial velocities v₀
   params->time_step = time_step;
-  params->v0 = plant().GetVelocities(context);
+  params->v0 = plant_.GetVelocities(context);
 
   // Set the (dense) mass matrix M₀.
   MatrixX<T>& M = params->M0;
   M.resize(nv, nv);
-  plant().CalcMassMatrix(context, &M);
+  plant_.CalcMassMatrix(context, &M);
 
   // Set joint damping D₀.
   params->D0.resize(nv);
-  params->D0 = plant().EvalJointDampingCache(context);
+  params->D0 = plant_.EvalJointDampingCache(context);
 
   // Compute nonlinear bias terms k₀.
   params->k0.resize(nv);
   MultibodyForces<T>& forces = scratch_.forces;
-  plant().CalcForceElementsContribution(context, &forces);
+  plant_.CalcForceElementsContribution(context, &forces);
   const VectorX<T>& acc = scratch_.accelerations.setZero(nv);
-  params->k0 = plant().CalcInverseDynamics(context, acc, forces);
+  params->k0 = plant_.CalcInverseDynamics(context, acc, forces);
 
   // Set the sparsity pattern for the dynamics matrix A = M + δt D.
   params->clique_sizes = clique_sizes_;
@@ -262,14 +261,14 @@ void IcfBuilder<T>::UpdateModel(
   params->body_is_floating = body_is_floating_;
 
   // Compute spatial velocity Jacobians J_WB for all bodies.
-  const auto& world_frame = plant().world_frame();
+  const auto& world_frame = plant_.world_frame();
   EigenPool<Matrix6X<T>>& J_WB = params->J_WB;
-  J_WB.Resize(plant().num_bodies(), 6, body_jacobian_cols_);
+  J_WB.Resize(plant_.num_bodies(), 6, body_jacobian_cols_);
 
-  for (int b = 0; b < plant().num_bodies(); ++b) {
-    const auto& body = plant().get_body(BodyIndex(b));
+  for (int b = 0; b < plant_.num_bodies(); ++b) {
+    const auto& body = plant_.get_body(BodyIndex(b));
 
-    if (!plant().IsAnchored(body)) {
+    if (!plant_.IsAnchored(body)) {
       // We ignore anchored bodies. Their jacobian is included in J_WB as a
       // dummy column.
       const TreeIndex t = forest.link_to_tree_index(BodyIndex(b));
@@ -286,7 +285,7 @@ void IcfBuilder<T>::UpdateModel(
         Jv_WBc_W.setIdentity();
       } else {
         Matrix6X<T>& J_V_WB = scratch_.J_V_WB;
-        plant().CalcJacobianSpatialVelocity(
+        plant_.CalcJacobianSpatialVelocity(
             context, JacobianWrtVariable::kV, body.body_frame(),
             Vector3<T>::Zero(), world_frame, world_frame, &J_V_WB);
         Jv_WBc_W = J_V_WB.middleCols(vt_start, nt);
@@ -377,14 +376,14 @@ template <typename T>
 void IcfBuilder<T>::ValidatePlant() {
   // Revisit this condition as constraints are implemented. See issues #23759,
   // #23760, #23762, #23763.
-  if (plant_->num_constraints() - plant_->num_coupler_constraints() > 0) {
+  if (plant_.num_constraints() - plant_.num_coupler_constraints() > 0) {
     throw std::runtime_error(fmt::format(
         "The CENIC integrator does not yet support some constraints, but "
         "they are present in the given MultibodyPlant: {} distance "
         "constraint(s), {} ball constraint(s), {} weld constraint(s), {} "
         "tendon constraint(s)",
-        plant_->num_distance_constraints(), plant_->num_ball_constraints(),
-        plant_->num_weld_constraints(), plant_->num_tendon_constraints()));
+        plant_.num_distance_constraints(), plant_.num_ball_constraints(),
+        plant_.num_weld_constraints(), plant_.num_tendon_constraints()));
   }
 }
 
@@ -412,14 +411,14 @@ void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
   // Set the stiction tolerance (stiction velocity, in m/s). Unlike other
   // contact parameters (stiffness, dissipation, friction coefficients, etc.),
   // this regularization parameter is shared by all contacts.
-  patches.set_stiction_tolerance(plant().stiction_tolerance());
+  patches.set_stiction_tolerance(plant_.stiction_tolerance());
 }
 
 template <typename T>
 void IcfBuilder<T>::AllocateCouplerConstraints(IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
-      plant().get_coupler_constraint_specs();
+      plant_.get_coupler_constraint_specs();
   CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
   couplers.Resize(specs_map.size());
 }
@@ -429,16 +428,16 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
                                           IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
 
-  const SpanningForest& forest = GetInternalTree(plant()).forest();
+  const SpanningForest& forest = GetInternalTree(plant_).forest();
   const std::map<MultibodyConstraintId, CouplerConstraintSpec>& specs_map =
-      plant().get_coupler_constraint_specs();
+      plant_.get_coupler_constraint_specs();
 
   CouplerConstraintsPool<T>& couplers = model->coupler_constraints_pool();
 
   int index = 0;
   for (const auto& [id, spec] : specs_map) {
-    const Joint<T>& joint0 = plant().get_joint(spec.joint0_index);
-    const Joint<T>& joint1 = plant().get_joint(spec.joint1_index);
+    const Joint<T>& joint0 = plant_.get_joint(spec.joint0_index);
+    const Joint<T>& joint1 = plant_.get_joint(spec.joint1_index);
 
     const int dof0 = joint0.velocity_start();
     const int dof1 = joint1.velocity_start();
@@ -485,12 +484,12 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
   DRAKE_ASSERT(model != nullptr);
   using std::isinf;
 
-  const SpanningForest& forest = GetInternalTree(plant()).forest();
+  const SpanningForest& forest = GetInternalTree(plant_).forest();
 
   LimitConstraintsPool<T>& limits = model->limit_constraints_pool();
 
-  for (JointIndex joint_index : plant().GetJointIndices()) {
-    const Joint<T>& joint = plant().get_joint(joint_index);
+  for (JointIndex joint_index : plant_.GetJointIndices()) {
+    const Joint<T>& joint = plant_.get_joint(joint_index);
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
     if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
       const int velocity_start = joint.velocity_start();
@@ -524,7 +523,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
   }
 
   const geometry::SceneGraphInspector<T>& inspector =
-      plant().EvalSceneGraphInspector(context);
+      plant_.EvalSceneGraphInspector(context);
 
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
@@ -539,12 +538,12 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const geometry::GeometryId Nid = pp.id_B;
     const geometry::FrameId frame_Mid = inspector.GetFrameId(Mid);
     const geometry::FrameId frame_Nid = inspector.GetFrameId(Nid);
-    const RigidBody<T>* bodyM = plant().GetBodyFromFrameId(frame_Mid);
-    const RigidBody<T>* bodyN = plant().GetBodyFromFrameId(frame_Nid);
+    const RigidBody<T>* bodyM = plant_.GetBodyFromFrameId(frame_Mid);
+    const RigidBody<T>* bodyN = plant_.GetBodyFromFrameId(frame_Nid);
     DRAKE_DEMAND(bodyM != nullptr && bodyN != nullptr);
 
-    const bool M_not_anchored = !plant().IsAnchored(*bodyM);
-    const bool N_not_anchored = !plant().IsAnchored(*bodyN);
+    const bool M_not_anchored = !plant_.IsAnchored(*bodyM);
+    const bool N_not_anchored = !plant_.IsAnchored(*bodyN);
     // Sanity check at least one body is not anchored.
     DRAKE_DEMAND(M_not_anchored || N_not_anchored);
 
@@ -599,7 +598,7 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
     const systems::Context<T>& context, IcfModel<T>* model) const {
   using std::max;
   const geometry::SceneGraphInspector<T>& inspector =
-      plant().EvalSceneGraphInspector(context);
+      plant_.EvalSceneGraphInspector(context);
 
   // TODO(amcastro-tri): This should be retrieved from the default contact
   // properties.
@@ -622,12 +621,12 @@ void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
     // Retrieve participating geometries and bodies.
     const geometry::FrameId Mid = inspector.GetFrameId(s.id_M());
     const geometry::FrameId Nid = inspector.GetFrameId(s.id_N());
-    const RigidBody<T>* bodyM = plant().GetBodyFromFrameId(Mid);
-    const RigidBody<T>* bodyN = plant().GetBodyFromFrameId(Nid);
+    const RigidBody<T>* bodyM = plant_.GetBodyFromFrameId(Mid);
+    const RigidBody<T>* bodyN = plant_.GetBodyFromFrameId(Nid);
     DRAKE_DEMAND(bodyM != nullptr && bodyN != nullptr);
 
-    const bool M_not_anchored = !plant().IsAnchored(*bodyM);
-    const bool N_not_anchored = !plant().IsAnchored(*bodyN);
+    const bool M_not_anchored = !plant_.IsAnchored(*bodyM);
+    const bool N_not_anchored = !plant_.IsAnchored(*bodyN);
     // Sanity check at least one body is not anchored.
     DRAKE_DEMAND(M_not_anchored || N_not_anchored);
 
@@ -726,13 +725,13 @@ void IcfBuilder<T>::SetActuationGainConstraints(const VectorX<T>& Ku,
                                                 bool has_external_forces,
                                                 IcfModel<T>* model) const {
   DRAKE_DEMAND(model != nullptr);
-  DRAKE_DEMAND(model->num_velocities() == plant().num_velocities());
+  DRAKE_DEMAND(model->num_velocities() == plant_.num_velocities());
   const int nv = model->num_velocities();
   DRAKE_DEMAND(Ku.size() == nv);
   DRAKE_DEMAND(bu.size() == nv);
 
   // Quick no-op exit.
-  if (plant().num_actuators() == 0) return;
+  if (plant_.num_actuators() == 0) return;
 
   auto& gain_constraints = model->gain_constraints_pool();
 
