@@ -23,22 +23,34 @@ _VTK_NUMERIC_TYPES = [
 ]
 
 # This list matches `vtk_fixed_size_numeric_types` in CMake/vtkTypeLists.cmake.
-# Each item is a tuple of (vtk_type, preferred_ctype, fallback_ctype).
-#
-# The {preferred,fallback}_ctype vs matches Common/Core/vtkTypeArrays.cmake's
-# calls to `vtk_type_native` and `vtk_type_native_choice`.
 _VTK_FIXED_SIZE_NUMERIC_TYPES = (
-    ("vtkTypeFloat32", "float", None),
-    ("vtkTypeFloat64", "double", None),
-    ("vtkTypeInt8", "signed char", None),
-    ("vtkTypeInt16", "short", None),
-    ("vtkTypeInt32", "int", None),
-    ("vtkTypeInt64", "long", "long long"),
-    ("vtkTypeUInt8", "unsigned char", None),
-    ("vtkTypeUInt16", "unsigned short", None),
-    ("vtkTypeUInt32", "unsigned int", None),
-    ("vtkTypeUInt64", "unsigned long", "unsigned long long"),
+    "vtkTypeFloat32",
+    "vtkTypeFloat64",
+    "vtkTypeInt8",
+    "vtkTypeInt16",
+    "vtkTypeInt32",
+    "vtkTypeInt64",
+    "vtkTypeUInt8",
+    "vtkTypeUInt16",
+    "vtkTypeUInt32",
+    "vtkTypeUInt64",
 )
+
+# The dict matches Common/Core/vtkTypeArrays.cmake's calls to `vtk_type_native`
+# and `vtk_type_native_choice`. Each value is a tuple of (preferred_ctype,
+# fallback_ctype).
+_VTK_TYPE_NATIVE = {
+    "vtkTypeInt8": ("signed char", None),
+    "vtkTypeUInt8": ("unsigned char", None),
+    "vtkTypeInt16": ("short", None),
+    "vtkTypeUInt16": ("unsigned short", None),
+    "vtkTypeInt32": ("int", None),
+    "vtkTypeUInt32": ("unsigned int", None),
+    "vtkTypeInt64": ("long", "long long"),
+    "vtkTypeUInt64": ("unsigned long", "unsigned long long"),
+    "vtkTypeFloat32": ("float", None),
+    "vtkTypeFloat64": ("double", None),
+}
 
 # This list matches Common/Core/CMakeLists.txt near the comment "Order of this
 # list is important with bulk instantiation".
@@ -153,7 +165,8 @@ def _generate_common_core_aos_typed_arrays(bulk_srcs):
     name = "common_core_aos_type_arrays"
     result_hdrs = []
     result_srcs = []
-    for vtk_type, preferred_ctype, fallback_ctype in _VTK_FIXED_SIZE_NUMERIC_TYPES:
+    for vtk_type in _VTK_FIXED_SIZE_NUMERIC_TYPES:
+        preferred_ctype, fallback_ctype = _VTK_TYPE_NATIVE[vtk_type]
         without_vtk_type_prefix = vtk_type.removeprefix("vtkType")
         preferred_ctype_upper = preferred_ctype.replace(" ", "_").upper()
         preferred_class = _ctype_to_vtk_camel_type(preferred_ctype)
@@ -252,7 +265,8 @@ def _generate_common_core_typed_arrays(bulk_srcs):
     name = "common_core_typed_arrays"
     result_hdrs = []
     result_srcs = []
-    for vtk_type, ctype, _ in _VTK_FIXED_SIZE_NUMERIC_TYPES:
+    for vtk_type in _VTK_FIXED_SIZE_NUMERIC_TYPES:
+        ctype, _ = _VTK_TYPE_NATIVE[vtk_type]
         snake = ctype.replace(" ", "_")
         for backend in (
             "Affine",
