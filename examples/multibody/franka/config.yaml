@@ -32,7 +32,10 @@ config:
       resolution_hint: 0.01
   # Adds visualization; to disable it, delete this entire stanza.
   visualization_config:
-    publish_period: .inf
+    # We don't want viz to interfere with error-control. Therefore we use a
+    # large viz period so that publish_every_time_step controls whether to
+    # publish (at the end of each integrator step) or not.
+    publish_period: 1e9
     # Whether to visualize forces (true) or not (false).
     publish_contacts: true
     # Whether to visualize collision geometry (true) or not (false).
