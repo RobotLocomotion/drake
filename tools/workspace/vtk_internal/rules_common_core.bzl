@@ -173,14 +173,16 @@ def _generate_common_core_type_list_macros():
         srcs = [hdr],
     )
 
-def _generate_common_core_aos_typed_arrays(bulk_srcs):
+def _generate_common_core_aos_typed_arrays():
     """Mimics a subset of the vtkTypeArrays.cmake logic, assuming a 64-bit
     platform. Generates an `*.h` and `*.cxx` file for each of VTK's primitive
     types.
+    Returns the bulk_instantiation_srcs dictionary of generated files.
     """
     name = "common_core_aos_type_arrays"
     result_hdrs = []
     result_srcs = []
+    bulk_instantiation_srcs = {}
     for vtk_type in _VTK_FIXED_SIZE_NUMERIC_TYPES:
         preferred_ctype, fallback_ctype = _VTK_TYPE_NATIVE[vtk_type]
         without_vtk_type_prefix = vtk_type.removeprefix("vtkType")
@@ -220,9 +222,7 @@ def _generate_common_core_aos_typed_arrays(bulk_srcs):
         )
         result_hdrs.append(outs[0])
         result_srcs.append(outs[1])
-        if preferred_ctype not in bulk_srcs:
-            bulk_srcs[preferred_ctype] = []
-        bulk_srcs[preferred_ctype].append(outs[1])
+        bulk_instantiation_srcs.setdefault(preferred_ctype, []).append(outs[1])
     native.filegroup(
         name = name + "_hdrs",
         srcs = result_hdrs,
@@ -231,13 +231,16 @@ def _generate_common_core_aos_typed_arrays(bulk_srcs):
         name = name + "_srcs",
         srcs = result_srcs,
     )
+    return bulk_instantiation_srcs
 
-def _generate_common_core_array_instantiations(bulk_srcs):
+def _generate_common_core_array_instantiations():
     """Mimics the instantiation_sources in Common/Core/CMakeLists.
     Generates a pile of headers.
+    Returns the bulk_instantiation_srcs dictionary of generated files.
     """
     name = "common_core_array_instantiations"
     result = []
+    bulk_instantiation_srcs = {}
     for ctype in _VTK_NUMERIC_TYPES:
         snake = ctype.replace(" ", "_")
         for stem in _VTK_INSTANTIATION_TYPES + (
@@ -264,23 +267,24 @@ def _generate_common_core_array_instantiations(bulk_srcs):
                 ],
                 strict = True,
             )
-            if ctype not in bulk_srcs:
-                bulk_srcs[ctype] = []
-            bulk_srcs[ctype].append(out)
+            bulk_instantiation_srcs.setdefault(ctype, []).append(out)
             result.append(out)
     native.filegroup(
         name = name,
         srcs = result,
     )
+    return bulk_instantiation_srcs
 
-def _generate_common_core_typed_arrays(bulk_srcs):
+def _generate_common_core_typed_arrays():
     """Mimics a subset of the vtkTypeArrays.cmake logic, assuming a 64-bit
     platform. Generates an `*.h` and `*.cxx` file for each combination of VTK's
     primitive types and array backend types.
+    Returns the bulk_instantiation_srcs dictionary of generated files.
     """
     name = "common_core_typed_arrays"
     result_hdrs = []
     result_srcs = []
+    bulk_instantiation_srcs = {}
     for vtk_type in _VTK_FIXED_SIZE_NUMERIC_TYPES:
         ctype, _ = _VTK_TYPE_NATIVE[vtk_type]
         snake = ctype.replace(" ", "_")
@@ -331,9 +335,7 @@ def _generate_common_core_typed_arrays(bulk_srcs):
             )
             result_hdrs.append(out_hdr)
             result_srcs.append(out_src)
-            if ctype not in bulk_srcs:
-                bulk_srcs[ctype] = []
-            bulk_srcs[ctype].append(out_src)
+            bulk_instantiation_srcs.setdefault(ctype, []).append(out_src)
     native.filegroup(
         name = name + "_hdrs",
         srcs = result_hdrs,
@@ -342,8 +344,19 @@ def _generate_common_core_typed_arrays(bulk_srcs):
         name = name + "_srcs",
         srcs = result_srcs,
     )
+    return bulk_instantiation_srcs
 
-def _generate_bulk_instantiation_srcs(bulk_srcs):
+def _merge_bulk_instantiation_srcs(*bulk_instantiation_srcs_args):
+    """Given many bulk_instantiation_srcs dictionaries of generated files,
+    returns a single merged dictionary.
+    """
+    result = {}
+    for arg in bulk_instantiation_srcs_args:
+        for ctype, files in arg.items():
+            result.setdefault(ctype, []).extend(files)
+    return result
+
+def _generate_bulk_instantiation_srcs(bulk_instantiation_srcs):
     """Mimics Common/Core/CMakeLists.txt codegen of bulk instantiation source
     files Common/Core/vtkArrayBulkInstantiate_{suffix}.cxx. Search for
     BULK_INSTANTIATION_SOURCES to find the relevant loop.
@@ -355,13 +368,13 @@ def _generate_bulk_instantiation_srcs(bulk_srcs):
             ctype.replace(" ", "_")
         )
         cmake_configure_files(
-            name = "_genrule_bulk_srcs_" + ctype,
+            name = "_genrule_bulk_instantiation_srcs_" + ctype,
             srcs = [src],
             outs = [out],
             defines = [
                 "BULK_INSTANTIATION_SOURCES=" + "\n".join([
                     "#include \"{}\"".format(x)
-                    for x in bulk_srcs[ctype]
+                    for x in bulk_instantiation_srcs[ctype]
                 ]),
             ],
             strict = True,
@@ -375,8 +388,12 @@ def _generate_bulk_instantiation_srcs(bulk_srcs):
 def generate_common_core_sources():
     _generate_common_core_array_dispatch_array_list()
     _generate_common_core_type_list_macros()
-    bulk_srcs = {}
-    _generate_common_core_aos_typed_arrays(bulk_srcs)
-    _generate_common_core_array_instantiations(bulk_srcs)
-    _generate_common_core_typed_arrays(bulk_srcs)
-    _generate_bulk_instantiation_srcs(bulk_srcs)
+    bulk_instantiation_srcs1 = _generate_common_core_aos_typed_arrays()
+    bulk_instantiation_srcs2 = _generate_common_core_array_instantiations()
+    bulk_instantiation_srcs3 = _generate_common_core_typed_arrays()
+    bulk_instantiation_srcs = _merge_bulk_instantiation_srcs(
+        bulk_instantiation_srcs1,
+        bulk_instantiation_srcs2,
+        bulk_instantiation_srcs3,
+    )
+    _generate_bulk_instantiation_srcs(bulk_instantiation_srcs)
