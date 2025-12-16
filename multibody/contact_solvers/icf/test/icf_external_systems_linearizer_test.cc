@@ -83,7 +83,7 @@ GTEST_TEST(IcfExternalSystemsLinearizerTest, Basic) {
   const IcfExternalSystemsLinearizer<double> dut(&plant);
   const int nv = plant.num_velocities();
   IcfLinearFeedbackGains<double> actuation_feedback;
-  IcfLinearFeedbackGains<double> external_feedback;  // unused here
+  IcfLinearFeedbackGains<double> external_feedback;  // unused
   actuation_feedback.Resize(nv);
   external_feedback.Resize(nv);
   bool has_actuation_forces{};
@@ -116,7 +116,7 @@ GTEST_TEST(IcfExternalSystemsLinearizerTest, Basic) {
   x_tilde0.head(nv) += h * v0;
   const VectorXd tau_tilde0 = y + D * x_tilde0;
 
-  // And thus the expected linearization τ(v) = b -  K⋅v is
+  // And thus the expected linearization τ(v) = b - K⋅v is:
   const VectorXd K_ref = -dtau_tilde_dv.diagonal();
   const VectorXd b_ref = tau_tilde0 + K_ref.asDiagonal() * v0;
 
