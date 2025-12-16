@@ -14,7 +14,7 @@ namespace icf {
 namespace internal {
 
 /* Helper class that linearizes external generalized forces with respect to
-generalized velocities. The linerization is approximate because it only keeps
+generalized velocities. The linearization is approximate because it only keeps
 diagonal terms and forces them to be non-negative, so that the ICF problem
 remains convex.
 
@@ -26,7 +26,7 @@ external sources in τₑ(x) (these could be body forces, drag, or any other
 externally applied generalized forces). For ICF, each contribution is linearized
 separately to write
   τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ; e),
-  τₑ(v) ≈ - Kₑ⋅v + bₑ,
+  τₑ(v) ≈ -Kₑ⋅v + bₑ,
 where Kᵤ, Kₑ are positive diagonal matrices, v the multibody generalized
 velocities and e the vector of effort limits. For clarity, from now on we
 linearize a single term τ(x), with the understanding that we do this separately
@@ -39,22 +39,22 @@ Without loss of generality, we can ignore contact and other constraints to write
 It is important to note that:
  1. We evaluate actuation and external forces τ(q, v) implicitly for stability
  2. The scheme is semi-implicit in q for better stability and energy
-    conservation properties (this updates in the configurations is symplectic).
+    conservation properties (the updates in the configurations is symplectic).
 
 We define x̃(v) = [q₀ + h⋅v; v], and approximate the external generalized forces
 as
-  τ(v) = τ(x̃(v)) ≈  τ(x̃₀) + dτ/dv(x̃₀)⋅(v − v₀),
+  τ(v) = τ(x̃(v)) ≈  τ(x̃₀) + (dτ/dv x̃₀)⋅(v − v₀),
 with x̃₀ = [q₀ + h⋅v₀; v₀].
 
 Further, we make the component-wise approximation:
-  (Implicit) τᵢ ≈  τᵢ(x̃₀) - max(0, -dτᵢ/dvᵢ)⋅(v − v₀), when dτᵢ/dvᵢ < 0 and,
+  (Implicit) τᵢ ≈  τᵢ(x̃₀) - (-dτᵢ/dvᵢ)⋅(v − v₀), when dτᵢ/dvᵢ < 0 and,
   (Explicit) τᵢ ≈  τᵢ(x₀), when dτᵢ/dvᵢ ≥ 0.
 That is, this approximation is implicit for stabilizing force terms (such as
 controllers) and explicit otherwise. Within the CENIC framework, error-control
 is able to stabilize explicit terms in the scheme when needed.
 
 In total, we write the approximations above as
-  τ(v) = b -  K⋅v,
+  τ(v) = b - K⋅v,
 where K is the positive diagonal matrix with entries
   K = max(0, -diag(dτ/dv)),
 and bias term
@@ -73,10 +73,11 @@ class IcfExternalSystemsLinearizer {
 
   ~IcfExternalSystemsLinearizer();
 
-  /* Linearizes torques as explained in the class overview.
+  /* Linearizes generalized forces as explained in the class overview.
 
-  @param[in] h The time step used to advance positions during differencing.
-    TODO(jwnimmer-tri) Explain / clarify with paper citations.
+  @param[in] h The time step used to advance positions during differencing,
+    i.e., how far in the future are the generalized velocities that we're
+    linearizing around.
   @param[in,out] mutable_plant_context The plant context to linearize around,
     used both as input (for the current state and inputs) and to mutate during
     differencing while computing changes in generalized forces due to changes in
@@ -93,7 +94,7 @@ class IcfExternalSystemsLinearizer {
       IcfLinearFeedbackGains<T>* external_feedback) const;
 
  private:
-  /* Preallocated scratch space. */
+  /* Pre-allocated scratch space. */
   struct Scratch {
     /* Sizes the member fields to accommodate the given plant. */
     explicit Scratch(const MultibodyPlant<T>& plant);
@@ -102,11 +103,12 @@ class IcfExternalSystemsLinearizer {
     std::unique_ptr<MultibodyForces<T>> f_ext;
     VectorX<T> gu0;        // Actuation gu(x) = B u(x) at x₀.
     VectorX<T> ge0;        // External forces ge(x) = τ_ext(x) at x₀.
+    VectorX<T> x_tilde0;   // Plant state x̃₀ = x̃(v₀).
     VectorX<T> gu_tilde0;  // Actuation at gu(x̃₀) at x̃₀ = x̃(v₀).
     VectorX<T> ge_tilde0;  // External forces ge(x̃₀) at x̃₀ = x̃(v₀).
-    VectorX<T> x_prime;    // Perturbed plant state x' for finite differences.
-    VectorX<T> gu_prime;   // Perturbed actuation gu(x') = B u(x').
-    VectorX<T> ge_prime;   // Perturbed external forces ge(x') = τ_ext(x').
+    VectorX<T> x_prime;    // Perturbed plant state x′ for finite differences.
+    VectorX<T> gu_prime;   // Perturbed actuation gu(x′) = B u(x′).
+    VectorX<T> ge_prime;   // Perturbed external forces ge(x′) = τ_ext(x′).
     MatrixX<T> N0;         // Kinematic map (q̇ = N v) at q₀.
   };
 

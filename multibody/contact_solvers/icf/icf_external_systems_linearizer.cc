@@ -12,7 +12,6 @@ namespace contact_solvers {
 namespace icf {
 namespace internal {
 
-using multibody::internal::MultibodyPlantIcfAttorney;
 using systems::Context;
 
 template <typename T>
@@ -29,20 +28,12 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     IcfLinearFeedbackGains<T>* actuation_feedback,
     IcfLinearFeedbackGains<T>* external_feedback) const {
   using std::abs;
+  using std::isfinite;
+  DRAKE_ASSERT(isfinite(h) && h > 0);
   DRAKE_ASSERT(actuation_feedback != nullptr);
   DRAKE_ASSERT(external_feedback != nullptr);
   const Context<T>& plant_context = mutable_plant_context;
   plant_.ValidateContext(plant_context);
-
-  // Extract the feedback gains that we'll set.
-  VectorX<T>& Ku = actuation_feedback->K;
-  VectorX<T>& bu = actuation_feedback->b;
-  VectorX<T>& Ke = external_feedback->K;
-  VectorX<T>& be = external_feedback->b;
-  DRAKE_ASSERT(Ku.size() == plant_.num_velocities());
-  DRAKE_ASSERT(bu.size() == plant_.num_velocities());
-  DRAKE_ASSERT(Ke.size() == plant_.num_velocities());
-  DRAKE_ASSERT(be.size() == plant_.num_velocities());
 
   // Check which (or both) of the two feedback values we actually need.
   const bool has_actuation_forces = plant_.num_actuators() > 0;
@@ -56,9 +47,20 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     return {false, false};
   }
 
+  // Get references to the feedback gains that we'll set as output.
+  VectorX<T>& Ku = actuation_feedback->K;
+  VectorX<T>& bu = actuation_feedback->b;
+  VectorX<T>& Ke = external_feedback->K;
+  VectorX<T>& be = external_feedback->b;
+  DRAKE_ASSERT(Ku.size() == plant_.num_velocities());
+  DRAKE_ASSERT(bu.size() == plant_.num_velocities());
+  DRAKE_ASSERT(Ke.size() == plant_.num_velocities());
+  DRAKE_ASSERT(be.size() == plant_.num_velocities());
+
   // Get references to pre-allocated variables.
   VectorX<T>& gu0 = scratch_.gu0;
   VectorX<T>& ge0 = scratch_.ge0;
+  VectorX<T>& x_tilde0 = scratch_.x_tilde0;
   VectorX<T>& gu_tilde0 = scratch_.gu_tilde0;
   VectorX<T>& ge_tilde0 = scratch_.ge_tilde0;
   VectorX<T>& x_prime = scratch_.x_prime;
@@ -87,8 +89,8 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
       plant_context.get_continuous_state_vector().CopyToVector();
   auto v0 = x0.segment(nq, nv);
 
-  // Semi-implicit state x̃(v) at v₀, x̃₀ = x̃(v₀) = [q₀ + h⋅N₀⋅v₀; v₀]
-  VectorX<T> x_tilde0 = x0;
+  // Semi-implicit state x̃(v) at v₀, x̃₀ = x̃(v₀) = [q₀ + h⋅N₀⋅v₀; v₀].
+  x_tilde0 = x0;
   auto q_tilde0 = x_tilde0.head(nq);
   auto v_tilde0 = x_tilde0.segment(nq, nv);
   q_tilde0 += h * N0 * v0;
@@ -107,7 +109,7 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
   auto q_prime = x_prime.head(nq);
   auto v_prime = x_prime.segment(nq, nv);
 
-  // Compute τ(v) = b -  K⋅(v − v₀), using forward differences.
+  // Compute τ(v) = b - K⋅(v − v₀), using forward differences.
   // We do this separately for τᵤ(x) and τₑ(x), as needed by ICF.
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
   for (int i = 0; i < nv; ++i) {
@@ -115,17 +117,17 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     const T abs_vi = abs(v_tilde0(i));
     T dvi = (abs_vi <= 1) ? T{eps} : eps * abs_vi;
 
-    // Ensure that v' and v differ by an exactly representable number.
+    // Ensure that v′ and ṽ₀ differ by an exactly representable number.
     v_prime(i) = v_tilde0(i) + dvi;
     dvi = v_prime(i) - v_tilde0(i);
 
-    // Perturb q as well, using the fact that q' = q + h N dv.
-    // TODO(jwnimmer-tri) This seems wasteful; the (v_prime - v) is sparse (only
-    // one element is non-zero) and typically N is also sparse. Consider using
-    // plant.MapVelocityToQDot or similar.
-    q_prime = q_tilde0 + h * N0 * (v_prime - v_tilde0);
+    // Perturb q as well, using the fact that q′ = q̃₀ + h N₀ dv.
+    // TODO(jwnimmer-tri) This seems wasteful; the (v_prime - v_tilde0) is
+    // sparse (only one element is non-zero) and typically N0 is also
+    // sparse. Consider using plant.MapVelocityToQDot or similar.
+    q_prime += h * N0 * (v_prime - v_tilde0);
 
-    // Put x' in the context and mark the state as stale.
+    // Put x′ in the context and mark the state as stale.
     mutable_plant_context.SetContinuousState(x_prime);
 
     if (has_actuation_forces) {
@@ -160,10 +162,11 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     }
 
     // Reset the state for the next iteration.
+    q_prime(i) = q_tilde0(i);
     v_prime(i) = v_tilde0(i);
   }
 
-  // Reset the context back to how we found it. That means v is now back to v0.
+  // Reset the context back to how we found it.
   mutable_plant_context.SetContinuousState(x0);
 
   return {has_actuation_forces, has_external_forces};
@@ -177,6 +180,7 @@ IcfExternalSystemsLinearizer<T>::Scratch::Scratch(
   f_ext = std::make_unique<MultibodyForces<T>>(plant);
   gu0.resize(nv);
   ge0.resize(nv);
+  x_tilde0.resize(nq + nv);
   gu_tilde0.resize(nv);
   ge_tilde0.resize(nv);
   x_prime.resize(nq + nv);
@@ -191,20 +195,20 @@ IcfExternalSystemsLinearizer<T>::Scratch::~Scratch() = default;
 template <typename T>
 void IcfExternalSystemsLinearizer<T>::CalcExternalForces(
     const Context<T>& context, VectorX<T>* tau) const {
+  using Attorney = multibody::internal::MultibodyPlantIcfAttorney<T>;
   MultibodyForces<T>& forces = *scratch_.f_ext;
   forces.SetZero();
-  MultibodyPlantIcfAttorney<T>::AddAppliedExternalSpatialForces(plant_, context,
-                                                                &forces);
-  MultibodyPlantIcfAttorney<T>::AddAppliedExternalGeneralizedForces(
-      plant_, context, &forces);
+  Attorney::AddAppliedExternalSpatialForces(plant_, context, &forces);
+  Attorney::AddAppliedExternalGeneralizedForces(plant_, context, &forces);
   plant_.CalcGeneralizedForces(context, forces, tau);
 }
 
 template <typename T>
 void IcfExternalSystemsLinearizer<T>::CalcActuationForces(
     const Context<T>& context, VectorX<T>* tau) const {
+  using Attorney = multibody::internal::MultibodyPlantIcfAttorney<T>;
   tau->setZero();
-  MultibodyPlantIcfAttorney<T>::AddJointActuationForces(plant_, context, tau);
+  Attorney::AddJointActuationForces(plant_, context, tau);
 }
 
 }  // namespace internal
