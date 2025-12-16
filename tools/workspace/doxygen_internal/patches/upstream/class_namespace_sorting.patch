@@ -8,153 +8,41 @@ Upstream could consider a new configuration option to separate these two
 behaviors.
 
 diff --git a/src/classdef.cpp b/src/classdef.cpp
-index 773614d48..122624992 100644
+index 773614d48..3f1a3b562 100644
 --- a/src/classdef.cpp
 +++ b/src/classdef.cpp
-@@ -4623,17 +4623,14 @@ void ClassDefImpl::sortMemberLists()
+@@ -4623,7 +4623,7 @@ void ClassDefImpl::sortMemberLists()
    {
      if (ml->needsSorting()) { ml->sort(); ml->setNeedsSorting(FALSE); }
    }
 -  if (Config_getBool(SORT_BRIEF_DOCS))
--  {
--    std::stable_sort(m_innerClasses.begin(),
--              m_innerClasses.end(),
--              [](const auto &c1,const auto &c2)
--              {
--                 return Config_getBool(SORT_BY_SCOPE_NAME)                ?
--                        qstricmp_sort(c1->name(),      c2->name()     )<0 :
--                        qstricmp_sort(c1->className(), c2->className())<0 ;
--              });
--  }
-+  std::stable_sort(m_innerClasses.begin(),
-+            m_innerClasses.end(),
-+            [](const auto &c1,const auto &c2)
-+            {
-+               return Config_getBool(SORT_BY_SCOPE_NAME)                ?
-+                      qstricmp_sort(c1->name(),      c2->name()     )<0 :
-+                      qstricmp_sort(c1->className(), c2->className())<0 ;
-+            });
- }
-
- int ClassDefImpl::countMemberDeclarations(MemberListType lt,const ClassDef *inheritedFrom,
-diff --git a/src/filedef.cpp b/src/filedef.cpp
-index 23c198a91..5703d1b4d 100644
---- a/src/filedef.cpp
-+++ b/src/filedef.cpp
-@@ -1791,13 +1791,6 @@ void FileDefImpl::sortMemberLists()
-     std::stable_sort(m_structs.begin(),   m_structs.end(),   classComp);
-     std::stable_sort(m_exceptions.begin(),m_exceptions.end(),classComp);
-
--    auto conceptComp = [](const ConceptLinkedRefMap::Ptr &c1,const ConceptLinkedRefMap::Ptr &c2)
--    {
--      return qstricmp_sort(c1->name(),c2->name())<0;
--    };
--
--    std::stable_sort(m_concepts.begin(), m_concepts.end(), conceptComp);
--
-     auto namespaceComp = [](const NamespaceLinkedRefMap::Ptr &n1,const NamespaceLinkedRefMap::Ptr &n2)
-     {
-       return qstricmp_sort(n1->name(),n2->name())<0;
++  if (true)
+   {
+     std::stable_sort(m_innerClasses.begin(),
+               m_innerClasses.end(),
 diff --git a/src/groupdef.cpp b/src/groupdef.cpp
-index f9e3e94c9..b003e0f44 100644
+index f9e3e94c9..b5560d12d 100644
 --- a/src/groupdef.cpp
 +++ b/src/groupdef.cpp
-@@ -1923,24 +1923,6 @@ void GroupDefImpl::sortMemberLists()
-     };
-
-     std::stable_sort(m_namespaces.begin(),m_namespaces.end(),namespaceComp);
--
--    auto moduleComp = [](const ModuleLinkedRefMap::Ptr &m1,const ModuleLinkedRefMap::Ptr &m2)
--    {
--      return qstricmp_sort(m1->name(),m2->name())<0;
--    };
--
--    std::stable_sort(m_modules.begin(), m_modules.end(), moduleComp);
--
--    auto conceptComp = [](const ConceptLinkedRefMap::Ptr &c1,const ConceptLinkedRefMap::Ptr &c2)
--    {
--      return qstricmp_sort(c1->name(),c2->name())<0;
--    };
--
--    std::stable_sort(m_concepts.begin(), m_concepts.end(), conceptComp);
--
--    std::stable_sort(m_dirList.begin(), m_dirList.end(), compareDirDefs);
--    std::stable_sort(m_fileList.begin(), m_fileList.end(), compareFileDefs);
--
-   }
-   else
-   {
-@@ -1991,13 +1973,10 @@ void GroupDefImpl::removeMemberFromList(MemberListType lt,MemberDef *md)
+@@ -1991,7 +1991,7 @@ void GroupDefImpl::removeMemberFromList(MemberListType lt,MemberDef *md)
 
  void GroupDefImpl::sortSubGroups()
  {
 -  if (Config_getBool(SORT_BRIEF_DOCS))
--  {
--    std::stable_sort(m_groups.begin(),
--              m_groups.end(),
--              [](const auto &g1,const auto &g2)
--              { return g1->groupTitle() < g2->groupTitle(); });
--  }
-+  std::stable_sort(m_groups.begin(),
-+            m_groups.end(),
-+            [](const auto &g1,const auto &g2)
-+            { return g1->groupTitle() < g2->groupTitle(); });
- }
-
- static bool hasNonReferenceNestedGroupRec(const GroupDef *gd,int level)
++  if (true)
+   {
+     std::stable_sort(m_groups.begin(),
+               m_groups.end(),
 diff --git a/src/namespacedef.cpp b/src/namespacedef.cpp
-index 82fe2634e..f502c49d8 100644
+index 82fe2634e..8baa18cc5 100644
 --- a/src/namespacedef.cpp
 +++ b/src/namespacedef.cpp
-@@ -1470,34 +1470,31 @@ void NamespaceDefImpl::sortMemberLists()
+@@ -1470,7 +1470,7 @@ void NamespaceDefImpl::sortMemberLists()
      if (ml->needsSorting()) { ml->sort(); ml->setNeedsSorting(FALSE); }
    }
 
 -  if (Config_getBool(SORT_BRIEF_DOCS))
-+  auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
++  if (true)
    {
--    auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
--    {
--      return Config_getBool(SORT_BY_SCOPE_NAME)          ?
--        qstricmp_sort(c1->name(), c2->name())<0          :
--        qstricmp_sort(c1->className(), c2->className())<0;
--    };
-+    return Config_getBool(SORT_BY_SCOPE_NAME)          ?
-+      qstricmp_sort(c1->name(), c2->name())<0          :
-+      qstricmp_sort(c1->className(), c2->className())<0;
-+  };
-
--    std::stable_sort(m_classes.begin(),   m_classes.end(),   classComp);
--    std::stable_sort(m_interfaces.begin(),m_interfaces.end(),classComp);
--    std::stable_sort(m_structs.begin(),   m_structs.end(),   classComp);
--    std::stable_sort(m_exceptions.begin(),m_exceptions.end(),classComp);
-+  std::stable_sort(m_classes.begin(),   m_classes.end(),   classComp);
-+  std::stable_sort(m_interfaces.begin(),m_interfaces.end(),classComp);
-+  std::stable_sort(m_structs.begin(),   m_structs.end(),   classComp);
-+  std::stable_sort(m_exceptions.begin(),m_exceptions.end(),classComp);
-
--    auto conceptComp = [](const ConceptLinkedRefMap::Ptr &c1,const ConceptLinkedRefMap::Ptr &c2)
--    {
--      return qstricmp_sort(c1->name(),c2->name())<0;
--    };
-+  auto conceptComp = [](const ConceptLinkedRefMap::Ptr &c1,const ConceptLinkedRefMap::Ptr &c2)
-+  {
-+    return qstricmp_sort(c1->name(),c2->name())<0;
-+  };
-
-     std::stable_sort(m_concepts.begin(), m_concepts.end(), conceptComp);
-
--    auto namespaceComp = [](const NamespaceLinkedRefMap::Ptr &n1,const NamespaceLinkedRefMap::Ptr &n2)
--    {
--      return qstricmp_sort(n1->name(),n2->name())<0;
--    };
-+  auto namespaceComp = [](const NamespaceLinkedRefMap::Ptr &n1,const NamespaceLinkedRefMap::Ptr &n2)
-+  {
-+    return qstricmp_sort(n1->name(),n2->name())<0;
-+  };
-
--    std::stable_sort(m_namespaces.begin(),m_namespaces.end(),namespaceComp);
--  }
-+  std::stable_sort(m_namespaces.begin(),m_namespaces.end(),namespaceComp);
-
- }
+     auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
+     {
