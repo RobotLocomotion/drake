@@ -256,7 +256,7 @@ def _generate_array_specialization(*, array_prefix, vtk_type, concrete_type):
 def _generate_common_core_typed_arrays():
     """Mimics a subset of vtkTypeArrays.cmake, for the (non-deprecated) loop
     that calls _generate_array_specialization. Generates a pair of `*.h` and
-    `*.cxx` files for the cross product of VTK's primitive types and array
+    `*.inc` files for the cross product of VTK's primitive types and array
     types. Returns the bulk_instantiation_srcs dictionary of generated files.
     """
     name = "common_core_typed_arrays"
@@ -295,10 +295,10 @@ def _generate_common_core_typed_arrays():
     return bulk_instantiation_srcs
 
 def _generate_common_core_aos_typed_arrays():
-    """Mimics a subset of the vtkTypeArrays.cmake logic, assuming a 64-bit
-    platform. Generates an `*.h` and `*.cxx` file for each of VTK's primitive
-    types.
-    Returns the bulk_instantiation_srcs dictionary of generated files.
+    """Mimics a subset of vtkTypeArrays.cmake, for the loop that mentions
+    vtkAOSTypedArray.h.in. Generates a pair of `*.h` and `*.inc` files for each
+    of VTK's primitive types. Returns the bulk_instantiation_srcs dictionary of
+    generated files.
     """
     name = "common_core_aos_type_arrays"
     result_hdrs = []
