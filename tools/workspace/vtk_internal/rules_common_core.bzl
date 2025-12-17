@@ -60,7 +60,9 @@ def _generate_common_core_array_dispatch_array_list():
 
     # This is hard-coded to use the default upstream options (e.g.,
     # VTK_DISPATCH_AOS_ARRAYS=ON, VTK_DISPATCH_SOA_ARRAYS=OFF, etc.).
-    # We could parameterize this function with options if we ever need more.
+    #
+    # To update this content for newer versions of VTK, it's convenient to run
+    # a CMake build and then inspect its generated vtkArrayDispatchArrayList.h.
     content = """
 #pragma once
 #include "vtkTypeList.h"
