@@ -41,6 +41,7 @@ IcfSolver::~IcfSolver() = default;
 
 bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
                                const double tolerance, IcfData<double>* data) {
+  using std::clamp;
   DRAKE_ASSERT(data != nullptr);
   DRAKE_ASSERT(tolerance > 0);
   DRAKE_ASSERT(model.num_velocities() > 0);
@@ -114,14 +115,14 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     if (k > 1) {
       const double dvk = stats_.step_norm[k - 1];    // ||D⁻¹⋅Δvₖ||
       const double dvkm1 = stats_.step_norm[k - 2];  // ||D⁻¹⋅Δvₖ₋₁||
-      const double theta = dvk / dvkm1;
 
-      // For the step-size-based convergence check η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
-      // we need η \in (0, 1]. Therefore we only use η = θ/(1−θ) when θ < 1.0,
-      // and otherwise make the (conservative) choice of η = 1.0.
-      // N.B. unlike in the Newton-Raphson steps discussed in [Hairer, 1996],
-      // it is possible that θ ≥ 1 without divergence, thanks to linesearch.
-      eta = (theta < 1.0) ? theta / (1.0 - theta) : 1.0;
+      // Convergence rate estimate θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖. Note that unlike
+      // in the Newton-Raphson steps discussed in [Hairer and Wanner, 1996], it
+      // is possible that θ ≥ 1 without divergence, thanks to linesearch.
+      // Therefore we clamp θ to be slightly less than 1.0 to avoid division by
+      // zero when computing η = θ/(1−θ).
+      const double theta = clamp(dvk / dvkm1, 0.0, 0.9999);
+      eta = theta / (1.0 - theta);
 
       // Predict the residual after a total of k_max iterations, assuming
       // linear convergence at the current rate θ.
