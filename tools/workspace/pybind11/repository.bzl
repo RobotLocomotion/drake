@@ -21,6 +21,7 @@ def pybind11_repository(
         sha256 = _SHA256,
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/upstream/pr5212.patch",
             ":patches/check_signature_infection.patch",
             ":patches/eigen_object_matrices.patch",
             ":patches/shared_ptr_lifetime.patch",
