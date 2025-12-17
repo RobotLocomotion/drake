@@ -91,6 +91,50 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
   EXPECT_EQ(model.time_step(), time_step * 2);
 }
 
+GTEST_TEST(IcfBuilder, RetryStep) {
+  systems::DiagramBuilder<double> diagram_builder{};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(robot_xml, "xml");
+  plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 2);
+
+  auto diagram = diagram_builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
+
+  IcfLinearFeedbackGains<double> no_feedback;
+  no_feedback.K.setZero(plant.num_velocities());
+  no_feedback.b.setZero(plant.num_velocities());
+  const double time_step = 0.01;
+  IcfBuilder<double> builder(plant, plant_context);
+  IcfModel<double> model;
+
+  // Run a full step and then a "retry step" for all combinations of feedback
+  // parameters.
+  for (int k = 0; k < 4; ++k) {
+    IcfLinearFeedbackGains<double>* actuation_feedback =
+        (k & 1) ? &no_feedback : nullptr;
+    IcfLinearFeedbackGains<double>* external_feedback =
+        (k & 2) ? &no_feedback : nullptr;
+
+    // Full step.
+    builder.UpdateModel(plant_context, time_step, actuation_feedback,
+                        external_feedback, &model);
+    // "Retry step."
+    builder.UpdateModel(time_step, actuation_feedback, external_feedback,
+                        &model);
+    EXPECT_EQ(model.num_cliques(), 1);
+    EXPECT_EQ(model.num_velocities(), plant.num_velocities());
+    EXPECT_EQ(model.num_limit_constraints(), 1);
+    EXPECT_EQ(model.time_step(), time_step);
+  }
+}
+
 GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder{};
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
