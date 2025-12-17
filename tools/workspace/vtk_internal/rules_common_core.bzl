@@ -372,12 +372,11 @@ def _generate_bulk_instantiation_srcs(bulk_instantiation_srcs):
     """
     all_outs = []
     for ctype in _VTK_NUMERIC_TYPES:
+        suffix = ctype.replace(" ", "_")
         src = "Common/Core/vtkArrayBulkInstantiate.cxx.in"
-        out = "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(
-            ctype.replace(" ", "_"),
-        )
+        out = "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(suffix)
         cmake_configure_files(
-            name = "_genrule_bulk_instantiation_srcs_" + ctype,
+            name = "_genrule_bulk_instantiation_srcs_" + suffix,
             srcs = [src],
             outs = [out],
             defines = [
