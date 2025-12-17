@@ -212,7 +212,7 @@ def _generate_common_core_array_instantiations():
                 strict = True,
             )
             all_outs.append(out)
-            bulk_instantiation_srcs.setdefault(ctype, []).append(out)
+            bulk_instantiation_srcs.setdefault(suffix.upper(), []).append(out)
     native.filegroup(
         name = name,
         srcs = all_outs,
@@ -388,18 +388,17 @@ def _generate_bulk_instantiation_srcs(bulk_instantiation_srcs):
     BULK_INSTANTIATION_SOURCES to find the relevant loop.
     """
     all_outs = []
-    for ctype in _VTK_NUMERIC_TYPES:
-        suffix = ctype.replace(" ", "_")
+    for ctype, files in bulk_instantiation_srcs.items():
         src = "Common/Core/vtkArrayBulkInstantiate.cxx.in"
-        out = "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(suffix)
+        out = "Common/Core/vtkArrayBulkInstantiate_{}.cxx".format(ctype)
         cmake_configure_files(
-            name = "_genrule_bulk_instantiation_srcs_" + suffix,
+            name = "_genrule_bulk_instantiation_srcs_" + ctype,
             srcs = [src],
             outs = [out],
             defines = [
                 "BULK_INSTANTIATION_SOURCES=" + "\n".join([
                     "#include \"{}\"".format(x)
-                    for x in bulk_instantiation_srcs.get(ctype, [])
+                    for x in files
                 ]),
             ],
             strict = True,
