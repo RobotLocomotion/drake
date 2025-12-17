@@ -109,8 +109,7 @@ void CenicIntegrator<T>::DoInitialize() {
 
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
-  builder_ = std::make_unique<IcfBuilder<T>>(
-      plant(), plant().GetMyContextFromRoot(this->get_context()));
+  builder_ = std::make_unique<IcfBuilder<T>>(plant());
 
   // Allocate scratch variables.
   scratch_.Resize(plant());
