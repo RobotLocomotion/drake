@@ -54,16 +54,16 @@ class IcfBuilder {
   }
 
   /* Updates only the time step δt. All other model data remains unchanged. */
-  void UpdateModel(const T& time_step, IcfModel<T>* model) const;
+  void UpdateTimeStep(const T& time_step, IcfModel<T>* model) const;
 
   /* Updates only the time step δt and feedback gains. All other model data
   remains unchanged.
   @pre The existence (i.e., nullness) of the two feedbacks values must match the
   existence of the most recent prior call to UpdateModel(). */
-  void UpdateModel(const T& time_step,
-                   const IcfLinearFeedbackGains<T>* actuation_feedback,
-                   const IcfLinearFeedbackGains<T>* external_feedback,
-                   IcfModel<T>* model) const;
+  void UpdateTimeStep(const T& time_step,
+                      const IcfLinearFeedbackGains<T>* actuation_feedback,
+                      const IcfLinearFeedbackGains<T>* external_feedback,
+                      IcfModel<T>* model) const;
 
  private:
   /* Scratch workspace data to build the model. */
@@ -150,10 +150,10 @@ class IcfBuilder {
   std::vector<T> body_mass_;             // mass of each body.
   VectorX<T> effort_limits_;             // actuator limits for each velocity.
   std::vector<int> clique_nu_;           // number of actuators per clique.
+  int num_actuation_constraints_{};      // count of clique_nu_[k] > 0.
 
   std::vector<int> limited_clique_sizes_;        // nv in each limited clique.
-  std::vector<int> clique_to_limit_constraint_;  // clique idx <--> limit idx.
-  std::vector<int> limit_constraint_to_clique_;
+  std::vector<int> clique_to_limit_constraint_;  // clique idx --> limit idx.
 
   // Internal storage for geometry query results.
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;
