@@ -40,16 +40,16 @@ _VTK_FIXED_SIZE_NUMERIC_TYPES = (
 # and `vtk_type_native_choice`. Each value is a tuple of (preferred_ctype,
 # fallback_ctype).
 _VTK_TYPE_NATIVE = {
-    "vtkTypeInt8": ("signed char", None),
-    "vtkTypeUInt8": ("unsigned char", None),
-    "vtkTypeInt16": ("short", None),
-    "vtkTypeUInt16": ("unsigned short", None),
-    "vtkTypeInt32": ("int", None),
-    "vtkTypeUInt32": ("unsigned int", None),
-    "vtkTypeInt64": ("long", "long long"),
-    "vtkTypeUInt64": ("unsigned long", "unsigned long long"),
-    "vtkTypeFloat32": ("float", None),
-    "vtkTypeFloat64": ("double", None),
+    "Int8": ("SIGNED_CHAR", None),
+    "UInt8": ("UNSIGNED_CHAR", None),
+    "Int16": ("SHORT", None),
+    "UInt16": ("UNSIGNED_SHORT", None),
+    "Int32": ("INT", None),
+    "UInt32": ("UNSIGNED_INT", None),
+    "Int64": ("LONG", "LONG_LONG"),
+    "UInt64": ("UNSIGNED_LONG", "UNSIGNED_LONG_LONG"),
+    "Float32": ("FLOAT", None),
+    "Float64": ("DOUBLE", None),
 }
 
 def _generate_common_core_array_dispatch_array_list():
@@ -121,8 +121,8 @@ def _ctype_to_vtk_camel_type(ctype):
     if ctype == None:
         return None
     return "vtk" + "".join([
-        word.capitalize()
-        for word in ctype.split(" ")
+        word.lower().capitalize()
+        for word in ctype.split("_")
     ])
 
 def _generate_common_core_type_list_macros():
@@ -282,7 +282,7 @@ def _generate_common_core_typed_arrays():
             )
             all_out_hdrs.append(out_hdr)
             all_out_srcs.append(out_src)
-            ctype, _ = _VTK_TYPE_NATIVE[vtk_type]
+            ctype, _ = _VTK_TYPE_NATIVE[vtk_type[len("vtkType"):]]
             bulk_instantiation_srcs.setdefault(ctype, []).append(out_src)
     native.filegroup(
         name = name + "_hdrs",
@@ -294,65 +294,81 @@ def _generate_common_core_typed_arrays():
     )
     return bulk_instantiation_srcs
 
-def _generate_common_core_aos_typed_arrays():
-    """Mimics a subset of vtkTypeArrays.cmake, for the loop that mentions
-    vtkAOSTypedArray.h.in. Generates a pair of `*.h` and `*.inc` files for each
-    of VTK's primitive types. Returns the bulk_instantiation_srcs dictionary of
-    generated files.
+def _vtk_type_native(type):
+    """Mimics the vtk_type_native and vtk_type_native_choice upstream functions.
+    Note that instead of taking all of the same arguments as those functions,
+    we take `type` and look up the rest.
     """
-    name = "common_core_aos_type_arrays"
-    result_hdrs = []
-    result_srcs = []
-    bulk_instantiation_srcs = {}
-    for vtk_type in _VTK_FIXED_SIZE_NUMERIC_TYPES:
-        preferred_ctype, fallback_ctype = _VTK_TYPE_NATIVE[vtk_type]
-        without_vtk_type_prefix = vtk_type.removeprefix("vtkType")
-        preferred_ctype_upper = preferred_ctype.replace(" ", "_").upper()
-        preferred_class = _ctype_to_vtk_camel_type(preferred_ctype)
-        fallback_class = _ctype_to_vtk_camel_type(fallback_ctype)
-        srcs = [
-            "Common/Core/vtkAOSTypedArray.h.in",
-            "Common/Core/vtkAOSTypedArray.cxx.in",
-        ]
-        outs = [
-            "Common/Core/{}Array.h".format(vtk_type),
-            # The CMakeLists.txt generates `*.cxx` files, but we don't want
-            # Bazel to compile them so we use `*.inc` here.
-            "Common/Core/{}Array.inc".format(vtk_type),
-        ]
-        cmake_configure_files(
-            name = "_common_core_aos_type_arrays_" + without_vtk_type_prefix,
-            srcs = srcs,
-            outs = outs,
-            defines = [
-                "VTK_TYPE_NAME={}".format(without_vtk_type_prefix),
-                "VTK_TYPE_NATIVE=" + """
-#if VTK_TYPE_{vtk_type_upper} == VTK_{preferred_ctype_upper}
+    preferred_ctype, fallback_ctype = _VTK_TYPE_NATIVE[type]
+    type_upper = type.upper()
+    if fallback_ctype == None:
+        return """
+        #if VTK_TYPE_{type_upper} == VTK_{ctype}
+        # include \"{clazz}Array.h\"
+        # define vtkTypeArrayBase {clazz}Array
+        #endif
+        """.format(
+            type_upper = type_upper,
+            ctype = preferred_ctype,
+            clazz = _ctype_to_vtk_camel_type(preferred_ctype),
+        )
+    else:
+        return """
+#if VTK_TYPE_{type_upper} == VTK_{preferred_ctype}
 # include \"{preferred_class}Array.h\"
 # define vtkTypeArrayBase {preferred_class}Array
-#else
+#elif VTK_TYPE_{type_upper} == VTK_{fallback_ctype}
 # include \"{fallback_class}Array.h\"
 # define vtkTypeArrayBase {fallback_class}Array
 #endif
-                """.format(
-                    vtk_type_upper = without_vtk_type_prefix.upper(),
-                    preferred_ctype_upper = preferred_ctype_upper,
-                    preferred_class = preferred_class,
-                    fallback_class = fallback_class or "_ERROR_",
-                ),
+        """.format(
+            type_upper = type_upper,
+            preferred_ctype = preferred_ctype,
+            preferred_class = _ctype_to_vtk_camel_type(preferred_ctype),
+            fallback_ctype = fallback_ctype,
+            fallback_class = _ctype_to_vtk_camel_type(fallback_ctype),
+        )
+
+def _generate_common_core_aos_typed_arrays():
+    """Mimics a subset of vtkTypeArrays.cmake, for the loop that mentions
+    vtkAOSTypedArray.h.in. Generates a pair of `*.h` and `*.inc` files for each
+    of VTK's primitive types. Unlike, CMakeLists.txt which generates a `*.cxx`
+    file, we generate `*.inc` here because we don't want Bazel to compile it
+    directly; instead, the `*.inc` file will be compiled via the "bulk
+    instantiation" mechanism. Returns the bulk_instantiation_srcs dictionary of
+    generated files.
+    """
+    name = "common_core_aos_type_arrays"
+    all_out_hdrs = []
+    all_out_srcs = []
+    bulk_instantiation_srcs = {}
+    for type in _VTK_FIXED_SIZE_NUMERIC_TYPES:
+        vtk_type = type[len("vtkType"):]
+        in_hdr = "Common/Core/vtkAOSTypedArray.h.in"
+        out_hdr = "Common/Core/{}Array.h".format(type)
+        in_src = "Common/Core/vtkAOSTypedArray.cxx.in"
+        out_src = "Common/Core/{}Array.inc".format(type)
+        cmake_configure_files(
+            name = "_common_core_aos_type_arrays_" + type,
+            srcs = [in_hdr, in_src],
+            outs = [out_hdr, out_src],
+            defines = [
+                "VTK_TYPE_NAME={}".format(vtk_type),
+                "VTK_TYPE_NATIVE=" + _vtk_type_native(vtk_type),
             ],
             strict = True,
         )
-        result_hdrs.append(outs[0])
-        result_srcs.append(outs[1])
-        bulk_instantiation_srcs.setdefault(preferred_ctype, []).append(outs[1])
+        all_out_hdrs.append(out_hdr)
+        all_out_srcs.append(out_src)
+        ctype, _ = _VTK_TYPE_NATIVE[vtk_type]
+        bulk_instantiation_srcs.setdefault(ctype, []).append(out_src)
     native.filegroup(
         name = name + "_hdrs",
-        srcs = result_hdrs,
+        srcs = all_out_hdrs,
     )
     native.filegroup(
         name = name + "_srcs",
-        srcs = result_srcs,
+        srcs = all_out_srcs,
     )
     return bulk_instantiation_srcs
 
