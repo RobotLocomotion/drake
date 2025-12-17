@@ -36,32 +36,32 @@ for modern robotics workflows.
 
 Benefits of CENIC include:
 
-- Guaranteed convergence. Unlike traditional implicit integrators that rely
-  on non-convex Newton-Raphson solves, CENIC's convex formulation eliminates
-  step rejections due to convergence failures.
+- Guaranteed convergence. Unlike traditional implicit integrators that rely on
+non-convex Newton-Raphson solves, CENIC's convex formulation eliminates step
+rejections due to convergence failures.
 
 - Guaranteed accuracy. CENIC inherits the well-studied accuracy guarantees
-  associated with error-controlled integration [Hairer et. al., 1996],
-avoiding discretization artifacts common in fixed-step discrete-time methods.
+associated with error-controlled integration [Hairer et. al., 1996], avoiding
+discretization artifacts common in fixed-step discrete-time methods.
 
-- Automatic time step selection. Users specify a desired accuracy rather than
-  a fixed time step, eliminating a common pain point in authoring multibody
-  simulations.
+- Automatic time step selection. Users specify a desired accuracy rather than a
+fixed time step, eliminating a common pain point in authoring multibody
+simulations.
 
 - Implicit treatment of external systems. This means that users can connect
-  arbitrary stiff controllers (e.g., custom ``LeafSystem`s) to the
-  `MultibodyPlant`` and have them treated implicitly in CENIC's convex
-  formulation. This allows for larger time steps, leading to faster and more
-  stable simulations.
+arbitrary stiff controllers (e.g., custom ``LeafSystem`s) to the
+`MultibodyPlant`` and have them treated implicitly in CENIC's convex
+formulation. This allows for larger time steps, leading to faster and more
+stable simulations.
 
 - Principled static/dynamic friction modeling. Unlike discrete solvers, CENIC
-  can simulate frictional contact with different static and dynamic friction
-  coefficients.
+can simulate frictional contact with different static and dynamic friction
+coefficients.
 
-- Speed. CENIC consistently outperforms general-purpose integrators by orders
-  of magnitude on contact-rich problems. Error-controlled CENIC is often (but
-  not always) faster than discrete-time simulation, depending on the
-  simulation in question and the requested accuracy.
+- Speed. CENIC consistently outperforms general-purpose integrators by orders of
+magnitude on contact-rich problems. Error-controlled CENIC is often (but not
+always) faster than discrete-time simulation, depending on the simulation in
+question and the requested accuracy.
 
 CENIC works by solving a convex Irrotational Contact Fields (ICF)
 optimization problem [Castro et al., 2023] to advance the system state

@@ -19,151 +19,131 @@
 namespace drake {
 namespace multibody {
 
-/**
- * Convex Error-controlled Numerical Integration for Contact (CENIC) is a
- * specialized error-controlled implicit integrator for contact-rich robotics
- * simulations [Kurtz et al., 2025].
- *
- * CENIC provides variable-step error-controlled integration for multibody
- * systems with stiff contact interactions, while maintaining the high speeds
- * characteristic of discrete-time solvers and required for modern robotics
- * workflows.
- *
- * Benefits of CENIC include:
- *
- * - Guaranteed convergence. Unlike traditional implicit integrators that rely
- *   on non-convex Newton-Raphson solves, CENIC's convex formulation eliminates
- *   step rejections due to convergence failures.
- *
- * - Guaranteed accuracy. CENIC inherits the well-studied accuracy guarantees
- *   associated with error-controlled integration [Hairer et. al., 1996],
- * avoiding discretization artifacts common in fixed-step discrete-time methods.
- *
- * - Automatic time step selection. Users specify a desired accuracy rather than
- *   a fixed time step, eliminating a common pain point in authoring multibody
- *   simulations.
- *
- * - Implicit treatment of external systems. This means that users can connect
- *   arbitrary stiff controllers (e.g., custom `LeafSystem`s) to the
- *   `MultibodyPlant` and have them treated implicitly in CENIC's convex
- *   formulation. This allows for larger time steps, leading to faster and more
- *   stable simulations.
- *
- * - Principled static/dynamic friction modeling. Unlike discrete solvers, CENIC
- *   can simulate frictional contact with different static and dynamic friction
- *   coefficients.
- *
- * - Speed. CENIC consistently outperforms general-purpose integrators by orders
- *   of magnitude on contact-rich problems. Error-controlled CENIC is often (but
- *   not always) faster than discrete-time simulation, depending on the
- *   simulation in question and the requested accuracy.
- *
- * CENIC works by solving a convex Irrotational Contact Fields (ICF)
- * optimization problem [Castro et al., 2023] to advance the system state at
- * each time step. A simple half-stepping strategy provides a second-order error
- * estimate for automatic step-size selection.
- *
- * Because CENIC is specific to multibody systems, this integrator requires a
- * system diagram with a `MultibodyPlant` subsystem named `"plant"`.
- *
- * Running CENIC in fixed-step mode (with error-control disabled) recovers the
- * "Lagged" variant of discrete-time ICF simulation from [Castro, 2023].
- *
- * References:
- *
- *   Kurtz V. and Castro A., 2025. CENIC: Convex Error-controlled
- *   Numerical Integration for Contact. https://arxiv.org/abs/2511.08771.
- *
- *   Castro A., Han X., and Masterjohn J., 2023. Irrotational
- *   Contact Fields. https://arxiv.org/abs/2312.03908.
- *
- *   Hairer E. and Wanner G., 1996. Solving Ordinary Differential
- *   Equations II: Stiff and Differential-Algebraic Problems. Springer Series in
- *   Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd edition.
- */
+/** Convex Error-controlled Numerical Integration for Contact (CENIC) is a
+specialized error-controlled implicit integrator for contact-rich robotics
+simulations [Kurtz et al., 2025].
+
+CENIC provides variable-step error-controlled integration for multibody systems
+with stiff contact interactions, while maintaining the high speeds
+characteristic of discrete-time solvers and required for modern robotics
+workflows.
+
+Benefits of CENIC include:
+
+- Guaranteed convergence. Unlike traditional implicit integrators that rely on
+  non-convex Newton-Raphson solves, CENIC's convex formulation eliminates step
+  rejections due to convergence failures.
+
+- Guaranteed accuracy. CENIC inherits the well-studied accuracy guarantees
+  associated with error-controlled integration [Hairer et. al., 1996], avoiding
+  discretization artifacts common in fixed-step discrete-time methods.
+
+- Automatic time step selection. Users specify a desired accuracy rather than a
+  fixed time step, eliminating a common pain point in authoring multibody
+  simulations.
+
+- Implicit treatment of external systems. This means that users can connect
+  arbitrary stiff controllers (e.g., custom `LeafSystem`s) to the
+  `MultibodyPlant` and have them treated implicitly in CENIC's convex
+  formulation. This allows for larger time steps, leading to faster and more
+  stable simulations.
+
+- Principled static/dynamic friction modeling. Unlike discrete solvers, CENIC
+  can simulate frictional contact with different static and dynamic friction
+  coefficients.
+
+- Speed. CENIC consistently outperforms general-purpose integrators by orders of
+  magnitude on contact-rich problems. Error-controlled CENIC is often (but not
+  always) faster than discrete-time simulation, depending on the simulation in
+  question and the requested accuracy.
+
+CENIC works by solving a convex Irrotational Contact Fields (ICF) optimization
+problem [Castro et al., 2023] to advance the system state at each time step. A
+simple half-stepping strategy provides a second-order error estimate for
+automatic step-size selection.
+
+Because CENIC is specific to multibody systems, this integrator requires a
+system diagram with a `MultibodyPlant` subsystem named `"plant"`.
+
+Running CENIC in fixed-step mode (with error-control disabled) recovers the
+"Lagged" variant of discrete-time ICF simulation from [Castro, 2023].
+
+References:
+
+  Kurtz V. and Castro A., 2025. CENIC: Convex Error-controlled Numerical
+  Integration for Contact. https://arxiv.org/abs/2511.08771.
+
+  Castro A., Han X., and Masterjohn J., 2023. Irrotational Contact
+  Fields. https://arxiv.org/abs/2312.03908.
+
+  Hairer E. and Wanner G., 1996. Solving Ordinary Differential Equations II:
+  Stiff and Differential-Algebraic Problems. Springer Series in Computational
+  Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd edition.
+
+@tparam_nonsymbolic_scalar */
 template <class T>
 class CenicIntegrator final : public systems::IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CenicIntegrator);
 
-  /**
-   * Constructs the integrator.
-   *
-   * @param system The overall system diagram to simulate. Must include a
-   *               MultibodyPlant and associated SceneGraph, with the plant
-   *               found as a direct child of the `system` diagram using the
-   *               subsystem name `"plant"`. This system is aliased by this
-   *               object so must remain alive longer than the integrator.
-   * @param context context for the overall system.
-   */
+  /** Constructs the integrator.
+  @param system The overall system diagram to simulate. Must include a
+                MultibodyPlant and associated SceneGraph, with the plant
+                found as a direct child of the `system` diagram using the
+                subsystem name `"plant"`. This system is aliased by this
+                object so must remain alive longer than the integrator.
+  @param context context for the overall system.  */
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
 
   ~CenicIntegrator() override;
 
-  /**
-   * Gets a reference to the MultibodyPlant used to formulate the convex
-   * optimization problem.
-   */
+  /** Gets a reference to the MultibodyPlant used to formulate the convex
+  optimization problem. */
   const MultibodyPlant<T>& plant() const { return plant_; }
 
-  /**
-   * Gets a reference to the ICF builder used to set up the convex problem.
-   */
+  /** Gets a reference to the ICF builder used to set up the convex problem. */
   contact_solvers::icf::internal::IcfBuilder<T>& builder() {
     // N.B. this is not const because the builder caches geometry data.
     DRAKE_ASSERT(builder_ != nullptr);
     return *builder_;
   }
 
-  /**
-   * Gets the current convex solver tolerances and iteration limits.
-   */
+  /** Gets the current convex solver tolerances and iteration limits. */
   const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
       const {
     return solver_.get_parameters();
   }
 
-  /**
-   * Sets the convex solver tolerances and iteration limits.
-   */
+  /** Sets the convex solver tolerances and iteration limits. */
   void set_solver_parameters(
       const contact_solvers::icf::IcfSolverParameters& parameters) {
     solver_.set_parameters(parameters);
   }
 
-  /**
-   * Gets the current total number of solver iterations across all time steps.
+  /** Gets the current total number of solver iterations across all time steps.
    */
   int get_total_solver_iterations() const { return total_solver_iterations_; }
 
-  /**
-   * Gets the current total number of linesearch iterations, across all time
-   * steps and solver iterations.
-   */
+  /**  Gets the current total number of linesearch iterations, across all time
+  steps and solver iterations. */
   int get_total_ls_iterations() const { return total_ls_iterations_; }
 
-  /**
-   * Gets the current total number of Hessian factorizations performed, across
-   * all time steps and solver iterations.
-   */
+  /** Gets the current total number of Hessian factorizations performed, across
+  all time steps and solver iterations. */
   int get_total_hessian_factorizations() const {
     return total_hessian_factorizations_;
   }
 
-  /**
-   * Error estimation is supported via half-stepping.
-   */
+  /** Error estimation is supported via half-stepping. */
   bool supports_error_estimation() const final { return true; }
 
-  /**
-   * Half-stepping error estimation gives a second-order error estimate. See
-   * ImplicitEulerIntegrator for details.
-   */
+  /** Half-stepping error estimation gives a second-order error estimate. See
+  ImplicitEulerIntegrator for details. */
   int get_error_estimate_order() const final { return 2; }
 
  private:
-  // Preallocated scratch space
+  /* Preallocated scratch space. */
   struct Scratch {
     /* Resizes the scratch space to accommodate the given plant. */
     void Resize(const MultibodyPlant<T>& plant);
