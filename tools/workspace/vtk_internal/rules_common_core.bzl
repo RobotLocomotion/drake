@@ -220,11 +220,11 @@ def _generate_common_core_array_instantiations():
     return bulk_instantiation_srcs
 
 def _generate_array_specialization(*, array_prefix, vtk_type, concrete_type):
-    """Mimics a subset of vtkTypeArrays.cmake macro of the same name.
-    Returns the pair of (out_hdr, out_src) filenames. Unlike, CMakeLists.txt
-    which generates a `*.cxx` file, we generate `*.inc` here because we don't
-    want Bazel to compile it directly; instead, the `*.inc` file will be
-    compiled via the "bulk instantiation" mechanism.
+    """Mimics a subset of vtkTypeArrays.cmake macro of the same name. Unlike
+    CMakeLists.txt which generates a `*.cxx` file, we generate `*.inc` here
+    because we don't want Bazel to compile it directly; instead, the `*.inc`
+    file will be compiled via the "bulk instantiation" mechanism. Returns the
+    generated code's filenames (out_hdr, out_src).
     """
     class_name = "vtk{}{}Array".format(array_prefix, vtk_type)
     in_hdr = "Common/Core/vtk{}TypedArray.h.in".format(array_prefix)
