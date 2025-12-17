@@ -130,7 +130,7 @@ def _generate_common_core_type_list_macros():
     Generates Common/Core/vtkTypeListMacros.h.
     """
     name = "common_core_type_list_macros"
-    max = 99
+    max = 99  # Per Common/Core/CMakeLists.txt call to CreateTypeListMacros.
     content = [
         "#pragma once",
         "#include \"vtkTypeList.h\"",
