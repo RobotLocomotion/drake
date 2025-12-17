@@ -239,7 +239,7 @@ TEST_P(TwoSpheres, GetContact) {
   fmt::print("Acc. ratio : {}\n", accel_ratio);
   fmt::print("Mass ratio : {}\n", mass_ratio);
 
-  IcfBuilder<double> builder(*plant_, *plant_context_);
+  IcfBuilder<double> builder(*plant_);
   IcfModel<double> model;
   IcfLinearFeedbackGains<double> no_feedback;
   no_feedback.K.setZero(plant_->num_velocities());
@@ -260,7 +260,7 @@ TEST_P(TwoSpheres, MakeData) {
   const int num_pairs =
       plant_->get_contact_model() == ContactModel::kPoint ? 1 : 4;
 
-  IcfBuilder<double> builder(*plant_, *plant_context_);
+  IcfBuilder<double> builder(*plant_);
   IcfModel<double> model;
   builder.UpdateModel(*plant_context_, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);

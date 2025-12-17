@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <utility>
 
 #include "drake/geometry/scene_graph_inspector.h"
@@ -73,8 +74,7 @@ void IcfBuilder<T>::CalcGeometryContactData(
 }
 
 template <typename T>
-IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
-                          const systems::Context<T>& context)
+IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant)
     : plant_(plant), scratch_(plant) {
   ValidatePlant();
 
@@ -193,25 +193,6 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
     const int clique_nv = clique_sizes_[clique];
     limited_clique_sizes_.push_back(clique_nv);
     clique_to_limit_constraint_[clique] = limited_clique_sizes_.size() - 1;
-  }
-
-  // Retrieve constant model parameters.
-  // TODO(amcastro-tri): This should be retrieved from the default contact
-  // properties.
-  const double kDefaultDissipation = 50.0;
-  const double kDefaultStiffness = 1.0e6;
-
-  const geometry::SceneGraphInspector<T>& inspector =
-      plant.EvalSceneGraphInspector(context);
-
-  const std::vector<geometry::GeometryId> geometries =
-      inspector.GetAllGeometryIds(geometry::Role::kProximity);
-
-  for (geometry::GeometryId id : geometries) {
-    stiffness_[id] = GetPointContactStiffness(id, kDefaultStiffness, inspector);
-    friction_[id] = GetCoulombFriction(id, inspector);
-    dissipation_[id] =
-        GetHuntCrossleyDissipation(id, kDefaultDissipation, inspector);
   }
 }
 
@@ -526,6 +507,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
 
   const geometry::SceneGraphInspector<T>& inspector =
       plant_.EvalSceneGraphInspector(context);
+  RefreshGeometryDetails(context);
 
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
 
@@ -561,19 +543,21 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const Vector3<T> p_AB_W = p_WBo - p_WAo;
 
     // Material properties.
-    const T& kM = stiffness_.at(Mid);
-    const T& kN = stiffness_.at(Nid);
+    const auto& Mid_details = geometry_details_.at(Mid);
+    const auto& Nid_details = geometry_details_.at(Nid);
+    const T& kM = Mid_details.stiffness;
+    const T& kN = Nid_details.stiffness;
     const T k = GetCombinedPointContactStiffness(kM, kN);
 
-    const T& dM = dissipation_.at(Mid);
-    const T& dN = dissipation_.at(Nid);
+    const T& dM = Mid_details.dissipation;
+    const T& dN = Nid_details.dissipation;
     const T d = CombineHuntCrossleyDissipation(kM, kN, dM, dN);
 
     // Friction properties
-    const auto& mu_A = friction_.at(Mid);
-    const auto& mu_B = friction_.at(Nid);
+    const auto& mu_M = Mid_details.friction;
+    const auto& mu_N = Nid_details.friction;
     CoulombFriction<double> mu =
-        CalcContactFrictionFromSurfaceProperties(mu_A, mu_B);
+        CalcContactFrictionFromSurfaceProperties(mu_M, mu_N);
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -780,6 +764,38 @@ void IcfBuilder<T>::SetExternalGainConstraints(const VectorX<T>& Ke,
         VectorX<T>::Constant(clique_nv, std::numeric_limits<T>::infinity());
 
     gain_constraints.Set(c, c, Ke_c, be_c, e);
+  }
+}
+
+template <typename T>
+void IcfBuilder<T>::RefreshGeometryDetails(
+    const systems::Context<T>& context) const {
+  const geometry::SceneGraphInspector<T>& inspector =
+      plant_.EvalSceneGraphInspector(context);
+
+  if (inspector.geometry_version().IsSameAs(geometry_version_,
+                                            geometry::Role::kProximity)) {
+    return;
+  }
+  geometry_version_ = inspector.geometry_version();
+
+  // Retrieve constant model parameters.
+  // TODO(amcastro-tri): This should be retrieved from the default contact
+  // properties.
+  const double kDefaultDissipation = 50.0;
+  const double kDefaultStiffness = 1.0e6;
+
+  const std::vector<geometry::GeometryId> geometries =
+      inspector.GetAllGeometryIds(geometry::Role::kProximity);
+
+  for (geometry::GeometryId id : geometries) {
+    GeometryDetails details;
+    details.stiffness =
+        GetPointContactStiffness(id, kDefaultStiffness, inspector);
+    details.friction = GetCoulombFriction(id, inspector);
+    details.dissipation =
+        GetHuntCrossleyDissipation(id, kDefaultDissipation, inspector);
+    geometry_details_[id] = details;
   }
 }
 

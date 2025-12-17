@@ -52,7 +52,7 @@ GTEST_TEST(IcfBuilder, Limits) {
   auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
 
   const double time_step = 0.01;
-  IcfBuilder<double> builder(plant, plant_context);
+  IcfBuilder<double> builder(plant);
   IcfModel<double> model;
   builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 2);
@@ -76,7 +76,7 @@ GTEST_TEST(IcfBuilder, UpdateTimeStepOnly) {
   auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
 
   const double time_step = 0.01;
-  IcfBuilder<double> builder(plant, plant_context);
+  IcfBuilder<double> builder(plant);
   IcfModel<double> model;
   builder.UpdateModel(plant_context, time_step, &model);
   EXPECT_EQ(model.num_cliques(), 1);
@@ -111,7 +111,7 @@ GTEST_TEST(IcfBuilder, RetryStep) {
   no_feedback.K.setZero(plant.num_velocities());
   no_feedback.b.setZero(plant.num_velocities());
   const double time_step = 0.01;
-  IcfBuilder<double> builder(plant, plant_context);
+  IcfBuilder<double> builder(plant);
   IcfModel<double> model;
 
   // Run a full step and then a "retry step" for all combinations of feedback
@@ -149,11 +149,7 @@ GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
 
   plant.Finalize();
 
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant),
                               ".*not.*support.*1 ball constraint\\(s\\).*");
 }
 
@@ -169,14 +165,9 @@ GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
   plant.AddDistanceConstraint(plant.get_body(BodyIndex(0)), Vector3d::Zero(),
                               plant.get_body(BodyIndex(1)), Vector3d::Zero(),
                               0.01);
-
   plant.Finalize();
 
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant),
                               ".*not.*support.*1 distance constraint\\(s\\).*");
 }
 
@@ -193,11 +184,7 @@ GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
 
   plant.Finalize();
 
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant),
                               ".*not.*support.*1 tendon constraint\\(s\\).*");
 }
 
@@ -212,14 +199,9 @@ GTEST_TEST(IcfBuilder, WeldConstraintUnsupported) {
 
   plant.AddWeldConstraint(plant.get_body(BodyIndex(0)), RigidTransformd(),
                           plant.get_body(BodyIndex(1)), RigidTransformd());
-
   plant.Finalize();
 
-  auto diagram = diagram_builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  auto& plant_context = plant.GetMyContextFromRoot(*diagram_context);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant, plant_context),
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(plant),
                               ".*not.*support.*1 weld constraint\\(s\\).*");
 }
 

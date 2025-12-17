@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -25,8 +25,7 @@ class IcfBuilder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfBuilder);
 
-  IcfBuilder(const MultibodyPlant<T>& plant,
-             const systems::Context<T>& context);
+  explicit IcfBuilder(const MultibodyPlant<T>& plant);
 
   /* Updates the given IcfModel to represent the ICF problem
 
@@ -136,12 +135,11 @@ class IcfBuilder {
     return tree_to_clique_[tree_index];
   }
 
+  void RefreshGeometryDetails(const systems::Context<T>& context) const;
+
   const MultibodyPlant<T>& plant_;
 
   // Model properties that do not change unless the system changes.
-  std::map<geometry::GeometryId, CoulombFriction<double>> friction_;
-  std::map<geometry::GeometryId, T> stiffness_;    // point contact.
-  std::map<geometry::GeometryId, T> dissipation_;  // H&C dissipation.
   std::vector<int> tree_to_clique_;      // cliques are trees with nv > 0.
   std::vector<int> clique_sizes_;        // nv for each clique.
   std::vector<int> body_jacobian_cols_;  // cols of J_WB for each body.
@@ -154,6 +152,17 @@ class IcfBuilder {
 
   std::vector<int> limited_clique_sizes_;        // nv in each limited clique.
   std::vector<int> clique_to_limit_constraint_;  // clique idx --> limit idx.
+
+  // Cache of geometry properties. This is invalidated by changes of
+  // geometry_version_;
+  struct GeometryDetails {
+    CoulombFriction<double> friction;
+    T stiffness;    // point contact.
+    T dissipation;  // H&C dissipation.
+  };
+  mutable std::unordered_map<geometry::GeometryId, GeometryDetails>
+      geometry_details_;
+  mutable geometry::GeometryVersion geometry_version_;
 
   // Internal storage for geometry query results.
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;
