@@ -30,7 +30,9 @@ namespace ad {
 template <typename Archive>
 void Serialize(Archive* a, drake::ad::AutoDiff* x) {
   a->Visit(drake::MakeNameValue("value", &(x->value())));
-  a->Visit(drake::MakeNameValue("derivatives", &(x->derivatives())));
+  Eigen::VectorXd derivatives = x->derivatives();
+  a->Visit(drake::MakeNameValue("derivatives", &derivatives));
+  x->derivatives() = derivatives;
 }
 }  // namespace ad
 }  // namespace drake
