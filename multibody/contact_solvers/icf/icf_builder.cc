@@ -163,12 +163,14 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
     ++clique_nu_[c];
     effort_limits_[dof] = actuator.effort_limit();
   }
+  num_actuation_constraints_ = std::ranges::count_if(clique_nu_, [](int k) {
+    return k > 0;
+  });
 
   // Iterate over joints to find cliques with at least one 1-DoF joint with
   // finite limits. Each of these cliques will require a limit constraint.
   limited_clique_sizes_.clear();
   clique_to_limit_constraint_.assign(clique_sizes_.size(), -1);
-  limit_constraint_to_clique_.clear();
   for (JointIndex joint_index : plant.GetJointIndices()) {
     const Joint<T>& joint = plant.get_joint(joint_index);
 
@@ -190,7 +192,6 @@ IcfBuilder<T>::IcfBuilder(const MultibodyPlant<T>& plant,
     const int clique = tree_to_clique(tree_index);
     const int clique_nv = clique_sizes_[clique];
     limited_clique_sizes_.push_back(clique_nv);
-    limit_constraint_to_clique_.push_back(clique);
     clique_to_limit_constraint_[clique] = limited_clique_sizes_.size() - 1;
   }
 
@@ -333,13 +334,14 @@ void IcfBuilder<T>::UpdateModel(
 }
 
 template <typename T>
-void IcfBuilder<T>::UpdateModel(const T& time_step, IcfModel<T>* model) const {
+void IcfBuilder<T>::UpdateTimeStep(const T& time_step,
+                                   IcfModel<T>* model) const {
   DRAKE_ASSERT(model != nullptr);
   model->UpdateTimeStep(time_step);
 }
 
 template <typename T>
-void IcfBuilder<T>::UpdateModel(
+void IcfBuilder<T>::UpdateTimeStep(
     const T& time_step, const IcfLinearFeedbackGains<T>* actuation_feedback,
     const IcfLinearFeedbackGains<T>* external_feedback,
     IcfModel<T>* model) const {
@@ -348,22 +350,23 @@ void IcfBuilder<T>::UpdateModel(
   model->UpdateTimeStep(time_step);
 
   // N.B. external forces must come first, followed by actuation.
-#if 0
-  // This DRAKE_DEMAND is not correct. We only add gain constraints for cliques
-  // that are actuated (see line 685), so it's sometimes the case that the 0 <
-  // gain_constraints.num_constraints() < model->num_cliques().
+
+  bool has_actuation_feedback = actuation_feedback != nullptr;
+  bool has_external_feedback = external_feedback != nullptr;
+  int external_constraints = model->num_cliques() * has_external_feedback;
+  int actuation_constraints =
+      num_actuation_constraints_ * has_actuation_feedback;
   auto& gain_constraints = model->gain_constraints_pool();
+  DRAKE_DEMAND(gain_constraints.num_constraints() >= external_constraints);
   DRAKE_DEMAND(gain_constraints.num_constraints() ==
-               model->num_cliques() *
-                   ((external_feedback != nullptr ? 1 : 0) +
-                    (actuation_feedback != nullptr ? 1 : 0)));
-#endif
-  if (external_feedback != nullptr) {
+               external_constraints + actuation_constraints);
+
+  if (has_external_feedback) {
     const VectorX<T>& Ke = external_feedback->K;
     const VectorX<T>& be = external_feedback->b;
     SetExternalGainConstraints(Ke, be, model);
   }
-  if (actuation_feedback != nullptr) {
+  if (has_actuation_feedback) {
     const VectorX<T>& Ku = actuation_feedback->K;
     const VectorX<T>& bu = actuation_feedback->b;
     // N.B. actuation constraint indices in the pool depend on whether external
