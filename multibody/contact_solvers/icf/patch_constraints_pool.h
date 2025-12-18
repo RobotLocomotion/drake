@@ -134,11 +134,7 @@ class PatchConstraintsPool {
   @note As required by SetPatch(), body B is always dynamic (not anchored).
         Therefore we provide the position of the contact point relative to B
         and, if needed, the position relative to A is inferred from p_AB_W
-        provided to SetPatch().
-
-  [Masterjohn et al., 2022] Masterjohn, J., Guoy, D., Shepherd, J. and Castro,
-  A., 2022. Velocity level approximation of pressure field contact patches. IEEE
-  Robotics and Automation Letters, 7(4), pp.11593-11600. */
+        provided to SetPatch(). */
   void SetPair(const int patch_index, const int pair_index,
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
@@ -219,7 +215,7 @@ class PatchConstraintsPool {
   // εₛ = max(vₛ, μ⋅σ⋅wₜ⋅n₀), where vₛ is the stiction tolerance, μ is the
   // friction coefficient, wₜ is the Delassus operator approximation, and n₀ is
   // the normal impulse from the previous time step. See the ICF paper [Castro
-  // et al., 2025] for further details.
+  // et al., 2023] for further details.
   double sigma_{1.0e-3};
 
   // Data per patch. Indexed by patch index p < num_patches().
