@@ -141,7 +141,7 @@ GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
     Vector1AD y_autodiff;
     Paraboloid(x_autodiff, &y_autodiff);
     const double tol = 2.0e-7;
-    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
+    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff, 2), tol));
 
     // Compute the Hessian using the autodiff version of
     // ComputeNumericalGradient().

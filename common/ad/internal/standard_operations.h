@@ -7,7 +7,7 @@
 
 The functions provide not only arithmetic (+,-,*,/) and boolean comparison
 (<,<=,>,>=,==,!=) but also argument-dependent lookup ("ADL") compatibility with
-the standard library's mathematical functions (abs, etc.)
+the standard library's mathematical functions (abs, sin, round, isfinite, etc.)
 
 (See https://en.cppreference.com/w/cpp/language/adl for details about ADL.)
 

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/ad/auto_diff.h"
+#include "drake/common/ad/internal/static_unit_vector.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 
 namespace drake {
@@ -11,34 +12,40 @@ namespace {
 using Eigen::VectorXd;
 using test::LimitMalloc;
 
-// An empty fixture for later expansion.
-class PartialsHeapTest : public ::testing::Test {};
+// Provide some autodiff variables that don't expire at scope end for test
+// cases.
+class PartialsHeapTest : public ::testing::Test {
+ public:
+  PartialsHeapTest() {
+    // Prime the global storage so that it doesn't get billed to the test case.
+    internal::GetStaticUnitVector(0);
+  }
+};
 
-// Neither the constructor nor GetRawStorageMutable allocate when size() == 0.
-TEST_F(PartialsHeapTest, GetRawStorageMutableEmpty) {
+// Neither the constructor nor MakeMutableXpr allocate when size() == 0.
+TEST_F(PartialsHeapTest, MutableEmpty) {
   LimitMalloc guard;
   Partials empty;
-  empty.GetRawStorageMutable();
-  empty.GetRawStorageMutable();
+  empty.MakeMutableXpr();
+  empty.MakeMutableXpr();
 }
 
-// Between the full-degree `value` constructor and GetRawStorageMutable, at
-// most one allocation (for the returned storage) is allowed.
-TEST_F(PartialsHeapTest, GetRawStorageMutableGeneric) {
+// Neither the constructor nor MakeMutableXpr allocates when size() == 1.
+TEST_F(PartialsHeapTest, MutableUnit) {
+  LimitMalloc guard;
+  Partials unit{1, 0};
+  unit.MakeMutableXpr();
+  unit.MakeMutableXpr();
+}
+
+// Between the full-degree `value` constructor and MakeMutableXpr, at most one
+// allocation (for the returned storage) is allowed.
+TEST_F(PartialsHeapTest, MutableGeneric) {
   const Eigen::Vector3d value{1.0, 2.0, 3.0};
   LimitMalloc guard({1});
   Partials full(value);
-  full.GetRawStorageMutable();
-  full.GetRawStorageMutable();
-}
-
-// Between the unit-vector constructor and GetRawStorageMutable, at
-// most one allocation (for the returned storage) is allowed.
-TEST_F(PartialsHeapTest, GetRawStorageMutableUnit) {
-  LimitMalloc guard({1});
-  Partials unit(10, 0);
-  unit.GetRawStorageMutable();
-  unit.GetRawStorageMutable();
+  full.MakeMutableXpr();
+  full.MakeMutableXpr();
 }
 
 }  // namespace

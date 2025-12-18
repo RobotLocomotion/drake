@@ -14,8 +14,11 @@ namespace ad {
 Drake's AutoDiff is not templated; it only supports dynamically-sized
 derivatives using floating-point doubles.
 
-However, by using a careful representation trick (maintaining a separate scale
-factor) it runs faster than `Eigen::AutoDiffScalar<Eigen::VectorXd>`. */
+However, using modern C++ implementation tricks (reference-counted,
+copy-on-write derivatives storage) and a more careful representation
+(maintaining the derivatives scale separately, and using inline storage
+in case only one partial is non-zero) it runs much faster than
+`Eigen::AutoDiffScalar<Eigen::VectorXd>`. */
 class AutoDiff {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AutoDiff);
@@ -67,16 +70,11 @@ class AutoDiff {
   Instead of mutating the derivatives after construction, it's generally
   preferable to set them directly in the constructor if possible.
 
-  Do not presume any specific C++ type for the the return value. It will act
-  like a mutable Eigen column-vector expression (e.g., Eigen::Block<VectorXd>)
-  that also allows for assignment and resizing, but we reserve the right to
-  change the return type for efficiency down the road.
-
   @note This function name is kept for compatibility with Eigen::AutoDiffScalar
   but it does NOT run in constant-time even though its name is lowercase.
   Calling this function often needs to finalize the derivatives prior to
   returning the reference, so is O(N) in the size of the derivatives. */
-  Eigen::VectorXd& derivatives() { return partials_.GetRawStorageMutable(); }
+  DerivativesMutableXpr derivatives() { return partials_.MakeMutableXpr(); }
 
   /// @name Internal use only
   //@{

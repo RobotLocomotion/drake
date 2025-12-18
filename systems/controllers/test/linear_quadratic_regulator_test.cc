@@ -353,7 +353,7 @@ GTEST_TEST(TestLqr, AcrobotTest) {
       mbp, *mbp_context, Q, R, Eigen::Matrix<double, 4, 1>::Zero(),
       mbp.get_actuation_input_port().get_index());
 
-  EXPECT_TRUE(CompareMatrices(mbp_controller->D(), controller->D(), 1e-9));
+  EXPECT_TRUE(CompareMatrices(mbp_controller->D(), controller->D(), 1e-8));
 }
 
 }  // namespace

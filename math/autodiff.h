@@ -149,7 +149,7 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
   if (!num_derivatives.has_value()) num_derivatives = value.size();
 
   using ADScalar = typename DerivedAutoDiff::Scalar;
-  auto_diff_matrix->resize(value.rows(), value.cols());
+  auto_diff_matrix->derived().resize(value.rows(), value.cols());
   int deriv_num = deriv_num_start.value_or(0);
   for (int i = 0; i < value.size(); ++i) {
     (*auto_diff_matrix)(i) = ADScalar(value(i), *num_derivatives, deriv_num++);
