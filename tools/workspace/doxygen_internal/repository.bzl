@@ -80,6 +80,6 @@ def doxygen_internal_repository(
         repository = "doxygen/doxygen",
         commit = "Release_1_15_0",
         platform = "noble",
-        sha256 = "4375934ecc6e516d33a70d22f5b84c522c920733841748920e12d74e01198660",  # noqa
+        sha256 = "127f10a70aa3bf526f07f27d4c2f72c105ef72a32ba48a136320af09935d06f6",  # noqa
         mirrors = mirrors,
     )
