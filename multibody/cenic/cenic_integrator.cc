@@ -124,6 +124,12 @@ void CenicIntegrator<T>::DoInitialize() {
 }
 
 template <typename T>
+void CenicIntegrator<T>::SetSolverParameters(
+    const IcfSolverParameters& parameters) {
+  solver_.SetParameters(parameters);
+}
+
+template <typename T>
 bool CenicIntegrator<T>::DoStep(const T& h) {
   // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();

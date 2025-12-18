@@ -45,7 +45,6 @@ PYBIND11_MODULE(cenic, m) {
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
 
-    // TODO(vincekurtz): add bindings set IcfSolverParameters
     DefineTemplateClassWithDefault<CenicIntegrator<T>, IntegratorBase<T>>(
         m, "CenicIntegrator", GetPyParam<T>(), doc.CenicIntegrator.doc)
         .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
@@ -57,9 +56,8 @@ PYBIND11_MODULE(cenic, m) {
         .def("get_solver_parameters",
             &CenicIntegrator<T>::get_solver_parameters,
             doc.CenicIntegrator.get_solver_parameters.doc)
-        .def("set_solver_parameters",
-            &CenicIntegrator<T>::set_solver_parameters, py::arg("parameters"),
-            doc.CenicIntegrator.set_solver_parameters.doc);
+        .def("SetSolverParameters", &CenicIntegrator<T>::SetSolverParameters,
+            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 }

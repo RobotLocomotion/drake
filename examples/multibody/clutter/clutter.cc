@@ -496,7 +496,7 @@ int do_main() {
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   if (config.simulator_config.integration_scheme == "cenic") {
     auto& ci = dynamic_cast<CenicIntegrator<double>&>(integrator);
-    ci.set_solver_parameters(config.icf_solver_config);
+    ci.SetSolverParameters(config.icf_solver_config);
   }
 
   // Set the initial position of the objects.

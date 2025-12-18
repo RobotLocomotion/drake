@@ -354,7 +354,7 @@ def run_simulation(
         # Make sure we can set ICF parameters
         icf_params = IcfSolverParameters()
         icf_params.min_tolerance = 1e-7
-        ci.set_solver_parameters(icf_params)
+        ci.SetSolverParameters(icf_params)
         assert ci.get_solver_parameters().min_tolerance == 1e-7
 
     meshcat.StartRecording()
