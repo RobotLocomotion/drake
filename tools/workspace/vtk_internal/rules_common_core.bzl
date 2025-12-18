@@ -187,7 +187,7 @@ def _generate_common_core_array_instantiations():
             "vtkStdFunctionArrayInstantiate",
             "vtkStructuredPointArrayInstantiate",
             "vtkTypedDataArrayInstantiate",
-            # This one is only instantiated iff "long" is part of the ctype.
+            # This one is instantiated iff "long" is part of the ctype.
             # This matches Common/Core/CMakeLists.txt near the comment "see
             # comments in vtkGenericDataArray.h for explanation".
             "vtkGenericDataArrayValueRangeInstantiate",
@@ -257,7 +257,7 @@ def _generate_array_specialization(*, array_prefix, vtk_type, concrete_type):
 def _generate_common_core_typed_arrays():
     """Mimics a subset of vtkTypeArrays.cmake, for the (non-deprecated) loop
     that calls _generate_array_specialization. Generates a pair of `*.h` and
-    `*.inc` files for the cross product of VTK's primitive types and array
+    `*.inc` files for the cartesian product of VTK's primitive types and array
     types. Returns the bulk_instantiation_srcs dictionary of generated files.
     """
     name = "common_core_typed_arrays"
@@ -333,7 +333,7 @@ def _vtk_type_native(type):
 def _generate_common_core_aos_typed_arrays():
     """Mimics a subset of vtkTypeArrays.cmake, for the loop that mentions
     vtkAOSTypedArray.h.in. Generates a pair of `*.h` and `*.inc` files for each
-    of VTK's primitive types. Unlike, CMakeLists.txt which generates a `*.cxx`
+    of VTK's primitive types. Unlike CMakeLists.txt which generates a `*.cxx`
     file, we generate `*.inc` here because we don't want Bazel to compile it
     directly; instead, the `*.inc` file will be compiled via the "bulk
     instantiation" mechanism. Returns the bulk_instantiation_srcs dictionary of
