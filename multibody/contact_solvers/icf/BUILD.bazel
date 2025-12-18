@@ -15,6 +15,7 @@ drake_cc_package_library(
         ":coupler_constraints_data_pool",
         ":eigen_pool",
         ":gain_constraints_data_pool",
+        ":icf_builder",
         ":icf_data",
         ":icf_external_systems_linearizer",
         ":icf_linear_feedback_gains",
@@ -105,6 +106,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "icf_builder",
+    srcs = ["icf_builder.cc"],
+    hdrs = ["icf_builder.h"],
+    deps = [
+        ":icf_linear_feedback_gains",
+        ":icf_model",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+    implementation_deps = [
+        "//multibody/plant:contact_properties",
+    ],
+)
+
+drake_cc_library(
     name = "icf_external_systems_linearizer",
     srcs = ["icf_external_systems_linearizer.cc"],
     hdrs = ["icf_external_systems_linearizer.h"],
@@ -184,6 +200,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "icf_builder_test",
+    deps = [
+        ":icf_builder",
+        "//common/test_utilities",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "icf_data_test",
     deps = [
         ":icf_data",
@@ -222,6 +247,19 @@ drake_cc_googletest(
         ":icf_model",
         ":icf_solver",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "two_spheres_test",
+    deps = [
+        ":icf_builder",
+        ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//multibody/parsing:parser",
+        "//multibody/plant:contact_properties",
+        "//systems/framework:diagram_builder",
     ],
 )
 
