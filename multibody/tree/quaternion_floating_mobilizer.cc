@@ -484,6 +484,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // Leveraging comments and code in AngularVelocityToQuaternionRateMatrix(()
   // and noting that N⁺ᵣ(qᵣ) = L(2 * q_FM)ᵀ, where the elements of the matrix L
   // are linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
+  // TODO(Mitiguy) Ensure this calculation provides the time derivative of the
+  //  NrPlus matrix calculation in DoCalcNplusMatrix().
   const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcQMatrix(twice_qdot).transpose();
 
   // For the translational part of this mobilizer, the translational generalized
