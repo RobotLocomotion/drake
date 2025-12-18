@@ -55,6 +55,7 @@ drake_cc_googletest(
     deps = [
         ":cenic_integrator",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
