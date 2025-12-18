@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -25,8 +25,7 @@ class IcfBuilder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfBuilder);
 
-  IcfBuilder(const MultibodyPlant<T>& plant,
-             const systems::Context<T>& context);
+  explicit IcfBuilder(const MultibodyPlant<T>& plant);
 
   /* Updates the given IcfModel to represent the ICF problem
 
@@ -54,16 +53,16 @@ class IcfBuilder {
   }
 
   /* Updates only the time step δt. All other model data remains unchanged. */
-  void UpdateModel(const T& time_step, IcfModel<T>* model) const;
+  void UpdateTimeStep(const T& time_step, IcfModel<T>* model) const;
 
   /* Updates only the time step δt and feedback gains. All other model data
   remains unchanged.
   @pre The existence (i.e., nullness) of the two feedbacks values must match the
   existence of the most recent prior call to UpdateModel(). */
-  void UpdateModel(const T& time_step,
-                   const IcfLinearFeedbackGains<T>* actuation_feedback,
-                   const IcfLinearFeedbackGains<T>* external_feedback,
-                   IcfModel<T>* model) const;
+  void UpdateTimeStep(const T& time_step,
+                      const IcfLinearFeedbackGains<T>* actuation_feedback,
+                      const IcfLinearFeedbackGains<T>* external_feedback,
+                      IcfModel<T>* model) const;
 
  private:
   /* Scratch workspace data to build the model. */
@@ -136,12 +135,11 @@ class IcfBuilder {
     return tree_to_clique_[tree_index];
   }
 
+  void RefreshGeometryDetails(const geometry::SceneGraphInspector<T>&) const;
+
   const MultibodyPlant<T>& plant_;
 
   // Model properties that do not change unless the system changes.
-  std::map<geometry::GeometryId, CoulombFriction<double>> friction_;
-  std::map<geometry::GeometryId, T> stiffness_;    // point contact.
-  std::map<geometry::GeometryId, T> dissipation_;  // H&C dissipation.
   std::vector<int> tree_to_clique_;      // cliques are trees with nv > 0.
   std::vector<int> clique_sizes_;        // nv for each clique.
   std::vector<int> body_jacobian_cols_;  // cols of J_WB for each body.
@@ -150,10 +148,21 @@ class IcfBuilder {
   std::vector<T> body_mass_;             // mass of each body.
   VectorX<T> effort_limits_;             // actuator limits for each velocity.
   std::vector<int> clique_nu_;           // number of actuators per clique.
+  int num_actuation_constraints_{};      // count of clique_nu_[k] > 0.
 
   std::vector<int> limited_clique_sizes_;        // nv in each limited clique.
-  std::vector<int> clique_to_limit_constraint_;  // clique idx <--> limit idx.
-  std::vector<int> limit_constraint_to_clique_;
+  std::vector<int> clique_to_limit_constraint_;  // clique idx --> limit idx.
+
+  // Cache of geometry properties. This is invalidated by changes of
+  // geometry_version_;
+  struct GeometryDetails {
+    CoulombFriction<double> friction;
+    T stiffness;    // point contact.
+    T dissipation;  // H&C dissipation.
+  };
+  mutable std::unordered_map<geometry::GeometryId, GeometryDetails>
+      geometry_details_;
+  mutable geometry::GeometryVersion geometry_version_;
 
   // Internal storage for geometry query results.
   std::vector<geometry::PenetrationAsPointPair<T>> point_pairs_;

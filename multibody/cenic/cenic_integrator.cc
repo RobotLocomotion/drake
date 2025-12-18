@@ -109,8 +109,7 @@ void CenicIntegrator<T>::DoInitialize() {
 
   // Create the ICF builder, which will manage the construction of the convex
   // ICF optimization problem.
-  builder_ = std::make_unique<IcfBuilder<T>>(
-      plant(), plant().GetMyContextFromRoot(this->get_context()));
+  builder_ = std::make_unique<IcfBuilder<T>>(plant());
 
   // Allocate scratch variables.
   scratch_.Resize(plant());
@@ -173,8 +172,8 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // The last time we updated the model, we used the initial state (q₀, v₀),
     // so all we need to update is the time step and the external system
     // linearization.
-    builder().UpdateModel(h, actuation_feedback, external_feedback,
-                          &model_at_x0_);
+    builder().UpdateTimeStep(h, actuation_feedback, external_feedback,
+                             &model_at_x0_);
   } else {
     time_at_last_solve_ = t0;
     // Build the full model around (q₀, v₀, h).
@@ -202,7 +201,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // initial guess. Note that this solve starts from the same initial state as
     // the full step, so we can reuse all of the constraints, avoiding expensive
     // geometry queries and such.
-    builder().UpdateModel(0.5 * h, &model_at_x0_);
+    builder().UpdateTimeStep(0.5 * h, &model_at_x0_);
     v_guess += x_next_full_->get_substate(plant_subsystem_index_)
                    .get_generalized_velocity()
                    .CopyToVector();
