@@ -20,9 +20,9 @@ struct IcfLinearFeedbackGains {
   ~IcfLinearFeedbackGains();
 
   /* Resizes this to store the given number of plant velocities. */
-  void Resize(int nv) {
-    K.resize(nv);
-    b.resize(nv);
+  void Resize(int num_velocities) {
+    K.resize(num_velocities);
+    b.resize(num_velocities);
   }
 
   VectorX<T> K;
