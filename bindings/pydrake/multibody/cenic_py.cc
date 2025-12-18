@@ -33,9 +33,10 @@ PYBIND11_MODULE(cenic, m) {
             &IcfSolverParameters::hessian_reuse_target_iterations)
         .def_readwrite(
             "use_dense_algebra", &IcfSolverParameters::use_dense_algebra)
+        .def_readwrite("max_linesearch_iterations",
+            &IcfSolverParameters::max_linesearch_iterations)
         .def_readwrite(
-            "max_ls_iterations", &IcfSolverParameters::max_ls_iterations)
-        .def_readwrite("ls_tolerance", &IcfSolverParameters::ls_tolerance)
+            "linesearch_tolerance", &IcfSolverParameters::linesearch_tolerance)
         .def_readwrite("alpha_max", &IcfSolverParameters::alpha_max)
         .def_readwrite(
             "print_solver_stats", &IcfSolverParameters::print_solver_stats);

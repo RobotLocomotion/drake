@@ -118,7 +118,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /** Sets the convex solver tolerances and iteration limits. */
   void set_solver_parameters(
       const contact_solvers::icf::IcfSolverParameters& parameters) {
-    solver_.set_parameters(parameters);
+    solver_.SetParameters(parameters);
   }
 
   /** Gets the current total number of solver iterations across all time steps.

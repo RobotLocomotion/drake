@@ -64,7 +64,7 @@ config:
     # Whether to use dense algebra in the ICF solver.
     use_dense_algebra: false
     # Tolerance for the exact line search performed by the convex integrator.
-    ls_tolerance: 1e-8
+    linesearch_tolerance: 1e-8
     # Maximum line search step size for the convex integrator (α_max).
     alpha_max: 1.0
     # Whether to print statistics to the console.
