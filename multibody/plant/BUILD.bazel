@@ -124,6 +124,7 @@ drake_cc_library(
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
+        "multibody_plant_icf_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
         "physical_model_collection.h",
