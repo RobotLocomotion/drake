@@ -350,7 +350,7 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // One way to form N⁺(q) is to rewrite eqn(3) for the ideal case |q|(t) = 1,
   // which means q = q̂ and q̂' ≜ d/dt(q̂) is perpendicular to q i.e., (q̂'⋅q = 0).
   //
-  //                              ⌈ ŵx ⌉       ⌈ -q̂x   q̂w  -q̂z  -q̂y ⌉ ⌈ q̂̇w ⌉
+  //                              ⌈ ŵx ⌉       ⌈ -q̂x   q̂w  -q̂z   q̂y ⌉ ⌈ q̂̇w ⌉
   // (4)  ŵ(q̂,q̂') = N̂⁺(q̂) q̂'  or  | ŵy | = 2.0 | -q̂y   q̂z   q̂w  -q̂x | | q̂̇x |
   //                              ⌊ ŵz ⌋       ⌊ -q̂z  -q̂y   q̂x   q̂w ⌋ | q̂̇y |
   //                                                                  ⌊ q̂̇z ⌋
