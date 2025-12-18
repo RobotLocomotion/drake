@@ -112,6 +112,14 @@ class GainConstraintsPool {
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
 
+  /* Testing only access. */
+  const std::vector<int>& clique() const { return clique_; }
+  const std::vector<int>& constraint_size() const { return constraint_size_; }
+  const EigenPool<VectorX<T>>& K() const { return K_; }
+  const EigenPool<VectorX<T>>& b() const { return b_; }
+  const EigenPool<VectorX<T>>& le() const { return le_; }
+  const EigenPool<VectorX<T>>& ue() const { return ue_; }
+
  private:
   /* Computes the cost, gradient, and Hessian contribution for a single gain
   constraint.
