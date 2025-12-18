@@ -33,6 +33,10 @@ void GainConstraintsPool<T>::Resize(std::span<const int> sizes) {
   ue_.Resize(num_elements, sizes);
 }
 
+// TODO(rpoyner-tri): here is a memory allocation to eventually remove. The
+// call to Set is copying (allocation) for K and b and e when the caller's
+// provided type is an Eigen block, but the Set function requires a VectorX
+// explicitly, not a Ref.
 template <typename T>
 void GainConstraintsPool<T>::Set(int index, int clique, const VectorX<T>& K,
                                  const VectorX<T>& b, const VectorX<T>& e) {
