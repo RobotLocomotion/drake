@@ -24,9 +24,15 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/*
 ARG DOXYGEN_VERSION=1.15.0
 ARG DOXYGEN_SHA256=a8cafe605867ad475aaf288a3852783076e1df83aabf16488bbfa958062e7440
+COPY ./patches/ ./patches
 RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
   && echo "${DOXYGEN_SHA256}  doxygen-${DOXYGEN_VERSION}.src.tar.gz" | sha256sum --check - \
   && tar -xzf "doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
+  && cd "doxygen-${DOXYGEN_VERSION}" \
+  && find ../patches -type f -name "*.patch" | while IFS= read -r patch; do \
+    git apply "$patch"; \
+  done \
+  && cd "../" \
   && mkdir -p doxygen-build /opt/doxygen \
   && cd doxygen-build \
   && cmake \
