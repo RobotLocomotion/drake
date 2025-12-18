@@ -12,12 +12,14 @@ convex solver.
 
 For details, see
 
-  Kurtz V. and Castro A., 2025. CENIC: Convex Error-controlled Numerical
-  Integration for Contact. https://arxiv.org/abs/2511.08771.
+  [Kurtz and Castro, 2025] Kurtz V. and Castro A., 2025. CENIC: Convex
+  Error-controlled Numerical Integration for Contact.
+  https://arxiv.org/abs/2511.08771.
 
-  Hairer E. and Wanner G., 1996. Solving Ordinary Differential Equations II:
-  Stiff and Differential-Algebraic Problems. Springer Series in Computational
-  Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd edition. */
+  [Hairer and Wanner, 1996] Hairer E. and Wanner G., 1996. Solving Ordinary
+  Differential Equations II: Stiff and Differential-Algebraic Problems. Springer
+  Series in Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd
+  edition. */
 struct IcfSolverParameters {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -28,13 +30,13 @@ struct IcfSolverParameters {
     a->Visit(DRAKE_NVP(enable_hessian_reuse));
     a->Visit(DRAKE_NVP(hessian_reuse_target_iterations));
     a->Visit(DRAKE_NVP(use_dense_algebra));
-    a->Visit(DRAKE_NVP(max_ls_iterations));
-    a->Visit(DRAKE_NVP(ls_tolerance));
+    a->Visit(DRAKE_NVP(max_linesearch_iterations));
+    a->Visit(DRAKE_NVP(linesearch_tolerance));
     a->Visit(DRAKE_NVP(alpha_max));
     a->Visit(DRAKE_NVP(print_solver_stats));
   }
 
-  /** Outer solver iteration limit. */
+  /** Maximum number of Newton iterations. */
   int max_iterations{100};
 
   /** Minimum tolerance ε for the convergence conditions
@@ -42,12 +44,12 @@ struct IcfSolverParameters {
     ‖D⋅∇ℓ‖ ≤ ε max(1, ‖D⋅r‖),
     η ‖D⁻¹⋅Δv‖ ≤ ε max(1, ‖D⋅r‖),
 
-  as detailed in Section VI.B of [Kurtz et. al., 2025].
+  as detailed in Section VI.B of [Kurtz and Castro, 2025].
 
   This provides a lower bound on the actual tolerance used, which is specified
   explicitly when calling the solver. For instance, CENIC passes an adaptive
   tolerance based on the desired accuracy to the ICF solver, see Section VI.B of
-  [Kurtz et. al., 2025]. */
+  [Kurtz and Castro, 2025]. */
   double min_tolerance{1e-8};
 
   /** Whether hessian reuse between iterations and time steps is enabled. */
@@ -56,7 +58,7 @@ struct IcfSolverParameters {
   /** Target maximum number of iterations for Hessian reuse. The solver
   effectively estimates the number of iterations to convergence. If the estimate
   is larger than this target, the Hessian will be recomputed to regain faster
-  Newton-style convergence. See [Hairer, 1996], Ch. IV.8. */
+  Newton-style convergence. See [Hairer and Wanner, 1996], Ch. IV.8. */
   int hessian_reuse_target_iterations{10};
 
   /** Dense algebra (LDLT) for solving for the search direction H⁻¹⋅g. This is
@@ -65,10 +67,10 @@ struct IcfSolverParameters {
   bool use_dense_algebra{false};
 
   /** Maximum iterations for exact linesearch. */
-  int max_ls_iterations{100};
+  int max_linesearch_iterations{100};
 
   /** Convergence tolerance for exact linesearch. */
-  double ls_tolerance{1e-8};
+  double linesearch_tolerance{1e-8};
 
   /** Maximum step length for exact linesearch. */
   double alpha_max{1.0};

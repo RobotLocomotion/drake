@@ -88,12 +88,12 @@ TEST_F(IcfSolverTest, UnconstrainedProblem) {
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats& stats = solver_.stats();
 
-  EXPECT_GE(stats.step_norm[0], 0.0);
+  EXPECT_GT(stats.step_norm[0], 0.0);
   EXPECT_EQ(stats.num_iterations, 1);
   EXPECT_EQ(stats.ls_iterations[0], 0);
 }
 
-/* Checks convergence under nominal operating conditions.*/
+/* Solves a typical problem with patch constraints.*/
 TEST_F(IcfSolverTest, Convergence) {
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats& stats = solver_.stats();
@@ -132,7 +132,7 @@ TEST_F(IcfSolverTest, DenseVsSparseAlgebra) {
   // Solve with dense algebra.
   IcfSolverParameters solver_params;
   solver_params.use_dense_algebra = true;
-  solver_.set_parameters(solver_params);
+  solver_.SetParameters(solver_params);
   EXPECT_TRUE(solver_.get_parameters().use_dense_algebra);
   data_.set_v(v_guess);  // Reset the initial guess.
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
@@ -155,14 +155,14 @@ TEST_F(IcfSolverTest, HessianReuse) {
 
   // Solve without Hessian reuse.
   solver_params.enable_hessian_reuse = false;
-  solver_.set_parameters(solver_params);
+  solver_.SetParameters(solver_params);
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats no_reuse_stats = solver_.stats();
   const VectorXd no_reuse_solution = data_.v();
 
   // Solve with Hessian reuse.
   solver_params.enable_hessian_reuse = true;
-  solver_.set_parameters(solver_params);
+  solver_.SetParameters(solver_params);
   data_.set_v(v_guess);  // Reset the initial guess.
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   const IcfSolverStats reuse_stats = solver_.stats();
@@ -200,7 +200,7 @@ TEST_F(IcfSolverTest, EarlyExit) {
 TEST_F(IcfSolverTest, PrintStatsSmokeTest) {
   IcfSolverParameters solver_params = solver_.get_parameters();
   solver_params.print_solver_stats = true;
-  solver_.set_parameters(solver_params);
+  solver_.SetParameters(solver_params);
   EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
 }
 
@@ -214,7 +214,7 @@ TEST_F(IcfSolverTest, LinesearchStepSizeLimits) {
   const std::vector<double> alpha_max_values = {0.5, 1.0, 1.5};
   for (const double alpha_max : alpha_max_values) {
     solver_params.alpha_max = alpha_max;
-    solver_.set_parameters(solver_params);
+    solver_.SetParameters(solver_params);
     data_.set_v(v_guess);
     EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
   }
@@ -240,8 +240,33 @@ TEST_F(IcfSolverTest, ConvergenceTolerances) {
 TEST_F(IcfSolverTest, ConvergenceFailure) {
   IcfSolverParameters solver_params = solver_.get_parameters();
   solver_params.max_iterations = 2;  // Too low for this problem.
-  solver_.set_parameters(solver_params);
+  solver_.SetParameters(solver_params);
   EXPECT_FALSE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+}
+
+/* Checks that the solver matches the analytical solution for a simple
+unconstrained problem. */
+TEST_F(IcfSolverTest, AnalyticalSolution) {
+  // Solve a simple problem with a clear analytical solution.
+  const std::vector<int> empty;
+  model_.patch_constraints_pool().Resize(empty);
+  model_.SetSparsityPattern();
+  model_.ResizeData(&data_);
+  EXPECT_TRUE(solver_.SolveWithGuess(model_, kConvergenceTolerance, &data_));
+  const VectorXd solution = data_.v();
+
+  // Compute the analytical solution, (M0 + h D0) (v - v0) + h k0 = 0.
+  const MatrixXd M0 = model_.params().M0;
+  const VectorXd D0 = model_.params().D0;
+  const VectorXd v0 = model_.params().v0;
+  const VectorXd k0 = model_.params().k0;
+  const double h = model_.params().time_step;
+  const MatrixXd A = M0 + h * D0.asDiagonal().toDenseMatrix();
+  const VectorXd analytical_solution = v0 - A.ldlt().solve(h * k0);
+
+  EXPECT_TRUE(CompareMatrices(solution, analytical_solution,
+                              kConvergenceTolerance,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace

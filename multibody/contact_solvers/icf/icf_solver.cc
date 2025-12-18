@@ -56,14 +56,15 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
   // Set the initial guess as stored in data.
   v = data->v();
 
-  // Convergence tolerances are scaled by D = diag(M)⁻¹/², so that all
+  // Convergence tolerances are scaled by D = diag(M)⁻⁰ᐧ⁵, so that all
   // entries of g̃ = D⋅g and ṽ = D⁻¹⋅v have the same units [Castro et al., 2021].
   //
   // Convergence is achieved when either the (normalized) gradient is small
   //   ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
-  // or the normalized) step size is sufficiently small,
+  // or the (normalized) step size is sufficiently small,
   //   η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖).
-  // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer, 1996].
+  // where η = θ / (1 − θ), θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖, as per [Hairer and
+  // Wanner, 1996].
   const VectorXd& D = model.scale_factor();
   const double scale = std::max(1.0, (D.asDiagonal() * model.r()).norm());
   const double epsilon = std::max(tolerance, parameters_.min_tolerance);
@@ -82,39 +83,35 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     model.CalcData(v, data);
     const double grad_norm = (D.asDiagonal() * data->gradient()).norm();
 
-    // We'll print solver stats before doing any convergence checks.
-    // That ensures that we get a printout even when the initial guess is good
-    // enough that no iterations are performed.
-    if (parameters_.print_solver_stats) {
-      const double step_norm = (k == 0) ? NAN : stats_.step_norm.back();
-      drake::log()->info(
-          "  k: {}, cost: {:.6f}, gradient: {:e}, step: {:e}, ls_iterations: "
-          "{}, alpha: {:.6f}",
-          k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
-    }
-
     // Gradient-based convergence check. Allows for early exit if v is already
     // close enough to the solution.
     if (grad_norm < scaled_tolerance) {
+      if (parameters_.print_solver_stats && k == 0) {
+        // This ensures that we get a printout even when the initial guess is
+        // good enough that no iterations are performed.
+        drake::log()->info("  k: {}, cost: {:.6f}, gradient: {:e}", k,
+                           data->cost(), grad_norm);
+      }
       return true;
     }
 
     // Step-size-based convergence check. This is only valid after the first
-    // iteration has been completed, since we need the step size ||D⁻¹⋅Δvₖ||
+    // iteration has been completed, since we need the step size ‖D⁻¹⋅Δvₖ‖
     if (k > 0) {
-      // For k = 1, we have η = 1, so this is equivalent to ||D⁻¹⋅Δvₖ|| < tol.
-      // Otherwise we use η = θ/(1−θ) as set below (see [Hairer, 1996], p.120).
+      // For k = 1, we have η = 1, so this is equivalent to ‖D⁻¹⋅Δvₖ‖ < tol.
+      // Otherwise we use η = θ/(1−θ) as set below (see [Hairer and Wanner,
+      // 1996], p.120).
       if (eta * stats_.step_norm.back() < scaled_tolerance) {
         return true;
       }
     }
 
     // Choose whether to re-compute the Hessian factorization using Equation
-    // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
-    // converge in the next few iterations, assuming linear convergence.
+    // IV.8.11 of [Hairer and Wanner, 1996]. This essentially predicts whether
+    // we'll converge in the next few iterations, assuming linear convergence.
     if (k > 1) {
-      const double dvk = stats_.step_norm[k - 1];    // ||D⁻¹⋅Δvₖ||
-      const double dvkm1 = stats_.step_norm[k - 2];  // ||D⁻¹⋅Δvₖ₋₁||
+      const double dvk = stats_.step_norm[k - 1];    // ‖D⁻¹⋅Δvₖ‖
+      const double dvkm1 = stats_.step_norm[k - 2];  // ‖D⁻¹⋅Δvₖ₋₁‖
 
       // Convergence rate estimate θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖. Note that unlike
       // in the Newton-Raphson steps discussed in [Hairer and Wanner, 1996], it
@@ -130,10 +127,10 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dvk;
 
-      if (anticipated_residual > scaled_tolerance || theta >= 1.0) {
+      if (anticipated_residual > scaled_tolerance) {
         // We likely won't converge in time at this (linear) rate, so we should
-        // use a fresh Hessian in hopes of faster (quadratic) convergence.
-        reuse_hessian_factorization_ = false;
+        // recompute the Hessian in hopes of faster (quadratic) convergence.
+        hessian_factorization_is_fresh_enough_ = false;
       }
     }
 
@@ -150,7 +147,8 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     //   3. The "anticipated residual" heuristics indicate that we'll converge
     //      in time under a linear convergence assumption.
     bool reuse_hessian = parameters_.enable_hessian_reuse &&
-                         reuse_sparsity_pattern && reuse_hessian_factorization_;
+                         reuse_sparsity_pattern &&
+                         hessian_factorization_is_fresh_enough_;
 
     // Compute the search direction wₖ = -Hₖ⁻¹⋅gₖ.
     ComputeSearchDirection(model, *data, &dv, reuse_hessian,
@@ -172,13 +170,26 @@ bool IcfSolver::SolveWithGuess(const IcfModel<double>& model,
     // Finalize solver stats now that we've finished the iteration.
     stats_.num_iterations++;
     stats_.cost.push_back(data->cost());
-    stats_.gradient_norm.push_back(data->gradient().norm());
+    stats_.gradient_norm.push_back(grad_norm);
     stats_.ls_iterations.push_back(ls_iterations);
     stats_.alpha.push_back(alpha);
-    stats_.step_norm.push_back((D.cwiseInverse().asDiagonal() * dv).norm());
+    const double step_norm = (D.cwiseInverse().asDiagonal() * dv).norm();
+    stats_.step_norm.push_back(step_norm);
+
+    if (parameters_.print_solver_stats) {
+      drake::log()->info(
+          "  k: {}, cost: {:.6f}, gradient: {:e}, step: {:e}, ls_iterations: "
+          "{}, alpha: {:.6f}",
+          k, data->cost(), grad_norm, step_norm, ls_iterations, alpha);
+    }
   }
 
   return false;  // Failed to converge.
+}
+
+void IcfSolver::SetParameters(const IcfSolverParameters& parameters) {
+  parameters_ = parameters;
+  stats_.Reserve(parameters_.max_iterations);
 }
 
 std::pair<double, int> IcfSolver::PerformExactLineSearch(
@@ -190,19 +201,18 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   IcfSearchDirectionData<double>& search_data = search_direction_data_;
   model.CalcSearchDirectionData(data, w, &search_data);
 
-  // Allocate first and second derivatives of ℓ̃(α).
-  double dell{NAN};   // First derivative ∂ℓ̃/∂α.
-  double d2ell{NAN};  // Second derivative ∂²ℓ̃/∂α².
-
   // First we'll evaluate ∂ℓ̃/∂α at α = 0. This should be strictly negative,
   // since the Hessian is positive definite. This is cheap since we already have
   // the gradient at α = 0 cached from solving for the search direction earlier.
-  // N.B. We use a new dell0 rather than dell declared above, because both dell
-  // and dell0 will be used below to generate an initial guess via cubic
-  // interpolation.
   const double ell0 = data.cost();              // Cost ℓ̃(0).
   const double dell0 = data.gradient().dot(w);  // Derivative ∂ℓ̃/∂α at α = 0.
+  // The derivative along the linesearch direction, ∂ℓ̃/∂α, should be negative at
+  // at α = 0 since the Hessian is positive definite.
   DRAKE_THROW_UNLESS(dell0 < 0, dell0);
+
+  // First and second derivatives of ℓ̃(α).
+  double dell{NAN};   // First derivative ∂ℓ̃/∂α.
+  double d2ell{NAN};  // Second derivative ∂²ℓ̃/∂α².
 
   // Next we'll evaluate ℓ̃, ∂ℓ̃/∂α, and ∂²ℓ̃/∂α² at α = α_max. If the cost is
   // still decreasing here, we just accept α_max to take the largest step
@@ -230,9 +240,9 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
   const double a = 2 * (ell0 - ell) + dell0 * alpha_max + dell * alpha_max;
   const double b = -3 * (ell0 - ell) - 2 * dell0 * alpha_max - dell * alpha_max;
   const double c = dell0 * alpha_max;
-  // This will throw if a solution to p'(t) = 0 cannot be found in [0, 1]. We
-  // know that such a solution must exist because we have already checked that
-  // ℓ̃(0) < 0 and ℓ̃(α_max) > 0.
+  // This will throw if a solution to p'(t) = 0 cannot be found in (0, 1). We
+  // know that such a solution must exist because p(t) is a cubic with p'(0) < 0
+  // and p'(1) > 0.
   const double alpha_guess =
       alpha_max * SolveQuadraticInUnitInterval(3 * a, 2 * b, c);
 
@@ -258,12 +268,13 @@ std::pair<double, int> IcfSolver::PerformExactLineSearch(
 
   // Finally, solve for f(α) = 0 using Newton with bisection fallback.
   return DoNewtonWithBisectionFallback(
-      cost_and_gradient, bracket, alpha_guess, parameters_.ls_tolerance,
-      parameters_.ls_tolerance, parameters_.max_ls_iterations);
+      cost_and_gradient, bracket, alpha_guess, parameters_.linesearch_tolerance,
+      parameters_.linesearch_tolerance, parameters_.max_linesearch_iterations);
 }
 
 double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
-                                               const double c) const {
+                                               const double c) {
+  using std::abs;
   using std::clamp;
   using std::sqrt;
 
@@ -274,8 +285,10 @@ double IcfSolver::SolveQuadraticInUnitInterval(const double a, const double b,
   };
 
   double s;
-  if (a < std::numeric_limits<double>::epsilon()) {
-    // If a ≈ 0, just solve b x + c = 0.
+  if (abs(a) < std::numeric_limits<double>::epsilon()) {
+    // If a ≈ 0, just solve b x + c = 0. b must be non-zero, otherwise this
+    // quadratic would be constant and our precondition of "exactly one root in
+    // (0, 1)" would be violated.
     s = -c / b;
   } else {
     // Use the numerically stable root-finding method described here:
@@ -313,7 +326,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       stats_.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
-      reuse_hessian_factorization_ = true;
+      hessian_factorization_is_fresh_enough_ = true;
     }
 
     // Compute the search direction w = -H⁻¹⋅g with dense algebra.
@@ -336,7 +349,7 @@ void IcfSolver::ComputeSearchDirection(const IcfModel<double>& model,
       stats_.num_factorizations++;
 
       // The factorization is now fresh, so we should try to reuse it next time.
-      reuse_hessian_factorization_ = true;
+      hessian_factorization_is_fresh_enough_ = true;
     }
 
     // Compute the search direction w = -H⁻¹⋅g with sparse algebra.

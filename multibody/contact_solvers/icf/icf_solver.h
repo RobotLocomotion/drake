@@ -24,11 +24,17 @@ iteration so vectors have size() == num_iterations. If the solver exits
 early (e.g., the initial guess solves the problem to tolerances), then we have
 `num_iterations = 0` and vector elements are empty. */
 struct IcfSolverStats {
+  /* Resets the stats to start a new solve. */
+  void Clear();
+
+  /* Reserves space for the vectors to avoid reallocations. */
+  void Reserve(int max_iterations);
+
   /* The number of solver iterations. */
-  int num_iterations;
+  int num_iterations{0};
 
   /* The total number of Hessian factorizations. */
-  int num_factorizations;
+  int num_factorizations{0};
 
   /* The cost ℓ(vₖ) at each iteration. */
   std::vector<double> cost;
@@ -44,12 +50,6 @@ struct IcfSolverStats {
 
   /* The step size ||Δvₖ|| at each iteration. */
   std::vector<double> step_norm;
-
-  /* Resets the stats to start a new solve. */
-  void Clear();
-
-  /* Reserves space for the vectors to avoid reallocations. */
-  void Reserve(int max_iterations);
 };
 
 /* A solver for convex Irrotational Contact Fields (ICF) problems,
@@ -75,7 +75,18 @@ and update the decision variables
     vₖ₊₁ = vₖ + Δvₖ,
     Δvₖ = αₖ⋅wₖ.
 
-This process repeats until convergence.
+This process repeats until convergence. Convergence is achieved when either the
+(normalized) gradient is sufficiently small,
+
+    ‖D⋅gₖ‖ ≤ ε max(1, ‖D⋅r‖),
+
+or the (normalized) step size is sufficiently small,
+
+    η ‖D⁻¹⋅Δvₖ‖ ≤ ε max(1, ‖D⋅r‖),
+
+with convergence tolerance ε, η = θ / (1 − θ), and θ = ‖D⁻¹⋅Δvₖ‖ / ‖D⁻¹⋅Δvₖ₋₁‖
+as per [Hairer and Wanner, 1996]. Norms are scaled by D = diag(M)⁻⁰ᐧ⁵, so that
+all entries of g̃ = D⋅g and ṽ = D⁻¹⋅v share the same units [Castro et al., 2023].
 
 Additionally, this solver supports optional Hessian reuse to avoid the cost of
 recomputing and refactoring the Hessian at each iteration. Since ℓ(v) is convex,
@@ -87,24 +98,11 @@ fast. The solver monitors convergence and automatically recomputes the Hessian
 only when necessary to regain fast (Newton-like) convergence.
 
 The ICF formulation was first described in [Castro et al., 2023]. This
-implementation follows the details described in [Kurtz et al., 2025]. The
-Hessian reuse strategy is described in Section VI.C of [Kurtz et al., 2025] and
-is an adaptation of techniques from [Hairer, 1996], chapter IV.8.
+implementation follows the details described in [Kurtz and Castro, 2025]. The
+Hessian reuse strategy is described in Section VI.C of [Kurtz and Castro, 2025]
+and is an adaptation of techniques from [Hairer and Wanner, 1996], chapter IV.8.
 
-See IcfSolverParameters and icf/README.md for further details.
-
-References:
-
-  [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
-  Contact Fields. https://arxiv.org/abs/2312.03908
-
-  [Kurtz et al., 2025] Kurtz V. and Castro A., 2025. CENIC: Convex
-  Error-controlled Numerical Integration for Contact.
-  https://arxiv.org/abs/2511.08771
-
-  [Hairer, 1996] Hairer E. and Wanner G., 1996. Solving Ordinary Differential
-  Equations II: Stiff and Differential-Algebraic Problems. Springer Series in
-  Computational Mathematics, Vol. 14. Springer-Verlag, Berlin, 2nd edition. */
+See IcfSolverParameters and icf/README.md for further details. */
 class IcfSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IcfSolver);
@@ -117,12 +115,14 @@ class IcfSolver {
   /* Solves the convex problem to compute next-step velocities, argmin ℓ(v).
 
   @param model The ICF model defining the optimization problem.
-  @param tolerance The convergence tolerance ε to be used for this solve.
-  @param[out] data The ICF data structure to be updated with the solution. To
-                   begin, stores the initial guess for velocities v.
+  @param tolerance The convergence tolerance ε to be used for this solve. See
+                   the class documentation for convergence criteria details.
+  @param[in, out] data The ICF data structure to be updated with the solution.
+                       To begin, stores the initial guess for velocities v.
 
   @return true if and only if the optimizer converged to tolerance ε.
-  @pre The model and data must compatible, e.g., via model.ResizeData(&data). */
+  @pre The model and data must compatible, e.g., via model.ResizeData(&data).
+  @pre The model must be non-empty, e.g., model.num_velocities() > 0. */
   bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
                       IcfData<double>* data);
 
@@ -130,10 +130,7 @@ class IcfSolver {
   const IcfSolverStats& stats() const { return stats_; }
 
   /* Sets solver parameters, reallocating space for statistics as needed. */
-  void set_parameters(const IcfSolverParameters& parameters) {
-    parameters_ = parameters;
-    stats_.Reserve(parameters_.max_iterations);
-  }
+  void SetParameters(const IcfSolverParameters& parameters);
 
   /* Returns the current set of solver parameters. */
   const IcfSolverParameters& get_parameters() const { return parameters_; }
@@ -152,26 +149,30 @@ class IcfSolver {
                                                 const IcfData<double>& data,
                                                 const Eigen::VectorXd& w);
 
-  /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ [0, 1].
-  @pre The equation in question must have exactly one real root in [0, 1]. */
-  double SolveQuadraticInUnitInterval(const double a, const double b,
-                                      const double c) const;
+  /* Returns the root of the quadratic equation ax² + bx + c = 0, x ∈ (0, 1).
+  @pre The equation in question must have one exactly real root in (0, 1),
+       otherwise this function will abort. */
+  static double SolveQuadraticInUnitInterval(const double a, const double b,
+                                             const double c);
 
   /* Solves for the Newton search direction w = −H⁻¹⋅g, with flags for several
-  levels of Hessian reuse:
+  levels of Hessian reuse.
 
-   reuse_factorization: reuse the exact same factorization of H as in the
-                        previous iteration. Do not compute the new
-                        Hessian at all. This is the fastest option, but
-                        gives a lower-quality search direction.
+  @param model The ICF model, used to compute the Hessian H.
+  @param data The ICF data at the current iterate v.
+  @param[out] w The computed search direction.
+  @param reuse_factorization If true, reuse the exact same factorization of H as
+                             in the previous iteration. Do not compute the new
+                             Hessian at all. This is the fastest option, but
+                             gives a lower-quality search direction.
 
-   reuse_sparsity_pattern: recompute H and its factorization, but reuse the
-                           stored sparsity pattern. This gives an exact
-                           Newton step, but avoids some allocations.
+  @param reuse_sparsity_pattern If true, recompute H and its factorization, but
+                                reuse the stored sparsity pattern. This gives an
+                                exact Newton step, but avoids some allocations.
 
-  If both of these flags are `false`, computes H from scratch and factors it
-  anew. The `reuse_factorization` flag takes precedence over
-  `reuse_sparsity_pattern`. */
+  @note If both `reuse_sparsity_pattern` and `reuse_factorization1 are `false`,
+  computes H from scratch and factors it anew. The `reuse_factorization` flag
+  takes precedence over `reuse_sparsity_pattern`. */
   void ComputeSearchDirection(const IcfModel<double>& model,
                               const IcfData<double>& data, Eigen::VectorXd* w,
                               bool reuse_factorization = false,
@@ -198,7 +199,7 @@ class IcfSolver {
       previous_sparsity_pattern_;
 
   // Flag for Hessian factorization re-use (changes between iterations).
-  bool reuse_hessian_factorization_{true};
+  bool hessian_factorization_is_fresh_enough_{false};
 
   // Iteration limits, tolerances, and other parameters.
   IcfSolverParameters parameters_;
