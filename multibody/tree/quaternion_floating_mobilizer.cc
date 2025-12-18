@@ -359,7 +359,7 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // shows it is relatively easy to form N̂⁺(q̂) in terms of a user-supplied q
   // and eqn(6) (proved below) relates q̂' to a user-supplied q̇ = q̇⊥ + q̇∥.
   //
-  //                                         ⌈ -qx   qw  -qz  -qy ⌉
+  //                                         ⌈ -qx   qw  -qz   qy ⌉
   // (5)  N̂⁺(q̂) =  N̂⁺(q) / |q| =  2.0 / |q|  | -qy   qz   qw  -qx |
   //                                         ⌊ -qz  -qy   qx   qw ⌋
   //
@@ -469,26 +469,22 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // where Nᵣ⁺(q) is the 3x4 matrix below. The matrix Ṅᵣ⁺(q,q̇ᵣ) is the
   // time-derivative of Nᵣ⁺(q).
   //
-  // ⌈ ωx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̇w ⌉
+  // ⌈ ωx ⌉       ⌈ -qx    qw   -qz   qy ⌉ ⌈ q̇w ⌉
   // | ωy | = 2.0 | -qy    qz    qw  -qx | | q̇x |
   // ⌊ ωz ⌋       | -qz   -qy    qx   qw | | q̇y |
   //                                       ⌊ q̇z ⌋
-  //
+
   // Calculate the time-derivative of the quaternion, i.e., q̇ᵣ = Nᵣ(q)⋅vᵣ.
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
   const Vector4<T> qdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
-  const Quaternion<T> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
+  const Quaternion<T> twice_qdot(2.0 * qdot[0], 2.0 * qdot[1], 2.0 * qdot[2],
+                                 2.0 * qdot[3]);
 
-  // TODO(Mitiguy) The next comment is incorrect and misleading.
-  //  Fix the normalization to mimic what was done in DoCalcNPlusMatrix().
-  // In view of the documentation in CalcQMatrix(), since
-  // Nᵣ⁺(qᵣ) = 2 * (Q_FM)ᵀ, where Q_FM is linear in the elements of
-  // qᵣ = [qw, qx, qy, qz]ᵀ, hence Ṅᵣ⁺(q̇ᵣ) = 2 * (Q̇_FM)ᵀ.
-  // TODO(Mitiguy) Ensure this calculation provides the time derivative of the
-  //  calculation in DoCalcNplusMatrix().
-  const Eigen::Matrix<T, 3, 4> NrPlusDot =
-      CalcTwoTimesQMatrixTranspose(qdot_FM);
+  // Leveraging comments and code in AngularVelocityToQuaternionRateMatrix(()
+  // and noting that N⁺ᵣ(qᵣ) = L(2 * q_FM)ᵀ, where the elements of the matrix L
+  // are linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
+  const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcQMatrix(twice_qdot).transpose();
 
   // For the translational part of this mobilizer, the translational generalized
   // velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ are related to the time-derivatives
@@ -574,7 +570,7 @@ void QuaternionFloatingMobilizer<T>::DoMapQDDotToAcceleration(
   // as v̇ᵣ = Nᵣ⁺(q)⋅q̈_FM, where Nᵣ⁺(q) is the 3x4 matrix below.
   // Note: Perhaps surprisingly, Ṅ⁺ᵣ(q,q̇)⋅q̇ = [0, 0, 0]ᵀ.
   //
-  // ⌈ ẇx ⌉       ⌈ -qx    qw   -qz  -qy ⌉ ⌈ q̈w ⌉
+  // ⌈ ẇx ⌉       ⌈ -qx    qw   -qz   qy ⌉ ⌈ q̈w ⌉
   // | ẇy | = 2.0 | -qy    qz    qw  -qx | | q̈x |
   // ⌊ ẇz ⌋       | -qz   -qy    qx   qw | | q̈y |
   //                                       ⌊ q̈z ⌋
