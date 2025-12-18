@@ -8,7 +8,9 @@ namespace multibody {
 namespace contact_solvers {
 namespace icf {
 namespace internal {
-// Forward declaration for friendship, below.
+// Forward declarations for friendship, below.
+template <typename T>
+class IcfBuilder;
 template <typename T>
 class IcfExternalSystemsLinearizer;
 }  // namespace internal
@@ -26,12 +28,18 @@ class MultibodyPlantIcfAttorney {
  private:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantIcfAttorney);
 
+  friend class contact_solvers::icf::internal::IcfBuilder<T>;
   friend class contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>;
 
   static void AddJointActuationForces(const MultibodyPlant<T>& plant,
                                       const systems::Context<T>& context,
                                       VectorX<T>* forces) {
     return plant.AddJointActuationForces(context, forces);
+  }
+
+  static const ContactByPenaltyMethodParameters&
+  GetContactByPenaltyMethodParameters(const MultibodyPlant<T>& plant) {
+    return plant.penalty_method_contact_parameters_;
   }
 };
 
