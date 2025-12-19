@@ -315,17 +315,18 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
   // Note: One provable property of eqn(1) and N(q) is that they produce a q̇
   // that is perpendicular to q, i.e., dot(q, q̇) = 0, which guarantees |q|²
   // (and hence |q|) is unchanged with a perfect integrator (even if |q| ≠ 1).
-  // Proof: 2 q̇ ⋅ q = d/dt (q ⋅ q) = d/dt( |q|² ) = 0.  Hence, a perfect
-  // integrator only affects a quaternion's direction (not its magnitude).
-  //
+  // Proof: 2 q̇ ⋅ q = d/dt (q ⋅ q) = d/dt( |q|² ) = 0 (hence |qᵣ|² is constant).
+  // So, a perfect integrator only affects a quaternion's direction (not its
+  // magnitude).
   //                            ⌈ q̇w ⌉       ⌈ -qx   -qy   -qz ⌉ ⌈ ωx ⌉
   // (1)  q̇(q,ω) = N(q) ω  or   | q̇x | = 0.5 |  qw    qz   -qy | | ωy |
   //                            | q̇y |       | -qz    qw    qx | ⌊ ωz ⌋
   //                            ⌊ q̇z ⌋       ⌊  qy   -qx    qw ⌋
   //
   // The elements of the 4x3 matrix N(q) are ± 0.5 times the 4 elements qw, qx,
-  // qy, qz of q (which is unnormalized). Denoting q as a non-unit quaternion,
-  // q̂ = q / |q| as its associated unit quaternion, and q̂' ≜ dq̂/dt, then,
+  // qy, qz of q (which is unnormalized). Denoting q̂ as a unit quaternion, its
+  // time-derivative q̂' ≜ dq̂/dt is related to angular velocity ω as q̂' = N(q̂) ω.
+  // Denoting q as a non-unit quaternion with associated unit quaternion q̂, then
   //
   // (2) q = |q| q̂,  N(q) = |q| N(q̂),  q̇ = N(q) ω = |q| N(q̂) ω,  so  q̇ = |q| q̂'
   //
@@ -477,16 +478,14 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // Calculate the time-derivative of the quaternion, i.e., q̇ᵣ = Nᵣ(q)⋅vᵣ.
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
-  const Vector4<T> qdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
-  const Quaternion<T> twice_qdot(2.0 * qdot[0], 2.0 * qdot[1], 2.0 * qdot[2],
-                                 2.0 * qdot[3]);
+  const Vector4<T> quatdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
+  const Quaternion<T> qdot(quatdot[0], quatdot[1], quatdot[2], quatdot[3]);
 
-  // Leveraging comments and code in AngularVelocityToQuaternionRateMatrix(()
-  // and noting that N⁺ᵣ(qᵣ) = L(2 * q_FM)ᵀ, where the elements of the matrix L
-  // are linear in q_FM = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = L(2 * q̇_FM)ᵀ.
   // TODO(Mitiguy) Ensure this calculation provides the time derivative of the
   //  NrPlus matrix calculation in DoCalcNplusMatrix().
-  const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcQMatrix(twice_qdot).transpose();
+  // Note that N⁺ᵣ(qᵣ) = Q(2 * qᵣ)ᵀ, where the elements of the matrix Q
+  // are linear in qᵣ = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = Q(2 * q̇ᵣ)ᵀ.
+  const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcTwoTimesQMatrixTranspose(qdot);
 
   // For the translational part of this mobilizer, the translational generalized
   // velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ are related to the time-derivatives

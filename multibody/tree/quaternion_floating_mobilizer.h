@@ -303,8 +303,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Lemma: If q̇ᵣ (the time-derivative of the quaternion qᵣ in context) are
   // calculated as q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized
   // velocities, then q̇ᵣ satisfies the "orthogonality constraint" qᵣ ⋅ q̇ᵣ = 0.
-  // Proof: qᵣ ⋅ q̇ᵣ = qᵣ ⋅ Nᵣ(qᵣ) vᵣ = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) vᵣ
-  //                = |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) vᵣ = |qᵣ|² [0 0 0] vᵣ = 0, where
+  // Proof: qᵣ ⋅ q̇ᵣ = qᵣ ⋅ Nᵣ(qᵣ) vᵣ
+  //                = |qᵣ| q̂ᵣ ⋅ |qᵣ| Nᵣ(q̂ᵣ) vᵣ
+  //                = |qᵣ|² q̂ᵣ ⋅ Nᵣ(q̂ᵣ) vᵣ
+  //                = |qᵣ|² [0 0 0] vᵣ = 0, where
   // q̂ᵣ is a unit quaternion (|q̂ᵣ|² = q̂w² + q̂x² + q̂y² + q̂z² = 1) and
   //
   //       ⌈ q̂w ⌉                  ⌈ -qx   -qy   -qz ⌉
@@ -328,14 +330,13 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // perpendicular to qᵣ (meaning qᵣ ⋅ q̇ᵣ = 0), we calculate Nᵣ⁺(qᵣ) so that
   // w_FM_F = Nᵣ⁺(qᵣ) * q̇ᵣ is the angular velocity of the mobilizer's M frame in
   // the mobilizer's F frame, expressed in the F frame. If q̇ᵣ is perpendicular
-  // to qᵣ, it guarantees |qᵣ|² (and hence |qᵣ|) are unchanged.  Proof:
-  // d/dt( |qᵣ|² ) = d/dt (qᵣ ⋅ qᵣ) = 2 (qᵣ ⋅ q̇ᵣ) = 0, if |qᵣ|² is constant.
+  // to qᵣ, we can prove |qᵣ|² (and hence |qᵣ|) are constant (unchanged).
   // Note: We can prove that if q̇ᵣ is calculated from q̇ᵣ = Nᵣ(qᵣ) * w_FM_F, then
   // qᵣ ⋅ q̇ᵣ = 0 and Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) = I₃₃, which means Nᵣ⁺(qᵣ) is truly a
   // pseudo-inverse of Nᵣ(qᵣ). If  qᵣ ⋅ q̇ᵣ ≠ 0 (q̇ᵣ is not perpendicular to qᵣ),
   // Nᵣ⁺(qᵣ) * Nᵣ(qᵣ) ≠ I₃₃, so here Nᵣ⁺(qᵣ) is not a pseudo-inverse of Nᵣ(qᵣ).
   // Contextual definition of the 3x4 matrix Nᵣ⁺(qᵣ): denoting q̂ = qᵣ / |qᵣ|,
-  // w_FM_F = Nᵣ⁺(q̂ᵣ) * d/dt(q̂_FM) = Nᵣ⁺(qᵣ) * d/dt(qᵣ). Hence, using
+  // w_FM_F = Nᵣ⁺(q̂ᵣ) * d/dt(q̂) = Nᵣ⁺(qᵣ) * d/dt(qᵣ). Hence, using
   // Nᵣ⁺(qᵣ) = QuaternionRateToAngularVelocityMatrix(qᵣ) accounts for a non-unit
   // qᵣ and its corresponding time-derivative q̇ᵣ.
   // Considering this mobilizer in its entirety (both rotation and translation),
@@ -349,13 +350,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
-  // This function calculates this mobilizer's Ṅ matrix using the quaternion
-  // and angular velocity in the context.
   void DoCalcNDotMatrix(const systems::Context<T>& context,
                         EigenPtr<MatrixX<T>> Ndot) const final;
 
-  // This function calculates this mobilizer's Ṅ⁺ matrix using the quaternion
-  // and angular velocity in the context.
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
 
@@ -419,7 +416,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // Textbook available at www.MotionGenesis.com
   static Eigen::Matrix<T, 4, 3> CalcQMatrix(const Quaternion<T>& q);
 
-  // Efficiently calculates the 4x3 matrix 0.5 * CalcQMatrix(q).
+  // Efficiently calculates the 4x3 matrix 0.5 * CalcQMatrix(q) by multiplying
+  // `q` on the input side instead of multiplying the entire 4x3 matrix by 0.5.
   // @param[in] q a generic quaternion which is not necessarily a unit
   // quaternion or a quaternion associated with a rotation matrix.
   // @see QuaternionFloatingMobilizer::CalcQMatrix().
@@ -429,7 +427,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     return CalcQMatrix({0.5 * q.w(), 0.5 * q.x(), 0.5 * q.y(), 0.5 * q.z()});
   }
 
-  // Efficiently calculates the 3x4 matrix [2 * CalcQMatrix(q)]ᵀ.
+  // Efficiently calculates the 3x4 matrix [2 * CalcQMatrix(q)]ᵀ by multiplying
+  // `q` on the input side instead of multiplying the entire 3x4 matrix by 2.
   // @param[in] q a generic quaternion which is not necessarily a unit
   // quaternion or a quaternion associated with a rotation matrix.
   // @see QuaternionFloatingMobilizer::CalcQMatrix().
