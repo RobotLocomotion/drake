@@ -297,9 +297,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // which uses the quaternion in context _with_ normalization.
   // This mobilizer's N(q) matrix relates q̇ (time derivatives of 7 generalized
   // positions) to v (6 generalized velocities) as q̇ = N(q)⋅v, where
-  // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   0₄₃ is the 4x3 zero matrix.
+  // N(q) = ⎡ Nᵣ(q)  0₄₃ ⎤   Nᵣ(q) is a 4x3 matrix. 0₄₃ is the 4x3 zero matrix.
   //        ⎣ 0₃₃    I₃₃ ⎦   I₃₃ is the 3x3 identity matrix.
-  // Nᵣ(q) = 0.5 * QuaternionFloatingMobilizer::CalcQMatrix(q) is a 4x3 matrix.
   // Lemma: If q̇ᵣ (the time-derivative of the quaternion qᵣ in context) are
   // calculated as q̇ᵣ = Nᵣ(q) vᵣ, where vᵣ are the rotational generalized
   // velocities, then q̇ᵣ satisfies the "orthogonality constraint" qᵣ ⋅ q̇ᵣ = 0.
@@ -382,64 +381,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  // Forms a 4x3 matrix whose elements depend linearly on the 4 elements of
-  // the quaternion q = [qw, qx, qy, qz] as shown below.
-  // @param[in] q a generic quaternion which is not necessarily a unit
-  // quaternion or a quaternion associated with a rotation matrix.
-  // As shown in the examples below, q may hold d/dt(q̂_FM) or d²/dt²(q̂_FM),
-  // the 1ˢᵗ or 2ⁿᵈ time derivatives of q̂_FM rather than simply q_FM.
-  // @returns  ⌈ -qx   -qy   -qz ⌉
-  //           |  qw    qz   -qy |
-  //           | -qz    qw    qx |
-  //           ⌊  qy   -qx    qw ⌋
-  //
-  // @note Herein, we denote the function that forms this matrix as Q(q).
-  // When q is the quaternion q_FM that relates the orientation of frames F
-  // F and M, we define the matrix Q_FM ≜ Q(q_FM).  When q_FM is a unit
-  // quaternion, we denote it as q̂_FM. Similarly, Q̂_FM ≜ Q(q̂_FM).
-  // Many uses of Q_FM and Q̂_FM are associated with angular velocity expressed
-  // in a particular frame. The examples below show them used in conjunction
-  // with w_FM_F (frame M's angular velocity in frame F, expressed in F).
-  // Another use of Q_FM and Q̂_FM are to help form parts of this mobilizer's
-  // Nᵣ(q) and Nᵣ⁺(q) matrices.
-  //
-  // q̇_FM = 0.5 * Q_FM * w_FM_F
-  // q̈_FM = 0.5 * Q_FM * ẇ_FM_F - 0.25 ω² q_FM    Note: ω² = |w_FM_F|²
-  // w_FM_F = 2 * (Q̂_FM)ᵀ * d/dt(q̂_FM)
-  // ẇ_FM_F = 2 * (Q̂_FM)ᵀ * d²/dt²(q̂_FM)
-  //
-  // @note Since the elements of the matrix returned by Q(q) depend linearly on
-  // qw, qx, qy, qz, s * Q(q) = Q(s * q), where s is a scalar (e.g., 0.5 or 2).
-  //
-  // Formulas, uses, and proofs are in Sections 9.3 and 9.6 of [Mitiguy].
-  // [Mitiguy, August 2025] Mitiguy, P. Advanced Dynamics & Motion Simulation.
-  // Textbook available at www.MotionGenesis.com
-  static Eigen::Matrix<T, 4, 3> CalcQMatrix(const Quaternion<T>& q);
-
-  // Efficiently calculates the 4x3 matrix 0.5 * CalcQMatrix(q) by multiplying
-  // `q` on the input side instead of multiplying the entire 4x3 matrix by 0.5.
-  // @param[in] q a generic quaternion which is not necessarily a unit
-  // quaternion or a quaternion associated with a rotation matrix.
-  // @see QuaternionFloatingMobilizer::CalcQMatrix().
-  // @note: One reason this function exists is that multiplying or dividing an
-  // Eigen Quaternion by a scalar fails when type <T> is expression.
-  static Eigen::Matrix<T, 4, 3> CalcQMatrixOverTwo(const Quaternion<T>& q) {
-    return CalcQMatrix({0.5 * q.w(), 0.5 * q.x(), 0.5 * q.y(), 0.5 * q.z()});
-  }
-
-  // Efficiently calculates the 3x4 matrix [2 * CalcQMatrix(q)]ᵀ by multiplying
-  // `q` on the input side instead of multiplying the entire 3x4 matrix by 2.
-  // @param[in] q a generic quaternion which is not necessarily a unit
-  // quaternion or a quaternion associated with a rotation matrix.
-  // @see QuaternionFloatingMobilizer::CalcQMatrix().
-  // @note: One reason this function exists is that multiplying or dividing an
-  // Eigen Quaternion by a scalar fails when type <T> is expression.
-  static Eigen::Matrix<T, 3, 4> CalcTwoTimesQMatrixTranspose(
-      const Quaternion<T>& q) {
-    return CalcQMatrix({2 * q.w(), 2 * q.x(), 2 * q.y(), 2 * q.z()})
-        .transpose();
-  }
-
   // Helper function to form this mobilizer's Nᵣ⁺(qᵣ) matrix, to relate angular
   // velocity w_FM_F to the quaternion 1ˢᵗ time-derivative q̇ᵣ, and to relate
   // angular acceleration alpha_FM_F to q̈ᵣ, where w_FM_F is frame M's angular
