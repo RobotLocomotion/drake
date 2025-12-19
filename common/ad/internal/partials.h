@@ -33,7 +33,7 @@ class StorageVec {
   /* Steals the storage from `other`. */
   StorageVec& operator=(StorageVec&& other) noexcept {
     if (this != &other) {
-      delete data_;
+      delete[] data_;
       size_ = other.size_;
       data_ = other.data_;
       other.size_ = 0;
