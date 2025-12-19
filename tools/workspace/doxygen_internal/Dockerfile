@@ -28,7 +28,7 @@ COPY ./patches/ ./patches
 RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
   && echo "${DOXYGEN_SHA256}  doxygen-${DOXYGEN_VERSION}.src.tar.gz" | sha256sum --check - \
   && tar -xzf "doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
-  && git -C "doxygen-${DOXYGEN_VERSION}" apply $(ls ../patches/**/*.patch | sort) \
+  && git -C "doxygen-${DOXYGEN_VERSION}" apply $(find ../patches/ -type f -name "*.patch" | sort) \
   && mkdir -p doxygen-build /opt/doxygen \
   && cd doxygen-build \
   && cmake \
