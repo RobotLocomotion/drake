@@ -55,7 +55,7 @@ StorageVec& StorageVec::operator=(const StorageVec& other) noexcept {
     if (size_ == other.size_) {
       std::copy(other.data_, other.data_ + other.size_, data_);
     } else {
-      delete data_;
+      delete[] data_;
       size_ = other.size_;
       if (size_ > 0) {
         data_ = new double[size_];
@@ -69,7 +69,7 @@ StorageVec& StorageVec::operator=(const StorageVec& other) noexcept {
 }
 
 StorageVec::~StorageVec() {
-  delete data_;
+  delete[] data_;
 }
 
 Partials::Partials(Eigen::Index size, Eigen::Index offset)
