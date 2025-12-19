@@ -482,6 +482,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "periodic_event_gc_test",
+    deps = [
+        ":framework_py",
+    ],
+)
+
+drake_py_unittest(
     name = "value_test",
     deps = [
         ":framework_py",
