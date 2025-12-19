@@ -337,8 +337,8 @@ PREDEFINED             = DRAKE_DOXYGEN_CXX=1 \
                          HAVE_SPDLOG=1
 # =============================================================================
 # N.B. The spelling of the macro names between common/drake_copyable.h,
-# common/drake_deprecated.h, common/default_scalars.h and this file must be
-# kept in sync!
+# common/drake_deprecated.h, common/default_scalars.h, common/fmt.h, and this
+# file must be kept in sync!
 # =============================================================================
 # The following macros are carefully crafted to retain good markup when they
 # pass through Doxygen's preprocessor.
@@ -369,6 +369,13 @@ X& operator=(X&&); \
 PREDEFINED            += "DRAKE_DEPRECATED(removal_date,message):= \
 /** (Deprecated.) \deprecated message <br> \
 This will be removed from Drake on or after removal_date. */ \
+"
+PREDEFINED            += "DRAKE_FORMATTER_AS(template_args,namespace,type,arg,expr):= \
+/** \name Implements a fmt::formatter<namespace::type> template specialization */ \
+/** \{ */ \
+template <template_args> \
+auto format_as(const namespace::type& arg); \
+/** \} */"
 "
 # N.B. The two macros below can't be parsed like the ones above, because the
 # fully-qualified class name is always passed to the macro instead of just the
