@@ -60,30 +60,19 @@ Eigen::Matrix<T, 4, 3> CalcQMatrix(const Quaternion<T>& q) {
   // clang-format on
 }
 
-// Efficiently calculates the 4x3 matrix 0.5 * CalcQMatrix(q) by multiplying
-// `q` on the input side instead of multiplying the entire 4x3 matrix by 0.5.
+// Efficiently calculates the 4x3 matrix `scale_factor * CalcQMatrix(q)` by
+// multiplying `q` on the input side instead of multiplying the entire 4x3
+// matrix by `scale_factor`.
 // @param[in] q a generic quaternion which is not necessarily a unit
 // quaternion or a quaternion associated with a rotation matrix.
 // @see QuaternionFloatingMobilizer::CalcQMatrix().
-// @note: One reason this function exists is that multiplying or dividing an
+// @note One reason this function exists is that multiplying or dividing an
 // Eigen Quaternion by a scalar fails when type <T> is expression.
 template <typename T>
-Eigen::Matrix<T, 4, 3> CalcQMatrixOverTwo(const Quaternion<T>& q) {
-  return CalcQMatrix(
-      Quaternion<T>(0.5 * q.w(), 0.5 * q.x(), 0.5 * q.y(), 0.5 * q.z()));
-}
-
-// Efficiently calculates the 3x4 matrix [2 * CalcQMatrix(q)]ᵀ by multiplying
-// `q` on the input side instead of multiplying the entire 3x4 matrix by 2.
-// @param[in] q a generic quaternion which is not necessarily a unit
-// quaternion or a quaternion associated with a rotation matrix.
-// @see QuaternionFloatingMobilizer::CalcQMatrix().
-// @note: One reason this function exists is that multiplying or dividing an
-// Eigen Quaternion by a scalar fails when type <T> is expression.
-template <typename T>
-Eigen::Matrix<T, 3, 4> CalcTwoTimesQMatrixTranspose(const Quaternion<T>& q) {
-  return CalcQMatrix(Quaternion<T>(2 * q.w(), 2 * q.x(), 2 * q.y(), 2 * q.z()))
-      .transpose();
+Eigen::Matrix<T, 4, 3> CalcScaledQMatrix(double scale_factor,
+                                         const Quaternion<T>& q) {
+  return CalcQMatrix(Quaternion<T>(scale_factor * q.w(), scale_factor * q.x(),
+                                   scale_factor * q.y(), scale_factor * q.z()));
 }
 }  // namespace
 
@@ -452,8 +441,10 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
       (Matrix4<T>::Identity() - q_unit * q_unit.transpose()) / q_norm;
 
   // From documentation in CalcQMatrix(), N̂ᵣ⁺(q̂) = N̂ᵣ⁺(q_unit) = 2 * Q(q_unit)ᵀ.
-  const Eigen::Matrix<T, 3, 4> NrHatPlus_q_unit = CalcTwoTimesQMatrixTranspose(
-      Quaternion<T>(q_unit[0], q_unit[1], q_unit[2], q_unit[3]));
+  const Eigen::Matrix<T, 3, 4> NrHatPlus_q_unit =
+      CalcScaledQMatrix(
+          2.0, Quaternion<T>(q_unit[0], q_unit[1], q_unit[2], q_unit[3]))
+          .transpose();
 
   // Returns the matrix that when multiplied by q̇ produces angular velocity ω.
   // Note: When |q| = 1, the returned value is denoted Nᵣ⁺(q̂), but not N̂ᵣ⁺(q̂).
@@ -465,7 +456,8 @@ void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
   // Upper-left block (rotational part of the N matrix) is Nᵣ ≜ 0.5 Q_FM.
   // See QuaternionFloatingMobilizer::CalcQMatrix() for details.
-  N->template block<4, 3>(0, 0) = CalcQMatrixOverTwo(get_quaternion(context));
+  N->template block<4, 3>(0, 0) =
+      CalcScaledQMatrix(0.5, get_quaternion(context));
   N->template block<4, 3>(0, 3).setZero();      // Upper-right block.
   N->template block<3, 3>(4, 0).setZero();      // Lower-left block.
   N->template block<3, 3>(4, 3).setIdentity();  // Lower-right block = [I₃₃].
@@ -499,12 +491,12 @@ void QuaternionFloatingMobilizer<T>::DoCalcNDotMatrix(
   // Calculate the time-derivative of the quaternion, i.e., q̇ᵣ = Nᵣ(q)⋅vᵣ.
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
-  const Vector4<T> qdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
+  const Vector4<T> qdot = CalcScaledQMatrix(0.5, q_FM) * w_FM_F;
   const Quaternion<T> qdot_FM(qdot[0], qdot[1], qdot[2], qdot[3]);
 
   // Since Nᵣ(qᵣ) = 0.5 * Q(q_FM), where Q(q_FM) is linear in the elements of
   // q_FM = [qw, qx, qy, qz]ᵀ, so Ṅᵣ(qᵣ,q̇ᵣ) = 0.5 * Q(q̇_FM).
-  const Eigen::Matrix<T, 4, 3> NrDotMatrix = CalcQMatrixOverTwo(qdot_FM);
+  const Eigen::Matrix<T, 4, 3> NrDotMatrix = CalcScaledQMatrix(0.5, qdot_FM);
 
   // For the translational part of this mobilizer, the time-derivative of the
   // generalized positions q̇ₜ = [ẋ, ẏ, ż]ᵀ are related to the translational
@@ -537,14 +529,15 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusDotMatrix(
   // Calculate the time-derivative of the quaternion, i.e., q̇ᵣ = Nᵣ(q)⋅vᵣ.
   const Quaternion<T> q_FM = get_quaternion(context);
   const Vector3<T> w_FM_F = get_angular_velocity(context);
-  const Vector4<T> quatdot = CalcQMatrixOverTwo(q_FM) * w_FM_F;
+  const Vector4<T> quatdot = CalcScaledQMatrix(0.5, q_FM) * w_FM_F;
   const Quaternion<T> qdot(quatdot[0], quatdot[1], quatdot[2], quatdot[3]);
 
   // TODO(Mitiguy) Ensure this calculation provides the time derivative of the
   //  NrPlus matrix calculation in DoCalcNplusMatrix().
   // Note that N⁺ᵣ(qᵣ) = Q(2 * qᵣ)ᵀ, where the elements of the matrix Q
   // are linear in qᵣ = [qw, qx, qy, qz]ᵀ, so Ṅ⁺ᵣ(qᵣ,q̇ᵣ) = Q(2 * q̇ᵣ)ᵀ.
-  const Eigen::Matrix<T, 3, 4> NrPlusDot = CalcTwoTimesQMatrixTranspose(qdot);
+  const Eigen::Matrix<T, 3, 4> NrPlusDot =
+      CalcScaledQMatrix(2.0, qdot).transpose();
 
   // For the translational part of this mobilizer, the translational generalized
   // velocities v_FM_F = vₜ = [vx, vy, vz]ᵀ are related to the time-derivatives
@@ -564,7 +557,8 @@ void QuaternionFloatingMobilizer<T>::DoMapVelocityToQDot(
     EigenPtr<VectorX<T>> qdot) const {
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, q̇_FM = 0.5 * Q(q_FM) ⋅ w_FM_F:
-  qdot->template head<4>() = CalcQMatrixOverTwo(q_FM) * v.template head<3>();
+  qdot->template head<4>() =
+      CalcScaledQMatrix(0.5, q_FM) * v.template head<3>();
   // Translational component, ṗ_FoMo_F = v_FMo_F:
   qdot->template tail<3>() = v.template tail<3>();
 }
@@ -606,7 +600,7 @@ void QuaternionFloatingMobilizer<T>::DoMapAccelerationToQDDot(
   const Vector3<T> w_FM_F = get_angular_velocity(context);
   const T w_squared_over_four = 0.25 * w_FM_F.squaredNorm();
   qddot->template head<4>() =
-      CalcQMatrixOverTwo(q_FM) * vdot.template head<3>() -
+      CalcScaledQMatrix(0.5, q_FM) * vdot.template head<3>() -
       w_squared_over_four * Vector4<T>(q_FM.w(), q_FM.x(), q_FM.y(), q_FM.z());
 
   // For the translational part of this mobilizer, the 2nd-derivative of the
