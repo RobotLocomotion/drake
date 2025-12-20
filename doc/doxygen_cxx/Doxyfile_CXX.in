@@ -373,9 +373,9 @@ This will be removed from Drake on or after removal_date. */ \
 PREDEFINED            += "DRAKE_FORMATTER_AS(TEMPLATE_ARGS,NAMESPACE,TYPE,ARG,EXPR):= \
 /** \{ */ \
 namespace fmt { \
-/** \brief Specializes the fmt::formatter<> class template for TYPE */ \
+/** \brief Specializes the fmt::formatter<> class template for NAMESPACE##::##TYPE */ \
 template <TEMPLATE_ARGS> \
-struct formatter<NAMESPACE::TYPE> {}; \
+struct formatter<NAMESPACE##::##TYPE> {}; \
 } \
 /** \} */"
 "
