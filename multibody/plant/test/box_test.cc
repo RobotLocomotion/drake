@@ -64,7 +64,11 @@ class SlidingBoxTest : public ::testing::Test {
     plant.get_actuation_input_port().FixValue(&plant_context, applied_force_);
 
     Simulator<double> simulator(*diagram, std::move(diagram_context));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // delete this when removing deprecated publish_every_time_step feature.
     simulator.set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
     // Implicit integration does much better than the default RK3 for this
     // system with regularized friction. Otherwise RK3 requires a very small
     // accuracy setting and it is very costly.

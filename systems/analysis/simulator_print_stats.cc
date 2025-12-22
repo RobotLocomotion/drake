@@ -31,8 +31,12 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
   fmt::print("General stats regarding discrete updates:\n");
   fmt::print("Number of time steps taken (simulator stats) = {:d}\n",
              simulator.get_num_steps_taken());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete this when removing deprecated publish_every_time_step feature.
   fmt::print("Simulator publishes every time step: {}\n",
              simulator.get_publish_every_time_step());
+#pragma GCC diagnostic pop
   fmt::print("Number of publishes = {:d}\n", simulator.get_num_publishes());
   fmt::print("Number of discrete updates = {:d}\n",
              simulator.get_num_discrete_updates());

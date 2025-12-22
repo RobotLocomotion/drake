@@ -265,10 +265,22 @@ turpis massa sed elementum tempus.)""";
 R"""(Field 2. Consectetur libero id faucibus nisl tincidunt eget nullam non
 nisi.)""";
         } field_2;
+        // Symbol: drake::mkdoc_test::Struct::field_3
+        struct /* field_3 */ {
+          // Source: drake/tools/workspace/mkdoc_internal/test/sample_header.h
+          const char* doc_deprecated =
+R"""(deprecated field to test that field_3.doc_deprecated is printed to
+file in Serialize__fields(), rather than field_3.doc. (Deprecated.)
+
+Deprecated:
+    Use something else instead. This will be removed from Drake on or
+    after 2066-01-19.)""";
+        } field_3;
         auto Serialize__fields() const {
           return std::array{
             std::make_pair("field_1", field_1.doc),
             std::make_pair("field_2", field_2.doc),
+            std::make_pair("field_3", field_3.doc_deprecated),
           };
         }
       } Struct;
