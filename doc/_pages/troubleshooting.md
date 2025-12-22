@@ -176,6 +176,81 @@ The solution is to use either `GetMyContextFromRoot()`
 
 See the notes on [System Compatibility][m_system_compat] for further discussion.
 
+# Simulator
+
+## publish every time step
+The ability to trigger forced publish events using `Simulator`'s API is 
+deprecated. This guide provides instructions on how to migrate the functionality
+for each access point of the deprecated feature.
+### simulator_publish_every_time_step gflag
+This flag sets SimulatorConfig{}.publish_every_time_step. Check its
+section below for details.
+
+This flag can also be used to publish visualization data in every simulation 
+step in some of Drake's examples, yielding the maximum visual update frequency.
+In case you want to change the default publish frequency of 64 Hz, replace the 
+following line:
+`visualization::AddDefaultVisualization(&builder);`
+in examples with
+```c++
+visualization::ApplyVisualizationConfig(
+    visualization::VisualizationConfig{.publish_period=1.0/DESIRED_FREQUENCY},
+    &builder);
+```
+and replace `DESIRED_FREQUENCY` with your preferred `double` value.
+### SimulatorConfig{}.publish_every_time_step
+This field sets `set_publish_every_time_step()` and 
+`set_publish_at_initialization()` to true. Check their respective sections
+below for migration steps.
+### get_publish_every_time_step()
+This method is not needed after migrating to system events. Check 
+`set_publish_every_time_step()` section below for migration steps.
+### set_publish_every_time_step()
+Using `set_publish_every_time_step()` means you have a forced publish event 
+declared in a `LeafSystem` and publishing using deprecated `Simulator` 
+parameter `publish_every_time_step_`.
+To migrate from `Simulator`'s deprecated `set_publish_every_time_step()`,
+define a per-step publish event
+handler in the `LeafSystem` being simulated and declare it using
+`DeclarePerStepPublishEvent` to achieve the same functionality. 
+Note that per-step publish events also publish at `Simulator`'s initialization. 
+Here's an example:
+```c++
+template <typename T>
+class PerStepPublishExampleSystem : public LeafSystem<T> {
+ public:
+  PerStepPublishExampleSystem() {
+    this->DeclarePerStepPublishEvent(
+        &PerStepPublishExampleSystem::PerStepPublishExampleHandler);
+  }
+  EventStatus PerStepPublishExampleHandler(const Context<T>&) const {
+    return EventStatus::Succeeded();
+  }
+}
+```
+### set_publish_at_initialization()
+Note that per-step publish events will trigger at initialization automatically.
+Using `set_publish_at_initialization()` means you have a forced publish event 
+declared in a `LeafSystem` and publishing using deprecated `Simulator` 
+parameter `publish_at_initialization_`.
+If you are only issuing a publish at `Simulator` initialization, define an event
+handler in the `LeafSystem` being simulated and declare it using 
+`DeclareInitializationPublishEvent`. Here's an example:
+```c++
+template <typename T>
+class InitPublishExampleSystem : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InitPublishExampleSystem);
+  InitPublishExampleSystem() {
+    this->DeclareInitializationPublishEvent(
+        &InitPublishExampleSystem::InitPublishExampleHandler);
+  }
+  EventStatus ExampleHandler(const Context<T>&) const {
+    return EventStatus::Succeeded();
+  }
+}
+```
+
 # PyPI (pip)
 
 ## No candidate version for this platform {#pip-no-candidate}
@@ -259,7 +334,7 @@ Note that the concurrency level passed to `make` (e.g., `make -j 2`) does not
 propagate through to affect the concurrency of most of Drake's build steps; you
 need to configure the dotfile in order to control the build concurrency.
 
-# Pydrake out of memory {#pydrake-oom}
+# Pydrake out of memory{#pydrake - oom }
 
 Pydrake programs often control C++ objects that use a lot of memory, so that
 the default behaviors for running garbage collection don't effectively control

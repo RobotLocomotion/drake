@@ -80,6 +80,7 @@ TYPED_TEST(SimulatorConfigFunctionsTest, CongruenceTest) {
   EXPECT_EQ(sim_defaults.start_time, config_defaults.start_time);
   EXPECT_EQ(sim_defaults.target_realtime_rate,
             config_defaults.target_realtime_rate);
+  // delete with publish_every_time_step 2026-06-01
   EXPECT_EQ(sim_defaults.publish_every_time_step,
             config_defaults.publish_every_time_step);
 }
@@ -93,6 +94,7 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
       "use_error_control: true\n"
       "start_time: 0.5\n"
       "target_realtime_rate: 3.0\n"
+      // delete with publish_every_time_step 2026-06-01
       "publish_every_time_step: true\n";
 
   // Ensure that the string and the struct have the same fields.
@@ -114,6 +116,7 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.use_error_control, bespoke.use_error_control);
   EXPECT_EQ(readback.start_time, bespoke.start_time);
   EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
+  // delete with publish_every_time_step 2026-06-01
   EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
 }
 

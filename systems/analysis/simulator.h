@@ -13,6 +13,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/name_value.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -543,7 +544,7 @@ class Simulator {
   /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /// (To be deprecated) Prefer using per-step publish events instead.
+  /// Prefer using per-step publish events instead.
   ///
   /// Sets whether the simulation should trigger a forced-Publish event on the
   /// System under simulation at the end of every trajectory-advancing step.
@@ -560,11 +561,15 @@ class Simulator {
   ///
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
+  DRAKE_DEPRECATED("2026-06-01",
+                   "Use LeafSystem::DeclarePerStepPublishEvent() instead. "
+                   "Check the \"publish every time step\" section in "
+                   "troubleshooting.md for details on how to migrate.")
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
 
-  /// (To be deprecated) Prefer using initialization or per-step publish
+  /// Prefer using initialization or per-step publish
   /// events instead.
   ///
   /// Sets whether the simulation should trigger a forced-Publish at the end
@@ -574,12 +579,21 @@ class Simulator {
   /// @see LeafSystem::DeclareInitializationPublishEvent()
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
+  DRAKE_DEPRECATED("2026-06-01",
+                   "If you are only issuing a publish at initialization, use "
+                   "LeafSystem::DeclareInitializationPublishEvent() instead. "
+                   "Check the \"publish every time step\" section in "
+                   "troubleshooting.md for details on how to migrate.")
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
 
   /// Returns true if the set_publish_every_time_step() option has been
   /// enabled. By default, returns false.
+  DRAKE_DEPRECATED("2026-06-01",
+                   "This method is not needed once per-step events are used. "
+                   "Check the \"publish every time step\" section in "
+                   "troubleshooting.md for details on how to migrate.")
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the
@@ -872,8 +886,10 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
 
+  // delete with publish_every_time_step 2026-06-01
   bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
 
+  // delete with publish_every_time_step 2026-06-01
   bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};
 
   // These are recorded at initialization or statistics reset.

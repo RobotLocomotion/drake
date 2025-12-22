@@ -10,6 +10,59 @@ namespace drake {
 namespace systems {
 namespace {
 
+// TODO(2026-06-01): delete class EventfulSystemUsingPublishEveryStep when
+// deleting publish_every_time_step feature.
+class EventfulSystemUsingPublishEveryStep final : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventfulSystemUsingPublishEveryStep);
+
+  EventfulSystemUsingPublishEveryStep() {
+    // These events were found to cause allocations at AdvanceTo() as
+    // originally implemented.
+    DeclarePeriodicPublishEvent(1.0, 0.5,
+                                &EventfulSystemUsingPublishEveryStep::Update);
+    DeclarePeriodicDiscreteUpdateEvent(
+        1.0, 0.5, &EventfulSystemUsingPublishEveryStep::Update);
+    DeclarePeriodicUnrestrictedUpdateEvent(
+        1.0, 0.5, &EventfulSystemUsingPublishEveryStep::Update);
+    DeclarePerStepPublishEvent(&EventfulSystemUsingPublishEveryStep::Update);
+    DeclarePerStepDiscreteUpdateEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+    DeclarePerStepUnrestrictedUpdateEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+
+    // These events were not found to allocate at AdvanceTo(); they are
+    // included for completeness.
+    DeclareForcedPublishEvent(&EventfulSystemUsingPublishEveryStep::Update);
+    DeclareForcedDiscreteUpdateEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+
+    // It turns out that declaring an init event can actually *reduce* the
+    // allocation count, by forcing earlier allocations in underlying storage
+    // objects. See #14543 for discussion of this problem.
+    // TODO(rpoyner-tri): expand testing to cover this problem.
+    DeclareInitializationPublishEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+    DeclareInitializationDiscreteUpdateEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+    DeclareInitializationUnrestrictedUpdateEvent(
+        &EventfulSystemUsingPublishEveryStep::Update);
+  }
+
+ private:
+  EventStatus Update(const Context<double>&) const {
+    return EventStatus::Succeeded();
+  }
+  EventStatus Update(const Context<double>&, DiscreteValues<double>*) const {
+    return EventStatus::Succeeded();
+  }
+  EventStatus Update(const Context<double>&, State<double>*) const {
+    return EventStatus::Succeeded();
+  }
+};
+
 class EventfulSystem final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventfulSystem);
@@ -24,11 +77,10 @@ class EventfulSystem final : public LeafSystem<double> {
     DeclarePerStepDiscreteUpdateEvent(&EventfulSystem::Update);
     DeclarePerStepUnrestrictedUpdateEvent(&EventfulSystem::Update);
 
-    // These events were not found to allocate at AdvanceTo(); they are
-    // included for completeness.
-    DeclareForcedPublishEvent(&EventfulSystem::Update);
-    DeclareForcedDiscreteUpdateEvent(&EventfulSystem::Update);
-    DeclareForcedUnrestrictedUpdateEvent(&EventfulSystem::Update);
+    // Simulator should never call forced events.
+    DeclareForcedPublishEvent(&EventfulSystem::Throws);
+    DeclareForcedDiscreteUpdateEvent(&EventfulSystem::Throws);
+    DeclareForcedUnrestrictedUpdateEvent(&EventfulSystem::Throws);
 
     // It turns out that declaring an init event can actually *reduce* the
     // allocation count, by forcing earlier allocations in underlying storage
@@ -49,7 +101,59 @@ class EventfulSystem final : public LeafSystem<double> {
   EventStatus Update(const Context<double>&, State<double>*) const {
     return EventStatus::Succeeded();
   }
+  EventStatus Throws(const Context<double>&) const {
+    throw std::runtime_error("Simulator shouldn't call forced events");
+  }
+  EventStatus Throws(const Context<double>&, DiscreteValues<double>*) const {
+    throw std::runtime_error("Simulator shouldn't call forced events");
+  }
+  EventStatus Throws(const Context<double>&, State<double>*) const {
+    throw std::runtime_error("Simulator shouldn't call forced events");
+  }
 };
+
+// TODO(2026-06-01): delete test
+// NoHeapAllocsInSimulatorForSystemsWithoutContinuousStateUsingPublishEveryStep
+// when deleting publish_every_time_step feature. Tests that heap allocations do
+// not occur from Simulator and the systems framework for systems that do
+// various event updates and do not have continuous state.
+// TODO(rpoyner-tri): add testing for witness functions.
+GTEST_TEST(
+    SimulatorLimitMallocTest,
+    // clang-format off
+    NoHeapAllocsInSimulatorForSystemsWithoutContinuousStateUsingPublishEveryStep
+    ) {
+  // clang-format on
+  // Build a Diagram containing the test system so we can test both Diagrams
+  // and LeafSystems at once.
+  DiagramBuilder<double> builder;
+  builder.AddSystem<EventfulSystemUsingPublishEveryStep>();
+  auto diagram = builder.Build();
+
+  // Create a Simulator and use it to advance time until t=3.
+  Simulator<double> simulator(*diagram);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete with publish_every_time_step 2026-06-01
+  // Actually cause forced-publish events to be issued.
+  simulator.set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
+  // Trigger first (and only allowable) heap allocation.
+  simulator.Initialize();
+  {
+    // As long as there are any allocations allowed here, there are still
+    // defects to fix. The exact number doesn't much matter; it should be set
+    // to the minimum possible at any given revision, to catch regressions. The
+    // goal (see #14543) is for the simulator and framework to support
+    // heap-free simulation after initialization, given careful system
+    // construction.
+    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 0});
+    simulator.AdvanceTo(1.0);
+    simulator.AdvanceTo(2.0);
+    simulator.AdvanceTo(3.0);
+    simulator.AdvancePendingEvents();
+  }
+}
 
 // Tests that heap allocations do not occur from Simulator and the systems
 // framework for systems that do various event updates and do not have
@@ -65,8 +169,6 @@ GTEST_TEST(SimulatorLimitMallocTest,
 
   // Create a Simulator and use it to advance time until t=3.
   Simulator<double> simulator(*diagram);
-  // Actually cause forced-publish events to be issued.
-  simulator.set_publish_every_time_step(true);
   // Trigger first (and only allowable) heap allocation.
   simulator.Initialize();
   {

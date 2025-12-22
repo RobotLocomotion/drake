@@ -19,6 +19,7 @@ DECLARE_bool(simulator_use_error_control);
 
 // Declares simulator gflags.
 DECLARE_double(simulator_target_realtime_rate);
+// Delete next line with publish_every_time_step 2026-06-01
 DECLARE_bool(simulator_publish_every_time_step);
 
 namespace drake {
