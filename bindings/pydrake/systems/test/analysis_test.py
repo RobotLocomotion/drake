@@ -337,8 +337,11 @@ class TestAnalysis(unittest.TestCase):
         )
         simulator.reset_context(context=simulator.get_context().Clone())
 
+        # delete with publish_every_time_step 2026-06-01
+        # Test will pass after deletion since the API will no longer exist.
         simulator.set_publish_every_time_step(publish=True)
         simulator.set_publish_at_initialization(publish=True)
+        #
         simulator.set_target_realtime_rate(realtime_rate=0.0)
         self.assertEqual(simulator.get_target_realtime_rate(), 0.0)
         self.assertIsInstance(simulator.get_actual_realtime_rate(), float)

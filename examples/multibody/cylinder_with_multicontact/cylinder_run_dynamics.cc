@@ -102,8 +102,11 @@ int do_main() {
                               Vector3<double>(FLAGS_vx0, 0.0, 0.0)));
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete with publish_every_time_step 2026-06-01
   simulator.set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

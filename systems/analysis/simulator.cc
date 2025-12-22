@@ -187,11 +187,15 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
     accumulated_event_status.KeepMoreSevere(
         HandlePublish(merged_events_->get_publish_events()));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // delete with publish_every_time_step 2026-06-01
     // If requested, do a force-publish before the simulation starts.
     if (publish_at_initialization_) {
       accumulated_event_status.KeepMoreSevere(
           HandlePublish(system_.get_forced_publish_events()));
     }
+#pragma GCC diagnostic pop
 
     // Invoke the monitor() if there is one. This is logically like a
     // Diagram-level Publish event so we handle it similarly.
@@ -438,12 +442,14 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
       accumulated_event_status.KeepMoreSevere(
           HandlePublish(merged_events_->get_publish_events()));
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // delete with publish_every_time_step 2026-06-01
       if (get_publish_every_time_step()) {
         accumulated_event_status.KeepMoreSevere(
             HandlePublish(system_.get_forced_publish_events()));
       }
-
+#pragma GCC diagnostic pop
       // Invoke the monitor() if there is one. This is logically like a
       // Diagram-level Publish event so we handle it similarly.
       if (get_monitor())
