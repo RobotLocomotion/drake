@@ -196,7 +196,6 @@ int DoMain() {
   sim_config.max_step_size = FLAGS_max_time_step;
   sim_config.accuracy = FLAGS_accuracy;
   sim_config.target_realtime_rate = FLAGS_realtime_rate;
-  sim_config.publish_every_time_step = false;
 
   systems::Simulator<double> simulator(*diagram);
   ApplySimulatorConfig(sim_config, &simulator);
