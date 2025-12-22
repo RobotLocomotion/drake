@@ -20,8 +20,7 @@ python_required = [
 # version, which is currently Python < 3.14. When that changes to a larger
 # version number, we should bump this up to match, and also grep tools/wheel
 # for other mentions of MOSEK version bounds and fix those as well.
-if sys.version_info[:2] < (3, 14):
-    python_required.append('Mosek==11.0.24')
+python_required.append('Mosek==11.0.24 ; python_version < "3.14"')
 
 
 def find_data_files(*patterns):
