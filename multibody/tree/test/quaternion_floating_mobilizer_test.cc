@@ -373,7 +373,7 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
                               MatrixCompareType::relative));
 
   // Note: the previously arbitrarily chosen q̇ᵣ = [1 2 3 4]ᵀ violates a
-  // constraint for the unit quaternion qᵣ. Why?  Since (qᵣ)ᵀ * qᵣ = 1,
+  // constraint for the unit quaternion qᵣ.  Why?  Since (qᵣ)ᵀ * qᵣ = 1,
   // (q̇ᵣ)ᵀ qᵣ + (qᵣ)ᵀ q̇ᵣ = 2 (qᵣ)ᵀ q̇ᵣ = 0.  However, since q̇ᵣ = [1 2 3 4]ᵀ above
   // was chosen without regarding the constraint, this is not true.
   // Resolve q̇ᵣ = q̇ᵣ_parallel + q̇ᵣ_perp, where q̇ᵣ_parallel is the part of q̇ᵣ
@@ -397,21 +397,22 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
 TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // Set an arbitrary non-zero state, but with a non-unit quaternion.
   // Test with both a unnormalized and normalized quaternion q_FM.
-  const Quaternion<double> quat_nonUnit(0.7, 0.8, 0.9, -1.2);
-  const Quaternion<double> quat_unit = quat_nonUnit.normalized();
-  const Vector3<double> wxyz(5.4, -9.8, 3.2);
-  const Vector3<double> vxyz(0.2, 0.5, -0.87);
-  const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
+  const Quaternion<double> quat_non_unit(0.7, 0.8, 0.9, -1.2);
+  const Quaternion<double> quat_unit = quat_non_unit.normalized();
+  const Vector3<double> w_xyz(5.4, -9.8, 3.2);
+  const Vector3<double> v_xyz(0.2, 0.5, -0.87);
+  const Vector6<double> v(w_xyz[0], w_xyz[1], w_xyz[2], v_xyz[0], v_xyz[1],
+                          v_xyz[2]);
   mobilizer_->SetQuaternion(context_.get(), quat_unit);
-  mobilizer_->SetAngularVelocity(context_.get(), wxyz);
-  mobilizer_->SetTranslationalVelocity(context_.get(), vxyz);
+  mobilizer_->SetAngularVelocity(context_.get(), w_xyz);
+  mobilizer_->SetTranslationalVelocity(context_.get(), v_xyz);
 
   // Calculate the qdot associated with angular and translational velocity.
   Eigen::Matrix<double, 7, 1> qdot_unit;  // Calculate qdot using quat_unit.
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot_unit);
 
-  // Use the previously calculated q̇_unit to calculate an associated angular and
-  // translational velocity -- and check that they match the original v.
+  // Use q̇_unit to calculate an associated angular and translational velocity,
+  // and check that they match the original v.
   Vector6<double> v_from_qdot_unit;
   mobilizer_->MapQDotToVelocity(*context_, qdot_unit, &v_from_qdot_unit);
   EXPECT_TRUE(CompareMatrices(v, v_from_qdot_unit, 16 * kTolerance,
@@ -427,45 +428,46 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // |qᵣ| is constant [e.g., (qᵣ)ᵀ * qᵣ = 4], the proof above is valid.
   const Vector4<double> qrdot_unit(qdot_unit[0], qdot_unit[1], qdot_unit[2],
                                    qdot_unit[3]);
-  double is_zero_if_OK_qdot =
+  double is_zero_if_ok_qdot =
       math::CalculateQuaternionDtConstraintViolation(quat_unit, qrdot_unit);
-  EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
+  EXPECT_TRUE(std::abs(is_zero_if_ok_qdot) < 16 * kTolerance);
 
   // Repeat the previous calculations with a non-unit quaternion.
-  mobilizer_->SetQuaternion(context_.get(), quat_nonUnit);
-  Eigen::Matrix<double, 7, 1> qdot_nonUnit;  // Calculate q̇ using q_nonUnit.
-  mobilizer_->MapVelocityToQDot(*context_, v, &qdot_nonUnit);
+  mobilizer_->SetQuaternion(context_.get(), quat_non_unit);
+  Eigen::Matrix<double, 7, 1> qdot_non_unit;  // Calculate q̇ using q_non_unit.
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot_non_unit);
 
-  // Verify q̇ᵣ_nonUnit = |quat_nonUnit| * q̇ᵣ_unit.
-  const Vector4<double> qrdot_nonUnit(qdot_nonUnit[0], qdot_nonUnit[1],
-                                      qdot_nonUnit[2], qdot_nonUnit[3]);
-  const double s = quat_nonUnit.norm();
-  EXPECT_TRUE(CompareMatrices(qrdot_nonUnit, s * qrdot_unit, 16 * kTolerance,
+  // Verify q̇ᵣ_non_unit = |quat_non_unit| * q̇ᵣ_unit.
+  const Vector4<double> qrdot_non_unit(qdot_non_unit[0], qdot_non_unit[1],
+                                       qdot_non_unit[2], qdot_non_unit[3]);
+  const double s = quat_non_unit.norm();
+  EXPECT_TRUE(CompareMatrices(qrdot_non_unit, s * qrdot_unit, 16 * kTolerance,
                               MatrixCompareType::relative));
 
-  // Ensure q̇ᵣ_nonUnit satisfies the derivative of the quaternion constraint.
-  is_zero_if_OK_qdot =
-      math::CalculateQuaternionDtConstraintViolation(quat_unit, qrdot_nonUnit);
-  EXPECT_TRUE(std::abs(is_zero_if_OK_qdot) < 16 * kTolerance);
+  // Ensure q̇ᵣ_non_unit satisfies the derivative of the quaternion constraint.
+  is_zero_if_ok_qdot =
+      math::CalculateQuaternionDtConstraintViolation(quat_unit, qrdot_non_unit);
+  EXPECT_TRUE(std::abs(is_zero_if_ok_qdot) < 16 * kTolerance);
 
-  // Use the previous q̇_nonUnit to calculate an associated angular and
+  // Use the previous q̇_non_unit to calculate an associated angular and
   // translational velocity -- and check that they match the original v.
-  // Reminder: MapQDotToVelocity has the effect of normalizing quat_nonUnit and
-  // _also_ accounting for the scaled q̇_nonUnit associated with quat_nonUnit.
-  Vector6<double> v_from_qdot_nonUnit;
-  mobilizer_->MapQDotToVelocity(*context_, qdot_nonUnit, &v_from_qdot_nonUnit);
-  EXPECT_TRUE(CompareMatrices(v, v_from_qdot_nonUnit, 16 * kTolerance,
+  // Reminder: MapQDotToVelocity has the effect of normalizing quat_non_unit and
+  // _also_ accounting for the scaled q̇_non_unit associated with quat_non_unit.
+  Vector6<double> v_from_qdot_non_unit;
+  mobilizer_->MapQDotToVelocity(*context_, qdot_non_unit,
+                                &v_from_qdot_non_unit);
+  EXPECT_TRUE(CompareMatrices(v, v_from_qdot_non_unit, 16 * kTolerance,
                               MatrixCompareType::relative));
 
   // Verify that if q̇ᵣ is parallel to qᵣ, i.e., q̇ᵣ = scalar * qᵣ where scalar is
   // a real number, that angular velocity vr_from_qrdot_parallel = [0 0 0].
   // Note: The proof of this uses the fact that Nᵣ⁺ * qᵣ = 0.
   const Vector4<double> qrdot_parallel =
-      3.45 * Vector4<double>(quat_nonUnit.w(), quat_nonUnit.x(),
-                             quat_nonUnit.y(), quat_nonUnit.z());
+      3.45 * Vector4<double>(quat_non_unit.w(), quat_non_unit.x(),
+                             quat_non_unit.y(), quat_non_unit.z());
   Eigen::Matrix<double, 7, 1> qdot_parallel;
-  qdot_parallel.head(4) = qrdot_parallel;        // q̇ᵣ is parallel to qᵣ.
-  qdot_parallel.tail(3) = qdot_nonUnit.tail(3);  // Translation is unchanged.
+  qdot_parallel.head(4) = qrdot_parallel;         // q̇ᵣ is parallel to qᵣ.
+  qdot_parallel.tail(3) = qdot_non_unit.tail(3);  // Translation is unchanged.
   Vector6<double> v_from_qrdot_parallel;
   mobilizer_->MapQDotToVelocity(*context_, qdot_parallel,
                                 &v_from_qrdot_parallel);
@@ -479,9 +481,10 @@ TEST_F(QuaternionFloatingMobilizerTest, MapVelocityToQDotAndViceVersa) {
   // q̇ᵣ_parallel is parallel to qᵣ (e.g., q̇ᵣ_parallel = scalar * qᵣ), then for
   // the purposes of using MapQDotToVelocity() to calculate angular velocity,
   // it is as if q̇ᵣ_parallel is zero. This fact builds on the previous test.
-  qdot_nonUnit.head(4) += qrdot_parallel;  // Sets q̇ᵣ = q̇ᵣ_parallel + q̇ᵣ_perp.
-  mobilizer_->MapQDotToVelocity(*context_, qdot_nonUnit, &v_from_qdot_nonUnit);
-  EXPECT_TRUE(CompareMatrices(v_from_qdot_nonUnit, v_from_qdot_unit,
+  qdot_non_unit.head(4) += qrdot_parallel;  // Sets q̇ᵣ = q̇ᵣ_parallel + q̇ᵣ_perp.
+  mobilizer_->MapQDotToVelocity(*context_, qdot_non_unit,
+                                &v_from_qdot_non_unit);
+  EXPECT_TRUE(CompareMatrices(v_from_qdot_non_unit, v_from_qdot_unit,
                               16 * kTolerance, MatrixCompareType::relative));
 }
 
@@ -489,12 +492,13 @@ TEST_F(QuaternionFloatingMobilizerTest, MapAccelerationToQDDotAndViceVersa) {
   // Set an arbitrary non-zero state.
   const math::RollPitchYaw<double> rpy(M_PI / 3, -M_PI / 4, M_PI / 5);
   Quaternion<double> q_FM = rpy.ToQuaternion();
-  const Vector3<double> wxyz(5.4, -9.8, 3.2);
-  const Vector3<double> vxyz(0.2, 0.5, -0.87);
-  const Vector6<double> v(wxyz[0], wxyz[1], wxyz[2], vxyz[0], vxyz[1], vxyz[2]);
+  const Vector3<double> w_xyz(5.4, -9.8, 3.2);
+  const Vector3<double> v_xyz(0.2, 0.5, -0.87);
+  const Vector6<double> v(w_xyz[0], w_xyz[1], w_xyz[2], v_xyz[0], v_xyz[1],
+                          v_xyz[2]);
   mobilizer_->SetQuaternion(context_.get(), q_FM);
-  mobilizer_->SetAngularVelocity(context_.get(), wxyz);
-  mobilizer_->SetTranslationalVelocity(context_.get(), vxyz);
+  mobilizer_->SetAngularVelocity(context_.get(), w_xyz);
+  mobilizer_->SetTranslationalVelocity(context_.get(), v_xyz);
 
   // Set an arbitrary v̇ and use MapAccelerationToQDDot() to calculate q̈.
   // Reminder: v̇ = [ẇx, ẇy, ẇz, v̇x, v̇y, v̇z]ᵀ
