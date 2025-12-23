@@ -7,6 +7,9 @@
 # When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
 # should be changed accordingly so that downstream users are synced with
 # Drake itself.
+
+TEST CHANGE!
+
 cmake_minimum_required(VERSION 3.22)
 
 project(drake
