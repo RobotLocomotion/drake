@@ -221,21 +221,7 @@ class _State:
         Compute and return the specified hash for the specified file.
         """
         with open(path, "rb") as f:
-            if hasattr(hashlib, "file_digest"):
-                return hashlib.file_digest(f, algorithm)
-
-            else:
-                digest = hashlib.new(algorithm)
-                buf = bytearray(256 * 1024)
-                view = memoryview(buf)
-
-                while True:
-                    size = f.readinto(buf)
-                    if size == 0:
-                        break
-                    digest.update(view[:size])
-
-                return digest.hexdigest()
+            return hashlib.file_digest(f, algorithm).hexdigest()
 
     def _write_hashfile(
         self, name: str, algorithm: str, local_path: str, hashfile_path: str
