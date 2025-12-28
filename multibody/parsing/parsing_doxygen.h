@@ -286,6 +286,14 @@ Here is the full list of custom elements:
 - @ref tag_drake_length
 - @ref tag_drake_line_segment
 - @ref tag_drake_linear_bushing_rpy
+- @ref tag_drake_linear_spring_damper
+- @ref tag_drake_linear_spring_damper_body_A
+- @ref tag_drake_linear_spring_damper_p_AP
+- @ref tag_drake_linear_spring_damper_body_B
+- @ref tag_drake_linear_spring_damper_p_BQ
+- @ref tag_drake_linear_spring_damper_free_length
+- @ref tag_drake_linear_spring_damper_stiffness
+- @ref tag_drake_linear_spring_damper_damping
 - @ref tag_drake_mass_damping
 - @ref tag_drake_mass_density
 - @ref tag_drake_material_model
@@ -644,6 +652,113 @@ passed to the constructor of drake::multibody::LinearBushingRollPitchYaw as the
 @see @ref tag_drake_linear_bushing_rpy,
 drake::multibody::LinearBushingRollPitchYaw,
 @ref Basic_bushing_torque_stiffness_and_damping "How to choose torque stiffness and damping constants"
+
+@subsection tag_drake_linear_spring_damper drake:linear_spring_damper
+
+- SDFormat path: `//model/drake:linear_spring_damper`
+- URDF path: `/robot/drake:linear_spring_damper`
+- Syntax: Nested elements @ref tag_drake_linear_spring_damper_body_A,
+  @ref tag_drake_linear_spring_damper_p_AP,
+  @ref tag_drake_linear_spring_damper_body_B,
+  @ref tag_drake_linear_spring_damper_p_BQ,
+  @ref tag_drake_linear_spring_damper_free_length,
+  @ref tag_drake_linear_spring_damper_stiffness,
+  and @ref tag_drake_linear_spring_damper_damping
+
+@subsection tag_drake_linear_spring_damper_semantics Semantics
+
+The element adds a drake::multibody::LinearSpringDamper to the model.
+
+@subsection tag_drake_linear_spring_damper_body_A drake:linear_spring_damper_body_A
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_body_A`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_body_A/@name`
+- Syntax: String.
+
+@subsection tag_drake_linear_spring_damper_body_A_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that will
+be passed to drake::multibody::LinearSpringDamper() as the `body_A` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_p_AP drake:linear_spring_damper_p_AP
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_p_AP`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_p_AP/@value`
+- Syntax: Three floating point values.
+
+@subsection tag_drake_linear_spring_damper_p_AP_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed into drake::multibody::LinearSpringDamper() as the `p_AP` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_body_B drake:linear_spring_damper_body_B
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_body_B`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_body_B/@name`
+- Syntax: String.
+
+@subsection tag_drake_linear_spring_damper_body_B_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that will
+be passed to drake::multibody::LinearSpringDamper() as the `body_B` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_p_BQ drake:linear_spring_damper_p_BQ
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_p_BQ`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_p_BQ/@value`
+- Syntax: Three floating point values.
+
+@subsection tag_drake_linear_spring_damper_p_BQ_semantics Semantics
+
+The three floating point values (units of meters) are formed into a vector and
+passed into drake::multibody::LinearSpringDamper() as the `p_BQ` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_free_length drake:linear_spring_damper_free_length
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_free_length`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_free_length/@value`
+- Syntax: a strictly positive floating point value.
+
+@subsection tag_drake_linear_spring_damper_free_length_semantics Semantics
+
+The floating point value (unit of meters) is passed into
+drake::multibody::LinearSpringDamper() as the `free_length` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_stiffness drake:linear_spring_damper_stiffness
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_stiffness`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_stiffness/@value`
+- Syntax: a non-negative floating point value.
+
+@subsection tag_drake_linear_spring_damper_stiffness_semantics Semantics
+
+The floating point value (unit of N/m) is passed into
+drake::multibody::LinearSpringDamper() as the `stiffness` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
+
+@subsection tag_drake_linear_spring_damper_damping drake:linear_spring_damper_damping
+
+- SDFormat path: `//model/drake:linear_spring_damper/drake:linear_spring_damper_damping`
+- URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_damping/@value`
+- Syntax: a non-negative floating point value.
+
+@subsection tag_drake_linear_spring_damper_damping_semantics Semantics
+
+The floating point value (unit of N⋅s/m) is passed into
+drake::multibody::LinearSpringDamper() as the `damping` parameter.
+
+@see @ref tag_drake_linear_spring_damper, drake::multibody::LinearSpringDamper()
 
 @subsection tag_drake_capsule drake:capsule
 
