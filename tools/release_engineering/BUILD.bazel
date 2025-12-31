@@ -16,6 +16,16 @@ drake_py_binary(
     ],
 )
 
+# This program is used by a small subset of Drake maintainers (and depends on
+# maintainer-only packages) and relies on manual testing.
+drake_py_binary(
+    name = "push_release",
+    srcs = ["push_release.py"],
+    deps = [
+        "@github3_py_internal//:github3_py",
+    ],
+)
+
 # N.B. Since this downloads files, this is not put under test.
 drake_py_binary(
     name = "download_release_candidate",

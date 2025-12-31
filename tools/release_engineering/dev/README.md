@@ -67,12 +67,12 @@ and push the official source code archive to GitHub.
 
 Once your machine is set-up, run the `push_release` script as described below:
 
-    bazel run //tools/release_engineering/dev:push_release -- <version>
+    bazel run //tools/release_engineering:push_release -- <version>
 
 The release creator will provide the version. Throughout this process, don’t
 use `v` on the version string. For example:
 
-    bazel run //tools/release_engineering/dev:push_release -- 1.0.0
+    bazel run //tools/release_engineering:push_release -- 1.0.0
 
 **Note:** If there is a timeout error uploading to GitHub, double-check
 the GitHub token created above, it is likely a permissions issue.
