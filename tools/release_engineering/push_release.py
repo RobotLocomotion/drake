@@ -340,18 +340,6 @@ def _assert_tty() -> None:
         sys.exit(1)
 
 
-def _assert_command_exists(name: str, package: str) -> None:
-    """
-    Asserts that an executable <name> exists,
-    or tells the user to install <package>.
-    """
-    if shutil.which(name) is None:
-        _fatal(
-            f"ERROR: `{name}` was not found. "
-            f"Fix with `apt-get install {package}`."
-        )
-
-
 def _test_non_empty(path) -> bool:
     """
     Tests if the specified path exists and is a non-empty file.
