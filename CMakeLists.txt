@@ -14,6 +14,8 @@ project(drake
   LANGUAGES C CXX
 )
 
+message(FATAL_ERROR "Testing a failed build.")
+
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
 # our objective is to accept configuration options using their standard spelling
 # (e.g., `-DCMAKE_BUILD_TYPE=Release`) and install Drake using those settings.
