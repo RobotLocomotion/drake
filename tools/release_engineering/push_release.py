@@ -199,7 +199,7 @@ class _State:
         else:
             # If we got here, either something is catastrophically wrong, or
             # the script needs to be updated to consider a new case.
-            raise RuntimeError(
+            _fatal(
                 "Cannot determine MIME type for file"
                 f" {local_path!r} with unexpected extension"
                 " (should be one of: .tar.gz, .sha256,"
