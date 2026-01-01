@@ -43,11 +43,6 @@ if(env.CHANGE_ID) {
 // we can optionally load a branched version.
 library "drake-ci@${params.ciSha}"
 
-// WIP REMOVE
-println(env.JOB_NAME.contains("continuous"))
-println(utils.isNewerBuildQueued())
-throw new Exception("WIP - no need to resume this build")
-
 node(utils.getNodeLabel()) {
   stage('test') {
     timeout(600) {
