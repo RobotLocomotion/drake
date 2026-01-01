@@ -562,6 +562,7 @@ drake_cc_library(
         "meshcat_internal.cc",
         "meshcat_recording_internal.cc",
         "meshcat_types_internal.cc",
+        "meshcat_zip_factory_internal.cc",
     ],
     hdrs = [
         "meshcat.h",
@@ -570,12 +571,14 @@ drake_cc_library(
         "meshcat_params.h",
         "meshcat_recording_internal.h",
         "meshcat_types_internal.h",
+        "meshcat_zip_factory_internal.h",
     ],
     data = [":meshcat_resources"],
     install_hdrs_exclude = [
         "meshcat_internal.h",
         "meshcat_recording_internal.h",
         "meshcat_types_internal.h",
+        "meshcat_zip_factory_internal.h",
     ],
     deps = [
         ":geometry_ids",
@@ -600,6 +603,7 @@ drake_cc_library(
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//systems/analysis:realtime_rate_calculator",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@libzip_internal//:libzip",
         "@msgpack_internal//:msgpack",
         "@nlohmann_internal//:nlohmann",
         "@stduuid_internal//:stduuid",

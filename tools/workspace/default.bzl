@@ -31,6 +31,7 @@ load("//tools/workspace/lcm_internal:repository.bzl", "lcm_internal_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
+load("//tools/workspace/libzip_internal:repository.bzl", "libzip_internal_repository")  # noqa
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("//tools/workspace/metis_internal:repository.bzl", "metis_internal_repository")  # noqa
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
@@ -115,6 +116,7 @@ def _add_internal_repositories():
     libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)
+    libzip_internal_repository(name = "libzip_internal", mirrors = mirrors)
     metis_internal_repository(name = "metis_internal", mirrors = mirrors)
     mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)

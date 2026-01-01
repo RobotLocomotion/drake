@@ -1535,6 +1535,12 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
 }
 
+GTEST_TEST(MeshcatTest, StaticZip) {
+  Meshcat meshcat;
+  const std::string zip = meshcat.StaticZip();
+  EXPECT_THAT(zip, testing::StartsWith("\0x50\0x4b\0x03\0x04"));
+}
+
 // Check that MeshcatParams.show_stats_plot sends a show_realtime_rate message.
 GTEST_TEST(MeshcatTest, ShowStatsPlot) {
   MeshcatParams params;
