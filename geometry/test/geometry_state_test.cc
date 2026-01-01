@@ -2641,7 +2641,7 @@ TEST_F(GeometryStateTest, TestCollisionCandidates) {
             if (!diff.empty()) {
               result << "\n    " << msg;
               for (const auto& p : diff) {
-                result << " (" << p.first << ", " << p.second << ")";
+                result << fmt::format(" ({}, {})", p.first, p.second);
               }
             }
           };
@@ -3141,12 +3141,11 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
     const bool illustration = i & 0x2;
     const bool perception = i & 0x4;
     const GeometryId id = geometries_[i];
-    EXPECT_TRUE(has_expected_roles(id, false, false, false))
-        << "Geometry " << id << " at index (" << i
-        << ") didn't start without roles";
+    EXPECT_TRUE(has_expected_roles(id, false, false, false)) << fmt::format(
+        "Geometry {} at index ({}) didn't start without roles", id, i);
     set_roles(id, proximity, perception, illustration);
     EXPECT_TRUE(has_expected_roles(id, proximity, perception, illustration))
-        << "Incorrect roles for geometry " << id << " at index (" << i << ").";
+        << fmt::format("Incorrect roles for geometry {} at index ({}).", id, i);
   }
 
   // Confirm it works on anchored geometry. Pick, arbitrarily, assigning
