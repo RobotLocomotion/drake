@@ -16,6 +16,8 @@ drake_cc_package_library(
         ":eigen_pool",
         ":gain_constraints_data_pool",
         ":icf_data",
+        ":icf_external_systems_linearizer",
+        ":icf_linear_feedback_gains",
         ":icf_model",
         ":icf_search_direction_data",
         ":icf_solver",
@@ -103,6 +105,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "icf_external_systems_linearizer",
+    srcs = ["icf_external_systems_linearizer.cc"],
+    hdrs = ["icf_external_systems_linearizer.h"],
+    deps = [
+        ":icf_linear_feedback_gains",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_linear_feedback_gains",
+    srcs = ["icf_linear_feedback_gains.cc"],
+    hdrs = ["icf_linear_feedback_gains.h"],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
     name = "icf_solver_parameters",
     hdrs = ["icf_solver_parameters.h"],
     deps = ["//common:name_value"],
@@ -166,6 +188,19 @@ drake_cc_googletest(
     deps = [
         ":icf_data",
         "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_external_systems_linearizer_test",
+    deps = [
+        ":icf_external_systems_linearizer",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:pid_controller",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 

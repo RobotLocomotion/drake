@@ -74,7 +74,8 @@ Key components and how they talk to each other:
    - `IcfSolver`: Solves the convex problem itself, e.g., does
      Newton iterations.
    - TODO(#23769): `IcfBuilder`: Constructs the optimization problem. The
-     builder is the only component that knows about `MultibodyPlant`.
+     builder (along with the related `IcfExternalSystemsLinearizer`) are the
+     only components that know about `MultibodyPlant`.
 
 Other components:
 

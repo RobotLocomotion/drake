@@ -40,6 +40,7 @@
 // #include "drake/multibody/plant/multibody_plant_config.h"
 // #include "drake/multibody/plant/multibody_plant_config_functions.h"
 // #include "drake/multibody/plant/multibody_plant_discrete_update_manager_attorney.h"
+// #include "drake/multibody/plant/multibody_plant_icf_attorney.h"
 // #include "drake/multibody/plant/multibody_plant_model_attorney.h"
 // #include "drake/multibody/plant/physical_model.h"
 // #include "drake/multibody/plant/physical_model_collection.h"
@@ -9881,6 +9882,9 @@ to be zero.)""";
       } Wing;
       // Symbol: drake::multibody::contact_solvers
       struct /* contact_solvers */ {
+        // Symbol: drake::multibody::contact_solvers::icf
+        struct /* icf */ {
+        } icf;
       } contact_solvers;
     } multibody;
   } drake;
