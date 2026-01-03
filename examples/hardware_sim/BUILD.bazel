@@ -167,6 +167,19 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "memory_leak",
+    srcs = ["memory_leak.py"],
+    data = [
+        "@drake_models//:tri_homecart",
+        "@drake_models//:ur_description",
+        "@drake_models//:wsg_50_description",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 drake_py_unittest(
     name = "robot_commander_test",
     data = [
