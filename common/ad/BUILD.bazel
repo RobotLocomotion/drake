@@ -72,7 +72,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "partials_heap_test",
     deps = [
-        "//common/ad:auto_diff",
+        ":auto_diff",
         "//common/test_utilities:limit_malloc",
     ],
 )
