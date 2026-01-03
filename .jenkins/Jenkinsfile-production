@@ -2,6 +2,14 @@
 
 library 'drake-ci@main'
 
+// For continuous flavors, abort the current job if there is a newer queued.
+if (env.JOB_NAME.contains("continuous") && utils.isNewerBuildQueued()) {
+  currentBuild.result = 'NOT_BUILT'
+  throw new Exception(
+    "There is a newer job in the queue, which supersedes the current job."
+  )
+}
+
 node(utils.getNodeLabel()) {
   stage('test') {
     timeout(600) {
