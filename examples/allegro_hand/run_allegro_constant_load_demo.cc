@@ -125,7 +125,11 @@ void DoMain() {
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete this when removing deprecated publish_every_time_step feature.
   simulator.set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

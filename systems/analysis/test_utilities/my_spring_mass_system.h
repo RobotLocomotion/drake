@@ -21,6 +21,12 @@ class MySpringMassSystem : public SpringMassSystem<T> {
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
     // This forced-publish event is necessary for any simulator_test case that
     // needs to verify that the publish_every_time_step feature works.
+    /*
+     * When removing the deprectaed publish_every_time_step feature, substitute
+     * this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
+     * with
+     * this->DeclarePerStepPublishEvent(&MySpringMassSystem::CountPublishes);
+     */
     this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
 
     if (update_rate > 0.0) {

@@ -181,9 +181,6 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
   const double h = 1;
   Simulator<double> simulator(system);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
-
   simulator.get_mutable_context().SetTime(0);
   simulator.AdvanceTo(1);
 
@@ -303,13 +300,15 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   const double offset2_;
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
 };
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// delete this when removing deprecated publish_every_time_step feature.
 // Disables non-witness based publishing for witness function testing.
 void DisableDefaultPublishing(Simulator<double>* s) {
   s->set_publish_at_initialization(false);
   s->set_publish_every_time_step(false);
 }
-
+#pragma GCC diagnostic pop
 // Initializes the Simulator's integrator to fixed step mode for witness
 // function related tests.
 void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double h) {
@@ -937,10 +936,13 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
   simulator.set_target_realtime_rate(0.5);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete this when removing deprecated publish_every_time_step feature.
   // Request forced-publishes at every internal step.
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(true);
-
+#pragma GCC diagnostic pop
   // Set the integrator and initialize the simulator.
   simulator.Initialize();
 
@@ -1021,6 +1023,9 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// delete this when removing deprecated publish_every_time_step feature.
 // Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
 GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
@@ -1038,6 +1043,7 @@ GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
   simulator.AdvanceTo(1.0);
   EXPECT_EQ(1, simulator.get_num_publishes());
 }
+#pragma GCC diagnostic pop
 
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
@@ -1715,8 +1721,6 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
   simulator.AdvanceTo(0.5);
 
   // Update occurs at 1000Hz, at the beginning of each step (there is no
@@ -1752,9 +1756,13 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
         events[simulator.get_num_steps_taken()].push_back(kIntegrate);
       });
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete this when removing deprecated publish_every_time_step feature.
   // Run a simulation with per-step forced-publishing enabled.
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
   simulator.AdvanceTo(0.5);
 
   // Verify that at least one of each event type was triggered.
@@ -2110,10 +2118,6 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   sim.get_mutable_integrator().set_fixed_step_mode(true);
   sim.get_mutable_integrator().set_maximum_step_size(0.001);
 
-  // Disables all simulator induced publish events, so that all publish calls
-  // are initiated by sys.
-  sim.set_publish_at_initialization(false);
-  sim.set_publish_every_time_step(false);
   sim.Initialize();
   sim.AdvanceTo(0.1);
 

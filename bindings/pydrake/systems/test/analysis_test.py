@@ -337,8 +337,10 @@ class TestAnalysis(unittest.TestCase):
         )
         simulator.reset_context(context=simulator.get_context().Clone())
 
+        # delete this when removing deprecated publish_every_time_step feature.
         simulator.set_publish_every_time_step(publish=True)
         simulator.set_publish_at_initialization(publish=True)
+        #
         simulator.set_target_realtime_rate(realtime_rate=0.0)
         self.assertEqual(simulator.get_target_realtime_rate(), 0.0)
         self.assertIsInstance(simulator.get_actual_realtime_rate(), float)

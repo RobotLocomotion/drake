@@ -678,7 +678,8 @@ class LeafSystem : public System<T> {
   _update_ events occur during initialization. On the other hand, any
   _publish_ events, including initialization-triggered, per-step,
   and time-triggered publish events that trigger at the initial time, are
-  dispatched together during initialization.
+  dispatched together during initialization. Initialization-triggered publish
+  events will precede per-step and time-triggered publish events.
 
   Template arguments to these methods are inferred from the argument lists
   and need not be specified explicitly. */
