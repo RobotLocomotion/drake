@@ -199,7 +199,7 @@ class _State:
         else:
             # If we got here, either something is catastrophically wrong, or
             # the script needs to be updated to consider a new case.
-            raise RuntimeError(
+            _fatal(
                 "Cannot determine MIME type for file"
                 f" {local_path!r} with unexpected extension"
                 " (should be one of: .tar.gz, .sha256,"
@@ -235,6 +235,13 @@ class _State:
         digest = self._compute_hash(local_path, algorithm)
         with open(hashfile_path, "wt") as f:
             f.write(f"{digest} {name}\n")
+
+        sha_program = f"{algorithm}sum"
+        if not shutil.which(sha_program):
+            _fatal(
+                f"ERROR: Required program {sha_program!r} not found in PATH."
+            )
+        subprocess.check_call([sha_program, "-c", "--quiet", hashfile_path])
 
         self._done()
         return digest
@@ -338,18 +345,6 @@ def _assert_tty() -> None:
             " various login credentials to be entered interactively."
         )
         sys.exit(1)
-
-
-def _assert_command_exists(name: str, package: str) -> None:
-    """
-    Asserts that an executable <name> exists,
-    or tells the user to install <package>.
-    """
-    if shutil.which(name) is None:
-        _fatal(
-            f"ERROR: `{name}` was not found. "
-            f"Fix with `apt-get install {package}`."
-        )
 
 
 def _test_non_empty(path) -> bool:
