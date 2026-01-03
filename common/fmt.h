@@ -9,6 +9,9 @@
 // This file contains the essentials of fmt support in Drake, mainly
 // compatibility code to inter-operate with different versions of fmt.
 
+// N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
+// file should be kept in sync.
+
 namespace drake {
 
 #if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
