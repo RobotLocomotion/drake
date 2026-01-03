@@ -94,13 +94,13 @@ void VoxelizedEnvironmentCollisionChecker::UpdateEnvironment(
           corresponding_body.scoped_name());
     } else {
       const auto& corresponding_body =
-          plant().GetBodyByName(internal_sdf.GetFrame());
+          plant().GetBodyByName(internal_sdf.Frame());
       environment_sdf_bodies_[environment_name] = corresponding_body.index();
       drake::log()->info(
           "Adding/updating environment model [{}] that belongs to body {} [{}] "
           "(body identified from environment frame name [{}])",
           environment_name, corresponding_body.index(),
-          corresponding_body.scoped_name(), internal_sdf.GetFrame());
+          corresponding_body.scoped_name(), internal_sdf.Frame());
     }
   } else {
     RemoveEnvironment(environment_name);
@@ -139,7 +139,7 @@ PointSignedDistanceAndGradientResult VoxelizedEnvironmentCollisionChecker ::
     const auto distance_query = internal_sdf.EstimateLocationDistance4d(p_BQ);
     if (distance_query) {
       if (distance_query.Value() <= query_radius) {
-        const double window = internal_sdf.GetResolution() * 0.25;
+        const double window = internal_sdf.Resolution() * 0.25;
         const auto gradient_query =
             internal_sdf.GetLocationFineGradient4d(p_BQ, window);
         // Make sure our check is inside the bounds of the SDF.
@@ -219,7 +219,7 @@ std::optional<double> VoxelizedEnvironmentCollisionChecker ::
     const auto coarse_distance_query =
         internal_sdf.GetLocationImmutable4d(p_BQ);
     if (coarse_distance_query) {
-      const double distance_error = internal_sdf.GetResolution() * 2.0;
+      const double distance_error = internal_sdf.Resolution() * 2.0;
       const double coarse_distance_estimate =
           coarse_distance_query.Value() - distance_error;
       if (coarse_distance_estimate < minimum_distance) {

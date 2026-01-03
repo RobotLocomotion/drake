@@ -11,7 +11,7 @@
 namespace drake {
 namespace planning {
 
-using common_robotics_utilities::voxel_grid::GridSizes;
+using common_robotics_utilities::voxel_grid::VoxelGridSizes;
 using voxelized_geometry_tools::OccupancyCell;
 using voxelized_geometry_tools::OccupancyMap;
 using voxelized_geometry_tools::SignedDistanceField;
@@ -37,8 +37,8 @@ VoxelOccupancyMap::VoxelOccupancyMap(const std::string& parent_body_name,
                                      const Eigen::Vector3d& grid_dimensions,
                                      const double grid_resolution,
                                      const float default_occupancy) {
-  const GridSizes cru_sizes(grid_resolution, grid_dimensions.x(),
-                            grid_dimensions.y(), grid_dimensions.z());
+  const auto cru_sizes =
+      VoxelGridSizes::FromGridSizes(grid_resolution, grid_dimensions);
   const OccupancyCell default_cell(default_occupancy);
   auto internal_occupancy_map = std::make_shared<OccupancyMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
@@ -48,10 +48,10 @@ VoxelOccupancyMap::VoxelOccupancyMap(const std::string& parent_body_name,
 
 VoxelOccupancyMap::VoxelOccupancyMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
-    const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
+    const Eigen::Matrix<int64_t, 3, 1>& grid_counts,
     const double grid_resolution, const float default_occupancy) {
-  const GridSizes cru_sizes(grid_resolution, grid_sizes.x(), grid_sizes.y(),
-                            grid_sizes.z());
+  const auto cru_sizes =
+      VoxelGridSizes::FromVoxelCounts(grid_resolution, grid_counts);
   const OccupancyCell default_cell(default_occupancy);
   auto internal_occupancy_map = std::make_shared<OccupancyMap>(
       X_PG.GetAsIsometry3(), parent_body_name, cru_sizes, default_cell);
@@ -100,7 +100,7 @@ VoxelSignedDistanceField VoxelOccupancyMap::ExportSignedDistanceField(
 
 const std::string& VoxelOccupancyMap::parent_body_name() const {
   const auto& internal_occupancy_map = internal::GetInternalOccupancyMap(*this);
-  return internal_occupancy_map.GetFrame();
+  return internal_occupancy_map.Frame();
 }
 
 bool VoxelOccupancyMap::is_empty() const {
