@@ -410,6 +410,7 @@ PYI_FILES = [
     "pydrake/multibody/benchmarks/__init__.pyi",
     "pydrake/multibody/benchmarks/acrobot.pyi",
     "pydrake/multibody/benchmarks/all.pyi",
+    "pydrake/multibody/contact_solvers.pyi",
     "pydrake/multibody/fem.pyi",
     "pydrake/multibody/inverse_kinematics.pyi",
     "pydrake/multibody/math.pyi",
