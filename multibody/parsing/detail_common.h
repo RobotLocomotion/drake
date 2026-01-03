@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/linear_spring_damper.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
@@ -161,6 +162,46 @@ geometry::ProximityProperties ParseProximityProperties(
 const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
     const std::function<const Frame<double>*(const char*)>& read_frame,
+    MultibodyPlant<double>* plant);
+
+// Populates a LinearSpringDamper from a reading interface in a URDF/SDF
+// agnostic manner. This function does no semantic parsing and leaves the
+// responsibility of handling errors or missing values to the individual
+// parsers. All values are expected to exist and be well formed. Through this,
+// the API to specify the linear_spring_damper tag in both SDF and URDF can be
+// controlled/modified in a single function.
+//
+// __SDF__:
+//
+// <drake:linear_spring_damper>
+//   <drake:linear_spring_damper_body_A>body_A</drake:linear_spring_damper_body_A>
+//   <drake:linear_spring_damper_p_AP>0 0 0</drake:linear_spring_damper_p_AP>
+//   <drake:linear_spring_damper_body_B>body_B</drake:linear_spring_damper_body_B>
+//   <drake:linear_spring_damper_p_BQ>0 0 0</drake:linear_spring_damper_p_BQ>
+//   <drake:linear_spring_damper_free_length>1.0</drake:linear_spring_damper_free_length>
+//   <drake:linear_spring_damper_stiffness>1.0</drake:linear_spring_damper_stiffness>
+//   <drake:linear_spring_damper_damping>1.0</drake:linear_spring_damper_damping>
+// </drake:linear_spring_damper>
+//
+// __URDF__:
+//
+// <drake:linear_spring_damper>
+//   <drake:linear_spring_damper_body_A name="body_A"/>
+//   <drake:linear_spring_damper_p_AP value="0 0 0"/>
+//   <drake:linear_spring_damper_body_B name="body_B"/>
+//   <drake:linear_spring_damper_p_BQ value="0 0 0"/>
+//   <drake:linear_spring_damper_free_length value="1.0"/>
+//   <drake:linear_spring_damper_stiffness value="1.0"/>
+//   <drake:linear_spring_damper_damping value="1.0"/>
+// </drake:linear_spring_damper>
+//
+// The various @p read_* functors may (at its option) emit diagnostic errors or
+// warnings but should not throw. ParseLinearSpringDamper() may return nullopt
+// at its option.
+const LinearSpringDamper<double>* ParseLinearSpringDamper(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
+    const std::function<std::optional<double>(const char*)>& read_double,
     MultibodyPlant<double>* plant);
 
 // Adds a ball constraint to `plant` from a reading interface in a URDF/SDF

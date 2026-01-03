@@ -203,6 +203,45 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
   return plant->AddBallConstraint(*body_A, p_AP, *body_B, p_BQ);
 }
 
+const LinearSpringDamper<double>* ParseLinearSpringDamper(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const RigidBody<double>*(const char*)>& read_body,
+    const std::function<std::optional<double>(const char*)>& read_double,
+    MultibodyPlant<double>* plant) {
+  const RigidBody<double>* body_A =
+      read_body("drake:linear_spring_damper_body_A");
+  if (!body_A) {
+    return {};
+  }
+  const RigidBody<double>* body_B =
+      read_body("drake:linear_spring_damper_body_B");
+  if (!body_B) {
+    return {};
+  }
+
+  const Eigen::Vector3d p_AP = read_vector("drake:linear_spring_damper_p_AP");
+  const Eigen::Vector3d p_BQ = read_vector("drake:linear_spring_damper_p_BQ");
+
+  const std::optional<double> free_length =
+      read_double("drake:linear_spring_damper_free_length");
+  if (!free_length) {
+    return {};
+  }
+  const std::optional<double> stiffness =
+      read_double("drake:linear_spring_damper_stiffness");
+  if (!stiffness) {
+    return {};
+  }
+  const std::optional<double> damping =
+      read_double("drake:linear_spring_damper_damping");
+  if (!damping) {
+    return {};
+  }
+
+  return &plant->AddForceElement<LinearSpringDamper>(
+      *body_A, p_AP, *body_B, p_BQ, *free_length, *stiffness, *damping);
+}
+
 std::optional<MultibodyConstraintId> ParseTendonConstraint(
     const DiagnosticPolicy& diagnostic, ModelInstanceIndex model_instance,
     const ElementNode& constraint_node,
