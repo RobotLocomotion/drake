@@ -867,6 +867,23 @@ class TestConstraints(unittest.TestCase):
         constraint.UpdateUpperBound(new_ub=np.array([10.0, 0.5, 2.0]))
         constraint.set_bounds(new_lb=[-1, -2, -2.0], new_ub=[1.0, 2.0, 3.0])
 
+        # Construct without specifying p_BQ's value. p_BQ is a decision
+        # variable.
+        constraint = ik.PositionConstraint(
+            plant=variables.plant,
+            frameAbar=variables.body1_frame,
+            X_AbarA=RigidTransform([-0.1, -0.2, -0.3]),
+            p_AQ_lower=[-0.1, -0.2, -0.3],
+            p_AQ_upper=[-0.05, -0.12, -0.28],
+            frameB=variables.body2_frame,
+            p_BQ=None,
+            plant_context=variables.plant_context,
+        )
+        self.assertIsInstance(constraint, mp.Constraint)
+        self.assertEqual(
+            constraint.num_vars(), variables.plant.num_positions() + 3
+        )
+
     @check_type_variables
     def test_position_cost(self, variables):
         cost = ik.PositionCost(
