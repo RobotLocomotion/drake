@@ -1326,6 +1326,12 @@ R"""(Returns this monomial raised to ``p``.
 Raises:
     RuntimeError if ``p`` is negative.)""";
         } pow_in_place;
+        // Symbol: drake::symbolic::Monomial::to_string
+        struct /* to_string */ {
+          // Source: drake/common/symbolic/monomial.h
+          const char* doc =
+R"""(Returns the string representation of this monomial.)""";
+        } to_string;
         // Symbol: drake::symbolic::Monomial::total_degree
         struct /* total_degree */ {
           // Source: drake/common/symbolic/monomial.h
