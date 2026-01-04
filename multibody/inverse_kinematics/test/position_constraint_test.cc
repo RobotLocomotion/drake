@@ -16,14 +16,14 @@ const double kInf = std::numeric_limits<double>::infinity();
 AutoDiffVecXd EvalPositionConstraintAutoDiff(
     const Context<AutoDiffXd>& context, const MultibodyPlant<AutoDiffXd>& plant,
     const Frame<AutoDiffXd>& frameAbar, const math::RigidTransformd& X_AAbar,
-    const Frame<AutoDiffXd>& frameB, const Vector3<double>& p_BQ) {
+    const Frame<AutoDiffXd>& frameB, const Vector3<AutoDiffXd>& p_BQ) {
   Vector3<AutoDiffXd> p_AbarQ;
-  plant.CalcPointsPositions(context, frameB, p_BQ.cast<AutoDiffXd>(), frameAbar,
-                            &p_AbarQ);
+  plant.CalcPointsPositions(context, frameB, p_BQ, frameAbar, &p_AbarQ);
   return X_AAbar.cast<AutoDiffXd>() * p_AbarQ;
 }
 
-TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
+TEST_F(IiwaKinematicConstraintTest, PositionConstraintGivenPBQ) {
+  // Test PositionConstraint with p_BQ specified.
   const Eigen::Vector3d p_BQ(0.1, 0.2, 0.3);
   const Eigen::Vector3d p_AQ_lower(-0.2, -0.3, -0.4);
   const Eigen::Vector3d p_AQ_upper(0.2, 0.3, 0.4);
@@ -68,7 +68,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     Vector3<AutoDiffXd> y_autodiff_expected = EvalPositionConstraintAutoDiff(
         *(this->plant_context_autodiff_), *(this->plant_autodiff_),
         this->plant_autodiff_->GetFrameByName(frameAbar.name()), X_AAbar_val,
-        this->plant_autodiff_->GetFrameByName(frameB.name()), p_BQ);
+        this->plant_autodiff_->GetFrameByName(frameB.name()),
+        p_BQ.cast<AutoDiffXd>());
     CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 
     // Test with non-identity gradient for q_autodiff.
@@ -80,7 +81,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     y_autodiff_expected = EvalPositionConstraintAutoDiff(
         *(this->plant_context_autodiff_), *(this->plant_autodiff_),
         this->plant_autodiff_->GetFrameByName(frameAbar.name()), X_AAbar_val,
-        this->plant_autodiff_->GetFrameByName(frameB.name()), p_BQ);
+        this->plant_autodiff_->GetFrameByName(frameB.name()),
+        p_BQ.cast<AutoDiffXd>());
     CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
   };
   // Constructs constraint with non-empty X_AbarA.
@@ -132,6 +134,111 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   constraint.UpdateUpperBound(new_ub);
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), new_lb));
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), new_ub));
+}
+
+TEST_F(IiwaKinematicConstraintTest, PositionConstraintFreePBQ) {
+  // Test PositionConstraint with p_BQ as decision variable.
+  const Eigen::Vector3d p_AQ_lower(-0.2, -0.3, -0.4);
+  const Eigen::Vector3d p_AQ_upper(0.2, 0.3, 0.4);
+  const auto frameAbar_index = plant_->GetFrameByName("iiwa_link_7").index();
+  const auto frameB_index = plant_->GetFrameByName("iiwa_link_3").index();
+  const Frame<double>& frameAbar = plant_->get_frame(frameAbar_index);
+  const math::RigidTransformd X_AAbar(
+      math::RotationMatrixd(Eigen::AngleAxisd(
+          0.2 * M_PI, Eigen::Vector3d(1.0 / 3, 2.0 / 3, -2.0 / 3))),
+      Eigen::Vector3d(0.5, 0.2, -0.1));
+  const Frame<double>& frameB = plant_->get_frame(frameB_index);
+
+  auto check_constraint = [this, p_AQ_lower, p_AQ_upper, &frameB, &frameAbar](
+                              const PositionConstraint& dut,
+                              const math::RigidTransformd& X_AAbar_val) {
+    EXPECT_EQ(dut.num_vars(), this->plant_->num_positions() + 3);
+    EXPECT_EQ(dut.num_constraints(), 3);
+    EXPECT_EQ(dut.lower_bound(), p_AQ_lower);
+    EXPECT_EQ(dut.upper_bound(), p_AQ_upper);
+
+    // Now check if Eval function computes the right result.
+    Eigen::VectorXd q(7);
+    q << 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
+    const Eigen::Vector3d p_BQ(0.1, 0.2, 0.3);
+    Eigen::VectorXd x(10);
+    x << q, p_BQ;
+    Eigen::VectorXd y;
+    dut.Eval(x, &y);
+
+    this->plant_->SetPositions(this->plant_context_, q);
+    Eigen::Vector3d p_AbarQ;
+    this->plant_->CalcPointsPositions(*(this->plant_context_), frameB, p_BQ,
+                                      frameAbar, &p_AbarQ);
+    const Eigen::Vector3d y_expected = X_AAbar_val * p_AbarQ;
+
+    const double tol = 1E-12;
+    EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
+
+    VectorX<AutoDiffXd> x_autodiff = math::InitializeAutoDiff(x);
+    AutoDiffVecXd y_autodiff;
+    dut.Eval(x_autodiff, &y_autodiff);
+    EXPECT_TRUE(
+        CompareMatrices(math::ExtractValue(y_autodiff), y_expected, tol));
+    VectorX<AutoDiffXd> q_autodiff = x_autodiff.head(7);
+    Vector3<AutoDiffXd> p_BQ_ad = x_autodiff.tail<3>();
+    this->plant_autodiff_->SetPositions(this->plant_context_autodiff_.get(),
+                                        q_autodiff);
+    Vector3<AutoDiffXd> y_autodiff_expected = EvalPositionConstraintAutoDiff(
+        *(this->plant_context_autodiff_), *(this->plant_autodiff_),
+        this->plant_autodiff_->GetFrameByName(frameAbar.name()), X_AAbar_val,
+        this->plant_autodiff_->GetFrameByName(frameB.name()), p_BQ_ad);
+    CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
+
+    // Test with non-identity gradient for q_autodiff.
+    x_autodiff =
+        math::InitializeAutoDiff(x, MatrixX<double>::Ones(x.size(), 2));
+    q_autodiff = x_autodiff.head(7);
+    p_BQ_ad = x_autodiff.tail<3>();
+    this->plant_autodiff_->SetPositions(this->plant_context_autodiff_.get(),
+                                        q_autodiff);
+    dut.Eval(x_autodiff, &y_autodiff);
+    y_autodiff_expected = EvalPositionConstraintAutoDiff(
+        *(this->plant_context_autodiff_), *(this->plant_autodiff_),
+        this->plant_autodiff_->GetFrameByName(frameAbar.name()), X_AAbar_val,
+        this->plant_autodiff_->GetFrameByName(frameB.name()), p_BQ_ad);
+    CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
+  };
+  // Constructs constraint with non-empty X_AbarA.
+  const math::RigidTransformd X_AbarA = X_AAbar.inverse();
+  PositionConstraint constraint(plant_, frameAbar, X_AbarA, p_AQ_lower,
+                                p_AQ_upper, frameB, std::nullopt,
+                                plant_context_);
+  check_constraint(constraint, X_AAbar);
+
+  // Constructs constraint without X_AAbar.
+  PositionConstraint constraint_without_X_AAbar(plant_, frameAbar, p_AQ_lower,
+                                                p_AQ_upper, frameB,
+                                                std::nullopt, plant_context_);
+  check_constraint(constraint_without_X_AAbar,
+                   math::RigidTransformd::Identity());
+  // Checks if the constraint constructed from MBP<ADS> gives the same result
+  // as from MBP<double>, with p_BQ as decision variable.
+  PositionConstraint constraint_from_autodiff(
+      plant_autodiff_.get(), plant_autodiff_->get_frame(frameAbar_index),
+      X_AAbar.inverse(), p_AQ_lower, p_AQ_upper,
+      plant_autodiff_->get_frame(frameB_index), std::nullopt,
+      plant_context_autodiff_.get());
+  Eigen::VectorXd x(10);
+  x << 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3, 0.2, 0.3, 0.4;
+  // Set dq to arbitrary value.
+  Eigen::Matrix<double, 10, 2> dx;
+  for (int i = 0; i < 10; ++i) {
+    dx(i, 0) = i * 2 + 1;
+    dx(i, 1) = std::sin(i + 0.2);
+  }
+  /* Tolerance for checking numerical gradient vs analytical gradient. The
+   * numerical gradient is only accurate up to 4E-7. */
+  // N.B. Using libsdformat9 with pose frame semantics requires an increase in
+  // tolerance from 2E-7 to 4E-7.
+  const double gradient_tol = 4E-7;
+  TestKinematicConstraintEval(constraint, constraint_from_autodiff, x, dx,
+                              gradient_tol);
 }
 
 TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
