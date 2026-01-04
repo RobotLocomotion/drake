@@ -687,7 +687,7 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context, int*) const {
               "SceneGraph encountered a non-finite value (e.g., NaN or "
               "infinity) on a pose input port. It came from the input "
               "associated with source id {} and name '{}'.",
-              fmt_streamed(source_id), state.GetName(source_id)));
+              source_id, state.GetName(source_id)));
         }
         state.SetFramePoses(source_id, poses, &kinematics_data);
       }
@@ -732,7 +732,7 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
               "SceneGraph encountered a non-finite value (e.g., Nan or "
               "infinity) on a deformable configuration input port. It came "
               "from the input associated with source id {} and name '{}'.",
-              fmt_streamed(source_id), state.GetName(source_id)));
+              source_id, state.GetName(source_id)));
         }
         state.SetGeometryConfiguration(source_id, configs, &kinematics_data);
       }

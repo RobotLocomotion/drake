@@ -4218,10 +4218,11 @@ class BoxPenetrationTest : public ::testing::Test {
       p_Ac = expected_penetration_.p_WCb;
       p_Bc = expected_penetration_.p_WCa;
     } else {
-      GTEST_FAIL() << "Wrong geometry ids reported in contact for tangent "
-                   << shape_name(shape_type) << ". Expected " << tangent_id
-                   << " and " << box_id << ". Got " << contact.id_A << " and "
-                   << contact.id_B;
+      GTEST_FAIL() << fmt::format(
+          "Wrong geometry ids reported in contact for tangent {}. Expected {} "
+          "and {}. Got {} and {}",
+          shape_name(shape_type), tangent_id, box_id, contact.id_A,
+          contact.id_B);
     }
     EXPECT_TRUE(CompareMatrices(contact.nhat_BA_W, normal, tolerance))
         << "Against tangent " << shape_name(shape_type);

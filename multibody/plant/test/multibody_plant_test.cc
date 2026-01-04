@@ -1605,8 +1605,8 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
         auto pair2 = std::make_pair(id2, id1);
         if (!expected_pairs.contains(pair1) &&
             !expected_pairs.contains(pair2)) {
-          GTEST_FAIL() << "The pair " << id1 << ", " << id2
-                       << " is not in the expected set";
+          GTEST_FAIL() << fmt::format(
+              "The pair {}, {} is not in the expected set", id1, id2);
         }
       };
       for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
