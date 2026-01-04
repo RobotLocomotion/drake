@@ -656,16 +656,18 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.PositionConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "PositionConstraint", cls_doc.doc)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
-              frameB, p_BQ, plant_context);
-        }),
+        .def(
+            py::init([](const MultibodyPlant<double>* plant,
+                         const Frame<double>& frameA,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                         const Frame<double>& frameB,
+                         const std::optional<Eigen::Ref<const Eigen::Vector3d>>&
+                             p_BQ,
+                         systems::Context<double>* plant_context) {
+              return std::make_unique<Class>(plant, frameA, p_AQ_lower,
+                  p_AQ_upper, frameB, p_BQ, plant_context);
+            }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
             py::arg("plant_context"),
@@ -673,17 +675,19 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_double)
-        .def(py::init([](const MultibodyPlant<double>* plant,
-                          const Frame<double>& frameAbar,
-                          const std::optional<math::RigidTransformd>& X_AbarA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
-              p_AQ_upper, frameB, p_BQ, plant_context);
-        }),
+        .def(
+            py::init([](const MultibodyPlant<double>* plant,
+                         const Frame<double>& frameAbar,
+                         const std::optional<math::RigidTransformd>& X_AbarA,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                         const Frame<double>& frameB,
+                         const std::optional<Eigen::Ref<const Eigen::Vector3d>>&
+                             p_BQ,
+                         systems::Context<double>* plant_context) {
+              return std::make_unique<Class>(plant, frameAbar, X_AbarA,
+                  p_AQ_lower, p_AQ_upper, frameB, p_BQ, plant_context);
+            }),
             py::arg("plant"), py::arg("frameAbar"), py::arg("X_AbarA"),
             py::arg("p_AQ_lower"), py::arg("p_AQ_upper"), py::arg("frameB"),
             py::arg("p_BQ"), py::arg("plant_context"),
@@ -691,16 +695,18 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_double_Abar)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
-              frameB, p_BQ, plant_context);
-        }),
+        .def(
+            py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                         const Frame<AutoDiffXd>& frameA,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                         const Frame<AutoDiffXd>& frameB,
+                         const std::optional<Eigen::Ref<const Eigen::Vector3d>>&
+                             p_BQ,
+                         systems::Context<AutoDiffXd>* plant_context) {
+              return std::make_unique<Class>(plant, frameA, p_AQ_lower,
+                  p_AQ_upper, frameB, p_BQ, plant_context);
+            }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
             py::arg("plant_context"),
@@ -708,17 +714,19 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), cls_doc.ctor.doc_autodiff)
-        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
-                          const Frame<AutoDiffXd>& frameAbar,
-                          const std::optional<math::RigidTransformd>& X_AbarA,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                          const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
-              p_AQ_upper, frameB, p_BQ, plant_context);
-        }),
+        .def(
+            py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                         const Frame<AutoDiffXd>& frameAbar,
+                         const std::optional<math::RigidTransformd>& X_AbarA,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                         const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                         const Frame<AutoDiffXd>& frameB,
+                         const std::optional<Eigen::Ref<const Eigen::Vector3d>>&
+                             p_BQ,
+                         systems::Context<AutoDiffXd>* plant_context) {
+              return std::make_unique<Class>(plant, frameAbar, X_AbarA,
+                  p_AQ_lower, p_AQ_upper, frameB, p_BQ, plant_context);
+            }),
             py::arg("plant"), py::arg("frameAbar"), py::arg("X_AbarA"),
             py::arg("p_AQ_lower"), py::arg("p_AQ_upper"), py::arg("frameB"),
             py::arg("p_BQ"), py::arg("plant_context"),
