@@ -8,14 +8,24 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
-
+namespace {
+std::optional<Eigen::Vector3d> CopyPBQ(
+    const std::optional<Eigen::Ref<const Eigen::Vector3d>>& p_BQ) {
+  if (p_BQ.has_value()) {
+    return std::make_optional(
+        Eigen::Vector3d(p_BQ.value()(0), p_BQ.value()(1), p_BQ.value()(2)));
+  }
+  return std::nullopt;
+}
+}  // namespace
 PositionConstraint::~PositionConstraint() = default;
 
 PositionConstraint::PositionConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const Frame<double>& frameB,
+    const std::optional<Eigen::Ref<const Eigen::Vector3d>>& p_BQ,
     systems::Context<double>* plant_context)
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
                          frameB, p_BQ, plant_context) {}
@@ -25,16 +35,19 @@ PositionConstraint::PositionConstraint(
     const std::optional<math::RigidTransformd>& X_AbarA,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const Frame<double>& frameB,
+    const std::optional<Eigen::Ref<const Eigen::Vector3d>>& p_BQ,
     systems::Context<double>* plant_context)
-    : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
-                          p_AQ_lower, p_AQ_upper),
+    : solvers::Constraint(
+          3,
+          RefFromPtrOrThrow(plant).num_positions() + (p_BQ.has_value() ? 0 : 3),
+          p_AQ_lower, p_AQ_upper),
       plant_double_(plant),
       frameAbar_index_(frameAbar.index()),
       X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
                                    : math::RigidTransformd::Identity()},
       frameB_index_(frameB.index()),
-      p_BQ_{p_BQ},
+      p_BQ_{CopyPBQ(p_BQ)},
       context_double_{plant_context},
       plant_autodiff_(nullptr),
       context_autodiff_(nullptr) {
@@ -54,16 +67,18 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<AutoDiffXd>& frameB,
-    const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const std::optional<Eigen::Ref<const Eigen::Vector3d>>& p_BQ,
     systems::Context<AutoDiffXd>* plant_context)
-    : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
-                          p_AQ_lower, p_AQ_upper),
+    : solvers::Constraint(
+          3,
+          RefFromPtrOrThrow(plant).num_positions() + (p_BQ.has_value() ? 0 : 3),
+          p_AQ_lower, p_AQ_upper),
       plant_double_(nullptr),
       frameAbar_index_(frameAbar.index()),
       X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
                                    : math::RigidTransformd::Identity()},
       frameB_index_(frameB.index()),
-      p_BQ_{p_BQ},
+      p_BQ_{CopyPBQ(p_BQ)},
       context_double_{nullptr},
       plant_autodiff_(plant),
       context_autodiff_(plant_context) {
@@ -77,7 +92,7 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<AutoDiffXd>& frameB,
-    const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const std::optional<Eigen::Ref<const Eigen::Vector3d>>& p_BQ,
     systems::Context<AutoDiffXd>* plant_context)
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
                          frameB, p_BQ, plant_context) {}
@@ -89,34 +104,79 @@ void EvalConstraintGradient(
     const MultibodyPlant<double>& plant, const Frame<double>& frameAbar,
     const math::RigidTransformd& X_AAbar, const Frame<double>& frameB,
     const Eigen::Vector3d& p_AQ, const Eigen::Vector3d& p_BQ,
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
+    bool p_BQ_is_decision_variable, const Eigen::Ref<const AutoDiffVecXd>& x,
+    AutoDiffVecXd* y) {
   Eigen::Matrix3Xd Jq_V_AbarBq(3, plant.num_positions());
   plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
                                           frameB, p_BQ, frameAbar, frameAbar,
                                           &Jq_V_AbarBq);
-  *y =
-      math::InitializeAutoDiff(p_AQ, X_AAbar.rotation().matrix() * Jq_V_AbarBq *
-                                         math::ExtractGradient(x));
+  if (p_BQ_is_decision_variable) {
+    // dy/dq = R_AAbar * Jq_V_AbarBq
+    // dy/dp_BQ = R_AAbar * R_AbarB
+    Eigen::Matrix3Xd dydx(3, x.size());
+    dydx.leftCols(plant.num_positions()) =
+        X_AAbar.rotation().matrix() * Jq_V_AbarBq;
+    const math::RigidTransformd X_AbarB =
+        plant.CalcRelativeTransform(context, frameAbar, frameB);
+    dydx.rightCols<3>() =
+        X_AAbar.rotation().matrix() * X_AbarB.rotation().matrix();
+    const Eigen::Matrix3Xd gradient = dydx * math::ExtractGradient(x);
+    *y = math::InitializeAutoDiff(p_AQ, gradient);
+  } else {
+    *y = math::InitializeAutoDiff(
+        p_AQ,
+        X_AAbar.rotation().matrix() * Jq_V_AbarBq * math::ExtractGradient(x));
+  }
 }
 
+// The supported template are
+// T = double, S = double
+// T = double, S = AutoDiffXd
+// T = AutoDiffXd, S = AutoDiffXd
 template <typename T, typename S>
 void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                    const FrameIndex frameAbar_index,
                    const math::RigidTransformd& X_AAbar,
-                   const FrameIndex frameB_index, const Eigen::Vector3d& p_BQ,
+                   const FrameIndex frameB_index,
+                   const std::optional<Eigen::Vector3d>& p_BQ,
                    const Eigen::Ref<const VectorX<S>>& x, VectorX<S>* y) {
   y->resize(3);
-  UpdateContextConfiguration(context, plant, x);
+  Vector3<T> p_BQ_T;
+  Eigen::Vector3d p_BQ_value;
+  const bool p_BQ_is_decision_variable = !p_BQ.has_value();
+  if (p_BQ.has_value()) {
+    p_BQ_value = *p_BQ;
+    p_BQ_T = p_BQ_value.cast<T>();
+    UpdateContextConfiguration(context, plant, x);
+  } else {
+    const VectorX<S> q = x.head(plant.num_positions());
+    UpdateContextConfiguration(context, plant, q);
+    if constexpr (std::is_same_v<S, double>) {
+      p_BQ_value = x.template tail<3>();
+    } else {
+      // x is AutoDiffXd
+      p_BQ_value(0) = x(plant.num_positions()).value();
+      p_BQ_value(1) = x(plant.num_positions() + 1).value();
+      p_BQ_value(2) = x(plant.num_positions() + 2).value();
+    }
+    if constexpr (std::is_same_v<T, S>) {
+      p_BQ_T = x.template tail<3>();
+    } else {
+      // S = AutoDiffXd, T = double
+      p_BQ_T = p_BQ_value;
+    }
+  }
+
   const Frame<T>& frameAbar = plant.get_frame(frameAbar_index);
   const Frame<T>& frameB = plant.get_frame(frameB_index);
   Vector3<T> p_AbarQ;
-  plant.CalcPointsPositions(*context, frameB, p_BQ.cast<T>(), frameAbar,
-                            &p_AbarQ);
+  plant.CalcPointsPositions(*context, frameB, p_BQ_T, frameAbar, &p_AbarQ);
   if constexpr (std::is_same_v<T, S>) {
     *y = X_AAbar.cast<S>() * p_AbarQ;
   } else {
     EvalConstraintGradient(*context, plant, frameAbar, X_AAbar, frameB,
-                           X_AAbar * p_AbarQ, p_BQ, x, y);
+                           X_AAbar * p_AbarQ, p_BQ_value,
+                           p_BQ_is_decision_variable, x, y);
   }
 }
 
