@@ -1,8 +1,8 @@
 #pragma once
 
 #include <filesystem>
-#include <ostream>
 
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/systems/sensors/image.h"

@@ -526,8 +526,8 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
 Polynomial Polynomial::Integrate(const Variable& x) const {
   if (decision_variables().include(x)) {
     ostringstream oss;
-    oss << x << " is a decision variable of polynomial " << *this
-        << ".  Integration with respect to decision variables is not "
+    oss << fmt::to_string(x) << " is a decision variable of polynomial "
+        << *this << ".  Integration with respect to decision variables is not "
         << "supported yet.";
     throw runtime_error(oss.str());
   }
