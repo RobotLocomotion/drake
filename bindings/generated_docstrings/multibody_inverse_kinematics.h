@@ -3761,7 +3761,12 @@ gradient of the constraint is computed from autodiff.)""";
         const char* doc =
 R"""(Constrains the position of a point Q, rigidly attached to a frame B,
 to be within a bounding box measured and expressed in frame A. Namely
-p_AQ_lower <= p_AQ <= p_AQ_upper.)""";
+p_AQ_lower <= p_AQ <= p_AQ_upper.
+
+Note that p_BQ may or may not be a decision variable. when p_BQ is a
+decision variable, the constraint is evaluated on the vector x = [q,
+p_BQ]. when p_BQ is specified, then it is not a decision variable, the
+constraint is evaluated on the vector x = q.)""";
         // Symbol: drake::multibody::PositionConstraint::PositionConstraint
         struct /* ctor */ {
           // Source: drake/multibody/inverse_kinematics/position_constraint.h
@@ -3788,7 +3793,8 @@ Parameter ``frameB``:
 
 Parameter ``p_BQ``:
     The position of the point Q, rigidly attached to frame B, measured
-    and expressed in frame B.
+    and expressed in frame B. If set to nullopt, then p_BQ is also a
+    decision variable.
 
 Parameter ``plant_context``:
     The Context that has been allocated for this ``plant``. We will
@@ -3807,6 +3813,10 @@ Raises:
 
 Raises:
     RuntimeError if ``plant_context`` is nullptr.)""";
+          // Source: drake/multibody/inverse_kinematics/position_constraint.h
+          const char* doc =
+R"""(Overloaded constructor. Do not specify the value of p_BQ. Instead,
+p_BQ is also a decision variable.)""";
           // Source: drake/multibody/inverse_kinematics/position_constraint.h
           const char* doc_autodiff =
 R"""(Overloaded constructor. Same as the constructor with the double
@@ -3843,7 +3853,8 @@ Parameter ``frameB``:
 
 Parameter ``p_BQ``:
     The position of the point Q, rigidly attached to frame B, measured
-    and expressed in frame B.
+    and expressed in frame B. If set to nullopt, then p_BQ is also a
+    decision variable.
 
 Parameter ``plant_context``:
     The Context that has been allocated for this ``plant``. We will
