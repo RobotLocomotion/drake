@@ -3761,7 +3761,23 @@ gradient of the constraint is computed from autodiff.)""";
         const char* doc =
 R"""(Constrains the position of a point Q, rigidly attached to a frame B,
 to be within a bounding box measured and expressed in frame A. Namely
-p_AQ_lower <= p_AQ <= p_AQ_upper.)""";
+p_AQ_lower <= p_AQ <= p_AQ_upper.
+
+Note that p_BQ may or may not be a decision variable. Common use cases
+include: 1. We want a specified point Q on the frame B to be within a
+bounding box. In this case, p_BQ is specified and not a decision
+variable. 2. We want some point Q on the frame B to be within a
+bounding box, but we don't know the exact position of Q on the frame
+B. For example, we want some point on the robot palm to touch a table,
+but we don't care which point on the robot palm. In this case, p_BQ is
+a decision variable, and we need an additional constraint to say "Q is
+on the surface of the robot palm".
+
+When p_BQ is a decision variable (i.e., it is *not* specified in the
+ctor), the constraint is evaluated on the vector x = [q, p_BQ]. When
+p_BQ is not a decision variable (i.e. it *is* specified
+non-`nullopt`in the ctor), the constraint is evaluated on the vector x
+= q.)""";
         // Symbol: drake::multibody::PositionConstraint::PositionConstraint
         struct /* ctor */ {
           // Source: drake/multibody/inverse_kinematics/position_constraint.h
@@ -3788,7 +3804,8 @@ Parameter ``frameB``:
 
 Parameter ``p_BQ``:
     The position of the point Q, rigidly attached to frame B, measured
-    and expressed in frame B.
+    and expressed in frame B. If set to nullopt, then p_BQ is also a
+    decision variable.
 
 Parameter ``plant_context``:
     The Context that has been allocated for this ``plant``. We will
@@ -3843,7 +3860,8 @@ Parameter ``frameB``:
 
 Parameter ``p_BQ``:
     The position of the point Q, rigidly attached to frame B, measured
-    and expressed in frame B.
+    and expressed in frame B. If set to nullopt, then p_BQ is also a
+    decision variable.
 
 Parameter ``plant_context``:
     The Context that has been allocated for this ``plant``. We will
