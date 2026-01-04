@@ -182,6 +182,15 @@ TEST_F(MonomialTest, GetVariables) {
   const Monomial m3{{{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}};
   EXPECT_EQ(m3.GetVariables(), Variables({var_x_, var_y_, var_z_}));
 }
+TEST_F(MonomialTest, MonomialToStringFmtFormatter) {
+  EXPECT_EQ("1", fmt::to_string(Monomial{}));
+  EXPECT_EQ("x", fmt::to_string(Monomial{{{var_x_, 1}}}));
+  // Variable print order depends on Variable ID (hence on Variable creation
+  // order). z is defined first so it gets printed first, y second, and so on.
+  EXPECT_EQ("z^3 * x^2", fmt::to_string(Monomial{{{var_x_, 2}, {var_z_, 3}}}));
+  EXPECT_EQ("z^3 * y^5 * x^2",
+            fmt::to_string(Monomial{{{var_x_, 2}, {var_z_, 3}, {var_y_, 5}}}));
+}
 
 // Checks we can have an Eigen matrix of Monomials without compilation
 // errors. No assertions in the test.

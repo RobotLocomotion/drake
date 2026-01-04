@@ -183,9 +183,9 @@ template <typename F>
   const symbolic::Polynomial::MapType& map = diff.monomial_to_coefficient_map();
   for (const auto& p : map) {
     if (std::abs(get_constant_value(p.second)) > tol) {
-      return ::testing::AssertionFailure()
-             << "The coefficient for " << p.first << " is " << p.second
-             << ", exceed tolerance " << tol << "\n";
+      return ::testing::AssertionFailure() << fmt::format(
+                 "The coefficient for {} is {}, exceed tolerance {}\n", p.first,
+                 p.second, tol);
     }
   }
   return ::testing::AssertionSuccess();
