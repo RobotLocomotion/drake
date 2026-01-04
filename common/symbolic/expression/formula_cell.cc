@@ -234,12 +234,10 @@ bool FormulaVar::Evaluate(const Environment& env) const {
   if (it != env.cend()) {
     return static_cast<bool>(it->second);
   } else {
-    ostringstream oss;
-    oss << "The following environment does not have an entry for the "
-           "variable "
-        << var_ << "\n";
-    oss << env << "\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("The following environment does not have an entry for the "
+                    "variable {}\n{}\n",
+                    var_, env));
   }
 }
 
@@ -250,7 +248,7 @@ Formula FormulaVar::Substitute(const Substitution&) const {
 }
 
 ostream& FormulaVar::Display(ostream& os) const {
-  return os << var_;
+  return os << fmt::to_string(var_);
 }
 
 const Variable& FormulaVar::get_variable() const {

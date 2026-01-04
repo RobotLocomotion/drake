@@ -1,7 +1,7 @@
 #pragma once
 
+#include <cstdio>
 #include <filesystem>
-#include <ostream>
 
 #include <gtest/gtest.h>
 
@@ -14,7 +14,7 @@ namespace sensors {
 /** Adds googletest support for printing EXPECT_EQ(Image, Image) failures.
 Small images print all pixel data. Large images only print a summary. */
 template <PixelType kPixelType>
-void PrintTo(const Image<kPixelType>& image, std::ostream* os);
+void PrintTo(const Image<kPixelType>& image, std::FILE* f);
 
 /** Loads the PNG or TIFF image from `filename` into the `image` output. */
 template <PixelType kPixelType>

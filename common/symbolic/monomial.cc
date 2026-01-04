@@ -192,7 +192,7 @@ double Monomial::Evaluate(const Environment& env) const {
               << " cannot be evaluated with the given "
                  "environment which does not provide an entry "
                  "for variable = "
-              << var << ".";
+              << fmt::to_string(var) << ".";
           throw runtime_error(oss.str());
         } else {
           const double base{it->second};
@@ -287,13 +287,13 @@ ostream& operator<<(ostream& out, const Monomial& m) {
     return out << 1;
   }
   auto it = m.powers_.begin();
-  out << it->first;
+  out << fmt::to_string(it->first);
   if (it->second > 1) {
     out << "^" << it->second;
   }
   for (++it; it != m.powers_.end(); ++it) {
     out << " * ";
-    out << it->first;
+    out << fmt::to_string(it->first);
     if (it->second > 1) {
       out << "^" << it->second;
     }

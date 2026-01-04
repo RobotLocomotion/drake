@@ -5,8 +5,6 @@
 
 #include <atomic>
 #include <memory>
-#include <ostream>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -16,9 +14,7 @@
 using std::atomic;
 using std::make_shared;
 using std::ostream;
-using std::ostringstream;
 using std::string;
-using std::to_string;
 
 namespace drake {
 namespace symbolic {
@@ -50,9 +46,7 @@ string Variable::get_name() const {
 }
 
 string Variable::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  return get_name();
 }
 
 ostream& operator<<(ostream& os, const Variable& var) {
@@ -80,14 +74,35 @@ ostream& operator<<(ostream& os, Variable::Type type) {
   DRAKE_UNREACHABLE();
 }
 
+std::string_view to_string(const Variable::Type& type) {
+  switch (type) {
+    case Variable::Type::CONTINUOUS:
+      return "Continuous";
+    case Variable::Type::BINARY:
+      return "Binary";
+    case Variable::Type::INTEGER:
+      return "Integer";
+    case Variable::Type::BOOLEAN:
+      return "Boolean";
+    case Variable::Type::RANDOM_UNIFORM:
+      return "Random Uniform";
+    case Variable::Type::RANDOM_GAUSSIAN:
+      return "Random Gaussian";
+    case Variable::Type::RANDOM_EXPONENTIAL:
+      return "Random Exponential";
+  }
+  DRAKE_UNREACHABLE();
+}
+
 MatrixX<Variable> MakeMatrixVariable(const int rows, const int cols,
                                      const string& name,
                                      const Variable::Type type) {
   MatrixX<Variable> m{rows, cols};
   for (int i = 0; i < rows; ++i) {
     for (int j = 0; j < cols; ++j) {
-      m(i, j) =
-          Variable{name + "(" + to_string(i) + ", " + to_string(j) + ")", type};
+      m(i, j) = Variable{
+          name + "(" + fmt::to_string(i) + ", " + fmt::to_string(j) + ")",
+          type};
     }
   }
   return m;
@@ -117,7 +132,7 @@ VectorX<Variable> MakeVectorVariable(const int rows, const string& name,
                                      const Variable::Type type) {
   VectorX<Variable> vec{rows};
   for (int i = 0; i < rows; ++i) {
-    vec[i] = Variable{name + "(" + to_string(i) + ")", type};
+    vec[i] = Variable{name + "(" + fmt::to_string(i) + ")", type};
   }
   return vec;
 }

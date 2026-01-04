@@ -20,10 +20,10 @@ using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
 
 template <PixelType kPixelType>
-void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
+void PrintTo(const Image<kPixelType>& image, std::FILE* f) {
   const int width = image.width();
   const int height = image.height();
-  fmt::print(*os, "Image<k{}>(width={}, height={})", kPixelType, width, height);
+  fmt::print(f, "Image<k{}>(width={}, height={})", kPixelType, width, height);
   const int size = width * height;
   // When there are no pixels, don't bother printing the "Channel ..." titles.
   // If there are way too many pixels (more than fit on one screen), omit all
@@ -35,15 +35,15 @@ void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
   using Promoted = std::conditional_t<std::is_integral_v<T>, int, T>;
   constexpr int num_channels = Image<kPixelType>::kNumChannels;
   for (int c = 0; c < num_channels; ++c) {
-    *os << "\n";
+    fmt::print(f, "\n");
     const T* const base = image.at(0, 0) + c;
     using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
     Eigen::Map<const MatrixX<T>, 0, Stride> eigen(
         base, height, width, Stride(num_channels, width * num_channels));
     if (num_channels > 1) {
-      fmt::print(*os, "Channel {}:\n", c);
+      fmt::print(f, "Channel {}:\n", c);
     }
-    fmt::print(*os, "{}", fmt_eigen(eigen.template cast<Promoted>()));
+    fmt::print(f, "{}", fmt_eigen(eigen.template cast<Promoted>()));
   }
 }
 

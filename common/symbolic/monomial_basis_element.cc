@@ -121,13 +121,13 @@ std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m) {
     return out << 1;
   }
   auto it = m.var_to_degree_map().begin();
-  out << it->first;
+  out << fmt::to_string(it->first);
   if (it->second > 1) {
     out << "^" << it->second;
   }
   for (++it; it != m.var_to_degree_map().end(); ++it) {
     out << " * ";
-    out << it->first;
+    out << fmt::to_string(it->first);
     if (it->second > 1) {
       out << "^" << it->second;
     }
