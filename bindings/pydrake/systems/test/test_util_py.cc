@@ -1,3 +1,4 @@
+#include <atomic>
 #include <memory>
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -16,6 +17,8 @@ using std::unique_ptr;
 namespace drake {
 
 using systems::BasicVector;
+using systems::ContextBase;
+using systems::LeafContext;
 using systems::LeafSystem;
 using systems::Simulator;
 
@@ -160,6 +163,53 @@ std::unique_ptr<DummySystemA> MakeDummySystem() {
   return std::make_unique<DummySystemB>();
 }
 
+// This counter tracks the number of live CountingLeafContext instances. It is
+// used to verify that contexts are properly freed when a Simulator is deleted.
+std::atomic<int> number_of_live_counting_contexts{0};
+
+// A LeafContext subclass that increments and decrements the global counter
+// upon construction and destruction, respectively. This allows tests to
+// verify that contexts created by the Simulator are properly garbage collected.
+class CountingLeafContext final : public LeafContext<T> {
+ public:
+  CountingLeafContext() { ++number_of_live_counting_contexts; }
+
+  ~CountingLeafContext() final { --number_of_live_counting_contexts; }
+
+  CountingLeafContext& operator=(const CountingLeafContext&) = delete;
+  CountingLeafContext(CountingLeafContext&&) = delete;
+  CountingLeafContext& operator=(CountingLeafContext&&) = delete;
+
+ private:
+  CountingLeafContext(const CountingLeafContext& source)
+      : LeafContext<T>(source) {
+    ++number_of_live_counting_contexts;
+  }
+
+  std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
+    return std::unique_ptr<ContextBase>(new CountingLeafContext(*this));
+  }
+};
+
+// A LeafSystem subclass that creates CountingLeafContext instances. Use this
+// system in tests to verify proper context lifetime management.
+class CountingContextSystem final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CountingContextSystem);
+
+  CountingContextSystem() = default;
+
+  // Returns the current number of live CountingLeafContext instances.
+  static int GetNumberOfLiveContexts() {
+    return number_of_live_counting_contexts.load();
+  }
+
+ private:
+  std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const final {
+    return std::make_unique<CountingLeafContext>();
+  }
+};
+
 }  // namespace
 
 PYBIND11_MODULE(test_util, m) {
@@ -255,6 +305,11 @@ PYBIND11_MODULE(test_util, m) {
   // We only bind the interface class (DummySystemA) and the factory function.
   py::class_<DummySystemA, LeafSystem<double>>(m, "DummySystemA");
   m.def("MakeDummySystem", &MakeDummySystem);
+
+  py::class_<CountingContextSystem, LeafSystem<T>>(m, "CountingContextSystem")
+      .def(py::init<>())
+      .def_static("GetNumberOfLiveContexts",
+          &CountingContextSystem::GetNumberOfLiveContexts);
 }
 
 }  // namespace pydrake

@@ -289,21 +289,25 @@ PYBIND11_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
-        .def(py::init([](const System<T>& system, Context<T>* context) {
-          // Expand the default-context request here, so that it gets a
-          // python-compatible lifetime.
-          if (context == nullptr) {
+        .def(py::init([](const System<T>& system, py::object py_context) {
+          // Handle the two cases for context ownership explicitly:
+          // 1. If py_context is None, create a new context and take ownership.
+          // 2. If py_context is provided, use the existing Python wrapper
+          //    directly (it already owns the C++ object).
+          if (py_context.is_none()) {
             std::unique_ptr<Context<T>> context_ptr =
                 system.CreateDefaultContext();
-            // Python ownership will be created below by
-            // make_shared_ptr_from_py_object.
-            context = context_ptr.release();
+            // Use take_ownership because we just created this context and need
+            // Python to own it. The unique_ptr is released, leaving the raw
+            // pointer with no owner until take_ownership establishes Python
+            // ownership.
+            py_context =
+                py::cast(context_ptr.release(), py_rvp::take_ownership);
           }
-          auto py_context = py::cast(context);
           return Simulator<T>::MakeWithSharedContext(
               system, make_shared_ptr_from_py_object<Context<T>>(py_context));
         }),
-            py::arg("system"), py::arg("context") = nullptr,
+            py::arg("system"), py::arg("context") = py::none(),
             // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
             []() {
