@@ -5,14 +5,15 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 
 using Eigen::Vector3d;
 using math::RotationMatrixd;
 
 template <typename T>
-Plane<T>::Plane(const Vector3<T>& n_F, const Vector3<T>& p_FP,
+Plane<T>::Plane(const Vector3<T>& normal, const Vector3<T>& point_on_plane,
                 bool already_normalized) {
+  const Vector3<T>& n_F = normal;
+  const Vector3<T>& p_FP = point_on_plane;
   if (!already_normalized) {
     const T magnitude = n_F.norm();
     // NOTE: This threshold is arbitrary. Given Drake uses mks and generally
@@ -83,6 +84,5 @@ void Plane<T>::ThrowIfInsufficientlyNormal(const Vector3<T>& n) {
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class Plane);
 
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
