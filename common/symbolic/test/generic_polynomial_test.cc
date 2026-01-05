@@ -1834,6 +1834,22 @@ TEST_F(SymbolicGenericPolynomialTest, SetIndeterminates) {
   }
 }
 
+/*
+ * `GenericPolynomial` is basis element agnostic and relies on `fmt::format()`
+ * for basis element stringification. Therefore, we'll only test against one
+ * specific basis element type to confirm `GenericPolynomial`'s specific
+ * stringification logic.
+ */
+TEST_F(SymbolicGenericPolynomialTest, UsingChebyshevBasisToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{}), "0");
+  EXPECT_EQ(
+      fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{Expression(1.)}),
+      "1*T0()");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{
+                12 * pow(var_x_, 3) + 8 * pow(var_x_, 2) - 7 * var_x_ - 1}),
+            "3*T0() + 2*T1(x) + 4*T2(x) + 3*T3(x)");
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
