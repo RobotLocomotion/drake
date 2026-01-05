@@ -809,9 +809,8 @@ ParseQuadraticAsRotatedLorentzConeConstraint(
     throw std::runtime_error(
         "AddQuadraticAsRotatedLorentzConeConstraint: The quadratic terms is "
         "numerically zero. This quadratic is actually linear, so the rotated "
-        "Lorentz cone "
-        "constraint would be ill-defined. Please add this constraint as "
-        "a linear constraint instead.");
+        "Lorentz cone constraint would be ill-defined. Please add this "
+        "constraint as a linear constraint instead.");
   }
   // A_lorentz * x + b_lorentz = [-bᵀx-c, 1, Fx]
   Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + F.rows(), F.cols());
