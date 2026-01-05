@@ -9,6 +9,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/obb.h"
+#include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
@@ -168,6 +169,113 @@ GTEST_TEST(AabbTest, TestEqual) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
   const Aabb e(p_HB + Vector3d(kEps, 0, 0), half_size);
   EXPECT_FALSE(a.Equal(e));
+}
+
+// Tests Aabb-plane intersection. The vast majority of the work is done by
+// the Plane class (tested elsewhere). We just need to confirm that the AABB
+// describes itself in the Plane's frame correctly. To that end, we make sure
+// that the aabb has non-trivial values for position and orientation and that
+// the transform between the hierarchy frame and plane frame is likewise
+// "interesting" (we're making sure that all the bits get used properly).
+GTEST_TEST(AabbTest, PlaneOverlap) {
+  // We'll define the problem *in* the plane's frame, but arbitrarily pose the
+  // problem in a separate frame prior to evaluation.
+  const Vector3d half_width(0.25, 2.0, 1.5);
+
+  // Box pose in the hierarchy frame H. Aabb's always have identity orientation
+  // in the *hierarchy* frame.
+  const RigidTransformd X_HB(RotationMatrixd::Identity(), Vector3d(-1, 2, 0.5));
+
+  // Hierarchy pose in the plane's frame. We're free to pick R_PH (such that
+  // R_PB ≠ I). We have to pick p_PH such that the box's corner just touches the
+  // plane.
+  const auto R_PH = RotationMatrixd::MakeFromOneVector(Vector3d(-1, 2, -2), 2);
+
+  // The "clearance" is the height the box center needs to be off the plane so
+  // that one corner is exactly touching (given its relative orientation).
+  const RotationMatrixd& R_PB = R_PH;  // R_HB = I.
+  const double clearance = R_PB.row(2).cwiseAbs().dot(half_width.transpose());
+  // The plane's normal is Pz, so only the z-value in the box origin matters.
+  const Vector3d p_PB(1.5, -0.5, clearance);
+  const Vector3d p_HB_P = R_PH * X_HB.translation();
+  const Vector3d p_PH = p_PB - p_HB_P;
+  const RigidTransformd X_PH(R_PH, p_PH);
+
+  // Express it in the world frame for computation.
+  const RigidTransformd X_WP(
+      RotationMatrixd::MakeFromOneVector(Vector3d(-1, 2, -2), 2),
+      Vector3d{3, -1, 2});
+  const Vector3d Pz_W = X_WP.rotation().col(2);
+  const Plane<double> plane_W(Pz_W, X_WP.translation());
+
+  const Aabb aabb_H(X_HB.translation(), half_width);
+
+  // Initialize X_WH such that the box corner exactly touches the plane. Then
+  // we'll perturb it in the normal direction up by epsilon (out of contact) and
+  // down again by two epsilon (into contact).
+  RigidTransformd X_WH = X_WP * X_PH;
+
+  const double kUp = 1e-6;
+  // Shift frame H up.
+  X_WH = RigidTransformd(Pz_W * kUp) * X_WH;
+  EXPECT_FALSE(Aabb::HasOverlap(aabb_H, plane_W, X_WH));
+
+  const double kDown = -2 * kUp;
+  // Shift frame H down.
+  X_WH = RigidTransformd(Pz_W * kDown) * X_WH;
+  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, plane_W, X_WH));
+}
+
+GTEST_TEST(AAabbTest, HalfSpaceOverlap) {
+  const Vector3d half_width(0.25, 2.0, 1.5);
+
+  // Box pose in the hierarchy frame H. Aabb's always have identity orientation
+  // in the *hierarchy* frame.
+  // const RigidTransformd X_HB(RotationMatrixd::Identity(), Vector3d(-1, 2,
+  // 0.5));
+  const RigidTransformd X_HB;
+
+  // Hierarchy pose in the half space's canonical frame C. We're free to pick
+  // R_CH (such that R_CB ≠ I). We have to pick p_CH such that the box's corner
+  // just touches the boundary of the half space.
+  const auto R_CH = RotationMatrixd::MakeFromOneVector(Vector3d(-1, 2, -2), 2);
+  // const auto R_CH = RotationMatrixd::Identity();
+
+  // The "clearance" is the height the box center needs to be off the plane so
+  // that one corner is exactly touching (given its relative orientation).
+  const RotationMatrixd& R_CB = R_CH;  // R_HB = I.
+  const double clearance = R_CB.row(2).cwiseAbs().dot(half_width.transpose());
+  // The half space's normal is Cz, so only the z-value in the box origin
+  // matters.
+  const Vector3d p_CB(1.5, -0.5, clearance);
+  const Vector3d p_HB_C = R_CH * X_HB.translation();
+  const Vector3d p_CH = p_CB - p_HB_C;
+
+  const HalfSpace halfspace_C;
+  const Aabb aabb_H(X_HB.translation(), half_width);
+
+  // Initialize X_CH such that the box corner exactly touches the half space
+  // boundary. Then we'll perturb it in the normal direction up by epsilon (out
+  // of contact), down again by two epsilon (into contact), and down by the the
+  // box's size so that it's fully *inside* the half space, but not touching the
+  // boundary.
+  RigidTransformd X_CH(R_CH, p_CH);
+  const Vector3d Cz = Vector3d::UnitZ();
+
+  const double kUp = 1e-6;
+  // Shift frame H up.
+  X_CH = RigidTransformd(Cz * kUp) * X_CH;
+  EXPECT_FALSE(Aabb::HasOverlap(aabb_H, halfspace_C, X_CH));
+
+  const double kDown = -2 * kUp;
+  // Shift frame H down.
+  X_CH = RigidTransformd(Cz * kDown) * X_CH;
+  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, halfspace_C, X_CH));
+
+  // Shift more than twice the clearance, further into penetration.
+  const double kDeep = -clearance * 2;
+  X_CH = RigidTransformd(Cz * kDeep) * X_CH;
+  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, halfspace_C, X_CH));
 }
 
 /* Confirm that the AabbMaker successfully makes the expected bounding boxes.
