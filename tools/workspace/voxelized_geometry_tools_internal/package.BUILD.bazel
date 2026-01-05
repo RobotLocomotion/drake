@@ -186,12 +186,24 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "voxel_raycasting_test",
+    srcs = ["test/voxel_raycasting_test.cpp"],
+    tags = ["no_kcov"],
+    deps = [
+        ":voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@googletest//:gtest",
+    ],
+)
+
 test_suite(
     name = "test_suite",
     tests = [
         ":mesh_rasterization_test",
         ":pointcloud_voxelization_test",
         ":sdf_generation_test",
+        ":voxel_raycasting_test",
     ],
 )
 
