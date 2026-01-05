@@ -1,5 +1,8 @@
 alien
+aptly
 diffstat
+docker.io
+docker-buildx
 fakeroot
 patchutils
 python3-boto3
