@@ -59,7 +59,7 @@ class PosedHalfSpace {
   }
 
   /* Gets the normal expressed in Frame F. */
-  const Vector3<T>& normal() const { return plane_.normal(); }
+  const Vector3<T>& normal() const { return plane_.unit_normal(); }
 
   /* Gets the boundary plane of `this` posed half space.  */
   const Plane<T>& boundary_plane() const { return plane_; }
