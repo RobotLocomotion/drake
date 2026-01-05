@@ -174,6 +174,56 @@ Parameter ``X_GH``:
 
 Returns:
     ``True`` if the boxes intersect.)""";
+          // Source: drake/geometry/proximity/aabb.h
+          const char* doc_aabb_plane =
+R"""(Checks whether bounding volume ``bv`` intersects the given plane. The
+bounding volume is centered on its canonical frame B, and B is posed
+in the corresponding hierarchy frame H. The plane is defined in frame
+P.
+
+The box and plane intersect if *any* point within the bounding volume
+has zero height (see CalcHeight()).
+
+Parameter ``bv_H``:
+    The bounding box to test.
+
+Parameter ``plane_P``:
+    The plane to test against the ``bv``. The plane is expressed in
+    frame P, therefore, to evaluate the height of a point with respect
+    to it, that point must be measured and expressed in P.
+
+Parameter ``X_PH``:
+    The relative pose between the hierarchy frame H and the plane
+    frame P.
+
+Returns:
+    ``True`` if the plane intersects the box.)""";
+          // Source: drake/geometry/proximity/aabb.h
+          const char* doc_aabb_halfspace =
+R"""(Checks whether bounding volume ``bv`` intersects the given half space.
+The bounding volume is centered on its canonical frame B, and B is
+posed in the corresponding hierarchy frame H. The half space is
+defined in its canonical frame C (such that the boundary plane of the
+half space is perpendicular to Cz and Co lies on the boundary plane).
+
+The box and halfspace intersect if *any* point within the bounding
+volume has a height less than or equal to zero.
+
+Parameter ``bv_H``:
+    The bounding box to test.
+
+Parameter ``hs_C``:
+    The half space to test against the ``bv``. The half space is
+    expressed in Frame C, therefore, to evaluate the signed distance
+    of a point with respect to it, that point must be measured and
+    expressed in C.
+
+Parameter ``X_CH``:
+    The relative pose between the hierarchy halfspace canonical frame
+    C and the box frame B.
+
+Returns:
+    ``True`` if the half space intersects the box.)""";
         } HasOverlap;
         // Symbol: drake::geometry::Aabb::center
         struct /* center */ {
@@ -737,14 +787,14 @@ Parameter ``X_GH``:
 Returns:
     ``True`` if the boxes intersect.)""";
           // Source: drake/geometry/proximity/obb.h
-          const char* doc =
-R"""((Internal use only) Checks whether bounding volume ``bv`` intersects
-the given plane. The bounding volume is centered on its canonical
-frame B, and B is posed in the corresponding hierarchy frame H. The
-plane is defined in frame P.
+          const char* doc_obb_plane =
+R"""(Checks whether bounding volume ``bv`` intersects the given plane. The
+bounding volume is centered on its canonical frame B, and B is posed
+in the corresponding hierarchy frame H. The plane is defined in frame
+P.
 
 The box and plane intersect if *any* point within the bounding volume
-has zero height (see CalcHeight()).
+has zero height.
 
 Parameter ``bv_H``:
     The bounding box to test.
@@ -767,6 +817,9 @@ The bounding volume is centered on its canonical frame B, and B is
 posed in the corresponding hierarchy frame H. The half space is
 defined in its canonical frame C (such that the boundary plane of the
 half space is perpendicular to Cz and Co lies on the boundary plane).
+
+The box and halfspace intersect if *any* point within the bounding
+volume has a height less than or equal to zero.
 
 Parameter ``bv_H``:
     The bounding box to test.
