@@ -1,17 +1,20 @@
 #pragma once
 
 #include <map>
-#include <ostream>
+#include <string>
 
 #include <Eigen/Core>
-#include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/monomial_basis_element.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
+
+// Remove with deprecation 2026-05-01.
+#include <ostream>
 
 namespace drake {
 namespace symbolic {
@@ -503,20 +506,15 @@ GenericPolynomialEnable<BasisElement> pow(
 }
 
 template <typename BasisElement>
-std::ostream& operator<<(std::ostream& os,
-                         const GenericPolynomial<BasisElement>& p) {
-  const typename GenericPolynomial<BasisElement>::MapType& map{
-      p.basis_element_to_coefficient_map()};
-  if (map.empty()) {
-    return os << 0;
-  }
-  auto it = map.begin();
-  os << it->second << "*" << it->first;
-  for (++it; it != map.end(); ++it) {
-    os << " + " << it->second << "*" << it->first;
-  }
-  return os;
-}
+std::string to_string(const GenericPolynomial<BasisElement>& p);
+
+template <typename BasisElement>
+DRAKE_DEPRECATED(
+    "2026-05-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os, const GenericPolynomial<BasisElement>& p);
 
 extern template class GenericPolynomial<MonomialBasisElement>;
 extern template class GenericPolynomial<ChebyshevBasisElement>;
@@ -565,9 +563,6 @@ struct NumTraits<
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename BasisElement>
-struct formatter<drake::symbolic::GenericPolynomial<BasisElement>>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename BasisElement, drake::symbolic,
+                   GenericPolynomial<BasisElement>, x,
+                   drake::symbolic::to_string(x))

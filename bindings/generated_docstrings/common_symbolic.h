@@ -2636,7 +2636,7 @@ Precondition:
       } pow;
       // Symbol: drake::symbolic::to_string
       struct /* to_string */ {
-        // Source: drake/common/symbolic/polynomial.h
+        // Source: drake/common/symbolic/generic_polynomial.h
         const char* doc = R"""()""";
       } to_string;
     } symbolic;

@@ -1834,6 +1834,69 @@ TEST_F(SymbolicGenericPolynomialTest, SetIndeterminates) {
   }
 }
 
+TEST_F(SymbolicGenericPolynomialTest, UsingMonomialBasisToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{}), "0");
+  EXPECT_EQ(fmt::to_string(
+                GenericPolynomial<MonomialBasisElement>{x_, Variables{var_x_}}),
+            "1*x");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+                3 * x_, Variables{var_x_}}),
+            "3*x");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+                5 * pow(x_, 2) * y_ * z_, var_xyz_}),
+            "5*x^2 * y * z");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+                b_ * c_ * pow(z_, 3) - pow(z_, 2) + 5 * pow(x_, 2) * y_ * z_,
+                var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 5*x^2 * y * z");
+  EXPECT_EQ(
+      fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+          b_ * c_ * pow(z_, 3) - pow(z_, 2) + 5 * pow(x_, 2) * y_ * z_ + x_,
+          var_xyz_}),
+      "-1*z^2 + (b * c)*z^3 + 1*x + 5*x^2 * y * z");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+                y_ + b_ * c_ * pow(z_, 3) - pow(z_, 2) +
+                    5 * pow(x_, 2) * y_ * z_ + x_,
+                var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*x + 5*x^2 * y * z");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+                y_ + b_ * c_ * pow(z_, 3) - pow(z_, 2) +
+                    5 * pow(x_, 2) * y_ * z_ + x_,
+                var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*x + 5*x^2 * y * z");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<MonomialBasisElement>{
+                pow(y_, 2) + y_ + b_ * c_ * pow(z_, 3) - pow(z_, 2) +
+                    5 * pow(x_, 2) * y_ * z_ + x_,
+                var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*y^2 + 1*x + 5*x^2 * y * z");
+}
+
+TEST_F(SymbolicGenericPolynomialTest, UsingChebyshevBasisToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{}), "0");
+  EXPECT_EQ(
+      fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{Expression(1.)}),
+      "1*T0()");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{
+                2 * pow(var_x_, 2) - 1}),
+            "1*T2(x)");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{
+                (2 * pow(var_x_, 2) - 1) * (4 * pow(var_y_, 3) - 3 * var_y_)}),
+            "1*T2(x)T3(y)");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{
+                16 * pow(var_x_, 2) * pow(var_y_, 3) - 8 * pow(var_y_, 3) -
+                12 * pow(var_x_, 2) * var_y_ + 6 * var_y_ +
+                2 * var_x_ * pow(var_y_, 2) - var_x_}),
+            "1*T1(x)T2(y) + 2*T2(x)T3(y)");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{
+                16 * pow(var_x_, 2) * pow(var_y_, 3) - 8 * pow(var_y_, 3) -
+                12 * pow(var_x_, 2) * var_y_ + 6 * var_y_ +
+                2 * var_x_ * pow(var_y_, 2) - var_x_}),
+            "1*T1(x)T2(y) + 2*T2(x)T3(y)");
+  EXPECT_EQ(fmt::to_string(GenericPolynomial<ChebyshevBasisElement>{
+                12 * pow(var_x_, 3) + 8 * pow(var_x_, 2) - 7 * var_x_ - 1}),
+            "3*T0() + 2*T1(x) + 4*T2(x) + 3*T3(x)");
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
