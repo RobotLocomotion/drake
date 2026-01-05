@@ -1,12 +1,12 @@
 name: Bug Report
-description: File a bug report.  (Please do not post questions this way; see below for StackOverflow links.)
+description: File a bug report.  (Please do not post questions this way; see below for a link to "Questions".)
 labels: ["type: bug"]
 body:
   - type: markdown
     attributes:
       value:
         Thanks for taking the time to fill out this bug report!
-        The `#drake` posts on [StackOverflow](https://stackoverflow.com/questions/tagged/drake)
+        Prior [discussions](https://github.com/RobotLocomotion/drake/discussions)
         also might help you find a solution.
   - type: textarea
     id: what-happened
