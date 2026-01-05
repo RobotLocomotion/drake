@@ -706,7 +706,7 @@ GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, TestException) {
   const Eigen::MatrixXd Q_non_psd = Eigen::Vector2d(1, -2).asDiagonal();
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ParseQuadraticAsRotatedLorentzConeConstraint(
-          Q, Eigen::Vector2d(1, 3), -2),
+          Q_non_psd, Eigen::Vector2d(1, 3), -2),
       ".* is not positive semidefinite.*");
 
   // Hessian is almost positive semidefinite with one eigenvalue slightly
