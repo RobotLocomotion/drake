@@ -1,12 +1,10 @@
 #pragma once
 
-#include <limits>
-
-#include "drake/common/drake_assert.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_eigen.h"
 #include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -52,26 +50,7 @@ class Plane {
    @pre If `already_normalized` is `false`, `n_F` must have magnitude ≥ 1e-10.
    */
   Plane(const Vector3<T>& n_F, const Vector3<T>& p_FP,
-        bool already_normalized = false) {
-    if (!already_normalized) {
-      const T magnitude = n_F.norm();
-      // NOTE: This threshold is arbitrary. Given Drake uses mks and generally
-      // works on problems at a human scale, the assumption is that if someone
-      // passes in an incredibly small normal (picometers), it is probably an
-      // error.
-      if (magnitude < 1e-10) {
-        throw std::runtime_error(fmt::format(
-            "Cannot instantiate plane from normal n_F = [{}]; its magnitude is "
-            "too small: {}",
-            fmt_eigen(n_F.transpose()), magnitude));
-      }
-      nhat_F_ = n_F / magnitude;
-    } else {
-      DRAKE_ASSERT_VOID(ThrowIfInsufficientlyNormal(n_F));
-      nhat_F_ = n_F;
-    }
-    displacement_ = nhat_F_.dot(p_FP);
-  }
+        bool already_normalized = false);
 
   /* Computes the height of Point Q relative to the plane. A positive height
    indicates the point lies _above_ the plane; negative height indicates
@@ -90,25 +69,32 @@ class Plane {
   /* Gets the plane's normal expressed in frame F. */
   const Vector3<T>& normal() const { return nhat_F_; }
 
+  /* Reports if the given box intersects this plane. The box is specified in
+   generic terms. It is an axis-aligned box, centered on a point with _half_
+   measures along the axis directions.
+
+   @param half_width                The half-width extents of the box along its
+                                    local axes.
+   @param box_center_in_plane       The center of the box measured and expressed
+                                    in the plane's frame.
+   @param box_orientation_in_plane  The orientation of the box expressed in the
+                                    plane's frame. The ith column goes with the
+                                    ith half width.
+   */
+  bool BoxOverlaps(const Eigen::Vector3d& half_width,
+                   const Eigen::Vector3d& box_center_in_plane,
+                   const math::RotationMatrixd& box_orientation_in_plane) const;
+
  private:
   // Used to validate the "already normalized" plane normal in debug mode.
-  static void ThrowIfInsufficientlyNormal(const Vector3<T>& n) {
-    using std::abs;
-    const T delta = abs(n.norm() - 1);
-    // We pick a threshold that should easily contain typical precision loss
-    // in the columns/rows of a rotation matrix -- a likely source for plane
-    // normals.
-    if (delta > 1e-13) {
-      throw std::runtime_error(fmt::format(
-          "Plane constructed with a normal vector that was declared normalized;"
-          " the vector is not unit length. Vector [{}] with length {}",
-          fmt_eigen(n.transpose()), T{n.norm()}));
-    }
-  }
+  static void ThrowIfInsufficientlyNormal(const Vector3<T>& n);
 
   Vector3<T> nhat_F_;
   T displacement_{};
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class Plane);
 
 }  // namespace internal
 }  // namespace geometry
