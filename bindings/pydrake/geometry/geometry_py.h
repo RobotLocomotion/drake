@@ -11,6 +11,10 @@
 namespace drake {
 namespace pydrake {
 
+/** Define the elements in the proximity namespace. See geometry_py_proximity.cc
+ */
+void DefineGeometryProximity(py::module m);
+
 /** Define the bounding box functions. See geometry_py_bounding_box.cc. */
 void DefineGeometryBoundingBox(py::module m);
 

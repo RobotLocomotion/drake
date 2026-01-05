@@ -62,6 +62,7 @@ drake_pybind_library(
         "geometry_py_hydro.cc",
         "geometry_py_meshes.cc",
         "geometry_py_optimization.cc",
+        "geometry_py_proximity.cc",
         "geometry_py_render.cc",
         "geometry_py_scene_graph.cc",
         "geometry_py_visualizers.cc",
@@ -143,6 +144,14 @@ drake_py_unittest(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/solvers",
+    ],
+)
+
+drake_py_unittest(
+    name = "proximity_test",
+    deps = [
+        ":geometry",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
