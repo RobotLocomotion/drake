@@ -55,34 +55,10 @@ bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
 
 bool Obb::HasOverlap(const Obb& bv_H, const internal::Plane<double>& plane_P,
                      const math::RigidTransformd& X_PH) {
-  /* The box doesn't overlap the plane if the box center is sufficiently far
-   from the plane to provide "clearance". If we consider the vector from the
-   "lowest" (defined relative to the normal direction) point on the box L to the
-   box origin Bo, p_LBo, the measure of that vector's projection onto the plane
-   normal, p_LBo·n_P, is exactly the clearance distance.
-
-   By definition, the vector p_LBo = ±Bx·hx + ±By·hy + ±Bz·hz, where the
-   signs applied to the basis vectors depend on the relative orientation of B
-   and P. Specifically, we'd pick the signs of the basis vectors so that Bi·n_P
-   is non-negative. Fortunately, we don't need to find the actual point L; we
-   only need the measure of the projected vector. We can exploit the fact that
-   (-Bi)·n_P = -(Bi·n_P); |Bi·n_P| is equal to ±Bi·n_P where we've picked
-   the "right" sign. */
-
   const RotationMatrixd& R_HB = bv_H.pose().rotation();
-  const RotationMatrixd R_PB = X_PH.rotation() * R_HB;
-  double half_extent_along_normal = 0.0;
-  const Vector3d& n_P = ExtractDoubleOrThrow(plane_P.normal());
-  for (int i = 0; i < 3; ++i) {
-    const auto& Bi_P = R_PB.col(i);
-    double extent = std::abs(Bi_P.dot(n_P)) * bv_H.half_width()(i);
-    half_extent_along_normal += extent;
-  }
-
-  const Vector3d p_PoBo_P = X_PH * bv_H.center();
-  const double box_center_height =
-      ExtractDoubleOrThrow(plane_P.CalcHeight(p_PoBo_P));
-  return std::abs(box_center_height) <= half_extent_along_normal;
+  const Vector3d& p_HBo = bv_H.center();
+  return plane_P.BoxOverlaps(bv_H.half_width(), X_PH * p_HBo,
+                             X_PH.rotation() * R_HB);
 }
 
 bool Obb::HasOverlap(const Obb& bv_H, const HalfSpace&,
