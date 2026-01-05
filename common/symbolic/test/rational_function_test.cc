@@ -385,6 +385,14 @@ TEST_F(SymbolicRationalFunctionTest, SetIndetermiantes) {
   EXPECT_EQ(f.denominator().indeterminates(), var_xy_);
 }
 
+TEST_F(SymbolicRationalFunctionTest, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(RationalFunction{}), "(0) / (1*1)");
+  EXPECT_EQ(fmt::to_string(RationalFunction{p1_, polynomial_one_}),
+            "(1*y + 2*x^2) / (1*1)");
+  EXPECT_EQ(fmt::to_string(RationalFunction{p1_, p2_}),
+            "(1*y + 2*x^2) / (2*y + 1*x^2)");
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
