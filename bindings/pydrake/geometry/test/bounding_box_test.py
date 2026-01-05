@@ -68,6 +68,21 @@ class TestGeometryBoundingBox(unittest.TestCase):
         transform = RigidTransform(p=[-2.0, 0.0, 0.0])
         self.assertTrue(mut.Aabb.HasOverlap(aabb1, aabb2, transform))
 
+        # Test Aabb-HalfSpace overlap.
+        half_space = mut.HalfSpace()
+        # Default half space has normal [0,0,1] and passes through origin.
+        # Our obb1 is centered at origin with half_width [1,1,1], so it
+        # should overlap the half space (extends into negative z).
+        self.assertTrue(
+            mut.Aabb.HasOverlap(aabb1, half_space, identity_transform)
+        )
+
+        # Test Aabb-Plane overlap.
+        plane_normal = np.array([0.0, 0.0, 1.0])
+        point_on_plane = np.array([0.0, 0.0, 0.5])
+        plane = mut.Plane(plane_normal, point_on_plane)
+        self.assertTrue(mut.Aabb.HasOverlap(aabb1, plane, identity_transform))
+
     def test_obb_api(self):
         # Test Obb construction and basic API.
         pose = RigidTransform(p=[1.0, 2.0, 3.0])
@@ -132,6 +147,12 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertTrue(
             mut.Obb.HasOverlap(obb1, half_space, identity_transform)
         )
+
+        # Test Obb-Plane overlap.
+        plane_normal = np.array([0.0, 0.0, 1.0])
+        point_on_plane = np.array([0.0, 0.0, 0.5])
+        plane = mut.Plane(plane_normal, point_on_plane)
+        self.assertTrue(mut.Obb.HasOverlap(obb1, plane, identity_transform))
 
     def test_aabb_obb_cross_overlap(self):
         # Test cross-type overlap between Aabb and Obb.
