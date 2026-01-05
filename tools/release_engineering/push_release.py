@@ -237,10 +237,6 @@ class _State:
             f.write(f"{digest} {name}\n")
 
         sha_program = f"{algorithm}sum"
-        if not shutil.which(sha_program):
-            _fatal(
-                f"ERROR: Required program {sha_program!r} not found in PATH."
-            )
         subprocess.check_call([sha_program, "-c", "--quiet", hashfile_path])
 
         self._done()
