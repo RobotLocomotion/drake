@@ -897,7 +897,7 @@ GTEST_TEST(ObbTest, PlaneOverlap) {
       RotationMatrixd::MakeFromOneVector(Vector3d(-1, 2, -2), 2),
       Vector3d{3, -1, 2});
   const Vector3d Pz_W = X_WP.rotation().col(2);
-  const internal::Plane<double> plane_W(Pz_W, X_WP.translation());
+  const Plane<double> plane_W(Pz_W, X_WP.translation());
 
   const Obb obb_H(X_HB, half_width);
   // Initialize X_WH such that the box corner exactly touches the plane. Then
