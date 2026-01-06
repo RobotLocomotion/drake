@@ -254,6 +254,7 @@ use_repo(
     "libjpeg_turbo_internal",
     "libpng_internal",
     "libtiff_internal",
+    "libzip_internal",
     "metis_internal",
     "msgpack_internal",
     "nanoflann_internal",
