@@ -302,7 +302,7 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
 };
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// delete this when removing deprecated publish_every_time_step feature.
+// delete with publish_every_time_step 2026-06-01
 // Disables non-witness based publishing for witness function testing.
 void DisableDefaultPublishing(Simulator<double>* s) {
   s->set_publish_at_initialization(false);
@@ -918,6 +918,49 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   EXPECT_FALSE(simulator.has_context());
 }
 
+// Delete this test with publish_every_time_step 2026-06-01
+// Try a purely continuous system with no sampling.
+GTEST_TEST(SimulatorTest, SpringMassNoSampleUsingPublishEveryTimeStep) {
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
+
+  // Set the integrator default step size.
+  const double h = 1e-3;
+
+  analysis_test::MySpringMassSystemTemp<double> spring_mass(kSpring, kMass,
+                                                            0.0);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
+
+  // Create the integrator.
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
+
+  simulator.set_target_realtime_rate(0.5);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Request forced-publishes at every internal step.
+  simulator.set_publish_at_initialization(true);
+  simulator.set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
+  // Set the integrator and initialize the simulator.
+  simulator.Initialize();
+
+  // Simulate for 1 second.
+  simulator.AdvanceTo(1.0);
+
+  EXPECT_NEAR(simulator.get_context().get_time(), 1.0, 1e-8);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
+
+  EXPECT_EQ(spring_mass.get_publish_count(), 1001);
+  EXPECT_EQ(spring_mass.get_update_count(), 0);
+
+  // Current time is 1. An earlier final time should fail.
+  EXPECT_THROW(simulator.AdvanceTo(0.5), std::runtime_error);
+}
+
 // Try a purely continuous system with no sampling.
 GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   const double kSpring = 300.0;  // N/m
@@ -936,13 +979,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
   simulator.set_target_realtime_rate(0.5);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
-  // Request forced-publishes at every internal step.
-  simulator.set_publish_at_initialization(true);
-  simulator.set_publish_every_time_step(true);
-#pragma GCC diagnostic pop
+
   // Set the integrator and initialize the simulator.
   simulator.Initialize();
 
@@ -1025,11 +1062,11 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// delete this when removing deprecated publish_every_time_step feature.
+// delete with publish_every_time_step 2026-06-01
 // Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
 GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
+  analysis_test::MySpringMassSystemTemp<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(false);
@@ -1756,13 +1793,6 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
         events[simulator.get_num_steps_taken()].push_back(kIntegrate);
       });
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
-  // Run a simulation with per-step forced-publishing enabled.
-  simulator.set_publish_at_initialization(true);
-  simulator.set_publish_every_time_step(true);
-#pragma GCC diagnostic pop
   simulator.AdvanceTo(0.5);
 
   // Verify that at least one of each event type was triggered.

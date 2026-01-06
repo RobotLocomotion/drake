@@ -19,15 +19,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   // Pass through to SpringMassSystem, except add events and handlers.
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
-    // This forced-publish event is necessary for any simulator_test case that
-    // needs to verify that the publish_every_time_step feature works.
-    /*
-     * When removing the deprectaed publish_every_time_step feature, substitute
-     * this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
-     * with
-     * this->DeclarePerStepPublishEvent(&MySpringMassSystem::CountPublishes);
-     */
-    this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
+    this->DeclarePerStepPublishEvent(&MySpringMassSystem::CountPublishes);
 
     if (update_rate > 0.0) {
       this->DeclarePeriodicDiscreteUpdateEvent(
@@ -56,6 +48,52 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   mutable int publish_count_{0};
   mutable int update_count_{0};
 };  // MySpringMassSystem
+
+/*
+ * A temporary class for `Simulator` tests that use deprecated
+ * publish_every_time_step feature.
+ * Delete the class with publish_every_time_step 2026-06-01
+ */
+template <class T>
+class MySpringMassSystemTemp : public SpringMassSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySpringMassSystemTemp);
+
+  // Pass through to SpringMassSystem, except add events and handlers.
+  MySpringMassSystemTemp(double stiffness, double mass, double update_rate)
+      : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
+    // This forced-publish event is necessary for any simulator_test case that
+    // needs to verify that the publish_every_time_step feature works.
+    this->DeclareForcedPublishEvent(&MySpringMassSystemTemp::CountPublishes);
+
+    if (update_rate > 0.0) {
+      this->DeclarePeriodicDiscreteUpdateEvent(
+          1.0 / update_rate, 0.0,
+          &MySpringMassSystemTemp::CountDiscreteUpdates);
+    }
+  }
+
+  int get_publish_count() const { return publish_count_; }
+
+  int get_update_count() const { return update_count_; }
+
+ private:
+  EventStatus CountPublishes(const Context<T>&) const {
+    ++publish_count_;
+    return EventStatus::Succeeded();
+  }
+
+  // The discrete equation update here is for the special case of zero
+  // discrete variables- in other words, this is just a counter.
+  EventStatus CountDiscreteUpdates(const Context<T>&,
+                                   DiscreteValues<T>*) const {
+    ++update_count_;
+    return EventStatus::Succeeded();
+  }
+
+  mutable int publish_count_{0};
+  mutable int update_count_{0};
+};  // MySpringMassSystemTemp
 
 }  // namespace analysis_test
 }  // namespace systems

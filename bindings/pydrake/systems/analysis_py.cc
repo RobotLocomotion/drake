@@ -288,8 +288,6 @@ PYBIND11_MODULE(analysis, m) {
 
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
         .def(py::init([](const System<T>& system, Context<T>* context) {
           // Expand the default-context request here, so that it gets a
@@ -393,14 +391,6 @@ Parameter ``interruptible``:
                   make_shared_ptr_from_py_object<Context<T>>(py_context));
             },
             py::arg("context"), doc.Simulator.reset_context.doc)
-        // delete this when removing deprecated publish_every_time_step feature.
-        .def("set_publish_every_time_step",
-            &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
-            doc.Simulator.set_publish_every_time_step.doc_deprecated)
-        .def("set_publish_at_initialization",
-            &Simulator<T>::set_publish_at_initialization, py::arg("publish"),
-            doc.Simulator.set_publish_at_initialization.doc_deprecated)
-        // delete till here
         .def("set_target_realtime_rate",
             &Simulator<T>::set_target_realtime_rate, py::arg("realtime_rate"),
             doc.Simulator.set_target_realtime_rate.doc)
@@ -424,6 +414,16 @@ Parameter ``interruptible``:
             doc.Simulator.get_num_unrestricted_updates.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // delete with publish_every_time_step 2026-06-01
+    cls.def("set_publish_every_time_step",
+           &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
+           doc.Simulator.set_publish_every_time_step.doc_deprecated)
+        .def("set_publish_at_initialization",
+            &Simulator<T>::set_publish_at_initialization, py::arg("publish"),
+            doc.Simulator.set_publish_at_initialization.doc_deprecated);
+    // delete till here
 #pragma GCC diagnostic pop
     m  // BR
         .def("ApplySimulatorConfig",

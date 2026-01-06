@@ -562,8 +562,7 @@ class Simulator {
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
   DRAKE_DEPRECATED("2026-06-01",
-                   "Use LeafSystem::DeclarePerStepPublishEvent() or "
-                   "LeafSystem::DeclareForcedPublishEvent() instead.")
+                   "Use LeafSystem::DeclarePerStepPublishEvent() instead.")
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
@@ -579,8 +578,10 @@ class Simulator {
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
   DRAKE_DEPRECATED("2026-06-01",
-                   "Use LeafSystem::DeclareInitializationPublishEvent() "
-                   "instead.")
+                   "Per-step publish events will trigger at initialization "
+                   "automatically. If you are only"
+                   "issuing a publish at initialization, use "
+                   "LeafSystem::DeclareInitializationPublishEvent()")
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
@@ -588,8 +589,8 @@ class Simulator {
   /// Returns true if the set_publish_every_time_step() option has been
   /// enabled. By default, returns false.
   DRAKE_DEPRECATED("2026-06-01",
-                   "Use LeafSystem::DeclarePerStepPublishEvent() or "
-                   "LeafSystem::DeclareForcedPublishEvent() instead.")
+                   "This method is not needed once per-step events (e.g. "
+                   "LeafSystem::DeclarePerStepPublishEvent()) are used.")
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the
@@ -883,7 +884,7 @@ class Simulator {
   double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
 
   bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};

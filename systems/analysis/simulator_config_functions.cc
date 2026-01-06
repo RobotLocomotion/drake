@@ -226,7 +226,7 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
   simulator->set_target_realtime_rate(config.target_realtime_rate);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   // It is almost always the case we want these two next flags to be either both
   // true or both false. Otherwise we could miss the first publish at t = 0.
   simulator->set_publish_at_initialization(config.publish_every_time_step);
@@ -256,7 +256,7 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   result.publish_every_time_step = simulator.get_publish_every_time_step();
 #pragma GCC diagnostic pop
   return result;

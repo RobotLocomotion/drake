@@ -33,7 +33,7 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
              simulator.get_num_steps_taken());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   fmt::print("Simulator publishes every time step: {}\n",
              simulator.get_publish_every_time_step());
 #pragma GCC diagnostic pop

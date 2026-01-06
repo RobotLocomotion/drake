@@ -337,7 +337,8 @@ class TestAnalysis(unittest.TestCase):
         )
         simulator.reset_context(context=simulator.get_context().Clone())
 
-        # delete this when removing deprecated publish_every_time_step feature.
+        # delete with publish_every_time_step 2026-06-01
+        # Test will pass after deletion since the API will no longer exist.
         simulator.set_publish_every_time_step(publish=True)
         simulator.set_publish_at_initialization(publish=True)
         #

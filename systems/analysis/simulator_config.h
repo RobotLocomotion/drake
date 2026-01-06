@@ -7,8 +7,6 @@
 
 namespace drake {
 namespace systems {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // TODO(dale.mcconachie) Update to include all configurable properties of
 // IntegratorBase. Currently, initial_step_size_target, minimum_step_size, and
 // throw_on_minimum_step_size_violation are missing.
@@ -35,15 +33,12 @@ struct SimulatorConfig {
   /// `start_time` at the beginning of the simulation.
   double start_time{0.0};
   double target_realtime_rate{0.0};
+  /// DEPRECATED: removal date: 2026-06-01.
+  /// Use LeafSystem::DeclarePerStepPublishEvent() instead.
   /// Sets Simulator::set_publish_at_initialization() in addition to
   /// Simulator::set_publish_every_time_step() when applied by
   /// ApplySimulatorConfig().
-  DRAKE_DEPRECATED("2026-06-01",
-                   "Use LeafSystem::DeclareInitializationPublishEvent(), "
-                   "LeafSystem::DeclarePerStepPublishEvent(), or "
-                   "LeafSystem::DeclareForcedPublishEvent() instead.")
   bool publish_every_time_step{false};
 };
-#pragma GCC diagnostic pop
 }  // namespace systems
 }  // namespace drake

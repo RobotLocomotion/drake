@@ -64,7 +64,8 @@ int DoMain() {
       *diagram, std::move(context));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
+  // An Initialization event may need to be added for LcmPublisherSystem.
   simulator->set_publish_at_initialization(true);
   simulator->set_publish_every_time_step(false);
 #pragma GCC diagnostic pop

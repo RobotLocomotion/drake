@@ -82,7 +82,7 @@ TYPED_TEST(SimulatorConfigFunctionsTest, CongruenceTest) {
             config_defaults.target_realtime_rate);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   EXPECT_EQ(sim_defaults.publish_every_time_step,
             config_defaults.publish_every_time_step);
 #pragma GCC diagnostic pop
@@ -97,7 +97,7 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
       "use_error_control: true\n"
       "start_time: 0.5\n"
       "target_realtime_rate: 3.0\n"
-      // delete this when removing deprecated publish_every_time_step feature.
+      // delete with publish_every_time_step 2026-06-01
       "publish_every_time_step: true\n";
 
   // Ensure that the string and the struct have the same fields.
@@ -121,7 +121,7 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
 #pragma GCC diagnostic pop
 }

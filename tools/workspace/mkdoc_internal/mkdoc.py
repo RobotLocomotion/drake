@@ -628,7 +628,7 @@ def print_symbols(f, name, node, level=0):
         child = node.children_map[key]
         print_symbols(f, key, child, level=level + 1)
     if "Serialize" in keys:
-        # For classes with a Serialize function, also generate a list of the
+        # For classes with a Serialize function, also generate an list of the
         # docstrings for all fields for use by DefAttributesUsingSerialize.
         # For simplicity, we emit all field names whether or not Serialize
         # actually uses them. The getter is oddly-named ("Serialize__fields")
@@ -648,10 +648,7 @@ def print_symbols(f, name, node, level=0):
             iprint("  auto Serialize__fields() const {")
             iprint("    return std::array{")
             for x in field_names:
-                if "Deprecated:" in node.children_map[x].doc_symbols[0].comment:
-                    iprint(f'      std::make_pair("{x}", {x}.doc_deprecated),')
-                else:
-                    iprint(f'      std::make_pair("{x}", {x}.doc),')
+                iprint(f'      std::make_pair("{x}", {x}.doc),')
             iprint("    };")
             iprint("  }")
     iprint("}} {};".format(name_var))

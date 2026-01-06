@@ -147,7 +147,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   integrator.set_target_accuracy(target_accuracy);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // delete this when removing deprecated publish_every_time_step feature.
+  // delete with publish_every_time_step 2026-06-01
   simulator.set_publish_every_time_step(true);
 #pragma GCC diagnostic pop
   simulator.Initialize();

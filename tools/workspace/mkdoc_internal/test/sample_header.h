@@ -199,10 +199,6 @@ struct Struct {
   /// Field 2. Consectetur libero id faucibus nisl tincidunt eget nullam non
   /// nisi.
   std::vector<int> field_2;
-  /// deprecated field to test that field_3.doc_deprecated is printed to
-  /// file in Serialize__fields(), rather than field_3.doc.
-  DRAKE_DEPRECATED("2066-01-19", "Use something else instead.")
-  int field_3;
 };
 
 /// Template class. Mauris pharetra et ultrices neque ornare aenean euismod

@@ -188,13 +188,6 @@ PYBIND11_MODULE(test_util, m) {
       // Leverage simulator to call initialization events.
       // TODO(eric.cousineau): Simplify as part of #10015.
       Simulator<T> simulator(system);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // delete this when removing deprecated publish_every_time_step feature.
-      // Do not publish at initialization because we want to track publishes
-      // from only events of trigger type `kInitialization`.
-      simulator.set_publish_at_initialization(false);
-#pragma GCC diagnostic pop
       simulator.Initialize();
     }
     {
