@@ -1,0 +1,60 @@
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files(
+    ["lock/zip_err_str.c"],
+    visibility = ["@libzip_internal//:__pkg__"],
+)
+
+# Generate the expected zip_err_str.c for use by the up-to-date test.
+genrule(
+    name = "generate_zip_error_strings",
+    testonly = True,
+    srcs = [
+        "@libzip_internal//:cmake/GenerateZipErrorStrings.cmake",
+        "@libzip_internal//:lib/zip.h",
+        "@libzip_internal//:lib/zipint.h",
+    ],
+    outs = ["gen/zip_err_str.c"],
+    cmd = " ".join([
+        "export ORIGINAL_EXECROOT=$$(pwd)",
+        "&&",
+        "mkdir -p $(RULEDIR)/gen",
+        "&&",
+        "cd $(RULEDIR)/gen",
+        "&&",
+        "cmake",
+        "-DPROJECT_SOURCE_DIR={}/{}".format(
+            "$${ORIGINAL_EXECROOT}",
+            "$$(dirname $$(dirname $(execpath @libzip_internal//:lib/zip.h)))",
+        ),
+        "-P",
+        "{}/{}".format(
+            "$${ORIGINAL_EXECROOT}",
+            "$(execpath @libzip_internal//:cmake/GenerateZipErrorStrings.cmake)",
+        ),
+    ]),
+    tags = [
+        # Only run CMake when necessary for the up-to-date test.
+        "manual",
+        # Don't style-check a generated file.
+        "nolint",
+    ],
+)
+
+# Test that the generated file is up-to-date.
+diff_test(
+    name = "zip_error_strings_test",
+    failure_message = (
+        "To fix, run this command:\n" +
+        "  cp bazel-bin/tools/workspace/libzip_internal/gen/zip_err_str.c " +
+        "tools/workspace/libzip_internal/lock/zip_err_str.c"
+    ),
+    file1 = ":lock/zip_err_str.c",
+    file2 = ":gen/zip_err_str.c",
+    tags = [
+        "lint",
+    ],
+)
+
+add_lint_tests()
