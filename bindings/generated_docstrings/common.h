@@ -14,7 +14,6 @@
 
 // #include "drake/common/autodiff.h"
 // #include "drake/common/autodiff_config.h"
-// #include "drake/common/bit_cast.h"
 // #include "drake/common/cond.h"
 // #include "drake/common/constants.h"
 // #include "drake/common/copyable_unique_ptr.h"

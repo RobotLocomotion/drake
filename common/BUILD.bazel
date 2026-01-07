@@ -29,7 +29,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":autodiff",
-        ":bit_cast",
         ":cond",
         ":copyable_unique_ptr",
         ":cpu_capabilities",
@@ -135,11 +134,6 @@ drake_cc_library(
     deps = [
         ":essential",
     ],
-)
-
-drake_cc_library(
-    name = "bit_cast",
-    hdrs = ["bit_cast.h"],
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
@@ -795,13 +789,6 @@ drake_cc_googletest(
         ":essential",
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "bit_cast_test",
-    deps = [
-        ":bit_cast",
     ],
 )
 
