@@ -1769,7 +1769,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingGood) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingNoBody) {
-  // Test missing body tag
+  // Test missing body tag.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1791,7 +1791,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingNoBody) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingNoBodyName) {
-  // Test missing body tag name attribute
+  // Test missing body tag name attribute.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1814,7 +1814,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingNoBodyName) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingNonExistentBody) {
-  // Test non-existent body tag
+  // Test non-existent body tag.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1839,7 +1839,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingNonExistentBody) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingNoPosition) {
-  // Test no body A position tag
+  // Test no body A position tag.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1861,7 +1861,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingNoPosition) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingNoPositionAttribute) {
-  // Test no value attribute on the body A position tag
+  // Test no value attribute on the body A position tag.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1884,7 +1884,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingNoPositionAttribute) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidFreeLength) {
-  // Test zero free length
+  // Test zero free length.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1931,7 +1931,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingNoStiffness) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
-  // Test negative stiffness
+  // Test negative stiffness.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>
@@ -1955,7 +1955,7 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
 }
 
 TEST_F(UrdfParserTest, LinearSpringDamperParsingNoStiffnessValue) {
-  // Test negative stiffness
+  // Test negative stiffness.
   const std::string model_string = R"""(
     <robot name="Model">
         <link name='A'/>

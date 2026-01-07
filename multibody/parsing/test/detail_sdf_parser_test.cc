@@ -2788,7 +2788,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingGood) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyA) {
   AddSceneGraph();
-  // Test missing body tag
+  // Test missing body tag.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
@@ -2813,7 +2813,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyA) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyB) {
   AddSceneGraph();
-  // Test missing body tag
+  // Test missing body tag.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
@@ -2838,7 +2838,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyB) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingNonExistentBody) {
   AddSceneGraph();
-  // Test non-existent body tag
+  // Test non-existent body tag.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
@@ -2865,7 +2865,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingNonExistentBody) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidFreeLength) {
   AddSceneGraph();
-  // Test zero free length
+  // Test zero free length.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
@@ -2893,7 +2893,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidFreeLength) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
   AddSceneGraph();
-  // Test negative stiffness
+  // Test negative stiffness.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
@@ -2920,7 +2920,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidDamping) {
   AddSceneGraph();
-  // Test negative damping
+  // Test negative damping.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
@@ -2947,7 +2947,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidDamping) {
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingMissingValue) {
   AddSceneGraph();
-  // Test missing free length
+  // Test missing free length.
   ParseTestString(R"""(
     <world name='World'>
       <model name='Model'>
