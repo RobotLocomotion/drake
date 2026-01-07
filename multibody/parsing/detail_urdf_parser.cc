@@ -1190,8 +1190,10 @@ void UrdfParser::ParseLinearSpringDamper(XMLElement* node) {
                           element_name));
         return {};
       }
+    } else {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
     }
-    return {};
   };
 
   internal::ParseLinearSpringDamper(read_vector, read_body, read_double,

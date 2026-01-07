@@ -1908,6 +1908,28 @@ TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidFreeLength) {
                    "strictly positive."));
 }
 
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoStiffness) {
+  // Test with missing stiffness tag.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to find the "
+                           "<drake:linear_spring_damper_stiffness> tag"));
+}
+
 TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
   // Test negative stiffness
   const std::string model_string = R"""(
