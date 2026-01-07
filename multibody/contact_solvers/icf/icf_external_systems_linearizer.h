@@ -101,7 +101,6 @@ class IcfExternalSystemsLinearizer {
     explicit Scratch(const MultibodyPlant<T>& plant);
     ~Scratch();
 
-    // TODO(jwnimmer-tri) Check if we still need this.
     std::unique_ptr<MultibodyForces<T>> f_ext;
 
     VectorX<T> tau_u0;  // Actuation τᵤ(x) = B u(x) at x₀.
