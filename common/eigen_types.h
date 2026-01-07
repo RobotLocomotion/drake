@@ -9,6 +9,7 @@
 /// usage of `<Scalar>` in Eigen's code base.
 /// @see also eigen_autodiff_types.h
 
+#include <iterator>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -22,6 +23,10 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 5),
 #include "drake/common/fmt_eigen.h"  // Clang-16 workaround; see #22061.
 
 namespace drake {
+
+// Provide easy access to `std::ssize` without reling on ADL.
+// This is especially helpful for using ssize on Eigen vectors.
+using std::ssize;
 
 /// The empty column vector (zero rows, one column), templated on scalar type.
 template <typename Scalar>

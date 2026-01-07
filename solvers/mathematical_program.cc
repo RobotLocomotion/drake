@@ -18,7 +18,6 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
