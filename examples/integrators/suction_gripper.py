@@ -1,8 +1,9 @@
 import time
 import argparse
-from pydrake.all import *
+
 import numpy as np
-from pydrake.multibody.cenic import IcfSolverParameters
+
+from pydrake.all import *
 
 ##
 #

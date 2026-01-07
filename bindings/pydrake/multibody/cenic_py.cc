@@ -7,7 +7,6 @@
 namespace drake {
 namespace pydrake {
 
-using multibody::contact_solvers::icf::IcfSolverParameters;
 using systems::Context;
 using systems::IntegratorBase;
 using systems::System;
@@ -18,29 +17,8 @@ PYBIND11_MODULE(cenic, m) {
   constexpr auto& doc = pydrake_doc_multibody_cenic.drake.multibody;
 
   // TODO(jwnimmer-tri) Figure out the right imports.
+  py::module::import("pydrake.multibody.contact_solvers");
   py::module::import("pydrake.systems.analysis");
-
-  // ICF Solver Parameters
-  // TODO(CENIC): wire up the docstrings properly
-  {
-    py::class_<IcfSolverParameters>(m, "IcfSolverParameters")
-        .def(py::init<>())
-        .def_readwrite("max_iterations", &IcfSolverParameters::max_iterations)
-        .def_readwrite("min_tolerance", &IcfSolverParameters::min_tolerance)
-        .def_readwrite(
-            "enable_hessian_reuse", &IcfSolverParameters::enable_hessian_reuse)
-        .def_readwrite("hessian_reuse_target_iterations",
-            &IcfSolverParameters::hessian_reuse_target_iterations)
-        .def_readwrite(
-            "use_dense_algebra", &IcfSolverParameters::use_dense_algebra)
-        .def_readwrite("max_linesearch_iterations",
-            &IcfSolverParameters::max_linesearch_iterations)
-        .def_readwrite(
-            "linesearch_tolerance", &IcfSolverParameters::linesearch_tolerance)
-        .def_readwrite("alpha_max", &IcfSolverParameters::alpha_max)
-        .def_readwrite(
-            "print_solver_stats", &IcfSolverParameters::print_solver_stats);
-  }
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {
     using T = decltype(dummy);
