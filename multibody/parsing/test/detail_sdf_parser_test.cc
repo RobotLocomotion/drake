@@ -2786,7 +2786,32 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingGood) {
   EXPECT_EQ(linear_spring_damper.damping(), 9.0);
 }
 
-TEST_F(SdfParserTest, LinearSpringDamperParsingBad1) {
+TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyA) {
+  AddSceneGraph();
+  // Test missing body tag
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_p_AP>1 2 3</drake:linear_spring_damper_p_AP>
+          <drake:linear_spring_damper_body_B>C</drake:linear_spring_damper_body_B>
+          <drake:linear_spring_damper_p_BQ>4 5 6</drake:linear_spring_damper_p_BQ>
+          <drake:linear_spring_damper_free_length>7.0</drake:linear_spring_damper_free_length>
+          <drake:linear_spring_damper_stiffness>8.0</drake:linear_spring_damper_stiffness>
+          <drake:linear_spring_damper_damping>9.0</drake:linear_spring_damper_damping>
+        </drake:linear_spring_damper>
+      </model>
+    </world>)""");
+
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(
+                  ".*<drake:linear_spring_damper>: Unable to find the "
+                  "<drake:linear_spring_damper_body_A> child tag."));
+}
+
+TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyB) {
   AddSceneGraph();
   // Test missing body tag
   ParseTestString(R"""(
@@ -2811,7 +2836,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingBad1) {
                   "<drake:linear_spring_damper_body_B> child tag."));
 }
 
-TEST_F(SdfParserTest, LinearSpringDamperParsingBad2) {
+TEST_F(SdfParserTest, LinearSpringDamperParsingNonExistentBody) {
   AddSceneGraph();
   // Test non-existent body tag
   ParseTestString(R"""(
@@ -2838,7 +2863,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingBad2) {
           "<drake:linear_spring_damper_body_B> does not exist in the model."));
 }
 
-TEST_F(SdfParserTest, LinearSpringDamperParsingBad3) {
+TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidFreeLength) {
   AddSceneGraph();
   // Test zero free length
   ParseTestString(R"""(
@@ -2866,7 +2891,7 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingBad3) {
           "positive."));
 }
 
-TEST_F(SdfParserTest, LinearSpringDamperParsingBad4) {
+TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
   AddSceneGraph();
   // Test negative stiffness
   ParseTestString(R"""(
@@ -2891,6 +2916,59 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingBad4) {
                   ".*<drake:linear_spring_damper>: The "
                   "<drake:linear_spring_damper_stiffness> child tag must be "
                   "non-negative."));
+}
+
+TEST_F(SdfParserTest, LinearSpringDamperParsingInvalidDamping) {
+  AddSceneGraph();
+  // Test negative damping
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A>A</drake:linear_spring_damper_body_A>
+          <drake:linear_spring_damper_p_AP>1 2 3</drake:linear_spring_damper_p_AP>
+          <drake:linear_spring_damper_body_B>B</drake:linear_spring_damper_body_B>
+          <drake:linear_spring_damper_p_BQ>4 5 6</drake:linear_spring_damper_p_BQ>
+          <drake:linear_spring_damper_free_length>7.0</drake:linear_spring_damper_free_length>
+          <drake:linear_spring_damper_stiffness>8.0</drake:linear_spring_damper_stiffness>
+          <drake:linear_spring_damper_damping>-9.0</drake:linear_spring_damper_damping>
+        </drake:linear_spring_damper>
+      </model>
+    </world>)""");
+
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(
+                  ".*<drake:linear_spring_damper>: The "
+                  "<drake:linear_spring_damper_damping> child tag must be "
+                  "non-negative."));
+}
+
+TEST_F(SdfParserTest, LinearSpringDamperParsingMissingValue) {
+  AddSceneGraph();
+  // Test missing free length
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A>A</drake:linear_spring_damper_body_A>
+          <drake:linear_spring_damper_p_AP>1 2 3</drake:linear_spring_damper_p_AP>
+          <drake:linear_spring_damper_body_B>B</drake:linear_spring_damper_body_B>
+          <drake:linear_spring_damper_p_BQ>4 5 6</drake:linear_spring_damper_p_BQ>
+          <drake:linear_spring_damper_stiffness>8.0</drake:linear_spring_damper_stiffness>
+          <drake:linear_spring_damper_damping>9.0</drake:linear_spring_damper_damping>
+        </drake:linear_spring_damper>
+      </model>
+    </world>)""");
+
+  EXPECT_THAT(
+      TakeError(),
+      ::testing::MatchesRegex(
+          ".*<drake:linear_spring_damper>: Unable "
+          "to find the <drake:linear_spring_damper_free_length> child tag."));
 }
 
 TEST_F(SdfParserTest, BushingParsingGood) {
