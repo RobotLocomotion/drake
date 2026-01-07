@@ -65,6 +65,19 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "contact_solvers_py",
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_contact_solvers_icf",
+        "//bindings/pydrake/common:serialize_pybind",
+    ],
+    cc_srcs = ["contact_solvers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
     name = "fem_py",
     cc_deps = [
         "//bindings/generated_docstrings:multibody_fem",
@@ -334,6 +347,7 @@ install_files(
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
     ":cenic_py",
+    ":contact_solvers_py",
     ":fem_py",
     ":inverse_kinematics_py",
     ":math_py",
@@ -419,6 +433,13 @@ drake_py_unittest(
     name = "benchmarks_test",
     deps = [
         ":benchmarks_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "contact_solvers_test",
+    deps = [
+        ":contact_solvers_py",
     ],
 )
 

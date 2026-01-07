@@ -1475,6 +1475,36 @@ GTEST_TEST(HPolyhedronTest, Serialize) {
   EXPECT_TRUE(CompareMatrices(H.b(), H2.b()));
 }
 
+namespace {
+double ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+    const HPolyhedron& polytope_1, const HPolyhedron& polytope_2) {
+  // This function helps with testing whether
+  // SimplifyByIncrementalFaceTranslation satisfies its intersection constraint.
+  // This function returns the radius of the largest ball contained in
+  // `polytope_1` centered in `polytope_2`.  The formulation is largely borrowed
+  // from ChebyshevCenter.
+  MathematicalProgram prog;
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(polytope_1.ambient_dimension(), "x");
+  solvers::VectorXDecisionVariable r = prog.NewContinuousVariables<1>("r");
+  // max r
+  prog.AddLinearCost(Vector1d(-1.0), 0, r);
+  // r ≥ 0.
+  const double kInf = std::numeric_limits<double>::infinity();
+  prog.AddBoundingBoxConstraint(0, kInf, r);
+  polytope_2.AddPointInSetConstraints(&prog, x);
+  // aᵢᵀ x + |aᵢ| r ≤ bᵢ.
+  Eigen::RowVectorXd a(polytope_1.A().cols() + 1);
+  for (int i = 0; i < polytope_1.A().rows(); ++i) {
+    a[0] = polytope_1.A().row(i).norm();
+    a.tail(polytope_1.A().cols()) = polytope_1.A().row(i);
+    prog.AddLinearConstraint(a, -kInf, polytope_1.b()[i], {r, x});
+  }
+  solvers::MathematicalProgramResult result = Solve(prog);
+  return result.GetSolution(r[0]);
+}
+}  // namespace
+
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation1) {
   // Test a case where the expected simplified polytope is known:
   // The circumbody is a square with the top-right and bottom-left corners cut
@@ -1631,6 +1661,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation5) {
   const HPolyhedron circumbody = HPolyhedron(A, b);
   const VPolytope circumbody_V(circumbody);  // For volume calculations.
   const double min_volume_ratio = 0.1;
+  const double intersection_padding = 0.1;
 
   // Create a triangle polytope that intersects with the circumbody.
   Eigen::Matrix<double, 2, 3> verts;
@@ -1643,15 +1674,16 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation5) {
       intersecting_polytope};
   const HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
       min_volume_ratio, true, 10, Eigen::MatrixXd(), intersecting_polytopes,
-      false);
+      false, intersection_padding);
   EXPECT_TRUE(
       inbody.ContainedIn(circumbody, kAffineTransformationConstraintTol));
   EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
             min_volume_ratio);
   EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
-  // We only expect to maintain part of the intersection, not to contain the
-  // whole original intersection.
-  EXPECT_TRUE(inbody.IntersectsWith(intersecting_polytope));
+  // Check intersection constraint.
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody, intersecting_polytope),
+            intersection_padding - kAffineTransformationConstraintTol);
 }
 
 GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation6) {
@@ -1703,6 +1735,7 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
   const HPolyhedron circumbody = HPolyhedron(A, b);
   const VPolytope circumbody_V(circumbody);  // For volume calculations.
   const double min_volume_ratio = 0.1;
+  const double intersection_padding = 0.1;
 
   // Create a triangle polytope that intersects with the circumbody.
   Eigen::Matrix<double, 2, 3> verts;
@@ -1720,17 +1753,39 @@ GTEST_TEST(HPolyhedronTest, SimplifyByIncrementalFaceTranslation7) {
            -1, 0.7, 0.7;
   // clang-format on
 
-  const HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
-      min_volume_ratio, true, 10, points, intersecting_polytopes, false);
+  // Check simplification with affine transformation.
+  HPolyhedron inbody = circumbody.SimplifyByIncrementalFaceTranslation(
+      min_volume_ratio, /* do_affine_transformation= */ true, 10, points,
+      intersecting_polytopes, false, intersection_padding);
   EXPECT_TRUE(
       inbody.ContainedIn(circumbody, kAffineTransformationConstraintTol));
   EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
             min_volume_ratio);
   EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
-  EXPECT_TRUE(inbody.IntersectsWith(intersecting_polytope));
   for (int i_point = 0; i_point < points.cols(); ++i_point) {
     EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
   }
+  // Check intersection constraint.
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody, intersecting_polytope),
+            intersection_padding - kAffineTransformationConstraintTol);
+
+  // Also check without affine transformation.
+  inbody = circumbody.SimplifyByIncrementalFaceTranslation(
+      min_volume_ratio, /* do_affine_transformation= */ false, 10, points,
+      intersecting_polytopes, false, intersection_padding);
+  EXPECT_TRUE(
+      inbody.ContainedIn(circumbody, kAffineTransformationConstraintTol));
+  EXPECT_GE(VPolytope(inbody).CalcVolume() / circumbody_V.CalcVolume(),
+            min_volume_ratio);
+  EXPECT_LE(inbody.b().rows(), circumbody.b().rows());
+  for (int i_point = 0; i_point < points.cols(); ++i_point) {
+    EXPECT_TRUE(inbody.PointInSet(points.col(i_point), kConstraintTol));
+  }
+  // Check intersection constraint.
+  EXPECT_GE(ComputeRadiusOfLargestBallInOneWithCenterInTwo(
+                inbody, intersecting_polytope),
+            intersection_padding - kAffineTransformationConstraintTol);
 }
 
 GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformationTest1) {

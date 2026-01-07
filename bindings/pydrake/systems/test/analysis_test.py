@@ -42,6 +42,7 @@ from pydrake.systems.primitives import (
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
 )
+from pydrake.systems.test.test_util import CountingContextSystem
 from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 
 
@@ -350,6 +351,22 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(simulator.get_num_unrestricted_updates(), 0)
 
         self.assertIs(simulator.get_system(), system)
+
+    def test_simulator_default_context_no_cpp_leak(self):
+        """Regression test for #23924"""
+        gc.collect()
+        baseline = CountingContextSystem.GetNumberOfLiveContexts()
+        self.assertEqual(baseline, 0)
+
+        simulator = Simulator(CountingContextSystem())
+        self.assertGreater(
+            CountingContextSystem.GetNumberOfLiveContexts(), baseline
+        )
+        del simulator
+        gc.collect()
+        self.assertEqual(
+            CountingContextSystem.GetNumberOfLiveContexts(), baseline
+        )
 
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime

@@ -38,6 +38,7 @@ _SUBDIRS = [
     "multibody/benchmarks/mass_damper_spring",
     "multibody/benchmarks/pendulum",
     "multibody/cenic",
+    "multibody/contact_solvers/icf",
     "multibody/fem",
     "multibody/inverse_kinematics",
     "multibody/math",
