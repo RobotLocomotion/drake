@@ -31,7 +31,13 @@ using systems::DiagramBuilder;
 using systems::FirstOrderTaylorApproximation;
 using systems::controllers::PidController;
 
-class IcfExternalSystemsLinearizerTest : public ::testing::Test {
+class LinearizerTestFixture {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearizerTestFixture);
+
+  LinearizerTestFixture() = default;
+  virtual ~LinearizerTestFixture() = default;
+
  protected:
   // Builds the diagram and creates a context.
   // The plant must already have been finalized.
@@ -87,6 +93,9 @@ class IcfExternalSystemsLinearizerTest : public ::testing::Test {
   Context<double>* plant_context_{};
 };
 
+class IcfExternalSystemsLinearizerTest : public ::testing::Test,
+                                         public LinearizerTestFixture {};
+
 // Checks the short-circuit logic for a plant with no external input.
 TEST_F(IcfExternalSystemsLinearizerTest, NoFeedback) {
   // Build a diagram with just the plant and scene graph (no controller).
@@ -120,10 +129,25 @@ constexpr char kActuatedPendulumXml[] = R"""(
 </mujoco>
 )""";
 
-// Run tests with an actuated pendulum and an external (PID) controller.
-TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
-  // Build a diagram containing an actuated double pendulum and PID controller.
+// Run a test with a pendulum and an external (PID) controller.
+// When `choose_plant_port == 0`, MbP actuation input is used.
+// When `choose_plant_port == 1`, MbP applied generalized force input is used.
+class IcfExternalSystemsLinearizerPidTest
+    : public LinearizerTestFixture,
+      public ::testing::TestWithParam<int /* choose_plant_port */> {};
+
+TEST_P(IcfExternalSystemsLinearizerPidTest, ActuationInput) {
+  const int choose_plant_port = GetParam();
+
+  // Build a diagram containing a double pendulum and PID controller.
   Parser(builder_.get()).AddModelsFromString(kActuatedPendulumXml, "xml");
+  if (choose_plant_port == 1) {
+    // We'll be using generalized force input, not actuation.
+    plant_.RemoveJointActuator(
+        plant_.get_joint_actuator(JointActuatorIndex(1)));
+    plant_.RemoveJointActuator(
+        plant_.get_joint_actuator(JointActuatorIndex(0)));
+  }
   plant_.Finalize();
   auto target_source = builder_->AddSystem<ConstantVectorSource<double>>(
       Vector4d{M_PI_2, M_PI_2, 0.0, 0.0});
@@ -133,8 +157,15 @@ TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
                     pid_controller->get_input_port_desired_state());
   builder_->Connect(plant_.get_state_output_port(),
                     pid_controller->get_input_port_estimated_state());
-  builder_->Connect(pid_controller->get_output_port(),
-                    plant_.get_actuation_input_port());
+  if (choose_plant_port == 0) {
+    builder_->Connect(pid_controller->get_output_port(),
+                      plant_.get_actuation_input_port());
+  } else {
+    DRAKE_DEMAND(choose_plant_port == 1);
+    builder_->Connect(pid_controller->get_output_port(),
+                      plant_.get_applied_generalized_force_input_port());
+  }
+
   Build();
   const Context<double>& pid_controller_context =
       pid_controller->GetMyContextFromRoot(*diagram_context_);
@@ -146,10 +177,16 @@ TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
   // Linearize the non-plant dynamics around the current state.
   const double h = 0.01;
   const auto result = LinearizeExternalSystem(h);
-  ASSERT_TRUE(result.actuation_feedback.has_value());
-  EXPECT_FALSE(result.external_feedback.has_value());
-  const VectorXd& K = result.actuation_feedback->K;
-  const VectorXd& b = result.actuation_feedback->b;
+  const std::optional<IcfLinearFeedbackGains<double>>& relevant_feedback =
+      (choose_plant_port == 0) ? result.actuation_feedback
+                               : result.external_feedback;
+  const std::optional<IcfLinearFeedbackGains<double>>& empty_feedback =
+      (choose_plant_port == 0) ? result.external_feedback
+                               : result.actuation_feedback;
+  ASSERT_TRUE(relevant_feedback.has_value());
+  EXPECT_FALSE(empty_feedback.has_value());
+  const VectorXd& K = relevant_feedback->K;
+  const VectorXd& b = relevant_feedback->b;
 
   // Compute linearization τ̃ = D⋅x + y around x₀ via autodiff.
   auto expected_linearization = FirstOrderTaylorApproximation(
@@ -182,12 +219,36 @@ TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
   EXPECT_TRUE(CompareMatrices(b, b_ref, kTol, MatrixCompareType::relative));
 }
 
+INSTANTIATE_TEST_SUITE_P(AllPorts, IcfExternalSystemsLinearizerPidTest,
+                         ::testing::Values(0, 1));
+
 // TODO(#23918) We should test an external controller where qdot != v.
 
 // TODO(#23918) We should test an external controller where the linearization
 // changes significantly with q. That's surprisingly not very common. For
 // instance a PD controller has constant derivatives, and an inverse dynamics
 // controller only changes slowly with q.
+
+// MJCF model of a floating ball (no joints).
+constexpr char kFloatingBodyXml[] = R"""(
+<?xml version="1.0"?>
+<mujoco model="ball">
+  <worldbody>
+    <body>
+      <geom type="sphere" size="0.01"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+// Run tests of the plant's applied_spatial_force input port.
+TEST_F(IcfExternalSystemsLinearizerTest, ExternalSpatialForce) {
+  Parser(builder_.get()).AddModelsFromString(kFloatingBodyXml, "xml");
+  plant_.Finalize();
+  // std::vector<ExternallyAppliedSpatialForce>
+  // plant_.get_applied_spatial_force_input_port()
+  EXPECT_TRUE(false);
+}
 
 }  // namespace internal
 }  // namespace icf
