@@ -169,7 +169,7 @@ std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p) {
   if (p.degree() == 0) {
     out << "T0()";
   } else {
-    out << "T" << p.degree() << "(" << p.var() << ")";
+    out << "T" << p.degree() << "(" << fmt::to_string(p.var()) << ")";
   }
   return out;
 }

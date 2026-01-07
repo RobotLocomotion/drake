@@ -23,7 +23,8 @@ template <PixelType kPixelType>
 void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
   const int width = image.width();
   const int height = image.height();
-  fmt::print(*os, "Image<k{}>(width={}, height={})", kPixelType, width, height);
+  fmt::print((*os), "Image<k{}>(width={}, height={})", kPixelType, width,
+             height);
   const int size = width * height;
   // When there are no pixels, don't bother printing the "Channel ..." titles.
   // If there are way too many pixels (more than fit on one screen), omit all
@@ -35,7 +36,7 @@ void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
   using Promoted = std::conditional_t<std::is_integral_v<T>, int, T>;
   constexpr int num_channels = Image<kPixelType>::kNumChannels;
   for (int c = 0; c < num_channels; ++c) {
-    *os << "\n";
+    fmt::print(*os, "\n");
     const T* const base = image.at(0, 0) + c;
     using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
     Eigen::Map<const MatrixX<T>, 0, Stride> eigen(

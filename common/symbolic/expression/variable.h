@@ -7,16 +7,19 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
-#include <ostream>
 #include <string>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
+
+// Remove with deprecation 2026-05-01.
+#include <ostream>
 
 namespace drake {
 namespace symbolic {
@@ -103,8 +106,6 @@ class Variable {
     // always have identical names.
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const Variable& var);
-
  private:
   // Unique identifier for this Variable. The high-order byte stores the Type.
   // See get_next_id() in the cc file for more details.
@@ -117,7 +118,19 @@ class Variable {
   std::shared_ptr<const std::string> name_;  // Name of variable.
 };
 
+DRAKE_DEPRECATED(
+    "2026-05-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream& operator<<(std::ostream& os, const Variable& var);
+
+DRAKE_DEPRECATED(
+    "2026-05-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
+
+std::string_view to_string(const Variable::Type& type);
 
 /// Creates a dynamically-sized Eigen matrix of symbolic variables.
 /// @param rows The number of rows in the new matrix.
@@ -372,10 +385,6 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 }  // namespace symbolic
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::symbolic::Variable> : drake::ostream_formatter {};
-template <>
-struct formatter<drake::symbolic::Variable::Type> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::symbolic, Variable, x, x.to_string())
+DRAKE_FORMATTER_AS(, drake::symbolic, Variable::Type, x,
+                   drake::symbolic::to_string(x))

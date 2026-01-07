@@ -1744,11 +1744,10 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
-    ostringstream oss;
-    oss << var
-        << " is not a decision variable in the mathematical program, "
-           "when calling FindDecisionVariableIndex.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(fmt::format(
+        "{} is not a decision variable in the mathematical program, "
+        "when calling FindDecisionVariableIndex.\n",
+        var));
   }
   return it->second;
 }
@@ -1765,11 +1764,10 @@ std::vector<int> MathematicalProgram::FindDecisionVariableIndices(
 size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   auto it = indeterminates_index_.find(var.get_id());
   if (it == indeterminates_index_.end()) {
-    ostringstream oss;
-    oss << var
-        << " is not an indeterminate in the mathematical program, "
-           "when calling GetSolution.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("{} is not an indeterminate in the mathematical program, "
+                    "when calling GetSolution.\n",
+                    var));
   }
   return it->second;
 }
