@@ -58,7 +58,6 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
   DRAKE_ASSERT(be.size() == plant_.num_velocities());
 
   // Get references to pre-allocated variables.
-  MatrixX<T>& N0 = scratch_.N0;
   VectorX<T>& tau_u0 = scratch_.tau_u0;
   VectorX<T>& tau_e0 = scratch_.tau_e0;
   VectorX<T>& x_tilde0 = scratch_.x_tilde0;
@@ -70,7 +69,8 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
 
   // Compute some quantities that depend on the current state, before messing
   // with the state with finite differences.
-  N0 = plant_.MakeVelocityToQDotMap(plant_context);
+  // TODO(jwnimmer-tri) Avoid the memory allocation of N0.
+  const MatrixX<T> N0 = plant_.MakeVelocityToQDotMap(plant_context);
   if (has_actuation_forces) {
     // tau_u0ᵢ is really only needed if Kuᵢ < 0.
     // TODO(amcastro-tri): Only compute if any Kuᵢ < 0.
@@ -83,13 +83,14 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
   }
 
   // Initial state.
+  // TODO(jwnimmer-tri) Avoid the memory allocation of x0.
   const int nq = plant_.num_positions();
   const int nv = plant_.num_velocities();
   const VectorX<T> x0 =
       plant_context.get_continuous_state_vector().CopyToVector();
   auto v0 = x0.segment(nq, nv);
 
-  // Semi-implicit state x̃(v) at v₀, x̃₀ = x̃(v₀) = [q₀ + h⋅N₀⋅v₀; v₀].
+  // Compute the state x̃(v) at v₀, x̃₀ = x̃(v₀) = [q₀ + h⋅N₀⋅v₀; v₀].
   x_tilde0 = x0;
   auto q_tilde0 = x_tilde0.head(nq);
   auto v_tilde0 = x_tilde0.segment(nq, nv);
@@ -109,7 +110,7 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
   auto q_prime = x_prime.head(nq);
   auto v_prime = x_prime.segment(nq, nv);
 
-  // Compute τ(v) = b - K⋅(v − v₀), using forward differences.
+  // Compute τ̃(v) = b - K⋅(v − v₀), using forward differences.
   // We do this separately for τᵤ(x) and τₑ(x), as needed by ICF.
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
   for (int i = 0; i < nv; ++i) {
@@ -141,6 +142,7 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
         bu(i) = tau_u_tilde0(i) + Ku(i) * v0(i);
       } else {
         // Explicit approximation.
+        // TODO(#23918) None of our test cases reach this case.
         Ku(i) = 0.0;
         bu(i) = tau_u0(i);
       }
@@ -179,7 +181,6 @@ IcfExternalSystemsLinearizer<T>::Scratch::Scratch(
   const int nq = plant.num_positions();
   f_ext = std::make_unique<MultibodyForces<T>>(plant);
 
-  N0.resize(nq, nv);
   tau_u0.resize(nv);
   tau_e0.resize(nv);
 

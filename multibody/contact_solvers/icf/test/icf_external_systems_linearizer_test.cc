@@ -151,7 +151,7 @@ TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
   const VectorXd& K = result.actuation_feedback->K;
   const VectorXd& b = result.actuation_feedback->b;
 
-  // Compute linearization τ = D⋅x + y around x₀ via autodiff.
+  // Compute linearization τ̃ = D⋅x + y around x₀ via autodiff.
   auto expected_linearization = FirstOrderTaylorApproximation(
       *pid_controller, pid_controller_context,
       pid_controller->get_input_port_estimated_state().get_index(),
@@ -172,7 +172,7 @@ TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
   x_tilde0.head(nq) += h * v0;
   const VectorXd tau_tilde0 = y + D * x_tilde0;
 
-  // And thus the expected linearization τ(v) = b - K⋅v is:
+  // And thus the expected linearization τ̃(v) = b - K⋅v is:
   const VectorXd K_ref = -dtau_tilde_dv.diagonal();
   const VectorXd b_ref = tau_tilde0 + K_ref.asDiagonal() * v0;
 
@@ -182,10 +182,12 @@ TEST_F(IcfExternalSystemsLinearizerTest, ActuationInput) {
   EXPECT_TRUE(CompareMatrices(b, b_ref, kTol, MatrixCompareType::relative));
 }
 
-// TODO(jwnimmer-tri) We should be sure to include an external controller where
-// the linearization changes significantly with q. That's surprisingly not very
-// common. For instance a PD controller has constant derivatives, and an inverse
-// dynamics controller only changes slowly with q.
+// TODO(#23918) We should test an external controller where qdot != v.
+
+// TODO(#23918) We should test an external controller where the linearization
+// changes significantly with q. That's surprisingly not very common. For
+// instance a PD controller has constant derivatives, and an inverse dynamics
+// controller only changes slowly with q.
 
 }  // namespace internal
 }  // namespace icf

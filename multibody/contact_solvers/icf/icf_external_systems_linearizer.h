@@ -27,34 +27,34 @@ externally applied generalized forces). For ICF, each contribution is linearized
 separately to write
   τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ; e),
   τₑ(v) ≈ -Kₑ⋅v + bₑ,
-where Kᵤ, Kₑ are positive diagonal matrices, v the multibody generalized
-velocities and e the vector of effort limits. For clarity, from now on we
+where Kᵤ, Kₑ are positive diagonal matrices, v are the multibody generalized
+velocities, and e is the vector of effort limits. For clarity, from now on we
 linearize a single term τ(x), with the understanding that we do this separately
 for both τᵤ(x) and τₑ(x).
 
 We can derive these approximations by considering the discrete momentum balance.
 Without loss of generality, we can ignore contact and other constraints to write
   M⋅(v−v₀) = h⋅k₀ + h⋅τ(q, v),
-  q = q₀ +h⋅v.
+  q = q₀ + h⋅N(q₀)⋅v.
 It is important to note that:
- 1. We evaluate actuation and external forces τ(q, v) implicitly for stability
+ 1. We evaluate actuation and external forces τ(q, v) implicitly for stability.
  2. The scheme is semi-implicit in q for better stability and energy
-    conservation properties (the update in the configurations is symplectic).
+    conservation properties.
 
 We define x̃(v) = [q₀ + h⋅v; v], and approximate the external generalized forces
-as
-  τ(v) = τ(x̃(v)) ≈  τ(x̃₀) + dτ/dv(x̃₀)⋅(v − v₀),
+as a function of generalized velocities:
+  τ̃(v) = τ(x̃(v)) ≈  τ(x̃₀) + dτ/dv(x̃₀)⋅(v − v₀),
 with x̃₀ = [q₀ + h⋅v₀; v₀].
 
-Further, we make the component-wise approximation:
-  (Implicit) τᵢ ≈  τᵢ(x̃₀) + dτᵢ/dvᵢ⋅(v − v₀), when dτᵢ/dvᵢ < 0 and,
-  (Explicit) τᵢ ≈  τᵢ(x₀), when dτᵢ/dvᵢ ≥ 0.
+Further, we define x₀=[q₀; v₀] and make the component-wise approximation:
+  (Implicit) τ̃ᵢ ≈  τᵢ(x̃₀) + dτᵢ/dvᵢ⋅(v − v₀), when dτᵢ/dvᵢ < 0 and,
+  (Explicit) τ̃ᵢ ≈  τᵢ(x₀), when dτᵢ/dvᵢ ≥ 0.
 That is, this approximation is implicit for stabilizing force terms (such as
-controllers) and explicit otherwise. Within the CENIC framework, error-control
-is able to stabilize explicit terms in the scheme when needed.
+most controllers) and explicit otherwise. Within the CENIC framework, error-
+control is able to stabilize explicit terms in the scheme when needed.
 
 In total, we write the approximations above as
-  τ(v) = b - K⋅v,
+  τ̃(v) = b - K⋅v,
 where K is the positive diagonal matrix with entries
   K = max(0, -diag(dτ/dv)),
 and bias term
@@ -77,15 +77,15 @@ class IcfExternalSystemsLinearizer {
 
   @param[in] h The time step used to advance positions during differencing,
     since the linearization is performed around x̃₀ = [q₀ + h⋅v₀; v₀].
-  @param[in,out] mutable_plant_context The plant context to linearize around,
+  @param[in] mutable_plant_context The plant context to linearize around,
     used both as input (for the current state and inputs) and to mutate during
     differencing while computing changes in generalized forces due to changes in
     state. All mutations are undone prior to returning.
   @param[out] actuation_feedback The linearization of actuation torques, valid
     on output iff the `has_actuation_forces` return value is true. Must be sized
     to `num_velocities` when passed in.
-  @param[out] actuation_feedback The linearization of external torques, valid
-    on output iff the `has_actuation_forces` return value is true. Must be sized
+  @param[out] external_feedback The linearization of external torques, valid
+    on output iff the `has_external_forces` return value is true. Must be sized
     to `num_velocities` when passed in.
   Returns a tuple [has_actuation_forces, has_external_forces] where a given
   element is true iff any input is connected for the corresponding type. */
@@ -101,9 +101,9 @@ class IcfExternalSystemsLinearizer {
     explicit Scratch(const MultibodyPlant<T>& plant);
     ~Scratch();
 
+    // TODO(jwnimmer-tri) Check if we still need this.
     std::unique_ptr<MultibodyForces<T>> f_ext;
 
-    MatrixX<T> N0;      // Kinematic map (q̇ = N v) at q₀.
     VectorX<T> tau_u0;  // Actuation τᵤ(x) = B u(x) at x₀.
     VectorX<T> tau_e0;  // External forces τₑ(x) = τ_ext(x) at x₀.
 
