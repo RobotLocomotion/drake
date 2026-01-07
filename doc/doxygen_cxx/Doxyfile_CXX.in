@@ -377,7 +377,7 @@ namespace fmt { \
 template <TEMPLATE_ARGS> \
 struct formatter<NAMESPACE##::##TYPE> {}; \
 } \
-/** \} */"
+/** \} */
 "
 # N.B. The two macros below can't be parsed like the ones above, because the
 # fully-qualified class name is always passed to the macro instead of just the
