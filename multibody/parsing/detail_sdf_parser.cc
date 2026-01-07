@@ -1919,7 +1919,7 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
 const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
-  const std::set<std::string> supported_bushing_elements{
+  const std::set<std::string> supported_elements{
       "drake:linear_spring_damper_body_A",
       "drake:linear_spring_damper_p_AP",
       "drake:linear_spring_damper_body_B",
@@ -1927,7 +1927,7 @@ const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
       "drake:linear_spring_damper_free_length",
       "drake:linear_spring_damper_stiffness",
       "drake:linear_spring_damper_damping"};
-  CheckSupportedElements(diagnostic, node, supported_bushing_elements);
+  CheckSupportedElements(diagnostic, node, supported_elements);
 
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
