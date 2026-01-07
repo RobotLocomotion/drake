@@ -47,28 +47,25 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     return {false, false};
   }
 
-  // TODO(#23918) For the moment, this class only implements actuation
-  // linearization τᵤ(v), not external forces τₑ(v).
-  if (has_external_forces) {
-    throw std::logic_error(
-        "The ICF solver does not yet support a MultibodyPlant with "
-        "applied_generalized_force or applied_spatial_force input. "
-        "Those input ports must remain disconnected. "
-        "Follow issue #23918 for updates.");
-  }
-
   // Get references to the feedback gains that we'll set as output.
   VectorX<T>& Ku = actuation_feedback->K;
   VectorX<T>& bu = actuation_feedback->b;
+  VectorX<T>& Ke = external_feedback->K;
+  VectorX<T>& be = external_feedback->b;
   DRAKE_ASSERT(Ku.size() == plant_.num_velocities());
   DRAKE_ASSERT(bu.size() == plant_.num_velocities());
+  DRAKE_ASSERT(Ke.size() == plant_.num_velocities());
+  DRAKE_ASSERT(be.size() == plant_.num_velocities());
 
   // Get references to pre-allocated variables.
   VectorX<T>& tau_u0 = scratch_.tau_u0;
+  VectorX<T>& tau_e0 = scratch_.tau_e0;
   VectorX<T>& x_tilde0 = scratch_.x_tilde0;
   VectorX<T>& tau_u_tilde0 = scratch_.tau_u_tilde0;
+  VectorX<T>& tau_e_tilde0 = scratch_.tau_e_tilde0;
   VectorX<T>& x_prime = scratch_.x_prime;
   VectorX<T>& tau_u_prime = scratch_.tau_u_prime;
+  VectorX<T>& tau_e_prime = scratch_.tau_e_prime;
 
   // Compute some quantities that depend on the current state, before messing
   // with the state with finite differences.
@@ -78,6 +75,11 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     // tau_u0ᵢ is really only needed if Kuᵢ < 0.
     // TODO(amcastro-tri): Only compute if any Kuᵢ < 0.
     CalcActuationForces(plant_context, &tau_u0);
+  }
+  if (has_external_forces) {
+    // tau_e0ᵢ is really only needed if Keᵢ < 0.
+    // TODO(amcastro-tri): Only compute if any Keᵢ < 0.
+    CalcExternalForces(plant_context, &tau_e0);
   }
 
   // Initial state.
@@ -98,6 +100,9 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
   mutable_plant_context.SetContinuousState(x_tilde0);
   if (has_actuation_forces) {
     CalcActuationForces(plant_context, &tau_u_tilde0);
+  }
+  if (has_external_forces) {
+    CalcExternalForces(plant_context, &tau_e_tilde0);
   }
 
   // Perturbed state.
@@ -143,6 +148,21 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
       }
     }
 
+    if (has_external_forces) {
+      // Same thing, but for external forces:
+      //  Ke = -dge/dv
+      CalcExternalForces(mutable_plant_context, &tau_e_prime);
+      Ke(i) = -(tau_e_prime(i) - tau_e_tilde0(i)) / dvi;
+      if (Ke(i) > 0.0) {
+        // Implicit approximation.
+        be(i) = tau_e_tilde0(i) + Ke(i) * v0(i);
+      } else {
+        // Explicit approximation.
+        Ke(i) = 0.0;
+        be(i) = tau_e0(i);
+      }
+    }
+
     // Reset the state for the next iteration.
     q_prime(i) = q_tilde0(i);
     v_prime(i) = v_tilde0(i);
@@ -159,18 +179,33 @@ IcfExternalSystemsLinearizer<T>::Scratch::Scratch(
     const MultibodyPlant<T>& plant) {
   const int nv = plant.num_velocities();
   const int nq = plant.num_positions();
+  f_ext = std::make_unique<MultibodyForces<T>>(plant);
 
   tau_u0.resize(nv);
+  tau_e0.resize(nv);
 
   x_tilde0.resize(nq + nv);
   tau_u_tilde0.resize(nv);
+  tau_e_tilde0.resize(nv);
 
   x_prime.resize(nq + nv);
   tau_u_prime.resize(nv);
+  tau_e_prime.resize(nv);
 }
 
 template <typename T>
 IcfExternalSystemsLinearizer<T>::Scratch::~Scratch() = default;
+
+template <typename T>
+void IcfExternalSystemsLinearizer<T>::CalcExternalForces(
+    const Context<T>& context, VectorX<T>* tau) const {
+  using Attorney = multibody::internal::MultibodyPlantIcfAttorney<T>;
+  MultibodyForces<T>& forces = *scratch_.f_ext;
+  forces.SetZero();
+  Attorney::AddAppliedExternalSpatialForces(plant_, context, &forces);
+  Attorney::AddAppliedExternalGeneralizedForces(plant_, context, &forces);
+  plant_.CalcGeneralizedForces(context, forces, tau);
+}
 
 template <typename T>
 void IcfExternalSystemsLinearizer<T>::CalcActuationForces(

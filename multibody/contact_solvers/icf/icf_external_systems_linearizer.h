@@ -61,10 +61,6 @@ and bias term
   bᵢ = τᵢ(x̃₀) + Kᵢ⋅v₀ᵢ, for dτᵢ/dvᵢ(x̃₀) < 0,
   bᵢ = τᵢ(x₀)         , otherwise.
 
-TODO(#23918) For the moment, this class only linearizes actuation τᵤ(v), not
-external forces τₑ(v). If the plant has external force inputs connected, we will
-throw an exception.
-
 @tparam_nonsymbolic_scalar */
 template <class T>
 class IcfExternalSystemsLinearizer {
@@ -105,14 +101,25 @@ class IcfExternalSystemsLinearizer {
     explicit Scratch(const MultibodyPlant<T>& plant);
     ~Scratch();
 
+    std::unique_ptr<MultibodyForces<T>> f_ext;
+
     VectorX<T> tau_u0;  // Actuation τᵤ(x) = B u(x) at x₀.
+    VectorX<T> tau_e0;  // External forces τₑ(x) = τ_ext(x) at x₀.
 
     VectorX<T> x_tilde0;      // Plant state x̃₀ = x̃(v₀).
     VectorX<T> tau_u_tilde0;  // Actuation at τᵤ(x̃₀) at x̃₀ = x̃(v₀).
+    VectorX<T> tau_e_tilde0;  // External forces τₑ(x̃₀) at x̃₀ = x̃(v₀).
 
     VectorX<T> x_prime;      // Perturbed plant state x′ for finite differences.
     VectorX<T> tau_u_prime;  // Perturbed actuation τᵤ(x′) = B u(x′).
+    VectorX<T> tau_e_prime;  // Perturbed external forces τₑ(x′) = τ_ext(x′).
   };
+
+  /* Computes external forces τ = τₑₓₜ(x) from the plant's spatial and
+  generalized force input ports.
+  @param[out] tau Output storage for τ. */
+  void CalcExternalForces(const systems::Context<T>& plant_context,
+                          VectorX<T>* tau) const;
 
   /* Computes actuator forces τ = B u(x) from the plant's actuation input ports
   (including the plant-wide actuation input port and any model-instance-specific
