@@ -383,7 +383,7 @@ Specifies the angle of a circular by right-hand-rule. Units are radians.
 tag_drake_ball_constraint_body_B, @ref tag_drake_ball_constraint_p_AP, and @ref
 tag_drake_ball_constraint_p_BQ
 
-@subsection tag_drake_ball_constraint_semantics Semantics
+@subsubsection tag_drake_ball_constraint_semantics Semantics
 
 The element adds a ball constraint to the model via
 drake::multibody::MultibodyPlant::AddBallConstraint().
@@ -394,7 +394,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint().
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@name`
 - Syntax: String.
 
-@subsection tag_drake_ball_constraint_body_A_semantics Semantics
+@subsubsection tag_drake_ball_constraint_body_A_semantics Semantics
 
 The string names a body (expected to already be defined by this model) that
 will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
@@ -409,7 +409,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@name`
 - Syntax: String.
 
-@subsection tag_drake_ball_constraint_body_B_semantics Semantics
+@subsubsection tag_drake_ball_constraint_body_B_semantics Semantics
 
 The string names a body (expected to already be defined by this model) that
 will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
@@ -424,7 +424,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_AP/@value`
 - Syntax: Three floating point values.
 
-@subsection tag_drake_ball_constraint_p_AP_semantics Semantics
+@subsubsection tag_drake_ball_constraint_p_AP_semantics Semantics
 
 The three floating point values (units of meters) are formed into a
 vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
@@ -439,7 +439,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
 - URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_BQ/@value`
 - Syntax: Three floating point values.
 
-@subsection tag_drake_ball_constraint_p_BQ_semantics Semantics
+@subsubsection tag_drake_ball_constraint_p_BQ_semantics Semantics
 
 The three floating point values (units of meters) are formed into a
 vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
@@ -459,7 +459,7 @@ drake::multibody::MultibodyPlant::AddBallConstraint()
   @ref tag_drake_tendon_constraint_stiffness,
   and @ref tag_drake_tendon_constraint_damping
 
-@subsection tag_drake_tendon_constraint_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_semantics Semantics
 
 The element adds a tendon constraint to the model via
 drake::multibody::MultibodyPlant::AddTendonConstraint().
@@ -471,7 +471,7 @@ drake::multibody::MultibodyPlant::AddTendonConstraint().
 - Syntax: Two attributes `name` containing a string value and `a` containing a
           floating point value.
 
-@subsection tag_drake_tendon_constraint_joint_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_joint_semantics Semantics
 
 The string names a joint (expected to already be defined by this model and be
 single-dof) and the float specifies a coefficient to be applied to the joint
@@ -488,7 +488,7 @@ drake::multibody::MultibodyPlant::AddTendonConstraint()
 - URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_offset/@value`
 - Syntax: Floating point value.
 
-@subsection tag_drake_tendon_constraint_offset_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_offset_semantics Semantics
 
 A floating point value specifying the length offset in either [m] or [rad] that
 will be passed to drake::multibody::MultibodyPlant::AddTendonConstraint() as the
@@ -503,7 +503,7 @@ drake::multibody::MultibodyPlant::AddTendonConstraint()
 - URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_lower_limit/@value`
 - Syntax: Floating point value.
 
-@subsection tag_drake_tendon_constraint_lower_limit_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_lower_limit_semantics Semantics
 
 A floating point value specifying the lower bound on the constraint in either
 [m] or [rad] that will be passed to
@@ -519,7 +519,7 @@ drake::multibody::MultibodyPlant::AddTendonConstraint()
 - URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_upper_limit/@value`
 - Syntax: Floating point value.
 
-@subsection tag_drake_tendon_constraint_upper_limit_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_upper_limit_semantics Semantics
 
 A floating point value specifying the upper bound on the constraint in either
 [m] or [rad] that will be passed to
@@ -535,7 +535,7 @@ drake::multibody::MultibodyPlant::AddTendonConstraint()
 - URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_stiffness/@value`
 - Syntax: Floating point value.
 
-@subsection tag_drake_tendon_constraint_stiffness_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_stiffness_semantics Semantics
 
 A floating point value specifying the constraint stiffness in either [N/m] or
 [N⋅m/rad] that will be passed to
@@ -551,7 +551,7 @@ drake::multibody::MultibodyPlant::AddTendonConstraint()
 - URDF path: `/robot/drake:tendon_constraint/drake:tendon_constraint_damping/@value`
 - Syntax: Floating point value.
 
-@subsection tag_drake_tendon_constraint_damping_semantics Semantics
+@subsubsection tag_drake_tendon_constraint_damping_semantics Semantics
 
 A floating point value specifying the constraint damping in either [N⋅s/m] or
 [N⋅m⋅rad/s] that will be passed to
@@ -665,7 +665,7 @@ drake::multibody::LinearBushingRollPitchYaw,
   @ref tag_drake_linear_spring_damper_stiffness,
   and @ref tag_drake_linear_spring_damper_damping
 
-@subsection tag_drake_linear_spring_damper_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_semantics Semantics
 
 The element adds a drake::multibody::LinearSpringDamper to the model.
 
@@ -675,7 +675,7 @@ The element adds a drake::multibody::LinearSpringDamper to the model.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_body_A/@name`
 - Syntax: String.
 
-@subsection tag_drake_linear_spring_damper_body_A_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_body_A_semantics Semantics
 
 The string names a body (expected to already be defined by this model) that will
 be passed to drake::multibody::LinearSpringDamper() as the `body_A` parameter.
@@ -688,7 +688,7 @@ be passed to drake::multibody::LinearSpringDamper() as the `body_A` parameter.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_p_AP/@value`
 - Syntax: Three floating point values.
 
-@subsection tag_drake_linear_spring_damper_p_AP_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_p_AP_semantics Semantics
 
 The three floating point values (units of meters) are formed into a vector and
 passed into drake::multibody::LinearSpringDamper() as the `p_AP` parameter.
@@ -701,7 +701,7 @@ passed into drake::multibody::LinearSpringDamper() as the `p_AP` parameter.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_body_B/@name`
 - Syntax: String.
 
-@subsection tag_drake_linear_spring_damper_body_B_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_body_B_semantics Semantics
 
 The string names a body (expected to already be defined by this model) that will
 be passed to drake::multibody::LinearSpringDamper() as the `body_B` parameter.
@@ -714,7 +714,7 @@ be passed to drake::multibody::LinearSpringDamper() as the `body_B` parameter.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_p_BQ/@value`
 - Syntax: Three floating point values.
 
-@subsection tag_drake_linear_spring_damper_p_BQ_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_p_BQ_semantics Semantics
 
 The three floating point values (units of meters) are formed into a vector and
 passed into drake::multibody::LinearSpringDamper() as the `p_BQ` parameter.
@@ -727,7 +727,7 @@ passed into drake::multibody::LinearSpringDamper() as the `p_BQ` parameter.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_free_length/@value`
 - Syntax: a strictly positive floating point value.
 
-@subsection tag_drake_linear_spring_damper_free_length_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_free_length_semantics Semantics
 
 The floating point value (unit of meters) is passed into
 drake::multibody::LinearSpringDamper() as the `free_length` parameter.
@@ -740,7 +740,7 @@ drake::multibody::LinearSpringDamper() as the `free_length` parameter.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_stiffness/@value`
 - Syntax: a non-negative floating point value.
 
-@subsection tag_drake_linear_spring_damper_stiffness_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_stiffness_semantics Semantics
 
 The floating point value (unit of N/m) is passed into
 drake::multibody::LinearSpringDamper() as the `stiffness` parameter.
@@ -753,7 +753,7 @@ drake::multibody::LinearSpringDamper() as the `stiffness` parameter.
 - URDF path: `/robot/drake:linear_spring_damper/drake:linear_spring_damper_damping/@value`
 - Syntax: a non-negative floating point value.
 
-@subsection tag_drake_linear_spring_damper_damping_semantics Semantics
+@subsubsection tag_drake_linear_spring_damper_damping_semantics Semantics
 
 The floating point value (unit of N⋅s/m) is passed into
 drake::multibody::LinearSpringDamper() as the `damping` parameter.
