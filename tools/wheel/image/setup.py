@@ -14,11 +14,7 @@ python_required = [
     'numpy',
     'pydot',
     'PyYAML',
-    # MOSEK's published wheels declare an upper bound on their supported Python
-    # version, which is currently Python < 3.14. When that changes to a larger
-    # version number, we should bump this up to match, and also grep tools/wheel
-    # for other mentions of MOSEK version bounds and fix those as well.
-    'Mosek==11.0.24 ; python_version < "3.14"',
+    'Mosek==11.1.2',
 ]
 
 def find_data_files(*patterns):

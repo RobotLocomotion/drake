@@ -25,18 +25,6 @@ build --config=packaging
 build --@drake//solvers:mosek_lazy_load=True
 EOF
 
-# MOSEK's published wheels declare an upper bound on their supported Python
-# version, which is currently Python < 3.14. When that changes to a larger
-# version number, we should bump this up to match, and also grep tools/wheel
-# for other mentions of MOSEK version bounds and fix those as well.
-PYTHON_MINOR=$(/usr/local/bin/python -c "import sys; print(sys.version_info.minor)")
-if [[ ${PYTHON_MINOR} -ge 14 ]]; then
-    cat >> /tmp/drake-wheel-build/drake-build/drake.bazelrc << EOF
-build --@drake//tools/flags:with_mosek=False
-build --@drake//solvers:mosek_lazy_load=False
-EOF
-fi
-
 # Install Drake using our wheel-build-specific Python interpreter.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
 cmake ../drake-src \
