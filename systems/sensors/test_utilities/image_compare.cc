@@ -23,8 +23,7 @@ template <PixelType kPixelType>
 void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
   const int width = image.width();
   const int height = image.height();
-  fmt::print((*os), "Image<k{}>(width={}, height={})", kPixelType, width,
-             height);
+  fmt::print(*os, "Image<k{}>(width={}, height={})", kPixelType, width, height);
   const int size = width * height;
   // When there are no pixels, don't bother printing the "Channel ..." titles.
   // If there are way too many pixels (more than fit on one screen), omit all

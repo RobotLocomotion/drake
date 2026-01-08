@@ -1112,7 +1112,7 @@ void Polynomial::CheckInvariant() const {
       oss << "Polynomial " << *this
           << " does not satisfy the invariant because the coefficient of the "
              "monomial "
-          << monomial << " is 0.\n";
+          << fmt::to_string(monomial) << " is 0.\n";
       throw runtime_error(oss.str());
     }
   }
@@ -1270,9 +1270,9 @@ ostream& operator<<(ostream& os, const Polynomial& p) {
     return os << 0;
   }
   auto it = map.begin();
-  os << it->second << "*" << it->first;
+  os << it->second << "*" << fmt::to_string(it->first);
   for (++it; it != map.end(); ++it) {
-    os << " + " << it->second << "*" << it->first;
+    os << " + " << it->second << "*" << fmt::to_string(it->first);
   }
   return os;
 }
