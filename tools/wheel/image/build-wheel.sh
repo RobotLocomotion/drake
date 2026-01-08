@@ -71,11 +71,13 @@ cp -r -t ${WHEEL_DIR}/pydrake \
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
     /tmp/drake-wheel-build/drake-dist/lib/libdrake*.so
 
-# See tools/wheel/image/build-drake.sh for details on the lack of MOSEK support
-# for Python 3.14.
+# MOSEK's published wheels declare an upper bound on their supported Python
+# version, which is currently Python < 3.15. When that changes to a larger
+# version number, we should bump this up to match, and also grep tools/wheel
+# for other mentions of MOSEK version bounds and fix those as well.
 PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
 MOSEK_ENABLED=1
-[ ${PYTHON_MINOR} -ge 14 ] && MOSEK_ENABLED=
+[ ${PYTHON_MINOR} -ge 15 ] && MOSEK_ENABLED=
 
 if [[ "$(uname)" == "Darwin" && -n "${MOSEK_ENABLED}" ]]; then
     # MOSEK is "sort of" third party, but is procured as part of Drake's build
