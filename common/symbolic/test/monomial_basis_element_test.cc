@@ -248,9 +248,9 @@ TEST_F(MonomialBasisElementTest, MonomialWithZeroExponent) {
   MonomialBasisElement m2({{var_x_, 0}, {var_y_, 2}});
   EXPECT_EQ(m1, m2);
   EXPECT_EQ(m2.var_to_degree_map().size(), 1);
-  std::map<Variable, int> power_expected;
-  power_expected.emplace(var_y_, 2);
-  EXPECT_EQ(m2.var_to_degree_map(), power_expected);
+  const auto& [base, exp] = *m2.get_powers().begin();
+  EXPECT_EQ(base, var_y_);
+  EXPECT_EQ(exp, 2);
 }
 
 // This test shows that we can have a std::unordered_map whose key is of

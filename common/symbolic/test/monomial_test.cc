@@ -222,10 +222,10 @@ TEST_F(MonomialTest, MonomialWithZeroExponent) {
   Monomial m1({{var_y_, 2}});
   Monomial m2({{var_x_, 0}, {var_y_, 2}});
   EXPECT_EQ(m1, m2);
-  EXPECT_EQ(m2.get_powers().size(), 1);
-  std::map<Variable, int> power_expected;
-  power_expected.emplace(var_y_, 2);
-  EXPECT_EQ(m2.get_powers(), power_expected);
+  ASSERT_EQ(m2.get_powers().size(), 1);
+  const auto& [base, exp] = *m2.get_powers().begin();
+  EXPECT_EQ(base, var_y_);
+  EXPECT_EQ(exp, 2);
 }
 
 TEST_F(MonomialTest, MonomialBasisX0) {
