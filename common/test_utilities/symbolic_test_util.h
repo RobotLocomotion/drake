@@ -22,6 +22,7 @@
 /// ASSERT_PRED2(ExprEqual, e1, e2);
 /// @endcode
 #include <algorithm>
+#include <map>
 #include <tuple>
 #include <vector>
 
@@ -74,6 +75,16 @@ namespace test {
 [[nodiscard]] inline bool ExprNotLess(const Expression& e1,
                                       const Expression& e2) {
   return !ExprLess(e1, e2);
+}
+
+[[nodiscard]] inline bool ExprToDoubleMapEqual(
+    const std::map<drake::symbolic::Expression, double>& m1,
+    const std::map<drake::symbolic::Expression, double>& m2) {
+  return std::equal(m1.begin(), m1.end(), m2.begin(), m2.end(),
+                    [](const auto& pair1, const auto& pair2) {
+                      return ExprEqual(pair1.first, pair2.first) &&
+                             (pair1.second == pair2.second);
+                    });
 }
 
 template <typename BasisElement>
@@ -190,6 +201,16 @@ template <typename F>
   }
   return ::testing::AssertionSuccess();
 }
+
+[[nodiscard]] inline bool PolynomialMapTypeEqual(
+    const Polynomial::MapType& m1, const Polynomial::MapType& m2) {
+  return std::equal(m1.begin(), m1.end(), m2.begin(), m2.end(),
+                    [](const auto& pair1, const auto& pair2) {
+                      return (pair1.first == pair2.first) &&
+                             ExprEqual(pair1.second, pair2.second);
+                    });
+}
+
 }  // namespace test
 }  // namespace symbolic
 }  // namespace drake
