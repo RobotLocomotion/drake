@@ -1,7 +1,5 @@
 #include "drake/solvers/scs_clarabel_common.h"
 
-#include "drake/common/ssize.h"
-
 namespace drake {
 namespace solvers {
 namespace internal {

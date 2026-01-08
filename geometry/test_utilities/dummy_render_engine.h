@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 
