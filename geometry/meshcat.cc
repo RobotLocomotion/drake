@@ -29,7 +29,6 @@
 #include "drake/common/network_policy.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/meshcat_file_storage_internal.h"
 #include "drake/geometry/meshcat_internal.h"

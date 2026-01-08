@@ -6,8 +6,6 @@
 
 #include <optional>
 
-#include "drake/common/ssize.h"
-
 namespace drake {
 namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.

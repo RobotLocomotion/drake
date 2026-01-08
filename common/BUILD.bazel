@@ -111,10 +111,11 @@ drake_cc_library(
         "drake_throw.h",
         "eigen_types.h",
         "never_destroyed.h",
-        "ssize.h",
         "text_logging.h",
         # Remove with deprecation on 2026-03-01.
         "text_logging_spdlog.h",
+        # Remove with deprecation on 2026-09-01.
+        "ssize.h",
     ],
     deps = [
         ":fmt",
@@ -809,13 +810,6 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ssize_test",
-    deps = [
-        ":essential",
     ],
 )
 

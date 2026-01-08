@@ -18,7 +18,6 @@
 #include <libqhullcpp/QhullFacetList.h>
 
 #include "drake/common/overloaded.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/vpolytope.h"
