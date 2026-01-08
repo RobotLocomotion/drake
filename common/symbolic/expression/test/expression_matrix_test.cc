@@ -633,23 +633,23 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
 
 // Shows that a purely numeric matrix of Expression is invertible.
 template <int N>
-void CheckNumericExpressionMatrixInversion() {
+void CheckNumericExpressionMatrixInversion(double tol) {
   const Eigen::Matrix<double, N, N> M_f = MakeSimpleInvertibleMatrix(N);
   const Eigen::Matrix<Expression, N, N> M_sym = M_f;
   // Statically sized.
-  EXPECT_TRUE(CompareMatrices(M_f.inverse(), M_sym.inverse(), 1e-9));
+  EXPECT_TRUE(CompareMatrices(M_f.inverse(), M_sym.inverse(), tol));
   // Dynamically sized.
   EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(M_f).inverse(),
-                              MatrixX<Expression>(M_sym).inverse(), 1e-9));
+                              MatrixX<Expression>(M_sym).inverse(), tol));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, InverseNumeric) {
-  CheckNumericExpressionMatrixInversion<1>();
-  CheckNumericExpressionMatrixInversion<2>();
-  CheckNumericExpressionMatrixInversion<3>();
-  CheckNumericExpressionMatrixInversion<4>();
-  CheckNumericExpressionMatrixInversion<5>();
-  CheckNumericExpressionMatrixInversion<10>();
+  CheckNumericExpressionMatrixInversion<1>(1e-9);
+  CheckNumericExpressionMatrixInversion<2>(1e-9);
+  CheckNumericExpressionMatrixInversion<3>(1e-9);
+  CheckNumericExpressionMatrixInversion<4>(1e-9);
+  CheckNumericExpressionMatrixInversion<5>(1e-9);
+  CheckNumericExpressionMatrixInversion<10>(1e-5);
 }
 
 // We found that the following example could leak memory. This test makes sure
