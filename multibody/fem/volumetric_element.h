@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -18,7 +19,7 @@ namespace internal {
  FemElement for the requirement. We define it here instead of nesting it in the
  traits class below due to #17109. */
 template <typename ConstitutiveModelType, int num_dofs,
-          int num_quadrature_points>
+          int num_quadrature_points, int num_external_force_quadrature_points>
 struct VolumetricElementData {
   using T = typename ConstitutiveModelType::T;
   /* The states evaluated at nodes of the element. */
@@ -50,35 +51,49 @@ struct VolumetricElementData {
   Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix;
   /* The tangent matrix matrix = w0*K + w1*D + w2*D. */
   Eigen::Matrix<T, num_dofs, num_dofs> tangent_matrix;
+  /* Quadrature positions to integrate external force fields. */
+  std::array<Vector<T, 3>, num_external_force_quadrature_points>
+      force_quadrature_positions;
+  /* Determinant of the deformation gradient evaluated at each quadrature point
+     for external force integration. */
+  std::array<T, num_external_force_quadrature_points> force_quadrature_F_det;
 };
 
 /* Forward declaration needed for defining the traits below. */
 template <class IsoparametricElementType, class QuadratureType,
-          class ConstitutiveModelType>
+          class ConstitutiveModelType,
+          class SubdIsoparametricElementType = IsoparametricElementType,
+          class SubdQuadratureType = QuadratureType>
 class VolumetricElement;
 
 /* The traits class for volumetric elasticity FEM element. */
 template <class IsoparametricElementType, class QuadratureType,
-          class ConstitutiveModelType>
+          class ConstitutiveModelType, class SubdIsoparametricElementType,
+          class SubdQuadratureType>
 struct FemElementTraits<VolumetricElement<
-    IsoparametricElementType, QuadratureType, ConstitutiveModelType>> {
+    IsoparametricElementType, QuadratureType, ConstitutiveModelType,
+    SubdIsoparametricElementType, SubdQuadratureType>> {
   /* Check that template parameters are of the correct types. */
   static_assert(
-      is_isoparametric_element<IsoparametricElementType>::value,
-      "The IsoparametricElementType template parameter must be a derived "
-      "class of IsoparametricElement");
+      is_isoparametric_element<IsoparametricElementType>::value &&
+          is_isoparametric_element<SubdIsoparametricElementType>::value,
+      "The IsoparametricElementType/SubdIsoparametricElementType template "
+      "parameter must be a derived class of IsoparametricElement");
   static_assert(
-      is_quadrature<QuadratureType>::value,
-      "The QuadratureType template parameter must be a derived class of "
-      "Quadrature<T, natural_dimension, num_quadrature_points>, where "
-      "`natural_dimension` can be 1, 2 or 3.");
+      is_quadrature<QuadratureType>::value &&
+          is_quadrature<SubdQuadratureType>::value,
+      "The QuadratureType/SubdQuadratureType template parameter must be a "
+      "derived class of Quadrature<T, natural_dimension, "
+      "num_quadrature_points>, where `natural_dimension` can be 1, 2 or 3.");
   static_assert(
       is_constitutive_model<ConstitutiveModelType>::value,
       "The ConstitutiveModelType template parameter must be a derived "
       "class of ConstitutiveModel");
   /* Check that the scalar types are compatible. */
   static_assert(std::is_same_v<typename IsoparametricElementType::T,
-                               typename ConstitutiveModelType::T>,
+                               typename ConstitutiveModelType::T> &&
+                    std::is_same_v<typename SubdIsoparametricElementType::T,
+                                   typename ConstitutiveModelType::T>,
                 "The scalar type of the isoparametric element and the "
                 "constitutive model must be the same.");
   /* Check that the number of quadrature points are compatible. */
@@ -101,6 +116,16 @@ struct FemElementTraits<VolumetricElement<
                 "The natural dimension of the isoparametric element must be 3 "
                 "for volumetric FEM elements. Codimensional objects are not "
                 "yet supported.");
+  /* Check consistency of isoparametric element/quadrature with subd
+   * counterparts */
+  static_assert(IsoparametricElementType::natural_dimension ==
+                    SubdIsoparametricElementType::natural_dimension,
+                "The natural dimension of the subd isoparametric element must "
+                "match that of the isoparametric element.");
+  static_assert(IsoparametricElementType::spatial_dimension ==
+                    SubdIsoparametricElementType::spatial_dimension,
+                "The spatial dimension of the subd isoparametric element must "
+                "match that of the isoparametric element.");
 
   using T = typename ConstitutiveModelType::T;
   using ConstitutiveModel = ConstitutiveModelType;
@@ -108,14 +133,17 @@ struct FemElementTraits<VolumetricElement<
   static constexpr int num_nodes = IsoparametricElementType::num_nodes;
   static constexpr int num_quadrature_points =
       QuadratureType::num_quadrature_points;
+  static constexpr int num_subd_quadrature_points =
+      SubdQuadratureType::num_quadrature_points;
   static constexpr int natural_dimension = QuadratureType::natural_dimension;
   /* The number of degrees of freedom is equal to the spatial dimension (which
    gives the number of degrees of freedom for a single node) times the number of
    nodes. */
   static constexpr int num_dofs = 3 * num_nodes;
 
-  using Data = VolumetricElementData<ConstitutiveModelType, num_dofs,
-                                     num_quadrature_points>;
+  using Data =
+      VolumetricElementData<ConstitutiveModelType, num_dofs,
+                            num_quadrature_points, num_subd_quadrature_points>;
 };
 
 /* This class models a single 3D elasticity FEM element in which the
@@ -130,19 +158,32 @@ struct FemElementTraits<VolumetricElement<
                          Quadrature.
  @tparam ConstitutiveModelType  The type of constitutive model used in this
                                 VolumetricElement. ConstitutiveModelType must be
-                                derived from ConstitutiveModel. */
+                                derived from ConstitutiveModel.
+ @tparam SubdIsoparametricElementType Like IsoparametricElementType, but used
+                                      for the subdivided element. By default,
+                                      equal to IsoparametricElementType.
+ @tparam SubdQuadratureType Like QuadratureType, but used for the subdivided
+                            element. Subdivision is enabled if this type is not
+                            the same as QuadratureType. By default, equal to
+                            QuadratureType. */
 template <class IsoparametricElementType, class QuadratureType,
-          class ConstitutiveModelType>
+          class ConstitutiveModelType, class SubdIsoparametricElementType,
+          class SubdQuadratureType>
 class VolumetricElement
     : public FemElement<VolumetricElement<
-          IsoparametricElementType, QuadratureType, ConstitutiveModelType>> {
+          IsoparametricElementType, QuadratureType, ConstitutiveModelType,
+          SubdIsoparametricElementType, SubdQuadratureType>> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumetricElement);
 
-  using ElementType = VolumetricElement<IsoparametricElementType,
-                                        QuadratureType, ConstitutiveModelType>;
+  using ElementType =
+      VolumetricElement<IsoparametricElementType, QuadratureType,
+                        ConstitutiveModelType, SubdIsoparametricElementType,
+                        SubdQuadratureType>;
   using IsoparametricElement = IsoparametricElementType;
   using Quadrature = QuadratureType;
+  using SubdIsoparametricElement = SubdIsoparametricElementType;
+  using SubdQuadrature = SubdQuadratureType;
 
   using Traits = FemElementTraits<ElementType>;
   using Data = typename Traits::Data;
@@ -150,8 +191,11 @@ class VolumetricElement
   static constexpr int natural_dimension = Traits::natural_dimension;
   static constexpr int kSpatialDimension = 3;
   static constexpr int num_quadrature_points = Traits::num_quadrature_points;
+  static constexpr int num_subd_quadrature_points =
+      Traits::num_subd_quadrature_points;
   static constexpr int num_dofs = Traits::num_dofs;
   static constexpr int num_nodes = Traits::num_nodes;
+  static constexpr bool use_subd = !std::is_same_v<SubdQuadrature, Quadrature>;
 
   /* Constructs a new VolumetricElement. In that process, precomputes the mass
    matrix and the gravity force acting on the element.
@@ -214,6 +258,37 @@ class VolumetricElement
     this->set_mass(density_ * total_volume);
 
     mass_matrix_ = PrecomputeMassMatrix();
+
+    if constexpr (use_subd) {
+      // TODO(xuchenhan-tri): The following code block is duplicated in the
+      // previous block. Consider refactoring.
+      subd_quadrature_ = SubdQuadrature{};
+      subd_isoparametric_element_ =
+          SubdIsoparametricElement(subd_quadrature_.value().get_points());
+      /* Computes the Jacobian of the change of variable function X(ξ) at subd
+       quadrature locations. */
+      const std::array<Eigen::Matrix<T, 3, natural_dimension>,
+                       num_subd_quadrature_points>
+          subd_dXdxi = subd_isoparametric_element_.value().CalcJacobian(
+              reference_positions);
+      subd_dxidX_ =
+          subd_isoparametric_element_.value().CalcJacobianPseudoinverse(
+              subd_dXdxi);
+      /* Record the quadrature point volume in reference configuration for each
+       quadrature location. */
+      std::array<T, num_subd_quadrature_points> subd_reference_volume;
+      for (int q = 0; q < num_subd_quadrature_points; ++q) {
+        /* The scale to transform quadrature weight in parent coordinates to
+         reference coordinates. */
+        T volume_scale;
+        volume_scale = subd_dXdxi[q].determinant();
+        /* Degenerate element in the initial configuration is not allowed. */
+        DRAKE_DEMAND(volume_scale > 0);
+        subd_reference_volume[q] =
+            volume_scale * subd_quadrature_.value().get_weight(q);
+      }
+      subd_reference_volume_ = std::move(subd_reference_volume);
+    }
   }
 
   /* Calculates the elastic potential energy (in joules) stored in this element.
@@ -475,10 +550,11 @@ class VolumetricElement
         isoparametric_element_.template InterpolateNodalValues<3>(
             element_v_reshaped);
 
-    std::array<Matrix3<T>, num_quadrature_points> F =
-        CalcDeformationGradient(data.element_q);
-    std::array<Matrix3<T>, num_quadrature_points> F0 =
-        CalcDeformationGradient(data.element_q0);
+    const std::array<Matrix3<T>, num_quadrature_points> F =
+        CalcDeformationGradient(data.element_q, isoparametric_element_, dxidX_);
+    const std::array<Matrix3<T>, num_quadrature_points> F0 =
+        CalcDeformationGradient(data.element_q0, isoparametric_element_,
+                                dxidX_);
 
     for (int q = 0; q < num_quadrature_points; ++q) {
       data.deformation_gradient_data[q].UpdateData(F[q], F0[q]);
@@ -489,6 +565,26 @@ class VolumetricElement
       this->constitutive_model().CalcFilteredHessian(
           data.deformation_gradient_data[q], &(data.dPdF[q]));
     }
+    if constexpr (use_subd) {
+      data.force_quadrature_positions =
+          subd_isoparametric_element_.value()
+              .template InterpolateNodalValues<3>(element_q_reshaped);
+      const std::array<Matrix3<T>, num_subd_quadrature_points> subd_F =
+          CalcDeformationGradient(data.element_q,
+                                  subd_isoparametric_element_.value(),
+                                  subd_dxidX_.value());
+      for (int q = 0; q < num_subd_quadrature_points; ++q) {
+        data.force_quadrature_F_det[q] = subd_F[q].determinant();
+      }
+    } else {
+      data.force_quadrature_positions =
+          isoparametric_element_.template InterpolateNodalValues<3>(
+              element_q_reshaped);
+      for (int q = 0; q < num_quadrature_points; ++q) {
+        data.force_quadrature_F_det[q] = F[q].determinant();
+      }
+    }
+
     data.stiffness_matrix.setZero();
     AddScaledElasticForceDerivative(data.dPdF, -1.0, &data.stiffness_matrix);
     data.damping_matrix =
@@ -504,13 +600,12 @@ class VolumetricElement
                                  const FemPlantData<T>& plant_data,
                                  const T& scale,
                                  EigenPtr<Vector<T, num_dofs>> result) const {
-    const std::array<Vector<T, 3>, num_quadrature_points>&
-        quadrature_positions = data.quadrature_positions;
-    const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
-        isoparametric_element_.GetShapeFunctions();
-    for (int q = 0; q < num_quadrature_points; ++q) {
-      const Matrix3<T>& deformation_gradient =
-          data.deformation_gradient_data[q].deformation_gradient();
+    const auto& quadrature_positions = data.force_quadrature_positions;
+    const int num_quads = quadrature_positions.size();
+    for (int q = 0; q < num_quads; ++q) {
+      const T& reference_volume =
+          use_subd ? subd_reference_volume_.value()[q] : reference_volume_[q];
+      const T& det = data.force_quadrature_F_det[q];
       Vector3<T> scaled_force = Vector3<T>::Zero();
       for (const multibody::ForceDensityFieldBase<T>* force_density :
            plant_data.force_density_fields) {
@@ -519,14 +614,21 @@ class VolumetricElement
             force_density->density_type() ==
                     multibody::ForceDensityType::kPerReferenceVolume
                 ? 1.0
-                : deformation_gradient.determinant();
+                : det;
         scaled_force += scale *
                         force_density->EvaluateAt(plant_data.plant_context,
                                                   quadrature_positions[q]) *
-                        reference_volume_[q] * change_of_volume;
+                        reference_volume * change_of_volume;
       }
       for (int n = 0; n < num_nodes; ++n) {
-        result->template segment<3>(3 * n) += scaled_force * S[q](n);
+        if (use_subd) {
+          const auto& S =
+              subd_isoparametric_element_.value().GetShapeFunctions();
+          result->template segment<3>(3 * n) += scaled_force * S[q](n);
+        } else {
+          const auto& S = isoparametric_element_.GetShapeFunctions();
+          result->template segment<3>(3 * n) += scaled_force * S[q](n);
+        }
       }
     }
   }
@@ -537,15 +639,32 @@ class VolumetricElement
    vector. */
   std::array<Matrix3<T>, num_quadrature_points> CalcDeformationGradient(
       const Eigen::Ref<const VectorX<T>>& element_q) const {
-    std::array<Matrix3<T>, num_quadrature_points> F;
+    return CalcDeformationGradient(element_q, isoparametric_element_, dxidX_);
+  }
+
+  /* Calculates the deformation gradient at all quadrature points in this
+   element.
+   @param[in] element_q  The positions of the nodes of the element in a flat
+   vector. */
+  template <class IsoparametricElement>
+  std::array<Matrix3<T>, IsoparametricElement::num_sample_locations>
+  CalcDeformationGradient(
+      const Eigen::Ref<const VectorX<T>>& element_q,
+      const IsoparametricElement& element,
+      const std::array<Eigen::Matrix<T, natural_dimension, 3>,
+                       IsoparametricElement::num_sample_locations>& dxidX)
+      const {
+    constexpr int num_sample_locations =
+        IsoparametricElement::num_sample_locations;
+    std::array<Matrix3<T>, num_sample_locations> F;
     const auto& element_q_reshaped =
         Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(element_q.data(), 3,
                                                          num_nodes);
-    const std::array<typename IsoparametricElementType::JacobianMatrix,
-                     num_quadrature_points>
-        dxdxi = isoparametric_element_.CalcJacobian(element_q_reshaped);
-    for (int quad = 0; quad < num_quadrature_points; ++quad) {
-      F[quad] = dxdxi[quad] * dxidX_[quad];
+    const std::array<typename IsoparametricElement::JacobianMatrix,
+                     num_sample_locations>
+        dxdxi = element.CalcJacobian(element_q_reshaped);
+    for (int quad = 0; quad < num_sample_locations; ++quad) {
+      F[quad] = dxdxi[quad] * dxidX[quad];
     }
     return F;
   }
@@ -620,6 +739,17 @@ class VolumetricElement
   T density_;
   /* Precomputed mass matrix. */
   Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix_;
+
+  /* Optional data member mirror their non-subd counterparts. These have values
+   when `use_subd` flag is on, and stores data associated with the subd
+   quadrature points used to integrate external forces more precisely. */
+  std::optional<SubdQuadratureType> subd_quadrature_;
+  std::optional<SubdIsoparametricElementType> subd_isoparametric_element_;
+  std::optional<std::array<Eigen::Matrix<T, natural_dimension, 3>,
+                           num_subd_quadrature_points>>
+      subd_dxidX_;
+  std::optional<std::array<T, num_subd_quadrature_points>>
+      subd_reference_volume_;
 };
 
 }  // namespace internal
