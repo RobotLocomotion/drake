@@ -123,6 +123,13 @@ class LimitConstraintsPool {
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
 
+  /* Testing only access. */
+  const std::vector<int>& clique() const { return clique_; }
+  const std::vector<int>& constraint_size() const { return constraint_size_; }
+  const EigenPool<VectorX<T>>& ql() const { return ql_; }
+  const EigenPool<VectorX<T>>& qu() const { return qu_; }
+  const EigenPool<VectorX<T>>& q0() const { return q0_; }
+
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit
   constraint.
