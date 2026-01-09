@@ -66,7 +66,9 @@ apt-get install ${maybe_yes} --no-install-recommends lsb-release
 
 codename=$(lsb_release -sc)
 
-if ! [[ "${codename}" =~ (jammy|noble) ]]; then
+if [[ "${codename}" =~ (resolute) ]]; then
+  echo 'WARNING: This script is unsupported on Ubuntu 26.04 (Resolute)' >&2
+elif ! [[ "${codename}" =~ (jammy|noble) ]]; then
   echo 'ERROR: This script requires Ubuntu 22.04 (Jammy) or 24.04 (Noble)' >&2
   exit 2
 fi

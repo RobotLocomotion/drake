@@ -3,12 +3,12 @@ libblas-dev
 libegl1
 libeigen3-dev
 libgfortran5
-libglib2.0-0
+libglib2.0-0t64
 libglx0
 libgomp1
 liblapack3
 libopengl0
-libpython3.12
+libpython3.13
 libspdlog-dev
 libx11-6
 ocl-icd-libopencl1
