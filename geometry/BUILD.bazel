@@ -628,6 +628,7 @@ drake_cc_binary(
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
         ":environment_maps",
+        ":test_stl_files",
         "//examples/kuka_iiwa_arm:models",
         "//examples/scene_graph:models",
         "//geometry/render:test_models",
