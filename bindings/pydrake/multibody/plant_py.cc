@@ -348,6 +348,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("AddWeldConstraint", &Class::AddWeldConstraint, py::arg("body_A"),
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
             py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc)
+        .def("AddTendonConstraint", &Class::AddTendonConstraint,
+            py::arg("joints"), py::arg("a"), py::arg("offset") = std::nullopt,
+            py::arg("lower_limit") = std::nullopt,
+            py::arg("upper_limit") = std::nullopt,
+            py::arg("stiffness") = std::nullopt,
+            py::arg("damping") = std::nullopt, py_rvp::reference_internal,
+            cls_doc.AddTendonConstraint.doc)
         .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
             cls_doc.RemoveConstraint.doc);
     // Mathy bits
