@@ -4961,7 +4961,7 @@ Lorentz cone. When solving the optimization problem using conic
 solvers (like Mosek, Gurobi, SCS, etc), it is numerically preferable
 to impose the convex quadratic constraint as rotated Lorentz cone
 constraint. See
-https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
 
 Raises:
     exception if this quadratic constraint is not convex (Q is not
@@ -4992,7 +4992,7 @@ R"""(Adds quadratic constraint lb ≤ .5 xᵀQx + bᵀx ≤ ub Notice that if yo
 quadratic constraint is convex, and you intend to solve the problem
 with a convex solver (like Mosek), then it is better to reformulate it
 with a second order cone constraint. See
-https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
 for an explanation.
 
 Parameter ``vars``:
@@ -5014,7 +5014,7 @@ a quadratic expression. Notice that if your quadratic constraint is
 convex, and you intend to solve the problem with a convex solver (like
 Mosek), then it is better to reformulate it with a second order cone
 constraint. See
-https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
 for an explanation.)""";
         } AddQuadraticConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticCost
@@ -6727,7 +6727,7 @@ solver such as SCS, MOSEK™, CSDP, etc, the dual solution to the
 (rotated) Lorentz cone constraint doesn't have the "shadow price"
 interpretation, but should lie in the dual cone, and satisfy the KKT
 condition. For more information, refer to
-https://docs.mosek.com/11.0/capi/prob-def-conic.html#duality-for-conic-optimization
+https://docs.mosek.com/11.1/capi/prob-def-conic.html#duality-for-conic-optimization
 as an explanation.
 
 The interpretation for the dual variable to conic constraint x ∈ K can
@@ -8538,20 +8538,20 @@ Note:
     subsequent iterations.) If the specified integer solution is
     infeasible or incomplete, MOSEK™ will simply ignore it. For more
     details, check
-    https://docs.mosek.com/11.0/capi/tutorial-mio-shared.html?highlight=initial
+    https://docs.mosek.com/11.1/capi/tutorial-mio-shared.html?highlight=initial
 
 MOSEK™ supports many solver parameters. You can refer to the full list
 of parameters in
-https://docs.mosek.com/11.0/capi/param-groups.html#doc-param-groups.
+https://docs.mosek.com/11.1/capi/param-groups.html#doc-param-groups.
 On top of these parameters, we also provide the following additional
 parameters
 
 - "writedata"
    set to a file name so that MOSEK™ solver will write the
    optimization model to this file. check
-   https://docs.mosek.com/11.0/capi/solver-io.html#saving-a-problem-to-a-file
+   https://docs.mosek.com/11.1/capi/solver-io.html#saving-a-problem-to-a-file
    for more details. The supported file extensions are listed in
-   https://docs.mosek.com/11.0/capi/supported-file-formats.html#doc-shared-file-formats.
+   https://docs.mosek.com/11.1/capi/supported-file-formats.html#doc-shared-file-formats.
    Set this parameter to "" if you don't want to write to a file. Default is
    not to write to a file.)""";
         // Symbol: drake::solvers::MosekSolver::AcquireLicense
@@ -8627,14 +8627,14 @@ obtain the details.)""";
           const char* doc =
 R"""(The MOSEK™ optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME
 in
-https://docs.mosek.com/11.0/capi/constants.html?highlight=msk_dinf_optimizer_time)""";
+https://docs.mosek.com/11.1/capi/constants.html?highlight=msk_dinf_optimizer_time)""";
         } optimizer_time;
         // Symbol: drake::solvers::MosekSolverDetails::rescode
         struct /* rescode */ {
           // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The response code returned from MOSEK™ solver. Check
-https://docs.mosek.com/11.0/capi/response-codes.html for the meaning
+https://docs.mosek.com/11.1/capi/response-codes.html for the meaning
 on the response code.)""";
         } rescode;
         // Symbol: drake::solvers::MosekSolverDetails::solution_status
@@ -8642,8 +8642,8 @@ on the response code.)""";
           // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The solution status after solving the problem. Check
-https://docs.mosek.com/11.0/capi/accessing-solution.html and
-https://docs.mosek.com/11.0/capi/constants.html#mosek.solsta for the
+https://docs.mosek.com/11.1/capi/accessing-solution.html and
+https://docs.mosek.com/11.1/capi/constants.html#mosek.solsta for the
 meaning on the solution status.)""";
         } solution_status;
       } MosekSolverDetails;
@@ -10609,7 +10609,7 @@ SCS code on github master might be more up-to-date than the version
 used in Drake.
 
 "MOSEK™" -- Parameter name and values as specified in Mosek Reference
-https://docs.mosek.com/11.0/capi/parameters.html
+https://docs.mosek.com/11.1/capi/parameters.html
 
 "OSQP" -- Parameter name and values as specified in OSQP Reference
 https://osqp.org/docs/interfaces/solver_settings.html#solver-settings

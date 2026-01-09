@@ -193,7 +193,7 @@ bazel build //tools/lint:buildifier
 The Drake Bazel build currently supports the following proprietary solvers:
 
 * Gurobi 12.0
-* MOSEK™ 10.0
+* MOSEK™ 11.1
 * SNOPT 7.4
 
 ## Gurobi 12.0

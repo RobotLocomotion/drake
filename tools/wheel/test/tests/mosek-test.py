@@ -11,10 +11,10 @@ solver = MosekSolver()
 assert solver.enabled()
 
 # MOSEK's published wheels declare an upper bound on their supported Python
-# version, which is currently Python < 3.14. When that changes to a larger
+# version, which is currently Python < 3.15. When that changes to a larger
 # version number, we should bump this up to match, and also grep tools/wheel
 # for other mentions of MOSEK version bounds and fix those as well.
-if sys.version_info[:2] < (3, 14):
+if sys.version_info[:2] < (3, 15):
     assert solver.available()
 else:
     assert not solver.available()
