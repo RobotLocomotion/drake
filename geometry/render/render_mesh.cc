@@ -14,7 +14,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/overloaded.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {

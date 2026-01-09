@@ -14,7 +14,6 @@
 #include "drake/common/overloaded.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
-#include "drake/common/ssize.h"
 #include "drake/common/string_map.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"

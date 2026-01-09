@@ -2,8 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/ssize.h"
-
 namespace drake {
 namespace geometry {
 namespace internal {

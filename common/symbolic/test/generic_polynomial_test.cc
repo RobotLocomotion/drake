@@ -22,6 +22,17 @@ using std::vector;
 using test::ExprEqual;
 using test::GenericPolyEqual;
 
+template <typename BasisElement>
+[[nodiscard]] bool GenericPolynomialMapTypeEqual(
+    const typename GenericPolynomial<BasisElement>::MapType& m1,
+    const typename GenericPolynomial<BasisElement>::MapType& m2) {
+  return std::equal(m1.begin(), m1.end(), m2.begin(), m2.end(),
+                    [](const auto& pair1, const auto& pair2) {
+                      return (pair1.first == pair2.first) &&
+                             ExprEqual(pair1.second, pair2.second);
+                    });
+}
+
 class SymbolicGenericPolynomialTest : public ::testing::Test {
  protected:
   const Variable var_x_{"x"};
@@ -108,7 +119,8 @@ TEST_F(SymbolicGenericPolynomialTest, ConstructFromMapType1) {
   map1.emplace(ChebyshevBasisElement{var_y_, 3}, 4.0 * b_);  // T₃(y) → 4b
   // p=−2aT₁(x)+4bT₃(y)
   const GenericPolynomial<ChebyshevBasisElement> p1(map1);
-  EXPECT_EQ(p1.basis_element_to_coefficient_map(), map1);
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<ChebyshevBasisElement>,
+               p1.basis_element_to_coefficient_map(), map1);
   EXPECT_EQ(p1.decision_variables(), Variables({var_a_, var_b_}));
   EXPECT_EQ(p1.indeterminates(), Variables({var_x_, var_y_}));
 }
@@ -335,40 +347,44 @@ TEST_F(SymbolicGenericPolynomialTest,
 TEST_F(SymbolicGenericPolynomialTest,
        ConstructorFromExpressionAndIndeterminates1) {
   const GenericPolynomial<MonomialBasisElement> p1{1.0, var_xyz_};  // p₁ = 1.0,
-  EXPECT_EQ(p1.basis_element_to_coefficient_map(),
-            GenericPolynomial<MonomialBasisElement>::MapType(
-                {{MonomialBasisElement{}, Expression(1.0)}}));
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+               p1.basis_element_to_coefficient_map(),
+               GenericPolynomial<MonomialBasisElement>::MapType(
+                   {{MonomialBasisElement{}, Expression(1.0)}}));
   // p₂ = ax + by + cz + 10
   const GenericPolynomial<MonomialBasisElement> p2{
       a_ * x_ + b_ * y_ + c_ * z_ + 10, var_xyz_};
-  EXPECT_EQ(p2.basis_element_to_coefficient_map(),
-            GenericPolynomial<MonomialBasisElement>::MapType(
-                {{MonomialBasisElement{var_x_}, a_},
-                 {MonomialBasisElement{var_y_}, b_},
-                 {MonomialBasisElement{var_z_}, c_},
-                 {MonomialBasisElement{}, 10}}));
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+               p2.basis_element_to_coefficient_map(),
+               GenericPolynomial<MonomialBasisElement>::MapType(
+                   {{MonomialBasisElement{var_x_}, a_},
+                    {MonomialBasisElement{var_y_}, b_},
+                    {MonomialBasisElement{var_z_}, c_},
+                    {MonomialBasisElement{}, 10}}));
   // p₃ = 3ab²*x²y -bc*z³ + b²
   const GenericPolynomial<MonomialBasisElement> p3{
       3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(z_, 3) + pow(b_, 2),
       var_xyz_};
-  EXPECT_EQ(p3.basis_element_to_coefficient_map(),
-            GenericPolynomial<MonomialBasisElement>::MapType(
-                // x²y ↦ 3ab²
-                {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
-                  3 * a_ * pow(b_, 2)},
-                 // z³ ↦ -bc
-                 {MonomialBasisElement{{{var_z_, 3}}}, -b_ * c_},
-                 // 1 ↦ b²
-                 {MonomialBasisElement(), pow(b_, 2)}}));
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+               p3.basis_element_to_coefficient_map(),
+               GenericPolynomial<MonomialBasisElement>::MapType(
+                   // x²y ↦ 3ab²
+                   {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
+                     3 * a_ * pow(b_, 2)},
+                    // z³ ↦ -bc
+                    {MonomialBasisElement{{{var_z_, 3}}}, -b_ * c_},
+                    // 1 ↦ b²
+                    {MonomialBasisElement(), pow(b_, 2)}}));
 
   // p₄ = 3ab²*x²y - bc*x³
   const GenericPolynomial<MonomialBasisElement> p4{
       3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(x_, 3), var_xyz_};
-  EXPECT_EQ(p4.basis_element_to_coefficient_map(),
-            GenericPolynomial<MonomialBasisElement>::MapType(
-                {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
-                  3 * a_ * pow(b_, 2)},
-                 {MonomialBasisElement{{{var_x_, 3}}}, -b_ * c_}}));
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+               p4.basis_element_to_coefficient_map(),
+               GenericPolynomial<MonomialBasisElement>::MapType(
+                   {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
+                     3 * a_ * pow(b_, 2)},
+                    {MonomialBasisElement{{{var_x_, 3}}}, -b_ * c_}}));
 
   // p₅ = (ax)³
   const GenericPolynomial<MonomialBasisElement> p5{pow(a_ * x_, 3), var_xyz_};
@@ -386,8 +402,9 @@ TEST_F(SymbolicGenericPolynomialTest,
   // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial.
   const GenericPolynomial<MonomialBasisElement> p1{e, {var_x_, var_y_}};
   const GenericPolynomial<MonomialBasisElement> p2{e, {var_x_, var_y_, var_z_}};
-  EXPECT_EQ(p1.basis_element_to_coefficient_map(),
-            p2.basis_element_to_coefficient_map());
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+               p1.basis_element_to_coefficient_map(),
+               p2.basis_element_to_coefficient_map());
 }
 
 TEST_F(SymbolicGenericPolynomialTest, DegreeAndTotalDegree) {
@@ -855,7 +872,9 @@ TEST_F(SymbolicGenericPolynomialTest,
   GenericPolynomial<MonomialBasisElement>::MapType product_map_expected{};
   product_map_expected.emplace(MonomialBasisElement(), 1);
   product_map_expected.emplace(MonomialBasisElement(var_x_, 2), -1);
-  EXPECT_EQ(product_map_expected, (p1 * p2).basis_element_to_coefficient_map());
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+               product_map_expected,
+               (p1 * p2).basis_element_to_coefficient_map());
 }
 
 TEST_F(SymbolicGenericPolynomialTest,
@@ -867,7 +886,9 @@ TEST_F(SymbolicGenericPolynomialTest,
   GenericPolynomial<ChebyshevBasisElement>::MapType product_map_expected{};
   product_map_expected.emplace(ChebyshevBasisElement(), 0.5);
   product_map_expected.emplace(ChebyshevBasisElement(var_x_, 2), -0.5);
-  EXPECT_EQ(product_map_expected, (p1 * p2).basis_element_to_coefficient_map());
+  EXPECT_PRED2(GenericPolynomialMapTypeEqual<ChebyshevBasisElement>,
+               product_map_expected,
+               (p1 * p2).basis_element_to_coefficient_map());
 }
 
 TEST_F(SymbolicGenericPolynomialTest,
@@ -1359,7 +1380,8 @@ TEST_F(SymbolicGenericPolynomialTest, ConstructNonPolynomialCoefficients) {
 
   for (const auto& [e, expected_map] : testcases) {
     const GenericPolynomial<MonomialBasisElement> p{e, indeterminates_};
-    EXPECT_EQ(p.basis_element_to_coefficient_map(), expected_map);
+    EXPECT_PRED2(GenericPolynomialMapTypeEqual<MonomialBasisElement>,
+                 p.basis_element_to_coefficient_map(), expected_map);
   }
 }
 

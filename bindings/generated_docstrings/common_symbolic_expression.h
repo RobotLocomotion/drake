@@ -5166,6 +5166,11 @@ R"""(Casts ``f_ptr`` to ``shared_ptr``<const RelationalFormulaCell>.
 Precondition:
     ``is_relational(*f_ptr)`` is true.)""";
       } to_relational;
+      // Symbol: drake::symbolic::to_string
+      struct /* to_string */ {
+        // Source: drake/common/symbolic/expression/variable.h
+        const char* doc = R"""()""";
+      } to_string;
       // Symbol: drake::symbolic::to_true
       struct /* to_true */ {
         // Source: drake/common/symbolic/expression/formula_cell.h

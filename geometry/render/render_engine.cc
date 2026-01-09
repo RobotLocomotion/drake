@@ -7,7 +7,6 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/scope_exit.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {

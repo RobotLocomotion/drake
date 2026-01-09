@@ -6,6 +6,7 @@
 #include <map>
 #include <numeric>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include <fmt/format.h>
@@ -23,9 +24,9 @@ using std::logic_error;
 using std::make_pair;
 using std::map;
 using std::ostream;
-using std::ostringstream;
 using std::pair;
 using std::runtime_error;
+using std::string;
 
 namespace {
 // Computes the total degree of a monomial. This method is used in a
@@ -187,13 +188,10 @@ double Monomial::Evaluate(const Environment& env) const {
         const Variable& var{p.first};
         const auto it = env.find(var);
         if (it == env.end()) {
-          ostringstream oss;
-          oss << "Monomial " << *this
-              << " cannot be evaluated with the given "
-                 "environment which does not provide an entry "
-                 "for variable = "
-              << var << ".";
-          throw runtime_error(oss.str());
+          throw runtime_error(fmt::format(
+              "Monomial {} cannot be evaluated with the given environment "
+              "which does not provide an entry for variable = {}.",
+              *this, var));
         } else {
           const double base{it->second};
           const int exponent{p.second};
@@ -265,9 +263,8 @@ Monomial& Monomial::operator*=(const Monomial& m) {
 
 Monomial& Monomial::pow_in_place(const int p) {
   if (p < 0) {
-    ostringstream oss;
-    oss << "Monomial::pow(int p) is called with a negative p = " << p;
-    throw runtime_error(oss.str());
+    throw runtime_error(fmt::format(
+        "Monomial::pow(int p) is called with a negative p = {}", p));
   }
   if (p == 0) {
     total_degree_ = 0;
@@ -282,23 +279,27 @@ Monomial& Monomial::pow_in_place(const int p) {
   return *this;
 }
 
-ostream& operator<<(ostream& out, const Monomial& m) {
-  if (m.powers_.empty()) {
-    return out << 1;
+string Monomial::to_string() const {
+  if (powers_.empty()) {
+    return fmt::to_string(1);
   }
-  auto it = m.powers_.begin();
-  out << it->first;
+  string result;
+  auto it = powers_.begin();
+  result.append(fmt::to_string(it->first));
   if (it->second > 1) {
-    out << "^" << it->second;
+    result.append(fmt::format("^{}", it->second));
   }
-  for (++it; it != m.powers_.end(); ++it) {
-    out << " * ";
-    out << it->first;
+  for (++it; it != powers_.end(); ++it) {
+    result.append(fmt::format(" * {}", it->first));
     if (it->second > 1) {
-      out << "^" << it->second;
+      result.append(fmt::format("^{}", it->second));
     }
   }
-  return out;
+  return result;
+}
+
+ostream& operator<<(ostream& out, const Monomial& m) {
+  return out << fmt::to_string(m);
 }
 
 Monomial operator*(Monomial m1, const Monomial& m2) {

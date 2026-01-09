@@ -28,6 +28,18 @@ class MultibodyPlantIcfAttorney {
 
   friend class contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>;
 
+  static void AddAppliedExternalGeneralizedForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    return plant.AddAppliedExternalGeneralizedForces(context, forces);
+  }
+
+  static void AddAppliedExternalSpatialForces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    return plant.AddAppliedExternalSpatialForces(context, forces);
+  }
+
   static void AddJointActuationForces(const MultibodyPlant<T>& plant,
                                       const systems::Context<T>& context,
                                       VectorX<T>* forces) {

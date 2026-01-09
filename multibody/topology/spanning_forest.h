@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/topology/graph.h"
 
 namespace drake {
