@@ -116,8 +116,7 @@ class Obb {
    @param X_PH      The relative pose between the hierarchy frame H and the
                     plane frame P.
    @returns `true` if the plane intersects the box.   */
-  static bool HasOverlap(const Obb& bv_H,
-                         const internal::Plane<double>& plane_P,
+  static bool HasOverlap(const Obb& bv_H, const Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
 
   /** Checks whether bounding volume `bv` intersects the given half space. The

@@ -17,13 +17,22 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
 namespace {
 
 using Eigen::Vector3d;
 using Planed = Plane<double>;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+
+GTEST_TEST(PlaneTest, Getters) {
+  const Vector3d nhat_F(1, 2, 3);
+  const Vector3d p_FP(0.25, -0.5, 0.75);
+  const Planed plane_F{nhat_F, p_FP};
+  EXPECT_TRUE(CompareMatrices(plane_F.normal(), nhat_F.normalized()));
+  // We don't expect the point on the plane to necessarily *match*. BUt we do
+  // expect it to evaluate to a height of zero.
+  EXPECT_DOUBLE_EQ(plane_F.CalcHeight(plane_F.point_on_plane()), 0);
+}
 
 // Tests the constructor -- with particular emphasis on normalization behavior.
 GTEST_TEST(PlaneTest, Construction) {
@@ -216,6 +225,5 @@ GTEST_TEST(PlaneTest, MixedScalar) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

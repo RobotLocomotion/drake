@@ -26,6 +26,7 @@ PYBIND11_MODULE(geometry, m) {
   DefineGeometryMeshes(m);
   DefineGeometryCommon(m);
   DefineGeometryBoundingBox(m);
+  DefineGeometryProximity(m);
   DefineGeometryRefine(m);
   DefineGeometryHydro(m);
   DefineGeometryRender(m);
