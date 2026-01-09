@@ -54,6 +54,13 @@ to the
 [drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed)
 example.
 
+If not using the example, be sure to install the dependencies before proceeding
+by running the setup script inside the download:
+
+```bash
+sudo drake/share/drake/setup/install_prereqs
+```
+
 ### Use as a Python library
 
 In most cases we suggest [installation via pip](/pip.html) because that
