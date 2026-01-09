@@ -178,7 +178,6 @@ int do_main() {
   // step integrator. This value is not used if time_step > 0 (fixed-time step).
   integrator.set_target_accuracy(FLAGS_integration_accuracy);
 
-  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

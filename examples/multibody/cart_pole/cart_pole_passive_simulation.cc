@@ -79,8 +79,6 @@ int do_main() {
   pole_pin.set_angle(&cart_pole_context, 2.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
-  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

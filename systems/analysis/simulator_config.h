@@ -2,11 +2,11 @@
 
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 
 namespace drake {
 namespace systems {
-
 // TODO(dale.mcconachie) Update to include all configurable properties of
 // IntegratorBase. Currently, initial_step_size_target, minimum_step_size, and
 // throw_on_minimum_step_size_violation are missing.
@@ -33,11 +33,12 @@ struct SimulatorConfig {
   /// `start_time` at the beginning of the simulation.
   double start_time{0.0};
   double target_realtime_rate{0.0};
+  /// DEPRECATED: removal date: 2026-06-01.
+  /// Use LeafSystem::DeclarePerStepPublishEvent() instead.
   /// Sets Simulator::set_publish_at_initialization() in addition to
   /// Simulator::set_publish_every_time_step() when applied by
   /// ApplySimulatorConfig().
   bool publish_every_time_step{false};
 };
-
 }  // namespace systems
 }  // namespace drake

@@ -62,9 +62,13 @@ int DoMain() {
   auto context = diagram->CreateDefaultContext();
   auto simulator = std::make_unique<systems::Simulator<double>>(
       *diagram, std::move(context));
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete with publish_every_time_step 2026-06-01
+  // An Initialization event may need to be added for LcmPublisherSystem.
   simulator->set_publish_at_initialization(true);
   simulator->set_publish_every_time_step(false);
+#pragma GCC diagnostic pop
   simulator->set_target_realtime_rate(1.0);
   simulator->Initialize();
   simulator->AdvanceTo(FLAGS_duration);

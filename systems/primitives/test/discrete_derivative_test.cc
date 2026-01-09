@@ -55,8 +55,6 @@ void RunFirstOrderHold(const bool suppress_initial_transient) {
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
   const auto& log = logger->FindLog(simulator.get_context());
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
   simulator.AdvanceTo(kDuration);
 
   for (int i = 0; i < log.sample_times().size(); i++) {

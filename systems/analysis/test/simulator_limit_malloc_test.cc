@@ -65,8 +65,6 @@ GTEST_TEST(SimulatorLimitMallocTest,
 
   // Create a Simulator and use it to advance time until t=3.
   Simulator<double> simulator(*diagram);
-  // Actually cause forced-publish events to be issued.
-  simulator.set_publish_every_time_step(true);
   // Trigger first (and only allowable) heap allocation.
   simulator.Initialize();
   {
