@@ -1620,6 +1620,35 @@ TEST_F(SymbolicPolynomialTest, CalcPolynomialWLowerTriangularPart) {
   EXPECT_PRED2(test::PolyEqualAfterExpansion, poly3, poly3_expected);
 }
 
+TEST_F(SymbolicPolynomialTest, PolynomialToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(Polynomial{}), "0");
+  EXPECT_EQ(fmt::to_string(Polynomial{x_, Variables{var_x_}}), "1*x");
+  EXPECT_EQ(fmt::to_string(Polynomial{3 * x_, Variables{var_x_}}), "3*x");
+  // One-monomial case
+  EXPECT_EQ(fmt::to_string(
+                Polynomial{3 * a_ * pow(b_, 2) * pow(x_, 2) * y_, var_xy_}),
+            "(3 * a * pow(b, 2))*x^2 * y");
+  // Multi-monomial cases
+  EXPECT_EQ(
+      fmt::to_string(Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2), var_xyz_}),
+      "-1*z^2 + (b * c)*z^3");
+  EXPECT_EQ(fmt::to_string(
+                Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_, var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*x");
+  EXPECT_EQ(fmt::to_string(Polynomial{
+                b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_ + y_, var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*x");
+  EXPECT_EQ(fmt::to_string(Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_ +
+                                          y_ + pow(x_, 2) * y_ * z_,
+                                      var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*x + 1*x^2 * y * z");
+  EXPECT_EQ(
+      fmt::to_string(Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_ + y_ +
+                                    pow(x_, 2) * y_ * z_ + pow(y_, 2),
+                                var_xyz_}),
+      "-1*z^2 + (b * c)*z^3 + 1*y + 1*y^2 + 1*x + 1*x^2 * y * z");
+}
+
 }  // namespace
 
 }  // namespace symbolic

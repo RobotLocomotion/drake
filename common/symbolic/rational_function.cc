@@ -42,7 +42,7 @@ Formula RationalFunction::operator!=(const RationalFunction& f) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const RationalFunction& f) {
-  os << "(" << f.numerator() << ") / (" << f.denominator() << ")";
+  os << fmt::format("({}) / ({})", f.numerator(), f.denominator());
   return os;
 }
 

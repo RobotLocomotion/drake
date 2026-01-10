@@ -2634,6 +2634,11 @@ Parameter ``n``:
 Precondition:
     n>=0.)""";
       } pow;
+      // Symbol: drake::symbolic::to_string
+      struct /* to_string */ {
+        // Source: drake/common/symbolic/polynomial.h
+        const char* doc = R"""()""";
+      } to_string;
     } symbolic;
   } drake;
 } pydrake_doc_common_symbolic;
