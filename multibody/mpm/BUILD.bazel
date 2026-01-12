@@ -2,10 +2,13 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
-    "drake_cc_googletest_linux_only",
     "drake_cc_library",
-    "drake_cc_library_linux_only",
     "drake_cc_package_library",
+)
+load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
+    "drake_cc_optional_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -59,8 +62,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "mock_sparse_grid",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = [
         "mock_sparse_grid.cc",
     ],
@@ -112,8 +116,9 @@ drake_cc_library(
 # TODO(xuchenhan-tri): when we enable SPGrid in our releases, we also need to
 # install its license file in drake/tools/workspace/BUILD.bazel.
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "sparse_grid",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = [
         "sparse_grid.cc",
     ],
@@ -130,8 +135,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "mpm_model",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = [
         "mpm_model.cc",
         "solver_state.cc",
@@ -150,8 +156,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "spgrid",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = [
         "spgrid.cc",
     ],
@@ -181,8 +188,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "transfer",
+    opt_in_condition = "//tools/skylark:linux",
     srcs = [
         "transfer.cc",
     ],
@@ -210,8 +218,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "mpm_model_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":mpm_model",
         "//common/test_utilities:eigen_matrix_compare",
@@ -226,8 +235,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "particle_sorter_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":bspline_weights",
         ":grid_data",
@@ -239,8 +249,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "sparse_grid_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":mock_sparse_grid",
         ":sparse_grid",
@@ -248,16 +259,18 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "spgrid_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":spgrid",
         "//common/test_utilities:limit_malloc",
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "transfer_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":particle_data",
         ":sparse_grid",

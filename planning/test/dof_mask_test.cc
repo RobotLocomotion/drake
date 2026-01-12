@@ -1,6 +1,7 @@
 #include "drake/planning/dof_mask.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -293,6 +294,25 @@ GTEST_TEST(DofMaskTest, SetInArray) {
   dofs.SetInArray(dof_values, &full_new);
   const Vector3d full_new_expected(1.0, 0.0, 3.0);
   EXPECT_EQ(full_new, full_new_expected);
+}
+
+GTEST_TEST(DofMaskTest, GetSelectedToFullIndex) {
+  const DofMask dofs1{true, false, false, true, false};
+  EXPECT_EQ(dofs1.GetSelectedToFullIndex(), std::vector<int>({0, 3}));
+
+  const DofMask dofs2{false, false, false, false};
+  EXPECT_TRUE(dofs2.GetSelectedToFullIndex().empty());
+}
+
+GTEST_TEST(DofMaskTest, GetFullToSelectedIndex) {
+  const DofMask dofs1{true, false, false, true, false, true, false};
+  EXPECT_EQ(dofs1.GetFullToSelectedIndex(),
+            (std::vector<std::optional<int>>{0, std::nullopt, std::nullopt, 1,
+                                             std::nullopt, 2, std::nullopt}));
+
+  const DofMask dofs2{false, false, false, false};
+  EXPECT_EQ(dofs2.GetFullToSelectedIndex(),
+            std::vector<std::optional<int>>(4, std::nullopt));
 }
 
 }  // namespace

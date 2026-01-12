@@ -43,6 +43,8 @@
     "drake_cc_variant_library.deps_always": 4,
     "drake_cc_variant_library.deps_enabled": 4,
 
+    "drake_cc_optional_googletest.opt_in_condition": -96,
+
     "git_repository.remote": 300,
     "git_repository.commit": 310,
 

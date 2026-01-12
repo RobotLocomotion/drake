@@ -208,7 +208,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
       MakeKukaIiwaModel<double>(false /* non-finalized model. */);
 
   // Verify the model was not finalized.
-  EXPECT_FALSE(model->topology_is_valid());
+  EXPECT_FALSE(model->is_finalized());
 
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.

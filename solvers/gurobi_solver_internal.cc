@@ -70,9 +70,9 @@ int AddLinearConstraintNoDuplication(
 
   // The matrix A_gurobi is stored in Compressed Sparse Row (CSR) format, using
   // three vectors cbeg, cind and cval. Please refer to
-  // https://www.gurobi.com/documentation/10.0/refman/c_addconstrs.html for the
-  // meaning of these three vectors. The non-zero entries in the i'th row of
-  // A_gurobi is stored in the chunk cind[cbeg[i]:cbeg[i+1]] and
+  // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/c/model.html#c.GRBaddqconstr
+  // for the meaning of these three vectors. The non-zero entries in the i'th
+  // row of A_gurobi is stored in the chunk cind[cbeg[i]:cbeg[i+1]] and
   // cval[cbeg[i]:cbeg[i+1]]
   std::vector<int> cbeg;
   cbeg.reserve(A.rows() * 2 + 1);
@@ -164,7 +164,7 @@ void ConvertSecondOrderConeLinearConstraint(
 
 // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
 // cone constraint.
-// https://www.gurobi.com/documentation/10.0/refman/c_addqconstr.html
+// https://docs.gurobi.com/projects/optimizer/en/current/reference/c/model.html#c.GRBaddqconstr
 // For Lorentz cone constraint,
 // Q = [-1 0 0 ... 0]
 //     [ 0 1 0 ... 0]
@@ -182,7 +182,7 @@ void ConvertSecondOrderConeLinearConstraint(
 //     [0  0 0 0 ... 1]
 // so z' * Q * z = z(2)^2 + ... + z(n-1)^2 - z(0) * z(1).
 // Note that Q in the rotated Lorentz cone case is not symmetric (following the
-// example https://www.gurobi.com/documentation/current/examples/qcp_c_c.html).
+// example https://www.gurobi.com/documentation/12.0/examples/qcp_c_c.html).
 // We will store Q in a sparse format.
 // qrow stores the row    indices of the non-zero entries of Q.
 // qcol stores the column indices of the non-zero entries of Q.
@@ -281,7 +281,7 @@ int AddSecondOrderConeConstraints(
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
-    // https://www.gurobi.com/documentation/10.0/refman/c_addqconstr.html
+    // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/c/model.html#c.GRBaddqconstr
     std::vector<int> qrow;
     std::vector<int> qcol;
     std::vector<double> qval;

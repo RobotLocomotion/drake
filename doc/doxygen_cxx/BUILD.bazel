@@ -31,21 +31,49 @@ drake_py_unittest(
 )
 
 filegroup(
+    name = "content",
+    srcs = [
+        "//bindings/pydrake:doxygen_input",
+        "//common:doxygen_input",
+        "//common/yaml:doxygen_input",
+        "//geometry:doxygen_input",
+        "//geometry/benchmarking:doxygen_input",
+        "//geometry/proximity:doxygen_input",
+        "//geometry/render:doxygen_input",
+        "//geometry/render_gltf_client:doxygen_input",
+        "//multibody:doxygen_input",
+        "//multibody/hydroelastics:doxygen_input",
+        "//multibody/parsing:doxygen_input",
+        "//multibody/plant:doxygen_input",
+        "//multibody/plant/images:doxygen_input",
+        "//multibody/tree:doxygen_input",
+        "//planning:doxygen_input",
+        "//solvers:doxygen_input",
+        "//systems:doxygen_input",
+        "//systems/framework:doxygen_input",
+        "//tools/install/libdrake:libdrake_headers",
+        "//tutorials:doxygen_input",
+    ],
+)
+
+filegroup(
     name = "doxygen_input",
     srcs = [
+        ":content",
         "Doxyfile_CXX.in",
         "DoxygenLayout.xml",
         "doxygen.h",
         "doxygen_extra.css",
         "header.html.patch",
         "footer.html",
-        # We call this program directly as a shebang executable, without using
-        # the py_library target above.  This is easier than trying to get the
+        # We call this program directly as an executable, without using the
+        # py_library target above. This is easier than trying to get the
         # PYTHONPATH configuration correct for use as a library.
         "system_doxygen.py",
     ],
     tags = [
-        # Don't re-lint system_doxygen.py.  The py_library rule already has it.
+        # Don't re-lint system_doxygen.py. The py_library rule already has it.
+        # This also avoids linting doxygen.h.
         "nolint",
     ],
 )

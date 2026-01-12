@@ -48,6 +48,28 @@ void Partials::MatchSizeOf(const Partials& other) {
   ThrowIfDifferentSize(other);
 }
 
+void Partials::Mul(double factor) {
+  if (std::isfinite(factor)) [[likely]] {
+    derivatives_ *= factor;
+  } else {
+    for (int i = 0; i < size(); ++i) {
+      const double x = derivatives_[i];
+      derivatives_[i] = (x == 0) ? 0 : x * factor;
+    }
+  }
+}
+
+void Partials::Div(double factor) {
+  if (!std::isnan(factor) && factor != 0) [[likely]] {
+    derivatives_ /= factor;
+  } else {
+    for (int i = 0; i < size(); ++i) {
+      const double x = derivatives_[i];
+      derivatives_[i] = (x == 0) ? 0 : x / factor;
+    }
+  }
+}
+
 void Partials::Add(const Partials& other) {
   AddScaled(1.0, other);
 }
@@ -57,11 +79,26 @@ void Partials::AddScaled(double scale, const Partials& other) {
     return;
   }
   if (size() == 0) {
-    derivatives_ = scale * other.derivatives_;
+    if (std::isfinite(scale)) [[likely]] {
+      derivatives_ = other.derivatives_ * scale;
+    } else {
+      derivatives_ = Eigen::VectorXd(other.size());
+      for (int i = 0; i < other.size(); ++i) {
+        const double x = other.derivatives_[i];
+        derivatives_[i] = (x == 0) ? 0 : x * scale;
+      }
+    }
     return;
   }
   ThrowIfDifferentSize(other);
-  derivatives_ += scale * other.derivatives_;
+  if (std::isfinite(scale)) [[likely]] {
+    derivatives_ += other.derivatives_ * scale;
+  } else {
+    for (int i = 0; i < size(); ++i) {
+      const double x = other.derivatives_[i];
+      derivatives_[i] += (x == 0) ? 0 : x * scale;
+    }
+  }
 }
 
 void Partials::ThrowIfDifferentSize(const Partials& other) {

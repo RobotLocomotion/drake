@@ -88,7 +88,7 @@ class FemModel {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder);
 
-    virtual ~Builder() = default;
+    virtual ~Builder();
 
     /** Adds the FEM elements described by calls to this builder to this
      associated FemModel. The builder is left in an invalid state after Build()
@@ -168,7 +168,7 @@ class FemModel {
    @throws std::exception if T is not double. */
   void CalcTangentMatrix(
       const FemState<T>& fem_state,
-      contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+      contact_solvers::internal::BlockSparseSymmetricMatrix3d* tangent_matrix)
       const;
 
   /** Calculates the position vector from the world origin Wo to the center
@@ -212,7 +212,7 @@ class FemModel {
    tangent matrix is `num_dofs()` by `num_dofs()`. All entries are initialized
    to zero.
    @throws std::exception if T is not double. */
-  std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+  std::unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
   MakeTangentMatrix() const;
 
   /** Applies boundary condition set for this %FemModel to the input `state`.
@@ -300,7 +300,7 @@ class FemModel {
    guaranteed to be non-null and properly sized. */
   virtual void DoCalcTangentMatrix(
       const FemState<T>& fem_state,
-      contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+      contact_solvers::internal::BlockSparseSymmetricMatrix3d* tangent_matrix)
       const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
@@ -324,7 +324,7 @@ class FemModel {
   /** FemModelImpl must override this method to provide an implementation for
    the NVI MakeTangentMatrix(). */
   virtual std::unique_ptr<
-      contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+      contact_solvers::internal::BlockSparseSymmetricMatrix3d>
   DoMakeTangentMatrix() const = 0;
 
   /** Updates the system that manages the states and the cache entries of this

@@ -40,8 +40,7 @@ void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
   // plant. On the other hand, if set_controller_gains is called post-Finalize
   // to add a controller on a continuous-time plant, we need to reject that
   // ourselves; the plant won't know to check for it.
-  const bool is_finalized = topology_.actuator_dof_start >= 0;
-  if (is_finalized) {
+  if (is_finalized_) {
     DRAKE_DEMAND(this->has_parent_tree());
     // N.B. Calling is_state_discrete() on a non-finalized plant will segfault;
     // we must be careful to only call it inside of the if-finalized guard.
@@ -82,50 +81,33 @@ void JointActuator<T>::set_actuation_vector(
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_THROW_UNLESS(u->size() == this->get_parent_tree().num_actuated_dofs());
   DRAKE_THROW_UNLESS(u_actuator.size() == num_inputs());
-  u->segment(topology_.actuator_dof_start, num_inputs()) = u_actuator;
+  u->segment(input_start(), num_inputs()) = u_actuator;
 }
 
 template <typename T>
 int JointActuator<T>::input_start() const {
-  if (topology_.actuator_dof_start < 0) {
-    throw std::runtime_error(
-        "JointActuator::input_start() must be called after the MultibodyPlant "
-        "is finalized.");
-  }
-  return topology_.actuator_dof_start;
+  return actuator_dof_start_;
 }
 
 template <typename T>
 int JointActuator<T>::num_inputs() const {
-  if (topology_.actuator_dof_start < 0) {
-    throw std::runtime_error(
-        "JointActuator::num_inputs() must be called after the MultibodyPlant "
-        "is finalized.");
-  }
-  DRAKE_ASSERT(joint().num_velocities() == topology_.num_dofs);
   return joint().num_velocities();
-}
-
-template <typename T>
-void JointActuator<T>::DoSetTopology(
-    const internal::MultibodyTreeTopology& mbt_topology) {
-  topology_ = mbt_topology.get_joint_actuator_topology(this->index());
 }
 
 template <typename T>
 std::unique_ptr<JointActuator<double>> JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>&) const {
-  return std::unique_ptr<JointActuator<double>>(
-      new JointActuator<double>(name_, joint_index_, effort_limit_,
-                                default_rotor_inertia_, default_gear_ratio_));
+  return std::unique_ptr<JointActuator<double>>(new JointActuator<double>(
+      name_, joint_index_, actuator_dof_start_, effort_limit_,
+      default_rotor_inertia_, default_gear_ratio_));
 }
 
 template <typename T>
 std::unique_ptr<JointActuator<AutoDiffXd>> JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
-      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_limit_,
-                                    default_rotor_inertia_,
+      new JointActuator<AutoDiffXd>(name_, joint_index_, actuator_dof_start_,
+                                    effort_limit_, default_rotor_inertia_,
                                     default_gear_ratio_));
 }
 
@@ -135,8 +117,8 @@ JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>&) const {
   return std::unique_ptr<JointActuator<symbolic::Expression>>(
       new JointActuator<symbolic::Expression>(
-          name_, joint_index_, effort_limit_, default_rotor_inertia_,
-          default_gear_ratio_));
+          name_, joint_index_, actuator_dof_start_, effort_limit_,
+          default_rotor_inertia_, default_gear_ratio_));
 }
 
 }  // namespace multibody

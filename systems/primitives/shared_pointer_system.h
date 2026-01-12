@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 

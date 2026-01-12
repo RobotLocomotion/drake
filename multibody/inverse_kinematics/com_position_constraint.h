@@ -56,7 +56,7 @@ class ComPositionConstraint final : public solvers::Constraint {
       const Frame<AutoDiffXd>& expressed_frame,
       systems::Context<AutoDiffXd>* plant_context);
 
-  ~ComPositionConstraint() override {}
+  ~ComPositionConstraint() override;
 
   /**
    * Compose the variables for Eval function from generalized position q and the

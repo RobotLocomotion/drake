@@ -21,11 +21,11 @@ from pydrake.common.test_utilities.meta import (
 from pydrake.common.value import Value
 from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 
-
 # To provide test coverage for all of the special cases of YAML loading, we'll
 # define some dataclasses. These classes mimic
 #  drake/common/yaml/test/example_structs.h
 # and should be roughly kept in sync with the definitions in that file.
+
 
 def _dataclass_eq(a, b):
     # Work around https://github.com/python/cpython/issues/128294.
@@ -81,15 +81,15 @@ class AllScalarsStruct:
 
 @dc.dataclass
 class ListStruct:
-    value: typing.List[float] = dc.field(
-        default_factory=lambda: list((nan,)))
+    value: typing.List[float] = dc.field(default_factory=lambda: list((nan,)))
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class MapStruct:
     value: typing.Dict[str, float] = dc.field(
-        default_factory=lambda: dict(nominal_float=nan))
+        default_factory=lambda: dict(nominal_float=nan)
+    )
     __eq__ = _dataclass_eq
 
 
@@ -135,15 +135,13 @@ class LegacyOptionalStructNoDefault:
 class NumpyStruct:
     # TODO(jwnimmer-tri) We should use the numpy.typing module here to
     # constrain the shape and/or dtype.
-    value: np.ndarray = dc.field(
-        default_factory=lambda: np.array([nan]))
+    value: np.ndarray = dc.field(default_factory=lambda: np.array([nan]))
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class RejectGetattrNumpyStruct:
-    value: np.ndarray = dc.field(
-        default_factory=lambda: np.array([nan]))
+    value: np.ndarray = dc.field(default_factory=lambda: np.array([nan]))
     __eq__ = _dataclass_eq
 
     def __getattribute__(self, name):
@@ -179,23 +177,22 @@ class PrimitiveVariantStruct:
 @dc.dataclass
 class ListVariantStruct:
     value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
-        dc.field(default_factory=lambda: list([nan])))
+        dc.field(default_factory=lambda: list([nan]))
+    )
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class OuterStruct:
     outer_value: float = nan
-    inner_struct: InnerStruct = dc.field(
-        default_factory=lambda: InnerStruct())
+    inner_struct: InnerStruct = dc.field(default_factory=lambda: InnerStruct())
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class OuterStructOpposite:
     # N.B. The opposite member order of OuterStruct.
-    inner_struct: InnerStruct = dc.field(
-        default_factory=lambda: InnerStruct())
+    inner_struct: InnerStruct = dc.field(default_factory=lambda: InnerStruct())
     outer_value: float = nan
     __eq__ = _dataclass_eq
 
@@ -208,8 +205,7 @@ class Blank:
 @dc.dataclass
 class OuterWithBlankInner:
     outer_value: float = nan
-    inner_struct: Blank = dc.field(
-        default_factory=lambda: Blank())
+    inner_struct: Blank = dc.field(default_factory=lambda: Blank())
     __eq__ = _dataclass_eq
 
 
@@ -218,13 +214,14 @@ class BigMapStruct:
     value: typing.Mapping[str, OuterStruct] = dc.field(
         default_factory=lambda: dict(
             foo=OuterStruct(
-                outer_value=1.0,
-                inner_struct=InnerStruct(inner_value=2.0))))
+                outer_value=1.0, inner_struct=InnerStruct(inner_value=2.0)
+            )
+        )
+    )
     __eq__ = _dataclass_eq
 
 
-class TestYamlTypedRead(unittest.TestCase,
-                        metaclass=ValueParameterizedTest):
+class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
     """Detailed tests for the typed yaml_load function(s).
 
     This test class is the Python flavor of the C++ test suite at
@@ -233,20 +230,24 @@ class TestYamlTypedRead(unittest.TestCase,
     """
 
     def _all_typed_read_options(
-            sweep_allow_yaml_with_no_schema=(True, False),
-            sweep_allow_schema_with_no_yaml=(True, False),
-            sweep_retain_map_defaults=(True, False)):
-        """Returns the options matrix for our value-parameterized test cases.
-        """
+        sweep_allow_yaml_with_no_schema=(True, False),
+        sweep_allow_schema_with_no_yaml=(True, False),
+        sweep_retain_map_defaults=(True, False),
+    ):
+        """Returns the options matrix for our value-parameterized test cases."""
         result = []
         for i in sweep_allow_yaml_with_no_schema:
             for j in sweep_allow_schema_with_no_yaml:
                 for k in sweep_retain_map_defaults:
-                    result.append(dict(options=dict(
-                        allow_yaml_with_no_schema=i,
-                        allow_schema_with_no_yaml=j,
-                        retain_map_defaults=k,
-                    )))
+                    result.append(
+                        dict(
+                            options=dict(
+                                allow_yaml_with_no_schema=i,
+                                allow_schema_with_no_yaml=j,
+                                retain_map_defaults=k,
+                            )
+                        )
+                    )
         return result
 
     @run_with_multiple_values(_all_typed_read_options())
@@ -279,13 +280,11 @@ class TestYamlTypedRead(unittest.TestCase,
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_float_missing(self, *, options):
         if options["allow_schema_with_no_yaml"]:
-            x = yaml_load_typed(schema=FloatStruct, data="{}",
-                                **options)
+            x = yaml_load_typed(schema=FloatStruct, data="{}", **options)
             self.assertTrue(math.isnan(x.value), msg=repr(x.value))
         else:
             with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
-                yaml_load_typed(schema=FloatStruct, data="{}",
-                                **options)
+                yaml_load_typed(schema=FloatStruct, data="{}", **options)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_int(self, *, options):
@@ -363,13 +362,13 @@ class TestYamlTypedRead(unittest.TestCase,
             (".", "."),
             ("no_directory.txt", "no_directory.txt"),
             ("/absolute/path/file.txt", "/absolute/path/file.txt"),
-            ("/quoted\"/path", "/quoted\"/path"),
+            ('/quoted"/path', '/quoted"/path'),
             # These strings end up changing to a greater or lesser degree.
-            ("\"\"", "."),
+            ('""', "."),
             ("!!str", "."),
             ("/non_lexical//path", "/non_lexical/path"),
             ("'1234'", "1234"),
-            ("\"1234\"", "1234"),
+            ('"1234"', "1234"),
             ("!!str 1234", "1234"),
         ]
         for value, expected in cases:
@@ -396,13 +395,11 @@ class TestYamlTypedRead(unittest.TestCase,
     def test_read_path_missing(self, *, options):
         if options["allow_schema_with_no_yaml"]:
             default_value = PathStruct()
-            x = yaml_load_typed(schema=PathStruct, data="{}",
-                                **options)
+            x = yaml_load_typed(schema=PathStruct, data="{}", **options)
             self.assertEqual(x.value, default_value.value, msg=repr(x.value))
         else:
             with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
-                yaml_load_typed(schema=PathStruct, data="{}",
-                                **options)
+                yaml_load_typed(schema=PathStruct, data="{}", **options)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_bytes(self, *, options):
@@ -421,7 +418,8 @@ class TestYamlTypedRead(unittest.TestCase,
         # Malformed base64 encoding.
         cases = [
             ("A3Rfc3RyAw=", "Incorrect padding"),
-            ("A3Rfc*RyAw==", "Invalid base64-encoded string")]
+            ("A3Rfc*RyAw==", "Invalid base64-encoded string"),
+        ]
         for value, error_regex in cases:
             data = f"value: !!binary {value}"
             with self.assertRaisesRegex(Exception, error_regex):
@@ -454,8 +452,9 @@ class TestYamlTypedRead(unittest.TestCase,
         ]
         for value, error_regex in cases:
             data = f"value: {value}"
-            with self.assertRaisesRegex(RuntimeError, error_regex,
-                                        msg=f"For value '{value}'"):
+            with self.assertRaisesRegex(
+                RuntimeError, error_regex, msg=f"For value '{value}'"
+            ):
                 yaml_load_typed(schema=BytesStruct, data=data, **options)
 
         # Using !!binary and assigning it to non-bytes should throw.
@@ -465,15 +464,17 @@ class TestYamlTypedRead(unittest.TestCase,
             (b"1234.5", FloatStruct),
             (b"1234", IntStruct),
             (b"test/path", PathStruct),
-            (b"a string", StringStruct)
+            (b"a string", StringStruct),
         ]
         for byte_value, schema in cases:
             encoded = base64.b64encode(byte_value)
             data = f"value: !!binary {encoded.decode('utf-8')}"
-            with self.assertRaisesRegex(RuntimeError,
-                                        "Expected a .* value .* instead got "
-                                        "yaml data of type <class 'bytes'>",
-                                        msg=f"value: {byte_value}"):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Expected a .* value .* instead got "
+                "yaml data of type <class 'bytes'>",
+                msg=f"value: {byte_value}",
+            ):
                 yaml_load_typed(schema=schema, data=data, **options)
 
     @run_with_multiple_values(_all_typed_read_options())
@@ -488,7 +489,7 @@ class TestYamlTypedRead(unittest.TestCase,
         """)
         x = yaml_load_typed(schema=AllScalarsStruct, data=data, **options)
         self.assertEqual(x.some_bool, True)
-        self.assertEqual(x.some_bytes, b'\x05\x06\x07')
+        self.assertEqual(x.some_bytes, b"\x05\x06\x07")
         self.assertEqual(x.some_float, 101.0)
         self.assertEqual(x.some_int, 102)
         self.assertEqual(x.some_path, Path("/alternative/path"))
@@ -542,9 +543,12 @@ class TestYamlTypedRead(unittest.TestCase,
             expected.update(foo=OuterStruct(1.0, InnerStruct(2.0)))
         self.assertEqual(x.value, expected)
 
-    @run_with_multiple_values(_all_typed_read_options(
-        # When False, the parser raises an exception not worth testing for.
-        sweep_allow_schema_with_no_yaml=[True]))
+    @run_with_multiple_values(
+        _all_typed_read_options(
+            # When False, the parser raises an exception not worth testing for.
+            sweep_allow_schema_with_no_yaml=[True]
+        )
+    )
     def test_read_big_map_merge_new_outer_value(self, *, options):
         data = dedent("""
         value:
@@ -557,9 +561,12 @@ class TestYamlTypedRead(unittest.TestCase,
             expected["foo"].inner_struct.inner_value = 2.0
         self.assertEqual(x.value, expected)
 
-    @run_with_multiple_values(_all_typed_read_options(
-        # When False, the parser raises an exception not worth testing for.
-        sweep_allow_schema_with_no_yaml=[True]))
+    @run_with_multiple_values(
+        _all_typed_read_options(
+            # When False, the parser raises an exception not worth testing for.
+            sweep_allow_schema_with_no_yaml=[True]
+        )
+    )
     def test_read_big_map_merge_new_inner_value(self, *, options):
         data = dedent("""
         value:
@@ -573,9 +580,12 @@ class TestYamlTypedRead(unittest.TestCase,
             expected["foo"].outer_value = 1.0
         self.assertEqual(x.value, expected)
 
-    @run_with_multiple_values(_all_typed_read_options(
-        # When False, the parser raises an exception not worth testing for.
-        sweep_allow_schema_with_no_yaml=[True]))
+    @run_with_multiple_values(
+        _all_typed_read_options(
+            # When False, the parser raises an exception not worth testing for.
+            sweep_allow_schema_with_no_yaml=[True]
+        )
+    )
     def test_read_big_map_merge_empty(self, *, options):
         data = dedent("""
         value:
@@ -608,14 +618,20 @@ class TestYamlTypedRead(unittest.TestCase,
         # The test case numbers here (1..12) reference the specification as
         # documented in the C++ unit test yaml_read_archive_test.cc.
         cases = [
-            (OptionalStructNoDefault, "value: 1.0", 1.0),    # Case 1, 2
-            (OptionalStruct,          "value: 1.0", 1.0),    # Case 3, 4
-            (OptionalStructNoDefault, "value:",     None),   # Case 5, 6
-            (OptionalStruct,          "value:",     None),   # Case 7, 8
-            (OptionalStructNoDefault, "{}",         None),   # Case 9, 10
-            (OptionalStruct,          "{}", (
-                nan if options["allow_schema_with_no_yaml"]  # Case 12
-                else None)),                                 # Case 11
+            (OptionalStructNoDefault, "value: 1.0", 1.0),  # Case 1, 2
+            (OptionalStruct, "value: 1.0", 1.0),  # Case 3, 4
+            (OptionalStructNoDefault, "value:", None),  # Case 5, 6
+            (OptionalStruct, "value:", None),  # Case 7, 8
+            (OptionalStructNoDefault, "{}", None),  # Case 9, 10
+            (
+                OptionalStruct,
+                "{}",
+                (
+                    nan
+                    if options["allow_schema_with_no_yaml"]  # Case 12
+                    else None
+                ),
+            ),  # Case 11
         ]
         respell = {
             OptionalStruct: LegacyOptionalStruct,
@@ -635,7 +651,8 @@ class TestYamlTypedRead(unittest.TestCase,
                     else:
                         amended_data = "foo: bar"
                     actual = yaml_load_typed(
-                        schema=schema, data=amended_data, **options)
+                        schema=schema, data=amended_data, **options
+                    )
                     self.assertEqual(actual, schema(expected))
 
     def test_read_optional_bytes(self):
@@ -681,13 +698,18 @@ class TestYamlTypedRead(unittest.TestCase,
         data = "value: !FloatStruct {}"
         defaults = VariantStruct(FloatStruct(22.0))
         if options["allow_schema_with_no_yaml"]:
-            x = yaml_load_typed(schema=VariantStruct, data=data,
-                                defaults=defaults, **options)
+            x = yaml_load_typed(
+                schema=VariantStruct, data=data, defaults=defaults, **options
+            )
             self.assertEqual(x, defaults)
         else:
             with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
-                yaml_load_typed(schema=VariantStruct, data=data,
-                                defaults=defaults, **options)
+                yaml_load_typed(
+                    schema=VariantStruct,
+                    data=data,
+                    defaults=defaults,
+                    **options,
+                )
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_generic_variant(self, *, options):
@@ -829,8 +851,9 @@ class TestYamlTypedRead(unittest.TestCase,
     def test_read_np_no_getattr(self, *, options):
         data = "value: [1.0]"
         expected = [1.0]
-        x = yaml_load_typed(schema=RejectGetattrNumpyStruct, data=data,
-                            **options)
+        x = yaml_load_typed(
+            schema=RejectGetattrNumpyStruct, data=data, **options
+        )
         np.testing.assert_equal(x._value(), np.array(expected), verbose=True)
 
     @run_with_multiple_values(_all_typed_read_options())
@@ -892,14 +915,16 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
           value:
             some_value
         """)
-        result = yaml_load_typed(schema=StringStruct, data=data,
-                                 child_name="some_child_name")
+        result = yaml_load_typed(
+            schema=StringStruct, data=data, child_name="some_child_name"
+        )
         self.assertEqual(result.value, "some_value")
 
         # When the requested child_name does not exist, that's an error.
         with self.assertRaisesRegex(KeyError, "wrong_child_name"):
-            yaml_load_typed(schema=StringStruct, data=data,
-                            child_name="wrong_child_name")
+            yaml_load_typed(
+                schema=StringStruct, data=data, child_name="wrong_child_name"
+            )
 
     def test_load_string_defaults(self):
         data = dedent("""
@@ -909,16 +934,18 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         defaults = MapStruct()
 
         # Merge the default map value(s).
-        result = yaml_load_typed(
-            schema=MapStruct, data=data, defaults=defaults)
-        self.assertDictEqual(result.value, dict(
-            nominal_float=nan,
-            some_key=1.0))
+        result = yaml_load_typed(schema=MapStruct, data=data, defaults=defaults)
+        self.assertDictEqual(
+            result.value, dict(nominal_float=nan, some_key=1.0)
+        )
 
         # Replace the default map value(s).
         result = yaml_load_typed(
-            schema=MapStruct, data=data, defaults=defaults,
-            retain_map_defaults=False)
+            schema=MapStruct,
+            data=data,
+            defaults=defaults,
+            retain_map_defaults=False,
+        )
         self.assertDictEqual(result.value, dict(some_key=1.0))
 
     def test_load_inferred_schema(self):
@@ -928,9 +955,9 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         """)
         result = yaml_load_typed(data=data, defaults=MapStruct())
         self.assertIsInstance(result, MapStruct)
-        self.assertDictEqual(result.value, dict(
-            nominal_float=nan,
-            some_key=1.0))
+        self.assertDictEqual(
+            result.value, dict(nominal_float=nan, some_key=1.0)
+        )
 
         with self.assertRaisesRegex(Exception, "At least one"):
             yaml_load_typed(data=data)
@@ -940,8 +967,9 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         value: some_value
         extra_junk: will_be_ignored
         """)
-        result = yaml_load_typed(schema=StringStruct, data=data,
-                                 allow_yaml_with_no_schema=True)
+        result = yaml_load_typed(
+            schema=StringStruct, data=data, allow_yaml_with_no_schema=True
+        )
         self.assertEqual(result.value, "some_value")
 
         # Cross-check that the option actually was important.
@@ -950,7 +978,8 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
 
     def test_load_file(self):
         filename = FindResourceOrThrow(
-            "drake/common/yaml/test/yaml_io_test_input_1.yaml")
+            "drake/common/yaml/test/yaml_io_test_input_1.yaml"
+        )
         result = yaml_load_typed(schema=StringStruct, filename=filename)
         self.assertEqual(result.value, "some_value_1")
 
@@ -959,7 +988,8 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         # have any corrresponding cases in the C++ unit tests.
         with self.assertRaisesRegex(Exception, "should have been a dict"):
             yaml_load_typed(
-                schema=typing.List[float], data="[1.0]", defaults=[])
+                schema=typing.List[float], data="[1.0]", defaults=[]
+            )
 
 
 class TestYamlTypedWrite(unittest.TestCase):
@@ -978,9 +1008,9 @@ class TestYamlTypedWrite(unittest.TestCase):
             (0.009, "0.009"),
             (1.2, "1.2"),
             (-1.2, "-1.2"),
-            (5.6e+16, "5.6e+16"),
+            (5.6e16, "5.6e+16"),
             (5.6e-12, "5.6e-12"),
-            (-5.6e+16, "-5.6e+16"),
+            (-5.6e16, "-5.6e+16"),
             (-5.6e-12, "-5.6e-12"),
             # See https://yaml.org/spec/1.2.2/#10214-floating-point.
             (nan, ".nan"),
@@ -994,7 +1024,7 @@ class TestYamlTypedWrite(unittest.TestCase):
 
     def test_write_string(self):
         # We'll use this abbreviation to help make our expected values clear.
-        dq = '"'   # double quote
+        dq = '"'  # double quote
         cases = [
             # Plain string.
             ("a", "a"),
@@ -1028,7 +1058,7 @@ class TestYamlTypedWrite(unittest.TestCase):
         x.some_int = 102
         x.some_str = "foo"
         x.some_path = Path("/test/path")
-        x.some_bytes = b'\x05\x06\x07'
+        x.some_bytes = b"\x05\x06\x07"
         actual_doc = yaml_dump_typed(x)
         expected_doc = dedent("""\
         some_bool: true
@@ -1043,9 +1073,9 @@ class TestYamlTypedWrite(unittest.TestCase):
 
     def test_write_bytes(self):
         cases = [
-            (b"", "!!binary \"\""),
+            (b"", '!!binary ""'),
             (b"all ascii", "!!binary |\n  YWxsIGFzY2lp"),
-            (b"other\x03\xffstuff", "!!binary |\n  b3RoZXID/3N0dWZm")
+            (b"other\x03\xffstuff", "!!binary |\n  b3RoZXID/3N0dWZm"),
         ]
         for value, expected_str in cases:
             actual_doc = yaml_dump_typed(BytesStruct(value=value))
@@ -1134,6 +1164,7 @@ class TestYamlTypedWrite(unittest.TestCase):
         @dc.dataclass
         class BadMapStruct:
             value: typing.Dict[int, float]
+
         with self.assertRaisesRegex(Exception, "keys must be string"):
             yaml_dump_typed(BadMapStruct({1: 2}))
 
@@ -1299,23 +1330,33 @@ class TestYamlTypedWrite(unittest.TestCase):
             self.assertEqual(actual_doc, expected_doc)
 
     def test_write_numpy_matrix(self):
-        x = NumpyStruct(value=np.array([
-            [0.0, 1.0, 2.0, 3.0],
-            [4.0, 5.0, 6.0, 7.0],
-            [8.0, 9.0, 10.0, 11.0],
-        ]))
-        self.assertEqual(yaml_dump_typed(x), dedent("""\
+        x = NumpyStruct(
+            value=np.array(
+                [
+                    [0.0, 1.0, 2.0, 3.0],
+                    [4.0, 5.0, 6.0, 7.0],
+                    [8.0, 9.0, 10.0, 11.0],
+                ]
+            )
+        )
+        self.assertEqual(
+            yaml_dump_typed(x),
+            dedent("""\
         value:
         - [0.0, 1.0, 2.0, 3.0]
         - [4.0, 5.0, 6.0, 7.0]
         - [8.0, 9.0, 10.0, 11.0]
-        """))
+        """),
+        )
 
     def test_write_numpy_matrix00(self):
         x = NumpyStruct(value=np.ndarray(shape=(0, 0)))
-        self.assertEqual(yaml_dump_typed(x), dedent("""\
+        self.assertEqual(
+            yaml_dump_typed(x),
+            dedent("""\
         value: []
-        """))
+        """),
+        )
 
     def test_write_nested(self):
         x = OuterStruct()
@@ -1363,9 +1404,8 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
 
     def _save(self, data, defaults, child_name="doc"):
         return yaml_dump_typed(
-            data=data,
-            defaults=defaults,
-            child_name=child_name)
+            data=data, defaults=defaults, child_name=child_name
+        )
 
     def test_dump_default_basic_example1(self):
         # Shows the typical use -- that only the novel data is output.
@@ -1375,10 +1415,13 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         defaults.inner_struct.inner_value = 2.0
         data = copy.deepcopy(defaults)
         data.outer_value = 3.0
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           outer_value: 3.0
-        """))
+        """),
+        )
 
     def test_dump_default_basic_example2(self):
         # Shows the typical use -- that only the novel data is output.
@@ -1388,11 +1431,14 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         defaults.inner_struct.inner_value = 2.0
         data = copy.deepcopy(defaults)
         data.inner_struct.inner_value = 3.0
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           inner_struct:
             inner_value: 3.0
-        """))
+        """),
+        )
 
     def test_dump_default_basic_example3(self):
         # Shows the typical use -- emit the content with or without providing a
@@ -1404,20 +1450,29 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data.inner_struct.inner_value = defaults.inner_struct.inner_value
 
         # Emit using the default "doc" root name.
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           outer_value: 3.0
-        """))
+        """),
+        )
 
         # Emit using an empty root name.
-        self.assertEqual(self._save(data, defaults, None), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults, None),
+            dedent("""\
         outer_value: 3.0
-        """))
+        """),
+        )
 
         # Emit with an empty root name without defaults.
-        self.assertEqual(self._save(defaults, defaults, None), dedent("""\
+        self.assertEqual(
+            self._save(defaults, defaults, None),
+            dedent("""\
         {}
-        """))
+        """),
+        )
 
     def test_dump_default_different_map_order1(self):
         # Same as the BasicExample1 from above, except that the map order of
@@ -1429,10 +1484,13 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data.outer_value = 3.0
         data.inner_struct.inner_value = defaults.inner_struct.inner_value
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           outer_value: 3.0
-        """))
+        """),
+        )
 
     def test_dump_default_different_map_order2(self):
         # Same as the BasicExample2 from above, except that the map order of
@@ -1444,11 +1502,14 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data.outer_value = defaults.outer_value
         data.inner_struct.inner_value = 3.0
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           inner_struct:
             inner_value: 3.0
-        """))
+        """),
+        )
 
     def test_dump_default_nulls(self):
         # YAML nulls are handled reasonably, without throwing.
@@ -1456,9 +1517,12 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         defaults.value = None
         data = copy.deepcopy(defaults)
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc: {}
-        """))
+        """),
+        )
 
     def test_dump_default_different_lists(self):
         # Lists differing in their values are not erased.
@@ -1467,10 +1531,13 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data = ListStruct()
         data.value = [1.0, 2.0, 3.0]
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           value: [1.0, 2.0, 3.0]
-        """))
+        """),
+        )
 
     def test_dump_default_different_size_lists(self):
         # Lists differing in size (but sharing a prefix) are not erased.
@@ -1479,10 +1546,13 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data = ListStruct()
         data.value = [1.0, 2.0, 3.0]
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           value: [1.0, 2.0, 3.0]
-        """))
+        """),
+        )
 
     def test_dump_default_different_variant_tag(self):
         # Variants differing by tag are not erased.
@@ -1491,11 +1561,14 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data = VariantStruct()
         data.value = FloatStruct(1.0)
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           value: !FloatStruct
             value: 1.0
-        """))
+        """),
+        )
 
     def test_dump_default_different_map_keys(self):
         # Maps differing in key only (same value) are not erased.
@@ -1504,11 +1577,14 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data = MapStruct()
         data.value["a"] = 1.0
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           value:
             a: 1.0
-        """))
+        """),
+        )
 
     def test_dump_default_different_map_values(self):
         # Maps differing in value only (same key) are not erased.
@@ -1517,11 +1593,14 @@ class TestYamlTypedWriteDefaults(unittest.TestCase):
         data = MapStruct()
         data.value["a"] = 1.0
 
-        self.assertEqual(self._save(data, defaults), dedent("""\
+        self.assertEqual(
+            self._save(data, defaults),
+            dedent("""\
         doc:
           value:
             a: 1.0
-        """))
+        """),
+        )
 
 
 class TestYamlTypedWriteAcceptance(unittest.TestCase):
@@ -1552,10 +1631,13 @@ class TestYamlTypedWriteAcceptance(unittest.TestCase):
 
         # Only the non-default map entry is saved.
         result = yaml_dump_typed(data, defaults=defaults)
-        self.assertEqual(result, dedent("""\
+        self.assertEqual(
+            result,
+            dedent("""\
             value:
               save_string: 1.0
-            """))
+            """),
+        )
 
     # Inside the implementation of yaml_dump_typed, the code to save to a
     # string versus a file shares all of the same dumping logic; only at the
@@ -1586,11 +1668,14 @@ class TestYamlTypedWriteAcceptance(unittest.TestCase):
             defaults=defaults,
         )
         readback = filename.read_text(encoding="utf-8")
-        self.assertEqual(readback, dedent("""\
+        self.assertEqual(
+            readback,
+            dedent("""\
             some_child:
               value:
                 save_file: 1.0
-            """))
+            """),
+        )
 
     def test_write_bad_schema(self):
         # N.B. This test covers python-specific error handling, so does not

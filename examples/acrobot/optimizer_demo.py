@@ -11,15 +11,13 @@ import tempfile
 
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
-
 from examples.acrobot.acrobot_io import (
     load_output,
     load_scenario,
     save_scenario,
 )
-
 from examples.acrobot.metrics import ensemble_cost, success_rate
+from pydrake.common import FindResourceOrThrow
 
 try:
     from scipy.optimize import fmin

@@ -36,7 +36,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
         });
   }
 
-  ~DiagnosticPolicyTestBase() { FlushDiagnostics(); }
+  ~DiagnosticPolicyTestBase() override;
 
   /// Remove an error from internal records and return its formatted string.
   std::string TakeError() {

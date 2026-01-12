@@ -63,7 +63,7 @@ class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
    */
   explicit QuaternionEulerIntegrationConstraint(bool allow_quaternion_negation);
 
-  ~QuaternionEulerIntegrationConstraint() override {}
+  ~QuaternionEulerIntegrationConstraint() override;
 
   template <typename T>
   Eigen::Matrix<T, 12, 1> ComposeVariable(

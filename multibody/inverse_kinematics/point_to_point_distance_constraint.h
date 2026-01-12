@@ -63,7 +63,7 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
       const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
       double distance_upper, systems::Context<AutoDiffXd>* plant_context);
 
-  ~PointToPointDistanceConstraint() override {}
+  ~PointToPointDistanceConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -188,7 +188,7 @@ void MultibodyTreeSystem<T>::Finalize() {
     throw std::logic_error(
         "MultibodyTreeSystem::Finalize(): repeated calls not allowed.");
   }
-  if (!tree_->topology_is_valid()) {
+  if (!tree_->is_finalized()) {
     tree_->Finalize();
   }
 

@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"

@@ -533,7 +533,7 @@ drake_py_unittest(
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -618,4 +618,4 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests_pydrake(python_lint_use_ruff_format = False)
+add_lint_tests_pydrake()

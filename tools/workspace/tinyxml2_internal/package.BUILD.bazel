@@ -12,6 +12,7 @@ cc_library(
     hdrs = ["tinyxml2.h"],
     srcs = ["tinyxml2.cpp"],
     includes = ["."],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )
@@ -21,3 +22,5 @@ install(
     docs = ["LICENSE.txt"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

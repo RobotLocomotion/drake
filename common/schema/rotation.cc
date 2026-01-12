@@ -1,6 +1,6 @@
 #include "drake/common/schema/rotation.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/overloaded.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"

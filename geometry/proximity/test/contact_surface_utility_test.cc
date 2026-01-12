@@ -595,7 +595,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
       // With assertions armed; we throw.
       DRAKE_EXPECT_THROWS_MESSAGE(
           CalcPolygonCentroid(quad, kZeroVec, vertices_M),
-          "CalcPolygonCentroid: given normal is too small; .*");
+          ".*n.norm\\(\\) >= 1e-10.*n.transpose.*n.norm.*");
     } else {
       // Without assertions, we compute the average vertex position.
       const Vector3d expected_centroid =
@@ -615,7 +615,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
       // With assertions armed; we throw.
       DRAKE_EXPECT_THROWS_MESSAGE(
           CalcPolygonCentroid(quad, kZeroVec, vertices_M),
-          "CalcPolygonCentroid: given normal is too small; .*");
+          ".*n.norm\\(\\) >= 1e-10.*n.transpose.*n.norm.*");
     } else {
       // Without assertions, we compute the triangle's centroid.
       EXPECT_TRUE(CompareMatrices(

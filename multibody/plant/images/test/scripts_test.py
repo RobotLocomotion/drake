@@ -1,19 +1,24 @@
-from os.path import isfile
+import os
+from pathlib import Path
+import subprocess
 import unittest
-from subprocess import run
-import sys
 
 
-class TestCreatePlot(unittest.TestCase):
-    def assert_isfile(self, file):
-        self.assertTrue(isfile(file), file)
-
-    def test_sripts(self):
-        # Must be run directly via Bazel.
-        python_bin = sys.executable
-        run(
-            [python_bin, "multibody/plant/images/ideal_stiction.py"], check=True
+class ScriptsTest(unittest.TestCase):
+    def test_ideal_stiction(self):
+        source = Path(".").absolute()
+        temp = Path(os.environ["TEST_TMPDIR"])
+        subprocess.check_call(
+            [source / "multibody/plant/images/ideal_stiction"],
+            cwd=temp,
         )
-        self.assert_isfile("./ideal_stiction.png")
-        run([python_bin, "multibody/plant/images/stiction.py"], check=True)
-        self.assert_isfile("./stribeck.png")
+        self.assertTrue((temp / "ideal_stiction.png").exists())
+
+    def test_stiction(self):
+        source = Path(".").absolute()
+        temp = Path(os.environ["TEST_TMPDIR"])
+        subprocess.check_call(
+            [source / "multibody/plant/images/stiction"],
+            cwd=temp,
+        )
+        self.assertTrue((temp / "stribeck.png").exists())

@@ -183,7 +183,7 @@ class FemModelImpl : public FemModel<typename Element::T> {
 
   void DoCalcTangentMatrix(
       const FemState<T>& fem_state,
-      contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+      contact_solvers::internal::BlockSparseSymmetricMatrix3d* tangent_matrix)
       const final {
     /* We already check for the scalar type in `CalcTangentMatrix()` but the `if
      constexpr` here is still needed to make the compiler happy. */
@@ -220,7 +220,7 @@ class FemModelImpl : public FemModel<typename Element::T> {
     }
   }
 
-  std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+  std::unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
   DoMakeTangentMatrix() const final {
     /* We already check for the scalar type in `MakeTangentMatrix()` but the `if
      constexpr` here is still needed to make the compiler happy. */
@@ -255,7 +255,7 @@ class FemModelImpl : public FemModel<typename Element::T> {
       contact_solvers::internal::BlockSparsityPattern block_pattern(
           std::vector<int>(this->num_nodes(), 3), std::move(sparsity_pattern));
       return std::make_unique<
-          contact_solvers::internal::Block3x3SparseSymmetricMatrix>(
+          contact_solvers::internal::BlockSparseSymmetricMatrix3d>(
           std::move(block_pattern));
     } else {
       DRAKE_UNREACHABLE();

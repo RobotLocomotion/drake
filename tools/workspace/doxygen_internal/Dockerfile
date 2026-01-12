@@ -1,9 +1,9 @@
 # This Dockerfile and the accompanying shell script are used by the project
 # maintainers to create the precompiled doxygen binaries that are downloaded
-# during the build. They are neither called during the build nor expected to be
-# called by most developers or users of the project.
+# during documentation generation. They are neither called during the build
+# nor expected to be called by most developers or users of the project.
 
-ARG UBUNTU_CODENAME=focal
+ARG UBUNTU_CODENAME=noble
 FROM ubuntu:${UBUNTU_CODENAME}
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update --quiet --quiet \
@@ -22,8 +22,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3 \
     wget \
   && rm -rf /var/lib/apt/lists/*
-ARG DOXYGEN_VERSION=1.8.15
-ARG DOXYGEN_SHA256=bd9c0ec462b6a9b5b41ede97bede5458e0d7bb40d4cfa27f6f622eb33c59245d
+ARG DOXYGEN_VERSION=1.14.0
+ARG DOXYGEN_SHA256=d4536d11ab13037327d8d026b75f5a86b7ccb2093e2f546235faf61fd86e6b5d
 RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
   && echo "${DOXYGEN_SHA256}  doxygen-${DOXYGEN_VERSION}.src.tar.gz" | sha256sum --check - \
   && tar -xzf "doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
@@ -31,8 +31,6 @@ RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOX
   && cd doxygen-build \
   && cmake \
     -DCMAKE_BUILD_TYPE:STRING=Release \
-    -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
-    -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
     -DCMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/doxygen \
     -DPython_EXECUTABLE:PATH=/usr/bin/python3 \

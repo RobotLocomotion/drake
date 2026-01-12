@@ -730,7 +730,11 @@ Raises:
     ``convex_sets_A`` and ``convex_sets_B``.
 
 Raises:
-    if ``convex_sets_A`` or ``convex_sets_B`` are empty.)""";
+    if ``convex_sets_A`` or ``convex_sets_B`` are empty.
+
+Raises:
+    if any entry of ``convex_sets_A`` or ``convex_sets_B`` is a
+    nullptr.)""";
           // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_6args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B_parallelism =
 R"""(Overload of ``ComputePairwiseIntersections`` allowing the user to
@@ -759,7 +763,11 @@ Raises:
 
 Raises:
     if not all entries of ``convex_sets_A``, `convex_sets_B`,
-    ``bboxes_A``, and ``bboxes_B`` have the same ambient dimension.)""";
+    ``bboxes_A``, and ``bboxes_B`` have the same ambient dimension.
+
+Raises:
+    if any entry of ``convex_sets_A`` or ``convex_sets_B`` is a
+    nullptr.)""";
           // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_4args_convex_sets_continuous_revolute_joints_preprocess_bbox_parallelism =
 R"""(Convenience overload to compute pairwise intersections within a list
@@ -791,7 +799,10 @@ Raises:
     ``convex_sets``.
 
 Raises:
-    if ``convex_sets`` is empty.)""";
+    if ``convex_sets`` is empty.
+
+Raises:
+    if any entry of ``convex_sets`` is a nullptr.)""";
           // Source: drake/geometry/optimization/geodesic_convexity.h
           const char* doc_4args_convex_sets_continuous_revolute_joints_bboxes_parallelism =
 R"""(Overload of ``ComputePairwiseIntersections`` allowing the user to
@@ -812,7 +823,10 @@ Raises:
 
 Raises:
     if not all entries of ``convex_sets`` and ``bboxes`` have the same
-    ambient dimension.)""";
+    ambient dimension.
+
+Raises:
+    if any entry of ``convex_sets`` is a nullptr.)""";
         } ComputePairwiseIntersections;
         // Symbol: drake::geometry::optimization::ConvexHull
         struct /* ConvexHull */ {
@@ -3872,6 +3886,14 @@ Returns:
 Parameter ``circumbody``:
     is an HPolyhedron that must contain the returned inbody.
 
+Precondition:
+    ``this`` is bounded. If ``check_bounded`` is true, this condition
+    is checked and an exception is thrown if it is not satisfied. If
+    ``check_bounded`` is set to false, then it is the user's
+    responsibility to ensure that ``this`` is bounded and the result
+    is not necessarily to be trusted if the precondition is not
+    satisfied.
+
 Raises:
     RuntimeError if the solver fails to solve the problem.)""";
           } MaximumVolumeInscribedAffineTransformation;
@@ -4498,16 +4520,6 @@ Note:
     require_sample_point_is_contained, iteration_limit,
     termination_threshold, relative_termination_threshold.)""";
         } Iris;
-        // Symbol: drake::geometry::optimization::IrisInConfigurationSpace
-        struct /* IrisInConfigurationSpace */ {
-          // Source: drake/geometry/optimization/iris.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use IrisNp instead. This will be removed from Drake on or after
-    2025-12-01.)""";
-        } IrisInConfigurationSpace;
         // Symbol: drake::geometry::optimization::IrisNp
         struct /* IrisNp */ {
           // Source: drake/geometry/optimization/iris.h
@@ -4937,7 +4949,10 @@ Raises:
 
 Raises:
     RuntimeError if continuous_revolute_joints has repeated entries,
-    or if any entry is outside the interval [0, ambient_dimension).)""";
+    or if any entry is outside the interval [0, ambient_dimension).
+
+Raises:
+    if any entry of ``convex_sets`` is a nullptr.)""";
         } PartitionConvexSet;
         // Symbol: drake::geometry::optimization::PlaneSeparatesGeometries
         struct /* PlaneSeparatesGeometries */ {

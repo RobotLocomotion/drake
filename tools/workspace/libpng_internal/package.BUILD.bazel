@@ -75,6 +75,7 @@ cc_library(
         "//conditions:default": [],
     }),
     includes = ["."],
+    isystem = True,
     copts = [
         "-fvisibility=hidden",
         "-w",
@@ -109,3 +110,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

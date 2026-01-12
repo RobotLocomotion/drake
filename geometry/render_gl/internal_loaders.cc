@@ -4,14 +4,11 @@
 #include <stdexcept>
 #include <string>
 
-#if !defined(__APPLE__)
+#include <fmt/format.h>
+#include <vtkX11Functions.h>
 #include <vtkglad/include/glad/egl.h>
 #include <vtkglad/include/glad/glx.h>
-#endif
 
-#include <fmt/format.h>
-
-#include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -23,11 +20,6 @@ constexpr char kTroubleshootingUrl[] =
     "https://drake.mit.edu/troubleshooting.html#gl-init";
 
 void GladLoaderLoadEgl() {
-#if defined(__APPLE__)
-  // This is not reachable via Drake's public API.
-  throw std::logic_error("Drake's GladLoaderLoadEgl() is unavailable on macOS");
-  unused(kTroubleshootingUrl);
-#else
   // Open the library at most once per process. At the time of this
   // writing this does not appear to matter in practice, but we might as
   // well avoid any problems down the road.
@@ -42,22 +34,18 @@ void GladLoaderLoadEgl() {
     return version;
   }();
   unused(ignored);
-#endif
 }
 
 void* GladLoaderLoadGlx() {
-#if defined(__APPLE__)
-  // This is not reachable via Drake's public API.
-  throw std::logic_error("Drake's GladLoaderLoadGlx() is unavailable on macOS");
-#else
   // Turn Display into a singleton to make CI happy, since when we close and
   // reopen the display on CI, we can't request a new OpenGL context. This
   // pattern won't call the corresponding `XCloseDisplay()` when the program
   // exits (https://linux.die.net/man/3/xclosedisplay), but it seems not so
   // evil to skip that.
   static Display* g_display = []() {
-    XInitThreads();
-    Display* display = XOpenDisplay(0);
+    vtkX11FunctionsInitialize();
+    vtkXInitThreads();
+    Display* display = vtkXOpenDisplay(0);
     if (display == nullptr) {
       const char* display_env = std::getenv("DISPLAY");
       throw std::logic_error(
@@ -76,7 +64,6 @@ void* GladLoaderLoadGlx() {
     return display;
   }();
   return g_display;
-#endif
 }
 
 }  // namespace internal

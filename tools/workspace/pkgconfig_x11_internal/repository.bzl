@@ -1,5 +1,7 @@
 load("//tools/workspace:pkg_config.bzl", "setup_pkg_config_repository")
 
+# Deprecated for removal on 2026-02-01.
+
 def _impl(repo_ctx):
     # N.B. We do not check the return value here for errors. Sometimes this
     # rule is evaluated on systems where pkg-config will fail but where the

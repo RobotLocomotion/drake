@@ -21,6 +21,7 @@ class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
     }
     SetWeightsAndQuadraturePoints();
   }
+  ~GaussianTriangleQuadratureRule() final;
 
  private:
   // Sets the weights and quadrature points depending on the order of the

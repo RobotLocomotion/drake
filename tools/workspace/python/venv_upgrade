@@ -12,12 +12,18 @@
 
 set -eux -o pipefail
 
+# NOTE: The list of Python versions here should be the set of all Python
+# versions for which wheels are built.
+readonly python_versions=( 3.10 3.11 3.12 3.13 3.14 )
+
+purge=1
 commit=
 files_to_commit=()
 lock_args=()
 while [ "${1:-}" != "" ]; do
     case "$1" in
         --reuse)
+            purge=
             lock_args+=( --update-reuse )
             ;;
         --commit)
@@ -96,8 +102,13 @@ fi
 
 # Update the Drake lock file.
 readonly lockfile="./setup/python/pdm.lock"
-lock_args+=( -d -p "${project_drake}" -L "${lockfile}" )
-"${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
+if [ -n "${purge}" ]; then
+    rm "$lockfile"
+fi
+lock_args+=( -d -p "${project_drake}" -L "${lockfile}" --append )
+for py in "${python_versions[@]}"; do
+    "${venv_pdm}/bin/pdm" lock "${lock_args[@]}" --python ${py}
+done
 
 # Check for changes to the lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )

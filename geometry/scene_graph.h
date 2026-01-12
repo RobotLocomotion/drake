@@ -968,12 +968,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
    "initialize" itself after changes to properties that will affect how a
    geometry appears. If changing a geometry's illustration properties doesn't
    seem to be affecting the visualization, retrigger its initialization action.
-
-   @warning Due to a bug (see issue
-   <a href="https://github.com/RobotLocomotion/drake/issues/13597">#13597</a>),
-   changing the illustration roles or properties in a systems::Context will not
-   have any apparent effect in certain viewers. Please change the illustration
-   role in the model prior to allocating the context.
    @pydrake_mkdoc_identifier{illustration_context}
    */
   void AssignRole(systems::Context<T>* context, SourceId source_id,

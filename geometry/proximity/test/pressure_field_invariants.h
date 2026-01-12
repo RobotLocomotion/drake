@@ -28,7 +28,7 @@ relation ship.
 
 For such pressure fields, this function verifies the invariants:
  1. The two fields are defined on the same mesh.
- 2. Pressure on the surface is uniform and equal to p̃₀`.
+ 2. Pressure on the surface is uniform and equal to `p̃₀`.
  3. The linear relationship slope is uniform and equal to s.
 
 @param[in] field_no_margin The pressure field for δ = 0.

@@ -4,7 +4,7 @@
 
 /**
 @addtogroup hydroelastic_user_guide
-
+@{
 A guide to using hydroelastic contact in practice.
 
 @section hug_introduction Introduction
@@ -18,8 +18,8 @@ over a contact patch with an uneven pressure distribution over that patch. It
 is common in robotics to model that as a single point contact or a set of point
 contacts. Hydroelastic contact instead attempts to approximate the patch and
 pressure distribution to provide much richer and more realistic contact
-behavior. For a high-level overview, see [this blog post]
-(https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88).
+behavior. For a high-level overview, see
+[this blog post](https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88).
 
 Drake implements two models for resolving contact to forces: point contact and
 hydroelastic contact. See @ref compliant_contact for a fuller discussion of the
@@ -518,8 +518,7 @@ indicate what can and cannot be done with hydroelastic contact.
 - The Drake Mesh Shape type can be used as a compliant hydroelastic body
   using a tetrahedral mesh in VTK file.
   See
-  [examples/hydroelastic/python_nonconvex_mesh.]
-  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
+  [examples/hydroelastic/python_nonconvex_mesh.](https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
 
 @subsection hug_not_yet_implemented What can’t you do with hydroelastic contact?
 
@@ -550,36 +549,31 @@ indicate what can and cannot be done with hydroelastic contact.
   and Lagged discrete approximations as well as continuous plant model) and
   `relaxation_time` (SAP approximation specific parameter) on the model, but the
   parameter may be ignored depending on your plant configuration. See the
-  documentation for that in the [MultibodyPlant documentation.]
-  (https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
+  documentation for that in the
+  [MultibodyPlant documentation.](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
 
 @section hydro_appendix_examples_and_tutorials Appendix B: Examples and Tutorials
 - Example
-  [Contact between a ball, dinner plate, and floor in C++]
-  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/ball_plate)
+  [Contact between a ball, dinner plate, and floor in C++](https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/ball_plate)
   uses the hydroelastic contact model for a convex ball and non-convex
   dinner plate.
 
 - Example
-  [Contact between a ball and paddle (box) in Python]
-  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_ball_paddle)
+  [Contact between a ball and paddle (box) in Python](https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_ball_paddle)
   uses the hydroelastic contact model for a ball on stationary paddle (box).
 
 - Example
-  [Contact between a bell pepper, dinner bowl, and floor in Python]
-  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
+  [Contact between a bell pepper, dinner bowl, and floor in Python](https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
   uses the hydroelastic contact model for a non-convex bell pepper in
   a non-convex dinner bowl.
 
 - Example
-  [Slip control for a spatula handle between finger grippers in C++]
-  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/spatula_slip_control)
+  [Slip control for a spatula handle between finger grippers in C++](https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/spatula_slip_control)
   uses the hydroelastic contact model for a spatula handle between finger
   grippers.
 
 - Tutorial
-  [Hydroelastic Contact Basics with Jupyter Python notebook]
-  (https://github.com/RobotLocomotion/drake/blob/master/tutorials/hydroelastic_contact_basics.ipynb)
+  [Hydroelastic Contact Basics with Jupyter Python notebook](https://github.com/RobotLocomotion/drake/blob/master/tutorials/hydroelastic_contact_basics.ipynb)
   shows how to simulate hydroelastic contact for a compliant block dropped
   on a rigid rectangular plate.
   The below-left picture shows one frame of the block's contact with
@@ -606,5 +600,5 @@ indicate what can and cannot be done with hydroelastic contact.
 - @anchor Sherman2022 [Sherman 2022] Sherman, M. (2022, June). Rethinking
   Contact Simulation for Robot Manipulation. Blog post in Medium.
   https://medium.com/toyotaresearch/rethinking-contact-simulation-for-robot-manipulation-434a56b5ec88 .
-
+ @}
  */

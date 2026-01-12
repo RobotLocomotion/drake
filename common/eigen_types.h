@@ -162,6 +162,14 @@ using AngleAxis = Eigen::AngleAxis<Scalar>;
 template <typename Scalar>
 using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0) || defined(DRAKE_DOXYGEN_CXX)
+/// A portable alias for Eigen::placeholders::all.
+static constexpr auto eigen_all = Eigen::placeholders::all;
+#else
+// Backwards compatibility for Eigen < 5.
+static const auto eigen_all = Eigen::all;
+#endif
+
 /*
  * Determines if a type is derived from EigenBase<> (e.g. ArrayBase<>,
  * MatrixBase<>).

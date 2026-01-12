@@ -31,7 +31,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
       const ContactWrenchEvaluator* contact_wrench_evaluator,
       double complementarity_tolerance);
 
-  ~StaticFrictionConeComplementarityNonlinearConstraint() override {}
+  ~StaticFrictionConeComplementarityNonlinearConstraint() override;
 
   /* The slack variable for n_Wᵀ * f_W. See
    * AddStaticFrictionConeComplementarityConstraint().*/

@@ -1,9 +1,9 @@
---- header.html.orig	2022-04-13 15:16:12.583092808 -0700
-+++ header.html.new	2022-04-13 15:29:17.385355977 -0700
-@@ -20,6 +20,46 @@
- <body>
+--- header.html.orig
++++ header.html.new
+@@ -33,6 +33,46 @@
+
  <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
- 
+
 +<header class="site-header">
 + <div class="site-header-inner contain">
 +  <a class="drake-logo" href="/"><img src="/images/drake-logo-white.svg"></a>
@@ -47,17 +47,22 @@
  <!--BEGIN TITLEAREA-->
  <div id="titlearea">
  <table cellspacing="0" cellpadding="0">
-@@ -44,13 +84,30 @@
+@@ -56,11 +96,6 @@
     <!--END PROJECT_BRIEF-->
    <!--END !PROJECT_NAME-->
    <!--BEGIN DISABLE_INDEX-->
 -   <!--BEGIN SEARCHENGINE-->
--   <td>$searchbox</td>
+-     <!--BEGIN !FULL_SIDEBAR-->
+-    <td>$searchbox</td>
+-     <!--END !FULL_SIDEBAR-->
 -   <!--END SEARCHENGINE-->
    <!--END DISABLE_INDEX-->
   </tr>
+   <!--BEGIN SEARCHENGINE-->
+@@ -71,5 +106,25 @@
   </tbody>
  </table>
+ </div>
 +<div class="title-banner">
 + <div class="title-banner__title">
 +  Drake C++ Documentation
@@ -74,10 +79,9 @@
 + </div>
 + <!--BEGIN SEARCHENGINE-->
 + <div id="MSearchBoxContainer">
-+  $searchbox
++  <td>$searchbox</td>
 + </div>
 + <!--END SEARCHENGINE-->
 +</div>
- </div>
  <!--END TITLEAREA-->
  <!-- end header part -->

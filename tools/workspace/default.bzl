@@ -70,7 +70,6 @@ load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_module_extension_impl")  # noqa
 load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
-load("//tools/workspace/statsjs_internal:repository.bzl", "statsjs_internal_repository")  # noqa
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
 load("//tools/workspace/styleguide:repository.bzl", "styleguide_repository")
 load("//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
@@ -149,7 +148,6 @@ def _add_internal_repositories():
     sdformat_internal_repository(name = "sdformat_internal", mirrors = mirrors)
     spral_internal_repository(name = "spral_internal", mirrors = mirrors)
     stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
-    statsjs_internal_repository(name = "statsjs_internal", mirrors = mirrors)
     stduuid_internal_repository(name = "stduuid_internal", mirrors = mirrors)
     styleguide_repository(name = "styleguide_internal", mirrors = mirrors)
     suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
@@ -186,8 +184,9 @@ def _drake_dep_repositories_impl(module_ctx):
         "lapack",
         "opencl",
         "spdlog",
-        "x11",
         "zlib",
+        # Deprecated for removal on 2026-02-01.
+        "x11",
     ]
     for name in ALIAS_REPOSITORIES:
         actual = "@drake//tools/workspace/" + name

@@ -1,6 +1,6 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace manipulation {

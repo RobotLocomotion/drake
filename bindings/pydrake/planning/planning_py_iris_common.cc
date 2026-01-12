@@ -166,10 +166,10 @@ void DefinePlanningIrisParameterizationFunction(py::module m) {
   // IrisParameterizationFunction
   const auto& cls_doc = doc.IrisParameterizationFunction;
 
-  const std::string parameterization_function_docstring =
-      std::string(cls_doc.ctor
-              .doc_3args_parameterization_double_parameterization_is_threadsafe_parameterization_dimension) +
-      R"(
+  const std::string parameterization_function_docstring = R"(
+Constructor for when the user provides a callable function to be used as the
+parameterization. ``parameterization`` is the function itself and ``dimension`` 
+is the input dimension.
 
 .. note:: In order to use IrisNp2, the user-provided parameterization function
    must support double and AutoDiffXd. If it does not support AutoDiffXd, then

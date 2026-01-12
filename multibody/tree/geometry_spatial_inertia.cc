@@ -201,6 +201,22 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
   return result;
 }
 
+CalcSpatialInertiaResult CalcSpatialInertiaWithFallback(
+    const geometry::Mesh& mesh, double density,
+    std::function<void(const std::string&)> warn_for_convex) {
+  CalcSpatialInertiaResult result =
+      internal::CalcSpatialInertiaImpl(mesh, density);
+  if (std::holds_alternative<std::string>(result)) {
+    if (warn_for_convex != nullptr) {
+      warn_for_convex(std::get<std::string>(result));
+    }
+
+    result = internal::CalcSpatialInertiaImpl(
+        geometry::Convex(mesh.source().path(), mesh.scale3()), density);
+  }
+  return result;
+}
+
 }  // namespace internal
 
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,

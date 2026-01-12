@@ -422,7 +422,7 @@ for Simulator. */
 template <typename T>
 class Event {
  public:
-  virtual ~Event() = default;
+  virtual ~Event();
 
   // TODO(eric.cousineau): Deprecate and remove this alias.
   using TriggerType = systems::TriggerType;

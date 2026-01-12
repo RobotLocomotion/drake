@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import os
+
 import pydrake
+
 
 def assert_exists(path):
     assert os.path.exists(path), f'{path!r} does not exist!'

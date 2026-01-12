@@ -4,7 +4,7 @@
 // clang-format off (to preserve link to images)
 
 /** @addtogroup contact_defaults Default Contact Parameters
-
+@{
 @brief  <a><!-- no brief line please --></a>
 
 In Drake, @ref why_rigid "contacts are modeled as compliant". While some may
@@ -188,5 +188,5 @@ millimeters range for large mobile robots the size of a humanoid. Stiffer values
 can be used, but this set of parameters is a good starting point that
 effectively trades off a practical approximation of rigid contact with numerical
 stiffness.
-
+@}
 */

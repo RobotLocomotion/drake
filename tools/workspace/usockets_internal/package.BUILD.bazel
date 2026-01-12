@@ -17,6 +17,7 @@ cc_library(
         "src/**/*.h",
     ]),
     includes = ["src"],
+    isystem = True,
     copts = [
         "-DLIBUS_NO_SSL",
         "-fvisibility=hidden",
@@ -30,3 +31,5 @@ install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

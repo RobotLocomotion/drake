@@ -54,8 +54,9 @@ def _get_commit_from_version(*, filename):
     # TODO(jwnimmer-tri) Add git sha into whl files for cross-checking as well.
     is_tar_file = filename.endswith(".tar.gz")
     is_deb_file = filename.endswith(".deb")
-    assert is_tar_file or is_deb_file, \
+    assert is_tar_file or is_deb_file, (
         f"{filename} did not end in .tar.gz or .deb"
+    )
 
     print(f"Extract version information from: {filename}...")
     if is_tar_file:
@@ -70,8 +71,15 @@ def _get_commit_from_version(*, filename):
         with tempfile.TemporaryDirectory(prefix="drake-release-tmp-") as td:
             # Extract the .deb to a temporary directory to inspect VERSION.TXT.
             _run(["dpkg-deb", "-x", filename, td])
-            version_txt_path = Path(td) / "opt" / "drake" / "share" / "doc" / \
-                "drake" / "VERSION.TXT"
+            version_txt_path = (
+                Path(td)
+                / "opt"
+                / "drake"
+                / "share"
+                / "doc"
+                / "drake"
+                / "VERSION.TXT"
+            )
             with open(version_txt_path) as f:
                 text = f.read()
             _, commit = text.split()
@@ -105,7 +113,8 @@ def _check_urls(*, urls):
     if missing_urls:
         error_message = StringIO()
         error_message.write(
-            f"ERROR: found {len(missing_urls)} missing URL(s).\n")
+            f"ERROR: found {len(missing_urls)} missing URL(s).\n"
+        )
         for url, message in missing_urls:
             error_message.write(f"[X] {url}:\n    {message}\n")
         raise UserError(error_message.getvalue())
@@ -133,8 +142,9 @@ def _download_binaries(*, timestamp, staging, version):
                 f"drake-{version[1:]}-cp311-cp311-manylinux_2_34_x86_64.whl",
                 f"drake-{version[1:]}-cp312-cp312-manylinux_2_34_x86_64.whl",
                 f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_x86_64.whl",
-                f"drake-{version[1:]}-cp312-cp312-macosx_14_0_arm64.whl",
-                f"drake-{version[1:]}-cp313-cp313-macosx_14_0_arm64.whl",
+                f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_x86_64.whl",
+                f"drake-{version[1:]}-cp313-cp313-macosx_15_0_arm64.whl",
+                f"drake-{version[1:]}-cp314-cp314-macosx_15_0_arm64.whl",
                 # Deb filenames.
                 f"drake-dev_{version[1:]}-1_amd64-jammy.deb",
                 f"drake-dev_{version[1:]}-1_amd64-noble.deb",
@@ -176,17 +186,12 @@ def _download_binaries(*, timestamp, staging, version):
 
 
 def _get_consistent_git_commit_sha(*, filenames):
-    """Returns the common git sha within the given list of filenames.
-    """
+    """Returns the common git sha within the given list of filenames."""
     # TODO(jwnimmer-tri) Add git sha into whl files for cross-checking.
-    non_wheel_filenames = [
-        x for x in filenames
-        if not x.endswith(".whl")
-    ]
+    non_wheel_filenames = [x for x in filenames if not x.endswith(".whl")]
     # Verify that each archive uses the same version.
     commit_list = [
-        _get_commit_from_version(filename=x)
-        for x in non_wheel_filenames
+        _get_commit_from_version(filename=x) for x in non_wheel_filenames
     ]
     result = commit_list[0]
     version_errors = []
@@ -194,20 +199,21 @@ def _get_consistent_git_commit_sha(*, filenames):
         if commit != result:
             version_errors.append(
                 f"For '{one_filename}': Commit '{commit}' is not "
-                f"the expected value '{result}'")
+                f"the expected value '{result}'"
+            )
     if len(version_errors) > 0:
         raise UserError("\n".join(version_errors))
     return result
 
 
 def _find_git_sha(*, timestamp):
-    """Implements the --find-git-sha command line action.
-    """
+    """Implements the --find-git-sha command line action."""
     with tempfile.TemporaryDirectory(prefix="drake-release-tmp-") as tmp_dir:
         print(f"+ cd {tmp_dir}", file=sys.stderr)
         os.chdir(tmp_dir)
         filenames = _download_binaries(
-            timestamp=timestamp, staging=False, version=None)
+            timestamp=timestamp, staging=False, version=None
+        )
         result = _get_consistent_git_commit_sha(filenames=filenames)
         print()
         print(f"The nightly binaries all have the same commit: {result}")
@@ -219,8 +225,9 @@ def _check_deb_versions(*, filenames, version):
     assert len(deb_filenames) > 0, filenames
     deb_versions = []  # list[tuple[str, str]]: (filename, extracted version)
     for deb in deb_filenames:
-        proc = subprocess.run(["dpkg-deb", "-f", deb, "Version"],
-                              capture_output=True, check=True)
+        proc = subprocess.run(
+            ["dpkg-deb", "-f", deb, "Version"], capture_output=True, check=True
+        )
         deb_version = proc.stdout.decode("utf-8").strip()
         deb_versions.append((deb, deb_version))
     version_errors = []
@@ -229,14 +236,14 @@ def _check_deb_versions(*, filenames, version):
         if deb_version != f"{version[1:]}-1":
             version_errors.append(
                 f"For '{deb}': Version '{deb_version}' is not "
-                f"the expected value '{version}'")
+                f"the expected value '{version}'"
+            )
     if len(version_errors) > 0:
         raise UserError("\n".join(version_errors))
 
 
 def _download_version(*, version):
-    """Implements the --version (download) command line action.
-    """
+    """Implements the --version (download) command line action."""
     if version[0] != "v":
         raise UserError(f"Bad version format: {version}")
     tmp_dir = f"/tmp/drake-release/{version}"
@@ -244,13 +251,15 @@ def _download_version(*, version):
         raise UserError(
             f"Directory must not already exist: {tmp_dir}\n"
             f"If you are re-running this script, please remove the "
-            f"directory.")
+            f"directory."
+        )
     os.makedirs(tmp_dir)
     print(f"+ cd {tmp_dir}", file=sys.stderr)
     os.chdir(tmp_dir)
 
     filenames = _download_binaries(
-        timestamp=None, staging=True, version=version)
+        timestamp=None, staging=True, version=version
+    )
     git_sha = _get_consistent_git_commit_sha(filenames=filenames)
     print(f"The binaries all have the same git commit sha: {git_sha}")
 
@@ -263,21 +272,26 @@ def _download_version(*, version):
         f"to uploaded are located in the following folder (Ctrl+Click "
         f"in the terminal to open in your file explorer):\n"
         f"\n"
-        f"  file://{tmp_dir}\n")
+        f"  file://{tmp_dir}\n"
+    )
 
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="download_release_candidate", description=__doc__,
-        formatter_class=argparse.RawTextHelpFormatter)
+        prog="download_release_candidate",
+        description=__doc__,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument(
-        "--find-git-sha", metavar="TIMESTAMP",
+        "--find-git-sha",
+        metavar="TIMESTAMP",
         help="Print the git sha to use for the release "
-             "matching the YYYYMMDD nightly.")
+        "matching the YYYYMMDD nightly.",
+    )
     action.add_argument(
-        "--version", type=str,
-        help="Download artifacts for the vX.Y.Z release.")
+        "--version", type=str, help="Download artifacts for the vX.Y.Z release."
+    )
     args = parser.parse_args()
 
     if args.version is None:

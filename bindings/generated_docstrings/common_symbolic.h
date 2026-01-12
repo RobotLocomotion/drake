@@ -826,14 +826,6 @@ Parameter ``map_var_to_index``:
     is of the same size as ``vars``, and
     map_var_to_index[vars(i).get_id()] = i. This invariance holds for
     map_var_to_index both as the input and as the output.)""";
-        // Source: drake/common/symbolic/decompose.h
-        const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use the overloaded function with std::vector<Variable> instead of
-    VectorX<Variable> This will be removed from Drake on or after
-    2024-05-01.)""";
       } ExtractAndAppendVariablesFromExpression;
       // Symbol: drake::symbolic::ExtractVariablesFromExpression
       struct /* ExtractVariablesFromExpression */ {
@@ -2332,10 +2324,10 @@ Raises:
 
 Parameter ``y``:
     The bilinear product between ``x`` and ``y`` will be replaced by
-    the corresponding term in ``W.
+    the corresponding term in ``W``.
 
 Raises:
-    RuntimeError if `y`` contains duplicate entries.
+    RuntimeError if ``y`` contains duplicate entries.
 
 Parameter ``W``:
     Bilinear product term x(i) * y(j) will be replaced by W(i, j). If

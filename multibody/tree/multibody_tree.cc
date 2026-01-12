@@ -12,7 +12,6 @@
 #include <fmt/ranges.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
@@ -163,9 +162,19 @@ template <typename T>
 void MultibodyTree<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
   DRAKE_MBT_THROW_IF_FINALIZED();
   actuator.HasThisParentTreeOrThrow(this);
+  const int num_dofs_removed = actuator.num_inputs();
   JointActuatorIndex actuator_index = actuator.index();
   actuators_.Remove(actuator_index);
-  topology_.RemoveJointActuatorTopology(actuator_index);
+  num_actuated_dofs_ -= num_dofs_removed;
+
+  // We have to adjust the dof-start allocation for all the higher-index
+  // actuators.
+  for (JointActuatorIndex i(actuator_index); i < actuators_.next_index(); ++i) {
+    if (!actuators_.has_element(i)) continue;  // Skip removed actuators.
+    JointActuator<T>& fixup_actuator = actuators_.get_mutable_element(i);
+    fixup_actuator.set_actuator_dof_start(fixup_actuator.input_start() -
+                                          num_dofs_removed);
+  }
 }
 
 template <typename T>
@@ -546,7 +555,7 @@ const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
 template <typename T>
 const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
     std::unique_ptr<RigidBody<T>> body) {
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "This MultibodyTree is finalized already. "
         "Therefore adding more bodies is not allowed. "
@@ -559,8 +568,6 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
   DRAKE_DEMAND(body->model_instance().is_valid());
 
   const BodyIndex body_index(num_bodies());
-  const FrameIndex body_frame_index(num_frames());
-  topology_.add_rigid_body_topology(body_index, body_frame_index);
 
   if (body_index == 0) {
     // We're adding the first RigidBody -- must be World!
@@ -574,14 +581,13 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBodyImpl(
     link_joint_graph_.AddLink(body->name(), body->model_instance());
   }
 
-  // TODO(amcastro-tri): consider not depending on setting this pointer at
-  //  all. Consider also removing MultibodyElement altogether.
   body->set_parent_tree(this, body_index);
   // MultibodyTree can access selected private methods in RigidBody through its
   // RigidBodyAttorney.
   // - Register body frame.
   Frame<T>* body_frame =
       &internal::RigidBodyAttorney<T>::get_mutable_body_frame(body.get());
+  const FrameIndex body_frame_index(num_frames());
   body_frame->set_parent_tree(this, body_frame_index);
   DRAKE_DEMAND(body_frame->name() == body->name());
   frames_.AddBorrowed(body_frame);
@@ -743,11 +749,12 @@ welds between Links that were merged onto a single Mobod. We visit the forest's
 mobilized bodies (Mobods) in depth-first order and create Mobilizers in the same
 order as Mobods. We make a stub 0th Mobilizer for World so that Mobilizers and
 Mobods are numbered identically. (Think of it as a weld of World to the
-universe.) Joints that are interior to merged LinkComposites won't get modeled
-at all since they don't appear in the forest. */
+universe.) Joints that are interior to optimized WeldedLinksAssemblies
+(composite bodies) won't get modeled at all since they don't appear in the
+forest. */
 template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
-  DRAKE_DEMAND(!topology_is_valid());
+  DRAKE_DEMAND(!is_finalized());
 
   // These are the Joint type names for the joints that are currently
   // reversible.
@@ -760,8 +767,6 @@ void MultibodyTree<T>::CreateJointImplementations() {
     if (mobod.is_world()) {
       // No associated Joint but we do want a stub "weld" Mobilizer so that
       // Mobods, BodyNodes, and Mobilizers have identical numbering.
-      topology_.add_world_mobilizer_topology(mobod,
-                                             world_body().body_frame().index());
       auto dummy_weld = std::make_unique<internal::WeldMobilizer<T>>(
           mobod, world_frame(), world_frame());
       dummy_weld->set_model_instance(world_model_instance());
@@ -792,6 +797,14 @@ void MultibodyTree<T>::CreateJointImplementations() {
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
     mobilizer->set_model_instance(joint.model_instance());
     mobilizer->set_is_ephemeral(joint.is_ephemeral());
+
+    // Mark floating base bodies as needed. Note the strict definition:
+    // (1) the inboard joint must have six degrees of freedom, and
+    // (2) that joint must be ephemeral (added automatically).
+    bool is_floating_base_mobilizer =
+        mobilizer->has_six_dofs() && mobilizer->is_ephemeral();
+    mobilizer->set_is_floating_base_mobilizer(is_floating_base_mobilizer);
+
     AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.
@@ -804,10 +817,8 @@ const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
     const RigidBody<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
-  const RigidBodyTopology& rigid_body_topology =
-      get_topology().get_rigid_body_topology(body.index());
-  const Mobilizer<T>& mobilizer =
-      get_mobilizer(rigid_body_topology.inboard_mobilizer);
+  const LinkJointGraph::Link& link = forest().link_by_index(body.index());
+  const Mobilizer<T>& mobilizer = get_mobilizer(link.mobod_index());
   if (!mobilizer.has_six_dofs()) {
     throw std::logic_error("Body '" + body.name() + "' is not a free body.");
   }
@@ -824,55 +835,36 @@ const Frame<T>& MultibodyTree<T>::AddOrGetJointFrame(
     return this->AddFrame<FixedOffsetFrame>(
         fmt::format("{}_{}", joint_name, frame_suffix), body.body_frame(),
         *X_BF, joint_instance);
-  } else {
-    return body.body_frame();
   }
-}
-
-template <typename T>
-void MultibodyTree<T>::FinalizeTopology() {
-  // If the topology is valid it means that this MultibodyTree was already
-  // finalized. Re-compilation is not allowed.
-  if (topology_is_valid()) {
-    throw std::logic_error(
-        "Attempting to call MultibodyTree::FinalizeTopology() on a tree with"
-        " an already finalized topology.");
-  }
-
-  // Before performing any setup that depends on the scalar type <T>, compile
-  // all the type-T independent topological information.
-  DRAKE_DEMAND(graph().forest_is_valid());
-  topology_.FinalizeTopology(graph());
+  return body.body_frame();
 }
 
 template <typename T>
 void MultibodyTree<T>::FinalizeInternals() {
-  if (!topology_is_valid()) {
-    throw std::logic_error(
-        "MultibodyTree::FinalizeTopology() must be called before "
-        "MultibodyTree::FinalizeInternals().");
-  }
+  DRAKE_DEMAND(!is_finalized());
+  DRAKE_DEMAND(graph().forest_is_valid());
 
   // Give different multibody elements the chance to perform any finalize-time
   // setup.
   for (const auto& body_index : rigid_bodies_.indices()) {
-    rigid_bodies_.get_mutable_element(body_index).SetTopology(topology_);
+    // This sets the body's is_floating_base_body() flag appropriately.
+    rigid_bodies_.get_mutable_element(body_index).SetTopology();
   }
   for (const auto& frame_index : frames_.indices()) {
     // We (re)set the topology on all frames. The rigid body frames' topologies
     // will already have been set in the body loop immediately above, but it
     // doesn't hurt to set them again. The important thing is that the non-body
     // frames are being set here for the first time.
-    frames_.get_mutable_element(frame_index).SetTopology(topology_);
+    frames_.get_mutable_element(frame_index).SetTopology();
   }
   for (const auto& mobilizer : mobilizers_) {
-    mobilizer->SetTopology(topology_);
+    mobilizer->SetTopology();
   }
   for (const auto& force_element : force_elements_) {
-    force_element->SetTopology(topology_);
+    force_element->SetTopology();
   }
   for (const auto& actuator_index : actuators_.indices()) {
-    actuators_.get_mutable_element(actuator_index).SetTopology(topology_);
+    actuators_.get_mutable_element(actuator_index).SetTopology();
   }
 
   // TODO(sherm1) Consider building the level collection while building the
@@ -900,7 +892,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   for (JointIndex i : GetJointIndices()) {
     auto& joint = joints_.get_mutable_element(i);
     const RigidBody<T>& body = joint.child_body();
-    if (body.is_floating_base_body()) {
+    if (RigidBodyAttorney<T>::is_floating_base_body_pre_finalize(body)) {
       DRAKE_DEMAND(joint.is_ephemeral());
       const auto [quaternion, translation] =
           GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(body);
@@ -908,6 +900,8 @@ void MultibodyTree<T>::FinalizeInternals() {
       default_body_poses_[body.index()] = joint.index();
     }
   }
+
+  is_finalized_ = true;
 }
 
 template <typename T>
@@ -920,8 +914,8 @@ void MultibodyTree<T>::Finalize() {
       directed by inboard/outboard edges, and
     - added constraints where needed to close kinematic loops in the graph.
   The modeler sorts the mobilized bodies into depth-first order. Note that
-  welded-together Links (in a LinkComposite) may be merged into a single
-  mobilized body so there can be more Links than Mobods.
+  welded-together Links (in a WeldedLinksAssembly) may be optimized into a
+  single mobilized body so there can be more Links than Mobods.
 
   Every Link will be modeled with one "primary" body and possibly several
   "shadow" bodies. Every non-Weld Joint will be modeled with a mobilizer, with
@@ -929,8 +923,8 @@ void MultibodyTree<T>::Finalize() {
   inboard/outboard connection or to the reverse, as necessary for the mobilizers
   to form properly-directed trees. Every body in a tree must have a path in
   the inboard direction connecting it to World. If necessary, additional
-  "floating" (6 dof) or "weld" (0 dof) joints are added to make the final
-  connection to World.
+  "ephemeral" floating (6 dof) or weld (0 dof) joints are added to make the
+  final connection to World.
 
   During the modeling process, the LinkJointGraph is augmented with "ephemeral
   elements" to provide a uniform interface to the additional elements that were
@@ -946,6 +940,18 @@ void MultibodyTree<T>::Finalize() {
   /* Add Links, Joints, and Constraints that were created during the modeling
   process (BuildForest()), which augmented the graph with them. We call those
   "ephemeral" elements. */
+
+  // TODO(sherm1) Add shadow links and loop constraints.
+  if (!graph.loop_constraints().empty()) {
+    link_joint_graph_.InvalidateForest();
+    throw std::runtime_error(fmt::format(
+        "The bodies and joints of this system form one or "
+        "more loops in the system graph. Drake currently does not "
+        "support automatic modeling of such systems; however, they "
+        "can be modeled with some input changes. See "
+        "https://drake.mit.edu/troubleshooting.html"
+        "#mbp-loops-in-graph for advice on how to model systems with loops."));
+  }
 
   /* Add the ephemeral Joints. */
   for (JointOrdinal i(graph.num_user_joints()); i < graph.num_joints(); ++i) {
@@ -977,19 +983,17 @@ void MultibodyTree<T>::Finalize() {
     DRAKE_DEMAND(new_joint.index() == added_joint.index());
   }
 
-  // TODO(sherm1) Add shadow links and loop constraints.
-  if (!graph.loop_constraints().empty()) {
-    throw std::runtime_error(fmt::format(
-        "The bodies and joints of this system form one or "
-        "more loops in the system graph. Drake currently does not "
-        "support automatic modeling of such systems; however, they "
-        "can be modeled with some input changes. See "
-        "https://drake.mit.edu/troubleshooting.html"
-        "#mbp-loops-in-graph for advice on how to model systems with loops."));
-  }
-
+  // Model each Joint with an appropriate Mobilizer.
   CreateJointImplementations();
-  FinalizeTopology();
+
+  // Perform final setup of all the MultibodyTree internals. This step is
+  // required both here and after cloning of a MultibodyTree. Actions:
+  // - invoke SetTopology() on all elements to give them a chance to
+  //   perform any finalize-time setup,
+  // - create BodyNodes corresponding to each Mobilizer and Mobod,
+  // - set default poses for each floating base body,
+  // - populate the ModelInstance objects with their mobilizers and actuators,
+  // - set the "is_finalized" flag to true.
   FinalizeInternals();
 }
 
@@ -1015,7 +1019,7 @@ void MultibodyTree<T>::CreateBodyNode(MobodIndex mobod_index) {
     parent_node->add_child_node(body_node.get());
   }
   body_node->set_parent_tree(this, mobod_index);
-  body_node->SetTopology(topology_);
+  body_node->SetTopology();
 
   body_nodes_.push_back(std::move(body_node));
 }
@@ -1440,7 +1444,7 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     const systems::Context<T>& context,
     std::vector<SpatialInertia<T>>* M_B_W_all) const {
   DRAKE_THROW_UNLESS(M_B_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*M_B_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*M_B_W_all) == num_mobods());
 
   const FrameBodyPoseCache<T>& frame_body_pose_cache =
       EvalFrameBodyPoses(context);
@@ -1526,7 +1530,7 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   // M_BBo_B from the parameterization of that inertia.
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
     if (mobod.is_world()) continue;
-    // TODO(sherm1) Can't handle composites yet.
+    // TODO(sherm1) Can't handle optimized WeldedLinksAssemblies yet.
     DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
     const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
 
@@ -1577,8 +1581,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationBias(
   // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `Ab_WB` for locked floating bodies.
   (*Ab_WB_all)[world_mobod_index()].SetNaN();
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
     node.CalcSpatialAccelerationBias(frame_body_pose_cache, positions, pc,
                                      velocities, vc, &*Ab_WB_all);
@@ -1591,7 +1594,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
     const ArticulatedBodyInertiaCache<T>& abic,
     std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == num_mobods());
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
       EvalSpatialAccelerationBiasCache(context);
 
@@ -1602,8 +1605,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
   // TODO(joemasterjohn): Consider an optimization to avoid computing `Zb_Bo_W`
   //  for locked floating bodies.
   (*Zb_Bo_W_all)[world_mobod_index()].SetNaN();
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const ArticulatedBodyInertia<T>& Pplus_PB_W =
         abic.get_Pplus_PB_W(mobod_index);
     const SpatialAcceleration<T>& Ab_WB = Ab_WB_cache[mobod_index];
@@ -1618,7 +1620,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Zb_Bo_W_all) == num_mobods());
   const ArticulatedBodyInertiaCache<T>& abic =
       EvalArticulatedBodyInertiaCache(context);
   CalcArticulatedBodyForceBias(context, abic, Zb_Bo_W_all);
@@ -1630,7 +1632,7 @@ void MultibodyTree<T>::CalcDynamicBiasForces(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Fb_Bo_W_all) const {
   DRAKE_THROW_UNLESS(Fb_Bo_W_all != nullptr);
-  DRAKE_THROW_UNLESS(ssize(*Fb_Bo_W_all) == topology_.num_mobods());
+  DRAKE_THROW_UNLESS(ssize(*Fb_Bo_W_all) == num_mobods());
 
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
@@ -1677,9 +1679,9 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
     bool ignore_velocities,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(ssize(*A_WB_array) == topology_.num_mobods());
+  DRAKE_DEMAND(ssize(*A_WB_array) == num_mobods());
 
-  DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == forest().num_velocities());
 
   const auto& frame_body_pose_cache = EvalFrameBodyPoses(context);
   const auto& pc = EvalPositionKinematics(context);
@@ -1713,7 +1715,7 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
     const VelocityKinematicsCache<T>& vc, const VectorX<T>& known_vdot,
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
-  DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == forest().num_velocities());
 
   std::vector<SpatialAcceleration<T>>& A_WB_array = ac->get_mutable_A_WB_pool();
 
@@ -1975,8 +1977,8 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
   VectorX<T> vdot(nv);
   VectorX<T> tau(nv);
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(topology_.num_mobods());
-  std::vector<SpatialForce<T>> F_BMo_W_array(topology_.num_mobods());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_mobods());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_mobods());
 
   // The mass matrix is only a function of configuration q. Therefore velocity
   // terms are not considered.
@@ -2053,8 +2055,8 @@ void MultibodyTree<T>::CalcBiasTerm(const systems::Context<T>& context,
   const int nv = num_velocities();
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(topology_.num_mobods());
-  std::vector<SpatialForce<T>> F_BMo_W_array(topology_.num_mobods());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_mobods());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_mobods());
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, vdot, {}, VectorX<T>(), &A_WB_array,
                       &F_BMo_W_array, Cv);
@@ -2653,8 +2655,7 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
 
   // TODO(joemasterjohn): Consider an optimization where we avoid computing
   //  `H_PB_W` for locked floating bodies.
-  for (MobodIndex mobod_index(1); mobod_index < topology_.num_mobods();
-       ++mobod_index) {
+  for (MobodIndex mobod_index(1); mobod_index < num_mobods(); ++mobod_index) {
     const BodyNode<T>& node = *body_nodes_[mobod_index];
 
     node.CalcAcrossNodeJacobianWrtVExpressedInWorld(
@@ -3157,8 +3158,8 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   // bodies, w_wF = Js_w_WF * v = 0  and  v_WFpi = Js_v_WFpi * v = 0.
   if (body_F.index() == world_index()) return;
 
-  // Form kinematic path from body_F to the world.
-  std::vector<MobodIndex> path_to_world =
+  // Form kinematic path from World to body_F.
+  std::vector<MobodIndex> path_from_world =
       forest().FindPathFromWorld(body_F.mobod_index());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -3171,8 +3172,8 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
   // For all bodies in the kinematic path from the world to body_F, compute
   // each node's contribution to the Jacobians.
   // Skip the world (level = 0).
-  for (size_t level = 1; level < path_to_world.size(); ++level) {
-    const MobodIndex mobod_index = path_to_world[level];
+  for (size_t level = 1; level < path_from_world.size(); ++level) {
+    const MobodIndex mobod_index = path_from_world[level];
     const BodyNode<T>& node = *body_nodes_[mobod_index];
     const SpanningForest::Mobod& mobod = node.mobod();
     const int start_index_in_v = mobod.v_start();
@@ -3553,7 +3554,7 @@ T MultibodyTree<T>::CalcNonConservativePower(
 
 template <typename T>
 void MultibodyTree<T>::ThrowIfFinalized(const char* source_method) const {
-  if (topology_is_valid()) {
+  if (is_finalized()) {
     throw std::logic_error(
         "Post-finalize calls to '" + std::string(source_method) +
         "()' are "
@@ -3563,7 +3564,7 @@ void MultibodyTree<T>::ThrowIfFinalized(const char* source_method) const {
 
 template <typename T>
 void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
-  if (!topology_is_valid()) {
+  if (!is_finalized()) {
     throw std::logic_error("Pre-finalize calls to '" +
                            std::string(source_method) +
                            "()' are "
@@ -3585,15 +3586,16 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     if (active_mobod.nq_outboard() > 0) continue;  // Not a terminal group.
 
     // At this point we're looking at a non-World, terminal WeldedMobods group.
-    // Find the matching LinkComposite that carries the mass properties.
-    const std::optional<LinkCompositeIndex> link_composite_index =
-        graph().links(active_mobod.link_ordinal()).composite();
-    DRAKE_DEMAND(link_composite_index.has_value());  // Should be composite!
-    const auto& link_composite = graph().link_composites(*link_composite_index);
-    DRAKE_DEMAND(link_composite.links[0] ==
+    // Find the matching WeldedLinksAssembly that carries the mass properties.
+    const std::optional<WeldedLinksAssemblyIndex> link_assembly_index =
+        graph().links(active_mobod.link_ordinal()).welded_links_assembly();
+    DRAKE_DEMAND(link_assembly_index.has_value());  // Should be an assembly!
+    const auto& link_assembly =
+        graph().welded_links_assemblies(*link_assembly_index);
+    DRAKE_DEMAND(link_assembly.links()[0] ==
                  graph().links(active_mobod.link_ordinal()).index());
 
-    ThrowIfTerminalBodyHasBadDefaultMassProperties(link_composite.links,
+    ThrowIfTerminalBodyHasBadDefaultMassProperties(link_assembly.links(),
                                                    active_mobod.index());
   }
 
@@ -3611,34 +3613,34 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
 // assumed to have the expected properties.
 template <typename T>
 void MultibodyTree<T>::ThrowIfTerminalBodyHasBadDefaultMassProperties(
-    const std::vector<BodyIndex>& link_composite,  // might be just a Link
+    const std::vector<BodyIndex>& link_assembly,  // might be just a Link
     MobodIndex active_mobilizer_index) const {
-  DRAKE_DEMAND(!link_composite.empty());
-  const bool is_composite = ssize(link_composite) > 1;
+  DRAKE_DEMAND(!link_assembly.empty());
+  const bool is_assembly = ssize(link_assembly) > 1;
   const Mobilizer<T>& active_mobilizer = get_mobilizer(active_mobilizer_index);
   const bool can_rotate = active_mobilizer.can_rotate();
   const bool can_translate = active_mobilizer.can_translate();
 
-  const std::string& active_link_name = get_body(link_composite[0]).name();
-  const char* description =
-      is_composite ? "the active body for a terminal composite body"
-                   : "a terminal body";
+  const std::string& active_link_name = get_body(link_assembly[0]).name();
+  const char* description = is_assembly
+                                ? "the active body for a terminal assembly"
+                                : "a terminal body";
 
-  if (can_translate && (CalcTotalDefaultMass(link_composite) == 0)) {
+  if (can_translate && (CalcTotalDefaultMass(link_assembly) == 0)) {
     throw std::logic_error(
         fmt::format("Body {} is {} that is massless, but its joint has a "
                     "translational degree of freedom.",
                     active_link_name, description));
   }
 
-  if (can_rotate && IsAnyDefaultRotationalInertiaNaN(link_composite)) {
+  if (can_rotate && IsAnyDefaultRotationalInertiaNaN(link_assembly)) {
     throw std::logic_error(fmt::format(
         "Body {} is {} that has a NaN rotational inertia, but its joint has a "
         "rotational degree of freedom.",
         active_link_name, description));
   }
 
-  if (can_rotate && AreAllDefaultRotationalInertiaZero(link_composite)) {
+  if (can_rotate && AreAllDefaultRotationalInertiaZero(link_assembly)) {
     throw std::logic_error(fmt::format(
         "Body {} is {} that has zero rotational inertia, but its joint has a "
         "rotational degree of freedom.",
@@ -4060,10 +4062,10 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<MultibodyTree<ToScalar>> MultibodyTree<T>::CloneToScalar()
     const {
-  if (!topology_is_valid()) {
+  if (!is_finalized()) {
     throw std::logic_error(
-        "Attempting to clone a MultibodyTree with an invalid topology. "
-        "MultibodyTree::Finalize() must be called before attempting to clone"
+        "Attempting to clone a MultibodyTree that has not been finalized."
+        " MultibodyTree::Finalize() must be called before attempting to clone"
         " a MultibodyTree.");
   }
   auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
@@ -4140,14 +4142,15 @@ std::unique_ptr<MultibodyTree<ToScalar>> MultibodyTree<T>::CloneToScalar()
     tree_clone->CloneActuatorAndAdd(*actuator);
   }
 
+  tree_clone->num_actuated_dofs_ = this->num_actuated_dofs_;
+
   // We can safely make a deep copy here since the original multibody tree is
   // required to be finalized.
-  tree_clone->topology_ = this->topology_;
   tree_clone->joint_to_mobilizer_ = this->joint_to_mobilizer_;
   tree_clone->discrete_state_index_ = this->discrete_state_index_;
 
   // All other internals templated on T are created with the following call to
-  // FinalizeInternals().
+  // FinalizeInternals(), which also sets the "is_finalized" flag to true.
   tree_clone->FinalizeInternals();
   return tree_clone;
 }
@@ -4200,6 +4203,8 @@ Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
   auto mobilizer_clone = mobilizer.CloneToScalar(*this);
   mobilizer_clone->set_parent_tree(this, mobilizer_index);
   mobilizer_clone->set_model_instance(mobilizer.model_instance());
+  mobilizer_clone->set_is_floating_base_mobilizer(
+      mobilizer.is_floating_base_mobilizer());
   Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
   mobilizers_.push_back(std::move(mobilizer_clone));
   return raw_mobilizer_clone_ptr;
@@ -4241,20 +4246,24 @@ template <typename T>
 std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
-  if (model_instance == world_model_instance()) {
-    return std::nullopt;
-  }
+  if (model_instance == world_model_instance()) return std::nullopt;
+
+  // We need only look at World's outboard mobods since those are the base
+  // bodies of each tree in the forest. Each of those mobods has an
+  // associated Link (the active link in case of WeldedLinksAssemblies). We're
+  // only interested in links in the given model instance, and there should be
+  // just one of those.
+  const SpanningForest::Mobod& world = forest().world_mobod();
   std::optional<BodyIndex> base_body_index{};
-  for (const RigidBody<T>* body : rigid_bodies_.elements()) {
-    if (body->model_instance() == model_instance &&
-        (topology_.get_rigid_body_topology(body->index()).parent_body ==
-         world_index())) {
-      if (base_body_index.has_value()) {
-        // More than one base body associated with this model.
-        return std::nullopt;
-      }
-      base_body_index = body->index();
-    }
+  for (const MobodIndex& base_mobod_index : world.outboards()) {
+    const SpanningForest::Mobod& base_mobod = forest().mobods(base_mobod_index);
+    DRAKE_DEMAND(base_mobod.level() == 1);
+    const LinkJointGraph::Link& active_link =
+        forest().links(base_mobod.link_ordinal());
+    if (active_link.model_instance() != model_instance) continue;
+    if (base_body_index.has_value())  // Not unique if already set.
+      return std::nullopt;
+    base_body_index = active_link.index();
   }
   return base_body_index;
 }

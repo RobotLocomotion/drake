@@ -138,7 +138,7 @@ void CalcOutputTest(
 
   Vector3<T> y0 = (W0 * x + b0);
   if (mlp.activation_type(0) == kReLU) {
-    y0 = y0.array().max(0.0).matrix();
+    y0 = y0.array().max(T{0.0}).matrix();
   } else if (mlp.activation_type(0) == kTanh) {
     y0 = y0.array().tanh().matrix();
   }
@@ -151,7 +151,7 @@ void CalcOutputTest(
 
   Vector3<T> y1 = (W1 * y0 + b1);
   if (mlp.activation_type(1) == kReLU) {
-    y1 = y1.array().max(0.0).matrix();
+    y1 = y1.array().max(T{0.0}).matrix();
   } else if (mlp.activation_type(1) == kTanh) {
     y1 = y1.array().tanh().matrix();
   }
@@ -164,7 +164,7 @@ void CalcOutputTest(
 
   Vector2<T> y = (W2 * y1 + b2);
   if (mlp.activation_type(2) == kReLU) {
-    y = y.array().max(0.0).matrix();
+    y = y.array().max(T{0.0}).matrix();
   } else if (mlp.activation_type(2) == kTanh) {
     y = y.array().tanh().matrix();
   }

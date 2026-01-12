@@ -26,8 +26,6 @@ using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
-using drake::multibody::internal::DiscreteContactPair;
-using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 
 namespace drake {

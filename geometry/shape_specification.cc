@@ -1,6 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <limits>
 #include <memory>
@@ -9,7 +10,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh_impl.h"
@@ -81,11 +82,10 @@ std::string MeshToString(std::string_view class_name, const MeshSource& source,
 }
 
 void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
-  if ((scale.array().abs() < 1e-8).any()) {
-    throw std::logic_error(
-        fmt::format("{} |scale| cannot be < 1e-8 on any axis, given [{}].",
-                    source, fmt_eigen(scale.transpose())));
-  }
+  if ((scale.array().abs() >= 1e-8).all() && scale.allFinite()) return;
+  throw std::logic_error(
+      fmt::format("{} |scale| cannot be < 1e-8 on any axis, given [{}].",
+                  source, fmt_eigen(scale.transpose())));
 }
 
 }  // namespace
@@ -107,12 +107,9 @@ std::unique_ptr<Shape> Shape::Clone() const {
 
 Box::Box(double width, double depth, double height)
     : size_(width, depth, height) {
-  if (width <= 0 || depth <= 0 || height <= 0) {
-    throw std::logic_error(
-        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
-                    "{}, and {}, respectively).",
-                    width, depth, height));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(width) && width > 0, width);
+  DRAKE_THROW_UNLESS(std::isfinite(depth) && depth > 0, depth);
+  DRAKE_THROW_UNLESS(std::isfinite(height) && height > 0, height);
 }
 
 Box::Box(const Vector3<double>& measures)
@@ -129,12 +126,8 @@ std::string Box::do_to_string() const {
 
 Capsule::Capsule(double radius, double length)
     : radius_(radius), length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Capsule radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius > 0, radius);
+  DRAKE_THROW_UNLESS(std::isfinite(length) && length > 0, length);
 }
 
 Capsule::Capsule(const Vector2<double>& measures)
@@ -198,12 +191,8 @@ std::string Convex::do_to_string() const {
 
 Cylinder::Cylinder(double radius, double length)
     : radius_(radius), length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Cylinder radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius > 0, radius);
+  DRAKE_THROW_UNLESS(std::isfinite(length) && length > 0, length);
 }
 
 Cylinder::Cylinder(const Vector2<double>& measures)
@@ -214,12 +203,9 @@ std::string Cylinder::do_to_string() const {
 }
 
 Ellipsoid::Ellipsoid(double a, double b, double c) : radii_(a, b, c) {
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw std::logic_error(
-        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
-                    "should all be > 0 (were {}, {}, and {}, respectively).",
-                    a, b, c));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(a) && a > 0, a);
+  DRAKE_THROW_UNLESS(std::isfinite(b) && b > 0, b);
+  DRAKE_THROW_UNLESS(std::isfinite(c) && c > 0, c);
 }
 
 Ellipsoid::Ellipsoid(const Vector3<double>& measures)
@@ -236,9 +222,7 @@ RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
   const double norm = Hz_dir_F.norm();
   // Note: this value of epsilon is somewhat arbitrary. It's merely a minor
   // fence over which ridiculous vectors will trip.
-  if (norm < 1e-10) {
-    throw std::logic_error("Can't make pose from a zero vector.");
-  }
+  DRAKE_THROW_UNLESS(norm >= 1e-10, norm);
 
   // First create basis.
   // Projects the normal into the first quadrant in order to identify the
@@ -309,12 +293,9 @@ std::string Mesh::do_to_string() const {
 
 MeshcatCone::MeshcatCone(double height, double a, double b)
     : height_(height), a_(a), b_(b) {
-  if (height <= 0 || a <= 0 || b <= 0) {
-    throw std::logic_error(fmt::format(
-        "MeshcatCone parameters height, a, and b should all be > 0 (they were "
-        "{}, {}, and {}, respectively).",
-        height, a, b));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(height) && height > 0, height);
+  DRAKE_THROW_UNLESS(std::isfinite(a) && a > 0, a);
+  DRAKE_THROW_UNLESS(std::isfinite(b) && b > 0, b);
 }
 
 MeshcatCone::MeshcatCone(const Vector3<double>& measures)
@@ -325,10 +306,7 @@ std::string MeshcatCone::do_to_string() const {
 }
 
 Sphere::Sphere(double radius) : radius_(radius) {
-  if (radius < 0) {
-    throw std::logic_error(
-        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius >= 0, radius);
 }
 
 std::string Sphere::do_to_string() const {

@@ -25,7 +25,7 @@ template <typename T>
 void UniformGravityFieldElement<T>::set_enabled(
     ModelInstanceIndex model_instance, bool is_enabled) {
   DRAKE_THROW_UNLESS(this->has_parent_tree());
-  if (this->get_parent_tree().topology_is_valid()) {
+  if (this->get_parent_tree().is_finalized()) {
     throw std::logic_error("Gravity can only be enabled pre-finalize.");
   }
   if (model_instance >= this->get_parent_tree().num_model_instances()) {

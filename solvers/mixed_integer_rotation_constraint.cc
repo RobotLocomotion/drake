@@ -794,7 +794,6 @@ void ComputeBoxSphereIntersectionAndHalfSpace(
           DRAKE_DEMAND((*box_sphere_intersection_vertices)[xi][yi][zi].size() >=
                        3);
 
-          Eigen::Vector3d normal{};
           internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
               (*box_sphere_intersection_vertices)[xi][yi][zi],
               &((*box_sphere_intersection_halfspace)[xi][yi][zi].first),

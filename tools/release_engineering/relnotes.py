@@ -104,7 +104,7 @@ def _format_commit(gh, drake, commit):
     pr_object = None
 
     # See if the subject contained the pull request number.
-    match = re.match(r'^(.*) +\(#([\d]+)\)$', subject)
+    match = re.match(r"^(.*) +\(#([\d]+)\)$", subject)
     if match:
         # Yes; just use it.
         pr_summary, pr_num = match.groups()
@@ -115,9 +115,12 @@ def _format_commit(gh, drake, commit):
         # one that merged it), but sometimes other PRs might mention it (e.g.,
         # for reverts).
         time.sleep(0.2)  # Try not to hit GitHub API rate limits.
-        results = list(gh.search_issues(
-            f"{commit.sha} is:pr is:merged repo:RobotLocomotion/drake",
-            number=2))
+        results = list(
+            gh.search_issues(
+                f"{commit.sha} is:pr is:merged repo:RobotLocomotion/drake",
+                number=2,
+            )
+        )
         if len(results) == 1:
             pr_object = results[0]
             pr_num = str(pr_object.number)
@@ -130,7 +133,7 @@ def _format_commit(gh, drake, commit):
         for label in pr_object.labels:
             if not label["name"].startswith(label_needle):
                 continue
-            severity = label["name"][len(label_needle):]
+            severity = label["name"][len(label_needle) :]
             severities.append(severity)
     else:
         # If we failed to associate the commit with a PR, ask the user to
@@ -142,21 +145,27 @@ def _format_commit(gh, drake, commit):
     # Figure out which top-level package(s) were changed, to help the release
     # notes author sort things better.
     comparison = drake.compare_commits(
-        base=commit.parents[0].get('sha'), head=commit.sha)
-    committed_files_weighted = (
-        {x.get('filename'): x.get('changes') for x in comparison.files})
+        base=commit.parents[0].get("sha"), head=commit.sha
+    )
+    committed_files_weighted = {
+        x.get("filename"): x.get("changes") for x in comparison.files
+    }
     # If all files in the commit are in dev directories, return empty data to
     # indicate the commit is ineligible.
     committed_nondev_files = [
-        x for x in committed_files_weighted.keys() if '/dev/' not in x]
+        x for x in committed_files_weighted.keys() if "/dev/" not in x
+    ]
     if not committed_nondev_files:
         return [], ["none"], ""
 
     # Report packages in order of most lines changed.
     packages_weighted = sum(
-        [Counter({_filename_to_primary_package(k): v})
-         for k, v in committed_files_weighted.items()],
-        Counter())
+        [
+            Counter({_filename_to_primary_package(k): v})
+            for k, v in committed_files_weighted.items()
+        ],
+        Counter(),
+    )
     packages = [k for k, v in packages_weighted.most_common()] or ["tools"]
     if len(packages) > 1 and "bindings" in packages:
         packages.remove("bindings")
@@ -167,12 +176,17 @@ def _format_commit(gh, drake, commit):
     # If there is a commit message body, turn it into some end-of-line text
     # that we'll have to editorialize by hand. Also ignore "Co-Authored-By:
     # ..." (inserted by GitHub) as it's irrelevant.
-    detail = " ".join([x.strip() for x in lines[1:] if x
-                       and "co-authored-by:" not in x.lower()])
+    detail = " ".join(
+        [
+            x.strip()
+            for x in lines[1:]
+            if x and "co-authored-by:" not in x.lower()
+        ]
+    )
     # When squashing, reviewable repeats the subject in the body.
     redundant_detail = f"* {pr_summary}"
     if detail.startswith(redundant_detail):
-        detail = detail[len(redundant_detail):].strip()
+        detail = detail[len(redundant_detail) :].strip()
     if detail:
         detail = f"  # {detail}"
 
@@ -185,6 +199,30 @@ def _format_commit(gh, drake, commit):
     inline_link = _format_inline_pr_link(pr_num)
     bullet = f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
     return packages, severities, bullet
+
+
+def _insert_into_section(lines, section_name, bullet):
+    """Inserts the given bullet into a section indicated by `section_name`.
+
+    The section is identified by a line that looks like:
+      <relnotes for name1(,name2,name3) go here>.
+
+    The bullet is inserted two lines after that line (i.e., after the section
+    header assuming `section_name` is found in the name list. `section_name`
+    should only appear once in lines.
+    """
+    found = False
+    for i, one_line in enumerate(lines):
+        match = re.search(r"<relnotes for (\S+) go here>", one_line)
+        if match:
+            (anchors_csv,) = match.groups()
+            anchors = anchors_csv.split(",")
+            if section_name in anchors:
+                lines.insert(i + 2, f"{bullet}\n")
+                found = True
+                break
+    if not found:
+        raise RuntimeError(f"Could not find anchor for {section_name}")
 
 
 def _update(args, notes_filename, gh, drake, target_commit):
@@ -211,7 +249,7 @@ def _update(args, notes_filename, gh, drake, target_commit):
 
     # Find new commits from newest to oldest.
     commits = []
-    for commit in drake.commits(sha='master'):
+    for commit in drake.commits(sha="master"):
         if commit.sha == prior_newest_commit:
             break
         commits.append(commit)
@@ -229,7 +267,8 @@ def _update(args, notes_filename, gh, drake, target_commit):
                     f"--target_commit={target_commit} is not part of "
                     f"commits from prior commit ({prior_newest_commit}) to "
                     f"latest commit on master. It is either too old (before "
-                    f"prior commit) or not on the master branch.")
+                    f"prior commit) or not on the master branch."
+                )
             # Trim commits down to target commit.
             target_index = commit_shas.index(target_commit)
             commits = commits[target_index:]
@@ -262,20 +301,32 @@ def _update(args, notes_filename, gh, drake, target_commit):
         bullet = f"* [{' '.join(severities)}] {bullet[2:]}"
 
         primary_package = packages[0]
-        # Find the section for this commit, matching a line that looks like:
-        # <relnotes for foo,{package},bar go here>
-        found = False
-        for i, one_line in enumerate(lines):
-            match = re.search(r"<relnotes for (\S+) go here>", one_line)
-            if match:
-                (anchors_csv,) = match.groups()
-                anchors = anchors_csv.split(",")
-                if primary_package in anchors:
-                    lines.insert(i + 2, f"{bullet}\n")
-                    found = True
-                    break
-        if not found:
-            raise RuntimeError(f"Could not find anchor for {primary_package}")
+
+        # For each known severity tag, we insert the bullet into the document
+        # at a particular section. The bullet can be filed in multiple
+        # sections. Unknown tags are an error.
+        insertion_points = {
+            "fix": primary_package,
+            "feature": primary_package,
+            "breaking change": "breaking-changes",
+            "newly deprecated": "newly-deprecated",
+            "removal of deprecated": "deprecated-removed",
+            "announce": "announcements",
+        }
+        primary_used = False
+        for severity in severities:
+            package_name = insertion_points.get(severity, "")
+            if package_name == "":
+                raise RuntimeError(
+                    f"Unknown severity ('{severity}') prevents disposition:\n"
+                    f"   '{bullet[2:]}'"
+                )
+            if package_name == primary_package:
+                if primary_used:
+                    # We only file once per primary package.
+                    continue
+                primary_used = True
+            _insert_into_section(lines, package_name, bullet)
 
     # Update the issue links.  Replace the text between these markers:
     # .. <begin issue links>
@@ -293,10 +344,9 @@ def _update(args, notes_filename, gh, drake, target_commit):
                 break
             (number,) = match.groups()
             pr_numbers.add(number)
-            one_line = one_line[match.end(0):]
-    pr_links = [_format_ref_pr_link(n) + "\n"
-                for n in sorted(list(pr_numbers))]
-    lines[begin + 1:end] = pr_links
+            one_line = one_line[match.end(0) :]
+    pr_links = [_format_ref_pr_link(n) + "\n" for n in sorted(list(pr_numbers))]
+    lines[begin + 1 : end] = pr_links
 
     # Rewrite the notes file.
     temp_notes = notes_filename.with_suffix(".md~")
@@ -333,7 +383,7 @@ def _create(args, notes_dir, notes_filename, gh, drake):
 
     # Strip out "This document is the template ..." boilerplate, which is the
     # first line of the file.
-    content = content[content.index("\n") + 1:]
+    content = content[content.index("\n") + 1 :]
 
     # Write the notes skeleton to disk.
     notes_filename.write_text(content, encoding="utf-8")
@@ -342,31 +392,47 @@ def _create(args, notes_dir, notes_filename, gh, drake):
 def main():
     # Parse the args.
     parser = argparse.ArgumentParser(
-        prog="relnotes", description=__doc__,
-        formatter_class=argparse.RawTextHelpFormatter)
+        prog="relnotes",
+        description=__doc__,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     parser.add_argument(
-        "--action", type=str, choices=["create", "update"], required=True,
-        help="Whether to create a new notes file or update an existing one")
+        "--action",
+        type=str,
+        choices=["create", "update"],
+        required=True,
+        help="Whether to create a new notes file or update an existing one",
+    )
     parser.add_argument(
-        "--version", type=str, required=True,
-        help="Notes file to create or edit, e.g., v1.2.0")
+        "--version",
+        type=str,
+        required=True,
+        help="Notes file to create or edit, e.g., v1.2.0",
+    )
     parser.add_argument(
-        "--prior_version", type=str,
-        help="Prior revision (required iff creating new notes)")
+        "--prior_version",
+        type=str,
+        help="Prior revision (required iff creating new notes)",
+    )
     parser.add_argument(
-        "--max_num_commits", type=int, default=400,
-        help="Stop after chasing this many commits")
+        "--max_num_commits",
+        type=int,
+        default=400,
+        help="Stop after chasing this many commits",
+    )
     parser.add_argument(
-        "--target_commit", type=str,
+        "--target_commit",
+        type=str,
         help="Use this as the target commit for --action=update. This *must* "
         "be newer than the prior commit, and must be fully a resolved "
-        "40-character SHA1.")
+        "40-character SHA1.",
+    )
     parser.add_argument(
-        "--token_file", default="~/.config/readonly_github_api_token.txt",
-        help="Uses an API token read from this filename (default: "
-        "%(default)s)")
-    parser.add_argument(
-        "--verbose", action="store_true", default=False)
+        "--token_file",
+        default="~/.config/readonly_github_api_token.txt",
+        help="Uses an API token read from this filename (default: %(default)s)",
+    )
+    parser.add_argument("--verbose", action="store_true", default=False)
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -395,7 +461,8 @@ def main():
             parser.error("--prior_version is required to --action=create")
         if args.target_commit is not None:
             parser.error(
-                "--target_commit cannot be specified with --action=create")
+                "--target_commit cannot be specified with --action=create"
+            )
         _create(args, notes_dir, notes_filename, gh, drake)
     else:
         assert args.action == "update"
@@ -403,10 +470,11 @@ def main():
             if not re.match(r"^[0-9a-f]{40}$", args.target_commit):
                 parser.error(
                     f"--target_commit={args.target_commit} is not a "
-                    f"40-character SHA1")
+                    f"40-character SHA1"
+                )
 
         _update(args, notes_filename, gh, drake, args.target_commit)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

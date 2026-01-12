@@ -15,6 +15,9 @@ using Eigen::Vector2d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
+constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+
 // An empty fixture for later expansion.
 class PartialsTest : public ::testing::Test {};
 
@@ -116,20 +119,26 @@ TEST_F(PartialsTest, MatchSizeOf) {
 
 TEST_F(PartialsTest, Mul) {
   Partials dut{4, 2};
-
   dut.Mul(-2.0);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), -2 * Vector4d::Unit(2)));
-
   dut.Mul(0.0);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Zero()));
 
   dut = Partials{Vector2d{1.0, 2.0}};
-
   dut.Mul(-2.0);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d{-2.0, -4.0}));
-
   dut.Mul(0.0);
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d::Zero()));
+}
+
+TEST_F(PartialsTest, MulNonFinite) {
+  Partials dut{2, 1};
+  dut.Mul(kInf);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d{0.0, kInf}));
+
+  dut = Partials{2, 1};
+  dut.Mul(kNaN);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d{0.0, kNaN}));
 }
 
 TEST_F(PartialsTest, Div) {
@@ -144,10 +153,17 @@ TEST_F(PartialsTest, Div) {
 TEST_F(PartialsTest, DivZero) {
   Partials dut{4, 2};
   dut.Div(0.0);
-  const double kInf = std::numeric_limits<double>::infinity();
-  const double kNaN = std::numeric_limits<double>::quiet_NaN();
-  EXPECT_TRUE(
-      CompareMatrices(dut.make_const_xpr(), Vector4d(kNaN, kNaN, kInf, kNaN)));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d(0, 0, kInf, 0)));
+}
+
+TEST_F(PartialsTest, DivNonFinite) {
+  Partials dut{4, 2};
+  dut.Div(kNaN);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d(0, 0, kNaN, 0)));
+
+  dut = Partials{4, 2};
+  dut.Div(kInf);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Zero()));
 }
 
 TEST_F(PartialsTest, Add) {
@@ -167,6 +183,14 @@ TEST_F(PartialsTest, AddScaled) {
       CompareMatrices(dut.make_const_xpr(), Vector4d::LinSpaced(1.0, 4.0)));
 }
 
+TEST_F(PartialsTest, AddScaledNonFinite) {
+  Partials dut{4, 0};
+  dut.AddScaled(kInf, Partials(4, 1));
+  dut.AddScaled(kNaN, Partials(4, 2));
+  EXPECT_TRUE(
+      CompareMatrices(dut.make_const_xpr(), Vector4d(1.0, kInf, kNaN, 0.0)));
+}
+
 TEST_F(PartialsTest, AddRhsEmpty) {
   Partials dut{4, 2};
   dut.Add(Partials{});
@@ -176,6 +200,10 @@ TEST_F(PartialsTest, AddRhsEmpty) {
 TEST_F(PartialsTest, AddScaledRhsEmpty) {
   Partials dut{4, 2};
   dut.AddScaled(1.0, Partials{});
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(2)));
+
+  dut = Partials{4, 2};
+  dut.AddScaled(kInf, Partials());
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(2)));
 }
 
@@ -189,6 +217,10 @@ TEST_F(PartialsTest, AddScaledLhsEmpty) {
   Partials dut;
   dut.AddScaled(-1.0, Partials(4, 2));
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), -Vector4d::Unit(2)));
+
+  dut = Partials{};
+  dut.AddScaled(kInf, Partials(4, 2));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d(0, 0, kInf, 0)));
 }
 
 TEST_F(PartialsTest, AddBothEmpty) {

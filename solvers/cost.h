@@ -695,7 +695,7 @@ class ExpressionCost : public Cost {
 
 /**
  * Converts an input of type @p F to a nonlinear cost.
- * @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
+ * @tparam FF The forwarded function type (e.g., `const F&`, `F&&`, ...).
  * The class `F` should have functions numInputs(), numOutputs(), and
  * eval(x, y).
  *

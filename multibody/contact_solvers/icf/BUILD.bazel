@@ -1,0 +1,98 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "icf",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":eigen_pool",
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_pool",
+    srcs = ["eigen_pool.cc"],
+    hdrs = ["eigen_pool.h"],
+    deps = [
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_data",
+    srcs = ["icf_data.cc"],
+    hdrs = ["icf_data.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_search_direction_data",
+    hdrs = ["icf_search_direction_data.h"],
+    deps = [
+        ":eigen_pool",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "icf_model",
+    srcs = [
+        "icf_model.cc",
+    ],
+    hdrs = [
+        "icf_model.h",
+    ],
+    deps = [
+        ":icf_data",
+        ":icf_search_direction_data",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_pool_test",
+    deps = [
+        ":eigen_pool",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_data_test",
+    deps = [
+        ":icf_data",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "icf_model_test",
+    deps = [
+        ":eigen_pool",
+        ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+    ],
+)
+
+add_lint_tests()

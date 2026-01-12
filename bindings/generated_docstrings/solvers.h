@@ -2588,17 +2588,17 @@ value, then the solver is enabled; otherwise, the solver is not
 enabled.
 
 Gurobi solver supports options/parameters listed in
-https://www.gurobi.com/documentation/10.0/refman/parameters.html. On
-top of these options, we provide the following additional options 1.
-"GRBwrite", set to a file name so that Gurobi solver will write the
+https://docs.gurobi.com/projects/optimizer/en/12.0/concepts/parameters.html.
+On top of these options, we provide the following additional options
+1. "GRBwrite", set to a file name so that Gurobi solver will write the
 optimization model to this file, check
-https://www.gurobi.com/documentation/10.0/refman/py_model_write.html
+https://www.docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Write
 for more details, such as all supported file extensions. Set this
 option to "" if you don't want to write to file. Default is not to
 write to a file. 2. "GRBcomputeIIS", set to 1 to compute an
 Irreducible Inconsistent Subsystem (IIS) when the problem is
 infeasible. Refer to
-https://www.gurobi.com/documentation/10.0/refman/py_model_computeiis.html
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Model.computeIIS
 for more details. Often this method is called together with setting
 GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
 "ilp". Default is not to compute IIS.
@@ -2684,8 +2684,8 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 an intermediate solution node, which may not be feasible. See Gurobi
 reference manual for more detail on callbacks:
-https://www.gurobi.com/documentation/current/refman/cb_codes.html The
-user may supply a partial solution in the VectorXd and
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+The user may supply a partial solution in the VectorXd and
 VectorXDecisionVariable arguments that will be passed to Gurobi as a
 candidate feasible solution. See gurobi_solver_test.cc for an example
 of using std::bind to create a callback of this signature, while
@@ -2714,9 +2714,9 @@ Parameter ``VectorXDecisionVariable*``:
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 a feasible solution. See Gurobi reference manual for more detail on
 callbacks:
-https://www.gurobi.com/documentation/current/refman/cb_codes.html See
-gurobi_solver_test.cc for an example of using std::bind to create a
-callback of this signature, while allowing additional data to be
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+See gurobi_solver_test.cc for an example of using std::bind to create
+a callback of this signature, while allowing additional data to be
 passed through.
 
 Parameter ``MathematicalProgram``:
@@ -2814,7 +2814,7 @@ obtain the details.)""";
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The error message returned from Gurobi call. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/error_codes.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/errors.html)""";
         } error_code;
         // Symbol: drake::solvers::GurobiSolverDetails::objective_bound
         struct /* objective_bound */ {
@@ -2822,21 +2822,21 @@ https://www.gurobi.com/documentation/10.0/refman/error_codes.html)""";
           const char* doc =
 R"""(The best known bound on the optimal objective. This is used in mixed
 integer optimization. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/objbound.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#objbound)""";
         } objective_bound;
         // Symbol: drake::solvers::GurobiSolverDetails::optimization_status
         struct /* optimization_status */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The status code when the optimize call has returned. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html)""";
         } optimization_status;
         // Symbol: drake::solvers::GurobiSolverDetails::optimizer_time
         struct /* optimizer_time */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The gurobi optimization time. Please refer to
-https://www.gurobi.com/documentation/10.0/refman/runtime.html)""";
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#attrruntime)""";
         } optimizer_time;
       } GurobiSolverDetails;
       // Symbol: drake::solvers::IndeterminatesRefList
@@ -3709,7 +3709,7 @@ available, throws a RuntimeError.)""";
 R"""(Converts an input of type ``F`` to a nonlinear cost.
 
 Template parameter ``FF``:
-    The forwarded function type (e.g., ``const F&, `F&&``, ...). The
+    The forwarded function type (e.g., ``const F&``, `F&&`, ...). The
     class ``F`` should have functions numInputs(), numOutputs(), and
     eval(x, y).)""";
       } MakeFunctionCost;
@@ -6704,8 +6704,8 @@ solution.
        GurobiSolver solver;
        // Explicitly tell the solver to compute the dual solution for Lorentz
        // cone or rotated Lorentz cone constraint, check
-       // https://www.gurobi.com/documentation/10.1/refman/qcpdual.html for
-       // more information.
+       // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html#qcpdual
+       // for more information.
        SolverOptions options;
        options.SetOption(GurobiSolver::id(), "QCPDual", 1);
        MathematicalProgramResult result = solver.Solve(prog, {}, options);
@@ -8121,8 +8121,8 @@ consecutive. Mathematically
 R"""(Getter for φ₊, the non-negative part of φ.)""";
         } phi_nonnegative;
       } MixedIntegerRotationConstraintGenerator;
-      // Symbol: drake::solvers::MobyLCPSolver
-      struct /* MobyLCPSolver */ {
+      // Symbol: drake::solvers::MobyLcpSolver
+      struct /* MobyLcpSolver */ {
         // Source: drake/solvers/moby_lcp_solver.h
         const char* doc =
 R"""(A class for solving Linear Complementarity Problems (LCPs). Solving a
@@ -8185,24 +8185,24 @@ latter) describe relevant matrix classes in more detail.
                     Linear Programming. Combinatorica, 4(4), pp. 373-395.
 * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
                     Programming. Heldermann Verlag, 1988.)""";
-        // Symbol: drake::solvers::MobyLCPSolver::ComputeZeroTolerance
+        // Symbol: drake::solvers::MobyLcpSolver::ComputeZeroTolerance
         struct /* ComputeZeroTolerance */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Calculates the zero tolerance that the solver would compute if the
 user does not specify a tolerance.)""";
         } ComputeZeroTolerance;
-        // Symbol: drake::solvers::MobyLCPSolver::MobyLCPSolver<T>
+        // Symbol: drake::solvers::MobyLcpSolver::MobyLcpSolver
         struct /* ctor */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ctor;
-        // Symbol: drake::solvers::MobyLCPSolver::ProgramAttributesSatisfied
+        // Symbol: drake::solvers::MobyLcpSolver::ProgramAttributesSatisfied
         struct /* ProgramAttributesSatisfied */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } ProgramAttributesSatisfied;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpFast
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpFast
         struct /* SolveLcpFast */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8256,7 +8256,7 @@ Returns:
                      and no-slip rigid contact models. arXiv:
                      1504.00719v1. 2015.)""";
         } SolveLcpFast;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpFastRegularized
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpFastRegularized
         struct /* SolveLcpFastRegularized */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8343,7 +8343,7 @@ See also:
 * [Cottle, 1992]     R. Cottle, J.-S. Pang, and R. Stone. The Linear
                      Complementarity Problem. Academic Press, 1992.)""";
         } SolveLcpFastRegularized;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpLemke
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpLemke
         struct /* SolveLcpLemke */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8405,7 +8405,7 @@ Raises:
 * [LEMKE]          P. Fackler and M. Miranda. LEMKE.
                    http://people.sc.fsu.edu/~burkardt/m\_src/lemke/lemke.m)""";
         } SolveLcpLemke;
-        // Symbol: drake::solvers::MobyLCPSolver::SolveLcpLemkeRegularized
+        // Symbol: drake::solvers::MobyLcpSolver::SolveLcpLemkeRegularized
         struct /* SolveLcpLemkeRegularized */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
@@ -8458,40 +8458,44 @@ See also:
 * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
                      Complementarity Problem. Academic Press, 1992.)""";
         } SolveLcpLemkeRegularized;
-        // Symbol: drake::solvers::MobyLCPSolver::get_num_pivots
+        // Symbol: drake::solvers::MobyLcpSolver::get_num_pivots
         struct /* get_num_pivots */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Returns the number of pivoting operations made by the last LCP solve.)""";
         } get_num_pivots;
-        // Symbol: drake::solvers::MobyLCPSolver::id
+        // Symbol: drake::solvers::MobyLcpSolver::id
         struct /* id */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } id;
-        // Symbol: drake::solvers::MobyLCPSolver::is_available
+        // Symbol: drake::solvers::MobyLcpSolver::is_available
         struct /* is_available */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } is_available;
-        // Symbol: drake::solvers::MobyLCPSolver::is_enabled
+        // Symbol: drake::solvers::MobyLcpSolver::is_enabled
         struct /* is_enabled */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc = R"""()""";
         } is_enabled;
-        // Symbol: drake::solvers::MobyLCPSolver::reset_num_pivots
+        // Symbol: drake::solvers::MobyLcpSolver::reset_num_pivots
         struct /* reset_num_pivots */ {
           // Source: drake/solvers/moby_lcp_solver.h
           const char* doc =
 R"""(Resets the number of pivoting operations made by the last LCP solver
 to zero.)""";
         } reset_num_pivots;
-      } MobyLCPSolver;
+      } MobyLcpSolver;
       // Symbol: drake::solvers::MobyLcpSolverId
       struct /* MobyLcpSolverId */ {
         // Source: drake/solvers/moby_lcp_solver.h
-        const char* doc =
-R"""(Non-template class for MobyLcpSolver<T> constants.)""";
+        const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use MobyLcpSolver::id() directly. This will be removed from Drake
+    on or after 2026-03-01.)""";
         // Symbol: drake::solvers::MobyLcpSolverId::MobyLcpSolverId
         struct /* ctor */ {
           // Source: drake/solvers/moby_lcp_solver.h
@@ -8500,9 +8504,12 @@ R"""(Non-template class for MobyLcpSolver<T> constants.)""";
         // Symbol: drake::solvers::MobyLcpSolverId::id
         struct /* id */ {
           // Source: drake/solvers/moby_lcp_solver.h
-          const char* doc =
-R"""(Returns:
-    same as SolverInterface::solver_id())""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use MobyLcpSolver::id() directly. This will be removed from Drake
+    on or after 2026-03-01.)""";
         } id;
       } MobyLcpSolverId;
       // Symbol: drake::solvers::MosekSolver
@@ -10288,7 +10295,10 @@ Parameter ``prog``:
     options.
 
 Parameter ``initial_guess``:
-    The initial guess for the decision variables.
+    The initial guess for the decision variables. If an
+    ``initial_guess`` is provided, then the solver uses
+    ``initial_guess`` and ignores the initial guess stored in
+    ``prog``.
 
 Parameter ``solver_options``:
     The options in addition to those stored in ``prog``. For each
@@ -10495,11 +10505,13 @@ string.)""";
           const char* doc =
 R"""(Solves an optimization program with optional initial guess and solver
 options. Note that these initial guess and solver options are not
-written to ``prog``. If the ``prog`` has set an option for a solver,
-and ``solver_options`` contains a different value for the same option
-on the same solver, then ``solver_options`` takes priority. Derived
-implementations of this interface may elect to throw RuntimeError for
-badly formed programs.)""";
+written to ``prog``. If the ``prog`` has set an initial guess, and
+``initial_guess`` is set, then ``initial_guess`` takes priority. If
+the ``prog`` has set an option for a solver, and ``solver_options``
+contains a different value for the same option on the same solver,
+then ``solver_options`` takes priority. Derived implementations of
+this interface may elect to throw RuntimeError for badly formed
+programs.)""";
         } Solve;
         // Symbol: drake::solvers::SolverInterface::SolverInterface
         struct /* ctor */ {
@@ -10587,8 +10599,8 @@ NLOPT_LD_SLSQP, call ``SetOption(NloptSolver::id(),
 NloptSolver::AlgorithmName(), "LD_SLSQP");``
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference
-Manual, section 10.2 "Parameter Descriptions"
-https://www.gurobi.com/documentation/10.0/refman/parameters.html
+Manual
+https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html
 
 "SCS" -- Parameter name and values as specified in the struct
 SCS_SETTINGS in SCS header file

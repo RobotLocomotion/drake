@@ -68,6 +68,10 @@ the main body of the document:
   not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
+* PRs may appear in multiple sections, depending on the tags they have. For
+  example, a PR that includes a fix and new deprecation will appear in both the
+  fix and newly-deprecated sections. Generally, PRs will be included once in
+  each appropriate section according to the tags assigned to it.
 * In general you should mention deprecated/removed classes and methods using
   their exact name (for easier searching).
   * In the deprecation section you can provide the fully-qualified name as the
@@ -167,11 +171,11 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **33** release files from
+      them." and then choose for upload the **36** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 9: 3 `.tar.gz` + 6 checksums
       - 6: 2 `.deb` + 4 checksums
-      - 12: 4 linux `.whl` + 8 checksums
+      - 15: 5 linux `.whl` + 10 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
@@ -229,56 +233,85 @@ the email address associated with your github account.
 1. Post a new slack thread in ``#releases`` saying that you're beginning the
    tutorials deployment now (so that others are aware of the potentially-
    disruptive changes).
-2. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/Dockerfile):
-   1. Edit the first line to refer to the YYYYMMDD for this release (login
-      with your github account; otherwise, the file is read-only).
-      1. For reference, the typical content is thus:
+2. Open the tutorials [requirements.txt](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/requirements.txt):
+   1. Be sure to login with your github account; otherwise, the file is read-only.
+   2. Edit the second line to refer to the PyPI version of this release.
+      1. For reference, the typical content is thus (varying only by Drake's
+         version number):
          ```
-         FROM robotlocomotion/drake:noble-20250612
+         # The current release.
+         drake==1.47.0
 
-         RUN apt-get -q update && apt-get -q install -y --no-install-recommends curl nginx-light python3-venv && apt-get remove -y python3-notebook && apt-get autoremove -y && apt-get -q clean
-
-         ENV PATH="/opt/drake/bin:${PATH}" \
-           PYTHONPATH="/opt/drake/lib/python3.12/site-packages:${PYTHONPATH}"
+         # A version compatible with Deepnote.
+         ipywidgets==8.1.7
          ```
-      2. If the current content differs by more than just the date from the
+      2. If the current content differs by more than just the version from the
          above template, ask for help on slack in the ``#releases`` channel.
-   2. After editing the date, click the "Build" button in the upper right,
-      and wait for the build to succeed.
-      1. If the build fails due to an infrastructure flake, you'll need to
-      tweak the Dockerfile before Deepnote will allow you to re-run the
-      Build.  For example, add `&& true` to the end of a RUN line.
-3. For reference (no action required), the
-   [requirements.txt](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/requirements.txt)
-   file should have the following content:
-   ```
-   ipywidgets==8.1.7
-
-   # We need to repeat drake's wheel dependencies here so that they end up in
-   # Deepnote's venv. Deepnote no longer sees the Ubuntu packages in /usr/lib.
-   matplotlib==3.10.3
-   numpy==1.26.4
-   pydot==4.0.1
-   PyYAML==6.0.2
-   ```
-4. Check the initialization notebook at
+4. Run the initialization notebook at
    [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/Init%20notebook-5fcfe3fc0bd0403899baab3b6cf37a18).
-   1. It has these cells added at the bottom, as a Drake-specific customization:
-      ```
-      import subprocess
-      import sys
-      subprocess.check_call([sys.executable, "-m", "pip", "check"], cwd="/work")
-      ```
-
+   1. Confirm that all cells executed successfully. Note that it may take
+      5-10 minutes to finish.
+   1. For reference, the most recent content is thus:
       ```
       %%bash
-      /opt/drake/share/drake/setup/deepnote/install_nginx
+      set -euo pipefail
+      # We need to upgrade libc and libstdc++ to Drake's minimum versions, because the
+      # base of Deepnote's Docker image is ANCIENT (Debian 11 Bullseye from 2021 OMG).
+      # This should be exciting ...
+      cat > /etc/apt/sources.list.d/bookworm.sources <<'EOF'
+      Types: deb
+      URIs: http://deb.debian.org/debian/
+      Suites: bookworm
+      Components: main
+      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+      EOF
+      cat > /etc/apt/preferences.d/bookworm.pref <<'EOF'
+      Package: *
+      Pin: release n=bookworm
+      Pin-Priority: 1
+      EOF
+      apt-get -q update
+      apt-get autoremove -y
+      apt-get -q install -t bookworm -y --no-install-recommends libc6 libc6-dev libstdc++6 libstdc++-10-dev
+
+      # Rendering needs EGL.
+      # The bullseye version is satisfactory.
+      apt-get install -y --no-install-recommends libegl1 libgl1-mesa-dri
+
+      # We'll also need nginx installed (for websocket proxying).
+      # The bullseye version is satisfactory.
+      apt-get -q install -y --no-install-recommends nginx-light
+      rm -f /etc/nginx/sites-enabled/default
+      cat > /etc/nginx/sites-available/deepnote-meshcat-proxy <<'EOF'
+      # Deepnote- and MeshCat- specific NginX proxy server configuration.
+      #
+      # Proxy https://DEEPNOTE_PROJECT_ID:8080/PORT/ to http://127.0.0.1:PORT/ so
+      # that multiple notebooks can all be served via Deepnote's only open port.
+      #
+      # For conf documentation, see https://www.nginx.com/resources/wiki/start/.
+      server {
+        listen 8080 default_server;
+        listen [::]:8080 default_server;
+        root /var/www/html;
+        server_name _;
+        location ~ /(7[0-9][0-9][0-9])/(.*) {
+          proxy_pass http://127.0.0.1:$1/$2;
+        }
+        proxy_read_timeout 600;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        send_timeout 600;
+      }
+      EOF
+      ln -sf /etc/nginx/sites-available/deepnote-meshcat-proxy /etc/nginx/sites-enabled/
+      service nginx start
+
+      # Now we can install our Python requirements.
+      cd /work
+      pip install -r ./requirements.txt
       ```
-      For Jammy we also needed to add ``cd /work`` atop the stanza that checks
-      for ``requirements.txt`` to get it working again.
-   2. Confirm that all cells executed successfully. If the "pip check" cell
-      reports dependency errors, then ask for help on slack in the
-      ``#releases`` channel.
+   2. If the current content differs from the above content, ask for help on
+      slack in the ``#releases`` channel.
 5. Copy the updated tutorials from the pinned Dockerfile release
    (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
    storage (``~/work/...``):
@@ -291,12 +324,14 @@ the email address associated with your github account.
    1. Caveats for specific notebook names:
       1. Do not run ``licensed_solvers_deepnote``; you don't have a license.
       2. Do not re-run ``zzz_for_maintainers``; you've already done that.
-      3. The ``authoring_multibody_simulation`` notebook will appear to hang on
-         one of the middle cells where it uses JointSliders. It is _not_ hung,
-         rather it is waiting for user input. Find the "Meshcat URL" link
-         earlier in the notebook, click through to open Meshcat in a new tab,
-         click "Open Controls", then click "Stop JointSliders" repeatedly until
-         the option vanishes and the notebook completes.
+      3. The ``authoring_multibody_simulation`` has gotchas to be mindful of:
+         1. Downloading the Drake package map can take 10+ minutes.
+         2. The notebook will appear to hang on one of the middle cells where it
+            uses JointSliders. It is _not_ hung, rather it is waiting for user
+            input. Find the "Meshcat URL" link earlier in the notebook, click
+            through to open Meshcat in a new tab, click "Open Controls", then
+            click "Stop JointSliders" repeatedly until the option vanishes and
+            the notebook completes.
       4. The ``rendering_multibody_plant`` sometimes crashes with an interrupted
          error. In that case, click through to the "Environment" gear in the
          left-hand panel, then into the ``init.ipynb`` notebook and re-run the

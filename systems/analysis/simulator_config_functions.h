@@ -14,10 +14,9 @@
 namespace drake {
 namespace systems {
 
-/** @addtogroup simulation
+/** @defgroup simulator_configuration Simulator configuration
+ @ingroup simulation
  @{
- @defgroup simulator_configuration Simulator configuration
-
  Configuration helpers to control Simulator and IntegratorBase settings.
  @}
  */

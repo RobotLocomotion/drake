@@ -1081,6 +1081,12 @@ R"""(The collision checker for the robot being controlled. Note that its
 robot_model_instances() accessor also partitions which parts of the
 ``plant`` are the robot model vs its environment.)""";
           } collision_checker;
+          // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::collision_checker_context
+          struct /* collision_checker_context */ {
+            // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
+            const char* doc =
+R"""(A mutable context for the collision checker.)""";
+          } collision_checker_context;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::CallbackDetails::frame_list
           struct /* frame_list */ {
             // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h

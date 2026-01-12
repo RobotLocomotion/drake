@@ -7,13 +7,39 @@ load(
     "drake_cc_package_library",
 )
 load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_library",
+    "drake_cc_variant_library",
+)
+load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_unittest",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
+# This render_gltf_client package is only implemented when
+# //tools/flags:with_render_gltf_client is True. When False, only the factory
+# is available and it will always throw an exception. When True, the factory
+# is the sole public entry point, even though the implementation is made up of
+# several other distinct components.
+#
+# Only the package-level library //geometry/render_gltf_client is public as a
+# Bazel target; all of the other targets are private.
+
 package(default_visibility = ["//visibility:private"])
+
+filegroup(
+    name = "doxygen_input",
+    srcs = ["render_gltf_client_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:with_render_gltf_client": "True"},
+)
 
 drake_cc_package_library(
     name = "render_gltf_client",
@@ -24,16 +50,20 @@ drake_cc_package_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "factory",
-    srcs = ["factory.cc"],
+    opt_in_condition = ":enabled",
+    srcs_always = [],
+    srcs_enabled = ["factory.cc"],
+    srcs_disabled = ["no_factory.cc"],
     hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":render_engine_gltf_client_params",
         "//geometry/render:render_engine",
     ],
-    implementation_deps = [
+    implementation_deps_always = [],
+    implementation_deps_enabled = [
         ":internal_render_engine_gltf_client",
         "//common:network_policy",
     ],
@@ -50,11 +80,11 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_http_service",
+    opt_in_condition = ":enabled",
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
@@ -64,11 +94,11 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_http_service_curl",
+    opt_in_condition = ":enabled",
     srcs = ["internal_http_service_curl.cc"],
     hdrs = ["internal_http_service_curl.h"],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service",
@@ -80,15 +110,15 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_render_client",
+    opt_in_condition = ":enabled",
     srcs = [
         "internal_render_client.cc",
     ],
     hdrs = [
         "internal_render_client.h",
     ],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service",
@@ -103,15 +133,15 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_render_engine_gltf_client",
+    opt_in_condition = ":enabled",
     srcs = [
         "internal_render_engine_gltf_client.cc",
     ],
     hdrs = [
         "internal_render_engine_gltf_client.h",
     ],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         ":internal_merge_gltf",
@@ -131,11 +161,11 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_merge_gltf",
+    opt_in_condition = ":enabled",
     srcs = ["internal_merge_gltf.cc"],
     hdrs = ["internal_merge_gltf.h"],
-    internal = True,
     visibility = ["//visibility:private"],
     deps = [
         "//common:drake_export",
@@ -159,11 +189,25 @@ drake_cc_googletest(
     ],
 )
 
+# N.B. This test asserts that the factory throws because of DRAKE_ALLOW_NETWORK.
+# Separately, we'll test that the factory throws because it's disabled via
+# :enabled via the below :internal_no_render_gltf_client_test.
 drake_cc_googletest(
     name = "factory_denied_test",
     allow_network = ["none"],
     deps = [
         ":factory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+# N.B. This test asserts that the no_factory flavor throws unconditionally.
+drake_cc_googletest(
+    name = "internal_no_render_gltf_client_test",
+    deps = [
+        # The ":factory_disabled" target is created by the
+        # drake_cc_variant_library(...) stanza above.
+        ":factory_disabled",
         "//common/test_utilities:expect_throws_message",
     ],
 )

@@ -6,7 +6,6 @@ import subprocess
 import tempfile
 import unittest
 
-
 bazel_wrapper = SourceFileLoader(
     "bazel_wrapper", "tools/clion/bazel_wrapper"
 ).load_module("bazel_wrapper")

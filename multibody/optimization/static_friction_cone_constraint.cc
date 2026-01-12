@@ -9,6 +9,8 @@ namespace drake {
 namespace multibody {
 const double kInf = std::numeric_limits<double>::infinity();
 
+StaticFrictionConeConstraint::~StaticFrictionConeConstraint() = default;
+
 StaticFrictionConeConstraint::StaticFrictionConeConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator)
     : solvers::Constraint(2 /* number of constraints */,

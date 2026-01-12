@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/temp_directory.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_pose.h"
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/multibody/parsing/parser.h"

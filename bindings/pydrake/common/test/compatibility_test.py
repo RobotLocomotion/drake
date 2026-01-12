@@ -1,4 +1,4 @@
-import pydrake.common.compatibility as mut
+import pydrake.common.compatibility as mut  # ruff: isort: skip
 
 from functools import partial
 from threading import Thread
@@ -23,8 +23,8 @@ class TestCompatibility(unittest.TestCase):
         # Ensure that the expected types have been patched with the `Deferred`
         # type.
         expect_deferred = [
-            'IntegerFormat',
-            'FloatFormat',
+            "IntegerFormat",
+            "FloatFormat",
         ]
         # Before patching.
         self.assertFalse(numpy_formatters["applied"])

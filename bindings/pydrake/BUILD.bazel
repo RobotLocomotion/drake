@@ -10,7 +10,6 @@ load(
 )
 load(
     "//tools/skylark:pybind.bzl",
-    "drake_pybind_cc_googletest",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -24,6 +23,13 @@ package(default_visibility = [
 exports_files([
     ".clang-format",
 ])
+
+filegroup(
+    name = "doxygen_input",
+    srcs = ["pydrake_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
@@ -51,14 +57,6 @@ drake_py_library(
 drake_cc_library(
     name = "pydrake_pybind",
     hdrs = ["pydrake_pybind.h"],
-    declare_installed_headers = 0,
-    visibility = ["//visibility:public"],
-)
-
-drake_cc_library(
-    name = "test_util_pybind",
-    testonly = 1,
-    hdrs = ["test/test_util_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
 )
@@ -234,13 +232,22 @@ drake_py_library(
     ],
 )
 
+drake_pybind_library(
+    name = "pydrake_pybind_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_srcs = ["test/pydrake_pybind_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
 # N.B. Due to dependency on `common` (#7912), this is not a fully isolated /
 # decoupled test.
-drake_pybind_cc_googletest(
+drake_py_unittest(
     name = "pydrake_pybind_test",
-    cc_deps = [":test_util_pybind"],
-    py_deps = [":module_py"],
-    py_srcs = ["test/_pydrake_pybind_test_extra.py"],
+    deps = [
+        ":module_py",
+        ":pydrake_pybind_test_util_py",
+    ],
 )
 
 drake_py_binary(
@@ -342,7 +349,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -495,5 +502,4 @@ add_lint_tests_pydrake(
         ":test/all_install_test.py",
         ":test/common_install_test.py",
     ],
-    python_lint_use_ruff_format = False,
 )

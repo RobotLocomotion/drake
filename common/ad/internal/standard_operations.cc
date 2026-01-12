@@ -216,6 +216,7 @@ AutoDiff pow(AutoDiff base_ad, const AutoDiff& exp_ad) {
   // If any of {base, exp, result} are NaN, then grad(result) is always NaN.
   if (std::isnan(result.value()) || std::isnan(base) || std::isnan(exp)) {
     result.partials().Mul(kNaN);
+    result.partials().AddScaled(kNaN, exp_ad.partials());
     return result;
   }
 
@@ -276,32 +277,8 @@ AutoDiff sqrt(AutoDiff x) {
   return x;
 }
 
-AutoDiff ceil(AutoDiff x) {
-  x.value() = std::ceil(x.value());
-  x.partials().SetZero();
-  return x;
-}
-
-AutoDiff floor(AutoDiff x) {
-  x.value() = std::floor(x.value());
-  x.partials().SetZero();
-  return x;
-}
-
-AutoDiff round(AutoDiff x) {
-  x.value() = std::round(x.value());
-  x.partials().SetZero();
-  return x;
-}
-
-AutoDiff nexttoward(AutoDiff from, long double to) {
-  from.value() = std::nexttoward(from.value(), to);
-  from.partials().SetZero();
-  return from;
-}
-
-std::ostream& operator<<(std::ostream& s, const AutoDiff& x) {
-  return s << fmt::format("{}", x.value());
+AutoDiff copysign(const AutoDiff& mag, const AutoDiff& sgn) {
+  return std::signbit(mag.value()) == std::signbit(sgn.value()) ? mag : -mag;
 }
 
 }  // namespace ad

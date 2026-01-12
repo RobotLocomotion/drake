@@ -15,6 +15,8 @@ int momentum_dim(bool angular_only) {
 }
 }  // namespace
 
+CentroidalMomentumConstraint::~CentroidalMomentumConstraint() = default;
+
 CentroidalMomentumConstraint::CentroidalMomentumConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     std::optional<std::vector<ModelInstanceIndex>> model_instances,

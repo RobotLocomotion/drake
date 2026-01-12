@@ -19,6 +19,13 @@ load(
 )
 
 filegroup(
+    name = "doxygen_input",
+    srcs = ["parsing_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
+filegroup(
     name = "test_models",
     testonly = 1,
     srcs = glob([
@@ -331,6 +338,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "detail_parsing_workspace",
+    srcs = ["detail_parsing_workspace.cc"],
     hdrs = ["detail_parsing_workspace.h"],
     internal = True,
     visibility = ["//visibility:private"],
@@ -607,6 +615,7 @@ drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
         ":test_models",
+        "//geometry:test_obj_files",
         "//multibody/benchmarks/acrobot:models",
         "@drake_models//:iiwa_description",
     ],

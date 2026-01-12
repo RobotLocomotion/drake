@@ -4,13 +4,17 @@ import unittest
 
 
 class TestFindRunfilesSubprocess(unittest.TestCase):
-
     def _check_output(self, env=os.environ):
         try:
-            output = subprocess.check_output([
-                "common/find_runfiles_test", "-spdlog_level=trace",
-                "--gtest_filter=FindRunfilesTest.AcceptanceTest",
-            ], stderr=subprocess.STDOUT, env=env)
+            output = subprocess.check_output(
+                [
+                    "common/find_runfiles_test",
+                    "-spdlog_level=trace",
+                    "--gtest_filter=FindRunfilesTest.AcceptanceTest",
+                ],
+                stderr=subprocess.STDOUT,
+                env=env,
+            )
             return output.decode("utf-8")
         except subprocess.CalledProcessError as e:
             e.output = e.output.decode("utf-8")

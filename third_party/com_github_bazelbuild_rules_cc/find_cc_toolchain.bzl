@@ -1,3 +1,5 @@
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+
 # This function is forked and modified from bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec/cc/find_cc_toolchain.bzl
 def find_cc_toolchain(ctx):

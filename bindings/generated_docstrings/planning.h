@@ -1287,15 +1287,15 @@ R"""(Gets the DistanceAndInterpolationProvider in use.)""";
           // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
-    a ``const`` body reference to a body in the full model's plant for
-    the given ``body_index``.)""";
+    a const body reference to a body in the full model's plant for the
+    given ``body_index``.)""";
         } get_body;
         // Symbol: drake::planning::CollisionChecker::model
         struct /* model */ {
           // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
-    a ``const`` reference to the full model.)""";
+    a const reference to the full model.)""";
         } model;
         // Symbol: drake::planning::CollisionChecker::model_context
         struct /* model_context */ {
@@ -1308,9 +1308,9 @@ Parameter ``context_number``:
     Optional implicit context number.
 
 Returns:
-    a ``const`` reference to either the collision checking context
-    given by the ``context_number``, or when nullopt the context to be
-    used with the current OpenMP thread.
+    a const reference to either the collision checking context given
+    by the ``context_number``, or when nullopt the context to be used
+    with the current OpenMP thread.
 
 See also:
     ccb_implicit_contexts "Implicit Context Parallelism".)""";
@@ -1327,7 +1327,7 @@ R"""(Returns:
           // Source: drake/planning/collision_checker.h
           const char* doc =
 R"""(Returns:
-    a `const reference to the full model's plant.)""";
+    a const reference to the full model's plant.)""";
         } plant;
         // Symbol: drake::planning::CollisionChecker::plant_context
         struct /* plant_context */ {
@@ -1340,8 +1340,8 @@ Parameter ``context_number``:
     Optional implicit context number.
 
 Returns:
-    a ``const`` reference to the multibody plant sub-context within
-    the context given by the ``context_number``, or when nullopt the
+    a const reference to the multibody plant sub-context within the
+    context given by the ``context_number``, or when nullopt the
     context to be used with the current OpenMP thread.
 
 See also:
@@ -1800,6 +1800,18 @@ vector instead of writing to an output argument.
 Precondition:
     ``full_vec.size() == size()``.)""";
         } GetFromArray;
+        // Symbol: drake::planning::DofMask::GetFullToSelectedIndex
+        struct /* GetFullToSelectedIndex */ {
+          // Source: drake/planning/dof_mask.h
+          const char* doc =
+R"""(The inverse mapping of GetSelectedToFullIndex(). If we have q_selected
+= dof_mask.GetFromArray(q_full), the this function returns the mapping
+from q_full index to q_selected index. Namely if dof_mask[i] is true,
+namely q_full[i] is selected, then
+q_selected[*dof_mask.GetFullToSelectedIndex()[i]] is the same as
+q_full[i]; if dof_mask[i] is false, then
+dof_mask.GetFullToSelectedIndex()[i] is nullopt.)""";
+        } GetFullToSelectedIndex;
         // Symbol: drake::planning::DofMask::GetJoints
         struct /* GetJoints */ {
           // Source: drake/planning/dof_mask.h
@@ -1814,6 +1826,15 @@ Precondition:
 Precondition:
     ``plant.num_positions() == size()``.)""";
         } GetJoints;
+        // Symbol: drake::planning::DofMask::GetSelectedToFullIndex
+        struct /* GetSelectedToFullIndex */ {
+          // Source: drake/planning/dof_mask.h
+          const char* doc =
+R"""(If we have q_selected = dof_mask.GetFromArray(q_full), then this
+function returns a mapping from q_selected index to q_full index, such
+that q_selected[i] is the same as
+q_full[dof_mask.GetSelectedToFullIndex()[i]].)""";
+        } GetSelectedToFullIndex;
         // Symbol: drake::planning::DofMask::Intersect
         struct /* Intersect */ {
           // Source: drake/planning/dof_mask.h

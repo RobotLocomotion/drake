@@ -1,5 +1,9 @@
 #include "drake/systems/analysis/integrator_base.h"
 
+#include <stdexcept>
+
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace systems {
 
@@ -519,15 +523,14 @@ void IntegratorBase<T>::ValidateSmallerStepSize(const T& current_step_size,
         "Integrator wants to select too small step "
         "size of {}; working minimum is ",
         new_step_size, get_working_minimum_step_size());
-    std::ostringstream str;
     // TODO(russt): Link to the "debugging dynamical systems" tutorial
     // (#17249) once it exists.
-    str << "Error control wants to select step smaller than minimum"
-        << " allowed (" << get_working_minimum_step_size()
-        << "). This is typically an indication that some part of your system "
-           "*with continuous state* is going unstable and/or is producing "
-           "excessively large derivatives.";
-    throw std::runtime_error(str.str());
+    throw std::runtime_error(fmt::format(
+        "Error control wants to select step smaller than minimum allowed ({}). "
+        "This is typically an indication that some part of your system *with "
+        "continuous state* is going unstable and/or is producing excessively "
+        "large derivatives.",
+        get_working_minimum_step_size()));
   }
 }
 

@@ -92,7 +92,7 @@ class CspaceFreePath {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult);
 
     SeparationCertificateResult() {}
-    ~SeparationCertificateResult() override = default;
+    ~SeparationCertificateResult() override;
   };
 
   /**
@@ -116,7 +116,7 @@ class CspaceFreePath {
       }
     }
 
-    ~SeparationCertificateProgram() override = default;
+    ~SeparationCertificateProgram() override;
 
     std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
   };

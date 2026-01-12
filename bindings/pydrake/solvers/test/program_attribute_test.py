@@ -1,8 +1,6 @@
 import unittest
-from pydrake.solvers import (
-    ProgramAttribute,
-    ProgramType
-)
+
+from pydrake.solvers import ProgramAttribute, ProgramType
 
 
 class TestProgramAttribute(unittest.TestCase):

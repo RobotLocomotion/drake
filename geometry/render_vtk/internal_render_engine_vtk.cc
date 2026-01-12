@@ -19,6 +19,7 @@
 #include <vtkImageReader2Factory.h>      // vtkIOImage
 #include <vtkLight.h>                    // vtkRenderingCore
 #include <vtkLightsPass.h>               // vtkRenderingOpenGL2
+#include <vtkMemoryResourceStream.h>     // vtkIOCore
 #include <vtkOpaquePass.h>               // vtkRenderingOpenGL2
 #include <vtkOpenGLFXAAPass.h>           // vtkRenderingOpenGL2
 #include <vtkOpenGLPolyDataMapper.h>     // vtkRenderingOpenGL2
@@ -951,8 +952,7 @@ void RenderEngineVtk::InitializePipelines() {
       // environment map.
       skybox->SetFloorRight(0, -1, 0);
       skybox->SetProjection(vtkSkybox::Sphere);
-      // Linear color space (aka *not HDR*) requires gamma correction.
-      skybox->SetGammaCorrect(!env_map.is_hdr);
+      skybox->GammaCorrectOn();
       renderer->AddActor(skybox);
     }
     // Setting an environment map should require all materials to be PBR.
@@ -1103,8 +1103,9 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
             },
             [reader = texture_reader.Get()](const MemoryFile& file) {
               const std::string& contents = file.contents();
-              reader->SetMemoryBuffer(contents.c_str());
-              reader->SetMemoryBufferLength(contents.size());
+              vtkNew<vtkMemoryResourceStream> stream;
+              stream->SetBuffer(contents.c_str(), contents.size());
+              reader->SetStream(stream);
               return file.filename_hint();
             }},
         material.diffuse_map);

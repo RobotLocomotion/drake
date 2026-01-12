@@ -56,7 +56,7 @@ assigned yet:
 
 * For PRs opened by a new or infrequent contributor:
 
-  > Good day, ``@AUTHOR``.  I'm assigning ``+@ASSIGNEE`` as the most relevant
+  > Good day, ``@AUTHOR``.  I'm assigning ``+a:@ASSIGNEE`` as the most relevant
   > team member to assist with this pull request.  If you already had a
   > different team member in mind, please let us know.  To ``@ASSIGNEE``,
   > feel free to delegate in case there is someone else more suitable.

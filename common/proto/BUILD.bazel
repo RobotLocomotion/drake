@@ -96,4 +96,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(python_lint_use_ruff_format = False)
+add_lint_tests()

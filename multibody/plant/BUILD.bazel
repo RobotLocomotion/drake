@@ -10,6 +10,18 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "contact_defaults_doxygen.h",
+        "contact_model_doxygen.h",
+        "hydroelastic_parameters_doxygen.h",
+        "simulation_and_solvers_doxygen.h",
+    ],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "plant",
     visibility = ["//visibility:public"],
@@ -1037,6 +1049,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_integration_test",
     timeout = "moderate",
+    args = select({
+        # TODO(#23854): This test is currently broken on macOS.
+        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",

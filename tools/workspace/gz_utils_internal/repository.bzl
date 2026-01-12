@@ -9,8 +9,8 @@ def gz_utils_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "gazebosim/gz-utils",
-        commit = "gz-utils3_3.1.1",
-        sha256 = "e3cf80c00454c964d61948d13e79a790cfa14b82fbb0c76fbd8170105fb28761",  # noqa
+        commit = "gz-utils4_4.0.0",
+        sha256 = "b06a179ea4297be8b8d09ea7a5d3d45059a3e4030c1bd256afc62f997cc992ed",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

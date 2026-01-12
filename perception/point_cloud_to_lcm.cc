@@ -5,7 +5,7 @@
 #include <cstring>
 #include <utility>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/lcmt_point_cloud.hpp"
 #include "drake/perception/point_cloud.h"
 

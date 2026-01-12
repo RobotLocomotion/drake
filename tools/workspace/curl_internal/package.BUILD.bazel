@@ -1,6 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
@@ -254,6 +255,7 @@ cc_library(
     hdrs = _HDRS + [":lib/curl_config.h"],
     srcs = _SRCS,
     includes = _INCLUDES,
+    isystem = True,
     copts = _COPTS,
     linkopts = _LINKOPTS,
     linkstatic = 1,
@@ -269,3 +271,5 @@ install(
     docs = ["COPYING"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

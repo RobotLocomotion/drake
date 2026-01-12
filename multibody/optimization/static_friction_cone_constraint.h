@@ -45,7 +45,7 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
   StaticFrictionConeConstraint(
       const ContactWrenchEvaluator* contact_wrench_evaluator);
 
-  ~StaticFrictionConeConstraint() override {}
+  ~StaticFrictionConeConstraint() override;
 
   /**
    * Given the bound variable @p x, decompose it into the generalized position

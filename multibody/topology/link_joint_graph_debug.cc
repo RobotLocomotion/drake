@@ -34,18 +34,19 @@ std::string LinkJointGraph::GenerateGraphvizString(
   if (show_as_modeled) graphviz += "\nred = ephemeral";
   graphviz += "\"]\n";
 
-  // Link composites are discovered during forest building. If there
-  // is no forest, there will be no composites. But if there are composites
-  // we'd like to draw boxes around them so we'll process composited links
+  // WeldedLinkAssemblies are discovered during forest building. If there
+  // is no forest, there will be no assemblies. But if there are assemblies
+  // we'd like to draw boxes around them so we'll process assembled links
   // first and then pick up the leftovers below.
-  for (LinkCompositeIndex index{0}; index < ssize(link_composites()); ++index) {
-    const LinkComposite& composite = link_composites(index);
+  for (WeldedLinksAssemblyIndex index{0};
+       index < ssize(welded_links_assemblies()); ++index) {
+    const WeldedLinksAssembly& assembly = welded_links_assemblies(index);
     // Oddly, in order to get the box and label for a subgraph, the _name_
     // of the subgraph must begin with "cluster"!
     graphviz += fmt::format("subgraph cluster{}", index) + " {\n";
-    graphviz += fmt::format("label=\"LinkComposite({}){}\";\n", index,
-                            composite.is_massless ? "*" : "");
-    for (const LinkIndex& link_index : composite.links) {
+    graphviz += fmt::format("label=\"WeldedLinksAssembly({}){}\";\n", index,
+                            assembly.is_massless() ? "*" : "");
+    for (const LinkIndex& link_index : assembly.links()) {
       const Link& link = link_by_index(link_index);
       const bool ephemeral = link_is_ephemeral(link.index());
       if (ephemeral && !include_ephemeral_elements) continue;
@@ -57,9 +58,9 @@ std::string LinkJointGraph::GenerateGraphvizString(
     graphviz += "}\n";
   }
 
-  // Now pick up the links that aren't in a composite.
+  // Now pick up the links that aren't in an assembly.
   for (const Link& link : links()) {
-    if (link.composite().has_value()) continue;
+    if (link.welded_links_assembly().has_value()) continue;
     const bool ephemeral = link_is_ephemeral(link.index());
     if (ephemeral && !include_ephemeral_elements) continue;
     graphviz +=

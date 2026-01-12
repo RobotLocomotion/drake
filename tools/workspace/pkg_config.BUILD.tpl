@@ -15,6 +15,7 @@ cc_library(
     copts = %{copts},
     defines = %{defines},
     includes = %{includes},
+    isystem = True,
     linkopts = %{linkopts},
     deps = %{deps},
     deprecation = %{extra_deprecation},

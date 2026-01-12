@@ -44,7 +44,7 @@ class csc_matrix:
         self._triplets = []
         for col in range(len(self.indptr) - 1):
             start = self.indptr[col]
-            end = self.indptr[col+1]
+            end = self.indptr[col + 1]
             rows = self.indices[start:end]
             values = self.data[start:end]
             for row, value in zip(rows, values):

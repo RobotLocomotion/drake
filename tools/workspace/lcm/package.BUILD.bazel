@@ -3,15 +3,14 @@
 load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load("@drake//tools/skylark:java.bzl", "java_binary", "java_library")
 load("@drake//tools/skylark:py.bzl", "py_library")
+load("@drake//tools/skylark:sh.bzl", "sh_binary")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
     "generate_export_header",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
-# TODO(jwnimmer-tri) Nothing in this file is used by Drake anymore, but is kept
-# around for backwards compatibility. The @lcm repository will be deprecated for
-# removal soon.
+# Everything here is deprecated for removal on 2026-02-01.
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -61,6 +60,8 @@ LCM_PUBLIC_HEADER_INCLUDES = [
     # everyone using LCM. Can we do better?
     "lcm",
 ]
+
+DEPRECATION = "DRAKE DEPRECATED: The @lcm module extension from drake_dep_repositories() is deprecated for removal. Upstream LCM now has native bazel support; use the upstream BUILD rules, instead. The deprecated code will be removed from Drake on or after 2026-02-01."  # noqa
 
 # We only build a shared-library flavor of liblcm.so, because its LGPL-licensed
 # and thus should never be linked statically.  Building C++ shared libraries
@@ -112,6 +113,7 @@ cc_library(
     srcs = ["libdrake_lcm.so"],
     hdrs = LCM_PUBLIC_HEADERS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
+    deprecation = DEPRECATION,
 )
 
 # This is the header-only library used by generated messages.
@@ -120,6 +122,7 @@ cc_library(
     hdrs = ["lcm/lcm_coretypes.h"],
     includes = ["."],
     linkstatic = True,
+    deprecation = DEPRECATION,
 )
 
 cc_binary(
@@ -134,6 +137,7 @@ cc_binary(
         ":lcm",
         "@glib//glib",
     ],
+    deprecation = DEPRECATION,
 )
 
 cc_binary(
@@ -143,6 +147,7 @@ cc_binary(
     ],
     copts = LCM_COPTS,
     deps = [":lcm"],
+    deprecation = DEPRECATION,
 )
 
 cc_binary(
@@ -169,6 +174,7 @@ cc_binary(
     deps = [
         "@glib//glib",
     ],
+    deprecation = DEPRECATION,
 )
 
 cc_binary(
@@ -241,6 +247,7 @@ py_library(
     srcs = ["gen/lcm/__init__.py"],  # Shim, from the genrule above.
     imports = ["gen"],
     deps = [":lcm-python-upstream"],
+    deprecation = DEPRECATION,
 )
 
 java_library(
@@ -251,14 +258,16 @@ java_library(
         "-XepDisableAllChecks",
     ],
     deps = [
-        "@lcm_maven//:net_sf_jchart2d_jchart2d",
+        "@drake_maven_internal//:net_sf_jchart2d_jchart2d",
     ],
+    deprecation = DEPRECATION,
 )
 
 java_binary(
     name = "lcm-logplayer-gui",
     main_class = "lcm.logging.LogPlayer",
     runtime_deps = [":lcm-java"],
+    deprecation = DEPRECATION,
 )
 
 java_binary(
@@ -272,4 +281,30 @@ java_binary(
     runtime_deps = [
         ":lcm-java",
     ],
+    deprecation = DEPRECATION,
+)
+
+cc_library(
+    name = "lcm_coretypes_non_deprecated",
+    deps = [":lcm_coretypes"],
+    visibility = ["@drake//tools/workspace/lcm:__subpackages__"],
+)
+
+py_library(
+    name = "lcm-python_non_deprecated",
+    deps = [":lcm-python"],
+    visibility = ["@drake//tools/workspace/lcm:__subpackages__"],
+)
+
+java_library(
+    name = "lcm-java_non_deprecated",
+    srcs = glob(["lcm-java/lcm/**/*.java"]),
+    javacopts = ["-XepDisableAllChecks"],
+    deps = ["@drake_maven_internal//:net_sf_jchart2d_jchart2d"],
+    visibility = ["@drake//tools/workspace/lcm:__subpackages__"],
+)
+
+sh_binary(
+    name = "lcm-gen_non_deprecated",
+    srcs = [":lcm-gen"],
 )

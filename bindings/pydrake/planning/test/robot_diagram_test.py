@@ -1,13 +1,13 @@
-import pydrake.planning as mut
+import pydrake.planning as mut  # ruff: isort: skip
 
 import gc
+import sys
 import unittest
 import weakref
 
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.geometry import SceneGraph_
 from pydrake.multibody.plant import MultibodyPlant_, MultibodyPlantConfig
 from pydrake.systems.controllers import InverseDynamicsController
@@ -19,19 +19,22 @@ class TestRobotDiagram(unittest.TestCase):
     def test_robot_diagram_builder_default_time_step(self, T):
         Class = mut.RobotDiagramBuilder_[T]
         dut = Class()
-        self.assertEqual(dut.plant().time_step(),
-                         MultibodyPlantConfig().time_step)
+        self.assertEqual(
+            dut.plant().time_step(), MultibodyPlantConfig().time_step
+        )
 
     @numpy_compare.check_all_types
     def test_robot_diagram_builder(self, T):
-        """Tests the full RobotDiagramBuilder API.
-        """
+        """Tests the full RobotDiagramBuilder API."""
         Class = mut.RobotDiagramBuilder_[T]
         dut = Class(time_step=0.0)
         if T is float:
-            dut.parser().AddModels(url=(
-                "package://drake_models/iiwa_description/urdf/"
-                + "iiwa14_spheres_dense_collision.urdf"))
+            dut.parser().AddModels(
+                url=(
+                    "package://drake_models/iiwa_description/urdf/"
+                    + "iiwa14_spheres_dense_collision.urdf"
+                )
+            )
         else:
             # TODO(jwnimmer-tri) Use dut.plant() to manually add some
             # models, bodies, and geometries here.
@@ -50,8 +53,7 @@ class TestRobotDiagram(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_robot_diagram(self, T):
-        """Tests the full RobotDiagram API.
-        """
+        """Tests the full RobotDiagram API."""
         builder = mut.RobotDiagramBuilder_[T]()
         dut = builder.Build()
 
@@ -61,17 +63,18 @@ class TestRobotDiagram(unittest.TestCase):
 
         root_context = dut.CreateDefaultContext()
         self.assertIsInstance(
-            dut.mutable_plant_context(root_context=root_context),
-            Context_[T])
+            dut.mutable_plant_context(root_context=root_context), Context_[T]
+        )
         self.assertIsInstance(
-            dut.plant_context(root_context=root_context),
-            Context_[T])
+            dut.plant_context(root_context=root_context), Context_[T]
+        )
         self.assertIsInstance(
             dut.mutable_scene_graph_context(root_context=root_context),
-            Context_[T])
+            Context_[T],
+        )
         self.assertIsInstance(
-            dut.scene_graph_context(root_context=root_context),
-            Context_[T])
+            dut.scene_graph_context(root_context=root_context), Context_[T]
+        )
 
     def test_lifetime_robot(self):
         """Ensure that diagrams built using RobotDiagram/Builder neither become
@@ -109,11 +112,14 @@ class TestRobotDiagram(unittest.TestCase):
             )
             # Forward ports for ease of testing.
             builder.builder().ExportInput(
-                controller.get_input_port_estimated_state(), "estimated_state")
+                controller.get_input_port_estimated_state(), "estimated_state"
+            )
             builder.builder().ExportInput(
-                controller.get_input_port_desired_state(), "desired_state")
+                controller.get_input_port_desired_state(), "desired_state"
+            )
             builder.builder().ExportOutput(
-                controller.get_output_port_control(), "generalized_force")
+                controller.get_output_port_control(), "generalized_force"
+            )
             diagram = builder.Build()
             return diagram, controller
 
@@ -162,7 +168,10 @@ class TestRobotDiagram(unittest.TestCase):
             builder = mut.RobotDiagramBuilder(time_step=0.05)
             # In the original bug, the reference count of the builder, and the
             # ref-cycle graph it participated in, would grow without bound.
-            self.assertEqual(actual_ref_count(builder.builder()), 0,
-                             msg=f"at iteration {i}")
+            self.assertEqual(
+                sys.getrefcount(builder.builder()),
+                1,
+                msg=f"at iteration {i}",
+            )
             diagram = builder.Build()  # noqa: F841 (unused-variable)
             gc.collect()

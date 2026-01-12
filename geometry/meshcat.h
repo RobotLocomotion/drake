@@ -552,7 +552,7 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  /** @group Realtime Rate Reporting
+  /** @name Realtime Rate Reporting
 
    %Meshcat can be used to visualize the realtime rate of a simulation's
    computation in the meshcat visualizer webpage. Meshcat broadcasts a realtime

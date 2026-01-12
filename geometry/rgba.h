@@ -2,11 +2,17 @@
 
 #include <algorithm>
 #include <optional>
+#include <string>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/common/name_value.h"
+
+// Remove with deprecation 2026-03-01.
+#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -89,7 +95,8 @@ class Rgba {
             std::min(1.0, b() * scale), a()};
   }
 
-  friend std::ostream& operator<<(std::ostream& out, const Rgba& rgba);
+  /** Converts the Rgba value to a string representation. */
+  std::string to_string() const;
 
   /** Passes this object to an Archive.
 
@@ -163,5 +170,10 @@ class Rgba {
       Eigen::Vector4d::Ones();
 };
 
+DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
+std::ostream& operator<<(std::ostream& out, const Rgba& rgba);
+
 }  // namespace geometry
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::geometry, Rgba, x, x.to_string())

@@ -13,6 +13,7 @@ cc_library(
     name = "uwebsockets",
     hdrs = glob(["src/*.h"]),
     includes = ["src"],
+    isystem = True,
     deps = [
         "@usockets_internal//:usockets",
         "@zlib",
@@ -26,3 +27,5 @@ install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

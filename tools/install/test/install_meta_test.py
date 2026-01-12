@@ -1,12 +1,12 @@
 """Tests the behavior of targets that use `installer.py`."""
 
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 import io
 import os
 from os.path import isdir, join, relpath
-import unittest
 from subprocess import STDOUT, check_output
 import sys
+import unittest
 
 import tools.install.installer as installer
 

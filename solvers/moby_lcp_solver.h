@@ -3,32 +3,16 @@
 
 #pragma once
 
-#include <fstream>
 #include <limits>
-#include <string>
 #include <vector>
 
-#include <Eigen/SparseCore>
-
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_base.h"
 
-// TODO(jwnimmer-tri): This class should be renamed MobyLcpSolver to comply with
-//                     style guide.
-
 namespace drake {
 namespace solvers {
-
-/// Non-template class for MobyLcpSolver<T> constants.
-class MobyLcpSolverId {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolverId);
-  MobyLcpSolverId() = delete;
-
-  /// @return same as SolverInterface::solver_id()
-  static SolverId id();
-};
 
 /// A class for solving Linear Complementarity Problems (LCPs). Solving a LCP
 /// requires finding a solution to the problem:<pre>
@@ -66,13 +50,12 @@ class MobyLcpSolverId {
 ///                     Linear Programming. Combinatorica, 4(4), pp. 373-395.
 /// * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
 ///                     Programming. Heldermann Verlag, 1988.
-template <class T>
-class MobyLCPSolver final : public SolverBase {
+class MobyLcpSolver final : public SolverBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolver);
 
-  MobyLCPSolver();
-  ~MobyLCPSolver() final;
+  MobyLcpSolver();
+  ~MobyLcpSolver() final;
 
   /// Calculates the zero tolerance that the solver would compute if the user
   /// does not specify a tolerance.
@@ -120,8 +103,8 @@ class MobyLCPSolver final : public SolverBase {
   /// * [Drumwright 2015]  E. Drumwright. Rapidly computable viscous friction
   ///                      and no-slip rigid contact models. arXiv:
   ///                      1504.00719v1. 2015.
-  bool SolveLcpFast(const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* z,
-                    const T& zero_tol = T(-1)) const;
+  bool SolveLcpFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+                    Eigen::VectorXd* z, double zero_tol = -1) const;
 
   /// Regularized version of the fast pivoting algorithm for LCPs of the form
   /// M = PAPᵀ, q = Pb, where b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is
@@ -174,10 +157,10 @@ class MobyLCPSolver final : public SolverBase {
   ///
   /// * [Cottle, 1992]     R. Cottle, J.-S. Pang, and R. Stone. The Linear
   ///                      Complementarity Problem. Academic Press, 1992.
-  bool SolveLcpFastRegularized(const MatrixX<T>& M, const VectorX<T>& q,
-                               VectorX<T>* z, int min_exp = -20,
-                               unsigned step_exp = 4, int max_exp = 20,
-                               const T& zero_tol = T(-1)) const;
+  bool SolveLcpFastRegularized(const Eigen::MatrixXd& M,
+                               const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                               int min_exp = -20, unsigned step_exp = 4,
+                               int max_exp = 20, double zero_tol = -1) const;
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
@@ -221,8 +204,9 @@ class MobyLCPSolver final : public SolverBase {
   ///                      Complementarity Problem. Academic Press, 1992.
   /// * [LEMKE]          P. Fackler and M. Miranda. LEMKE.
   ///                    http://people.sc.fsu.edu/~burkardt/m\_src/lemke/lemke.m
-  bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* z,
-                     const T& piv_tol = T(-1), const T& zero_tol = T(-1)) const;
+  bool SolveLcpLemke(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+                     Eigen::VectorXd* z, double piv_tol = -1,
+                     double zero_tol = -1) const;
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
@@ -256,11 +240,11 @@ class MobyLCPSolver final : public SolverBase {
   ///
   /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
   ///                      Complementarity Problem. Academic Press, 1992.
-  bool SolveLcpLemkeRegularized(const MatrixX<T>& M, const VectorX<T>& q,
-                                VectorX<T>* z, int min_exp = -20,
-                                unsigned step_exp = 1, int max_exp = 1,
-                                const T& piv_tol = T(-1),
-                                const T& zero_tol = T(-1)) const;
+  bool SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
+                                const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                                int min_exp = -20, unsigned step_exp = 1,
+                                int max_exp = 1, double piv_tol = -1,
+                                double zero_tol = -1) const;
 
   /// Returns the number of pivoting operations made by the last LCP solve.
   int get_num_pivots() const { return pivots_; }
@@ -286,9 +270,8 @@ class MobyLCPSolver final : public SolverBase {
 
   void ClearIndexVectors() const;
 
-  template <typename MatrixType, typename Scalar>
-  void FinishLemkeSolution(const MatrixType& M, const VectorX<Scalar>& q,
-                           const VectorX<Scalar>& x, VectorX<Scalar>* z) const;
+  void FinishLemkeSolution(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+                           const Eigen::VectorXd& x, Eigen::VectorXd* z) const;
 
   // Records the number of pivoting operations used during the last solve.
   mutable unsigned pivots_{0};
@@ -299,6 +282,22 @@ class MobyLCPSolver final : public SolverBase {
   // Vectors which correspond to indices into other data.
   mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
 };
+
+class DRAKE_DEPRECATED("2026-03-01", "Use MobyLcpSolver::id() directly.")
+    MobyLcpSolverId {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolverId);
+  MobyLcpSolverId() = delete;
+
+  DRAKE_DEPRECATED("2026-03-01", "Use MobyLcpSolver::id() directly.")
+  static SolverId id() { return MobyLcpSolver::id(); }
+};
+
+/// Deprecated template class; just an alias for MobyLcpSolver.
+/// @tparam T must be `double`
+template <class T>
+using MobyLCPSolver DRAKE_DEPRECATED(
+    "2026-03-01", "Use MobyLcpSolver directly.") = MobyLcpSolver;
 
 }  // namespace solvers
 }  // namespace drake

@@ -11,15 +11,16 @@ def lcm_internal_repository(
         the monthly upgrades.
         """,
         # TODO(jwnimmer-tri) At the moment we have both @lcm and @lcm_internal
-        # repositories. We are working to deprecate @lcm. In the meantime, be
-        # aware that we have a different pins for each repository.
-        # TODO(jwnimmer-tri) Once LCM has its next tagged release >v1.5.1, we
-        # should switch this back to a release tag instead of this hash.
-        commit = "e4bed2c86fbd6dd2280326801acf71cbd05074be",
-        sha256 = "b2bf5bf7fed61805d72855c8ea9d247de95e5ca885ee6c5c8c9185aa87dda74c",  # noqa
+        # repositories, with @lcm being deprecated 2026-02-01. Be aware that we
+        # have different pins for each repository.
+        commit = "v1.5.2",
+        sha256 = "d443261619080f1c0693237b2019436988e1b2b2ba5fc09a49bf23769e1796de",  # noqa
         patches = [
-            ":patches/copts.patch",
+            ":patches/maven.patch",
             ":patches/vendor_namespace.patch",
+        ],
+        patch_cmds = [
+            "echo 'exports_files([\"drake_repository_metadata.json\"])' >> BUILD.bazel",  # noqa
         ],
         mirrors = mirrors,
     )

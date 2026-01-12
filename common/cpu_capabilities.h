@@ -4,9 +4,9 @@
 
 namespace drake {
 
-/** @addtogroup environment_variables
+/** @defgroup drake_disable_cpu_features DRAKE_DISABLE_CPU_FEATURES
+@ingroup environment_variables
 @{
-@defgroup drake_disable_cpu_features DRAKE_DISABLE_CPU_FEATURES
 
 Certain low-level code in Drake will scan for available CPU features at runtime
 and dispatch to CPU-optimized implementations.

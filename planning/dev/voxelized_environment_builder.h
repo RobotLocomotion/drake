@@ -14,23 +14,23 @@
 #include "drake/common/parallelism.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/dev/voxel_collision_map.h"
-#include "drake/planning/dev/voxel_tagged_object_collision_map.h"
+#include "drake/planning/dev/voxel_occupancy_map.h"
+#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
 
 namespace drake {
 namespace planning {
 
-/// Builds a CollisionMap using the parameters specified.
-/// CollisionMaps are a dense voxel grid where each cell is a
-/// voxelized_geometry_tools::CollisionCell that stores P(occupancy) as a float.
-/// CollisionMaps support computation of signed distance fields and
+/// Builds a VoxelOccupancyMap using the parameters specified.
+/// VoxelOccupancyMaps are a dense voxel grid where each cell is a
+/// voxelized_geometry_tools::OccupancyCell that stores P(occupancy) as a float.
+/// OccupancyMaps support computation of signed distance fields and
 /// topological invariants (# of components, # of holes, # of voids).
 /// Empty cells receive occupancy=0.0, filled cells receive occupancy=1.0.
 /// @param plant MultibodyPlant model with a registered SceneGraph.
 /// @param plant_context Context of plant.
 /// @param geometries_to_ignore Set of geometries to ignore.
 /// @param parent_body_name Name of parent body in the MultibodyPlant, used as
-/// frame name in the constructed CollisionMap. If this name is not unique, or
+/// frame name in the constructed OccupancyMap. If this name is not unique, or
 /// does not correspond to an existing MbP body, use override_parent_body_index
 /// to specfiy the parent body directly.
 /// @param X_PG Pose of occupancy map frame G in frame of parent body P.
@@ -45,7 +45,7 @@ namespace planning {
 /// parent body name is not unique, or if the frame name does not match an
 /// existing MbP body (e.g. the name is a TF-compatible name incompatible with
 /// GetBodyByName).
-VoxelCollisionMap BuildCollisionMap(
+VoxelOccupancyMap BuildOccupancyMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
@@ -54,10 +54,10 @@ VoxelCollisionMap BuildCollisionMap(
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
-/// Builds a TaggedObjectCollisionMap using the parameters specified.
-/// TaggedObjectCollisionMaps are a dense voxel grid where each cell is a
-/// voxelized_geometry_tools::TaggedObjectCollisionCell that stores P(occupancy)
-/// as a float and object_id as a uint32_t. TaggedObjectCollisionMaps support
+/// Builds a VoxelTaggedObjectOccupancyMap using the parameters specified.
+/// VoxelTaggedObjectOccupancyMaps are a dense voxel grid where each cell is a
+/// voxelized_geometry_tools::TaggedObjectOccupancyCell that stores P(occupancy)
+/// as a float and object_id as a uint32_t. TaggedObjectOccupancyMaps support
 /// computation of signed distance fields and the first three topological
 /// invariants (# of components, # of holes, # of voids) as well as a limited
 /// form of spatial partioning.
@@ -69,7 +69,7 @@ VoxelCollisionMap BuildCollisionMap(
 /// @param plant_context Context of plant.
 /// @param geometries_to_ignore Set of geometries to ignore.
 /// @param parent_body_name Name of parent body in the MultibodyPlant, used as
-/// frame name in the constructed CollisionMap. If this name is not unique, or
+/// frame name in the constructed OccupancyMap. If this name is not unique, or
 /// does not correspond to an existing MbP body, use override_parent_body_index
 /// to specfiy the parent body directly.
 /// @param X_PG Pose of occupancy map frame G in frame of parent body P.
@@ -84,7 +84,7 @@ VoxelCollisionMap BuildCollisionMap(
 /// parent body name is not unique, or if the frame name does not match an
 /// existing MbP body (e.g. the name is a TF-compatible name incompatible with
 /// GetBodyByName).
-VoxelTaggedObjectCollisionMap BuildTaggedObjectCollisionMap(
+VoxelTaggedObjectOccupancyMap BuildTaggedObjectOccupancyMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
@@ -93,26 +93,26 @@ VoxelTaggedObjectCollisionMap BuildTaggedObjectCollisionMap(
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
-/// Fills an initialized CollisionMapGrid.
+/// Fills an initialized VoxelOccupancyMap.
 /// Empty cells receive occupancy=0.0, filled cells receive occupancy=1.0.
 /// @param plant MultibodyPlant model with a registered SceneGraph.
 /// @param plant_context Context of plant.
 /// @param geometries_to_ignore Set of geometries to ignore.
-/// @param collision_map TaggedObjectCollisionMapGrid to fill.
+/// @param occupancy_map TaggedObjectOccupancyMapGrid to fill.
 /// @param override_parent_body_index Optionally provide a body index to
 /// override using the collision map frame name to identify the parent body. Use
 /// this if the frame name is not unique, or if the frame name does not match an
 /// existing MbP body (e.g. the name is a TF-compatible name incompatible with
 /// GetBodyByName).
-void FillCollisionMap(
+void FillOccupancyMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
-    VoxelCollisionMap* collision_map,
+    VoxelOccupancyMap* occupancy_map,
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
-/// Fills an initialized TaggedObjectCollisionMapGrid.
+/// Fills an initialized VoxelTaggedObjectOccupancyMap.
 /// Empty cells receive occupancy=0.0, filled cells receive occupancy=1.0.
 /// Filled cells of the environment receive object_id values corresponding to
 /// the integer values of the GeometryId in that location. If your environment
@@ -120,17 +120,17 @@ void FillCollisionMap(
 /// @param plant MultibodyPlant model with a registered SceneGraph.
 /// @param plant_context Context of plant.
 /// @param geometries_to_ignore Set of geometries to ignore.
-/// @param collision_map TaggedObjectCollisionMapGrid to fill.
+/// @param occupancy_map TaggedObjectOccupancyMapGrid to fill.
 /// @param override_parent_body_index Optionally provide a body index to
 /// override using the collision map frame name to identify the parent body. Use
 /// this if the frame name is not unique, or if the frame name does not match an
 /// existing MbP body (e.g. the name is a TF-compatible name incompatible with
 /// GetBodyByName).
-void FillTaggedObjectCollisionMap(
+void FillTaggedObjectOccupancyMap(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context,
     const std::unordered_set<geometry::GeometryId>& geometries_to_ignore,
-    VoxelTaggedObjectCollisionMap* collision_map,
+    VoxelTaggedObjectOccupancyMap* occupancy_map,
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 

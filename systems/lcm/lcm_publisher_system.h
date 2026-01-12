@@ -5,8 +5,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/hash.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/event.h"

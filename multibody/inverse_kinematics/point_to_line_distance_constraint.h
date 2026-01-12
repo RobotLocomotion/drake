@@ -75,7 +75,7 @@ class PointToLineDistanceConstraint : public solvers::Constraint {
                                 double distance_lower, double distance_upper,
                                 systems::Context<AutoDiffXd>* plant_context);
 
-  ~PointToLineDistanceConstraint() override {}
+  ~PointToLineDistanceConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

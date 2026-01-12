@@ -134,7 +134,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       if (i < num_trials / 2) {
         // The first num_trials/2 programs should hit the iteration limit.
         // This code is defined in
-        // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+        // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
         const int ITERATION_LIMIT = 7;
         EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
         EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));
@@ -142,7 +142,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       } else {
         // The last num_trials/2 programs should solve to optimality.
         // This code is defined in
-        // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+        // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
         const int OPTIMAL = 2;
         EXPECT_EQ(solver_details.optimization_status, OPTIMAL);
         EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));
@@ -160,7 +160,7 @@ GTEST_TEST(SolveInParallelTest, TestSolveInParallelSolverOptions) {
       const auto solver_details =
           results.at(i).get_solver_details<GurobiSolver>();
       // This code is defined in
-      // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
+      // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
       const int ITERATION_LIMIT = 7;
       EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
       EXPECT_TRUE(std::isfinite(results.at(i).get_optimal_cost()));

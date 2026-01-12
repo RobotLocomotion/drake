@@ -5,9 +5,7 @@
 
 # ruff: noqa: F401 (unused-import)
 
-from . import distributions
-from . import nn
-from . import optim
+from . import distributions, nn, optim
 
 Tensor = None
 device = None

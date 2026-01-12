@@ -8,10 +8,9 @@ https://cmake.org/cmake/help/latest/command/configure_file.html
 """
 
 import argparse
+from collections import OrderedDict
 import os
 import re
-
-from collections import OrderedDict
 
 # Looks like "#cmakedefine VAR ..." or "#cmakedefine01 VAR".
 _cmakedefine = re.compile(

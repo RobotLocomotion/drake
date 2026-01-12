@@ -7,9 +7,12 @@ load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
-    "drake_cc_googletest_linux_only",
     "drake_cc_library",
     "drake_cc_package_library",
+)
+load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -378,6 +381,7 @@ drake_cc_library(
         ":image_file_format",
         "//common:unused",
         "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOCore",
         "@vtk_internal//:vtkIOImage",
     ],
 )
@@ -581,16 +585,17 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "rgbd_sensor_async_gl_test",
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    # We'd prefer this to be enabled on all //tools/skylark:linux platforms.
+    opt_in_condition = "//tools:ubuntu_jammy",
     timeout = "moderate",
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "@drake_models//:manipulation_station",
     ],
     display = True,
-    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
-    enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags(),
     deps = [
         ":image_writer",

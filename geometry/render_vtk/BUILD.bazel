@@ -6,10 +6,29 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_library",
+    "drake_cc_variant_library",
+)
 load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
+# This render_vtk package is only implemented when
+# //tools/flags:with_render_vtk is True. When False, only the factory is
+# available and it will always throw an exception. When True, the factory is
+# the sole public entry point, even though the implementation is made up of
+# several other distinct components.
+#
+# Only the package-level library //geometry/render_vtk is public as a Bazel
+# target; all of the other targets are private.
+
 package(default_visibility = ["//visibility:private"])
+
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:with_render_vtk": "True"},
+)
 
 drake_cc_package_library(
     name = "render_vtk",
@@ -34,25 +53,29 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "factory",
-    srcs = ["factory.cc"],
+    opt_in_condition = ":enabled",
+    srcs_always = [],
+    srcs_enabled = ["factory.cc"],
+    srcs_disabled = ["no_factory.cc"],
     hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":render_engine_vtk_params",
         "//geometry/render:render_engine",
     ],
-    implementation_deps = [
+    implementation_deps_always = [],
+    implementation_deps_enabled = [
         ":internal_render_engine_vtk",
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_make_render_window",
+    opt_in_condition = ":enabled",
     srcs = ["internal_make_render_window.cc"],
     hdrs = ["internal_make_render_window.h"],
-    internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
     ],
@@ -63,15 +86,14 @@ drake_cc_library(
         "//geometry/render_gl:internal_loaders",
         "@vtk_internal//:vtkRenderingCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
-        "@vtk_internal//:vtkglad",
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_render_engine_vtk",
+    opt_in_condition = ":enabled",
     srcs = ["internal_render_engine_vtk.cc"],
     hdrs = ["internal_render_engine_vtk.h"],
-    internal = True,
     visibility = [
         "//geometry/render_gltf_client:__pkg__",
     ],
@@ -94,6 +116,7 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonExecutionModel",
         "@vtk_internal//:vtkCommonTransforms",
         "@vtk_internal//:vtkFiltersSources",
+        "@vtk_internal//:vtkIOCore",
         "@vtk_internal//:vtkIOGeometry",
         "@vtk_internal//:vtkIOImage",
         "@vtk_internal//:vtkIOImport",
@@ -103,12 +126,11 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_render_engine_vtk_base",
+    opt_in_condition = ":enabled",
     srcs = ["internal_render_engine_vtk_base.cc"],
     hdrs = ["internal_render_engine_vtk_base.h"],
-    internal = True,
-    visibility = ["//visibility:private"],
     deps = [
         "//common:scope_exit",
         "//geometry:geometry_roles",
@@ -124,12 +146,11 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_optional_library(
     name = "internal_vtk_util",
+    opt_in_condition = ":enabled",
     srcs = ["internal_vtk_util.cc"],
     hdrs = ["internal_vtk_util.h"],
-    internal = True,
-    visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
         "//math:geometric_transform",
@@ -242,7 +263,6 @@ genrule(
     srcs = ["//geometry/render:test/meshes/fully_textured_pyramid.gltf"],
     outs = ["test/pyramid_no_color_texture.gltf"],
     cmd = "sed '/baseColorTexture/,/},/d' $< > $@",
-    visibility = ["//visibility:private"],
 )
 
 PYRAMID_RESOURCES = [
@@ -289,6 +309,16 @@ drake_cc_googletest(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOImport",
         "@vtk_internal//:vtkRenderingCore",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_no_render_vtk_test",
+    deps = [
+        # The ":factory_disabled" target is created by the
+        # drake_cc_variant_library(...) stanza above.
+        ":factory_disabled",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

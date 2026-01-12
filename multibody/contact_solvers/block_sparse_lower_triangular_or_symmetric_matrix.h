@@ -91,11 +91,12 @@ class BlockSparsityPattern {
   3. This class only allows square matrices and blocks on the diagonal must be
      square too.
  Most callers should use clearer and less verbose typedefs at the bottom of the
- file (e.g. `BlockSparseSymmetricMatrix`) rather than this class template
+ file (e.g. `BlockSparseSymmetricMatrixXd`) rather than this class template
  directly.
 
  @tparam MatrixType   The Eigen matrix type of each block in block sparse
-                      matrix, e.g. Matrix3<double> or MatrixX<double>.
+                      matrix. The only valid options are `Matrix3d`, `MatrixXd`,
+                      or `MatrixX<AutoDiffXd>`.
  @pre MatrixType::RowsAtCompileType == MatrixType::ColsAtCompileTime.
  @tparam is_symmetric Determines whether the matrix is symmetric or lower
                       triangular.
@@ -110,6 +111,8 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
       BlockSparseLowerTriangularOrSymmetricMatrix);
 
   static_assert(MatrixType::RowsAtCompileTime == MatrixType::ColsAtCompileTime);
+
+  using Scalar = typename MatrixType::Scalar;
 
   /* Constructs a BlockSparseLowerTriangularOrSymmetricMatrix with the given
    block sparsity pattern.
@@ -180,12 +183,12 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
 
   /* Makes a dense representation of the matrix. Useful for debugging purposes.
    */
-  MatrixX<double> MakeDenseMatrix() const;
+  MatrixX<Scalar> MakeDenseMatrix() const;
 
   /* Makes a dense representation of the bottom right `num_blocks` blocks of the
    matrix.
    @pre 0 <= num_blocks <= block_cols(). */
-  MatrixX<double> MakeDenseBottomRightCorner(int num_blocks) const;
+  MatrixX<Scalar> MakeDenseBottomRightCorner(int num_blocks) const;
 
   /* Returns true if the ij-th block in this block sparse matrix is non-zero. In
    particular, this returns false if the indices provided are out of range. */
@@ -300,14 +303,22 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   std::vector<std::vector<int>> block_row_to_flat_;
 };
 
+template <typename Block>
 using BlockSparseLowerTriangularMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, false>;
+    BlockSparseLowerTriangularOrSymmetricMatrix<Block, false>;
+
+template <typename Block>
 using BlockSparseSymmetricMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, true>;
-using Block3x3SparseLowerTriangularMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>, false>;
-using Block3x3SparseSymmetricMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>, true>;
+    BlockSparseLowerTriangularOrSymmetricMatrix<Block, true>;
+
+using BlockSparseLowerTriangularMatrixXd =
+    BlockSparseLowerTriangularMatrix<MatrixX<double>>;
+using BlockSparseSymmetricMatrixXd =
+    BlockSparseSymmetricMatrix<MatrixX<double>>;
+using BlockSparseLowerTriangularMatrix3d =
+    BlockSparseLowerTriangularMatrix<Matrix3<double>>;
+using BlockSparseSymmetricMatrix3d =
+    BlockSparseSymmetricMatrix<Matrix3<double>>;
 
 }  // namespace internal
 }  // namespace contact_solvers

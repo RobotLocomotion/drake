@@ -1,5 +1,10 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load("@bazel_skylib//rules:common_settings.bzl", "int_flag", "string_flag")
+load(
+    "@bazel_skylib//rules:common_settings.bzl",
+    "bool_flag",
+    "int_flag",
+    "string_flag",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:sh.bzl", "sh_binary")
 
@@ -149,6 +154,33 @@ selects.config_setting_group(
 config_setting(
     name = "debug",
     values = {"compilation_mode": "dbg"},
+)
+
+# (Internal use only.)  When this is set to True, some Drake builds may use the
+# mold linker, primarily for its improved handling of DWARF debug
+# information. It should be False (the default) for all builds initiated via
+# Drake's CMake wrappers. See the other "mold_linker" settings below and issue
+# #21836.
+bool_flag(
+    name = "allow_mold_linker",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "mold_linker_allowed",
+    flag_values = {":allow_mold_linker": "True"},
+)
+
+selects.config_setting_group(
+    name = "use_mold_linker",
+    match_all = [
+        # TODO(rpoyner-tri): consider removing the "noble" requirement when
+        # Drake's support of "jammy" ends. Jammy is excluded because its
+        # version of the mold linker is too old.
+        "//tools:ubuntu_noble",
+        ":debug",
+        ":mold_linker_allowed",
+    ],
 )
 
 config_setting(

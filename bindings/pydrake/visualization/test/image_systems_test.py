@@ -15,7 +15,6 @@ from pydrake.visualization import (
 
 
 class TestColorizeDepthImage(unittest.TestCase):
-
     def test_properties(self):
         dut = ColorizeDepthImage()
         self.assertIsInstance(dut.invalid_color, Rgba)
@@ -43,7 +42,6 @@ class TestColorizeDepthImage(unittest.TestCase):
 
 
 class TestColorizeLabelImage(unittest.TestCase):
-
     def test_properties(self):
         dut = ColorizeLabelImage()
         self.assertIsInstance(dut.background_color, Rgba)
@@ -62,7 +60,6 @@ class TestColorizeLabelImage(unittest.TestCase):
 
 
 class TestConcatenateImages(unittest.TestCase):
-
     def test_smoke(self):
         rows, cols = (2, 3)
         dut = ConcatenateImages(rows=rows, cols=cols)

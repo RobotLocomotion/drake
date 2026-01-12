@@ -1,4 +1,4 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import copy
 import logging
@@ -11,13 +11,13 @@ from pydrake.common.value import Value
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import (
     DiagramBuilder,
- )
+)
 from pydrake.systems.sensors import (
     CameraInfo,
-    ImageRgba8U,
     ImageDepth16U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
     RgbdSensor,
 )
 
@@ -28,20 +28,22 @@ class TestGeometryRender(unittest.TestCase):
         mut.LightParameter()
 
         # The kwarg constructor also works.
-        light = mut.LightParameter(type='spot',
-                                   color=mut.Rgba(0.1, 0.2, 0.3),
-                                   attenuation_values=(1, 2, 3),
-                                   position=(-1, -2, -3),
-                                   frame='camera',
-                                   intensity=0.5,
-                                   direction=(0, 1, 0),
-                                   cone_angle=85)
+        light = mut.LightParameter(
+            type="spot",
+            color=mut.Rgba(0.1, 0.2, 0.3),
+            attenuation_values=(1, 2, 3),
+            position=(-1, -2, -3),
+            frame="camera",
+            intensity=0.5,
+            direction=(0, 1, 0),
+            cone_angle=85,
+        )
         # Attributes are bound explicitly, so we'll test them explicitly.
-        self.assertEqual(light.type, 'spot')
+        self.assertEqual(light.type, "spot")
         self.assertEqual(light.color, mut.Rgba(0.1, 0.2, 0.3))
         self.assertTupleEqual(tuple(light.attenuation_values), (1, 2, 3))
         self.assertTupleEqual(tuple(light.position), (-1, -2, -3))
-        self.assertEqual(light.frame, 'camera')
+        self.assertEqual(light.frame, "camera")
         self.assertEqual(light.intensity, 0.5)
         self.assertTupleEqual(tuple(light.direction), (0, 1, 0))
         self.assertEqual(light.cone_angle, 85)
@@ -60,7 +62,8 @@ class TestGeometryRender(unittest.TestCase):
             sample_count=8,
             intensity_scale=1.5,
             intensity_shift=0.05,
-            blur=False)
+            blur=False,
+        )
         self.assertEqual(params.radius, 0.2)
         self.assertEqual(params.bias, 0.01)
         self.assertEqual(params.sample_count, 8)
@@ -92,7 +95,8 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIsInstance(params.texture, mut.NullTexture)
 
         params = mut.EnvironmentMap(
-            texture=mut.EquirectangularMap(path="test.hdr"))
+            texture=mut.EquirectangularMap(path="test.hdr")
+        )
         self.assertIn("EquirectangularMap", repr(params))
         copy.copy(params)
 
@@ -108,6 +112,17 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("warn_unimplemented=", repr(params))
         copy.copy(params)
 
+    def test_render_engine_vtk_api(self):
+        self.assertTrue(mut.kHasRenderEngineVtk)
+
+        scene_graph = mut.SceneGraph()
+        params = mut.RenderEngineVtkParams()
+        scene_graph.AddRenderer(
+            "vtk_renderer", mut.MakeRenderEngineVtk(params=params)
+        )
+        self.assertTrue(scene_graph.HasRenderer("vtk_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 1)
+
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.RenderEngineVtkParams()
@@ -117,8 +132,9 @@ class TestGeometryRender(unittest.TestCase):
         params = mut.RenderEngineVtkParams(
             default_diffuse=diffuse,
             environment_map=mut.EnvironmentMap(
-                skybox=False,
-                texture=mut.EquirectangularMap(path="local.hdr")))
+                skybox=False, texture=mut.EquirectangularMap(path="local.hdr")
+            ),
+        )
         self.assertTrue((params.default_diffuse == diffuse).all())
 
         self.assertIn("default_diffuse", repr(params))
@@ -132,8 +148,7 @@ class TestGeometryRender(unittest.TestCase):
         """
         for should_warn in [False, True]:
             with self.subTest(should_warn=should_warn):
-                self._do_test_render_vtk_gltf_warnings(
-                    should_warn=should_warn)
+                self._do_test_render_vtk_gltf_warnings(should_warn=should_warn)
 
     def _do_test_render_vtk_gltf_warnings(self, *, should_warn):
         # Create the render engine.
@@ -149,7 +164,8 @@ class TestGeometryRender(unittest.TestCase):
         material.AddProperty("label", "id", mut.RenderLabel(1))
         geom_id = mut.GeometryId.get_new_id()
         filename = FindResourceOrThrow(
-            "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf")
+            "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf"
+        )
 
         # Load the mesh, which should emit exactly one log message.
         with self.assertLogs("drake", logging.DEBUG) as cm:
@@ -158,7 +174,8 @@ class TestGeometryRender(unittest.TestCase):
                 shape=mut.Mesh(filename),
                 properties=material,
                 X_WG=RigidTransform.Identity(),
-                needs_updates=False)
+                needs_updates=False,
+            )
         self.assertEqual(len(cm.records), 1, cm)
         record = cm.records[0]
 
@@ -291,10 +308,12 @@ class TestGeometryRender(unittest.TestCase):
                 new = DummyRenderEngine()
                 new.force_accept = copy.deepcopy(self.force_accept, memo=memo)
                 new.registered_geometries = copy.deepcopy(
-                    self.registered_geometries, memo=memo)
+                    self.registered_geometries, memo=memo
+                )
                 new.updated_ids = copy.deepcopy(self.updated_ids, memo=memo)
                 new.include_group_name = copy.deepcopy(
-                    self.include_group_name, memo=memo)
+                    self.include_group_name, memo=memo
+                )
                 new.X_WC = copy.deepcopy(self.X_WC, memo=memo)
                 new.color_count = copy.deepcopy(self.color_count, memo=memo)
                 new.depth_count = copy.deepcopy(self.depth_count, memo=memo)
@@ -331,14 +350,21 @@ class TestGeometryRender(unittest.TestCase):
         builder = DiagramBuilder()
         scene_graph = builder.AddSystem(mut.SceneGraph())
         scene_graph.AddRenderer(renderer_name, engine)
-        sensor = builder.AddSystem(RgbdSensor(
-            parent_id=scene_graph.world_frame_id(),
-            X_PB=RigidTransform(),
-            depth_camera=mut.DepthRenderCamera(
-                mut.RenderCameraCore(
-                    renderer_name, CameraInfo(640, 480, np.pi/4),
-                    mut.ClippingRange(0.1, 5.0), RigidTransform()),
-                mut.DepthRange(0.1, 5.0))))
+        sensor = builder.AddSystem(
+            RgbdSensor(
+                parent_id=scene_graph.world_frame_id(),
+                X_PB=RigidTransform(),
+                depth_camera=mut.DepthRenderCamera(
+                    mut.RenderCameraCore(
+                        renderer_name,
+                        CameraInfo(640, 480, np.pi / 4),
+                        mut.ClippingRange(0.1, 5.0),
+                        RigidTransform(),
+                    ),
+                    mut.DepthRange(0.1, 5.0),
+                ),
+            )
+        )
         builder.Connect(
             scene_graph.get_query_output_port(),
             sensor.query_object_input_port(),
@@ -373,9 +399,12 @@ class TestGeometryRender(unittest.TestCase):
         # TODO(eric, duy): Test more properties.
 
     def test_render_engine_gltf_client_api(self):
+        self.assertTrue(mut.kHasRenderEngineGltfClient)
+
         scene_graph = mut.SceneGraph()
         params = mut.RenderEngineGltfClientParams()
-        scene_graph.AddRenderer("gltf_renderer",
-                                mut.MakeRenderEngineGltfClient(params=params))
+        scene_graph.AddRenderer(
+            "gltf_renderer", mut.MakeRenderEngineGltfClient(params=params)
+        )
         self.assertTrue(scene_graph.HasRenderer("gltf_renderer"))
         self.assertEqual(scene_graph.RendererCount(), 1)

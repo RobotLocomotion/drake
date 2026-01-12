@@ -117,10 +117,12 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   EXPECT_EQ(model->num_joints(), 2);
 
   // Topology is invalid before MultibodyTree::Finalize().
-  EXPECT_FALSE(model->topology_is_valid());
+  EXPECT_FALSE(model->is_finalized());
+  EXPECT_FALSE(model->graph().forest_is_valid());
   // Verifies that the topology of this model gets validated at finalize stage.
   DRAKE_EXPECT_NO_THROW(model->Finalize());
-  EXPECT_TRUE(model->topology_is_valid());
+  EXPECT_TRUE(model->graph().forest_is_valid());
+  EXPECT_TRUE(model->is_finalized());
 
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
   // order starting with index = 0 (world_index()) for the "world" body.
@@ -163,12 +165,15 @@ GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   EXPECT_EQ(model->num_bodies(), 3);
   EXPECT_EQ(model->num_joints(), 3);
 
-  // Topology is invalid before MultibodyTree::Finalize(), and after fail.
-  EXPECT_FALSE(model->topology_is_valid());
+  // Topology is invalid before MultibodyTree::Finalize() or after a
+  // topological failure (unsupported loop in graph).
+  EXPECT_FALSE(model->is_finalized());
+  EXPECT_FALSE(model->graph().forest_is_valid());
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->Finalize(),
       "The bodies and joints of this system form one or more loops.*");
-  EXPECT_FALSE(model->topology_is_valid());
+  EXPECT_FALSE(model->graph().forest_is_valid());
+  EXPECT_FALSE(model->is_finalized());
 }
 
 // Tests the correctness of MultibodyElement checks to verify one or more
@@ -329,10 +334,9 @@ class TreeTopologyTests : public ::testing::Test {
 
   void FinalizeModel() { model_->Finalize(); }
 
-  // Performs a number of tests on the BodyNodeTopology corresponding to the
+  // Performs a number of tests on the BodyNode corresponding to the
   // body indexed by `body`.
-  static void TestBodyNode(const MultibodyTreeTopology& topology,
-                           const SpanningForest& forest, BodyIndex body) {
+  static void TestBodyNode(const SpanningForest& forest, BodyIndex body) {
     // In case of merged composites, many links may follow the same mobod.
     // Make sure the link's mobod agrees that the link follows it.
     const LinkJointGraph::Link& link = forest.link_by_index(body);
@@ -354,14 +358,8 @@ class TreeTopologyTests : public ::testing::Test {
                           mobod_index) != child_mobods.end());
   }
 
-  static void VerifyTopology(const MultibodyTreeTopology& topology,
-                             const SpanningForest& forest) {
+  static void VerifyTopology(const SpanningForest& forest) {
     const int kNumRigidBodies = 10;
-
-    EXPECT_EQ(topology.num_rigid_bodies(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobilizers(), kNumRigidBodies);
-    EXPECT_EQ(topology.num_mobods(), kNumRigidBodies);
-    EXPECT_EQ(topology.forest_height(), 4);
 
     EXPECT_EQ(forest.num_links(), kNumRigidBodies);
     EXPECT_EQ(forest.num_mobods(), kNumRigidBodies);
@@ -377,24 +375,11 @@ class TreeTopologyTests : public ::testing::Test {
                                             LinkIndex(3), LinkIndex(8)};
     const set<LinkIndex> expected_level3 = {LinkIndex(6)};
 
-    std::vector<std::set<BodyIndex>> topo_levels(topology.num_rigid_bodies());
-    for (BodyIndex index(0); index < topology.num_rigid_bodies(); ++index) {
-      const RigidBodyTopology& rigid_body_topology =
-          topology.get_rigid_body_topology(index);
-      topo_levels[rigid_body_topology.level].insert(index);
-    }
     // Comparison of sets. The order of the elements is not important.
-    EXPECT_EQ(topo_levels[0], expected_level0);
-    EXPECT_EQ(topo_levels[1], expected_level1);
-    EXPECT_EQ(topo_levels[2], expected_level2);
-    EXPECT_EQ(topo_levels[3], expected_level3);
-
-    // Repeat for the forest.
-    std::vector<std::set<LinkIndex>> levels(topology.num_rigid_bodies());
+    std::vector<std::set<LinkIndex>> levels(forest.height());
     for (const LinkJointGraph::Link& link : forest.links()) {
-      const LinkIndex link_index = link.index();
       const int level = forest.mobods(link.mobod_index()).level();
-      levels[level].insert(link_index);
+      levels[level].insert(link.index());
     }
     EXPECT_EQ(levels[0], expected_level0);
     EXPECT_EQ(levels[1], expected_level1);
@@ -417,7 +402,7 @@ class TreeTopologyTests : public ::testing::Test {
 
     // Checks the correctness of each BodyNode associated with a Link.
     for (BodyIndex index(0); index < kNumRigidBodies; ++index) {
-      TestBodyNode(topology, forest, index);
+      TestBodyNode(forest, index);
     }
 
     // We now verify the precise expected topology. We use our internal
@@ -439,16 +424,6 @@ class TreeTopologyTests : public ::testing::Test {
     }
 
     // Verify the expected forest of trees.
-    EXPECT_EQ(topology.num_trees(), 4);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(0)), 0);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(1)), 1);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(3)), 3);
-
     EXPECT_EQ(forest.num_trees(), 4);
     EXPECT_EQ(forest.trees(TreeIndex(0)).nv(), 1);
     EXPECT_EQ(forest.trees(TreeIndex(1)).nv(), 2);
@@ -470,18 +445,10 @@ class TreeTopologyTests : public ::testing::Test {
     // invalid.
     for (const auto& [link_index, tree_index] : expected_link_to_tree) {
       if (link_index == world_index()) {
-        EXPECT_FALSE(topology.body_to_tree_index(link_index).is_valid());
+        EXPECT_FALSE(forest.link_to_tree_index(link_index).is_valid());
         continue;
       }
-      EXPECT_EQ(topology.body_to_tree_index(link_index), tree_index);
-    }
-
-    for (const auto& [link_index, tree_index] : expected_link_to_tree) {
-      if (link_index == world_index()) {
-        EXPECT_FALSE(forest.link_to_tree(link_index).is_valid());
-        continue;
-      }
-      EXPECT_EQ(forest.link_to_tree(link_index), tree_index);
+      EXPECT_EQ(forest.link_to_tree_index(link_index), tree_index);
     }
 
     // No velocities map to Tree 2.
@@ -490,14 +457,9 @@ class TreeTopologyTests : public ::testing::Test {
         {3, TreeIndex(3)}, {4, TreeIndex(3)}, {5, TreeIndex(3)},
         {6, TreeIndex(3)}};
 
-    EXPECT_EQ(topology.num_velocities(), 7);
-    for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
-      EXPECT_EQ(topology.velocity_to_tree_index(velocity_index), tree_index);
-    }
-
     EXPECT_EQ(forest.num_velocities(), 7);
     for (const auto& [velocity_index, tree_index] : expected_velocity_to_tree) {
-      EXPECT_EQ(forest.v_to_tree(velocity_index), tree_index);
+      EXPECT_EQ(forest.v_to_tree_index(velocity_index), tree_index);
     }
   }
 
@@ -518,16 +480,11 @@ TEST_F(TreeTopologyTests, Finalize) {
   EXPECT_EQ(model_->num_bodies(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
 
-  const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
-
-  EXPECT_EQ(topology.num_mobods(), 10);
-  EXPECT_EQ(topology.forest_height(), 4);
-
   EXPECT_EQ(forest.num_mobods(), 10);
   EXPECT_EQ(forest.height(), 4);
 
-  VerifyTopology(topology, forest);
+  VerifyTopology(forest);
 }
 
 // This unit tests verifies the correct number of generalized positions and
@@ -538,16 +495,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_joints(), 9);
 
-  // TODO(sherm1) First make sure topology and forest agree, then nuke the
-  //  old topology code.
-  const MultibodyTreeTopology& topology = model_->get_topology();
   const SpanningForest& forest = model_->forest();
-
-  EXPECT_EQ(topology.num_mobods(), model_->num_bodies());
-  EXPECT_EQ(topology.forest_height(), 4);
-  EXPECT_EQ(topology.num_positions(), 7);
-  EXPECT_EQ(topology.num_velocities(), 7);
-  EXPECT_EQ(topology.num_states(), 14);
 
   EXPECT_EQ(forest.num_mobods(), 10);
   EXPECT_EQ(forest.height(), 4);
@@ -570,8 +518,8 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     positions_index += mobod.nq();
     velocities_index += mobod.nv();
   }
-  EXPECT_EQ(positions_index, topology.num_positions());
-  EXPECT_EQ(velocities_index, topology.num_velocities());
+  EXPECT_EQ(positions_index, forest.num_positions());
+  EXPECT_EQ(velocities_index, forest.num_velocities());
 }
 
 // Verifies that the clone of a given MultibodyTree model created with
@@ -582,25 +530,18 @@ TEST_F(TreeTopologyTests, Clone) {
   EXPECT_EQ(model_->num_bodies(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
   EXPECT_EQ(model_->num_force_elements(), 1);
-  const MultibodyTreeTopology& topology = model_->get_topology();
+  const SpanningForest& forest = model_->forest();
 
   auto cloned_model = model_->Clone();
   EXPECT_EQ(cloned_model->num_bodies(), 10);
   EXPECT_EQ(cloned_model->num_mobilizers(), 10);
   EXPECT_EQ(cloned_model->num_force_elements(), 1);
-  const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
   const SpanningForest& clone_forest = cloned_model->forest();
 
   // Verify the cloned topology actually is a different object.
-  ASSERT_NE(&topology, &clone_topology);
+  ASSERT_NE(&forest, &clone_forest);
 
-  // The topology of the clone must be exactly equal to the topology of the
-  // original MultibodyTree.
-  EXPECT_EQ(topology, clone_topology);
-
-  // Even though the test above confirms the two topologies are exactly equal,
-  // we perform a number of additional tests.
-  VerifyTopology(clone_topology, clone_forest);
+  VerifyTopology(clone_forest);
 }
 
 // Verifies that the AutoDiffXd version of a given MultibodyTree model created
@@ -610,22 +551,13 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   model_->Finalize();
   EXPECT_EQ(model_->num_bodies(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
-  const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto autodiff_model = model_->ToAutoDiffXd();
   EXPECT_EQ(autodiff_model->num_bodies(), 10);
   EXPECT_EQ(autodiff_model->num_mobilizers(), 10);
-  const MultibodyTreeTopology& autodiff_topology =
-      autodiff_model->get_topology();
   const SpanningForest& autodiff_forest = autodiff_model->forest();
 
-  // The topology of the clone must be exactly equal to the topology of the
-  // original MultibodyTree.
-  EXPECT_EQ(topology, autodiff_topology);
-
-  // Even though the test above confirms the two topologies are exactly equal,
-  // we perform a number of additional tests.
-  VerifyTopology(autodiff_topology, autodiff_forest);
+  VerifyTopology(autodiff_forest);
 }
 
 // Verifies that the symbolic version of a given MultibodyTree model created
@@ -635,22 +567,13 @@ TEST_F(TreeTopologyTests, ToSymbolic) {
   model_->Finalize();
   EXPECT_EQ(model_->num_bodies(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 10);
-  const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto symbolic_model = model_->CloneToScalar<symbolic::Expression>();
   EXPECT_EQ(symbolic_model->num_bodies(), 10);
   EXPECT_EQ(symbolic_model->num_mobilizers(), 10);
-  const MultibodyTreeTopology& symbolic_topology =
-      symbolic_model->get_topology();
   const SpanningForest& symbolic_forest = symbolic_model->forest();
 
-  // The topology of the clone must be exactly equal to the topology of the
-  // original MultibodyTree.
-  EXPECT_EQ(topology, symbolic_topology);
-
-  // Even though the test above confirms the two topologies are exactly equal,
-  // we perform a number of additional tests.
-  VerifyTopology(symbolic_topology, symbolic_forest);
+  VerifyTopology(symbolic_forest);
 }
 
 // Confirm that the topology methods SpanningForest::FindPathFromWorld() and
@@ -1026,7 +949,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroMass) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "is massless, but its joint has a translational degree of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
                               expected_message);
@@ -1053,7 +976,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithZeroInertia) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "has zero rotational inertia, but its joint has a rotational degree "
       "of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
@@ -1084,7 +1007,7 @@ GTEST_TEST(WeldedBodies, ThrowErrorForDistalCompositeBodyWithNaNInertia) {
 
   // The next function is usually called from MultibodyPlant::Finalize().
   const std::string expected_message =
-      "Body bodyA is the active body for a terminal composite body that "
+      "Body bodyA is the active body for a terminal assembly that "
       "has a NaN rotational inertia, but its joint has a rotational degree "
       "of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),

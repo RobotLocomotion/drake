@@ -271,7 +271,7 @@ string_flag(
 # when a default-enabled solver is opted-out of.
 #
 # See `FooSolver::available()` (e.g., `ClarabelSolver::available()`) to retrieve
-# these setting at runtime.
+# these settings at runtime.
 
 # Open-source solvers.
 
@@ -325,6 +325,42 @@ bool_flag(
 bool_flag(
     name = "with_snopt",
     build_setting_default = False,
+)
+
+# -----------------------------------------------------------------------------
+# Configuration for render engines.
+#
+# Drake's RenderEngine wraps different render engines into common API.
+# Drake can be compiled with various render engines enabled or disabled.
+#
+# By default, when building from source, all render engines will be enabled,
+# except RenderEngineGl is always disabled on macOS (the flag has no effect).
+# Disabling one or many of the render engines can provide advantages for build
+# times, build sizes on disk, runtime dependencies, or other general issues
+# with compiling the render engine.
+#
+# If you build from source and disable one of the render engines, Drake's
+# Stable API will build and install correctly, but we cannot guarantee that all
+# tests will pass or that all Drake features will operate correctly. In other
+# words, we cannot guarantee Drake's correctness when a default-enabled render
+# engine is opted-out of.
+#
+# See `geometry::kHasRenderEngineFoo` (e.g., `geometry::kHasRenderEngineGl)` to
+# retrieve these settings at runtime.
+
+bool_flag(
+    name = "with_render_gl",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_render_vtk",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_render_gltf_client",
+    build_setting_default = True,
 )
 
 # -----------------------------------------------------------------------------

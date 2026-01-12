@@ -1,3 +1,4 @@
+load("//doc:defs.bzl", "enumerate_filegroup")
 load("//tools/install:check_licenses.bzl", "check_licenses")
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -8,32 +9,118 @@ load(
     "drake_py_test",
 )
 
+filegroup(
+    name = "drake_repository_metadata",
+    srcs = [
+        "@abseil_cpp_internal//:drake_repository_metadata.json",
+        "@bazelisk_internal//:drake_repository_metadata.json",
+        "@ccd_internal//:drake_repository_metadata.json",
+        "@clang_cindex_python3_internal//:drake_repository_metadata.json",
+        "@clarabel_cpp_internal//:drake_repository_metadata.json",
+        "@clp_internal//:drake_repository_metadata.json",
+        "@coinutils_internal//:drake_repository_metadata.json",
+        "@common_robotics_utilities_internal//:drake_repository_metadata.json",
+        "@cpplint_internal//:drake_repository_metadata.json",
+        "@csdp_internal//:drake_repository_metadata.json",
+        "@curl_internal//:drake_repository_metadata.json",
+        "@dm_control_internal//:drake_repository_metadata.json",
+        "@drake_models//:drake_repository_metadata.json",
+        "@fcl_internal//:drake_repository_metadata.json",
+        "@github3_py_internal//:drake_repository_metadata.json",
+        "@gklib_internal//:drake_repository_metadata.json",
+        "@gymnasium_py_internal//:drake_repository_metadata.json",
+        "@gz_math_internal//:drake_repository_metadata.json",
+        "@gz_utils_internal//:drake_repository_metadata.json",
+        "@highway_internal//:drake_repository_metadata.json",
+        "@implib_so_internal//:drake_repository_metadata.json",
+        "@ipopt_internal//:drake_repository_metadata.json",
+        "@lapack_internal//:drake_repository_metadata.json",
+        "@lcm_internal//:drake_repository_metadata.json",
+        "@libjpeg_turbo_internal//:drake_repository_metadata.json",
+        "@libpng_internal//:drake_repository_metadata.json",
+        "@libtiff_internal//:drake_repository_metadata.json",
+        "@meshcat//:drake_repository_metadata.json",
+        "@metis_internal//:drake_repository_metadata.json",
+        "@mosek//:drake_repository_metadata.json",
+        "@mpmath_py_internal//:drake_repository_metadata.json",
+        "@msgpack_internal//:drake_repository_metadata.json",
+        "@mujoco_menagerie_internal//:drake_repository_metadata.json",
+        "@mypy_extensions_internal//:drake_repository_metadata.json",
+        "@mypy_internal//:drake_repository_metadata.json",
+        "@nanoflann_internal//:drake_repository_metadata.json",
+        "@nlohmann_internal//:drake_repository_metadata.json",
+        "@nlopt_internal//:drake_repository_metadata.json",
+        "@onetbb_internal//:drake_repository_metadata.json",
+        "@osqp_internal//:drake_repository_metadata.json",
+        "@pathspec_internal//:drake_repository_metadata.json",
+        "@picosha2_internal//:drake_repository_metadata.json",
+        "@pybind11//:drake_repository_metadata.json",
+        "@qdldl_internal//:drake_repository_metadata.json",
+        "@qhull_internal//:drake_repository_metadata.json",
+        "@ros_xacro_internal//:drake_repository_metadata.json",
+        "@scs_internal//:drake_repository_metadata.json",
+        "@sdformat_internal//:drake_repository_metadata.json",
+        "@spral_internal//:drake_repository_metadata.json",
+        "@stable_baselines3_internal//:drake_repository_metadata.json",
+        "@stduuid_internal//:drake_repository_metadata.json",
+        "@styleguide_internal//:drake_repository_metadata.json",
+        "@suitesparse_internal//:drake_repository_metadata.json",
+        "@sympy_py_internal//:drake_repository_metadata.json",
+        "@tinygltf_internal//:drake_repository_metadata.json",
+        "@tinyobjloader_internal//:drake_repository_metadata.json",
+        "@tinyxml2_internal//:drake_repository_metadata.json",
+        "@tomli_internal//:drake_repository_metadata.json",
+        "@typing_extensions_internal//:drake_repository_metadata.json",
+        "@uritemplate_py_internal//:drake_repository_metadata.json",
+        "@usockets_internal//:drake_repository_metadata.json",
+        "@uwebsockets_internal//:drake_repository_metadata.json",
+        "@voxelized_geometry_tools_internal//:drake_repository_metadata.json",
+        "@vtk_internal//:drake_repository_metadata.json",
+        "@xmlrunner_py_internal//:drake_repository_metadata.json",
+        "@yaml_cpp_internal//:drake_repository_metadata.json",
+    ],
+)
+
+enumerate_filegroup(
+    name = "drake_repository_metadata_inventory.txt",
+    data = [":drake_repository_metadata"],
+)
+
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     visibility = [":__subpackages__"],
-    deps = ["//tools:module_py"],
+    deps = [
+        "//tools:module_py",
+    ],
+)
+
+drake_py_library(
+    name = "metadata",
+    srcs = ["metadata.py"],
+    data = [
+        ":drake_repository_metadata",
+        ":drake_repository_metadata_inventory.txt",
+    ],
+    deps = [
+        "//tools:module_py",
+        "@rules_python//python/runfiles",
+    ],
 )
 
 drake_py_binary(
     name = "mirror_to_s3",
-    srcs = [
-        "metadata.py",
-        "mirror_to_s3.py",
+    srcs = ["mirror_to_s3.py"],
+    deps = [
+        ":metadata",
     ],
-    visibility = ["//visibility:private"],
-    deps = [":module_py"],
 )
 
 drake_py_binary(
     name = "new_release",
-    srcs = [
-        "metadata.py",
-        "new_release.py",
-    ],
-    visibility = ["//visibility:private"],
+    srcs = ["new_release.py"],
     deps = [
-        ":module_py",
+        ":metadata",
         "@github3_py_internal//:github3_py",
     ],
 )
@@ -117,7 +204,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "qhull_internal",
     "sdformat_internal",
     "spral_internal",
-    "statsjs_internal",
     "stduuid_internal",
     "suitesparse_internal",
     "tinygltf_internal",
@@ -132,15 +218,15 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "blas",
     "eigen",
     "fmt",
-    "gflags",
     "glib",
     "highway_internal",
     "lapack",
     "libjpeg_turbo_internal",
     "opencl",
     "spdlog",
-    "x11",
     "zlib",
+    # Remove with resource_tool deprecation 2026-02-01.
+    "gflags",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
     "//conditions:default": [],

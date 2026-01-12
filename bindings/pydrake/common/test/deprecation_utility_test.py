@@ -15,7 +15,7 @@ import unittest
 from pydrake.common import Parallelism
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
-import deprecation_example.cc_module as mut_cc
+import deprecation_example.cc_module as mut_cc  # ruff: isort: skip
 
 
 class TestDeprecationExample(unittest.TestCase):
@@ -36,7 +36,8 @@ class TestDeprecationExample(unittest.TestCase):
         with catch_drake_warnings(expected_count=1) as w:
             mut_cc.ExampleCppClass(0.0)
             self.assertIn(
-                "Do not use ExampleCppClass(double)", str(w[0].message))
+                "Do not use ExampleCppClass(double)", str(w[0].message)
+            )
 
     def test_cc_deprecate_attribute(self):
         obj = mut_cc.ExampleCppClass()
@@ -72,4 +73,5 @@ class TestDeprecationExample(unittest.TestCase):
         with catch_drake_warnings(expected_count=1) as w:
             obj.FunctionWithArgumentName(old_name=1)
             self.assertIn(
-                "FunctionWithArgumentName(old_name)", str(w[0].message))
+                "FunctionWithArgumentName(old_name)", str(w[0].message)
+            )

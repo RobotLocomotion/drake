@@ -9,3 +9,5 @@ exports_files(glob([
     "*",
     "include/*",
 ]))
+
+exports_files(["drake_repository_metadata.json"])

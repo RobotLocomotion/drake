@@ -216,7 +216,7 @@ void DoublePendulumRationalForwardKinematics::
             [&angles](int i1, int i2) {
               return angles(i1) < angles(i2);
             });
-  Matrix2Xd sorted_vertices = vregion.vertices()(Eigen::all, indices);
+  Matrix2Xd sorted_vertices = vregion.vertices()(eigen_all, indices);
 
   for (int i1 = 0; i1 < sorted_vertices.cols(); ++i1) {
     int i2 = i1 + 1;

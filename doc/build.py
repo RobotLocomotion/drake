@@ -7,9 +7,9 @@ import os.path
 from pathlib import Path
 import sys
 import urllib.parse
+import xml.etree.ElementTree as ET
 
 from python import runfiles
-import xml.etree.ElementTree as ET
 
 from doc.defs import check_call, main
 

@@ -4,9 +4,9 @@
 
 namespace drake {
 
-/** @addtogroup environment_variables
+/** @defgroup allow_network DRAKE_ALLOW_NETWORK
+@ingroup environment_variables
 @{
-@defgroup allow_network DRAKE_ALLOW_NETWORK
 
 Users can set the environment variable `DRAKE_ALLOW_NETWORK` to a
 colon-separated list to limit which components are permitted network access.

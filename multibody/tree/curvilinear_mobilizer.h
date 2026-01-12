@@ -13,10 +13,7 @@
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
-
-using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
 
 namespace drake {
 namespace multibody {
@@ -89,7 +86,8 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   CurvilinearMobilizer(
       const SpanningForest::Mobod& mobod, const Frame<T>& inboard_frame_F,
       const Frame<T>& outboard_frame_M,
-      const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path);
+      const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+          curvilinear_path);
 
   ~CurvilinearMobilizer() final;
 
@@ -247,7 +245,7 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 
-  PiecewiseConstantCurvatureTrajectory<T> curvilinear_path_;
+  trajectories::PiecewiseConstantCurvatureTrajectory<T> curvilinear_path_;
 };
 
 }  // namespace internal

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -8,7 +7,6 @@
 #include <set>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -27,7 +25,6 @@
 #include "drake/multibody/tree/element_collection.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
@@ -110,8 +107,6 @@ class MultibodyTree {
   // **must** be called before invoking any %MultibodyTree method.
   // See Finalize() for details.
   // @{
-  // TODO(amcastro-tri): add at least one example of a method that requires a
-  // valid topology in this documentation.
   // See this Reviewable comment:
   // https://reviewable.io/reviews/robotlocomotion/drake/5583#-KgGqGisnX9uMuYDkHpx
 
@@ -289,46 +284,6 @@ class MultibodyTree {
   template <template <typename Scalar> class MobilizerType>
   const MobilizerType<T>& AddMobilizer(
       std::unique_ptr<MobilizerType<T>> mobilizer);
-
-  // Constructs a new mobilizer with type `MobilizerType` with the given
-  // `args`, and adds it to `this` %MultibodyTree, which retains ownership.
-  // The `MobilizerType` will be specialized on the scalar type T of this
-  // %MultibodyTree.
-  //
-  // Example of usage:
-  // @code
-  //   MultibodyTree<T> model;
-  //   // ... Code to define inboard and outboard frames by calling
-  //   // MultibodyTree::AddFrame() ...
-  //   // Notice RevoluteMobilizer is a template an a scalar type.
-  //   const RevoluteMobilizer<T>& pin =
-  //     model.template AddMobilizer<RevoluteMobilizer>(
-  //       inboard_frame, outboard_frame,
-  //       Vector3d::UnitZ() /*revolute axis*/);
-  // @endcode
-  //
-  // Note that for dependent names _only_ you must use the template keyword
-  // (say for instance you have a MultibodyTree<T> member within your custom
-  // class).
-  //
-  // @throws std::exception if Finalize() was already called on `this` tree.
-  // @throws std::exception if the new mobilizer attempts to connect a
-  // frame with itself.
-  // @throws std::exception if attempting to connect two bodies with more
-  // than one mobilizer between them.
-  //
-  // @param[in] args The arguments needed to construct a valid Mobilizer of
-  //                 type `MobilizerType`. `MobilizerType` must provide a
-  //                 public constructor that takes these arguments.
-  // @returns A constant reference of type `MobilizerType` to the created
-  //          mobilizer. This reference which will remain valid for the
-  //          lifetime of `this` %MultibodyTree.
-  //
-  // @tparam MobilizerType A template for the type of Mobilizer to construct.
-  //                       The template will be specialized on the scalar type
-  //                       T of `this` %MultibodyTree.
-  template <template <typename Scalar> class MobilizerType, typename... Args>
-  const MobilizerType<T>& AddMobilizer(Args&&... args);
 
   // Creates and adds to `this` %MultibodyTree (which retains ownership) a new
   // `ForceElement` member with the specific type `ForceElementType`. The
@@ -586,7 +541,7 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
-  int num_actuated_dofs() const { return topology_.num_actuated_dofs(); }
+  int num_actuated_dofs() const { return num_actuated_dofs_; }
 
   // See MultibodyPlant method.
   int num_actuators(ModelInstanceIndex model_instance) const {
@@ -607,7 +562,7 @@ class MultibodyTree {
   // Kinematic paths are created by Mobilizer objects connecting a chain of
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
-  int forest_height() const { return topology_.forest_height(); }
+  int forest_height() const { return forest().height(); }
 
   // Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
@@ -882,18 +837,9 @@ class MultibodyTree {
   ModelInstanceIndex GetModelInstanceByName(std::string_view name) const;
   // @}
 
-  // Returns `true` if this %MultibodyTree was finalized with Finalize() after
-  // all multibody elements were added, and `false` otherwise.
-  // When a %MultibodyTree is instantiated, its topology remains invalid until
-  // Finalize() is called, which validates the topology.
-  // @see Finalize().
-  bool topology_is_valid() const { return topology_.is_valid(); }
-
-  // Returns the topology information for this multibody tree. Users should not
-  // need to call this method since MultibodyTreeTopology is an internal
-  // bookkeeping detail. Used at Finalize() stage by multibody elements to
-  // retrieve a local copy of their topology.
-  const MultibodyTreeTopology& get_topology() const { return topology_; }
+  // Returns `true` if this MultibodyTree was finalized successfully with
+  // Finalize() after all multibody elements were added.
+  bool is_finalized() const { return is_finalized_; }
 
   // Returns the set of RigidBodies that are affected kinematically by the given
   // Joints' degrees of freedom. Weld joints are ignored. Otherwise this is just
@@ -1002,12 +948,10 @@ class MultibodyTree {
   // distinguish them from user-defined elements.
   //
   // If the Finalize operation is successful, the topology of this MultibodyTree
-  // is validated, meaning that the topology is up-to-date after this call.
-  // No more multibody plant elements can be added after a call to Finalize().
+  // is analyzed and embodied in a SpanningForest. No more multibody plant
+  // elements can be added after a call to Finalize().
   //
   // @throws std::exception if called post-finalize.
-  // TODO(amcastro-tri): Consider making this method private and calling it
-  //  automatically when CreateDefaultContext() is called.
   void Finalize();
 
   // (Advanced) Allocates a new context for this %MultibodyTree uniquely
@@ -2201,9 +2145,9 @@ class MultibodyTree {
 
   // Creates a deep copy of `this` %MultibodyTree templated on the scalar type
   // `ToScalar`.
-  // The new deep copy is guaranteed to have exactly the same
-  // MultibodyTreeTopology as the original tree the method is called on.
-  // This method ensures the following cloning order:
+  // The new deep copy is guaranteed to have exactly the same topology
+  // as the original tree the method is called on. This method ensures the
+  // following cloning order:
   //
   //   - RigidBody objects, and their corresponding RigidBodyFrame objects.
   //   - Frame objects.
@@ -2452,7 +2396,7 @@ class MultibodyTree {
   systems::DiscreteStateIndex get_discrete_state_index() const {
     DRAKE_DEMAND(tree_system_ != nullptr);
     DRAKE_DEMAND(is_state_discrete());
-    DRAKE_DEMAND(topology_is_valid());
+    DRAKE_DEMAND(is_finalized());
     return discrete_state_index_;
   }
 
@@ -2593,15 +2537,8 @@ class MultibodyTree {
       ModelInstanceIndex joint_instance, std::string_view joint_name,
       std::string_view frame_suffix);
 
-  // Finalizes the MultibodyTreeTopology of this tree in accordance with the
-  // SpanningForest.
-  void FinalizeTopology();
-
   // At Finalize(), this method performs all other finalization that is not
-  // topological (i.e. performed by FinalizeTopology()). This includes for
-  // instance the creation of BodyNode objects.
-  // This method will throw a std::exception if FinalizeTopology() was not
-  // previously called on this tree.
+  // topological. This includes for instance the creation of BodyNode objects.
   void FinalizeInternals();
 
   // Helper method to add a QuaternionFreeMobilizer to all bodies that do not
@@ -2793,7 +2730,7 @@ class MultibodyTree {
   // `Js_v_WFpi_W` is either nullptr or a `3*p x n` matrix, where p is the
   // number of points in Fpi and n is the number of elements in 𝑠.
   // @throws std::exception if any of the following occurs:
-  // - The size of `p_WoFpi_W' differs from `3 x n`.
+  // - The size of `p_WoFpi_W` differs from `3 x n`.
   // - `Js_w_WF_W` and `Js_v_WFpi_W` are both nullptr.
   // - `Js_w_WF_W` is not nullptr and its size differs from `3 x n`.
   // - `Js_v_WFpi_W` is not nullptr and its size differs from `3*p x n`.
@@ -2881,10 +2818,6 @@ class MultibodyTree {
   GetDefaultFloatingBaseBodyPoseAsQuaternionVec3Pair(
       const RigidBody<T>& body) const;
 
-  // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
-  //  a method that verifies the state of the topology with a signature similar
-  //  to RoadGeometry::CheckHasRightSizeForModel().
-
   // These objects are defined via MultibodyPlant and are thus user-visible.
   const RigidBody<T>* world_rigid_body_{nullptr};
   // When we need to look up elements by name, we'll use an ElementCollection.
@@ -2894,6 +2827,9 @@ class MultibodyTree {
   ElementCollection<T, Joint, JointIndex> joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> force_elements_;
   ElementCollection<T, JointActuator, JointActuatorIndex> actuators_;
+
+  // This is accumulated as actuators are added.
+  int num_actuated_dofs_{0};
 
   // This is the internal representation of user-defined model instances.
   ElementCollection<T, internal::ModelInstance, ModelInstanceIndex>
@@ -2924,20 +2860,19 @@ class MultibodyTree {
   std::unordered_map<JointIndex, MobodIndex> joint_to_mobilizer_;
 
   // Maps the default body poses of all floating bodies AND bodies touched by
-  // MultibodyPlant::SetDefaultFreeBodyPose(). During Finalize(), the default
-  // pose of a floating body is converted to the joint index of the floating
-  // joint connecting the world and the body. Post-finalize and the default
-  // poses of such floating bodies can (and should) be retrieved via the joints'
-  // default positions. The poses are stored as a quaternion-translation pair to
-  // match the default positions stored in the quaternion floating joints
-  // without any numerical conversions and thereby avoiding roundoff errors and
+  // MultibodyPlant::SetDefaultFloatingBaseBodyPose(). During Finalize(), the
+  // default pose of a floating base body is converted to the joint index of the
+  // ephemeral (automatically added) floating joint connecting the world frame
+  // and the body frame. Post-finalize, the default poses of such floating
+  // base bodies can (and should) be retrieved via the joints' default
+  // positions. The poses are stored as a quaternion-translation pair to match
+  // the default positions stored in the quaternion floating joints without
+  // any numerical conversions and thereby avoiding roundoff errors and
   // surprising discrepancies pre and post finalize.
   std::unordered_map<
       BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,
                                                     Vector3<double>>>>
       default_body_poses_;
-
-  MultibodyTreeTopology topology_;
 
   // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};
@@ -2946,6 +2881,9 @@ class MultibodyTree {
   //  states for efficient use of the cache.
   // The discrete state index for the multibody state if the system is discrete.
   systems::DiscreteStateIndex discrete_state_index_;
+
+  // True only if we get all the way through Finalize().
+  bool is_finalized_{false};
 };
 
 }  // namespace internal

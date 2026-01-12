@@ -341,6 +341,18 @@ TEST_F(YamlWriteArchiveTest, EigenVector) {
 )""");
 }
 
+TEST_F(YamlWriteArchiveTest, EigenArraySingleColumn) {
+  const auto test = [](const Eigen::ArrayXd& value,
+                       const std::string& expected) {
+    const EigenArrayStruct<1> x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  test(Eigen::Array3d(1.0, 2.0, 3.0), R"""(doc:
+  value: [1.0, 2.0, 3.0]
+)""");
+}
+
 TEST_F(YamlWriteArchiveTest, EigenVectorX) {
   const auto test = [](const Eigen::VectorXd& value,
                        const std::string& expected) {
@@ -371,6 +383,22 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
     - [0.0, 1.0, 2.0, 3.0]
     - [4.0, 5.0, 6.0, 7.0]
     - [8.0, 9.0, 10.0, 11.0]
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, EigenArrayRectangular) {
+  using Array34d = Eigen::Array<double, 3, 4>;
+  const auto test = [](const Array34d& value, const std::string& expected) {
+    const EigenArrayStruct<4> x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  test((Array34d{} << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).finished(),
+       R"""(doc:
+  value:
+    - [1.0, 2.0, 3.0, 4.0]
+    - [5.0, 6.0, 7.0, 8.0]
+    - [9.0, 10.0, 11.0, 12.0]
 )""");
 }
 

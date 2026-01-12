@@ -16,7 +16,7 @@ class TestVanDerPol(unittest.TestCase):
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()
-        state.SetFromVector([0., 2.])
+        state.SetFromVector([0.0, 2.0])
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
@@ -27,8 +27,7 @@ class TestVanDerPol(unittest.TestCase):
         vdp = VanDerPolOscillator()
 
         self.assertTrue(vdp.get_position_output_port().get_index().is_valid())
-        self.assertTrue(
-            vdp.get_full_state_output_port().get_index().is_valid())
+        self.assertTrue(vdp.get_full_state_output_port().get_index().is_valid())
 
     def test_limit_cycle(self):
         cycle = VanDerPolOscillator.CalcLimitCycle()

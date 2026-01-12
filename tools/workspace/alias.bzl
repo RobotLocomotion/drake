@@ -1,5 +1,3 @@
-load(":metadata.bzl", "generate_repository_metadata")
-
 def _impl(repo_ctx):
     name = repo_ctx.attr.name
     aliases = repo_ctx.attr.aliases
@@ -24,11 +22,6 @@ def _impl(repo_ctx):
 
     for path, text in build_files.items():
         repo_ctx.file(path, text)
-
-    generate_repository_metadata(
-        repo_ctx,
-        repository_rule_type = "alias",
-    )
 
 alias_repository = repository_rule(
     doc = """Adds a repository with aliases to other repositories.""",

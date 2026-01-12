@@ -1,6 +1,6 @@
 #include "drake/planning/body_shape_description.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
 

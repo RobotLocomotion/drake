@@ -4,7 +4,7 @@
 // clang-format off (to preserve link to images)
 
 /** @addtogroup hydro_params Estimation of Hydroelastic Parameters
-
+@{
 @brief  <a><!-- no brief line please --></a>
 
 Similarly to Hertz theory of contact mechanics, in this section we derive
@@ -118,7 +118,7 @@ key idea is to model a compliant layer or _foundation_ of thickness H over a
 rigid core, see Fig. 1. This compliant layer can be seen as a bed of linear
 springs that gets pushed when a second object comes into contact. Integrating
 the effect of all springs over the contact area produces the net force among the
-two contacting bodies. 
+two contacting bodies.
 
 @image html drake/multibody/plant/images/elastic_foundation.svg "Figure 1: Elastic Foundation Model." width=35%
 
@@ -223,5 +223,5 @@ Given the small deformations assumption we see in Fig. 2 that this last integral
 can be approximated as the volume of intersection between the two undeformed
 geometries, leading to the same result found by
 @ref Gonthier2007 "[Gonthier, 2007]" in Eq. (2).
-
+@}
 */

@@ -737,7 +737,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       for (int particle_index = 0;
            particle_index < num_particles_to_walk_toward; ++particle_index) {
         auto& particle = particles_to_work_on[particle_index];
-        if (num_hyperplanes_added >
+        if (num_hyperplanes_added >=
             options.sampled_iris_options.max_separating_planes_per_iteration) {
           break;
         }
@@ -807,7 +807,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
-          solve_succeeded = prog.Solve(*solver, particle, {}, &closest);
+          solve_succeeded =
+              prog.Solve(*solver, particle, options.solver_options, &closest);
         } else {
           // We did not find a collision pair corresponding to this particle, so
           // the particle must be violating one of the constraints from
@@ -860,12 +861,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
           // TODO(cohnt): Allow the user to specify the solver options used
           // here.
-          solve_succeeded =
-              counter_example_prog->Solve(*solver, particle, {}, &closest);
+          solve_succeeded = counter_example_prog->Solve(
+              *solver, particle, options.solver_options, &closest);
         }
 
         bool add_hyperplane =
             solve_succeeded || options.add_hyperplane_if_solve_fails;
+        ++num_hyperplanes_added;
         VectorXd* point_to_add_hyperplane{nullptr};
 
         if (solve_succeeded) {

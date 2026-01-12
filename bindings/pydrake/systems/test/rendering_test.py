@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.systems.rendering import (
-    MultibodyPositionToGeometryPose,
-)
-
 import unittest
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.systems.rendering import (
+    MultibodyPositionToGeometryPose,
+)
 
 
 def normalized(x):
@@ -20,7 +20,8 @@ def normalized(x):
 class TestRendering(unittest.TestCase):
     def testMultibodyPositionToGeometryPose(self):
         file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        )
         plant = MultibodyPlant(time_step=0.01)
         Parser(plant).AddModels(file_name)
         scene_graph = SceneGraph()
@@ -28,7 +29,8 @@ class TestRendering(unittest.TestCase):
         plant.Finalize()
 
         to_pose = MultibodyPositionToGeometryPose(
-            plant=plant, input_multibody_state=False)
+            plant=plant, input_multibody_state=False
+        )
 
         # Check the size of the input.
         self.assertEqual(to_pose.get_input_port().size(), 2)

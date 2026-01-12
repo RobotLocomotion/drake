@@ -195,14 +195,16 @@ class YamlWriteArchive final {
   void DoVisit(const NVP& nvp,
                const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>&,
                int32_t) {
-    if constexpr (Cols == 1) {
-      auto& value = *nvp.value();
-      const bool empty = value.size() == 0;
-      this->VisitArrayLike<T>(nvp.name(), value.size(),
-                              empty ? nullptr : &value.coeffRef(0));
-    } else {
-      this->VisitMatrix<T>(nvp.name(), nvp.value());
-    }
+    this->VisitEigenDenseBase(nvp);
+  }
+
+  // For Eigen::Array.
+  template <typename NVP, typename T, int Rows, int Cols, int Options = 0,
+            int MaxRows = Rows, int MaxCols = Cols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Array<T, Rows, Cols, Options, MaxRows, MaxCols>&,
+               int32_t) {
+    this->VisitEigenDenseBase(nvp);
   }
 
   // If no other DoVisit matched, we'll treat the value as a scalar.
@@ -357,19 +359,28 @@ class YamlWriteArchive final {
     root_.Add(name, std::move(sub_node));
   }
 
-  template <typename T, int Rows, int Cols, int Options = 0, int MaxRows = Rows,
-            int MaxCols = Cols>
-  void VisitMatrix(
-      const char* name,
-      const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
-    auto sub_node = internal::Node::MakeSequence();
-    for (int i = 0; i < matrix->rows(); ++i) {
-      Eigen::Matrix<T, Cols, 1> row = matrix->row(i);
-      YamlWriteArchive sub_archive;
-      sub_archive.Visit(drake::MakeNameValue("i", &row));
-      sub_node.Add(std::move(sub_archive.root_.At("i")));
+  template <typename NVP>
+  void VisitEigenDenseBase(const NVP& nvp) {
+    auto& value = *nvp.value();
+    using Derived = std::remove_cvref_t<decltype(value)>;
+    using Scalar = typename Derived::Scalar;
+    if constexpr (Derived::ColsAtCompileTime == 1) {
+      // If the compile-time size is a column vector, then we'll re-use the
+      // visitor logic from std::array to handle it.
+      const bool empty = value.size() == 0;
+      this->VisitArrayLike<Scalar>(nvp.name(), value.size(),
+                                   empty ? nullptr : &value.coeffRef(0));
+    } else {
+      // Otherwise, we'll loop for a dense rectangular matrix.
+      auto sub_node = internal::Node::MakeSequence();
+      for (int i = 0; i < value.rows(); ++i) {
+        Eigen::Matrix<Scalar, Derived::ColsAtCompileTime, 1> row = value.row(i);
+        YamlWriteArchive sub_archive;
+        sub_archive.Visit(drake::MakeNameValue("i", &row));
+        sub_node.Add(std::move(sub_archive.root_.At("i")));
+      }
+      root_.Add(nvp.name(), std::move(sub_node));
     }
-    root_.Add(name, std::move(sub_node));
   }
 
   // This is used for std::map, std::unordered_map, or similar.

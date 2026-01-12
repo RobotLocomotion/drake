@@ -80,7 +80,7 @@ class OrientationConstraint : public solvers::Constraint {
                         double theta_bound,
                         systems::Context<AutoDiffXd>* plant_context);
 
-  ~OrientationConstraint() override {}
+  ~OrientationConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

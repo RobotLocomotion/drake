@@ -3,7 +3,7 @@
 #include <limits>
 #include <optional>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 
 using drake::AbstractValue;

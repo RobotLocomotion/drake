@@ -1,4 +1,4 @@
-load("//tools/skylark:cc.bzl", "CcInfo")
+load("//tools/skylark:cc.bzl", "CcInfo", "cc_common")
 
 def _cc_defines_impl(ctx):
     deps_cc_infos = cc_common.merge_cc_infos(

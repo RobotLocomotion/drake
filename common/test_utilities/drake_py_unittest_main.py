@@ -13,6 +13,7 @@ import sys
 import trace
 import unittest
 import warnings
+
 import xmlrunner
 
 try:
@@ -236,7 +237,9 @@ def reexecute_if_unbuffered():
             argv.insert(0, sys.executable)
         cmd = " ".join([shlex.quote(arg) for arg in argv])
         sys.stdout.flush()
+        os.environ["PYTHONPATH"] = ":".join(sys.path)
         os.execv(argv[0], argv)
+    os.environ.pop("PYTHONPATH", None)
 
 
 def traced(func, ignoredirs=None):
@@ -244,7 +247,6 @@ def traced(func, ignoredirs=None):
      Python code outside of the system prefix."""
     import functools
     import sys
-    import trace
     if ignoredirs is None:
         ignoredirs = ["/usr", sys.prefix]
     tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)

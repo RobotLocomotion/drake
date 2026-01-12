@@ -411,9 +411,9 @@ TEST_F(PendulumTests, Indexes) {
 TEST_F(PendulumTests, Finalize) {
   CreatePendulumModel();
   // Finalize() stage.
-  EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
+  EXPECT_FALSE(model_->is_finalized());  // Not valid before Finalize().
   DRAKE_EXPECT_NO_THROW(model_->Finalize());
-  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
+  EXPECT_TRUE(model_->is_finalized());  // Valid after Finalize().
 
   // Asserts that no more multibody elements can be added after finalize.
   const auto M_Bo_B = SpatialInertia<double>::NaN();
@@ -466,7 +466,7 @@ TEST_F(PendulumTests, CreateContext) {
 
   // Finalize() stage.
   DRAKE_EXPECT_NO_THROW(model_->Finalize());
-  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
+  EXPECT_TRUE(model_->is_finalized());  // Valid after Finalize().
 
   // Create Context.
   MultibodyTreeSystem<double> system(std::move(model_));

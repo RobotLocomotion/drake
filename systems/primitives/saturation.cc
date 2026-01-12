@@ -61,7 +61,8 @@ Saturation<T>::Saturation(bool min_max_ports_enabled, int input_size,
   DRAKE_THROW_UNLESS(min_value.size() == max_value.size());
 
   // Checks no min's are greater than matching max's.
-  DRAKE_THROW_UNLESS((min_value_.array() <= max_value_.array()).all());
+  DRAKE_THROW_UNLESS(
+      (min_value_.array() <= max_value_.array()).template cast<bool>().all());
 
   // Input and outputs are of same dimension.
   input_port_index_ =
@@ -101,7 +102,8 @@ void Saturation<T>::CalcSaturatedOutput(const Context<T>& context,
       u_max = get_max_value_port().Eval(context);
     }
   }
-  DRAKE_THROW_UNLESS((u_min.array() <= u_max.array()).all());
+  DRAKE_THROW_UNLESS(
+      (u_min.array() <= u_max.array()).template cast<bool>().all());
 
   // Evaluates the input port.
   const auto& u = get_input_port().Eval(context);

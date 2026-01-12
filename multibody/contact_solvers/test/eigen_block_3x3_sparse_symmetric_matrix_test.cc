@@ -58,7 +58,7 @@ Eigen::Matrix<double, 12, 12> MakeSpdMatrix() {
 }
 
 /* Makes a sparse version of the result from MakeSpdMatrix(). */
-Block3x3SparseSymmetricMatrix MakeSparseSpdMatrix() {
+BlockSparseSymmetricMatrix3d MakeSparseSpdMatrix() {
   std::vector<std::vector<int>> sparsity;
   sparsity.emplace_back(std::vector<int>{0});
   sparsity.emplace_back(std::vector<int>{1, 2, 3});
@@ -67,7 +67,7 @@ Block3x3SparseSymmetricMatrix MakeSparseSpdMatrix() {
   std::vector<int> block_sizes = {3, 3, 3, 3};
   BlockSparsityPattern block_pattern(block_sizes, sparsity);
 
-  Block3x3SparseSymmetricMatrix A(std::move(block_pattern));
+  BlockSparseSymmetricMatrix3d A(std::move(block_pattern));
   const std::vector<int>& starting_cols = A.starting_cols();
   const Eigen::Matrix<double, 12, 12> dense_A = MakeSpdMatrix();
   std::vector<std::pair<int, int>> nonzero_lower_triangular_blocks{
@@ -85,7 +85,7 @@ Block3x3SparseSymmetricMatrix MakeSparseSpdMatrix() {
 GTEST_TEST(EigenBlock3x3SparseSymmetricMatrixTest, Basic) {
   const double kTol = 4.0 * std::numeric_limits<double>::epsilon();
 
-  const Block3x3SparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  const BlockSparseSymmetricMatrix3d A = MakeSparseSpdMatrix();
   const MatrixXd dense_A = A.MakeDenseMatrix();
   const EigenBlock3x3SparseSymmetricMatrix eigen_A(&A, Parallelism(true));
 
@@ -108,7 +108,7 @@ GTEST_TEST(EigenBlock3x3SparseSymmetricMatrixTest, Basic) {
 GTEST_TEST(EigenBlock3x3SparseSymmetricMatrixTest, ScaledIdentityTwoBlock) {
   const double kTol = 1e-14;
 
-  const Block3x3SparseSymmetricMatrix A = MakeSparseSpdMatrix();
+  const BlockSparseSymmetricMatrix3d A = MakeSparseSpdMatrix();
   const MatrixXd dense_A = A.MakeDenseMatrix();
   const EigenBlock3x3SparseSymmetricMatrix eigen_A(&A, Parallelism(true));
 

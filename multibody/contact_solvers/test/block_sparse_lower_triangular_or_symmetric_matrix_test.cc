@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -75,14 +76,14 @@ MatrixXd MakeDenseMatrix(bool is_symmetric) {
         -----------------
           0  | A21 | A22
  */
-BlockSparseLowerTriangularMatrix MakeLowerTriangularMatrix() {
+BlockSparseLowerTriangularMatrixXd MakeLowerTriangularMatrix() {
   std::vector<int> diag{2, 3, 4};
   std::vector<std::vector<int>> sparsity;
   sparsity.push_back(std::vector<int>{0});
   sparsity.push_back(std::vector<int>{1, 2});
   sparsity.push_back(std::vector<int>{2});
   BlockSparsityPattern pattern(diag, sparsity);
-  BlockSparseLowerTriangularMatrix A_blocks(pattern);
+  BlockSparseLowerTriangularMatrixXd A_blocks(pattern);
   A_blocks.SetBlock(0, 0, A00);
   A_blocks.SetBlock(1, 1, A11);
   A_blocks.SetBlock(2, 1, A21);
@@ -97,14 +98,14 @@ BlockSparseLowerTriangularMatrix MakeLowerTriangularMatrix() {
         -----------------
           0  | A21 | A22
  where A21 = A12.transpose(). */
-BlockSparseSymmetricMatrix MakeSymmetricMatrix() {
+BlockSparseSymmetricMatrixXd MakeSymmetricMatrix() {
   std::vector<int> diag{2, 3, 4};
   std::vector<std::vector<int>> sparsity;
   sparsity.push_back(std::vector<int>{0});
   sparsity.push_back(std::vector<int>{1, 2});
   sparsity.push_back(std::vector<int>{2});
   BlockSparsityPattern pattern(diag, sparsity);
-  BlockSparseSymmetricMatrix A_blocks(pattern);
+  BlockSparseSymmetricMatrixXd A_blocks(pattern);
   A_blocks.SetBlock(0, 0, A00);
   A_blocks.SetBlock(1, 1, A11);
   A_blocks.SetBlock(2, 1, A21);
@@ -129,26 +130,26 @@ GTEST_TEST(BlockSparsityPatternTest, CalcNumNonzeros) {
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, Construction) {
-  const BlockSparseLowerTriangularMatrix A_triangular =
+  const BlockSparseLowerTriangularMatrixXd A_triangular =
       MakeLowerTriangularMatrix();
-  const BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  const BlockSparseSymmetricMatrixXd A_symmetric = MakeSymmetricMatrix();
   EXPECT_EQ(A_triangular.MakeDenseMatrix(), MakeDenseMatrix(false));
   EXPECT_EQ(A_symmetric.MakeDenseMatrix(), MakeDenseMatrix(true));
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, SetZero) {
-  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+  BlockSparseLowerTriangularMatrixXd A_triangular = MakeLowerTriangularMatrix();
   A_triangular.SetZero();
   EXPECT_EQ(A_triangular.MakeDenseMatrix(), MatrixXd::Zero(9, 9));
 
-  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  BlockSparseSymmetricMatrixXd A_symmetric = MakeSymmetricMatrix();
   A_symmetric.SetZero();
   EXPECT_EQ(A_symmetric.MakeDenseMatrix(), MatrixXd::Zero(9, 9));
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, Getter) {
-  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
-  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  BlockSparseLowerTriangularMatrixXd A_triangular = MakeLowerTriangularMatrix();
+  BlockSparseSymmetricMatrixXd A_symmetric = MakeSymmetricMatrix();
   /* Existing diagonal blocks. */
   ASSERT_TRUE(A_triangular.HasBlock(0, 0));
   ASSERT_TRUE(A_symmetric.HasBlock(0, 0));
@@ -206,7 +207,7 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, Getter) {
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, SetBlock) {
-  BlockSparseLowerTriangularMatrix A = MakeLowerTriangularMatrix();
+  BlockSparseLowerTriangularMatrixXd A = MakeLowerTriangularMatrix();
   MatrixXd m = MakeArbitraryMatrix(4, 3);
   A.SetBlock(2, 1, m);
   EXPECT_EQ(A.block(2, 1), m);
@@ -218,13 +219,13 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, SetBlock) {
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, ZeroRowsAndColumns) {
   /* Throws for lower triangular matrix. */
-  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+  BlockSparseLowerTriangularMatrixXd A_triangular = MakeLowerTriangularMatrix();
   DRAKE_EXPECT_THROWS_MESSAGE(A_triangular.ZeroRowsAndColumns({0, 1}),
                               ".*is_symmetric.*");
 
   /* Keeps the diagonal entries for the diagonal blocks 0 and 1. Keeps the
    diagonal block 2 untouched. All off-diagonal blocks are zeroed out. */
-  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  BlockSparseSymmetricMatrixXd A_symmetric = MakeSymmetricMatrix();
   A_symmetric.ZeroRowsAndColumns({0, 1});
 
   MatrixXd A_symmetric_dense = MatrixXd::Zero(9, 9);
@@ -240,12 +241,12 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, ZeroRowsAndColumns) {
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, MakeDenseBottomRightCorner) {
-  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+  BlockSparseLowerTriangularMatrixXd A_triangular = MakeLowerTriangularMatrix();
   MatrixXd expected = MakeDenseMatrix(false).bottomRightCorner(7, 7);
   EXPECT_EQ(expected, A_triangular.MakeDenseBottomRightCorner(2));
   EXPECT_EQ(MatrixXd::Zero(0, 0), A_triangular.MakeDenseBottomRightCorner(0));
 
-  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  BlockSparseSymmetricMatrixXd A_symmetric = MakeSymmetricMatrix();
   expected = MakeDenseMatrix(true).bottomRightCorner(7, 7);
   EXPECT_EQ(expected, A_symmetric.MakeDenseBottomRightCorner(2));
   EXPECT_EQ(MatrixXd::Zero(0, 0), A_symmetric.MakeDenseBottomRightCorner(0));
@@ -253,8 +254,9 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, MakeDenseBottomRightCorner) {
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
   if (kDrakeAssertIsArmed) {
-    BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
-    BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+    BlockSparseLowerTriangularMatrixXd A_triangular =
+        MakeLowerTriangularMatrix();
+    BlockSparseSymmetricMatrixXd A_symmetric = MakeSymmetricMatrix();
     /* i <= block_rows() fails. */
     DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(A_triangular.AddToBlock(200, 100, A00),
                                          ".*out of bound.*");
@@ -299,6 +301,17 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
     ASSERT_THROW(A_symmetric.SetBlockFlat(0, 2, non_symmetric_matrix),
                  std::exception);
   }
+}
+
+// Sanity check for linker errors. We don't need a functional test.
+GTEST_TEST(TriangularBlockSparseMatrixTest, Autodiff) {
+  const std::vector<int> diag;
+  const std::vector<std::vector<int>> sparsity;
+  const BlockSparsityPattern pattern(diag, sparsity);
+  const BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>, false>
+      triangular(pattern);
+  const BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>, true>
+      symmetric(pattern);
 }
 
 }  // namespace

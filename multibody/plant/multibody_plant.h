@@ -2161,8 +2161,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
   /// (`is_discrete() == false`).
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. `get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap`).
+  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap).
   MultibodyConstraintId AddTendonConstraint(std::vector<JointIndex> joints,
                                             std::vector<double> a,
                                             std::optional<double> offset,
@@ -2870,7 +2870,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// (Advanced) Populates output vector q_out with the generalized positions q
   /// of a specified model instance in a given Context.
   /// @note q_out is a dense vector of dimension
-  ///       `num_positions(model_instance)' associated with `model_instance`
+  ///       `num_positions(model_instance)` associated with `model_instance`
   ///       and is populated by copying from `context`.
   /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
@@ -5095,7 +5095,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
-  bool is_finalized() const { return internal_tree().topology_is_valid(); }
+  bool is_finalized() const { return internal_tree().is_finalized(); }
 
   /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
   /// returns false. If `this` plant is discrete, returns whether or not the
@@ -5606,7 +5606,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a Graphviz string describing the topology of this plant.
-  /// To render the string, use the Graphviz tool, ``dot``.
+  /// To render the string, use the Graphviz tool, `dot`.
   /// http://www.graphviz.org/
   ///
   /// Note: this method can be called either before or after `Finalize()`.
@@ -6041,7 +6041,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       MaybeModelInstanceIndex model_instance = {});
 
   // Estimates a global set of point contact parameters given a
-  // `penetration_allowance`. See set_penetration_allowance()` for details.
+  // `penetration_allowance`. See `set_penetration_allowance()` for details.
   // TODO(amcastro-tri): Once #13064 is resolved, make this a method outside MBP
   // with signature:
   // EstimatePointContactParameters(double penetration_allowance,

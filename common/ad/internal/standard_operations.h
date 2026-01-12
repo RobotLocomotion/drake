@@ -529,19 +529,30 @@ AutoDiff tanh(AutoDiff x);
 
 /** ADL overload to mimic std::ceil from `<cmath>`.
 The result's derivatives are always zero. */
-AutoDiff ceil(AutoDiff x);
+inline double ceil(const AutoDiff& x) {
+  return std::ceil(x.value());
+}
 
 /** ADL overload to mimic std::floor from `<cmath>`.
 The result's derivatives are always zero. */
-AutoDiff floor(AutoDiff x);
+inline double floor(const AutoDiff& x) {
+  return std::floor(x.value());
+}
 
 /** ADL overload to mimic std::round from `<cmath>`.
 The result's derivatives are always zero. */
-AutoDiff round(AutoDiff x);
+inline double round(const AutoDiff& x) {
+  return std::round(x.value());
+}
 
 /** ADL overload to mimic std::nexttoward from `<cmath>`.
 The result's derivatives are always zero. */
-AutoDiff nexttoward(AutoDiff from, long double to);
+inline double nexttoward(const AutoDiff& from, long double to) {
+  return std::nexttoward(from.value(), to);
+}
+
+/** ADL overload to mimic std::copysign from `<cmath>`. */
+AutoDiff copysign(const AutoDiff& mag, const AutoDiff& sgn);
 
 /** ADL overload to mimic std::isfinite from `<cmath>`.
 Because the return type is `bool`, the derivatives are not preserved. */
@@ -560,16 +571,6 @@ Because the return type is `bool`, the derivatives are not preserved. */
 inline bool isnan(const AutoDiff& x) {
   return std::isnan(x.value());
 }
-
-//@}
-
-/// @name Miscellaneous functions
-//@{
-
-// TODO(jwnimmer-tri) Deprecate me.
-/** Outputs the `value()` part of x to the stream.
-To output the derivatives use `<< x.derivatives().transpose()`. */
-std::ostream& operator<<(std::ostream& s, const AutoDiff& x);
 
 //@}
 

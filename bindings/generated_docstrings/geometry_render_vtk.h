@@ -212,7 +212,10 @@ implementation can use the properties found in the
 PerceptionProperties to determine whether it *accepts* a shape
 provided for registration. RenderEngineVtk makes use of defaults to
 accept *all* geometries (assuming the properties pass validation,
-e.g., render label validation).)""";
+e.g., render label validation).
+
+Raises:
+    RuntimeError if kHasRenderEngineVtk is false.)""";
       } MakeRenderEngineVtk;
       // Symbol: drake::geometry::NullTexture
       struct /* NullTexture */ {

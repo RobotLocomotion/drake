@@ -83,7 +83,7 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
 /// `VisitSqrt`, `VisitPow`, `VisitSin`, `VisitCos`, `VisitTan`, `VisitAsin`,
 /// `VisitAtan`, `VisitAtan2`, `VisitSinh`, `VisitCosh`, `VisitTanh`,
 /// `VisitMin`, `VisitMax`, `VisitCeil`, `VisitFloor`, `VisitIfThenElse`,
-/// `VisitUninterpretedFunction.
+/// `VisitUninterpretedFunction`.
 ///
 /// @throws std::exception if NaN is detected during a visit.
 template <typename Result, typename Visitor, typename... Args>

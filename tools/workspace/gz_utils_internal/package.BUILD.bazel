@@ -108,6 +108,7 @@ cc_library_vendored(
     copts = ["-w"],
     linkstatic = True,
     includes = ["drake_hdr"],
+    isystem = True,
     visibility = ["//visibility:public"],
 )
 
@@ -118,3 +119,5 @@ install(
     ],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

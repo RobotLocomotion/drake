@@ -6,6 +6,6 @@ cask 'temurin'
 brew 'gcc'
 brew 'glib'
 brew 'graphviz'
-brew 'python@3.13'
+brew 'python@3.14'
 
 mas 'Xcode', id: 497799835 unless File.exist? '/Applications/Xcode.app'

@@ -97,7 +97,7 @@ else()
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
-set(MINIMUM_BAZEL_VERSION 8.0.1)
+set(MINIMUM_BAZEL_VERSION 8.4.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
@@ -224,7 +224,7 @@ set(CMAKE_CXX_STANDARD 20)
 if(APPLE)
   # The macOS python version should match what's listed in both the
   # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
-  set(SUPPORTED_PYTHON_VERSION 3.13)
+  set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
     set(SUPPORTED_PYTHON_VERSION 3.12)
@@ -596,32 +596,43 @@ endif()
 
 set(BAZEL_CONFIG)
 
-# Defines common options for open-source solver dependencies.
-# By default, these are all ON.
-# Passes the corresponding options to Bazel.
-function(open_solver_option SOLVER)
-  string(TOUPPER "WITH_${SOLVER}" OPTION_NAME)
-  string(TOLOWER "with_${SOLVER}" OPTION_BAZEL_ARG)
-  option("${OPTION_NAME}" "Build with support for ${SOLVER}" ON)
-  if(${OPTION_NAME})
-    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=True")
+# Defines options for opting out of certain features in Drake's build. Options
+# default to ON, i.e., all features are enabled by default but the user can
+# opt-out by specifying ${option_name}=OFF.
+#
+# This is currently used for the open-source solvers and render engines. The
+# spelling of `option_name` should lowercase-match the spelling of the
+# corresponding Bazel flag.
+function(define_bool_option option_name display_name)
+  string(TOLOWER "${option_name}" option_bazel_flag)
+  option("${option_name}" "Build with support for ${display_name}" ON)
+  if(${option_name})
+    string(APPEND BAZEL_CONFIG
+      " --@drake//tools/flags:${option_bazel_flag}=True")
   else()
-    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
+    string(APPEND BAZEL_CONFIG
+      " --@drake//tools/flags:${option_bazel_flag}=False")
   endif()
   set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
 endfunction()
 
-open_solver_option("Clarabel")
-open_solver_option("CLP")
-open_solver_option("CSDP")
-open_solver_option("Ipopt")
-open_solver_option("NLopt")
-open_solver_option("OSQP")
-open_solver_option("SCS")
+if(NOT APPLE)
+  define_bool_option("WITH_RENDER_GL" "RenderEngineGl")
+endif()
+define_bool_option("WITH_RENDER_VTK" "RenderEngineVtk")
+define_bool_option("WITH_RENDER_GLTF_CLIENT" "RenderEngineGltfClient")
+
+define_bool_option("WITH_CLARABEL" "Clarabel")
+define_bool_option("WITH_CLP" "CLP")
+define_bool_option("WITH_CSDP" "CSDP")
+define_bool_option("WITH_IPOPT" "Ipopt")
+define_bool_option("WITH_NLOPT" "NLopt")
+define_bool_option("WITH_OSQP" "OSQP")
+define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
-  find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
+  find_package(Gurobi 12.0 EXACT MODULE REQUIRED)
 
   string(APPEND BAZEL_CONFIG " --config=gurobi")
 
@@ -813,7 +824,6 @@ configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
 configure_file(cmake/BUILD.bazel.in drake_build_cwd/BUILD.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" drake_build_cwd/.bazelversion SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/tools/workspace/rules_cc/patches/upstream/pr456.patch" drake_build_cwd/pr456.patch SYMBOLIC)
 
 find_package(Git)
 

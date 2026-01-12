@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/manipulation/util/robot_plan_utils.h"

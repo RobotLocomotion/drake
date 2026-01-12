@@ -10,7 +10,6 @@
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 
@@ -275,7 +274,7 @@ class ForceElement : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each force element retrieves its
   // topology from the parent MultibodyTree.
-  void DoSetTopology(const internal::MultibodyTreeTopology&) final {}
+  void DoSetTopology() final {}
 
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(

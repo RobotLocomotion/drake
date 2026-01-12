@@ -8,15 +8,17 @@ import weakref
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     Simulator,
-    )
+)
 from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
-    BasicVector, BasicVector_,
+    BasicVector,
+    BasicVector_,
     CacheEntry,
     CacheEntryValue,
     CacheIndex,
@@ -31,7 +33,8 @@ from pydrake.systems.framework import (
     DiscreteValues,
     EventStatus,
     InputPortIndex,
-    LeafSystem, LeafSystem_,
+    LeafSystem,
+    LeafSystem_,
     NumericParameterIndex,
     PortDataType,
     PublishEvent,
@@ -43,18 +46,15 @@ from pydrake.systems.framework import (
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
-    )
+)
 from pydrake.systems.primitives import (
     Adder,
     ZeroOrderHold,
-    )
-
+)
 from pydrake.systems.test.test_util import (
     call_leaf_system_overrides,
     call_vector_system_overrides,
-    )
-
-from pydrake.common.test_utilities import numpy_compare
+)
 
 
 def noop(*args, **kwargs):
@@ -67,8 +67,7 @@ class CustomAdder(LeafSystem):
     def __init__(self, num_inputs, size):
         LeafSystem.__init__(self)
         for i in range(num_inputs):
-            self.DeclareVectorInputPort(
-                "input{}".format(i), size)
+            self.DeclareVectorInputPort("input{}".format(i), size)
         self.DeclareVectorOutputPort("sum", size, self._calc_sum)
 
     def _calc_sum(self, context, sum_data):
@@ -120,7 +119,7 @@ class CustomVectorSystem(VectorSystem):
 
     def DoCalcVectorDiscreteVariableUpdates(self, context, u, x, x_n):
         self.ValidateContext(context)
-        x_n[:] = x + 2*u
+        x_n[:] = x + 2 * u
         self.has_called.append("discrete")
 
 
@@ -138,23 +137,36 @@ class CustomPortsLifetimeHazardSystem(LeafSystem):
         # Use all of the entry points that return port references, storing the
         # results in self.
         ports = set()
-        ports.add(self.DeclareInputPort(kUseDefaultName,
-                                        PortDataType.kVectorValued, 1))
+        ports.add(
+            self.DeclareInputPort(
+                kUseDefaultName, PortDataType.kVectorValued, 1
+            )
+        )
         ports.add(self.DeclareAbstractInputPort("Ain", Value[str]()))
-        ports.add(self.DeclareAbstractOutputPort("Aout",
-                                                 lambda: Value(""),
-                                                 lambda: Value("")))
+        ports.add(
+            self.DeclareAbstractOutputPort(
+                "Aout", lambda: Value(""), lambda: Value("")
+            )
+        )
         ports.add(self.DeclareVectorInputPort("Vin", 2))
         ports.add(self.DeclareVectorInputPort("Vin.rand", 2, random_type=None))
         ports.add(self.DeclareVectorOutputPort("Vout.size", 2, lambda: [1, 2]))
-        ports.add(self.DeclareVectorOutputPort("Vout.model", BasicVector(2),
-                                               lambda: [1, 2]))
-        ports.add(self.DeclareStateOutputPort(kUseDefaultName,
-                                              ContinuousStateIndex(0)))
-        ports.add(self.DeclareStateOutputPort(kUseDefaultName,
-                                              DiscreteStateIndex(0)))
-        ports.add(self.DeclareStateOutputPort(kUseDefaultName,
-                                              AbstractStateIndex(0)))
+        ports.add(
+            self.DeclareVectorOutputPort(
+                "Vout.model", BasicVector(2), lambda: [1, 2]
+            )
+        )
+        ports.add(
+            self.DeclareStateOutputPort(
+                kUseDefaultName, ContinuousStateIndex(0)
+            )
+        )
+        ports.add(
+            self.DeclareStateOutputPort(kUseDefaultName, DiscreteStateIndex(0))
+        )
+        ports.add(
+            self.DeclareStateOutputPort(kUseDefaultName, AbstractStateIndex(0))
+        )
         self._ports = ports
 
 
@@ -231,8 +243,11 @@ class TestCustom(unittest.TestCase):
         simulator.Initialize()
         simulator.AdvanceTo(1)
         # Ensure that we have the outputs we want.
-        value = (diagram.GetMutableSubsystemContext(zoh, context)
-                 .get_discrete_state_vector().get_value())
+        value = (
+            diagram.GetMutableSubsystemContext(zoh, context)
+            .get_discrete_state_vector()
+            .get_value()
+        )
         self.assertTrue(np.allclose([5, 7, 9], value))
 
     def test_adder_graphviz(self):
@@ -248,29 +263,30 @@ class TestCustom(unittest.TestCase):
 
     def test_leaf_system_well_known_tickets(self):
         for func in [
-                LeafSystem.accuracy_ticket,
-                LeafSystem.all_input_ports_ticket,
-                LeafSystem.all_parameters_ticket,
-                LeafSystem.all_sources_except_input_ports_ticket,
-                LeafSystem.all_sources_ticket,
-                LeafSystem.all_state_ticket,
-                LeafSystem.configuration_ticket,
-                LeafSystem.ke_ticket,
-                LeafSystem.kinematics_ticket,
-                LeafSystem.nothing_ticket,
-                LeafSystem.pa_ticket,
-                LeafSystem.pc_ticket,
-                LeafSystem.pe_ticket,
-                LeafSystem.pn_ticket,
-                LeafSystem.pnc_ticket,
-                LeafSystem.q_ticket,
-                LeafSystem.time_ticket,
-                LeafSystem.v_ticket,
-                LeafSystem.xa_ticket,
-                LeafSystem.xc_ticket,
-                LeafSystem.xcdot_ticket,
-                LeafSystem.xd_ticket,
-                LeafSystem.z_ticket]:
+            LeafSystem.accuracy_ticket,
+            LeafSystem.all_input_ports_ticket,
+            LeafSystem.all_parameters_ticket,
+            LeafSystem.all_sources_except_input_ports_ticket,
+            LeafSystem.all_sources_ticket,
+            LeafSystem.all_state_ticket,
+            LeafSystem.configuration_ticket,
+            LeafSystem.ke_ticket,
+            LeafSystem.kinematics_ticket,
+            LeafSystem.nothing_ticket,
+            LeafSystem.pa_ticket,
+            LeafSystem.pc_ticket,
+            LeafSystem.pe_ticket,
+            LeafSystem.pn_ticket,
+            LeafSystem.pnc_ticket,
+            LeafSystem.q_ticket,
+            LeafSystem.time_ticket,
+            LeafSystem.v_ticket,
+            LeafSystem.xa_ticket,
+            LeafSystem.xc_ticket,
+            LeafSystem.xcdot_ticket,
+            LeafSystem.xd_ticket,
+            LeafSystem.z_ticket,
+        ]:
             self.assertIsInstance(func(), DependencyTicket, func)
 
     def test_leaf_system_per_item_tickets(self):
@@ -282,13 +298,13 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(dut.DeclareVectorInputPort("u1", 2).size(), 2)
         dut.DeclareNumericParameter(model_vector=BasicVector(1))
         for func, arg in [
-                (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
-                (dut.abstract_state_ticket, AbstractStateIndex(0)),
-                (dut.cache_entry_ticket, CacheIndex(0)),
-                (dut.discrete_state_ticket, DiscreteStateIndex(0)),
-                (dut.input_port_ticket, InputPortIndex(0)),
-                (dut.numeric_parameter_ticket, NumericParameterIndex(0)),
-                ]:
+            (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
+            (dut.abstract_state_ticket, AbstractStateIndex(0)),
+            (dut.cache_entry_ticket, CacheIndex(0)),
+            (dut.discrete_state_ticket, DiscreteStateIndex(0)),
+            (dut.input_port_ticket, InputPortIndex(0)),
+            (dut.numeric_parameter_ticket, NumericParameterIndex(0)),
+        ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
 
     def test_cache_entry(self):
@@ -306,9 +322,10 @@ class TestCustom(unittest.TestCase):
         cache_entry = dummy.DeclareCacheEntry(
             description="scratch",
             value_producer=ValueProducer(
-                allocate=model_value.Clone,
-                calc=calc_cache),
-            prerequisites_of_calc={dummy.nothing_ticket()})
+                allocate=model_value.Clone, calc=calc_cache
+            ),
+            prerequisites_of_calc={dummy.nothing_ticket()},
+        )
         self.assertIsInstance(cache_entry, CacheEntry)
 
         context = dummy.CreateDefaultContext()
@@ -364,29 +381,35 @@ class TestCustom(unittest.TestCase):
     def test_value_producer_error_reporting_allocate_none(self):
         def broken_alloc_callback():
             pass
+
         system = LeafSystem()
         system.DeclareCacheEntry(
             description="",
             value_producer=ValueProducer(
                 allocate=broken_alloc_callback,
-                calc=lambda context, output: None))
+                calc=lambda context, output: None,
+            ),
+        )
         with self.assertRaisesRegex(
-                RuntimeError,
-                "broken_alloc_callback.*Value.*not None"):
+            RuntimeError, "broken_alloc_callback.*Value.*not None"
+        ):
             system.CreateDefaultContext()
 
     def test_value_producer_error_reporting_allocate_mistyped(self):
         def broken_alloc_callback():
             return "hello"
+
         system = LeafSystem()
         system.DeclareCacheEntry(
             description="",
             value_producer=ValueProducer(
                 allocate=broken_alloc_callback,
-                calc=lambda context, output: None))
+                calc=lambda context, output: None,
+            ),
+        )
         with self.assertRaisesRegex(
-                RuntimeError,
-                "broken_alloc_callback.*return.*Value.*not.*str"):
+            RuntimeError, "broken_alloc_callback.*return.*Value.*not.*str"
+        ):
             system.CreateDefaultContext()
 
     def test_leaf_system_issue13792(self):
@@ -431,77 +454,107 @@ class TestCustom(unittest.TestCase):
                 self.called_system_reset = False
                 # Ensure we have desired overloads.
                 self.DeclareInitializationPublishEvent(
-                    publish=self._on_initialize_publish)
+                    publish=self._on_initialize_publish
+                )
                 self.DeclareInitializationDiscreteUpdateEvent(
-                    update=self._on_initialize_discrete)
+                    update=self._on_initialize_discrete
+                )
                 self.DeclareInitializationUnrestrictedUpdateEvent(
-                    update=self._on_initialize_unrestricted)
+                    update=self._on_initialize_unrestricted
+                )
                 self.DeclareInitializationEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
-                        callback=self._on_initialize))
+                        callback=self._on_initialize,
+                    )
+                )
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
                     offset_sec=0,
-                    publish=self._on_periodic_publish)
+                    publish=self._on_periodic_publish,
+                )
                 self.DeclarePeriodicDiscreteUpdateEvent(
                     period_sec=1.0,
                     offset_sec=0,
-                    update=self._on_periodic_discrete)
+                    update=self._on_periodic_discrete,
+                )
                 self.DeclarePeriodicUnrestrictedUpdateEvent(
                     period_sec=1.0,
                     offset_sec=0,
-                    update=self._on_periodic_unrestricted)
+                    update=self._on_periodic_unrestricted,
+                )
                 self.DeclarePerStepPublishEvent(
-                    publish=self._on_per_step_publish)
+                    publish=self._on_per_step_publish
+                )
                 self.DeclarePerStepDiscreteUpdateEvent(
-                    update=self._on_per_step_discrete)
+                    update=self._on_per_step_discrete
+                )
                 self.DeclarePerStepUnrestrictedUpdateEvent(
-                    update=self._on_per_step_unrestricted)
+                    update=self._on_per_step_unrestricted
+                )
                 self.DeclarePerStepEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kPerStep,
-                        callback=self._on_per_step))
-                self.DeclareForcedPublishEvent(
-                    publish=self._on_forced_publish)
+                        callback=self._on_per_step,
+                    )
+                )
+                self.DeclareForcedPublishEvent(publish=self._on_forced_publish)
                 self.DeclareForcedDiscreteUpdateEvent(
-                    update=self._on_forced_discrete)
+                    update=self._on_forced_discrete
+                )
                 self.DeclareForcedUnrestrictedUpdateEvent(
-                    update=self._on_forced_unrestricted)
+                    update=self._on_forced_unrestricted
+                )
                 self.DeclarePeriodicEvent(
                     period_sec=1.0,
                     offset_sec=0.0,
                     event=PublishEvent(
                         trigger_type=TriggerType.kPeriodic,
-                        callback=self._on_periodic))
+                        callback=self._on_periodic,
+                    ),
+                )
                 self.DeclareContinuousState(2)
                 self.DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
                 # feedthrough.
                 self.DeclareInputPort(
-                    kUseDefaultName, PortDataType.kVectorValued, 1)
+                    kUseDefaultName, PortDataType.kVectorValued, 1
+                )
                 self.DeclareVectorInputPort(
-                    name="test_input", model_vector=BasicVector(1),
-                    random_type=None)
+                    name="test_input",
+                    model_vector=BasicVector(1),
+                    random_type=None,
+                )
                 self.DeclareVectorOutputPort(
-                    "noop", BasicVector(1), noop,
-                    prerequisites_of_calc=set([self.nothing_ticket()]))
-                self.DeclareVectorOutputPort("noop2",
-                                             1,
-                                             noop,
-                                             prerequisites_of_calc=set(
-                                                 [self.nothing_ticket()]))
+                    "noop",
+                    BasicVector(1),
+                    noop,
+                    prerequisites_of_calc=set([self.nothing_ticket()]),
+                )
+                self.DeclareVectorOutputPort(
+                    "noop2",
+                    1,
+                    noop,
+                    prerequisites_of_calc=set([self.nothing_ticket()]),
+                )
                 self.witness = self.MakeWitnessFunction(
-                    "witness", WitnessFunctionDirection.kCrossesZero,
-                    self._witness)
+                    "witness",
+                    WitnessFunctionDirection.kCrossesZero,
+                    self._witness,
+                )
                 # Test bindings for both callback function signatures.
                 self.reset_witness = self.MakeWitnessFunction(
-                    "reset", WitnessFunctionDirection.kCrossesZero,
-                    self._guard, UnrestrictedUpdateEvent(self._reset))
+                    "reset",
+                    WitnessFunctionDirection.kCrossesZero,
+                    self._guard,
+                    UnrestrictedUpdateEvent(self._reset),
+                )
                 self.system_reset_witness = self.MakeWitnessFunction(
-                    "system reset", WitnessFunctionDirection.kCrossesZero,
-                    self._guard, UnrestrictedUpdateEvent(
-                        system_callback=self._system_reset))
+                    "system reset",
+                    WitnessFunctionDirection.kCrossesZero,
+                    self._guard,
+                    UnrestrictedUpdateEvent(system_callback=self._system_reset),
+                )
                 self.witness_result = 1.0
                 self.getwitness_result = [
                     self.witness,
@@ -648,7 +701,8 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(system.HasAnyDirectFeedthrough())
         self.assertFalse(system.HasDirectFeedthrough(output_port=0))
         self.assertFalse(
-            system.HasDirectFeedthrough(input_port=0, output_port=0))
+            system.HasDirectFeedthrough(input_port=0, output_port=0)
+        )
 
         # Test explicit calls.
         system = TrivialSystem()
@@ -659,7 +713,8 @@ class TestCustom(unittest.TestCase):
         context_update = context.Clone()
         system.CalcTimeDerivatives(
             context=context,
-            derivatives=context_update.get_mutable_continuous_state())
+            derivatives=context_update.get_mutable_continuous_state(),
+        )
         self.assertTrue(system.called_continuous)
 
         system.called_continuous = False
@@ -667,26 +722,30 @@ class TestCustom(unittest.TestCase):
         system.CalcImplicitTimeDerivativesResidual(
             context=context,
             proposed_derivatives=context_update.get_continuous_state(),
-            residual=residual)
+            residual=residual,
+        )
         np.testing.assert_allclose(residual, 0, 1e-14)
         self.assertTrue(system.called_continuous)
         np.testing.assert_allclose(
             system.CalcImplicitTimeDerivativesResidual(
                 context=context,
-                proposed_derivatives=context_update.get_continuous_state()), 0,
-            1e-14)
+                proposed_derivatives=context_update.get_continuous_state(),
+            ),
+            0,
+            1e-14,
+        )
 
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
 
         system.CalcForcedDiscreteVariableUpdate(
             context=context,
-            discrete_state=context_update.get_mutable_discrete_state())
+            discrete_state=context_update.get_mutable_discrete_state(),
+        )
         self.assertTrue(system.called_forced_discrete)
 
         system.CalcForcedUnrestrictedUpdate(
-            context=context,
-            state=context_update.get_mutable_state()
+            context=context, state=context_update.get_mutable_state()
         )
         self.assertTrue(system.called_forced_unrestricted)
 
@@ -769,8 +828,10 @@ class TestCustom(unittest.TestCase):
                 LeafSystem.__init__(self)
                 self.called_periodic_publish = False
                 self.DeclarePeriodicPublishEvent(
-                    period_sec=1.0, offset_sec=0.0,
-                    publish=self._on_periodic_publish)
+                    period_sec=1.0,
+                    offset_sec=0.0,
+                    publish=self._on_periodic_publish,
+                )
 
             def _on_periodic_publish(self, context):
                 self.called_periodic_publish = True
@@ -803,31 +864,38 @@ class TestCustom(unittest.TestCase):
         for is_discrete in [False, True]:
             system = CustomVectorSystem(is_discrete)
             self.assertEqual(
-                system.GetSystemType(), f"{__name__}.CustomVectorSystem")
+                system.GetSystemType(), f"{__name__}.CustomVectorSystem"
+            )
             context = system.CreateDefaultContext()
 
-            u = np.array([1.])
+            u = np.array([1.0])
             system.get_input_port(0).FixValue(context, u)
 
             # Dispatch virtual calls from C++.
             output = call_vector_system_overrides(
-                system, context, is_discrete, dt)
+                system, context, is_discrete, dt
+            )
             self.assertTrue(system.HasAnyDirectFeedthrough())
 
             # Check call order.
             update_type = is_discrete and "discrete" or "continuous"
-            self.assertEqual(
-                system.has_called,
-                [update_type, "output"])
+            self.assertEqual(system.has_called, [update_type, "output"])
 
             # Check values.
             state = context.get_state()
-            x = (is_discrete and state.get_discrete_state()
-                 or state.get_continuous_state()).get_vector().get_value()
+            x = (
+                (
+                    is_discrete
+                    and state.get_discrete_state()
+                    or state.get_continuous_state()
+                )
+                .get_vector()
+                .get_value()
+            )
 
-            x0 = [0., 0.]
-            c = is_discrete and 2 or 1*dt
-            x_expected = x0 + c*u
+            x0 = [0.0, 0.0]
+            c = is_discrete and 2 or 1 * dt
+            x_expected = x0 + c * u
             self.assertTrue(np.allclose(x, x_expected))
 
             # Check output.
@@ -838,7 +906,7 @@ class TestCustom(unittest.TestCase):
     def test_context_api(self):
         # Capture miscellaneous functions not yet tested.
         model_value = Value("Hello")
-        model_vector = BasicVector([1., 2.])
+        model_vector = BasicVector([1.0, 2.0])
 
         class TrivialSystem(LeafSystem):
             def __init__(self):
@@ -851,68 +919,81 @@ class TestCustom(unittest.TestCase):
 
         system = TrivialSystem()
         context = system.CreateDefaultContext()
-        self.assertTrue(
-            context.get_state() is context.get_mutable_state())
+        self.assertTrue(context.get_state() is context.get_mutable_state())
         self.assertEqual(context.num_continuous_states(), 1)
         self.assertTrue(
-            context.get_continuous_state_vector() is
-            context.get_mutable_continuous_state_vector())
+            context.get_continuous_state_vector()
+            is context.get_mutable_continuous_state_vector()
+        )
         self.assertEqual(context.num_discrete_state_groups(), 1)
         self.assertTrue(
-            context.get_discrete_state_vector() is
-            context.get_mutable_discrete_state_vector())
+            context.get_discrete_state_vector()
+            is context.get_mutable_discrete_state_vector()
+        )
         self.assertTrue(
-            context.get_discrete_state(0) is
-            context.get_discrete_state_vector())
+            context.get_discrete_state(0) is context.get_discrete_state_vector()
+        )
         self.assertTrue(
-            context.get_discrete_state(0) is
-            context.get_discrete_state().get_vector(0))
+            context.get_discrete_state(0)
+            is context.get_discrete_state().get_vector(0)
+        )
         self.assertTrue(
-            context.get_mutable_discrete_state(0) is
-            context.get_mutable_discrete_state_vector())
+            context.get_mutable_discrete_state(0)
+            is context.get_mutable_discrete_state_vector()
+        )
         self.assertTrue(
-            context.get_mutable_discrete_state(0) is
-            context.get_mutable_discrete_state().get_vector(0))
+            context.get_mutable_discrete_state(0)
+            is context.get_mutable_discrete_state().get_vector(0)
+        )
         self.assertEqual(context.num_abstract_states(), 1)
         self.assertTrue(
-            context.get_abstract_state() is
-            context.get_mutable_abstract_state())
+            context.get_abstract_state() is context.get_mutable_abstract_state()
+        )
         self.assertTrue(
-            context.get_abstract_state(0) is
-            context.get_mutable_abstract_state(0))
+            context.get_abstract_state(0)
+            is context.get_mutable_abstract_state(0)
+        )
         self.assertEqual(
-            context.get_abstract_state(0).get_value(), model_value.get_value())
+            context.get_abstract_state(0).get_value(), model_value.get_value()
+        )
 
         # Check state API.
         state = context.get_mutable_state()
         self.assertTrue(
-            state.get_mutable_discrete_state(index=0) is
-            state.get_mutable_discrete_state().get_vector(index=0))
+            state.get_mutable_discrete_state(index=0)
+            is state.get_mutable_discrete_state().get_vector(index=0)
+        )
         self.assertTrue(
-            state.get_abstract_state(index=0) is
-            state.get_abstract_state().get_value(index=0))
+            state.get_abstract_state(index=0)
+            is state.get_abstract_state().get_value(index=0)
+        )
         self.assertTrue(
-            state.get_mutable_abstract_state(index=0) is
-            state.get_mutable_abstract_state().get_value(index=0))
+            state.get_mutable_abstract_state(index=0)
+            is state.get_mutable_abstract_state().get_value(index=0)
+        )
 
         # Check abstract state API (also test Values).
         values = context.get_abstract_state()
         self.assertEqual(values.size(), 1)
         self.assertEqual(
-            values.get_value(0).get_value(), model_value.get_value())
+            values.get_value(0).get_value(), model_value.get_value()
+        )
         self.assertEqual(
-            values.get_mutable_value(0).get_value(), model_value.get_value())
+            values.get_mutable_value(0).get_value(), model_value.get_value()
+        )
         values.SetFrom(values.Clone())
 
         # Check parameter accessors.
         self.assertEqual(system.num_abstract_parameters(), 1)
         self.assertEqual(
             context.get_abstract_parameter(index=0).get_value(),
-            model_value.get_value())
+            model_value.get_value(),
+        )
         self.assertEqual(system.num_numeric_parameter_groups(), 1)
         np.testing.assert_equal(
             context.get_numeric_parameter(index=0).get_value(),
-            model_vector.get_value())
+            model_vector.get_value(),
+        )
 
         # Check diagram context accessors.
         builder = DiagramBuilder()
@@ -921,18 +1002,22 @@ class TestCustom(unittest.TestCase):
         context = diagram.CreateDefaultContext()
         # Existence check.
         self.assertIsNot(
-            diagram.GetMutableSubsystemState(system, context), None)
-        subcontext = diagram.GetMutableSubsystemContext(subsystem=system,
-                                                        context=context)
+            diagram.GetMutableSubsystemState(system, context), None
+        )
+        subcontext = diagram.GetMutableSubsystemContext(
+            subsystem=system, context=context
+        )
         self.assertIsNot(subcontext, None)
         self.assertIs(
             diagram.GetSubsystemContext(subsystem=system, context=context),
-            subcontext)
+            subcontext,
+        )
         subcontext2 = system.GetMyMutableContextFromRoot(root_context=context)
         self.assertIsNot(subcontext2, None)
         self.assertIs(subcontext2, subcontext)
-        self.assertIs(system.GetMyContextFromRoot(root_context=context),
-                      subcontext2)
+        self.assertIs(
+            system.GetMyContextFromRoot(root_context=context), subcontext2
+        )
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
@@ -947,17 +1032,21 @@ class TestCustom(unittest.TestCase):
                     num_state = num_q + num_v + num_z
                     if index == 0:
                         self.DeclareContinuousState(
-                            num_state_variables=num_state)
+                            num_state_variables=num_state
+                        )
                     elif index == 1:
                         self.DeclareContinuousState(
-                            num_q=num_q, num_v=num_v, num_z=num_z)
+                            num_q=num_q, num_v=num_v, num_z=num_z
+                        )
                     elif index == 2:
-                        self.DeclareContinuousState(
-                            BasicVector_[T](num_state))
+                        self.DeclareContinuousState(BasicVector_[T](num_state))
                     elif index == 3:
                         self.DeclareContinuousState(
                             BasicVector_[T](num_state),
-                            num_q=num_q, num_v=num_v, num_z=num_z)
+                            num_q=num_q,
+                            num_v=num_v,
+                            num_z=num_z,
+                        )
 
                 def DoCalcTimeDerivatives(self, context, derivatives):
                     derivatives.get_mutable_vector().SetZero()
@@ -966,10 +1055,12 @@ class TestCustom(unittest.TestCase):
                 system = TrivialSystem(index)
                 context = system.CreateDefaultContext()
                 self.assertEqual(
-                    context.get_continuous_state_vector().size(), 6)
+                    context.get_continuous_state_vector().size(), 6
+                )
                 self.assertEqual(system.AllocateTimeDerivatives().size(), 6)
                 self.assertEqual(
-                    system.EvalTimeDerivatives(context=context).size(), 6)
+                    system.EvalTimeDerivatives(context=context).size(), 6
+                )
 
                 # The constructors for ContinuousState(state: VectorBase, ...)
                 # used when diagrams are in play receives special treatment in
@@ -981,18 +1072,19 @@ class TestCustom(unittest.TestCase):
                 diagram = builder.Build()
                 diagram_context = diagram.CreateDefaultContext()
                 diagram_state_copy = ContinuousState_[T](
-                    state=diagram_context.get_continuous_state().get_vector())
-                self.assertEqual(diagram_state_copy.size(), 6*n)
+                    state=diagram_context.get_continuous_state().get_vector()
+                )
+                self.assertEqual(diagram_state_copy.size(), 6 * n)
                 diagram_state_copy = ContinuousState_[T](
                     state=diagram_context.get_continuous_state().get_vector(),
-                    num_q=2*n,
-                    num_v=1*n,
-                    num_z=3*n,
+                    num_q=2 * n,
+                    num_v=1 * n,
+                    num_z=3 * n,
                 )
-                self.assertEqual(diagram_state_copy.num_q(), 2*n)
-                self.assertEqual(diagram_state_copy.num_v(), 1*n)
-                self.assertEqual(diagram_state_copy.num_z(), 3*n)
-                self.assertEqual(diagram_state_copy.size(), 6*n)
+                self.assertEqual(diagram_state_copy.num_q(), 2 * n)
+                self.assertEqual(diagram_state_copy.num_v(), 1 * n)
+                self.assertEqual(diagram_state_copy.num_z(), 3 * n)
+                self.assertEqual(diagram_state_copy.size(), 6 * n)
 
     def test_discrete_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
@@ -1004,22 +1096,20 @@ class TestCustom(unittest.TestCase):
                     num_states = 3
                     if index == 0:
                         self.DeclareDiscreteState(
-                            num_state_variables=num_states)
+                            num_state_variables=num_states
+                        )
                     elif index == 1:
                         self.DeclareDiscreteState([1, 2, 3])
                     elif index == 2:
-                        self.DeclareDiscreteState(
-                            BasicVector_[T](num_states))
+                        self.DeclareDiscreteState(BasicVector_[T](num_states))
 
             for index in range(3):
                 system = TrivialSystem(index)
                 context = system.CreateDefaultContext()
-                self.assertEqual(
-                    context.get_discrete_state(0).size(), 3)
+                self.assertEqual(context.get_discrete_state(0).size(), 3)
                 self.assertEqual(system.AllocateDiscreteVariables().size(), 3)
 
     def test_abstract_io_port(self):
-
         def assert_value_equal(a, b):
             a_name, a_value = a
             b_name, b_value = b
@@ -1028,31 +1118,34 @@ class TestCustom(unittest.TestCase):
 
         # N.B. Since this has trivial operations, we can test all scalar types.
         for T in [float, AutoDiffXd, Expression]:
-            default_value = ("default", T(0.))
+            default_value = ("default", T(0.0))
             expected_input_value = ("input", T(np.pi))
-            expected_output_value = ("output", 2*T(np.pi))
+            expected_output_value = ("output", 2 * T(np.pi))
 
             class CustomAbstractSystem(LeafSystem_[T]):
                 def __init__(self):
                     LeafSystem_[T].__init__(self)
                     self.input_port = self.DeclareAbstractInputPort(
-                        "in", Value(default_value))
+                        "in", Value(default_value)
+                    )
                     self.output_port = self.DeclareAbstractOutputPort(
                         "out",
                         lambda: Value(default_value),
                         self.DoCalcAbstractOutput,
-                        prerequisites_of_calc=set([
-                            self.input_port.ticket()]))
+                        prerequisites_of_calc=set([self.input_port.ticket()]),
+                    )
 
                 def DoCalcAbstractOutput(self, context, y_data):
                     input_value = self.EvalAbstractInput(
-                        context=context, port_index=0).get_value()
+                        context=context, port_index=0
+                    ).get_value()
                     # The allocator function will populate the output with
                     # the "input"
                     assert_value_equal(input_value, expected_input_value)
                     y_data.set_value(expected_output_value)
                     assert_value_equal(
-                        y_data.get_value(), expected_output_value)
+                        y_data.get_value(), expected_output_value
+                    )
 
             system = CustomAbstractSystem()
             context = system.CreateDefaultContext()

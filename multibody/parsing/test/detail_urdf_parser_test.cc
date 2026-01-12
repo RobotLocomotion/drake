@@ -1502,15 +1502,17 @@ template <typename ShapeType>
     const std::string_view shape_type =
         inspector.GetShape(geometry_id).type_name();
     if (shape_type != name) {
-      return ::testing::AssertionFailure()
-             << "Geometry with role " << role << " has wrong shape type."
-             << "\nExpected: " << name << "\nFound: " << shape_type;
+      return ::testing::AssertionFailure() << fmt::format(
+                 "Geometry with role {} has wrong shape type.\n"
+                 "  Expected: {}\n"
+                 "  Found: {}",
+                 role, name, shape_type);
     }
   } catch (const std::exception& e) {
-    return ::testing::AssertionFailure()
-           << "Frame " << frame_id << " does not have a geometry with role "
-           << role << " and name " << name
-           << ".\n  Exception message: " << e.what();
+    return ::testing::AssertionFailure() << fmt::format(
+               "Frame {} does not have a geometry with role {} and name {}.\n"
+               "  Exception message: {}",
+               frame_id, role, name, e.what());
   }
   return ::testing::AssertionSuccess();
 }

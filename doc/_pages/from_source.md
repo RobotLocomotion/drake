@@ -37,7 +37,7 @@ officially supports when building from source:
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.4   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.4   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sequoia (15)                 | arm64        | 3.13       | 8.4   | 4.1   | Apple LLVM 17 (Xcode 26.0)   | OpenJDK 23 |
+| macOS Sequoia (15)                 | arm64        | 3.14       | 8.4   | 4.1   | Apple LLVM 17 (Xcode 26.0)   | OpenJDK 23 |
 | macOS Tahoe (26) ⁽⁴⁾               | arm64        | TBD        | TBD   | TBD   | TBD                          | TBD        |
 
 "Official support" means that we have Continuous Integration test coverage to
@@ -185,12 +185,23 @@ Adjusting open-source dependencies:
   library will be not installed alongside Drake. See  `DrakeLcm::available()` to
   retrieve this setting at runtime.
   * This option cannot be `ON` with `BUILD_SHARED_LIBS=OFF`.
+* `WITH_RENDER_GL` (default `ON`). When `ON`, enables the `RenderEngineGl` in
+  the build. See `geometry::kHasRenderEngineGl` to retrieve this setting at
+  runtime.
+  * This option is not available on macOS; `geometry::kHasRenderEngineGl` will
+    always be false.
+* `WITH_RENDER_GLTF_CLIENT` (default `ON`). When `ON`, enables the
+  `RenderEngineGltfClient` in the build. See
+  `geometry::kHasRenderEngineGltfClient` to retrieve this setting at runtime.
+* `WITH_RENDER_VTK` (default `ON`). When `ON`, enables the `RenderEngineVtk` in
+  the build. See `geometry::kHasRenderEngineVtk` to retrieve this setting at
+  runtime.
 
 Adjusting closed-source (commercial) software dependencies:
 
 * `WITH_GUROBI` (default `OFF`).
   When `ON`, enables the `GurobiSolver` in the build.
-  * When enabled, you must download and install Gurobi 10.0 yourself prior to
+  * When enabled, you must download and install Gurobi 12.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
     download Gurobi. If Gurobi is not installed to its standard location, you
     must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
@@ -261,7 +272,7 @@ export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 
 ```bash
 cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.13/site-packages:${PYTHONPATH}
+export PYTHONPATH=${PWD}/install/lib/python3.14/site-packages:${PYTHONPATH}
 ```
 
 # Building with Bazel

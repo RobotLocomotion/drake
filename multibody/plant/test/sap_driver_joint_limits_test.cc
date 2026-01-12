@@ -348,11 +348,12 @@ TEST_F(KukaIiwaArmTests, CalcLinearDynamicsMatrix) {
       SapDriverTest::CalcLinearDynamicsMatrix(sap_driver(), *context_);
   const int nv = plant_.num_velocities();
   MatrixXd Adense = MatrixXd::Zero(nv, nv);
-  const MultibodyTreeTopology& topology =
-      CompliantContactManagerTester::topology(*manager_);
-  for (TreeIndex t(0); t < topology.num_trees(); ++t) {
-    const int tree_start = topology.tree_velocities_start_in_v(t);
-    const int tree_nv = topology.num_tree_velocities(t);
+  const SpanningForest& forest =
+      CompliantContactManagerTester::get_forest(*manager_);
+  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
+    const SpanningForest::Tree& tree = forest.trees(t);
+    const int tree_start = tree.v_start();
+    const int tree_nv = tree.nv();
     Adense.block(tree_start, tree_start, tree_nv, tree_nv) = A[t];
   }
   const MatrixXd Aexpected =
@@ -402,7 +403,7 @@ TEST_F(KukaIiwaArmTests, CalcAccelerationKinematicsCache) {
   // Verify CompliantContactManager loads the acceleration kinematics with the
   // proper results.
   AccelerationKinematicsCache<double> ac(
-      CompliantContactManagerTester::forest(*manager_));
+      CompliantContactManagerTester::get_forest(*manager_));
   manager_->CalcAccelerationKinematicsCache(*context_, &ac);
   EXPECT_TRUE(CompareMatrices(ac.get_vdot(), a_expected));
   for (BodyIndex b(0); b < plant_.num_bodies(); ++b) {

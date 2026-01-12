@@ -155,6 +155,7 @@ cc_library(
     hdrs = _PUBLIC_HDRS,
     srcs = _SRCS + _PRIVATE_HDRS,
     includes = ["libtiff"],
+    isystem = True,
     copts = [
         "-fvisibility=hidden",
         "-w",
@@ -171,3 +172,5 @@ install(
     docs = ["LICENSE.md"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

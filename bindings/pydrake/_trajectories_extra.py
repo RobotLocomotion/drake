@@ -2,6 +2,8 @@
 
 from pydrake.common import (
     _MangledName,
+)
+from pydrake.common import (
     pretty_class_name as _pretty_class_name,
 )
 
@@ -11,7 +13,8 @@ def __getattr__(name):
     compatibility with unpickling.
     """
     return _MangledName.module_getattr(
-        module_name=__name__, module_globals=globals(), name=name)
+        module_name=__name__, module_globals=globals(), name=name
+    )
 
 
 def _wrapped_trajectory_repr(wrapped_trajectory):

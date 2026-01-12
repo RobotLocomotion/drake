@@ -38,6 +38,7 @@ cc_library(
         "include",
         "linsys",
     ],
+    isystem = True,
     copts = [
         "-fvisibility=hidden",
         "-w",
@@ -63,3 +64,5 @@ install(
     name = "install",
     docs = ["LICENSE.txt"],
 )
+
+exports_files(["drake_repository_metadata.json"])

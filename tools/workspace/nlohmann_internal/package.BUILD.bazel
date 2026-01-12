@@ -14,6 +14,7 @@ cc_library(
         "single_include/nlohmann/json_fwd.hpp",
     ],
     strip_include_prefix = "single_include",
+    isystem = True,
     defines = [
         # The nlohmann/json code has logic that tries to infer whether or not
         # the compiler toolchain supports the spaceship operator (<=>).
@@ -32,3 +33,5 @@ install(
     name = "install",
     docs = ["LICENSE.MIT"],
 )
+
+exports_files(["drake_repository_metadata.json"])

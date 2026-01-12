@@ -5,19 +5,17 @@ load(
     "drake_py_unittest",
 )
 
-# TODO(jwnimmer-tri) These tests are no longer relevant for Drake, but are kept
-# around as regression coverage of our `package.BUILD.bazel` file. This file
-# (and its tests) will be removed when the `@lcm` deprecation is removed.
+# Remove everything here on 2026-02-01 along with LCM deprecation.
 
 drake_py_test(
     name = "import_lcm_test",
     allow_import_unittest = True,
-    deps = ["@lcm//:lcm-python"],
+    deps = ["@lcm//:lcm-python_non_deprecated"],
 )
 
 drake_py_unittest(
     name = "no_lcm_warnings_test",
-    deps = ["@lcm//:lcm-python"],
+    deps = ["@lcm//:lcm-python_non_deprecated"],
 )
 
 add_lint_tests()

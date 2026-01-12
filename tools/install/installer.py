@@ -19,7 +19,7 @@ from pathlib import Path
 import re
 import shutil
 import stat
-from subprocess import check_output, check_call
+from subprocess import check_call, check_output
 import sys
 
 from python import runfiles

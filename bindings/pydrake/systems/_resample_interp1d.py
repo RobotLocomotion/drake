@@ -89,7 +89,7 @@ def _resample_interp1d(t, x, time_step):
     t_hi = t_copy[hi_indices]
 
     # Resample data.
-    x_axis = (axis % x_copy.ndim)
+    x_axis = axis % x_copy.ndim
     xi = np.moveaxis(np.asarray(x_copy), x_axis, 0)
     xi = xi.reshape((xi.shape[0], -1))
     xi_lo = xi[lo_indices]
@@ -98,13 +98,16 @@ def _resample_interp1d(t, x, time_step):
     # Perform the linear interpolation.
     slope = (xi_hi - xi_lo) / (t_hi - t_lo)[:, None]
     xi_new = slope * (t_resample - t_lo)[:, None] + xi_lo
-    x_extra_shape = x_copy.shape[:x_axis] + x_copy.shape[x_axis+1:]
+    x_extra_shape = x_copy.shape[:x_axis] + x_copy.shape[x_axis + 1 :]
     x_final = xi_new.reshape(t_resample.shape + x_extra_shape)
     if x_axis != 0 and t_resample.shape != ():
         nx = len(t_resample.shape)
         ny = len(x_extra_shape)
-        s = (list(range(nx, nx + x_axis))
-             + list(range(nx)) + list(range(nx+x_axis, nx+ny)))
+        s = (
+            list(range(nx, nx + x_axis))
+            + list(range(nx))
+            + list(range(nx + x_axis, nx + ny))
+        )
         x_final = x_final.transpose(s)
 
     return t_resample, x_final

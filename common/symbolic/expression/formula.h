@@ -533,6 +533,12 @@ template <
                        Formula>>>
 struct RelationalOpTraits {
   static constexpr auto Dynamic = Eigen::Dynamic;
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+  static constexpr int Rows = Eigen::internal::min_size_prefer_fixed(
+      DerivedA::RowsAtCompileTime, DerivedB::RowsAtCompileTime);
+  static constexpr int Cols = Eigen::internal::min_size_prefer_fixed(
+      DerivedA::ColsAtCompileTime, DerivedB::ColsAtCompileTime);
+#else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
   static constexpr int Rows = EIGEN_SIZE_MIN_PREFER_FIXED(
@@ -540,6 +546,7 @@ struct RelationalOpTraits {
   static constexpr int Cols = EIGEN_SIZE_MIN_PREFER_FIXED(
       (DerivedA::ColsAtCompileTime), (DerivedB::ColsAtCompileTime));
 #pragma GCC diagnostic pop
+#endif  // EIGEN_VERSION_AT_LEAST
   using ReturnType = Eigen::Array<Formula, Rows, Cols>;
 };
 /// Returns @p f1 ∧ @p f2.
@@ -1189,10 +1196,74 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Formula>
     : GenericNumTraits<drake::symbolic::Formula> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 namespace internal {
+
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+template <>
+struct cast_impl<drake::symbolic::Formula, bool> {
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool run(
+      const drake::symbolic::Formula& x) {
+    return bool{x};
+  }
+};
+
+/// Provides specialization for max_coeff_functor for Expression.
+template <>
+struct max_coeff_functor<drake::symbolic::Expression, PropagateFast, false> {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool compareCoeff(
+      const drake::symbolic::Expression& incumbent,
+      const drake::symbolic::Expression& candidate) const {
+    return bool{candidate > incumbent};
+  }
+};
+template <>
+struct max_coeff_functor<drake::symbolic::Expression, PropagateNaN, false> {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool compareCoeff(
+      const drake::symbolic::Expression& incumbent,
+      const drake::symbolic::Expression& candidate) const {
+    return bool{candidate > incumbent};
+  }
+};
+template <>
+struct max_coeff_functor<drake::symbolic::Expression, PropagateNumbers, false> {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool compareCoeff(
+      const drake::symbolic::Expression& incumbent,
+      const drake::symbolic::Expression& candidate) const {
+    return bool{candidate > incumbent};
+  }
+};
+
+/// Provides specialization for min_coeff_functor for Expression.
+template <>
+struct min_coeff_functor<drake::symbolic::Expression, PropagateFast, false> {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool compareCoeff(
+      const drake::symbolic::Expression& incumbent,
+      const drake::symbolic::Expression& candidate) const {
+    return bool{candidate < incumbent};
+  }
+};
+template <>
+struct min_coeff_functor<drake::symbolic::Expression, PropagateNaN, false> {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool compareCoeff(
+      const drake::symbolic::Expression& incumbent,
+      const drake::symbolic::Expression& candidate) const {
+    return bool{candidate < incumbent};
+  }
+};
+template <>
+struct min_coeff_functor<drake::symbolic::Expression, PropagateNumbers, false> {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool compareCoeff(
+      const drake::symbolic::Expression& incumbent,
+      const drake::symbolic::Expression& candidate) const {
+    return bool{candidate < incumbent};
+  }
+};
+#endif  // EIGEN_VERSION_AT_LEAST
 
 /// Provides specialization for scalar_cmp_op to handle the case "Expr == Expr"
 template <>
@@ -1273,6 +1344,7 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
 };
 
 #if EIGEN_VERSION_AT_LEAST(3, 4, 90)
+#if !EIGEN_VERSION_AT_LEAST(5, 0, 0)
 // Provides specialization for minmax_compare to handle the case "Expr < Expr".
 // This is needed for the trunk versions of Eigen (i.e., anticipating 3.5.x).
 template <int NaNPropagation>
@@ -1292,6 +1364,7 @@ struct minmax_compare<drake::symbolic::Expression, NaNPropagation, false> {
     return static_cast<bool>(a > b);
   }
 };
+#endif  // EIGEN_VERSION_AT_LEAST
 #endif  // EIGEN_VERSION_AT_LEAST
 
 /// Provides specialization for scalar_cmp_op to handle the case "Var == Var".

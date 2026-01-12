@@ -52,6 +52,15 @@ build --config=packaging
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 EOF
 
+# See tools/wheel/image/build-drake.sh for details on the lack of MOSEK support
+# for Python 3.14.
+PYTHON_MINOR=$($python_executable -c "import sys; print(sys.version_info.minor)")
+if [[ ${PYTHON_MINOR} -ge 14 ]]; then
+    cat >> "$build_root/drake.bazelrc" << EOF
+build --@drake//tools/flags:with_mosek=False
+EOF
+fi
+
 # Install Drake.
 # N.B. When you change anything here, also fix wheel/image/build-drake.sh.
 cmake "$git_root" \

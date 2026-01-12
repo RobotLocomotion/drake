@@ -23,7 +23,12 @@ never returns back to being zero-sized (unless the Partials is moved-from).
 In particular, note that the result of a binary operation takes on the size from
 either operand, e.g., foo.Add(bar) with foo.size() == 0 and bar.size() == 4 will
 will result in foo.size() == 4 after the addition, and that's true even if bar's
-vector was all zeros. */
+vector was all zeros.
+
+When a scale factor is applied to a Partials object (e.g., with Mul, Div, or
+AddScaled), any zero values will remain zero, even if the factor is ±∞ or NaN.
+We treat them as "missing" (i.e., sparse), not IEEE zero, so multiplication by
+non-finite numbers is still well-defined. */
 class Partials {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Partials);
@@ -56,10 +61,10 @@ class Partials {
   void SetZero() { derivatives_.setZero(); }
 
   /* Scales this vector by the given amount. */
-  void Mul(double factor) { derivatives_ *= factor; }
+  void Mul(double factor);
 
   /* Scales this vector by the reciprocal of the given amount. */
-  void Div(double factor) { derivatives_ /= factor; }
+  void Div(double factor);
 
   /* Adds `other` into `this`. */
   void Add(const Partials& other);

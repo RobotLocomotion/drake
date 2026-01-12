@@ -62,6 +62,9 @@ void EulerIntegrationEvalGeneric(bool allow_quaternion_negation,
 }
 }  // namespace
 
+QuaternionEulerIntegrationConstraint::~QuaternionEulerIntegrationConstraint() =
+    default;
+
 QuaternionEulerIntegrationConstraint::QuaternionEulerIntegrationConstraint(
     bool allow_quaternion_negation)
     : solvers::Constraint(1, 12, Vector1d::Ones(), Vector1d::Ones()),

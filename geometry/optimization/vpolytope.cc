@@ -668,10 +668,15 @@ VPolytope::DoToShapeWithPose() const {
 std::unique_ptr<ConvexSet> VPolytope::DoAffineHullShortcut(
     std::optional<double> tol) const {
   DRAKE_THROW_UNLESS(vertices_.size() > 0);
-  Eigen::JacobiSVD<MatrixXd> svd;
   MatrixXd centered_points =
       vertices_.rightCols(vertices_.cols() - 1).colwise() - vertices_.col(0);
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+  Eigen::JacobiSVD<MatrixXd, Eigen::DecompositionOptions::ComputeThinU> svd;
+  svd.compute(centered_points);
+#else
+  Eigen::JacobiSVD<MatrixXd> svd;
   svd.compute(centered_points, Eigen::DecompositionOptions::ComputeThinU);
+#endif
   if (tol) {
     svd.setThreshold(tol.value());
   }

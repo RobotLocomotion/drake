@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -14,7 +13,6 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -356,6 +354,10 @@ class Mobilizer : public MultibodyElement<T> {
   // Ignoring joint limits, this means this mobilizer can represent any pose
   // and any spatial velocity to machine precision.
   bool has_six_dofs() const { return num_velocities() == 6; }
+
+  bool is_floating_base_mobilizer() const {
+    return is_floating_base_mobilizer_;
+  }
 
   // Returns `true` if `this` uses a quaternion parameterization of rotations.
   virtual bool has_quaternion_dofs() const { return false; }
@@ -798,6 +800,10 @@ class Mobilizer : public MultibodyElement<T> {
         is_locked_parameter_index_);
   }
 
+  void set_is_floating_base_mobilizer(bool is_floating) {
+    is_floating_base_mobilizer_ = is_floating;
+  }
+
  protected:
   // NVI to CalcNMatrix(). Implementations can safely assume that N is not the
   // nullptr and that N has the proper size.
@@ -894,9 +900,7 @@ class Mobilizer : public MultibodyElement<T> {
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().
-  // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
-  // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology&) final {
+  void DoSetTopology() final {
     // Mobod provides topology info at construction.
   }
 
@@ -907,6 +911,13 @@ class Mobilizer : public MultibodyElement<T> {
   // System parameter index for `this` mobilizer's lock state stored in a
   // context.
   systems::AbstractParameterIndex is_locked_parameter_index_;
+
+  // Set according to the policy that defines a "floating base body". See
+  // MultibodyTree::CreateJointImplementations() which enforces that policy.
+  // (We define a floating base body as one for which we automatically added
+  // a 6-dof joint to connect it directly to World; a floating base mobilizer
+  // is the mobilizer implementing that joint.)
+  bool is_floating_base_mobilizer_{false};
 };
 
 }  // namespace internal

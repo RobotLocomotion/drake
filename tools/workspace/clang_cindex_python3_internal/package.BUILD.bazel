@@ -13,3 +13,5 @@ py_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

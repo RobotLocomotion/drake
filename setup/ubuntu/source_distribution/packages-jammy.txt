@@ -5,7 +5,6 @@ libglib2.0-dev
 libglx-dev
 liblapack-dev
 libopengl-dev
-libx11-dev
 ocl-icd-opencl-dev
 opencl-headers
 patch

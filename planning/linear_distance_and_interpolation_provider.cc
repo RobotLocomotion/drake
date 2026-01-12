@@ -5,7 +5,7 @@
 #include <common_robotics_utilities/math.hpp>
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 
 namespace drake {

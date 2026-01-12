@@ -68,5 +68,4 @@ add_lint_tests(
         "kcoverage.py",
         "kcov_tool",
     ],
-    python_lint_use_ruff_format = False,
 )

@@ -5,14 +5,21 @@ keep Drake's pin of QDLDL aligned with what Drake's pin of OSQP desires.  (SCS
 tends to use stale copies of QDLDL and we can't really be expected to stick
 with those old versions just for the sake of SCS.)
 
-For example, if Drake pinned OSQP to commit = "v0.4.1" then look at
-https://github.com/osqp/osqp/tree/v0.4.1/lin_sys/direct/qdldl
-which shows that OSQP 0.4.1 prefers a pin of 7ab0fca for QDLDL.
+For example, if Drake pinned OSQP to commit = "v1.0.0" then look at OSQP
+1.0.0's
+[qdldl.cmake](https://github.com/osqp/osqp/blob/v1.0.0/algebra/_common/lin_sys/qdldl/qdldl.cmake).
+recipe, where you should encounter a stanza that resembles the following...
 
-Looking at https://github.com/osqp/qdldl/commit/7ab0fca we see that it was
-approximately the 0.1.3 release.  (The actual v0.1.3 release tag on QDLDL is on
-the merge commit of 7ab0fca onto master.)  So, Drake should ideally pin QDLDL
-commit = "v0.1.3".
+```cmake
+FetchContent_Declare(
+  qdldl
+  GIT_REPOSITORY https://github.com/osqp/qdldl.git
+  GIT_TAG v0.1.8
+  )
+```
+
+...which shows that OSQP 1.0.0 fetches v0.1.8 for QDLDL. So, Drake should
+ideally pin QDLDL commit = "v0.1.8".
 
 Given the potential interactions of QDLDL, OSQP, and SCS it may not be possible
 to keep all of the versions aligned perfectly.  When in doubt, prefer to use

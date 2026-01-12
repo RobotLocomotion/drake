@@ -45,7 +45,6 @@
 // #include "drake/multibody/tree/multibody_tree.h"
 // #include "drake/multibody/tree/multibody_tree_indexes.h"
 // #include "drake/multibody/tree/multibody_tree_system.h"
-// #include "drake/multibody/tree/multibody_tree_topology.h"
 // #include "drake/multibody/tree/parameter_conversion.h"
 // #include "drake/multibody/tree/planar_joint.h"
 // #include "drake/multibody/tree/planar_mobilizer.h"
@@ -2174,7 +2173,7 @@ method computes the pose ``X_BQ`` of frame Q in the body frame B to
 which this frame is attached. In other words, if the pose of ``this``
 frame F in the body frame B is ``X_BF``, this method computes the pose
 ``X_BQ`` of frame Q in the body frame B as ``X_BQ = X_BF * X_FQ``. In
-particular, if ``this`` **is**` the body frame B, i.e. ``X_BF`` is the
+particular, if ``this`` **is** the body frame B, i.e. ``X_BF`` is the
 identity transformation, this method directly returns ``X_FQ``.
 Specific frame subclasses can override this method to provide faster
 implementations if needed.)""";
@@ -4202,9 +4201,8 @@ Note:
           const char* doc =
 R"""(Returns the index to the first element for this joint actuator /
 within the vector of actuation inputs for the full multibody / system.
-
-Raises:
-    RuntimeError if the MultibodyTree model is not finalized.)""";
+Returns -1 if this JointActuator hasn't been added to a
+MultibodyPlant.)""";
         } input_start;
         // Symbol: drake::multibody::JointActuator::joint
         struct /* joint */ {
@@ -4225,10 +4223,8 @@ Raises:
         struct /* num_inputs */ {
           // Source: drake/multibody/tree/joint_actuator.h
           const char* doc =
-R"""(Returns the number of inputs associated with this actuator.
-
-Raises:
-    RuntimeError if the MultibodyTree model is not finalized.)""";
+R"""(Returns the number of inputs associated with this actuator. This is
+always the number of degrees of freedom of the actuated joint.)""";
         } num_inputs;
         // Symbol: drake::multibody::JointActuator::rotor_inertia
         struct /* rotor_inertia */ {
@@ -4272,6 +4268,11 @@ Raises:
     RuntimeError if ``u.size() !=
     this->GetParentPlant().num_actuated_dofs()``.)""";
         } set_actuation_vector;
+        // Symbol: drake::multibody::JointActuator::set_actuator_dof_start
+        struct /* set_actuator_dof_start */ {
+          // Source: drake/multibody/tree/joint_actuator.h
+          const char* doc = R"""()""";
+        } set_actuator_dof_start;
         // Symbol: drake::multibody::JointActuator::set_controller_gains
         struct /* set_controller_gains */ {
           // Source: drake/multibody/tree/joint_actuator.h
@@ -5312,9 +5313,10 @@ Precondition:
         struct /* SetTopology */ {
           // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
-R"""(Gives MultibodyElement-derived objects the opportunity to retrieve
-their topology after MultibodyTree::Finalize() is invoked. NVI to pure
-virtual method DoSetTopology().)""";
+R"""((Internal use only) Gives MultibodyElement-derived objects the
+opportunity to set data members that depend on topology and coordinate
+assignments having been finalized. This is invoked at the end of
+MultibodyTree::Finalize(). NVI to pure virtual method DoSetTopology().)""";
         } SetTopology;
         // Symbol: drake::multibody::MultibodyElement::get_parent_tree
         struct /* get_parent_tree */ {

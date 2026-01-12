@@ -463,6 +463,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("params"), py_rvp::take_ownership,
       doc_vtk.MakeRenderEngineVtk.doc);
 
+  m.attr("kHasRenderEngineVtk") = kHasRenderEngineVtk;
+
   {
     using Class = RenderEngineGlParams;
     constexpr auto& cls_doc = doc_gl.RenderEngineGlParams;
@@ -490,6 +492,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       },
       py::arg("params") = RenderEngineGlParams(), py_rvp::take_ownership,
       doc_gl.MakeRenderEngineGl.doc);
+
+  m.attr("kHasRenderEngineGl") = kHasRenderEngineGl;
 
   {
     using Class = RenderEngineGltfClientParams;
@@ -521,6 +525,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py_rvp::take_ownership, doc_gltf_client.MakeRenderEngineGltfClient.doc);
 
   AddValueInstantiation<RenderLabel>(m);
+
+  m.attr("kHasRenderEngineGltfClient") = kHasRenderEngineGltfClient;
 }
 }  // namespace
 

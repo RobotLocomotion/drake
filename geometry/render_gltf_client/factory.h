@@ -8,6 +8,9 @@
 namespace drake {
 namespace geometry {
 
+/** Reports the availability of the RenderEngineGltfClient implementation. */
+extern const bool kHasRenderEngineGltfClient;
+
 /** Constructs a RenderEngine implementation which generates
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> files to upload to a render server, and retrieves renderings from said
@@ -64,6 +67,9 @@ namespace geometry {
       // Now that libcurl has been re-initialized to suit your application's
       // needs, you may now create threads if desired.
       @endcode
+
+ @throws std::exception if kHasRenderEngineGltfClient is false, or if disabled
+ via the environment variable DRAKE_ALLOW_NETWORK.
 
  [libcurl]: https://curl.se/libcurl/
  [libcurl_threadsafe]: https://curl.se/libcurl/c/threadsafe.html

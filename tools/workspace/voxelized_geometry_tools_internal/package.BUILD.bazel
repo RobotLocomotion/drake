@@ -1,6 +1,6 @@
 # -*- bazel -*-
 
-load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:cc.bzl", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,6 +12,7 @@ cc_library(
     name = "cl_hpp",
     hdrs = ["include/voxelized_geometry_tools/cl.hpp"],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = ["@opencl"],
 )
@@ -19,24 +20,31 @@ cc_library(
 cc_library(
     name = "voxelized_geometry_tools",
     srcs = [
-        "src/voxelized_geometry_tools/collision_map.cpp",
-        "src/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.cpp",
+        "src/voxelized_geometry_tools/dynamic_spatial_hashed_occupancy_map.cpp",
         "src/voxelized_geometry_tools/mesh_rasterizer.cpp",
+        "src/voxelized_geometry_tools/occupancy_component_map.cpp",
+        "src/voxelized_geometry_tools/occupancy_map.cpp",
+        "src/voxelized_geometry_tools/occupancy_map_conversions.cpp",
         "src/voxelized_geometry_tools/signed_distance_field.cpp",
         "src/voxelized_geometry_tools/signed_distance_field_generation.cpp",  # noqa
-        "src/voxelized_geometry_tools/tagged_object_collision_map.cpp",
+        "src/voxelized_geometry_tools/tagged_object_occupancy_component_map.cpp",  # noqa
+        "src/voxelized_geometry_tools/tagged_object_occupancy_map.cpp",
     ],
     hdrs = [
-        "include/voxelized_geometry_tools/collision_map.hpp",
-        "include/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.hpp",  # noqa
+        "include/voxelized_geometry_tools/dynamic_spatial_hashed_occupancy_map.hpp",  # noqa
         "include/voxelized_geometry_tools/mesh_rasterizer.hpp",
+        "include/voxelized_geometry_tools/occupancy_component_map.hpp",
+        "include/voxelized_geometry_tools/occupancy_map.hpp",
+        "include/voxelized_geometry_tools/occupancy_map_conversions.hpp",
         "include/voxelized_geometry_tools/signed_distance_field.hpp",
         "include/voxelized_geometry_tools/signed_distance_field_generation.hpp",
-        "include/voxelized_geometry_tools/tagged_object_collision_map.hpp",
+        "include/voxelized_geometry_tools/tagged_object_occupancy_component_map.hpp",  # noqa
+        "include/voxelized_geometry_tools/tagged_object_occupancy_map.hpp",
         "include/voxelized_geometry_tools/topology_computation.hpp",
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -59,6 +67,7 @@ cc_library(
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -77,6 +86,7 @@ cc_library(
         "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":cl_hpp",
@@ -102,6 +112,7 @@ cc_library(
         "include/voxelized_geometry_tools/pointcloud_voxelization_interface.hpp",  # noqa
     ],
     includes = ["include"],
+    isystem = True,
     linkstatic = True,
     deps = [
         ":voxelized_geometry_tools",
@@ -148,6 +159,17 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "occupancy_map_conversions_test",
+    srcs = ["test/occupancy_map_conversions_test.cpp"],
+    tags = ["no_kcov"],
+    deps = [
+        ":voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@googletest//:gtest",
+    ],
+)
+
 # N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "sdf_generation_test",
@@ -172,3 +194,5 @@ test_suite(
         ":sdf_generation_test",
     ],
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -8,21 +8,22 @@ lifetime of objects, eventually lock down capabilities as they are introduced.
 
 import gc
 import unittest
+
 import numpy as np
 
 from pydrake.systems.analysis import (
     Simulator,
-    )
+)
 from pydrake.systems.framework import (
     DiagramBuilder,
-    )
+)
 from pydrake.systems.primitives import (
     Adder,
-    )
+)
 from pydrake.systems.test.test_util import (
     DeleteListenerSystem,
     DeleteListenerVector,
-    )
+)
 
 
 class Info:
@@ -113,6 +114,6 @@ class TestLifetime(unittest.TestCase):
         self.assertTrue(vector is not None)
         # Ensure that we do not get segfault behavior when accessing / mutating
         # the values.
-        self.assertTrue(np.allclose(vector.get_value(), [0.]))
-        vector.get_mutable_value()[:] = [10.]
-        self.assertTrue(np.allclose(vector.get_value(), [10.]))
+        self.assertTrue(np.allclose(vector.get_value(), [0.0]))
+        vector.get_mutable_value()[:] = [10.0]
+        self.assertTrue(np.allclose(vector.get_value(), [10.0]))

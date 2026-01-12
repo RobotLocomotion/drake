@@ -11,6 +11,7 @@ from pydrake.systems.framework import DiagramBuilder, System
 class PortMonitor:
     """Mock-up of some bespoke user code that would monitor ports during a
     simulation."""
+
     system: System | None = None
     ports: list | None = None
 
@@ -26,9 +27,8 @@ def _create_port_monitor_diagram(system, ports):
 
 
 def check_ports_lifetime_hazard(
-        test: unittest.TestCase,
-        dut: list[System],
-        ports: list):
+    test: unittest.TestCase, dut: list[System], ports: list
+):
     """Checks that the list of 'ports', when stored as metadata associated with
     a Diagram, does not interfere with garbage collection.
 

@@ -2,10 +2,11 @@
 Uploads Drake release artifacts.
 
 This is intended for use by Drake maintainers (only).
-This program is only supported on Ubuntu Jammy 22.04.
+This program is only supported on Ubuntu Noble 24.04.
 """
 
 import argparse
+from dataclasses import dataclass, field
 import hashlib
 import json
 import os
@@ -15,19 +16,15 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-import urllib.request
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+import urllib.request
 
 import boto3
-
 import docker
-
 import github3
 from github3.repos.release import Asset, Release
 from github3.repos.repo import Repository
 from github3.repos.tag import RepoTag
-
 
 _GITHUB_REPO_OWNER = "RobotLocomotion"
 _GITHUB_REPO_NAME = "drake"

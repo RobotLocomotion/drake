@@ -156,7 +156,7 @@ output_ports:
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
-  ~Rod2D() override {}
+  ~Rod2D() override;
 
   /// System model and approach for simulating the system.
   enum class SystemType {
@@ -543,7 +543,7 @@ class Rod2D : public systems::LeafSystem<T> {
   ConstraintSolver<T> solver_;
 
   // Solves linear complementarity problems for the discretized system.
-  solvers::MobyLCPSolver<T> lcp_;
+  solvers::MobyLcpSolver lcp_;
 
   // The system type, unable to be changed after object construction.
   const SystemType system_type_;

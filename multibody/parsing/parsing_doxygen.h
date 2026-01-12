@@ -3,7 +3,7 @@
 
 /**
 @addtogroup multibody_parsing
-
+@{
 Drake's drake::multibody::Parser accepts model files written in a variety of
 input formats. Drake's parsing of URDF, SDFormat, and MJCF (Mujoco XML) has
 Drake-specific extensions and limitations.
@@ -1495,8 +1495,8 @@ The nested elements are:
   nz components). The normal vector is automatically normalized to unit length.
 
 Multiple `drake:wall_boundary_condition` elements can be specified for a single
-deformable link to define multiple boundary conditions. This element is only 
-valid for deformable links (those containing a `drake:deformable_properties` 
+deformable link to define multiple boundary conditions. This element is only
+valid for deformable links (those containing a `drake:deformable_properties`
 element).
 
 @see @ref tag_deformable_link_requirements,
@@ -1512,5 +1512,5 @@ drake::multibody::DeformableModel::SetWallBoundaryCondition()
 
 If present, this element provides a value (with unit `Pa(N/m²)`) for the Young's
 modulus for the deformable body.
-
+@}
 */

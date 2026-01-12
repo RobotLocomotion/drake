@@ -1,0 +1,14 @@
+# Imagine a cube, centered on the origin with edge length of two meters. This
+# mesh is simply the top and bottom faces with their normals pointing *towards*
+# each other.
+v -1.000000 1.000000 -1.000000
+v -1.000000 -1.000000 -1.000000
+v 1.000000 -1.000000 -1.000000
+v 1.000000 1.000000 -1.000000
+v 1.000000 -1.000000 1.000000
+v -1.000000 -1.000000 1.000000
+v -1.000000 1.000000 1.000000
+v 1.000000 1.000000 1.000000
+
+f 1 2 3 4
+f 5 6 7 8

@@ -590,10 +590,12 @@ const char* kBadMatrixInversion =
 // Note that in 1) Matrix<Expression>::inverse() is called while in 2)
 // Matrix<double>::inverse() is used.
 // Also show that it fails for matrices larger than 4x4 and any
-// dynamically-sized matrix.
+// dynamically-sized matrix with size > 1.
 template <int N>
 void CheckSymbolicMatrixInversion() {
-  drake::log()->debug("CheckSymbolicMatrixInversion<{}>()", N);
+  SCOPED_TRACE(fmt::format("CheckSymbolicMatrixInversion<{}>()", N));
+
+  // Statically sized.
   const Eigen::Matrix<Variable, N, N> Mvar = MakeMatrixVariable(N, N);
   const Eigen::Matrix<Expression, N, N> M = Mvar;
   const Eigen::Matrix<Expression, N, N> Minv = M.inverse();
@@ -604,9 +606,18 @@ void CheckSymbolicMatrixInversion() {
   }
   EXPECT_TRUE(CompareMatrices(Substitute(Minv, subst),
                               Substitute(M, subst).inverse(), 1e-10));
-  // Show that the dynamically-sized variant fails.
-  const MatrixX<Expression> Mdyn = M;
-  DRAKE_EXPECT_THROWS_MESSAGE(Mdyn.inverse().eval(), kBadMatrixInversion);
+
+  // Dynamically sized.
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+  constexpr bool expect_failure = (N > 1);
+#else
+  constexpr bool expect_failure = true;
+#endif
+  if constexpr (expect_failure) {
+    const MatrixX<Expression> Mdyn = M;
+    DRAKE_EXPECT_THROWS_MESSAGE(Substitute(Mdyn.inverse(), subst),
+                                kBadMatrixInversion);
+  }
 }
 
 // Positive tests for symbolic inversion of 1x1, 2x2, 3x3, and 4x4 matrices.

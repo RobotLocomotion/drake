@@ -240,6 +240,9 @@ drake_py_unittest(
         "@drake_models//:manipulation_station",
         "@drake_models//:wsg_50_description",
     ],
+    deps = [
+        "//bindings/pydrake",
+    ],
 )
 
 add_lint_tests_pydrake(
@@ -248,5 +251,4 @@ add_lint_tests_pydrake(
         "run_installed_model_visualizer.py",
         "test/visualization_install_tests.py",
     ],
-    python_lint_use_ruff_format = False,
 )

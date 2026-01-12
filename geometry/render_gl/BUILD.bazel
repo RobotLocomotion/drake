@@ -1,18 +1,25 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
-    "drake_cc_googletest_linux_only",
     "drake_cc_library",
-    "drake_cc_library_linux_only",
     "drake_cc_package_library",
+)
+load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
+    "drake_cc_optional_library",
+    "drake_cc_variant_library",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
-# This render_gl package is only implemented on Linux.  For macOS, only the
-# factory is available and it will always throw an exception.  For Linux, the
-# factory is the sole public entry point, even though the implementation is
-# made up of several other distinct components.
+# This render_gl package is only implemented on Linux and when
+# //tools/flags:with_render_gl is True. When either of these conditions is unmet
+# (i.e., on macOS, or when the flag is False), only factory is available and it
+# will always throw an exception. When met, the factory is the sole public
+# entry point, even though the implementation is made up of several other
+# distinct components.
 #
 # Because the components are only conditionally available, and because we do
 # not want Drake's installed headers to depend on GL headers, we only install
@@ -23,6 +30,40 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
+config_setting(
+    name = "with_render_gl",
+    flag_values = {"//tools/flags:with_render_gl": "True"},
+)
+
+config_setting(
+    name = "with_render_vtk",
+    flag_values = {"//tools/flags:with_render_vtk": "True"},
+)
+
+selects.config_setting_group(
+    name = "enabled",
+    match_all = [
+        ":with_render_gl",
+        "//tools/skylark:linux",
+    ],
+)
+
+selects.config_setting_group(
+    name = "with_render_gl_or_vtk",
+    match_any = [
+        ":with_render_gl",
+        ":with_render_vtk",
+    ],
+)
+
+selects.config_setting_group(
+    name = "enable_internal_loaders",
+    match_all = [
+        ":with_render_gl_or_vtk",
+        "//tools/skylark:linux",
+    ],
+)
+
 drake_cc_package_library(
     name = "render_gl",
     visibility = ["//visibility:public"],
@@ -32,28 +73,29 @@ drake_cc_package_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "internal_loaders",
-    srcs = ["internal_loaders.cc"],
+    opt_in_condition = ":enable_internal_loaders",
+    srcs_always = [],
+    srcs_enabled = ["internal_loaders.cc"],
+    srcs_disabled = ["no_internal_loaders.cc"],
     hdrs = ["internal_loaders.h"],
     internal = True,
     visibility = [
         "//geometry/render_vtk:__pkg__",
     ],
-    deps = [
-        "//common:essential",
+    deps = [],
+    implementation_deps_always = [],
+    implementation_deps_enabled = [
         "//common:unused",
-    ] + select({
-        "@drake//tools/skylark:linux": [
-            "@vtk_internal//:vtkglad",
-            "@x11",
-        ],
-        "//conditions:default": [],
-    }),
+        "@vtk_internal//:vtkglad",
+        "@vtk_internal//:vtkx11",
+    ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_opengl_context",
+    opt_in_condition = ":enabled",
     srcs = ["internal_opengl_context.cc"],
     hdrs = [
         "internal_opengl_context.h",
@@ -64,11 +106,14 @@ drake_cc_library_linux_only(
         "//common:essential",
         "//common:scope_exit",
         "//common:unused",
+        "@vtk_internal//:vtkglad",
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_opengl_geometry",
+    opt_in_condition = ":enabled",
+    srcs = [],
     hdrs = ["internal_opengl_geometry.h"],
     deps = [
         ":internal_opengl_context",
@@ -78,8 +123,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_render_engine_gl",
+    opt_in_condition = ":enabled",
     srcs = [
         "internal_render_engine_gl.cc",
     ],
@@ -105,50 +151,21 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library(
+drake_cc_variant_library(
     name = "factory",
-    srcs = select({
-        "//tools/cc_toolchain:apple": [],
-        "//conditions:default": [
-            "factory.cc",
-        ],
-    }),
-    hdrs = [
-        "factory.h",
-    ],
-    tags = [
-        # This is linted using `extra_srcs`, below.
-        "nolint",
-    ],
+    opt_in_condition = ":enabled",
+    srcs_always = [],
+    srcs_enabled = ["factory.cc"],
+    srcs_disabled = ["no_factory.cc"],
+    hdrs = ["factory.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":render_engine_gl_params",
         "//geometry/render:render_engine",
     ],
-    implementation_deps = select({
-        "//tools/cc_toolchain:apple": [
-            ":apple_only_no_factory",
-        ],
-        "//conditions:default": [
-            ":internal_render_engine_gl",
-        ],
-    }),
-)
-
-drake_cc_library(
-    name = "apple_only_no_factory",
-    srcs = [
-        # Always compile this on every platform, to ensure it is well-formed.
-        "no_factory.cc",
-    ],
-    hdrs = [
-        "factory.h",
-    ],
-    internal = True,
-    visibility = ["//visibility:private"],
-    deps = [
-        ":render_engine_gl_params",
-        "//geometry/render:render_engine",
+    implementation_deps_always = [],
+    implementation_deps_enabled = [
+        ":internal_render_engine_gl",
     ],
 )
 
@@ -166,8 +183,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_shader_program",
+    opt_in_condition = ":enabled",
     srcs = ["internal_shader_program.cc"],
     hdrs = [
         "internal_shader_program.h",
@@ -183,8 +201,10 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_shader_program_data",
+    opt_in_condition = ":enabled",
+    srcs = [],
     hdrs = ["internal_shader_program_data.h"],
     deps = [
         "//common:copyable_unique_ptr",
@@ -193,8 +213,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_shape_meshes",
+    opt_in_condition = ":enabled",
     srcs = ["internal_shape_meshes.cc"],
     hdrs = ["internal_shape_meshes.h"],
     deps = [
@@ -207,8 +228,9 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_library_linux_only(
+drake_cc_optional_library(
     name = "internal_texture_library",
+    opt_in_condition = ":enabled",
     srcs = ["internal_texture_library.cc"],
     hdrs = ["internal_texture_library.h"],
     deps = [
@@ -225,15 +247,17 @@ drake_cc_library_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_buffer_dim_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":internal_render_engine_gl",
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_opengl_context_test",
+    opt_in_condition = "//tools/skylark:linux",
     display = True,
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
@@ -241,21 +265,15 @@ drake_cc_googletest_linux_only(
         # memcheck tests in order to make progress on related code.
         # TODO(#12962) Investigate, fix or suppress, then re-enable this test.
         "no_memcheck",
-
-        # Since migrating CI Jenkins jobs from Jammy to Noble, this test
-        # causes the newly converted ASAN jobs to fail. It also fails for Noble
-        # LSAN jobs since upgrading the provisioned images on 2025-09-01.
-        # TODO(#23107) Investigate, fix or suppress, then re-enable this test.
-        "no_asan",
-        "no_lsan",
     ],
     deps = [
         ":internal_opengl_context",
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_opengl_geometry_test",
+    opt_in_condition = "//tools/skylark:linux",
     deps = [
         ":internal_opengl_geometry",
         "//common/test_utilities:eigen_matrix_compare",
@@ -263,8 +281,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_render_engine_gl_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//examples/scene_graph:models",
         "//geometry:test_gltf_files",
@@ -293,19 +312,27 @@ drake_cc_googletest_linux_only(
 )
 
 drake_cc_googletest(
-    name = "internal_no_render_engine_gl_test",
-    args = select({
-        "//tools/cc_toolchain:linux": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
+    name = "internal_no_loaders_test",
     deps = [
-        ":factory",
+        # The ":factory_disabled" target is created by the
+        # drake_cc_variant_library(...) stanza above.
+        ":internal_loaders_disabled",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_no_render_engine_gl_test",
+    deps = [
+        # The ":factory_disabled" target is created by the
+        # drake_cc_variant_library(...) stanza above.
+        ":factory_disabled",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_shape_meshes_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -318,8 +345,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_shader_program_test",
+    opt_in_condition = "//tools/skylark:linux",
     display = True,
     tags = vtk_test_tags(),
     deps = [
@@ -331,8 +359,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "thread_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -349,14 +378,15 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "multithread_safety_test",
+    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
+    # We'd prefer this to be enabled on all //tools/skylark:linux platforms.
+    opt_in_condition = "//tools:ubuntu_jammy",
     data = [
         "//geometry/render:test_models",
     ],
     display = True,
-    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
-    enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags() + [
         # We launch up to 3 child tasks.
         "cpu:4",
@@ -373,8 +403,9 @@ drake_cc_googletest_linux_only(
     ],
 )
 
-drake_cc_googletest_linux_only(
+drake_cc_optional_googletest(
     name = "internal_texture_library_test",
+    opt_in_condition = "//tools/skylark:linux",
     data = [
         "//geometry/render:test_models",
     ],
@@ -394,10 +425,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(
-    cpplint_extra_srcs = [
-        "no_factory.cc",
-        "factory.cc",
-        "factory.h",
-    ],
-)
+add_lint_tests()

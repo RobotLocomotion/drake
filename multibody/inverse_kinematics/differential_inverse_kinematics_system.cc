@@ -26,6 +26,7 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using parsing::GetScopedFrameByName;
 using planning::CollisionChecker;
+using planning::CollisionCheckerContext;
 using planning::DofMask;
 using planning::JointLimits;
 using planning::RobotClearance;
@@ -39,6 +40,7 @@ using solvers::VectorXDecisionVariable;
 using systems::BasicVector;
 using systems::BusValue;
 using systems::Context;
+using systems::ValueProducer;
 
 using CallbackDetails = DifferentialInverseKinematicsSystem::CallbackDetails;
 using DiagonalMatrixXd = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
@@ -193,6 +195,8 @@ DifferentialInverseKinematicsSystem::CollisionConstraint::AddToProgram(
   const MultibodyPlant<double>& plant = details->collision_checker.plant();
   const Context<double>& plant_context = details->plant_context;
   const CollisionChecker& collision_checker = details->collision_checker;
+  CollisionCheckerContext& collision_checker_context =
+      details->collision_checker_context;
   const DofMask& active_dof = details->active_dof;
   const double dt = details->time_step;
   VectorXd dist;
@@ -200,8 +204,10 @@ DifferentialInverseKinematicsSystem::CollisionConstraint::AddToProgram(
   const auto& robot_position = plant.GetPositions(plant_context);
   // TODO(aditya.bhat): Would be better to share context rather than
   // maintaining separate.
-  const RobotClearance robot_clearance = collision_checker.CalcRobotClearance(
-      robot_position, config_.influence_distance);
+  const RobotClearance robot_clearance =
+      collision_checker.CalcContextRobotClearance(&collision_checker_context,
+                                                  robot_position,
+                                                  config_.influence_distance);
   if (select_data_for_collision_constraint_ != nullptr) {
     // Use the passed-in constraint filtering function.
     select_data_for_collision_constraint_(active_dof, robot_clearance, &dist,
@@ -499,6 +505,38 @@ VectorXd TrySolveQPAndFallbackToZero(const MathematicalProgram& prog,
   return VectorXd::Zero(v_next.size());
 }
 
+/* Helper class for a cache entry used as "scratch" storage, where the cache
+entry has no inputs / no invalidation, and is rather only used as temporary
+storage to be overwritten as needed by other calculation code.
+
+The challenging part here is having a shared_ptr<CollisionCheckerContext> as a
+member field. That's the type returned by CollisionChecker so we need to stick
+with it. However, we don't want shallow copy semantics: cloning a Context must
+always deep copy all of its storage. Therefore, we mark this class non-copyable
+and implement a Clone method that allocates a new context. */
+class CollisionCheckerContextHolder {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionCheckerContextHolder);
+
+  explicit CollisionCheckerContextHolder(
+      std::shared_ptr<const planning::CollisionChecker> collision_checker)
+      : collision_checker_(std::move(collision_checker)),
+        context_(collision_checker_->MakeStandaloneModelContext()) {}
+
+  std::unique_ptr<CollisionCheckerContextHolder> Clone() const {
+    return std::make_unique<CollisionCheckerContextHolder>(collision_checker_);
+  }
+
+  CollisionCheckerContext& get_mutable() const {
+    DRAKE_DEMAND(context_ != nullptr);
+    return *context_;
+  }
+
+ private:
+  const std::shared_ptr<const planning::CollisionChecker> collision_checker_;
+  std::shared_ptr<CollisionCheckerContext> context_;
+};
+
 }  // namespace
 
 /* Each value on the input port for either desired cartesian poses or desired
@@ -572,6 +610,23 @@ DifferentialInverseKinematicsSystem::DifferentialInverseKinematicsSystem(
                this->input_port_ticket(
                    get_input_port_desired_cartesian_velocities().get_index()),
                this->cache_entry_ticket(plant_context_cache_index_)})
+          .cache_index();
+
+  // Declare scratch storage for the collision checker context. We must use an
+  // AllocateCallback for the entry, because we need each Context we create to
+  // have a distinct shared_ptr in the holder. As with all "scratch" storage,
+  // there is no Calc function -- the code that uses this storage will (re)set
+  // its value as necessary during use.
+  collision_checker_context_scratch_index_ =
+      this->DeclareCacheEntry(
+              "collision_checker_context_context_scratch",
+              ValueProducer(
+                  [this]() {
+                    return AbstractValue::Make(CollisionCheckerContextHolder(
+                        this->collision_checker_));
+                  },
+                  &ValueProducer::NoopCalc),
+              {this->nothing_ticket()})
           .cache_index();
 
   output_port_index_commanded_velocity_ =
@@ -659,6 +714,11 @@ void DifferentialInverseKinematicsSystem::CalcCommandedVelocity(
   const auto& cartesian_desires =
       this->get_cache_entry(cartesian_desires_cache_index_)
           .template Eval<CartesianDesires>(context);
+  const auto& collision_checker_context_holder =
+      this->get_cache_entry(collision_checker_context_scratch_index_)
+          .template Eval<CollisionCheckerContextHolder>(context);
+  CollisionCheckerContext& collision_checker_context =
+      collision_checker_context_holder.get_mutable();
   const int num_desires = ssize(cartesian_desires.frame_list);
 
   MatrixXd Jv_TGs(kCartesianSpaceJacobianRows * num_desires,
@@ -693,6 +753,7 @@ void DifferentialInverseKinematicsSystem::CalcCommandedVelocity(
       .v_next = v_next,
       .plant_context = plant_context,
       .collision_checker = *collision_checker_,
+      .collision_checker_context = collision_checker_context,
       .active_dof = active_dof_,
       .time_step = time_step_,
       .nominal_posture = nominal_posture,

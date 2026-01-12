@@ -1,5 +1,5 @@
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load("@drake//tools/skylark:drake_cc.bzl", "cc_nolink_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load(
     "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
     "cc_whole_archive_library",

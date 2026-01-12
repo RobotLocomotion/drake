@@ -1,3 +1,4 @@
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -156,4 +157,4 @@ drake_cc_googletest(
 # sub-struct. At the moment we have no test coverage of the legacy API's
 # nesting support (_encodeNoHash, _decodeNoHash, _computeHash).
 
-add_lint_tests(python_lint_use_ruff_format = True)
+add_lint_tests()

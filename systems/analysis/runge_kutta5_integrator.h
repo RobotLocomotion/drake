@@ -13,11 +13,14 @@ namespace systems {
 // clang-format off
 /**
  A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
- with a fourth order error estimate.
+ with a fifth order error estimate. Specifically, this is an explicit
+ Runge-Kutta method of order 5(4), where the higher order estimate is meant to
+ be propagated (unlike the Fehlberg 4(5) method, where the 4th order solution is
+ meant to be propagated).
 
- For a discussion of this Runge-Kutta method, see [Dormand, 1980] and
- [Hairer, 1993]. The embedded error estimate was derived as described
- in [Hairer, 1993], where all the coefficients are tabulated.
+ For a discussion of this Runge-Kutta method, see [Dormand, 1980] and [Hairer,
+ 1993]. The embedded error estimate was derived as described in [Hairer, 1993],
+ where all the coefficients are tabulated.
 
  The Butcher tableau for this integrator follows:
  <pre>
@@ -40,6 +43,9 @@ namespace systems {
    1980, 6(1): 19–26.
  - [Hairer, 1993] E. Hairer, S. Nørsett, and G. Wanner. Solving ODEs I. 2nd
    rev. ed. Springer, 1993. pp. 178-9.
+ - [Fehlberg, 1969] E. Fehlberg. Low-order classical Runge-Kutta formulas with
+   stepsize control and their application to some heat transfer problems (Vol.
+   315). National aeronautics and space administration, 1969.
 
  @tparam_nonsymbolic_scalar
  @ingroup integrators
@@ -71,7 +77,7 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
   bool supports_error_estimation() const override { return true; }
 
   /// The order of the asymptotic term in the error estimate.
-  int get_error_estimate_order() const override { return 4; }
+  int get_error_estimate_order() const override { return 5; }
 
  private:
   void DoInitialize() override;

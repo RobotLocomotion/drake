@@ -1,0 +1,24 @@
+[vtk] Disable vtkX11FunctionsFinalize
+
+We want Drake's logic to open X11 so that we can directly manage the
+lifetime for our needs without relying on VTK's global variables.
+
+--- Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx
++++ Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx
+@@ -106,12 +106,16 @@ vtkXOpenGLRenderWindowInternal::vtkXOpenGLRenderWindowInternal(vtkRenderWindow*)
+ {
+   this->ContextId = nullptr;
+   this->FBConfig = None;
++#if 0  // Drake handles X11 loading on its own.
+   vtkX11FunctionsInitialize();
++#endif
+ }
+ 
+ vtkXOpenGLRenderWindowInternal::~vtkXOpenGLRenderWindowInternal()
+ {
++#if 0  // Drake never unloads shared libraries.
+   vtkX11FunctionsFinalize();
++#endif
+ }
+ 
+ vtkStandardNewMacro(vtkXOpenGLRenderWindow);

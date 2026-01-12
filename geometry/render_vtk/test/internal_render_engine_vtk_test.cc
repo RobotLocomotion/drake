@@ -2099,34 +2099,34 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
       {.description = "Facing +Wz, toward the blue face, magenta behind; HDR",
        .R_WC = RotationMatrixd(),
        .bg_color = Rgba(0, 0, 1),
-       .sphere_color = Rgba(0.61176471, 0.38039216, 0.56470588),  // magenta-ish
+       .sphere_color = Rgba(0.97254902, 0.62352941, 0.89411765),  // magenta-ish
        .map_path = hdr_path},
       {.description = "Facing blue; testing the skybox",
        .R_WC = RotationMatrixd(),
        .bg_color = Rgba(0, 0, 1),
-       .sphere_color = Rgba(0.61176471, 0.38039216, 0.56470588),  // magenta-ish
+       .sphere_color = Rgba(0.97254902, 0.62352941, 0.89411765),  // magenta-ish
        .map_path = hdr_path,
        .show_map = false},
       {.description = "Facing blue; testing the clone",
        .R_WC = RotationMatrixd(),
        .bg_color = Rgba(0, 0, 1),
-       .sphere_color = Rgba(0.61176471, 0.38039216, 0.56470588),  // magenta-ish
+       .sphere_color = Rgba(0.97254902, 0.62352941, 0.89411765),  // magenta-ish
        .map_path = hdr_path,
        .render_clone = true},
       {.description = "Facing +Wy, toward the green face, yellow behind; HDR",
        .R_WC = RotationMatrixd::MakeXRotation(M_PI / 2),
        .bg_color = Rgba(0, 1, 0),
-       .sphere_color = Rgba(0.60784314, 0.56470588, 0.38039216),  // yellow-ish
+       .sphere_color = Rgba(0.96862745, 0.89411765, 0.62352941),  // yellow-ish
        .map_path = hdr_path},
       {.description = "Facing +Wx, toward the red face, cyan behind; HDR",
        .R_WC = RotationMatrixd::MakeYRotation(M_PI / 2),
        .bg_color = Rgba(1, 0, 0),
-       .sphere_color = Rgba(0.30980392, 0.60392157, 0.60392157),  // cyan-ish
+       .sphere_color = Rgba(0.50980392, 0.96470588, 0.96470588),  // cyan-ish
        .map_path = hdr_path},
       {.description = "Facing +Wz, toward the blue face, magenta behind; LDR",
        .R_WC = RotationMatrixd(),
        .bg_color = Rgba(0.0588, 0.0588, 0.9255),
-       .sphere_color = Rgba(0.45098039, 0.25490196, 0.39607843),  // magenta-ish
+       .sphere_color = Rgba(0.71372549, 0.41960784, 0.61960784),  // magenta-ish
        .map_path = ldr_path},
   };
 
@@ -2167,7 +2167,7 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
     const TestColor center_color(image.at(cx, cy));
     EXPECT_TRUE(IsColorNear(center_color, config.sphere_color, tolerance))
         << "  test color: " << center_color << "\n"
-        << "  expected sphere color: " << config.sphere_color;
+        << "  expected sphere color: " << fmt::to_string(config.sphere_color);
 
     // Test the background (we see the right part of the environment map
     // or none at all, if we're not using the sky box).

@@ -6,6 +6,8 @@
 namespace drake {
 namespace geometry {
 
+using drake::math::internal::PartialPivLU;
+
 template <typename T>
 VolumeMesh<T>::VolumeMesh(std::vector<VolumeElement>&& elements,
                           std::vector<Vector3<T>>&& vertices)
@@ -41,7 +43,7 @@ VolumeMesh<T>::CalcBarycentric(const Vector3<C>& p_MQ, int e) const
   }
   Vector4<ReturnType> b;
   b << ReturnType(1.0), p_MQ;
-  const math::LinearSolver<Eigen::PartialPivLU, Matrix4<ReturnType>> A_lu(A);
+  const math::LinearSolver<PartialPivLU, Matrix4<ReturnType>> A_lu(A);
   const Vector4<ReturnType> b_Q = A_lu.Solve(b);
   // TODO(DamrongGuoy): Save the inverse of the matrix instead of
   //  calculating it on the fly. We can reduce to 3x3 system too.  See

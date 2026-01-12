@@ -23,6 +23,7 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "manipulation",
     cc_deps = [
+        "//bindings/generated_docstrings:manipulation_franka_panda",
         "//bindings/generated_docstrings:manipulation_kuka_iiwa",
         "//bindings/generated_docstrings:manipulation_schunk_wsg",
         "//bindings/generated_docstrings:manipulation_util",
@@ -36,6 +37,7 @@ drake_pybind_library(
         "manipulation_py.h",
         "manipulation_py.cc",
         "manipulation_py_kuka_iiwa.cc",
+        "manipulation_py_franka_panda.cc",
         "manipulation_py_schunk_wsg.cc",
         "manipulation_py_util.cc",
     ],
@@ -63,6 +65,14 @@ drake_py_unittest(
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
         "//bindings/pydrake/systems:test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "franka_panda_test",
+    deps = [
+        ":manipulation",
+        "//bindings/pydrake/systems",
     ],
 )
 
@@ -102,4 +112,4 @@ install(
     deps = get_drake_py_installs([":manipulation"]),
 )
 
-add_lint_tests_pydrake(python_lint_use_ruff_format = False)
+add_lint_tests_pydrake()

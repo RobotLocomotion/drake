@@ -2,7 +2,7 @@ import os
 import unittest
 import warnings
 
-from lcm import EventLog, LCM
+from lcm import LCM, EventLog
 
 
 class Test(unittest.TestCase):

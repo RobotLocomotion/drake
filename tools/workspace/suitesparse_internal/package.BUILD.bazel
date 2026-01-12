@@ -12,6 +12,7 @@ cc_library(
     srcs = ["SuiteSparse_config/SuiteSparse_config.c"],
     hdrs = ["SuiteSparse_config/SuiteSparse_config.h"],
     strip_include_prefix = "SuiteSparse_config",
+    isystem = True,
     copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
@@ -25,6 +26,7 @@ cc_library(
         "AMD/Include/amd.h",
     ],
     strip_include_prefix = "AMD/Include",
+    isystem = True,
     linkstatic = True,
     deps = [
         ":config",
@@ -55,3 +57,5 @@ install(
     docs = ["AMD/Doc/License.txt"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

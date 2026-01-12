@@ -220,7 +220,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* N.B. Keep the spelling and order of declarations here identical to the
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
-  const MultibodyTree<T>& internal_tree() const;
+  const MultibodyTree<T>& internal_tree() const {
+    return GetInternalTree(this->plant());
+  }
 
   systems::CacheEntry& DeclareCacheEntry(std::string description,
                                          systems::ValueProducer,
@@ -236,13 +238,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* @} */
 
-  const MultibodyTreeTopology& tree_topology() const {
-    return internal::GetInternalTree(this->plant()).get_topology();
-  }
+  const SpanningForest& get_forest() const { return internal_tree().forest(); }
 
-  const internal::SpanningForest& forest() const {
-    return internal::GetInternalTree(this->plant()).forest();
-  }
   /* Returns the pointer to the DeformableDriver owned by `this` manager if one
    exists. Otherwise, returns nullptr. */
   const DeformableDriver<double>* deformable_driver() const {

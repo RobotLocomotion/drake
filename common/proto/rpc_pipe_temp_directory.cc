@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace common {

@@ -171,7 +171,7 @@ boolean<T> AreQuaternionsEqualForOrientation(const Eigen::Quaternion<T>& quat1,
 }
 
 // Note: To avoid dependence on Eigen's internal ordering of elements in its
-// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
+// Quaternion class, herein we use `e0 = quat.w()`, `e1 = quat.x()`, etc.
 // Return value `quatDt` *does* have a specific order as defined above.
 /** This function calculates a quaternion's time-derivative from its quaternion
  * and angular velocity. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
@@ -202,7 +202,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 }
 
 // Note: To avoid dependence on Eigen's internal ordering of elements in its
-// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
+// Quaternion class, herein we use `e0 = quat.w()`, `e1 = quat.x()`, etc.
 // Parameter `quatDt` *does* have a specific order as defined above.
 /** This function calculates angular velocity from a quaternion and its time-
  * derivative. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.

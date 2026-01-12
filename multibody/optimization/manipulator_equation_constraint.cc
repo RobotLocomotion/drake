@@ -18,6 +18,8 @@ int GetLambdaSize(const std::map<SortedPair<geometry::GeometryId>,
 }
 }  // namespace
 
+ManipulatorEquationConstraint::~ManipulatorEquationConstraint() = default;
+
 ManipulatorEquationConstraint::ManipulatorEquationConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,

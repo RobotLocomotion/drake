@@ -166,7 +166,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Monomial>
     : GenericNumTraits<drake::symbolic::Monomial> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 namespace internal {

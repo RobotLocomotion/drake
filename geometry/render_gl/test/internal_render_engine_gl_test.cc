@@ -16,7 +16,6 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <tiny_gltf.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>  // vtkCommonDataModel

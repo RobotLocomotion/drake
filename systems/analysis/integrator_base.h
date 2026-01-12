@@ -11,7 +11,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -20,9 +19,9 @@
 namespace drake {
 namespace systems {
 
-/** @addtogroup simulation
+/** @defgroup integrators Integrators
+ @ingroup simulation
  @{
- @defgroup integrators Integrators
 
  Apart from solving initial value problems, for which the integrator is a
  key component of a simulator, integrators can also be used to solve

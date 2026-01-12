@@ -11,6 +11,7 @@ cc_library(
     name = "nanoflann",
     hdrs = ["include/nanoflann.hpp"],
     strip_include_prefix = "include",
+    isystem = True,
     linkstatic = 1,
 )
 
@@ -19,3 +20,5 @@ install(
     name = "install",
     docs = ["COPYING"],
 )
+
+exports_files(["drake_repository_metadata.json"])

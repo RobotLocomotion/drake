@@ -4,10 +4,8 @@ import sys
 import warnings
 
 from jupyter_core.command import main as _jupyter_main
-
-# http://nbconvert.readthedocs.io/en/latest/execute_api.html
-import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+import nbformat
 from python import runfiles
 
 _ISSUE_12536_NOTES = """
@@ -46,6 +44,9 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         "--test", action="store_true", help="Run as a test (non-interactive)"
     )
     args = parser.parse_args(argv)
+
+    # The notebook should be run with the same dependencies as we have now.
+    os.environ["PYTHONPATH"] = ":".join(sys.path)
 
     if not args.test:
         print("Running notebook interactively")

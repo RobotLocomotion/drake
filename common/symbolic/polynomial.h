@@ -572,7 +572,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Polynomial>
     : GenericNumTraits<drake::symbolic::Polynomial> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 /* Informs Eigen that BinaryOp(LhsType, RhsType) gets ResultType. */

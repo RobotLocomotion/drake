@@ -26,7 +26,6 @@ import requests
 
 from tools.workspace.metadata import read_repository_metadata
 
-
 BUCKET_NAME = "drake-mirror"
 BUCKET_URL = "https://s3.amazonaws.com/drake-mirror/"
 CLOUDFRONT_URL = "https://drake-mirror.csail.mit.edu/"

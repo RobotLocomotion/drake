@@ -1,7 +1,6 @@
 # A re-implementation of upstream's sdf/embedSdf.rb tool in Python.
 
 import sys
-
 import xml.etree.ElementTree as ET
 
 assert __name__ == "__main__"

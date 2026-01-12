@@ -434,7 +434,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
     ],
@@ -565,5 +565,4 @@ add_lint_tests_pydrake(
         "run_installed_mesh_to_model.py",
         "run_installed_fix_inertia.py",
     ],
-    python_lint_use_ruff_format = False,
 )

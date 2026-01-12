@@ -73,7 +73,7 @@ class PidController : public LeafSystem<T>,
    * @param kd D gain.
    *
    * @throws std::exception if @p kp, @p ki and @p kd have different
-   * dimensions or `P_x.row() != 2 * |kp|'.
+   * dimensions or `P_x.row() != 2 * |kp|`.
    */
   PidController(const MatrixX<double>& state_projection,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,

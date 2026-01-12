@@ -24,8 +24,8 @@ def _is_full_package_library(one_label):
 
 
 def _bazel_query(args):
-    output = subprocess.check_output(["bazel", "query"] + args).decode('utf8')
-    return [x for x in output.split('\n') if x]
+    output = subprocess.check_output(["bazel", "query"] + args).decode("utf8")
+    return [x for x in output.split("\n") if x]
 
 
 def _find_libdrake_components():
@@ -54,19 +54,24 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
 """
     # First, find the drake_cc_package_library targets within that query.
     package_libs = []
-    for label in _bazel_query([
+    for label in _bazel_query(
+        [
             'attr(tags, "{}", {})'.format(
-                "drake_cc_package_library", components_query)]):
+                "drake_cc_package_library", components_query
+            )
+        ]
+    ):
         new_label = _is_full_package_library(label)
         assert new_label
         package_libs.append(new_label)
     # Then, find any remaining cc_library targets that are not part of a
     # drake_cc_package_library.
-    misc_libs = _bazel_query([
-        components_query + " ".join([
-            "except deps({}, 1)".format(x)
-            for x in package_libs
-        ])])
+    misc_libs = _bazel_query(
+        [
+            components_query
+            + " ".join(["except deps({}, 1)".format(x) for x in package_libs])
+        ]
+    )
     # Sort the result for consistency.
     return sorted(package_libs + misc_libs, key=_label_sort_key)
 
@@ -74,8 +79,12 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-o", "--output", type=argparse.FileType("w"), default=None,
-        help="Output to a given file, instead of `build_components.bzl`.")
+        "-o",
+        "--output",
+        type=argparse.FileType("w"),
+        default=None,
+        help="Output to a given file, instead of `build_components.bzl`.",
+    )
     args = parser.parse_args()
 
     mydir = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -120,16 +129,16 @@ def main():
         for one_line in header_lines:
             new.write(one_line)
         for one_label in component_labels:
-            if '#' in one_label:
-                line = '    ' + one_label
+            if "#" in one_label:
+                line = "    " + one_label
             else:
                 line = '    "{}",'.format(one_label)
                 if ":" in one_label:
-                    line += '  # unpackaged'
+                    line += "  # unpackaged"
             new.write(line)
             if len(line) > 79:
-                new.write('  # noqa')
-            new.write('\n')
+                new.write("  # noqa")
+            new.write("\n")
         for one_line in footer_lines:
             new.write(one_line)
 
@@ -137,5 +146,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

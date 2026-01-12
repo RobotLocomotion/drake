@@ -31,6 +31,7 @@ cc_library(
     hdrs = [":config"] + glob(["src/ccd/*.h"], allow_empty = False),
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
+    isystem = True,
 )
 
 # Compile the code (using both its exported headers and its private headers).
@@ -42,6 +43,7 @@ cc_library(
         "-fvisibility=hidden",
     ],
     includes = ["src"],
+    isystem = True,
     linkstatic = True,
     deps = [":hdrs"],
 )
@@ -69,3 +71,5 @@ install(
     docs = ["BSD-LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -8,6 +8,12 @@ load(
     "drake_cc_package_library",
 )
 load(
+    "//tools/skylark:drake_optional.bzl",
+    "drake_cc_optional_googletest",
+    "drake_cc_optional_library",
+    "drake_cc_variant_library",
+)
+load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
@@ -17,14 +23,15 @@ load(
     "gurobi_test_tags",
     "mosek_test_tags",
 )
-load(
-    ":defs.bzl",
-    "drake_cc_optional_googletest",
-    "drake_cc_optional_library",
-    "drake_cc_variant_library",
-)
 
 package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "doxygen_input",
+    srcs = ["mathematical_program_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
 
 # When this is set to True, rather than linking to MOSEK directly, Drake will
 # create (using implib.so) and link to a trampoline library that allows the

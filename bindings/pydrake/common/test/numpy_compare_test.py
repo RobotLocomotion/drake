@@ -26,10 +26,10 @@ class Custom:
 # Hack into private API to register custom comparisons.
 registry = numpy_compare._registry
 registry.register_to_float(Custom, lambda x: float(str(x)))
+registry.register_comparator(Custom, Custom, Custom.assert_eq, Custom.assert_ne)
 registry.register_comparator(
-    Custom, Custom, Custom.assert_eq, Custom.assert_ne)
-registry.register_comparator(
-    Custom, str, numpy_compare._str_eq, numpy_compare._str_ne)
+    Custom, str, numpy_compare._str_eq, numpy_compare._str_ne
+)
 
 
 class TestNumpyCompareSimple(unittest.TestCase):
@@ -47,35 +47,35 @@ class TestNumpyCompareSimple(unittest.TestCase):
         # Custom.
         a = Custom("1.")
         b = Custom("2.")
-        self.assertEqual(numpy_compare.to_float(a), 1.)
+        self.assertEqual(numpy_compare.to_float(a), 1.0)
         A = np.array([a, b])
-        np.testing.assert_equal(numpy_compare.to_float(A), [1., 2.])
+        np.testing.assert_equal(numpy_compare.to_float(A), [1.0, 2.0])
         # - Convenience float comparators.
-        numpy_compare.assert_float_equal(a, 1.)
+        numpy_compare.assert_float_equal(a, 1.0)
         with self.assertRaises(AssertionError):
-            numpy_compare.assert_float_equal(a, 2.)
-        numpy_compare.assert_float_not_equal(a, 2.)
+            numpy_compare.assert_float_equal(a, 2.0)
+        numpy_compare.assert_float_not_equal(a, 2.0)
         with self.assertRaises(AssertionError):
-            numpy_compare.assert_float_not_equal(a, 1.)
-        numpy_compare.assert_float_equal(A, [1., 2.])
+            numpy_compare.assert_float_not_equal(a, 1.0)
+        numpy_compare.assert_float_equal(A, [1.0, 2.0])
         # Check nearness.
         Af_delta = numpy_compare.to_float(A) + 5e-16
         numpy_compare.assert_float_not_equal(A, Af_delta)
         numpy_compare.assert_float_allclose(A, Af_delta)
 
     def test_resolve_type(self):
-        Af = np.array([1., 2.])
+        Af = np.array([1.0, 2.0])
         self.assertEqual(numpy_compare.resolve_type(Af), float)
         Ac = np.array([Custom("a"), Custom("b")])
         self.assertEqual(numpy_compare.resolve_type(Ac), Custom)
         with self.assertRaises(AssertionError):
             numpy_compare.resolve_type([])
         with self.assertRaises(AssertionError):
-            numpy_compare.resolve_type(["a", 1., None])
+            numpy_compare.resolve_type(["a", 1.0, None])
 
     def test_asserts_builtin(self):
-        a = 1.
-        b = 0.
+        a = 1.0
+        b = 0.0
         # Scalar.
         numpy_compare.assert_equal(a, a)
         with self.assertRaises(AssertionError):
@@ -85,7 +85,7 @@ class TestNumpyCompareSimple(unittest.TestCase):
             numpy_compare.assert_not_equal(a, a)
         # Array.
         A = np.array([a, a])
-        C = np.array([1., 2.])
+        C = np.array([1.0, 2.0])
         numpy_compare.assert_equal(A, a)
         numpy_compare.assert_equal(C, C)
         with self.assertRaises(AssertionError):
@@ -124,9 +124,9 @@ class TestNumpyCompareSimple(unittest.TestCase):
 
     def test_asserts_autodiff(self):
         # Test only scalar; other cases are handled by above test case.
-        a = AutoDiffXd(1., [1., 0.])
-        b = AutoDiffXd(1., [0., 1.])
-        c = AutoDiffXd(2., [3., 4.])
+        a = AutoDiffXd(1.0, [1.0, 0.0])
+        b = AutoDiffXd(1.0, [0.0, 1.0])
+        c = AutoDiffXd(2.0, [3.0, 4.0])
         numpy_compare.assert_equal(a, a)
         numpy_compare.assert_allclose(a, a)
         numpy_compare.assert_not_equal(a, b)

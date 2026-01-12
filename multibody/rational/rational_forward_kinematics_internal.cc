@@ -16,7 +16,8 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
                                 BodyIndex start, BodyIndex end) {
   DRAKE_DEMAND(start.is_valid());
   DRAKE_DEMAND(end.is_valid());
-  const MultibodyTreeTopology& topology = GetInternalTree(plant).get_topology();
+  const MultibodyTree<double>& tree = GetInternalTree(plant);
+  const SpanningForest& forest = tree.forest();
 
   // Do a breadth first search in the tree. The `worklist` stores the nodes
   // ready for exploration; In the `ancestor` map, the values are the immediate
@@ -40,13 +41,21 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
     if (current == end) {
       break;
     }
-    const RigidBodyTopology& current_node_topology =
-        topology.get_rigid_body_topology(current);
+    const LinkJointGraph::Link& current_link = forest.link_by_index(current);
+    const SpanningForest::Mobod& current_mobod =
+        forest.mobods(current_link.mobod_index());
     if (current != world_index()) {
-      const BodyIndex parent = current_node_topology.parent_body;
+      const SpanningForest::Mobod& parent_mobod =
+          forest.mobods(current_mobod.inboard());
+      const BodyIndex parent =
+          tree.forest().links(parent_mobod.link_ordinal()).index();
       visit_edge(current, parent);
     }
-    for (BodyIndex child : current_node_topology.child_bodies) {
+    for (const MobodIndex& child_mobod_index : current_mobod.outboards()) {
+      const SpanningForest::Mobod& child_mobod =
+          forest.mobods(child_mobod_index);
+      const BodyIndex child =
+          tree.forest().links(child_mobod.link_ordinal()).index();
       visit_edge(current, child);
     }
   }
@@ -71,20 +80,20 @@ std::vector<MobodIndex> FindMobilizersOnPath(
   std::vector<MobodIndex> mobilizers_on_path;
   mobilizers_on_path.reserve(path.size() - 1);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
+  const SpanningForest& forest = tree.forest();
   for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
-    const RigidBodyTopology& rigid_body_topology =
-        tree.get_topology().get_rigid_body_topology(path[i]);
-    if (path[i] != world_index() &&
-        rigid_body_topology.parent_body == path[i + 1]) {
+    // Figure out which mobilizer connects path[i] with path[i+1].
+    const LinkJointGraph::Link& link_i = forest.link_by_index(path[i]);
+    const LinkJointGraph::Link& link_ip1 = forest.link_by_index(path[i + 1]);
+    const SpanningForest::Mobod& mobod_i = forest.mobods(link_i.mobod_index());
+    if (!mobod_i.is_world() && mobod_i.inboard() == link_ip1.mobod_index()) {
       // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i]'s inboard mobilizer.
-      mobilizers_on_path.push_back(rigid_body_topology.inboard_mobilizer);
+      mobilizers_on_path.push_back(link_i.mobod_index());
     } else {
       // path[i] is the parent of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i+1]'s inboard mobilizer.
-      mobilizers_on_path.push_back(tree.get_topology()
-                                       .get_rigid_body_topology(path[i + 1])
-                                       .inboard_mobilizer);
+      mobilizers_on_path.push_back(link_ip1.mobod_index());
     }
   }
   return mobilizers_on_path;

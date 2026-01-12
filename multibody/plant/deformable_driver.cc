@@ -318,8 +318,8 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
     }
     scaled_Jv_v_WGc_C.SetFromTriplets(triplets);
     result.v_WGc.emplace_back(v_WGc);
-    const TreeIndex tree_index(
-        manager_->internal_tree().get_topology().num_trees() + body_index);
+    const TreeIndex tree_index(manager_->internal_tree().forest().num_trees() +
+                               body_index);
     result.jacobian.emplace_back(tree_index,
                                  MatrixBlock<T>(std::move(scaled_Jv_v_WGc_C)));
   }
@@ -343,14 +343,15 @@ DeformableDriver<T>::ComputeContactDataForRigid(
       manager_->plant()
           .EvalBodyPoseInWorld(context, manager_->plant().get_body(body_index))
           .translation();
-  const MultibodyTreeTopology& tree_topology =
-      manager_->internal_tree().get_topology();
-  const TreeIndex tree_index = tree_topology.body_to_tree_index(body_index);
+  if (body_index == world_index()) return result;
+
+  const SpanningForest& forest = manager_->internal_tree().forest();
+  const TreeIndex tree_index = forest.link_to_tree_index(body_index);
+  const SpanningForest::Tree& tree = forest.trees(tree_index);
+  const int tree_nv = tree.nv();
   /* If the body is welded to world, then everything is trivially zero (as
    indicated by empty jacobian and velocity vectors). */
-  if (!tree_topology.tree_has_dofs(tree_index)) {
-    return result;
-  }
+  if (tree_nv == 0) return result;
 
   const Eigen::VectorBlock<const VectorX<T>> rigid_v0 =
       manager_->plant().GetVelocities(context);
@@ -367,9 +368,7 @@ DeformableDriver<T>::ComputeContactDataForRigid(
         p_WC, frame_W, frame_W, &Jv_v_WGc_W);
     result.v_WGc.emplace_back(Jv_v_WGc_W * rigid_v0);
     Matrix3X<T> J = surface.R_WCs()[i].matrix().transpose() *
-                    Jv_v_WGc_W.middleCols(
-                        tree_topology.tree_velocities_start_in_v(tree_index),
-                        tree_topology.num_tree_velocities(tree_index));
+                    Jv_v_WGc_W.middleCols(tree.v_start(), tree_nv);
     result.jacobian.emplace_back(tree_index, MatrixBlock<T>(std::move(J)));
   }
   return result;
@@ -616,8 +615,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
    and rigid bodies are mutually exclusive, and Jv_v_WAp = 0 for rigid dofs
    and Jv_v_WBq = 0 for deformable dofs. */
   const int nv = manager_->plant().num_velocities();
-  const MultibodyTreeTopology& tree_topology =
-      manager_->internal_tree().get_topology();
+  const SpanningForest& forest = manager_->internal_tree().forest();
   const auto& configurations =
       manager_->plant()
           .get_deformable_body_configuration_output_port()
@@ -644,7 +642,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
         EvalConstraintParticipation(context, index);
     // Each deformable body forms its own clique and are indexed in inceasing
     // DeformableBodyIndex order and placed after all rigid cliques.
-    const TreeIndex clique_index_A(tree_topology.num_trees() + index);
+    const TreeIndex clique_index_A(forest.num_trees() + index);
     const GeometryId geometry_id = body.geometry_id();
     const PartialPermutation& vertex_permutation =
         EvalVertexPermutation(context, geometry_id);
@@ -660,7 +658,6 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
       jacobian_triplets.reserve(num_vertices_in_constraint);
       /* The Jacobian block for the rigid body B. */
       const BodyIndex index_B = spec.body_B;
-      const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
       const RigidBody<T>& rigid_body = manager_->plant().get_body(index_B);
       const math::RigidTransform<T>& X_WB =
           manager_->plant().EvalBodyPoseInWorld(context, rigid_body);
@@ -698,6 +695,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
           index + manager_->plant().num_bodies();  // Deformable body.
       const int object_B = index_B;                // Rigid body.
 
+      const TreeIndex tree_index = forest.link_to_tree_index(index_B);
       if (tree_index.is_valid()) {
         /* Rigid body is not welded to world. */
         const int clique_index_B = tree_index;
@@ -707,9 +705,9 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             Eigen::Map<const Matrix3X<T>>(p_WQs.data(), 3, p_WQs.size() / 3),
             frame_W, frame_W, &Jv_v_WBq);
-        MatrixBlock<T> jacobian_block_B(Jv_v_WBq.middleCols(
-            tree_topology.tree_velocities_start_in_v(tree_index),
-            tree_topology.num_tree_velocities(tree_index)));
+        const SpanningForest::Tree& tree = forest.trees(tree_index);
+        MatrixBlock<T> jacobian_block_B(
+            Jv_v_WBq.middleCols(tree.v_start(), tree.nv()));
         SapConstraintJacobian<T> J(clique_index_A, std::move(jacobian_block_A),
                                    clique_index_B, std::move(jacobian_block_B));
         result->emplace_back(object_A, std::move(p_WPs), object_B,

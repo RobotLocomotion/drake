@@ -4,7 +4,7 @@
 Runs fix_inertia from an install tree.
 """
 
-from os.path import isdir, join, dirname, realpath
+from os.path import dirname, isdir, join, realpath
 import sys
 
 
@@ -18,6 +18,7 @@ def main():
 
     # Execute the imported main.
     from pydrake.multibody.fix_inertia import _main
+
     _main()
 
 

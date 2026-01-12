@@ -1,5 +1,4 @@
 load(":execute.bzl", "path", "which")
-load(":metadata.bzl", "generate_repository_metadata")
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
@@ -288,11 +287,6 @@ def _maybe_setup_pkg_config_repository(repository_ctx):
     return struct(error = None)
 
 def setup_pkg_config_repository(repository_ctx):
-    generate_repository_metadata(
-        repository_ctx,
-        repository_rule_type = "pkg_config",
-    )
-
     # Check if pkg-config works.
     error = _maybe_setup_pkg_config_repository(repository_ctx).error
     if error == None:

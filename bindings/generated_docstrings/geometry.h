@@ -133,7 +133,7 @@ materials can optionally provide defaults for missing properties.
 Raises:
     RuntimeError if ``dissipation`` is negative, ``point_stiffness``
     is not positive, of any of the contact material properties have
-    already been defined in ``properties`.
+    already been defined in ``properties``.
 
 Precondition:
     ``properties`` is not nullptr.)""";
@@ -2155,6 +2155,12 @@ accessed via this method.)""";
           const char* doc =
 R"""(Reports the number of property groups in this set.)""";
         } num_groups;
+        // Symbol: drake::geometry::GeometryProperties::to_string
+        struct /* to_string */ {
+          // Source: drake/geometry/geometry_properties.h
+          const char* doc =
+R"""(Converts the GeometryProperties to a string representation.)""";
+        } to_string;
       } GeometryProperties;
       // Symbol: drake::geometry::GeometrySet
       struct /* GeometrySet */ {
@@ -6097,7 +6103,7 @@ as a zero-radius sphere.
 Mesh | Sphere | | :--------: | :-----: | :------: | :-----: |
 :-------: | :--------: | :--------: | :-----: | :-----: | | double |
 2e-15 | 4e-15 | 5e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 5e-15ᶜ | 4e-15 | |
-AutoDiffXd | 1e-15 | 4e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 3e-15 | |
+AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 3e-15 | |
 Expression | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ***Table 8***: Worst
 observed error (in m) for 2mm penetration/separation between geometry
 approximately 20cm in size and a point.
@@ -6539,6 +6545,12 @@ Raises:
 Raises:
     RuntimeError if any values are outside of the range [0, 1].)""";
         } set;
+        // Symbol: drake::geometry::Rgba::to_string
+        struct /* to_string */ {
+          // Source: drake/geometry/rgba.h
+          const char* doc =
+R"""(Converts the Rgba value to a string representation.)""";
+        } to_string;
         // Symbol: drake::geometry::Rgba::update
         struct /* update */ {
           // Source: drake/geometry/rgba.h
@@ -6996,15 +7008,7 @@ Warning:
     "initialize" itself after changes to properties that will affect
     how a geometry appears. If changing a geometry's illustration
     properties doesn't seem to be affecting the visualization,
-    retrigger its initialization action.
-
-Warning:
-    Due to a bug (see issue `#13597
-    <https://github.com/RobotLocomotion/drake/issues/13597>`_),
-    changing the illustration roles or properties in a
-    systems::Context will not have any apparent effect in certain
-    viewers. Please change the illustration role in the model prior to
-    allocating the context.)""";
+    retrigger its initialization action.)""";
         } AssignRole;
         // Symbol: drake::geometry::SceneGraph::ChangeShape
         struct /* ChangeShape */ {
@@ -7870,9 +7874,9 @@ returned, otherwise all geometries will be returned.
 
 Note:
     Specifying ``role`` *can* have the effect of filtering geometries
-    *from* the given geometry_set` -- if a GeometryId is an explicit
-    member of the geometry set but does not have the requested role,
-    it will not be contained in the output.
+    *from* the given ``geometry_set`` -- if a GeometryId is an
+    explicit member of the geometry set but does not have the
+    requested role, it will not be contained in the output.
 
 Parameter ``geometry_set``:
     The encoding of the set of geometries.

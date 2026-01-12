@@ -6,7 +6,7 @@ namespace geometry {
 namespace render {
 
 /** @addtogroup render_engines
-
+ @{
  Rendering engines are used to enable simulation of the perception stack.
 
  <h2>Overview</h2>
@@ -74,6 +74,7 @@ namespace render {
  user will experience on a fixed system.
 
  Next topic: @ref geometry_file_formats
+ @}
  */
 
 /** @defgroup render_benchmarks Render Benchmarks

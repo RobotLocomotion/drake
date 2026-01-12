@@ -26,6 +26,7 @@ import numpy as np
 
 from pydrake.common import RandomGenerator
 from pydrake.common.yaml import yaml_load_typed
+from pydrake.geometry import SceneGraphConfig
 from pydrake.lcm import DrakeLcmParams
 from pydrake.manipulation import (
     ApplyDriverConfigs,
@@ -34,15 +35,14 @@ from pydrake.manipulation import (
     SchunkWsgDriver,
     ZeroForceDriver,
 )
-from pydrake.geometry import SceneGraphConfig
-from pydrake.multibody.plant import (
-    AddMultibodyPlant,
-    MultibodyPlantConfig,
-)
 from pydrake.multibody.parsing import (
     ModelDirective,
     ModelDirectives,
     ProcessModelDirectives,
+)
+from pydrake.multibody.plant import (
+    AddMultibodyPlant,
+    MultibodyPlantConfig,
 )
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,

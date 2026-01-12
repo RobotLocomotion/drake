@@ -83,9 +83,8 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":planning",
-        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -115,7 +114,6 @@ drake_py_unittest(
     ],
     deps = [
         ":planning",
-        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/systems:controllers_py",
     ],
@@ -137,7 +135,7 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -151,7 +149,7 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
     ],
 )
 
@@ -179,4 +177,4 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests_pydrake(python_lint_use_ruff_format = False)
+add_lint_tests_pydrake()

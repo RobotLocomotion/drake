@@ -12,6 +12,7 @@ PYBIND11_MODULE(manipulation, m) {
 
   // The order of these calls matters. Some modules rely on prior definitions.
   internal::DefineManipulationKukaIiwa(m);
+  internal::DefineManipulationFrankaPanda(m);
   internal::DefineManipulationSchunkWsg(m);
   internal::DefineManipulationUtil(m);
 

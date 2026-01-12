@@ -17,7 +17,7 @@
 #include <common_robotics_utilities/print.hpp>
 #include <common_robotics_utilities/utility.hpp>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/planning/linear_distance_and_interpolation_provider.h"

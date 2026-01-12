@@ -4,18 +4,18 @@
 
 This process only needs to be done once per system.
 
-Note that these scripts are tested on Ubuntu Jammy;
+Note that these scripts are tested on Ubuntu Noble;
 other platforms are not supported.
 
 ### Install required packages
 
-Linux:
+    apt install aptly
 
-    apt install gnupg1 aptly docker awscli
+Follow instructions to install docker
+https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
 
-
-**Note:** There are compatibility issues with `gnupg2` and `aptly`. See
-[this issue](https://github.com/aptly-dev/aptly/issues/657), for example.
+Follow instructions to install awscli
+https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 
 ### Configure aptly
 
@@ -36,9 +36,7 @@ Download the public key from S3.
 
 Using the passphrase from the AWS Secrets Manager, run:
 
-    gpg[1] --import <key.asc>
-
-**Note:** It is not clear if `gpg` or `gpg1` is correct to use on Ubuntu.
+    gpg --import <key.asc>
 
 ### Log into Docker
 
@@ -75,6 +73,9 @@ The release creator will provide the version. Throughout this process, don’t
 use `v` on the version string. For example:
 
     bazel run //tools/release_engineering/dev:push_release -- 1.0.0
+
+**Note:** If there is a timeout error uploading to GitHub, double-check
+the GitHub token created above, it is likely a permissions issue.
 
 ### Verification
 
@@ -121,6 +122,10 @@ version string. For example:
 
 The script will prompt for the GPG passphrase, which may be found in the AWS
 Secrets Manager. The script may prompt for this multiple times.
+
+### Verification
+
+Verify that you can install drake via APT, see https://drake.mit.edu/apt.html for instructions.
 
 ### [Optional] Add a new configuration
 

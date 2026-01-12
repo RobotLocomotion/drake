@@ -1,9 +1,7 @@
 #pragma once
 
-// ============================================================================
 // N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
-// file must be kept in sync!
-// ============================================================================
+// file must be kept in sync.
 
 /** @file
 Provides careful macros to selectively enable or disable the special member

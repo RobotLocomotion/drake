@@ -15,6 +15,7 @@ def abseil_cpp_internal_repository(
             ":patches/inline_namespace.patch",
         ],
         patch_cmds = [
+            "echo 'exports_files([\"drake_repository_metadata.json\"])' >> BUILD.bazel",  # noqa
             # Force linkstatic = 1 everywhere. First, remove the few existing
             # uses so that we don't get "duplicate kwarg" errors. Then, add it
             # anywhere that linkopts already appears.

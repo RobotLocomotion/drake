@@ -23,6 +23,7 @@ drake_py_library(
     visibility = ["//visibility:private"],
     deps = [
         ":module_py",
+        "@rules_python//python/runfiles",
     ],
 )
 

@@ -2503,11 +2503,12 @@ Parameter ``theta_lambda``:
 
 Parameter ``p``:
     position vector from frame A's origin to frame B's origin,
-    expressed in frame A. In monogram notation p is denoted ``p_AoBo_A
+    expressed in frame A. In monogram notation p is denoted
+    ``p_AoBo_A``.
 
 Raises:
     RuntimeError in debug builds if the rotation matrix that is built
-    from `theta_lambda`` is invalid.
+    from ``theta_lambda`` is invalid.
 
 See also:
     RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&))""";
@@ -4993,7 +4994,7 @@ Returns:
       // Symbol: drake::math::hessian
       struct /* hessian */ {
         // Source: drake/math/jacobian.h
-        const char* doc =
+        const char* doc_deprecated =
 R"""(Computes a matrix of AutoDiffScalars from which the value, Jacobian,
 and Hessian of a function
 
@@ -5019,7 +5020,12 @@ Parameter ``x``:
 
 Returns:
     AutoDiffScalar matrix corresponding to the Hessian of f evaluated
-    at x)""";
+    at x / (Deprecated.)
+
+Deprecated:
+    Removed with no replacement; copy the code into your project if
+    you still need it This will be removed from Drake on or after
+    2026-04-01.)""";
       } hessian;
       // Symbol: drake::math::intRange
       struct /* intRange */ {
@@ -5048,7 +5054,7 @@ Returns:
       // Symbol: drake::math::jacobian
       struct /* jacobian */ {
         // Source: drake/math/jacobian.h
-        const char* doc =
+        const char* doc_deprecated =
 R"""(Computes a matrix of AutoDiffScalars from which both the value and the
 Jacobian of a function
 
@@ -5060,7 +5066,7 @@ The derivative vector for each AutoDiffScalar in the output contains
 the derivatives with respect to all components of the argument
 :math:`x`.
 
-The return type of this function is a matrix with the `best' possible
+The return type of this function is a matrix with the 'best' possible
 AutoDiffScalar scalar type, in the following sense: - If the number of
 derivatives can be determined at compile time, the AutoDiffScalar
 derivative vector will have that fixed size. - If the maximum number
@@ -5097,7 +5103,12 @@ Parameter ``x``:
 
 Returns:
     AutoDiffScalar matrix corresponding to the Jacobian of f evaluated
-    at x.)""";
+    at x. / (Deprecated.)
+
+Deprecated:
+    Removed with no replacement; copy the code into your project if
+    you still need it This will be removed from Drake on or after
+    2026-04-01.)""";
       } jacobian;
       // Symbol: drake::math::matGradMult
       struct /* matGradMult */ {

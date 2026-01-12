@@ -10,7 +10,7 @@
 
 #include <fmt/ranges.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_frame.h"
@@ -286,6 +286,17 @@ const DiscreteStepMemory::Data<T>* get_discrete_step_memory(
     const Context<T>& context) {
   return context.template get_abstract_state<DiscreteStepMemory>(0)
       .template get<T>();
+}
+
+// Checks the given vector for NaNs, unless the vector is symbolic in which case
+// always returns false.
+template <typename EigenMatrix>
+bool HasNaN(const EigenMatrix& x) {
+  if constexpr (scalar_predicate<typename EigenMatrix::Scalar>::is_bool) {
+    return x.hasNaN();
+  } else {
+    return false;
+  }
 }
 
 }  // namespace
@@ -2625,7 +2636,7 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   if (applied_generalized_force_input.HasValue(context)) {
     const VectorX<T>& applied_generalized_force =
         applied_generalized_force_input.Eval(context);
-    if (applied_generalized_force.hasNaN()) {
+    if (HasNaN(applied_generalized_force)) {
       throw std::runtime_error(
           "Detected NaN in applied generalized force input port.");
     }
@@ -2673,9 +2684,9 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   auto throw_if_contains_nan = [this](const ExternallyAppliedSpatialForce<T>&
                                           external_spatial_force) {
     const SpatialForce<T>& spatial_force = external_spatial_force.F_Bq_W;
-    if (external_spatial_force.p_BoBq_B.hasNaN() ||
-        spatial_force.rotational().hasNaN() ||
-        spatial_force.translational().hasNaN()) {
+    if (HasNaN(external_spatial_force.p_BoBq_B) ||
+        HasNaN(spatial_force.rotational()) ||
+        HasNaN(spatial_force.translational())) {
       throw std::runtime_error(fmt::format(
           "Spatial force applied on body {} contains NaN.",
           internal_tree().get_body(external_spatial_force.body_index).name()));
@@ -2789,7 +2800,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
     if (input_port.HasValue(context)) {
       const auto& u_instance = input_port.Eval(context);
-      if (u_instance.hasNaN()) {
+      if (HasNaN(u_instance)) {
         throw std::runtime_error(fmt::format(
             "Actuation input port for model instance {} contains NaN.",
             GetModelInstanceName(model_instance_index)));
@@ -2804,7 +2815,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
       this->get_input_port(input_port_indices_.actuation);
   if (actuation_port.HasValue(context)) {
     const auto& u = actuation_port.Eval(context);
-    if (u.hasNaN()) {
+    if (HasNaN(u)) {
       throw std::runtime_error(
           "Detected NaN in the actuation input port for all instances.");
     }
@@ -2986,18 +2997,18 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     return;
   }
   const auto& geometry_id_to_body_index = geometry_id_to_body_index_;
-  const internal::MultibodyTreeTopology& topology =
-      internal_tree().get_topology();
+  const internal::SpanningForest& forest = internal_tree().forest();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
       joint_locking.unlocked_velocity_indices_per_tree;
   const auto is_irrelevant_geometry =
-      [&geometry_id_to_body_index, &topology,
+      [&geometry_id_to_body_index, &forest,
        &per_tree_unlocked_indices](GeometryId geometry_id) {
         // Checks whether `geometry_id` belongs to a zero-dof tree.
         const BodyIndex body_index = geometry_id_to_body_index.at(geometry_id);
         const internal::TreeIndex tree_index =
-            topology.body_to_tree_index(body_index);
-        return !topology.tree_has_dofs(tree_index) ||
+            forest.link_to_tree_index(body_index);
+        const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+        return !tree.has_dofs() ||
                per_tree_unlocked_indices[tree_index].size() == 0;
       };
   const auto is_irrelevant_point_pair =
@@ -3032,7 +3043,7 @@ void MultibodyPlant<T>::CalcJointLocking(
     internal::JointLockingCacheData<T>* data) const {
   DRAKE_DEMAND(data != nullptr);
 
-  const auto& topology = internal_tree().get_topology();
+  const internal::SpanningForest& forest = internal_tree().forest();
 
   auto& unlocked = data->unlocked_velocity_indices;
   auto& locked = data->locked_velocity_indices;
@@ -3043,8 +3054,8 @@ void MultibodyPlant<T>::CalcJointLocking(
   locked_per_tree.clear();
   unlocked.resize(num_velocities());
   locked.resize(num_velocities());
-  unlocked_per_tree.resize(topology.num_trees());
-  locked_per_tree.resize(topology.num_trees());
+  unlocked_per_tree.resize(forest.num_trees());
+  locked_per_tree.resize(forest.num_trees());
 
   int unlocked_cursor = 0;
   int locked_cursor = 0;
@@ -3077,15 +3088,17 @@ void MultibodyPlant<T>::CalcJointLocking(
   internal::DemandIndicesValid(locked, num_velocities());
 
   for (int dof : unlocked) {
-    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
-    unlocked_per_tree[tree].push_back(tree_dof);
+    const internal::TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    unlocked_per_tree[tree_index].push_back(tree_dof);
   }
 
   for (int dof : locked) {
-    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
-    locked_per_tree[tree].push_back(tree_dof);
+    const internal::TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    locked_per_tree[tree_index].push_back(tree_dof);
   }
 }
 

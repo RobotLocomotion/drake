@@ -13,6 +13,19 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "contact_surface_doxygen.h",
+        "penetration_doxygen.h",
+        "proximity_doxygen.h",
+    ] + glob([
+        "images/*.png",
+    ]),
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "proximity",
     visibility = ["//visibility:public"],
@@ -1087,6 +1100,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "bvh_test",
+    args = select({
+        # TODO(#23855): This test is currently broken on macOS.
+        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":bvh",
         ":make_ellipsoid_mesh",

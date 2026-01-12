@@ -44,7 +44,7 @@ quaternion, angular velocity and angular acceleration expressed in B
 (B's center of mass) in N (World). Algorithm from [Kane, 1983]
 Sections 1.13 and 3.1, Pages 60-62 and 159-169.
 
-- [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
+- [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983
   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
   https://ecommons.cornell.edu/handle/1813/637)""";
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalcAngularRates_s_p
@@ -66,7 +66,7 @@ Note:
     ``s`` and ``p`` are returned in units of radian/second.
 
 - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
-  1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  1983 (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   download: https://ecommons.cornell.edu/handle/1813/637)""";
             } CalcAngularRates_s_p;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalcInitial_v_NBcm_N
@@ -107,16 +107,17 @@ Note:
     This function allows for initial misalignment of Nx, Ny, Nz and
     Bx, By, Bz.
 
-std::tuple | Description
------------|------------------------------------------------- quat_NB
-| Quaternion relating frame N to frame B: [e0, e1, e2, e3] | Note:
-quat_NB is analogous to the rotation matrix R_NB. quatDt |
-Time-derivative of `quat_NB', i.e., [ė0, ė1, ė2, ė3]. w_NB_B | B's
-angular velocity in N, expressed in B. alpha_NB_B | B's angular
-acceleration in N, expressed in B.
+| Return values | Description
+|---------------|------------------------------------------------- |
+quat_NB | Quaternion [e0, e1, e2, e3] relating frame N to frame B. |
+quatDt | Time-derivative of quat_NB, i.e., [ė0, ė1, ė2, ė3]. |
+w_NB_B | B's angular velocity in N, expressed in B. | alpha_NB_B | B's
+angular acceleration in N, expressed in B.
+
+Note: quat_NB is analogous to the rotation matrix R_NB.
 
 - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
-  1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  1983 (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   download: https://ecommons.cornell.edu/handle/1813/637)""";
             } CalculateExactRotationalSolutionNB;
             // Symbol: drake::multibody::benchmarks::free_body::FreeBody::CalculateExactTranslationalSolution

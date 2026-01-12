@@ -30,16 +30,21 @@ class TestScsSolver(unittest.TestCase):
         # Use a loose tolerance for the check since the correctness of the
         # solver has been validated in the C++ code, while the Python test
         # just verifies if the binding works or not.
-        atol = 1E-3
+        atol = 1e-3
         numpy_compare.assert_float_allclose(
-            result.GetSolution(x), [1.0, 1.0], atol=atol)
+            result.GetSolution(x), [1.0, 1.0], atol=atol
+        )
         numpy_compare.assert_float_allclose(
-            result.get_solver_details().primal_objective, 1.0, atol=atol)
+            result.get_solver_details().primal_objective, 1.0, atol=atol
+        )
         numpy_compare.assert_float_allclose(
-            result.get_solver_details().primal_residue, np.array([0.]),
-            atol=atol)
+            result.get_solver_details().primal_residue,
+            np.array([0.0]),
+            atol=atol,
+        )
         numpy_compare.assert_float_allclose(
-            result.get_solver_details().y, np.array([1., 1.]), atol=atol)
+            result.get_solver_details().y, np.array([1.0, 1.0]), atol=atol
+        )
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when SCS is disabled."""

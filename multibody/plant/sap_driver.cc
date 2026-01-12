@@ -134,7 +134,8 @@ template <typename T>
 void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                             std::vector<MatrixX<T>>* A) const {
   DRAKE_DEMAND(A != nullptr);
-  A->resize(tree_topology().num_trees());
+  const SpanningForest& forest = get_forest();
+  A->resize(forest.num_trees());
   const int nv = plant().num_velocities();
 
   // TODO(amcastro-tri): consider placing the computation of the dense mass
@@ -152,9 +153,10 @@ void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
   //   A = ∂m/∂v = (M + dt⋅D)
   M.diagonal() += plant().time_step() * plant().EvalJointDampingCache(context);
 
-  for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
-    const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
-    const int tree_nv = tree_topology().num_tree_velocities(t);
+  for (TreeIndex t(0); t < forest.num_trees(); ++t) {
+    const SpanningForest::Tree& tree = forest.trees(t);
+    const int tree_start_in_v = tree.v_start();
+    const int tree_nv = tree.nv();
     (*A)[t] = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
   }
 
@@ -321,6 +323,7 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
   const double stiffness = 1.0e12;
   const double dissipation_time_scale = dt;
 
+  const SpanningForest& forest = get_forest();
   for (JointIndex joint_index : plant().GetJointIndices()) {
     const Joint<T>& joint = plant().get_joint(joint_index);
     // We only support limits for 1 DOF joints for which we know that q̇ = v.
@@ -328,11 +331,10 @@ void SapDriver<T>::AddLimitConstraints(const systems::Context<T>& context,
       const double lower_limit = joint.position_lower_limits()[0];
       const double upper_limit = joint.position_upper_limits()[0];
       const int velocity_start = joint.velocity_start();
-      const TreeIndex tree_index =
-          tree_topology().velocity_to_tree_index(velocity_start);
-      const int tree_nv = tree_topology().num_tree_velocities(tree_index);
-      const int tree_velocity_start =
-          tree_topology().tree_velocities_start_in_v(tree_index);
+      const TreeIndex tree_index = forest.v_to_tree_index(velocity_start);
+      const SpanningForest::Tree& tree = forest.trees(tree_index);
+      const int tree_nv = tree.nv();
+      const int tree_velocity_start = tree.v_start();
       const int tree_dof = velocity_start - tree_velocity_start;
 
       // Current configuration position.
@@ -396,6 +398,7 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       manager().GetConstraintActiveStatus(context);
 
+  const SpanningForest& forest = get_forest();
   for (const auto& [id, info] : manager().coupler_constraints_specs()) {
     // Skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
@@ -403,24 +406,25 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
     const int dof0 = joint0.velocity_start();
     const int dof1 = joint1.velocity_start();
-    const TreeIndex tree0 = tree_topology().velocity_to_tree_index(dof0);
-    const TreeIndex tree1 = tree_topology().velocity_to_tree_index(dof1);
+    const TreeIndex tree0_index = forest.v_to_tree_index(dof0);
+    const TreeIndex tree1_index = forest.v_to_tree_index(dof1);
 
     // Sanity check.
-    DRAKE_DEMAND(tree0.is_valid() && tree1.is_valid());
+    DRAKE_DEMAND(tree0_index.is_valid() && tree1_index.is_valid());
+
+    const SpanningForest::Tree& tree0 = forest.trees(tree0_index);
+    const SpanningForest::Tree& tree1 = forest.trees(tree1_index);
 
     // DOFs local to their tree.
-    const int tree_dof0 =
-        dof0 - tree_topology().tree_velocities_start_in_v(tree0);
-    const int tree_dof1 =
-        dof1 - tree_topology().tree_velocities_start_in_v(tree1);
+    const int tree_dof0 = dof0 - tree0.v_start();
+    const int tree_dof1 = dof1 - tree1.v_start();
 
-    const int tree_nv0 = tree_topology().num_tree_velocities(tree0);
-    const int tree_nv1 = tree_topology().num_tree_velocities(tree1);
+    const int tree_nv0 = tree0.nv();
+    const int tree_nv1 = tree1.nv();
 
     const typename SapCouplerConstraint<T>::Kinematics kinematics{
-        tree0,           tree_dof0,  tree_nv0, joint0.GetOnePosition(context),
-        tree1,           tree_dof1,  tree_nv1, joint1.GetOnePosition(context),
+        tree0_index,     tree_dof0,  tree_nv0, joint0.GetOnePosition(context),
+        tree1_index,     tree_dof1,  tree_nv1, joint1.GetOnePosition(context),
         info.gear_ratio, info.offset};
 
     problem->AddConstraint(
@@ -477,10 +481,14 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     // SapDistanceConstraint.
     auto make_constraint_jacobian = [this, &Jv_ApBq_W](BodyIndex bodyA,
                                                        BodyIndex bodyB) {
-      const TreeIndex treeA_index = tree_topology().body_to_tree_index(bodyA);
-      const TreeIndex treeB_index = tree_topology().body_to_tree_index(bodyB);
-      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
-      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+      const SpanningForest& forest = get_forest();
+      const TreeIndex treeA_index = forest.link_to_tree_index(bodyA);
+      const SpanningForest::Tree& treeA = forest.trees(treeA_index);
+      const bool treeA_has_dofs = treeA.has_dofs();
+
+      const TreeIndex treeB_index = forest.link_to_tree_index(bodyB);
+      const SpanningForest::Tree& treeB = forest.trees(treeB_index);
+      const bool treeB_has_dofs = treeB.has_dofs();
 
       // Sanity check at least one body is not World or anchored to World.
       DRAKE_DEMAND(treeA_has_dofs || treeB_has_dofs);
@@ -491,18 +499,12 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
           !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
-        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(tree_index),
-            tree_topology().num_tree_velocities(tree_index));
-        return SapConstraintJacobian<T>(tree_index, std::move(Jtree));
+        const SpanningForest::Tree& tree = treeA_has_dofs ? treeA : treeB;
+        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(tree.v_start(), tree.nv());
+        return SapConstraintJacobian<T>(tree.index(), std::move(Jtree));
       } else {
-        MatrixX<T> JA = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeA_index),
-            tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeB_index),
-            tree_topology().num_tree_velocities(treeB_index));
+        MatrixX<T> JA = Jv_ApBq_W.middleCols(treeA.v_start(), treeA.nv());
+        MatrixX<T> JB = Jv_ApBq_W.middleCols(treeB.v_start(), treeB.nv());
         return SapConstraintJacobian<T>(treeA_index, std::move(JA), treeB_index,
                                         std::move(JB));
       }
@@ -568,12 +570,11 @@ void SapDriver<T>::AddBallConstraints(
     // Jacobian for the relative velocity v_PQ_W, as required by
     // SapDistanceConstraint.
     auto make_constraint_jacobian = [this, &Jv_ApBq_W, &body_A, &body_B]() {
-      const TreeIndex treeA_index =
-          tree_topology().body_to_tree_index(body_A.index());
-      const TreeIndex treeB_index =
-          tree_topology().body_to_tree_index(body_B.index());
-      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
-      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+      const SpanningForest& forest = get_forest();
+      const TreeIndex treeA_index = forest.link_to_tree_index(body_A.index());
+      const TreeIndex treeB_index = forest.link_to_tree_index(body_B.index());
+      const bool treeA_has_dofs = forest.trees(treeA_index).has_dofs();
+      const bool treeB_has_dofs = forest.trees(treeB_index).has_dofs();
 
       // TODO(joemasterjohn): Move this exception up to the plant level so that
       // it fails as fast as possible. Currently, the earliest this can happen
@@ -593,17 +594,14 @@ void SapDriver<T>::AddBallConstraints(
 
       if (single_tree) {
         const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
-        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(tree_index),
-            tree_topology().num_tree_velocities(tree_index));
+        const SpanningForest::Tree& tree = forest.trees(tree_index);
+        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(tree.v_start(), tree.nv());
         return SapConstraintJacobian<T>(tree_index, std::move(Jtree));
       } else {
-        MatrixX<T> JA = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeA_index),
-            tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB = Jv_ApBq_W.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeB_index),
-            tree_topology().num_tree_velocities(treeB_index));
+        const SpanningForest::Tree& treeA = forest.trees(treeA_index);
+        const SpanningForest::Tree& treeB = forest.trees(treeB_index);
+        MatrixX<T> JA = Jv_ApBq_W.middleCols(treeA.v_start(), treeA.nv());
+        MatrixX<T> JB = Jv_ApBq_W.middleCols(treeB.v_start(), treeB.nv());
         return SapConstraintJacobian<T>(treeA_index, std::move(JA), treeB_index,
                                         std::move(JB));
       }
@@ -672,12 +670,15 @@ void SapDriver<T>::AddWeldConstraints(
     auto make_constraint_jacobian = [this, &J_W_AmBm](
                                         const RigidBody<T>& bodyA,
                                         const RigidBody<T>& bodyB) {
-      const TreeIndex treeA_index =
-          tree_topology().body_to_tree_index(bodyA.index());
-      const TreeIndex treeB_index =
-          tree_topology().body_to_tree_index(bodyB.index());
-      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
-      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+      const SpanningForest& forest = get_forest();
+
+      const TreeIndex treeA_index = forest.link_to_tree_index(bodyA.index());
+      const SpanningForest::Tree& treeA = forest.trees(treeA_index);
+      const bool treeA_has_dofs = treeA.has_dofs();
+
+      const TreeIndex treeB_index = forest.link_to_tree_index(bodyB.index());
+      const SpanningForest::Tree& treeB = forest.trees(treeB_index);
+      const bool treeB_has_dofs = treeB.has_dofs();
 
       // TODO(joemasterjohn): Move this exception up to the plant level so
       //  that it fails as fast as possible. Currently, the earliest this can
@@ -696,18 +697,12 @@ void SapDriver<T>::AddWeldConstraints(
           !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
-        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(
-            tree_topology().tree_velocities_start_in_v(tree_index),
-            tree_topology().num_tree_velocities(tree_index));
-        return SapConstraintJacobian<T>(tree_index, std::move(Jtree_W));
+        const SpanningForest::Tree& tree = treeA_has_dofs ? treeA : treeB;
+        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(tree.v_start(), tree.nv());
+        return SapConstraintJacobian<T>(tree.index(), std::move(Jtree_W));
       } else {
-        MatrixX<T> JA_W = J_W_AmBm.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeA_index),
-            tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB_W = J_W_AmBm.middleCols(
-            tree_topology().tree_velocities_start_in_v(treeB_index),
-            tree_topology().num_tree_velocities(treeB_index));
+        MatrixX<T> JA_W = J_W_AmBm.middleCols(treeA.v_start(), treeA.nv());
+        MatrixX<T> JB_W = J_W_AmBm.middleCols(treeB.v_start(), treeB.nv());
         return SapConstraintJacobian<T>(treeA_index, std::move(JA_W),
                                         treeB_index, std::move(JB_W));
       }
@@ -737,6 +732,7 @@ void SapDriver<T>::AddPdControllerConstraints(
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
+  const SpanningForest& forest = get_forest();
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < plant().num_model_instances();
        ++model_instance_index) {
@@ -769,10 +765,10 @@ void SapDriver<T>::AddPdControllerConstraints(
 
           const T& q0 = joint.GetOnePosition(context);
           const int dof = joint.velocity_start();
-          const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
-          const int tree_dof =
-              dof - tree_topology().tree_velocities_start_in_v(tree);
-          const int tree_nv = tree_topology().num_tree_velocities(tree);
+          const TreeIndex tree_index = forest.v_to_tree_index(dof);
+          const SpanningForest::Tree& tree = forest.trees(tree_index);
+          const int tree_dof = dof - tree.v_start();
+          const int tree_nv = tree.nv();
 
           // Controller gains.
           const PdControllerGains& gains = actuator.get_controller_gains();
@@ -782,7 +778,7 @@ void SapDriver<T>::AddPdControllerConstraints(
           typename SapPdControllerConstraint<T>::Parameters parameters{
               Kp, Kd, effort_limit};
           typename SapPdControllerConstraint<T>::Configuration configuration{
-              tree, tree_dof, tree_nv, q0, qd, vd, u0};
+              tree_index, tree_dof, tree_nv, q0, qd, vd, u0};
 
           problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
               std::move(configuration), std::move(parameters)));
@@ -826,6 +822,7 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       manager().GetConstraintActiveStatus(context);
 
+  const SpanningForest& forest = get_forest();
   for (const auto& [id, info] : manager().tendon_constraints_specs()) {
     // Skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
@@ -835,36 +832,37 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
         kBeta);
 
     // Find the set of trees that the joints of this constraint belong to.
-    TreeIndex tree0, tree1;
+    TreeIndex tree0_index, tree1_index;
     for (int i = 0; i < ssize(info.joints); ++i) {
       const Joint<T>& joint = plant().get_joint(info.joints[i]);
-      const TreeIndex tree =
-          tree_topology().velocity_to_tree_index(joint.velocity_start());
+      const TreeIndex tree_index =
+          forest.v_to_tree_index(joint.velocity_start());
       // Sanity check.
-      DRAKE_DEMAND(tree.is_valid());
+      DRAKE_DEMAND(tree_index.is_valid());
 
       // Update the first two trees that we find along the way.
-      if (!tree0.is_valid()) {
-        tree0 = tree;
-      } else if (!tree1.is_valid() && tree != tree0) {
-        tree1 = tree;
+      if (!tree0_index.is_valid()) {
+        tree0_index = tree_index;
+      } else if (!tree1_index.is_valid() && tree_index != tree0_index) {
+        tree1_index = tree_index;
       }
 
       // Constraints can have at most 2 participating cliques.
       // TODO(joemasterjohn): Fail faster by moving this detection to
-      // MultibodyPlant at Finalize() time.
-      if (tree != tree0 && tree != tree1) {
+      //  MultibodyPlant at Finalize() time.
+      if (tree_index != tree0_index && tree_index != tree1_index) {
         throw std::logic_error(
             "Creating a tendon constraint for a set of joints that belong "
             "to more than two kinematic trees is not allowed.");
       }
     }
 
-    DRAKE_DEMAND(tree0.is_valid());
+    DRAKE_DEMAND(tree0_index.is_valid());
 
     // Single clique version.
-    if (!tree1.is_valid()) {
-      const int tree0_nv = tree_topology().num_tree_velocities(tree0);
+    if (!tree1_index.is_valid()) {
+      const SpanningForest::Tree& tree0 = forest.trees(tree0_index);
+      const int tree0_nv = tree0.nv();
       VectorX<T> q0(tree0_nv);
       VectorX<T> a0(tree0_nv);
       q0.setZero();
@@ -874,14 +872,13 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
         const Joint<T>& joint = plant().get_joint(info.joints[i]);
         const int dof = joint.velocity_start();
         // DOFs local to their tree.
-        const int tree_dof =
-            dof - tree_topology().tree_velocities_start_in_v(tree0);
+        const int tree_dof = dof - tree0.v_start();
         q0(tree_dof) = joint.GetOnePosition(context);
         a0(tree_dof) = info.a[i];
       }
 
-      typename SapTendonConstraint<T>::Kinematics kinematics(tree0, q0, a0,
-                                                             info.offset);
+      typename SapTendonConstraint<T>::Kinematics kinematics(tree0_index, q0,
+                                                             a0, info.offset);
 
       // Only add the constraint if it is violated at q_0.
       if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
@@ -894,8 +891,11 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
 
     } else {
       // 2 clique version.
-      const int tree_nv0 = tree_topology().num_tree_velocities(tree0);
-      const int tree_nv1 = tree_topology().num_tree_velocities(tree1);
+      const SpanningForest::Tree& tree0 = forest.trees(tree0_index);
+      const SpanningForest::Tree& tree1 = forest.trees(tree1_index);
+
+      const int tree_nv0 = tree0.nv();
+      const int tree_nv1 = tree1.nv();
       VectorX<T> q0(tree_nv0);
       VectorX<T> q1(tree_nv1);
       VectorX<T> a0(tree_nv0);
@@ -907,24 +907,21 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
 
       for (int i = 0; i < ssize(info.joints); ++i) {
         const Joint<T>& joint = plant().get_joint(info.joints[i]);
-        const TreeIndex tree =
-            tree_topology().velocity_to_tree_index(joint.velocity_start());
         const int dof = joint.velocity_start();
-        if (tree == tree0) {
-          const int tree_dof =
-              dof - tree_topology().tree_velocities_start_in_v(tree0);
+        const TreeIndex tree_index = forest.v_to_tree_index(dof);
+        if (tree_index == tree0_index) {
+          const int tree_dof = dof - tree0.v_start();
           q0(tree_dof) = joint.GetOnePosition(context);
           a0(tree_dof) = info.a[i];
         } else {
-          const int tree_dof =
-              dof - tree_topology().tree_velocities_start_in_v(tree1);
+          const int tree_dof = dof - tree1.v_start();
           q1(tree_dof) = joint.GetOnePosition(context);
           a1(tree_dof) = info.a[i];
         }
       }
 
       typename SapTendonConstraint<T>::Kinematics kinematics(
-          tree0, tree1, q0, q1, a0, a1, info.offset);
+          tree0_index, tree1_index, q0, q1, a0, a1, info.offset);
       // Only add the constraint if it is violated at q_0.
       if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
                                                           kinematics)
@@ -1051,7 +1048,8 @@ void SapDriver<T>::AddCliqueContribution(
     const systems::Context<T>& context, int clique,
     const Eigen::Ref<const VectorX<T>>& clique_values,
     EigenPtr<VectorX<T>> values) const {
-  if (clique >= tree_topology().num_trees()) {
+  const SpanningForest& forest = get_forest();
+  if (clique >= forest.num_trees()) {
     const DeformableDriver<double>* deformable_driver =
         manager().deformable_driver();
     DRAKE_THROW_UNLESS(deformable_driver != nullptr);
@@ -1059,7 +1057,7 @@ void SapDriver<T>::AddCliqueContribution(
       const int num_deformable_dofs = values->size() - plant().num_velocities();
       Eigen::Ref<VectorX<T>> deformable_values =
           values->tail(num_deformable_dofs);
-      DeformableBodyIndex body_index(clique - tree_topology().num_trees());
+      DeformableBodyIndex body_index(clique - forest.num_trees());
       deformable_driver->EvalParticipatingVelocityMultiplexer(context)
           .Demultiplex(&deformable_values, body_index) += clique_values;
     } else {
@@ -1069,8 +1067,9 @@ void SapDriver<T>::AddCliqueContribution(
     }
   } else {
     const TreeIndex t(clique);
-    const int v_start = tree_topology().tree_velocities_start_in_v(t);
-    const int nv = tree_topology().num_tree_velocities(t);
+    const SpanningForest::Tree& tree = forest.trees(t);
+    const int v_start = tree.v_start();
+    const int nv = tree.nv();
     values->segment(v_start, nv) += clique_values;
   }
 }

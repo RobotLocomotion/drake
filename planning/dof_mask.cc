@@ -203,5 +203,33 @@ bool DofMask::operator==(const DofMask& o) const {
   return result;
 }
 
+std::vector<int> DofMask::GetSelectedToFullIndex() const {
+  std::vector<int> ret(count_);
+  int count = 0;
+  for (int i = 0; i < std::ssize(data_); ++i) {
+    if (data_[i]) {
+      ret[count++] = i;
+      if (count >= count_) {
+        break;
+      }
+    }
+  }
+  return ret;
+}
+
+std::vector<std::optional<int>> DofMask::GetFullToSelectedIndex() const {
+  std::vector<std::optional<int>> ret(std::ssize(data_), std::nullopt);
+  int count = 0;
+  for (int i = 0; i < std::ssize(data_); ++i) {
+    if (data_[i]) {
+      ret[i] = count++;
+      if (count >= count_) {
+        break;
+      }
+    }
+  }
+  return ret;
+}
+
 }  // namespace planning
 }  // namespace drake

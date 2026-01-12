@@ -1,4 +1,4 @@
-load("//tools/skylark:cc.bzl", "CcInfo")
+load("//tools/skylark:cc.bzl", "CcInfo", "cc_common")
 load("//tools/skylark:sh.bzl", "sh_test")
 
 # This file contains a linter rule that ensures that only our allowed set of

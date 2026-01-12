@@ -67,7 +67,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
                                 double angle_lower, double angle_upper,
                                 systems::Context<AutoDiffXd>* plant_context);
 
-  ~AngleBetweenVectorsConstraint() override {}
+  ~AngleBetweenVectorsConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

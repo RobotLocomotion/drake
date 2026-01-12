@@ -34,7 +34,7 @@ import re
 import struct
 import token
 import tokenize
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 # A brief summary of LCM's grammar.
 #

@@ -18,7 +18,7 @@ def scoped_file(filepath, is_fifo=False):
         if is_fifo:
             os.mkfifo(filepath)
         else:
-            with open(filepath, 'w'):
+            with open(filepath, "w"):
                 pass
         yield
     finally:
@@ -59,8 +59,10 @@ def wait_for_done_count(num_expected, attempt_max=1000):
         attempt += 1
         if attempt == attempt_max:
             raise RuntimeError(
-                "Did not get updated 'done count'. Read values: {}"
-                .format(values_read))
+                "Did not get updated 'done count'. Read values: {}".format(
+                    values_read
+                )
+            )
 
 
 class TestCallPython(unittest.TestCase):
@@ -73,7 +75,7 @@ class TestCallPython(unittest.TestCase):
             client_flags += ["--stop_on_error"]
 
         with scoped_file(file, is_fifo=True), scoped_file(done_file):
-            with open(done_file, 'w') as f:
+            with open(done_file, "w") as f:
                 f.write("0\n")
             # Start client.
             client = subprocess.Popen([client_bin] + client_flags)
@@ -101,7 +103,8 @@ class TestCallPython(unittest.TestCase):
 
     def test_help(self):
         text = subprocess.check_output(
-            [client_bin, "--help"], stderr=subprocess.STDOUT).decode("utf8")
+            [client_bin, "--help"], stderr=subprocess.STDOUT
+        ).decode("utf8")
         # Print output, since `assertIn` does not provide user-friendly
         # multiline error messages.
         print(text)

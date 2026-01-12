@@ -19,7 +19,8 @@ class DrakeGymTest(unittest.TestCase):
     def setUpClass(cls):
         gym.envs.register(
             id="DrakeCartPole-v0",
-            entry_point="pydrake.examples.gym.envs.cart_pole:DrakeCartPoleEnv")
+            entry_point="pydrake.examples.gym.envs.cart_pole:DrakeCartPoleEnv",
+        )
 
     def make_env(self):
         return gym.make("DrakeCartPole-v0")
@@ -31,9 +32,8 @@ class DrakeGymTest(unittest.TestCase):
         """Run stable-baselines's built-in test suite for our env."""
         dut = self.make_env()
         stable_baselines3.common.env_checker.check_env(
-            env=dut,
-            warn=True,
-            skip_render_check=True)
+            env=dut, warn=True, skip_render_check=True
+        )
 
     # TODO(JoseBarreiros-TRI) Add tests for make_vec_env. In our currently
     # supported versions of `gymnasium` and `stable_baselines3`, stable

@@ -13,7 +13,6 @@
 #include <nanoflann.hpp>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
 
 using common_robotics_utilities::voxel_grid::DSHVGSetType;

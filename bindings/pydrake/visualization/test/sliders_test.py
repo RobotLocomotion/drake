@@ -1,7 +1,3 @@
-from pydrake.visualization import (
-    MeshcatPoseSliders,
-)
-
 import unittest
 
 from pydrake.geometry import (
@@ -10,10 +6,12 @@ from pydrake.geometry import (
 from pydrake.math import (
     RigidTransform,
 )
+from pydrake.visualization import (
+    MeshcatPoseSliders,
+)
 
 
 class TestSliders(unittest.TestCase):
-
     def test_meshcat_pose_sliders(self):
         # Construct a sliders system, using every available option.
         meshcat = Meshcat()
@@ -23,14 +21,11 @@ class TestSliders(unittest.TestCase):
             lower_limit=[-0.5] * 6,
             upper_limit=[0.5] * 6,
             step=[0.1] * 6,
-            decrement_keycodes=[
-                "KeyA", "KeyB", "KeyC", "KeyD", "KeyE", "KeyF"
-            ],
-            increment_keycodes=[
-                "KeyG", "KeyH", "KeyI", "KeyJ", "KeyK", "KeyL"
-            ],
+            decrement_keycodes=["KeyA", "KeyB", "KeyC", "KeyD", "KeyE", "KeyF"],
+            increment_keycodes=["KeyG", "KeyH", "KeyI", "KeyJ", "KeyK", "KeyL"],
             prefix="pre",
-            visible=[False, False, True, True, True, False])
+            visible=[False, False, True, True, True, False],
+        )
 
         # Various methods should not crash.
         dut.get_output_port()
@@ -41,10 +36,12 @@ class TestSliders(unittest.TestCase):
         context = dut.CreateDefaultContext()
 
         # The Run function doesn't crash.
-        X = dut.Run(system=dut,
-                    context=context,
-                    timeout=1.0,
-                    stop_button_keycode="ArrowLeft")
+        X = dut.Run(
+            system=dut,
+            context=context,
+            timeout=1.0,
+            stop_button_keycode="ArrowLeft",
+        )
         self.assertTrue(X.IsExactlyIdentity())
 
         X2 = RigidTransform([0.1, 0.2, 0.3])

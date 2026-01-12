@@ -11,6 +11,9 @@ namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
 
+MinimumDistanceUpperBoundConstraint::~MinimumDistanceUpperBoundConstraint() =
+    default;
+
 template <typename T>
 void MinimumDistanceUpperBoundConstraint::Initialize(
     const MultibodyPlant<T>& plant, systems::Context<T>* plant_context,

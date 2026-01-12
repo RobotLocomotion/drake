@@ -71,6 +71,7 @@
 // #include "drake/common/string_unordered_set.h"
 // #include "drake/common/temp_directory.h"
 // #include "drake/common/text_logging.h"
+// #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
 // #include "drake/common/type_safe_index.h"
 // #include "drake/common/unused.h"
@@ -1084,7 +1085,7 @@ characters.)""";
       struct /* filename_hint */ {
         // Source: drake/common/memory_file.h
         const char* doc =
-R"""(Returns the notional "filename" for this file`.)""";
+R"""(Returns the notional "filename" for this ``file``.)""";
       } filename_hint;
       // Symbol: drake::MemoryFile::sha256
       struct /* sha256 */ {
@@ -2994,7 +2995,10 @@ Note:
 R"""(Returns ``fmt::to_string(x)`` but always with at least one digit after
 the decimal point. Different versions of fmt disagree on whether to
 omit the trailing ".0" when formatting integer-valued floating-point
-numbers.)""";
+numbers.
+
+Template parameter ``T``:
+    must be either ``float`` or ``double``.)""";
     } fmt_floating_point;
     // Symbol: drake::fmt_runtime
     struct /* fmt_runtime */ {
@@ -3145,11 +3149,11 @@ For example:
 .. code-block:: c++
 
     double* SanityCheck(double* data) {
-      if (!data) {
-        static const logging::Warn log_once("Bad data!");
-        return alternative_data();
-      }
-      return data;
+    if (!data) {
+    static const logging::Warn log_once("Bad data!");
+    return alternative_data();
+    }
+    return data;
     }
 
 .. raw:: html
@@ -3163,7 +3167,7 @@ For example:
       } Warn;
       // Symbol: drake::logging::get_dist_sink
       struct /* get_dist_sink */ {
-        // Source: drake/common/text_logging.h
+        // Source: drake/common/text_logging_spdlog.h
         const char* doc =
 R"""((Advanced) Retrieves the default sink for all Drake logs. When spdlog
 is enabled, the return value can be cast to

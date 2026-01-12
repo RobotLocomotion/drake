@@ -83,9 +83,9 @@ void Activation(
       dYdX->noalias() = (1.0 - X.array().tanh().square()).matrix();
     }
   } else if (type == kReLU) {
-    *Y = X.array().max(0.0).matrix();
+    *Y = X.array().max(T{0.0}).matrix();
     if (dYdX) {
-      dYdX->noalias() = (X.array() <= 0).select(0 * X, 1);
+      dYdX->noalias() = (X.array() <= 0).template cast<bool>().select(0 * X, 1);
     }
   } else {
     DRAKE_DEMAND(type == kIdentity);

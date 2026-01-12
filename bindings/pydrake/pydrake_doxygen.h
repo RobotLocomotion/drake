@@ -397,8 +397,8 @@ versa).
 If there is an indirect / transitive relationship (storing a reference to an
 argument's member or a transfer of ownership, append `(tr.)` to the
 relationship. Note: ownership transfer solutions likely require treatment of
-all the involved objects; see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle" and [issue
-#14387](https://github.com/RobotLocomotion/drake/issues/14387).
+all the involved objects; see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle" and
+[issue #14387](https://github.com/RobotLocomotion/drake/issues/14387).
 
 Some example comments:
 
@@ -421,7 +421,7 @@ For more information about `pybind11` return value policies, see [the pybind11
 documentation](
 https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
 
-`pydrake` offers the @ref drake::pydrake::py_rvp "py_rvp" alias to help with
+`pydrake` offers the `drake::pydrake::py_rvp` alias to help with
 shortened usage of `py::return_value_policy`. The most used (non-default)
 policies in `pydrake` are `reference` and `reference_internal` due to the usage
 of raw pointers / references in the public C++ API (rather than
@@ -456,15 +456,16 @@ explicitly.
 
 The `ref_cycle` annotation has been helpful in solving some tricky lifetime
 problems with pydrake bindings. It was one piece of the solution to Diagram
-memory leaks; see [issue
-#14387](https://github.com/RobotLocomotion/drake/issues/14387) for details. In
-the case of Python custom leaf systems, it was used to avoid inadvertent
-self-reference via stored references to port objects. See [issue
-#22515](https://github.com/RobotLocomotion/drake/issues/22515) for details.
+memory leaks; see
+[issue #14387](https://github.com/RobotLocomotion/drake/issues/14387) for
+details. In the case of Python custom leaf systems, it was used to avoid
+inadvertent self-reference via stored references to port objects. See
+[issue #22515](https://github.com/RobotLocomotion/drake/issues/22515) for
+details.
 
 A fairly simple example of using `ref_cycle` might look like the code
-below. The code is excerpted from fixes to [issue
-#22515](https://github.com/RobotLocomotion/drake/issues/22515):
+below. The code is excerpted from fixes to
+[issue #22515](https://github.com/RobotLocomotion/drake/issues/22515):
 
 ```
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
@@ -493,8 +494,8 @@ Notice that in replacing `py_rvp::reference_internal`, we need both the
 ## Function Overloads
 
 To bind function overloads, please try the following (in order):
-- `py::overload_cast<Args>(func)`: See [the pybind11
-documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
+- `py::overload_cast<Args>(func)`: See
+[the pybind11 documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
 This works about 80% of the time.
 - `pydrake::overload_cast_explicit<Return, Args...>(func)`: When
 `py::overload_cast` does not work (not always guaranteed to work).
@@ -701,10 +702,9 @@ covered.
 // TODO(eric.cousineau): If it ever stops redirecting stdin, use
 // `bazel run --run_under='gdb --args python' --script_path=...`.
 
-/**
-@addtogroup environment_variables
+/** @defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
+@ingroup environment_variables
 @{
-@defgroup pydrake_python_logging DRAKE_PYTHON_LOGGING
 
 By default, pydrake will redirect spdlog logging (from C++) to Python's
 `logging` module. However, if this environment variable is set to "0",
