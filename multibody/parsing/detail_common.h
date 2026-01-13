@@ -196,9 +196,9 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
 //   <drake:linear_spring_damper_damping value="1.0"/>
 // </drake:linear_spring_damper>
 //
-// The various @p read_* functors may (at its option) emit diagnostic errors or
-// warnings but should not throw. ParseLinearSpringDamper() may return nullopt
-// at its option.
+// Each of the various @p read_* functors may (at its option) emit diagnostic
+// errors or warnings but should not throw. ParseLinearSpringDamper() may return
+// nullptr at its option.
 const LinearSpringDamper<double>* ParseLinearSpringDamper(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
     const std::function<const RigidBody<double>*(const char*)>& read_body,
