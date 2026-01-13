@@ -1575,9 +1575,10 @@ bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
   return value == "true" ? true : false;
 }
 
-std::optional<double> ParseDouble(const SDFormatDiagnostic& diagnostic,
-                                  const sdf::ElementPtr node,
-                                  const char* element_name) {
+std::optional<double> ParseDouble(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    const char* element_name,
+    const std::optional<std::function<bool(double)>> validator = std::nullopt) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
@@ -1587,8 +1588,11 @@ std::optional<double> ParseDouble(const SDFormatDiagnostic& diagnostic,
   }
 
   const double value = node->Get<double>(element_name);
+  if (!validator.has_value() || (*validator)(value)) {
+    return value;
+  }
 
-  return value;
+  return {};
 }
 
 bool ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
@@ -1951,32 +1955,30 @@ const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
   // Returns std::nullopt if the tag does not exist.
   auto read_double = [&diagnostic,
                       node](const char* element_name) -> std::optional<double> {
-    if (!node->HasElement(element_name)) {
-      std::string message =
-          fmt::format("<{}>: Unable to find the <{}> child tag.",
-                      node->GetName(), element_name);
-      diagnostic.Error(node, std::move(message));
-      return {};
-    }
-    double result = node->Get<double>(element_name);
-    // For drake:linear_spring_damper_free_length: require strictly positive
-    if (result <= 0 &&
-        std::string(element_name) == "drake:linear_spring_damper_free_length") {
-      std::string message =
-          fmt::format("<{}>: The <{}> child tag must be strictly positive.",
-                      node->GetName(), element_name);
-      diagnostic.Error(node, std::move(message));
-      return {};
-    }
-    // For other elements: require non-negative
-    if (result < 0) {
-      std::string message =
-          fmt::format("<{}>: The <{}> child tag must be non-negative.",
-                      node->GetName(), element_name);
-      diagnostic.Error(node, std::move(message));
-      return {};
-    }
-    return result;
+    auto validator = [&diagnostic, node, element_name](double result) {
+      // For drake:linear_spring_damper_free_length: require strictly positive
+      if (result <= 0 && std::string(element_name) ==
+                             "drake:linear_spring_damper_free_length") {
+        std::string message =
+            fmt::format("<{}>: The <{}> child tag must be strictly positive.",
+                        node->GetName(), element_name);
+        diagnostic.Error(node, std::move(message));
+        return false;
+      }
+
+      // For other elements: require non-negative
+      if (result < 0) {
+        std::string message =
+            fmt::format("<{}>: The <{}> child tag must be non-negative.",
+                        node->GetName(), element_name);
+        diagnostic.Error(node, std::move(message));
+        return false;
+      }
+
+      return true;
+    };
+
+    return ParseDouble(diagnostic, node, element_name, validator);
   };
 
   return ParseLinearSpringDamper(read_vector, read_body, read_double, plant);
