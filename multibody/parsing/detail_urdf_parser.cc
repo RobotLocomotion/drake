@@ -1133,7 +1133,6 @@ void UrdfParser::ParseLinearSpringDamper(XMLElement* node) {
   auto read_body =
       [node, this](const char* element_name) -> const RigidBody<double>* {
     XMLElement* value_node = node->FirstChildElement(element_name);
-
     if (value_node != nullptr) {
       std::string body_name;
       auto plant = w_.plant;
@@ -1151,7 +1150,6 @@ void UrdfParser::ParseLinearSpringDamper(XMLElement* node) {
                                        element_name));
         return {};
       }
-
     } else {
       Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
       return {};

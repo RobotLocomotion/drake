@@ -1965,7 +1965,6 @@ const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
         diagnostic.Error(node, std::move(message));
         return false;
       }
-
       // For other elements: require non-negative
       if (result < 0) {
         std::string message =
@@ -1974,7 +1973,6 @@ const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
         diagnostic.Error(node, std::move(message));
         return false;
       }
-
       return true;
     };
 
