@@ -752,7 +752,7 @@ to be compliant, as opposed to rigid, in hydroelastic contact models.
           point value and `d` (derivative gain) containing a non-negative
           floating point value.
 
-@subsection tag_drake_controller_gains_semantics Semantics
+@subsubsection tag_drake_controller_gains_semantics Semantics
 
 If present, this element provides proportional and derivative gains for a low
 level PD controller for the drake::multibody::JointActuator associated with the
@@ -1242,6 +1242,11 @@ MultibodyPlant's constructor documentation for details.
 - URDF path: N/A
 - Syntax: String.
 
+@subsubsection tag_drake_parent_semantics Semantics
+
+The string names a frame (defined elsewhere in the model) that is associated
+with the parent link of the joint being defined.
+
 @subsection tag_drake_perception_properties drake:perception_properties
 
 - SDFormat path: `//model/link/visual/drake:perception_properties`
@@ -1267,11 +1272,6 @@ visuals.
 
 @see @ref tag_drake_illustration_properties
 @see @ref tag_drake_visual
-
-@subsubsection tag_drake_parent_semantics Semantics
-
-The string names a frame (defined elsewhere in the model) that is associated
-with the parent link of the joint being defined.
 
 @see @ref tag_drake_joint
 

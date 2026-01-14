@@ -53,7 +53,7 @@ bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
   return internal::BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
 }
 
-bool Obb::HasOverlap(const Obb& bv_H, const internal::Plane<double>& plane_P,
+bool Obb::HasOverlap(const Obb& bv_H, const Plane<double>& plane_P,
                      const math::RigidTransformd& X_PH) {
   const RotationMatrixd& R_HB = bv_H.pose().rotation();
   const Vector3d& p_HBo = bv_H.center();

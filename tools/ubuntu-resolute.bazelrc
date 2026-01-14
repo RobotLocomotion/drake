@@ -13,7 +13,7 @@ build:clang --host_action_env=CXX=clang++-19
 build:clang --copt=-fno-assume-unique-vtables
 build:clang --host_copt=-fno-assume-unique-vtables
 
-build --define=UBUNTU_VERSION=24.04
+build --define=UBUNTU_VERSION=26.04
 
 # This flag tells our drake_cc.bzl rules which GCC version they should expect to
 # see, so that the rules can tweak our warning flags. Note that this is not
@@ -21,4 +21,4 @@ build --define=UBUNTU_VERSION=24.04
 #
 # Note that when building Drake via CMake, our cmake/bazelrc.in overrides this
 # value to match the CC and CXX override that CMake has told Drake to use.
-build --@drake//tools/cc_toolchain:compiler_major=13
+build --@drake//tools/cc_toolchain:compiler_major=15
