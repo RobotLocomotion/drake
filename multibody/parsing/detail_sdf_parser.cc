@@ -1578,7 +1578,7 @@ bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
 std::optional<double> ParseDouble(
     const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
     const char* element_name,
-    const std::optional<std::function<bool(double)>> validator = std::nullopt) {
+    const std::function<bool(double)> validator = nullptr) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
@@ -1588,7 +1588,7 @@ std::optional<double> ParseDouble(
   }
 
   const double value = node->Get<double>(element_name);
-  if (!validator.has_value() || (*validator)(value)) {
+  if (validator == nullptr || validator(value)) {
     return value;
   }
 
