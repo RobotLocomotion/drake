@@ -1,5 +1,6 @@
 #include "drake/geometry/mesh_deformation_interpolator.h"
 
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -173,7 +174,8 @@ GTEST_TEST(DrivenTriangleMesh, VertexPositionAndNormal) {
     expected_normals.segment<3>(3 * v).normalize();
   }
   EXPECT_TRUE(CompareMatrices(expected_normals,
-                              driven_mesh.GetDrivenVertexNormals(), 1e-15));
+                              driven_mesh.GetDrivenVertexNormals(),
+                              2.0 * std::numeric_limits<double>::epsilon()));
 
   /* Now we test the constructor that explicitly specifies the interpolator. */
   VertexSampler interpolator(std::vector<int>{0, 1, 2, 5}, control_mesh);
@@ -184,8 +186,9 @@ GTEST_TEST(DrivenTriangleMesh, VertexPositionAndNormal) {
   another_driven_mesh.SetControlMeshPositions(q);
   EXPECT_TRUE(CompareMatrices(expected_q,
                               another_driven_mesh.GetDrivenVertexPositions()));
-  EXPECT_TRUE(CompareMatrices(
-      expected_normals, another_driven_mesh.GetDrivenVertexNormals(), 1e-15));
+  EXPECT_TRUE(CompareMatrices(expected_normals,
+                              another_driven_mesh.GetDrivenVertexNormals(),
+                              2.0 * std::numeric_limits<double>::epsilon()));
 }
 
 // We test geometry::internal::MakeDrivenSurfaceMesh on the unit octahedron
