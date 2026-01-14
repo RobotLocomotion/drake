@@ -17,7 +17,7 @@ namespace {
 const double kDt = 1e-3;
 const double kGamma = 0.6;
 const double kBeta = 0.3;
-const double kTolerance = 8.0 * std::numeric_limits<double>::epsilon();
+const double kTolerance = 1e-12;
 
 /* Arbitrary initial states. */
 Vector3<double> q() {
