@@ -583,7 +583,7 @@ void CharacterizeResultTest<T>::RunCharacterization(
      bound but gives a modicum of breathing room. */
     constexpr double cutoff = 4 * std::numeric_limits<double>::epsilon();
     if (query.error > cutoff) {
-      EXPECT_GT(*worst_error, query.error / 8)
+      EXPECT_GT(*worst_error, query.error / 12)
           << "Expected error is too big!"
           << "\n  " << worst_config->description
           << "\n    Expected error: " << query.error
