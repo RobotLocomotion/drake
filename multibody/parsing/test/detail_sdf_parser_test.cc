@@ -2795,23 +2795,20 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingUnsupportedChildTag) {
         <link name='A'/>
         <link name='B'/>
         <drake:linear_spring_damper>
-          <drake:linear_spring_damper_body_A>A</drake:linear_spring_damper_body_A>
-          <drake:linear_spring_damper_p_AP>1 2 3</drake:linear_spring_damper_p_AP>
-          <drake:linear_spring_damper_body_B>B</drake:linear_spring_damper_body_B>
-          <drake:linear_spring_damper_p_BQ>4 5 6</drake:linear_spring_damper_p_BQ>
-          <drake:linear_spring_damper_free_length>7.0</drake:linear_spring_damper_free_length>
-          <drake:linear_spring_damper_stiffness>8.0</drake:linear_spring_damper_stiffness>
-          <drake:linear_spring_damper_damping>9.0</drake:linear_spring_damper_damping>
-          <drake:linear_spring_damper_unsupported>0.0</drake:linear_spring_damper_unsupported>
+          <INVALID_TAG>0.0</INVALID_TAG>
         </drake:linear_spring_damper>
       </model>
     </world>)""");
 
-  EXPECT_THAT(
-      TakeError(),
-      ::testing::MatchesRegex(
-          ".*Unsupported SDFormat element in drake:linear_spring_damper: "
-          "drake:linear_spring_damper_unsupported"));
+  // We've omitted the required tags. We'll get one error for the first tag it
+  // attempted to read (it skips the others). But the invalid tag will still
+  // generate a warning.
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(".*Unable to find the .* child tag."));
+
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+                                 ".*Ignoring unsupported SDFormat element in "
+                                 "drake:linear_spring_damper: INVALID_TAG"));
 }
 
 TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyA) {
