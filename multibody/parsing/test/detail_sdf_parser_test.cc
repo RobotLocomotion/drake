@@ -2786,6 +2786,34 @@ TEST_F(SdfParserTest, LinearSpringDamperParsingGood) {
   EXPECT_EQ(linear_spring_damper.damping(), 9.0);
 }
 
+TEST_F(SdfParserTest, LinearSpringDamperParsingUnsupportedChildTag) {
+  AddSceneGraph();
+  // Test with an extra tag which is not supported.
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A>A</drake:linear_spring_damper_body_A>
+          <drake:linear_spring_damper_p_AP>1 2 3</drake:linear_spring_damper_p_AP>
+          <drake:linear_spring_damper_body_B>B</drake:linear_spring_damper_body_B>
+          <drake:linear_spring_damper_p_BQ>4 5 6</drake:linear_spring_damper_p_BQ>
+          <drake:linear_spring_damper_free_length>7.0</drake:linear_spring_damper_free_length>
+          <drake:linear_spring_damper_stiffness>8.0</drake:linear_spring_damper_stiffness>
+          <drake:linear_spring_damper_damping>9.0</drake:linear_spring_damper_damping>
+          <drake:linear_spring_damper_unsupported>0.0</drake:linear_spring_damper_unsupported>
+        </drake:linear_spring_damper>
+      </model>
+    </world>)""");
+
+  EXPECT_THAT(
+      TakeError(),
+      ::testing::MatchesRegex(
+          ".*Unsupported SDFormat element in drake:linear_spring_damper: "
+          "drake:linear_spring_damper_unsupported"));
+}
+
 TEST_F(SdfParserTest, LinearSpringDamperParsingNoBodyA) {
   AddSceneGraph();
   // Test missing body tag.
