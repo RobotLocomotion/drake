@@ -138,6 +138,39 @@ class VelocityKinematicsCache {
   SpatialVelocity_PoolType V_PB_W_pool_;
 };
 
+template <typename T>
+class VelocityKinematicsCacheInM {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCacheInM);
+
+  explicit VelocityKinematicsCacheInM(int num_mobods)
+      : V_FM_M_pool_(num_mobods), V_WM_M_pool_(num_mobods) {
+    V_FM_M_pool_[0].SetZero();  // World velocity is zero.
+    V_WM_M_pool_[0].SetZero();
+  }
+
+  const SpatialVelocity<T>& get_V_FM_M(MobodIndex index) const {
+    return V_FM_M_pool_[index];
+  }
+
+  const SpatialVelocity<T>& get_V_WM_M(MobodIndex index) const {
+    return V_WM_M_pool_[index];
+  }
+
+  SpatialVelocity<T>& get_mutable_V_FM_M(MobodIndex index) {
+    return V_FM_M_pool_[index];
+  }
+
+  SpatialVelocity<T>& get_mutable_V_WM_M(MobodIndex index) {
+    return V_WM_M_pool_[index];
+  }
+
+ private:
+  // Index by MobodIndex.
+  std::vector<SpatialVelocity<T>> V_FM_M_pool_;
+  std::vector<SpatialVelocity<T>> V_WM_M_pool_;
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

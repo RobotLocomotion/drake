@@ -2997,15 +2997,17 @@ TEST_F(SplitPendulum, MassMatrix) {
   // We choose an arbitrary angle since the mass matrix is independent of the
   // state.
   const double theta = M_PI / 3;
-  pin_->set_angle(context_.get(), theta);
 
-  MatrixX<double> M_via_id(1, 1), M_via_W(1, 1);
+  MatrixX<double> M_via_id(1, 1), M_via_W(1, 1), M_via_M(1, 1);
+  pin_->set_angle(context_.get(), theta);
   plant_.CalcMassMatrixViaInverseDynamics(*context_, &M_via_id);
   plant_.CalcMassMatrix(*context_, &M_via_W);
+  plant_.CalcMassMatrixViaM(*context_, &M_via_M);
 
   // We can only expect values within the precision specified in the sdf file.
   EXPECT_NEAR(M_via_id(0, 0), Io, 1.0e-6);
   EXPECT_NEAR(M_via_W(0, 0), Io, 1.0e-6);
+  EXPECT_NEAR(M_via_M(0, 0), Io, 1.0e-6);
 }
 
 // This test ensures that we can create a symbolic mass matrix successfully.
@@ -3042,18 +3044,22 @@ TEST_F(SplitPendulum, SymbolicMassMatrix) {
   sym_plant->SetPositions(sym_context.get(), q);
   sym_plant->SetVelocities(sym_context.get(), v);
 
-  // Calculate the mass matrix two different ways, via Inverse Dynamics
-  // ("_via_id") and using the Composite Body Algorithm via recursion of
-  // World-frame quantities ("_via_W"). Verify that evaluating the resulting
-  // expressions yields the same result numerically.
-  Eigen::MatrixX<symbolic::Expression> M_via_id(1, 1), M_via_W(1, 1);
+  // Calculate the mass matrix three different ways, via Inverse Dynamics
+  // ("_via_id"), using the Composite Body Algorithm via recursion of
+  // World-frame quantities ("_via_W"), and M-frame quantities ("_via_M").
+  // Verify that evaluating the resulting expressions yields the same result
+  // numerically.
+  Eigen::MatrixX<symbolic::Expression> M_via_id(1, 1), M_via_W(1, 1),
+      M_via_M(1, 1);
   sym_plant->CalcMassMatrixViaInverseDynamics(*sym_context, &M_via_id);
   sym_plant->CalcMassMatrix(*sym_context, &M_via_W);
+  sym_plant->CalcMassMatrixViaM(*sym_context, &M_via_M);
 
   const symbolic::Environment env{{q_var(0), 2.0}, {v_var(0), 10.},
                                   {m_var(0), 3.0}, {m_var(1), 4.0},
                                   {l_var(0), 5.0}, {l_var(1), 6.0}};
   EXPECT_NEAR(M_via_W(0, 0).Evaluate(env), M_via_id(0, 0).Evaluate(env), 1e-14);
+  EXPECT_NEAR(M_via_M(0, 0).Evaluate(env), M_via_id(0, 0).Evaluate(env), 1e-14);
 
   // Generate symbolic expressions for a few more quantities here just as a
   // sanity check that we can do so. We won't look at the results.
