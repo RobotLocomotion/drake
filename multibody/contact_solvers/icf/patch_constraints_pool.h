@@ -173,6 +173,9 @@ class PatchConstraintsPool {
                          EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                          T* d2cost) const;
 
+  /* Testing only access. */
+  const std::vector<std::pair<int, int>>& bodies() { return bodies_; }
+
  private:
   /* Returns the index into data per patch and per contact pair.
   @param p Patch index p < num_pairs().
