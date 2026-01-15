@@ -784,10 +784,27 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
+        // XXX
         .def("DeclarePeriodicPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self, double period_sec,
-                              double offset_sec,
-                              EventCallback<const Context<T>&> publish) {
+            WrapCallbacks([](py::object py_self, double period_sec,
+                              double offset_sec, py::object py_publish) {
+              fmt::print("publish ptr {}\n",
+                  reinterpret_cast<void*>(py_publish.ptr()));
+              auto self = py::cast<PyLeafSystem*>(py_self);
+              auto publish =
+                  py::cast<EventCallback<const Context<T>&>>(py_publish);
+              if (PyInstanceMethod_Check(py_publish.ptr())) {
+                fmt::print("is PyInstanceMethod\n");
+                DRAKE_DEMAND(false);
+              } else if (PyMethod_Check(py_publish.ptr())) {
+                fmt::print("is PyMethod\n");
+                DRAKE_DEMAND(false);
+              } else if (PyFunction_Check(py_publish.ptr())){
+                fmt::print("is PyFunction\n");
+              }
+
+              internal::make_arbitrary_ref_cycle(
+                  py_self, py_publish, "DeclarePeriodicPublishEvent");
               self->DeclarePeriodicEvent(period_sec, offset_sec,
                   PublishEvent<T>(TriggerType::kPeriodic,
                       [&publish](const System<T>&, const Context<T>& context,
