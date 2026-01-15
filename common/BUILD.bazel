@@ -29,7 +29,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":autodiff",
-        ":bit_cast",
         ":cond",
         ":copyable_unique_ptr",
         ":cpu_capabilities",
@@ -112,10 +111,11 @@ drake_cc_library(
         "drake_throw.h",
         "eigen_types.h",
         "never_destroyed.h",
-        "ssize.h",
         "text_logging.h",
         # Remove with deprecation on 2026-03-01.
         "text_logging_spdlog.h",
+        # Remove with deprecation on 2026-09-01.
+        "ssize.h",
     ],
     deps = [
         ":fmt",
@@ -135,11 +135,6 @@ drake_cc_library(
     deps = [
         ":essential",
     ],
-)
-
-drake_cc_library(
-    name = "bit_cast",
-    hdrs = ["bit_cast.h"],
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
@@ -798,13 +793,6 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "bit_cast_test",
-    deps = [
-        ":bit_cast",
-    ],
-)
-
 drake_cc_binary(
     name = "cpu_capabilities_test_device",
     testonly = True,
@@ -822,13 +810,6 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ssize_test",
-    deps = [
-        ":essential",
     ],
 )
 

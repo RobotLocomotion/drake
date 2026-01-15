@@ -5,7 +5,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 
 // TODO(rpoyner-tri): the Select*() and Expand*() functions below can be
 // removed and replaced with arbitrary indexing once Eigen 3.4 is our minimum

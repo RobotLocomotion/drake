@@ -33,18 +33,18 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.48.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.48.0):
+[v1.49.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.49.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.48.0/drake-1.48.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.48.0/drake-1.48.0-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.48.0/drake-1.48.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.48.0/drake-1.48.0-noble.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.48.0/drake-1.48.0-mac-arm64.tar.gz (for arm64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.49.0/drake-1.49.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.49.0/drake-1.49.0-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.49.0/drake-1.49.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.49.0/drake-1.49.0-noble.tar.gz)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.49.0/drake-1.49.0-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
 software. For example:
 
 ```
-curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.48.0/drake-1.48.0-mac-arm64.tar.gz
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.49.0/drake-1.49.0-mac-arm64.tar.gz
 ```
 
 ### Use as a C++ library
@@ -53,6 +53,13 @@ For an example of using a Drake ``*.tar.gz`` image from a CMake project, refer
 to the
 [drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed)
 example.
+
+If not using the example, be sure to install the dependencies before proceeding
+by running the setup script inside the download:
+
+```bash
+sudo drake/share/drake/setup/install_prereqs
+```
 
 ### Use as a Python library
 

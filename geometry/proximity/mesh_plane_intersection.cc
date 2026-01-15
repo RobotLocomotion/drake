@@ -247,7 +247,7 @@ int SliceTetWithPlane(
 
   // Because the vertices are measured and expressed in the world frame, we
   // need to provide a normal expressed in the same.
-  const Vector3<T> nhat_W = X_WM.rotation() * plane_M.normal();
+  const Vector3<T> nhat_W = X_WM.rotation() * plane_M.unit_normal();
   const Vector3<T> grad_e_MN_W =
       X_WM.rotation() * field_M.EvaluateGradient(tet_index).cast<T>();
   return builder_W->AddPolygon(face_verts, nhat_W, grad_e_MN_W);

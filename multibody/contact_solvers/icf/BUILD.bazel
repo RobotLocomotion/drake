@@ -256,6 +256,7 @@ drake_cc_googletest(
         ":icf_builder",
         ":icf_model",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
         "//multibody/parsing:parser",
         "//multibody/plant:contact_properties",

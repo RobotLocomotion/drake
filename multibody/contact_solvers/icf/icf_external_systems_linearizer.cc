@@ -176,7 +176,8 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
 
 template <typename T>
 IcfExternalSystemsLinearizer<T>::Scratch::Scratch(
-    const MultibodyPlant<T>& plant) {
+    const MultibodyPlant<T>& plant)
+    : f_ext(plant) {
   const int nv = plant.num_velocities();
   const int nq = plant.num_positions();
   f_ext = std::make_unique<MultibodyForces<T>>(plant);
@@ -213,6 +214,17 @@ void IcfExternalSystemsLinearizer<T>::CalcActuationForces(
   using Attorney = multibody::internal::MultibodyPlantIcfAttorney<T>;
   tau->setZero();
   Attorney::AddJointActuationForces(plant_, context, tau);
+}
+
+template <typename T>
+void IcfExternalSystemsLinearizer<T>::CalcExternalForces(
+    const Context<T>& context, VectorX<T>* tau) const {
+  using Attorney = multibody::internal::MultibodyPlantIcfAttorney<T>;
+  MultibodyForces<T>& forces = scratch_.f_ext;
+  forces.SetZero();
+  Attorney::AddAppliedExternalSpatialForces(plant_, context, &forces);
+  Attorney::AddAppliedExternalGeneralizedForces(plant_, context, &forces);
+  plant_.CalcGeneralizedForces(context, forces, tau);
 }
 
 }  // namespace internal

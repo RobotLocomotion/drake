@@ -526,8 +526,8 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
 Polynomial Polynomial::Integrate(const Variable& x) const {
   if (decision_variables().include(x)) {
     ostringstream oss;
-    oss << x << " is a decision variable of polynomial " << *this
-        << ".  Integration with respect to decision variables is not "
+    oss << fmt::to_string(x) << " is a decision variable of polynomial "
+        << *this << ".  Integration with respect to decision variables is not "
         << "supported yet.";
     throw runtime_error(oss.str());
   }
@@ -1112,7 +1112,7 @@ void Polynomial::CheckInvariant() const {
       oss << "Polynomial " << *this
           << " does not satisfy the invariant because the coefficient of the "
              "monomial "
-          << monomial << " is 0.\n";
+          << fmt::to_string(monomial) << " is 0.\n";
       throw runtime_error(oss.str());
     }
   }
@@ -1270,9 +1270,9 @@ ostream& operator<<(ostream& os, const Polynomial& p) {
     return os << 0;
   }
   auto it = map.begin();
-  os << it->second << "*" << it->first;
+  os << it->second << "*" << fmt::to_string(it->first);
   for (++it; it != map.end(); ++it) {
-    os << " + " << it->second << "*" << it->first;
+    os << " + " << it->second << "*" << fmt::to_string(it->first);
   }
   return os;
 }

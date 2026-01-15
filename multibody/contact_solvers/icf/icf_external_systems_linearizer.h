@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <tuple>
 
 #include "drake/common/default_scalars.h"
@@ -101,7 +100,7 @@ class IcfExternalSystemsLinearizer {
     explicit Scratch(const MultibodyPlant<T>& plant);
     ~Scratch();
 
-    std::unique_ptr<MultibodyForces<T>> f_ext;
+    MultibodyForces<T> f_ext;
 
     VectorX<T> tau_u0;  // Actuation τᵤ(x) = B u(x) at x₀.
     VectorX<T> tau_e0;  // External forces τₑ(x) = τ_ext(x) at x₀.
@@ -127,6 +126,12 @@ class IcfExternalSystemsLinearizer {
   @param[out] tau Output storage for τ. */
   void CalcActuationForces(const systems::Context<T>& plant_context,
                            VectorX<T>* tau) const;
+
+  /* Computes external forces τ = τₑ(x) from the plant's spatial and
+  generalized force input ports.
+  @param[out] tau Output storage for τ. */
+  void CalcExternalForces(const systems::Context<T>& plant_context,
+                          VectorX<T>* tau) const;
 
   const MultibodyPlant<T>& plant_;
 
