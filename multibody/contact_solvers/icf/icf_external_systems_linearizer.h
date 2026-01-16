@@ -114,12 +114,6 @@ class IcfExternalSystemsLinearizer {
     VectorX<T> tau_e_prime;  // Perturbed external forces τₑ(x′) = τ_ext(x′).
   };
 
-  /* Computes external forces τ = τₑₓₜ(x) from the plant's spatial and
-  generalized force input ports.
-  @param[out] tau Output storage for τ. */
-  void CalcExternalForces(const systems::Context<T>& plant_context,
-                          VectorX<T>* tau) const;
-
   /* Computes actuator forces τ = B u(x) from the plant's actuation input ports
   (including the plant-wide actuation input port and any model-instance-specific
   input ports).
