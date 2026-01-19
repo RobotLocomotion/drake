@@ -32,10 +32,18 @@ tag_base = "pip-drake"
 # The platform alias is used for Docker tag names, and, when combined with the
 # Python version, must be unique.
 targets = (
-    # NOTE: adding or removing a python version?  Please update the artifact
-    # tallies in doc/_pages/release_playbook.md (search `Attach binaries`)
-    # and, if necessary, the set of Python versions for which lockfiles are
-    # generated in tools/workspace/python/venv_upgrade.
+    # NOTE: adding or removing a python version?  Please also check the
+    # following locations for updates:
+    # * the artifact tallies in doc/_pages/release_playbook.md (search
+    #   `Attach binaries`);
+    # * the set of Python versions for which lockfiles are
+    #   generated in tools/workspace/python/venv_upgrade;
+    # * the set of Python versions for which installation via `pip` is
+    #   supported in doc/_pages/installation.md (search `when installing via
+    #   ``pip```);
+    # * the Python versions supported by MOSEK, in tools/wheel/setup.py. If
+    #   there is any Python version supported by Drake, but not MOSEK, a note
+    #   should be added to the aforementioned installation documentation.
     Target(
         build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
         test_platform=Platform("ubuntu", "22.04", "jammy"),
