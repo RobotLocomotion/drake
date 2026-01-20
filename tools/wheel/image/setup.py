@@ -17,7 +17,11 @@ python_required = [
     # MOSEK's published wheels declare an upper bound on their supported Python
     # version, which is currently Python < 3.15. When that changes to a larger
     # version number, we should bump this up to match, and also grep tools/wheel
-    # for other mentions of MOSEK version bounds and fix those as well.
+    # for other mentions of MOSEK version bounds and fix those as well. Further,
+    # if this version number is lower than the maximum version for which Drake
+    # builds wheels (see tools/wheel/wheel_builder/macos.py and
+    # tools/wheel/wheel_builder/linux.py), then that should be documented for
+    # users accordingly.
     'Mosek==11.1.2 ; python_version < "3.15"',
 ]
 
