@@ -72,7 +72,7 @@
 /// Provides a convenient wrapper to throw an exception when a condition is
 /// unmet.  This is similar to an assertion, but uses exceptions instead of
 /// `::abort()`, and cannot be disabled.
-///
+#define DRAKE_THROW_UNLESS(condition, ...)
 /// Evaluates `condition` and iff the value is false will throw an exception
 /// with a message showing at least the condition text, function name, file, and
 /// line.
@@ -98,10 +98,10 @@
 /// expressions are specified, this will most likely produce a compiler error
 /// referencing "ENCODE_EACH".
 ///
-/// Not all value expression types are supported. This shouldn't be interpreted
-/// as *the* definitive list. If yours isn't supported, feel free to submit a PR
-/// to add it (reaching out for help as appropriate).
-#define DRAKE_THROW_UNLESS(condition, ...)
+/// Not all value expression types are supported. The currently supported set
+/// shouldn't be considered *the* definitive set. If yours isn't supported, feel
+/// free to submit a PR to add it (reaching out for help as appropriate).
+#define DRAKE_DEREF(ptr)
 /// Derferences a pointer, with null checking. If the provided pointer is null,
 /// throws an exception. Otherwise, returns a reference to the object being
 /// pointed to.
@@ -128,7 +128,6 @@
 /// arrays (&x[0]).
 ///
 /// @endcode
-#define DRAKE_DEREF(ptr)
 #else  //  DRAKE_DOXYGEN_CXX
 
 // Users should NOT set these; only this header should set them.
@@ -254,6 +253,7 @@ namespace internal {
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_same_v<T, int> || std::is_same_v<T, std::size_t> ||
            std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char*>);
