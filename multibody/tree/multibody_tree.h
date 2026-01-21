@@ -1120,8 +1120,7 @@ class MultibodyTree {
   void CalcPointsVelocities(const systems::Context<T>& context,
                             const Frame<T>& frame_B,
                             const Eigen::Ref<const MatrixX<T>>& p_BoQi_B,
-                            const Frame<T>& frame_M,
-                            const Frame<T>& frame_E,
+                            const Frame<T>& frame_M, const Frame<T>& frame_E,
                             EigenPtr<MatrixX<T>> v_MQi_E) const;
 
   // See MultibodyPlant method.
