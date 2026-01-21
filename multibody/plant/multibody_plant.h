@@ -3864,8 +3864,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void CalcPointsVelocities(const systems::Context<T>& context,
                             const Frame<T>& frame_B,
                             const Eigen::Ref<const MatrixX<T>>& p_BoQi_B,
-                            const Frame<T>& frame_M,
-                            const Frame<T>& frame_E,
+                            const Frame<T>& frame_M, const Frame<T>& frame_E,
                             EigenPtr<MatrixX<T>> v_MQi_E) const {
     this->ValidateContext(context);
     return internal_tree().CalcPointsVelocities(context, frame_B, p_BoQi_B,
