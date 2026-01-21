@@ -1117,6 +1117,14 @@ class MultibodyTree {
                            EigenPtr<MatrixX<T>> p_AQi) const;
 
   // See MultibodyPlant method.
+  void CalcPointsVelocities(const systems::Context<T>& context,
+                            const Frame<T>& frame_B,
+                            const Eigen::Ref<const MatrixX<T>>& p_BoQi_B,
+                            const Frame<T>& frame_M,
+                            const Frame<T>& frame_E,
+                            EigenPtr<MatrixX<T>> v_MQi_E) const;
+
+  // See MultibodyPlant method.
   T CalcTotalMass(const systems::Context<T>& context) const;
 
   // See MultibodyPlant method.
