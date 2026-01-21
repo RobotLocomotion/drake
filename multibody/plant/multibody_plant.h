@@ -3845,6 +3845,33 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                p_AQi);
   }
 
+  /// For a set of n points Qi (i = 0, ... n-1) that are regarded as fixed on a
+  /// frame B, calculates the velocities v_MQi_E of Qi measured in a frame M and
+  /// expressed in a frame E.
+  /// @param[in] context Contains the state of the multibody system, including
+  /// the generalized positions q and the generalized velocities v.
+  /// @param[in] frame_B The frame B in which each point Qi is fixed and whose
+  /// frame origin Bo is the starting point for position vectors in p_BoQi_B.
+  /// frame_B is also the expressed-in-frame for those position vectors.
+  /// @param[in] p_BoQi_B Position vectors from Bo (frame B's origin) to each
+  /// point Qi (i = 0, ... n-1), expressed in frame B.
+  /// @param[in] frame_M The frame in which the velocities are to be measured.
+  /// @param[out] v_MQi_E The velocities of each point Qi (i = 0, ... n-1)
+  /// measured in frame M and expressed in frame E. On input, v_MQi_E must have
+  /// the same size as p_BoQi_B or an exception is thrown
+  /// @throws std::exception if p_BoQi_B and v_MQi_E do not have three rows (are
+  /// not 3 element vectors) or do not have the same number (n > 0) of columns.
+  void CalcPointsVelocities(const systems::Context<T>& context,
+                            const Frame<T>& frame_B,
+                            const Eigen::Ref<const MatrixX<T>>& p_BoQi_B,
+                            const Frame<T>& frame_M,
+                            const Frame<T>& frame_E,
+                            EigenPtr<MatrixX<T>> v_MQi_E) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcPointsVelocities(context, frame_B, p_BoQi_B,
+                                                frame_M, frame_E, v_MQi_E);
+  }
+
   /// Calculates the total mass of all bodies in this MultibodyPlant.
   /// @param[in] context Contains the state of the model.
   /// @retval The total mass of all bodies or 0 if there are none.

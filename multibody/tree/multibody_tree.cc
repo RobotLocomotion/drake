@@ -2134,6 +2134,29 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+void CalcPointsVelocities(const systems::Context<T>& context,
+                          const Frame<T>& frame_B,
+                          const Eigen::Ref<const MatrixX<T>>& p_BoQi_B,
+                          const Frame<T>& frame_M,
+                          const Frame<T>& frame_E,
+                          EigenPtr<MatrixX<T>> v_MQi_E) const {
+  DRAKE_THROW_UNLESS(p_BoQi_B.rows() == 3);
+  DRAKE_THROW_UNLESS(v_MQi_E != nullptr);
+  DRAKE_THROW_UNLESS(v_MQi_E->rows() == 3);
+  DRAKE_THROW_UNLESS(v_MQi_E->cols() == p_BoQi_B.cols());
+
+  const SpatialVelocity<T> V_MBo_E =
+      frame_B.CalcSpatialVelocity(context, frame_M, frame_E);
+  const RotationMatrix<T> R_EB =
+      plant.CalcRelativeRotationMatrix(context, frame_E, frame_B);
+  const int number_of_vectors = p_BoQi_B.cols();
+  const Eigen::Matrix<T, 3, number_of_vectors> p_BoQi_E = R_EB * p_BoQi_B;
+  for (int i = 0; i < n; ++i) {
+    v_MQi_E(i) = V_MBo_E.Shift(p_BoQi_E(i)).translational();
+  }
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
