@@ -5,6 +5,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/plane.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 
@@ -126,8 +128,45 @@ class Aabb {
   static bool HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
                          const math::RigidTransformd& X_GH);
 
-  // TODO(SeanCurtis-TRI): Support collision with primitives as appropriate
-  //  (see obb.h for an example).
+  /** Checks whether bounding volume `bv` intersects the given plane. The
+   bounding volume is centered on its canonical frame B, and B is posed in the
+   corresponding hierarchy frame H. The plane is defined in frame P.
+
+   The box and plane intersect if _any_ point within the bounding volume has
+   zero height (see CalcHeight()).
+
+   @param bv_H      The bounding box to test.
+   @param plane_P   The plane to test against the `bv`. The plane is expressed
+                    in frame P, therefore, to evaluate the height of a point
+                    with respect to it, that point must be measured and
+                    expressed in P.
+   @param X_PH      The relative pose between the hierarchy frame H and the
+                    plane frame P.
+   @returns `true` if the plane intersects the box.
+   @pydrake_mkdoc_identifier{aabb_plane} */
+  static bool HasOverlap(const Aabb& bv_H, const Plane<double>& plane_P,
+                         const math::RigidTransformd& X_PH);
+
+  /** Checks whether bounding volume `bv` intersects the given half space. The
+   bounding volume is centered on its canonical frame B, and B is posed in the
+   corresponding hierarchy frame H. The half space is defined in its
+   canonical frame C (such that the boundary plane of the half space is
+   perpendicular to Cz and Co lies on the boundary plane).
+
+   The box and halfspace intersect if _any_ point within the bounding volume has
+   a height less than or equal to zero.
+
+   @param bv_H      The bounding box to test.
+   @param hs_C      The half space to test against the `bv`. The half space is
+                    expressed in Frame C, therefore, to evaluate the signed
+                    distance of a point with respect to it, that point must be
+                    measured and expressed in C.
+   @param X_CH      The relative pose between the hierarchy halfspace canonical
+                    frame C and the box frame B.
+   @returns `true` if the half space intersects the box.
+   @pydrake_mkdoc_identifier{aabb_halfspace} */
+  static bool HasOverlap(const Aabb& bv_H, const HalfSpace& hs_C,
+                         const math::RigidTransformd& X_CH);
 
   /** Compares the values of the two Aabb instances for exact equality down to
    the last bit. Assumes that the quantities are measured and expressed in

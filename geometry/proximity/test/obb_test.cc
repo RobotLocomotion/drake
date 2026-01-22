@@ -887,8 +887,8 @@ GTEST_TEST(ObbTest, PlaneOverlap) {
   const double clearance = R_PB.row(2).cwiseAbs().dot(half_width.transpose());
   // The plane's normal is Pz, so only the z-value in the box origin matters.
   const Vector3d p_PB(1.5, -0.5, clearance);
-  const Vector3d p_BH_P = R_PH * X_HB.translation();
-  const Vector3d p_PH = p_PB - p_BH_P;
+  const Vector3d p_HB_P = R_PH * X_HB.translation();
+  const Vector3d p_PH = p_PB - p_HB_P;
   const RigidTransformd X_PH(R_PH, p_PH);
 
   // Pose the whole problem in the world frame with some arbitrary, non-identity
