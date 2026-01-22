@@ -33,8 +33,8 @@ struct SimulatorConfig {
   double start_time{0.0};
   double target_realtime_rate{0.0};
   /// DEPRECATED: removal date: 2026-06-01.
-  /// Check "publish every time step" section in troubleshooting.md for details
-  /// on how to migrate to system events.
+  /// See https://drake.mit.edu/troubleshooting.html#force-publishing for
+  /// guidance.
   /// Sets Simulator::set_publish_at_initialization() in addition to
   /// Simulator::set_publish_every_time_step() when applied by
   /// ApplySimulatorConfig().

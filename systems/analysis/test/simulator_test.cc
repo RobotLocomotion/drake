@@ -1021,7 +1021,7 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
 // delete this test with publish_every_time_step 2026-06-01
 // Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
-GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
+GTEST_TEST(SimulatorTest, DisablePublishEveryTimestepDeprecated) {
   analysis_test::MySpringMassSystemTemp<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
   simulator.set_publish_at_initialization(true);
@@ -1039,7 +1039,8 @@ GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
 
 // Delete this test with publish_every_time_step 2026-06-01
 // Try a purely continuous system with no sampling.
-GTEST_TEST(SimulatorTest, SpringMassNoSampleUsingPublishEveryTimeStep) {
+GTEST_TEST(SimulatorTest,
+           SpringMassNoSampleUsingPublishEveryTimeStepDeprecated) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
@@ -1082,7 +1083,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSampleUsingPublishEveryTimeStep) {
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
 // evenly so we should get some step size modification here.
-GTEST_TEST(SimulatorTest, SpringMassUsingPublishEveryTimeStep) {
+GTEST_TEST(SimulatorTest, SpringMassUsingPublishEveryTimeStepDeprecated) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
@@ -1119,10 +1120,10 @@ GTEST_TEST(SimulatorTest, SpringMassUsingPublishEveryTimeStep) {
 }
 #pragma GCC diagnostic pop
 
-// Repeat the previous test but now the continuous steps are interrupted
-// by a discrete sample every 1/30 second. The step size doesn't divide that
-// evenly so we should get some step size modification here.
-GTEST_TEST(SimulatorTest, SpringMass) {
+// Repeat the SpringMassNoSample test but now the continuous steps are
+// interrupted by a discrete sample every 1/30 second. The step size doesn't
+// divide that evenly so we should get some step size modification here.
+GTEST_TEST(SimulatorTest, SpringMassRegularSampling) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 

@@ -562,9 +562,10 @@ class Simulator {
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
   DRAKE_DEPRECATED("2026-06-01",
-                   "Use LeafSystem::DeclarePerStepPublishEvent() instead. "
-                   "Check the \"publish every time step\" section in "
-                   "troubleshooting.md for details on how to migrate.")
+                   "This is no longer controlled by the Simulator. It must be "
+                   "be defined in the LeafSystem instead. See "
+                   "https://drake.mit.edu/troubleshooting.html#force-publishing"
+                   " for help.");
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
@@ -580,10 +581,10 @@ class Simulator {
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
   DRAKE_DEPRECATED("2026-06-01",
-                   "If you are only issuing a publish at initialization, use "
-                   "LeafSystem::DeclareInitializationPublishEvent() instead. "
-                   "Check the \"publish every time step\" section in "
-                   "troubleshooting.md for details on how to migrate.")
+                   "This is no longer controlled by the Simulator. It must be "
+                   "be defined in the LeafSystem instead. See "
+                   "https://drake.mit.edu/troubleshooting.html#force-publishing"
+                   " for help.");
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
@@ -591,9 +592,8 @@ class Simulator {
   /// Returns true if the set_publish_every_time_step() option has been
   /// enabled. By default, returns false.
   DRAKE_DEPRECATED("2026-06-01",
-                   "This method is not needed once per-step events are used. "
-                   "Check the \"publish every time step\" section in "
-                   "troubleshooting.md for details on how to migrate.")
+                   "See https://drake.mit.edu/troubleshooting.html"
+                   "#force-publishing for help.");
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the

@@ -21,7 +21,7 @@ DEFINE_double(simulator_target_realtime_rate,
 DEFINE_bool(simulator_publish_every_time_step,
             drake::systems::SimulatorConfig{}.publish_every_time_step,
             "DEPRECATED: removal date: 2026-06-01. "
-            "Check \"publish every time step\" section in troubleshooting.md "
+            "See https://drake.mit.edu/troubleshooting.html#force-publishing "
             "for details on how to migrate to system events."
             "[Simulator flag] Sets whether the simulation should trigger a "
             "forced-Publish event at the end of every trajectory-advancing "

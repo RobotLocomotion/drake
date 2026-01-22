@@ -176,80 +176,73 @@ The solution is to use either `GetMyContextFromRoot()`
 
 See the notes on [System Compatibility][m_system_compat] for further discussion.
 
+<!-- Remove Simulator section (and publish every time step) on 2026-06-01 when
+deprecation is removed. -->
+
 # Simulator
 
-## publish every time step
-The ability to trigger forced publish events using `Simulator`'s API is 
-deprecated. This guide provides instructions on how to migrate the functionality
-for each access point of the deprecated feature.
-### simulator_publish_every_time_step gflag
-This flag sets SimulatorConfig{}.publish_every_time_step. Check its
-section below for details.
+## Force publishing
 
-This flag can also be used to publish visualization data in every simulation 
-step in some of Drake's examples, yielding the maximum visual update frequency.
-In case you want to change the default publish frequency of 64 Hz, replace the 
-following line:
-`visualization::AddDefaultVisualization(&builder);`
-in examples with
-```c++
-visualization::ApplyVisualizationConfig(
-    visualization::VisualizationConfig{.publish_period=1.0/DESIRED_FREQUENCY},
-    &builder);
-```
-and replace `DESIRED_FREQUENCY` with your preferred `double` value.
-### SimulatorConfig{}.publish_every_time_step
-This field sets `set_publish_every_time_step()` and 
-`set_publish_at_initialization()` to true. Check their respective sections
-below for migration steps.
-### get_publish_every_time_step()
-This method is not needed after migrating to system events. Check 
-`set_publish_every_time_step()` section below for migration steps.
-### set_publish_every_time_step()
-Using `set_publish_every_time_step()` means you have a forced publish event 
-declared in a `LeafSystem` and publishing using deprecated `Simulator` 
-parameter `publish_every_time_step_`.
-To migrate from `Simulator`'s deprecated `set_publish_every_time_step()`,
-define a per-step publish event
-handler in the `LeafSystem` being simulated and declare it using
-`DeclarePerStepPublishEvent` to achieve the same functionality. 
-Note that per-step publish events also publish at `Simulator`'s initialization. 
-Here's an example:
-```c++
-template <typename T>
-class PerStepPublishExampleSystem : public LeafSystem<T> {
- public:
-  PerStepPublishExampleSystem() {
-    this->DeclarePerStepPublishEvent(
-        &PerStepPublishExampleSystem::PerStepPublishExampleHandler);
-  }
-  EventStatus PerStepPublishExampleHandler(const Context<T>&) const {
-    return EventStatus::Succeeded();
-  }
-}
-```
-### set_publish_at_initialization()
-Note that per-step publish events will trigger at initialization automatically.
-Using `set_publish_at_initialization()` means you have a forced publish event 
-declared in a `LeafSystem` and publishing using deprecated `Simulator` 
-parameter `publish_at_initialization_`.
-If you are only issuing a publish at `Simulator` initialization, define an event
-handler in the `LeafSystem` being simulated and declare it using 
-`DeclareInitializationPublishEvent`. Here's an example:
-```c++
-template <typename T>
-class InitPublishExampleSystem : public LeafSystem<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InitPublishExampleSystem);
-  InitPublishExampleSystem() {
-    this->DeclareInitializationPublishEvent(
-        &InitPublishExampleSystem::InitPublishExampleHandler);
-  }
-  EventStatus ExampleHandler(const Context<T>&) const {
-    return EventStatus::Succeeded();
-  }
-}
-```
+`Simulator` had APIs to exercise its diagram's [force][force_trigger] events.
+This includes
+
+  - [`Simulator::set_publish_every_time_step()`][sim_every_step]
+  - [`SimulatorConfig::publish_every_time_step`][sim_config_every_step]
+  - The optional command-line parameter `simulator_publish_every_time_step`
+  - [`Simulator::set_publish_at_initialization()`][sim_init]
+
+These have all been deprecated (for removal on 2026-06-01). We don't expect this
+will generally impact users. This guide will help those who may rely on this
+functionality transition in to the recommended mechanisms.
+
+Rather than configuring an *entire* diagram to publish at initialization or
+at each time step, each `LeafSystem` articulates independently whether it has
+work that should be done at initialization or at each time step. This is done
+by declaring [events][events] in each `LeafSystem`'s constructor.
+
+### `Simulator::set_publish_every_time_step()`
+
+To configure a LeafSystem to publish at every time step, use
+[`LeafSystem::DeclarePerStepPublishEvent()`][c_LeafSystem_per_step_publish] in
+the system's constructor.
+
+This will most likely be defined for some form of system introspection: e.g.,
+logging system state, broadcasting state to an external process. Less likely
+would be visualization because an appropriate visualization rate is typically at
+a lower frequency than that of simulation steps. Furthermore, well articulated
+logging systems will typically be parameterized to control their publication
+rate.
+
+Note: introducing a per-step publish event implicitly includes publishing at
+initialization.
+
+There is also a deprecated `Simulator::get_publish_every_time_step()`, the
+getter for this `Simulator` parameter. This will need to be evaluated on a per-leaf-system basis.
+
+### `SimulatorConfig::publish_every_time_step`
+
+This flag value was simply passed to `Simulator::set_publish_every_time_step()`.
+If you find you actually have a leaf system that may need to publish at each
+time step and that determination needs to be made at runtime, you'll have to
+find an alternative means to configure it. You can create your own configuration
+struct and include it in your scene configuration yaml.
+
+### Command-line parameter `simulator_publish_every_time_step`
+
+This command-line flag simply set the value of
+`SimulatorConfig::publish_every_time_step`. Please refer to the previous section
+for guidance.
+
+### `Simulator::set_publish_at_initialization()`
+
+To configure a LeafSystem to publish at every time step, use
+[`LeafSystem::DeclareInitializationPublishEvent()`][c_LeafSystem_init_publish]
+in the system's constructor.
+
+Note: if your leaf system already includes a per-step publish event, you won't
+also need an initialization publish event. Initialization is included in
+per-step events.
+<!-- 2026-06-01 End of block to delete. >
 
 # PyPI (pip)
 
@@ -401,6 +394,9 @@ sudo route -nv add -net 224.0.0.0/4 -interface lo0
 [c_MultibodyPlant]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html
 [p_MultibodyPlant]: https://drake.mit.edu/pydrake/pydrake.multibody.plant.html#pydrake.multibody.plant.MultibodyPlant
 
+<!-- drake/system -->
+[events]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_event.html
+
 <!-- drake/systems/framework -->
 [c_Context]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_context.html
 [p_Context]: https://drake.mit.edu/pydrake/pydrake.systems.framework.html#pydrake.systems.framework.Context
@@ -412,3 +408,12 @@ sudo route -nv add -net 224.0.0.0/4 -interface lo0
 [p_GetMyMutableContextFromRoot]: https://drake.mit.edu/pydrake/pydrake.systems.framework.html#pydrake.systems.framework.System_.System_[float].GetMyMutableContextFromRoot
 [c_System]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_system.html
 [p_System]: https://drake.mit.edu/pydrake/pydrake.systems.framework.html#pydrake.systems.framework.System
+[c_LeafSystem_per_step_publish]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_leaf_system.html#a49a07c6bbccc4464d5d6192889c3d2e6
+[c_LeafSystem_init_publish]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_leaf_system.html#aab3136bba7eb6480a84309d019b28d83
+
+<!-- Links to be removed upon 2026-06-01 deprecation removal. -->
+[force_trigger]: https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1systems.html#a59b7f49353f2a99b6c22d2eaae0fe9e9af8ece195be5dd5e820bdeee7ad21a4bf
+[sim_every_step]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#aef1dc6aeb821503379ab1dd8c6044562
+[sim_init]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#ac210a235b5e0865efb51fdd27c4b58ae
+[sim_config_every_step]: https://drake.mit.edu/doxygen_cxx/structdrake_1_1systems_1_1_simulator_config.html#af1d9089360c8cd472de8f923ba7df99a
+<!-- End of links to be removed.  -->
