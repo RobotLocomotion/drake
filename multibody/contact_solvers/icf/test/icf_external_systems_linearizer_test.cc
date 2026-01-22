@@ -143,7 +143,8 @@ class SpatialForceFeedback final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpatialForceFeedback);
 
-  static constexpr double kGain = 22;
+  static constexpr double Kp = 5;    // [N/m]
+  static constexpr double Kd = 0.3;  // [Ns/m]
 
   explicit SpatialForceFeedback(BodyIndex body_index)
       : body_index_(body_index) {
@@ -162,16 +163,16 @@ class SpatialForceFeedback final : public systems::LeafSystem<double> {
     ExternallyAppliedSpatialForce<double>& result = output->at(0);
 
     // Our input is connected to the the plant's state_output_port.
-    auto q_v = get_input_port().Eval(context);
-    const double q = q_v(0);
-    const double v = q_v(1);
+    auto x = get_input_port().Eval(context);
+    const double q = x(0);
+    const double v = x(1);
 
-    // The feedback term is f = -(K v + q).
-    const double f_x = -(kGain * v + q);
+    // The feedback term is f = -(Kp q + Kd v).
+    const double f = -(Kp * q + Kd * v);
     result.body_index = body_index_;
     result.p_BoBq_B = Vector3d::Zero();
     result.F_Bq_W = SpatialForce<double>(/* tau = */ Vector3d::Zero(),
-                                         /* f = */ f_x * Vector3d::UnitX());
+                                         /* f = */ f * Vector3d::UnitX());
   }
 
   const BodyIndex body_index_;
@@ -195,10 +196,10 @@ TEST_F(IcfExternalSystemsLinearizerTest, ExternalSpatialForce) {
   Build();
 
   // Set an interesting initial state.
-  const double q = 0.1;
-  const double v = 0.2;
-  plant_.SetPositions(plant_context_, Vector1d{q});
-  plant_.SetVelocities(plant_context_, Vector1d{v});
+  const double q0 = 0.1;
+  const double v0 = 0.2;
+  plant_.SetPositions(plant_context_, Vector1d{q0});
+  plant_.SetVelocities(plant_context_, Vector1d{v0});
 
   // Linearize the non-plant dynamics around the current state.
   const double h = 0.01;
@@ -209,10 +210,15 @@ TEST_F(IcfExternalSystemsLinearizerTest, ExternalSpatialForce) {
   const VectorXd& b = result.external_feedback->b;
 
   // Check that the feedback was linearized as expected.
-  const Vector1d K_expected{SpatialForceFeedback::kGain};
-  const Vector1d b_expected{-q};
-  EXPECT_TRUE(CompareMatrices(K, K_expected, 1e-2));
-  EXPECT_TRUE(CompareMatrices(b, b_expected, 1e-6));
+  // K = -df/dv  = -d/dv(-(Kp*(q0 + h*v) + Kd*v)) = Kd + h*Kp
+  const Vector1d K_expected{SpatialForceFeedback::Kd +
+                            h * SpatialForceFeedback::Kp};
+  // b = f(q0 + h*v0, v0) + K*v0 = -(Kp*(q0 + h*v0) + Kd*v0) + K*v0
+  const Vector1d b_expected{(-SpatialForceFeedback::Kp * (q0 + h * v0) -
+                             SpatialForceFeedback::Kd * v0) +
+                            K_expected(0) * v0};
+  EXPECT_TRUE(CompareMatrices(K, K_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(b, b_expected, 1e-8));
 }
 
 // Test base for switching between actuation feedback and external feedback.
