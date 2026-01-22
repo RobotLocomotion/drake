@@ -399,7 +399,7 @@ TEST_P(IcfExternalSystemsLinearizerChoosePortTest, BangBang) {
 
   // Set an interesting initial state.
   const double q = 21.9;
-  const double v = 0.0;
+  const double v = 0.5;
   plant_.SetPositions(plant_context_, Vector1d{q});
   plant_.SetVelocities(plant_context_, Vector1d{v});
 
@@ -412,22 +412,28 @@ TEST_P(IcfExternalSystemsLinearizerChoosePortTest, BangBang) {
     const VectorXd& K = result.actuation_feedback->K;
     const VectorXd& b = result.actuation_feedback->b;
 
+    ASSERT_EQ(K.size(), 1);
+    ASSERT_EQ(b.size(), 1);
+
     // Check that the feedback was linearized as expected.
-    const Vector1d K_expected{0.0};
-    const Vector1d b_expected{BangBang::kGain};
-    EXPECT_TRUE(CompareMatrices(K, K_expected, 1e-2));
-    EXPECT_TRUE(CompareMatrices(b, b_expected, 1e-6));
+    const double K_expected{0.0};
+    const double b_expected{BangBang::kGain};
+    EXPECT_EQ(K(0), K_expected);
+    EXPECT_EQ(b(0), b_expected);
   } else {
     ASSERT_TRUE(result.external_feedback.has_value());
     EXPECT_FALSE(result.actuation_feedback.has_value());
     const VectorXd& K = result.external_feedback->K;
     const VectorXd& b = result.external_feedback->b;
 
+    ASSERT_EQ(K.size(), 1);
+    ASSERT_EQ(b.size(), 1);
+
     // Check that the feedback was linearized as expected.
-    const Vector1d K_expected{0.0};
-    const Vector1d b_expected{BangBang::kGain};
-    EXPECT_TRUE(CompareMatrices(K, K_expected, 1e-2));
-    EXPECT_TRUE(CompareMatrices(b, b_expected, 1e-6));
+    const double K_expected{0.0};
+    const double b_expected{BangBang::kGain};
+    EXPECT_EQ(K(0), K_expected);
+    EXPECT_EQ(b(0), b_expected);
   }
 }
 
