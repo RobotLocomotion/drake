@@ -55,7 +55,7 @@ void FemModel<T>::CalcResidual(const FemState<T>& fem_state,
 template <typename T>
 void FemModel<T>::CalcTangentMatrix(
     const FemState<T>& fem_state,
-    contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+    contact_solvers::internal::BlockSparseSymmetricMatrix3d* tangent_matrix)
     const {
   if constexpr (std::is_same_v<T, double>) {
     DRAKE_DEMAND(tangent_matrix != nullptr);
@@ -92,7 +92,7 @@ Vector3<T> FemModel<T>::CalcEffectiveAngularVelocity(
 }
 
 template <typename T>
-std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+std::unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
 FemModel<T>::MakeTangentMatrix() const {
   if constexpr (std::is_same_v<T, double>) {
     return DoMakeTangentMatrix();

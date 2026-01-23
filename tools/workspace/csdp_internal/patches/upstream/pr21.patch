@@ -1,0 +1,141 @@
+This is https://github.com/coin-or/Csdp/pull/21 rebased onto 6.2.x.
+
+From: Doug Torrance <dtorrance@piedmont.edu>
+Date: Thu, 4 Sep 2025 21:03:28 -0400
+Subject: [PATCH] Add proper declarations for BLAS/LAPACK functions
+
+Otherwise, when compiling with C23 (which is the default in GCC 15),
+we get "too many arguments to function" errors.
+
+We also add BLAS_FUNC and LAPACK_FUNC macros so we don't need to have
+four different declarations for each function.
+
+--- include/declarations.h
++++ include/declarations.h
+@@ -216,79 +237,74 @@
+ 
+ #ifdef CAPSBLAS
+ #ifdef NOUNDERBLAS
+-double DNRM2();
+-double DASUM();
+-double DDOT();
+-int IDAMAX();
+-void DGEMM();
+-void DGEMV();
+-void DGER();
+-void DTRSM();
+-void DTRMV();
++#  define BLAS_FUNC(name, NAME) NAME
+ #else
+-double DNRM2_();
+-double DASUM_();
+-double DDOT_();
+-int IDAMAX_();
+-void DGEMM_();
+-void DGEMV_();
+-void DGER_();
+-void DTRSM_();
+-void DTRMV_();
++#  define BLAS_FUNC(name, NAME) NAME##_
+ #endif
+ #else
+ #ifdef NOUNDERBLAS
+-double dnrm2();
+-double dasum();
+-double ddot();
+-int idamax();
+-void dgemm();
+-void dgemv();
+-void dger();
+-void dtrsm();
+-void dtrmv();
++#  define BLAS_FUNC(name, NAME) name
+ #else
+-double dnrm2_();
+-double dasum_();
+-double ddot_();
+-int idamax_();
+-void dgemm_();
+-void dgemv_();
+-void dger_();
+-void dtrsm_();
+-void dtrmv_();
++#  define BLAS_FUNC(name, NAME) name##_
+ #endif
+ #endif
+ 
++double BLAS_FUNC(dnrm2, DNRM2)(const int *n, const double *x, const int *incx);
++double BLAS_FUNC(dasum, DASUM)(const int *n, const double *x, const int *incx);
++double BLAS_FUNC(ddot, DDOT)(const int *n, const double *x, const int *incx,
++			     const double *y, const int *incy);
++int BLAS_FUNC(idamax, IDAMAX)(const int *n, const double *x, const int *incx);
++void BLAS_FUNC(dgemm, DGEMM)(const char *transa, const char *transb,
++			     const int *m, const int *n, const int *k,
++			     const double *alpha, const double *a,
++			     const int *lda, const double *b, const int *ldb,
++			     const double *beta, double *c, const int *ldc);
++void BLAS_FUNC(dgemv, DGEMV)(const char *trans, const int *m, const int *n,
++			     const double *alpha, const double *a,
++			     const int *lda, const double *x, const int *incx,
++			     const double *beta, double *y, const int *incy);
++void BLAS_FUNC(dger, DGER)(const int *m, const int *n, const double *alpha,
++			   const double *x,const int *incx,
++			   const double *y, const int *incy,
++			   double *a, const int *lda);
++void BLAS_FUNC(dtrsm, DTRSM)(const char *side, const char *uplo,
++			     const char *transa, const char *diag,
++			     const int *m, const int *n,
++			     const double *alpha,
++			     const double *a, const int *lda,
++			     double *b, const int *ldb);
++void BLAS_FUNC(dtrmv, DTRMV)(const char *uplo, const char *trans,
++			     const char *diag, const int *n, const double *a,
++			     const int *lda, double *x, const int *incx);
++
+ /*
+   LAPACK next.
+  */
+ 
+ #ifdef CAPSLAPACK
+ #ifdef NOUNDERLAPACK
+-void DPOTRF();
+-void DPOTRS();
+-void DPOTRI();
+-void DTRTRI();
++#  define LAPACK_FUNC(name, NAME) NAME
+ #else
+-void DPOTRF_();
+-void DPOTRS_();
+-void DPOTRI_();
+-void DTRTRI_();
++#  define LAPACK_FUNC(name, NAME) NAME##_
+ #endif
+ #else
+ #ifdef NOUNDERLAPACK
+-void dpotrf();
+-void dpotrs();
+-void dpotri();
+-void dtrtri();
++#  define LAPACK_FUNC(name, NAME) name
+ #else
+-void dpotrf_();
+-void dpotrs_();
+-void dpotri_();
+-void dtrtri_();
++#  define LAPACK_FUNC(name, NAME) name##_
+ #endif
+ #endif
+ 
++void LAPACK_FUNC(dpotrf, DPOTRF)(const char *uplo, const int *n,
++				 double *a, const int *lda, int *info);
++void LAPACK_FUNC(dpotrs, DPOTRS)(const char *uplo, const int *n,
++				 const int *nrhs, const double *a,
++				 const int *lda, double *b, const int *ldb,
++				 int *info);
++void LAPACK_FUNC(dpotri, DPOTRI)(const char *uplo, const int *n,
++				 double *a, const int *lda, int *info);
++void LAPACK_FUNC(dtrtri, DTRTRI)(const char *uplo, const char *diag,
++				 const int *n, double *a, const int *lda,
++				 int *info);
+ 
+ #endif

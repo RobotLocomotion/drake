@@ -116,14 +116,17 @@ class DiscreteUpdateManager;
 template <typename>
 class GeometryContactData;
 // Forward declarations for hydroelastic_contact_forces_continuous_cache_data.h.
-template <typename T>
-struct HydroelasticContactForcesContinuousCacheData;
-// Forward declarations for plant_model_attorney.h.
 template <typename>
-class MultibodyPlantModelAttorney;
+struct HydroelasticContactForcesContinuousCacheData;
 // Forward declarations for multibody_plant_discrete_update_manager_attorney.h.
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
+// Forward declarations for multibody_plant_icf_attorney.h.
+template <typename>
+class MultibodyPlantIcfAttorney;
+// Forward declarations for multibody_plant_model_attorney.h.
+template <typename>
+class MultibodyPlantModelAttorney;
 
 }  // namespace internal
 
@@ -3670,7 +3673,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                                     angles);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use SetFloatingBaseBodyPoseInWorldFrame() instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const RigidBody<T>& body,
@@ -3678,7 +3681,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use SetFloatingBaseBodyPoseInAnchoredFrame() instead.")
   void SetFreeBodyPoseInAnchoredFrame(
       systems::Context<T>* context, const Frame<T>& frame_F,
@@ -3686,28 +3689,28 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     SetFloatingBaseBodyPoseInAnchoredFrame(context, frame_F, body, X_FB);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use GetUniqueFloatingBaseBodyOrThrow() instead.")
   const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
       ModelInstanceIndex model_instance) const {
     return GetUniqueFloatingBaseBodyOrThrow(model_instance);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use SetDefaultFloatingBaseBodyPose() instead.")
   void SetDefaultFreeBodyPose(const RigidBody<T>& body,
                               const math::RigidTransform<double>& X_PB) {
     SetDefaultFloatingBaseBodyPose(body, X_PB);
   }
 
-  DRAKE_DEPRECATED("2026-01-01",
+  DRAKE_DEPRECATED("2026-06-01",
                    "Use GetDefaultFloatingBaseBodyPose() instead.")
   math::RigidTransform<double> GetDefaultFreeBodyPose(
       const RigidBody<T>& body) const {
     return GetDefaultFloatingBaseBodyPose(body);
   }
 
-  DRAKE_DEPRECATED("2026-01-01", "Use HasUniqueFloatingBaseBody() instead.")
+  DRAKE_DEPRECATED("2026-06-01", "Use HasUniqueFloatingBaseBody() instead.")
   bool HasUniqueFreeBaseBody(ModelInstanceIndex model_instance) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);
@@ -5810,8 +5813,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   // Friend attorney class to provide private access to those internal::
   // implementations that need it.
-  friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
+  friend class internal::MultibodyPlantIcfAttorney<T>;
+  friend class internal::MultibodyPlantModelAttorney<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.

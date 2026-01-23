@@ -35,7 +35,7 @@ void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
   using Promoted = std::conditional_t<std::is_integral_v<T>, int, T>;
   constexpr int num_channels = Image<kPixelType>::kNumChannels;
   for (int c = 0; c < num_channels; ++c) {
-    *os << "\n";
+    fmt::print(*os, "\n");
     const T* const base = image.at(0, 0) + c;
     using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
     Eigen::Map<const MatrixX<T>, 0, Stride> eigen(

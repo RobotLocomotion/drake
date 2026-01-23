@@ -4025,11 +4025,14 @@ Parameter ``keep_whole_intersection``:
     transformation step if ``do_affine_transformation`` is true.
 
 Parameter ``intersection_padding``:
-    is a distance by which each hyperplane is translated back outward
-    after satisfing intersection constraints, subject to not
-    surpassing the original hyperplane position. In the case where
-    ``keep_whole_intersection`` is false, using a non-zero value for
-    this parameter prevents intersections from being single points.
+    limits how much the intersection between the inbody and each
+    polytope in ``intersection_polytopes`` can be reduced. For each
+    polytope in ``intersecting_polytopes``, there is a ball fully
+    contained in the inbody, of radius ``intersection_padding``, whose
+    center is contained in the intersecting polytope. In the case
+    where ``keep_whole_intersection`` is false, using a non-zero value
+    for this parameter prevents intersections from being single
+    points.
 
 Parameter ``random_seed``:
     is a seed for a random number generator used to shuffle the
@@ -4520,16 +4523,6 @@ Note:
     require_sample_point_is_contained, iteration_limit,
     termination_threshold, relative_termination_threshold.)""";
         } Iris;
-        // Symbol: drake::geometry::optimization::IrisInConfigurationSpace
-        struct /* IrisInConfigurationSpace */ {
-          // Source: drake/geometry/optimization/iris.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use IrisNp instead. This will be removed from Drake on or after
-    2025-12-01.)""";
-        } IrisInConfigurationSpace;
         // Symbol: drake::geometry::optimization::IrisNp
         struct /* IrisNp */ {
           // Source: drake/geometry/optimization/iris.h

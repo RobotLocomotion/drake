@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -1574,9 +1575,10 @@ bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
   return value == "true" ? true : false;
 }
 
-std::optional<double> ParseDouble(const SDFormatDiagnostic& diagnostic,
-                                  const sdf::ElementPtr node,
-                                  const char* element_name) {
+std::optional<double> ParseDouble(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    const char* element_name,
+    const std::function<bool(double)> validator = nullptr) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
@@ -1586,8 +1588,11 @@ std::optional<double> ParseDouble(const SDFormatDiagnostic& diagnostic,
   }
 
   const double value = node->Get<double>(element_name);
+  if (validator == nullptr || validator(value)) {
+    return value;
+  }
 
-  return value;
+  return {};
 }
 
 bool ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
@@ -1915,6 +1920,68 @@ std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
   return ParseBallConstraint(read_vector, read_body, plant);
 }
 
+const LinearSpringDamper<double>* AddLinearSpringDamperFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_elements{
+      "drake:linear_spring_damper_body_A",
+      "drake:linear_spring_damper_p_AP",
+      "drake:linear_spring_damper_body_B",
+      "drake:linear_spring_damper_p_BQ",
+      "drake:linear_spring_damper_free_length",
+      "drake:linear_spring_damper_stiffness",
+      "drake:linear_spring_damper_damping"};
+  CheckSupportedElements(diagnostic, node, supported_elements);
+
+  // Functor to read a vector valued child tag with tag name: `element_name`
+  // e.g. <element_name>0 0 0</element_name>
+  // Reports an error if the tag does not exist.
+  auto read_vector = [&diagnostic,
+                      node](const char* element_name) -> Eigen::Vector3d {
+    return ParseVector3(diagnostic, node, element_name);
+  };
+
+  // Functor to read a child tag with tag name: `element_name` that specifies a
+  // body name, e.g. <element_name>body_name</element_name>
+  // Reports an error if the tag does not exist or if the body does not exist in
+  // the plant.
+  auto read_body = [&diagnostic, node, model_instance, plant](
+                       const char* element_name) -> const RigidBody<double>* {
+    return ParseBody(diagnostic, node, model_instance, plant, element_name);
+  };
+
+  // Functor to read a double valued child tag with tag name: `element_name`
+  // e.g. <element_name>0</element_name>
+  // Returns std::nullopt if the tag does not exist.
+  auto read_double = [&diagnostic,
+                      node](const char* element_name) -> std::optional<double> {
+    auto validator = [&diagnostic, node, element_name](double result) {
+      // For drake:linear_spring_damper_free_length: require strictly positive
+      if (result <= 0 && std::string(element_name) ==
+                             "drake:linear_spring_damper_free_length") {
+        std::string message =
+            fmt::format("<{}>: The <{}> child tag must be strictly positive.",
+                        node->GetName(), element_name);
+        diagnostic.Error(node, std::move(message));
+        return false;
+      }
+      // For other elements: require non-negative
+      if (result < 0) {
+        std::string message =
+            fmt::format("<{}>: The <{}> child tag must be non-negative.",
+                        node->GetName(), element_name);
+        diagnostic.Error(node, std::move(message));
+        return false;
+      }
+      return true;
+    };
+
+    return ParseDouble(diagnostic, node, element_name, validator);
+  };
+
+  return ParseLinearSpringDamper(read_vector, read_body, read_double, plant);
+}
+
 std::optional<MultibodyConstraintId> AddTendonConstraintFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
     ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
@@ -2188,6 +2255,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   const std::set<std::string> supported_model_elements{
       "drake:joint",
       "drake:linear_bushing_rpy",
+      "drake:linear_spring_damper",
       "drake:ball_constraint",
       "drake:tendon_constraint",
       "drake:collision_filter_group",
@@ -2332,6 +2400,21 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                            "drake:linear_bushing_rpy")) {
       if (AddBushingFromSpecification(diagnostic, bushing_node, model_instance,
                                       plant) == nullptr) {
+        return {};
+      }
+    }
+  }
+
+  drake::log()->trace("sdf_parser: Add linear_spring_damper");
+  if (model.Element()->HasElement("drake:linear_spring_damper")) {
+    for (sdf::ElementPtr linear_spring_damper_node =
+             model.Element()->GetElement("drake:linear_spring_damper");
+         linear_spring_damper_node;
+         linear_spring_damper_node = linear_spring_damper_node->GetNextElement(
+             "drake:linear_spring_damper")) {
+      if (AddLinearSpringDamperFromSpecification(
+              diagnostic, linear_spring_damper_node, model_instance, plant) ==
+          nullptr) {
         return {};
       }
     }

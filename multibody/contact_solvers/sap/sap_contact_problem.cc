@@ -5,7 +5,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"

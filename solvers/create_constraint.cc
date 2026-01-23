@@ -805,6 +805,13 @@ ParseQuadraticAsRotatedLorentzConeConstraint(
   // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = 0.5 * Q
   const Eigen::MatrixXd F = math::DecomposePSDmatrixIntoXtransposeTimesX(
       (Q + Q.transpose()) / 4, zero_tol);
+  if (F.rows() == 0) {
+    throw std::runtime_error(
+        "AddQuadraticAsRotatedLorentzConeConstraint: The quadratic terms is "
+        "numerically zero. This quadratic is actually linear, so the rotated "
+        "Lorentz cone constraint would be ill-defined. Please add this "
+        "constraint as a linear constraint instead.");
+  }
   // A_lorentz * x + b_lorentz = [-bᵀx-c, 1, Fx]
   Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + F.rows(), F.cols());
   Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(2 + F.rows());

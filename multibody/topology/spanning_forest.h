@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/topology/graph.h"
 
 namespace drake {
@@ -27,30 +26,30 @@ using WeldedMobodsIndex = TypeSafeIndex<class WeldedMobodsTag>;
 /* SpanningForest models a LinkJointGraph via a set of spanning trees and
 loop-closing constraints. This is a directed forest, with edges ordered from
 inboard (closer to World) to outboard. The nodes are mobilized bodies (Mobods)
-representing a body and its inboard mobilizer. While building the Forest we also
+representing a body and its inboard mobilizer. While building the forest we also
 study the original LinkJointGraph and update it to reflect:
   - how each of its elements was modeled,
   - any new elements that needed to be added for the model, and
-  - which Links are welded together into composites.
+  - which Links are welded together into WeldedLinksAssemblies.
 
 Welded-together Links have no relative motion so should be excluded from mutual
-collision computations and can (optionally) be modeled with a single mobilized
-body.
+collision computations and can (optionally) be optimized by modeling with one
+or more composite Mobods.
 
 Problem statement
 
 We're given a disjoint collection of directed, possibly cyclic, graphs whose
 nodes represent links and whose parent->child directed edges represent joints.
-Some graphs contain edges to World, others are free-floating. The task here is
+Some graphs contain edges from World, others are free-floating. The task here is
 to efficiently convert the input graph collection into a single directed
 _acyclic_ graph considered as a forest of directed trees. The nodes of the trees
 are _mobilized bodies_ (Mobods), each of which has a unique edge ("mobilizer")
 connecting it to its _inboard_ (closer to World) mobilized body, and directed
 inboard->outboard. Each tree spans one of the input graphs and is given an edge
-to World if there wasn't one already. Links are cut to break cycles, with each
-half getting its own Mobod. The forest is augmented with weld constraints
-that will act on the two Mobods to reconnect the Link halves. The resulting
-forest (with its associated welds) is to be optimized for computation speed and
+from World if there wasn't one already. Links are cut to break cycles, with each
+half getting its own Mobod. The forest is augmented with weld constraints that
+will act on the two Mobods to reconnect the Link halves. The resulting forest
+(with its associated welds) is to be optimized for computation speed and
 numerical accuracy, consistent with user preferences.
 
 Input links and joints can be annotated with properties that may affect how we
@@ -63,7 +62,7 @@ connect free-floating input graphs to World, and how they should be connected
 
 These are the properties the resulting forest _must_ have:
   - All nodes (Mobods) have a path from World.
-  - Massless bodies never appear as terminal nodes in the forest
+  - Massless bodies never appear as terminal nodes in the forest.
   - Mobod nodes are numbered depth-first.
   - Position and velocity coordinates q and v are assigned to the edges
     (mobilizers) with the same depth-first ordering.
@@ -75,33 +74,33 @@ And these additional properties are highly desirable:
   - The maximum branch length is minimized when breaking cycles.
   - Input parent->child edge directions are preserved as inboard->outboard
     directions when possible without increasing the maximum branch length.
-  - Welded-together links are combined into a single Mobod (optionally).
+  - Welded-together links are combined onto one composite Mobod (optionally).
 
 Discussion
 
 A LinkJointGraph consists of Links (user-defined rigid bodies) and Joints in a
 directed, possibly cyclic graph. Link 0 is designated as the World and is
-modeled by Mobod 0 in the Forest. Each Joint connects a "parent" Link to a
+modeled by Mobod 0 in the forest. Each Joint connects a "parent" Link to a
 "child" Link. The parent->child ordering is arbitrary but sets the user's
 expected sign conventions for the Joint coordinates. Those must be preserved,
-even though inboard->outboard ordering may differ from parent->child (even if
-there are no loops). We distinguish "moving" (or "articulated") Joints from
+even though inboard->outboard ordering may differ from parent->child, even if
+there are no loops. We distinguish "moving" (or "articulated") Joints from
 "weld" (0 dof) Joints; every moving Joint is modeled by a mobilizer, but welds
-may be eliminated by creating LinkComposites that require only a single
-mobilizer for a group of Links.
+may be eliminated by creating WeldedLinksAssemblies that can be modeled with
+composite Mobods.
 
-The SpanningForest contains a Mobod node corresponding to each Link or
-LinkComposite (group of welded-together Links). A mobilizer connects each Mobod
-to an inboard Mobod (except for World). An additional "shadow" Link and its
-Mobod is created whenever a loop is broken by cutting a Link, and a
-LoopConstraint is added to reconnect the primary Link to its shadow. Every
-moving Joint will map to a Mobod and there will be additional floating or weld
-mobilizers added as needed to connect tree root nodes (a.k.a. "base bodies") to
-World.
+Every Link is associated with a single Mobod in the SpanningForest. Multiple
+Links (contained in a WeldedLinksAssembly) may be represented by a single Mobod.
+A mobilizer connects each Mobod to an inboard Mobod (except for World). An
+additional "shadow" Link and its Mobod is created whenever a loop is broken by
+cutting a Link, and a LoopConstraint is added to reconnect the primary Link to
+its shadow. Every moving Joint will map to a Mobod and there will be additional
+floating or weld joints added as needed to connect tree root nodes (a.k.a. "base
+bodies") to World.
 
 When extra bodies, mobilizers, and constraints are needed to construct the
-Forest, corresponding _ephemeral_ Links, Joints, and LoopConstraints are added
-to the LinkJointGraph so a user can view the Forest as an extended
+forest, corresponding _ephemeral_ Links, Joints, and LoopConstraints are added
+to the LinkJointGraph so a user can view the forest as an extended
 LinkJointGraph (the original graph is retained). For example, added 6dof
 mobilizers can be viewed as though they had been floating Joints in the
 LinkJointGraph.
@@ -111,24 +110,25 @@ Mobod corresponding to World. The data structures are designed to support fast
 computation directly so that the information here does not need to be duplicated
 elsewhere.
 
-Things we get for free (O(1)) here as a side effect of building the Forest:
+Things we get for free (O(1)) here as a side effect of building the forest:
   - access the mobilized bodies (Mobods) in depth-first order
   - access Trees also in depth-first order and find out which Mobods belong
       to a given Tree and what range of coordinates belongs to each Tree or
       subtree
   - ask a Mobod which Tree it is in, and which coordinates it uses
   - find out which groups of Mobods are welded together (so have no relative
-    motion)
+      motion)
   - ask a Mobod which WeldedMobods grouping it belongs to, if any
   - ask a coordinate (q or v) which Mobod or Tree it belongs to
   - ask for the max height of a Tree or the level of a particular Mobod
   - determine which Mobods are anchored to World, directly or indirectly
   - find out which Mobod(s) represents a given Link
   - find out which Mobod (if any) represents a given Joint (welds internal
-    to LinkComposites are not modeled)
-  - find all the Links that follow a particular Mobod (for composites)
-  - find out what (ephemeral) Links, Joints, and LoopConstraints appear in the
-      Forest but not the source Graph.
+      to WeldedLinksAssemblies may be unmodeled)
+  - find all the Links that follow a particular Mobod (can be composite
+      Mobods for Links in WeldedLinksAssemblies)
+  - find out what (ephemeral) Links, Joints, and LoopConstraints appear in
+      the forest but not the source Graph.
 
 Supported operations at minimal cost:
   - find the path from World to a given Link or Mobod
@@ -187,7 +187,7 @@ class SpanningForest {
       MobodIndex mobod1_index, MobodIndex mobod2_index,
       std::vector<MobodIndex>* path1, std::vector<MobodIndex>* path2) const;
 
-  /* Finds all the Links following the Forest subtree whose root mobilized body
+  /* Finds all the Links following the forest subtree whose root mobilized body
   B is given. That is, we return all the Links that follow B or any other Mobod
   in the subtree rooted at B. The Links following B come first, and the rest
   follow the depth-first ordering of the Mobods. In particular, the result is
@@ -262,7 +262,7 @@ class SpanningForest {
   that weren't explicitly connected to World by a Joint come last. */
   const std::vector<Mobod>& mobods() const { return data_.mobods; }
 
-  /* Returns the number of Mobods in the Forest, including World.  This is the
+  /* Returns the number of Mobods in the forest, including World.  This is the
   same as `ssize(mobods())`. */
   [[nodiscard]] inline int num_mobods() const;
 
@@ -287,12 +287,12 @@ class SpanningForest {
       LoopConstraintIndex index) const;
 
   /* The partitioning of the forest of mobilized bodies into trees. Each Tree
-  has a base (root) mobilized body that is connected directly to the World
-  Mobod (which may represent a LinkComposite). World is not considered to
-  be part of any Tree; it is the root of the Forest. */
+  has a base (root) mobilized body that is connected directly to the World Mobod
+  (which may represent a WeldedLinksAssembly). World is not considered to be
+  part of any Tree; it is the root of the forest. */
   const std::vector<Tree>& trees() const { return data_.trees; }
 
-  /* Returns the number of Trees in the Forest.  This is the same as
+  /* Returns the number of Trees in the forest.  This is the same as
   `ssize(trees())`. */
   [[nodiscard]] inline int num_trees() const;
 
@@ -309,20 +309,24 @@ class SpanningForest {
   int height() const { return data_.forest_height; }
 
   /* Returns precalculated groups of mobilized bodies that are mutually
-  interconnected by Weld mobilizers so have no relative degrees of freedom.
-  Note that if you have chosen the modeling option to combine welded-together
-  Links into single bodies, then each LinkComposite gets only a single Mobod
-  and hence there won't be any WeldedMobods groups here (except for World which
-  is always considered to be in a WeldedMobods group even if nothing is welded
-  to it). Use mobod_to_links() to find all the Links following a single Mobod.
+  interconnected by Weld mobilizers so have no relative degrees of freedom. Note
+  that if you have chosen the modeling option to optimize welded-together Links
+  into single composite bodies, then each WeldedLinksAssembly gets only a single
+  Mobod and hence there won't be any WeldedMobods groups here (except for World,
+  see below). On the other hand, if some of the joints in a WeldedLinksAssembly
+  have been designated "must be modeled", the assembly will be split over
+  several Mobods connected by a weld mobilizer; in that case there will be a
+  corresponding WeldedMobods group. Use mobod_to_links() to find all the Links
+  following a single Mobod.
 
-  The World WeldedMobods group comes first and contains World, mobilized bodies
-  representing Links marked "Static", and bodies (if any) welded to Static
-  bodies or World (recursively). Those are the "anchored" mobilized bodies. The
-  other groups represent sets of welded-together mobilized bodies, with the
-  first one in the group the only Mobod with a non-weld inboard mobilizer.
-  That moving Mobod is necessarily the lowest numbered (most inboard) Mobod
-  of the WeldedMobods group. The remaining Mobods are in no particular order.
+  The always-present World WeldedMobods group comes first and contains World,
+  mobilized bodies representing Links marked "Static", and bodies (if any)
+  welded to Static bodies or World (recursively). Those are the "anchored"
+  mobilized bodies. The other groups represent sets of welded-together mobilized
+  bodies, with the first one in the group the only Mobod with a non-weld inboard
+  mobilizer. That moving Mobod (the "active Mobod") is necessarily the lowest
+  numbered (most inboard) Mobod of the WeldedMobods group. The remaining Mobods
+  are in no particular order.
 
   Except for World, Mobods not welded to any other Mobods do not appear here.
   @see mobod_to_links() */
@@ -352,14 +356,14 @@ class SpanningForest {
 
   /* Returns the Link that is represented by the given Mobod. This could be
   one of the Links from the original graph or an added shadow Link. If this
-  Mobod represents a LinkComposite, the Link returned here is the
+  Mobod represents a WeldedLinksAssembly, the Link returned here is the
   "active" Link, that is, the one whose mobilizer is used to move the whole
-  Composite. Cost is O(1) and very fast.
+  Assembly. Cost is O(1) and very fast.
   @pre mobod_index is in range */
   inline LinkOrdinal mobod_to_link_ordinal(MobodIndex mobod_index) const;
 
   /* Returns all the Links mobilized by this Mobod. The "active" Link returned
-  by mobod_to_link() comes first, then any other Links in the same Composite.
+  by mobod_to_link() comes first, then any other Links in the same Assembly.
   O(1), very fast.
   @pre mobod_index is in range  */
   inline const std::vector<LinkOrdinal>& mobod_to_link_ordinals(
@@ -429,8 +433,8 @@ class SpanningForest {
   std::string GenerateGraphvizString(std::string_view label) const;
 
   /* (Debugging, Testing) Runs a series of expensive tests to see that the
-  Graph and Forest are internally consistent and throws if not. Does nothing
-  if no Forest has been built. */
+  Graph and forest are internally consistent and throws if not. Does nothing
+  if no forest has been built. */
   void SanityCheckForest() const;
 
  private:
@@ -500,11 +504,11 @@ class SpanningForest {
                    int* num_unprocessed_links);
 
   // Grows the trees containing each of the given Joints by one level. The
-  // output parameter `J_out` (cleared on entry) on return
-  // contains the set of Joints that should be modeled at the next level.
-  // @pre the pointers are non-null and `J_in` is not empty. On return,
+  // output parameter `J_out` (cleared on entry) on return contains the set of
+  // Joints that should be modeled at the next level. On return,
   // num_unprocessed_links will have been decremented by the number of Links
   // that were modeled.
+  // @pre the pointers are non-null and `J_in` is not empty.
   void ExtendTreesOneLevel(const std::vector<JointIndex>& J_in,
                            std::vector<JointIndex>* J_out,
                            int* num_unprocessed_links);
@@ -519,13 +523,13 @@ class SpanningForest {
       const Joint& open_joint) const;
 
   // Helper for ExtendTreesOneLevel(). We're given a set of as-yet-unmodeled,
-  // "open" joints, each of which has one end already following the given Mobod.
-  // Returns a list of joints that represent the "next level" in the forest
-  // outboard of the given Mobod. For any joint that doesn't have to be a
-  // merged joint in a merged composite, that joint goes directly on the
-  // "next level" list. Otherwise, we have to extend the composite and find all
-  // the open joints where one end is part of the composite; those are the
-  // "next level".
+  // "open" joints, each of which has one end already following the given
+  // inboard Mobod. Returns a list of joints that represent the "next level" in
+  // the forest outboard of the given Mobod. For any joint that isn't going to
+  // be an unmodeled internal joint in an optimized WeldedLinksAssembly, that
+  // joint goes directly on the "next level" list. Otherwise, we have to extend
+  // the assembly and find all the open joints where one end is part of the
+  // assembly; those are the "next level".
   void FindNextLevelJoints(MobodIndex inboard_mobod_index,
                            const std::vector<JointIndex>& J_in,
                            std::vector<JointIndex>* J_level,
@@ -550,12 +554,12 @@ class SpanningForest {
 
   // Adds a new mobilized body outboard of the given inboard body:
   //  - sets the level to one higher than the inboard level
-  //  - if inboard is World, starts a new tree otherwise new Mobod is in
-  //    the same tree as inboard
+  //  - if inboard is World, starts a new tree otherwise new Mobod is in the
+  //    same tree as inboard
   //  - adds the new Mobod to the list of outboard Mobods in the inboard body
   //  - updates maps of link-to-mobod and joint-to-mobod
   //  - if joint type is Weld, we are creating or joining a WeldedMobods group
-  //    and LinkComposite; if welded to World the Mobod is "anchored". */
+  //    and WeldedLinksAssembly; if welded to World the Mobod is "anchored". */
   const Mobod& AddNewMobod(LinkOrdinal outboard_link_ordinal,
                            JointOrdinal joint_ordinal,
                            MobodIndex inboard_mobod_index, bool is_reversed);
@@ -567,21 +571,21 @@ class SpanningForest {
   // Sets the comparison function to be used in making the "best" choice.
   void SetBaseBodyChoicePolicy();
 
-  // The not-yet-modeled Joint given by `loop_joint_index` connects two Links
-  // both of which are already modeled in the Forest. We will model the Joint by
+  // The not-yet-modeled Joint given by `loop_joint_ordinal` connects two Links
+  // both of which are already modeled in the forest. We will model the Joint by
   // splitting off a shadow of one of the Links and mobilizing the shadow with a
   // forward or reversed Mobilizer of the Joint's type. Then we add a Weld
   // Constraint to attach the shadow to its primary. Some details:
   //  - if one link is massless, split the other one
   //  - if both are massless we have an invalid forest
-  //  - either or both Links may be composites; it is the mass properties
-  //    of the whole composite that determines masslessness.
+  //  - either or both Links may be part of a WeldedLinksAssembly; it is the
+  //    mass properties of the whole assembly that determines masslessness.
   void HandleLoopClosure(JointOrdinal loop_joint_ordinal);
 
   // Adds a shadow Link of the given primary and mobilizes the shadow with
   // the given joint which was originally connected to the primary. Adds a
   // weld constraint to reattach the shadow to the primary. The shadow and
-  // weld are added to the graph as ephemeral elements.
+  // weld constraint are added to the graph as ephemeral elements.
   const Mobod& AddShadowMobod(LinkOrdinal primary_link_ordinal,
                               JointOrdinal shadow_joint_ordinal);
 
@@ -621,34 +625,34 @@ class SpanningForest {
     return *data_.graph;
   }
 
-  // Returns true if this model instance requests optimization (link merging)
-  // of composites, either explicitly or via inheritance from the global
+  // Returns true if this model instance requests optimization (link merging) of
+  // WeldedLinksAssemblies, either explicitly or via inheritance from the global
   // settings.
-  bool should_merge_link_composites(ModelInstanceIndex index) const {
-    return static_cast<bool>(options(index) &
-                             ForestBuildingOptions::kMergeLinkComposites);
+  bool should_merge_welded_links_assemblies(ModelInstanceIndex index) const {
+    return static_cast<bool>(
+        options(index) & ForestBuildingOptions::kOptimizeWeldedLinksAssemblies);
   }
 
-  // This implements our policy for when to optimize LinkComposites by merging
-  // their constituent Links onto a single Mobod. We're given a Joint
-  // connecting parent and child Links and need to decide whether the parent
-  // and child will follow a single Mobod or two different Mobods. If we
-  // decide to merge them, the Joint won't be modeled at all since it will be
-  // interior to the composite.
+  // This implements our policy for when to optimize WeldedLinksAssemblies by
+  // merging their constituent Links onto a single Mobod. We're given a Joint
+  // connecting parent and child Links and need to decide whether the parent and
+  // child will follow a single Mobod or two different Mobods. If we decide to
+  // merge them, the Joint won't be modeled at all since it will be interior to
+  // the assembly.
   //
   // To return true (merge), the following must all be true:
   //   - The joint must be a weld, and
-  //   - the joint's model instance must request merging composites, and
-  //   - the joint has _not_ demanded that it be modeled.
+  //   - the joint's model instance must request optimizing assemblies, and
+  //   - the joint has _not_ demanded that it be separately modeled.
   bool should_merge_parent_and_child(const Joint& joint) const {
     return joint.is_weld() && !joint.must_be_modeled() &&
-           should_merge_link_composites(joint.model_instance());
+           should_merge_welded_links_assemblies(joint.model_instance());
   }
 
-  // Adds the follower Link to the LinkComposite that inboard_mobod is
-  // mobilizing and notes that the Joint is internal to that LinkComposite
-  // so is not modeled. Will create the LinkComposite if there was only one
-  // Link mobilized before.
+  // Adds the follower Link to the WeldedLinksAssembly that inboard_mobod is
+  // mobilizing and notes that the Joint is internal to that WeldedLinksAssembly
+  // so is not modeled. Will create the WeldedLinksAssembly if there was only
+  // one Link mobilized before.
   const Mobod& JoinExistingMobod(Mobod* inboard_mobod,
                                  LinkOrdinal follower_link_ordinal,
                                  JointOrdinal weld_joint_ordinal);
@@ -656,13 +660,13 @@ class SpanningForest {
   // We're given an existing Mobod and a to-be-merged weld joint where that
   // joint's inboard link is already following the Mobod. Greedily extend this
   // Mobod recursively to merge all links that are merge-welded to the inboard
-  // link. As we encounter non-merge joints attached to this composite we append
+  // link. As we encounter non-merge joints attached to this assembly we append
   // them to `open_joint_indexes` for processing next. Those constitute the
-  // "next level" outboard of this merged composite.
-  void GrowCompositeMobod(Mobod* inboard_mobod, LinkIndex outboard_link_index,
-                          JointOrdinal weld_joint_ordinal,
-                          std::vector<JointIndex>* open_joint_indexes,
-                          int* num_unprocessed_links);
+  // "next level" outboard of this optimized WeldedLinksAssembly.
+  void GrowAssemblyMobod(Mobod* inboard_mobod, LinkIndex outboard_link_index,
+                         JointOrdinal weld_joint_ordinal,
+                         std::vector<JointIndex>* open_joint_indexes,
+                         int* num_unprocessed_links);
 
   struct Data {
     // These are all default but definitions deferred to .cc file so
@@ -692,13 +696,13 @@ class SpanningForest {
     int forest_height{0};
 
     // Welded Mobod groups. These are disjoint sets of Mobods that have no
-    // relative motion due to _modeled_ weld Joints (and _not_ due to weld
-    // constraints). (If we are building LinkComposites, there won't be any
-    // Mobods welded together because we'll make all welded-together Links
-    // follow a single Mobod.) The World Mobod group is always present and comes
-    // first even if nothing is welded to it. Other Mobods appear here only if
-    // they are welded to at least one other Mobod. The indexes here must be
-    // renumbered by FixupForestToUseNewNumbering().
+    // relative motion due to _separately modeled_ weld Joints (and _not_ due to
+    // weld constraints). (If we are optimizing WeldedLinksAssemblies, there
+    // won't be any Mobods welded together because we'll make all
+    // welded-together Links follow a single Mobod.) The World Mobod group is
+    // always present and comes first even if nothing is welded to it. Other
+    // Mobods appear here only if they are welded to at least one other Mobod.
+    // The indexes here must be renumbered by FixupForestToUseNewNumbering().
     std::vector<std::vector<MobodIndex>> welded_mobods;
 
     // Map from mobilizer coordinates to their associated mobilized bodies.
@@ -707,7 +711,7 @@ class SpanningForest {
     std::vector<MobodIndex> q_to_mobod;  // size is nq (total number of q's)
     std::vector<MobodIndex> v_to_mobod;  // size is nv (total number of v's)
 
-    // Indexes of quaternion starts within the q vector, in increasing order.
+    // Indices of quaternion starts within the q vector, in increasing order.
     std::vector<int> quaternion_starts;
 
     // This policy is expressed as a "less than" comparator of the type used by
@@ -718,7 +722,7 @@ class SpanningForest {
 
     // Set to false if we had to end a branch with a massless body.
     bool dynamics_ok{true};
-    // Human-readable explanation for the above.
+    // Human-readable explanation for the above, if false.
     std::string why_no_dynamics;
   } data_;
 };

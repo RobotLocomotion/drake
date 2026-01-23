@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/proximity/field_intersection.h"
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
@@ -63,6 +64,15 @@ std::unique_ptr<ContactSurface<T>> CalcCompliantCompliant(
       id_F, compliant_F.soft_mesh(), X_WF, id_G, compliant_G.soft_mesh(), X_WG,
       representation);
 }
+
+template <typename T>
+ContactCalculator<T>::ContactCalculator(
+    const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs,
+    const Geometries* geometries,
+    HydroelasticContactRepresentation representation)
+    : X_WGs_(DRAKE_DEREF(X_WGs)),
+      geometries_(DRAKE_DEREF(geometries)),
+      representation_(representation) {}
 
 template <typename T>
 typename ContactCalculator<T>::MaybeMakeContactSurfaceResult

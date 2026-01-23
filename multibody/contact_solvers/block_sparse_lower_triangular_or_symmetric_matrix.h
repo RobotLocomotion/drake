@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 
 namespace drake {
 namespace multibody {
@@ -91,7 +90,7 @@ class BlockSparsityPattern {
   3. This class only allows square matrices and blocks on the diagonal must be
      square too.
  Most callers should use clearer and less verbose typedefs at the bottom of the
- file (e.g. `BlockSparseSymmetricMatrix`) rather than this class template
+ file (e.g. `BlockSparseSymmetricMatrixXd`) rather than this class template
  directly.
 
  @tparam MatrixType   The Eigen matrix type of each block in block sparse
@@ -303,14 +302,22 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   std::vector<std::vector<int>> block_row_to_flat_;
 };
 
+template <typename Block>
 using BlockSparseLowerTriangularMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, false>;
+    BlockSparseLowerTriangularOrSymmetricMatrix<Block, false>;
+
+template <typename Block>
 using BlockSparseSymmetricMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>, true>;
-using Block3x3SparseLowerTriangularMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>, false>;
-using Block3x3SparseSymmetricMatrix =
-    BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>, true>;
+    BlockSparseLowerTriangularOrSymmetricMatrix<Block, true>;
+
+using BlockSparseLowerTriangularMatrixXd =
+    BlockSparseLowerTriangularMatrix<MatrixX<double>>;
+using BlockSparseSymmetricMatrixXd =
+    BlockSparseSymmetricMatrix<MatrixX<double>>;
+using BlockSparseLowerTriangularMatrix3d =
+    BlockSparseLowerTriangularMatrix<Matrix3<double>>;
+using BlockSparseSymmetricMatrix3d =
+    BlockSparseSymmetricMatrix<Matrix3<double>>;
 
 }  // namespace internal
 }  // namespace contact_solvers

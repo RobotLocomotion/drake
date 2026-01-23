@@ -1,0 +1,13 @@
+gfortran
+libclang-19-dev
+libgl-dev
+libglib2.0-dev
+libglx-dev
+liblapack-dev
+libopengl-dev
+ocl-icd-opencl-dev
+opencl-headers
+patch
+pkg-config
+python3-all-dev
+zlib1g-dev

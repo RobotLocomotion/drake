@@ -7,7 +7,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import Parallelism, RandomGenerator, temp_directory
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box,
@@ -889,14 +888,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(region.ambient_dimension(), 1)
         self.assertTrue(region.PointInSet([1.0]))
         self.assertFalse(region.PointInSet([-1.0]))
-
-        with catch_drake_warnings(expected_count=1) as w:
-            region = mut.IrisInConfigurationSpace(
-                plant=plant,
-                context=plant.GetMyContextFromRoot(context),
-                options=options,
-            )
-            self.assertIn("Use IrisNp", str(w[0].message))
 
     def test_serialize_iris_regions(self):
         iris_regions = {

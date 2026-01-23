@@ -13,11 +13,11 @@ def mosek_repository(
         # - tools/dynamic_analysis/tsan.supp may also need updating
         # - LICENSE.third_party may also need updating to match
         #   https://docs.mosek.com/latest/licensing/license-agreement-info.html
-        version = "11.0.24",
+        version = "11.1.2",
         sha256 = {
-            "mosektoolslinuxaarch64.tar.bz2": "68e94abb10087bf38dd4b378cc51a412dc1f94171ef50dff9075a4c1bf909bb6",  # noqa
-            "mosektoolslinux64x86.tar.bz2": "f058e4bec5cde899cf5193f7ac966a923a256c335466a0678604068a51404362",  # noqa
-            "mosektoolsosxaarch64.tar.bz2": "b0bd9232e45597d098b9464eb6302b17cf0f3bd5679e06bce1e74c046604da34",  # noqa
+            "mosektoolslinuxaarch64.tar.bz2": "59bec3262d3654d6754a89ea0a787f039ac90ca37f2093d2c6fd883672350ec8",  # noqa
+            "mosektoolslinux64x86.tar.bz2": "61416cc09c9354e6e90fb65a48c97dc4d86d5e0634ac0380a9c4e7ffbd73bf00",  # noqa
+            "mosektoolsosxaarch64.tar.bz2": "e09457a0ff2a74f701f366474bd135ae7f4d3caf08ef32b5666f2b5c1ced4b97",  # noqa
         },
         mirrors = mirrors,
     )

@@ -288,26 +288,29 @@ if(NOT PYTHON_VERSION_MAJOR_MINOR VERSION_EQUAL SUPPORTED_PYTHON_VERSION)
   )
 endif()
 
+# We need to run Bazel in a dedicated temporary directory. The particular
+# name `drake_build_cwd` isn't important, it just needs to be unique. Note,
+# however, that the macOS wheel builds also need to know this path, so if it
+# ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
+set(DRAKE_BAZEL_BUILD_DIR "${CMAKE_BINARY_DIR}/drake_build_cwd")
+file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}")
+
 set(BAZEL_REPO_ENV)
 
+# Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
+# `single_version_override`.
+file(CREATE_LINK
+  "${PROJECT_SOURCE_DIR}/tools/workspace/rules_cc/patches/upstream/cc-as-gcc.patch"
+  "${DRAKE_BAZEL_BUILD_DIR}/cc-as-gcc.patch"
+  SYMBOLIC
+)
 if(NOT APPLE)
+  # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
+  # interfere with here.
   string(APPEND BAZEL_REPO_ENV
     " --repo_env=CC=${CMAKE_C_COMPILER}"
     " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
-  # Pass a Bazel flag which enforces the underlying compiler so that
-  # compiler- and version-specific logic (e.g., warnings) is enforced in the
-  # build, since rules_cc's support for compiler identification is not as
-  # robust as using CMake's CMAKE_<LANG>_COMPILER_ID.
-  if(CMAKE_C_COMPILER_ID STREQUAL Clang)
-    string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/cc_toolchain:compiler=clang"
-    )
-  elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
-    string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/cc_toolchain:compiler=gcc"
-    )
-  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
@@ -746,6 +749,15 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
+option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." ON)
+
+if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
+  # TODO(jwnimmer-tri) On 2026-02-01, add a deprecation warning to this mode.
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
+else()
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
+endif()
+
 if(DRAKE_CI_ENABLE_PACKAGING)
   string(APPEND BAZEL_CONFIG " --config=packaging")
 endif()
@@ -815,15 +827,11 @@ foreach(import IN LISTS BAZELRC_IMPORTS)
   string(APPEND BAZELRC_IMPORT "import ${PROJECT_SOURCE_DIR}/${import}\n")
 endforeach()
 
-# We need to run Bazel in a dedicated temporary directory. The particular
-# name `drake_build_cwd` isn't important, it just needs to be unique. Note,
-# however, that the macOS wheel builds also need to know this path, so if it
-# ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
-configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
-configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
-configure_file(cmake/BUILD.bazel.in drake_build_cwd/BUILD.bazel @ONLY)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" drake_build_cwd/.bazelversion SYMBOLIC)
+configure_file(cmake/bazel.rc.in "${DRAKE_BAZEL_BUILD_DIR}/.bazelrc" @ONLY)
+configure_file(cmake/MODULE.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/MODULE.bazel" @ONLY)
+configure_file(cmake/BUILD.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/BUILD.bazel" @ONLY)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" "${DRAKE_BAZEL_BUILD_DIR}/.bazeliskrc" SYMBOLIC)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" "${DRAKE_BAZEL_BUILD_DIR}/.bazelversion" SYMBOLIC)
 
 find_package(Git)
 
@@ -851,7 +859,7 @@ add_custom_target(drake_version ALL
 
 add_custom_target(drake_install ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
+  WORKING_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}"
   USES_TERMINAL
 )
 add_dependencies(drake_install drake_version)
@@ -861,7 +869,7 @@ install(CODE
     COMMAND
       \"${Bazel_EXECUTABLE}\" run ${BAZEL_INSTALL_TARGET}
       -- ${BAZEL_INSTALL_ARGS}
-    WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd\"
+    WORKING_DIRECTORY \"${DRAKE_BAZEL_BUILD_DIR}\"
   )"
   ALL_COMPONENTS
 )

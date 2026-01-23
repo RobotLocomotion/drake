@@ -390,10 +390,8 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
   // Idea taken from: Eigen::internal::print_matrix() in Eigen/src/Core/IO.h
   for (int j = 0; j < I.cols(); ++j) {
     for (int i = 0; i < I.rows(); ++i) {
-      std::stringstream sstr;
-      sstr.copyfmt(out);
-      sstr << I(i, j);
-      width = std::max<int>(width, static_cast<int>(sstr.str().length()));
+      const std::string element = fmt::to_string(I(i, j));
+      width = std::max<int>(width, static_cast<int>(element.length()));
     }
   }
 
@@ -401,11 +399,11 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
   for (int i = 0; i < I.rows(); ++i) {
     out << "[";
     if (width) out.width(width);
-    out << I(i, 0);
+    out << fmt::to_string(I(i, 0));
     for (int j = 1; j < I.cols(); ++j) {
       out << "  ";
       if (width) out.width(width);
-      out << I(i, j);
+      out << fmt::to_string(I(i, j));
     }
     out << "]\n";
   }

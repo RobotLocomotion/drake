@@ -35,8 +35,6 @@ cc_library(
         "lib/packed.c",
         "lib/psd_feas.c",
         "lib/qreig.c",
-        "lib/readprob.c",
-        "lib/readsol.c",
         "lib/sdp.c",
         "lib/solvesys.c",
         "lib/sortentries.c",

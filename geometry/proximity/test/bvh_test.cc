@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -314,15 +315,31 @@ TYPED_TEST(BvhTest, TestCollide) {
   ASSERT_EQ(CountLeafNodes(tangent.root_node()), 16);
   ASSERT_EQ(CountAllNodes(tangent.root_node()), 31);
 
-  // The total number of collision candidates is an empirical observation only
-  // and differs by BvType. This encodes the two observed values. The
-  // significance here is that we get the same number in both cases. We
-  // assume that equal number implies same contents.
-  constexpr int kTotalCandidates = std::is_same_v<BvType, Obb> ? 100 : 32;
-  pairs = this->bvh_.GetCollisionCandidates(tangent, X_WV);
-  EXPECT_EQ(pairs.size(), kTotalCandidates);
-  pairs = tangent.GetCollisionCandidates(this->bvh_, X_WV);
-  EXPECT_EQ(pairs.size(), kTotalCandidates);
+  // TODO(SeanCurtis-TRI): This test is a proxy of *full* correctness. For full
+  // correctness, we would want to make sure that every *primitive* pair that
+  // intersects is reported in the collision candidates (i.e., we don't want
+  // actual collisions to be omitted). If problems crop up, we may need to
+  // articulate the full test (brute-force primitive-wise collision results vs
+  // culled collision results).
+
+  // We're not focusing on the *specific* number of collision candidates here.
+  // Instead, we're interested in the fact that the operation is commutative.
+  // A vs B should yield the same candidates as B vs A, (modulo ordering).
+  // We'll confirm that there's a non-empty set of candidates, but otherwise
+  // confirm that the two sets are equal.
+  const std::vector<std::pair<int, int>> bvh_to_tangent =
+      this->bvh_.GetCollisionCandidates(tangent, X_WV);
+  std::vector<std::pair<int, int>> tangent_to_bvh =
+      tangent.GetCollisionCandidates(this->bvh_, X_WV.inverse());
+  // Reverse index ordering to match the tangent_to_bvh results.
+  std::for_each(tangent_to_bvh.begin(), tangent_to_bvh.end(),
+                [](std::pair<int, int>& p) {
+                  std::swap(p.first, p.second);
+                });
+
+  EXPECT_GT(bvh_to_tangent.size(), 0);
+  EXPECT_THAT(bvh_to_tangent,
+              testing::UnorderedElementsAreArray(tangent_to_bvh));
 }
 
 // Tests colliding while traversing through the bvh trees but with early exit.

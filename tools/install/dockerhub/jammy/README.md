@@ -3,18 +3,18 @@
 To create a Docker image similar to those hosted on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake), download the
 latest [binary package](https://drake.mit.edu/from_binary.html)
-`drake-latest-noble.tar.gz` to this directory, and then run the following
+`drake-latest-jammy.tar.gz` to this directory, and then run the following
 command:
 
 ```bash
-docker build -t robotlocomotion/drake:noble .
+docker build -t robotlocomotion/drake:jammy .
 ```
 
 To start a Docker container with an interactive pseudo-terminal, run the
 following command:
 
 ```bash
-docker run -it robotlocomotion/drake:noble
+docker run -it robotlocomotion/drake:jammy
 ```
 
 The environment variables `PATH` and `PYTHONPATH` are preset to suitable values

@@ -4596,6 +4596,24 @@ You can also use your browser to download this file, by typing
 "/download" on the end of the URL (i.e., accessing ``web_url() +
 "/download"``).)""";
         } StaticHtml;
+        // Symbol: drake::geometry::Meshcat::StaticZip
+        struct /* StaticZip */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(Like StaticHtml(), returns a standalone snapshot of the visualizer and
+its contents; the return value is a ZIP file containing a thin
+``meshcat.html`` page and the assets (meshes, textures, etc.) as
+separate files.
+
+When you are uploading the unzipped files to a website, this will
+typically be a more efficient representation as compared to
+StaticHtml(). However, it cannot be opened directly by a browser from
+disk. A simple web server like ``python -m http.server`` is required.
+
+You can also use your browser to download this file, by typing
+"/download.zip" on the end of the URL (i.e., accessing ``web_url() +
+"/download.zip"``).)""";
+        } StaticZip;
         // Symbol: drake::geometry::Meshcat::StopRecording
         struct /* StopRecording */ {
           // Source: drake/geometry/meshcat.h
@@ -7008,15 +7026,7 @@ Warning:
     "initialize" itself after changes to properties that will affect
     how a geometry appears. If changing a geometry's illustration
     properties doesn't seem to be affecting the visualization,
-    retrigger its initialization action.
-
-Warning:
-    Due to a bug (see issue `#13597
-    <https://github.com/RobotLocomotion/drake/issues/13597>`_),
-    changing the illustration roles or properties in a
-    systems::Context will not have any apparent effect in certain
-    viewers. Please change the illustration role in the model prior to
-    allocating the context.)""";
+    retrigger its initialization action.)""";
         } AssignRole;
         // Symbol: drake::geometry::SceneGraph::ChangeShape
         struct /* ChangeShape */ {

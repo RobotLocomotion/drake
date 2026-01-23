@@ -2,7 +2,6 @@ load("//tools/workspace:alias.bzl", "alias_repository")
 load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
 load("//tools/workspace/bazelisk_internal:repository.bzl", "bazelisk_internal_repository")  # noqa
-load("//tools/workspace/buildifier:repository.bzl", "buildifier_repository")
 load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
@@ -16,11 +15,9 @@ load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_interna
 load("//tools/workspace/doxygen_internal:repository.bzl", "doxygen_internal_repository")  # noqa
 load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")
 load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")
-load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("//tools/workspace/gfortran_internal:repository.bzl", "gfortran_internal_repository")  # noqa
 load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
 load("//tools/workspace/gklib_internal:repository.bzl", "gklib_internal_repository")  # noqa
-load("//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("//tools/workspace/gymnasium_py_internal:repository.bzl", "gymnasium_py_internal_repository")  # noqa
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
@@ -34,6 +31,7 @@ load("//tools/workspace/lcm_internal:repository.bzl", "lcm_internal_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
+load("//tools/workspace/libzip_internal:repository.bzl", "libzip_internal_repository")  # noqa
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("//tools/workspace/metis_internal:repository.bzl", "metis_internal_repository")  # noqa
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
@@ -59,7 +57,6 @@ load("//tools/workspace/pkgconfig_spdlog_internal:repository.bzl", "pkgconfig_sp
 load("//tools/workspace/pkgconfig_x11_internal:repository.bzl", "pkgconfig_x11_internal_repository")  # noqa
 load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
-load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
 load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
@@ -71,7 +68,7 @@ load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_module_extensio
 load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
-load("//tools/workspace/styleguide:repository.bzl", "styleguide_repository")
+load("//tools/workspace/styleguide_internal:repository.bzl", "styleguide_internal_repository")  # noqa
 load("//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
 load("//tools/workspace/sympy_py_internal:repository.bzl", "sympy_py_internal_repository")  # noqa
 load("//tools/workspace/tinygltf_internal:repository.bzl", "tinygltf_internal_repository")  # noqa
@@ -119,6 +116,7 @@ def _add_internal_repositories():
     libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)
+    libzip_internal_repository(name = "libzip_internal", mirrors = mirrors)
     metis_internal_repository(name = "metis_internal", mirrors = mirrors)
     mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)
@@ -149,7 +147,7 @@ def _add_internal_repositories():
     spral_internal_repository(name = "spral_internal", mirrors = mirrors)
     stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     stduuid_internal_repository(name = "stduuid_internal", mirrors = mirrors)
-    styleguide_repository(name = "styleguide_internal", mirrors = mirrors)
+    styleguide_internal_repository(name = "styleguide_internal", mirrors = mirrors)  # noqa
     suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     sympy_py_internal_repository(name = "sympy_py_internal", mirrors = mirrors)
     tinygltf_internal_repository(name = "tinygltf_internal", mirrors = mirrors)
@@ -198,13 +196,6 @@ def _drake_dep_repositories_impl(module_ctx):
             name = name,
             aliases = aliases,
         )
-
-    # Deprecated 2026-01-01.
-    buildifier_repository(name = "buildifier", mirrors = mirrors)
-    gflags_repository(name = "gflags", mirrors = mirrors)
-    gtest_repository(name = "gtest", mirrors = mirrors)
-    pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
-    styleguide_repository(name = "styleguide", mirrors = mirrors)
 
 drake_dep_repositories = module_extension(
     implementation = _drake_dep_repositories_impl,

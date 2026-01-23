@@ -13,9 +13,7 @@
 #endif
 
 // #include "drake/common/autodiff.h"
-// #include "drake/common/autodiff_overloads.h"
-// #include "drake/common/autodiffxd.h"
-// #include "drake/common/bit_cast.h"
+// #include "drake/common/autodiff_config.h"
 // #include "drake/common/cond.h"
 // #include "drake/common/constants.h"
 // #include "drake/common/copyable_unique_ptr.h"
@@ -33,7 +31,6 @@
 // #include "drake/common/drake_path.h"
 // #include "drake/common/drake_throw.h"
 // #include "drake/common/dummy_value.h"
-// #include "drake/common/eigen_autodiff_types.h"
 // #include "drake/common/eigen_types.h"
 // #include "drake/common/extract_double.h"
 // #include "drake/common/file_source.h"
@@ -71,6 +68,7 @@
 // #include "drake/common/string_unordered_set.h"
 // #include "drake/common/temp_directory.h"
 // #include "drake/common/text_logging.h"
+// #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
 // #include "drake/common/type_safe_index.h"
 // #include "drake/common/unused.h"
@@ -221,16 +219,16 @@ object.)""";
     } AbstractValue;
     // Symbol: drake::AutoDiffVecXd
     struct /* AutoDiffVecXd */ {
-      // Source: drake/common/eigen_autodiff_types.h
+      // Source: drake/common/autodiff.h
       const char* doc =
-R"""(A dynamic-sized vector of autodiff variables, each with a
-dynamic-sized vector of partials.)""";
+R"""(A dynamic-sized vector of autodiff variables.)""";
     } AutoDiffVecXd;
     // Symbol: drake::AutoDiffXd
     struct /* AutoDiffXd */ {
-      // Source: drake/common/eigen_autodiff_types.h
+      // Source: drake/common/autodiff.h
       const char* doc =
-R"""(An autodiff variable with a dynamic number of partials.)""";
+R"""(A scalar type that performs automatic differentiation. Always use this
+``AutoDiffXd`` alias when referring to the scalar type.)""";
     } AutoDiffXd;
     // Symbol: drake::CalcProbabilityDensity
     struct /* CalcProbabilityDensity */ {
@@ -434,13 +432,15 @@ R"""(Precondition:
     } EigenPtr;
     // Symbol: drake::ExtractDoubleOrThrow
     struct /* ExtractDoubleOrThrow */ {
-      // Source: drake/common/autodiff_overloads.h
-      const char* doc_was_unable_to_choose_unambiguous_names =
-R"""(Returns the autodiff scalar's value() as a double. Never throws.
-Overloads ExtractDoubleOrThrow from common/extract_double.h.
-
-See also:
-    math::ExtractValue(), math::DiscardGradient())""";
+      // Source: drake/common/extract_double.h
+      const char* doc_1args_scalar =
+R"""(Returns ``scalar`` as a double. Never throws.)""";
+      // Source: drake/common/extract_double.h
+      const char* doc_1args_constEigenMatrixBase =
+R"""(Returns ``matrix`` as an Eigen::Matrix<double, ...> with the same size
+allocation as ``matrix``. Calls ExtractDoubleOrThrow on each element
+of the matrix, and therefore throws if any one of the extractions
+fail.)""";
     } ExtractDoubleOrThrow;
     // Symbol: drake::FileSource
     struct /* FileSource */ {
@@ -2609,12 +2609,8 @@ the matrix ``m``. An empty matrix returns false.)""";
     } assert;
     // Symbol: drake::cond
     struct /* cond */ {
-      // Source: drake/common/autodiff_overloads.h
-      const char* doc_3args =
-R"""(Provides special case of cond expression for Eigen::AutoDiffScalar
-type.)""";
       // Source: drake/common/cond.h
-      const char* doc_1args =
+      const char* doc =
 R"""(@name cond Constructs conditional expression (similar to Lisp's cond).
 
 
@@ -3035,13 +3031,6 @@ R"""(Provides hash_append for a range, as given by two iterators.)""";
     } hash_append_range;
     // Symbol: drake::if_then_else
     struct /* if_then_else */ {
-      // Source: drake/common/autodiff_overloads.h
-      const char* doc_3args_bool_constEigenAutoDiffScalar_constEigenAutoDiffScalar =
-R"""(Provides if-then-else expression for Eigen::AutoDiffScalar type. To
-support Eigen's generic expressions, we use casting to the plain
-object after applying Eigen::internal::remove_all. It is based on the
-Eigen's implementation of min/max function for AutoDiffScalar type
-(https://bitbucket.org/eigen/eigen/src/10a1de58614569c9250df88bdfc6402024687bc6/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h?at=default&fileviewer=file-view-default#AutoDiffScalar.h-546).)""";
       // Source: drake/common/double_overloads.h
       const char* doc_3args_f_cond_v_then_v_else =
 R"""(The semantics is similar but not exactly the same as C++'s conditional
@@ -3166,7 +3155,7 @@ For example:
       } Warn;
       // Symbol: drake::logging::get_dist_sink
       struct /* get_dist_sink */ {
-        // Source: drake/common/text_logging.h
+        // Source: drake/common/text_logging_spdlog.h
         const char* doc =
 R"""((Advanced) Retrieves the default sink for all Drake logs. When spdlog
 is enabled, the return value can be cast to

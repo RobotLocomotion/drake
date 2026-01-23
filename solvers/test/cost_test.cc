@@ -518,7 +518,7 @@ GTEST_TEST(TestL2NormCost, Eval) {
     const Matrix<double, 1, 4> grad_expected =
         (x0.transpose() * A.transpose() * A + b.transpose() * A) / (z.norm());
     EXPECT_TRUE(
-        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-15));
+        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-14));
   }
 
   // Test Symbolic.

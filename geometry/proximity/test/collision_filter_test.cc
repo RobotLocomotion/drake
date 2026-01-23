@@ -35,15 +35,16 @@ constexpr bool kCanCollide = true;
   const bool result1 = filter.CanCollideWith(id_A, id_B);
   const bool result2 = filter.CanCollideWith(id_B, id_A);
   if (result1 != result2) {
-    return ::testing::AssertionFailure()
-           << "The collision filter state for " << id_A << " and " << id_B
-           << " changed based on ordering";
+    return ::testing::AssertionFailure() << fmt::format(
+               "The collision filter state for {} and {} changed based on "
+               "ordering",
+               id_A, id_B);
   }
   if (result1 != expect_collidable) {
-    return ::testing::AssertionFailure()
-           << "For pair (" << id_A << ", " << id_B
-           << "), our expectation for can-collide was " << expect_collidable
-           << ", but the filter reported " << result1;
+    return ::testing::AssertionFailure() << fmt::format(
+               "For pair ({}, {}), our expectation for can-collide was {}, but "
+               "the filter reported {}",
+               id_A, id_B, expect_collidable, result1);
   }
   return ::testing::AssertionSuccess();
 }

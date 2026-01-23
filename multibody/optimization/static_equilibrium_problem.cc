@@ -1,5 +1,6 @@
 #include "drake/multibody/optimization/static_equilibrium_problem.h"
 
+#include "drake/common/drake_assert.h"
 #include "drake/multibody/optimization/static_equilibrium_constraint.h"
 #include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
 
@@ -10,7 +11,7 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
     systems::Context<AutoDiffXd>* context,
     const std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>&
         ignored_collision_pairs)
-    : plant_{*plant},
+    : plant_{DRAKE_DEREF(plant)},
       context_{context},
       owned_prog_{new solvers::MathematicalProgram()},
       prog_{owned_prog_.get()},

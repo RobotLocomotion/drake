@@ -555,6 +555,20 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
+    name = "meshcat_zip_factory_internal",
+    srcs = ["meshcat_zip_factory_internal.cc"],
+    hdrs = ["meshcat_zip_factory_internal.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+    ],
+    implementation_deps = [
+        "@libzip_internal//:libzip",
+    ],
+)
+
+drake_cc_library(
     name = "meshcat",
     srcs = [
         "meshcat.cc",
@@ -580,6 +594,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":meshcat_animation",
+        ":meshcat_zip_factory_internal",
         ":rgba",
         ":scene_graph_inspector",
         ":shape_specification",
@@ -639,6 +654,13 @@ drake_py_binary(
     srcs = ["test/meshcat_websocket_client.py"],
     visibility = [
         "//bindings/pydrake/visualization:__pkg__",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_zip_factory_internal_test",
+    deps = [
+        ":meshcat_zip_factory_internal",
     ],
 )
 
