@@ -563,9 +563,9 @@ class Simulator {
   /// @see LeafSystem::DeclareForcedPublishEvent()
   DRAKE_DEPRECATED("2026-06-01",
                    "This is no longer controlled by the Simulator. It must be "
-                   "be defined in the LeafSystem instead. See "
+                   "defined in the LeafSystem instead. See "
                    "https://drake.mit.edu/troubleshooting.html#force-publishing"
-                   " for help.");
+                   " for help.")
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
@@ -584,7 +584,7 @@ class Simulator {
                    "This is no longer controlled by the Simulator. It must be "
                    "be defined in the LeafSystem instead. See "
                    "https://drake.mit.edu/troubleshooting.html#force-publishing"
-                   " for help.");
+                   " for help.")
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
@@ -593,7 +593,7 @@ class Simulator {
   /// enabled. By default, returns false.
   DRAKE_DEPRECATED("2026-06-01",
                    "See https://drake.mit.edu/troubleshooting.html"
-                   "#force-publishing for help.");
+                   "#force-publishing for help.")
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the

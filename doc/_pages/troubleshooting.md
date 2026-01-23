@@ -193,7 +193,7 @@ This includes
 
 These have all been deprecated (for removal on 2026-06-01). We don't expect this
 will generally impact users. This guide will help those who may rely on this
-functionality transition in to the recommended mechanisms.
+functionality transition into the recommended mechanisms.
 
 Rather than configuring an *entire* diagram to publish at initialization or
 at each time step, each `LeafSystem` articulates independently whether it has
@@ -216,7 +216,7 @@ rate.
 Note: introducing a per-step publish event implicitly includes publishing at
 initialization.
 
-There is also a deprecated `Simulator::get_publish_every_time_step()`, the
+There is also a deprecated [`Simulator::get_publish_every_time_step()`][get_publish_every_step], the
 getter for this `Simulator` parameter. This will need to be evaluated on a per-leaf-system basis.
 
 ### `SimulatorConfig::publish_every_time_step`
@@ -242,7 +242,7 @@ in the system's constructor.
 Note: if your leaf system already includes a per-step publish event, you won't
 also need an initialization publish event. Initialization is included in
 per-step events.
-<!-- 2026-06-01 End of block to delete. >
+<!-- 2026-06-01 End of block to delete. -->
 
 # PyPI (pip)
 
@@ -327,7 +327,7 @@ Note that the concurrency level passed to `make` (e.g., `make -j 2`) does not
 propagate through to affect the concurrency of most of Drake's build steps; you
 need to configure the dotfile in order to control the build concurrency.
 
-# Pydrake out of memory{#pydrake - oom }
+# Pydrake out of memory {#pydrake-oom}
 
 Pydrake programs often control C++ objects that use a lot of memory, so that
 the default behaviors for running garbage collection don't effectively control
@@ -414,6 +414,7 @@ sudo route -nv add -net 224.0.0.0/4 -interface lo0
 <!-- Links to be removed upon 2026-06-01 deprecation removal. -->
 [force_trigger]: https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1systems.html#a59b7f49353f2a99b6c22d2eaae0fe9e9af8ece195be5dd5e820bdeee7ad21a4bf
 [sim_every_step]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#aef1dc6aeb821503379ab1dd8c6044562
+[get_publish_every_step]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#ae66775683e61fc461dec4f76bb8e5c7a
 [sim_init]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#ac210a235b5e0865efb51fdd27c4b58ae
 [sim_config_every_step]: https://drake.mit.edu/doxygen_cxx/structdrake_1_1systems_1_1_simulator_config.html#af1d9089360c8cd472de8f923ba7df99a
 <!-- End of links to be removed.  -->

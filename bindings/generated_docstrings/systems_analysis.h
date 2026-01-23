@@ -4577,14 +4577,11 @@ single dispatcher call may handle multiple unrestricted update events.)""";
         struct /* get_publish_every_time_step */ {
           // Source: drake/systems/analysis/simulator.h
           const char* doc_deprecated =
-R"""(Returns true if the set_publish_every_time_step() option has been
-enabled. By default, returns false. (Deprecated.)
+R"""((Deprecated.)
 
 Deprecated:
-    This method is not needed once per-step events are used. Check the
-    "publish every time step" section in troubleshooting.md for
-    details on how to migrate. This will be removed from Drake on or
-    after 2026-06-01.)""";
+    See https://drake.mit.edu/troubleshooting.html#force-publishing
+    for help. This will be removed from Drake on or after 2026-06-01.)""";
         } get_publish_every_time_step;
         // Symbol: drake::systems::Simulator::get_system
         struct /* get_system */ {
@@ -4812,59 +4809,25 @@ Note:
         struct /* set_publish_at_initialization */ {
           // Source: drake/systems/analysis/simulator.h
           const char* doc_deprecated =
-R"""(Prefer using initialization or per-step publish events instead.
-
-Sets whether the simulation should trigger a forced-Publish at the end
-of Initialize(). See set_publish_every_time_step() documentation for
-more information.
-
-See also:
-    LeafSystem::DeclareInitializationPublishEvent()
-
-See also:
-    LeafSystem::DeclarePerStepPublishEvent()
-
-See also:
-    LeafSystem::DeclareForcedPublishEvent() (Deprecated.)
+R"""((Deprecated.)
 
 Deprecated:
-    If you are only issuing a publish at initialization, use
-    LeafSystem::DeclareInitializationPublishEvent() instead. Check the
-    "publish every time step" section in troubleshooting.md for
-    details on how to migrate. This will be removed from Drake on or
-    after 2026-06-01.)""";
+    This is no longer controlled by the Simulator. It must be be
+    defined in the LeafSystem instead. See
+    https://drake.mit.edu/troubleshooting.html#force-publishing for
+    help. This will be removed from Drake on or after 2026-06-01.)""";
         } set_publish_at_initialization;
         // Symbol: drake::systems::Simulator::set_publish_every_time_step
         struct /* set_publish_every_time_step */ {
           // Source: drake/systems/analysis/simulator.h
           const char* doc_deprecated =
-R"""(Prefer using per-step publish events instead.
-
-Sets whether the simulation should trigger a forced-Publish event on
-the System under simulation at the end of every trajectory-advancing
-step. Specifically, that means the System::Publish() event dispatcher
-will be invoked on each subsystem of the System and passed the current
-Context and a forced-publish Event. If a subsystem has declared a
-forced-publish event handler, that will be called. Otherwise, nothing
-will happen.
-
-Enabling this option does not cause a forced-publish to be triggered
-at initialization; if you want that you should also call
-``set_publish_at_initialization(true)``. If you want a forced-publish
-at the end of every step, you will usually also want one at the end of
-initialization, requiring both options to be enabled.
-
-See also:
-    LeafSystem::DeclarePerStepPublishEvent()
-
-See also:
-    LeafSystem::DeclareForcedPublishEvent() (Deprecated.)
+R"""((Deprecated.)
 
 Deprecated:
-    Use LeafSystem::DeclarePerStepPublishEvent() instead. Check the
-    "publish every time step" section in troubleshooting.md for
-    details on how to migrate. This will be removed from Drake on or
-    after 2026-06-01.)""";
+    This is no longer controlled by the Simulator. It must be defined
+    in the LeafSystem instead. See
+    https://drake.mit.edu/troubleshooting.html#force-publishing for
+    help. This will be removed from Drake on or after 2026-06-01.)""";
         } set_publish_every_time_step;
         // Symbol: drake::systems::Simulator::set_target_realtime_rate
         struct /* set_target_realtime_rate */ {
@@ -4928,10 +4891,10 @@ IntegratorBase.)""";
         struct /* publish_every_time_step */ {
           // Source: drake/systems/analysis/simulator_config.h
           const char* doc =
-R"""(DEPRECATED: removal date: 2026-06-01. Check "publish every time step"
-section in troubleshooting.md for details on how to migrate to system
-events. Sets Simulator::set_publish_at_initialization() in addition to
-Simulator::set_publish_every_time_step() when applied by
+R"""(DEPRECATED: removal date: 2026-06-01. See
+https://drake.mit.edu/troubleshooting.html#force-publishing for
+guidance. Sets Simulator::set_publish_at_initialization() in addition
+to Simulator::set_publish_every_time_step() when applied by
 ApplySimulatorConfig().)""";
         } publish_every_time_step;
         // Symbol: drake::systems::SimulatorConfig::start_time
