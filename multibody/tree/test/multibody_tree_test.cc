@@ -1100,6 +1100,13 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityD) {
   //   b) the Jacobian should be exactly zero.
   EXPECT_EQ(p_WP_out, p_WP_set);
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(3 * npoints, nv));
+
+  // For each point P, calculate v_WP_W (P's velocity measured in World W,
+  // expressed in world W.  Note: This test case is somewhat degenerate.
+  Matrix3X<double> v_WP_W(3, npoints);  // Calculated quantities.
+  tree().CalcPointsVelocities(*context_, frame_W, p_WP_set, frame_W, frame_W,
+                              &v_WP_W);
+  EXPECT_EQ(v_WP_W, MatrixX<double>::Zero(3, npoints));
 }
 
 // Verify that even when the input set of points and/or the Jacobian might

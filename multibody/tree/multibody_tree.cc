@@ -2134,32 +2134,27 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
-void CalcPointsVelocities(const systems::Context<T>& context,
-                          const Frame<T>& frame_B,
-                          const Eigen::Ref<const Matrix3X<T>>& p_BoQi_B,
-                          const Frame<T>& frame_M, const Frame<T>& frame_E,
-                          EigenPtr<Matrix3X<T>> v_MQi_E) const {
+void MultibodyTree<T>::CalcPointsVelocities(
+    const systems::Context<T>& context, const Frame<T>& frame_B,
+    const Eigen::Ref<const MatrixX<T>>& p_BoQi_B, const Frame<T>& frame_M,
+    const Frame<T>& frame_E, EigenPtr<MatrixX<T>> v_MQi_E) const {
+  DRAKE_THROW_UNLESS(p_BoQi_B.rows() == 3);
   DRAKE_THROW_UNLESS(v_MQi_E != nullptr);
+  DRAKE_THROW_UNLESS(v_MQi_E->rows() == 3);
   DRAKE_THROW_UNLESS(v_MQi_E->cols() == p_BoQi_B.cols());
 
+  // Calculate v_MQi_E = v_MBo_E + ω_MB_E x p_BoQi_E
   const SpatialVelocity<T> V_MBo_E =
       frame_B.CalcSpatialVelocity(context, frame_M, frame_E);
 
-  // Check if unit vectors in frames B and E are directed with Bx = Ex, By = Ey,
-  // Bz = Ez so the R_EB rotation matrix is an identity matrix.  If not, express
-  // the position vectors p_BoQi_B in frame E (to match V_MBo_E).
-  Eigen::Matrix3X<T>* p_BoQi_E = &p_BoQi_B;  // Usually reassigned below.
-  Eigen::Matrix3X<T> p_BoQi_E_buffer;
-  if (&frame_B != &frame_E) {
-    const RotationMatrix<T> R_EB =
-        CalcRelativeRotationMatrix(context, frame_E, frame_B);
-    if (!R_EB.IsExactlyIdentity())
-      p_BoQi_E = &p_BoQi_E_buffer = R_EB * p_BoQi_B;
-  }
+  // Form the R_EB rotation matrix to express p_BoQi_B in terms of frame E.
+  const RotationMatrix<T> R_EB =
+      CalcRelativeRotationMatrix(context, frame_E, frame_B);
 
   // Cycle through each of the position vectors (columns of p_BoQi_E).
   for (int col = 0; col < p_BoQi_B.cols(); ++col) {
-    v_MQi_E.col(col) = V_MBo_E.Shift(p_BoQi_E.col(col)).translational();
+    const Vector3<T> p_BoQi_E = R_EB * p_BoQi_B.col(col);
+    v_MQi_E->col(col) = V_MBo_E.Shift(p_BoQi_E).translational();
   }
 }
 
