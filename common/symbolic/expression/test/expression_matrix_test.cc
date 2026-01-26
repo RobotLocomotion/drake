@@ -573,6 +573,8 @@ Eigen::MatrixXd MakeSimpleInvertibleMatrix(int N) {
   for (int i = 0; i < N * N; ++i) {
     M(i) = std::pow(i, N - 1);
   }
+  // Add some diagonal dominance to improve conditioning for inversion.
+  M.diagonal() += (M.cwiseAbs().rowwise().sum().array() + 1.0).matrix();
   return M;
 }
 
@@ -635,10 +637,6 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
 template <int N>
 void CheckNumericExpressionMatrixInversion() {
   Eigen::Matrix<double, N, N> M_f = MakeSimpleInvertibleMatrix(N);
-  // Add some diagonal dominance to improve conditioning for inversion.
-  for (int i = 0; i < N; ++i) {
-    M_f(i, i) += M_f.row(i).cwiseAbs().sum() + 1.0;
-  }
   const Eigen::Matrix<Expression, N, N> M_sym = M_f;
   // Statically sized.
   EXPECT_TRUE(CompareMatrices(M_f.inverse(), M_sym.inverse(), 1e-9));

@@ -17,7 +17,7 @@ namespace {
 const double kDt = 1e-3;
 const double kGamma = 0.6;
 const double kBeta = 0.3;
-const double kTolerance = 1e-12;
+const double kTolerance = 8.0 * std::numeric_limits<double>::epsilon();
 
 /* Arbitrary initial states. */
 Vector3<double> q() {
@@ -63,12 +63,12 @@ TEST_F(VelocityNewmarkSchemeTest, UpdateStateFromChangeInUnknowns) {
   const Vector3<double>& weights = scheme_.GetWeights();
   scheme_.UpdateStateFromChangeInUnknowns(dz, &state);
   EXPECT_TRUE(CompareMatrices(state.GetPositions() - state0.GetPositions(),
-                              weights(0) * dz, kTolerance));
+                              weights(0) * dz, 1e-12));
   EXPECT_TRUE(CompareMatrices(state.GetVelocities() - state0.GetVelocities(),
-                              weights(1) * dz, kTolerance));
+                              weights(1) * dz, 1e-12));
   EXPECT_TRUE(
       CompareMatrices(state.GetAccelerations() - state0.GetAccelerations(),
-                      weights(2) * dz, kTolerance));
+                      weights(2) * dz, 1e-12));
 }
 
 /* Tests that VelocityNewmarkScheme reproduces analytical solutions with

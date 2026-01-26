@@ -583,15 +583,20 @@ void CharacterizeResultTest<T>::RunCharacterization(
      bound but gives a modicum of breathing room. */
     constexpr double cutoff = 4 * std::numeric_limits<double>::epsilon();
     if (query.error > cutoff) {
+      // We don't want the documented query error to be overly loose. If the
+      // observed error is more than an order of magnitude smaller than the
+      // documented error, that's a sign that the documented error could be
+      // tightened. We need it to be this loose to account for cross-platform
+      // floating point variations.
       EXPECT_GT(*worst_error, query.error / 12)
-          << "Expected error is too big!"
+          << "Expected error is too small!"
           << "\n  " << worst_config->description
           << "\n    Expected error: " << query.error
           << "\n    Observed error: " << (*worst_error)
           << "\n    For distance: " << worst_config->signed_distance;
     }
     EXPECT_LE(*worst_error, query.error)
-        << "Expected error is too small!"
+        << "Expected error is too big!"
         << "\n  " << worst_config->description
         << "\n    Expected error: " << query.error
         << "\n    Observed error: " << (*worst_error)
