@@ -369,7 +369,8 @@ class BangBang final : public systems::LeafSystem<double> {
   const BodyIndex body_index_;
 };
 
-// Test linearization with a controller to force explicit approximations.
+// Test linearization with a controller to force explicit approximations.  The
+// explicit approximation is used when dτᵢ/dvᵢ(x̃₀) < 0.
 TEST_P(IcfExternalSystemsLinearizerChoosePortTest, BangBang) {
   const int choose_plant_port = GetParam();
 
