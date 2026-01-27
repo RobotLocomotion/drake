@@ -108,7 +108,10 @@ class SimulationTestScenario : public testing::Test {
     // Set up a simulator with the CENIC integrator in error-control mode.
     simulator_ =
         std::make_unique<Simulator<double>>(*diagram_, std::move(context));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     simulator_->set_publish_every_time_step(true);
+#pragma GCC diagnostic pop
     integrator_ = &simulator_->reset_integrator<CenicIntegrator<double>>();
     integrator_->set_maximum_step_size(0.1);
     integrator_->set_fixed_step_mode(false);
