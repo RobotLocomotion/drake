@@ -69,6 +69,15 @@ if(APPLE)
 else()
   list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
 
+  execute_process(
+    COMMAND "/usr/bin/arch"
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    OUTPUT_VARIABLE UBUNTU_ARCH)
+  if(UBUNTU_ARCH STREQUAL "")
+    message(FATAL_ERROR "Could NOT query linux arch")
+  endif()
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
+
   find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
   mark_as_advanced(LSB_RELEASE_EXECUTABLE)
   if(NOT LSB_RELEASE_EXECUTABLE)
