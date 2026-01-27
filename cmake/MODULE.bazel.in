@@ -9,6 +9,13 @@ local_path_override(
     path = "@PROJECT_SOURCE_DIR@",
 )
 
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+
+python.toolchain(
+    python_version = "@PYTHON_VERSION_MAJOR_MINOR@",
+    is_default = True,
+)
+
 python_repository = use_repo_rule(
     "@drake//tools/workspace/python:repository.bzl",
     "python_repository",

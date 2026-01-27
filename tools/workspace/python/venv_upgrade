@@ -113,6 +113,10 @@ done
 # Check for changes to the lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
+# Also bump mypy's lockfile.
+bazel run //setup/python/mypy:lock.update
+files_to_commit+=( "$(git diff --name-only HEAD -- ./setup/python/mypy/requirements.txt)" )
+
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
     if [ ${#files_to_commit[@]} == 0 ]; then
