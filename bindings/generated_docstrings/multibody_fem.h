@@ -43,6 +43,7 @@
 // #include "drake/multibody/fem/quadrature.h"
 // #include "drake/multibody/fem/schur_complement.h"
 // #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
+// #include "drake/multibody/fem/tet_subdivision_quadrature.h"
 // #include "drake/multibody/fem/velocity_newmark_scheme.h"
 // #include "drake/multibody/fem/volumetric_element.h"
 // #include "drake/multibody/fem/volumetric_model.h"
@@ -193,12 +194,24 @@ has unit s. Must be non-negative. Default to 0. See DampingModel.
 - Mass density: Has unit kg/m³. Must be positive. Default to 1.5e3.
 - Material model: The constitutive model that describes the stress-strain
 relationship of the body, see MaterialModel. Default to
-MaterialModel::kCorotated.)""";
+MaterialModel::kLinearCorotated.
+- Element subdivision count: to integrate external volumetric forces, elements
+can be subdivided to resolve large non-linearities within the domain of the
+element. The number of resulting quadrature points is equal to 4^N where N is
+the subdivision count. Zero means no subdivision. Default to 0.)""";
           // Symbol: drake::multibody::fem::DeformableBodyConfig::DeformableBodyConfig<T>
           struct /* ctor */ {
             // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc = R"""()""";
           } ctor;
+          // Symbol: drake::multibody::fem::DeformableBodyConfig::element_subdivision_count
+          struct /* element_subdivision_count */ {
+            // Source: drake/multibody/fem/deformable_body_config.h
+            const char* doc =
+R"""(Returns the number of times each element is subdivided when evaluating
+the external forces. Useful when elements are too coarse to resolve
+external force fields.)""";
+          } element_subdivision_count;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::mass_damping_coefficient
           struct /* mass_damping_coefficient */ {
             // Source: drake/multibody/fem/deformable_body_config.h
@@ -222,6 +235,13 @@ R"""(Returns the constitutive model of the material.)""";
             // Source: drake/multibody/fem/deformable_body_config.h
             const char* doc = R"""(Returns the Poisson's ratio, unitless.)""";
           } poissons_ratio;
+          // Symbol: drake::multibody::fem::DeformableBodyConfig::set_element_subdivision_count
+          struct /* set_element_subdivision_count */ {
+            // Source: drake/multibody/fem/deformable_body_config.h
+            const char* doc =
+R"""(Precondition:
+    0 <= element_subdivision_count <= 4.)""";
+          } set_element_subdivision_count;
           // Symbol: drake::multibody::fem::DeformableBodyConfig::set_mass_damping_coefficient
           struct /* set_mass_damping_coefficient */ {
             // Source: drake/multibody/fem/deformable_body_config.h

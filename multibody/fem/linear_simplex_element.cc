@@ -132,6 +132,13 @@ template class LinearSimplexElement<double, 2, 3, 4>;
 template class LinearSimplexElement<double, 3, 3, 1>;
 template class LinearSimplexElement<double, 3, 3, 2>;
 template class LinearSimplexElement<double, 3, 3, 5>;
+
+/* Explicit instantiations for subdivions 1,2,3,4. */
+template class LinearSimplexElement<double, 3, 3, 4>;
+template class LinearSimplexElement<double, 3, 3, 16>;
+template class LinearSimplexElement<double, 3, 3, 64>;
+template class LinearSimplexElement<double, 3, 3, 256>;
+
 template class LinearSimplexElement<AutoDiffXd, 2, 2, 2>;
 template class LinearSimplexElement<AutoDiffXd, 2, 2, 4>;
 template class LinearSimplexElement<AutoDiffXd, 2, 3, 4>;
