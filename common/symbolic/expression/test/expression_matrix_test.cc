@@ -636,7 +636,7 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
 // Shows that a purely numeric matrix of Expression is invertible.
 template <int N>
 void CheckNumericExpressionMatrixInversion() {
-  Eigen::Matrix<double, N, N> M_f = MakeSimpleInvertibleMatrix(N);
+  const Eigen::Matrix<double, N, N> M_f = MakeSimpleInvertibleMatrix(N);
   const Eigen::Matrix<Expression, N, N> M_sym = M_f;
   // Statically sized.
   EXPECT_TRUE(CompareMatrices(M_f.inverse(), M_sym.inverse(), 1e-9));
