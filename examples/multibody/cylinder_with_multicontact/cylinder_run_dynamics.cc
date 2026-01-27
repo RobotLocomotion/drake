@@ -102,8 +102,6 @@ int do_main() {
                               Vector3<double>(FLAGS_vx0, 0.0, 0.0)));
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
-  simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);
