@@ -183,6 +183,18 @@ class PositionConstraint : public solvers::Constraint {
         "PositionConstraint::DoEval() does not work for symbolic variables.");
   }
 
+  // Base constructor; all others delegate to it. Note: the dummy integer
+  // parameter on the end is used to disambiguate between this constructor
+  // and *some* of the public constructors.
+  template <typename T>
+  PositionConstraint(const MultibodyPlant<T>* plant, const Frame<T>& frameAbar,
+                     const std::optional<math::RigidTransformd>& X_AbarA,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                     const Frame<T>& frameB,
+                     const std::optional<Eigen::Vector3d>& p_BQ,
+                     systems::Context<T>* plant_context, int);
+
   bool use_autodiff() const { return plant_autodiff_; }
 
   const MultibodyPlant<double>* const plant_double_;

@@ -18,7 +18,8 @@ PositionConstraint::PositionConstraint(
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     systems::Context<double>* plant_context)
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
-                         frameB, p_BQ, plant_context) {}
+                         frameB, p_BQ, plant_context, 0) {}
+
 // Double version. No frameAbar. Do not specify the value of p_BQ. Instead, p_BQ
 // is also a decision variable.
 PositionConstraint::PositionConstraint(
@@ -27,7 +28,7 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<double>& frameB, systems::Context<double>* plant_context)
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
-                         frameB, plant_context) {}
+                         frameB, std::nullopt, plant_context, 0) {}
 
 // Double version.
 PositionConstraint::PositionConstraint(
@@ -37,25 +38,8 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     systems::Context<double>* plant_context)
-    : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
-                          p_AQ_lower, p_AQ_upper),
-      plant_double_(plant),
-      frameAbar_index_(frameAbar.index()),
-      X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
-                                   : math::RigidTransformd::Identity()},
-      frameB_index_(frameB.index()),
-      p_BQ_{p_BQ},
-      context_double_{plant_context},
-      plant_autodiff_(nullptr),
-      context_autodiff_(nullptr) {
-  if (plant == nullptr) {
-    throw std::invalid_argument("PositionConstraint(): plant is nullptr.");
-  }
-  if (plant_context == nullptr) {
-    throw std::invalid_argument(
-        "PositionConstraint(): plant_context is nullptr.");
-  }
-}
+    : PositionConstraint(plant, frameAbar, X_AbarA, p_AQ_lower, p_AQ_upper,
+                         frameB, p_BQ, plant_context, 0) {}
 
 // Double version. Overloaded constructor. Do not specify the value of p_BQ.
 // Instead, p_BQ is also a decision variable.
@@ -65,25 +49,8 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<double>& frameB, systems::Context<double>* plant_context)
-    : solvers::Constraint(3, (RefFromPtrOrThrow(plant).num_positions() + 3),
-                          p_AQ_lower, p_AQ_upper),
-      plant_double_(plant),
-      frameAbar_index_(frameAbar.index()),
-      X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
-                                   : math::RigidTransformd::Identity()},
-      frameB_index_(frameB.index()),
-      p_BQ_{std::nullopt},
-      context_double_{plant_context},
-      plant_autodiff_(nullptr),
-      context_autodiff_(nullptr) {
-  if (plant == nullptr) {
-    throw std::invalid_argument("PositionConstraint(): plant is nullptr.");
-  }
-  if (plant_context == nullptr) {
-    throw std::invalid_argument(
-        "PositionConstraint(): plant_context is nullptr.");
-  }
-}
+    : PositionConstraint(plant, frameAbar, X_AbarA, p_AQ_lower, p_AQ_upper,
+                         frameB, std::nullopt, plant_context, 0) {}
 
 // Autodiff version.
 PositionConstraint::PositionConstraint(
@@ -95,20 +62,8 @@ PositionConstraint::PositionConstraint(
     const Frame<AutoDiffXd>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     systems::Context<AutoDiffXd>* plant_context)
-    : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
-                          p_AQ_lower, p_AQ_upper),
-      plant_double_(nullptr),
-      frameAbar_index_(frameAbar.index()),
-      X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
-                                   : math::RigidTransformd::Identity()},
-      frameB_index_(frameB.index()),
-      p_BQ_{p_BQ},
-      context_double_{nullptr},
-      plant_autodiff_(plant),
-      context_autodiff_(plant_context) {
-  if (plant_context == nullptr)
-    throw std::invalid_argument("plant_context is nullptr.");
-}
+    : PositionConstraint(plant, frameAbar, X_AbarA, p_AQ_lower, p_AQ_upper,
+                         frameB, p_BQ, plant_context, 0) {}
 
 // AutoDiff version. Do not specify the value of p_BQ. Instead, p_BQ
 // is also a decision variable.
@@ -120,20 +75,8 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<AutoDiffXd>& frameB,
     systems::Context<AutoDiffXd>* plant_context)
-    : solvers::Constraint(3, (RefFromPtrOrThrow(plant).num_positions() + 3),
-                          p_AQ_lower, p_AQ_upper),
-      plant_double_(nullptr),
-      frameAbar_index_(frameAbar.index()),
-      X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
-                                   : math::RigidTransformd::Identity()},
-      frameB_index_(frameB.index()),
-      p_BQ_{std::nullopt},
-      context_double_{nullptr},
-      plant_autodiff_(plant),
-      context_autodiff_(plant_context) {
-  if (plant_context == nullptr)
-    throw std::invalid_argument("plant_context is nullptr.");
-}
+    : PositionConstraint(plant, frameAbar, X_AbarA, p_AQ_lower, p_AQ_upper,
+                         frameB, std::nullopt, plant_context, 0) {}
 
 // AutoDiff version. No frameAbar.
 PositionConstraint::PositionConstraint(
@@ -145,7 +88,7 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     systems::Context<AutoDiffXd>* plant_context)
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
-                         frameB, p_BQ, plant_context) {}
+                         frameB, p_BQ, plant_context, 0) {}
 
 // AutoDiff version, no frameAbar. Do not specify the value of p_BQ. Instead,
 // p_BQ is also a decision variable.
@@ -157,7 +100,7 @@ PositionConstraint::PositionConstraint(
     const Frame<AutoDiffXd>& frameB,
     systems::Context<AutoDiffXd>* plant_context)
     : PositionConstraint(plant, frameA, std::nullopt, p_AQ_lower, p_AQ_upper,
-                         frameB, plant_context) {}
+                         frameB, std::nullopt, plant_context, 0) {}
 
 namespace {
 
@@ -264,6 +207,58 @@ void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   } else {
     DoEvalGeneric(*plant_autodiff_, context_autodiff_, frameAbar_index_,
                   X_AAbar_, frameB_index_, p_BQ_, x, y);
+  }
+}
+
+namespace {
+
+template <typename T, typename U>
+const MultibodyPlant<T>* MaybeMatchScalar(const MultibodyPlant<U>* instance) {
+  if constexpr (std::is_same_v<T, U>) {
+    return instance;
+  } else {
+    return nullptr;
+  }
+}
+
+template <typename T, typename U>
+systems::Context<T>* MaybeMatchScalar(systems::Context<U>* instance) {
+  if constexpr (std::is_same_v<T, U>) {
+    return instance;
+  } else {
+    return nullptr;
+  }
+}
+
+}  // namespace
+
+template <typename T>
+PositionConstraint::PositionConstraint(
+    const MultibodyPlant<T>* plant, const Frame<T>& frameAbar,
+    const std::optional<math::RigidTransformd>& X_AbarA,
+    const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+    const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper, const Frame<T>& frameB,
+    const std::optional<Eigen::Vector3d>& p_BQ,
+    systems::Context<T>* plant_context, int)
+    : solvers::Constraint(
+          3,
+          RefFromPtrOrThrow(plant).num_positions() + (p_BQ.has_value() ? 0 : 3),
+          p_AQ_lower, p_AQ_upper),
+      plant_double_(MaybeMatchScalar<double>(plant)),
+      frameAbar_index_(frameAbar.index()),
+      X_AAbar_{X_AbarA.has_value() ? X_AbarA.value().inverse()
+                                   : math::RigidTransformd::Identity()},
+      frameB_index_(frameB.index()),
+      p_BQ_{p_BQ},
+      context_double_{MaybeMatchScalar<double>(plant_context)},
+      plant_autodiff_(MaybeMatchScalar<AutoDiffXd>(plant)),
+      context_autodiff_(MaybeMatchScalar<AutoDiffXd>(plant_context)) {
+  if (plant == nullptr) {
+    throw std::invalid_argument("PositionConstraint(): plant is nullptr.");
+  }
+  if (plant_context == nullptr) {
+    throw std::invalid_argument(
+        "PositionConstraint(): plant_context is nullptr.");
   }
 }
 
