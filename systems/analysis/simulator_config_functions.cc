@@ -261,10 +261,14 @@ void ApplySimulatorConfig(const SimulatorConfig& config,
   }
   simulator->get_mutable_context().SetTime(config.start_time);
   simulator->set_target_realtime_rate(config.target_realtime_rate);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete with publish_every_time_step 2026-06-01
   // It is almost always the case we want these two next flags to be either both
   // true or both false. Otherwise we could miss the first publish at t = 0.
   simulator->set_publish_at_initialization(config.publish_every_time_step);
   simulator->set_publish_every_time_step(config.publish_every_time_step);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -287,7 +291,11 @@ SimulatorConfig ExtractSimulatorConfig(const Simulator<T>& simulator) {
   result.start_time = ExtractDoubleOrThrow(simulator.get_context().get_time());
   result.target_realtime_rate =
       ExtractDoubleOrThrow(simulator.get_target_realtime_rate());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete with publish_every_time_step 2026-06-01
   result.publish_every_time_step = simulator.get_publish_every_time_step();
+#pragma GCC diagnostic pop
   return result;
 }
 

@@ -169,8 +169,6 @@ int DoMain() {
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
-
-  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
 
