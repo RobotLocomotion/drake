@@ -62,13 +62,14 @@ TEST_F(VelocityNewmarkSchemeTest, UpdateStateFromChangeInUnknowns) {
   const Vector3<double> dz(1.234, 4.567, 7.890);
   const Vector3<double>& weights = scheme_.GetWeights();
   scheme_.UpdateStateFromChangeInUnknowns(dz, &state);
-  EXPECT_TRUE(CompareMatrices(state.GetPositions() - state0.GetPositions(),
-                              weights(0) * dz, 1e-12));
-  EXPECT_TRUE(CompareMatrices(state.GetVelocities() - state0.GetVelocities(),
-                              weights(1) * dz, 1e-12));
+  const auto q_expected = state0.GetPositions() + weights(0) * dz;
+  const auto v_expected = state0.GetVelocities() + weights(1) * dz;
+  const auto a_expected = state0.GetAccelerations() + weights(2) * dz;
+
+  EXPECT_TRUE(CompareMatrices(state.GetPositions(), q_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(state.GetVelocities(), v_expected, kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(state.GetAccelerations() - state0.GetAccelerations(),
-                      weights(2) * dz, 1e-12));
+      CompareMatrices(state.GetAccelerations(), a_expected, kTolerance));
 }
 
 /* Tests that VelocityNewmarkScheme reproduces analytical solutions with
