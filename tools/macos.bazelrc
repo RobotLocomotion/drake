@@ -1,4 +1,7 @@
-# Common options for macOS, no matter the arch (x86 or arm).
+# Common options for macOS.
+
+# N.B. Ensure this is consistent with `execute.bzl`.
+build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
