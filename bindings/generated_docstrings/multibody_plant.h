@@ -4395,6 +4395,40 @@ Note:
     RuntimeError if ``p_BQi`` and ``p_AQi`` differ in the number of
     columns.)""";
         } CalcPointsPositions;
+        // Symbol: drake::multibody::MultibodyPlant::CalcPointsVelocities
+        struct /* CalcPointsVelocities */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(For a set of n points Qi (i = 0, ... n-1) that are regarded as fixed
+on a frame B, calculates the velocities v_MQi_E of Qi measured in a
+frame M and expressed in a frame E.
+
+Parameter ``context``:
+    Contains the state of the multibody system, including the
+    generalized positions q and the generalized velocities v.
+
+Parameter ``frame_B``:
+    The frame B in which each point Qi is fixed and whose frame origin
+    Bo is the starting point for position vectors in p_BoQi_B. frame_B
+    is also the expressed-in-frame for those position vectors.
+
+Parameter ``p_BoQi_B``:
+    Position vectors from Bo (frame B's origin) to each point Qi (i =
+    0, ... n-1), expressed in frame B.
+
+Parameter ``frame_M``:
+    The frame in which the velocities are to be measured.
+
+Parameter ``v_MQi_E``:
+    The velocities of each point Qi (i = 0, ... n-1) measured in frame
+    M and expressed in frame E. On input, v_MQi_E must have the same
+    size as p_BoQi_B or an exception is thrown
+
+Raises:
+    RuntimeError if p_BoQi_B and v_MQi_E do not have three rows (are
+    not 3 element vectors) or do not have the same number (n > 0) of
+    columns.)""";
+        } CalcPointsVelocities;
         // Symbol: drake::multibody::MultibodyPlant::CalcRelativeRotationMatrix
         struct /* CalcRelativeRotationMatrix */ {
           // Source: drake/multibody/plant/multibody_plant.h
