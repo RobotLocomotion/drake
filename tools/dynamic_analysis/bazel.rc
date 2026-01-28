@@ -2,281 +2,211 @@
 # This filed is included by //tools:bazel.rc.
 
 ### Kcov coverage build. ###
-build:kcov --build_tests_only
-build:kcov --copt -g
-build:kcov --copt -O0
-build:kcov --strategy=TestRunner=local
-build:kcov --run_under //tools/dynamic_analysis:kcov
-build:kcov --local_test_jobs=HOST_CPUS*0.5
+build:kcov --config=_kcov
 build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
-build:kcov --nocache_test_results
-build:kcov --zip_undeclared_test_outputs=true
+
+### Kcov everything build. ###
+build:kcov_everything --config=_kcov
+build:kcov_everything --@drake//tools/flags:with_gurobi=True
+build:kcov_everything --@drake//tools/flags:with_mosek=True
+build:kcov_everything --@drake//tools/flags:with_snopt=True
+build:kcov_everything --test_tag_filters=-lint,-no_kcov
+
+### Kcov and Kcov everything common flags. ###
+### NOT intended for developer use. ###
+build:_kcov --build_tests_only
+build:_kcov --copt -g
+build:_kcov --copt -O0
+build:_kcov --strategy=TestRunner=local
+build:_kcov --run_under //tools/dynamic_analysis:kcov
+build:_kcov --local_test_jobs=HOST_CPUS*0.5
+build:_kcov --nocache_test_results
+build:_kcov --zip_undeclared_test_outputs=true
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
 # significantly. In addition, kcov builds complete reports during the timeout
 # period, and is vulnerable to cloud filesystem slow-downs.  Timeouts are 20x
 # default values.
-build:kcov --test_timeout=1200,6000,19000,72000
-
-### Kcov everything build. ###
-build:kcov_everything --build_tests_only
-build:kcov_everything --@drake//tools/flags:with_gurobi=True
-build:kcov_everything --@drake//tools/flags:with_mosek=True
-build:kcov_everything --@drake//tools/flags:with_snopt=True
-build:kcov_everything --copt -g
-build:kcov_everything --copt -O0
-build:kcov_everything --strategy=TestRunner=local
-build:kcov_everything --run_under=//tools/dynamic_analysis:kcov
-build:kcov_everything --local_test_jobs=HOST_CPUS*0.5
-build:kcov_everything --test_tag_filters=-lint,-no_kcov
-build:kcov_everything --nocache_test_results
-build:kcov_everything --zip_undeclared_test_outputs=true
-# See timeout note above.
-build:kcov_everything --test_timeout=1200,6000,19000,72000
+build:_kcov --test_timeout=1200,6000,19000,72000
 
 ### ASan build. Clang only. ###
-build:asan --build_tests_only
-build:asan --copt=-g
-# https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
-build:asan --copt=-fno-common
-build:asan --copt=-fsanitize=address
-build:asan --copt=-fsanitize-address-use-after-scope
-build:asan --copt=-fstandalone-debug
-build:asan --copt=-O0
-build:asan --copt=-fno-omit-frame-pointer
-build:asan --linkopt=-fsanitize=address
-build:asan --linkopt=-fsanitize-address-use-after-scope
-build:asan --run_under=//tools/dynamic_analysis:asan
-build:asan --test_env=ASAN_OPTIONS
-build:asan --test_env=LSAN_OPTIONS
-build:asan --test_env=ASAN_SYMBOLIZER_PATH
-build:asan --test_env=LSAN_SYMBOLIZER_PATH
+build:asan --config=_asan
 # LSan is run with ASan by default
 build:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
-build:asan --test_lang_filters=-sh,-py
-# Typical slowdown introduced by AddressSanitizer is 2x.
-# See https://clang.llvm.org/docs/AddressSanitizer.html
-build:asan --test_timeout=150,750,2250,9000  # 2.5x
-build:asan --define=USING_SANITIZER=ON
-# Due to https://sourceware.org/bugzilla/show_bug.cgi?id=25975, we see ...
-#  ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
-# ... spammed millions of times in ASan builds. The only way to silence that
-# warning is to silence ALL WARNINGS AT ALL EVER in ASan builds.
-build:asan --auto_output_filter=all
 
 ### ASan everything build. Clang only. ###
-build:asan_everything --build_tests_only
+build:asan_everything --config=_asan
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
 build:asan_everything --@drake//tools/flags:with_gurobi=False
 build:asan_everything --@drake//tools/flags:with_mosek=False
 build:asan_everything --@drake//tools/flags:with_snopt=True
-build:asan_everything --copt=-g
-# https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
-build:asan_everything --copt=-fno-common
-build:asan_everything --copt=-fsanitize=address
-build:asan_everything --copt=-fsanitize-address-use-after-scope
-build:asan_everything --copt=-fstandalone-debug
-build:asan_everything --copt=-O0
-build:asan_everything --copt=-fno-omit-frame-pointer
-build:asan_everything --linkopt=-fsanitize=address
-build:asan_everything --linkopt=-fsanitize-address-use-after-scope
 # LSan is run with ASan by default
 build:asan_everything --test_tag_filters=-gurobi,-mosek,-no_asan,-no_lsan
-build:asan_everything --run_under=//tools/dynamic_analysis:asan
-build:asan_everything --test_env=ASAN_OPTIONS
-build:asan_everything --test_env=LSAN_OPTIONS
-build:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
-build:asan_everything --test_env=LSAN_SYMBOLIZER_PATH
-build:asan_everything --test_lang_filters=-sh,-py
+
+### ASan and ASan everything common flags. ###
+### NOT intended for developer use. ###
+build:_asan --build_tests_only
+build:_asan --copt=-g
+# https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
+build:_asan --copt=-fno-common
+build:_asan --copt=-fsanitize=address
+build:_asan --copt=-fsanitize-address-use-after-scope
+build:_asan --copt=-fstandalone-debug
+build:_asan --copt=-O0
+build:_asan --copt=-fno-omit-frame-pointer
+build:_asan --linkopt=-fsanitize=address
+build:_asan --linkopt=-fsanitize-address-use-after-scope
+build:_asan --run_under=//tools/dynamic_analysis:asan
+build:_asan --test_env=ASAN_OPTIONS
+build:_asan --test_env=LSAN_OPTIONS
+build:_asan --test_env=ASAN_SYMBOLIZER_PATH
+build:_asan --test_env=LSAN_SYMBOLIZER_PATH
+build:_asan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-build:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
-build:asan_everything --define=USING_SANITIZER=ON
+build:_asan --test_timeout=150,750,2250,9000  # 2.5x
+build:_asan --define=USING_SANITIZER=ON
 # Due to https://sourceware.org/bugzilla/show_bug.cgi?id=25975, we see ...
-# ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
+#  ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
 # ... spammed millions of times in ASan builds. The only way to silence that
 # warning is to silence ALL WARNINGS AT ALL EVER in ASan builds.
-build:asan_everything --auto_output_filter=all
+build:_asan --auto_output_filter=all
 
 ### LSan build. Clang only. ###
-build:lsan --build_tests_only
-build:lsan --copt=-g
-build:lsan --copt=-fno-common
-build:lsan --copt=-fsanitize=leak
-build:lsan --copt=-fstandalone-debug
-build:lsan --copt=-O0
-build:lsan --copt=-fno-omit-frame-pointer
-build:lsan --linkopt=-fsanitize=leak
-build:lsan --run_under=//tools/dynamic_analysis:lsan
-build:lsan --test_env=LSAN_OPTIONS
-build:lsan --test_env=LSAN_SYMBOLIZER_PATH
+build:lsan --config=_lsan
 build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
-build:lsan --test_lang_filters=-sh,-py
-build:lsan --test_timeout=120,600,1800,7200  # 2x
-build:lsan --define=USING_SANITIZER=ON
 
 ### LSan everything build. Clang only. ###
-build:lsan_everything --build_tests_only
+build:lsan_everything --config=_lsan
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
 build:lsan_everything --@drake//tools/flags:with_gurobi=False
 build:lsan_everything --@drake//tools/flags:with_mosek=False
 build:lsan_everything --@drake//tools/flags:with_snopt=True
-build:lsan_everything --copt=-g
-build:lsan_everything --copt=-fno-common
-build:lsan_everything --copt=-fsanitize=leak
-build:lsan_everything --copt=-fstandalone-debug
-build:lsan_everything --copt=-O0
-build:lsan_everything --copt=-fno-omit-frame-pointer
-build:lsan_everything --linkopt=-fsanitize=leak
 build:lsan_everything --test_tag_filters=-gurobi,-mosek,-no_lsan
-build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
-build:lsan_everything --test_env=LSAN_OPTIONS
-build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
-build:lsan_everything --test_lang_filters=-sh,-py
-build:lsan_everything --test_timeout=120,600,1800,7200  # 2x
-build:lsan_everything --define=USING_SANITIZER=ON
+
+### LSan and LSan everything common flags. ###
+### NOT intended for developer use. ###
+build:_lsan --build_tests_only
+build:_lsan --copt=-g
+build:_lsan --copt=-fno-common
+build:_lsan --copt=-fsanitize=leak
+build:_lsan --copt=-fstandalone-debug
+build:_lsan --copt=-O0
+build:_lsan --copt=-fno-omit-frame-pointer
+build:_lsan --linkopt=-fsanitize=leak
+build:_lsan --run_under=//tools/dynamic_analysis:lsan
+build:_lsan --test_env=LSAN_OPTIONS
+build:_lsan --test_env=LSAN_SYMBOLIZER_PATH
+build:_lsan --test_lang_filters=-sh,-py
+build:_lsan --test_timeout=120,600,1800,7200  # 2x
+build:_lsan --define=USING_SANITIZER=ON
 
 ### TSan build. ###
-build:tsan --build_tests_only
-build:tsan --copt -g
-build:tsan --copt -fsanitize=thread
-build:tsan --copt -O1
-build:tsan --copt -fno-omit-frame-pointer
-# From Tsan documentation for Clang-3.9:
-# fsanitize=thread flag will cause Clang to act as though the -fPIE flag
-# had been supplied if compiling without -fPIC, and as though the
-# -pie flag had been supplied if linking an executable
-# Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
-build:tsan --noforce_pic
-build:tsan --linkopt -fsanitize=thread
-build:tsan --run_under=//tools/dynamic_analysis:tsan
-build:tsan --test_env=TSAN_OPTIONS
+build:tsan --config=_tsan
 build:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
-build:tsan --test_lang_filters=-sh,-py
-# Typical slowdown introduced by ThreadSanitizer is about 5x-15x
-# See https://clang.llvm.org/docs/ThreadSanitizer.html
-build:tsan --test_timeout=300,1500,5400,18000
-build:tsan --define=USING_SANITIZER=ON
 
 ### TSan everything build. ###
-build:tsan_everything --build_tests_only
+build:tsan_everything --config=_tsan
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
 build:tsan_everything --@drake//tools/flags:with_gurobi=False
 build:tsan_everything --@drake//tools/flags:with_mosek=False
 build:tsan_everything --@drake//tools/flags:with_snopt=True
-build:tsan_everything --copt -g
-build:tsan_everything --copt -fsanitize=thread
-build:tsan_everything --copt -O1
-build:tsan_everything --copt -fno-omit-frame-pointer
+build:tsan_everything --test_tag_filters=-gurobi,-mosek,-no_tsan
+
+### TSan and TSan everything common flags. ###
+### NOT intended for developer use. ###
+build:_tsan --build_tests_only
+build:_tsan --copt -g
+build:_tsan --copt -fsanitize=thread
+build:_tsan --copt -O1
+build:_tsan --copt -fno-omit-frame-pointer
 # From Tsan documentation for Clang-3.9:
 # fsanitize=thread flag will cause Clang to act as though the -fPIE flag
 # had been supplied if compiling without -fPIC, and as though the
 # -pie flag had been supplied if linking an executable
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
-build:tsan_everything --noforce_pic
-build:tsan_everything --linkopt -fsanitize=thread
-build:tsan_everything --test_tag_filters=-gurobi,-mosek,-no_tsan
-build:tsan_everything --run_under=//tools/dynamic_analysis:tsan
-build:tsan_everything --test_env=TSAN_OPTIONS
-build:tsan_everything --test_lang_filters=-sh,-py
+build:_tsan --noforce_pic
+build:_tsan --linkopt -fsanitize=thread
+build:_tsan --run_under=//tools/dynamic_analysis:tsan
+build:_tsan --test_env=TSAN_OPTIONS
+build:_tsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
-build:tsan_everything --test_timeout=300,1500,5400,18000
-build:tsan_everything --define=USING_SANITIZER=ON
+build:_tsan --test_timeout=300,1500,5400,18000
+build:_tsan --define=USING_SANITIZER=ON
 
 ### UBSan build. ###
-build:ubsan --build_tests_only
-build:ubsan --copt -g
-build:ubsan --copt -fsanitize=undefined
-# Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
-# would require extra linkopts that cause segmentation faults on pure C code.
-build:ubsan --copt -fno-sanitize=float-divide-by-zero,function,vptr
-build:ubsan --copt -O1
-build:ubsan --copt -fno-omit-frame-pointer
-# TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
-# autogenerated toolchain.
-# build:ubsan --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
-build:ubsan --linkopt -fsanitize=undefined
-build:ubsan --linkopt -Wl,--gc-sections  # Claw back some disk space for CI.
-build:ubsan --run_under=//tools/dynamic_analysis:ubsan
-build:ubsan --test_env=UBSAN_OPTIONS
+build:ubsan --config=_ubsan
 build:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
-build:ubsan --test_lang_filters=-sh,-py
-# Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
-# See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
-build:ubsan --test_timeout=120,600,1800,7200
-build:ubsan --define=USING_SANITIZER=ON
 
 ### UBSan everything build. ###
-build:ubsan_everything --build_tests_only
+build:ubsan_everything --config=_ubsan
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
 build:ubsan_everything --@drake//tools/flags:with_gurobi=False
 build:ubsan_everything --@drake//tools/flags:with_mosek=False
 build:ubsan_everything --@drake//tools/flags:with_snopt=True
-build:ubsan_everything --copt -g
-build:ubsan_everything --copt -fsanitize=undefined
+build:ubsan_everything --test_tag_filters=-mosek,-gurobi,-no_ubsan
+
+### UBSan and UBSan everything common flags. ###
+### NOT intended for developer use. ###
+build:_ubsan --build_tests_only
+build:_ubsan --copt -g
+build:_ubsan --copt -fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
 # would require extra linkopts that cause segmentation faults on pure C code.
-build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,function,vptr
-build:ubsan_everything --copt -O1
-build:ubsan_everything --copt -fno-omit-frame-pointer
+build:_ubsan --copt -fno-sanitize=float-divide-by-zero,function,vptr
+build:_ubsan --copt -O1
+build:_ubsan --copt -fno-omit-frame-pointer
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
 # autogenerated toolchain.
-# build:ubsan_everything --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
-build:ubsan_everything --linkopt -fsanitize=undefined
-build:ubsan_everything --linkopt -Wl,--gc-sections  # Claw back some disk space for CI.
-build:ubsan_everything --test_tag_filters=-mosek,-gurobi,-no_ubsan
-build:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
-build:ubsan_everything --test_env=UBSAN_OPTIONS
-build:ubsan_everything --test_lang_filters=-sh,-py
+# build:_ubsan --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
+build:_ubsan --linkopt -fsanitize=undefined
+build:_ubsan --linkopt -Wl,--gc-sections  # Claw back some disk space for CI.
+build:_ubsan --run_under=//tools/dynamic_analysis:ubsan
+build:_ubsan --test_env=UBSAN_OPTIONS
+build:_ubsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
-build:ubsan_everything --test_timeout=120,600,1800,7200
-build:ubsan_everything --define=USING_SANITIZER=ON
+build:_ubsan --test_timeout=120,600,1800,7200
+build:_ubsan --define=USING_SANITIZER=ON
 
 ### Memcheck build. ###
-build:memcheck --build_tests_only
-build:memcheck --copt -gdwarf-4
-# https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
-build:memcheck --copt -O2
-build:memcheck --copt=-DNDEBUG                # Disable third-party asserts.
-build:memcheck --copt=-DDRAKE_ENABLE_ASSERTS  # ... but keep Drake's asserts.
-build:memcheck --run_under=//tools/dynamic_analysis:valgrind
+build:memcheck --config=_memcheck
 # We explicitly do not filter `sh` targets because some C++ binaries are tested
 # indirectly via those targets. Any Python code that is run through a `sh`
 # target may need `tags = ["no_memcheck"]` if it incurs CI issues.
 build:memcheck --test_lang_filters=-py
 build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_valgrind_tools
-# Slowdown factor can range from 5-100.
-# See http://valgrind.org/info/about.html
-build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
-build:memcheck --test_env=VALGRIND_OPTS
-build:memcheck --define=USING_MEMCHECK=ON
 
 ### Memcheck everything build. ###
-build:memcheck_everything --build_tests_only
+build:memcheck_everything --config=_memcheck
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
 build:memcheck_everything --@drake//tools/flags:with_gurobi=False
 build:memcheck_everything --@drake//tools/flags:with_mosek=False
 build:memcheck_everything --@drake//tools/flags:with_snopt=True
-build:memcheck_everything --copt -gdwarf-4
-# https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
-build:memcheck_everything --copt -O2
-build:memcheck_everything --copt=-DNDEBUG                # Disable third-party asserts.
-build:memcheck_everything --copt=-DDRAKE_ENABLE_ASSERTS  # ...but keep Drake's asserts.
 build:memcheck_everything --test_tag_filters=-mosek,-gurobi,-no_memcheck,-no_valgrind_tools
-build:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 build:memcheck_everything --test_lang_filters=-sh,-py
+
+### Memcheck and Memcheck everything common flags. ###
+### NOT intended for developer use. ###
+build:_memcheck --build_tests_only
+build:_memcheck --copt -gdwarf-4
+# https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
+build:_memcheck --copt -O2
+build:_memcheck --copt=-DNDEBUG                # Disable third-party asserts.
+build:_memcheck --copt=-DDRAKE_ENABLE_ASSERTS  # ... but keep Drake's asserts.
+build:_memcheck --run_under=//tools/dynamic_analysis:valgrind
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-build:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
-build:memcheck_everything --define=USING_MEMCHECK=ON
+build:_memcheck --test_timeout=1500,7500,22500,90000  # 25x
+build:_memcheck --test_env=VALGRIND_OPTS
+build:_memcheck --define=USING_MEMCHECK=ON
 
 # Fast memcheck.
 #
