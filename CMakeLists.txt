@@ -57,17 +57,17 @@ if(APPLE)
   endif()
 
   list(APPEND BAZELRC_IMPORTS "tools/macos.bazelrc")
+else()
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
 
   execute_process(
     COMMAND "/usr/bin/arch"
     OUTPUT_STRIP_TRAILING_WHITESPACE
-    OUTPUT_VARIABLE MACOS_ARCH)
-  if(MACOS_ARCH STREQUAL "")
-    message(FATAL_ERROR "Could NOT query macOS arch")
+    OUTPUT_VARIABLE UBUNTU_ARCH)
+  if(UBUNTU_ARCH STREQUAL "")
+    message(FATAL_ERROR "Could NOT query linux arch")
   endif()
-  list(APPEND BAZELRC_IMPORTS "tools/macos-arch-${MACOS_ARCH}.bazelrc")
-else()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
 
   find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
   mark_as_advanced(LSB_RELEASE_EXECUTABLE)

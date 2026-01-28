@@ -29,11 +29,13 @@ fi
 
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
+arch=$(/usr/bin/arch)
 codename=$(lsb_release -sc)
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
 import %workspace%/tools/ubuntu.bazelrc
+import %workspace%/tools/ubuntu-arch-${arch}.bazelrc
 import %workspace%/tools/ubuntu-${codename}.bazelrc
 EOF
 
