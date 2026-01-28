@@ -3857,8 +3857,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// point Qi (i = 0, ... n-1), expressed in frame B.
   /// @param[in] frame_M The frame in which the velocities are to be measured.
   /// @param[out] v_MQi_E The velocities of each point Qi (i = 0, ... n-1)
-  /// measured in frame M and expressed in frame E. On input, v_MQi_E must have
-  /// the same size as p_BoQi_B or an exception is thrown
+  /// measured in frame M and expressed in frame E.
   /// @throws std::exception if p_BoQi_B and v_MQi_E do not have three rows (are
   /// not 3 element vectors) or do not have the same number (n > 0) of columns.
   void CalcPointsVelocities(const systems::Context<T>& context,
