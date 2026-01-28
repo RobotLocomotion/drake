@@ -2134,6 +2134,46 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcPointsVelocities(
+    const systems::Context<T>& context, const Frame<T>& frame_B,
+    const Eigen::Ref<const MatrixX<T>>& p_BoQi_B, const Frame<T>& frame_M,
+    const Frame<T>& frame_E, EigenPtr<MatrixX<T>> v_MQi_E) const {
+  DRAKE_THROW_UNLESS(p_BoQi_B.rows() == 3);
+  DRAKE_THROW_UNLESS(v_MQi_E != nullptr);
+  DRAKE_THROW_UNLESS(v_MQi_E->rows() == 3);
+  DRAKE_THROW_UNLESS(v_MQi_E->cols() == p_BoQi_B.cols());
+
+  // The calculation used below is: v_MQi_E = v_MBo_E + ω_MB_E x p_BoQi_E.
+  // The SpatialVelocity V_MBo_E stores both v_MBo_E and ω_MB_E.
+  const SpatialVelocity<T> V_MBo_E =
+      frame_B.CalcSpatialVelocity(context, frame_M, frame_E);
+
+  // If ω_MB_E is zero, v_MQi_E = v_MBo_E + (ω_MB_E = 0) x p_BoQi_E = v_MBo_E.
+  const int num_position_vectors = p_BoQi_B.cols();
+  if (V_MBo_E.rotational() == Vector3<T>::Zero()) {
+    for (int col = 0; col < num_position_vectors; ++col)
+      v_MQi_E->col(col) = V_MBo_E.translational();
+    return;
+  }
+
+  // Form the R_EB rotation matrix to express p_BoQi_B in terms of frame E.
+  const RotationMatrix<T> R_EB =
+      CalcRelativeRotationMatrix(context, frame_E, frame_B);
+  // Try to calculate as v_MQi_E = v_MBo_E + ω_MB_E x p_BoQi_B
+  // rather than as      v_MQi_E = v_MBo_E + ω_MB_E x p_BoQi_E.
+  if (R_EB.IsNearlyIdentity()) {
+    for (int col = 0; col < num_position_vectors; ++col) {
+      v_MQi_E->col(col) = V_MBo_E.Shift(p_BoQi_B.col(col)).translational();
+    }
+  } else {
+    for (int col = 0; col < num_position_vectors; ++col) {
+      const Vector3<T> p_BoQi_E = R_EB * p_BoQi_B.col(col);
+      v_MQi_E->col(col) = V_MBo_E.Shift(p_BoQi_E).translational();
+    }
+  }
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
