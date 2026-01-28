@@ -142,7 +142,6 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
         bu(i) = tau_u_tilde0(i) + Ku(i) * v0(i);
       } else {
         // Explicit approximation.
-        // TODO(#23918) None of our test cases reach this case.
         Ku(i) = 0.0;
         bu(i) = tau_u0(i);
       }
