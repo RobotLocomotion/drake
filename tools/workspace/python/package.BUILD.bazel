@@ -44,6 +44,10 @@ cc_library(
 py_runtime(
     name = "runtime",
     interpreter_path = PYTHON_BIN_PATH,
+    interpreter_version_info = {
+        "major": PYTHON_VERSION.split(".")[0],
+        "minor": PYTHON_VERSION.split(".")[1],
+    },
     python_version = "PY3",
 )
 

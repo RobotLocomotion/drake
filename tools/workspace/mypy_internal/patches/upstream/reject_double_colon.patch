@@ -11,7 +11,7 @@ Upstreamed at https://github.com/python/mypy/pull/20285.
 
 --- mypy/stubdoc.py
 +++ mypy/stubdoc.py
-@@ -233,6 +233,19 @@
+@@ -233,8 +233,21 @@
              self.accumulator = ""
              self.state.append(STATE_ARGUMENT_TYPE)
  
@@ -31,3 +31,11 @@ Upstreamed at https://github.com/python/mypy/pull/20285.
          elif (
              token.type == tokenize.OP
              and token.string == "="
+             and self.state[-1] in (STATE_ARGUMENT_LIST, STATE_ARGUMENT_TYPE)
+         ):
+
+--- mypy-1.19.1.dist-info/RECORD
++++ mypy-1.19.1.dist-info/RECORD
+@@ -173,1 +173,1 @@
+-mypy/stubdoc.py,sha256=JT18oLHTiogu40pCjKxF3JLK00qRsQjAMD9g1X3M24A,18780
++mypy/stubdoc.py,sha256=P5gJIsQ-Jt2shpVVIqGydmBTKmhLwy3IzY8_QqJ8r2k,19357

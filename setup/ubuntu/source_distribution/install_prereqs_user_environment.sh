@@ -44,3 +44,6 @@ EOF
 if [[ "${prefetch_bazel}" -eq 1 ]]; then
   (cd "${workspace_dir}" && bazel version)
 fi
+
+# Our MODULE.bazel uses this file to determine the default python version.
+/usr/bin/python3 -c "from sys import version_info as v; print('{}.{}'.format(v.major, v.minor))" > "${workspace_dir}/gen/python_version.txt"
