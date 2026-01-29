@@ -114,20 +114,6 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void SetSolverParameters(
       const contact_solvers::icf::IcfSolverParameters& parameters);
 
-  /** Gets the current total number of solver iterations across all time steps.
-   */
-  int get_total_solver_iterations() const { return total_solver_iterations_; }
-
-  /** Gets the current total number of linesearch iterations, across all time
-  steps and solver iterations. */
-  int get_total_ls_iterations() const { return total_ls_iterations_; }
-
-  /** Gets the current total number of Hessian factorizations performed, across
-  all time steps and solver iterations. */
-  int get_total_hessian_factorizations() const {
-    return total_hessian_factorizations_;
-  }
-
   bool supports_error_estimation() const final;
 
   int get_error_estimate_order() const final;
@@ -150,6 +136,13 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     contact_solvers::icf::internal::IcfLinearFeedbackGains<T> external_feedback;
   };
 
+  /* Data for PrintSimulatorStatistics(). */
+  struct Stats {
+    int total_solver_iterations{0};
+    int total_hessian_factorizations{0};
+    int total_ls_iterations{0};
+  };
+
   /* Gets a reference to the ICF builder used to set up the convex problem. */
   contact_solvers::icf::internal::IcfBuilder<T>& builder() {
     // N.B. this is not const because the builder caches geometry data when
@@ -160,6 +153,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   T CalcStateChangeNorm(
       const systems::ContinuousState<T>& dx_state) const final;
+
+  void DoResetStatistics() final;
+
+  std::vector<systems::NamedStatistic> DoGetStatisticsSummary() const final;
 
   void DoInitialize() final;
 
@@ -212,10 +209,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   // Pre-allocated scratch space for intermediate calculations.
   Scratch scratch_;
 
-  // Logging/performance tracking utilities
-  int total_solver_iterations_{0};
-  int total_ls_iterations_{0};
-  int total_hessian_factorizations_{0};
+  // Data for PrintSimulatorStatistics().
+  Stats stats_;
 
   // Intermediate states for error control, which compares a single large
   // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).

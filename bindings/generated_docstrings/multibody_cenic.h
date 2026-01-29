@@ -122,27 +122,6 @@ R"""(Sets the convex solver tolerances and iteration limits.)""";
           const char* doc =
 R"""(Gets the current convex solver tolerances and iteration limits.)""";
         } get_solver_parameters;
-        // Symbol: drake::multibody::CenicIntegrator::get_total_hessian_factorizations
-        struct /* get_total_hessian_factorizations */ {
-          // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Gets the current total number of Hessian factorizations performed,
-across all time steps and solver iterations.)""";
-        } get_total_hessian_factorizations;
-        // Symbol: drake::multibody::CenicIntegrator::get_total_ls_iterations
-        struct /* get_total_ls_iterations */ {
-          // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Gets the current total number of linesearch iterations, across all
-time steps and solver iterations.)""";
-        } get_total_ls_iterations;
-        // Symbol: drake::multibody::CenicIntegrator::get_total_solver_iterations
-        struct /* get_total_solver_iterations */ {
-          // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Gets the current total number of solver iterations across all time
-steps.)""";
-        } get_total_solver_iterations;
         // Symbol: drake::multibody::CenicIntegrator::plant
         struct /* plant */ {
           // Source: drake/multibody/cenic/cenic_integrator.h

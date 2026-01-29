@@ -24,6 +24,13 @@ void ImplicitIntegrator<T>::DoResetStatistics() {
 }
 
 template <class T>
+std::vector<NamedStatistic> ImplicitIntegrator<T>::DoGetStatisticsSummary()
+    const {
+  // TODO(jwnimmer-tri) Add statistics here.
+  return {};
+}
+
+template <class T>
 void ImplicitIntegrator<T>::DoReset() {
   J_.resize(0, 0);
   DoResetCachedJacobianRelatedMatrices();

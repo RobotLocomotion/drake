@@ -7,7 +7,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/multibody/cenic/cenic_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
@@ -165,22 +164,25 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
     }
   }
 
-  // If the integrator is a CenicIntegrator, we can similarly print some more
-  // specific statistics.
-  const multibody::CenicIntegrator<T>* cenic =
-      dynamic_cast<const multibody::CenicIntegrator<T>*>(
-          &(simulator.get_integrator()));
-  const bool integrator_is_cenic = (cenic != nullptr);
-  if (integrator_is_cenic) {
-    const multibody::CenicIntegrator<T>& ci = *cenic;
-    fmt::print("CENIC Statistics:\n");
-    fmt::print("Number of solver iterations = {:d}\n",
-               ci.get_total_solver_iterations());
-    fmt::print("Number of hessian factorizations = {:d}\n",
-               ci.get_total_hessian_factorizations());
-    fmt::print("Number of linesearch iterations = {:d}\n",
-               ci.get_total_ls_iterations());
+  // Finally, log the machine-readable statistics.
+  fmt::print("\nJSON Statistics:\n");
+  fmt::print("{{\n");
+  const auto summary = integrator.GetStatisticsSummary();
+  const std::string& last_key = summary.back().first;
+  for (const auto& [key, value] : summary) {
+    const std::string key_quoted = fmt_debug_string(key);
+    const std::string value_str = std::visit(
+        [](const auto& unwrapped_value) {
+          return fmt::to_string(unwrapped_value);
+        },
+        value);
+    std::string line = fmt::format("  {}: {}", key_quoted, value_str);
+    if (key != last_key) {
+      line.append(",");
+    }
+    fmt::print("{}\n", line);
   }
+  fmt::print("}}\n");
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
