@@ -4421,8 +4421,7 @@ Parameter ``frame_M``:
 
 Parameter ``v_MQi_E``:
     The velocities of each point Qi (i = 0, ... n-1) measured in frame
-    M and expressed in frame E. On input, v_MQi_E must have the same
-    size as p_BoQi_B or an exception is thrown
+    M and expressed in frame E.
 
 Raises:
     RuntimeError if p_BoQi_B and v_MQi_E do not have three rows (are
