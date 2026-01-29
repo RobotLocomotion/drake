@@ -100,6 +100,9 @@ drake_cc_library(
         "//common:nice_type_name",
         "//systems/framework:leaf_system",
     ],
+    implementation_deps = [
+        "//multibody/cenic:make_cenic_integrator",
+    ],
 )
 
 drake_cc_library(
@@ -431,6 +434,9 @@ drake_cc_library(
         ":integrator_base",
         ":simulator",
         "@fmt",
+    ],
+    implementation_deps = [
+        "//multibody/cenic:cenic_integrator",
     ],
 )
 

@@ -49,6 +49,11 @@ TYPED_TEST(SimulatorConfigFunctionsTest, GetSchemes) {
   ConstantVectorSource<T> source(2);
   Simulator<T> simulator(source);
   for (const auto& one_scheme : schemes) {
+    if (one_scheme == "cenic") {
+      // This is not a real integrator, and cannot be instantiated against a
+      // ConstantVectorSource.
+      continue;
+    }
     DRAKE_EXPECT_NO_THROW(
         ResetIntegratorFromFlags(&simulator, one_scheme, T(0.001)));
   }

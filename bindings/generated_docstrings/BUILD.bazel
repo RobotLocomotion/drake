@@ -37,6 +37,7 @@ _SUBDIRS = [
     "multibody/benchmarks/kuka_iiwa_robot",
     "multibody/benchmarks/mass_damper_spring",
     "multibody/benchmarks/pendulum",
+    "multibody/cenic",
     "multibody/contact_solvers/icf",
     "multibody/fem",
     "multibody/inverse_kinematics",

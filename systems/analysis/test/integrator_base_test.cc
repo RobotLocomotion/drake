@@ -280,6 +280,9 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
   LinearSystem<double> system(A);
 
   for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") continue;
+
     // Create an original integrator corresponding to scheme.
     Simulator<double> tmp(system);
     auto& original = ResetIntegratorFromFlags(&tmp, scheme, 0.2);
