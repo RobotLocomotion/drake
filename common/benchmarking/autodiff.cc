@@ -24,6 +24,8 @@ enum ScalarConfig : int {
   kDerivativesNone = -1,
   /* AutoDiff with empty derivatives (i.e., size() == 0). */
   kDerivativesEmpty = 0,
+  /* AutoDiff with unit derivatives (as in InitializeAutoDiff). */
+  kDerivativesUnit = 1,
   /* AutoDiff with dense derivatives (all partials are non-zero). */
   kDerivativesDense = 2,
 };
@@ -53,6 +55,9 @@ T __attribute__((noinline)) MakeScalar(double value, ScalarConfig config,
     return value;
   }
   if constexpr (std::is_same_v<T, AD>) {
+    if (config == kDerivativesUnit) {
+      return AD(value, size, 0);
+    }
     if (config == kDerivativesDense) {
       return AD(value, VectorXd::LinSpaced(size, 0.5, 2.5));
     }
@@ -80,6 +85,10 @@ auto __attribute__((noinline)) MakeMatrix(ScalarConfig config, int size) {
         continue;
       }
       if constexpr (std::is_same_v<T, AD>) {
+        if (config == kDerivativesUnit) {
+          result(row, col) = AD(value, size, col);
+          continue;
+        }
         if (config == kDerivativesDense) {
           const double lo = 5 * std::cos(row + 7 * col);
           const double hi = 5 * std::cos(row + 13 * col);
@@ -201,6 +210,7 @@ void MatrixMultiply(benchmark::State& state) {  // NOLINT
       state);
 }
 
+// XXX Add kDerivativesUnit here.
 void ArgSweep(benchmark::internal::Benchmark* benchmark, bool use_double) {
   for (const auto& left_side : {kDerivativesEmpty, kDerivativesDense}) {
     for (const auto& right_side :

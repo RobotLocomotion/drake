@@ -25,6 +25,9 @@ constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 // An empty fixture for later expansion.
 class PartialsTest : public ::testing::Test {};
 
+// TODO(jwnimmer-tri) Add a tranche of 1d test cases; the logic is magical.
+// TODO(jwnimmer-tri) Test that Add(known_zero) still propagtes the size().
+
 TEST_F(PartialsTest, DefaultCtor) {
   const Partials dut;
   EXPECT_EQ(dut.size(), 0);
@@ -37,9 +40,28 @@ TEST_F(PartialsTest, UnitCtor2Arg) {
   EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(2)));
 }
 
+TEST_F(PartialsTest, UnitCtorLarge) {
+  constexpr int big = 300;
+  static_assert(big > StorageVec::kMaxUnownedSize, "Test case needs updating");
+  const Partials dut(big, 3);
+  EXPECT_EQ(dut.size(), big);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), VectorXd::Unit(big, 3)));
+}
+
 TEST_F(PartialsTest, UnitCtorInsanelyLarge) {
   const Eigen::Index terabyte = Eigen::Index{1} << 40;
   DRAKE_EXPECT_THROWS_MESSAGE(Partials(terabyte, 0), ".*too large.*");
+}
+
+// Check the constructor's special cases when value.size() == 1.
+TEST_F(PartialsTest, UnitCtorSize1Value) {
+  const VectorXd basis1d = VectorXd::Constant(1, 2.0);
+  const Partials unit(basis1d);
+  EXPECT_TRUE(CompareMatrices(unit.make_const_xpr(), basis1d));
+
+  const VectorXd zero1d = VectorXd::Zero(1);
+  const Partials empty(zero1d);
+  EXPECT_TRUE(CompareMatrices(empty.make_const_xpr(), zero1d));
 }
 
 TEST_F(PartialsTest, UnitCtorMisuse) {
@@ -107,6 +129,42 @@ TEST_F(PartialsTest, MatchSizeOf) {
   // Mismatched sizes.
   const Partials wrong{5, 0};
   DRAKE_EXPECT_THROWS_MESSAGE(foo.MatchSizeOf(wrong), ".*different sizes.*");
+}
+
+TEST_F(PartialsTest, SetZeroFromFullCtorLarge) {
+  constexpr int big = 300;
+  static_assert(big > StorageVec::kMaxUnownedSize, "Test case needs updating");
+  const VectorXd basis = VectorXd::LinSpaced(big, 0.0, 1.0);
+  Partials dut(basis);
+  dut.SetZero();
+  EXPECT_EQ(dut.size(), big);
+  EXPECT_TRUE(dut.make_const_xpr().isZero(0 /* precision */));
+}
+
+TEST_F(PartialsTest, MutableXprFromDefaultCtor) {
+  Partials dut;
+  EXPECT_EQ(dut.MakeMutableXpr().size(), 0);
+  dut.MakeMutableXpr().resize(4) = Vector4d::Unit(3);
+  EXPECT_EQ(dut.size(), 4);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
+}
+
+#if 0
+TEST_F(PartialsTest, MutableXprFromUnitCtor) {
+  Partials dut{2, 1, -1.0};
+  EXPECT_TRUE(CompareMatrices(dut.MakeMutableXpr(), -Vector2d::Unit(1)));
+  dut.MakeMutableXpr().resize(4) = Vector4d::Unit(3);
+  EXPECT_EQ(dut.size(), 4);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
+}
+#endif
+
+TEST_F(PartialsTest, MutableXprFromFullCtor) {
+  Partials dut{Vector2d{1.0, 2.0}};
+  EXPECT_TRUE(CompareMatrices(dut.MakeMutableXpr(), Vector2d{1.0, 2.0}));
+  dut.MakeMutableXpr().resize(4) = Vector4d::Unit(3);
+  EXPECT_EQ(dut.size(), 4);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
 }
 
 TEST_F(PartialsTest, Mul) {
@@ -263,6 +321,25 @@ TEST_F(PartialsTest, AddScaledBothEmpty) {
   EXPECT_EQ(dut.size(), 0);
 }
 
+// These special cases are too rare to fall under the Eigen equivalence test.
+TEST_F(PartialsTest, AddScaledUnitVectors) {
+  Partials dut{4, 0};
+  dut.AddScaled(2.0, dut);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), 3 * Vector4d::Unit(0)));
+  dut.AddScaled(-1.0, dut);
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Zero()));
+}
+
+// These special cases are too rare to fall under the Eigen equivalence test.
+TEST_F(PartialsTest, AddScaledFullVectors) {
+  const Vector4d basis = Vector4d::LinSpaced(10.0, 13.0);
+  Partials dut{basis};
+  dut.AddScaled(2.0, Partials(dut));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), 3 * basis));
+  dut.AddScaled(-1.0, Partials(dut));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Zero()));
+}
+
 // Rather than writing out dozens of acute test inputs and outputs by hand, we
 // can test for equivalence with a known-good implementation, i.e., VectorXd.
 //
@@ -277,10 +354,10 @@ TEST_F(PartialsTest, AddScaledEquivalenceToEigen) {
         : partials{kSize, unit_offset}, twin{Vector4d::Unit(unit_offset)} {}
 
     // Constructs a new value: this + scale*other.
-    Twins AddScaled(double scale, const Twins& other, bool prescale) const {
+    Twins AddScaled(double scale, const Twins& other, bool inplace) const {
       Twins result(*this);
-      if (prescale) {
-        // Force the partials into canonical form.
+      if (inplace) {
+        // Force the result to work within exclusively-owned storage.
         result.partials.MakeMutableXpr();
       }
       result.partials.AddScaled(scale, other.partials);
@@ -341,11 +418,11 @@ TEST_F(PartialsTest, AddScaledEquivalenceToEigen) {
     const int a_index = random_index();
     const int b_index = random_index();
     const double scale = random_scale();
-    const bool prescale = i % 2 == 1;
+    const bool inplace = i % 2 == 1;
 
     const Twins& a = values.at(a_index);
     const Twins& b = values.at(b_index);
-    values.emplace_back(a.AddScaled(scale, b, prescale));
+    values.emplace_back(a.AddScaled(scale, b, inplace));
 
     values.back().index = values.size() - 1;
     values.back().lhs_index = a_index;
@@ -454,30 +531,50 @@ TEST_F(PartialsTest, MutableAssignmentEqualSize) {
 
 TEST_F(PartialsTest, MutableAssignmentFromDefaultCtor) {
   Partials dut;
-  EXPECT_EQ(dut.make_const_xpr().size(), 0);
+  EXPECT_EQ(dut.MakeMutableXpr().size(), 0);
 
-  dut.MakeMutableXpr() = Vector4d::Unit(1);
+  dut.MakeMutableXpr() = Vector4d::Unit(3);
   EXPECT_EQ(dut.size(), 4);
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(1)));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
+
+  dut.MakeMutableXpr().resize(1);
+  EXPECT_EQ(dut.size(), 1);
 }
 
 TEST_F(PartialsTest, MutableAssignmentFromUnitCtor) {
   Partials dut{2, 1};
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d::Unit(1)));
+  EXPECT_TRUE(CompareMatrices(dut.MakeMutableXpr(), Vector2d::Unit(1)));
 
-  dut.MakeMutableXpr() = Vector4d::Unit(1);
+  dut.MakeMutableXpr() = Vector4d::Unit(3);
   EXPECT_EQ(dut.size(), 4);
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(1)));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
+
+  dut.MakeMutableXpr().resize(1);
+  EXPECT_EQ(dut.size(), 1);
 }
 
 TEST_F(PartialsTest, MutableAssignmentFromFullCtor) {
   Partials dut{Vector2d{1.0, 2.0}};
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector2d{1.0, 2.0}));
+  EXPECT_TRUE(CompareMatrices(dut.MakeMutableXpr(), Vector2d{1.0, 2.0}));
 
-  dut.MakeMutableXpr() = Vector4d::Unit(1);
+  dut.MakeMutableXpr() = Vector4d::Unit(3);
   EXPECT_EQ(dut.size(), 4);
-  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(1)));
+  EXPECT_TRUE(CompareMatrices(dut.make_const_xpr(), Vector4d::Unit(3)));
+
+  dut.MakeMutableXpr().resize(1);
+  EXPECT_EQ(dut.size(), 1);
 }
+
+#if 0
+constexpr int N = StorageVec::kMaxUnownedSize;
+GTEST_TEST(StaticUnitVectorTest, SpotChecks) {
+  for (int i : {0, 100, N - 1, N}) {
+    const double* data = GetStaticUnitVector(i);
+    EXPECT_TRUE(CompareMatrices(Eigen::Map<const VectorXd>(data, N),
+                                VectorXd::Unit(N, i)));
+  }
+}
+#endif
 
 }  // namespace
 }  // namespace internal
