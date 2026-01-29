@@ -4,6 +4,7 @@
 import warnings
 
 # Normal symbols.
+from .cenic import *  # noqa
 from .contact_solvers import *  # noqa
 from .inverse_kinematics import *  # noqa
 from .fem import *  # noqa

@@ -13,6 +13,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/cenic/make_cenic_integrator.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -28,6 +29,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+using multibody::MakeCenicIntegrator;
 using std::function;
 using std::pair;
 using std::string;
@@ -89,8 +91,17 @@ class DummySystem final : public LeafSystem<T> {
 template <typename T>
 string GetIntegrationSchemeName(const IntegratorBase<T>& integrator) {
   const string current_type = NiceTypeName::Get(integrator);
+  if (current_type.starts_with("drake::multibody::CenicIntegrator")) {
+    // The loop immediately below cannot handle this case.
+    return "cenic";
+  }
   Simulator<T> dummy_simulator(std::make_unique<DummySystem<T>>());
   for (const auto& scheme : GetIntegrationSchemes()) {
+    if (scheme == "cenic") {
+      // Already handled above; also requires a MultibodyPlant, so trying the
+      // DummySystem would fail.
+      continue;
+    }
     ResetIntegratorFromFlags(&dummy_simulator, scheme, T(0.001));
     if (NiceTypeName::Get(dummy_simulator.get_integrator()) == current_type) {
       return scheme;
@@ -153,6 +164,31 @@ NamedConfigureIntegratorFunc<T> MakeConfigurator() {
   }
 }
 
+template <typename T>
+NamedConfigureIntegratorFunc<T> MakeCenicConfigurator() {
+  NamedConfigureIntegratorFunc<T> named_function;
+  named_function.first = "cenic";
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    named_function.second = [](Simulator<T>* simulator, const System<T>& system,
+                               const T& max_step_size)
+        -> std::variant<IntegratorBase<T>*,
+                        std::unique_ptr<IntegratorBase<T>>> {
+      Context<T>* const context =
+          (simulator != nullptr) ? &simulator->get_mutable_context() : nullptr;
+      auto owned = MakeCenicIntegrator<T>(system, context);
+      owned->set_maximum_step_size(max_step_size);
+      if (simulator != nullptr) {
+        auto* unowned = owned.get();
+        simulator->reset_integrator(std::move(owned));
+        return unowned;
+      } else {
+        return owned;
+      }
+    };
+  }
+  return named_function;
+}
+
 // Returns the full list of supported (scheme, functor) pairs.  N.B. The list
 // here must be kept in sync with the help string in simulator_gflags.cc.
 template <typename T>
@@ -162,6 +198,7 @@ GetAllNamedConfigureIntegratorFuncs() {
       std::initializer_list<NamedConfigureIntegratorFunc<T>>{
           // Keep this list sorted alphabetically.
           MakeConfigurator<T, BogackiShampine3Integrator>(),
+          MakeCenicConfigurator<T>(),
           MakeConfigurator<T, ExplicitEulerIntegrator>(),
           MakeConfigurator<T, ImplicitEulerIntegrator>(),
           MakeConfigurator<T, Radau1Integrator>(),
