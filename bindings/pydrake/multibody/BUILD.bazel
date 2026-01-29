@@ -50,6 +50,22 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "cenic_py",
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_cenic",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+    ],
+    cc_srcs = ["cenic_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":plant_py",
+        "//bindings/pydrake/systems:analysis_py",
+    ],
+)
+
+drake_pybind_library(
     name = "contact_solvers_py",
     cc_deps = [
         "//bindings/generated_docstrings:multibody_contact_solvers_icf",
@@ -331,6 +347,7 @@ install_files(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
+    ":cenic_py",
     ":contact_solvers_py",
     ":fem_py",
     ":inverse_kinematics_py",
@@ -417,6 +434,15 @@ drake_py_unittest(
     name = "benchmarks_test",
     deps = [
         ":benchmarks_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "cenic_test",
+    deps = [
+        ":cenic_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/planning",
     ],
 )
 
