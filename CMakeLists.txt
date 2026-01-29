@@ -219,11 +219,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
-# The supported Python major/minor versions should match those listed in
-# doc/_pages/from_source.md and setup/python/pyproject.toml.
+# The supported Python major/minor versions.
+# When changing any of these, see drake/tools/workspace/python/README.md.
 if(APPLE)
-  # The macOS python version should match what's listed in both the
-  # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
   set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)

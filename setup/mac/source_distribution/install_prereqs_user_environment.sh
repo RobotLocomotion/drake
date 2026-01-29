@@ -24,3 +24,7 @@ EOF
 # Prefetch the bazelisk download of bazel.
 # This is especially helpful for the "Provisioned" images in CI.
 (cd "${workspace_dir}" && bazelisk version) > /dev/null
+
+# Our MODULE.bazel uses this file to determine the default python version.
+# When changing this, see drake/tools/workspace/python/README.md.
+echo "3.14" > "${workspace_dir}/gen/python_version.txt"
