@@ -158,9 +158,12 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     return *builder_;
   }
 
+  T CalcStateChangeNorm(
+      const systems::ContinuousState<T>& dx_state) const final;
+
   void DoInitialize() final;
 
-  bool DoStep(const T& h) override;
+  bool DoStep(const T& h) final;
 
   /* Solves the ICF problem to compute x_{t+h}.
 
@@ -182,15 +185,6 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   N.B. q₀ is stored in this->get_context(). */
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
-
-  /* Overrides the typical state change norm (weighted infinity norm) to use
-  just the infinity norm of the position vector, as discussed in Sec. V.E of
-  [Kurtz and Castro, 2025].
-
-  TODO(#23921): Add options for accounting for error from external systems with
-  continuous state. */
-  T CalcStateChangeNorm(
-      const systems::ContinuousState<T>& dx_state) const final;
 
   // The multibody plant used as the basis of the convex optimization problem.
   const MultibodyPlant<T>& plant_;

@@ -63,16 +63,6 @@ std::vector<int> CalcNonPlantXcSubsystemIndices(
 }  // namespace
 
 template <typename T>
-void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
-  const int nv = plant.num_velocities();
-  const int nq = plant.num_positions();
-  v.resize(nv);
-  q.resize(nq);
-  actuation_feedback.Resize(nv);
-  external_feedback.Resize(nv);
-}
-
-template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
     : IntegratorBase<T>(system, context),
@@ -86,6 +76,35 @@ CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
 
 template <typename T>
 CenicIntegrator<T>::~CenicIntegrator() = default;
+
+template <typename T>
+void CenicIntegrator<T>::SetSolverParameters(
+    const IcfSolverParameters& parameters) {
+  solver_.SetParameters(parameters);
+}
+
+template <typename T>
+bool CenicIntegrator<T>::supports_error_estimation() const {
+  // Error estimation is supported via half-stepping.
+  return true;
+}
+
+template <typename T>
+int CenicIntegrator<T>::get_error_estimate_order() const {
+  // Half-stepping error estimation gives a second-order error estimate. See
+  // ImplicitEulerIntegrator for details.
+  return 2;
+}
+
+template <typename T>
+void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
+  const int nv = plant.num_velocities();
+  const int nq = plant.num_positions();
+  v.resize(nv);
+  q.resize(nq);
+  actuation_feedback.Resize(nv);
+  external_feedback.Resize(nv);
+}
 
 template <typename T>
 void CenicIntegrator<T>::DoInitialize() {
@@ -123,10 +142,23 @@ void CenicIntegrator<T>::DoInitialize() {
       this->get_system().AllocateTimeDerivatives());
 }
 
+// Overrides the typical state change norm (weighted infinity norm) to use just
+// the infinity norm of the position vector, as discussed in Sec. V.E of [Kurtz
+// and Castro, 2025].
+//
+// TODO(#23921): Add options for accounting for error from external systems with
+// continuous state.
 template <typename T>
-void CenicIntegrator<T>::SetSolverParameters(
-    const IcfSolverParameters& parameters) {
-  solver_.SetParameters(parameters);
+T CenicIntegrator<T>::CalcStateChangeNorm(
+    const ContinuousState<T>& dx_state) const {
+  using std::isnan;
+  const VectorBase<T>& dgq =
+      dynamic_cast<const DiagramContinuousState<T>&>(dx_state)
+          .get_substate(plant_subsystem_index_)
+          .get_generalized_position();
+  const T x_norm = dgq.CopyToVector().template lpNorm<Eigen::Infinity>();
+  if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
+  return x_norm;
 }
 
 template <typename T>
@@ -343,33 +375,6 @@ void CenicIntegrator<T>::AdvancePlantConfiguration(const T& h,
       q->template segment<4>(i).normalize();
     }
   }
-}
-
-template <typename T>
-T CenicIntegrator<T>::CalcStateChangeNorm(
-    const ContinuousState<T>& dx_state) const {
-  // Simple infinity norm of the generalized position change.
-  using std::isnan;
-  const VectorBase<T>& dgq =
-      dynamic_cast<const DiagramContinuousState<T>&>(dx_state)
-          .get_substate(plant_subsystem_index_)
-          .get_generalized_position();
-  const T x_norm = dgq.CopyToVector().template lpNorm<Eigen::Infinity>();
-  if (isnan(x_norm)) return std::numeric_limits<T>::quiet_NaN();
-  return x_norm;
-}
-
-template <typename T>
-bool CenicIntegrator<T>::supports_error_estimation() const {
-  // Error estimation is supported via half-stepping.
-  return true;
-}
-
-template <typename T>
-int CenicIntegrator<T>::get_error_estimate_order() const {
-  // Half-stepping error estimation gives a second-order error estimate. See
-  // ImplicitEulerIntegrator for details.
-  return 2;
 }
 
 }  // namespace multibody
