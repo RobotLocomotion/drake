@@ -38,14 +38,11 @@ load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
-load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
-load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
-load("//tools/workspace/pathspec_internal:repository.bzl", "pathspec_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_blas_internal:repository.bzl", "pkgconfig_blas_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_eigen_internal:repository.bzl", "pkgconfig_eigen_internal_repository")  # noqa
@@ -74,8 +71,6 @@ load("//tools/workspace/sympy_py_internal:repository.bzl", "sympy_py_internal_re
 load("//tools/workspace/tinygltf_internal:repository.bzl", "tinygltf_internal_repository")  # noqa
 load("//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
 load("//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
-load("//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
-load("//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
 load("//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
 load("//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
 load("//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
@@ -121,14 +116,11 @@ def _add_internal_repositories():
     mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)
     mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
-    mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
-    mypy_internal_repository(name = "mypy_internal", mirrors = mirrors)
     nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
     nlohmann_internal_repository(name = "nlohmann_internal", mirrors = mirrors)
     nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
-    pathspec_internal_repository(name = "pathspec_internal", mirrors = mirrors)
     picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)
     pkgconfig_blas_internal_repository(name = "pkgconfig_blas_internal")
     pkgconfig_eigen_internal_repository(name = "pkgconfig_eigen_internal")
@@ -153,8 +145,6 @@ def _add_internal_repositories():
     tinygltf_internal_repository(name = "tinygltf_internal", mirrors = mirrors)
     tinyobjloader_internal_repository(name = "tinyobjloader_internal", mirrors = mirrors)  # noqa
     tinyxml2_internal_repository(name = "tinyxml2_internal", mirrors = mirrors)
-    tomli_internal_repository(name = "tomli_internal", mirrors = mirrors)
-    typing_extensions_internal_repository(name = "typing_extensions_internal", mirrors = mirrors)  # noqa
     uritemplate_py_internal_repository(name = "uritemplate_py_internal", mirrors = mirrors)  # noqa
     usockets_internal_repository(name = "usockets_internal", mirrors = mirrors)
     uwebsockets_internal_repository(name = "uwebsockets_internal", mirrors = mirrors)  # noqa

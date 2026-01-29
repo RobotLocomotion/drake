@@ -281,7 +281,9 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
 
   for (auto& scheme : GetIntegrationSchemes()) {
     // Skip CENIC, since it requires a MultibodyPlant.
-    if (scheme == "cenic") continue;
+    if (scheme == "cenic") {
+      continue;
+    }
 
     // Create an original integrator corresponding to scheme.
     Simulator<double> tmp(system);

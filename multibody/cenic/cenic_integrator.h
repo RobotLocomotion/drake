@@ -98,7 +98,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
 
-  ~CenicIntegrator() override;
+  ~CenicIntegrator() final;
 
   /** Gets a reference to the MultibodyPlant used to formulate the convex
   optimization problem. */
@@ -128,12 +128,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     return total_hessian_factorizations_;
   }
 
-  /** Error estimation is supported via half-stepping. */
-  bool supports_error_estimation() const final { return true; }
+  bool supports_error_estimation() const final;
 
-  /** Half-stepping error estimation gives a second-order error estimate. See
-  ImplicitEulerIntegrator for details. */
-  int get_error_estimate_order() const final { return 2; }
+  int get_error_estimate_order() const final;
 
  private:
   /* Preallocated scratch space. */
@@ -161,12 +158,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     return *builder_;
   }
 
-  /* Performs final checks and allocations before beginning integration. */
   void DoInitialize() final;
 
-  /* Performs the main integration step, setting x_{t+h} and the error estimate.
-  @param h The time step to take.
-  @returns `true` if the step was successful, `false` otherwise. */
   bool DoStep(const T& h) override;
 
   /* Solves the ICF problem to compute x_{t+h}.

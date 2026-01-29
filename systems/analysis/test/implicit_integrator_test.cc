@@ -149,8 +149,7 @@ GTEST_TEST(ImplicitIntegratorTest, Clone) {
   SpringMassSystem<double> dummy_system(spring_k, mass, false /* unforced */);
 
   for (auto& scheme : GetIntegrationSchemes()) {
-    // Skip CENIC, since it doesn't support the dummy system (only diagrams with
-    // a plant in them).
+    // Skip CENIC, since it requires a MultibodyPlant.
     if (scheme == "cenic") {
       continue;
     }

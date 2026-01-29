@@ -498,6 +498,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "simulator_config_functions_cenic_test",
+    deps = [
+        ":simulator",
+        ":simulator_config_functions",
+        "//multibody/cenic",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "simulator_status_test",
     deps = [
         ":simulator_status",

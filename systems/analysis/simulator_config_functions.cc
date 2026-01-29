@@ -91,15 +91,15 @@ class DummySystem final : public LeafSystem<T> {
 template <typename T>
 string GetIntegrationSchemeName(const IntegratorBase<T>& integrator) {
   const string current_type = NiceTypeName::Get(integrator);
-  if (current_type.starts_with("drake::systems::CenicIntegrator")) {
+  if (current_type.starts_with("drake::multibody::CenicIntegrator")) {
     // The loop immediately below cannot handle this case.
     return "cenic";
   }
   Simulator<T> dummy_simulator(std::make_unique<DummySystem<T>>());
   for (const auto& scheme : GetIntegrationSchemes()) {
     if (scheme == "cenic") {
-      // This is not a real integrator, and cannot be instantiated against a
-      // DummySystem.
+      // Already handled above; also requires a MultibodyPlant, so trying the
+      // DummySystem would fail.
       continue;
     }
     ResetIntegratorFromFlags(&dummy_simulator, scheme, T(0.001));

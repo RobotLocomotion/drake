@@ -159,7 +159,7 @@ multibody/parsing
 <tr>
 <td><code>multibody plant</code></td>
 <td>MultibodyPlant and supporting code.</td>
-<td>amcastro-tri</td>
+<td>joemasterjohn</td>
 <td><small>
 multibody/contact_solvers<br>
 multibody/math<br>

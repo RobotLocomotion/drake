@@ -359,6 +359,18 @@ T CenicIntegrator<T>::CalcStateChangeNorm(
   return x_norm;
 }
 
+bool CenicIntegrator<T>::supports_error_estimation() const {
+  // Error estimation is supported via half-stepping.
+  return true;
+}
+
+template <typename T>
+int CenicIntegrator<T>::get_error_estimate_order() const {
+  // Half-stepping error estimation gives a second-order error estimate. See
+  // ImplicitEulerIntegrator for details.
+  return 2
+}
+
 }  // namespace multibody
 }  // namespace drake
 

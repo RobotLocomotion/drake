@@ -16,8 +16,7 @@ PYBIND11_MODULE(cenic, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_cenic.drake.multibody;
 
-  // TODO(jwnimmer-tri) Figure out the right imports.
-  py::module::import("pydrake.multibody.contact_solvers");
+  py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.analysis");
 
   auto bind_nonsymbolic_scalar_types = [&m](auto dummy) {

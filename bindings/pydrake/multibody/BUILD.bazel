@@ -60,6 +60,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        ":plant_py",
         "//bindings/pydrake/systems:analysis_py",
     ],
 )
@@ -433,6 +434,15 @@ drake_py_unittest(
     name = "benchmarks_test",
     deps = [
         ":benchmarks_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "cenic_test",
+    deps = [
+        ":cenic_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/planning",
     ],
 )
 
