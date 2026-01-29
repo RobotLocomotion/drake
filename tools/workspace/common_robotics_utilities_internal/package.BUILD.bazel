@@ -48,6 +48,7 @@ cc_library(
         "include/common_robotics_utilities/time_optimal_trajectory_parametrization.hpp",  # noqa
         "include/common_robotics_utilities/utility.hpp",
         "include/common_robotics_utilities/voxel_grid.hpp",
+        "include/common_robotics_utilities/voxel_grid_common.hpp",
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
