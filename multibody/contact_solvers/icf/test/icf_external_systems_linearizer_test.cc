@@ -404,7 +404,16 @@ TEST_P(IcfExternalSystemsLinearizerChoosePortTest, BangBang) {
   plant_.SetPositions(plant_context_, Vector1d{q});
   plant_.SetVelocities(plant_context_, Vector1d{v});
 
-  // Linearize the non-plant dynamics around the current state.
+  // Linearize the non-plant dynamics around the current state. Note that the
+  // result checks below are exact, rather than within a tolerance. Here's why:
+  // * K: This case is testing the "explicit" codepath in the linearizer that
+  //   sets K = 0.0. Therefore testing this and expecting anything other than
+  //   exactly 0 would be confusing.
+  // * b: The contract of the linearizer for the explicit codepath is
+  //     b = tau(q0, x0) (notice tau and not tau_tilde).
+  //   The controller that is used here computes (at this configuration)
+  //     tau = kGain * signum(kDesired - q0)
+  //   where kDesired = 22 and q0 = 21.9.
   const double h = 0.01;
   const auto result = LinearizeExternalSystem(h);
   if (choose_plant_port == 0) {
