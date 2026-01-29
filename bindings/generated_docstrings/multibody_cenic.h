@@ -114,9 +114,7 @@ R"""(Sets the convex solver tolerances and iteration limits.)""";
         // Symbol: drake::multibody::CenicIntegrator::get_error_estimate_order
         struct /* get_error_estimate_order */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Half-stepping error estimation gives a second-order error estimate.
-See ImplicitEulerIntegrator for details.)""";
+          const char* doc = R"""()""";
         } get_error_estimate_order;
         // Symbol: drake::multibody::CenicIntegrator::get_solver_parameters
         struct /* get_solver_parameters */ {
@@ -155,8 +153,7 @@ optimization problem.)""";
         // Symbol: drake::multibody::CenicIntegrator::supports_error_estimation
         struct /* supports_error_estimation */ {
           // Source: drake/multibody/cenic/cenic_integrator.h
-          const char* doc =
-R"""(Error estimation is supported via half-stepping.)""";
+          const char* doc = R"""()""";
         } supports_error_estimation;
       } CenicIntegrator;
       // Symbol: drake::multibody::MakeCenicIntegrator

@@ -16,6 +16,7 @@ PYBIND11_MODULE(cenic, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_cenic.drake.multibody;
 
+  py::module::import("pydrake.multibody.contact_solvers");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.analysis");
 

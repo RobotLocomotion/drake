@@ -59,6 +59,7 @@ drake_pybind_library(
     cc_srcs = ["cenic_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":contact_solvers_py",
         ":module_py",
         ":plant_py",
         "//bindings/pydrake/systems:analysis_py",
