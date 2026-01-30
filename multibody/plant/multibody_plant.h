@@ -3835,8 +3835,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
   ///   to a vector in ℝ³ holding the position of one of the points in the set
   ///   as measured and expressed in frame B. Each column of p_BQi is a position
-  ///   vector associated with one point Qi, and the number of column in p_BQi
-  ///   is the number n of points.
+  ///   vector associated with one point Qi, and the number of columns in p_BQi
+  ///   is the number np of points.
   /// @param[in] frame_A
   ///   The frame A in which it is desired to compute the positions `p_AQi` of
   ///   each point `Qi` in the set.
@@ -3845,8 +3845,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
   ///   **must** be in `ℝ³ˣⁿᵖ`. Each column of p_AQi is a position vector
-  ///   associated with one point Qi, and the number of column in p_BQi is the
-  ///   number n of points.
+  ///   associated with one point Qi, and the number of columns in p_BQi is the
+  ///   number np of points.
   ///
   /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
   /// method will throw a std::exception. This method also throws
