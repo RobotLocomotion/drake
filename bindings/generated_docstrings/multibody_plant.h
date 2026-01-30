@@ -4365,6 +4365,29 @@ expressed in a frame B, this method computes the positions
 in another frame A, as a function of the generalized positions q of
 the model.
 
+Example of usage: Given two points Q0 and Q1 that are fixed to a frame
+B, the code below calculates their positions from the world frame
+origin, expressed in the world frame W.
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    constexpr int num_position_vectors = 2;
+     MatrixX<double> p_BQi(3, num_position_vectors);
+     p_BQi.col(0) = Vector3<double>(1.1, 2.2, 3.3);
+     p_BQi.col(1) = Vector3<double>(-9.8, 7.6, -5.43);
+     MatrixX<double> p_WQi(3, num_position_vectors);
+     const Frame<double>& frame_W = plant.world_frame();
+     plant.CalcPointsPositions(*context_, frame_B, p_BQi, frame_W, &p_WQi);
+
+.. raw:: html
+
+    </details>
+
 Parameter ``context``:
     The context containing the state of the model. It stores the
     generalized positions q of the model.
@@ -4378,6 +4401,9 @@ Parameter ``p_BQi``:
     ℝ³ˣⁿᵖ`` with ``np`` the number of points in the set. Each column
     of ``p_BQi`` corresponds to a vector in ℝ³ holding the position of
     one of the points in the set as measured and expressed in frame B.
+    Each column of p_BQi is a position vector associated with one
+    point Qi, and the number of columns in p_BQi is the number np of
+    points.
 
 Parameter ``frame_A``:
     The frame A in which it is desired to compute the positions
@@ -4387,7 +4413,9 @@ Parameter ``p_AQi``:
     The output positions of each point ``Qi`` now computed as measured
     and expressed in frame A. The output ``p_AQi`` **must** have the
     same size as the input ``p_BQi`` or otherwise this method aborts.
-    That is ``p_AQi`` **must** be in ``ℝ³ˣⁿᵖ``.
+    That is ``p_AQi`` **must** be in ``ℝ³ˣⁿᵖ``. Each column of p_AQi
+    is a position vector associated with one point Qi, and the number
+    of columns in p_BQi is the number np of points.
 
 Note:
     Both ``p_BQi`` and ``p_AQi`` must have three rows. Otherwise this
@@ -4400,8 +4428,32 @@ Note:
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
 R"""(For a set of n points Qi (i = 0, ... n-1) that are regarded as fixed
-on a frame B, calculates the velocities v_MQi_E of Qi measured in a
-frame M and expressed in a frame E.
+on a frame B, calculates the velocities v_AQi_E of Qi measured in a
+frame A and expressed in a frame E.
+
+Example of usage: Given two points Q0 and Q1 that are fixed to a frame
+B, the code below calculates their velocities measured and expressed
+in the world frame W.
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    constexpr int num_position_vectors = 2;
+     MatrixX<double> p_BQi(3, num_position_vectors);
+     p_BQi.col(0) = Vector3<double>(1.1, 2.2, 3.3);
+     p_BQi.col(1) = Vector3<double>(-9.8, 7.6, -5.43);
+     MatrixX<double> v_WQi_W(3, num_position_vectors);
+     const Frame<double>& frame_W = plant.world_frame();
+     plant.CalcPointsVelocities(*context_, frame_B, p_BQi, frame_W, frame_W,
+                                &v_WQi_W);
+
+.. raw:: html
+
+    </details>
 
 Parameter ``context``:
     Contains the state of the multibody system, including the
@@ -4409,23 +4461,30 @@ Parameter ``context``:
 
 Parameter ``frame_B``:
     The frame B in which each point Qi is fixed and whose frame origin
-    Bo is the starting point for position vectors in p_BoQi_B. frame_B
-    is also the expressed-in-frame for those position vectors.
+    Bo is the starting point for position vectors in p_BQi. frame_B is
+    also the expressed-in-frame for position vectors P_BQi.
 
-Parameter ``p_BoQi_B``:
+Parameter ``p_BQi``:
     Position vectors from Bo (frame B's origin) to each point Qi (i =
-    0, ... n-1), expressed in frame B.
+    0, ... n-1), expressed in frame B. Each column of p_BQi is a
+    position vector associated with one point Qi, and the number of
+    columns in p_BQi is the number n of points.
 
-Parameter ``frame_M``:
+Parameter ``frame_A``:
     The frame in which the velocities are to be measured.
 
-Parameter ``v_MQi_E``:
+Parameter ``frame_E``:
+    The frame in which the velocities are expressed.
+
+Parameter ``v_AQi_E``:
     The velocities of each point Qi (i = 0, ... n-1) measured in frame
-    M and expressed in frame E.
+    A and expressed in frame E. Each column of v_AQi_E is a
+    translational velocity vector associated with one point Qi, and
+    the number of columns in v_AQi_E is the number n of points.
 
 Raises:
-    RuntimeError if p_BoQi_B and v_MQi_E do not have three rows (are
-    not 3 element vectors) or do not have the same number (n > 0) of
+    RuntimeError if p_BQi and v_AQi_E do not have three rows (are not
+    3 element vectors) or do not have the same number (n > 0) of
     columns.)""";
         } CalcPointsVelocities;
         // Symbol: drake::multibody::MultibodyPlant::CalcRelativeRotationMatrix
