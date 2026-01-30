@@ -759,10 +759,10 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // Create a set of points to further test CalcPointsVelocities().
   constexpr int num_position_vectors = 4;
   MatrixX<double> p_EoEi_E(3, num_position_vectors);
-  p_EoEi_E.col(3) = Vector3<double>(0, 0, 0);
-  p_EoEi_E.col(0) = Vector3<double>(1, 2, 3);
-  p_EoEi_E.col(1) = Vector3<double>(-3, 2, -1.23);
-  p_EoEi_E.col(2) = Vector3<double>(-0.2, std::sqrt(2), -3.14);
+  p_EoEi_E.col(0) = Vector3<double>(0, 0, 0);
+  p_EoEi_E.col(1) = Vector3<double>(1, 2, 3);
+  p_EoEi_E.col(2) = Vector3<double>(-3, 2, -1.23);
+  p_EoEi_E.col(3) = Vector3<double>(-0.2, std::sqrt(2), -3.14);
 
   // Verify CalcPointsVelocities() expressed-in-frame: v_WEi_E = Jv_WEi_E * v.
   MatrixX<double> v_WEi_E(3, num_position_vectors);  // Quantity to calculate.
