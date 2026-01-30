@@ -41,7 +41,7 @@ if(env.CHANGE_ID) {
 
 // N.B. Load the drake-ci utilities after parsing the parameters, above, so
 // we can optionally load a branched version.
-library "drake-ci@${params.ciSha}"
+@Library("drake-ci@${params.ciSha}") _
 
 node(utils.getNodeLabel()) {
   stage('test') {
