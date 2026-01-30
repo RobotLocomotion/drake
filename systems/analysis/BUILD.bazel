@@ -435,9 +435,6 @@ drake_cc_library(
         ":simulator",
         "@fmt",
     ],
-    implementation_deps = [
-        "//multibody/cenic:cenic_integrator",
-    ],
 )
 
 drake_cc_library(

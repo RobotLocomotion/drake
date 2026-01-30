@@ -29,6 +29,7 @@ using systems::ContinuousState;
 using systems::Diagram;
 using systems::DiagramContinuousState;
 using systems::IntegratorBase;
+using systems::NamedStatistic;
 using systems::SubsystemIndex;
 using systems::System;
 using systems::VectorBase;
@@ -104,6 +105,22 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant) {
   q.resize(nq);
   actuation_feedback.Resize(nv);
   external_feedback.Resize(nv);
+}
+
+template <typename T>
+void CenicIntegrator<T>::DoResetStatistics() {
+  stats_ = {};
+}
+
+template <typename T>
+std::vector<NamedStatistic> CenicIntegrator<T>::DoGetStatisticsSummary() const {
+  std::vector<NamedStatistic> result;
+  result.emplace_back("cenic_total_solver_iterations",
+                      stats_.total_solver_iterations);
+  result.emplace_back("cenic_total_hessian_factorizations",
+                      stats_.total_hessian_factorizations);
+  result.emplace_back("cenic_total_ls_iterations", stats_.total_ls_iterations);
+  return result;
 }
 
 template <typename T>
@@ -306,9 +323,9 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   }
 
   // Accumulate solver statistics.
-  total_solver_iterations_ += solver_.stats().num_iterations;
-  total_hessian_factorizations_ += solver_.stats().num_factorizations;
-  total_ls_iterations_ +=
+  stats_.total_solver_iterations += solver_.stats().num_iterations;
+  stats_.total_hessian_factorizations += solver_.stats().num_factorizations;
+  stats_.total_ls_iterations +=
       std::accumulate(solver_.stats().ls_iterations.begin(),
                       solver_.stats().ls_iterations.end(), 0);
 
