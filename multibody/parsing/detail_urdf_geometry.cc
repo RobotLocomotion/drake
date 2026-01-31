@@ -402,7 +402,7 @@ std::optional<std::string> ParseGeometryName(
 }  // namespace
 
 // Parses a "visual" element in @p node.
-std::optional<geometry::GeometryInstance> ParseVisual(
+UrdfVisualProperties ParseVisual(
     const TinyXml2Diagnostic& diagnostic,
     const std::string& parent_element_name, const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
@@ -441,30 +441,90 @@ std::optional<geometry::GeometryInstance> ParseVisual(
     return {};
   }
 
-  // The empty property set relies on downstream consumer default behavior.
-  geometry::IllustrationProperties properties;
+  // Check for drake:illustration_properties and drake:perception_properties
+  // tags.
+  const XMLElement* illustration_node =
+      node->FirstChildElement("drake:illustration_properties");
+  const XMLElement* perception_node =
+      node->FirstChildElement("drake:perception_properties");
 
+  // Default: both roles enabled if no tags present.
+  bool add_illustration = true;
+  bool add_perception = true;
+
+  // Parse illustration_properties enabled attribute.
+  if (illustration_node) {
+    std::string enabled;
+    if (ParseStringAttribute(illustration_node, "enabled", &enabled)) {
+      add_illustration = !(enabled == "false");
+    }
+  }
+
+  // Parse perception_properties enabled attribute.
+  if (perception_node) {
+    std::string enabled;
+    if (ParseStringAttribute(perception_node, "enabled", &enabled)) {
+      add_perception = !(enabled == "false");
+    }
+  }
+
+  // If both roles are disabled, emit a warning and skip this visual entirely.
+  if (!add_illustration && !add_perception) {
+    diagnostic.Warning(
+        *node,
+        fmt::format(
+            "Visual geometry in link '{}' has both illustration and "
+            "perception "
+            "properties disabled. This geometry will be ignored by Drake.",
+            parent_element_name));
+    return {};
+  }
+
+  // Create the appropriate properties based on which roles are enabled.
+  std::optional<geometry::IllustrationProperties> illustration_properties;
+  std::optional<geometry::PerceptionProperties> perception_properties;
+
+  if (add_illustration) {
+    illustration_properties = geometry::IllustrationProperties();
+  }
+  if (add_perception) {
+    perception_properties = geometry::PerceptionProperties();
+  }
+
+  // Parse material (color and texture) and add to whichever properties exist.
+  // We'll add to illustration first, then copy to perception if both are
+  // enabled.
   const XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
     UrdfMaterial material =
         ParseMaterial(diagnostic, material_node, false /* name required */,
                       package_map, root_dir, materials);
+    // Add material to illustration if it exists, otherwise to perception.
+    geometry::GeometryProperties* target_props =
+        illustration_properties ? static_cast<geometry::GeometryProperties*>(
+                                      &*illustration_properties)
+                                : static_cast<geometry::GeometryProperties*>(
+                                      &*perception_properties);
     if (material.rgba) {
-      properties = geometry::MakePhongIllustrationProperties(*(material.rgba));
+      target_props->AddProperty("phong", "diffuse", *(material.rgba));
     }
     if (material.diffuse_map) {
-      properties.AddProperty("phong", "diffuse_map", *(material.diffuse_map));
+      target_props->AddProperty("phong", "diffuse_map",
+                                *(material.diffuse_map));
     }
   }
 
-  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
-  //  a bit misleading; it isn't used by illustration, but we're not currently
-  //  parsing illustration and perception properties separately. So, we stash
-  //  them in the illustration properties relying on it to be ignored by
-  //  illustration consumers but copied over to the perception properties.
+  // Copy illustration properties to perception if both roles are enabled.
+  if (add_illustration && add_perception) {
+    perception_properties =
+        geometry::PerceptionProperties(*illustration_properties);
+  }
+
+  // Parse drake:accepting_renderer tags (for perception role only).
+  // This must be done AFTER the copy above, so it only affects perception.
   const char* kAcceptingTag = "drake:accepting_renderer";
   const XMLElement* accepting_node = node->FirstChildElement(kAcceptingTag);
-  if (accepting_node) {
+  if (accepting_node && add_perception) {
     std::set<std::string> accepting_names;
     while (accepting_node) {
       std::string name;
@@ -478,7 +538,8 @@ std::optional<geometry::GeometryInstance> ParseVisual(
       accepting_node = accepting_node->NextSiblingElement(kAcceptingTag);
     }
     DRAKE_DEMAND(accepting_names.size() > 0);
-    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
+    perception_properties->AddProperty("renderer", "accepting",
+                                       std::move(accepting_names));
   }
 
   std::optional<std::string> geometry_name =
@@ -488,10 +549,14 @@ std::optional<geometry::GeometryInstance> ParseVisual(
     return {};
   }
 
-  auto instance = geometry::GeometryInstance(T_element_to_link,
-                                             std::move(shape), *geometry_name);
-  instance.set_illustration_properties(properties);
-  return instance;
+  auto instance = std::make_unique<geometry::GeometryInstance>(
+      T_element_to_link, std::move(shape), *geometry_name);
+
+  UrdfVisualProperties result;
+  result.illustration = illustration_properties;
+  result.perception = perception_properties;
+  result.geometry = std::move(instance);
+  return result;
 }
 
 namespace {
