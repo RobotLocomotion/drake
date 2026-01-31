@@ -230,19 +230,32 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
     std::unordered_set<std::string> geometry_names;
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-      std::optional<geometry::GeometryInstance> geometry_instance =
+      UrdfVisualProperties visual_props =
           ParseVisual(diagnostic_, body_name, w_.package_map, root_dir_,
                       visual_node, materials, &geometry_names);
-      if (!geometry_instance) {
+      if (!visual_props.geometry) {
         continue;
       }
-      // The parsing should *always* produce an IllustrationProperties
-      // instance, even if it is empty.
-      DRAKE_DEMAND(geometry_instance->illustration_properties() != nullptr);
-      w_.plant->RegisterVisualGeometry(
-          body, geometry_instance->pose(), geometry_instance->shape(),
-          geometry_instance->name(),
-          *geometry_instance->illustration_properties());
+
+      // Set illustration properties if present.
+      if (visual_props.illustration.has_value()) {
+        visual_props.geometry->set_illustration_properties(
+            *visual_props.illustration);
+      }
+
+      // Set perception properties if present.
+      if (visual_props.perception.has_value()) {
+        visual_props.geometry->set_perception_properties(
+            *visual_props.perception);
+      }
+
+      // Ensure at least one set of visual properties is present.
+      DRAKE_DEMAND(visual_props.geometry->illustration_properties() !=
+                       nullptr ||
+                   visual_props.geometry->perception_properties() != nullptr);
+
+      // Register the visual geometry with both property sets.
+      w_.plant->RegisterVisualGeometry(body, std::move(visual_props.geometry));
     }
 
     geometry_names.clear();  // See ParseCollision API; the names are per-role.
