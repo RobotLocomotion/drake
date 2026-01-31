@@ -1078,7 +1078,7 @@ In SDFormat files only, the name may refer to a group within a nested model
 @subsection tag_drake_illustration_properties drake:illustration_properties
 
 - SDFormat path: `//model/link/visual/drake:illustration_properties`
-- URDF path: n/a
+- URDF path: `/robot/link/visual/drake:illustration_properties`
 - Syntax: Single attribute: `enabled` (bool).
 
 @subsubsection tag_drake_illustration_properties_semantics Semantics
@@ -1365,7 +1365,7 @@ with the parent link of the joint being defined.
 @subsection tag_drake_perception_properties drake:perception_properties
 
 - SDFormat path: `//model/link/visual/drake:perception_properties`
-- URDF path: n/a
+- URDF path: `/robot/link/visual/drake:perception_properties`
 - Syntax: Single attribute: `enabled` (bool).
 
 @subsubsection tag_drake_perception_properties_semantics Semantics
