@@ -167,10 +167,6 @@ class Installer:
                 if needs_patching:
                     self._libraries_to_fix_rpath.append((basename, dst_full))
 
-        # Remove with deprecation 2026-02-01.
-        if basename == "resource_tool":
-            self._binaries_to_fix_rpath.append((basename, dst_full))
-
     def fix_rpaths_and_strip(self):
         # Only fix files that are installed now.
         fix_items = itertools.chain(
