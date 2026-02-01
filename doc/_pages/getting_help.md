@@ -40,7 +40,7 @@ When reporting an issue, please consider providing the following information
 (``helper command in monospace``):
 
 * Operating system (e.g., Ubuntu Noble 24.04 or macOS Sequoia)
-* Installation method (e.g., pip, apt, binary tar.gz, docker image, or
+* Installation method (e.g., pip, apt, binary tar.gz, or
   rebuilding from source)
 * Language you are using (C++ or [Python](/python_bindings.html))
     * If using C++:

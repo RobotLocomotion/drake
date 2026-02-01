@@ -4,6 +4,11 @@ title: Installation via Docker
 
 # Docker Hub
 
+<div class="warning" markdown="1">
+**Drake's published docker images are deprecated and will no longer receive
+updates after 2026-06-01.**
+</div>
+
 Drake publishes pre-compiled binaries as Docker images on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake). Refer to
 [Supported Configurations](/installation.html#supported-configurations)
@@ -28,6 +33,11 @@ in [Source Installation](/from_source.html).
 
 ## Stable Releases
 
+<div class="warning" markdown="1">
+**Drake's published docker images are deprecated and will no longer receive
+updates after 2026-06-01.**
+</div>
+
 The latest stable image can be pulled from
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake)
 as follows:
@@ -48,6 +58,11 @@ The docker tags for Drake's stable releases are spelled like:
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
+
+<div class="warning" markdown="1">
+**Drake's published docker images are deprecated and will no longer receive
+updates after 2026-06-01.**
+</div>
 
 The latest nightly image can be pulled from
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake)

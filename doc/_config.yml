@@ -39,8 +39,6 @@ custom:
           url: '/apt.html'
         - page: 'Binary Download'
           url: '/from_binary.html'
-        - page: 'Docker Hub'
-          url: '/docker.html'
         - page: 'Build From Source'
           url: '/from_source.html'
       - title: 'Gallery'
