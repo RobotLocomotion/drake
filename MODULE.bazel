@@ -59,7 +59,7 @@ use_repo(cc_configure, "local_config_cc")
 
 bazel_dep(name = "eigen", version = "5.0.1", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
-bazel_dep(name = "spdlog", version = "1.16.0.bcr.2", repo_name = "module_spdlog")  # noqa
+bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
 # Add C++ module dependencies that are NOT used by Drake's public API, but are
 # used by Drake's implementation. Builds have the option to opt-out of these
