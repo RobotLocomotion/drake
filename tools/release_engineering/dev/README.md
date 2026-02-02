@@ -11,7 +11,7 @@ other platforms are not supported.
 
     apt install aptly
 
-Follow instructions to install docker
+Follow instructions to install Docker
 https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
 
 Follow instructions to install awscli
@@ -62,7 +62,7 @@ Clone the drake repository:
 
 ## Run script for Docker / S3 / GitHub
 
-The next step is to push docker images, mirror the .tar/.deb artifacts to S3,
+The next step is to push Docker images, mirror the .tar/.deb artifacts to S3,
 and push the official source code archive to GitHub.
 
 Once your machine is set-up, run the `push_release` script as described below:

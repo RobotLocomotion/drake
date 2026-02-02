@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Internal script to provision a bare docker image for testing a Drake wheel.
+# Internal script to provision a bare Docker image for testing a Drake wheel.
 
 set -eu -o pipefail
 
