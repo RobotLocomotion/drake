@@ -24,6 +24,86 @@ void ImplicitIntegrator<T>::DoResetStatistics() {
 }
 
 template <class T>
+std::vector<NamedStatistic> ImplicitIntegrator<T>::DoGetStatisticsSummary()
+    const {
+  std::vector<NamedStatistic> result;
+  result.emplace_back("integrator_num_step_shrinkages_from_substep_failures",
+                      this->get_num_step_shrinkages_from_substep_failures());
+  result.emplace_back("integrator_num_substep_failures",
+                      this->get_num_substep_failures());
+
+  // When error estimation is enabled, we'll return both the total count as well
+  // as the breakdown for the error estimator vs the integrator. When not, we'll
+  // only return the total count.
+
+  // N.B. "integrator_num_derivative_evaluations" is logged by our base class.
+  if (this->supports_error_estimation()) {
+    const int num_integrator_derivative_evaluations =
+        this->get_num_derivative_evaluations() -
+        get_num_error_estimator_derivative_evaluations();
+    result.emplace_back("integrator_num_integrator_derivative_evaluations",
+                        num_integrator_derivative_evaluations);
+    result.emplace_back("integrator_num_error_estimator_derivative_evaluations",
+                        get_num_error_estimator_derivative_evaluations());
+  }
+
+  result.emplace_back("integrator_num_jacobian_evaluations",
+                      get_num_jacobian_evaluations());
+  if (this->supports_error_estimation()) {
+    const int num_integrator_jacobian_evaluations =
+        get_num_jacobian_evaluations() -
+        get_num_error_estimator_jacobian_evaluations();
+    result.emplace_back("integrator_num_integrator_jacobian_evaluations",
+                        num_integrator_jacobian_evaluations);
+    result.emplace_back("integrator_num_error_estimator_jacobian_evaluations",
+                        get_num_error_estimator_jacobian_evaluations());
+  }
+
+  result.emplace_back("integrator_num_derivative_evaluations_for_jacobian",
+                      get_num_derivative_evaluations_for_jacobian());
+  if (this->supports_error_estimation()) {
+    const int num_integrator_derivative_evaluations_for_jacobian =
+        get_num_derivative_evaluations_for_jacobian() -
+        get_num_error_estimator_derivative_evaluations_for_jacobian();
+    result.emplace_back(
+        "integrator_num_integrator_derivative_evaluations_for_jacobian",
+        num_integrator_derivative_evaluations_for_jacobian);
+    result.emplace_back(
+        "integrator_num_error_estimator_derivative_evaluations_for_jacobian",
+        get_num_error_estimator_derivative_evaluations_for_jacobian());
+  }
+
+  result.emplace_back("integrator_num_iteration_matrix_factorizations",
+                      get_num_iteration_matrix_factorizations());
+  if (this->supports_error_estimation()) {
+    const int num_integrator_iteration_matrix_factorizations =
+        get_num_iteration_matrix_factorizations() -
+        get_num_error_estimator_iteration_matrix_factorizations();
+    result.emplace_back(
+        "integrator_num_integrator_iteration_matrix_factorizations",
+        num_integrator_iteration_matrix_factorizations);
+    result.emplace_back(
+        "integrator_num_error_estimator_iteration_matrix_factorizations",
+        get_num_error_estimator_iteration_matrix_factorizations());
+  }
+
+  result.emplace_back("integrator_num_newton_raphson_iterations",
+                      get_num_newton_raphson_iterations());
+  if (this->supports_error_estimation()) {
+    const int num_integrator_newton_raphson_iterations =
+        get_num_newton_raphson_iterations() -
+        get_num_error_estimator_newton_raphson_iterations();
+    result.emplace_back("integrator_num_integrator_newton_raphson_iterations",
+                        num_integrator_newton_raphson_iterations);
+    result.emplace_back(
+        "integrator_num_error_estimator_newton_raphson_iterations",
+        get_num_error_estimator_newton_raphson_iterations());
+  }
+
+  return result;
+}
+
+template <class T>
 void ImplicitIntegrator<T>::DoReset() {
   J_.resize(0, 0);
   DoResetCachedJacobianRelatedMatrices();
