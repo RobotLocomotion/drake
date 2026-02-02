@@ -41,6 +41,14 @@ TEST_F(PartialsHeapTest, MakeMutableXprUnit) {
   unit.MakeMutableXpr();
 }
 
+// Neither the constructor nor MakeMutableXpr allocates when size() == 1.
+TEST_F(PartialsHeapTest, MakeMutableXprUnitSize1) {
+  LimitMalloc guard;
+  Partials unit(1, 0);
+  unit.MakeMutableXpr();
+  unit.MakeMutableXpr();
+}
+
 // Copy-assignment of equal sizes doesn't allocate.
 TEST_F(PartialsHeapTest, CopyAssign) {
   Partials foo(Eigen::Vector3d{1.0, 2.0, 3.0});
