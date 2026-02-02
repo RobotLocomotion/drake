@@ -181,8 +181,8 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        commit = "a9bd41e68fa5ee434dbf6224c6c78af334383870",
-        sha256 = "cfdb1e6201b6ba3b6922a95b532b8d78c18a9bd9a2e723e7910461886af2c030",  # noqa
+        commit = "b9b29780aad1bc92e26c8100ec88619c5dbaa2ed",
+        sha256 = "306b4d28c2137c3c540e27033e6411156623d9319fc715f332b65e5c31f289f7",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -194,7 +194,6 @@ def vtk_internal_repository(
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/rendering_opengl2_replace_single_scattering_with_multi_scattering_in_pbr.patch",
             ":patches/upstream/utilities_x11_more_functions.patch",
-            ":patches/common_core_fmt12.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",

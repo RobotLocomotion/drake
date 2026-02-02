@@ -190,7 +190,6 @@ MODULE_SETTINGS = {
             # Library API choices.
             "VTK_ALL_NEW_OBJECT_FACTORY=1",
             "VTK_ALWAYS_OPTIMIZE_ARRAY_ITERATORS=1",
-            "VTK_LEGACY_REMOVE=1",
             "VTK_USE_FUTURE_BOOL=1",
             "VTK_USE_FUTURE_CONST=1",
             "VTK_WARN_ON_DISPATCH_FAILURE=1",
@@ -225,7 +224,6 @@ MODULE_SETTINGS = {
             "VTK_DISPATCH_STD_FUNCTION_ARRAYS",
             "VTK_DISPATCH_STRIDED_ARRAYS",
             "VTK_DISPATCH_STRUCTURED_POINT_ARRAYS",
-            "VTK_LEGACY_SILENT",
             "VTK_USE_MEMKIND",
         ],
     },

@@ -186,7 +186,6 @@ def _generate_common_core_array_instantiations():
             "vtkSOADataArrayTemplateInstantiate",
             "vtkStdFunctionArrayInstantiate",
             "vtkStructuredPointArrayInstantiate",
-            "vtkTypedDataArrayInstantiate",
             # This one is instantiated iff "long" is part of the ctype.
             # This matches Common/Core/CMakeLists.txt near the comment "see
             # comments in vtkGenericDataArray.h for explanation".
@@ -195,11 +194,9 @@ def _generate_common_core_array_instantiations():
             if "Generic" in prefix and "long" not in ctype:
                 # See comment immediately above.
                 continue
-            src = "Common/Core/{prefix}.cxx.in".format(prefix = prefix)
+            src = "Common/Core/{prefix}.cxx.inc.in".format(prefix = prefix)
 
-            # The CMakeLists.txt generates `*.cxx` files, but we don't want
-            # Bazel to compile them so we use `*.inc` here.
-            out = "Common/Core/{prefix}_{suffix}.inc".format(
+            out = "Common/Core/{prefix}_{suffix}.cxx.inc".format(
                 prefix = prefix,
                 suffix = suffix,
             )
@@ -221,17 +218,15 @@ def _generate_common_core_array_instantiations():
     return bulk_instantiation_srcs
 
 def _generate_array_specialization(*, array_prefix, vtk_type, concrete_type):
-    """Mimics a subset of vtkTypeArrays.cmake macro of the same name. Unlike
-    CMakeLists.txt which generates a `*.cxx` file, we generate `*.inc` here
-    because we don't want Bazel to compile it directly; instead, the `*.inc`
-    file will be compiled via the "bulk instantiation" mechanism. Returns the
-    generated code's filenames (out_hdr, out_src).
+    """Mimics a subset of vtkTypeArrays.cmake macro of the same name. The
+    generated `*.cxx.inc` file will be compiled via the "bulk instantiation"
+    mechanism. Returns the generated code's filenames (out_hdr, out_src).
     """
     class_name = "vtk{}{}Array".format(array_prefix, vtk_type)
     in_hdr = "Common/Core/vtk{}TypedArray.h.in".format(array_prefix)
     out_hdr = "Common/Core/{}.h".format(class_name)
-    in_src = "Common/Core/vtk{}TypedArray.cxx.in".format(array_prefix)
-    out_src = "Common/Core/{}.inc".format(class_name)
+    in_src = "Common/Core/vtk{}TypedArray.cxx.inc.in".format(array_prefix)
+    out_src = "Common/Core/{}.cxx.inc".format(class_name)
 
     cmake_configure_files(
         name = "_common_core_typed_arrays_{}".format(class_name),
@@ -257,8 +252,9 @@ def _generate_array_specialization(*, array_prefix, vtk_type, concrete_type):
 def _generate_common_core_typed_arrays():
     """Mimics a subset of vtkTypeArrays.cmake, for the (non-deprecated) loop
     that calls _generate_array_specialization. Generates a pair of `*.h` and
-    `*.inc` files for the cartesian product of VTK's primitive types and array
-    types. Returns the bulk_instantiation_srcs dictionary of generated files.
+    `*.cxx.inc` files for the cartesian product of VTK's primitive types and
+    array types. Returns the bulk_instantiation_srcs dictionary of generated
+    files.
     """
     name = "common_core_typed_arrays"
     all_out_hdrs = []
@@ -332,10 +328,8 @@ def _vtk_type_native(type):
 
 def _generate_common_core_aos_typed_arrays():
     """Mimics a subset of vtkTypeArrays.cmake, for the loop that mentions
-    vtkAOSTypedArray.h.in. Generates a pair of `*.h` and `*.inc` files for each
-    of VTK's primitive types. Unlike CMakeLists.txt which generates a `*.cxx`
-    file, we generate `*.inc` here because we don't want Bazel to compile it
-    directly; instead, the `*.inc` file will be compiled via the "bulk
+    vtkAOSTypedArray.h.in. Generates a pair of `*.h` and `*.cxx.inc` files for
+    each of VTK's primitive types; the latter will be compiled via the "bulk
     instantiation" mechanism. Returns the bulk_instantiation_srcs dictionary of
     generated files.
     """
@@ -347,8 +341,8 @@ def _generate_common_core_aos_typed_arrays():
         vtk_type = type[len("vtkType"):]
         in_hdr = "Common/Core/vtkAOSTypedArray.h.in"
         out_hdr = "Common/Core/{}Array.h".format(type)
-        in_src = "Common/Core/vtkAOSTypedArray.cxx.in"
-        out_src = "Common/Core/{}Array.inc".format(type)
+        in_src = "Common/Core/vtkAOSTypedArray.cxx.inc.in"
+        out_src = "Common/Core/{}Array.cxx.inc".format(type)
         cmake_configure_files(
             name = "_common_core_aos_type_arrays_" + type,
             srcs = [in_hdr, in_src],
