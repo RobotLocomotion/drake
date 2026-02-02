@@ -1378,6 +1378,11 @@ Returns:
             const char* doc = R"""()""";
           } kNotConverged;
         } ConvergenceStatus;
+        // Symbol: drake::systems::ImplicitIntegrator::DoGetStatisticsSummary
+        struct /* DoGetStatisticsSummary */ {
+          // Source: drake/systems/analysis/implicit_integrator.h
+          const char* doc = R"""()""";
+        } DoGetStatisticsSummary;
         // Symbol: drake::systems::ImplicitIntegrator::DoImplicitIntegratorClone
         struct /* DoImplicitIntegratorClone */ {
           // Source: drake/systems/analysis/implicit_integrator.h
@@ -2148,6 +2153,15 @@ Returns:
 See also:
     DoStep())""";
         } DoDenseStep;
+        // Symbol: drake::systems::IntegratorBase::DoGetStatisticsSummary
+        struct /* DoGetStatisticsSummary */ {
+          // Source: drake/systems/analysis/integrator_base.h
+          const char* doc =
+R"""(Returns statistics particular to a specific integrator, in service of
+GetStatisticsSummary(). The default implementation of this function
+does nothing. If your integrator collects its own statistics, you
+should re-implement this method and return them there.)""";
+        } DoGetStatisticsSummary;
         // Symbol: drake::systems::IntegratorBase::DoInitialize
         struct /* DoInitialize */ {
           // Source: drake/systems/analysis/integrator_base.h
@@ -2219,6 +2233,15 @@ system.EvalTimeDerivatives() directly. This version of this function
 exists to allow integrators to include AutoDiff'd systems in
 derivative function evaluations.)""";
         } EvalTimeDerivatives;
+        // Symbol: drake::systems::IntegratorBase::GetStatisticsSummary
+        struct /* GetStatisticsSummary */ {
+          // Source: drake/systems/analysis/integrator_base.h
+          const char* doc =
+R"""(Returns all integrator statistics as a single collection. The data is
+organized as a list of (key, value) pairs. The types allowed by the
+``variant`` may grow over time; be sure to use ``std::visit`` for
+access.)""";
+        } GetStatisticsSummary;
         // Symbol: drake::systems::IntegratorBase::Initialize
         struct /* Initialize */ {
           // Source: drake/systems/analysis/integrator_base.h
@@ -3340,6 +3363,12 @@ Raises:
     RuntimeError if the integration scheme does not match any of
     GetIntegrationSchemes().)""";
       } IsScalarTypeSupportedByIntegrator;
+      // Symbol: drake::systems::NamedStatistic
+      struct /* NamedStatistic */ {
+        // Source: drake/systems/analysis/integrator_base.h
+        const char* doc =
+R"""(Helper type for IntegratorBase<T>::GetStatisticsSummary.)""";
+      } NamedStatistic;
       // Symbol: drake::systems::PrintSimulatorStatistics
       struct /* PrintSimulatorStatistics */ {
         // Source: drake/systems/analysis/simulator_print_stats.h
