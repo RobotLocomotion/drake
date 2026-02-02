@@ -12,15 +12,15 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "2.1.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "bazel_features", version = "1.39.0")
+bazel_dep(name = "apple_support", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "bazel_features", version = "1.41.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.2.16")
 bazel_dep(name = "rules_java", version = "9.3.0")
 bazel_dep(name = "rules_jvm_external", version = "6.9")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "1.8.2")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_python", version = "1.8.3")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
 bazel_dep(name = "rules_rust", version = "0.68.1")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
@@ -59,7 +59,7 @@ use_repo(cc_configure, "local_config_cc")
 
 bazel_dep(name = "eigen", version = "5.0.1", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
-bazel_dep(name = "spdlog", version = "1.16.0.bcr.2", repo_name = "module_spdlog")  # noqa
+bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
 # Add C++ module dependencies that are NOT used by Drake's public API, but are
 # used by Drake's implementation. Builds have the option to opt-out of these
@@ -235,7 +235,7 @@ use_repo(maven, "drake_maven_internal")
 
 bazel_dep(
     name = "buildifier_prebuilt",
-    version = "8.2.1.1",
+    version = "8.2.1.2",
     dev_dependency = True,
 )
 
