@@ -265,7 +265,7 @@ single_version_override(
 
 bazel_dep(
     name = "google_benchmark",
-    version = "1.9.4",
+    version = "1.9.5",
     dev_dependency = True,
 )
 single_version_override(
