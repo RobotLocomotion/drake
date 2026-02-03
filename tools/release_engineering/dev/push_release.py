@@ -457,7 +457,7 @@ def main(args: List[str]) -> None:
         dest="push_docker",
         default=True,
         action=argparse.BooleanOptionalAction,
-        help="Publish docker images from staging images.",
+        help="Publish Docker images from staging images.",
     )
     parser.add_argument(
         "--tar",

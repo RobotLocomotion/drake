@@ -223,8 +223,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "opencl",
     "spdlog",
     "zlib",
-    # Remove with resource_tool deprecation 2026-02-01.
-    "gflags",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
     "//conditions:default": [],

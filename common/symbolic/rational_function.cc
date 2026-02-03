@@ -42,8 +42,11 @@ Formula RationalFunction::operator!=(const RationalFunction& f) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const RationalFunction& f) {
-  os << fmt::format("({}) / ({})", f.numerator(), f.denominator());
-  return os;
+  return os << fmt::to_string(f);
+}
+
+std::string to_string(const RationalFunction& f) {
+  return fmt::format("({}) / ({})", f.numerator(), f.denominator());
 }
 
 void RationalFunction::CheckIndeterminates() const {
@@ -52,21 +55,24 @@ void RationalFunction::CheckIndeterminates() const {
   const Variables vars2{intersect(numerator_.decision_variables(),
                                   denominator_.indeterminates())};
   if (!vars1.empty() || !vars2.empty()) {
-    std::ostringstream oss;
-    oss << "RationalFunction " << *this << " is invalid.\n";
+    std::string err_msg{
+        fmt::format("RationalFunction {} is invalid.\n", *this)};
     if (!vars1.empty()) {
-      oss << "The following variable(s) "
-             "are used as indeterminates in the numerator and decision "
-             "variables in the denominator at the same time:\n"
-          << vars1 << ".\n";
+      err_msg.append(fmt::format(
+          "The following variable(s) are used as indeterminates in the "
+          "numerator and decision variables in the denominator at the same "
+          "time:\n{}.\n",
+          vars1));
     }
     if (!vars2.empty()) {
-      oss << "The following variable(s) "
-             "are used as decision variables in the numerator and "
-             "indeterminates variables in the denominator at the same time:\n"
-          << vars2 << ".\n";
+      err_msg.append(
+          fmt::format("The following variable(s) "
+                      "are used as decision variables in the numerator and "
+                      "indeterminates variables in the denominator at the same "
+                      "time:\n{}.\n",
+                      vars2));
     }
-    throw std::logic_error(oss.str());
+    throw std::logic_error(err_msg);
   }
 }
 

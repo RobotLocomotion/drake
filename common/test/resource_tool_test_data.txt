@@ -1,1 +1,0 @@
-Test data for drake/common/test/resource_tool_test.py.

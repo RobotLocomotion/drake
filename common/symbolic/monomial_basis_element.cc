@@ -116,31 +116,33 @@ Expression MonomialBasisElement::DoToExpression() const {
   return ExpressionMulFactory{1.0, base_to_exponent_map}.GetExpression();
 }
 
-std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m) {
+std::string to_string(const MonomialBasisElement& m) {
   if (m.var_to_degree_map().empty()) {
-    return out << 1;
+    return "1";
   }
   auto it = m.var_to_degree_map().begin();
-  out << fmt::to_string(it->first);
+  std::string result{fmt::to_string(it->first)};
   if (it->second > 1) {
-    out << "^" << it->second;
+    result.append(fmt::format("^{}", it->second));
   }
   for (++it; it != m.var_to_degree_map().end(); ++it) {
-    out << " * ";
-    out << fmt::to_string(it->first);
+    result.append(fmt::format(" * {}", it->first));
     if (it->second > 1) {
-      out << "^" << it->second;
+      result.append(fmt::format("^{}", it->second));
     }
   }
-  return out;
+  return result;
+}
+
+std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m) {
+  return out << fmt::to_string(m);
 }
 
 MonomialBasisElement& MonomialBasisElement::pow_in_place(const int p) {
   if (p < 0) {
-    std::ostringstream oss;
-    oss << "MonomialBasisElement::pow(int p) is called with a negative p = "
-        << p;
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format(
+        "MonomialBasisElement::pow(int p) is called with a negative p = {}",
+        p));
   }
   if (p == 0) {
     int* total_degree = get_mutable_total_degree();

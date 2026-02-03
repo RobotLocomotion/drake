@@ -92,7 +92,7 @@ def _path_depth(path):
 
 def _docker(*args, stdout=None):
     """
-    Runs a docker command.
+    Runs a Docker command.
     The value of `stdout` is passed through to the subprocess module.
     Blocks until completion and returns a CompletedProcess instance.
     """
@@ -216,7 +216,7 @@ def _build_stage(target, args, tag_prefix, stage=None):
 
 def _target_args(target: Target, role: Role):
     """
-    Returns the docker build arguments for the specified platform target.
+    Returns the Docker build arguments for the specified platform target.
     """
     platform_name = target.platform(role).name
     platform_version = target.platform(role).version

@@ -212,11 +212,6 @@ use_repo(
     # deprecating it until we have nanobind ready.
     #
     "pybind11",
-    #
-    # Deprecated for removal on 2026-02-01.
-    #
-    "lcm",
-    "x11",
 )
 
 # Load Java dependencies.
@@ -238,13 +233,12 @@ bazel_dep(
     version = "8.2.1.2",
     dev_dependency = True,
 )
-
 bazel_dep(
     name = "gflags",
     version = "2.2.2.bcr.1",
-    # TODO(jwnimmer-tri) Set dev_dependency = True on 2026-02-01 with removal
-    # of resource_tool deprecation.
+    dev_dependency = True,
 )
+
 bazel_dep(
     name = "googletest",
     version = "1.17.0.bcr.2",
@@ -265,7 +259,7 @@ single_version_override(
 
 bazel_dep(
     name = "google_benchmark",
-    version = "1.9.4",
+    version = "1.9.5",
     dev_dependency = True,
 )
 single_version_override(
@@ -384,10 +378,6 @@ use_repo(
     #
     "doxygen_internal",
     "styleguide_internal",
-    #
-    # Deprecated for removal on 2026-02-01.
-    #
-    "pkgconfig_x11_internal",
 )
 
 crate_universe = use_extension(

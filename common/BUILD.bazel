@@ -672,34 +672,16 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "resource_tool",
-    srcs = ["resource_tool.cc"],
-    deprecation = "DRAKE DEPRECATED: The resource_tool binary is deprecated and will be removed from Drake on or after 2026-02-01",  # noqa
-    tags = ["manual"],
-    deps = [
-        ":add_text_logging_gflags",
-        ":essential",
-        ":find_resource",
-    ],
-)
-
 install(
     name = "install",
-    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
         # TODO(tyler-yankee): As written, find_resource relies on dynamic
         # loading and disregards //tools/flags:install_libdrake=static.
         # We should determine alternatives to make this work, so that users
         # linking libdrake statically can distribute a single archive file.
         ":libdrake_marker.so",
-        # Remove with resource_tool deprecation 2026-02-01.
-        ":resource_tool",
     ],
     runtime_dest = "share/drake/common",
-    data_dest = "share/drake",
-    guess_data = "WORKSPACE",
-    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
 
 # === test/ ===
@@ -1387,19 +1369,6 @@ drake_py_unittest(
     data = [":drake_cc_googletest_main_test_device"],
 )
 
-# Remove with resource_tool deprecation 2026-02-01.
-drake_py_unittest(
-    name = "resource_tool_test",
-    args = [
-        "$(location :resource_tool)",
-    ],
-    data = [
-        "test/resource_tool_test_data.txt",
-        ":resource_tool",
-        "//examples/pendulum:models",
-    ],
-)
-
 drake_cc_googletest(
     name = "value_test",
     deps = [
@@ -1426,9 +1395,5 @@ add_lint_tests(
         "nice_type_name.h",
         "nice_type_name_override.cc",
         "nice_type_name_override.h",
-    ],
-    python_lint_extra_srcs = [
-        # Remove with resource_tool deprecation 2026-02-01.
-        ":test/resource_tool_installed_test.py",
     ],
 )

@@ -314,8 +314,7 @@ the email address associated with your github account.
       ```
    2. If the current content differs from the above content, ask for help on
       slack in the ``#releases`` channel.
-5. Copy the updated tutorials from the pinned Dockerfile release
-   (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
+5. Copy the updated tutorials from the wheel release into the Deepnote project
    storage (``~/work/...``):
    1. Open [zzz_for_maintainers.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/zzz_for_maintainers-fd55235184ab44289133abc40e94a5e0).
    2. Run each cell one by one, checking for errors as you go.
