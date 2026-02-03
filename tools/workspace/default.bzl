@@ -26,7 +26,6 @@ load("//tools/workspace/highway_internal:repository.bzl", "highway_internal_repo
 load("//tools/workspace/implib_so_internal:repository.bzl", "implib_so_internal_repository")  # noqa
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
-load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("//tools/workspace/lcm_internal:repository.bzl", "lcm_internal_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
@@ -51,7 +50,6 @@ load("//tools/workspace/pkgconfig_glib_internal:repository.bzl", "pkgconfig_glib
 load("//tools/workspace/pkgconfig_lapack_internal:repository.bzl", "pkgconfig_lapack_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_opencl_internal:repository.bzl", "pkgconfig_opencl_internal_repository")  # noqa
 load("//tools/workspace/pkgconfig_spdlog_internal:repository.bzl", "pkgconfig_spdlog_internal_repository")  # noqa
-load("//tools/workspace/pkgconfig_x11_internal:repository.bzl", "pkgconfig_x11_internal_repository")  # noqa
 load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
@@ -129,7 +127,6 @@ def _add_internal_repositories():
     pkgconfig_lapack_internal_repository(name = "pkgconfig_lapack_internal")
     pkgconfig_opencl_internal_repository(name = "pkgconfig_opencl_internal")
     pkgconfig_spdlog_internal_repository(name = "pkgconfig_spdlog_internal")
-    pkgconfig_x11_internal_repository(name = "pkgconfig_x11_internal")
     poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
     qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
@@ -157,7 +154,6 @@ def _drake_dep_repositories_impl(module_ctx):
     mirrors = DEFAULT_MIRRORS
     drake_models_repository(name = "drake_models", mirrors = mirrors)
     gurobi_repository(name = "gurobi")
-    lcm_repository(name = "lcm", mirrors = mirrors)
     meshcat_repository(name = "meshcat", mirrors = mirrors)
     mosek_repository(name = "mosek", mirrors = mirrors)
     pybind11_repository(name = "pybind11", mirrors = mirrors)
@@ -173,8 +169,6 @@ def _drake_dep_repositories_impl(module_ctx):
         "opencl",
         "spdlog",
         "zlib",
-        # Deprecated for removal on 2026-02-01.
-        "x11",
     ]
     for name in ALIAS_REPOSITORIES:
         actual = "@drake//tools/workspace/" + name
