@@ -250,6 +250,7 @@ class TestAnalysis(unittest.TestCase):
         )
         self.assertTrue(isnan(integrator.get_largest_step_size_taken()))
         self.assertEqual(integrator.get_num_steps_taken(), 0)
+        self.assertGreater(len(integrator.GetStatisticsSummary()), 0)
         integrator.ResetStatistics()
 
         integrator.Reset()

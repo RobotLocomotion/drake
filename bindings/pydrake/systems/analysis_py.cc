@@ -209,6 +209,8 @@ PYBIND11_MODULE(analysis, m) {
               cls_doc.get_largest_step_size_taken.doc)
           .def("get_num_steps_taken", &Class::get_num_steps_taken,
               cls_doc.get_num_steps_taken.doc)
+          .def("GetStatisticsSummary", &Class::GetStatisticsSummary,
+              cls_doc.GetStatisticsSummary.doc)
           // N.B. While `context` is not directly owned by this system, we
           // would still like our accessors to keep it alive (e.g. a user calls
           // `simulator.get_integrator().get_context()`.
