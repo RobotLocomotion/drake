@@ -1727,3 +1727,56 @@ class TestYamlTypedReadPybind11(unittest.TestCase):
         self.assertEqual(x.some_map, dict(one=1.0))
         self.assertEqual(x.some_variant.quux, 1.0)
         self.assertEqual(yaml_dump_typed(x), data)
+
+
+@dc.dataclass
+class SomeOtherType:
+    pass
+
+
+@dc.dataclass
+class BasicTypePromotion:
+    float_type: float = nan
+    np_type: np.ndarray = dc.field(default_factory=lambda: np.array([nan]))
+    path_type: Path = dc.field(default_factory=Path)
+    truthy_type: bool = False
+
+
+@dc.dataclass
+class VariantTypePromotion:
+    float_type: float | SomeOtherType = nan
+    np_type: np.ndarray | SomeOtherType = dc.field(
+        default_factory=lambda: np.array([nan])
+    )
+    path_type: Path | SomeOtherType = dc.field(default_factory=Path)
+    truthy_type: bool | SomeOtherType = False
+
+
+class TestYamlLoadTypedVariantTypePromotion(unittest.TestCase):
+    def test_float_variant_type_promotion(self):
+        data = "float_type: 1"
+        b = yaml_load_typed(schema=BasicTypePromotion, data=data)
+        v = yaml_load_typed(schema=VariantTypePromotion, data=data)
+        self.assertEqual(b.float_type, v.float_type)
+        self.assertEqual(v.float_type, 1.0)
+
+    def test_np_variant_type_promotion(self):
+        data = "np_type: [1]"
+        b = yaml_load_typed(schema=BasicTypePromotion, data=data)
+        v = yaml_load_typed(schema=VariantTypePromotion, data=data)
+        self.assertEqual(b.np_type, v.np_type)
+        self.assertEqual(v.np_type, np.array([1.0]))
+
+    def test_path_variant_type_promotion(self):
+        data = "path_type: /path/to/nowhere"
+        b = yaml_load_typed(schema=BasicTypePromotion, data=data)
+        v = yaml_load_typed(schema=VariantTypePromotion, data=data)
+        self.assertEqual(b.path_type, v.path_type)
+        self.assertEqual(v.path_type, Path("/path/to/nowhere"))
+
+    def test_truthy_variant_type_promotion(self):
+        data = "truthy_type: true"
+        b = yaml_load_typed(schema=BasicTypePromotion, data=data)
+        v = yaml_load_typed(schema=VariantTypePromotion, data=data)
+        self.assertEqual(b.truthy_type, v.truthy_type)
+        self.assertEqual(v.truthy_type, True)
