@@ -168,6 +168,29 @@ selects.config_setting_group(
     ],
 )
 
+config_setting(
+    name = "compiler_major_15",
+    flag_values = {":compiler_major": "15"},
+)
+
+selects.config_setting_group(
+    name = "gcc_15_with_warnings",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_major_15",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_15_with_errors",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_major_15",
+        ":error_severity_error",
+    ],
+)
+
 # *****************************************************************************
 # The following sh_binary (and its prerequisite genrule) are used by drake-ci's
 # CMake setup logic to sniff out Drake's selected compiler. They are not used
