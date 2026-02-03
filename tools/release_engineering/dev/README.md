@@ -62,10 +62,10 @@ Clone the drake repository:
 
 ## Run script for Docker / S3 / GitHub
 
-The next step is to push docker images, mirror the .tar/.deb artifacts to S3,
-and push the official source code archive to GitHub.
+The next step is to push docker images, push the official source code archive
+to GitHub, and mirror the release artifacts to S3.
 
-Once your machine is set-up, run the `push_release` script as described below:
+Once your machine is set up, run the `push_release` script as described below:
 
     bazel run //tools/release_engineering/dev:push_release -- <version>
 
