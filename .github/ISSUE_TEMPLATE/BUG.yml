@@ -47,7 +47,6 @@ body:
         - pip install drake
         - apt install drake
         - binary tar.gz download
-        - dockerhub
         - compiled from source code using CMake
         - compiled from source code using Bazel
   - type: textarea

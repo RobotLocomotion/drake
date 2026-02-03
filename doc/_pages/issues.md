@@ -56,7 +56,7 @@ RobotLocomotion/drake-ci
 
 <tr>
 <td><code>distribution</code></td>
-<td>Nightly binaries, monthly releases, docker, installation.</td>
+<td>Nightly binaries, monthly releases, installation.</td>
 <td>jwnimmer-tri</td>
 <td><small>
 tools/install<br>
