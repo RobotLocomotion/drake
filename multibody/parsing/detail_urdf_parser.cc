@@ -233,16 +233,11 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
       std::optional<geometry::GeometryInstance> geometry_instance =
           ParseVisual(diagnostic_, body_name, w_.package_map, root_dir_,
                       visual_node, materials, &geometry_names);
-      if (!geometry_instance) {
-        continue;
+      if (geometry_instance.has_value()) {
+        w_.plant->RegisterVisualGeometry(
+            body, std::make_unique<geometry::GeometryInstance>(
+                      std::move(*geometry_instance)));
       }
-      // The parsing should *always* produce an IllustrationProperties
-      // instance, even if it is empty.
-      DRAKE_DEMAND(geometry_instance->illustration_properties() != nullptr);
-      w_.plant->RegisterVisualGeometry(
-          body, geometry_instance->pose(), geometry_instance->shape(),
-          geometry_instance->name(),
-          *geometry_instance->illustration_properties());
     }
 
     geometry_names.clear();  // See ParseCollision API; the names are per-role.
