@@ -98,6 +98,17 @@ GCC_VERSION_SPECIFIC_FLAGS = {
         "-Wno-array-bounds",
         "-Wno-stringop-overread",
     ],
+    15: [
+        # See above: all flags below exhibit similar behavior for both GCC 13
+        # and 15.
+        "-Werror=pessimizing-move",
+        "-Werror=uninitialized",
+        "-Wno-dangling-reference",
+        "-Wno-maybe-uninitialized",
+        "-Wno-stringop-overflow",
+        "-Wno-array-bounds",
+        "-Wno-stringop-overread",
+    ],
 }
 
 def _defang(flags):
