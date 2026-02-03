@@ -4,6 +4,7 @@
 #include <string>
 
 #include <fmt/core.h>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
@@ -13,6 +14,18 @@
 
 namespace drake {
 namespace systems {
+
+namespace {
+void AddNamedStatisticToJson(const NamedStatistic& statistic,
+                             nlohmann::json* json_summary) {
+  const auto& [key, value] = statistic;
+  std::visit(
+      [&](const auto& unwrapped_value) {
+        (*json_summary)[key] = unwrapped_value;
+      },
+      value);
+}
+}  // namespace
 
 template <typename T>
 void PrintSimulatorStatistics(const Simulator<T>& simulator) {
@@ -163,6 +176,14 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
                  implicit_integrator->get_num_newton_raphson_iterations());
     }
   }
+
+  // Finally, log the machine-readable statistics.
+  fmt::print("\nJSON Statistics:\n");
+  nlohmann::json json_summary;
+  for (const NamedStatistic& statistic : integrator.GetStatisticsSummary()) {
+    AddNamedStatisticToJson(statistic, &json_summary);
+  }
+  fmt::print("{}\n", json_summary.dump(/* indent = */ 2));
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
