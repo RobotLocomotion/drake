@@ -145,28 +145,43 @@ selects.config_setting_group(
     ],
 )
 
-config_setting(
-    name = "compiler_major_13",
-    flag_values = {":compiler_major": "13"},
-)
+COMPILER_MAJOR_VERSIONS = [
+    "13",
+    "14",
+    "15",
+]
 
-selects.config_setting_group(
-    name = "gcc_13_with_warnings",
-    match_all = [
-        "@rules_cc//cc/compiler:gcc",
-        ":compiler_major_13",
-        ":error_severity_warning",
-    ],
-)
+[
+    config_setting(
+        name = "compiler_major_{}".format(x),
+        flag_values = {":compiler_major": x},
+    )
+    for x in COMPILER_MAJOR_VERSIONS
+]
 
-selects.config_setting_group(
-    name = "gcc_13_with_errors",
-    match_all = [
-        "@rules_cc//cc/compiler:gcc",
-        ":compiler_major_13",
-        ":error_severity_error",
-    ],
-)
+[
+    selects.config_setting_group(
+        name = "gcc_{}_with_warnings".format(x),
+        match_all = [
+            "@rules_cc//cc/compiler:gcc",
+            ":compiler_major_{}".format(x),
+            ":error_severity_warning",
+        ],
+    )
+    for x in COMPILER_MAJOR_VERSIONS
+]
+
+[
+    selects.config_setting_group(
+        name = "gcc_{}_with_errors".format(x),
+        match_all = [
+            "@rules_cc//cc/compiler:gcc",
+            ":compiler_major_{}".format(x),
+            ":error_severity_error",
+        ],
+    )
+    for x in COMPILER_MAJOR_VERSIONS
+]
 
 # *****************************************************************************
 # The following sh_binary (and its prerequisite genrule) are used by drake-ci's
