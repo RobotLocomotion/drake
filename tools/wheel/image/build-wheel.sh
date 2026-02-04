@@ -170,5 +170,5 @@ if [[ "$(uname)" == "Darwin" ]]; then
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
-    auditwheel repair --plat manylinux_${GLIBC_VERSION}_x86_64 dist/drake*.whl
+    auditwheel repair --plat manylinux_${GLIBC_VERSION}_$(arch) dist/drake*.whl
 fi

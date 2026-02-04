@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import platform
 import sys
 
 from pydrake.all import MosekSolver
@@ -14,7 +15,9 @@ assert solver.enabled()
 # version, which is currently Python < 3.15. When that changes to a larger
 # version number, we should bump this up to match, and also grep tools/wheel
 # for other mentions of MOSEK version bounds and fix those as well.
-if sys.version_info[:2] < (3, 15):
+# Additionally, MOSEK is not currently supported for Linux aarch64 wheels.
+# (Apple Silicon is spelled 'arm64', so this doesn't apply there.)
+if sys.version_info[:2] < (3, 15) and platform.machine() != "aarch64":
     assert solver.available()
 else:
     assert not solver.available()
