@@ -3810,6 +3810,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// each point `Qi` in the set as measured and expressed in another frame A,
   /// as a function of the generalized positions q of the model.
   ///
+  /// Example of usage: Given two points Q0 and Q1 that are fixed to a frame B,
+  /// the code below calculates their positions from the world frame origin,
+  /// expressed in the world frame W.
+  ///
+  /// @code
+  ///  constexpr int num_position_vectors = 2;
+  ///  MatrixX<double> p_BQi(3, num_position_vectors);
+  ///  p_BQi.col(0) = Vector3<double>(1.1, 2.2, 3.3);
+  ///  p_BQi.col(1) = Vector3<double>(-9.8, 7.6, -5.43);
+  ///  MatrixX<double> p_WQi(3, num_position_vectors);
+  ///  const Frame<double>& frame_W = plant.world_frame();
+  ///  plant.CalcPointsPositions(*context_, frame_B, p_BQi, frame_W, &p_WQi);
+  /// @endcode
+  ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q of the model.
@@ -3817,10 +3831,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
   ///   given.
   /// @param[in] p_BQi
-  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿᵖ` with
-  ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
+  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿ` with
+  ///   `n` the number of points in the set. Each column of `p_BQi` corresponds
   ///   to a vector in ℝ³ holding the position of one of the points in the set
-  ///   as measured and expressed in frame B.
+  ///   as measured and expressed in frame B. Each column of p_BQi is a position
+  ///   vector associated with one point Qi, and the number of columns in p_BQi
+  ///   is the number n of points.
   /// @param[in] frame_A
   ///   The frame A in which it is desired to compute the positions `p_AQi` of
   ///   each point `Qi` in the set.
@@ -3828,12 +3844,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   The output positions of each point `Qi` now computed as measured and
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
-  ///   **must** be in `ℝ³ˣⁿᵖ`.
+  ///   **must** be in `ℝ³ˣⁿ`. Each column of p_AQi is a position vector
+  ///   associated with one point Qi, and the number of columns in p_BQi is the
+  ///   number n of points.
   ///
   /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
-  /// method will throw a std::exception. This method also throws
-  /// a std::exception if `p_BQi` and `p_AQi` differ in the number
-  /// of columns.
+  /// method will throw a std::exception. This method also throws a
+  /// std::exception if `p_BQi` and `p_AQi` differ in the number of columns.
   void CalcPointsPositions(const systems::Context<T>& context,
                            const Frame<T>& frame_B,
                            const Eigen::Ref<const MatrixX<T>>& p_BQi,
@@ -3843,6 +3860,52 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(p_AQi != nullptr);
     return internal_tree().CalcPointsPositions(context, frame_B, p_BQi, frame_A,
                                                p_AQi);
+  }
+
+  /// For a set of n points Qi (i = 0, ... n-1) that are regarded as fixed on a
+  /// frame B, calculates the velocities v_AQi_E of Qi measured in a frame A and
+  /// expressed in a frame E.
+  ///
+  /// Example of usage: Given two points Q0 and Q1 that are fixed to a frame B,
+  /// the code below calculates their velocities measured and expressed in the
+  /// world frame W.
+  ///
+  /// @code
+  ///  constexpr int num_position_vectors = 2;
+  ///  MatrixX<double> p_BQi(3, num_position_vectors);
+  ///  p_BQi.col(0) = Vector3<double>(1.1, 2.2, 3.3);
+  ///  p_BQi.col(1) = Vector3<double>(-9.8, 7.6, -5.43);
+  ///  MatrixX<double> v_WQi_W(3, num_position_vectors);
+  ///  const Frame<double>& frame_W = plant.world_frame();
+  ///  plant.CalcPointsVelocities(*context_, frame_B, p_BQi, frame_W, frame_W,
+  ///                             &v_WQi_W);
+  /// @endcode
+  ///
+  /// @param[in] context Contains the state of the multibody system, including
+  /// the generalized positions q and the generalized velocities v.
+  /// @param[in] frame_B The frame B in which each point Qi is fixed and whose
+  /// frame origin Bo is the starting point for position vectors in p_BQi.
+  /// frame_B is also the expressed-in-frame for position vectors p_BQi.
+  /// @param[in] p_BQi Position vectors from Bo (frame B's origin) to each
+  /// point Qi (i = 0, ... n-1), expressed in frame B. Each column of p_BQi
+  /// is a position vector associated with one point Qi, and the number of
+  /// columns in p_BQi is the number n of points.
+  /// @param[in] frame_A The frame in which the velocities are to be measured.
+  /// @param[in] frame_E The frame in which the velocities are to be expressed.
+  /// @param[out] v_AQi_E The velocities of each point Qi (i = 0, ... n-1)
+  /// measured in frame A and expressed in frame E. Each column of v_AQi_E is a
+  /// translational velocity vector associated with one point Qi, and the
+  /// number of columns in v_AQi_E is the number n of points.
+  /// @throws std::exception if p_BQi and v_AQi_E do not have three rows (are
+  /// not 3 element vectors) or do not have the same number (n > 0) of columns.
+  void CalcPointsVelocities(const systems::Context<T>& context,
+                            const Frame<T>& frame_B,
+                            const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                            const Frame<T>& frame_A, const Frame<T>& frame_E,
+                            EigenPtr<MatrixX<T>> v_AQi_E) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcPointsVelocities(context, frame_B, p_BQi,
+                                                frame_A, frame_E, v_AQi_E);
   }
 
   /// Calculates the total mass of all bodies in this MultibodyPlant.

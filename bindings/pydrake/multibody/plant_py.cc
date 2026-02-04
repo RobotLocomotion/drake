@@ -366,6 +366,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
     cls  // BR
+        .def(
+            "CalcPointsVelocities",
+            [](const Class* self, const Context<T>& context,
+                const Frame<T>& frame_B,
+                const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              MatrixX<T> v_AQi_E(p_BQi.rows(), p_BQi.cols());
+              self->CalcPointsVelocities(
+                  context, frame_B, p_BQi, frame_A, frame_E, &v_AQi_E);
+              return v_AQi_E;
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
+            py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcPointsVelocities.doc);
+    cls  // BR
         .def("CalcTotalMass",
             overload_cast_explicit<T, const Context<T>&>(&Class::CalcTotalMass),
             py::arg("context"), cls_doc.CalcTotalMass.doc_1args)
