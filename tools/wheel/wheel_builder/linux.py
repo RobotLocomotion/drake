@@ -4,7 +4,7 @@
 import atexit
 from datetime import datetime, timezone
 import os
-import pathlib
+import platform
 import subprocess
 import sys
 import tarfile
@@ -27,11 +27,13 @@ _images_to_remove = []
 
 tag_base = "pip-drake"
 
+ARCH = platform.machine()
+
 # This is the complete set of defined targets (i.e. potential wheels). By
-# default, all targets are built, but the user may down-select from this set.
-# The platform alias is used for Docker tag names, and, when combined with the
-# Python version, must be unique.
-targets = (
+# default, all targets matching the currently running architecture are built,
+# but the user may down-select from this set. The platform alias is used for
+# Docker tag names, and, when combined with the Python version, must be unique.
+targets = {
     # NOTE: adding or removing a python version?  Please also check the
     # following locations for updates:
     # * the artifact tallies in doc/_pages/release_playbook.md (search
@@ -44,50 +46,66 @@ targets = (
     # * the Python versions supported by MOSEK, in tools/wheel/setup.py. If
     #   there is any Python version supported by Drake, but not MOSEK, a note
     #   should be added to the aforementioned installation documentation.
-    Target(
-        build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-        test_platform=Platform("ubuntu", "22.04", "jammy"),
-        python_version_tuple=(3, 10, 16),
-        python_sha="bfb249609990220491a1b92850a07135ed0831e41738cf681d63cf01b2a8fbd1",  # noqa
+    "x86_64": (
+        Target(
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            test_platform=Platform("ubuntu", "22.04", "jammy"),
+            python_version_tuple=(3, 10, 16),
+            python_sha="bfb249609990220491a1b92850a07135ed0831e41738cf681d63cf01b2a8fbd1",  # noqa
+        ),
+        Target(
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            test_platform=Platform("ubuntu", "22.04", "jammy"),
+            python_version_tuple=(3, 11, 11),
+            python_sha="2a9920c7a0cd236de33644ed980a13cbbc21058bfdc528febb6081575ed73be3",  # noqa
+        ),
+        Target(
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            test_platform=Platform("ubuntu", "24.04", "noble"),
+            python_version_tuple=(3, 12, 8),
+            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+        ),
+        Target(
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been released.
+            test_platform=Platform("ubuntu", "25.10", "questing"),
+            python_version_tuple=(3, 13, 0),
+            python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
+        ),
+        Target(
+            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
+            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been released.
+            test_platform=Platform("ubuntu", "25.10", "questing"),
+            python_version_tuple=(3, 14, 0),
+            python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
+        ),
     ),
-    Target(
-        build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-        test_platform=Platform("ubuntu", "22.04", "jammy"),
-        python_version_tuple=(3, 11, 11),
-        python_sha="2a9920c7a0cd236de33644ed980a13cbbc21058bfdc528febb6081575ed73be3",  # noqa
+    "aarch64": (
+        Target(
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            test_platform=Platform("ubuntu", "24.04", "noble"),
+            python_version_tuple=(3, 12, 8),
+            python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
+        ),
+        Target(
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been released.
+            test_platform=Platform("ubuntu", "25.10", "questing"),
+            python_version_tuple=(3, 13, 0),
+            python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
+        ),
+        Target(
+            build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
+            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been released.
+            test_platform=Platform("ubuntu", "25.10", "questing"),
+            python_version_tuple=(3, 14, 0),
+            python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
+        ),
     ),
-    Target(
-        build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-        test_platform=Platform("ubuntu", "24.04", "noble"),
-        python_version_tuple=(3, 12, 8),
-        python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
-    ),
-    Target(
-        build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-        # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been released.
-        test_platform=Platform("ubuntu", "25.10", "questing"),
-        python_version_tuple=(3, 13, 0),
-        python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
-    ),
-    Target(
-        build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-        # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been released.
-        test_platform=Platform("ubuntu", "25.10", "questing"),
-        python_version_tuple=(3, 14, 0),
-        python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
-    ),
-)
+}[ARCH]
 glibc_versions = {
     "almalinux9": "2_34",
 }
-
-
-def _path_depth(path):
-    """
-    Return the number of components (i.e. the "depth") of `path`.
-    """
-    offset = 1 if os.path.isabs(path) else 0  # Strip leading '/'.
-    return len(pathlib.Path(path).parts[offset:])
 
 
 def _docker(*args, stdout=None):
@@ -291,7 +309,7 @@ def _test_wheel(target, identifier, options):
     wheel = wheel_name(
         python_version=target.python_tag,
         wheel_version=options.version,
-        wheel_platform=f"manylinux_{glibc}_x86_64",
+        wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
 
     test_image = _tagname(target, TEST, f"test-{identifier}")
