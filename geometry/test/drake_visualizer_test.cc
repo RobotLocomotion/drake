@@ -953,12 +953,6 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
 /* Confirms that the documented prerequisites do bad things.  */
 TYPED_TEST(DrakeVisualizerTest, BadParameters) {
   using T = TypeParam;
-  // Zero publish period.
-  EXPECT_THROW(DrakeVisualizer<T>(&(this->lcm_),
-                                  DrakeVisualizerParams{0, Role::kIllustration,
-                                                        Rgba{1, 1, 1, 1}}),
-               std::exception);
-
   // Negative publish period.
   EXPECT_THROW(
       DrakeVisualizer<T>(

@@ -1,3 +1,4 @@
+
 #include "drake/multibody/cenic/cenic_integrator.h"
 
 #include <limits>
@@ -18,6 +19,7 @@
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -29,6 +31,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using geometry::Meshcat;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
@@ -70,7 +73,10 @@ constexpr char kBallOnTableMjcf[] = R"""(
 /* A base test case with utilities for setting up a CENIC simulation. */
 class SimulationTestScenario : public testing::Test {
  protected:
-  void SetUp() override { AddModels(); }
+  void SetUp() override {
+    meshcat_ = std::make_shared<Meshcat>();
+    AddModels();
+  }
 
   /* Add models to the plant. */
   virtual void AddModels() = 0;
@@ -83,6 +89,13 @@ class SimulationTestScenario : public testing::Test {
     if (!plant_.is_finalized()) {
       plant_.Finalize();
     }
+
+    visualization::VisualizationConfig vis_config;
+    // Don't create visualizer events that interfere with the integrator's step
+    // size selection. Use the magic zero value to get per-step updates.
+    vis_config.publish_period = 0.0;
+    ApplyVisualizationConfig(vis_config, builder_.get(), nullptr, &plant_,
+                             nullptr, meshcat_);
 
     diagram_ = builder_->Build();
     std::unique_ptr<Context<double>> context = diagram_->CreateDefaultContext();
@@ -111,6 +124,7 @@ class SimulationTestScenario : public testing::Test {
   CenicIntegrator<double>* integrator_{nullptr};
 
   // Always available.
+  std::shared_ptr<Meshcat> meshcat_;
   MultibodyPlant<double>& plant_{
       AddMultibodyPlantSceneGraph(builder_.get(), 0.0).plant};
 };

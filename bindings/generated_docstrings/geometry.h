@@ -1167,7 +1167,7 @@ Parameter ``params``:
     The set of parameters to control this system's behavior.
 
 Raises:
-    RuntimeError if ``params.publish_period <= 0``.
+    RuntimeError if ``params.publish_period < 0``.
 
 Raises:
     RuntimeError if ``params.role == Role::kUnassigned``.)""";
@@ -5268,7 +5268,7 @@ Parameter ``params``:
     The set of parameters to control this system's behavior.
 
 Raises:
-    RuntimeError if ``params.publish_period <= 0``.
+    RuntimeError if ``params.publish_period < 0``.
 
 Raises:
     RuntimeError if ``params.role == Role::kUnassigned``.)""";
