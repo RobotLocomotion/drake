@@ -79,6 +79,9 @@ PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
 MOSEK_ENABLED=1
 [ ${PYTHON_MINOR} -ge 15 ] && MOSEK_ENABLED=
 
+# MOSEK is not currently supported for Linux aarch64 wheels.
+[ "$(arch)" == "aarch64" ] && MOSEK_ENABLED=
+
 if [[ "$(uname)" == "Darwin" && -n "${MOSEK_ENABLED}" ]]; then
     # MOSEK is "sort of" third party, but is procured as part of Drake's build
     # and ends up in /tmp/drake-wheel-build/drake-dist/. It should end up in
@@ -170,5 +173,5 @@ if [[ "$(uname)" == "Darwin" ]]; then
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
-    auditwheel repair --plat manylinux_${GLIBC_VERSION}_x86_64 dist/drake*.whl
+    auditwheel repair --plat manylinux_${GLIBC_VERSION}_$(arch) dist/drake*.whl
 fi

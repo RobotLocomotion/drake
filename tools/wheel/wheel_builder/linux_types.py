@@ -2,6 +2,7 @@
 # //tools/wheel:builder for the user interface.
 
 from dataclasses import dataclass
+import platform
 from typing import Tuple
 
 
@@ -13,6 +14,7 @@ class Role:
 @dataclass
 class Platform:
     name: str
+    architecture: str
     version: str
     alias: str
 
@@ -37,3 +39,5 @@ class Target:
 
 BUILD = Role("build")
 TEST = Role("test")
+
+ARCH = platform.machine()
