@@ -77,27 +77,34 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
+# The GCC_13_OR_NEWER_FLAGS will be enabled for all C++ rules in the project
+# when building with gcc 13 through the newest version in the official support
+# matrix. See GCC_VERSION_SPECIFIC_FLAGS below for details.
+GCC_13_OR_NEWER_FLAGS = [
+    "-Werror=pessimizing-move",
+    "-Werror=uninitialized",
+    # This falsely dings code that returns const references, e.g., our
+    # MbP style for "add element" or "find by name" member functions.
+    "-Wno-dangling-reference",
+    # This falsely dings code inside Eigen.
+    "-Wno-maybe-uninitialized",
+    # This falsely dings code inside libstdc++.
+    "-Wno-stringop-overflow",
+    # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
+    # Eigen uses 16-byte alignment, which these flags doesn't account for.
+    "-Wno-array-bounds",
+    "-Wno-stringop-overread",
+]
+
 # The GCC_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
 # project when building with gcc of the specified major version, but only if
 # the --@drake//tools/cc_toolchain:compiler_major=NN flag has been set on the
 # command line or in an rcfile. (It typically will be except when Drake is used
 # as a Bazel external.)
 GCC_VERSION_SPECIFIC_FLAGS = {
-    13: [
-        "-Werror=pessimizing-move",
-        "-Werror=uninitialized",
-        # This falsely dings code that returns const references, e.g., our
-        # MbP style for "add element" or "find by name" member functions.
-        "-Wno-dangling-reference",
-        # This falsely dings code inside Eigen.
-        "-Wno-maybe-uninitialized",
-        # This falsely dings code inside libstdc++.
-        "-Wno-stringop-overflow",
-        # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
-        # Eigen uses 16-byte alignment, which these flags doesn't account for.
-        "-Wno-array-bounds",
-        "-Wno-stringop-overread",
-    ],
+    13: GCC_13_OR_NEWER_FLAGS,
+    14: GCC_13_OR_NEWER_FLAGS,
+    15: GCC_13_OR_NEWER_FLAGS,
 }
 
 def _defang(flags):

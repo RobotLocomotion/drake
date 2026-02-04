@@ -190,6 +190,15 @@ GTEST_TEST(ChebyshevPolynomialTest, UnorderedMapOfChebyshevPolynomial) {
   EXPECT_EQ(it0->second, 1);
 }
 
+GTEST_TEST(ChebyshevPolynomial, ToStringFmtFormatter) {
+  const Variable x("x");
+  EXPECT_EQ(fmt::to_string(ChebyshevPolynomial(x, 0)), "T0()");
+  EXPECT_EQ(fmt::to_string(ChebyshevPolynomial(x, 2)), "T2(x)");
+}
+
+// Remove OperatorOut test with deprecation 2026-06-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(ChebyshevPolynomial, OperatorOut) {
   const Variable x("x");
   std::ostringstream os1;
@@ -200,6 +209,7 @@ GTEST_TEST(ChebyshevPolynomial, OperatorOut) {
   os2 << ChebyshevPolynomial(x, 2);
   EXPECT_EQ(fmt::format("{}", os2.str()), "T2(x)");
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(ChebyshevPolynomialTest, ChebyshevPolynomialLess) {
   // Test operator<

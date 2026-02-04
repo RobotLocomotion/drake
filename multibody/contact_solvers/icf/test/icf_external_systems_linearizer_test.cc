@@ -28,6 +28,8 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using math::RigidTransformd;
+using math::RollPitchYawd;
 using systems::BasicVector;
 using systems::ConstantVectorSource;
 using systems::Context;
@@ -134,8 +136,6 @@ constexpr char kActuatedPendulumXml[] = R"""(
 </mujoco>
 )""";
 
-// TODO(#23918) We should test an external controller where qdot != v.
-
 // A feedback "controller" that takes the plant's state_output_port as input and
 // produces applied spatial forces as output. It assumes a 1-dof plant -- a ball
 // with a prismatic joint to the world moving on the +x axis.
@@ -219,6 +219,92 @@ TEST_F(IcfExternalSystemsLinearizerTest, ExternalSpatialForce) {
                             K_expected(0) * v0};
   EXPECT_TRUE(CompareMatrices(K, K_expected, 1e-8));
   EXPECT_TRUE(CompareMatrices(b, b_expected, 1e-8));
+}
+
+// A feedback "controller" that takes the plant's state_output_port as input and
+// produces applied spatial forces as output. It assumes a plant with a
+// quaternion floating joint.
+class QuaternionSpatialForceFeedback final
+    : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionSpatialForceFeedback);
+
+  explicit QuaternionSpatialForceFeedback(BodyIndex body_index)
+      : body_index_(body_index) {
+    const int nq = 7;
+    const int nv = 6;
+    DeclareVectorInputPort("in", nq + nv);
+    DeclareAbstractOutputPort("out",
+                              &QuaternionSpatialForceFeedback::CalcOutput);
+  }
+
+  static Vector6d Kd() { return Vector6d::LinSpaced(0.95, 1.05); }
+
+ private:
+  void CalcOutput(
+      const Context<double>& context,
+      std::vector<ExternallyAppliedSpatialForce<double>>* output) const {
+    // Initialize the output.
+    output->resize(1);
+    ExternallyAppliedSpatialForce<double>& result = output->at(0);
+
+    // Our input is connected to the the plant's state_output_port.
+    const Vector6d v = get_input_port().Eval(context).segment(7, 6);
+
+    // The feedback term is f = -(Kd v).
+    const Vector6d f = -Kd().array() * v.array();
+
+    result.body_index = body_index_;
+    result.p_BoBq_B = Vector3d::Zero();
+    result.F_Bq_W = SpatialForce<double>(f);
+  }
+
+  const BodyIndex body_index_;
+};
+
+// Use a plant where qdot != v. We'll simply check for non-crashing (i.e., that
+// the Eigen dimensions matched at runtime) and that Kd is recovered. We don't
+// check the details of the the mapping math, assuming that so long as the sizes
+// match the implementation is correctly formulated.
+TEST_F(IcfExternalSystemsLinearizerTest, FloatingBall) {
+  const RigidBody<double>& ball =
+      plant_.AddRigidBody("ball", default_model_instance(),
+                          SpatialInertia<double>::SolidSphereWithMass(
+                              /* mass = */ 1.0, /* radius = */ 0.01));
+  plant_.Finalize();
+  auto controller =
+      builder_->AddSystem<QuaternionSpatialForceFeedback>(ball.index());
+  builder_->Connect(plant_.get_state_output_port(),
+                    controller->get_input_port());
+  builder_->Connect(controller->get_output_port(),
+                    plant_.get_applied_spatial_force_input_port());
+  Build();
+
+  // Set an arbitrary non-zero initial state.
+  plant_.SetFloatingBaseBodyPoseInWorldFrame(
+      plant_context_, ball,
+      RigidTransformd(RollPitchYawd(Vector3d::LinSpaced(-1, 3)),
+                      Vector3d::LinSpaced(22, 33)));
+  plant_.SetFreeBodySpatialVelocity(
+      plant_context_, ball,
+      SpatialVelocity<double>(Vector6d::LinSpaced(-10, 10)));
+
+  // Linearize the non-plant dynamics around the current state.
+  const double h = 0.01;
+  const auto result = LinearizeExternalSystem(h);
+  ASSERT_TRUE(result.external_feedback.has_value());
+  EXPECT_FALSE(result.actuation_feedback.has_value());
+  const VectorXd& K = result.external_feedback->K;
+  const VectorXd& b = result.external_feedback->b;
+
+  // Check that the feedback was linearized as expected. The forward differences
+  // step size in the implementation is approximately sqrt(eps), so we'll allow
+  // 10x roundoff error in this sanity check.
+  const Vector6d K_expected = QuaternionSpatialForceFeedback::Kd();
+  const Vector6d b_expected = Vector6d::Zero();
+  const double tol = 10 * std::sqrt(std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(CompareMatrices(K, K_expected, tol));
+  EXPECT_TRUE(CompareMatrices(b, b_expected, tol));
 }
 
 // Test base for switching between actuation feedback and external feedback.
