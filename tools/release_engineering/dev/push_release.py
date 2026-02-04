@@ -410,7 +410,7 @@ def main(args: List[str]) -> None:
 
     release = repo.release_from_tag(release_tag)
 
-    if release_tag is None:
+    if release is None:
         _fatal(f"ERROR: GitHub release {release_tag.name!r} does NOT exist.")
 
     # Set up shared state
