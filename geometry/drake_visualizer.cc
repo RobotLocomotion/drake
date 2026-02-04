@@ -538,9 +538,9 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
   // This constructor should not do anything that requires lcm_ (or owned_lcm_)
   // to be non-nullptr. By design, both being nullptr is a desired, expected
   // possibility during the scope of the constructor.
-  if (params_.publish_period <= 0) {
+  if (params_.publish_period < 0) {
     throw std::runtime_error(fmt::format(
-        "DrakeVisualizer requires a positive publish period; {} was given",
+        "DrakeVisualizer requires a non-negative publish period; {} was given",
         params_.publish_period));
   }
   if (params_.role == Role::kUnassigned) {
@@ -550,8 +550,12 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
         "illustration");
   }
 
-  this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
-                                    &DrakeVisualizer<T>::SendGeometryMessage);
+  if (params_.publish_period > 0.0) {
+    this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
+                                      &DrakeVisualizer<T>::SendGeometryMessage);
+  } else {
+    this->DeclarePerStepPublishEvent(&DrakeVisualizer<T>::SendGeometryMessage);
+  }
   this->DeclareForcedPublishEvent(&DrakeVisualizer<T>::SendGeometryMessage);
 
   query_object_input_port_ =

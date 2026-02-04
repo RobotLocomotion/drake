@@ -55,8 +55,12 @@ ContactVisualizer<T>::ContactVisualizer(std::shared_ptr<Meshcat> meshcat,
   hydroelastic_visualizer_ = std::make_unique<HydroelasticContactVisualizer>(
       meshcat_, std::move(hydro_params));
 
-  this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
-                                    &ContactVisualizer::UpdateMeshcat);
+  if (params_.publish_period > 0.0) {
+    this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
+                                      &ContactVisualizer::UpdateMeshcat);
+  } else {
+    this->DeclarePerStepPublishEvent(&ContactVisualizer::UpdateMeshcat);
+  }
   this->DeclareForcedPublishEvent(&ContactVisualizer::UpdateMeshcat);
 
   if (params_.delete_on_initialization_event) {

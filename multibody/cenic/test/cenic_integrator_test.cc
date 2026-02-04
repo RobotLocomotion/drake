@@ -91,8 +91,8 @@ class SimulationTestScenario : public testing::Test {
 
     VisualizationConfig vis_config;
     // Don't create visualizer events that interfere with the integrator's step
-    // size selection.
-    vis_config.publish_period = 1e9;
+    // size selection. Use the magic zero value to get per-step updates.
+    vis_config.publish_period = 0.0;
     ApplyVisualizationConfig(vis_config, builder_.get(), nullptr, &plant_,
                              nullptr, meshcat_);
 
