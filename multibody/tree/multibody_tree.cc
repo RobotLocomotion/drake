@@ -2134,6 +2134,33 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcPointsVelocities(
+    const systems::Context<T>& context, const Frame<T>& frame_B,
+    const Eigen::Ref<const MatrixX<T>>& p_BoQi_B, const Frame<T>& frame_A,
+    const Frame<T>& frame_E, EigenPtr<MatrixX<T>> v_AQi_E) const {
+  DRAKE_THROW_UNLESS(p_BoQi_B.rows() == 3);
+  DRAKE_THROW_UNLESS(v_AQi_E != nullptr);
+  DRAKE_THROW_UNLESS(v_AQi_E->rows() == 3);
+  DRAKE_THROW_UNLESS(v_AQi_E->cols() == p_BoQi_B.cols());
+
+  // The calculation used below is: v_AQi_E = v_ABo_E + ω_AB_E x p_BoQi_E.
+  // The R_EB rotation matrix is used to express p_BoQi_B in terms of frame E.
+  const SpatialVelocity<T> V_ABo_E =
+      frame_B.CalcSpatialVelocity(context, frame_A, frame_E);
+  const RotationMatrix<T> R_EB =
+      CalcRelativeRotationMatrix(context, frame_E, frame_B);
+  for (int col = 0; col < p_BoQi_B.cols(); ++col) {
+    const Vector3<T> p_BoQi_E = R_EB * p_BoQi_B.col(col);
+    v_AQi_E->col(col) = V_ABo_E.Shift(p_BoQi_E).translational();
+  }
+
+  // TODO(Mitiguy) A few possible optimizations are below. Implement as useful.
+  // If ω_AB_E is zero, v_AQi_E = v_ABo_E + (ω_AB_E = 0) x p_BoQi_E = v_ABo_E.
+  // If R_EB = [I₃₃], form v_AQi_E = v_ABo_E + ω_AB_E x p_BoQi_B
+  // rather than as        v_AQi_E = v_ABo_E + ω_AB_E x p_BoQi_E.
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
   T total_mass = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {

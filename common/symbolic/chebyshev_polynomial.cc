@@ -164,14 +164,18 @@ ChebyshevPolynomial::Differentiate() const {
     return derivative;
   }
 }
+std::string to_string(const ChebyshevPolynomial& p) {
+  std::string result;
+  if (p.degree() == 0) {
+    result.append("T0()");
+  } else {
+    result.append(fmt::format("T{}({})", p.degree(), p.var()));
+  }
+  return result;
+}
 
 std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p) {
-  if (p.degree() == 0) {
-    out << "T0()";
-  } else {
-    out << "T" << p.degree() << "(" << fmt::to_string(p.var()) << ")";
-  }
-  return out;
+  return out << fmt::to_string(p);
 }
 
 bool ChebyshevPolynomial::operator<(const ChebyshevPolynomial& other) const {

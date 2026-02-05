@@ -241,15 +241,20 @@ std::map<ChebyshevBasisElement, double> operator*(
   return result;
 }
 
-std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m) {
+std::string to_string(const ChebyshevBasisElement& m) {
+  std::string result;
   if (m.var_to_degree_map().empty()) {
-    out << "T0()";
+    result.append("T0()");
   } else {
     for (const auto& [var, degree] : m.var_to_degree_map()) {
-      out << ChebyshevPolynomial(var, degree);
+      result.append(fmt::to_string(ChebyshevPolynomial(var, degree)));
     }
   }
-  return out;
+  return result;
+}
+
+std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m) {
+  return out << fmt::to_string(m);
 }
 }  // namespace symbolic
 }  // namespace drake
