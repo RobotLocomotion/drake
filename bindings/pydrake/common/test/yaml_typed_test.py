@@ -832,17 +832,19 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         basic = yaml_load_typed(
             schema=PromotionBasicStruct, data=data, **options
         )
-        self.assertEqual(basic.float_type, 1.0)
-        self.assertEqual(basic.np_type, np.array([1.0]))
-        self.assertEqual(basic.path_type, Path("/path/to/nowhere"))
-        self.assertEqual(basic.truthy_type, True)
         union = yaml_load_typed(
             schema=PromotionVariantStruct, data=data, **options
         )
-        self.assertEqual(union.float_type, 1.0)
-        self.assertEqual(union.np_type, np.array([1.0]))
-        self.assertEqual(union.path_type, Path("/path/to/nowhere"))
-        self.assertEqual(union.truthy_type, True)
+        for x, remark in [(basic, "basic"), (union, "union")]:
+            with self.subTest(remark=remark):
+                self.assertEqual(x.float_type, 1.0)
+                self.assertIsInstance(x.float_type, float)
+                self.assertEqual(x.np_type, np.array([1.0]))
+                self.assertIsInstance(x.np_type, np.ndarray)
+                self.assertEqual(x.path_type, Path("/path/to/nowhere"))
+                self.assertIsInstance(x.path_type, Path)
+                self.assertEqual(x.truthy_type, True)
+                self.assertIsInstance(x.truthy_type, bool)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_np_vector(self, *, options):
