@@ -405,7 +405,7 @@ struct PromotionBasicStruct {
   // This struct matches PromotionVariantStruct without the variant options.
   double double_type{kNominalDouble};
   Eigen::VectorXd eigen_type{Eigen::VectorXd::Constant(1, kNominalDouble)};
-  std::filesystem::path path_type;
+  std::filesystem::path path_type{"/path/to/nowhere"};
   bool truthy_type{false};
 };
 

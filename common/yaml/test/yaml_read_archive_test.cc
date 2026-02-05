@@ -808,13 +808,13 @@ TEST_P(YamlReadArchiveTest, VariantTypePromotion) {
 doc:
   double_type: 1
   eigen_type: [1]
-  path_type: /path/to/nowhere
+  path_type: /path/to/somewhere
   truthy_type: true
 )""";
 
   const double expected_double = 1.0;
   const Eigen::VectorXd expected_eigen = Eigen::VectorXd::Constant(1, 1.0);
-  const std::filesystem::path expected_path("/path/to/nowhere");
+  const std::filesystem::path expected_path("/path/to/somewhere");
   const bool expected_bool = true;
 
   const auto& basic = AcceptNoThrow<PromotionBasicStruct>(Load(doc));

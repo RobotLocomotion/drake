@@ -64,7 +64,7 @@ class BytesStruct:
 
 @dc.dataclass
 class PathStruct:
-    value: Path = "/path/to/nowhere"
+    value: Path = Path("/path/to/nowhere")
     __eq__ = _dataclass_eq
 
 
@@ -74,7 +74,7 @@ class AllScalarsStruct:
     some_bytes: bytes = b"\x00\x01\x02"
     some_float: float = nan
     some_int: int = 11
-    some_path: Path = "/path/to/nowhere"
+    some_path: Path = Path("/path/to/nowhere")
     some_str: str = "nominal_string"
     __eq__ = _dataclass_eq
 
@@ -187,7 +187,7 @@ class PromotionBasicStruct:
     # This struct matches PromotionVariantStruct without the variant options.
     float_type: float = nan
     np_type: np.ndarray = dc.field(default_factory=lambda: np.array([nan]))
-    path_type: Path = dc.field(default_factory=Path)
+    path_type: Path = dc.field(default_factory=lambda: Path("/path/to/nowhere"))
     truthy_type: bool = False
 
 
@@ -197,7 +197,9 @@ class PromotionVariantStruct:
     np_type: np.ndarray | FloatStruct = dc.field(
         default_factory=lambda: np.array([nan])
     )
-    path_type: Path | FloatStruct = dc.field(default_factory=Path)
+    path_type: Path | FloatStruct = dc.field(
+        default_factory=lambda: Path("/path/to/nowhere")
+    )
     truthy_type: bool | FloatStruct = False
 
 
@@ -826,7 +828,7 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         data = dedent("""
         float_type: 1
         np_type: [1]
-        path_type: /path/to/nowhere
+        path_type: /path/to/somewhere
         truthy_type: true
         """)
         basic = yaml_load_typed(
@@ -841,7 +843,7 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
                 self.assertIsInstance(x.float_type, float)
                 self.assertEqual(x.np_type, np.array([1.0]))
                 self.assertIsInstance(x.np_type, np.ndarray)
-                self.assertEqual(x.path_type, Path("/path/to/nowhere"))
+                self.assertEqual(x.path_type, Path("/path/to/somewhere"))
                 self.assertIsInstance(x.path_type, Path)
                 self.assertEqual(x.truthy_type, True)
                 self.assertIsInstance(x.truthy_type, bool)
