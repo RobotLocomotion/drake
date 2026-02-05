@@ -193,12 +193,12 @@ class PromotionBasicStruct:
 
 @dc.dataclass
 class PromotionVariantStruct:
-    float_type: float | bytes = nan
-    np_type: np.ndarray | bytes = dc.field(
+    float_type: float | FloatStruct = nan
+    np_type: np.ndarray | FloatStruct = dc.field(
         default_factory=lambda: np.array([nan])
     )
-    path_type: Path | bytes = dc.field(default_factory=Path)
-    truthy_type: bool | bytes = False
+    path_type: Path | FloatStruct = dc.field(default_factory=Path)
+    truthy_type: bool | FloatStruct = False
 
 
 @dc.dataclass

@@ -803,6 +803,33 @@ TEST_P(YamlReadArchiveTest, VariantMissing) {
   EXPECT_EQ(std::get<double>(x.value), kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, VariantTypePromotion) {
+  const std::string doc = R"""(
+doc:
+  double_type: 1
+  eigen_type: [1]
+  path_type: /path/to/nowhere
+  truthy_type: true
+)""";
+
+  const double expected_double = 1.0;
+  const Eigen::VectorXd expected_eigen = Eigen::VectorXd::Constant(1, 1.0);
+  const std::filesystem::path expected_path("/path/to/nowhere");
+  const bool expected_bool = true;
+
+  const auto& basic = AcceptNoThrow<PromotionBasicStruct>(Load(doc));
+  EXPECT_EQ(basic.double_type, expected_double);
+  EXPECT_EQ(basic.eigen_type, expected_eigen);
+  EXPECT_EQ(basic.path_type, expected_path);
+  EXPECT_EQ(basic.truthy_type, expected_bool);
+
+  const auto& variant = AcceptNoThrow<PromotionVariantStruct>(Load(doc));
+  EXPECT_EQ(std::get<0>(variant.double_type), expected_double);
+  EXPECT_EQ(std::get<0>(variant.eigen_type), expected_eigen);
+  EXPECT_EQ(std::get<0>(variant.path_type), expected_path);
+  EXPECT_EQ(std::get<0>(variant.truthy_type), expected_bool);
+}
+
 TEST_P(YamlReadArchiveTest, EigenVector) {
   const auto test = [](const std::string& value,
                        const Eigen::VectorXd& expected) {
