@@ -7,7 +7,6 @@ This program is only supported on Ubuntu Noble 24.04.
 
 import argparse
 import hashlib
-import json
 import os
 import re
 import shutil
@@ -19,7 +18,6 @@ from typing import Any, Dict, List, Optional
 import urllib.request
 
 import boto3
-import docker
 import github3
 from github3.repos.release import Asset, Release
 from github3.repos.repo import Repository
@@ -33,9 +31,6 @@ _GITHUB_REPO_URI = (
 
 _ARCHIVE_HASHES = {"sha256", "sha512"}
 
-_DOCKER_REGISTRY_API_URI = "https://registry.hub.docker.com/v2/repositories"
-_DOCKER_REPOSITORY_NAME = "robotlocomotion/drake"
-
 _AWS_BUCKET = "drake-packages"
 _AWS_PREFIX = "drake/release"
 
@@ -46,8 +41,6 @@ class _State:
         self._release = release
         self._scratch = tempfile.TemporaryDirectory()
         self._s3 = boto3.client("s3")
-        if options.push_docker:
-            self._docker = docker.APIClient()
 
         self.source_version = options.source_version
 
@@ -194,28 +187,6 @@ class _State:
             print(f"{name!r} {algorithm}: {digest}")
             self._upload_file_github(hashfile_name, hashfile_path)
 
-    def push_docker_tag(
-        self,
-        old_tag_name: str,
-        new_tag_name: str,
-        repository: str = _DOCKER_REPOSITORY_NAME,
-    ) -> None:
-        image = f"{repository}:{old_tag_name}"
-        if self._options.dry_run:
-            print(f"push {image!r} to {repository!r} as {new_tag_name!r}")
-        else:
-            self._begin("pulling", f"{repository}:{old_tag_name}")
-            self._docker.pull(repository, old_tag_name)
-            self._done()
-
-            self._docker.tag(image, repository, new_tag_name)
-
-            self._begin("pushing", f"{repository}:{new_tag_name}")
-            self._docker.push(repository, new_tag_name)
-            self._done()
-
-            self._docker.remove_image(image)
-
 
 def _fatal(msg: str, result: int = 1) -> None:
     width = shutil.get_terminal_size().columns
@@ -233,18 +204,6 @@ def _assert_tty() -> None:
             " various login credentials to be entered interactively."
         )
         sys.exit(1)
-
-
-def _assert_command_exists(name: str, package: str) -> None:
-    """
-    Asserts that an executable <name> exists,
-    or tells the user to install <package>.
-    """
-    if shutil.which(name) is None:
-        _fatal(
-            f"ERROR: `{name}` was not found. "
-            f"Fix with `apt-get install {package}`."
-        )
 
 
 def _test_non_empty(path) -> bool:
@@ -287,22 +246,6 @@ def _find_tag(repo: Repository, tag: str) -> Optional[RepoTag]:
     return None
 
 
-def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME) -> List[str]:
-    tags = []
-    uri = f"{_DOCKER_REGISTRY_API_URI}/{repository}/tags?page_size=1000"
-
-    while uri is not None:
-        with urllib.request.urlopen(uri) as response:
-            reply = json.load(response)
-
-        for t in reply["results"]:
-            tags.append(t["name"])
-
-        uri = reply.get("next")
-
-    return tags
-
-
 def _push_source(state: _State) -> None:
     """
     Downloads the source .tar artifact and pushes it to GitHub.
@@ -321,26 +264,8 @@ def _push_s3(state: _State) -> None:
         state.push_artifact(artifact, _AWS_BUCKET, dest_path)
 
 
-def _push_docker(state: _State) -> None:
-    """
-    Re-tags Docker staging images as release images.
-    """
-    tail = f"{state.source_version}-staging"
-    for tag_name in _list_docker_tags():
-        if tag_name.endswith(tail):
-            release_tag_name = tag_name.rsplit("-", 1)[0]
-            state.push_docker_tag(tag_name, release_tag_name)
-
-
 def main(args: List[str]) -> None:
     parser = argparse.ArgumentParser(prog="push_release", description=__doc__)
-    parser.add_argument(
-        "--docker",
-        dest="push_docker",
-        default=True,
-        action=argparse.BooleanOptionalAction,
-        help="Publish Docker images from staging images.",
-    )
     parser.add_argument(
         "--source",
         dest="push_source",
@@ -421,8 +346,6 @@ def main(args: List[str]) -> None:
         _push_source(state)
     if options.push_s3:
         _push_s3(state)
-    if options.push_docker:
-        _push_docker(state)
 
 
 if __name__ == "__main__":
