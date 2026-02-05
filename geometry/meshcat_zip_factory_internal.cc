@@ -2,7 +2,10 @@
 
 #include <utility>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <zip.h>
+#pragma GCC diagnostic pop
 
 #include "drake/common/drake_assert.h"
 
