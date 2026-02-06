@@ -3268,6 +3268,35 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.num_constraints(), 1)
 
     @numpy_compare.check_all_types
+    def test_tendon_constraint_api(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_approximation(
+            DiscreteContactApproximation.kSap)
+
+        # Add weld constraint.
+        body_A = plant.AddRigidBody(name="A")
+        body_B = plant.AddRigidBody(name="B")
+        revolute_joint = plant.AddJoint(RevoluteJoint_[T](
+                name="revolute_joint", frame_on_parent=plant.world_frame(),
+                frame_on_child=body_A.body_frame(), axis=[0, 0, 1],
+                damping=0.))
+        prismatic_joint = plant.AddJoint(PrismaticJoint_[T](
+                name="prismatic_joint", frame_on_parent=plant.world_frame(),
+                frame_on_child=body_B.body_frame(), axis=[0, 0, 1],
+                damping=0.))
+
+        plant.AddTendonConstraint(
+            joints=[revolute_joint.index(), prismatic_joint.index()],
+            a=[0.1, 0.2], offset=0.3, lower_limit=-1.2, upper_limit=3.4,
+            stiffness=5.6, damping=7.8)
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
     def test_remove_constraint(self, T):
         plant = MultibodyPlant_[T](0.01)
         plant.set_discrete_contact_approximation(
