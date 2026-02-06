@@ -22,7 +22,9 @@ python_required = [
     # builds wheels (see tools/wheel/wheel_builder/macos.py and
     # tools/wheel/wheel_builder/linux.py), then that should be documented for
     # users accordingly.
-    'Mosek==11.1.2 ; python_version < "3.15"',
+    # Additionally, MOSEK is not supported on Linux aarch64. (Apple Silicon
+    # is 'arm64', so the dependency will still exist there.)
+    'Mosek==11.1.2 ; python_version < "3.15" and platform_machine != "aarch64"',
 ]
 
 def find_data_files(*patterns):
