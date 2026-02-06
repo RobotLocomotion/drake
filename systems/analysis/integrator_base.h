@@ -1431,7 +1431,7 @@ class IntegratorBase {
    largest error in any state vector component.
    @returns the norm (a non-negative value)
    */
-  T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
+  virtual T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
 
   /**
    Calculates adjusted integrator step sizes toward keeping state variables

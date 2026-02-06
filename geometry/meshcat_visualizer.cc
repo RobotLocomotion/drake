@@ -35,8 +35,12 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
         "kIllustration");
   }
 
-  this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
-                                    &MeshcatVisualizer<T>::UpdateMeshcat);
+  if (params_.publish_period > 0) {
+    this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
+                                      &MeshcatVisualizer<T>::UpdateMeshcat);
+  } else {
+    this->DeclarePerStepPublishEvent(&MeshcatVisualizer<T>::UpdateMeshcat);
+  }
   this->DeclareForcedPublishEvent(&MeshcatVisualizer<T>::UpdateMeshcat);
 
   if (params_.delete_on_initialization_event) {
@@ -71,8 +75,15 @@ void MeshcatVisualizer<T>::Delete() const {
 template <typename T>
 MeshcatAnimation* MeshcatVisualizer<T>::StartRecording(
     bool set_transforms_while_recording) {
-  meshcat_->StartRecording(1.0 / params_.publish_period,
-                           set_transforms_while_recording);
+  if (params_.publish_period > 0.0) {
+    meshcat_->StartRecording(1.0 / params_.publish_period,
+                             set_transforms_while_recording);
+  } else {
+    // Use the (fictional) default frame rate when doing per-step updates.
+    static const MeshcatVisualizerParams kDefaultParams;
+    meshcat_->StartRecording(1.0 / kDefaultParams.publish_period,
+                             set_transforms_while_recording);
+  }
   return &meshcat_->get_mutable_recording();
 }
 
