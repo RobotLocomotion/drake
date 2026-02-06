@@ -78,6 +78,25 @@ div.groupText {
   font-family: 'DejaVu Sans Mono', monospace;
 }
 
+td.paramname {
+  white-space: normal;
+}
+
+td.memItemLeft {
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+td.memItemRight{
+  vertical-align: top;
+}
+
+table.memberdecls {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+
 .icon {
   font-family: 'DejaVu Sans', sans-serif;
 }
