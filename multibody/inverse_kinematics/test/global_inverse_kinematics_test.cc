@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -113,62 +116,99 @@ TEST_F(KukaTest, ReachableWithCost) {
   // Test a reachable cartesian pose, test global IK with costs.
   // The cost is on the deviation to a desired posture q. Since q itself satisfy
   // the kinematics constraints we impose, the optimal solution should be q.
-  const auto& joint_lb = plant_->GetPositionLowerLimits();
-  const auto& joint_ub = plant_->GetPositionUpperLimits();
-  DRAKE_DEMAND(plant_->num_positions() == 7);
-  Eigen::Matrix<double, 7, 1> q = joint_lb;
-  // Pick a posture within the joint bounds.
-  for (int i = 0; i < 7; ++i) {
-    q(i) += (joint_ub(i) - joint_lb(i)) * i / 10.0;
-  }
-  auto context = plant_->CreateDefaultContext();
-  plant_->SetPositions(context.get(), q);
-
-  math::RigidTransformd X_WEe = plant_->CalcRelativeTransform(
-      *context, plant_->world_frame(),
-      plant_->get_body(BodyIndex{ee_idx_}).body_frame());
-  math::RigidTransformd X_W0 = plant_->CalcRelativeTransform(
-      *context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0"));
-  // Constrain the global IK to reach the exact end effector pose as the
-  // posture q.
-  global_ik_.AddWorldPositionConstraint(ee_idx_,              // body index
-                                        Vector3d::Zero(),     // p_BQ
-                                        X_WEe.translation(),  // lower bound
-                                        X_WEe.translation(),  // upper bound
-                                        RigidTransformd());
-  global_ik_.AddWorldRelativePositionConstraint(
-      ee_idx_, Vector3d::Zero(), plant_->GetBodyByName("iiwa_link_0").index(),
-      Vector3d::Zero(),
-      X_WEe.translation() - X_W0.translation(),  // lower bound
-      X_WEe.translation() - X_W0.translation(),  // upper bound
-      RigidTransformd());
-  global_ik_.AddWorldOrientationConstraint(
-      ee_idx_,                                        // body index
-      Eigen::Quaterniond(X_WEe.rotation().matrix()),  // desired orientation
-      0);                                             // tolerance.
 
   solvers::GurobiSolver gurobi_solver;
+  if (!gurobi_solver.available()) {
+    return;
+  }
 
-  if (gurobi_solver.available()) {
+  Eigen::VectorXd q_no_cost;
+  solvers::MathematicalProgramResult result;
+  for (int cost_type = 0; cost_type <= 3; ++cost_type) {
+    // cost_type == 0 corresponds to AddPostureCost.
+    // cost_type == 1 corresponds to AddJointCenteringCost with norm=1.
+    // cost_type == 2 corresponds to AddJointCenteringCost with norm=2 and
+    // squared. cost_type == 3 corresponds to AddJointCenteringCost with norm=2
+    // and not squared.
+    const auto& joint_lb = plant_->GetPositionLowerLimits();
+    const auto& joint_ub = plant_->GetPositionUpperLimits();
+    DRAKE_DEMAND(plant_->num_positions() == 7);
+    Eigen::Matrix<double, 7, 1> q = joint_lb;
+    // Pick a posture within the joint bounds.
+    for (int i = 0; i < 7; ++i) {
+      q(i) += (joint_ub(i) - joint_lb(i)) * i / 10.0;
+    }
+    auto context = plant_->CreateDefaultContext();
+    plant_->SetPositions(context.get(), q);
+
+    math::RigidTransformd X_WEe = plant_->CalcRelativeTransform(
+        *context, plant_->world_frame(),
+        plant_->get_body(BodyIndex{ee_idx_}).body_frame());
+    math::RigidTransformd X_W0 = plant_->CalcRelativeTransform(
+        *context, plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0"));
+    // Constrain the global IK to reach the exact end effector pose as the
+    // posture q.
+    global_ik_.AddWorldPositionConstraint(ee_idx_,              // body index
+                                          Vector3d::Zero(),     // p_BQ
+                                          X_WEe.translation(),  // lower bound
+                                          X_WEe.translation(),  // upper bound
+                                          RigidTransformd());
+    global_ik_.AddWorldRelativePositionConstraint(
+        ee_idx_, Vector3d::Zero(), plant_->GetBodyByName("iiwa_link_0").index(),
+        Vector3d::Zero(),
+        X_WEe.translation() - X_W0.translation(),  // lower bound
+        X_WEe.translation() - X_W0.translation(),  // upper bound
+        RigidTransformd());
+    global_ik_.AddWorldOrientationConstraint(
+        ee_idx_,                                        // body index
+        Eigen::Quaterniond(X_WEe.rotation().matrix()),  // desired orientation
+        0);                                             // tolerance.
+
     // First solve the IK problem without the cost.
     global_ik_.get_mutable_prog()->SetSolverOption(solvers::GurobiSolver::id(),
                                                    "OutputFlag", 1);
 
-    solvers::MathematicalProgramResult result =
-        gurobi_solver.Solve(global_ik_.prog(), {}, {});
-    EXPECT_TRUE(result.is_success());
+    solvers::SolverOptions options;
+    options.SetOption(solvers::CommonSolverOption::kPrintToConsole, true);
 
-    const Eigen::VectorXd q_no_cost =
-        global_ik_.ReconstructGeneralizedPositionSolution(result);
+    // We only need to solve this the first time.
+    if (cost_type == 0) {
+      result = gurobi_solver.Solve(global_ik_.prog(), {}, options);
+      EXPECT_TRUE(result.is_success());
 
-    // Now add the cost on the posture error.
-    // Any positive cost should be able to achieve the optimal solution
-    // being equal to q.
-    global_ik_.AddPostureCost(
-        q, Eigen::VectorXd::Constant(plant_->num_bodies(), 1),
-        Eigen::VectorXd::Constant(plant_->num_bodies(), 1));
+      q_no_cost = global_ik_.ReconstructGeneralizedPositionSolution(result);
+    }
 
-    result = gurobi_solver.Solve(global_ik_.prog(), {}, {});
+    if (cost_type == 0) {
+      // Now add the cost on the posture error.
+      // Any positive cost should be able to achieve the optimal solution
+      // being equal to q.
+      global_ik_.AddPostureCost(
+          q, Eigen::VectorXd::Constant(plant_->num_bodies(), 1),
+          Eigen::VectorXd::Constant(plant_->num_bodies(), 1));
+    } else {
+      std::vector<std::string> iiwa_link_names{
+          "iiwa_link_1", "iiwa_link_2", "iiwa_link_3", "iiwa_link_4",
+          "iiwa_link_5", "iiwa_link_6", "iiwa_link_7",
+      };
+      for (int i = 0; i < 7; ++i) {
+        const RigidBody<double>& iiwa_link =
+            plant_->GetBodyByName(iiwa_link_names[i]);
+        if (cost_type == 1) {
+          global_ik_.AddJointCenteringCost(iiwa_link.index(), q[i], 1.0, 1);
+        } else if (cost_type == 2) {
+          global_ik_.AddJointCenteringCost(iiwa_link.index(), q[i], 1.0, 2,
+                                           true);
+        } else if (cost_type == 3) {
+          global_ik_.AddJointCenteringCost(iiwa_link.index(), q[i], 1.0, 2,
+                                           false);
+        } else {
+          DRAKE_UNREACHABLE();
+        }
+      }
+    }
+
+    result = gurobi_solver.Solve(global_ik_.prog(), {}, options);
     EXPECT_TRUE(result.is_success());
 
     // The position tolerance and the orientation tolerance is chosen
