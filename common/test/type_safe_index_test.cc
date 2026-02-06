@@ -338,6 +338,15 @@ GTEST_TEST(TypeSafeIndex, ToString) {
                                        "Converting to an int.+");
 }
 
+GTEST_TEST(TypeSafeIndex, ToStringFmtFormatter) {
+  AIndex index(87);
+  EXPECT_EQ(fmt::to_string(index), "87");
+
+  AIndex invalid;
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(fmt::to_string(invalid),
+                                       "Converting to an int.+");
+}
+
 // Verifies that it is not possible to convert between two different
 // index types.
 GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {

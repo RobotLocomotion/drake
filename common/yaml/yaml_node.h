@@ -2,7 +2,6 @@
 
 #include <map>
 #include <optional>
-#include <ostream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -10,7 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/string_map.h"
 
 // Note that even though this file contains "class Node", the file is named
@@ -287,10 +286,6 @@ class Node final {
     friend bool operator==(const MappingData&, const MappingData&);
   };
 
-  /* Displays the given node using flow style.  Intended only for debugging,
-  not serialization. */
-  friend std::ostream& operator<<(std::ostream&, const Node&);
-
  private:
   /* No-op for use only by the public "Make..." functions. */
   Node();
@@ -315,14 +310,15 @@ class Node final {
   std::optional<std::string> filename_;
 };
 
+/* Displays the given node using flow style. Intended only for debugging,
+not serialization. */
+std::string to_string(const Node& node);
+
 }  // namespace internal
 }  // namespace yaml
 }  // namespace drake
 
 #ifndef DRAKE_DOXYGEN_CXX
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::yaml::internal::Node> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::yaml::internal, Node, x,
+                   drake::yaml::internal::to_string(x))
 #endif
