@@ -8,11 +8,11 @@ load(
 
 # Load the relevant upstream methods.
 load(
-    "@intellij_aspect//:intellij_info_bundled.bzl",
+    "//.clwb_aspects:intellij_info_bundled.bzl",
     "semantics",
 )
 load(
-    "@intellij_aspect//:intellij_info_impl_bundled.bzl",
+    "//.clwb_aspects:intellij_info_impl_bundled.bzl",
     "intellij_info_aspect_impl",
     "make_intellij_info_aspect",
 )
@@ -36,13 +36,10 @@ def _extra_ide_info(target, ctx, ide_info, ide_info_file, output_groups):
     if c_ide_info == None:
         # Not a C / C++ target.
         return False
-    includes = getattr(c_ide_info, "transitive_quote_include_directory", None)
-    if includes == None:
-        # No includes exist, so we don't need to override them.
-        return False
 
     # Place Drake's parent directory on CLion's include path.
-    includes.insert(0, additional_transitive_quote_include_directory)
+    includes = c_ide_info.compilation_context.quote_includes
+    includes.append(additional_transitive_quote_include_directory)
     return False
 
 # Curry our semantics argument into the aspect rule's implementation function.

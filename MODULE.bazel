@@ -392,3 +392,15 @@ use_repo(
     "crate__paste-1.0.15",
     "crate_licenses",
 )
+
+# Add CLion support repository used by `tools/clion/bazel_wrapper`.
+
+drake_clion_environment = use_repo_rule(
+    "//tools/clion:repository.bzl",
+    "drake_clion_environment",
+)
+
+drake_clion_environment(
+    name = "drake_clion_environment",
+    dev_dependency = True,
+)
