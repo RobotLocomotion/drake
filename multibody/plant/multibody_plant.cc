@@ -493,16 +493,10 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently coupler constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
-  // TAMSI does not support tendon constraints. We've already confirmed that
-  // this model is discrete. The only remaining discrete solver is SAP, so we
-  // can safely proceed.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  // TAMSI does not support coupler constraints. The only remaining discrete
+  // solver is SAP, so we can safely proceed.
+  if (is_discrete() &&
+      get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support coupler constraints. Use "
@@ -538,15 +532,10 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently distance constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
-  // TAMSI does not support distance constraints. For all other solvers, we let
-  // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  // TAMSI does not support distance constraints. For other discrete solvers,
+  // we let the discrete update manager throw an exception at finalize time.
+  if (is_discrete() &&
+      get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support distance constraints. Use "
@@ -649,15 +638,10 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently ball constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
-  // TAMSI does not support ball constraints. For all other solvers, we let
-  // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  // TAMSI does not support ball constraints. For other discrete solvers, we
+  // let the discrete update manager throw an exception at finalize time.
+  if (is_discrete() &&
+      get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support ball constraints. Use "
@@ -692,15 +676,10 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently weld constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
-  // TAMSI does not support weld constraints. For all other solvers, we let
-  // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  // TAMSI does not support weld constraints. For other discrete solvers, we
+  // let the discrete update manager throw an exception at finalize time.
+  if (is_discrete() &&
+      get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support weld constraints. Use "
@@ -738,15 +717,10 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently tendon constraints are only supported for discrete "
-        "MultibodyPlant models.");
-  }
-
-  // TAMSI does not support tendon constraints. For all other solvers, we
+  // TAMSI does not support tendon constraints. For other discrete solvers, we
   // let the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (is_discrete() &&
+      get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support tendon constraints. Use "
@@ -1470,13 +1444,6 @@ void MultibodyPlant<T>::Finalize() {
       SetDiscreteUpdateManager(std::move(manager));
     }
   }
-
-  if (!is_discrete() && AnyActuatorHasPdControl(*this)) {
-    throw std::logic_error(
-        "Continuous model with PD controlled joint actuators. This feature is "
-        "only supported for discrete models. Refer to MultibodyPlant's "
-        "documentation for further details.");
-  }
 }
 
 template <typename T>
@@ -1548,6 +1515,8 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   // verify that there are no joint limits when the model is continuous.
   // If there are limits defined, we prepare a warning message that will be
   // logged iff the user attempts to do anything that would have needed them.
+  // TODO(#24061) revisit this warning when CENIC reaction forces are
+  // corrected.
   if (!is_discrete() && !joint_limits_parameters_.joints_with_limits.empty()) {
     std::string joint_names_with_limits;
     for (auto joint_index : joint_limits_parameters_.joints_with_limits) {
@@ -3228,6 +3197,23 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
 }
 
 template <typename T>
+void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics() const {
+  // Reject constraints.
+  if (num_constraints() > 0) {
+    throw std::logic_error(
+        "Continuous model with constraints, not using CENIC integrator");
+  }
+  // Reject PD control.
+  if (AnyActuatorHasPdControl(*this)) {
+    throw std::logic_error(
+        "Continuous model with PD controlled joint actuators, not using "
+        "CENIC integrator");
+  }
+  // TODO(#24061): consider rejecting models with joint limits here, once CENIC
+  // has correct behavior for joint limits, and errors/warnings are rearranged.
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcNonContactForcesContinuous(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
@@ -3255,6 +3241,7 @@ void MultibodyPlant<T>::AddInForcesContinuous(
   this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(!is_discrete());
+  ThrowIfUnsupportedContinuousTimeDynamics();
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(
@@ -3271,6 +3258,23 @@ void MultibodyPlant<T>::AddInForcesContinuous(
       EvalSpatialContactForcesContinuous(context);
   for (int i = 0; i < ssize(Fapp_BBo_W_array); ++i)
     Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
+}
+
+template <typename T>
+void MultibodyPlant<T>::DoCalcTimeDerivatives(
+    const Context<T>& context, systems::ContinuousState<T>* derivatives) const {
+  ThrowIfUnsupportedContinuousTimeDynamics();
+  internal::MultibodyTreeSystem<T>::DoCalcTimeDerivatives(context, derivatives);
+}
+
+template <typename T>
+void MultibodyPlant<T>::DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<T>& context,
+    const systems::ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const {
+  ThrowIfUnsupportedContinuousTimeDynamics();
+  internal::MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
+      context, proposed_derivatives, residual);
 }
 
 template <typename T>
@@ -4049,6 +4053,7 @@ void MultibodyPlant<T>::CalcReactionForces(
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
   } else {
+    ThrowIfUnsupportedContinuousTimeDynamics();
     CalcNonContactForcesContinuous(context, &applied_forces);
     CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
   }

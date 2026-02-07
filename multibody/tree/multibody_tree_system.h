@@ -374,12 +374,18 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
- private:
   // This is only meaningful in continuous mode.
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const final;
+      systems::ContinuousState<T>* derivatives) const override;
 
+  // Public documentation for this overload can be found in multibody_plant.h.
+  void DoCalcImplicitTimeDerivativesResidual(
+      const systems::Context<T>& context,
+      const systems::ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const override;
+
+ private:
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
@@ -389,12 +395,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const final;
-
-  // Public documentation for this overload can be found in multibody_plant.h.
-  void DoCalcImplicitTimeDerivativesResidual(
-      const systems::Context<T>& context,
-      const systems::ContinuousState<T>& proposed_derivatives,
-      EigenPtr<VectorX<T>> residual) const final;
 
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const final {
     return internal_tree().CalcPotentialEnergy(context);

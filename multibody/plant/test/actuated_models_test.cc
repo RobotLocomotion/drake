@@ -603,14 +603,11 @@ TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
   }
 }
 
-TEST_F(ActuatedIiwaArmTest,
-       PdControlledActuatorsOnlySupportedForDiscreteModels) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SetUpModel(ModelConfiguration::kArmIsControlled,
-                 MultibodyPlantConfig{.time_step = 0.0}),
-      "Continuous model with PD controlled joint actuators. This feature is "
-      "only supported for discrete models. Refer to MultibodyPlant's "
-      "documentation for further details.");
+TEST_F(ActuatedIiwaArmTest, FailOnContinuousNonCenic) {
+  SetUpModel(ModelConfiguration::kArmIsControlled,
+             MultibodyPlantConfig{.time_step = 0.0});
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->EvalTimeDerivatives(*context_),
+                              ".*not.*CENIC.*");
 }
 
 // This unit test verifies that, when within effort limits, forces applied

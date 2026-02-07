@@ -56,9 +56,11 @@ using geometry::SceneGraph;
 // uses the SAP solver. More specifically, we call
 // set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
 // MultibodyPlant used for testing before parsing.
-class UrdfParserTest : public test::DiagnosticPolicyTestBase {
+class UrdfParserTestBase : public test::DiagnosticPolicyTestBase {
  public:
-  UrdfParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
+  explicit UrdfParserTestBase(double time_step) : plant_(time_step) {
+    plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
+  }
 
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name, const std::string& model_name) {
@@ -100,6 +102,16 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
   CollisionFilterGroupsImpl<std::string> last_parsed_groups_;
+};
+
+class UrdfParserTest : public UrdfParserTestBase {
+ public:
+  UrdfParserTest() : UrdfParserTestBase(0.1) {}
+};
+
+class UrdfParserTestContinuous : public UrdfParserTestBase {
+ public:
+  UrdfParserTestContinuous() : UrdfParserTestBase(0.0) {}
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
@@ -395,31 +407,39 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
               MatchesRegex(".*Joint 'joint' has unrecognized type: 'who'"));
 }
 
-// TODO(rpoyner-tri): Add MimicContinuousTime (which should throw the same
-// warning as MimicNoSap).
+static constexpr char kMimicModel[] = R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='revolute'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0'/>
+      </joint>
+    </robot>)""";
 
 TEST_F(UrdfParserTest, MimicNoSap) {
   // Currently the <mimic> tag is only supported by SAP. Setting the solver
   // to TAMSI should be a warning.
   plant_.set_discrete_contact_approximation(
       DiscreteContactApproximation::kTamsi);
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='a'>
-      <link name='parent'/>
-      <link name='child'/>
-      <joint name='joint' type='revolute'>
-        <parent link='parent'/>
-        <child link='child'/>
-        <mimic/>
-      </joint>
-    </robot>)""",
-                                   ""),
-            std::nullopt);
+  EXPECT_NE(AddModelFromUrdfString(kMimicModel, ""), std::nullopt);
   EXPECT_THAT(
       TakeWarning(),
       MatchesRegex(
           ".*Mimic elements are currently only supported by MultibodyPlant "
           "with a discrete time step and using DiscreteContactSolver::kSap."));
+}
+
+TEST_F(UrdfParserTestContinuous, MimicContinuous) {
+  // Feature support in continuous plants depends on integrator selection, so
+  // can't be checked at parsing time.
+  EXPECT_NE(AddModelFromUrdfString(kMimicModel, ""), std::nullopt);
 }
 
 TEST_F(UrdfParserTest, MimicNoJoint) {

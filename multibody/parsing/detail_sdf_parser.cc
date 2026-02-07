@@ -893,7 +893,9 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
                    MultibodyPlant<double>* plant) {
   if (!joint_spec.Element()->HasElement("drake:mimic")) return true;
 
-  if (!plant->is_discrete() ||
+  // Only warn for non-SAP discrete solvers; continuous plants have different
+  // error reporting.
+  if (plant->is_discrete() &&
       plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
     diagnostic.Warning(
         joint_spec.Element(),

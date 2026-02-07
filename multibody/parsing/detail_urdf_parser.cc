@@ -756,7 +756,9 @@ void UrdfParser::ParseMimicTag(XMLElement* node) {
   std::string name;
   ParseStringAttribute(node, "name", &name);
 
-  if (!plant->is_discrete() ||
+  // Only warn for non-SAP discrete solvers; continuous plants have different
+  // error reporting.
+  if (plant->is_discrete() &&
       plant->get_discrete_contact_solver() != DiscreteContactSolver::kSap) {
     Warning(
         *mimic_node,
