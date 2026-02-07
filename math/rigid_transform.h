@@ -1,15 +1,15 @@
 #pragma once
 
 #include <limits>
-
-#include <fmt/format.h>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -1023,7 +1023,15 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
 /// `std::ostream`. Especially useful for debugging.
 /// @relates RigidTransform
 template <typename T>
-std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X);
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& out, const RigidTransform<T>& X);
+
+template <typename T>
+std::string to_string(const RigidTransform<T>& X);
 
 /// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 /// @relates RigidTransform
@@ -1032,12 +1040,8 @@ using RigidTransformd = RigidTransform<double>;
 }  // namespace math
 }  // namespace drake
 
-// Format RigidTransform using its operator<<.
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::math::RigidTransform<T>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename T, drake::math, RigidTransform<T>, x,
+                   drake::math::to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RigidTransform);

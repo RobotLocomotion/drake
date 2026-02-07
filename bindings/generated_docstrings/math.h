@@ -5150,6 +5150,13 @@ Deprecated:
         // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } setSubMatrixGradient;
+      // Symbol: drake::math::to_string
+      struct /* to_string */ {
+        // Source: drake/math/roll_pitch_yaw.h
+        const char* doc =
+R"""(Represents a RollPitchYaw object as a string. Especially useful for
+debugging.)""";
+      } to_string;
       // Symbol: drake::math::transposeGrad
       struct /* transposeGrad */ {
         // Source: drake/math/gradient_util.h
