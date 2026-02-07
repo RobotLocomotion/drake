@@ -79,9 +79,11 @@ const double kEps = std::numeric_limits<double>::epsilon();
 // uses the SAP solver. More specifically, we call
 // set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
 // MultibodyPlant used for testing before parsing.
-class SdfParserTest : public test::DiagnosticPolicyTestBase {
+class SdfParserTestBase : public test::DiagnosticPolicyTestBase {
  public:
-  SdfParserTest() { RecordErrors(); }
+  explicit SdfParserTestBase(double time_step) : plant_(time_step) {
+    RecordErrors();
+  }
 
   void AddSceneGraph() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
 
@@ -175,9 +177,19 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
   ParsingOptions options_;
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
-  MultibodyPlant<double> plant_{0.01};
+  MultibodyPlant<double> plant_;
   SceneGraph<double> scene_graph_;
   CollisionFilterGroupsImpl<std::string> last_parsed_groups_;
+};
+
+class SdfParserTest : public SdfParserTestBase {
+ public:
+  SdfParserTest() : SdfParserTestBase(0.01) {}
+};
+
+class SdfParserTestContinuous : public SdfParserTestBase {
+ public:
+  SdfParserTestContinuous() : SdfParserTestBase(0.0) {}
 };
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -1093,10 +1105,7 @@ TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
   EXPECT_EQ(spec.offset, 0.5);
 }
 
-TEST_F(SdfParserTest, MimicNoSap) {
-  plant_.set_discrete_contact_approximation(
-      DiscreteContactApproximation::kTamsi);
-  ParseTestString(R"""(
+static constexpr char kMimicModel[] = R"""(
     <model name='a'>
       <link name='A'/>
       <link name='B'/>
@@ -1116,13 +1125,25 @@ TEST_F(SdfParserTest, MimicNoSap) {
         </axis>
         <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
       </joint>
-    </model>)""");
+    </model>)""";
+
+TEST_F(SdfParserTest, MimicNoSap) {
+  plant_.set_discrete_contact_approximation(
+      DiscreteContactApproximation::kTamsi);
+  ParseTestString(kMimicModel);
 
   EXPECT_THAT(
       TakeWarning(),
       MatchesRegex(
           ".*Mimic elements are currently only supported by MultibodyPlant "
-          "with a discrete time step and using DiscreteContactSolver::kSap."));
+          "with a discrete time step and using "
+          "DiscreteContactSolver::kSap..*or.*continuous.*CENIC.*"));
+}
+
+TEST_F(SdfParserTestContinuous, MimicContinuous) {
+  // Feature support in continuous plants depends on integrator selection, so
+  // can't be checked at parsing time.
+  ParseTestString(kMimicModel);
 }
 
 TEST_F(SdfParserTest, MimicNoJoint) {
