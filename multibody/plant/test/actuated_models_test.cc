@@ -603,14 +603,71 @@ TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
   }
 }
 
-TEST_F(ActuatedIiwaArmTest,
-       PdControlledActuatorsOnlySupportedForDiscreteModels) {
+TEST_F(ActuatedIiwaArmTest, FailOnContinuousNonCenic) {
+  SetUpModel(ModelConfiguration::kArmIsControlled,
+             MultibodyPlantConfig{.time_step = 0.0});
+
+  // No desired state ports are connected, so PD is ignored.
+  EXPECT_NO_THROW(plant_->EvalTimeDerivatives(*context_));
+  const systems::ContinuousState<double>& derivatives =
+      plant_->EvalTimeDerivatives(*context_);
+  VectorXd residual = VectorXd::Zero(derivatives.size());
+  EXPECT_NO_THROW(plant_->CalcImplicitTimeDerivativesResidual(
+      *context_, derivatives, &residual));
+  EXPECT_NO_THROW(
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_));
+  EXPECT_NO_THROW(
+      plant_->get_reaction_forces_output_port().Eval<AbstractValue>(*context_));
+  EXPECT_NO_THROW(plant_->get_net_actuation_output_port().Eval(*context_));
+
+  // When desired state is supplied, the plant complains about un-implemented
+  // PD control.
+  VectorXd arm_xd = VectorXd::LinSpaced(2 * kKukaNumPositions_, 1.0, 14.0);
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_xd);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->EvalTimeDerivatives(*context_),
+                              ".*PD.*not.*CENIC.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->CalcImplicitTimeDerivativesResidual(
+                                  *context_, derivatives, &residual),
+                              ".*PD.*not.*CENIC.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SetUpModel(ModelConfiguration::kArmIsControlled,
-                 MultibodyPlantConfig{.time_step = 0.0}),
-      "Continuous model with PD controlled joint actuators. This feature is "
-      "only supported for discrete models. Refer to MultibodyPlant's "
-      "documentation for further details.");
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_),
+      ".*PD.*not.*CENIC.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_reaction_forces_output_port().Eval<AbstractValue>(*context_),
+      ".*PD.*not.*CENIC.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_net_actuation_output_port().Eval(*context_),
+      ".*PD.*not.*CENIC.*");
+
+  // Joints are locked, so PD is ignored.
+  for (JointActuatorIndex a : plant_->GetJointActuatorIndices()) {
+    const auto& actuator = plant_->get_joint_actuator(a);
+    actuator.joint().Lock(context_.get());
+  }
+  EXPECT_NO_THROW(plant_->EvalTimeDerivatives(*context_));
+  EXPECT_NO_THROW(plant_->CalcImplicitTimeDerivativesResidual(
+      *context_, derivatives, &residual));
+  EXPECT_NO_THROW(
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_));
+  EXPECT_NO_THROW(
+      plant_->get_reaction_forces_output_port().Eval<AbstractValue>(*context_));
+  EXPECT_NO_THROW(plant_->get_net_actuation_output_port().Eval(*context_));
+
+  // Gains are set to zero, so PD is ignored.
+  for (JointActuatorIndex a : plant_->GetJointActuatorIndices()) {
+    auto& actuator = plant_->get_mutable_joint_actuator(a);
+    actuator.set_controller_gains({0.0, 0.0});
+    actuator.joint().Unlock(context_.get());
+  }
+  EXPECT_NO_THROW(plant_->EvalTimeDerivatives(*context_));
+  EXPECT_NO_THROW(plant_->CalcImplicitTimeDerivativesResidual(
+      *context_, derivatives, &residual));
+  EXPECT_NO_THROW(
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_));
+  EXPECT_NO_THROW(
+      plant_->get_reaction_forces_output_port().Eval<AbstractValue>(*context_));
+  EXPECT_NO_THROW(plant_->get_net_actuation_output_port().Eval(*context_));
 }
 
 // This unit test verifies that, when within effort limits, forces applied

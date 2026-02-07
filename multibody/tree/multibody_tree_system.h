@@ -374,12 +374,12 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
- private:
   // This is only meaningful in continuous mode.
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const final;
+      systems::ContinuousState<T>* derivatives) const override;
 
+ private:
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,

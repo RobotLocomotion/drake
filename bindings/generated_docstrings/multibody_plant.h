@@ -2084,7 +2084,9 @@ Warning:
     Currently, this feature is only supported for discrete models
     (is_discrete() is true) using the SAP solver
     (get_discrete_contact_solver() returns
-    DiscreteContactSolver::kSap.)
+    DiscreteContactSolver::kSap.). Unsupported use with contniuous
+    models will not raise exceptions at configuration time, but may
+    raise exceptions at run time.
 
 PD controlled joint actuators can be defined by setting PD gains for
 each joint actuator, see JointActuator::set_controller_gains(). Unless
@@ -2585,10 +2587,6 @@ Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
 
 Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
-
-Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
     solver is not SAP. (i.e. get_discrete_contact_solver() !=
     DiscreteContactSolver::kSap))""";
@@ -2620,10 +2618,6 @@ Raises:
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
@@ -2706,10 +2700,6 @@ Raises:
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
@@ -3156,10 +3146,6 @@ Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
 
 Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (``is_discrete() == false``).
-
-Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
     solver is not SAP. (i.e. get_discrete_contact_solver() !=
     DiscreteContactSolver::kSap).)""";
@@ -3192,10 +3178,6 @@ Raises:
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact

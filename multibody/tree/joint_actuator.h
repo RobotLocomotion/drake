@@ -303,8 +303,8 @@ class JointActuator final : public MultibodyElement<T> {
   ///
   /// PD control is currently only supported for a discrete time
   /// plant. Attempting to use non-zero gains on a continuous time plant will
-  /// result in an exception.
-  /// See @ref pd_controllers_and_ports for further details.
+  /// not raise exceptions at configuration time, but may result in an
+  /// exception at run time.  See @ref pd_controllers for further details.
   void set_controller_gains(PdControllerGains gains);
 
   /// Returns `true` if any non-zero controller gains have been specified with

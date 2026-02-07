@@ -112,67 +112,52 @@ JointActuator<double>& AddBodyJointAndActuator(
 }  // namespace
 
 GTEST_TEST(JointActuatorTest, PdControllerTest) {
-  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
-  internal::MultibodyTree<double>& tree = *tree_pointer;
-  std::unique_ptr<internal::MultibodyTreeSystem<double>> tree_system{nullptr};
-  JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
-  EXPECT_FALSE(dut.has_controller());
+  for (bool is_discrete : {false, true}) {
+    SCOPED_TRACE(fmt::format("is_discrete? {}", is_discrete));
 
-  // Check lifecycle operations on a PD controller pre-Finalize, then check the
-  // same thing again post-Finalize.
-  for (int i = 0; i < 2; ++i) {
-    if (i == 1) {
-      tree.Finalize();
-      tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
-          std::move(tree_pointer), /* is_discrete = */ true);
+    auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
+    internal::MultibodyTree<double>& tree = *tree_pointer;
+    std::unique_ptr<internal::MultibodyTreeSystem<double>> tree_system{nullptr};
+    JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
+    EXPECT_FALSE(dut.has_controller());
+
+    // Check lifecycle operations on a PD controller pre-Finalize, then check
+    // the same thing again post-Finalize.
+    for (int i = 0; i < 2; ++i) {
+      if (i == 1) {
+        tree.Finalize();
+        tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
+            std::move(tree_pointer), is_discrete);
+      }
+
+      // Add.
+      EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3, .d = 1e2}));
+      EXPECT_TRUE(dut.has_controller());
+      EXPECT_EQ(dut.get_controller_gains().p, 1e3);
+      EXPECT_EQ(dut.get_controller_gains().d, 1e2);
+
+      // Remove.
+      EXPECT_NO_THROW(dut.set_controller_gains({}));
+      EXPECT_FALSE(dut.has_controller());
+
+      // Re-add (with only a single term, to make sure the code's if-check
+      // works).
+      EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3}));
+      EXPECT_TRUE(dut.has_controller());
+      EXPECT_EQ(dut.get_controller_gains().p, 1e3);
+      EXPECT_EQ(dut.get_controller_gains().d, 0);
+
+      // Change the gains (using the other single term, for the same reason).
+      EXPECT_NO_THROW(dut.set_controller_gains({.d = 1e2}));
+      EXPECT_TRUE(dut.has_controller());
+      EXPECT_EQ(dut.get_controller_gains().p, 0);
+      EXPECT_EQ(dut.get_controller_gains().d, 1e2);
+
+      // Remove.
+      EXPECT_NO_THROW(dut.set_controller_gains({}));
+      EXPECT_FALSE(dut.has_controller());
     }
-
-    // Add.
-    EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3, .d = 1e2}));
-    EXPECT_TRUE(dut.has_controller());
-    EXPECT_EQ(dut.get_controller_gains().p, 1e3);
-    EXPECT_EQ(dut.get_controller_gains().d, 1e2);
-
-    // Remove.
-    EXPECT_NO_THROW(dut.set_controller_gains({}));
-    EXPECT_FALSE(dut.has_controller());
-
-    // Re-add (with only a single term, to make sure the code's if-check works).
-    EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3}));
-    EXPECT_TRUE(dut.has_controller());
-    EXPECT_EQ(dut.get_controller_gains().p, 1e3);
-    EXPECT_EQ(dut.get_controller_gains().d, 0);
-
-    // Change the gains (using the other single term, for the same reason).
-    EXPECT_NO_THROW(dut.set_controller_gains({.d = 1e2}));
-    EXPECT_TRUE(dut.has_controller());
-    EXPECT_EQ(dut.get_controller_gains().p, 0);
-    EXPECT_EQ(dut.get_controller_gains().d, 1e2);
-
-    // Remove.
-    EXPECT_NO_THROW(dut.set_controller_gains({}));
-    EXPECT_FALSE(dut.has_controller());
   }
-}
-
-GTEST_TEST(JointActuatorTest, ContinuousTimePdControllerTest) {
-  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
-  internal::MultibodyTree<double>& tree = *tree_pointer;
-  JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
-  tree.Finalize();
-  auto tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
-      std::move(tree_pointer), /* is_discrete = */ false);
-  EXPECT_FALSE(dut.has_controller());
-
-  // Call the set function with zeros to clear out controller (a no-op) is safe.
-  EXPECT_NO_THROW(dut.set_controller_gains({}));
-  EXPECT_FALSE(dut.has_controller());
-
-  // Trying to set any non-zero gain is forbidden.
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.p = 1e3}),
-                              ".*only.*discrete models.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.d = 1e2}),
-                              ".*only.*discrete models.*");
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
