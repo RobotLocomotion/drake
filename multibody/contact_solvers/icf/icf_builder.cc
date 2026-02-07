@@ -283,6 +283,17 @@ void IcfBuilder<T>::ValidatePlant() {
         plant_.num_distance_constraints(), plant_.num_ball_constraints(),
         plant_.num_weld_constraints(), plant_.num_tendon_constraints()));
   }
+
+  // Revisit this condition when PD control is implemented. See #24002.
+  for (JointActuatorIndex a : plant_.GetJointActuatorIndices()) {
+    if (plant_.get_joint_actuator(a).has_controller()) {
+      throw std::logic_error(fmt::format(
+          "The CENIC integrator does not yet support PD controlled joint "
+          "actuators, but at least one is present at joint actuator index "
+          "'{}'",
+          a));
+    }
+  }
 }
 
 template <typename T>
