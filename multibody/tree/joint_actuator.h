@@ -301,6 +301,7 @@ class JointActuator final : public MultibodyElement<T> {
   /// velocity are specified through
   /// MultibodyPlant::get_desired_state_input_port().
   ///
+  /// XXX rewrite this section.
   /// PD control is currently only supported for a discrete time
   /// plant. Attempting to use non-zero gains on a continuous time plant will
   /// result in an exception.
