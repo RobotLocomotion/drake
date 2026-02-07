@@ -350,6 +350,11 @@ Aborts if no package named ``package_name`` exists in this PackageMap.)""";
           const char* doc =
 R"""(Returns the number of entries in this PackageMap.)""";
         } size;
+        // Symbol: drake::multibody::PackageMap::to_string
+        struct /* to_string */ {
+          // Source: drake/multibody/parsing/package_map.h
+          const char* doc = R"""()""";
+        } to_string;
       } PackageMap;
       // Symbol: drake::multibody::Parser
       struct /* Parser */ {
