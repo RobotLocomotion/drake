@@ -343,17 +343,18 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
                               ".*TAMSI does not support weld constraints.*");
 }
 
-GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
+GTEST_TEST(WeldConstraintTests, FailOnContinuousNonCenic) {
   MultibodyPlant<double> plant{0.0};
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
-                              RigidTransformd{Vector3d{0, 0, 0}}),
-      ".*Currently weld constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+  plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
+                          RigidTransformd{Vector3d{0, 0, 0}});
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              ".*not.*CENIC.*");
 }
 
 GTEST_TEST(WeldConstraintTests, FailOnFinalized) {

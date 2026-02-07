@@ -88,10 +88,7 @@ GTEST_TEST(IcfBuilder, Limits) {
 
 GTEST_TEST(IcfBuilder, Coupler) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23992): MultibodyPlant does not yet support coupler constraints on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.01};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
 
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
@@ -127,10 +124,7 @@ GTEST_TEST(IcfBuilder, Coupler) {
 // MultibodyPlant should to the checking.
 GTEST_TEST(IcfBuilder, CouplerBad) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23992): MultibodyPlant does not yet support coupler constraints on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.01};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
 
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
@@ -288,10 +282,7 @@ GTEST_TEST(IcfBuilder, BallConstraintUnsupported) {
 
 GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23762): MultibodyPlant does not yet support distance constraints on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
@@ -308,10 +299,7 @@ GTEST_TEST(IcfBuilder, DistanceConstraintUnsupported) {
 
 GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23763): MultibodyPlant does not yet support tendon constraints on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
@@ -327,10 +315,7 @@ GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
 
 GTEST_TEST(IcfBuilder, WeldConstraintUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23759): MultibodyPlant does not yet support weld constraints on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 
@@ -346,9 +331,9 @@ GTEST_TEST(IcfBuilder, WeldConstraintUnsupported) {
 
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23768): MultibodyPlant does not yet support deformable bodies on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
+  // TODO(#23768): MultibodyPlant (specifically, DeformableModel) does not yet
+  // support deformable bodies on continuous plants. Internally, ICF doesn't
+  // much care about the plant's discrete/continuous configuration.
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
@@ -363,12 +348,26 @@ GTEST_TEST(IcfBuilder, DeformableUnsupported) {
                               ".*deformable.*bodies.* == 0.*fail.*");
 }
 
+GTEST_TEST(IcfBuilder, PdControlUnsupported) {
+  systems::DiagramBuilder<double> diagram_builder;
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
+  MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlant(plant_config, &diagram_builder);
+
+  Parser(&plant, "Pendulum").AddModelsFromString(kRobotXml, "xml");
+  const auto& actuator =
+      plant.AddJointActuator("elbow", plant.GetJointByName("joint2"));
+  plant.get_mutable_joint_actuator(actuator.index())
+      .set_controller_gains({1.0, 1.0});
+  plant.Finalize();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
+                              ".*not.*support.*PD.*control.*");
+}
+
 GTEST_TEST(IcfBuilder, JointLockingUnsupported) {
   systems::DiagramBuilder<double> diagram_builder;
-  // TODO(#23764): MultibodyPlant does not yet support joint locking on
-  // continuous plants. Internally, ICF doesn't much care about the plant's
-  // discrete/continuous configuration.
-  multibody::MultibodyPlantConfig plant_config{.time_step = 0.1};
+  multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlant(plant_config, &diagram_builder);
 

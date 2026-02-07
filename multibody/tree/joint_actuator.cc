@@ -32,27 +32,6 @@ void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
     return;
   }
 
-  // The continuous-time MultibodyPlant logic does not support implicit PD. The
-  // plant's Finalize() call already checks for this condition and throws if a
-  // PD controller exists during Finalize. However, take note that adding a
-  // controller and removing it again before calling Finalize is valid -- the
-  // only invalid condition is a PD controller on a finalized, continuous-time
-  // plant. On the other hand, if set_controller_gains is called post-Finalize
-  // to add a controller on a continuous-time plant, we need to reject that
-  // ourselves; the plant won't know to check for it.
-  if (is_finalized_) {
-    DRAKE_DEMAND(this->has_parent_tree());
-    // N.B. Calling is_state_discrete() on a non-finalized plant will segfault;
-    // we must be careful to only call it inside of the if-finalized guard.
-    const bool is_continuous = !this->get_parent_tree().is_state_discrete();
-    if (is_continuous) {
-      throw std::runtime_error(fmt::format(
-          "Cannot set PD gains on the actuator named '{}'. This feature "
-          "is only supported for discrete models.",
-          name()));
-    }
-  }
-
   pd_controller_gains_ = gains;
 }
 

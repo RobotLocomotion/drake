@@ -4069,7 +4069,8 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
 // Verifies we instantiated an appropriate MultibodyPlant model based on the
 // fixture's parameter.
 TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
-  // The plant must be a discrete system if the periodic update period is zero.
+  // The plant must not be a discrete system if the periodic update period is
+  // zero.
   EXPECT_EQ(!plant_->is_discrete(), this->GetParam() == 0);
 }
 
