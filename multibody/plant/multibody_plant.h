@@ -1942,8 +1942,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -1996,8 +1994,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not positive or zero.
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2055,8 +2051,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2077,8 +2071,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2161,8 +2153,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @pre `damping >= 0` (if not std::nullopt).
   ///
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (`is_discrete() == false`).
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap).
@@ -6139,6 +6129,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   internal::DesiredStateInput<T> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
+  // Throws if the plant uses features not supported by plant-oblivious
+  // continuous integrators.
+  void ThrowIfUnsupportedContinuousTimeDynamics(
+      const systems::Context<T>& context) const;
+
   // Computes all non-contact applied forces including:
   //  - Force elements.
   //  - Joint actuation.
@@ -6154,6 +6149,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // @pre The plant is continuous.
   void AddInForcesContinuous(const systems::Context<T>& context,
                              MultibodyForces<T>* forces) const override;
+
+  // Validates that plant features are compatible with plant-oblivious
+  // continuous integrators, then calculates the derivatives.
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 
   // Discrete system version of CalcForwardDynamics(). This method does not use
   // O(n) forward dynamics but a discrete solver according to the discrete

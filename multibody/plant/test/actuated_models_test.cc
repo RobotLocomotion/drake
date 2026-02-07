@@ -603,14 +603,38 @@ TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
   }
 }
 
-TEST_F(ActuatedIiwaArmTest,
-       PdControlledActuatorsOnlySupportedForDiscreteModels) {
+TEST_F(ActuatedIiwaArmTest, FailOnContinuousNonCenic) {
+  SetUpModel(ModelConfiguration::kArmIsControlled,
+             MultibodyPlantConfig{.time_step = 0.0});
+
+  // No desired state ports are connected, so PD is ignored.
+  EXPECT_NO_THROW(plant_->EvalTimeDerivatives(*context_));
+  const systems::ContinuousState<double>& derivatives =
+      plant_->EvalTimeDerivatives(*context_);
+  VectorXd residual = VectorXd::Zero(derivatives.size());
+  EXPECT_NO_THROW(plant_->CalcImplicitTimeDerivativesResidual(
+      *context_, derivatives, &residual));
+  EXPECT_NO_THROW(
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_));
+  EXPECT_NO_THROW(
+      plant_->get_reaction_forces_output_port().Eval<AbstractValue>(*context_));
+
+  // When desired state is supplied, the plant complains about un-implemented
+  // PD control.
+  VectorXd arm_xd = VectorXd::LinSpaced(2 * kKukaNumPositions_, 1.0, 14.0);
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_xd);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->EvalTimeDerivatives(*context_),
+                              ".*PD.*not.*CENIC.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->CalcImplicitTimeDerivativesResidual(
+                                  *context_, derivatives, &residual),
+                              ".*PD.*not.*CENIC.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SetUpModel(ModelConfiguration::kArmIsControlled,
-                 MultibodyPlantConfig{.time_step = 0.0}),
-      "Continuous model with PD controlled joint actuators. This feature is "
-      "only supported for discrete models. Refer to MultibodyPlant's "
-      "documentation for further details.");
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context_),
+      ".*PD.*not.*CENIC.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_reaction_forces_output_port().Eval<AbstractValue>(*context_),
+      ".*PD.*not.*CENIC.*");
 }
 
 // This unit test verifies that, when within effort limits, forces applied
