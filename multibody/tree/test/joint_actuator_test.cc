@@ -155,6 +155,9 @@ GTEST_TEST(JointActuatorTest, PdControllerTest) {
   }
 }
 
+// Continuous time support for PD controllers is dependent on choice of
+// integrator, and on specific calculations requested. Feature support checks
+// are in those specific implementations, and not in JointActuator.
 GTEST_TEST(JointActuatorTest, ContinuousTimePdControllerTest) {
   auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
   internal::MultibodyTree<double>& tree = *tree_pointer;
@@ -168,11 +171,9 @@ GTEST_TEST(JointActuatorTest, ContinuousTimePdControllerTest) {
   EXPECT_NO_THROW(dut.set_controller_gains({}));
   EXPECT_FALSE(dut.has_controller());
 
-  // Trying to set any non-zero gain is forbidden.
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.p = 1e3}),
-                              ".*only.*discrete models.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.d = 1e2}),
-                              ".*only.*discrete models.*");
+  // Trying to set any non-zero gain is allowed.
+  EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3}));
+  EXPECT_NO_THROW(dut.set_controller_gains({.d = 1e2}));
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {

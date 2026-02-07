@@ -4292,10 +4292,11 @@ MultibodyPlant::get_actuation_input_port(). Desired configuration and
 velocity are specified through
 MultibodyPlant::get_desired_state_input_port().
 
-PD control is currently only supported for a discrete time plant.
-Attempting to use non-zero gains on a continuous time plant will
-result in an exception. See pd_controllers_and_ports for further
-details.)""";
+PD control is currently only supported for a discrete time plant, and
+for specific uses of continuous time plants. Attempting to use
+non-zero gains on a continuous time plant will not raise exceptions at
+configuration time, but may result in an exception at run time. See
+pd_controllers for further details.)""";
         } set_controller_gains;
         // Symbol: drake::multibody::JointActuator::set_default_gear_ratio
         struct /* set_default_gear_ratio */ {
