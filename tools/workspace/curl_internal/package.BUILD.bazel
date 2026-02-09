@@ -65,6 +65,7 @@ _SRCS = [
     "lib/curlx/fopen.c",
     "lib/curlx/inet_pton.c",
     "lib/curlx/nonblock.c",
+    "lib/curlx/strcopy.c",
     "lib/curlx/strerr.c",
     "lib/curlx/strparse.c",
     "lib/curlx/timediff.c",
@@ -194,6 +195,7 @@ check_lists_consistency(
         "lib/curl_range.c",
         "lib/curl_rtmp.c",
         "lib/curl_sasl.c",
+        "lib/curl_share.c",
         "lib/curl_sha512_256.c",
         "lib/curl_sspi.c",
         "lib/curl_threads.c",
@@ -225,6 +227,7 @@ check_lists_consistency(
         "lib/pingpong.c",
         "lib/pop3.c",
         "lib/psl.c",
+        "lib/ratelimit.c",
         "lib/smb.c",
         "lib/smtp.c",
         "lib/socks_gssapi.c",
@@ -245,7 +248,7 @@ check_lists_consistency(
 # Generate curl_config.h based on the hard-coded cmakedefines.bzl.
 cmake_configure_file(
     name = "configure_file",
-    src = "lib/curl_config.h.cmake",
+    src = "lib/curl_config-cmake.h.in",
     out = "lib/curl_config.h",
     defines = CMAKE_DEFINES,
     undefines = CMAKE_UNDEFINES,
