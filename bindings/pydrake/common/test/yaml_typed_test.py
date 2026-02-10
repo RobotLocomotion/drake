@@ -831,13 +831,34 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         path_type: /path/to/somewhere
         truthy_type: true
         """)
+        # Check that loading the above document into non-Union values promotes
+        # them appropriately.
         basic = yaml_load_typed(
             schema=PromotionBasicStruct, data=data, **options
         )
-        union = yaml_load_typed(
+        # Check that loading the same document into Union values promotes them
+        # exactly the same way.
+        union1 = yaml_load_typed(
             schema=PromotionVariantStruct, data=data, **options
         )
-        for x, remark in [(basic, "basic"), (union, "union")]:
+        # Check the same thing but with the struct defaults initialized to the
+        # second type in the Union instead of the first.
+        union2 = yaml_load_typed(
+            schema=PromotionVariantStruct,
+            data=data,
+            defaults=PromotionVariantStruct(
+                float_type=FloatStruct(),
+                np_type=FloatStruct(),
+                path_type=FloatStruct(),
+                truthy_type=FloatStruct(),
+            ),
+            **options,
+        )
+        for x, remark in [
+            (basic, "basic"),
+            (union1, "union1"),
+            (union2, "union2"),
+        ]:
             with self.subTest(remark=remark):
                 self.assertEqual(x.float_type, 1.0)
                 self.assertIsInstance(x.float_type, float)
