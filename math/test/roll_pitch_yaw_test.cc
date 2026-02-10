@@ -532,6 +532,9 @@ GTEST_TEST(RollPitchYaw, SymbolicTest) {
               testing::MatchesRegex(".*inf.*(and.*inf.*){5}"));
 }
 
+// TODO(2026-06-01): delete test StreamInsertionOperator
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Test the stream insertion operator to write into a stream.
 GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   // Test stream insertion for RollPitchYaw<double>.
@@ -564,6 +567,33 @@ GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   streamD << rpy_symbolic_huge;
   rpy_expected_string = "rpy = <symbolic> <symbolic> <symbolic>";
   EXPECT_EQ(rpy_expected_string, streamD.str());
+}
+#pragma GCC diagnostic pop
+
+// Test the fmt formatter.
+GTEST_TEST(RollPitchYaw, ToStringFmtFormatter) {
+  // Test the fmt formatter for RollPitchYaw<double>.
+  const RollPitchYaw<double> rpy_double(0.2, 0.3, 0.4);
+  std::string rpy_expected_string = "rpy = 0.2 0.3 0.4";
+  EXPECT_EQ(fmt::to_string(rpy_double), rpy_expected_string);
+
+  // Test the fmt formatter for RollPitchYaw<AutoDiffXd>.
+  const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.5, 0.6, 0.7);
+  rpy_expected_string = "rpy = 0.5 0.6 0.7";
+  EXPECT_EQ(fmt::to_string(rpy_autodiff), rpy_expected_string);
+
+  // Test the fmt formatter for RollPitchYaw<symbolic::Expression>.
+  const symbolic::Variable r("foo"), p("bar"), y("baz");
+  const RollPitchYaw<Expression> rpy_symbolic(r, p, y);
+  rpy_expected_string = "rpy = foo bar baz";
+  EXPECT_EQ(fmt::to_string(rpy_symbolic), rpy_expected_string);
+
+  // When the expression strings are very long, they will be truncated.
+  const Expression big_expr = sqrt(pow(r, 2) + pow(p, 2) + pow(y, 2));
+  const RollPitchYaw<symbolic::Expression> rpy_symbolic_huge(big_expr, big_expr,
+                                                             big_expr);
+  rpy_expected_string = "rpy = <symbolic> <symbolic> <symbolic>";
+  EXPECT_EQ(fmt::to_string(rpy_symbolic_huge), rpy_expected_string);
 }
 
 }  // namespace
