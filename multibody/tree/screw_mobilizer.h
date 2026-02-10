@@ -216,13 +216,29 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     DRAKE_ASSERT(v != nullptr);
     const T f_v = GetScrewTranslationFromRotation(v[0], screw_pitch_);
-    return SpatialVelocity<T>(v[0] * axis_, f_v * axis_);
+    return SpatialVelocity<T>(v[0] * axis_, f_v * axis_);  // axis_F
+  }
+
+  /* Same as V_FM_F. 8 flops */
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T* v) const {
+    DRAKE_ASSERT(v != nullptr);
+    const T f_v = GetScrewTranslationFromRotation(v[0], screw_pitch_);
+    return SpatialVelocity<T>(v[0] * axis_, f_v * axis_);  // axis_M
   }
 
   /* Our lone generalized acceleration is the angular acceleration θdotdot about
   the screw axis. Therefore we have H₆ₓ₁=[axis f⋅axis] where f=pitch/2π, and
   Hdot=0, so A_FM = H⋅vdot + Hdot⋅v = [axis⋅vdot, f⋅axis⋅vdot]ᵀ. 8 flops */
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    DRAKE_ASSERT(vdot != nullptr);
+    const T f_vdot = GetScrewTranslationFromRotation(vdot[0], screw_pitch_);
+    return SpatialAcceleration<T>(vdot[0] * axis_, f_vdot * axis_);
+  }
+
+  /* Same as A_FM_F. 8 flops */
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T* vdot) const {
     DRAKE_ASSERT(vdot != nullptr);
     const T f_vdot = GetScrewTranslationFromRotation(vdot[0], screw_pitch_);
     return SpatialAcceleration<T>(vdot[0] * axis_, f_vdot * axis_);
@@ -235,6 +251,17 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
     const Vector3<T>& t_B_F = F_BMo_F.rotational();       // torque
     const Vector3<T>& f_BMo_F = F_BMo_F.translational();  // force
     tau[0] = axis_.dot(t_B_F) + f * axis_.dot(f_BMo_F);
+  }
+
+  /* Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [axis_Mᵀ f⋅axis_Mᵀ] and
+  axis_M == axis_F (see class comments).  12 flops */
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const Vector6<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const T f = screw_pitch_ / (2 * M_PI);
+    const auto t_B_M = F_BMo_M.template head<3>();    // rotational (torque)
+    const auto f_BMo_M = F_BMo_M.template tail<3>();  // translational (force)
+    tau[0] = axis_.dot(t_B_M) + f * axis_.dot(f_BMo_M);  // This is axis_M.
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

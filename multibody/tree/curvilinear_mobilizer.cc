@@ -133,12 +133,12 @@ void CurvilinearMobilizer<T>::calc_tau(const T* q,
 template <typename T>
 void CurvilinearMobilizer<T>::calc_tau_from_M(const math::RigidTransform<T>&,
                                               const T* q,
-                                              const SpatialForce<T>& F_BMo_M,
+                                              const Vector6<T>& F_BMo_M,
                                               T* tau) const {
   DRAKE_ASSERT(tau != nullptr);
   const T& rho = curvilinear_path_.curvature(*q);
-  const Vector3<T>& t_M = F_BMo_M.rotational();
-  const Vector3<T>& f_M = F_BMo_M.translational();
+  const auto t_M = F_BMo_M.template head<3>();
+  const auto f_M = F_BMo_M.template tail<3>();
   tau[0] = rho * t_M[2] + f_M[0];
 }
 

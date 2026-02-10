@@ -221,8 +221,8 @@ TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
   // Taking the force in the M frame shouldn't change the result.
   const SpatialForce<double> F_Mo_M = R_FM.transpose() * F_Mo_F;
   double tau_from_M{};
-  mobilizer_->calc_tau_from_M(RigidTransformd() /*not used*/, &distance, F_Mo_M,
-                              &tau_from_M);
+  mobilizer_->calc_tau_from_M(RigidTransformd() /*not used*/, &distance,
+                              F_Mo_M.get_coeffs(), &tau_from_M);
   EXPECT_NEAR(tau_from_M, tau_expected, 4.0 * kEpsilon);
 }
 

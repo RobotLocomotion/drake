@@ -173,10 +173,33 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                               Vector3<T>(v[0], v[1], 0.0));
   }
 
+  /* Computes the across-mobilizer velocity V_FM_M(q, v) of the outboard frame
+  M measured in frame F and expressed in frame M as a function of the input
+  velocity v. */
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T* q,
+                                 const T* v) const {
+    // TODO(sherm1) These are already available in the passed-in X_FM.
+    using std::sin, std::cos;
+    const T s = sin(q[2]), c = cos(q[2]);
+    return SpatialVelocity<T>(
+        Vector3<T>(0.0, 0.0, v[2]),
+        Vector3<T>(c * v[0] + s * v[1], c * v[1] - s * v[0], 0.0));
+  }
+
   /* Returns H_FM_F⋅vdot + Hdot_FM_F⋅v. See class description. */
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     return SpatialAcceleration<T>(Vector3<T>(0.0, 0.0, vdot[2]),
                                   Vector3<T>(vdot[0], vdot[1], 0.0));
+  }
+
+  /* Returns H_FM_M⋅vdot + Hdot_FM_M⋅v. See class description. */
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>& X_FM,
+                                     const T*, const T*, const T* vdot) const {
+    // TODO(sherm1) Use explicit sin & cos from X_FM.
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialAcceleration<T> A_FM_F = calc_A_FM(nullptr, nullptr, vdot);
+    const SpatialAcceleration<T> A_FM_M = R_FM.inverse() * A_FM_F;  // 30 flops
+    return A_FM_M;
   }
 
   /* Returns tau = H_FM_Fᵀ⋅F_F */
@@ -187,6 +210,20 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
     tau[0] = f_BMo_F[0];                                  // force along x
     tau[1] = f_BMo_F[1];                                  // force along y
     tau[2] = t_B_F[2];                                    // torque about z
+  }
+
+  /* Returns tau = H_FM_Mᵀ⋅F_M. See class comments. */
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T* q,
+                       const Vector6<T>& F_BMo_M, T* tau) const {
+    // TODO(sherm1) These are already available in the passed-in X_FM.
+    using std::sin, std::cos;
+    DRAKE_ASSERT(tau != nullptr);
+    const T s = sin(q[2]), c = cos(q[2]);
+    const auto t_B_M = F_BMo_M.template head<3>();    // rotational (torque)
+    const auto f_BMo_M = F_BMo_M.template tail<3>();  // translational (force)
+    tau[0] = c * f_BMo_M[0] - s * f_BMo_M[1];         // force along x
+    tau[1] = s * f_BMo_M[0] + c * f_BMo_M[1];         // force along y
+    tau[2] = t_B_M[2];                                // torque about z
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

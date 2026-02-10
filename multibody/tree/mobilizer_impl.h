@@ -59,6 +59,10 @@ careful when interpreting them as Eigen vectors for computation purposes.
   RigidTransform<T> pre_multiply_by_X_FM(const RigidTransform<T>& X_FM,
                                          const RigidTransform<T>& X_MB) const;
 
+// Returns p_F = X_FM ⋅ p_M (shift position vector and re-express).
+  Vector3<T> apply_X_FM(const RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const;
+
   // Returns v_F = R_FM ⋅ v_M (re-express vector).
   Vector3<T> apply_R_FM(const RotationMatrix<T>& R_FM,
                         const Vector3<T>& v_M) const;
@@ -75,7 +79,30 @@ careful when interpreting them as Eigen vectors for computation purposes.
   // Returns tau = H_FM_Fᵀ(q)⋅F_BMo_F.
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const;
 
-  // TODO(sherm1) More to come (see #22253)
+  The following M-frame methods are also required (we believe it will be
+  significantly faster to compute in the M frame). The M-frame computations
+  are currently experimental, but these functions must be provided by every
+  mobilizer in order for the experimental code to compile.
+
+  // TODO(sherm1) Get rid of the X_FM parameter once we commit to M-frame.
+  @note The precalculated X_FM transform is passed in to these functions
+  to make it easy to implement them in terms of the F-frame functions above.
+  However, that negates the potential performance gains so should be used
+  only for mobilizers where performance is limited elsewhere. I.e., don't
+  use that transform for revolute and prismatic mobilizers!
+
+  // Returns V_FM_M = H_FM_M(q)⋅v
+  SpatialVelocity<T> calc_V_FM_M(const RigidTransform<T>& X_FM,
+                                 const T* q, const T* v) const;
+
+  // Returns A_FM_M = H_FM_M(q)⋅vdot + Hdot_FM_M(q,v)⋅v
+  SpatialAcceleration<T> calc_A_FM_M(const RigidTransform<T>& X_FM,
+                                     const T* q, const T* v, const T* vdot)
+                                     const;
+
+  // Returns tau = H_FM_Mᵀ(q)⋅F_BMo_M
+  void calc_tau_from_M(const RigidTransform<T>& X_FM, const T* q,
+                       const Vector6<T>& F_BMo_M, T* tau) const;
 
 MobilizerImpl also provides a number of size specific methods to retrieve
 multibody quantities of interest from caching structures. These are common
@@ -204,6 +231,14 @@ class MobilizerImpl : public Mobilizer<T> {
   // N.B. no default implementations possible for calc_X_FM() and update_X_FM()
   // here. However, a minimal implementation for update_X_FM() in a concrete
   // mobilizer is just *X_FM = calc_X_FM(q).
+
+  // Returns p_F = X_FM ⋅ p_M (shift and re-express). The default implementation
+  // treats X_FM as fully general and performs this in 18 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
+                        const Vector3<T>& p_M) const {
+    return X_FM * p_M;
+  }
 
   // Returns v_F = R_FM ⋅ v_M (re-express). The default implementation
   // treats R_FM as fully general and performs this in 15 flops. Mobilizers

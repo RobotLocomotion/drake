@@ -4206,6 +4206,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                external_forces);
   }
 
+  VectorX<T> CalcInverseDynamicsViaM(
+      const systems::Context<T>& context, const VectorX<T>& known_vdot,
+      const MultibodyForces<T>& external_forces) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcInverseDynamicsViaM(context, known_vdot,
+                                                   external_forces);
+  }
+
 #ifdef DRAKE_DOXYGEN_CXX
   // MultibodyPlant uses the NVI implementation of
   // CalcImplicitTimeDerivativesResidual from
@@ -4500,6 +4508,15 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     DRAKE_DEMAND(M != nullptr);
     internal_tree().CalcMassMatrix(context, M);
+  }
+
+  // Same mass matrix, calculated by working in each body's inboard mobilizer
+  // frame M, rather than in World. Should be faster.
+  void CalcMassMatrixViaM(const systems::Context<T>& context,
+                          EigenPtr<MatrixX<T>> M) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(M != nullptr);
+    internal_tree().CalcMassMatrixViaM(context, M);
   }
 
   /// This method allows users to map the state of `this` model, x, into a

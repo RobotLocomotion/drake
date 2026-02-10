@@ -187,7 +187,7 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
    M frame instead of F (producing the same resulting tau). Returns
    tau = H_FM_Mᵀ⋅F_BMo_M (see class comments). */
   void calc_tau_from_M(const math::RigidTransform<T>&, const T* q,
-                       const SpatialForce<T>& F_BMo_M, T* tau) const;
+                       const Vector6<T>& F_BMo_M, T* tau) const;
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;

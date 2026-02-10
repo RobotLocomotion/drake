@@ -22,7 +22,7 @@ using test::LimitMalloc;
 namespace multibody {
 namespace {
 
-// We verify the computation of the mass matrix by comparing two significantly
+// We verify the computation of the mass matrix by comparing three significantly
 // different implementations:
 //   - CalcMassMatrix(): Composite Body Algorithm, via recursion using World
 //     frame quantities.
@@ -75,6 +75,17 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
       plant_.CalcMassMatrix(context, &Mcba_via_W);
     }
 
+    // Compute mass matrix via the Composite Body Algorithm in M frames.
+    MatrixX<double> Mcba_in_M(plant_.num_velocities(), plant_.num_velocities());
+    plant_.CalcMassMatrixViaM(context, &Mcba_in_M);
+
+    // After a first warm-up call, subsequent calls to
+    // CalcMassMatrixInM<double>() should never allocate.
+    {
+      LimitMalloc guard;
+      plant_.CalcMassMatrixViaM(context, &Mcba_in_M);
+    }
+
     // Compute mass matrix using inverse dynamics for each column (indicated
     // by "_via_id" here).
     MatrixX<double> M_via_id(plant_.num_velocities(), plant_.num_velocities());
@@ -88,6 +99,8 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
     const double tolerance = 10.0 * std::numeric_limits<double>::epsilon() *
                              Mcba_via_W.norm() / plant_.num_velocities();
     EXPECT_TRUE(CompareMatrices(Mcba_via_W, M_via_id, tolerance,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(Mcba_in_M, M_via_id, tolerance,
                                 MatrixCompareType::relative));
   }
 

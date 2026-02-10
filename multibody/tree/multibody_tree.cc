@@ -1336,6 +1336,30 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcPositionKinematicsCacheInM(
+    const systems::Context<T>& context,
+    PositionKinematicsCacheInM<T>* pcm) const {
+  DRAKE_DEMAND(pcm != nullptr);
+
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
+
+  const Eigen::VectorBlock<const VectorX<T>> q_block = get_positions(context);
+  const T* q = q_block.data();
+
+  // Performs a base-to-tip recursion computing body poses.
+  // Skip the World which is mobod_index(0).
+  for (MobodIndex mobod_index(1); mobod_index < ssize(body_nodes_);
+       ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
+
+    node.CalcPositionKinematicsCacheInM_BaseToTip(frame_body_pose_cache, q,
+                                                  pcm);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcBlockSystemJacobianCache(
     const systems::Context<T>& context,
     BlockSystemJacobianCache<T>* sjc) const {
@@ -1438,6 +1462,28 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   }
 }
 
+template <typename T>
+void MultibodyTree<T>::CalcVelocityKinematicsCacheInM(
+    const systems::Context<T>& context,
+    const PositionKinematicsCacheInM<T>& pcm,
+    VelocityKinematicsCacheInM<T>* vcm) const {
+  DRAKE_DEMAND(vcm != nullptr);
+
+  const T* positions = get_positions(context).data();
+  const T* velocities = get_velocities(context).data();
+
+  // Performs a base-to-tip recursion computing body velocities. Skip World.
+  for (MobodIndex mobod_index(1); mobod_index < ssize(body_nodes_);
+       ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
+
+    // Update per-mobod kinematics.
+    node.CalcVelocityKinematicsCacheInM_BaseToTip(positions, pcm, velocities,
+                                                  vcm);
+  }
+}
+
 // Result is indexed by MobodIndex, not BodyIndex.
 template <typename T>
 void MultibodyTree<T>::CalcSpatialInertiasInWorld(
@@ -1526,19 +1572,62 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
                               frame->CalcPoseInBodyFrame(context));
   }
 
-  // For every mobilized body, precalculate its body-frame spatial inertia
-  // M_BBo_B from the parameterization of that inertia.
+  // The second pass precomputes, for any frame F fixed to a body B, X_MbF which
+  // is the pose of that frame in body B's unique mobilizer frame Mb. This is
+  // useful so we can efficiently compute multibody quantities in each body's
+  // M frame. The first pass will have determined X_BMb (and X_MbB) as well
+  // as X_BF. We'll compute X_MbF = X_MbB*X_BF and store the result for every
+  // frame, indexed by FrameIndex.
+  for (const Frame<T>* frame : frames_.elements()) {
+    // This is the mobilizer that connects body B to its inboard (parent)
+    // body. The _outboard_ frame of that mobilizer is Mb.
+    const Mobilizer<T>& mobilizer_B =
+        get_mobilizer(frame->body().mobod_index());
+    const Frame<T>& frame_Mb = mobilizer_B.outboard_frame();
+
+    const RigidTransform<T>& X_MbB = frame_Mb.get_X_FB(*frame_body_poses);
+    const RigidTransform<T>& X_BF = frame->get_X_BF(*frame_body_poses);
+
+    frame_body_poses->SetX_MbF(frame->index(), X_MbB * X_BF);
+  }
+
+  // For every mobilized body, shift its (parameterized) spatial inertia from
+  // the body origin Bo to the (just determined above) unique inboard mobilizer
+  // frame M's origin Mo. Then re-express the shifted inertia in M.
   for (const SpanningForest::Mobod& mobod : forest().mobods()) {
     if (mobod.is_world()) continue;
     // TODO(sherm1) Can't handle optimized WeldedLinksAssemblies yet.
     DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
     const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
 
+    // Get the shift and new basis.
+    const Frame<T>& frame_M = mobilizer.outboard_frame();
+    const int pose_index = frame_M.get_body_pose_index_in_cache();
+    const Vector3<T>& p_BoMo_B =
+        frame_body_poses->get_X_BF(pose_index).translation();
+    const RotationMatrix<T>& R_MB =
+        frame_body_poses->get_X_FB(pose_index).rotation();
+
     // Get the parameterized spatial inertia.
     const RigidBody<T>& body = mobilizer.outboard_body();
     const SpatialInertia<T> M_BBo_B =
         body.CalcSpatialInertiaInBodyFrame(context);
     frame_body_poses->SetM_BBo_B(mobod.index(), M_BBo_B);
+
+    // Can't shift if there are NaNs. (Skip if T is symbolic.)
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (M_BBo_B.IsNaN()) {
+        // Hopefully no one is planning to use this. If they do it will blow
+        // up later.
+        frame_body_poses->SetM_BMo_M(mobod.index(), M_BBo_B);
+        continue;
+      }
+    }
+
+    // Shift and re-express.
+    const SpatialInertia<T> M_BMo_B = M_BBo_B.Shift(p_BoMo_B);
+    const SpatialInertia<T> M_BMo_M = M_BMo_B.ReExpress(R_MB);
+    frame_body_poses->SetM_BMo_M(mobod.index(), M_BMo_M);
   }
 }
 
@@ -1559,6 +1648,26 @@ void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
 
     composite_node.CalcCompositeBodyInertiaInWorld_TipToBase(pc, M_BBo_W_all,
                                                              &*K_BBo_W_all);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcCompositeBodyInertiasInM(
+    const systems::Context<T>& context,
+    std::vector<SpatialInertia<T>>* I_BMo_M_all) const {
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
+  const PositionKinematicsCacheInM<T>& pcm = EvalPositionKinematicsInM(context);
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the base of the composite body. We'll add in
+    // everything outboard of this node.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+
+    composite_node.CalcCompositeBodyInertiaInM_TipToBase(frame_body_pose_cache,
+                                                         pcm, &*I_BMo_M_all);
   }
 }
 
@@ -1710,6 +1819,32 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcSpatialAccelerationsInMFromVdot(
+    const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+    const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
+    const T* accelerations,
+    std::vector<SpatialAcceleration<T>>* A_WM_M_array) const {
+  DRAKE_ASSERT(positions != nullptr && velocities != nullptr &&
+               accelerations != nullptr);
+  DRAKE_ASSERT(A_WM_M_array != nullptr);
+  DRAKE_ASSERT(ssize(*A_WM_M_array) == topology_.num_mobods());
+
+  // The world's spatial acceleration is always zero.
+  (*A_WM_M_array)[world_mobod_index()] = SpatialAcceleration<T>::Zero();
+
+  // Performs a base-to-tip recursion computing body accelerations. World was
+  // handled above so is skipped here.
+  for (MobodIndex mobod_index{1}; mobod_index < num_mobods(); ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
+
+    // Update per-node kinematics.
+    node.CalcSpatialAccelerationInM_BaseToTip(positions, pcm, velocities, vcm,
+                                              accelerations, &*A_WM_M_array);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcAccelerationKinematicsCache(
     const systems::Context<T>& context, const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc, const VectorX<T>& known_vdot,
@@ -1806,7 +1941,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
 
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces tau for the associated mobilizer.
-      node.CalcInverseDynamics_TipToBase(
+      node.CalcInverseDynamicsViaWorld_TipToBase(
           frame_body_pose_cache, positions, pc, spatial_inertia_in_world_cache,
           dynamic_bias_cache,  // null if ignoring velocities
           *A_WB_array,
@@ -1822,6 +1957,58 @@ void MultibodyTree<T>::CalcInverseDynamics(
   for (int i = 0; i < num_velocities(); ++i) {
     (*tau_array)(i) += reflected_inertia(i) * known_vdot(i);
   }
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::CalcInverseDynamicsViaM(
+    const systems::Context<T>& context, const VectorX<T>& known_vdot,
+    const MultibodyForces<T>& external_forces) const {
+  // Temporary storage used in the computation of inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WM_M_array(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_M_array(num_bodies());
+
+  const T* const positions = get_positions(context).data();
+  const T* const velocities = get_velocities(context).data();
+  const T* const accelerations = known_vdot.data();
+
+  const PositionKinematicsCacheInM<T>& pcm = EvalPositionKinematicsInM(context);
+  const VelocityKinematicsCacheInM<T>& vcm = EvalVelocityKinematicsInM(context);
+
+  CalcSpatialAccelerationsInMFromVdot(positions, pcm, velocities, vcm,
+                                      accelerations, &A_WM_M_array);
+
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
+
+  // Note that applied forces are in W.
+  const std::vector<SpatialForce<T>>& Fapp_Bo_W_array =
+      external_forces.body_forces();
+  const VectorX<T>& tau_app_array = external_forces.generalized_forces();
+
+  VectorX<T> tau(num_velocities());  // The to-be-returned result.
+  for (int level = forest_height() - 1; level >= 0; --level) {
+    for (MobodIndex mobod_index : body_node_levels_[level]) {
+      const BodyNode<T>& node = *body_nodes_[mobod_index];
+
+      DRAKE_ASSERT(node.get_topology().level == level);
+      DRAKE_ASSERT(node.mobod_index() == mobod_index);
+
+      // Compute F_BMo_M for the body associated with this node and project it
+      // onto the space of generalized forces tau for the associated mobilizer.
+      node.CalcInverseDynamicsViaM_TipToBase(
+          frame_body_pose_cache, positions, pcm, vcm, A_WM_M_array,
+          Fapp_Bo_W_array, tau_app_array, &F_BMo_M_array, &tau);
+    }
+  }
+
+  // Add the effect of reflected inertias.
+  // See JointActuator::reflected_inertia().
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
+  for (int i = 0; i < num_velocities(); ++i) {
+    tau(i) += reflected_inertia(i) * known_vdot(i);
+  }
+
+  return tau;
 }
 
 template <typename T>
@@ -2040,6 +2227,37 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
     composite_node.CalcMassMatrixContributionViaWorld_TipToBase(
         pc, K_BBo_W_cache, H_PB_W_cache, M);
+  }
+
+  // Account for reflected inertia.
+  M->diagonal() += reflected_inertia;
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcMassMatrixViaM(const systems::Context<T>& context,
+                                          EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
+
+  const T* const positions = get_positions(context).data();
+  const PositionKinematicsCacheInM<T>& pcm = EvalPositionKinematicsInM(context);
+  const std::vector<SpatialInertia<T>>& I_BM_M_cache =
+      EvalCompositeBodyInertiaInMCache(context);
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
+
+  // The algorithm below does not recurse zero entries and therefore these must
+  // be set a priori.
+  M->setZero();
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the composite body C.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+
+    composite_node.CalcMassMatrixContributionViaM_TipToBase(positions, pcm,
+                                                            I_BM_M_cache, M);
   }
 
   // Account for reflected inertia.
