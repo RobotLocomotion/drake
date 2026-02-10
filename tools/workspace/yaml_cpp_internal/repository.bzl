@@ -10,7 +10,7 @@ def yaml_cpp_internal_repository(
         sha256 = "25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/upstream/b64_decode_failure_is_empty.patch",
+            ":patches/upstream/pr1398.patch",
             ":patches/emit-local-tag.patch",
         ],
         mirrors = mirrors,
