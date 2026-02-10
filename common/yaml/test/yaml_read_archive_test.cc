@@ -817,17 +817,35 @@ doc:
   const std::filesystem::path expected_path("/path/to/somewhere");
   const bool expected_bool = true;
 
+  // Check that loading the above document into non-variant values promotes them
+  // appropriately.
   const auto& basic = AcceptNoThrow<PromotionBasicStruct>(Load(doc));
   EXPECT_EQ(basic.double_type, expected_double);
   EXPECT_EQ(basic.eigen_type, expected_eigen);
   EXPECT_EQ(basic.path_type, expected_path);
   EXPECT_EQ(basic.truthy_type, expected_bool);
 
-  const auto& variant = AcceptNoThrow<PromotionVariantStruct>(Load(doc));
-  EXPECT_EQ(std::get<0>(variant.double_type), expected_double);
-  EXPECT_EQ(std::get<0>(variant.eigen_type), expected_eigen);
-  EXPECT_EQ(std::get<0>(variant.path_type), expected_path);
-  EXPECT_EQ(std::get<0>(variant.truthy_type), expected_bool);
+  // Check that loading the same document into variant values promotes them
+  // exactly the same way.
+  const auto& variant1 = AcceptNoThrow<PromotionVariantStruct>(Load(doc));
+  EXPECT_EQ(std::get<0>(variant1.double_type), expected_double);
+  EXPECT_EQ(std::get<0>(variant1.eigen_type), expected_eigen);
+  EXPECT_EQ(std::get<0>(variant1.path_type), expected_path);
+  EXPECT_EQ(std::get<0>(variant1.truthy_type), expected_bool);
+
+  // Check the same thing but with the struct defaults initialized to the second
+  // type in the variant instead of the first.
+  PromotionVariantStruct variant2{
+      .double_type = DoubleStruct{},
+      .eigen_type = DoubleStruct{},
+      .path_type = DoubleStruct{},
+      .truthy_type = DoubleStruct{},
+  };
+  EXPECT_NO_THROW(YamlReadArchive(Load(doc), GetParam()).Accept(&variant2));
+  EXPECT_EQ(std::get<0>(variant2.double_type), expected_double);
+  EXPECT_EQ(std::get<0>(variant2.eigen_type), expected_eigen);
+  EXPECT_EQ(std::get<0>(variant2.path_type), expected_path);
+  EXPECT_EQ(std::get<0>(variant2.truthy_type), expected_bool);
 }
 
 TEST_P(YamlReadArchiveTest, EigenVector) {
