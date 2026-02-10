@@ -480,7 +480,7 @@ def _merge_yaml_dict_item_into_target(
             # Check if the scalar can be converted to the default type (i.e.,
             # the first type in the Union) when no type tag has been given. If
             # the default type is a primitive, we must be careful to use the
-            # safe converion routine.
+            # safe conversion routine.
             default_type = generic_args[0]
             default_typed_value = None
             if default_type in list(_PRIMITIVE_YAML_TYPES):
