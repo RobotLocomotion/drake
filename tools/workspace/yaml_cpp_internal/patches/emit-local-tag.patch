@@ -12,13 +12,12 @@ Reasoning for not upstreaming this patch: Drake-specific default option.
  }
  
  void EmitFromEvents::EmitProps(const std::string& tag, anchor_t anchor) {
--  if (!tag.empty() && tag != "?" && tag != "!"){
+   if (!tag.empty() && tag != "?" && tag != "!"){
 -      if (tag[0] == '!') {
 -        m_emitter << LocalTag(std::string(tag.begin()+1, tag.end()));
 -      } else {
 -        m_emitter << VerbatimTag(tag);
 -      }
-+  if (!tag.empty() && tag != "?" && tag != "!") {
 +    // N.B. The upstream yaml-cpp uses VerbatimTag here, but Drake has patched
 +    // this file to meet our needs instead. Upstream support for custom tags
 +    // during emitting is "pretty bad" (i.e., non-existent); for details see
