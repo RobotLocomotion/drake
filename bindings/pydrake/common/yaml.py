@@ -496,7 +496,8 @@ def _merge_yaml_dict_item_into_target(
             if default_typed_value is not None:
                 setter(default_typed_value)
                 return
-            # The yaml_value didn't match any allowed Union type.
+            # The yaml_value didn't match (or couldn't be promoted to) any of
+            # the allowed types in the Union.
             raise RuntimeError(
                 f"The schema sum type for '{name}' cannot accept a yaml "
                 f"value '{yaml_value}' of type {yaml_value_type}; only "
