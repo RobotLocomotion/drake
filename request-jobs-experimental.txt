@@ -39,6 +39,10 @@
 @drake-jenkins-bot mac-arm-tahoe-clang-cmake-experimental-release please
 
 ---------- Unprovisioned ----------
+@drake-jenkins-bot linux-arm-noble-unprovisioned-gcc-bazel-experimental-everything-release please
+@drake-jenkins-bot linux-arm-noble-unprovisioned-gcc-bazel-experimental-release please
+@drake-jenkins-bot linux-arm-noble-unprovisioned-gcc-cmake-experimental-packaging please
+@drake-jenkins-bot linux-arm-noble-unprovisioned-gcc-wheel-experimental-release please
 @drake-jenkins-bot linux-jammy-unprovisioned-gcc-cmake-experimental-packaging please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-debug please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-everything-debug please
