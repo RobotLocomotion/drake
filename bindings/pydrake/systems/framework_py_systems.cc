@@ -791,24 +791,29 @@ Note: The above is for the C++ documentation. For Python, use
               fmt::print("publish ptr {}\n",
                   reinterpret_cast<void*>(py_publish.ptr()));
               auto self = py::cast<PyLeafSystem*>(py_self);
-              auto publish =
-                  py::cast<EventCallback<const Context<T>&>>(py_publish);
+
               if (PyInstanceMethod_Check(py_publish.ptr())) {
                 fmt::print("is PyInstanceMethod\n");
                 DRAKE_DEMAND(false);
               } else if (PyMethod_Check(py_publish.ptr())) {
                 fmt::print("is PyMethod\n");
                 DRAKE_DEMAND(false);
-              } else if (PyFunction_Check(py_publish.ptr())){
+              } else if (PyFunction_Check(py_publish.ptr())) {
                 fmt::print("is PyFunction\n");
               }
 
               internal::make_arbitrary_ref_cycle(
                   py_self, py_publish, "DeclarePeriodicPublishEvent");
+              PyObject* publish_ptr = py_publish.ptr();
               self->DeclarePeriodicEvent(period_sec, offset_sec,
                   PublishEvent<T>(TriggerType::kPeriodic,
-                      [&publish](const System<T>&, const Context<T>& context,
-                          const PublishEvent<T>&) {
+                      [publish_ptr](const System<T>&,
+                          const Context<T>& context, const PublishEvent<T>&) {
+                        py::gil_scoped_acquire guard;
+                        py::handle py_publish_from_ptr = publish_ptr;
+                        auto publish =
+                            py::cast<EventCallback<const Context<T>&>>(
+                                py_publish_from_ptr);
                         return publish(context).value_or(
                             EventStatus::Succeeded());
                       }));
