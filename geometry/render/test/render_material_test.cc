@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/geometry/geometry_roles.h"
 

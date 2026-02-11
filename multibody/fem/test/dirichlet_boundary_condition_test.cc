@@ -19,7 +19,7 @@ namespace {
 /* An arbitrary number of degree of freedom made up for testing purpose. */
 static constexpr int kNumDofs = 6;
 using DenseMatrix = Eigen::Matrix<double, kNumDofs, kNumDofs>;
-using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using contact_solvers::internal::BlockSparseSymmetricMatrix3d;
 using Eigen::Matrix3d;
 using Eigen::VectorXd;
 using std::make_unique;
@@ -60,12 +60,12 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
   /* Makes a block diagonal tangent matrix with
     [ A00   0;
       0    A11]. */
-  static unique_ptr<Block3x3SparseSymmetricMatrix> MakeTangentMatrix() {
+  static unique_ptr<BlockSparseSymmetricMatrix3d> MakeTangentMatrix() {
     const std::vector<std::vector<int>> sparsity = {std::vector<int>({0}),
                                                     std::vector<int>({1})};
     contact_solvers::internal::BlockSparsityPattern block_pattern(
         std::vector<int>(2, 3), sparsity);
-    auto A = make_unique<Block3x3SparseSymmetricMatrix>(block_pattern);
+    auto A = make_unique<BlockSparseSymmetricMatrix3d>(block_pattern);
     A->SetBlock(0, 0, A00);
     A->SetBlock(1, 1, A11);
     return A;

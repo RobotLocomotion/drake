@@ -93,12 +93,15 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_same_v<T, int> || std::is_same_v<T, std::size_t> ||
            std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char*>)
 {
   if constexpr (std::is_floating_point_v<T>) {
     return fmt_floating_point(value);
+  } else if constexpr (std::is_integral_v<T>) {
+    return fmt::to_string(value);
   } else {
     return fmt_debug_string(value);
   }
@@ -110,6 +113,8 @@ template std::string StringifyErrorDetailValue<std::string>(const std::string&);
 template std::string StringifyErrorDetailValue<std::string_view>(
     const std::string_view&);
 template std::string StringifyErrorDetailValue<char const*>(char const* const&);
+template std::string StringifyErrorDetailValue<int>(const int&);
+template std::string StringifyErrorDetailValue<std::size_t>(const std::size_t&);
 
 }  // namespace internal
 }  // namespace drake

@@ -188,7 +188,7 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
   unique_ptr<FemState<double>> fem_state = model.MakeFemState();
-  unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+  unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
       tangent_matrix = model.MakeTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
@@ -245,7 +245,7 @@ GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
                               ".*only.*double.*");
   unique_ptr<FemState<T>> fem_state = fem_model->MakeFemState();
   contact_solvers::internal::BlockSparsityPattern empty_pattern({}, {});
-  contact_solvers::internal::Block3x3SparseSymmetricMatrix tangent_matrix(
+  contact_solvers::internal::BlockSparseSymmetricMatrix3d tangent_matrix(
       empty_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(
       fem_model->CalcTangentMatrix(*fem_state, &tangent_matrix),
@@ -278,7 +278,7 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
 
   /* Trying to calculate tangent matrix with the old state causes an exception.
    */
-  unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+  unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
       tangent_matrix = model.MakeTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
@@ -386,13 +386,13 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     const Vector3d weights(0.1, 0.2, 0.3);
 
     unique_ptr<FemState<T>> state0 = model.MakeFemState();
-    unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+    unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
         tangent_matrix0 = model.MakeTangentMatrix();
     model.CalcTangentMatrix(*state0, tangent_matrix0.get());
     const MatrixX<T> dense_tangent_matrix0 = tangent_matrix0->MakeDenseMatrix();
 
     unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
-    unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+    unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
         tangent_matrix1 = model.MakeTangentMatrix();
     model_without_bc.CalcTangentMatrix(*state1, tangent_matrix1.get());
     MatrixX<T> dense_tangent_matrix1 = tangent_matrix1->MakeDenseMatrix();

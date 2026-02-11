@@ -7,20 +7,35 @@ output. For example "MyFunc(foo: int) -> bool" is a valid signature, but
 the sample code "MyFunc(Eigen::Lower)" was being mis-parsed. Fix this by
 patching stubgen to reset in case it sees a double colon.
 
+Upstreamed at https://github.com/python/mypy/pull/20285.
+
 --- mypy/stubdoc.py
 +++ mypy/stubdoc.py
-@@ -139,6 +139,14 @@
+@@ -233,8 +233,21 @@
+             self.accumulator = ""
+             self.state.append(STATE_ARGUMENT_TYPE)
  
-         elif (
-             token.type == tokenize.OP
-+            and token.string == ":"
-+            and self.state[-1] == STATE_ARGUMENT_TYPE
-+        ):
-+            self.reset()
-+            return
-+
 +        elif (
 +            token.type == tokenize.OP
++            and token.string == ":"
++            and self.state[-1] == STATE_ARGUMENT_TYPE
++            and self.accumulator == ""
++        ):
++            # We thought we were after the colon of an "arg_name: arg_type"
++            # stanza, so we were expecting an "arg_type" now. However, we ended
++            # up with "arg_name::" (with two colons). That's a C++ type name,
++            # not an argument name followed by a Python type. This function
++            # signature is malformed / invalid.
++            self.reset()
++
+         elif (
+             token.type == tokenize.OP
              and token.string == "="
              and self.state[-1] in (STATE_ARGUMENT_LIST, STATE_ARGUMENT_TYPE)
          ):
+
+--- mypy-1.19.1.dist-info/RECORD
++++ mypy-1.19.1.dist-info/RECORD
+@@ -173,1 +173,1 @@
+-mypy/stubdoc.py,sha256=JT18oLHTiogu40pCjKxF3JLK00qRsQjAMD9g1X3M24A,18780
++mypy/stubdoc.py,sha256=P5gJIsQ-Jt2shpVVIqGydmBTKmhLwy3IzY8_QqJ8r2k,19357

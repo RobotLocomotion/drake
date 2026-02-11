@@ -182,11 +182,18 @@ TEST_F(IdentifierTests, PutInSet) {
   EXPECT_TRUE(ids.contains(a1));
 }
 
-// Tests the streaming behavior.
+// Tests the streaming behavior. Remove with 2026-05-01 deprecation removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(IdentifierTests, StreamOperator) {
   stringstream ss;
   ss << a2_;
   EXPECT_EQ(ss.str(), "2");
+}
+#pragma GCC diagnostic pop
+
+TEST_F(IdentifierTests, FmtFormatterProducesExpectedString) {
+  EXPECT_EQ(fmt::to_string(a2_), "2");
 }
 
 // Tests the ability to convert the id to string via std::to_string.
@@ -304,8 +311,7 @@ TEST_F(IdentifierTests, InvalidStream) {
     return;
   }
   AId invalid;
-  std::stringstream ss;
-  DRAKE_EXPECT_THROWS_MESSAGE(ss << invalid, ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(fmt::to_string(invalid), ".*is_valid.*failed.*");
 }
 
 }  // namespace

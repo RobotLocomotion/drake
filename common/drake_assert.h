@@ -69,6 +69,65 @@
 /// to silence false positive warnings.  When in doubt, throw an exception
 /// manually instead of using this macro.
 #define DRAKE_UNREACHABLE()
+/// Provides a convenient wrapper to throw an exception when a condition is
+/// unmet.  This is similar to an assertion, but uses exceptions instead of
+/// `::abort()`, and cannot be disabled.
+#define DRAKE_THROW_UNLESS(condition, ...)
+/// Evaluates `condition` and iff the value is false will throw an exception
+/// with a message showing at least the condition text, function name, file, and
+/// line.
+///
+/// The condition must not be a pointer, where we'd implicitly rely on its
+/// nullness. Instead, always write out "!= nullptr" to be precise.
+///
+/// Correct: `DRAKE_THROW_UNLESS(foo != nullptr);`
+/// Incorrect: `DRAKE_THROW_UNLESS(foo);`
+///
+/// Because this macro is intended to provide a useful exception message to
+/// users, we should err on the side of extra detail about the failure. The
+/// meaning of "foo" isolated within error message text does not make it clear
+/// that a null pointer is the proximate cause of the problem.
+///
+/// In addition to the `condition`, up to four value expressions can be
+/// provided. Each value expression and its value will be included in the error
+/// message. For example:
+///
+///   DRAKE_THROW_UNLESS(x < 0, x);
+///
+/// Will include the the value of `x` in the message. If too many value
+/// expressions are specified, this will most likely produce a compiler error
+/// referencing "ENCODE_EACH".
+///
+/// Not all value expression types are supported. The currently supported set
+/// shouldn't be considered *the* definitive set. If yours isn't supported, feel
+/// free to submit a PR to add it (reaching out for help as appropriate).
+#define DRAKE_DEREF(ptr)
+/// Derferences a pointer, with null checking. If the provided pointer is null,
+/// throws an exception. Otherwise, returns a reference to the object being
+/// pointed to.
+///
+/// If the pointer points to a const type, a const reference is returned. If it
+/// points to a non-const type, a non-const reference is returned.
+///
+/// It will typically appear in a class's constructor when it aliases a an
+/// input parameter.
+///
+/// Example usage:
+///
+/// @code{cpp}
+///
+/// class Foo {
+///  public:
+///   Foo(const Bar* bar) : bar_(DRAKE_DEREF(bar)) {}
+///  private:
+///   const Bar& bar_;
+/// };
+///
+/// @warning The pointer passed must be an l-value; do not pass in temporaries.
+/// E.g., this includes function calls that return pointers and pointers to
+/// arrays (&x[0]).
+///
+/// @endcode
 #else  //  DRAKE_DOXYGEN_CXX
 
 // Users should NOT set these; only this header should set them.
@@ -194,6 +253,7 @@ namespace internal {
 template <typename T>
 std::string StringifyErrorDetailValue(const T& value)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+           std::is_same_v<T, int> || std::is_same_v<T, std::size_t> ||
            std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char*>);
@@ -258,41 +318,26 @@ template <typename... NamesAndValues>
   _GET_NTH_ARG(__VA_ARGS__ __VA_OPT__(, ) _e_4, _e_3, _e_2, _e_1, _e_0) \
   (__VA_ARGS__)
 
+/* Dereferences a pointer, throwing an exception for null.
+
+ The extraneous parameters are used to provide context in the thrown exception.
+
+ Note: if a pointer to a const type is passed in, a const reference comes out,
+ otherwise a non-const reference comes out. */
+template <typename PtrType>
+auto SafeDereference(PtrType& ptr, const char* condition, const char* func,
+                     const char* file, int line) -> decltype(*ptr)
+  requires std::is_reference_v<decltype(*ptr)>
+{
+  if (ptr == nullptr) {
+    Throw(condition, func, file, line);
+  }
+  return *ptr;
+}
+
 }  // namespace internal
 }  // namespace drake
 
-/// Provides a convenient wrapper to throw an exception when a condition is
-/// unmet.  This is similar to an assertion, but uses exceptions instead of
-/// `::abort()`, and cannot be disabled.
-///
-/// Evaluates `condition` and iff the value is false will throw an exception
-/// with a message showing at least the condition text, function name, file, and
-/// line.
-///
-/// The condition must not be a pointer, where we'd implicitly rely on its
-/// nullness. Instead, always write out "!= nullptr" to be precise.
-///
-/// Correct: `DRAKE_THROW_UNLESS(foo != nullptr);`
-/// Incorrect: `DRAKE_THROW_UNLESS(foo);`
-///
-/// Because this macro is intended to provide a useful exception message to
-/// users, we should err on the side of extra detail about the failure. The
-/// meaning of "foo" isolated within error message text does not make it clear
-/// that a null pointer is the proximate cause of the problem.
-///
-/// In addition to the `condition`, up to four value expressions can be
-/// provided. Each value expression and its value will be included in the error
-/// message. For example:
-///
-///   DRAKE_THROW_UNLESS(x < 0, x);
-///
-/// Will include the the value of `x` in the message. If too many value
-/// expressions are specified, this will most likely produce a compiler error
-/// referencing "ENCODE_EACH".
-///
-/// Not all value expression types are supported. This shouldn't be interpreted
-/// as *the* definitive list. If yours isn't supported, feel free to submit a PR
-/// to add it (reaching out for help as appropriate).
 #define DRAKE_THROW_UNLESS(condition, ...)                                    \
   do {                                                                        \
     typedef ::drake::assert::ConditionTraits<                                 \
@@ -310,5 +355,9 @@ template <typename... NamesAndValues>
           __LINE__ __VA_OPT__(, ACCUMULATE(__VA_ARGS__)));                    \
     }                                                                         \
   } while (0)
+
+#define DRAKE_DEREF(ptr)                                                \
+  ::drake::internal::SafeDereference(ptr, #ptr " != nullptr", __func__, \
+                                     __FILE__, __LINE__)
 
 #endif  // DRAKE_DOXYGEN_CXX

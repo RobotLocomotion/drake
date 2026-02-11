@@ -181,8 +181,8 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        commit = "23daad7b687725f22b1b5e24e3ac5f1042658c92",
-        sha256 = "bfd3f93e11bd3bb7f4780c33ecf632a9df9db7b05cd9be8e91dbf3ed9653c238",  # noqa
+        commit = "b9b29780aad1bc92e26c8100ec88619c5dbaa2ed",
+        sha256 = "306b4d28c2137c3c540e27033e6411156623d9319fc715f332b65e5c31f289f7",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -192,11 +192,8 @@ def vtk_internal_repository(
             # - Patch file names should begin with the name of the module being
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
-            ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
-            ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
+            ":patches/upstream/rendering_opengl2_replace_single_scattering_with_multi_scattering_in_pbr.patch",
             ":patches/upstream/utilities_x11_more_functions.patch",
-            ":patches/common_core_fmt12.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",

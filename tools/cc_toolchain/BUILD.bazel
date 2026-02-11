@@ -26,28 +26,16 @@ string_flag(
     ],
 )
 
-# In our developer builds and CMake installs, we use the following two flags
-# as optional hints for configuring compiler warnings. It's not strictly
-# necessary to set these, but doing so will tweak the compiler flags and
-# reduce warning spam during the build.
+# In our developer builds and CMake installs, we use the following flag as
+# an optional hint for configuring compiler warnings. It's not strictly
+# necessary to set, but doing so will tweak the compiler flags and reduce
+# warning spam during the build.
 #
-# These are intended for internal use only, not for users to configure.
+# This is intended for internal use only, not for users to configure.
 #
-# TODO(jwnimmer-tri) Ideally, rules_cc would provide,
-# * for 'compiler', a check for the real underlying compiler by invoking it
-#   (akin to CMake) instead of just parsing the filename; and
-# * for 'compiler_major', some toolchain attribute that we could query.
-# Neither of these seem to exist yet.
-string_flag(
-    name = "compiler",
-    build_setting_default = "",
-    values = [
-        "",
-        "gcc",
-        "clang",
-    ],
-)
-
+# TODO(jwnimmer-tri) Ideally, rules_cc would provide some toolchain attribute
+# that we could query for the version of the compiler, but that doesn't seem to
+# exist yet.
 int_flag(
     name = "compiler_major",
     build_setting_default = 0,
@@ -73,37 +61,11 @@ config_setting(
     flag_values = {":error_severity": "error"},
 )
 
-config_setting(
-    name = "compiler_clang",
-    flag_values = {":compiler": "clang"},
-)
-
-config_setting(
-    name = "compiler_gcc",
-    flag_values = {":compiler": "gcc"},
-)
-
-selects.config_setting_group(
-    name = "clang",
-    match_any = [
-        "@rules_cc//cc/compiler:clang",
-        ":compiler_clang",
-    ],
-)
-
-selects.config_setting_group(
-    name = "gcc",
-    match_any = [
-        "@rules_cc//cc/compiler:gcc",
-        ":compiler_gcc",
-    ],
-)
-
 selects.config_setting_group(
     name = "apple_clang_with_warnings",
     match_all = [
         ":apple",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_warning",
     ],
 )
@@ -112,7 +74,7 @@ selects.config_setting_group(
     name = "apple_clang_with_errors",
     match_all = [
         ":apple",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_error",
     ],
 )
@@ -120,7 +82,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_with_warnings",
     match_all = [
-        ":gcc",
+        "@rules_cc//cc/compiler:gcc",
         ":error_severity_warning",
     ],
 )
@@ -128,7 +90,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_with_errors",
     match_all = [
-        ":gcc",
+        "@rules_cc//cc/compiler:gcc",
         ":error_severity_error",
     ],
 )
@@ -137,7 +99,7 @@ selects.config_setting_group(
     name = "linux_clang_with_warnings",
     match_all = [
         ":linux",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_warning",
     ],
 )
@@ -146,7 +108,7 @@ selects.config_setting_group(
     name = "linux_clang_with_errors",
     match_all = [
         ":linux",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_error",
     ],
 )
@@ -183,28 +145,43 @@ selects.config_setting_group(
     ],
 )
 
-config_setting(
-    name = "compiler_major_13",
-    flag_values = {":compiler_major": "13"},
-)
+COMPILER_MAJOR_VERSIONS = [
+    "13",
+    "14",
+    "15",
+]
 
-selects.config_setting_group(
-    name = "gcc_13_with_warnings",
-    match_all = [
-        ":gcc",
-        ":compiler_major_13",
-        ":error_severity_warning",
-    ],
-)
+[
+    config_setting(
+        name = "compiler_major_{}".format(x),
+        flag_values = {":compiler_major": x},
+    )
+    for x in COMPILER_MAJOR_VERSIONS
+]
 
-selects.config_setting_group(
-    name = "gcc_13_with_errors",
-    match_all = [
-        ":gcc",
-        ":compiler_major_13",
-        ":error_severity_error",
-    ],
-)
+[
+    selects.config_setting_group(
+        name = "gcc_{}_with_warnings".format(x),
+        match_all = [
+            "@rules_cc//cc/compiler:gcc",
+            ":compiler_major_{}".format(x),
+            ":error_severity_warning",
+        ],
+    )
+    for x in COMPILER_MAJOR_VERSIONS
+]
+
+[
+    selects.config_setting_group(
+        name = "gcc_{}_with_errors".format(x),
+        match_all = [
+            "@rules_cc//cc/compiler:gcc",
+            ":compiler_major_{}".format(x),
+            ":error_severity_error",
+        ],
+    )
+    for x in COMPILER_MAJOR_VERSIONS
+]
 
 # *****************************************************************************
 # The following sh_binary (and its prerequisite genrule) are used by drake-ci's

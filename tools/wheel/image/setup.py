@@ -14,15 +14,18 @@ python_required = [
     'numpy',
     'pydot',
     'PyYAML',
+    # MOSEK's published wheels declare an upper bound on their supported Python
+    # version, which is currently Python < 3.15. When that changes to a larger
+    # version number, we should bump this up to match, and also grep tools/wheel
+    # for other mentions of MOSEK version bounds and fix those as well. Further,
+    # if this version number is lower than the maximum version for which Drake
+    # builds wheels (see tools/wheel/wheel_builder/macos.py and
+    # tools/wheel/wheel_builder/linux.py), then that should be documented for
+    # users accordingly.
+    # Additionally, MOSEK is not supported on Linux aarch64. (Apple Silicon
+    # is spelled 'arm64', so this doesn't apply there.)
+    'Mosek==11.1.2 ; python_version < "3.15" and platform_machine != "aarch64"',
 ]
-
-# MOSEK's published wheels declare an upper bound on their supported Python
-# version, which is currently Python < 3.14. When that changes to a larger
-# version number, we should bump this up to match, and also grep tools/wheel
-# for other mentions of MOSEK version bounds and fix those as well.
-if sys.version_info[:2] < (3, 14):
-    python_required.append('Mosek==11.0.24')
-
 
 def find_data_files(*patterns):
     result = []
@@ -87,7 +90,7 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development :: Libraries :: Python Modules'],
       license='Various',
-      platforms=['linux_x86_64', 'macosx_x86_64', 'macosx_arm64'],
+      platforms=['linux_x86_64', 'macosx_arm64'],
       packages=_actually_find_packages(),
       # Add in any packaged data.
       include_package_data=True,

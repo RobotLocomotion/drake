@@ -124,6 +124,7 @@ drake_cc_library(
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
+        "multibody_plant_icf_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
         "physical_model_collection.h",
@@ -431,7 +432,7 @@ drake_cc_library(
         "contact_properties.h",
     ],
     internal = True,
-    visibility = ["//visibility:private"],
+    visibility = ["//multibody/contact_solvers:__subpackages__"],
     deps = [
         "//common:default_scalars",
         "//geometry:scene_graph_inspector",

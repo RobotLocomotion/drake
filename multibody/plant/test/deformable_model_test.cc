@@ -101,6 +101,29 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
       ".*RegisterDeformableBody.*continuous MultibodyPlant.*not allowed.*");
 }
 
+/* Tests that deformable models can be added with all supported element
+ subdivision counts. */
+TEST_F(DeformableModelTest, RegisterWithSubdivision) {
+  for (int subd = 0; subd <= 4; subd++) {
+    Sphere sphere(1.0);
+    auto geometry = make_unique<GeometryInstance>(
+        RigidTransformd(), make_unique<Sphere>(sphere),
+        fmt::format("sphere_subd_{}", subd));
+    constexpr double kRezHint = 0.5;
+
+    /* Copy default config with desired element subdivision count. */
+    fem::DeformableBodyConfig<double> body_config_{default_body_config_};
+    body_config_.set_element_subdivision_count(subd);
+    DeformableBodyId body_id = deformable_model_ptr_->RegisterDeformableBody(
+        std::move(geometry), body_config_, kRezHint);
+
+    /* Verify that a corresponding FemModel has been built. */
+    EXPECT_NO_THROW(deformable_model_ptr_->GetFemModel(body_id));
+  }
+
+  plant_->Finalize();
+}
+
 /* Coarsely tests that SetWallBoundaryCondition adds some sort of boundary
  condition. Showing that boundary conditions only get conditionally added (based
  on location of the boundary wall) is sufficient evidence to infer that the

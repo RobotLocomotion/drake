@@ -12,19 +12,26 @@ module(
 
 # Add starlark rules.
 
-bazel_dep(name = "apple_support", version = "1.24.4")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "bazel_features", version = "1.38.0")
-bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "apple_support", version = "2.2.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "bazel_features", version = "1.41.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.2.14")
-bazel_dep(name = "rules_java", version = "9.0.3")
+bazel_dep(name = "rules_cc", version = "0.2.16")
+bazel_dep(name = "rules_java", version = "9.3.0")
 bazel_dep(name = "rules_jvm_external", version = "6.9")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "1.7.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
-bazel_dep(name = "rules_rust", version = "0.67.0")
+bazel_dep(name = "rules_python", version = "1.8.3")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rust", version = "0.68.1")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
-# Customize our toolchains.
+single_version_override(
+    module_name = "rules_cc",
+    patches = [
+        "@drake//tools/workspace/rules_cc:patches/upstream/cc-as-gcc.patch",
+    ],
+)
+
+# Configure the C++ toolchain.
 
 cc_configure = use_extension(
     "@rules_cc//cc:extensions.bzl",
@@ -52,7 +59,7 @@ use_repo(cc_configure, "local_config_cc")
 
 bazel_dep(name = "eigen", version = "5.0.1", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
-bazel_dep(name = "spdlog", version = "1.16.0.bcr.1", repo_name = "module_spdlog")  # noqa
+bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
 # Add C++ module dependencies that are NOT used by Drake's public API, but are
 # used by Drake's implementation. Builds have the option to opt-out of these
@@ -68,8 +75,8 @@ bazel_dep(name = "spdlog", version = "1.16.0.bcr.1", repo_name = "module_spdlog"
 # For first-party Bazel builds (by Drake Developers), the non-module flavor
 # is used by default.
 
-bazel_dep(name = "glib", version = "2.82.2.bcr.6", repo_name = "module_glib")
-bazel_dep(name = "zlib", version = "1.3.1.bcr.7", repo_name = "module_zlib")
+bazel_dep(name = "glib", version = "2.82.2.bcr.7", repo_name = "module_glib")
+bazel_dep(name = "zlib", version = "1.3.1.bcr.8", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
@@ -84,6 +91,70 @@ llvm(
     name = "llvm",
     llvm_version = "20.1.7",
 )
+
+# Configure the Python toolchain.
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+
+PYTHON_VERSIONS = [
+    # When changing this list, see drake/tools/workspace/python/README.md.
+    "3.10",
+    "3.11",
+    "3.12",
+    "3.13",
+    "3.14",
+]
+
+[
+    python.toolchain(python_version = python_version)
+    for python_version in PYTHON_VERSIONS
+]
+
+python.defaults(
+    python_version_file = "gen/python_version.txt",
+)
+
+uv = use_extension(
+    "@rules_python//python/uv:uv.bzl",
+    "uv",
+)
+uv.configure(version = "0.9.27")
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+
+[
+    pip.parse(
+        hub_name = "drake_mypy",
+        python_version = python_version,
+        requirements_lock = "//setup:python/mypy/requirements.txt",
+    )
+    for python_version in PYTHON_VERSIONS
+]
+
+[
+    pip.override(
+        file = "mypy-1.19.1-{abi}-{abi}-{platform}.whl".format(
+            abi = abi,
+            platform = platform,
+        ),
+        patch_strip = 0,
+        patches = [
+            "//tools/workspace/mypy_internal:patches/upstream/reject_double_colon.patch",  # noqa
+            "//tools/workspace/mypy_internal:patches/timeout.patch",
+        ],
+    )
+    for abi in [
+        "cp3{minor}".format(minor = x[2:])
+        for x in PYTHON_VERSIONS
+    ]
+    for platform in [
+        "macosx_11_0_arm64",
+        "manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64",
+        "manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64",
+    ]
+]
+
+use_repo(pip, "drake_mypy")
 
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.
@@ -141,11 +212,6 @@ use_repo(
     # deprecating it until we have nanobind ready.
     #
     "pybind11",
-    #
-    # Deprecated for removal on 2026-02-01.
-    #
-    "lcm",
-    "x11",
 )
 
 # Load Java dependencies.
@@ -164,16 +230,15 @@ use_repo(maven, "drake_maven_internal")
 
 bazel_dep(
     name = "buildifier_prebuilt",
-    version = "8.2.1",
+    version = "8.2.1.2",
     dev_dependency = True,
 )
-
 bazel_dep(
     name = "gflags",
     version = "2.2.2.bcr.1",
-    # TODO(jwnimmer-tri) Set dev_dependency = True on 2026-02-01 with removal
-    # of resource_tool deprecation.
+    dev_dependency = True,
 )
+
 bazel_dep(
     name = "googletest",
     version = "1.17.0.bcr.2",
@@ -188,14 +253,13 @@ single_version_override(
         "//tools/workspace/googletest:patches/upstream/exception_shadowing.patch",  # noqa
         "//tools/workspace/googletest:patches/upstream/param_iterator_interface.patch",  # noqa
         "//tools/workspace/googletest:patches/add_printers.patch",
-        "//tools/workspace/googletest:patches/add_printers_deps.patch",
         "//tools/workspace/googletest:patches/defines.patch",
     ],
 )
 
 bazel_dep(
     name = "google_benchmark",
-    version = "1.9.4",
+    version = "1.9.5",
     dev_dependency = True,
 )
 single_version_override(
@@ -210,7 +274,7 @@ single_version_override(
 
 bazel_dep(
     name = "ruff_prebuilt",
-    version = "0.14.1.3",
+    version = "0.14.10.1",
     dev_dependency = True,
     repo_name = "ruff",
 )
@@ -248,6 +312,7 @@ use_repo(
     "libjpeg_turbo_internal",
     "libpng_internal",
     "libtiff_internal",
+    "libzip_internal",
     "metis_internal",
     "msgpack_internal",
     "nanoflann_internal",
@@ -284,11 +349,6 @@ use_repo(
     # Python code used when building pydrake.
     #
     "clang_cindex_python3_internal",
-    "mypy_extensions_internal",
-    "mypy_internal",
-    "pathspec_internal",
-    "tomli_internal",
-    "typing_extensions_internal",
     #
     # Python libraries used at runtime.
     #
@@ -318,10 +378,6 @@ use_repo(
     #
     "doxygen_internal",
     "styleguide_internal",
-    #
-    # Deprecated for removal on 2026-02-01.
-    #
-    "pkgconfig_x11_internal",
 )
 
 crate_universe = use_extension(

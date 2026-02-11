@@ -47,6 +47,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:drake_bool",
+        "//common:dummy_value",
         "//common:essential",
         "//common:hash",
         "//common:random",

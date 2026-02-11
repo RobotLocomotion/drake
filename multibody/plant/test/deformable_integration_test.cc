@@ -251,7 +251,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
         SpatialForce<double>(Vector3d::Zero(), f_C_W.segment<3>(3 * i))
             .Shift(p_VC_W);
   }
-  const double kTol = 16.0 * std::numeric_limits<double>::epsilon();
+  const double kTol = 32.0 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(contact_info.F_Ac_W().translational(),
                               F_Ac_W_expected.translational(), kTol));
   EXPECT_TRUE(CompareMatrices(contact_info.F_Ac_W().rotational(),

@@ -50,6 +50,35 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "cenic_py",
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_cenic",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+    ],
+    cc_srcs = ["cenic_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":plant_py",
+        "//bindings/pydrake/systems:analysis_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "contact_solvers_py",
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_contact_solvers_icf",
+        "//bindings/pydrake/common:serialize_pybind",
+    ],
+    cc_srcs = ["contact_solvers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
     name = "fem_py",
     cc_deps = [
         "//bindings/generated_docstrings:multibody_fem",
@@ -318,6 +347,8 @@ install_files(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
+    ":cenic_py",
+    ":contact_solvers_py",
     ":fem_py",
     ":inverse_kinematics_py",
     ":math_py",
@@ -407,6 +438,22 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "cenic_test",
+    deps = [
+        ":cenic_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "contact_solvers_test",
+    deps = [
+        ":contact_solvers_py",
+    ],
+)
+
+drake_py_unittest(
     name = "fem_test",
     deps = [
         ":fem_py",
@@ -434,7 +481,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
     ],

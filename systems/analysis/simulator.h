@@ -13,6 +13,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/name_value.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -543,7 +544,7 @@ class Simulator {
   /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /// (To be deprecated) Prefer using per-step publish events instead.
+  /// Prefer using per-step publish events instead.
   ///
   /// Sets whether the simulation should trigger a forced-Publish event on the
   /// System under simulation at the end of every trajectory-advancing step.
@@ -560,11 +561,16 @@ class Simulator {
   ///
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
+  DRAKE_DEPRECATED("2026-06-01",
+                   "This is no longer controlled by the Simulator. It must be "
+                   "defined in the LeafSystem instead. See "
+                   "https://drake.mit.edu/troubleshooting.html#force-publishing"
+                   " for help.")
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
 
-  /// (To be deprecated) Prefer using initialization or per-step publish
+  /// Prefer using initialization or per-step publish
   /// events instead.
   ///
   /// Sets whether the simulation should trigger a forced-Publish at the end
@@ -574,12 +580,20 @@ class Simulator {
   /// @see LeafSystem::DeclareInitializationPublishEvent()
   /// @see LeafSystem::DeclarePerStepPublishEvent()
   /// @see LeafSystem::DeclareForcedPublishEvent()
+  DRAKE_DEPRECATED("2026-06-01",
+                   "This is no longer controlled by the Simulator. It must be "
+                   "be defined in the LeafSystem instead. See "
+                   "https://drake.mit.edu/troubleshooting.html#force-publishing"
+                   " for help.")
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
 
   /// Returns true if the set_publish_every_time_step() option has been
   /// enabled. By default, returns false.
+  DRAKE_DEPRECATED("2026-06-01",
+                   "See https://drake.mit.edu/troubleshooting.html"
+                   "#force-publishing for help.")
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the
@@ -707,7 +721,7 @@ class Simulator {
   ///       constructor is usually associated with fixed-step integrators (i.e.,
   ///       integrators which do not support error estimation).
   template <class Integrator>
-  Integrator& reset_integrator(const T max_step_size) {
+  Integrator& reset_integrator(const T& max_step_size) {
     static_assert(
         std::is_constructible_v<Integrator, const System<T>&, double,
                                 Context<T>*>,
@@ -719,6 +733,13 @@ class Simulator {
     initialization_done_ = false;
     return *static_cast<Integrator*>(integrator_.get());
   }
+
+  /// (Advanced) Resets the integrator to the given object.
+  /// @see argument-less version of reset_integrator() for note about
+  ///      initialization.
+  /// @pre integrator->get_system() is the same object as this->get_system().
+  IntegratorBase<T>& reset_integrator(
+      std::unique_ptr<IntegratorBase<T>> integrator);
 
   /// Gets the length of the interval used for witness function time isolation.
   /// The length of the interval is computed differently, depending on context,
@@ -766,9 +787,11 @@ class Simulator {
   };
 
   // All constructors delegate to here.
+  // @param use_owned_system  If true, `owned_system` must not be null. If
+  //                          false, `system` must not be null.
   Simulator(const System<T>* system,
             std::unique_ptr<const System<T>> owned_system,
-            std::shared_ptr<Context<T>> context);
+            std::shared_ptr<Context<T>> context, bool use_owned_system);
 
   [[nodiscard]] EventStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -863,8 +886,10 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
 
+  // delete with publish_every_time_step 2026-06-01
   bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
 
+  // delete with publish_every_time_step 2026-06-01
   bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};
 
   // These are recorded at initialization or statistics reset.

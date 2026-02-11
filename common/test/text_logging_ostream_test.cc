@@ -31,6 +31,8 @@
 #ifdef HAVE_SPDLOG
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
+
+#include "drake/common/text_logging_spdlog.h"
 #endif  // HAVE_SPDLOG
 
 #include "drake/common/fmt_ostream.h"
@@ -70,7 +72,14 @@ GTEST_TEST(TextLoggingTest, SmokeTestStreamable) {
 // We must run this test last because it changes the default configuration.
 GTEST_TEST(TextLoggingTest, ZZZ_ChangeDefaultSink) {
   // The getter should never return nullptr, even with spdlog disabled.
+#if TEXT_LOGGING_TEST_SPDLOG
   drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
+#pragma GCC diagnostic pop
+#endif
   ASSERT_NE(sink_base, nullptr);
 
 // The remainder of the test case only makes sense when spdlog is enabled.

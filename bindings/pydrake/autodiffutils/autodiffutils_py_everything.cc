@@ -1,5 +1,4 @@
 #include <Eigen/Core>
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/bindings/generated_docstrings/math.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
@@ -10,7 +9,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
-using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
 using std::cos;
 using std::sin;

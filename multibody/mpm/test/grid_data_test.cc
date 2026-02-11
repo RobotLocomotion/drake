@@ -75,7 +75,7 @@ TYPED_TEST(IndexOrFlagTest, StateTransition) {
   EXPECT_FALSE(another_dut.is_inactive());
 }
 
-using FloatingPointTypes = ::testing::Types<float, double>;
+using FloatingPointTypes = ::testing::Types<float, double, AutoDiffXd>;
 
 template <typename T>
 class GridDataTest : public ::testing::Test {};
@@ -100,16 +100,22 @@ TYPED_TEST(GridDataTest, Reset) {
 
 TYPED_TEST(GridDataTest, Equality) {
   using T = TypeParam;
+
+  T one{1.0};
+  if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    one = AutoDiffXd(1.0, 1, 0);
+  }
+
   GridData<T> data1;
   data1.index_or_flag.set_index(123);
-  data1.scratch = Vector3<T>::Ones();
-  data1.v = Vector3<T>::Ones();
+  data1.scratch = Vector3<T>::Constant(one);
+  data1.v = Vector3<T>::Constant(one);
   data1.m = 1;
 
   GridData<T> data2;
   data2.index_or_flag.set_index(123);
-  data2.scratch = Vector3<T>::Ones();
-  data2.v = Vector3<T>::Ones();
+  data2.scratch = Vector3<T>::Constant(one);
+  data2.v = Vector3<T>::Constant(one);
   data2.m = 1;
 
   EXPECT_EQ(data1, data2);

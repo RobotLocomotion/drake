@@ -58,13 +58,13 @@ Matrix3d A22() {
          A20 |  0  | A22
  where A02 = A20.transpose(). We choose values so that A is diagonally dominant
  and thus SPD. */
-Block3x3SparseSymmetricMatrix MakeBlockSparseMatrix() {
+BlockSparseSymmetricMatrix3d MakeBlockSparseMatrix() {
   std::vector<std::vector<int>> sparsity_pattern;
   sparsity_pattern.emplace_back(std::vector<int>{0, 1, 2});
   sparsity_pattern.emplace_back(std::vector<int>{1});
   sparsity_pattern.emplace_back(std::vector<int>{2});
   BlockSparsityPattern block_pattern({{3, 3, 3}}, std::move(sparsity_pattern));
-  Block3x3SparseSymmetricMatrix A(std::move(block_pattern));
+  BlockSparseSymmetricMatrix3d A(std::move(block_pattern));
   A.SetBlock(0, 0, A00());
   A.SetBlock(1, 0, A10());
   A.SetBlock(2, 0, A20());
@@ -83,7 +83,7 @@ Block3x3SparseSymmetricMatrix MakeBlockSparseMatrix() {
 
 and returns the Schur complement of the A11 block. */
 SchurComplement MakeSchurComplement() {
-  Block3x3SparseSymmetricMatrix block_sparse_matrix = MakeBlockSparseMatrix();
+  BlockSparseSymmetricMatrix3d block_sparse_matrix = MakeBlockSparseMatrix();
   const std::unordered_set<int> eliminated_blocks = {1};
   return SchurComplement(block_sparse_matrix, eliminated_blocks);
 }

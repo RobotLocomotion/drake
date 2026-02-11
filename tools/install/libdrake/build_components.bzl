@@ -9,6 +9,7 @@
 # should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
     "//common",
+    "//common/ad",
     "//common/proto",
     "//common/schema",
     "//common/symbolic",
@@ -56,6 +57,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/kuka_iiwa_robot",
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
+    "//multibody/cenic",
     "//multibody/contact_solvers",
     "//multibody/contact_solvers/icf",
     "//multibody/contact_solvers/sap",

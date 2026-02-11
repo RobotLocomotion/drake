@@ -103,10 +103,6 @@ namespace logging {
 See the text_logging.h documentation for a short tutorial. */
 using logger = spdlog::logger;
 
-/** When spdlog is enabled in this build, drake::logging::sink is an alias for
-spdlog::sinks::sink.  When spdlog is disabled, it is an empty class. */
-using spdlog::sinks::sink;
-
 /** True only if spdlog is enabled in this build. */
 constexpr bool kHaveSpdlog = true;
 
@@ -140,14 +136,6 @@ class logger {
   void critical(const Args&...) {}
 };
 
-// A stubbed-out version of `spdlog::sinks::sink`.
-class sink {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(sink);
-
-  sink();
-};
-
 }  // namespace logging
 
 #define DRAKE_LOGGER_TRACE(...)
@@ -164,13 +152,6 @@ See the text_logging.h documentation for a short tutorial. */
 logging::logger* log();
 
 namespace logging {
-
-/** (Advanced) Retrieves the default sink for all Drake logs.  When spdlog is
-enabled, the return value can be cast to spdlog::sinks::dist_sink_mt and thus
-allows consumers of Drake to redirect Drake's text logs to locations other than
-the default of stderr.  When spdlog is disabled, the return value is an empty
-class. */
-sink* get_dist_sink();
 
 /** When constructed, logs a message (at "warn" severity); the destructor is
 guaranteed to be trivial.  This is useful for declaring an instance of this
@@ -225,3 +206,8 @@ extern const char* const kSetLogPatternHelpMessage;
 
 }  // namespace logging
 }  // namespace drake
+
+// Providing the `get_dist_sink()` API via "drake/common/text_logging.h" is
+// deprecated and will be removed from Drake on or after 2026-03-01. To access
+// the sink, instead `#include "drake/common/text_logging_spdlog.h"` directly.
+#include "drake/common/text_logging_spdlog.h"

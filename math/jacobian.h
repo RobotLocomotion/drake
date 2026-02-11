@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/drake_deprecated.h"
+
 namespace drake {
 namespace math {
 
@@ -53,6 +55,9 @@ namespace math {
    at x.
  */
 template <int MaxChunkSize = 10, class F, class Arg>
+DRAKE_DEPRECATED("2026-04-01",
+                 "Removed with no replacement; copy the code into your project "
+                 "if you still need it")
 decltype(auto) jacobian(F&& f, Arg&& x) {
   using Eigen::AutoDiffScalar;
   using Eigen::Index;
@@ -159,6 +164,9 @@ decltype(auto) jacobian(F&& f, Arg&& x) {
  */
 template <int MaxChunkSizeOuter = 10, int MaxChunkSizeInner = 10, class F,
           class Arg>
+DRAKE_DEPRECATED("2026-04-01",
+                 "Removed with no replacement; copy the code into your project "
+                 "if you still need it")
 decltype(auto) hessian(F&& f, Arg&& x) {
   auto jac_fun = [&](const auto& x_inner) {
     return jacobian<MaxChunkSizeInner>(f, x_inner);

@@ -1,3 +1,6 @@
+Drake's published Docker images are deprecated and will no longer
+receive updates after 2026-06-01.
+
 # Docker Image for Docker Hub (Noble)
 
 To create a Docker image similar to those hosted on

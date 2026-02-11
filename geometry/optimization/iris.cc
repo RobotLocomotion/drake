@@ -806,12 +806,6 @@ HPolyhedron IrisNp(const MultibodyPlant<double>& plant,
   return P;
 }
 
-HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
-                                     const Context<double>& context,
-                                     const IrisOptions& options) {
-  return IrisNp(plant, context, options);
-}
-
 void SetEdgeContainmentTerminationCondition(
     IrisOptions* options, const Eigen::Ref<const Eigen::VectorXd>& x_1,
     const Eigen::Ref<const Eigen::VectorXd>& x_2, const double epsilon,

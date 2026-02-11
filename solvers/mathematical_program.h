@@ -2054,7 +2054,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
@@ -2066,7 +2066,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2088,7 +2088,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
@@ -2110,7 +2110,7 @@ class MathematicalProgram {
    Notice that if your quadratic constraint is convex, and you intend to solve
    the problem with a convex solver (like Mosek), then it is better to
    reformulate it with a second order cone constraint. See
-   https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation for
+   https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation for
    an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
@@ -2537,7 +2537,7 @@ class MathematicalProgram {
    * cone. When solving the optimization problem using conic solvers (like
    * Mosek, Gurobi, SCS, etc), it is numerically preferable to impose the
    * convex quadratic constraint as rotated Lorentz cone constraint. See
-   * https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+   * https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
    * @throw exception if this quadratic constraint is not convex (Q is not
    * positive semidefinite)
    * @param Q The Hessian of the quadratic constraint. Should be positive

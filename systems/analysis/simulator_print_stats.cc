@@ -4,6 +4,7 @@
 #include <string>
 
 #include <fmt/core.h>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
@@ -13,6 +14,19 @@
 
 namespace drake {
 namespace systems {
+
+namespace {
+void AddNamedStatisticToJson(const NamedStatistic& statistic,
+                             nlohmann::json* json_summary) {
+  const std::string& key = std::get<0>(statistic);
+  const auto& variant_value = std::get<1>(statistic);
+  std::visit(
+      [&](const auto& unwrapped_value) {
+        (*json_summary)[key] = unwrapped_value;
+      },
+      variant_value);
+}
+}  // namespace
 
 template <typename T>
 void PrintSimulatorStatistics(const Simulator<T>& simulator) {
@@ -31,8 +45,12 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
   fmt::print("General stats regarding discrete updates:\n");
   fmt::print("Number of time steps taken (simulator stats) = {:d}\n",
              simulator.get_num_steps_taken());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // delete with publish_every_time_step 2026-06-01
   fmt::print("Simulator publishes every time step: {}\n",
              simulator.get_publish_every_time_step());
+#pragma GCC diagnostic pop
   fmt::print("Number of publishes = {:d}\n", simulator.get_num_publishes());
   fmt::print("Number of discrete updates = {:d}\n",
              simulator.get_num_discrete_updates());
@@ -159,6 +177,14 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
                  implicit_integrator->get_num_newton_raphson_iterations());
     }
   }
+
+  // Finally, log the machine-readable statistics.
+  fmt::print("\nJSON Statistics:\n");
+  nlohmann::json json_summary;
+  for (const NamedStatistic& statistic : integrator.GetStatisticsSummary()) {
+    AddNamedStatisticToJson(statistic, &json_summary);
+  }
+  fmt::print("{}\n", json_summary.dump(/* indent = */ 2));
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

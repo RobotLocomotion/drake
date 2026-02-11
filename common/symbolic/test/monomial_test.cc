@@ -183,6 +183,18 @@ TEST_F(MonomialTest, GetVariables) {
   EXPECT_EQ(m3.GetVariables(), Variables({var_x_, var_y_, var_z_}));
 }
 
+TEST_F(MonomialTest, MonomialToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(Monomial{}), "1");
+  EXPECT_EQ(fmt::to_string(Monomial{{{var_x_, 1}}}), "x");
+  EXPECT_EQ(fmt::to_string(Monomial{{{var_x_, 2}}}), "x^2");
+  // Variable print order depends on Variable ID (hence on Variable creation
+  // order). z is defined first so it gets printed first, y second, and so on.
+  EXPECT_EQ(fmt::to_string(Monomial{{{var_x_, 1}, {var_z_, 3}}}), "z^3 * x");
+  EXPECT_EQ(fmt::to_string(Monomial{{{var_x_, 2}, {var_z_, 3}}}), "z^3 * x^2");
+  EXPECT_EQ(fmt::to_string(Monomial{{{var_x_, 2}, {var_z_, 3}, {var_y_, 5}}}),
+            "z^3 * y^5 * x^2");
+}
+
 // Checks we can have an Eigen matrix of Monomials without compilation
 // errors. No assertions in the test.
 TEST_F(MonomialTest, EigenMatrixOfMonomials) {
@@ -210,10 +222,10 @@ TEST_F(MonomialTest, MonomialWithZeroExponent) {
   Monomial m1({{var_y_, 2}});
   Monomial m2({{var_x_, 0}, {var_y_, 2}});
   EXPECT_EQ(m1, m2);
-  EXPECT_EQ(m2.get_powers().size(), 1);
-  std::map<Variable, int> power_expected;
-  power_expected.emplace(var_y_, 2);
-  EXPECT_EQ(m2.get_powers(), power_expected);
+  ASSERT_EQ(m2.get_powers().size(), 1);
+  const auto& [base, exp] = *m2.get_powers().begin();
+  EXPECT_EQ(base, var_y_);
+  EXPECT_EQ(exp, 2);
 }
 
 TEST_F(MonomialTest, MonomialBasisX0) {

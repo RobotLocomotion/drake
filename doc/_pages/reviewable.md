@@ -120,6 +120,16 @@ notes: feature`` or ``release notes: fix`` is fine; in the
 case of externals bumps, the notes document doesn't use separate
 sections for fix / feature anyway.
 
+**release notes: announce**<br/>
+
+Drake release notes will frequently highlight specific changes in its
+"Announcements" section. If a PR author (or subsequent reviewer) feels that
+the PR's change should be included in the announcements, they can add this tag
+to call the release engineer's attention to it. This is a helpful aid to the
+release engineer, but, at the end of the day, the release engineer has
+discretion to include PRs in announcements that have not been tagged and even
+omit PRs that _have_ been tagged.
+
 **When combining release notes labels:**
 
 - ``none`` must not be combined with any other label.
@@ -129,6 +139,9 @@ sections for fix / feature anyway.
   because usually the deprecation is concurrent with the addition of its
   replacement or due to some other new change. Only if the deprecation is the
   _sole_ content of the commit will ``newly deprecated`` be the only label.
+- ``announce`` will generally be combined with another label -- presumably the
+  label characterizing the nature of a change being announced. Most typically,
+  it will be partnered with a ``feature`` or ``fix`` label.
 
 # Joint Feature and Platform review
 

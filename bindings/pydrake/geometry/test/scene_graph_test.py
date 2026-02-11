@@ -964,6 +964,12 @@ class TestGeometrySceneGraph(unittest.TestCase):
             mut.HydroelasticContactRepresentation.kTriangle,
             mut.HydroelasticContactRepresentation.kPolygon,
         ):
+            # Check the non-empty return from FindCollisionCandidates() -- see
+            # issue #23839.
+            candidates = query_object.FindCollisionCandidates()
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(candidates[0], (g_id0, g_id1))
+
             expect_triangles = (
                 rep == mut.HydroelasticContactRepresentation.kTriangle
             )
