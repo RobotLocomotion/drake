@@ -51,7 +51,7 @@ wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
 Add the Drake repository to your APT sources list:
 
 ```bash
-echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/$(lsb_release -cs) $(lsb_release -cs) main" \
+echo "deb [arch=$(dpkg-architecture -qDEB_HOST_ARCH)] https://drake-apt.csail.mit.edu/$(lsb_release -cs) $(lsb_release -cs) main" \
   | sudo tee /etc/apt/sources.list.d/drake.list >/dev/null
 ```
 
@@ -75,22 +75,29 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 ## Nightly Releases
 
 Unsigned nightly apt packages of Drake for Ubuntu 22.04 (Jammy) and
-Ubuntu 24.04 (Noble) are available to download at:
+Ubuntu 24.04 (Noble) ⁽¹⁾ are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb)
 
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded with ``0.0.``. For example,
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-jammy.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb)
 
 Nightly packages are retained for 56 days from their date of creation.
 
-To install a nightly apt package, download the archive and install it directly:
+To install a nightly apt package, download the archive and install it directly.
+For example, when using Ubuntu 24.04 (Noble) on amd64:
 
 ```bash
 wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb
 sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-noble.deb
 ```
+
+⁽¹⁾ Drake's support for Ubuntu arm64 APT packages is currently experimental.
+Packages are only available on a nightly basis, not for stable releases. Follow
+[#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
