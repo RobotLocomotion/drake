@@ -159,6 +159,9 @@ EXCLUDE_SYMBOLS        = "*::internal" \
                          "pybind11"
 # Don't document our (obvious) Eigen overloads like "isinf", etc.
 EXCLUDE_SYMBOLS       += "Eigen"
+# For some reason, Doxygen picks up on this primitive type and considers it a
+# Drake class. Nerf it.
+EXCLUDE_SYMBOLS       += "double";
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
