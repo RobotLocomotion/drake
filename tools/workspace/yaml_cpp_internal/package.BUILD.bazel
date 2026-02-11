@@ -13,7 +13,9 @@ _HDRS = glob([
 ], allow_empty = False)
 
 # The upstream sources that we'll use.
-_SRCS = glob([
+_SRCS = [
+    "src/contrib/dragonbox.h",
+] + glob([
     "src/*.cpp",
     "src/*.h",
 ], allow_empty = False)
