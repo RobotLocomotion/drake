@@ -85,6 +85,7 @@ td.paramname {
 td.memItemLeft {
   white-space: nowrap;
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 td.memItemRight {
