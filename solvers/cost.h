@@ -614,7 +614,9 @@ class EvaluatorCost : public Cost {
 
   std::shared_ptr<EvaluatorType> evaluator_;
   std::optional<Eigen::VectorXd> a_;
+#ifndef DRAKE_DOXYGEN_CXX  // See drake#24013 for why this is necessary.
   double b_{};
+#endif
 };
 
 /**
