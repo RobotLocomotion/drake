@@ -250,6 +250,13 @@ struct JointLimitsPenaltyParametersEstimator {
 
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
+constexpr auto kDiscreteContactApproximationTamsi =
+    DiscreteContactApproximation::kTamsi;
+#pragma GCC diagnostic push
+
 // Hack to fully qualify frame names, pending resolution of #9128. Used by
 // geometry registration routines. When this hack is removed, also undo the
 // de-hacking step within internal_geometry_names.cc. Note that unlike the
@@ -502,7 +509,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
   // TAMSI does not support tendon constraints. We've already confirmed that
   // this model is discrete. The only remaining discrete solver is SAP, so we
   // can safely proceed.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support coupler constraints. Use "
@@ -546,7 +553,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
 
   // TAMSI does not support distance constraints. For all other solvers, we let
   // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support distance constraints. Use "
@@ -657,7 +664,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
 
   // TAMSI does not support ball constraints. For all other solvers, we let
   // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support ball constraints. Use "
@@ -700,7 +707,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
 
   // TAMSI does not support weld constraints. For all other solvers, we let
   // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support weld constraints. Use "
@@ -746,7 +753,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
 
   // TAMSI does not support tendon constraints. For all other solvers, we
   // let the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+  if (get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
         "does not support tendon constraints. Use "
@@ -879,8 +886,8 @@ void MultibodyPlant<T>::set_contact_model(ContactModel model) {
 template <typename T>
 DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver() const {
   // Only the TAMSI approximation uses the TAMSI solver.
-  if (discrete_contact_approximation_ == DiscreteContactApproximation::kTamsi)
-    return DiscreteContactSolver::kTamsi;
+  if (discrete_contact_approximation_ == kDiscreteContactApproximationTamsi)
+    return kDiscreteContactSolverTamsi;
   // All other approximations use the SAP solver.
   return DiscreteContactSolver::kSap;
 }
@@ -891,7 +898,7 @@ void MultibodyPlant<T>::set_discrete_contact_approximation(
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
 
-  if (approximation == DiscreteContactApproximation::kTamsi &&
+  if (approximation == kDiscreteContactApproximationTamsi &&
       num_constraints() > 0) {
     throw std::runtime_error(fmt::format(
         "You selected TAMSI as the contact approximation, but you have "

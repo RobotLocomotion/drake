@@ -300,6 +300,9 @@ GTEST_TEST(BallConstraintTests, FinalizedConstraint) {
           *context));
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(
@@ -312,6 +315,7 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
                                                       bodyB, Vector3d{0, 0, 0}),
                               ".*TAMSI does not support ball constraints.*");
 }
+#pragma GCC diagnostic push
 
 GTEST_TEST(BallConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};

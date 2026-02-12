@@ -1735,16 +1735,26 @@ PYBIND11_MODULE(plant, m) {
   {
     using Class = DiscreteContactSolver;
     constexpr auto& cls_doc = doc.DiscreteContactSolver;
-    py::enum_<Class>(m, "DiscreteContactSolver", cls_doc.doc)
-        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
-        .value("kSap", Class::kSap, cls_doc.kSap.doc);
+    py::enum_<Class> cls(m, "DiscreteContactSolver", cls_doc.doc_deprecated);
+    // Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
+#pragma GCC diagnostic pop
+    cls.value("kSap", Class::kSap, cls_doc.kSap.doc);
   }
 
   {
     using Class = DiscreteContactApproximation;
     constexpr auto& cls_doc = doc.DiscreteContactApproximation;
-    py::enum_<Class>(m, "DiscreteContactApproximation", cls_doc.doc)
-        .value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc)
+    py::enum_<Class> cls(
+        m, "DiscreteContactApproximation", cls_doc.doc_deprecated);
+    // Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
+#pragma GCC diagnostic pop
+    cls  // BR
         .value("kSap", Class::kSap, cls_doc.kSap.doc)
         .value("kSimilar", Class::kSimilar, cls_doc.kSimilar.doc)
         .value("kLagged", Class::kLagged, cls_doc.kLagged.doc);

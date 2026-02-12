@@ -398,6 +398,9 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
 // TODO(rpoyner-tri): Add MimicContinuousTime (which should throw the same
 // warning as MimicNoSap).
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(UrdfParserTest, MimicNoSap) {
   // Currently the <mimic> tag is only supported by SAP. Setting the solver
   // to TAMSI should be a warning.
@@ -421,6 +424,7 @@ TEST_F(UrdfParserTest, MimicNoSap) {
           ".*Mimic elements are currently only supported by MultibodyPlant "
           "with a discrete time step and using DiscreteContactSolver::kSap."));
 }
+#pragma GCC diagnostic pop
 
 TEST_F(UrdfParserTest, MimicNoJoint) {
   // Currently the <mimic> tag is only supported by SAP.

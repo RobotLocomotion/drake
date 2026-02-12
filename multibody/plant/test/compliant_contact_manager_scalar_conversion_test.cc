@@ -12,10 +12,19 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace {
 
 using drake::systems::Context;
 using drake::systems::Simulator;
 using Eigen::VectorXd;
+
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
+constexpr auto kDiscreteContactApproximationTamsi =
+    DiscreteContactApproximation::kTamsi;
+#pragma GCC diagnostic push
 
 template <typename T>
 class CompliantContactManagerScalarConversionTest : public ::testing::Test {};
@@ -65,9 +74,9 @@ std::unique_ptr<MultibodyPlant<T>> MakePlant(
   // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
   // arbitrarily choose two model approximations to accomplish this.
   switch (solver_type) {
-    case DiscreteContactSolver::kTamsi:
+    case kDiscreteContactSolverTamsi:
       plant->set_discrete_contact_approximation(
-          DiscreteContactApproximation::kTamsi);
+          kDiscreteContactApproximationTamsi);
       break;
     case DiscreteContactSolver::kSap:
       plant->set_discrete_contact_approximation(
@@ -116,9 +125,9 @@ GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithSap) {
 
 GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithTamsi) {
   TestPlantConversionAndSimulate<double, AutoDiffXd>(
-      DiscreteContactSolver::kTamsi);
+      kDiscreteContactSolverTamsi);
   TestPlantConversionAndSimulate<AutoDiffXd, double>(
-      DiscreteContactSolver::kTamsi);
+      kDiscreteContactSolverTamsi);
 }
 
 template <typename T, typename U>
@@ -133,17 +142,18 @@ void TestPlantConversion(DiscreteContactSolver solver_type) {
 GTEST_TEST(ScalarConvertTest, ConversionToAndFromSymbolic) {
   // Conversion from double to symbolic.
   TestPlantConversion<double, symbolic::Expression>(
-      DiscreteContactSolver::kTamsi);
+      kDiscreteContactSolverTamsi);
   TestPlantConversion<double, symbolic::Expression>(
       DiscreteContactSolver::kSap);
 
   // Conversion from symbolic to double.
   TestPlantConversion<symbolic::Expression, double>(
-      DiscreteContactSolver::kTamsi);
+      kDiscreteContactSolverTamsi);
   TestPlantConversion<symbolic::Expression, double>(
       DiscreteContactSolver::kSap);
 }
 
+}  // namespace
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
