@@ -1093,6 +1093,9 @@ TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
   EXPECT_EQ(spec.offset, 0.5);
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SdfParserTest, MimicNoSap) {
   plant_.set_discrete_contact_approximation(
       DiscreteContactApproximation::kTamsi);
@@ -1124,6 +1127,7 @@ TEST_F(SdfParserTest, MimicNoSap) {
           ".*Mimic elements are currently only supported by MultibodyPlant "
           "with a discrete time step and using DiscreteContactSolver::kSap."));
 }
+#pragma GCC diagnostic pop
 
 TEST_F(SdfParserTest, MimicNoJoint) {
   plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);

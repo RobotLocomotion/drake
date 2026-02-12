@@ -562,6 +562,9 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
             deformable_model_ptr_->HasConstraint(body_id));
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 /* An empty DeformableModel doesn't get in the way of a TAMSI plant. */
 TEST_F(DeformableModelTest, EmptyDeformableModelWorksWithTamsi) {
   plant_->set_discrete_contact_approximation(
@@ -569,6 +572,7 @@ TEST_F(DeformableModelTest, EmptyDeformableModelWorksWithTamsi) {
   EXPECT_TRUE(deformable_model_ptr_->is_empty());
   EXPECT_NO_THROW(plant_->Finalize());
 }
+#pragma GCC diagnostic push
 
 /* If a DeformableModel is not empty, we require the owning plant to use the SAP
  solver. */

@@ -5383,9 +5383,13 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
       {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_EXPECT_THROWS_MESSAGE(plant.set_discrete_contact_approximation(
                                   DiscreteContactApproximation::kTamsi),
                               ".*TAMSI does not support constraints.*");
+#pragma GCC diagnostic pop
 
   plant.Finalize();
 
@@ -6343,6 +6347,10 @@ GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
                               ".*finalized.*");
 }
 
+// Rework this test on 2026-09-01 per TAMSI deprecation. The only test logic we
+// still need is to check for a post-Finalize call to change the approximation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Verify the proper coordination of discrete contact approximations with their
 // corresponding solvers.
 GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
@@ -6385,6 +6393,7 @@ GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
           DiscreteContactApproximation::kTamsi),
       "Post-finalize calls to '.*' are not allowed; .*");
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace multibody
