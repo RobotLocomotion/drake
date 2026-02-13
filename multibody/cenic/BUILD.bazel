@@ -22,7 +22,9 @@ drake_cc_library(
     srcs = ["cenic_integrator.cc"],
     hdrs = ["cenic_integrator.h"],
     deps = [
-        "//multibody/plant",
+        "//multibody/contact_solvers/icf:icf_builder",
+        "//multibody/contact_solvers/icf:icf_external_systems_linearizer",
+        "//multibody/contact_solvers/icf:icf_solver",
         "//systems/analysis:integrator_base",
     ],
 )
@@ -46,10 +48,14 @@ drake_cc_googletest(
     name = "cenic_integrator_test",
     deps = [
         ":cenic_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:maybe_pause_for_user",
         "//multibody/parsing",
-        "//multibody/plant",
         "//systems/analysis:simulator",
-        "//systems/framework:diagram",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis/test_utilities",
+        "//visualization:visualization_config_functions",
     ],
 )
 

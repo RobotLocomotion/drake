@@ -57,7 +57,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    @param meshcat A Meshcat instance.  This class will assume shared ownership
                   for the lifetime of the object.
    @param params  The set of parameters to control this system's behavior.
-   @throws std::exception if `params.publish_period <= 0`.
+   @throws std::exception if `params.publish_period < 0`.
    @throws std::exception if `params.role == Role::kUnassigned`. */
   explicit MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                              MeshcatVisualizerParams params = {});
