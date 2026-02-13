@@ -758,6 +758,7 @@ GTEST_TEST(SpatialInertia, CastToAutoDiff) {
   ASSERT_EQ(com_gradient.size(), 0);
 }
 
+// TODO(2026-06-01): delete test ShiftOperator.
 // Test the shift operator to write into a stream.
 GTEST_TEST(SpatialInertia, ShiftOperator) {
   const double mass = 2.5;
@@ -769,7 +770,10 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   SpatialInertia<double> M(mass, com, G);
 
   std::stringstream stream;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   stream << M;
+#pragma GCC diagnostic pop
   std::string expected_string =
       "\n"
       " mass = 2.5\n"
@@ -779,6 +783,26 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
       "[ 0.25   5.75    0.5]\n"
       "[-0.25    0.5      6]\n";
   EXPECT_EQ(expected_string, stream.str());
+}
+
+// Verify the output string from SpatialInertia's fmt formatter.
+GTEST_TEST(SpatialInertia, ToStringFmtFormatter) {
+  const double mass = 2.5;
+  const Vector3d com(0.1, -0.2, 0.3);
+  const Vector3d m(2.0, 2.3, 2.4);         // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);        // p for products.
+  UnitInertia<double> G(m(0), m(1), m(2),  /* moments of inertia */
+                        p(0), p(1), p(2)); /* products of inertia */
+  SpatialInertia<double> M(mass, com, G);
+  std::string expected_string =
+      "\n"
+      " mass = 2.5\n"
+      " Center of mass = [0.1  -0.2  0.3]\n"
+      " Inertia about point P, I_BP =\n"
+      "[    5   0.25  -0.25]\n"
+      "[ 0.25   5.75    0.5]\n"
+      "[-0.25    0.5      6]\n";
+  EXPECT_EQ(fmt::to_string(M), expected_string);
 }
 
 // Verifies the correctness of:

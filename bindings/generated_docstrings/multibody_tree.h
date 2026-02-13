@@ -11895,6 +11895,15 @@ if they were "welded" together.)""";
 R"""(Returns the model instance which contains all tree elements with no
 explicit model instance specified.)""";
       } default_model_instance;
+      // Symbol: drake::multibody::to_string
+      struct /* to_string */ {
+        // Source: drake/multibody/tree/rotational_inertia.h
+        const char* doc_1args_constRotationalInertia =
+R"""(Returns the string representation of a RotationalInertia object.)""";
+        // Source: drake/multibody/tree/spatial_inertia.h
+        const char* doc_1args_constSpatialInertia =
+R"""(Returns the string representation of a SpatialInertia object.)""";
+      } to_string;
       // Symbol: drake::multibody::world_frame_index
       struct /* world_frame_index */ {
         // Source: drake/multibody/tree/multibody_tree_indexes.h

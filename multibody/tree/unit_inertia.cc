@@ -291,6 +291,14 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   return std::pair(Vector3<double>(lmax, lmed, lmin), R_EA);
 }
 
+template <typename T>
+std::string to_string(const UnitInertia<T>& I) {
+  return fmt::to_string(static_cast<const RotationalInertia<T>&>(I));
+}
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (static_cast<std::string (*)(const UnitInertia<T>&)>(&to_string)));
+
 }  // namespace multibody
 }  // namespace drake
 

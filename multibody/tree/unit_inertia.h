@@ -9,6 +9,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/rotational_inertia.h"
 
@@ -469,8 +470,14 @@ class UnitInertia : public RotationalInertia<T> {
   //@}
 };
 
+template <typename T>
+std::string to_string(const UnitInertia<T>& I);
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(typename T, drake::multibody, UnitInertia<T>, x,
+                   drake::multibody::to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::UnitInertia);
