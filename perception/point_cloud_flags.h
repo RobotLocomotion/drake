@@ -1,12 +1,15 @@
 #pragma once
 
-#include <ostream>
 #include <stdexcept>
 #include <string>
 
+// TODO(2026-06-01): Remove ostream header when `operator<<` is removed.
+#include <ostream>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 
 namespace drake {
 namespace perception {
@@ -156,14 +159,21 @@ class Fields {
 
   bool operator!=(const Fields& rhs) const { return !(*this == rhs); }
 
-  /// Provides human-readable output.
-  friend std::ostream& operator<<(std::ostream& os, const Fields& rhs);
-
  private:
   // TODO(eric.cousineau): Use `optional` to avoid the need for `none` objects?
   BaseFieldT base_fields_{kNone};
   DescriptorType descriptor_type_{kDescriptorNone};
 };
+
+/// Provides a human-readable description of `fields`.
+std::string to_string(const Fields& fields);
+
+/// Provides human-readable output.
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream& operator<<(std::ostream& os, const Fields& rhs);
 
 // Do not use implicit conversion because it becomes ambiguous.
 /// Makes operator| compatible for `BaseField` + `DescriptorType`.
@@ -186,9 +196,6 @@ inline Fields operator|(const DescriptorType& lhs, const Fields& rhs) {
 }  // namespace perception
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::perception::pc_flags::Fields>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::perception::pc_flags, DescriptorType, x, x.name())
+DRAKE_FORMATTER_AS(, drake::perception::pc_flags, Fields, x,
+                   drake::perception::pc_flags::to_string(x))
