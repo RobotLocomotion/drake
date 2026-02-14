@@ -374,11 +374,26 @@ TEST_F(SimplePlant, FailOnTAMSI) {
 
 TEST_F(SimplePlant, FailOnContinuous) {
   MakePlant(0.0);  // Continuous plant.
+  plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {},
+                              valid_lower_limit_, {}, {}, {});
+  plant_->Finalize();
+  auto context = plant_->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant_->EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
-                                  {}, {}, {}),
-      ".*Currently tendon constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+      plant_->get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_generalized_acceleration_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_reaction_forces_output_port().Eval(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      ".*continuous.*not.*support.*constraints.*");
 }
 
 TEST_F(SimplePlant, FailOnFinalized) {
