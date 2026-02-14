@@ -366,17 +366,18 @@ GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
       ".*TAMSI does not support distance constraints.*");
 }
 
-GTEST_TEST(DistanceConstraintTests, FailOnContinuous) {
+GTEST_TEST(DistanceConstraintTests, FailOnContinuousNonCenic) {
   MultibodyPlant<double> plant{0.0};
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
-                                  Vector3d{0, 0, 0}, 1 /* distance */),
-      ".*Currently distance constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+  plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                              Vector3d{0, 0, 0}, 1 /* distance */);
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
 }
 
 GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {

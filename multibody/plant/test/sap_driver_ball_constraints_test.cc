@@ -319,11 +319,11 @@ GTEST_TEST(BallConstraintTests, FailOnContinuous) {
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
-                              Vector3d{0, 0, 0}),
-      ".*Currently ball constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+  plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB, Vector3d{0, 0, 0});
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
 }
 
 GTEST_TEST(BallConstraintTests, FailOnFinalized) {
