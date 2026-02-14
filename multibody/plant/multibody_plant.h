@@ -1804,6 +1804,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// GetConstraintActiveStatus() and set its active status with
   /// SetConstraintActiveStatus().
   ///
+  /// @warning: Adding constraints to a continous time plant is allowed at
+  /// configuration time, but will raise exceptions at run time for results
+  /// that should have been affected by the constraints.
+  /// <!-- TODO(#23759,#23760,#23762,#23763,#23992): revisit this documentation
+  /// as constraints are implemented for CENIC. -->
+  ///
   /// <!-- TODO(joemasterjohn): As different constraint types are added in a
   /// piecemeal fashion, the burden of managing and maintaining these different
   /// constraints becomes cumbersome for the plant. Consider a new
@@ -1942,8 +1948,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -1996,8 +2000,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not positive or zero.
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2055,8 +2057,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2077,8 +2077,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2161,8 +2159,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @pre `damping >= 0` (if not std::nullopt).
   ///
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (`is_discrete() == false`).
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap).
@@ -6134,9 +6130,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                       const systems::Context<T>& context,
                                       systems::BasicVector<T>* output) const;
 
-  // This fuction evaluates the desired state input ports and returns them as a
-  // DesiredStateInput.
+  // This function evaluates the desired state input ports and returns them as
+  // a DesiredStateInput.
   internal::DesiredStateInput<T> AssembleDesiredStateInput(
+      const systems::Context<T>& context) const;
+
+  // Throws if the plant uses features not supported by continuous time
+  // calculations.
+  void ThrowIfUnsupportedContinuousTimeDynamics(
       const systems::Context<T>& context) const;
 
   // Computes all non-contact applied forces including:
