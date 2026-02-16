@@ -100,6 +100,9 @@ drake_cc_library(
         "//common:nice_type_name",
         "//systems/framework:leaf_system",
     ],
+    implementation_deps = [
+        "//multibody/cenic:make_cenic_integrator",
+    ],
 )
 
 drake_cc_library(
@@ -427,10 +430,13 @@ drake_cc_library(
     srcs = ["simulator_print_stats.cc"],
     hdrs = ["simulator_print_stats.h"],
     deps = [
+        ":simulator",
+    ],
+    implementation_deps = [
         ":implicit_integrator",
         ":integrator_base",
-        ":simulator",
         "@fmt",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -488,6 +494,16 @@ drake_cc_googletest(
         "//common/yaml",
         "//systems/framework:leaf_system",
         "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulator_config_functions_cenic_test",
+    deps = [
+        ":simulator",
+        ":simulator_config_functions",
+        "//multibody/cenic",
+        "//planning:robot_diagram_builder",
     ],
 )
 

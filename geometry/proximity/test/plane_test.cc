@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/plane.h"
 
 #include <limits>
+#include <string>
 #include <vector>
 
 #include <fmt/format.h>
@@ -11,14 +12,27 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
-namespace internal {
 namespace {
 
 using Eigen::Vector3d;
 using Planed = Plane<double>;
+using math::RigidTransformd;
+using math::RotationMatrixd;
+
+GTEST_TEST(PlaneTest, Getters) {
+  const Vector3d nhat_F(1, 2, 3);
+  const Vector3d p_FP(0.25, -0.5, 0.75);
+  const Planed plane_F{nhat_F, p_FP};
+  EXPECT_TRUE(CompareMatrices(plane_F.unit_normal(), nhat_F.normalized()));
+  // We don't expect the point on the plane to necessarily *match*. But we do
+  // expect it to evaluate to a height of zero.
+  EXPECT_DOUBLE_EQ(plane_F.CalcHeight(plane_F.reference_point()), 0);
+}
 
 // Tests the constructor -- with particular emphasis on normalization behavior.
 GTEST_TEST(PlaneTest, Construction) {
@@ -31,13 +45,13 @@ GTEST_TEST(PlaneTest, Construction) {
   {
     // Case: unnormalized vector produces normalized results.
     const Planed plane_F{0.5 * nhat_F, p_FP};
-    EXPECT_TRUE(CompareMatrices(plane_F.normal(), nhat_F, kEps));
+    EXPECT_TRUE(CompareMatrices(plane_F.unit_normal(), nhat_F, kEps));
   }
 
   {
     // Case: normalized vector comes through untouched.
     const Planed plane_F{nhat_F, p_FP};
-    EXPECT_TRUE(CompareMatrices(plane_F.normal(), nhat_F));
+    EXPECT_TRUE(CompareMatrices(plane_F.unit_normal(), nhat_F));
   }
 
   {
@@ -53,7 +67,7 @@ GTEST_TEST(PlaneTest, Construction) {
     } else {
       // In release, it is simply used.
       const Planed plane_F{0.5 * nhat_F, p_FP, true /* already_normalized */};
-      EXPECT_TRUE(CompareMatrices(plane_F.normal(), 0.5 * nhat_F));
+      EXPECT_TRUE(CompareMatrices(plane_F.unit_normal(), 0.5 * nhat_F));
     }
   }
 
@@ -91,6 +105,69 @@ GTEST_TEST(PlaneTest, CalcHeight) {
     for (int i = 0; i < 2; ++i) {
       EXPECT_NEAR(plane_F.CalcHeight(p_FQs[i]), -h_Qs[i], kEps);
     }
+  }
+}
+
+GTEST_TEST(PlaneTest, BoxOverlap) {
+  // We'll set up the problem in some frame C, where the plane normal is
+  // Cz = [0, 0, 1] and the offset is zero. Once we've configured a box w.r.t.
+  // to that frame, we'll re-express them all in a separate frame P.
+
+  struct Box {
+    Vector3d center;
+    RotationMatrixd orientation;
+    bool expected_result{};
+    std::string description;
+  };
+
+  const Vector3d half_width{1, 2, 3};
+
+  // Compute two arbitrary orientations and the corresponding clearance along
+  // the z-axis when the box is aligned with each orientation.
+  const std::vector<RotationMatrixd> R_CHs{
+      RotationMatrixd::MakeFromOneVector(Vector3d(-1, 1, 1), 1),
+      RotationMatrixd::MakeFromOneVector(Vector3d(1, -1, -2), 1)};
+
+  const RigidTransformd X_PC(RotationMatrixd(), Vector3d(0.5, -1.5, 2.0));
+  const Plane<double> plane_P(X_PC.rotation().col(2), X_PC.translation());
+
+  // In the problems below, the x- and y-values of the center don't matter, so
+  // we'll put in some dummy non-zero values to strongly assert their
+  // irrelevance.
+  const double dummy_x = -3;
+  const double dummy_y = 4;
+  std::vector<Box> boxes;
+  for (int i = 0; i < ssize(R_CHs); ++i) {
+    const RotationMatrixd& R_CH = R_CHs[i];
+    const double clearance = R_CH.row(2).cwiseAbs().dot(half_width.transpose());
+    boxes.push_back(
+        Box{.center = Vector3d(dummy_x, dummy_y, clearance + 1e-10),
+            .orientation = R_CH,
+            .expected_result = false,
+            .description = fmt::format("Separated just above - pose {}", i)});
+    boxes.push_back(
+        Box{.center = Vector3d(dummy_x, dummy_y, clearance - 1e-10),
+            .orientation = R_CH,
+            .expected_result = true,
+            .description = fmt::format("Penetrating from above - pose {}", i)});
+    boxes.push_back(
+        Box{.center = Vector3d(dummy_x, dummy_y, -clearance - 1e-10),
+            .orientation = R_CH,
+            .expected_result = false,
+            .description = fmt::format("Separated just below - pose {}", i)});
+    boxes.push_back(
+        Box{.center = Vector3d(dummy_x, dummy_y, -clearance + 1e-10),
+            .orientation = R_CH,
+            .expected_result = true,
+            .description = fmt::format("Penetrating from below - pose {}", i)});
+  }
+
+  for (const auto& box_C : boxes) {
+    const Vector3d p_PBo = X_PC * box_C.center;
+    const RotationMatrixd R_PB = X_PC.rotation() * box_C.orientation;
+    EXPECT_EQ(plane_P.BoxOverlaps(half_width, p_PBo, R_PB),
+              box_C.expected_result)
+        << box_C.description;
   }
 }
 
@@ -148,6 +225,5 @@ GTEST_TEST(PlaneTest, MixedScalar) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

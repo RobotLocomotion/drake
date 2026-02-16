@@ -130,7 +130,7 @@ def _download_binaries(*, timestamp, staging, version):
     """
 
     # This is a partial inventory of our binary releases (tgz and wheel only).
-    # The apt and docker releases are handled separately.
+    # The apt and Docker releases are handled separately.
     if staging:
         assert version is not None
         assert timestamp is None

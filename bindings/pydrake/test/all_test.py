@@ -137,6 +137,8 @@ class TestAll(unittest.TestCase):
             # multibody
             # - benchmarks
             "MakeAcrobotPlant",
+            # - contact_solvers
+            "IcfSolverParameters",
             # - inverse_kinematics
             "InverseKinematics",
             # - math

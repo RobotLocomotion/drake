@@ -1,12 +1,14 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <utility>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
@@ -182,6 +184,12 @@ class MonomialBasisElement : public PolynomialBasisElement {
   [[nodiscard]] Expression DoToExpression() const override;
 };
 
+std::string to_string(const MonomialBasisElement& m);
+
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m);
 
 /** Returns a multiplication of two monomials, @p m1 and @p m2.
@@ -240,9 +248,5 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::symbolic::MonomialBasisElement>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::symbolic, MonomialBasisElement, x,
+                   drake::symbolic::to_string(x))

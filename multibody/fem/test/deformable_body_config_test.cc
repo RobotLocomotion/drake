@@ -15,6 +15,7 @@ GTEST_TEST(DeformableBodyConfigTest, DefaultValues) {
   EXPECT_EQ(config.stiffness_damping_coefficient(), 0.0);
   EXPECT_EQ(config.mass_density(), 1.5e3);
   EXPECT_EQ(config.material_model(), MaterialModel::kLinearCorotated);
+  EXPECT_EQ(config.element_subdivision_count(), 0);
 }
 
 GTEST_TEST(DeformableBodyConfigTest, Setters) {
@@ -31,6 +32,8 @@ GTEST_TEST(DeformableBodyConfigTest, Setters) {
   EXPECT_EQ(config.mass_density(), 1e3);
   config.set_material_model(MaterialModel::kLinear);
   EXPECT_EQ(config.material_model(), MaterialModel::kLinear);
+  config.set_element_subdivision_count(4);
+  EXPECT_EQ(config.element_subdivision_count(), 4);
 }
 
 }  // namespace

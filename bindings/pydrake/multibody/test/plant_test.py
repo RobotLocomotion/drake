@@ -1351,6 +1351,15 @@ class TestPlant(unittest.TestCase):
         ).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
+        v_AQi_E = plant.CalcPointsVelocities(
+            context=context,
+            frame_B=base_frame,
+            p_BQi=np.array([[0, 1, 2], [10, 11, 12]]).T,
+            frame_A=world_frame,
+            frame_E=world_frame,
+        ).T
+        self.assertTupleEqual(v_AQi_E.shape, (2, 3))
+
         # Verify CalcTotalMass() calculates a non-zero mass.
         p_mass = plant.CalcTotalMass(context=context)
         numpy_compare.assert_float_not_equal(p_mass, 0.0)

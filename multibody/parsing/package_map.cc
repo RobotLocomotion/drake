@@ -976,15 +976,20 @@ void PackageMap::AddPackageXml(const char* filename) {
   this->AddPackageXml(std::string(filename));
 }
 
+std::string PackageMap::to_string() const {
+  std::string result{"PackageMap:\n"};
+  if (size() == 0) {
+    result.append("  [EMPTY!]\n");
+  }
+  for (const auto& [package_name, data] : impl_->map()) {
+    result.append(
+        fmt::format("  - {}: {}\n", package_name, data.display_path()));
+  }
+  return result;
+}
+
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
-  out << "PackageMap:\n";
-  if (package_map.size() == 0) {
-    out << "  [EMPTY!]\n";
-  }
-  for (const auto& [package_name, data] : package_map.impl_->map()) {
-    out << "  - " << package_name << ": " << data.display_path() << "\n";
-  }
-  return out;
+  return out << fmt::to_string(package_map);
 }
 
 }  // namespace multibody

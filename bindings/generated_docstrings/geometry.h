@@ -4596,6 +4596,24 @@ You can also use your browser to download this file, by typing
 "/download" on the end of the URL (i.e., accessing ``web_url() +
 "/download"``).)""";
         } StaticHtml;
+        // Symbol: drake::geometry::Meshcat::StaticZip
+        struct /* StaticZip */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(Like StaticHtml(), returns a standalone snapshot of the visualizer and
+its contents; the return value is a ZIP file containing a thin
+``meshcat.html`` page and the assets (meshes, textures, etc.) as
+separate files.
+
+When you are uploading the unzipped files to a website, this will
+typically be a more efficient representation as compared to
+StaticHtml(). However, it cannot be opened directly by a browser from
+disk. A simple web server like ``python -m http.server`` is required.
+
+You can also use your browser to download this file, by typing
+"/download.zip" on the end of the URL (i.e., accessing ``web_url() +
+"/download.zip"``).)""";
+        } StaticZip;
         // Symbol: drake::geometry::Meshcat::StopRecording
         struct /* StopRecording */ {
           // Source: drake/geometry/meshcat.h
@@ -6102,7 +6120,7 @@ as a zero-radius sphere.
 | Scalar | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace |
 Mesh | Sphere | | :--------: | :-----: | :------: | :-----: |
 :-------: | :--------: | :--------: | :-----: | :-----: | | double |
-2e-15 | 4e-15 | 5e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 5e-15ᶜ | 4e-15 | |
+2e-15 | 4e-15 | 6e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 6e-15ᶜ | 4e-15 | |
 AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 3e-15 | |
 Expression | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ***Table 8***: Worst
 observed error (in m) for 2mm penetration/separation between geometry

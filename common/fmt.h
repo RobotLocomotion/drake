@@ -9,6 +9,9 @@
 // This file contains the essentials of fmt support in Drake, mainly
 // compatibility code to inter-operate with different versions of fmt.
 
+// N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
+// file should be kept in sync.
+
 namespace drake {
 
 #if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
@@ -38,21 +41,6 @@ trailing ".0" when formatting integer-valued floating-point numbers.
 template <typename T>
 std::string fmt_floating_point(T x)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double>);
-
-template <typename T>
-[[deprecated(
-    "\nDRAKE DEPRECATED: The fmt_floating_point function now only allows "
-    "'float' and 'double' as template arguments; other types are deprecated.\n"
-    "The deprecated code will be removed from Drake on or after 2026-02-01.")]]
-std::string fmt_floating_point(T x)
-  requires(!(std::is_same_v<T, float> || std::is_same_v<T, double>))
-{
-  std::string result = fmt::format("{:#}", x);
-  if (result.back() == '.') {
-    result.push_back('0');
-  }
-  return result;
-}
 
 /** Returns `fmt::("{:?}", x)`, i.e, using fmt's "debug string format"; see
 https://fmt.dev docs for the '?' presentation type for details. We provide this

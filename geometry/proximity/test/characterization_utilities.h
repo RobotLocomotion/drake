@@ -342,7 +342,7 @@ class CharacterizeResultTest : public ::testing::Test {
                 |    error    |
                 |-------------|     e = query.error
                 |             |
-               e/4            e
+               e/12            e
 
    This gives us a reasonably tight bound on the error.
 

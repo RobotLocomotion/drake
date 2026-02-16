@@ -25,6 +25,7 @@ using std::vector;
 
 using test::ExprEqual;
 using test::PolyEqual;
+using test::PolynomialMapTypeEqual;
 
 class SymbolicPolynomialTest : public ::testing::Test {
  protected:
@@ -103,7 +104,7 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType1) {
   map.emplace(Monomial{var_x_}, -2.0 * a_);          // x ↦ -2a
   map.emplace(Monomial{{{var_y_, 3.0}}}, 4.0 * b_);  // y³ ↦ 4b
   const Polynomial p{map};                           // p = -2ax + 4by³
-  EXPECT_EQ(p.monomial_to_coefficient_map(), map);
+  EXPECT_PRED2(PolynomialMapTypeEqual, p.monomial_to_coefficient_map(), map);
   EXPECT_EQ(p.ToExpression(), -2 * a_ * x_ + 4 * b_ * pow(y_, 3));
   EXPECT_EQ(p.decision_variables(), Variables({var_a_, var_b_}));
   EXPECT_EQ(p.indeterminates(), Variables({var_x_, var_y_}));
@@ -114,7 +115,8 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType2) {
   for (int i = 0; i < monomials_.size(); ++i) {
     p_map.emplace(monomials_[i], 1);
   }
-  EXPECT_EQ(Polynomial{p_map}.monomial_to_coefficient_map(), p_map);
+  EXPECT_PRED2(PolynomialMapTypeEqual,
+               Polynomial{p_map}.monomial_to_coefficient_map(), p_map);
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructFromMapType3) {
@@ -167,32 +169,32 @@ TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
 
 TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates1) {
   const Polynomial p1{1.0, var_xyz_};  // p₁ = 1.0,
-  EXPECT_EQ(p1.monomial_to_coefficient_map(),
-            Polynomial::MapType({{Monomial{}, Expression(1.0)}}));
+  EXPECT_PRED2(PolynomialMapTypeEqual, p1.monomial_to_coefficient_map(),
+               Polynomial::MapType({{Monomial{}, Expression(1.0)}}));
   // p₂ = ax + by + cz + 10
   const Polynomial p2{a_ * x_ + b_ * y_ + c_ * z_ + 10, var_xyz_};
-  EXPECT_EQ(p2.monomial_to_coefficient_map(),
-            Polynomial::MapType({{Monomial{var_x_}, a_},
-                                 {Monomial{var_y_}, b_},
-                                 {Monomial{var_z_}, c_},
-                                 {Monomial{}, 10}}));
+  EXPECT_PRED2(PolynomialMapTypeEqual, p2.monomial_to_coefficient_map(),
+               Polynomial::MapType({{Monomial{var_x_}, a_},
+                                    {Monomial{var_y_}, b_},
+                                    {Monomial{var_z_}, c_},
+                                    {Monomial{}, 10}}));
   // p₃ = 3ab²*x²y -bc*z³
   const Polynomial p3{
       3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(z_, 3), var_xyz_};
-  EXPECT_EQ(p3.monomial_to_coefficient_map(),
-            Polynomial::MapType(
-                // x²y ↦ 3ab²
-                {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
-                 // z³ ↦ -bc
-                 {Monomial{{{var_z_, 3}}}, -b_ * c_}}));
+  EXPECT_PRED2(PolynomialMapTypeEqual, p3.monomial_to_coefficient_map(),
+               Polynomial::MapType(
+                   // x²y ↦ 3ab²
+                   {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
+                    // z³ ↦ -bc
+                    {Monomial{{{var_z_, 3}}}, -b_ * c_}}));
 
   // p₄ = 3ab²*x²y - bc*x³
   const Polynomial p4{
       3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(x_, 3), var_xyz_};
-  EXPECT_EQ(p4.monomial_to_coefficient_map(),
-            Polynomial::MapType(
-                {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
-                 {Monomial{{{var_x_, 3}}}, -b_ * c_}}));
+  EXPECT_PRED2(PolynomialMapTypeEqual, p4.monomial_to_coefficient_map(),
+               Polynomial::MapType(
+                   {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
+                    {Monomial{{{var_x_, 3}}}, -b_ * c_}}));
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates2) {
@@ -582,7 +584,8 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialPolynomial2) {
   Polynomial::MapType product_map_expected{};
   product_map_expected.emplace(Monomial(), 1);
   product_map_expected.emplace(Monomial(var_x_, 2), -1);
-  EXPECT_EQ(product_map_expected, (p1 * p2).monomial_to_coefficient_map());
+  EXPECT_PRED2(PolynomialMapTypeEqual, product_map_expected,
+               (p1 * p2).monomial_to_coefficient_map());
 }
 
 TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialExpression) {
@@ -953,7 +956,8 @@ TEST_F(SymbolicPolynomialTest, ConstructNonPolynomialCoefficients) {
     const Expression& e{item.first};
     const Polynomial p{e, indeterminates_};
     const Polynomial::MapType& expected_map{item.second};
-    EXPECT_EQ(p.monomial_to_coefficient_map(), expected_map);
+    EXPECT_PRED2(PolynomialMapTypeEqual, p.monomial_to_coefficient_map(),
+                 expected_map);
   }
 }
 
@@ -1614,6 +1618,35 @@ TEST_F(SymbolicPolynomialTest, CalcPolynomialWLowerTriangularPart) {
           var_a_ * var_b_ * pow(var_y_, 4),
       var_xy_);
   EXPECT_PRED2(test::PolyEqualAfterExpansion, poly3, poly3_expected);
+}
+
+TEST_F(SymbolicPolynomialTest, PolynomialToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(Polynomial{}), "0");
+  EXPECT_EQ(fmt::to_string(Polynomial{x_, Variables{var_x_}}), "1*x");
+  EXPECT_EQ(fmt::to_string(Polynomial{3 * x_, Variables{var_x_}}), "3*x");
+  // One-monomial case
+  EXPECT_EQ(fmt::to_string(
+                Polynomial{3 * a_ * pow(b_, 2) * pow(x_, 2) * y_, var_xy_}),
+            "(3 * a * pow(b, 2))*x^2 * y");
+  // Multi-monomial cases
+  EXPECT_EQ(
+      fmt::to_string(Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2), var_xyz_}),
+      "-1*z^2 + (b * c)*z^3");
+  EXPECT_EQ(fmt::to_string(
+                Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_, var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*x");
+  EXPECT_EQ(fmt::to_string(Polynomial{
+                b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_ + y_, var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*x");
+  EXPECT_EQ(fmt::to_string(Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_ +
+                                          y_ + pow(x_, 2) * y_ * z_,
+                                      var_xyz_}),
+            "-1*z^2 + (b * c)*z^3 + 1*y + 1*x + 1*x^2 * y * z");
+  EXPECT_EQ(
+      fmt::to_string(Polynomial{b_ * c_ * pow(z_, 3) - pow(z_, 2) + x_ + y_ +
+                                    pow(x_, 2) * y_ * z_ + pow(y_, 2),
+                                var_xyz_}),
+      "-1*z^2 + (b * c)*z^3 + 1*y + 1*y^2 + 1*x + 1*x^2 * y * z");
 }
 
 }  // namespace

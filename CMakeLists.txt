@@ -57,17 +57,17 @@ if(APPLE)
   endif()
 
   list(APPEND BAZELRC_IMPORTS "tools/macos.bazelrc")
+else()
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
 
   execute_process(
     COMMAND "/usr/bin/arch"
     OUTPUT_STRIP_TRAILING_WHITESPACE
-    OUTPUT_VARIABLE MACOS_ARCH)
-  if(MACOS_ARCH STREQUAL "")
-    message(FATAL_ERROR "Could NOT query macOS arch")
+    OUTPUT_VARIABLE UBUNTU_ARCH)
+  if(UBUNTU_ARCH STREQUAL "")
+    message(FATAL_ERROR "Could NOT query linux arch")
   endif()
-  list(APPEND BAZELRC_IMPORTS "tools/macos-arch-${MACOS_ARCH}.bazelrc")
-else()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
 
   find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
   mark_as_advanced(LSB_RELEASE_EXECUTABLE)
@@ -219,11 +219,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
-# The supported Python major/minor versions should match those listed in
-# doc/_pages/from_source.md and setup/python/pyproject.toml.
+# The supported Python major/minor versions.
+# When changing any of these, see drake/tools/workspace/python/README.md.
 if(APPLE)
-  # The macOS python version should match what's listed in both the
-  # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
   set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)

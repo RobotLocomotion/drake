@@ -666,6 +666,7 @@ TEST_F(KukaIiwaModelTests, StateAccess) {
 //    respect to v.
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
+// - MultibodyTree::CalcPointsVelocities()
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
@@ -747,6 +748,49 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   const Vector3<double> Jv_WE_times_v = Jv_WE * v;
   EXPECT_TRUE(CompareMatrices(Jv_WE_times_v, v_WE, kTolerance,
                               MatrixCompareType::relative));
+
+  // Verify CalcPointsVelocities() matches v_WE = Jv_WE * v.
+  Vector3<double> v_WEo_W;  // Quantity to be calculated.
+  tree().CalcPointsVelocities(*context_, frame_E, p_EoGo_E, frame_W, frame_W,
+                              &v_WEo_W);
+  EXPECT_TRUE(
+      CompareMatrices(v_WEo_W, v_WE, kTolerance, MatrixCompareType::relative));
+
+  // Create a set of points to further test CalcPointsVelocities().
+  constexpr int num_position_vectors = 4;
+  MatrixX<double> p_EoEi_E(3, num_position_vectors);
+  p_EoEi_E.col(0) = Vector3<double>(0, 0, 0);
+  p_EoEi_E.col(1) = Vector3<double>(1, 2, 3);
+  p_EoEi_E.col(2) = Vector3<double>(-3, 2, -1.23);
+  p_EoEi_E.col(3) = Vector3<double>(-0.2, std::sqrt(2), -3.14);
+
+  // Verify CalcPointsVelocities() expressed-in-frame: v_WEi_E = Jv_WEi_E * v.
+  MatrixX<double> v_WEi_E(3, num_position_vectors);  // Quantity to calculate.
+  tree().CalcPointsVelocities(*context_, frame_E, p_EoEi_E, frame_W, frame_E,
+                              &v_WEi_E);
+  Matrix3X<double> Jv_WEi_E(3, tree().num_velocities());
+  for (int i = 0; i < num_position_vectors; ++i) {
+    tree().CalcJacobianTranslationalVelocity(*context_, JacobianWrtVariable::kV,
+                                             frame_E, frame_E, p_EoEi_E.col(i),
+                                             frame_W, frame_E, &Jv_WEi_E);
+    EXPECT_TRUE(CompareMatrices(v_WEi_E.col(i), Jv_WEi_E * v, kTolerance,
+                                MatrixCompareType::relative));
+  }
+
+  // Verify CalcPointsVelocities() measured-in-frame: v_WEo_E = Jv_WEo_E * v.
+  const RigidBody<double>& link3 = tree().GetRigidBodyByName("iiwa_link_3");
+  const Frame<double>& frame_M = link3.body_frame();  // Measured-in frame.
+  Matrix3X<double> v_MEi_M(3, num_position_vectors);  // Quantity to calculate.
+  tree().CalcPointsVelocities(*context_, frame_E, p_EoEi_E, frame_M, frame_M,
+                              &v_MEi_M);
+  Matrix3X<double> Jv_MEi_M(3, tree().num_velocities());
+  for (int i = 0; i < num_position_vectors; ++i) {
+    tree().CalcJacobianTranslationalVelocity(*context_, JacobianWrtVariable::kV,
+                                             frame_E, frame_E, p_EoEi_E.col(i),
+                                             frame_M, frame_M, &Jv_MEi_M);
+    EXPECT_TRUE(CompareMatrices(v_MEi_M.col(i), Jv_MEi_M * v, kTolerance,
+                                MatrixCompareType::relative));
+  }
 
   // Verify that MultibodyTree::CalcPointsPositions() computes the same value
   // of p_WE. Even both code paths resolve to CalcPointsPositions(), here we
@@ -1100,6 +1144,21 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityD) {
   //   b) the Jacobian should be exactly zero.
   EXPECT_EQ(p_WP_out, p_WP_set);
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(3 * npoints, nv));
+
+  // For each point P, calculate v_WP_W (P's velocity measured in World W,
+  // expressed in world W.  Note: This test case calculates velocities measured
+  // in world for points that are attached to world.
+  Matrix3X<double> v_WP_W(3, npoints);  // Calculated quantities.
+  tree().CalcPointsVelocities(*context_, frame_W, p_WP_set, frame_W, frame_W,
+                              &v_WP_W);
+  EXPECT_EQ(v_WP_W, MatrixX<double>::Zero(3, npoints));
+
+  // Since v_WP_W = 0, v_WP_link3 should also be zero.
+  const Frame<double>& link3 = tree().GetFrameByName("iiwa_link_3");
+  Matrix3X<double> v_WP_link3(3, npoints);  // Calculated quantities.
+  tree().CalcPointsVelocities(*context_, frame_W, p_WP_set, frame_W, link3,
+                              &v_WP_link3);
+  EXPECT_EQ(v_WP_link3, MatrixX<double>::Zero(3, npoints));
 }
 
 // Verify that even when the input set of points and/or the Jacobian might

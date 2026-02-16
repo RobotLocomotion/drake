@@ -858,10 +858,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "plane",
+    srcs = ["plane.cc"],
     hdrs = ["plane.h"],
     deps = [
         ":mesh_traits",
+        "//common:default_scalars",
         "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 

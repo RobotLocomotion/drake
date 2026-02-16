@@ -33,7 +33,9 @@ class VolumetricModel : public FemModelImpl<Element> {
   static_assert(
       std::is_same_v<
           VolumetricElement<typename Element::IsoparametricElement,
-                            typename Element::Quadrature, ConstitutiveModel>,
+                            typename Element::Quadrature, ConstitutiveModel,
+                            typename Element::SubdIsoparametricElement,
+                            typename Element::SubdQuadrature>,
           Element>,
       "The template parameter `Element` must be of type VolumetricElement.");
 

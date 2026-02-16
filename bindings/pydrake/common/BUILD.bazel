@@ -374,7 +374,9 @@ drake_py_unittest(
 
 drake_cc_library(
     name = "deprecation_example_class",
-    testonly = True,
+    # N.B. We would like to say `testonly = True` here but that causes a crash
+    # with Bazel 8.5.1. This target has private visibility anyway, so it's not
+    # too bad to omit the `testonly` attribute.
     srcs = ["test/deprecation_example/example_class.cc"],
     hdrs = ["test/deprecation_example/example_class.h"],
     deps = [

@@ -14,7 +14,6 @@
 
 // #include "drake/common/autodiff.h"
 // #include "drake/common/autodiff_config.h"
-// #include "drake/common/bit_cast.h"
 // #include "drake/common/cond.h"
 // #include "drake/common/constants.h"
 // #include "drake/common/copyable_unique_ptr.h"
@@ -1609,6 +1608,11 @@ not reflect any sort of mathematical total order.)""";
           // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } terms;
+        // Symbol: drake::Polynomial::Monomial::to_string
+        struct /* to_string */ {
+          // Source: drake/common/polynomial.h
+          const char* doc = R"""()""";
+        } to_string;
       } Monomial;
       // Symbol: drake::Polynomial::Polynomial<T>
       struct /* ctor */ {
@@ -1792,6 +1796,11 @@ R"""(Returns true if this is a univariate polynomial)""";
 R"""(A comparison to allow std::lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
       } operator_lt;
+      // Symbol: drake::Polynomial::to_string
+      struct /* to_string */ {
+        // Source: drake/common/polynomial.h
+        const char* doc = R"""()""";
+      } to_string;
     } Polynomial;
     // Symbol: drake::Polynomiald
     struct /* Polynomiald */ {

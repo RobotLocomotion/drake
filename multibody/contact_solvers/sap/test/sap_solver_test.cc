@@ -9,12 +9,14 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/systems/framework/context.h"
 
+using drake::math::RotationMatrixd;
 using drake::systems::Context;
 using Eigen::Matrix2d;
 using Eigen::Matrix3d;
@@ -170,12 +172,16 @@ class PizzaSaverProblem {
         mu_, stiffness_, taud_, beta, 1.0e-3};
 
     // For these tests, only the signed distance phi is relevant.
-    // Object indices must be valid, even though not used in these tests. Every
-    // other configuration will be left uninitialized.
+    // All other configuration values are initialized arbitrarily and unused.
     const ContactConfiguration<double> configuration{
-        .objectA = 0 /* valid, though not used */,
-        .objectB = 0 /* valid, though not used */,
-        .phi = phi0};
+        .objectA = 0,
+        .p_ApC_W = Vector3d::Zero(),
+        .objectB = 0,
+        .p_BqC_W = Vector3d::Zero(),
+        .phi = phi0,
+        .vn = 0,
+        .fe = 0,
+        .R_WC = RotationMatrixd::Identity()};
 
     MatrixXd J;  // Full system Jacobian for the three contacts.
     CalcContactJacobian(q0(3), &J);

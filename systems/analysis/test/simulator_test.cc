@@ -181,9 +181,6 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
   const double h = 1;
   Simulator<double> simulator(system);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
-
   simulator.get_mutable_context().SetTime(0);
   simulator.AdvanceTo(1);
 
@@ -303,13 +300,15 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   const double offset2_;
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
 };
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// delete with publish_every_time_step 2026-06-01
 // Disables non-witness based publishing for witness function testing.
 void DisableDefaultPublishing(Simulator<double>* s) {
   s->set_publish_at_initialization(false);
   s->set_publish_every_time_step(false);
 }
-
+#pragma GCC diagnostic pop
 // Initializes the Simulator's integrator to fixed step mode for witness
 // function related tests.
 void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double h) {
@@ -937,9 +936,6 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
 
   simulator.set_target_realtime_rate(0.5);
-  // Request forced-publishes at every internal step.
-  simulator.set_publish_at_initialization(true);
-  simulator.set_publish_every_time_step(true);
 
   // Set the integrator and initialize the simulator.
   simulator.Initialize();
@@ -951,7 +947,6 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
 
-  EXPECT_EQ(spring_mass.get_publish_count(), 1001);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
 
   // Current time is 1. An earlier final time should fail.
@@ -1021,10 +1016,13 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// delete this test with publish_every_time_step 2026-06-01
 // Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
-GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
+GTEST_TEST(SimulatorTest, DisablePublishEveryTimestepDeprecated) {
+  analysis_test::MySpringMassSystemTemp<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(false);
@@ -1039,10 +1037,93 @@ GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
   EXPECT_EQ(1, simulator.get_num_publishes());
 }
 
+// Delete this test with publish_every_time_step 2026-06-01
+// Try a purely continuous system with no sampling.
+GTEST_TEST(SimulatorTest,
+           SpringMassNoSampleUsingPublishEveryTimeStepDeprecated) {
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
+
+  // Set the integrator default step size.
+  const double h = 1e-3;
+
+  analysis_test::MySpringMassSystemTemp<double> spring_mass(kSpring, kMass,
+                                                            0.0);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
+
+  // Create the integrator.
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
+
+  simulator.set_target_realtime_rate(0.5);
+  // Request forced-publishes at every internal step.
+  simulator.set_publish_at_initialization(true);
+  simulator.set_publish_every_time_step(true);
+
+  // Set the integrator and initialize the simulator.
+  simulator.Initialize();
+
+  // Simulate for 1 second.
+  simulator.AdvanceTo(1.0);
+
+  EXPECT_NEAR(simulator.get_context().get_time(), 1.0, 1e-8);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
+
+  EXPECT_EQ(spring_mass.get_publish_count(), 1001);
+  EXPECT_EQ(spring_mass.get_update_count(), 0);
+
+  // Current time is 1. An earlier final time should fail.
+  EXPECT_THROW(simulator.AdvanceTo(0.5), std::runtime_error);
+}
+
+// delete this test with publish_every_time_step 2026-06-01
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
 // evenly so we should get some step size modification here.
-GTEST_TEST(SimulatorTest, SpringMass) {
+GTEST_TEST(SimulatorTest, SpringMassUsingPublishEveryTimeStepDeprecated) {
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
+
+  // Set the integrator default step size.
+  const double h = 1e-3;
+
+  // Create the mass spring system and the simulator.
+  analysis_test::MySpringMassSystemTemp<double> spring_mass(kSpring, kMass,
+                                                            30.0);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Set initial condition using the Simulator's internal context.
+  spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
+
+  // Create the integrator and initialize it.
+  auto& integrator =
+      simulator.reset_integrator<ExplicitEulerIntegrator<double>>(h);
+  integrator.Initialize();
+
+  // Set the integrator and initialize the simulator.
+  simulator.Initialize();
+
+  // Simulate to one second.
+  simulator.AdvanceTo(1.0);
+
+  EXPECT_GT(simulator.get_num_steps_taken(), 1000);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 30);
+
+  // We're calling Publish() every step, and extra steps have to be taken
+  // since the step size doesn't divide evenly into the sample rate. Shouldn't
+  // require more than one extra step per sample though.
+  EXPECT_LE(spring_mass.get_publish_count(), 1030);
+  EXPECT_EQ(spring_mass.get_update_count(), 30);
+}
+#pragma GCC diagnostic pop
+
+// Repeat the SpringMassNoSample test but now the continuous steps are
+// interrupted by a discrete sample every 1/30 second. The step size doesn't
+// divide that evenly so we should get some step size modification here.
+GTEST_TEST(SimulatorTest, SpringMassRegularSampling) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
@@ -1069,11 +1150,6 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_updates(), 30);
-
-  // We're calling Publish() every step, and extra steps have to be taken
-  // since the step size doesn't divide evenly into the sample rate. Shouldn't
-  // require more than one extra step per sample though.
-  EXPECT_LE(spring_mass.get_publish_count(), 1030);
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
 
@@ -1715,8 +1791,6 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
   simulator.AdvanceTo(0.5);
 
   // Update occurs at 1000Hz, at the beginning of each step (there is no
@@ -1752,9 +1826,6 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
         events[simulator.get_num_steps_taken()].push_back(kIntegrate);
       });
 
-  // Run a simulation with per-step forced-publishing enabled.
-  simulator.set_publish_at_initialization(true);
-  simulator.set_publish_every_time_step(true);
   simulator.AdvanceTo(0.5);
 
   // Verify that at least one of each event type was triggered.
@@ -2110,10 +2181,6 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   sim.get_mutable_integrator().set_fixed_step_mode(true);
   sim.get_mutable_integrator().set_maximum_step_size(0.001);
 
-  // Disables all simulator induced publish events, so that all publish calls
-  // are initiated by sys.
-  sim.set_publish_at_initialization(false);
-  sim.set_publish_every_time_step(false);
   sim.Initialize();
   sim.AdvanceTo(0.1);
 

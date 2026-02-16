@@ -2,10 +2,12 @@ import pydrake.geometry as mut  # ruff: isort: skip
 
 import copy
 import gc
+import io
 import itertools
 import unittest
 import urllib.request
 import weakref
+import zipfile
 
 import numpy as np
 import umsgpack
@@ -337,6 +339,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIn(
             "data:application/octet-binary;base64", meshcat.StaticHtml()
         )
+        with zipfile.ZipFile(io.BytesIO(meshcat.StaticZip())) as zip_file:
+            self.assertIn("meshcat.html", zip_file.namelist())
         gamepad = meshcat.GetGamepad()
         # Check default values (assuming no gamepad messages have arrived):
         self.assertIsNone(gamepad.index)

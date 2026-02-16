@@ -12,6 +12,11 @@
     "bazelisk",
     "bazel-module"
   ],
+  "bazel-module": {
+    "managerFilePatterns": [
+      "cmake/MODULE.bazel.in"
+    ]
+  },
   "labels": [
     "priority: low",
     "release notes: fix",

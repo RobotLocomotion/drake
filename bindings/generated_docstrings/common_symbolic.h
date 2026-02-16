@@ -1326,6 +1326,12 @@ R"""(Returns this monomial raised to ``p``.
 Raises:
     RuntimeError if ``p`` is negative.)""";
         } pow_in_place;
+        // Symbol: drake::symbolic::Monomial::to_string
+        struct /* to_string */ {
+          // Source: drake/common/symbolic/monomial.h
+          const char* doc =
+R"""(Returns the string representation of this monomial.)""";
+        } to_string;
         // Symbol: drake::symbolic::Monomial::total_degree
         struct /* total_degree */ {
           // Source: drake/common/symbolic/monomial.h
@@ -2628,6 +2634,11 @@ Parameter ``n``:
 Precondition:
     n>=0.)""";
       } pow;
+      // Symbol: drake::symbolic::to_string
+      struct /* to_string */ {
+        // Source: drake/common/symbolic/chebyshev_basis_element.h
+        const char* doc = R"""()""";
+      } to_string;
     } symbolic;
   } drake;
 } pydrake_doc_common_symbolic;

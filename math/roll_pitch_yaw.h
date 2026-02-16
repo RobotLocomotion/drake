@@ -2,14 +2,16 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -564,7 +566,18 @@ class RollPitchYaw {
 /// `std::ostream`. Especially useful for debugging.
 /// @relates RollPitchYaw.
 template <typename T>
-std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy);
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& out, const RollPitchYaw<T>& rpy);
+
+/// Represents a RollPitchYaw object as a string. Especially useful for
+/// debugging.
+/// @relates RollPitchYaw.
+template <typename T>
+std::string to_string(const RollPitchYaw<T>& rpy);
 
 /// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
 /// @relates RollPitchYaw
@@ -573,12 +586,8 @@ using RollPitchYawd = RollPitchYaw<double>;
 }  // namespace math
 }  // namespace drake
 
-// Format RollPitchYaw using its operator<<.
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::math::RollPitchYaw<T>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename T, drake::math, RollPitchYaw<T>, x,
+                   drake::math::to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RollPitchYaw);

@@ -1,4 +1,4 @@
-# The upstream lib/curl_config.h.cmake has a bajillion settings that it
+# The upstream lib/curl_config-cmake.h.in has a bajillion settings that it
 # measures from the host platform. In order to have a reproducible build,
 # we set them manually for Drake rather than measuring them.
 
@@ -121,6 +121,7 @@ CMAKE_DEFINES = [
     "HAVE_LIBGEN_H",
     "HAVE_LIBZ",
     "HAVE_LOCALE_H",
+    "HAVE_LOCALTIME_R",
     "HAVE_LONGLONG",
     "HAVE_NETDB_H",
     "HAVE_NETINET_IN_H",
@@ -201,6 +202,7 @@ CMAKE_UNDEFINES = [
     "CURL_DISABLE_LIBCURL_OPTION",
     "CURL_DISABLE_MIME",
     "CURL_DISABLE_SOCKETPAIR",
+    "CURL_DISABLE_TYPECHECK",
     "CURL_DISABLE_VERBOSE_STRINGS",
     "CURL_EXTERN_SYMBOL",
     "CURL_KRB5_VERSION",
@@ -269,6 +271,7 @@ CMAKE_UNDEFINES = [
     "USE_APPLE_IDN",
     "USE_APPLE_SECTRUST",
     "USE_ARES",
+    "USE_BACKTRACE",
     "USE_ECH",
     "USE_GNUTLS",
     "USE_GSASL",
@@ -296,7 +299,6 @@ CMAKE_UNDEFINES = [
     "USE_WATT32",
     "USE_WIN32_CRYPTO",
     "USE_WIN32_IDN",
-    "USE_WIN32_LARGE_FILES",
     "USE_WIN32_LDAP",
     "USE_WINDOWS_SSPI",
     "USE_WOLFSSL",

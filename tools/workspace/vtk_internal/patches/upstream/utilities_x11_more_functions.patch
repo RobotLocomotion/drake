@@ -2,58 +2,72 @@
 
 --- Utilities/X11/vtkX11Functions.cxx
 +++ Utilities/X11/vtkX11Functions.cxx
-@@ -79,4 +79,9 @@ DEFINE_POINTER_TO_FUNCTION(vtkXCreateWindow);
+@@ -86,6 +86,10 @@ DEFINE_POINTER_TO_FUNCTION(vtkXRootWindow);
  DEFINE_POINTER_TO_FUNCTION(vtkXGetVisualInfo);
+ DEFINE_POINTER_TO_FUNCTION(vtkXMatchVisualInfo);
+ DEFINE_POINTER_TO_FUNCTION(vtkXGetErrorText);
 +DEFINE_POINTER_TO_FUNCTION(vtkXClearWindow);
 +DEFINE_POINTER_TO_FUNCTION(vtkXFreeColormap);
-+DEFINE_POINTER_TO_FUNCTION(vtkXInitThreads);
 +DEFINE_POINTER_TO_FUNCTION(vtkXMapRaised);
 +DEFINE_POINTER_TO_FUNCTION(vtkXWindowEvent);
- 
+
  // Xcursor API
  #if VTK_HAVE_XCURSOR
-@@ -167,2 +172,7 @@ extern "C"
+@@ -185,6 +189,10 @@ extern "C"
        LOAD_POINTER_TO_FUNCTION(libX11, XGetVisualInfo, vtkXGetVisualInfo);
+       LOAD_POINTER_TO_FUNCTION(libX11, XMatchVisualInfo, vtkXMatchVisualInfo);
+       LOAD_POINTER_TO_FUNCTION(libX11, XGetErrorText, vtkXGetErrorText);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XClearWindow, vtkXClearWindow);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XFreeColormap, vtkXFreeColormap);
-+      LOAD_POINTER_TO_FUNCTION(libX11, XInitThreads, vtkXInitThreads);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XMapRaised, vtkXMapRaised);
 +      LOAD_POINTER_TO_FUNCTION(libX11, XWindowEvent, vtkXWindowEvent);
  #if VTK_HAVE_XCURSOR
-@@ -245,3 +255,8 @@ extern "C"
+       for (const char** libName = XCURSOR_LIBRARY_NAMES; *libName != nullptr; ++libName)
+       {
+@@ -274,6 +282,10 @@ extern "C"
        NULLIFY_POINTER_TO_FUNCTION(vtkXGetVisualInfo);
+       NULLIFY_POINTER_TO_FUNCTION(vtkXMatchVisualInfo);
+       NULLIFY_POINTER_TO_FUNCTION(vtkXGetErrorText);
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXClearWindow);
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXFreeColormap);
-+      NULLIFY_POINTER_TO_FUNCTION(vtkXInitThreads);
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXMapRaised);
 +      NULLIFY_POINTER_TO_FUNCTION(vtkXWindowEvent);
- 
+
  // Xcursor API
+ #if VTK_HAVE_XCURSOR
 
 --- Utilities/X11/vtkX11Functions.h.in
 +++ Utilities/X11/vtkX11Functions.h.in
-@@ -111,3 +111,8 @@
+@@ -117,6 +117,10 @@
  #define vtkXGetVisualInfo VTK_ABI_NAMESPACE_MANGLE(vtkXGetVisualInfo)
+ #define vtkXMatchVisualInfo VTK_ABI_NAMESPACE_MANGLE(vtkXMatchVisualInfo)
+ #define vtkXGetErrorText VTK_ABI_NAMESPACE_MANGLE(vtkXGetErrorText)
 +#define vtkXClearWindow VTK_ABI_NAMESPACE_MANGLE(vtkXClearWindow)
 +#define vtkXFreeColormap VTK_ABI_NAMESPACE_MANGLE(vtkXFreeColormap)
-+#define vtkXInitThreads VTK_ABI_NAMESPACE_MANGLE(vtkXInitThreads)
 +#define vtkXMapRaised VTK_ABI_NAMESPACE_MANGLE(vtkXMapRaised)
 +#define vtkXWindowEvent VTK_ABI_NAMESPACE_MANGLE(vtkXWindowEvent)
- 
+
  #if VTK_HAVE_XCURSOR
-@@ -198,2 +203,7 @@ extern "C"
+ #define vtkXcursorFilenameLoadCursor VTK_ABI_NAMESPACE_MANGLE(vtkXcursorFilenameLoadCursor)
+@@ -215,6 +219,10 @@ extern "C"
    typedef XVisualInfo* (*vtkXGetVisualInfoType)(Display*, long, XVisualInfo*, int*);
+   typedef int (*vtkXMatchVisualInfoType)(Display*, int, int, int, XVisualInfo*);
+   typedef int (*vtkXGetErrorTextType)(Display*, int, char*, int);
 +  typedef int (*vtkXClearWindowType)(Display*, Window);
 +  typedef Colormap (*vtkXFreeColormapType)(Display*, Window);
-+  typedef Status (*vtkXInitThreadsType)();
 +  typedef int (*vtkXMapRaisedType)(Display*, Window);
 +  typedef int (*vtkXWindowEventType)(Display*, Window, long, XEvent*);
    // Xcursor API
-@@ -263,2 +273,7 @@ extern "C"
+ #if VTK_HAVE_XCURSOR
+   typedef Cursor (*vtkXcursorFilenameLoadCursorType)(Display*, const char*);
+@@ -283,6 +291,10 @@ extern "C"
    VTKX11_EXPORT extern vtkXGetVisualInfoType vtkXGetVisualInfo;
+   VTKX11_EXPORT extern vtkXMatchVisualInfoType vtkXMatchVisualInfo;
+   VTKX11_EXPORT extern vtkXGetErrorTextType vtkXGetErrorText;
 +  VTKX11_EXPORT extern vtkXClearWindowType vtkXClearWindow;
 +  VTKX11_EXPORT extern vtkXFreeColormapType vtkXFreeColormap;
-+  VTKX11_EXPORT extern vtkXInitThreadsType vtkXInitThreads;
 +  VTKX11_EXPORT extern vtkXMapRaisedType vtkXMapRaised;
 +  VTKX11_EXPORT extern vtkXWindowEventType vtkXWindowEvent;
    // Xcursor API
+ #if VTK_HAVE_XCURSOR
+   VTKX11_EXPORT extern vtkXcursorFilenameLoadCursorType vtkXcursorFilenameLoadCursor;

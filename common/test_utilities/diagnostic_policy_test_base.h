@@ -9,7 +9,6 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 
 namespace drake {
 namespace test {
