@@ -473,9 +473,7 @@ TEST_F(DoublePendulum, EffortLimits) {
 }
 
 /* Checks that coupler constraints are handled correctly by the integrator. */
-// TODO(#23992): MultibodyPlant does not yet support coupler constraints on
-// continuous plants. Enable this test once the obstacle is removed.
-TEST_F(DoublePendulum, DISABLED_CoupledJoints) {
+TEST_F(DoublePendulum, CoupledJoints) {
   const double gear_ratio = 0.5;
   plant_.AddCouplerConstraint(plant_.GetJointByName("joint1"),
                               plant_.GetJointByName("joint2"), gear_ratio);
