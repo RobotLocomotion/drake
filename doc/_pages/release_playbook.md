@@ -188,9 +188,12 @@ the main body of the document:
    2. Click "Publish release".
    3. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
       repository and select the "Post-Release Actions" template.
-   4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
+   4. Update the GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues/400)
       repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
       constant.
+      - Change the issue name to reflect the current release version.
+      - Add a comment that includes the link to the release notes for the new
+        version.
    5. Announce on Drake Slack, ``#general``.
    6. Party on, Wayne.
 
