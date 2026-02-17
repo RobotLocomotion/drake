@@ -16,6 +16,7 @@ PYBIND11_MODULE(cenic, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_cenic.drake.multibody;
 
+  py::module::import("pydrake.multibody.contact_solvers");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.analysis");
 
@@ -29,7 +30,12 @@ PYBIND11_MODULE(cenic, m) {
             // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
-            py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc);
+            py::keep_alive<1, 3>(), doc.CenicIntegrator.ctor.doc)
+        .def("get_solver_parameters",
+            &CenicIntegrator<T>::get_solver_parameters,
+            doc.CenicIntegrator.get_solver_parameters.doc)
+        .def("SetSolverParameters", &CenicIntegrator<T>::SetSolverParameters,
+            py::arg("parameters"), doc.CenicIntegrator.SetSolverParameters.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 }
