@@ -2585,10 +2585,6 @@ Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
 
 Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
-
-Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
     solver is not SAP. (i.e. get_discrete_contact_solver() !=
     DiscreteContactSolver::kSap))""";
@@ -2620,10 +2616,6 @@ Raises:
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
@@ -2706,10 +2698,6 @@ Raises:
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
@@ -3156,10 +3144,6 @@ Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
 
 Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (``is_discrete() == false``).
-
-Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
     solver is not SAP. (i.e. get_discrete_contact_solver() !=
     DiscreteContactSolver::kSap).)""";
@@ -3192,10 +3176,6 @@ Raises:
 
 Raises:
     RuntimeError if the MultibodyPlant has already been finalized.
-
-Raises:
-    RuntimeError if ``this`` MultibodyPlant is not a discrete model
-    (is_discrete() == false)
 
 Raises:
     RuntimeError if ``this`` MultibodyPlant's underlying contact
