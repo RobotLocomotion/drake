@@ -803,6 +803,12 @@ R"""(Makes operator| compatible for ``BaseField`` + ``DescriptorType``.
 See also:
     Fields::operator|= for preconditions.)""";
         } operator_bor;
+        // Symbol: drake::perception::pc_flags::to_string
+        struct /* to_string */ {
+          // Source: drake/perception/point_cloud_flags.h
+          const char* doc =
+R"""(Provides a human-readable description of ``fields``.)""";
+        } to_string;
       } pc_flags;
     } perception;
   } drake;
