@@ -124,7 +124,7 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // rigid body for a finger. The collision geometries, consisting of a set of
 // small spheres, approximates a torus attached to the finger.
 //
-// @param[in] plant the MultiBodyPlant in which to add the pads.
+// @param[in] plant the MultibodyPlant in which to add the pads.
 // @param[in] pad_offset the ring offset along the x-axis in the finger
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
