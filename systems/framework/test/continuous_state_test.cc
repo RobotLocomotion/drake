@@ -242,7 +242,7 @@ TEST_F(ContinuousStateTest, StringStream) {
   EXPECT_EQ(s.str(), expected);
 }
 
-// Tests for DiagramContinousState.
+// Tests for DiagramContinuousState.
 
 class DiagramContinuousStateTest : public ::testing::Test {
  protected:

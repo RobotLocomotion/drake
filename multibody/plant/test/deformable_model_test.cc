@@ -91,7 +91,7 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
           default_body_config_, kRezHint),
       ".*RegisterDeformableBody.*after system resources have been declared.*");
 
-  /* Registering a deformable body within a continous plant throws. */
+  /* Registering a deformable body within a continuous plant throws. */
   MultibodyPlant<double> continuous_plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       continuous_plant.mutable_deformable_model().RegisterDeformableBody(
@@ -467,7 +467,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
     }
   }
 
-  /* Registering an external force within a continous plant throws. */
+  /* Registering an external force within a continuous plant throws. */
   MultibodyPlant<double> continuous_plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       continuous_plant.mutable_deformable_model().AddExternalForce(
