@@ -16,12 +16,6 @@ sh_binary(
 )
 
 sh_binary(
-    name = "msan",
-    srcs = ["msan.sh"],
-    data = ["msan.supp"],
-)
-
-sh_binary(
     name = "tsan",
     srcs = ["tsan.sh"],
     data = ["tsan.supp"],
