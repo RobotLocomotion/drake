@@ -203,6 +203,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:snopt_solver",
         "//solvers:solve",
+        "//systems/analysis",
     ],
 )
 

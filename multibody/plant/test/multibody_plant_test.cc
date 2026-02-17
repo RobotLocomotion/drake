@@ -126,8 +126,7 @@ namespace {
 // Verifies that fresh-constructed plants are using the default contact surface
 // representation.
 GTEST_TEST(MultibodyPlant, GetDefaultContactSurfaceRepresentation) {
-  std::array<double, 2> time_steps{0.0, 0.1};
-  for (const auto& time_step : time_steps) {
+  for (const double time_step : {0.0, 0.1}) {
     MultibodyPlant<double> plant{time_step};
     EXPECT_EQ(plant.get_contact_surface_representation(),
               MultibodyPlant<double>::GetDefaultContactSurfaceRepresentation(
@@ -3764,7 +3763,7 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointWithActuator) {
       "elements which must be removed prior to joint removal.*JointActuator.*");
 }
 
-TEST_F(MultibodyPlantRemodeling, RemoveJointWithCoupler) {
+TEST_P(MultibodyPlantRemodelingParam, RemoveJointWithCoupler) {
   BuildModel();
   // Add a coupler constraint between joint0 and joint1 before removal.
   plant_->AddCouplerConstraint(plant_->GetJointByName<RevoluteJoint>("joint0"),
@@ -5318,201 +5317,228 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 }
 
 GTEST_TEST(MultibodyPlantTests, GetConstraintIds) {
-  // Set up a plant with each constraint type with arbitrary parameters.
-  MultibodyPlant<double> plant(0.01);
+  for (double time_step : {0.0, 0.01}) {
+    SCOPED_TRACE(fmt::format("time step: {}", time_step));
+    // Set up a plant with each constraint type with arbitrary parameters.
+    MultibodyPlant<double> plant(time_step);
 
-  EXPECT_EQ(plant.GetConstraintIds().size(), 0);
+    EXPECT_EQ(plant.GetConstraintIds().size(), 0);
 
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const RigidBody<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const RigidBody<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  const RevoluteJoint<double>& world_A =
-      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
-                                    body_A, std::nullopt, Vector3d::UnitZ());
-  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
-      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
-  MultibodyConstraintId coupler_id =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
-      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
-  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
-      body_A, RigidTransformd(), body_B, RigidTransformd());
-  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
-      {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
+    if (plant.is_discrete()) {
+      // N.B. This feature is only supported by the SAP solver. Therefore we
+      // arbitrarily choose one model approximation that uses the SAP solver.
+      plant.set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
+    }
+    const RigidBody<double>& body_A =
+        plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+    const RigidBody<double>& body_B =
+        plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+    const RevoluteJoint<double>& world_A = plant.AddJoint<RevoluteJoint>(
+        "world_A", plant.world_body(), std::nullopt, body_A, std::nullopt,
+        Vector3d::UnitZ());
+    const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
+        "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+    MultibodyConstraintId coupler_id =
+        plant.AddCouplerConstraint(world_A, A_B, 2.3);
+    MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+        body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
+    MultibodyConstraintId ball_id = plant.AddBallConstraint(
+        body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+    MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+        body_A, RigidTransformd(), body_B, RigidTransformd());
+    MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+        {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-  std::vector<MultibodyConstraintId> ids = plant.GetConstraintIds();
-  // The order of the constraints is not guaranteed.
-  EXPECT_THAT(ids, testing::UnorderedElementsAre(coupler_id, distance_id,
-                                                 ball_id, weld_id, tendon_id));
+    std::vector<MultibodyConstraintId> ids = plant.GetConstraintIds();
+    // The order of the constraints is not guaranteed.
+    EXPECT_THAT(ids, testing::UnorderedElementsAre(
+                         coupler_id, distance_id, ball_id, weld_id, tendon_id));
 
-  plant.RemoveConstraint(coupler_id);
-  plant.RemoveConstraint(ball_id);
-  ids = plant.GetConstraintIds();
-  EXPECT_THAT(ids,
-              testing::UnorderedElementsAre(distance_id, weld_id, tendon_id));
+    plant.RemoveConstraint(coupler_id);
+    plant.RemoveConstraint(ball_id);
+    ids = plant.GetConstraintIds();
+    EXPECT_THAT(ids,
+                testing::UnorderedElementsAre(distance_id, weld_id, tendon_id));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
-  // Set up a plant with 3 constraints with arbitrary parameters.
-  MultibodyPlant<double> plant(0.01);
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const RigidBody<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const RigidBody<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  const RevoluteJoint<double>& world_A =
-      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
-                                    body_A, std::nullopt, Vector3d::UnitZ());
-  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
-      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
-  MultibodyConstraintId coupler_id =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
-      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
-  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
-      body_A, RigidTransformd(), body_B, RigidTransformd());
-  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
-      {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
+  for (double time_step : {0.0, 0.01}) {
+    SCOPED_TRACE(fmt::format("time step: {}", time_step));
+    // Set up a plant with 3 constraints with arbitrary parameters.
+    MultibodyPlant<double> plant(time_step);
+    if (plant.is_discrete()) {
+      // N.B. This feature is only supported by the SAP solver. Therefore we
+      // arbitrarily choose one model approximation that uses the SAP solver.
+      plant.set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
+    }
+    const RigidBody<double>& body_A =
+        plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+    const RigidBody<double>& body_B =
+        plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+    const RevoluteJoint<double>& world_A = plant.AddJoint<RevoluteJoint>(
+        "world_A", plant.world_body(), std::nullopt, body_A, std::nullopt,
+        Vector3d::UnitZ());
+    const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
+        "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+    MultibodyConstraintId coupler_id =
+        plant.AddCouplerConstraint(world_A, A_B, 2.3);
+    MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+        body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
+    MultibodyConstraintId ball_id = plant.AddBallConstraint(
+        body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+    MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+        body_A, RigidTransformd(), body_B, RigidTransformd());
+    MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+        {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.set_discrete_contact_approximation(
-                                  DiscreteContactApproximation::kTamsi),
-                              ".*TAMSI does not support constraints.*");
+    if (plant.is_discrete()) {
+      DRAKE_EXPECT_THROWS_MESSAGE(plant.set_discrete_contact_approximation(
+                                      DiscreteContactApproximation::kTamsi),
+                                  ".*TAMSI does not support constraints.*");
+    }
 
-  plant.Finalize();
+    plant.Finalize();
 
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+    std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
-  // Verify all constraints are active in a default context.
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
+    // Verify all constraints are active in a default context.
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
 
-  // Set all constraints to inactive.
-  plant.SetConstraintActiveStatus(context.get(), coupler_id, false);
-  plant.SetConstraintActiveStatus(context.get(), distance_id, false);
-  plant.SetConstraintActiveStatus(context.get(), ball_id, false);
-  plant.SetConstraintActiveStatus(context.get(), weld_id, false);
-  plant.SetConstraintActiveStatus(context.get(), tendon_id, false);
+    // Set all constraints to inactive.
+    plant.SetConstraintActiveStatus(context.get(), coupler_id, false);
+    plant.SetConstraintActiveStatus(context.get(), distance_id, false);
+    plant.SetConstraintActiveStatus(context.get(), ball_id, false);
+    plant.SetConstraintActiveStatus(context.get(), weld_id, false);
+    plant.SetConstraintActiveStatus(context.get(), tendon_id, false);
 
-  // Verify all constraints are inactive in the context.
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, coupler_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, distance_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, ball_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, tendon_id));
+    // Verify all constraints are inactive in the context.
+    EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, coupler_id));
+    EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, distance_id));
+    EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, ball_id));
+    EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, weld_id));
+    EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, tendon_id));
 
-  // Set all constraints to back to active.
-  plant.SetConstraintActiveStatus(context.get(), coupler_id, true);
-  plant.SetConstraintActiveStatus(context.get(), distance_id, true);
-  plant.SetConstraintActiveStatus(context.get(), ball_id, true);
-  plant.SetConstraintActiveStatus(context.get(), weld_id, true);
-  plant.SetConstraintActiveStatus(context.get(), tendon_id, true);
+    // Set all constraints to back to active.
+    plant.SetConstraintActiveStatus(context.get(), coupler_id, true);
+    plant.SetConstraintActiveStatus(context.get(), distance_id, true);
+    plant.SetConstraintActiveStatus(context.get(), ball_id, true);
+    plant.SetConstraintActiveStatus(context.get(), weld_id, true);
+    plant.SetConstraintActiveStatus(context.get(), tendon_id, true);
 
-  // Verify all constraints are active in the context.
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
-  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
+    // Verify all constraints are active in the context.
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
+    EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
-  // Set up a plant with 3 constraints with arbitrary parameters.
-  MultibodyPlant<double> plant(0.01);
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const Body<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const Body<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  const RevoluteJoint<double>& world_A =
-      plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), std::nullopt,
-                                    body_A, std::nullopt, Vector3d::UnitZ());
-  const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
-      "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
-  MultibodyConstraintId coupler_id =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
-      body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
-  MultibodyConstraintId weld_id = plant.AddWeldConstraint(
-      body_A, RigidTransformd(), body_B, RigidTransformd());
-  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
-      {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
+  for (double time_step : {0.0, 0.01}) {
+    SCOPED_TRACE(fmt::format("time step: {}", time_step));
+    // Set up a plant with 3 constraints with arbitrary parameters.
+    MultibodyPlant<double> plant(time_step);
+    if (plant.is_discrete()) {
+      // N.B. This feature is only supported by the SAP solver. Therefore we
+      // arbitrarily choose one model approximation that uses the SAP solver.
+      plant.set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
+    }
+    const Body<double>& body_A =
+        plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+    const Body<double>& body_B =
+        plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+    const RevoluteJoint<double>& world_A = plant.AddJoint<RevoluteJoint>(
+        "world_A", plant.world_body(), std::nullopt, body_A, std::nullopt,
+        Vector3d::UnitZ());
+    const RevoluteJoint<double>& A_B = plant.AddJoint<RevoluteJoint>(
+        "A_B", body_A, std::nullopt, body_B, std::nullopt, Vector3d::UnitZ());
+    MultibodyConstraintId coupler_id =
+        plant.AddCouplerConstraint(world_A, A_B, 2.3);
+    MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+        body_A, Vector3d(1.0, 2.0, 3.0), body_B, Vector3d(4.0, 5.0, 6.0), 2.0);
+    MultibodyConstraintId ball_id = plant.AddBallConstraint(
+        body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
+    MultibodyConstraintId weld_id = plant.AddWeldConstraint(
+        body_A, RigidTransformd(), body_B, RigidTransformd());
+    MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+        {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-  EXPECT_EQ(plant.num_coupler_constraints(), 1);
-  EXPECT_EQ(plant.num_distance_constraints(), 1);
-  EXPECT_EQ(plant.num_ball_constraints(), 1);
-  EXPECT_EQ(plant.num_weld_constraints(), 1);
-  EXPECT_EQ(plant.num_tendon_constraints(), 1);
-  plant.RemoveConstraint(coupler_id);
-  plant.RemoveConstraint(distance_id);
-  plant.RemoveConstraint(ball_id);
-  plant.RemoveConstraint(weld_id);
-  plant.RemoveConstraint(tendon_id);
-  EXPECT_EQ(plant.num_coupler_constraints(), 0);
-  EXPECT_EQ(plant.num_distance_constraints(), 0);
-  EXPECT_EQ(plant.num_ball_constraints(), 0);
-  EXPECT_EQ(plant.num_weld_constraints(), 0);
-  EXPECT_EQ(plant.num_tendon_constraints(), 0);
+    EXPECT_EQ(plant.num_coupler_constraints(), 1);
+    EXPECT_EQ(plant.num_distance_constraints(), 1);
+    EXPECT_EQ(plant.num_ball_constraints(), 1);
+    EXPECT_EQ(plant.num_weld_constraints(), 1);
+    EXPECT_EQ(plant.num_tendon_constraints(), 1);
+    plant.RemoveConstraint(coupler_id);
+    plant.RemoveConstraint(distance_id);
+    plant.RemoveConstraint(ball_id);
+    plant.RemoveConstraint(weld_id);
+    plant.RemoveConstraint(tendon_id);
+    EXPECT_EQ(plant.num_coupler_constraints(), 0);
+    EXPECT_EQ(plant.num_distance_constraints(), 0);
+    EXPECT_EQ(plant.num_ball_constraints(), 0);
+    EXPECT_EQ(plant.num_weld_constraints(), 0);
+    EXPECT_EQ(plant.num_tendon_constraints(), 0);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.RemoveConstraint(coupler_id),
-                              ".*does not match any constraint.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(plant.RemoveConstraint(coupler_id),
+                                ".*does not match any constraint.*");
 
-  // Add a new coupler constraint
-  MultibodyConstraintId coupler_id2 =
-      plant.AddCouplerConstraint(world_A, A_B, 2.3);
-  EXPECT_EQ(plant.num_coupler_constraints(), 1);
+    // Add a new coupler constraint
+    MultibodyConstraintId coupler_id2 =
+        plant.AddCouplerConstraint(world_A, A_B, 2.3);
+    EXPECT_EQ(plant.num_coupler_constraints(), 1);
 
-  plant.Finalize();
+    plant.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.RemoveConstraint(coupler_id2),
-      ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.RemoveConstraint(coupler_id2),
+        ".*Post-finalize calls to .*RemoveConstraint.* are not allowed.*");
+  }
 }
 
 GTEST_TEST(MultibodyPlantTests, FinalizeConstraints) {
-  // Set up a plant with partially specified constraints that must be finalized.
-  MultibodyPlant<double> plant(0.01);
-  // N.B. This feature is only supported by the SAP solver. Therefore we
-  // arbitrarily choose one model approximation that uses the SAP solver.
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
-  const Body<double>& body_A =
-      plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
-  const Body<double>& body_B =
-      plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
-  RigidTransformd X_WA(Vector3d(-1.0, -2.0, -3.0));
-  plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), X_WA, body_A,
-                                std::nullopt, Vector3d::UnitZ());
-  RigidTransformd X_WB(Vector3d(1.2, 3.4, 5.6));
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body_B"), X_WB);
+  for (double time_step : {0.0, 0.01}) {
+    SCOPED_TRACE(fmt::format("time step: {}", time_step));
+    // Set up a plant with partially specified constraints that must be
+    // finalized.
+    MultibodyPlant<double> plant(time_step);
+    if (plant.is_discrete()) {
+      // N.B. This feature is only supported by the SAP solver. Therefore we
+      // arbitrarily choose one model approximation that uses the SAP solver.
+      plant.set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
+    }
+    const Body<double>& body_A =
+        plant.AddRigidBody("body_A", SpatialInertia<double>::NaN());
+    const Body<double>& body_B =
+        plant.AddRigidBody("body_B", SpatialInertia<double>::NaN());
+    RigidTransformd X_WA(Vector3d(-1.0, -2.0, -3.0));
+    plant.AddJoint<RevoluteJoint>("world_A", plant.world_body(), X_WA, body_A,
+                                  std::nullopt, Vector3d::UnitZ());
+    RigidTransformd X_WB(Vector3d(1.2, 3.4, 5.6));
+    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body_B"), X_WB);
 
-  Vector3d p_AP = Vector3d(4.0, 5.0, 6.0);
-  MultibodyConstraintId ball_id = plant.AddBallConstraint(
-      body_A, p_AP, body_B, std::nullopt /* p_BQ is left unspecified */);
-  EXPECT_FALSE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+    Vector3d p_AP = Vector3d(4.0, 5.0, 6.0);
+    MultibodyConstraintId ball_id = plant.AddBallConstraint(
+        body_A, p_AP, body_B, std::nullopt /* p_BQ is left unspecified */);
+    EXPECT_FALSE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
 
-  plant.Finalize();
+    plant.Finalize();
 
-  Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
-  ASSERT_TRUE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
-  EXPECT_TRUE(CompareMatrices(
-      plant.get_ball_constraint_specs(ball_id).p_BQ.value(), p_BQ, 1e-14));
+    Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
+    ASSERT_TRUE(plant.get_ball_constraint_specs(ball_id).p_BQ.has_value());
+    EXPECT_TRUE(CompareMatrices(
+        plant.get_ball_constraint_specs(ball_id).p_BQ.value(), p_BQ, 1e-14));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
@@ -6386,6 +6412,9 @@ GTEST_TEST(MultibodyPlantTests, DiscreteContactApproximation) {
           DiscreteContactApproximation::kTamsi),
       "Post-finalize calls to '.*' are not allowed; .*");
 }
+
+INSTANTIATE_TEST_SUITE_P(ContinousAndDiscrete, MultibodyPlantRemodelingParam,
+                         ::testing::Values(0.0, 0.1));
 
 }  // namespace
 }  // namespace multibody

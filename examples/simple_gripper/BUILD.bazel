@@ -29,8 +29,9 @@ drake_cc_binary(
         ":models",
     ],
     test_rule_args = [
-        "--simulator_integration_scheme=runge_kutta2",
-        "--simulation_time=0.01",
+        "--simulator_integration_scheme=cenic",
+        "--mbp_discrete_update_period=0.0",
+        "--simulation_time=1.0",
         "--simulator_target_realtime_rate=0.0",
     ],
     test_rule_timeout = "moderate",

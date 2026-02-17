@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -12,6 +13,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -28,12 +30,18 @@ bool SnoptSolverUnavailable() {
            solvers::SnoptSolver::is_enabled());
 }
 
-class AddMultibodyPlantConstraintsTest : public ::testing::Test {
+class AddMultibodyPlantConstraintsTestBase : public ::testing::Test {
  public:
+  explicit AddMultibodyPlantConstraintsTestBase(double time_step)
+      : plant_(std::make_shared<MultibodyPlant<double>>(time_step)) {}
+
   void SetUp() override {
-    plant_->set_discrete_contact_approximation(
-        DiscreteContactApproximation::kSap);
-    plant_->SetUseSampledOutputPorts(false);
+    plant_->set_name("plant");
+    if (plant_->is_discrete()) {
+      plant_->set_discrete_contact_approximation(
+          DiscreteContactApproximation::kSap);
+      plant_->SetUseSampledOutputPorts(false);
+    }
 
     body_A_ = &plant_->AddRigidBody(
         "body_A", SpatialInertia<double>::SolidBoxWithMass(1, 1, 1, 1));
@@ -76,17 +84,36 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
     // Now step the dynamics forward and verify that the constraint stays
     // satisfied.
     plant_->SetPositions(plant_context_.get(), result.GetSolution(q));
-    VectorXd qn = plant_->EvalUniquePeriodicDiscreteUpdate(*plant_context_)
-                      .value()
-                      .head(plant_->num_positions());
+    VectorXd qn;
+    if (plant_->is_discrete()) {
+      qn = plant_->EvalUniquePeriodicDiscreteUpdate(*plant_context_)
+               .value()
+               .head(plant_->num_positions());
+    } else {
+      // do equivalent step with CENIC.
+      systems::DiagramBuilder<double> builder;
+      auto plant_clone =
+          dynamic_pointer_cast<MultibodyPlant<double>>(plant_->Clone());
+      auto results =
+          AddMultibodyPlantSceneGraph(&builder, std::move(plant_clone));
+      auto diagram = builder.Build();
+      systems::Simulator simulator(*diagram);
+      systems::SimulatorConfig config{.integration_scheme = "cenic",
+                                      .max_step_size = 0.1,
+                                      .accuracy = 1e-3};
+      ApplySimulatorConfig(config, &simulator);
+      simulator.AdvanceTo(0.1);
+      const auto& context = simulator.get_context();
+      const auto& plant = results.plant;
+      qn = plant.GetPositions(plant.GetMyContextFromRoot(context));
+    }
 
     prog.SetInitialGuessForAllVariables(qn);
     EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
   }
 
  protected:
-  std::shared_ptr<MultibodyPlant<double>> plant_{
-      std::make_shared<MultibodyPlant<double>>(0.1)};
+  std::shared_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<Context<double>> plant_context_{};
   const RigidBody<double>* body_A_{nullptr};
   const RigidBody<double>* body_B_{nullptr};
@@ -94,7 +121,32 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
   const RevoluteJoint<double>* A_B_{nullptr};
 };
 
+class AddMultibodyPlantConstraintsTest
+    : public AddMultibodyPlantConstraintsTestBase {
+ public:
+  AddMultibodyPlantConstraintsTest()
+      : AddMultibodyPlantConstraintsTestBase(0.1) {}
+};
+
+class AddMultibodyPlantConstraintsTestContinuous
+    : public AddMultibodyPlantConstraintsTestBase {
+ public:
+  AddMultibodyPlantConstraintsTestContinuous()
+      : AddMultibodyPlantConstraintsTestBase(0.0) {}
+};
+
 TEST_F(AddMultibodyPlantConstraintsTest, CouplerConstraint) {
+  plant_->AddCouplerConstraint(*world_A_, *A_B_, 2.3);
+  CheckConstraints();
+
+  // Confirm that I also could have called the method with plant_context ==
+  // nullptr.
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(plant_->num_positions());
+  EXPECT_NO_THROW(AddMultibodyPlantConstraints(plant_, q, &prog));
+}
+
+TEST_F(AddMultibodyPlantConstraintsTestContinuous, CouplerConstraint) {
   plant_->AddCouplerConstraint(*world_A_, *A_B_, 2.3);
   CheckConstraints();
 
