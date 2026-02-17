@@ -1622,7 +1622,7 @@ Parameter ``starting_rounds``:
     position of ``trajectory`` will be unchanged.
 
 Returns:
-    an unwrapped (continous in Euclidean space) CompositeTrajectory.
+    an unwrapped (continuous in Euclidean space) CompositeTrajectory.
 
 Raises:
     RuntimeError if
