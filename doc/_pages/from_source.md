@@ -35,19 +35,18 @@ officially supports when building from source:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.5   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.5   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sequoia (15)                 | arm64        | 3.14       | 8.5   | 4.2   | Apple LLVM 17 (Xcode 26.2)   | OpenJDK 23 |
-| macOS Tahoe (26)                   | arm64        | 3.14       | 8.5   | 4.2   | Apple LLVM 17 (Xcode 26.2)   | OpenJDK 23 |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 9.0   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
+| macOS Sequoia (15)                 | arm64        | 3.14       | 9.0   | 4.2   | Apple LLVM 17 (Xcode 26.2)   | OpenJDK 23 |
+| macOS Tahoe (26)                   | arm64        | 3.14       | 9.0   | 4.2   | Apple LLVM 17 (Xcode 26.2)   | OpenJDK 23 |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
 
 Unofficially, Drake is also likely to be compatible with newer versions of
-Ubuntu or macOS than what are listed, or with Ubuntu running on arm64, or
-with other versions of Python or Java. However, these are not supported
-so if it doesn't work for you then please file a pull request with the fix,
-not a bug report.
+Ubuntu or macOS than what are listed, or with other versions of Python or Java.
+However, these are not supported so if it doesn't work for you then please file
+a pull request with the fix, not a bug report.
 
 All else being equal, we would recommend developers use Ubuntu 24.04 (Noble).
 
@@ -58,6 +57,10 @@ maybe require extra setup. See the
 ⁽²⁾ CPython is the only Python implementation supported.
 
 ⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
+
+⁽⁴⁾ On an experimental basis, Drake also supports aarch64 on Ubuntu 24.04
+(Noble). Follow [#13514](https://github.com/RobotLocomotion/drake/issues/13514)
+for updates.
 
 # Building with CMake
 

@@ -334,8 +334,8 @@ TEST_P(YamlNodeParamaterizedTest, Visiting) {
   DRAKE_UNREACHABLE();
 }
 
-// Check debug printing using operator<<.
-TEST_P(YamlNodeParamaterizedTest, ToString) {
+// Check debug printing using fmt.
+TEST_P(YamlNodeParamaterizedTest, ToStringFmtFormatter) {
   Node dut = MakeNonEmptyDut();
 
   // Confirm that the code is being run by checking for a notable
@@ -355,11 +355,11 @@ TEST_P(YamlNodeParamaterizedTest, ToString) {
       break;
     }
   }
-  EXPECT_THAT(fmt::format("{}", dut), testing::HasSubstr(needle));
+  EXPECT_THAT(fmt::to_string(dut), testing::HasSubstr(needle));
 
   // Confirm that tags are represented somehow.
   dut.SetTag("MyTag");
-  EXPECT_THAT(fmt::format("{}", dut), testing::HasSubstr("MyTag"));
+  EXPECT_THAT(fmt::to_string(dut), testing::HasSubstr("MyTag"));
 }
 
 INSTANTIATE_TEST_SUITE_P(Suite, YamlNodeParamaterizedTest,

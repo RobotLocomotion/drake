@@ -1,12 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <tuple>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
-#include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
-#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/icf_builder.h"
 #include "drake/multibody/contact_solvers/icf/icf_external_systems_linearizer.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
@@ -25,8 +21,7 @@ simulations [Kurtz and Castro, 2025].
 
 CENIC provides variable-step error-controlled integration for multibody systems
 with stiff contact interactions, while maintaining the high speeds
-characteristic of discrete-time solvers and required for modern robotics
-workflows.
+characteristic of discrete-time solvers required for modern robotics workflows.
 
 Benefits of CENIC include:
 
@@ -88,6 +83,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CenicIntegrator);
 
+  /** This target accuracy is established in the constructor, but may be
+  changed by @ref integrator-accuracy methods. CENIC works best at loose
+  accuracy. */
+  static constexpr double kDefaultAccuracy = 1e-3;
+
   /** Constructs the integrator.
   @param system The overall system diagram to simulate. Must include a
                 MultibodyPlant and associated SceneGraph, with the plant
@@ -121,19 +121,31 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
  private:
   /* Preallocated scratch space. */
   struct Scratch {
-    /* Resizes the scratch space to accommodate the given plant. */
-    void Resize(const MultibodyPlant<T>& plant);
+    /* Resizes the scratch space to accommodate the given plant and enclosing
+    diagram. */
+    void Resize(const MultibodyPlant<T>& plant,
+                const systems::System<T>& diagram);
 
-    // State-sized variables, x = [q; v] for the plant (not the diagram).
-    VectorX<T> v;
+    /* State-sized variables, x = [q; v] for the plant (not the diagram). */
+    VectorX<T> v_guess;
     VectorX<T> q;
 
-    // Linearized external system gains (sized to the plant's num_velocities):
-    // Torque-limited actuation, τ = clamp(−Ku⋅v + bu).
+    /* Linearized external system gains (sized to the plant's num_velocities):
+    Torque-limited actuation, τᵤ(v) ≈ clamp(-Kᵤ⋅v + bᵤ, e). */
     contact_solvers::icf::internal::IcfLinearFeedbackGains<T>
-        actuation_feedback;
-    // Non-limited external forces, τ = −Ke⋅v + be.
-    contact_solvers::icf::internal::IcfLinearFeedbackGains<T> external_feedback;
+        actuation_feedback_storage;
+    /* Non-limited external forces, τₑ(v) ≈ −Kₑ⋅v + bₑ. */
+    contact_solvers::icf::internal::IcfLinearFeedbackGains<T>
+        external_feedback_storage;
+
+    /* Intermediate states for error control, which compares a single large
+    step (x_next_full_) to the result of two smaller steps (x_next_half_2_). */
+    /* x_{t+h}. */
+    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full;
+    /* x_{t+h/2}. */
+    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_1;
+    /* x_{t+h/2+h/2}. */
+    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_2;
   };
 
   /* Data for PrintSimulatorStatistics(). */
@@ -143,20 +155,12 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     int total_ls_iterations{0};
   };
 
-  /* Gets a reference to the ICF builder used to set up the convex problem. */
-  contact_solvers::icf::internal::IcfBuilder<T>& builder() {
-    // N.B. this is not const because the builder caches geometry data when
-    // something like builder().UpdateModel(...) is called (a typical use case).
-    DRAKE_ASSERT(builder_ != nullptr);
-    return *builder_;
-  }
-
-  T CalcStateChangeNorm(
-      const systems::ContinuousState<T>& dx_state) const final;
-
   void DoResetStatistics() final;
 
   std::vector<systems::NamedStatistic> DoGetStatisticsSummary() const final;
+
+  T CalcStateChangeNorm(
+      const systems::ContinuousState<T>& dx_state) const final;
 
   void DoInitialize() final;
 
@@ -166,8 +170,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   @param model The ICF model for the convex problem min_v ℓ(v; q₀, v₀, h).
   @param v_guess The initial guess for the MbP plant velocities.
-  @param x_next The output continuous state, includes state for both the
-                plant and any external systems. */
+  @param[out] x_next The output continuous state, includes state for both the
+                     plant and any external systems. */
   void ComputeNextContinuousState(
       const contact_solvers::icf::internal::IcfModel<T>& model,
       const VectorX<T>& v_guess, systems::DiagramContinuousState<T>* x_next);
@@ -183,43 +187,35 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  // The multibody plant used as the basis of the convex optimization problem.
+  /* The plant used as the basis of the convex optimization problem. */
   const MultibodyPlant<T>& plant_;
   const systems::SubsystemIndex plant_subsystem_index_;
-  // Which subsystems in our Diagram have continuous state beyond the MbP.
+  /* Which subsystems in our Diagram have continuous state other than the
+  plant. */
   const std::vector<int> non_plant_xc_subsystem_indices_;
 
-  // Helper class that linearizes torques dτ/dv from plant input ports.
+  /* Helper class that linearizes torques dτ/dv from plant input ports. */
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>
       external_systems_linearizer_;
 
-  // Pre-allocated objects used to formulate and solve the optimization problem.
+  /* ICF integrator state and storage. */
   std::unique_ptr<contact_solvers::icf::internal::IcfBuilder<T>> builder_;
   contact_solvers::icf::internal::IcfSolver solver_;
-  // For the full step and first half-step.
+  /* For the full step and first half-step. */
   contact_solvers::icf::internal::IcfModel<T> model_at_x0_;
-  // For the second half-step (at t + h/2).
+  /* For the second half-step (at t + h/2). */
   contact_solvers::icf::internal::IcfModel<T> model_at_xh_;
   contact_solvers::icf::internal::IcfData<T> data_;
 
-  // Track whether solves are initialized at the same time as a previous
-  // rejected step, to enable model (e.g., constraints, geometry) reuse.
+  /* Track whether solves are initialized at the same time as a previous
+  rejected step, to enable model (e.g., constraints, geometry) reuse. */
   T time_at_last_solve_{NAN};
 
-  // Pre-allocated scratch space for intermediate calculations.
+  /* Preallocated scratch space for intermediate calculations. */
   Scratch scratch_;
 
-  // Data for PrintSimulatorStatistics().
+  /* Data for PrintSimulatorStatistics(). */
   Stats stats_;
-
-  // Intermediate states for error control, which compares a single large
-  // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
-  // x_{t+h}
-  std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full_;
-  // x_{t+h/2}
-  std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_1_;
-  // x_{t+h/2+h/2}
-  std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_2_;
 };
 
 }  // namespace multibody

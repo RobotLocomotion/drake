@@ -31,8 +31,13 @@ robotics simulations [Kurtz and Castro, 2025].
 
 CENIC provides variable-step error-controlled integration for
 multibody systems with stiff contact interactions, while maintaining
+<<<<<<< HEAD
 the high speeds characteristic of discrete-time solvers and required
 for modern robotics workflows.
+=======
+the high speeds characteristic of discrete-time solvers required for
+modern robotics workflows.
+>>>>>>> upstream/master
 
 Benefits of CENIC include:
 

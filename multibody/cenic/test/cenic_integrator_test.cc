@@ -2,45 +2,56 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
-#include <tuple>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/maybe_pause_for_user.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/analysis/simulator_config_functions.h"
-#include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/linear_system.h"
-#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace multibody {
 namespace cenic {
 namespace {
 
+using contact_solvers::icf::IcfSolverParameters;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using systems::ConstantVectorSource;
+using systems::Context;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::NamedStatistic;
+using systems::Simulator;
+using systems::SpringMassSystem;
+using systems::controllers::PidController;
+
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 constexpr char kDoublePendulumMjcf[] = R"""(
   <?xml version="1.0"?>
   <mujoco model="double_pendulum">
-  <worldbody>
-    <body>
-    <joint type="hinge" name="joint1" axis="0 1 0" pos="0 0 0.1" damping="0.001"/>
-    <geom type="capsule" size="0.01 0.1"/>
-    <body>
-      <joint type="hinge" name="joint2" axis="0 1 0" pos="0 0 -0.1" damping="0.001"/>
-      <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
-    </body>
-    </body>
-  </worldbody>
+    <worldbody>
+      <body>
+        <joint type="hinge" name="joint1" axis="0 1 0" pos="0 0 0.1" damping="0.001"/>
+        <geom type="capsule" size="0.01 0.1"/>
+        <body>
+          <joint type="hinge" name="joint2" axis="0 1 0" pos="0 0 -0.1" damping="0.001"/>
+          <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
+        </body>
+      </body>
+    </worldbody>
   </mujoco>
   )""";
 constexpr char kBallOnTableMjcf[] = R"""(
@@ -56,28 +67,10 @@ constexpr char kBallOnTableMjcf[] = R"""(
   </mujoco>
   )""";
 
-using common::MaybePauseForUser;
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using geometry::Meshcat;
-using geometry::SceneGraph;
-using systems::ConstantVectorSource;
-using systems::Context;
-using systems::Diagram;
-using systems::DiagramBuilder;
-using systems::Simulator;
-using systems::SpringMassSystem;
-using systems::controllers::PidController;
-using visualization::ApplyVisualizationConfig;
-using visualization::VisualizationConfig;
-
 /* A base test case with utilities for setting up a CENIC simulation. */
 class SimulationTestScenario : public testing::Test {
  protected:
-  void SetUp() override {
-    meshcat_ = std::make_shared<Meshcat>();
-    AddModels();
-  }
+  void SetUp() override { AddModels(); }
 
   /* Add models to the plant. */
   virtual void AddModels() = 0;
@@ -91,13 +84,6 @@ class SimulationTestScenario : public testing::Test {
       plant_.Finalize();
     }
 
-    VisualizationConfig vis_config;
-    // Don't create visualizer events that interfere with the integrator's step
-    // size selection.
-    vis_config.publish_period = 1e9;
-    ApplyVisualizationConfig(vis_config, builder_.get(), nullptr, &plant_,
-                             nullptr, meshcat_);
-
     diagram_ = builder_->Build();
     std::unique_ptr<Context<double>> context = diagram_->CreateDefaultContext();
 
@@ -108,17 +94,11 @@ class SimulationTestScenario : public testing::Test {
     // Set up a simulator with the CENIC integrator in error-control mode.
     simulator_ =
         std::make_unique<Simulator<double>>(*diagram_, std::move(context));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    simulator_->set_publish_every_time_step(true);
-#pragma GCC diagnostic pop
     integrator_ = &simulator_->reset_integrator<CenicIntegrator<double>>();
     integrator_->set_maximum_step_size(0.1);
-    integrator_->set_fixed_step_mode(false);
+    EXPECT_EQ(integrator_->get_fixed_step_mode(), false);
     integrator_->set_target_accuracy(1e-3);
   }
-
-  std::shared_ptr<Meshcat> meshcat_;
 
   // Only available prior to Build().
   std::unique_ptr<DiagramBuilder<double>> builder_{
@@ -142,8 +122,8 @@ class DoublePendulum : public SimulationTestScenario {
   }
 
   void SetInitialConditions() override {
-    plant_.SetPositions(plant_context_, Eigen::Vector2d(M_PI / 4, M_PI / 2));
-    plant_.SetVelocities(plant_context_, Eigen::Vector2d(0.1, 0.2));
+    plant_.SetPositions(plant_context_, Vector2d(M_PI / 4, M_PI / 2));
+    plant_.SetVelocities(plant_context_, Vector2d(0.1, 0.2));
   }
 };
 
@@ -158,8 +138,105 @@ class BallOnTable : public SimulationTestScenario {
   }
 };
 
+/* Checks that the integrator complains when no initial step size is
+configured. */
+TEST_F(DoublePendulum, NoStep) {
+  Build();
+  integrator_ = &simulator_->reset_integrator<CenicIntegrator<double>>();
+  DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(1e-2),
+                              ".*Neither.*step size.*set.*");
+}
+
+/* Checks that the integrator reports expected statistics, and that they may be
+reset. */
+TEST_F(DoublePendulum, Stats) {
+  Build();
+
+  const std::set<std::string> expected_keys{
+      "cenic_total_hessian_factorizations",
+      "cenic_total_ls_iterations",
+      "cenic_total_solver_iterations",
+      "integrator_actual_initial_step_size_taken",
+      "integrator_largest_step_size_taken",
+      "integrator_num_derivative_evaluations",
+      "integrator_num_step_shrinkages_from_error_control",
+      "integrator_num_steps_taken",
+      "integrator_smallest_adapted_step_size_taken"};
+
+  auto validate_empty_stats = [&](const std::vector<NamedStatistic>& stats,
+                                  std::string_view label) {
+    EXPECT_EQ(ssize(stats), 9);
+    std::set<std::string> found_keys;
+    for (const auto& [key, value] : stats) {
+      SCOPED_TRACE(fmt::format("{} stat for '{}'", label, key));
+      found_keys.insert(key);
+      if (std::holds_alternative<int64_t>(value)) {
+        EXPECT_EQ(std::get<int64_t>(value), 0);
+      } else {
+        EXPECT_TRUE(std::isnan(std::get<double>(value)));
+      }
+    }
+    EXPECT_EQ(found_keys, expected_keys);
+  };
+
+  validate_empty_stats(integrator_->GetStatisticsSummary(), "initial");
+
+  simulator_->AdvanceTo(1.0);
+
+  std::vector<NamedStatistic> later_stats = integrator_->GetStatisticsSummary();
+  EXPECT_EQ(ssize(later_stats), 9);
+  std::set<std::string> later_keys;
+  for (const auto& [key, value] : later_stats) {
+    later_keys.insert(key);
+    if (key == "cenic_total_hessian_factorizations") {
+      EXPECT_EQ(std::get<int64_t>(value), 569);
+    } else if (key == "cenic_total_ls_iterations") {
+      // The system simulated here doesn't require using line search. See
+      // icf_solver_test for test case that exercises this statistic.
+      EXPECT_EQ(std::get<int64_t>(value), 0);
+    } else if (key == "cenic_total_solver_iterations") {
+      EXPECT_EQ(std::get<int64_t>(value), 569);
+    } else if (key == "integrator_actual_initial_step_size_taken") {
+      EXPECT_NEAR(std::get<double>(value), 0.01, 1e-9);
+    } else if (key == "integrator_largest_step_size_taken") {
+      EXPECT_NEAR(std::get<double>(value), 0.012669, 1e-6);
+    } else if (key == "integrator_num_derivative_evaluations") {
+      // CENIC doesn't ever call CalcTimeDerivatives(), which is what is being
+      // counted here.
+      EXPECT_EQ(std::get<int64_t>(value), 0);
+    } else if (key == "integrator_num_step_shrinkages_from_error_control") {
+      EXPECT_EQ(std::get<int64_t>(value), 23);
+    } else if (key == "integrator_num_steps_taken") {
+      EXPECT_EQ(std::get<int64_t>(value), 167);
+    } else if (key == "integrator_smallest_adapted_step_size_taken") {
+      EXPECT_NEAR(std::get<double>(value), 0.003819, 1e-6);
+    } else {
+      GTEST_FAIL() << "Unrecognized statistic name: '" << key << "'.";
+    }
+  }
+  EXPECT_EQ(later_keys, expected_keys);
+
+  integrator_->ResetStatistics();
+
+  validate_empty_stats(integrator_->GetStatisticsSummary(), "reset");
+}
+
+/* Checks that solver parameter setting is effective. Since the methods tested
+here only forward to the ICF solver, only one field is checked. Detailed
+testing of parameter effects can be found in icf_solver_test. */
+TEST_F(DoublePendulum, Parameters) {
+  Build();
+  EXPECT_NO_THROW(simulator_->AdvanceTo(1e-2));
+  IcfSolverParameters params = integrator_->get_solver_parameters();
+  params.max_iterations = 1;  // Force solver failure.
+  integrator_->SetSolverParameters(params);
+  DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(2e-2),
+                              ".*optimization failed.*");
+}
+
 /* Checks that a double pendulum simulation in fixed-step mode matches the
-discrete solver. */
+discrete solver. Simulation time and stepping are carefully chosen to
+facilitate matching of results. */
 TEST_F(DoublePendulum, FixedStep) {
   const double time_step = 1e-2;
   const double simulation_time = 0.5;
@@ -192,15 +269,15 @@ TEST_F(DoublePendulum, FixedStep) {
                               MatrixCompareType::relative));
 }
 
-/* Verifies that energy conservation for an undamped double pendulum is improved
-with tightened accuracy. */
-TEST_F(DoublePendulum, EnergyConservation) {
+/* Verifies that energy conservation and error metrics for an undamped double
+pendulum are improved with tightened accuracy. */
+TEST_F(DoublePendulum, AccuracyTrends) {
   const double simulation_time = 2.0;
 
   // Remove joint damping for this test.
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
-    joint.set_default_damping_vector(Eigen::VectorXd::Zero(1));
+    joint.set_default_damping_vector(VectorXd::Zero(1));
   }
   Build();
 
@@ -213,10 +290,16 @@ TEST_F(DoublePendulum, EnergyConservation) {
   integrator_->set_target_accuracy(1e-1);
   simulator_->AdvanceTo(simulation_time);
 
+  // Calculate a norm of the error estimate for use in trend checking.
+  auto error_norm = [](const systems::ContinuousState<double>* estimate) {
+    return estimate->CopyToVector().norm();
+  };
+
   const int num_steps_loose = integrator_->get_num_steps_taken();
   const double final_energy_loose =
       plant_.CalcPotentialEnergy(*plant_context_) +
       plant_.CalcKineticEnergy(*plant_context_);
+  const double error_loose = error_norm(integrator_->get_error_estimate());
 
   // Simulate again with a much tighter accuracy.
   simulator_->get_mutable_context().SetTime(0.0);
@@ -229,6 +312,7 @@ TEST_F(DoublePendulum, EnergyConservation) {
   const double final_energy_tight =
       plant_.CalcPotentialEnergy(*plant_context_) +
       plant_.CalcKineticEnergy(*plant_context_);
+  const double error_tight = error_norm(integrator_->get_error_estimate());
 
   const double energy_error_tight =
       std::abs(final_energy_tight - initial_energy) / initial_energy;
@@ -236,6 +320,7 @@ TEST_F(DoublePendulum, EnergyConservation) {
       std::abs(final_energy_loose - initial_energy) / initial_energy;
   EXPECT_LT(energy_error_tight, energy_error_loose);
   EXPECT_GT(num_steps_tight, num_steps_loose);
+  EXPECT_LT(error_tight, error_loose);
 }
 
 /* Simulates the double pendulum with PID actuation. */
@@ -249,11 +334,10 @@ TEST_F(DoublePendulum, ExternalActuation) {
   EXPECT_EQ(plant_.num_actuators(), 2);
 
   // Set up a PID controller.
-  const Eigen::Vector2d q_nom(-M_PI / 4, M_PI / 2);
-  const Eigen::Vector2d Kp(1.24, 0.79);
-  const Eigen::Vector2d Kd(0.15, 0.03);
-  const Eigen::Vector2d Ki(0.5, 0.4);
-  const Eigen::Vector4d x_nom(M_PI_2, -M_PI_2, 0.0, 0.0);
+  const Vector2d Kp(1.24, 0.79);
+  const Vector2d Kd(0.15, 0.03);
+  const Vector2d Ki(0.5, 0.4);
+  const Vector4d x_nom(M_PI_2, -M_PI_2, 0.0, 0.0);
 
   auto target_sender = builder_->AddSystem<ConstantVectorSource<double>>(x_nom);
   auto pid_controller = builder_->AddSystem<PidController<double>>(Kp, Ki, Kd);
@@ -267,12 +351,8 @@ TEST_F(DoublePendulum, ExternalActuation) {
 
   Build();
 
-  // Simulate for a few seconds, visualizing in Meshcat if requested.
-  meshcat_->StartRecording();
+  // Simulate for a few seconds.
   simulator_->AdvanceTo(20.0);
-  meshcat_->StopRecording();
-  meshcat_->PublishRecording();
-  MaybePauseForUser();
 
   // We should get close-ish to the target state.
   const VectorXd x_final = plant_.GetPositionsAndVelocities(*plant_context_);
@@ -294,6 +374,8 @@ TEST_F(DoublePendulum, ExternalActuation) {
 
 /* Checks integration of an external (non-plant) system with second-order (q, v)
 continuous state.*/
+// TODO(#23921): Revisit this test when implementing an error estimate that
+// accounts for external systems.
 TEST_F(DoublePendulum, PositionVelocityExternalSystem) {
   auto spring_mass_system = builder_->AddSystem<SpringMassSystem>(100.0, 1.0);
   Build();
@@ -333,11 +415,7 @@ TEST_F(DoublePendulum, JointLimits) {
   }
   Build();
 
-  meshcat_->StartRecording();
   simulator_->AdvanceTo(1.0);
-  meshcat_->StopRecording();
-  meshcat_->PublishRecording();
-  MaybePauseForUser();
 
   // The final configuration should be resting on the lower joint limits.
   const VectorXd q = plant_.GetPositions(*plant_context_);
@@ -354,7 +432,7 @@ TEST_F(DoublePendulum, EffortLimits) {
 
     // Disable joint damping so it's easier to derive the applied torques
     // analytically.
-    joint.set_default_damping_vector(Eigen::VectorXd::Zero(1));
+    joint.set_default_damping_vector(VectorXd::Zero(1));
   }
   Build();
 
@@ -386,7 +464,7 @@ TEST_F(DoublePendulum, EffortLimits) {
   EXPECT_TRUE(u_requested[1] > 0.2);
 
   // Applied actuation should be clamped to effort limits.
-  // TODO(vincekurtz): report this in plant.get_net_actuation_output_port().
+  // TODO(#24074): report this in plant.get_net_actuation_output_port().
   const VectorXd v = plant_.GetVelocities(*plant_context_);
   const VectorXd u_applied = M * (v - v0) / h + k;
 
@@ -395,26 +473,23 @@ TEST_F(DoublePendulum, EffortLimits) {
 }
 
 /* Checks that coupler constraints are handled correctly by the integrator. */
-TEST_F(DoublePendulum, CoupledJoints) {
+// TODO(#23992): MultibodyPlant does not yet support coupler constraints on
+// continuous plants. Enable this test once the obstacle is removed.
+TEST_F(DoublePendulum, DISABLED_CoupledJoints) {
   const double gear_ratio = 0.5;
   plant_.AddCouplerConstraint(plant_.GetJointByName("joint1"),
                               plant_.GetJointByName("joint2"), gear_ratio);
   Build();
   const VectorXd q0 = plant_.GetPositions(*plant_context_);
 
-  // Initial conditions should satisfy the coupler constraint. The tolerance
-  // is loose because the initial conditions need to satisfy the constraint
-  // exactly. Additionally, the constraint is essentially enforced by a very
-  // stiff spring, so we shouldn't expect exact satisfaction.
-  EXPECT_NEAR(q0(0), gear_ratio * q0(1), 1e-5);
+  // Initial conditions should satisfy the coupler constraint.
+  EXPECT_NEAR(q0(0), gear_ratio * q0(1), kEpsilon);
 
-  meshcat_->StartRecording();
   simulator_->AdvanceTo(1.0);
-  meshcat_->StopRecording();
-  meshcat_->PublishRecording();
-  MaybePauseForUser();
 
-  // Verify that the constraint is satisfied at the end of the simulation.
+  // Verify that the constraint is satisfied at the end of the simulation.  The
+  // constraint is essentially enforced by a very stiff spring, so we shouldn't
+  // expect exact satisfaction.
   const VectorXd q = plant_.GetPositions(*plant_context_);
   EXPECT_NEAR(q(0), gear_ratio * q(1), 1e-5);
 }
@@ -441,11 +516,7 @@ TEST_F(BallOnTable, RollingContact) {
   const double x_expected = roll_speed * simulation_time;
   const double z_expected = radius;
 
-  meshcat_->StartRecording();
   simulator_->AdvanceTo(simulation_time);
-  meshcat_->StopRecording();
-  meshcat_->PublishRecording();
-  MaybePauseForUser();
 
   const VectorXd q = plant_.GetPositions(*plant_context_);
   const double x_actual = q[4];
@@ -468,15 +539,11 @@ TEST_F(BallOnTable, QuaternionNormalization) {
   // Run the simulation briefly with fixed (large) steps.
   integrator_->set_maximum_step_size(0.1);
   integrator_->set_fixed_step_mode(true);
-  meshcat_->StartRecording();
   simulator_->AdvanceTo(1.0);
-  meshcat_->StopRecording();
-  meshcat_->PublishRecording();
-  MaybePauseForUser();
 
   // Quaternions should remain normalized.
   const VectorXd q = plant_.GetPositions(*plant_context_);
-  const Eigen::Vector4d quat = q.segment<4>(0);
+  const Vector4d quat = q.segment<4>(0);
   const double quat_norm = quat.norm();
   EXPECT_NEAR(quat_norm, 1.0, 10 * kEpsilon);
 }
@@ -493,11 +560,7 @@ TEST_F(BallOnTable, ExternalForces) {
   plant_.get_applied_generalized_force_input_port().FixValue(plant_context_,
                                                              f_ext);
   integrator_->set_target_accuracy(1e-5);
-  meshcat_->StartRecording();
   simulator_->AdvanceTo(simulation_time);
-  meshcat_->StopRecording();
-  meshcat_->PublishRecording();
-  MaybePauseForUser();
 
   // Compare with the analytical solution.
   const double m = plant_.CalcTotalMass(*plant_context_);

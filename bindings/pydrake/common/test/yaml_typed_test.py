@@ -64,7 +64,7 @@ class BytesStruct:
 
 @dc.dataclass
 class PathStruct:
-    value: Path = "/path/to/nowhere"
+    value: Path = Path("/path/to/nowhere")
     __eq__ = _dataclass_eq
 
 
@@ -74,7 +74,7 @@ class AllScalarsStruct:
     some_bytes: bytes = b"\x00\x01\x02"
     some_float: float = nan
     some_int: int = 11
-    some_path: Path = "/path/to/nowhere"
+    some_path: Path = Path("/path/to/nowhere")
     some_str: str = "nominal_string"
     __eq__ = _dataclass_eq
 
@@ -180,6 +180,27 @@ class ListVariantStruct:
         dc.field(default_factory=lambda: list([nan]))
     )
     __eq__ = _dataclass_eq
+
+
+@dc.dataclass
+class PromotionBasicStruct:
+    # This struct matches PromotionVariantStruct without the variant options.
+    float_type: float = nan
+    np_type: np.ndarray = dc.field(default_factory=lambda: np.array([nan]))
+    path_type: Path = dc.field(default_factory=lambda: Path("/path/to/nowhere"))
+    truthy_type: bool = False
+
+
+@dc.dataclass
+class PromotionVariantStruct:
+    float_type: float | FloatStruct = nan
+    np_type: np.ndarray | FloatStruct = dc.field(
+        default_factory=lambda: np.array([nan])
+    )
+    path_type: Path | FloatStruct = dc.field(
+        default_factory=lambda: Path("/path/to/nowhere")
+    )
+    truthy_type: bool | FloatStruct = False
 
 
 @dc.dataclass
@@ -801,6 +822,52 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         self.assertEqual(x.value[1], 1.0)
         self.assertEqual(x.value[2], FloatStruct(2.0))
         self.assertEqual(type(x.value[3]), NumpyStruct)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_variant_type_promotion(self, *, options):
+        data = dedent("""
+        float_type: 1
+        np_type: [1]
+        path_type: /path/to/somewhere
+        truthy_type: true
+        """)
+        # Check that loading the above document into non-Union values promotes
+        # them appropriately.
+        basic = yaml_load_typed(
+            schema=PromotionBasicStruct, data=data, **options
+        )
+        # Check that loading the same document into Union values promotes them
+        # exactly the same way.
+        union1 = yaml_load_typed(
+            schema=PromotionVariantStruct, data=data, **options
+        )
+        # Check the same thing but with the struct defaults initialized to the
+        # second type in the Union instead of the first.
+        union2 = yaml_load_typed(
+            schema=PromotionVariantStruct,
+            data=data,
+            defaults=PromotionVariantStruct(
+                float_type=FloatStruct(),
+                np_type=FloatStruct(),
+                path_type=FloatStruct(),
+                truthy_type=FloatStruct(),
+            ),
+            **options,
+        )
+        for x, remark in [
+            (basic, "basic"),
+            (union1, "union1"),
+            (union2, "union2"),
+        ]:
+            with self.subTest(remark=remark):
+                self.assertEqual(x.float_type, 1.0)
+                self.assertIsInstance(x.float_type, float)
+                self.assertEqual(x.np_type, np.array([1.0]))
+                self.assertIsInstance(x.np_type, np.ndarray)
+                self.assertEqual(x.path_type, Path("/path/to/somewhere"))
+                self.assertIsInstance(x.path_type, Path)
+                self.assertEqual(x.truthy_type, True)
+                self.assertIsInstance(x.truthy_type, bool)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_np_vector(self, *, options):

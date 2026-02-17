@@ -378,13 +378,15 @@ void RotationalInertia<T>::ThrowIfNotPhysicallyValidImpl(
   }
 }
 
-// TODO(Mitiguy) Consider using this code (or code similar to this) to write
-//  most/all Drake matrices and consolidate other usages to use this.
-// TODO(jwnimmer-tri) Obeying the formatting choices from `out` (via `copyfmt`
-//  is a defect; we should always display full round-trip precision.  We should
-//  not re-use this pattern elsewhere.
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
+  return out << fmt::to_string(I);
+}
+
+// TODO(Mitiguy) Consider using this code (or code similar to this) to write
+//  most/all Drake matrices and consolidate other usages to use this.
+template <typename T>
+std::string to_string(const RotationalInertia<T>& I) {
   int width = 0;
   // Computes largest width so that we can align columns for a prettier format.
   // Idea taken from: Eigen::internal::print_matrix() in Eigen/src/Core/IO.h
@@ -394,28 +396,32 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
       width = std::max<int>(width, static_cast<int>(element.length()));
     }
   }
-
+  std::string result;
   // Outputs to stream.
   for (int i = 0; i < I.rows(); ++i) {
-    out << "[";
-    if (width) out.width(width);
-    out << fmt::to_string(I(i, 0));
+    result.append("[");
+    result.append(fmt::format("{:>{}}", I(i, 0), width));
     for (int j = 1; j < I.cols(); ++j) {
-      out << "  ";
-      if (width) out.width(width);
-      out << fmt::to_string(I(i, j));
+      result.append("  ");
+      result.append(fmt::format("{:>{}}", I(i, j), width));
     }
-    out << "]\n";
+    result.append("]\n");
   }
-  return out;
+  return result;
 }
 
+// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     (static_cast<std::ostream& (*)(std::ostream&, const RotationalInertia<T>&)>(
-        &operator<< )  // clang-format would remove space lint requires
+        &operator<< ),  // clang-format would remove space lint requires
+    static_cast<std::string(*)(const RotationalInertia<T>&)>(
+        &to_string)
 ));
 // clang-format on
+#pragma GCC diagnostic pop
 
 }  // namespace multibody
 }  // namespace drake

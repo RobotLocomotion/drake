@@ -267,7 +267,7 @@ TEST_F(PackageMapRemoteTest, AddMapMergeFetched) {
 
   // Confirm the remote data (URLs) was still preserved, even though we already
   // had a fetched path in available during the AddMap.
-  EXPECT_THAT(fmt::to_string(fmt_streamed(dut)),
+  EXPECT_THAT(fmt::to_string(dut),
               testing::HasSubstr("package_map_test_packages/compressed.zip"));
 }
 

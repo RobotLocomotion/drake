@@ -473,14 +473,36 @@ def _merge_yaml_dict_item_into_target(
         # The YAML data might be a scalar value (as opposed to a mapping).
         yaml_value_type = type(yaml_value)
         if yaml_value_type in list(_PRIMITIVE_YAML_TYPES) + [type(None)]:
-            if yaml_value_type not in generic_args:
-                raise RuntimeError(
-                    f"The schema sum type for '{name}' cannot accept a yaml "
-                    f"value '{yaml_value}' of type {yaml_value_type}; only "
-                    f"one of {generic_args} are acceptable"
+            # Check if the scalar is one of the allowed union types.
+            if yaml_value_type in generic_args:
+                setter(yaml_value)
+                return
+            # Check if the scalar can be converted to the default type (i.e.,
+            # the first type in the Union) when no type tag has been given. If
+            # the default type is a primitive, we must be careful to use the
+            # safe conversion routine.
+            default_type = generic_args[0]
+            default_typed_value = None
+            if default_type in list(_PRIMITIVE_YAML_TYPES):
+                default_typed_value = _convert_yaml_primitive_to_schema_type(
+                    yaml_value=yaml_value,
+                    value_schema=default_type,
                 )
-            setter(yaml_value)
-            return
+            else:
+                try:
+                    default_typed_value = default_type(yaml_value)
+                except Exception:
+                    pass
+            if default_typed_value is not None:
+                setter(default_typed_value)
+                return
+            # The yaml_value didn't match (or couldn't be promoted to) any of
+            # the allowed types in the Union.
+            raise RuntimeError(
+                f"The schema sum type for '{name}' cannot accept a yaml "
+                f"value '{yaml_value}' of type {yaml_value_type}; only "
+                f"one of {generic_args} are acceptable"
+            )
         # A mapping can optionally specify a type tag to choose which Union[]
         # type to parse into. When none is provided, the default is to use the
         # first option listed in the sum type (to match what C++ does).
