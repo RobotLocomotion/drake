@@ -1342,7 +1342,7 @@ arises.)""";
       // Symbol: drake::multibody::DiscreteContactApproximation
       struct /* DiscreteContactApproximation */ {
         // Source: drake/multibody/plant/multibody_plant.h
-        const char* doc =
+        const char* doc_deprecated =
 R"""(The type of the contact approximation used for a discrete
 MultibodyPlant model.
 
@@ -1394,7 +1394,11 @@ References
   https://arxiv.org/abs/2110.10107.
 - [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. A Theory
   of Irrotational Contact Fields. Available online at
-  https://arxiv.org/abs/2312.03908)""";
+  https://arxiv.org/abs/2312.03908 (Deprecated.)
+
+Deprecated:
+    The TAMSI solver is deprecated for removal. This will be removed
+    from Drake on or after 2026-09-01.)""";
         // Symbol: drake::multibody::DiscreteContactApproximation::kLagged
         struct /* kLagged */ {
           // Source: drake/multibody/plant/multibody_plant.h
@@ -1424,7 +1428,7 @@ R"""(TAMSI solver approximation, see [Castro et al., 2019].)""";
       // Symbol: drake::multibody::DiscreteContactSolver
       struct /* DiscreteContactSolver */ {
         // Source: drake/multibody/plant/multibody_plant.h
-        const char* doc =
+        const char* doc_deprecated =
 R"""(The type of the contact solver used for a discrete MultibodyPlant
 model.
 
@@ -1444,7 +1448,11 @@ References
   https://arxiv.org/abs/1909.05700.
 - [Castro et al., 2022] Castro A., Permenter F. and Han X., 2022. An
   Unconstrained Convex Formulation of Compliant Contact. Available online at
-  https://arxiv.org/abs/2110.10107.)""";
+  https://arxiv.org/abs/2110.10107. (Deprecated.)
+
+Deprecated:
+    The TAMSI solver is deprecated for removal. This will be removed
+    from Drake on or after 2026-09-01.)""";
         // Symbol: drake::multibody::DiscreteContactSolver::kSap
         struct /* kSap */ {
           // Source: drake/multibody/plant/multibody_plant.h
