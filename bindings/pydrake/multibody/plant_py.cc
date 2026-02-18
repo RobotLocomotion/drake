@@ -267,6 +267,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AddJointActuator.doc)
         .def("RemoveJointActuator", &Class::RemoveJointActuator,
             py::arg("actuator"), cls_doc.RemoveJointActuator.doc)
+        .def("RemoveAllJointActuatorEffortLimits",
+            &Class::RemoveAllJointActuatorEffortLimits,
+            cls_doc.RemoveAllJointActuatorEffortLimits.doc)
         .def(
             "AddFrame",
             [](Class* self, const Frame<T>& frame) {

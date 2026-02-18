@@ -66,14 +66,12 @@ class IcfBuilder {
                            const IcfLinearFeedbackGains<T>* external_feedback,
                            IcfModel<T>* model) const;
 
-  /* Testing only access. */
-  const VectorX<T>& effort_limits() const { return plant_facts_.effort_limits; }
-
  private:
   /* Scratch workspace data to build the model. */
   struct Scratch {
     explicit Scratch(const MultibodyPlant<T>& plant);
 
+    VectorX<T> effort_limits;        // size nv
     Matrix6X<T> J_V_WB;              // size 6 x nv
     const VectorX<T> accelerations;  // size nv
     MultibodyForces<T> forces;
@@ -165,15 +163,14 @@ class IcfBuilder {
   struct PlantFacts {
     explicit PlantFacts(const MultibodyPlant<T>& plant);
 
-    std::vector<int> tree_to_clique;      // cliques are trees with nv > 0.
-    std::vector<int> clique_sizes;        // nv for each clique.
-    std::vector<int> body_jacobian_cols;  // cols of J_WB for each body.
-    std::vector<int> body_to_clique;      // clique index for each body.
-    std::vector<int> body_is_floating;    // 1 if body is floating, else 0.
-    VectorX<T> effort_limits;             // actuator limits for each velocity.
-    std::vector<int> clique_nu;           // number of actuators per clique.
-    int num_actuation_constraints{};      // count of clique_nu_[k] > 0.
-    std::vector<int> limited_clique_sizes;        // nv in each limited clique.
+    std::vector<int> tree_to_clique;        // cliques are trees with nv > 0.
+    std::vector<int> clique_sizes;          // nv for each clique.
+    std::vector<int> body_jacobian_cols;    // cols of J_WB for each body.
+    std::vector<int> body_to_clique;        // clique index for each body.
+    std::vector<int> body_is_floating;      // 1 if body is floating, else 0.
+    std::vector<int> clique_nu;             // number of actuators per clique.
+    int num_actuation_constraints{};        // count of clique_nu_[k] > 0.
+    std::vector<int> limited_clique_sizes;  // nv in each limited clique.
     std::vector<int> clique_to_limit_constraint;  // clique idx --> limit idx.
   };
   const PlantFacts plant_facts_{plant_};
@@ -194,7 +191,7 @@ class IcfBuilder {
   std::vector<geometry::ContactSurface<T>> surfaces_;
 
   // Storage for intermediate computations, often overwritten.
-  Scratch scratch_{plant_};
+  mutable Scratch scratch_{plant_};
 };
 
 }  // namespace internal
