@@ -16,5 +16,10 @@ class TestCenic(unittest.TestCase):
         CenicIntegrator = mut.CenicIntegrator_[T]
         dut = CenicIntegrator(system=diagram, context=None)
 
+        # Confirm parameter operations.
+        parameters = dut.get_solver_parameters()
+        self.assertIsNotNone(parameters)
+        dut.SetSolverParameters(parameters=parameters)
+
         # Confirm the IntegratorBase inheritance.
         dut.set_fixed_step_mode(True)
