@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <deque>
-#include <sstream>
 #include <vector>
 
-#include <fmt/format.h>
+// TODO(2026-06-01): Remove sstream header when `operator<<` is removed.
+#include <sstream>
 
 namespace drake {
 namespace solvers {
@@ -103,31 +103,28 @@ std::string to_string(const ProgramAttribute& attr) {
 }
 
 std::ostream& operator<<(std::ostream& os, const ProgramAttribute& attr) {
-  os << to_string(attr);
-  return os;
+  return os << fmt::to_string(attr);
 }
 
 std::string to_string(const ProgramAttributes& attrs) {
-  std::ostringstream result;
-  result << attrs;
-  return result.str();
+  std::deque<ProgramAttribute> sorted(attrs.begin(), attrs.end());
+  std::ranges::sort(sorted.begin(), sorted.end());
+  std::string result{"{ProgramAttributes: "};
+  if (sorted.empty()) {
+    result.append("empty");
+  } else {
+    result.append(fmt::to_string(sorted.front()));
+    sorted.pop_front();
+    for (const auto& attr : sorted) {
+      result.append(fmt::format(", {}", attr));
+    }
+  }
+  result.append("}");
+  return result;
 }
 
 std::ostream& operator<<(std::ostream& os, const ProgramAttributes& attrs) {
-  std::deque<ProgramAttribute> sorted(attrs.begin(), attrs.end());
-  std::sort(sorted.begin(), sorted.end());
-  os << "{ProgramAttributes: ";
-  if (sorted.empty()) {
-    os << "empty";
-  } else {
-    os << sorted.front();
-    sorted.pop_front();
-    for (const auto& attr : sorted) {
-      os << ", " << attr;
-    }
-  }
-  os << "}";
-  return os;
+  return os << fmt::to_string(attrs);
 }
 
 std::string to_string(const ProgramType& program_type) {
@@ -165,8 +162,7 @@ std::string to_string(const ProgramType& program_type) {
 }
 
 std::ostream& operator<<(std::ostream& os, const ProgramType& program_type) {
-  os << to_string(program_type);
-  return os;
+  return os << fmt::to_string(program_type);
 }
 
 }  // namespace solvers
