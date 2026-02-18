@@ -174,7 +174,8 @@ enum class ContactModel {
 ///   https://arxiv.org/abs/2110.10107.
 enum class DiscreteContactSolver {
   /// TAMSI solver, see [Castro et al., 2019].
-  kTamsi,
+  kTamsi DRAKE_DEPRECATED("2026-09-01",
+                          "The TAMSI solver is deprecated for removal."),
   /// SAP solver, see [Castro et al., 2022].
   kSap,
 };
@@ -231,7 +232,8 @@ enum class DiscreteContactSolver {
 ///   https://arxiv.org/abs/2312.03908
 enum class DiscreteContactApproximation {
   /// TAMSI solver approximation, see [Castro et al., 2019].
-  kTamsi,
+  kTamsi DRAKE_DEPRECATED("2026-09-01",
+                          "The TAMSI solver is deprecated for removal."),
   /// SAP solver model approximation, see [Castro et al., 2022].
   kSap,
   /// Similarity approximation found in [Castro et al., 2023].

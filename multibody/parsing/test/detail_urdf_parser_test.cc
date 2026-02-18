@@ -423,6 +423,9 @@ static constexpr char kMimicModel[] = R"""(
       </joint>
     </robot>)""";
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(UrdfParserTest, MimicNoSap) {
   // Currently the <mimic> tag is only supported by SAP. Setting the solver
   // to TAMSI should be a warning.
@@ -442,6 +445,7 @@ TEST_F(UrdfParserTestContinuous, MimicContinuous) {
   // can't be checked at parsing time.
   EXPECT_NE(AddModelFromUrdfString(kMimicModel, ""), std::nullopt);
 }
+#pragma GCC diagnostic pop
 
 TEST_F(UrdfParserTest, MimicNoJoint) {
   // Currently the <mimic> tag is only supported by SAP.

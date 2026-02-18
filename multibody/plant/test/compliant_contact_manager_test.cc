@@ -55,8 +55,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-constexpr double kEps = std::numeric_limits<double>::epsilon();
-
 // Friend class used to provide access to a selection of private functions in
 // SapDriver for testing purposes.
 // TODO(amcastro-tri): Consider how to split SapDriver tests from
@@ -79,6 +77,16 @@ class SapDriverTest {
                                     contact_results);
   }
 };
+
+namespace {
+
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
+#pragma GCC diagnostic push
+
+constexpr double kEps = std::numeric_limits<double>::epsilon();
 
 // Tests that in SetDiscreteUpdateManager, a non-empty DeformableModel will
 // cause a DeformableDriver to be instantiated in the manager.
@@ -686,7 +694,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
   // projections onto the friction cone are accurate to machine epsilon and
   // therefore no error is expected.
   const double kRelativeSlipTolerance =
-      config.contact_solver == DiscreteContactSolver::kTamsi ? 2.0e-6 : 0.0;
+      config.contact_solver == kDiscreteContactSolverTamsi ? 2.0e-6 : 0.0;
 
   if (config.point_contact) {
     // Test point contact.
@@ -751,15 +759,15 @@ std::vector<ContactTestConfig> MakeTestCases() {
        .contact_solver = DiscreteContactSolver::kSap},
       {.description = "HydroelasticContactWithFallback_TAMSI",
        .point_contact = false,
-       .contact_solver = DiscreteContactSolver::kTamsi},
+       .contact_solver = kDiscreteContactSolverTamsi},
       {.description = "HydroelasticContactOnly_TAMSI",
        .point_contact = false,
        // We verify that the test passes with hydroelastic only.
        .contact_model = ContactModel::kHydroelastic,
-       .contact_solver = DiscreteContactSolver::kTamsi},
+       .contact_solver = kDiscreteContactSolverTamsi},
       {.description = "PointContact_TAMSI",
        .point_contact = true,
-       .contact_solver = DiscreteContactSolver::kTamsi},
+       .contact_solver = kDiscreteContactSolverTamsi},
   };
 }
 
@@ -768,6 +776,7 @@ INSTANTIATE_TEST_SUITE_P(CompliantContactManagerTests,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 
+}  // namespace
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
