@@ -1767,7 +1767,7 @@ Perform introspection to find out what's in the MultibodyPlant.
 
 **** Model Instances
 
-A MultiBodyPlant may contain multiple model instances. Each model
+A MultibodyPlant may contain multiple model instances. Each model
 instance corresponds to a set of bodies and their connections
 (joints). Model instances provide methods to get or set the state of
 the set of bodies (e.g., through GetPositionsAndVelocities() and
