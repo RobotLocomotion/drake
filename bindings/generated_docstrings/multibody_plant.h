@@ -2065,11 +2065,6 @@ Note:
     GetActuationFromArray() to scatter the whole plant vector into
     per-model instance vectors.
 
-Warning:
-    Effort limits (JointActuator::effort_limit()) are not enforced,
-    unless PD controllers are defined. See pd_controllers "Using PD
-    controlled actuators".
-
 ** Using PD controlled actuators
 
 While PD controllers can be modeled externally and be connected to the
@@ -2081,10 +2076,10 @@ plant where the discrete solver can strongly couple controller and
 model dynamics.
 
 Warning:
-    Currently, this feature is only supported for discrete models
-    (is_discrete() is true) using the SAP solver
+    For discrete models (is_discrete() is true), this feature is not
+    supported when using the TAMSI solver
     (get_discrete_contact_solver() returns
-    DiscreteContactSolver::kSap.)
+    DiscreteContactSolver::kTamsi.)
 
 PD controlled joint actuators can be defined by setting PD gains for
 each joint actuator, see JointActuator::set_controller_gains(). Unless
@@ -2893,15 +2888,6 @@ Parameter ``effort_limit``:
     in accordance to the joint type it actuates. For instance, it will
     have units of N⋅m (torque) for revolute joints while it will have
     units of N (force) for prismatic joints.
-
-Note:
-    The effort limit is unused by MultibodyPlant and is simply
-    provided here for bookkeeping purposes. It will not, for instance,
-    saturate external actuation inputs based on this value. If, for
-    example, a user intends to saturate the force/torque that is
-    applied to the MultibodyPlant via this actuator, the user-level
-    code (e.g., a controller) should query this effort limit and
-    impose the saturation there.
 
 Returns:
     A constant reference to the new JointActuator just added, which
