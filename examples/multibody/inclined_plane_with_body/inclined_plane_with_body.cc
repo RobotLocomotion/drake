@@ -61,8 +61,8 @@ DEFINE_bool(is_inclined_plane_half_space, true,
 DEFINE_string(
     bodyB_type, "sphere",
     "Valid body types are 'sphere', 'block', or 'block_with_4Spheres'");
-DEFINE_string(contact_approximation, "tamsi",
-              "Discrete contact approximation. Options are: 'tamsi', "
+DEFINE_string(contact_approximation, "lagged",
+              "Discrete contact approximation. Options are: "
               "'sap', 'similar', 'lagged'");
 
 using drake::multibody::MultibodyPlant;
