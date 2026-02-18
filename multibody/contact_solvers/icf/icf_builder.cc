@@ -289,12 +289,12 @@ template <typename T>
 void IcfBuilder<T>::ValidateContext(const systems::Context<T>& context) {
   // Revisit this condition when joint locking support is implemented. See
   // #23764.
-  for (int k = 0; k < plant_.num_joints(); ++k) {
-    if (plant_.get_joint(JointIndex(k)).is_locked(context)) {
+  for (const JointIndex& j : plant_.GetJointIndices()) {
+    if (plant_.get_joint(j).is_locked(context)) {
       throw std::runtime_error(
           fmt::format("The CENIC integrator does not yet support joint "
                       "locking, but at least joint {} is locked",
-                      k));
+                      j));
     }
   }
 }
