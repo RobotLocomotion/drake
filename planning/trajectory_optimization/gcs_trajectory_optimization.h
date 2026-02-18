@@ -1339,7 +1339,7 @@ class GcsTrajectoryOptimization final {
    starting rounds are not provided, the initial position of @p trajectory will
    be unchanged.
 
-   @returns an unwrapped (continous in Euclidean space) CompositeTrajectory.
+   @returns an unwrapped (continuous in Euclidean space) CompositeTrajectory.
 
    @throws std::exception if
    starting_rounds.size()!=continuous_revolute_joints.size().

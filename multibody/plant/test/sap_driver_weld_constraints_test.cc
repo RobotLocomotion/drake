@@ -349,11 +349,26 @@ GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
+  plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
+                          RigidTransformd{Vector3d{0, 0, 0}});
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.EvalTimeDerivatives(*context),
+                              ".*continuous.*not.*support.*constraints.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
-                              RigidTransformd{Vector3d{0, 0, 0}}),
-      ".*Currently weld constraints are only supported for discrete "
-      "MultibodyPlant models.*");
+      plant.get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_generalized_acceleration_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.get_reaction_forces_output_port().Eval(*context),
+      ".*continuous.*not.*support.*constraints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassTranslationalAccelerationInWorld(*context),
+      ".*continuous.*not.*support.*constraints.*");
 }
 
 GTEST_TEST(WeldConstraintTests, FailOnFinalized) {

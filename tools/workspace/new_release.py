@@ -111,8 +111,6 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
 _COHORTS = (
     # clarabel_cpp uses crate_universe; be sure to keep them aligned.
     {"clarabel_cpp_internal", "crate_universe"},
-    # mypy uses mypy_extensions; be sure to keep them aligned.
-    {"mypy_internal", "mypy_extensions_internal"},
     # sdformat depends on both gz libraries; be sure to keep them aligned.
     {"sdformat_internal", "gz_math_internal", "gz_utils_internal"},
     # uwebsockets depends on usockets; be sure to keep them aligned.
