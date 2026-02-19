@@ -192,9 +192,8 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
     // CalcTimeDerivatives should not be allocating, but for now we have a few
     // remaining fixes before it's down to zero:
     //  2 temps in MbTS::CalcArticulatedBodyForceCache (F_B_W_, tau_).
-    //  1 temp  in MbP::AssembleActuationInput (actuation_input).
     //  2 temps in MbTS::DoCalcTimeDerivatives (xdot, qdot).
-    LimitMalloc guard({.max_num_allocations = 5});
+    LimitMalloc guard({.max_num_allocations = 4});
     EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
   }
 

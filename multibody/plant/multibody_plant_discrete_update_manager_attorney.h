@@ -66,26 +66,20 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     plant.AddAppliedExternalSpatialForces(context, forces);
   }
 
-  static void AddJointActuationForces(const MultibodyPlant<T>& plant,
-                                      const drake::systems::Context<T>& context,
-                                      VectorX<T>* forces) {
-    plant.AddJointActuationForces(context, forces);
-  }
-
   static void CalcForceElementsContribution(
       const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
       MultibodyForces<T>* forces) {
     return plant.CalcForceElementsContribution(context, forces);
   }
 
-  static VectorX<T> AssembleActuationInput(const MultibodyPlant<T>& plant,
-                                           const systems::Context<T>& context) {
-    return plant.AssembleActuationInput(context);
+  static const VectorX<T>& EvalActuationInput(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalActuationInput(context);
   }
 
-  static DesiredStateInput<T> AssembleDesiredStateInput(
+  static const DesiredStateInput<T>& EvalDesiredStateInput(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.AssembleDesiredStateInput(context);
+    return plant.EvalDesiredStateInput(context);
   }
 
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all

@@ -2718,7 +2718,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->size() == num_velocities());
   if (num_actuators() > 0) {
-    const VectorX<T> u = AssembleActuationInput(context);
+    const VectorX<T>& u = EvalActuationInput(context);
     for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
       const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
       const Joint<T>& joint = actuator.joint();
@@ -2778,15 +2778,22 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
 }
 
 template <typename T>
-VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
+const VectorX<T>& MultibodyPlant<T>::EvalActuationInput(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
+  return this->get_cache_entry(cache_indices_.actuation_input)
+      .template Eval<VectorX<T>>(context);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcActuationInput(const systems::Context<T>& context,
+                                           VectorX<T>* actuation_input) const {
   this->ValidateContext(context);
 
   // Assemble the vector from the model instance input ports.
-  // TODO(sherm1) Heap allocation here. Get rid of it.
   // We initialize to zero. Actuation inputs are assumed to have zero values if
   // not connected.
-  VectorX<T> actuation_input = VectorX<T>::Zero(num_actuated_dofs());
+  actuation_input->setZero();
 
   // Contribution from the per model-instance input ports.
   for (ModelInstanceIndex model_instance_index(0);
@@ -2805,7 +2812,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
             "Actuation input port for model instance {} contains NaN.",
             GetModelInstanceName(model_instance_index)));
       }
-      SetActuationInArray(model_instance_index, u_instance, &actuation_input);
+      SetActuationInArray(model_instance_index, u_instance, actuation_input);
     }
   }
 
@@ -2820,10 +2827,8 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
           "Detected NaN in the actuation input port for all instances.");
     }
     // Contribution is added to the per model-instance contribution.
-    actuation_input += u;
+    *actuation_input += u;
   }
-
-  return actuation_input;
 }
 
 template <typename T>
@@ -2849,7 +2854,7 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
     }
   } else {
     DRAKE_DEMAND(!sampled);
-    output->SetFromVector(AssembleActuationInput(context));
+    output->SetFromVector(EvalActuationInput(context));
   }
 }
 
@@ -2866,8 +2871,17 @@ void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
 }
 
 template <typename T>
-internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
+const internal::DesiredStateInput<T>& MultibodyPlant<T>::EvalDesiredStateInput(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
+  return this->get_cache_entry(cache_indices_.desired_state_input)
+      .template Eval<internal::DesiredStateInput<T>>(context);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcDesiredStateInput(
+    const systems::Context<T>& context,
+    internal::DesiredStateInput<T>* desired_state_input) const {
   this->ValidateContext(context);
 
   // Checks if desired state x for model_instance has NaNs. Only entries
@@ -2894,9 +2908,6 @@ internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
   };
 
   // Assemble the vector from the model instance input ports.
-  // TODO(amcastro-tri): Heap allocation here. Get rid of it. Make it EvalFoo().
-  internal::DesiredStateInput<T> desired_states(num_model_instances());
-
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     // Ignore the port if the model instance has no actuated DoFs.
@@ -2915,12 +2926,13 @@ internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
       }
       const auto qd = xd_instance.head(instance_num_u);
       const auto vd = xd_instance.tail(instance_num_u);
-      desired_states.SetModelInstanceDesiredStates(model_instance_index, qd,
-                                                   vd);
+      desired_state_input->SetModelInstanceDesiredStates(model_instance_index,
+                                                         qd, vd);
+    } else {
+      desired_state_input->ClearModelInstanceDesiredStates(
+          model_instance_index);
     }
   }
-
-  return desired_states;
 }
 
 template <typename T>
@@ -3693,6 +3705,33 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       "JointLocking", internal::JointLockingCacheData<T>{},
       &MultibodyPlant::CalcJointLocking, {this->all_parameters_ticket()});
   cache_indices_.joint_locking = joint_locking_cache_entry.cache_index();
+
+  // Cache actuation input data.
+  {
+    std::set<DependencyTicket> prerequisites;
+    prerequisites.insert(get_actuation_input_port().ticket());
+    for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+      prerequisites.insert(get_actuation_input_port(i).ticket());
+    }
+    const auto& actuation_input_cache_entry = this->DeclareCacheEntry(
+        "ActuationInput", VectorX<T>(num_actuators()),
+        &MultibodyPlant::CalcActuationInput, std::move(prerequisites));
+    cache_indices_.actuation_input = actuation_input_cache_entry.cache_index();
+  }
+
+  // Cache desired state input data.
+  {
+    std::set<DependencyTicket> prerequisites;
+    for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+      prerequisites.insert(get_desired_state_input_port(i).ticket());
+    }
+    const auto& desired_state_input_cache_entry = this->DeclareCacheEntry(
+        "DesiredStateInput",
+        internal::DesiredStateInput<T>(num_model_instances()),
+        &MultibodyPlant::CalcDesiredStateInput, std::move(prerequisites));
+    cache_indices_.desired_state_input =
+        desired_state_input_cache_entry.cache_index();
+  }
 }
 
 template <typename T>
