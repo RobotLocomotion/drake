@@ -1,0 +1,61 @@
+Remember that CompliantContactManager is-a DiscreteUpdateManager.
+
+********** For computing the dynamics solve **********
+
+SapDriver::CalcSapSolverResults
+and SapDriver::CalcContactSolverResults 
+and SapDriver::CalcDiscreteUpdateMultibodyForces
+and SapDriver::CalcActuation
+=> SapDriver::EvalContactProblemCache
+  => SapDriver::CalcContactProblemCache
+    => SapDriver::CalcFreeMotionVelocities
+      => CompliantContactManager::EvalAccelerationsDueToNonConstraintForcesCache
+        => CompliantContactManager::CalcAccelerationsDueToNonConstraintForcesCache (include_pd=false)
+          => DiscreteUpdateManager>::CalcNonContactForces (param on include_pd)
+            => DiscreteUpdateManager::CalcInputPortForces
+              => DiscreteUpdateManager::CalcJointActuationForces
+                 => DiscreteUpdateManager::EvalActuationInput
+                   actuator.has_controller: actuation_w_pd
+                   else:                    actuation_wo_pd
+^^ In this call chain, we DO want clamping (include_pd=False).
+
+=> DiscreteUpdateManager::CalcDiscreteValues and related
+  => DiscreteUpdateManager::EvalContactSolverResults
+    => DiscreteUpdateManager::CalcContactSolverResults
+      => CompliantContactManager::DoCalcContactSolverResults
+        SAP: n/a
+        TAMSI:
+        => TamsiDriver::CalcContactSolverResults (include_pd=true)
+          => (DiscreteUpdateManager>::CalcNonContactForces)
+^^ In this call chain, we DO want clamping (include_pd=True).
+
+=> SapDriver::AddPdControllerConstraints
+  => DiscreteUpdateManager::EvalActuationInput
+^^ In this call chain, we do NOT want clamping.
+
+********** For reporting the step after the fact **********
+
+=> MultibodyPlant::CalcNetActuationOutput (unsampled) or DiscreteUpdateManager::CalcDiscreteValues (sampled)
+  => DiscreteUpdateManager::EvalActuation
+    => DiscreteUpdateManager::CalcActuation
+      => CompliantContactManager::DoCalcActuation
+        SAP:
+        => SapDriver::CalcActuation
+          => SapDriver::EvalSapSolverResults (for pd-controlled-and-unlocked actuators)
+          => DiscreteUpdateManager::EvalActuationInput (otherwise)
+        TAMSI:
+        => DiscreteUpdateManager::EvalActuationInput
+^^ In this call chain, we DO want clamping (for both SAP and TAMSI).
+
+=> MultibodyPlant::CalcReactionForcesOutput (unsampled) or MultibodyPlant::CalcStepUnrestricted (sampled)
+  => MultibodyPlant::CalcReactionForces
+    => DiscreteUpdateManager::EvalDiscreteUpdateMultibodyForces
+      => DiscreteUpdateManager::CalcDiscreteUpdateMultibodyForces
+        => CompliantContactManager::DoCalcDiscreteUpdateMultibodyForces
+          SAP:
+          => SapDriver::CalcDiscreteUpdateMultibodyForces (include_pd=false)
+            => (DiscreteUpdateManager>::CalcNonContactForces)
+          TAMSI:
+          => TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces (include_pd=true)
+            => (DiscreteUpdateManager>::CalcNonContactForces)
+^^ In this call chain, we DO want clamping (for both SAP and TAMSI).

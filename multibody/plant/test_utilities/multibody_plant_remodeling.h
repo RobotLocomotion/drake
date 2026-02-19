@@ -43,6 +43,8 @@ class MultibodyPlantRemodelingBase {
   void FinalizeAndBuild();
 
  protected:
+  const double time_step_;
+
   // These members are only valid after SetUp().
   // `builder_` is invalid after calling FinalizeAndBuild().
   std::unique_ptr<systems::DiagramBuilder<double>> builder_;
@@ -53,8 +55,6 @@ class MultibodyPlantRemodelingBase {
   std::unique_ptr<systems::Diagram<double>> diagram_;
   std::unique_ptr<systems::Simulator<double>> simulator_;
   systems::Context<double>* plant_context_{nullptr};
-
-  const double time_step_;  // time step of plant_
 };
 
 // This test fixture hard codes the plant time step to an arbitrary discrete
@@ -66,7 +66,14 @@ class MultibodyPlantRemodelingDiscrete : public MultibodyPlantRemodelingBase,
       : MultibodyPlantRemodelingBase(/* time_step = */ 0.1) {}
 };
 
-// This Test fixture accepts a time step value by test parameter.
+// This test fixture hard codes the plant time step to zero (i.e., continuous).
+class MultibodyPlantRemodelingContinuous : public MultibodyPlantRemodelingBase,
+                                           public ::testing::Test {
+ public:
+  MultibodyPlantRemodelingContinuous() : MultibodyPlantRemodelingBase(0.0) {}
+};
+
+// This test fixture accepts a time step value by test parameter.
 class MultibodyPlantRemodelingParam : public MultibodyPlantRemodelingBase,
                                       public ::testing::TestWithParam<double> {
  public:
