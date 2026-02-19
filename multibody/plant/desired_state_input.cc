@@ -28,6 +28,14 @@ void DesiredStateInput<T>::SetModelInstanceDesiredStates(
   velocities_[model_instance] = vd;
 }
 
+template <typename T>
+void DesiredStateInput<T>::ClearModelInstanceDesiredStates(
+    ModelInstanceIndex model_instance) {
+  DRAKE_DEMAND(model_instance < num_model_instances());
+  positions_[model_instance] = std::nullopt;
+  velocities_[model_instance] = std::nullopt;
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

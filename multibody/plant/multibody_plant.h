@@ -5919,6 +5919,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   struct CacheIndices {
     systems::CacheIndex geometry_contact_data;
     systems::CacheIndex joint_locking;
+    systems::CacheIndex actuation_input;
+    systems::CacheIndex desired_state_input;
 
     // This is only valid for a continuous-time, hydroelastic-contact plant.
     systems::CacheIndex hydroelastic_contact_forces_continuous;
@@ -6112,11 +6114,16 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // have a place we can refer users to for details.
   void EstimatePointContactParameters(double penetration_allowance);
 
-  // Helper method to assemble actuation input vector from the appropriate
-  // ports. The actuation value for a particular actuator can be found at offset
+  // Methods that assemble actuation input vector from the appropriate ports.
+  // The actuation value for a particular actuator can be found at offset
   // JointActuator::input_start() in the returned vector (see
-  // MultibodyPlant::get_actuation_input_port()).
-  VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
+  // MultibodyPlant::get_actuation_input_port()). N.B. this does not include
+  // actuation due to the desired_state input ports; this is only the
+  // feedforward actuation.
+  const VectorX<T>& EvalActuationInput(
+      const systems::Context<T>& context) const;
+  void CalcActuationInput(const systems::Context<T>& context,
+                          VectorX<T>* actuation_input) const;
 
   // Calc method for the "net_actuation" output port.
   template <bool sampled>
@@ -6129,10 +6136,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                       const systems::Context<T>& context,
                                       systems::BasicVector<T>* output) const;
 
-  // This function evaluates the desired state input ports and returns them as
-  // a DesiredStateInput.
-  internal::DesiredStateInput<T> AssembleDesiredStateInput(
+  // These methods evaluate the desired state input ports and return them as a
+  // DesiredStateInput.
+  const internal::DesiredStateInput<T>& EvalDesiredStateInput(
       const systems::Context<T>& context) const;
+  void CalcDesiredStateInput(
+      const systems::Context<T>& context,
+      internal::DesiredStateInput<T>* desired_state_input) const;
 
   // Throws if the plant uses features not supported by continuous time
   // calculations.
