@@ -392,8 +392,8 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
     const int clique1 = tree_to_clique(tree1);
 
     if (clique0 != clique1) {
-      // TODO(#23992): this limitation is contested. It should either be
-      // removed, or escalated to MultibodyPlant.
+      // TODO(#23992): this limitation is a regression from SAP coupler
+      // constraints. It should be removed.
       throw std::logic_error(
           "IcfBuilder: Couplers are only allowed within DoFs in the same "
           "tree.");

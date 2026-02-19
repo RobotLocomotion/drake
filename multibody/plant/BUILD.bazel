@@ -960,6 +960,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "coupler_constraints_test",
+    deps = [
+        "//common/test_utilities",
+        "//multibody/parsing",
+        "//systems/analysis",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_boundary_condition_test",
     deps = [
         ":multibody_plant_core",
