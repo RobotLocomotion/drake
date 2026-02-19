@@ -1231,6 +1231,8 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
   // PD controlled actuation values are overwritten below with values computed
   // by the SAP solver, which includes these terms implicitly and enforces
   // effort limits.
+  // XXX This should be effort-limited (for non-PD).
+  // XXX When a PD is locked, we should be discarding the ff actuation input.
   *actuation = manager().EvalActuationInput(context);
 
   // Add contribution from PD controllers.

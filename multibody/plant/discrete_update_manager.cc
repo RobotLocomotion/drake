@@ -341,6 +341,7 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
   actuation_w_pd->setZero();
   actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
+    // XXX This should be effort-limited.
     const VectorX<T>& u = EvalActuationInput(context);
     for (JointActuatorIndex actuator_index :
          plant().GetJointActuatorIndices()) {
