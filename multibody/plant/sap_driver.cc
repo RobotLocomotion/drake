@@ -731,7 +731,7 @@ void SapDriver<T>::AddPdControllerConstraints(
   const DesiredStateInput<T>& desired_states =
       manager_->EvalDesiredStateInput(context);
   const VectorX<T>& feed_forward_actuation =
-      manager_->EvalActuationInput(context);
+      manager_->EvalActuationInput(context, /* effort_limit = */ false);
 
   const SpanningForest& forest = get_forest();
   for (ModelInstanceIndex model_instance_index(0);
@@ -1230,11 +1230,13 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
 template <typename T>
 void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
                                  VectorX<T>* actuation) const {
-  // By default, models with no controllers feed through the output.
-  // PD controlled actuation values are overwritten below with values computed
-  // by the SAP solver, which includes these terms implicitly and enforces
-  // effort limits.
-  *actuation = manager().EvalActuationInput(context);
+  // If there are no PD controllers, then the net actuation output is simply the
+  // (effort-limited) actuation input. We'll use that as our baseline here.
+  //
+  // Any PD controlled actuators are overwritten below with values computed by
+  // the SAP solver; those values already account for the PD actuation,
+  // feedforward actuation, and effort limits.
+  *actuation = manager().EvalActuationInput(context, /* effort_limit = */ true);
 
   // Add contribution from PD controllers.
   const ContactProblemCache<T>& contact_problem_cache =

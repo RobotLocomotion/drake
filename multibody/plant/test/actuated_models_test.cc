@@ -30,8 +30,9 @@ namespace multibody {
 class MultibodyPlantTester {
  public:
   static const VectorXd& EvalActuationInput(const MultibodyPlant<double>& plant,
-                                            const Context<double>& context) {
-    return plant.EvalActuationInput(context);
+                                            const Context<double>& context,
+                                            bool effort_limit) {
+    return plant.EvalActuationInput(context, effort_limit);
   }
 
   static const internal::DesiredStateInput<double>& EvalDesiredStateInput(
@@ -141,9 +142,7 @@ class ActuatedIiwaArmTest : public ::testing::Test {
               plant_->get_mutable_joint_actuator(actuator_index);
           // We do not add PD controllers to the acrobot.
           if (actuator.model_instance() == acrobot_model_) continue;
-          // N.B. Proportional gains must be strictly positive, so we choose a
-          // small positive number to approximate zero.
-          actuator.set_controller_gains({1.0e-10, 0.0});
+          actuator.set_controller_gains({0.0, 0.0});
         }
       }
     }
@@ -251,13 +250,11 @@ class ActuatedIiwaArmTest : public ::testing::Test {
   }
 
   // This method sets arm and gripper actuation inputs with
-  // MakeActuationForEachModel(false) (iiwa outside effort limits) and verifies
+  // MakeActuationForEachModel(true) (iiwa inside effort limits) and verifies
   // the actuation output port copies them to the output.
-  // Note: Since the arm actuation is outside effort limits, for SAP this will
-  // only be true in the absence of PD controllers.
   void VerifyActuationOutputFeedsThroughActuationInputs() {
     auto [arm_u, acrobot_u, gripper_u] =
-        MakeActuationForEachModel(false /* iiwa outside limits */);
+        MakeActuationForEachModel(true /* iiwa inside limits */);
 
     // Set arbitrary actuation values.
     plant_->get_actuation_input_port(arm_model_)
@@ -442,8 +439,8 @@ TEST_F(ActuatedIiwaArmTest, EvalActuationInput) {
   plant_->get_actuation_input_port(acrobot_model_)
       .FixValue(context_.get(), acrobot_u);
 
-  const VectorXd full_u =
-      MultibodyPlantTester::EvalActuationInput(*plant_, *context_);
+  const VectorXd full_u = MultibodyPlantTester::EvalActuationInput(
+      *plant_, *context_, /* effort_limit = */ false);
 
   const int arm_nu = plant_->num_actuated_dofs(arm_model_);
   VectorXd expected_u =
@@ -636,13 +633,6 @@ TEST_F(ActuatedIiwaArmTest,
   plant_->SetPositionsAndVelocities(context_.get(), arm_model_, arm_x0);
   plant_->SetPositionsAndVelocities(context_.get(), gripper_model_, gripper_x0);
 
-  // The desired state input ports are required to be connected, even when PD
-  // gains are zero in this test.
-  plant_->get_desired_state_input_port(gripper_model_)
-      .FixValue(context_.get(), gripper_x0);
-  plant_->get_desired_state_input_port(arm_model_)
-      .FixValue(context_.get(), arm_x0);
-
   // N.B. These values of actuation are well within effort limits, for both arm
   // and gripper.
   auto [arm_u, acrobot_u, gripper_u] =
@@ -704,13 +694,6 @@ TEST_F(ActuatedIiwaArmTest,
   plant_->SetPositionsAndVelocities(context_.get(), arm_model_, arm_x0);
   plant_->SetPositionsAndVelocities(context_.get(), gripper_model_, gripper_x0);
 
-  // The desired state input ports are required to be connected, even when PD
-  // gains are zero in this test.
-  plant_->get_desired_state_input_port(gripper_model_)
-      .FixValue(context_.get(), gripper_x0);
-  plant_->get_desired_state_input_port(arm_model_)
-      .FixValue(context_.get(), arm_x0);
-
   auto [arm_u, acrobot_u, gripper_u] =
       MakeActuationForEachModel(false /* iiwa outside limits */);
 
@@ -754,21 +737,20 @@ TEST_F(ActuatedIiwaArmTest,
                               MatrixCompareType::relative));
 
   // Verify the actuation values reported by the plant.
-  VerifyNetActuationOutputPorts(arm_u_clamped, acrobot_u, gripper_u, expected_u,
-                                kTolerance);
+  {
+    SCOPED_TRACE(fmt::format("net actuation, nominal"));
+    VerifyNetActuationOutputPorts(arm_u_clamped, acrobot_u, gripper_u,
+                                  expected_u, kTolerance);
+  }
 
-  // Joint 4 is actuated beyond its effort limits. Here we verify that when the
-  // joint is locked (and only for this joint), it's PD controller is ignored
-  // and only the input actuation (through the actuation input port) is reported
-  // in the actuation output.
-  plant_->GetJointByName("iiwa_joint_4").Lock(context_.get());
-  const VectorXd arm_u_when_joint4_is_locked =
-      (VectorXd(7) << 176, 176, 55, -160, -110, -40, -40).finished();
-  const VectorXd expected_u_when_joint4_is_locked = AssembleFullModelActuation(
-      arm_u_when_joint4_is_locked, acrobot_u, gripper_u);
-  VerifyNetActuationOutputPorts(arm_u_when_joint4_is_locked, acrobot_u,
-                                gripper_u, expected_u_when_joint4_is_locked,
-                                kTolerance);
+  // Locking a joint disables the (non-existent) PD controller, but otherwise
+  // doesn't change anything. In particular, the effort limit is still enforced.
+  {
+    SCOPED_TRACE(fmt::format("net actuation, locked"));
+    plant_->GetJointByName("iiwa_joint_4").Lock(context_.get());
+    VerifyNetActuationOutputPorts(arm_u_clamped, acrobot_u, gripper_u,
+                                  expected_u, kTolerance);
+  }
 }
 
 // This unit test verifies that the net actuation contributions computed by SAP
@@ -788,16 +770,9 @@ TEST_F(ActuatedIiwaArmTest,
 // simple expected values.
 TEST_F(ActuatedIiwaArmTest, RemovedActuatorNetActuationPDController) {
   test_remove_joint_actuators_ = true;
-  // Set the PD gains to near zero to effectively disable PD control, while
+  // Set the PD gains to zero to effectively disable PD control, while
   // still reporting actuation through the constraints.
   SetUpModel(ModelConfiguration::kModelWithZeroGains);
-
-  // The desired state input ports are required to be connected, even when PD
-  // gains are (effectively) zero in this test.
-  plant_->get_desired_state_input_port(gripper_model_)
-      .FixValue(context_.get(), VectorXd::Zero(4));
-  plant_->get_desired_state_input_port(arm_model_)
-      .FixValue(context_.get(), VectorXd::Zero(12));
 
   auto [arm_u, acrobot_u, gripper_u] = MakeActuationForEachModel(
       false /* iiwa outside limits */, false /* gripper outside limits */);
