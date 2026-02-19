@@ -67,13 +67,12 @@ struct LogarithmicSos2NewBinaryVariables<Eigen::Dynamic> {
  * (1, 1) represents integer 2, so only λ(2) and λ(3) can be strictly positive.
  */
 template <typename Derived>
-typename std::enable_if_t<
-    drake::is_eigen_vector_of<Derived, symbolic::Expression>::value,
-    typename LogarithmicSos2NewBinaryVariables<
-        Derived::RowsAtCompileTime>::type>
-AddLogarithmicSos2Constraint(MathematicalProgram* prog,
-                             const Eigen::MatrixBase<Derived>& lambda,
-                             const std::string& binary_variable_name = "y") {
+  requires(drake::is_eigen_vector_of<Derived, symbolic::Expression>::value)
+auto AddLogarithmicSos2Constraint(MathematicalProgram* prog,
+                                  const Eigen::MatrixBase<Derived>& lambda,
+                                  const std::string& binary_variable_name = "y")
+    -> typename LogarithmicSos2NewBinaryVariables<
+        Derived::RowsAtCompileTime>::type {
   const int binary_variable_size = CeilLog2(lambda.rows() - 1);
   const auto y = prog->NewBinaryVariables<
       LogarithmicSos2NewBinaryVariables<Derived::RowsAtCompileTime>::Rows, 1>(
@@ -164,8 +163,8 @@ void AddLogarithmicSos1Constraint(
  * suppose n = 8, i = 5, then y is a vector of size ⌈log₂(n)⌉ = 3, and the value
  * of y is (1, 1, 0) which equals to 5 according to reflected Gray code.
  */
-std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
-AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda);
+auto AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda)
+    -> std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>;
 
 /**
  * For a continuous variable whose range is cut into small intervals, we will
@@ -241,18 +240,17 @@ std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning);
  */
 template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
           typename DerivedBy>
-typename std::enable_if_t<
-    is_eigen_vector_of<DerivedPhiX, double>::value &&
-        is_eigen_vector_of<DerivedPhiY, double>::value &&
-        is_eigen_vector_of<DerivedBx, symbolic::Expression>::value &&
-        is_eigen_vector_of<DerivedBy, symbolic::Expression>::value,
-    MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
-                           DerivedPhiY::RowsAtCompileTime>>
-AddBilinearProductMcCormickEnvelopeSos2(
+  requires(is_eigen_vector_of<DerivedPhiX, double>::value &&
+           is_eigen_vector_of<DerivedPhiY, double>::value &&
+           is_eigen_vector_of<DerivedBx, symbolic::Expression>::value &&
+           is_eigen_vector_of<DerivedBy, symbolic::Expression>::value)
+auto AddBilinearProductMcCormickEnvelopeSos2(
     MathematicalProgram* prog, const symbolic::Variable& x,
     const symbolic::Variable& y, const symbolic::Expression& w,
     const DerivedPhiX& phi_x, const DerivedPhiY& phi_y, const DerivedBx& Bx,
-    const DerivedBy& By, IntervalBinning binning) {
+    const DerivedBy& By, IntervalBinning binning)
+    -> MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
+                              DerivedPhiY::RowsAtCompileTime> {
   switch (binning) {
     case IntervalBinning::kLogarithmic:
       DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));

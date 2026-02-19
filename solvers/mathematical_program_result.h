@@ -47,10 +47,8 @@ double GetVariableValue(
  * variables.
  */
 template <typename Derived>
-typename std::enable_if_t<
-    std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-    MatrixLikewise<double, Derived>>
-GetVariableValue(
+  requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+MatrixLikewise<double, Derived> GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
     const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
@@ -187,10 +185,9 @@ class MathematicalProgramResult final {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  [[nodiscard]] typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      MatrixLikewise<double, Derived>>
-  GetSolution(const Eigen::MatrixBase<Derived>& var) const {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+  [[nodiscard]] MatrixLikewise<double, Derived> GetSolution(
+      const Eigen::MatrixBase<Derived>& var) const {
     return GetVariableValue(var, decision_variable_index_, x_val_);
   }
 
@@ -240,10 +237,9 @@ class MathematicalProgramResult final {
    * doc_was_unable_to_choose_unambiguous_name. }
    */
   template <typename Derived>
-  [[nodiscard]] typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
-      MatrixLikewise<symbolic::Expression, Derived>>
-  GetSolution(const Eigen::MatrixBase<Derived>& m) const {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Expression>)
+  [[nodiscard]] MatrixLikewise<symbolic::Expression, Derived> GetSolution(
+      const Eigen::MatrixBase<Derived>& m) const {
     MatrixLikewise<symbolic::Expression, Derived> value(m.rows(), m.cols());
     for (int i = 0; i < m.rows(); ++i) {
       for (int j = 0; j < m.cols(); ++j) {
@@ -416,11 +412,9 @@ class MathematicalProgramResult final {
    * problem.
    */
   template <typename Derived>
-  [[nodiscard]] typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      MatrixLikewise<double, Derived>>
-  GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
-                        int solution_number) const {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+  [[nodiscard]] MatrixLikewise<double, Derived> GetSuboptimalSolution(
+      const Eigen::MatrixBase<Derived>& var, int solution_number) const {
     return GetVariableValue(var, decision_variable_index_,
                             suboptimal_x_val_[solution_number]);
   }
