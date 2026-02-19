@@ -479,6 +479,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "desired_state_input_test",
+    deps = [
+        ":desired_state_input",
+    ],
+)
+
+drake_cc_googletest(
     name = "discrete_step_memory_test",
     deps = [
         ":multibody_plant_core",

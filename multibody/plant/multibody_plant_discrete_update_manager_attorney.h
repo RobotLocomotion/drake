@@ -73,8 +73,9 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   }
 
   static const VectorX<T>& EvalActuationInput(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalActuationInput(context);
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      bool effort_limit) {
+    return plant.EvalActuationInput(context, effort_limit);
   }
 
   static const DesiredStateInput<T>& EvalDesiredStateInput(
