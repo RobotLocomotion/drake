@@ -352,6 +352,9 @@ GTEST_TEST(DistanceConstraintsTests, DistanceConstraintParams) {
   }
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(
@@ -365,6 +368,7 @@ GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
                                   Vector3d{0, 0, 0}, 1 /* distance */),
       ".*TAMSI does not support distance constraints.*");
 }
+#pragma GCC diagnostic push
 
 GTEST_TEST(DistanceConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};

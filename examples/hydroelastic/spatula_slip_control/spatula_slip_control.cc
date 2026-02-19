@@ -18,7 +18,7 @@
 #include "drake/visualization/visualization_config_functions.h"
 
 // Parameters for squeezing the spatula.
-DEFINE_double(gripper_force, 1,
+DEFINE_double(gripper_force, 1.5,
               "The baseline force to be applied by the gripper. [N].");
 DEFINE_double(amplitude, 5,
               "The amplitude of the oscillations "
@@ -39,8 +39,8 @@ DEFINE_string(contact_model, "hydroelastic",
 DEFINE_string(contact_surface_representation, "polygon",
               "Contact-surface representation for hydroelastics. "
               "Options are: 'triangle' or 'polygon'.");
-DEFINE_string(contact_approximation, "tamsi",
-              "Discrete contact approximation. Options are: 'tamsi', "
+DEFINE_string(contact_approximation, "lagged",
+              "Discrete contact approximation. Options are: "
               "'sap', 'similar', 'lagged'");
 
 // Simulator settings.

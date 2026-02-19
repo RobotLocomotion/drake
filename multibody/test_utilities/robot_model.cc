@@ -20,10 +20,14 @@ std::ostream& operator<<(std::ostream& out, const RobotModelConfig& c) {
       out << "Sap";
       break;
     }
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     case DiscreteContactApproximation::kTamsi: {
       out << "Tamsi";
       break;
     }
+#pragma GCC diagnostic pop
   }
 
   switch (c.contact_model) {
