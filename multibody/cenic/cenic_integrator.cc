@@ -28,7 +28,15 @@ const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
         fmt::format("CenicIntegrator must be given a Diagram, not a {}",
                     NiceTypeName::Get(system)));
   }
-  return diagram->template GetDowncastSubsystemByName<MultibodyPlant>("plant");
+  const MultibodyPlant<T>& plant =
+      diagram->template GetDowncastSubsystemByName<MultibodyPlant>("plant");
+  if (plant.is_discrete()) {
+    throw std::logic_error(fmt::format(
+        "CenicIntegrator must be given a continuous time plant (time_step = "
+        "0.0), not a discrete time plant (time_step = {})",
+        plant.time_step()));
+  }
+  return plant;
 }
 
 template <typename T>

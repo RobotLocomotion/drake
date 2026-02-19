@@ -22,7 +22,7 @@ using systems::DiagramBuilder;
 using systems::IntegratorBase;
 
 GTEST_TEST(MakeCenicIntegratorTest, Success) {
-  RobotDiagramBuilder<double> builder;
+  RobotDiagramBuilder<double> builder{/* time_step = */ 0.0};
   std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
 
   std::unique_ptr<IntegratorBase<double>> dut =
@@ -33,6 +33,13 @@ GTEST_TEST(MakeCenicIntegratorTest, Success) {
   const auto& dut_plant = cenic.plant();
   const auto& diagram_plant = robot_diagram->plant();
   EXPECT_EQ(&dut_plant, &diagram_plant);
+}
+
+GTEST_TEST(MakeCenicIntegratorTest, FailureDiscrete) {
+  RobotDiagramBuilder<double> builder;
+  std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
+  DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*robot_diagram),
+                              ".*continuous.*not.*discrete.*");
 }
 
 GTEST_TEST(MakeCenicIntegratorTest, FailureNonDiagram) {
