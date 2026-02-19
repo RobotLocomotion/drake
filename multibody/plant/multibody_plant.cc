@@ -267,16 +267,6 @@ std::string GetScopedName(const MultibodyPlant<T>& plant,
   }
 }
 
-// Helper that returns `true` iff any joint actuator in the model is PD
-// controlled.
-template <typename T>
-bool AnyActuatorHasPdControl(const MultibodyPlant<T>& plant) {
-  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
-    if (plant.get_joint_actuator(a).has_controller()) return true;
-  }
-  return false;
-}
-
 // Retrieves the DiscreteStepMemory pointer from state in the given `context`.
 // If there is no memory (e.g., has never been updated by a step), returns null.
 // @pre The context is from a plant with use_sampled_output_ports() == true.
@@ -1468,13 +1458,6 @@ void MultibodyPlant<T>::Finalize() {
     if (manager) {
       SetDiscreteUpdateManager(std::move(manager));
     }
-  }
-
-  if (!is_discrete() && AnyActuatorHasPdControl(*this)) {
-    throw std::logic_error(
-        "Continuous model with PD controlled joint actuators. This feature is "
-        "only supported for discrete models. Refer to MultibodyPlant's "
-        "documentation for further details.");
   }
 }
 
@@ -2718,7 +2701,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->size() == num_velocities());
   if (num_actuators() > 0) {
-    const VectorX<T>& u = EvalActuationInput(context);
+    const VectorX<T>& u = EvalNetActuationContinuous(context);
     for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
       const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
       const Joint<T>& joint = actuator.joint();
@@ -2832,6 +2815,72 @@ void MultibodyPlant<T>::CalcActuationInput(const systems::Context<T>& context,
 }
 
 template <typename T>
+const VectorX<T>& MultibodyPlant<T>::EvalNetActuationContinuous(
+    const systems::Context<T>& context) const {
+  return this->get_cache_entry(cache_indices_.net_actuation_continuous)
+      .template Eval<VectorX<T>>(context);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcNetActuationContinuous(
+    const systems::Context<T>& context, VectorX<T>* net_actuation) const {
+  // Start with feed-forward actuation (u_ff).
+  *net_actuation = EvalActuationInput(context);
+
+  // Add in desired state feedback, to compute:
+  //  ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
+  const internal::DesiredStateInput<T>& desired_state =
+      EvalDesiredStateInput(context);
+  const Eigen::VectorBlock<const VectorX<T>> full_q = GetPositions(context);
+  const Eigen::VectorBlock<const VectorX<T>> full_v = GetVelocities(context);
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    if (desired_state.is_armed(model_instance_index)) {
+      const VectorX<T>& instance_qd =
+          desired_state.positions(model_instance_index);
+      const VectorX<T>& instance_vd =
+          desired_state.velocities(model_instance_index);
+
+      // Sanity check sizes before accessing qd and vd below.
+      DRAKE_DEMAND(instance_qd.size() == num_actuators(model_instance_index));
+      DRAKE_DEMAND(instance_vd.size() == num_actuators(model_instance_index));
+
+      int a = 0;  // Actuator index local to its model-instance.
+      for (JointActuatorIndex actuator_index :
+           GetJointActuatorIndices(model_instance_index)) {
+        const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+        const Joint<T>& joint = actuator.joint();
+        if (actuator.has_controller() && !joint.is_locked(context)) {
+          const PdControllerGains& gains = actuator.get_controller_gains();
+          const T& Kp = gains.p;
+          const T& Kd = gains.d;
+          const T& q = full_q[joint.position_start()];
+          const T& v = full_v[joint.velocity_start()];
+          const T& qd = instance_qd[a];
+          const T& vd = instance_vd[a];
+          T& u = (*net_actuation)[actuator.input_start()];
+          u += -Kp * (q - qd) - Kd * (v - vd);
+        }
+        ++a;
+      }
+    }
+  }
+
+  // Enforce effort limits:
+  //  u = max(−e, min(e, ũ))
+  using std::max;
+  using std::min;
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    const double e = actuator.effort_limit();
+    if (std::isfinite(e)) {
+      T& u = (*net_actuation)[actuator.input_start()];
+      u = max(-e, min(e, u));
+    }
+  }
+}
+
+template <typename T>
 template <bool sampled>
 void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
                                                BasicVector<T>* output) const {
@@ -2854,7 +2903,7 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
     }
   } else {
     DRAKE_DEMAND(!sampled);
-    output->SetFromVector(EvalActuationInput(context));
+    output->SetFromVector(EvalNetActuationContinuous(context));
   }
 }
 
@@ -3731,6 +3780,20 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         &MultibodyPlant::CalcDesiredStateInput, std::move(prerequisites));
     cache_indices_.desired_state_input =
         desired_state_input_cache_entry.cache_index();
+  }
+
+  // Cache net actuation (continuous-time only).
+  if (!is_discrete()) {
+    const auto& net_actuation_continuous_cache_entry = this->DeclareCacheEntry(
+        "NetActuationContinuous", VectorX<T>(num_actuators()),
+        &MultibodyPlant::CalcNetActuationContinuous,
+        {
+            this->get_cache_entry(cache_indices_.actuation_input).ticket(),
+            this->get_cache_entry(cache_indices_.desired_state_input).ticket(),
+            state_ticket,
+        });
+    cache_indices_.net_actuation_continuous =
+        net_actuation_continuous_cache_entry.cache_index();
   }
 }
 
