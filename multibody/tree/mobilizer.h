@@ -778,7 +778,6 @@ class Mobilizer : public MultibodyElement<T> {
   // unlocked.
   void Lock(systems::Context<T>* context) const {
     DRAKE_THROW_UNLESS(this->has_parent_tree());
-    // Joint locking is only supported for discrete mode.
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(true);
     this->get_parent_tree()
@@ -787,8 +786,7 @@ class Mobilizer : public MultibodyElement<T> {
         .setZero();
   }
 
-  // Unlock the mobilizer. Unlocking is not yet supported for continuous-mode
-  // systems.
+  // Unlock the mobilizer.
   void Unlock(systems::Context<T>* context) const {
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(false);
