@@ -155,26 +155,6 @@ GTEST_TEST(JointActuatorTest, PdControllerTest) {
   }
 }
 
-GTEST_TEST(JointActuatorTest, ContinuousTimePdControllerTest) {
-  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
-  internal::MultibodyTree<double>& tree = *tree_pointer;
-  JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
-  tree.Finalize();
-  auto tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
-      std::move(tree_pointer), /* is_discrete = */ false);
-  EXPECT_FALSE(dut.has_controller());
-
-  // Call the set function with zeros to clear out controller (a no-op) is safe.
-  EXPECT_NO_THROW(dut.set_controller_gains({}));
-  EXPECT_FALSE(dut.has_controller());
-
-  // Trying to set any non-zero gain is forbidden.
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.p = 1e3}),
-                              ".*only.*discrete models.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.d = 1e2}),
-                              ".*only.*discrete models.*");
-}
-
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
   auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
   internal::MultibodyTree<double>& tree = *tree_pointer;

@@ -251,13 +251,11 @@ class ActuatedIiwaArmTest : public ::testing::Test {
   }
 
   // This method sets arm and gripper actuation inputs with
-  // MakeActuationForEachModel(false) (iiwa outside effort limits) and verifies
+  // MakeActuationForEachModel(true) (iiwa inside effort limits) and verifies
   // the actuation output port copies them to the output.
-  // Note: Since the arm actuation is outside effort limits, for SAP this will
-  // only be true in the absence of PD controllers.
   void VerifyActuationOutputFeedsThroughActuationInputs() {
     auto [arm_u, acrobot_u, gripper_u] =
-        MakeActuationForEachModel(false /* iiwa outside limits */);
+        MakeActuationForEachModel(true /* iiwa inside limits */);
 
     // Set arbitrary actuation values.
     plant_->get_actuation_input_port(arm_model_)
@@ -603,16 +601,6 @@ TEST_F(ActuatedIiwaArmTest, EvalDesiredStateInput_RejectNansUnlessIgnored) {
     EXPECT_NO_THROW(
         MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_));
   }
-}
-
-TEST_F(ActuatedIiwaArmTest,
-       PdControlledActuatorsOnlySupportedForDiscreteModels) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SetUpModel(ModelConfiguration::kArmIsControlled,
-                 MultibodyPlantConfig{.time_step = 0.0}),
-      "Continuous model with PD controlled joint actuators. This feature is "
-      "only supported for discrete models. Refer to MultibodyPlant's "
-      "documentation for further details.");
 }
 
 // This unit test verifies that, when within effort limits, forces applied

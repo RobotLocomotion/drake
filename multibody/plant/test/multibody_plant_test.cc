@@ -117,6 +117,7 @@ class MultibodyPlantTester {
   static void AddJointActuationForces(const MultibodyPlant<T>& plant,
                                       const systems::Context<T>& context,
                                       VectorX<T>* forces) {
+    DRAKE_DEMAND(!plant.is_discrete());
     plant.AddJointActuationForces(context, forces);
   }
 };
@@ -3611,7 +3612,7 @@ TEST_F(MultibodyPlantRemodelingDiscrete, MakeActuatorSelectorMatrix) {
   EXPECT_TRUE(CompareMatrices(Su, Su_expected));
 }
 
-TEST_F(MultibodyPlantRemodelingDiscrete, AddJointActuationForces) {
+TEST_F(MultibodyPlantRemodelingContinuous, AddJointActuationForces) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
@@ -3619,9 +3620,9 @@ TEST_F(MultibodyPlantRemodelingDiscrete, AddJointActuationForces) {
   // Actuator with index 1 has been removed.
   const systems::InputPort<double>& u_input =
       plant_->get_actuation_input_port();
-  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+  u_input.FixValue(plant_context_, Vector2d(0.25, 0.5));
 
-  const VectorXd forces_expected = (VectorXd(3) << 1.0, 0.0, 3.0).finished();
+  const VectorXd forces_expected = Vector3d(0.25, 0.0, 0.5);
 
   // Test that AddJointActuationForces uses the correct indices into 'u'
   // using JointActuator::input_start().
