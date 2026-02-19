@@ -205,8 +205,11 @@ template <typename T>
 std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const systems::Context<T>& context, SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_DEMAND(plant().get_discrete_contact_approximation() !=
                DiscreteContactApproximation::kTamsi);
+#pragma GCC diagnostic pop
 
   // Parameters used by SAP to estimate regularization, see [Castro et al.,
   // 2021].
