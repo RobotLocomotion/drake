@@ -14,7 +14,7 @@ using multibody::CenicIntegrator;
 using planning::RobotDiagramBuilder;
 
 GTEST_TEST(SimulatorConfigFunctionsCenicTest, ExtractSimulatorConfig) {
-  RobotDiagramBuilder<double> builder;
+  RobotDiagramBuilder<double> builder{/* time_step = */ 0.0};
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
   ApplySimulatorConfig(
@@ -27,7 +27,7 @@ GTEST_TEST(SimulatorConfigFunctionsCenicTest, ExtractSimulatorConfig) {
 }
 
 GTEST_TEST(SimulatorConfigFunctionsCenicTest, CreateIntegratorFromConfig) {
-  RobotDiagramBuilder<double> builder;
+  RobotDiagramBuilder<double> builder{/* time_step = */ 0.0};
   auto diagram = builder.Build();
   std::unique_ptr<IntegratorBase<double>> dut = CreateIntegratorFromConfig(
       diagram.get(), SimulatorConfig{

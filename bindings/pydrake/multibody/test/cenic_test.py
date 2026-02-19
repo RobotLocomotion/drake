@@ -9,7 +9,7 @@ class TestCenic(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
     def test_cenic(self, T):
         # Create a diagram.
-        builder = RobotDiagramBuilder_[T]()
+        builder = RobotDiagramBuilder_[T](time_step=0.0)
         diagram = builder.Build()
 
         # Create the device under test.

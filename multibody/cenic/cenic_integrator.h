@@ -92,8 +92,9 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   @param system The overall system diagram to simulate. Must include a
                 MultibodyPlant and associated SceneGraph, with the plant
                 found as a direct child of the `system` diagram using the
-                subsystem name `"plant"`. This system is aliased by this
-                object so must remain alive longer than the integrator.
+                subsystem name `"plant"`. The plant must be a continuous-time
+                plant. This system is aliased by this object so must remain
+                alive longer than the integrator.
   @param context context for the overall system.  */
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
