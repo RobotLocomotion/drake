@@ -2080,6 +2080,10 @@ can be improved significantly by moving your PD controller into the
 plant where the discrete solver can strongly couple controller and
 model dynamics.
 
+Note:
+    PD controllers are ignored when a joint is locked (see
+    Joint::Lock()).
+
 Warning:
     Currently, this feature is only supported for discrete models
     (is_discrete() is true) using the SAP solver
@@ -2151,7 +2155,7 @@ a given actuator.
 Note:
     PD controllers are ignored when a joint is locked (see
     Joint::Lock()), and thus they have no effect on the actuation
-    output.
+    output nor reaction forces.
 
 **** Loading models from SDFormat files
 
@@ -7747,7 +7751,8 @@ yet taken a step, the output value will be all zeros.
 
 Note:
     PD controllers are not considered for actuators on locked joints,
-    see Joint::Lock(). Therefore they do not contribute to this port.
+    see Joint::Lock(). Therefore they do not contribute to this port
+    if the joint is locked.
 
 Precondition:
     Finalize() was already called on ``this`` plant.
@@ -7774,7 +7779,8 @@ yet taken a step, the output value will be all zeros.
 
 Note:
     PD controllers are not considered for actuators on locked joints,
-    see Joint::Lock(). Therefore they do not contribute to this port.
+    see Joint::Lock(). Therefore they do not contribute to this port
+    if the joint is locked.
 
 Precondition:
     Finalize() was already called on ``this`` plant.
@@ -7811,6 +7817,11 @@ In a discrete-time plant, the use_sampled_output_ports setting affects
 the output of this port. See output_port_sampling "Output port
 sampling" for details. When sampling is enabled and the plant has not
 yet taken a step, the output value will be all zeros.
+
+Note:
+    PD controllers are not considered for actuators on locked joints,
+    see Joint::Lock(). Therefore they do not contribute to this port
+    if the joint is locked.
 
 Raises:
     RuntimeError if called pre-finalize.)""";

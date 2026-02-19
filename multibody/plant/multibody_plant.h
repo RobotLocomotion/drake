@@ -609,6 +609,8 @@ cases, simulation stability and robustness can be improved significantly by
 moving your PD controller into the plant where the discrete solver can strongly
 couple controller and model dynamics.
 
+@note PD controllers are ignored when a joint is locked (see Joint::Lock()).
+
 @warning Currently, this feature is only supported for discrete models
 (is_discrete() is true) using the SAP solver (get_discrete_contact_solver()
 returns DiscreteContactSolver::kSap.)
@@ -662,7 +664,7 @@ the net actuation port (get_net_actuation_output_port()). That is, the net
 actuation port reports the total actuation applied by a given actuator.
 
 @note PD controllers are ignored when a joint is locked (see Joint::Lock()), and
-thus they have no effect on the actuation output.
+thus they have no effect on the actuation output nor reaction forces.
 
 @anchor sdf_loading
                  ### Loading models from SDFormat files
@@ -1092,7 +1094,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// step, the output value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
-  /// see Joint::Lock(). Therefore they do not contribute to this port.
+  /// see Joint::Lock(). Therefore they do not contribute to this port if the
+  /// joint is locked.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port() const;
@@ -1113,7 +1116,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// step, the output value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
-  /// see Joint::Lock(). Therefore they do not contribute to this port.
+  /// see Joint::Lock(). Therefore they do not contribute to this port if the
+  /// joint is locked.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port(
@@ -1274,6 +1278,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// for details. When sampling is enabled and the plant has not yet taken a
   /// step, the output value will be all zeros.
   ///
+  /// @note PD controllers are not considered for actuators on locked joints,
+  /// see Joint::Lock(). Therefore they do not contribute to this port if the
+  /// joint is locked.
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_reaction_forces_output_port() const;
 
