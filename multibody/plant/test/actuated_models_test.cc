@@ -29,14 +29,14 @@ namespace multibody {
 // testing purposes.
 class MultibodyPlantTester {
  public:
-  static VectorXd AssembleActuationInput(const MultibodyPlant<double>& plant,
-                                         const Context<double>& context) {
-    return plant.AssembleActuationInput(context);
+  static const VectorXd& EvalActuationInput(const MultibodyPlant<double>& plant,
+                                            const Context<double>& context) {
+    return plant.EvalActuationInput(context);
   }
 
-  static internal::DesiredStateInput<double> AssembleDesiredStateInput(
+  static const internal::DesiredStateInput<double>& EvalDesiredStateInput(
       const MultibodyPlant<double>& plant, const Context<double>& context) {
-    return plant.AssembleDesiredStateInput(context);
+    return plant.EvalDesiredStateInput(context);
   }
 };
 
@@ -388,6 +388,10 @@ GTEST_TEST(DesiredStateInput, DesiredStateInputTest) {
   EXPECT_EQ(xd.velocities(ModelInstanceIndex(1)), v1);
   EXPECT_EQ(xd.positions(ModelInstanceIndex(3)), q3);
   EXPECT_EQ(xd.velocities(ModelInstanceIndex(3)), v3);
+
+  xd.ClearModelInstanceDesiredStates(ModelInstanceIndex(1));
+  EXPECT_FALSE(xd.is_armed(ModelInstanceIndex(1)));
+  EXPECT_TRUE(xd.is_armed(ModelInstanceIndex(3)));
 }
 
 // We verify basic port size invariants for a model in which only a subset of
@@ -417,7 +421,7 @@ TEST_F(ActuatedIiwaArmTest, GetDesiredStatePort) {
 // Verify the assembly of actuation input ports. In particular, we verify this
 // assembly is performed in the order of JointActuatorIndex and that
 // disconnected ports default to zero values.
-TEST_F(ActuatedIiwaArmTest, AssembleActuationInput) {
+TEST_F(ActuatedIiwaArmTest, EvalActuationInput) {
   // We setup a model with one PD controlled model instance (the gripper) and a
   // model instance without PD control (the arm).
   SetUpModel(ModelConfiguration::kArmIsNotControlled);
@@ -439,7 +443,7 @@ TEST_F(ActuatedIiwaArmTest, AssembleActuationInput) {
       .FixValue(context_.get(), acrobot_u);
 
   const VectorXd full_u =
-      MultibodyPlantTester::AssembleActuationInput(*plant_, *context_);
+      MultibodyPlantTester::EvalActuationInput(*plant_, *context_);
 
   const int arm_nu = plant_->num_actuated_dofs(arm_model_);
   VectorXd expected_u =
@@ -451,7 +455,7 @@ TEST_F(ActuatedIiwaArmTest, AssembleActuationInput) {
 // We build an a model containing a fully PD-actuated gripper and an iiwa arm
 // with only a subset of its joints PD-controlled.
 TEST_F(ActuatedIiwaArmTest,
-       AssembleDesiredStateInput_PartiallyPdControlledModelsAreAllowed) {
+       EvalDesiredStateInput_PartiallyPdControlledModelsAreAllowed) {
   // We build an IIWA model with only a subset of actuators having PD control.
   SetUpModel(ModelConfiguration::kArmIsPartiallyControlled);
 
@@ -463,7 +467,7 @@ TEST_F(ActuatedIiwaArmTest,
 
   // Verify input assembly.
   const internal::DesiredStateInput<double> input =
-      MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+      MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_);
   EXPECT_EQ(input.num_model_instances(), plant_->num_model_instances());
   EXPECT_TRUE(input.is_armed(arm_model_));
   EXPECT_FALSE(input.is_armed(gripper_model_));
@@ -473,15 +477,14 @@ TEST_F(ActuatedIiwaArmTest,
 
 // Verify the assembly of desired states for a plant with a single PD controlled
 // model instance.
-TEST_F(ActuatedIiwaArmTest,
-       AssembleDesiredStateInput_VerifyAssemblyWithOneModel) {
+TEST_F(ActuatedIiwaArmTest, EvalDesiredStateInput_VerifyAssemblyWithOneModel) {
   SetUpModel();
 
   const VectorXd gripper_xd = (VectorXd(4) << 1.0, 2.0, 3.0, 4.0).finished();
   plant_->get_desired_state_input_port(gripper_model_)
       .FixValue(context_.get(), gripper_xd);
   const internal::DesiredStateInput<double> input =
-      MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+      MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_);
 
   // Only the gripper model is "armed".
   EXPECT_EQ(input.num_model_instances(), plant_->num_model_instances());
@@ -497,8 +500,7 @@ TEST_F(ActuatedIiwaArmTest,
 
 // Verify the assembly of desired states for a plant with two PD controlled
 // model instances.
-TEST_F(ActuatedIiwaArmTest,
-       AssembleDesiredStateInput_VerifyAssemblyWithTwoModels) {
+TEST_F(ActuatedIiwaArmTest, EvalDesiredStateInput_VerifyAssemblyWithTwoModels) {
   SetUpModel(ModelConfiguration::kArmIsControlled);
 
   // Fixed desired state for the gripper.
@@ -509,7 +511,7 @@ TEST_F(ActuatedIiwaArmTest,
   // We provided no desired state for the arm, and it is therefore "disarmed".
   {
     const internal::DesiredStateInput<double> input =
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_);
 
     EXPECT_EQ(input.num_model_instances(), plant_->num_model_instances());
     EXPECT_FALSE(input.is_armed(acrobot_model_));
@@ -528,7 +530,7 @@ TEST_F(ActuatedIiwaArmTest,
   // We verify the arm is no longer disarmed and the input assembly.
   {
     const internal::DesiredStateInput<double> input =
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_);
 
     // Verify desired states for the models that are armed.
     EXPECT_FALSE(input.is_armed(acrobot_model_));
@@ -545,7 +547,7 @@ TEST_F(ActuatedIiwaArmTest,
 // Verify that an exception is thrown if there are NaNs in the desired state
 // input port, only for states corresponding to PD-controlled actuators. Desired
 // states for non PD-controlled actuators are ignored.
-TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
+TEST_F(ActuatedIiwaArmTest, EvalDesiredStateInput_RejectNansUnlessIgnored) {
   // We build an IIWA model with only a subset of actuators having PD control.
   SetUpModel(ModelConfiguration::kArmIsPartiallyControlled);
 
@@ -563,7 +565,7 @@ TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
     plant_->get_desired_state_input_port(arm_model_)
         .FixValue(context_.get(), arm_xd);
     EXPECT_NO_THROW(
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_));
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_));
   }
 
   // NaN values for PD-controlled actuators do trigger an exception, unless the
@@ -580,12 +582,12 @@ TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
     plant_->get_desired_state_input_port(arm_model_)
         .FixValue(context_.get(), arm_xd);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_),
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_),
         "Desired state input port for model instance iiwa7 contains NaN.");
     // The NaN should be ignored if the actuated joint is locked.
     actuator.joint().Lock(context_.get());
     EXPECT_NO_THROW(
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_));
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_));
 
     // Valid qd, NaN vd.
     arm_xd[pd_actuator] = 0.0;
@@ -594,12 +596,12 @@ TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_RejectNansUnlessIgnored) {
     plant_->get_desired_state_input_port(arm_model_)
         .FixValue(context_.get(), arm_xd);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_),
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_),
         "Desired state input port for model instance iiwa7 contains NaN.");
     // The NaN should be ignored if the actuated joint is locked.
     actuator.joint().Lock(context_.get());
     EXPECT_NO_THROW(
-        MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_));
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_));
   }
 }
 
