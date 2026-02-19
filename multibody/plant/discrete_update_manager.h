@@ -313,9 +313,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const internal::JointLockingCacheData<T>& EvalJointLocking(
       const systems::Context<T>& context) const;
 
-  VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
+  const VectorX<T>& EvalActuationInput(
+      const systems::Context<T>& context) const;
 
-  DesiredStateInput<T> AssembleDesiredStateInput(
+  const DesiredStateInput<T>& EvalDesiredStateInput(
       const systems::Context<T>& context) const;
 
   const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
