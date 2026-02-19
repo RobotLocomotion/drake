@@ -295,13 +295,6 @@ file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}")
 
 set(BAZEL_REPO_ENV)
 
-# Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
-# `single_version_override`.
-file(CREATE_LINK
-  "${PROJECT_SOURCE_DIR}/tools/workspace/rules_cc/patches/upstream/cc-as-gcc.patch"
-  "${DRAKE_BAZEL_BUILD_DIR}/cc-as-gcc.patch"
-  SYMBOLIC
-)
 if(NOT APPLE)
   # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
   # interfere with here.
