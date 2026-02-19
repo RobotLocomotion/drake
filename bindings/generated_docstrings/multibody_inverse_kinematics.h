@@ -2221,6 +2221,85 @@ kinematics constraints, with some error. The approach is described in
 Global Inverse Kinematics via Mixed-integer Convex Optimization by
 Hongkai Dai, Gregory Izatt and Russ Tedrake, International Journal of
 Robotics Research, 2019.)""";
+        // Symbol: drake::multibody::GlobalInverseKinematics::AddJointCenteringCost
+        struct /* AddJointCenteringCost */ {
+          // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h
+          const char* doc =
+R"""(Adds a cost that penalizes deviation of a revolute joint from a
+desired angle theta. For a revolute joint connecting the body
+specified by body_index to its parent body, this method adds a cost
+that encourages the joint’s rotation value to match the given angle
+theta. The cost is evaluated by affixing a small set of unit vectors,
+orthogonal to the revolute joint axis, and comparing their
+orientations based on the current rotation value against the desired
+rotation.
+
+We define the following: - C: the frame of the body indicated by
+body_index. It is the "child" of the revolute joint. - P: the frame of
+the parent body of the revolute joint. - R_WC: the relative
+orientation between frame C and the world frame W. - R_WP: the
+relative orientation between frame P and the world frame W. - R_CJc:
+the orientation of the joint's fixed child frame Jc relative to body
+C. - R_PJp: the orientation of the joint's fixed parent frame Jp
+relative to body P. - R_JpJc_theta: the orientation of a frame
+Jc_theta, affixed to P. Its origin is coincident with Jp's (and Jc's)
+and Jc *aligns* with it when rotated by an angle equal to theta.
+
+The cost is computed as follows:
+
+∑ᵢ ‖ R_WC·R_CJc·vᵢ_Jc − R_WP·R_PJp·R_JpJc_theta·vᵢ_Jc_theta ‖ₙ
+
+where ‖·‖ₙ denotes either the L1 or L2 norm (depending on norm), and
+the result is scaled by weight. If squared is true and norm = 2, the
+squared 2-norm is used instead.
+
+In the cost formulation, vᵢ_Jc and vᵢ_Jc_theta have the same measures
+in their respective frames. If the current joint angle is equal to the
+desired angle theta, the vectors will be aligned. The difference
+between the two vectors is an approximate measure of how far the joint
+angle is from theta.
+
+Remember that R_WC and R_WP are not literally in the SO(3) rotation
+group. They are a relaxed version of a true rotation. The relaxation
+introduces anisotropic errors. By sampling multiple vectors vᵢ, we can
+reduce the effect of the approximation error in any single direction.
+
+When the joint angle is equal to theta, the disparity between vᵢ_Jc
+and vᵢ_Jc_theta will be at its smallest (modulo the error in the
+relaxed rotation matrices).
+
+For approximating a true quadratic joint centering cost, L2-squared is
+the most accurate (and slowest), followed by L2, L1, and then,
+finally, the posture cost, AddPostureCost(), is the least accurate
+(but fastest).
+
+Parameter ``body_index``:
+    The index of the *child* body whose inboard joint will have this
+    centering cost applied.
+
+Parameter ``desired_theta``:
+    The target joint angle (in radians). The cost is minimized when
+    the joint’s rotation equals this value.
+
+Parameter ``weight``:
+    The scalar weight applied to this cost.
+
+Parameter ``norm``:
+    Specifies which norm to use in the cost: 1: use an L1 norm on the
+    unit-vector differences. 2: use an L2 norm (optionally squared).
+
+Parameter ``squared``:
+    If true and norm = 2, applies the squared L2 norm cost; otherwise,
+    applies the unsquared version.
+
+Raises:
+    RuntimeError if the body's mobilizing joint isn't supported or if
+    the norm is incorrectly specified (e.g., L3, squared L1, etc.).
+
+Note:
+    Only revolute joints are currently supported. For floating bodies,
+    use AddPostureCost() instead.)""";
+        } AddJointCenteringCost;
         // Symbol: drake::multibody::GlobalInverseKinematics::AddJointLimitConstraint
         struct /* AddJointLimitConstraint */ {
           // Source: drake/multibody/inverse_kinematics/global_inverse_kinematics.h

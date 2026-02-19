@@ -1086,6 +1086,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("joint_upper_bound"),
             py::arg("linear_constraint_approximation") = false,
             cls_doc.AddJointLimitConstraint.doc)
+        .def("AddJointCenteringCost", &Class::AddJointCenteringCost,
+            py::arg("body_index"), py::arg("desired_theta"),
+            py::arg("weight") = 1.0, py::arg("norm") = 1,
+            py::arg("squared") = false)
         .def("SetInitialGuess", &Class::SetInitialGuess, py::arg("q"),
             cls_doc.SetInitialGuess.doc);
     // TODO(cohnt): Convert methods that use Polytope3D to use ConvexSets.

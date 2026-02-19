@@ -1143,8 +1143,8 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             global_ik.ReconstructGeneralizedPositionSolution(result=result)
 
     def test_joint_limits(self):
-        # We need a separate test since the AddJointLimitsConstraint method
-        # is not usable with floating bodies.
+        # We need a separate test since the AddJointLimitsConstraint and
+        # AddJointCenteringCost methods are not usable with floating bodies.
         plant = MultibodyPlant(time_step=0.01)
         (model_instance,) = Parser(plant).AddModels(
             FindResourceOrThrow(
@@ -1161,4 +1161,11 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             joint_lower_bound=-10.0,
             joint_upper_bound=10.0,
             linear_constraint_approximation=False,
+        )
+        global_ik.AddJointCenteringCost(
+            body_index=body_index,
+            desired_theta=0.0,
+            weight=1.0,
+            norm=1,
+            squared=False,
         )
