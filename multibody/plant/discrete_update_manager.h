@@ -313,8 +313,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const internal::JointLockingCacheData<T>& EvalJointLocking(
       const systems::Context<T>& context) const;
 
-  const VectorX<T>& EvalActuationInput(
-      const systems::Context<T>& context) const;
+  const VectorX<T>& EvalActuationInput(const systems::Context<T>& context,
+                                       bool effort_limit) const;
 
   const DesiredStateInput<T>& EvalDesiredStateInput(
       const systems::Context<T>& context) const;

@@ -30,8 +30,9 @@ namespace multibody {
 class MultibodyPlantTester {
  public:
   static const VectorXd& EvalActuationInput(const MultibodyPlant<double>& plant,
-                                            const Context<double>& context) {
-    return plant.EvalActuationInput(context);
+                                            const Context<double>& context,
+                                            bool effort_limit) {
+    return plant.EvalActuationInput(context, effort_limit);
   }
 
   static const internal::DesiredStateInput<double>& EvalDesiredStateInput(
@@ -251,13 +252,11 @@ class ActuatedIiwaArmTest : public ::testing::Test {
   }
 
   // This method sets arm and gripper actuation inputs with
-  // MakeActuationForEachModel(false) (iiwa outside effort limits) and verifies
+  // MakeActuationForEachModel(true) (iiwa inside effort limits) and verifies
   // the actuation output port copies them to the output.
-  // Note: Since the arm actuation is outside effort limits, for SAP this will
-  // only be true in the absence of PD controllers.
   void VerifyActuationOutputFeedsThroughActuationInputs() {
     auto [arm_u, acrobot_u, gripper_u] =
-        MakeActuationForEachModel(false /* iiwa outside limits */);
+        MakeActuationForEachModel(true /* iiwa inside limits */);
 
     // Set arbitrary actuation values.
     plant_->get_actuation_input_port(arm_model_)
@@ -442,8 +441,8 @@ TEST_F(ActuatedIiwaArmTest, EvalActuationInput) {
   plant_->get_actuation_input_port(acrobot_model_)
       .FixValue(context_.get(), acrobot_u);
 
-  const VectorXd full_u =
-      MultibodyPlantTester::EvalActuationInput(*plant_, *context_);
+  const VectorXd full_u = MultibodyPlantTester::EvalActuationInput(
+      *plant_, *context_, /* effort_limit = */ false);
 
   const int arm_nu = plant_->num_actuated_dofs(arm_model_);
   VectorXd expected_u =

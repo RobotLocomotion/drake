@@ -731,7 +731,7 @@ void SapDriver<T>::AddPdControllerConstraints(
   const DesiredStateInput<T>& desired_states =
       manager_->EvalDesiredStateInput(context);
   const VectorX<T>& feed_forward_actuation =
-      manager_->EvalActuationInput(context);
+      manager_->EvalActuationInput(context, /* effort_limit = */ false);
 
   const SpanningForest& forest = get_forest();
   for (ModelInstanceIndex model_instance_index(0);
@@ -1234,7 +1234,7 @@ void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
   // PD controlled actuation values are overwritten below with values computed
   // by the SAP solver, which includes these terms implicitly and enforces
   // effort limits.
-  *actuation = manager().EvalActuationInput(context);
+  *actuation = manager().EvalActuationInput(context, /* effort_limit = */ true);
 
   // Add contribution from PD controllers.
   const ContactProblemCache<T>& contact_problem_cache =
