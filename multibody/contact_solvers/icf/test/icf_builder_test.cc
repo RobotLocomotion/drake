@@ -119,9 +119,8 @@ GTEST_TEST(IcfBuilder, Coupler) {
   EXPECT_EQ(pool.gear_ratio()[0], 0.8);
 }
 
-// TODO(#23992): the limitation checked in this test is contested. Must all
-// coupler constraints live within a single topological tree? If so,
-// MultibodyPlant should to the checking.
+// TODO(#23992): the limitation checked in this test is a regression from SAP
+// coupler constraints.
 GTEST_TEST(IcfBuilder, CouplerBad) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
