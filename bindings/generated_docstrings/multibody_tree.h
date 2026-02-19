@@ -3395,7 +3395,9 @@ details on the rest of the arguments for this constructor.)""";
           // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Lock the joint. Its generalized velocities will be 0 until it is
-unlocked.)""";
+unlocked. If actuated, its PD controllers will be ignored and thus
+will have no effect on the reported actuation output nor reaction
+forces.)""";
         } Lock;
         // Symbol: drake::multibody::Joint::MakeUniqueOffsetFrameName
         struct /* MakeUniqueOffsetFrameName */ {
@@ -3618,7 +3620,9 @@ Precondition:
         // Symbol: drake::multibody::Joint::Unlock
         struct /* Unlock */ {
           // Source: drake/multibody/tree/joint.h
-          const char* doc = R"""(Unlock the joint.)""";
+          const char* doc =
+R"""(Unlock the joint. If actuated, its PD controllers (if any) will no
+longer be ignored.)""";
         } Unlock;
         // Symbol: drake::multibody::Joint::acceleration_lower_limits
         struct /* acceleration_lower_limits */ {
