@@ -14,6 +14,24 @@ namespace internal {
 
 namespace {
 
+// Each peer will have a new/updated attribute, containing a set of
+// handles. Insert each into the other's handle set. Create the set first
+// if it is not yet existing.
+void make_link(handle a, handle b) {
+  static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
+  if (!hasattr(a, refcycle_peers)) {
+    py::set new_set;
+    DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_set.ptr())));
+    a.attr(refcycle_peers) = new_set;
+  }
+  handle peers = a.attr(refcycle_peers);
+  // Ensure the proper ref count on the `peers` set. If it is > 1, the
+  // objects will live forever. If it is < 1, the cycle will just be deleted
+  // immediately.
+  DRAKE_DEMAND(Py_REFCNT(peers.ptr()) == 1);
+  PySet_Add(peers.ptr(), b.ptr());
+}
+
 void make_ref_cycle(handle p0, handle p1) {
   DRAKE_DEMAND(static_cast<bool>(p0));
   DRAKE_DEMAND(static_cast<bool>(p1));
@@ -22,23 +40,6 @@ void make_ref_cycle(handle p0, handle p1) {
   DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(p0.ptr())));
   DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(p1.ptr())));
 
-  // Each peer will have a new/updated attribute, containing a set of
-  // handles. Insert each into the other's handle set. Create the set first
-  // if it is not yet existing.
-  auto make_link = [](handle a, handle b) {
-    static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
-    if (!hasattr(a, refcycle_peers)) {
-      py::set new_set;
-      DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_set.ptr())));
-      a.attr(refcycle_peers) = new_set;
-    }
-    handle peers = a.attr(refcycle_peers);
-    // Ensure the proper ref count on the `peers` set. If it is > 1, the
-    // objects will live forever. If it is < 1, the cycle will just be deleted
-    // immediately.
-    DRAKE_DEMAND(Py_REFCNT(peers.ptr()) == 1);
-    PySet_Add(peers.ptr(), b.ptr());
-  };
   make_link(p0, p1);
   make_link(p1, p0);
 }
@@ -100,6 +101,12 @@ void ref_cycle_impl(
         n, call.func.name);
   };
   check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
+}
+
+void make_arbitrary_ref_link(
+    handle p0, handle p1, const std::string&) {
+  // XXX add error checking.
+  make_link(p0, p1);
 }
 
 void make_arbitrary_ref_cycle(

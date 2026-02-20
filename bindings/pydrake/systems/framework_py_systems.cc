@@ -736,32 +736,46 @@ Note: The above is for the C++ documentation. For Python, use
         // TODO(russt): Implement the std::function variant of
         // LeafSystem::Declare*Event sugar methods if they are ever needed,
         // instead of implementing them here.
-        .def("DeclareInitializationPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
+        .def(
+            "DeclareInitializationPublishEvent",
+            [](py::object py_self, py::object py_publish) {
+              internal::make_arbitrary_ref_link(
+                  py_self, py_publish, "DeclareInitializationPublishEvent");
+              auto self = py::cast<PyLeafSystem*>(py_self);
+              PyObject* publish_ptr = py_publish.ptr();
               self->DeclareInitializationEvent(PublishEvent<T>(
                   TriggerType::kInitialization,
-                  [&publish](const System<T>&, const Context<T>& context,
+                  [publish_ptr](const System<T>&, const Context<T>& context,
                       const PublishEvent<T>&) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_publish_from_ptr = publish_ptr;
+                    auto publish = py::cast<EventCallback<const Context<T>&>>(
+                        py_publish_from_ptr);
                     return publish(context).value_or(EventStatus::Succeeded());
                   }));
-            }),
+            },
             py::arg("publish"),
             doc.LeafSystem.DeclareInitializationPublishEvent.doc)
-        .def("DeclareInitializationDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclareInitializationEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kInitialization,
-                          [&update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareInitializationDiscreteUpdateEvent",
+            [](py::object py_self, py::object py_update) {
+              internal::make_arbitrary_ref_link(py_self, py_update,
+                  "DeclareInitializationDiscreteUpdateEvent");
+              auto self = py::cast<PyLeafSystem*>(py_self);
+              PyObject* update_ptr = py_update.ptr();
+              self->DeclareInitializationEvent(DiscreteUpdateEvent<T>(
+                  TriggerType::kInitialization,
+                  [update_ptr](const System<T>&, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_update_from_ptr = update_ptr;
+                    auto update = py::cast<
+                        EventCallback<const Context<T>&, DiscreteValues<T>*>>(
+                        py_update_from_ptr);
+                    return update(context, &*xd)
+                        .value_or(EventStatus::Succeeded());
+                  }));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
         .def("DeclareInitializationUnrestrictedUpdateEvent",
@@ -784,31 +798,18 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        // XXX
-        .def("DeclarePeriodicPublishEvent",
-            WrapCallbacks([](py::object py_self, double period_sec,
-                              double offset_sec, py::object py_publish) {
-              fmt::print("publish ptr {}\n",
-                  reinterpret_cast<void*>(py_publish.ptr()));
-              auto self = py::cast<PyLeafSystem*>(py_self);
-
-              if (PyInstanceMethod_Check(py_publish.ptr())) {
-                fmt::print("is PyInstanceMethod\n");
-                DRAKE_DEMAND(false);
-              } else if (PyMethod_Check(py_publish.ptr())) {
-                fmt::print("is PyMethod\n");
-                DRAKE_DEMAND(false);
-              } else if (PyFunction_Check(py_publish.ptr())) {
-                fmt::print("is PyFunction\n");
-              }
-
-              internal::make_arbitrary_ref_cycle(
+        .def(
+            "DeclarePeriodicPublishEvent",
+            [](py::object py_self, double period_sec, double offset_sec,
+                py::object py_publish) {
+              internal::make_arbitrary_ref_link(
                   py_self, py_publish, "DeclarePeriodicPublishEvent");
+              auto self = py::cast<PyLeafSystem*>(py_self);
               PyObject* publish_ptr = py_publish.ptr();
               self->DeclarePeriodicEvent(period_sec, offset_sec,
                   PublishEvent<T>(TriggerType::kPeriodic,
-                      [publish_ptr](const System<T>&,
-                          const Context<T>& context, const PublishEvent<T>&) {
+                      [publish_ptr](const System<T>&, const Context<T>& context,
+                          const PublishEvent<T>&) {
                         py::gil_scoped_acquire guard;
                         py::handle py_publish_from_ptr = publish_ptr;
                         auto publish =
@@ -817,7 +818,7 @@ Note: The above is for the C++ documentation. For Python, use
                         return publish(context).value_or(
                             EventStatus::Succeeded());
                       }));
-            }),
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
             doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
         .def("DeclarePeriodicDiscreteUpdateEvent",

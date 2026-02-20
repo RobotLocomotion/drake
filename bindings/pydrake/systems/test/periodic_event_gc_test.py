@@ -1,4 +1,6 @@
 import gc
+import pprint
+import sys
 import unittest
 import weakref
 
@@ -11,27 +13,44 @@ class MinimalLeafSystem(LeafSystem):
 
     def __init__(self):
         super().__init__()
-        print("id of callback", hex(id(self._callback)))
-        x = self._callback
-        print("id of x", hex(id(x)))
-        self.DeclarePeriodicPublishEvent(1.0, 0.0, x)
 
-    def _callback(self, context):
+        self.DeclareInitializationPublishEvent(self._callbackstar)
+        self.DeclareInitializationDiscreteUpdateEvent(self._callback2)
+        self.DeclarePeriodicPublishEvent(1.0, 0.0, self._callback1)
+
+    def _callback1(self, a):
+        pass
+
+    def _callbackstar(self, *args, **kwargs):
+        pass
+
+    def _callback2(self, a, b):
         pass
 
 
-def a_global_callback(context):
+def a_global_callback(*args, **kwargs):
     pass
+
 
 class FunctionCallbackLeafSystem(LeafSystem):
     """Minimal system with a periodic callback."""
 
     def __init__(self):
         super().__init__()
-        print("id of callback", hex(id(a_global_callback)))
-        x = a_global_callback
-        print("id of x", hex(id(x)))
-        self.DeclarePeriodicPublishEvent(1.0, 0.0, x)
+        self.DeclareInitializationPublishEvent(a_global_callback)
+        self.DeclareInitializationDiscreteUpdateEvent(a_global_callback)
+        self.DeclarePeriodicPublishEvent(1.0, 0.0, a_global_callback)
+
+
+class LambdaCallbackLeafSystem(LeafSystem):
+    """Minimal system with a periodic callback."""
+
+    def __init__(self):
+        super().__init__()
+        self.DeclareInitializationPublishEvent(lambda *args, **kwargs: None)
+        self.DeclareInitializationDiscreteUpdateEvent(
+            lambda *args, **kwargs: None)
+        self.DeclarePeriodicPublishEvent(1.0, 0.0, lambda *args, **kwargs: None)
 
 
 class TestPeriodicEventGarbageCollection(unittest.TestCase):
@@ -40,17 +59,21 @@ class TestPeriodicEventGarbageCollection(unittest.TestCase):
     def do_test_is_collectible(self, system_class):
         system = system_class()
         simulator = Simulator(system)
+        print(f"system referrers"
+              f" {pprint.pformat(gc.get_referrers(system))}")
         simulator.AdvanceTo(1.0)
+        print(f"system referrers"
+              f" {pprint.pformat(gc.get_referrers(system))}")
 
-        weak_ref = weakref.ref(system)
+        spy = weakref.finalize(system, lambda: None)
 
         del simulator
         del system
         gc.collect()
 
-        self.assertIsNone(weak_ref())
+        self.assertFalse(spy.alive)
 
-    @unittest.skip("demand")
+
     def test_minimal_leaf_system_is_collectible(self):
         """A LeafSystem with a periodic callback must be garbage collectible."""
         self.do_test_is_collectible(MinimalLeafSystem)
@@ -58,3 +81,8 @@ class TestPeriodicEventGarbageCollection(unittest.TestCase):
     def test_function_callback_leaf_system_is_collectible(self):
         """A LeafSystem with a periodic callback must be garbage collectible."""
         self.do_test_is_collectible(FunctionCallbackLeafSystem)
+
+    def test_lambda_callback_leaf_system_is_collectible(self):
+        """A LeafSystem with a periodic callback must be garbage collectible."""
+        self.do_test_is_collectible(LambdaCallbackLeafSystem)
+
