@@ -736,32 +736,46 @@ Note: The above is for the C++ documentation. For Python, use
         // TODO(russt): Implement the std::function variant of
         // LeafSystem::Declare*Event sugar methods if they are ever needed,
         // instead of implementing them here.
-        .def("DeclareInitializationPublishEvent",
-            WrapCallbacks([](PyLeafSystem* self,
-                              EventCallback<const Context<T>&> publish) {
+        .def(
+            "DeclareInitializationPublishEvent",
+            [](py::object py_self, py::object py_publish) {
+              internal::make_arbitrary_ref_link(
+                  py_self, py_publish, "DeclareInitializationPublishEvent");
+              auto self = py::cast<PyLeafSystem*>(py_self);
+              PyObject* publish_ptr = py_publish.ptr();
               self->DeclareInitializationEvent(PublishEvent<T>(
                   TriggerType::kInitialization,
-                  [publish](const System<T>&, const Context<T>& context,
+                  [publish_ptr](const System<T>&, const Context<T>& context,
                       const PublishEvent<T>&) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_publish_from_ptr = publish_ptr;
+                    auto publish = py::cast<EventCallback<const Context<T>&>>(
+                        py_publish_from_ptr);
                     return publish(context).value_or(EventStatus::Succeeded());
                   }));
-            }),
+            },
             py::arg("publish"),
             doc.LeafSystem.DeclareInitializationPublishEvent.doc)
-        .def("DeclareInitializationDiscreteUpdateEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self,
-                    EventCallback<const Context<T>&, DiscreteValues<T>*>
-                        update) {
-                  self->DeclareInitializationEvent(
-                      DiscreteUpdateEvent<T>(TriggerType::kInitialization,
-                          [update](const System<T>&, const Context<T>& context,
-                              const DiscreteUpdateEvent<T>&,
-                              DiscreteValues<T>* xd) {
-                            return update(context, &*xd)
-                                .value_or(EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclareInitializationDiscreteUpdateEvent",
+            [](py::object py_self, py::object py_update) {
+              internal::make_arbitrary_ref_link(py_self, py_update,
+                  "DeclareInitializationDiscreteUpdateEvent");
+              auto self = py::cast<PyLeafSystem*>(py_self);
+              PyObject* update_ptr = py_update.ptr();
+              self->DeclareInitializationEvent(DiscreteUpdateEvent<T>(
+                  TriggerType::kInitialization,
+                  [update_ptr](const System<T>&, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+                    py::gil_scoped_acquire guard;
+                    py::handle py_update_from_ptr = update_ptr;
+                    auto update = py::cast<
+                        EventCallback<const Context<T>&, DiscreteValues<T>*>>(
+                        py_update_from_ptr);
+                    return update(context, &*xd)
+                        .value_or(EventStatus::Succeeded());
+                  }));
+            },
             py::arg("update"),
             doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
         .def("DeclareInitializationUnrestrictedUpdateEvent",
@@ -770,7 +784,7 @@ Note: The above is for the C++ documentation. For Python, use
                     EventCallback<const Context<T>&, State<T>*> update) {
                   self->DeclareInitializationEvent(
                       UnrestrictedUpdateEvent<T>(TriggerType::kInitialization,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
                             return update(context, &*x)
                                 .value_or(EventStatus::Succeeded());
@@ -784,18 +798,27 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("DeclarePeriodicPublishEvent",
-            WrapCallbacks(
-                [](PyLeafSystem* self, double period_sec, double offset_sec,
-                    EventCallback<const Context<T>&> publish) {
-                  self->DeclarePeriodicEvent(period_sec, offset_sec,
-                      PublishEvent<T>(TriggerType::kPeriodic,
-                          [publish](const System<T>&, const Context<T>& context,
-                              const PublishEvent<T>&) {
-                            return publish(context).value_or(
-                                EventStatus::Succeeded());
-                          }));
-                }),
+        .def(
+            "DeclarePeriodicPublishEvent",
+            [](py::object py_self, double period_sec, double offset_sec,
+                py::object py_publish) {
+              internal::make_arbitrary_ref_link(
+                  py_self, py_publish, "DeclarePeriodicPublishEvent");
+              auto self = py::cast<PyLeafSystem*>(py_self);
+              PyObject* publish_ptr = py_publish.ptr();
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  PublishEvent<T>(TriggerType::kPeriodic,
+                      [publish_ptr](const System<T>&, const Context<T>& context,
+                          const PublishEvent<T>&) {
+                        py::gil_scoped_acquire guard;
+                        py::handle py_publish_from_ptr = publish_ptr;
+                        auto publish =
+                            py::cast<EventCallback<const Context<T>&>>(
+                                py_publish_from_ptr);
+                        return publish(context).value_or(
+                            EventStatus::Succeeded());
+                      }));
+            },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
             doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
         .def("DeclarePeriodicDiscreteUpdateEvent",
@@ -805,7 +828,7 @@ Note: The above is for the C++ documentation. For Python, use
                         update) {
                   self->DeclarePeriodicEvent(period_sec, offset_sec,
                       DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const DiscreteUpdateEvent<T>&,
                               DiscreteValues<T>* xd) {
                             return update(context, &*xd)
@@ -820,7 +843,7 @@ Note: The above is for the C++ documentation. For Python, use
                     EventCallback<const Context<T>&, State<T>*> update) {
                   self->DeclarePeriodicEvent(period_sec, offset_sec,
                       UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
                             return update(context, &*x)
                                 .value_or(EventStatus::Succeeded());
@@ -840,7 +863,7 @@ Note: The above is for the C++ documentation. For Python, use
             WrapCallbacks([](PyLeafSystem* self,
                               EventCallback<const Context<T>&> publish) {
               self->DeclarePerStepEvent(PublishEvent<T>(TriggerType::kPerStep,
-                  [publish](const System<T>&, const Context<T>& context,
+                  [&publish](const System<T>&, const Context<T>& context,
                       const PublishEvent<T>&) {
                     return publish(context).value_or(EventStatus::Succeeded());
                   }));
@@ -853,7 +876,7 @@ Note: The above is for the C++ documentation. For Python, use
                         update) {
                   self->DeclarePerStepEvent(
                       DiscreteUpdateEvent<T>(TriggerType::kPerStep,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const DiscreteUpdateEvent<T>&,
                               DiscreteValues<T>* xd) {
                             return update(context, &*xd)
@@ -868,7 +891,7 @@ Note: The above is for the C++ documentation. For Python, use
                     EventCallback<const Context<T>&, State<T>*> update) {
                   self->DeclarePerStepEvent(
                       UnrestrictedUpdateEvent<T>(TriggerType::kPerStep,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
                             return update(context, &*x)
                                 .value_or(EventStatus::Succeeded());
@@ -887,7 +910,7 @@ Note: The above is for the C++ documentation. For Python, use
                               EventCallback<const Context<T>&> publish) {
               self->get_mutable_forced_publish_events().AddEvent(
                   PublishEvent<T>(TriggerType::kForced,
-                      [publish](const System<T>&, const Context<T>& context,
+                      [&publish](const System<T>&, const Context<T>& context,
                           const PublishEvent<T>&) {
                         return publish(context).value_or(
                             EventStatus::Succeeded());
@@ -901,7 +924,7 @@ Note: The above is for the C++ documentation. For Python, use
                         update) {
                   self->get_mutable_forced_discrete_update_events().AddEvent(
                       DiscreteUpdateEvent<T>(TriggerType::kForced,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const DiscreteUpdateEvent<T>&,
                               DiscreteValues<T>* xd) {
                             return update(context, &*xd)
@@ -916,7 +939,7 @@ Note: The above is for the C++ documentation. For Python, use
                     EventCallback<const Context<T>&, State<T>*> update) {
                   self->get_mutable_forced_unrestricted_update_events()
                       .AddEvent(UnrestrictedUpdateEvent<T>(TriggerType::kForced,
-                          [update](const System<T>&, const Context<T>& context,
+                          [&update](const System<T>&, const Context<T>& context,
                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
                             return update(context, &*x)
                                 .value_or(EventStatus::Succeeded());
