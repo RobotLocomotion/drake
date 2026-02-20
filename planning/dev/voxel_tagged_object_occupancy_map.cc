@@ -11,7 +11,7 @@
 namespace drake {
 namespace planning {
 
-using common_robotics_utilities::voxel_grid::GridSizes;
+using common_robotics_utilities::voxel_grid::VoxelGridSizes;
 using voxelized_geometry_tools::SignedDistanceField;
 using voxelized_geometry_tools::TaggedObjectOccupancyCell;
 using voxelized_geometry_tools::TaggedObjectOccupancyMap;
@@ -37,8 +37,8 @@ VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
     const Eigen::Vector3d& grid_dimensions, const double grid_resolution,
     const float default_occupancy, const uint32_t default_object_id) {
-  const GridSizes cru_sizes(grid_resolution, grid_dimensions.x(),
-                            grid_dimensions.y(), grid_dimensions.z());
+  const auto cru_sizes =
+      VoxelGridSizes::FromGridSizes(grid_resolution, grid_dimensions);
   const TaggedObjectOccupancyCell default_cell(default_occupancy,
                                                default_object_id);
   auto internal_occupancy_map = std::make_shared<TaggedObjectOccupancyMap>(
@@ -49,11 +49,11 @@ VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
 
 VoxelTaggedObjectOccupancyMap::VoxelTaggedObjectOccupancyMap(
     const std::string& parent_body_name, const math::RigidTransformd& X_PG,
-    const Eigen::Matrix<int64_t, 3, 1>& grid_sizes,
+    const Eigen::Matrix<int64_t, 3, 1>& grid_counts,
     const double grid_resolution, const float default_occupancy,
     const uint32_t default_object_id) {
-  const GridSizes cru_sizes(grid_resolution, grid_sizes.x(), grid_sizes.y(),
-                            grid_sizes.z());
+  const auto cru_sizes =
+      VoxelGridSizes::FromVoxelCounts(grid_resolution, grid_counts);
   const TaggedObjectOccupancyCell default_cell(default_occupancy,
                                                default_object_id);
   auto internal_occupancy_map = std::make_shared<TaggedObjectOccupancyMap>(
@@ -110,7 +110,7 @@ VoxelTaggedObjectOccupancyMap::ExportSignedDistanceField(
 const std::string& VoxelTaggedObjectOccupancyMap::parent_body_name() const {
   const auto& internal_occupancy_map =
       internal::GetInternalTaggedObjectOccupancyMap(*this);
-  return internal_occupancy_map.GetFrame();
+  return internal_occupancy_map.Frame();
 }
 
 bool VoxelTaggedObjectOccupancyMap::is_empty() const {

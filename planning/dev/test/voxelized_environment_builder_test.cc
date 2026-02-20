@@ -62,9 +62,9 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   ASSERT_FALSE(cmap.is_empty());
   const auto& internal_cmap = internal::GetInternalOccupancyMap(cmap);
   ASSERT_TRUE(internal_cmap.IsInitialized());
-  ASSERT_EQ(internal_cmap.GetNumXCells(), 8);
-  ASSERT_EQ(internal_cmap.GetNumYCells(), 8);
-  ASSERT_EQ(internal_cmap.GetNumZCells(), 8);
+  ASSERT_EQ(internal_cmap.NumXVoxels(), 8);
+  ASSERT_EQ(internal_cmap.NumYVoxels(), 8);
+  ASSERT_EQ(internal_cmap.NumZVoxels(), 8);
 
   const VoxelTaggedObjectOccupancyMap tocmap = BuildTaggedObjectOccupancyMap(
       model->plant(), plant_context,
@@ -74,9 +74,9 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   const auto& internal_tocmap =
       internal::GetInternalTaggedObjectOccupancyMap(tocmap);
   ASSERT_TRUE(internal_tocmap.IsInitialized());
-  ASSERT_EQ(internal_tocmap.GetNumXCells(), 8);
-  ASSERT_EQ(internal_tocmap.GetNumYCells(), 8);
-  ASSERT_EQ(internal_tocmap.GetNumZCells(), 8);
+  ASSERT_EQ(internal_tocmap.NumXVoxels(), 8);
+  ASSERT_EQ(internal_tocmap.NumYVoxels(), 8);
+  ASSERT_EQ(internal_tocmap.NumZVoxels(), 8);
 
   // Export to signed distance field, using default options for SDF generation.
   const VoxelSignedDistanceField::GenerationParameters sdf_gen_parameters;
@@ -84,14 +84,14 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   ASSERT_FALSE(sdf.is_empty());
   const auto& internal_sdf = internal::GetInternalSignedDistanceField(sdf);
   ASSERT_TRUE(internal_sdf.IsInitialized());
-  ASSERT_EQ(internal_sdf.GetNumXCells(), 8);
-  ASSERT_EQ(internal_sdf.GetNumYCells(), 8);
-  ASSERT_EQ(internal_sdf.GetNumZCells(), 8);
+  ASSERT_EQ(internal_sdf.NumXVoxels(), 8);
+  ASSERT_EQ(internal_sdf.NumYVoxels(), 8);
+  ASSERT_EQ(internal_sdf.NumZVoxels(), 8);
 
   // Make sure the grids are properly filled
-  for (int64_t xidx = 0; xidx < internal_cmap.GetNumXCells(); xidx++) {
-    for (int64_t yidx = 0; yidx < internal_cmap.GetNumYCells(); yidx++) {
-      for (int64_t zidx = 0; zidx < internal_cmap.GetNumZCells(); zidx++) {
+  for (int64_t xidx = 0; xidx < internal_cmap.NumXVoxels(); xidx++) {
+    for (int64_t yidx = 0; yidx < internal_cmap.NumYVoxels(); yidx++) {
+      for (int64_t zidx = 0; zidx < internal_cmap.NumZVoxels(); zidx++) {
         // Check grid querying
         const auto cmap_query =
             internal_cmap.GetIndexImmutable(xidx, yidx, zidx);
