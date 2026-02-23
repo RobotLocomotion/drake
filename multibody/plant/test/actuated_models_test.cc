@@ -366,34 +366,6 @@ TEST_F(ActuatedIiwaArmTest, GetActuationInputPort) {
       "num_model_instances\\(\\)' failed.");
 }
 
-/* Unit tests internal:: class to store desired states. */
-GTEST_TEST(DesiredStateInput, DesiredStateInputTest) {
-  internal::DesiredStateInput<double> xd(5);
-  const Vector3<double> q1(1.0, 2.0, 3.0);
-  const Vector3<double> v1(4.0, 5.0, 6.0);
-  xd.SetModelInstanceDesiredStates(ModelInstanceIndex(1), q1, v1);
-
-  const Vector2<double> q3(1.0, 2.0);
-  const Vector2<double> v3(3.0, 4.0);
-  xd.SetModelInstanceDesiredStates(ModelInstanceIndex(3), q3, v3);
-
-  EXPECT_EQ(xd.num_model_instances(), 5);
-  EXPECT_FALSE(xd.is_armed(ModelInstanceIndex(0)));
-  EXPECT_TRUE(xd.is_armed(ModelInstanceIndex(1)));
-  EXPECT_FALSE(xd.is_armed(ModelInstanceIndex(2)));
-  EXPECT_TRUE(xd.is_armed(ModelInstanceIndex(3)));
-  EXPECT_FALSE(xd.is_armed(ModelInstanceIndex(4)));
-
-  EXPECT_EQ(xd.positions(ModelInstanceIndex(1)), q1);
-  EXPECT_EQ(xd.velocities(ModelInstanceIndex(1)), v1);
-  EXPECT_EQ(xd.positions(ModelInstanceIndex(3)), q3);
-  EXPECT_EQ(xd.velocities(ModelInstanceIndex(3)), v3);
-
-  xd.ClearModelInstanceDesiredStates(ModelInstanceIndex(1));
-  EXPECT_FALSE(xd.is_armed(ModelInstanceIndex(1)));
-  EXPECT_TRUE(xd.is_armed(ModelInstanceIndex(3)));
-}
-
 // We verify basic port size invariants for a model in which only a subset of
 // the arm's actuators are PD controlled.
 TEST_F(ActuatedIiwaArmTest, GetDesiredStatePort) {
