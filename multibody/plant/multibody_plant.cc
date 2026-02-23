@@ -1031,6 +1031,14 @@ void MultibodyPlant<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
 }
 
 template <typename T>
+void MultibodyPlant<T>::RemoveAllJointActuatorEffortLimits() {
+  for (const JointActuatorIndex& i : GetJointActuatorIndices()) {
+    get_mutable_joint_actuator(i).set_effort_limit(
+        std::numeric_limits<double>::infinity());
+  }
+}
+
+template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);

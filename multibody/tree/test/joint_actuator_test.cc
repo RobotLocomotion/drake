@@ -78,6 +78,8 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   const auto& actuator4 =
       tree.AddJointActuator("act4", body4_world, kPositiveEffortLimit);
+  tree.get_mutable_joint_actuator(actuator4.index()).set_effort_limit(22.0);
+  EXPECT_EQ(actuator4.effort_limit(), 22.0);
 
   tree.Finalize();
 

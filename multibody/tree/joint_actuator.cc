@@ -11,15 +11,20 @@ JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
                                 double effort_limit)
     : MultibodyElement<T>(joint.model_instance()),
       name_(name),
-      joint_index_(joint.index()),
-      effort_limit_(effort_limit) {
-  if (effort_limit_ <= 0.0) {
-    throw std::runtime_error("Effort limit must be strictly positive!");
-  }
+      joint_index_(joint.index()) {
+  set_effort_limit(effort_limit);
 }
 
 template <typename T>
 JointActuator<T>::~JointActuator() = default;
+
+template <typename T>
+void JointActuator<T>::set_effort_limit(double effort_limit) {
+  if (!(effort_limit > 0.0)) {
+    throw std::runtime_error("Effort limit must be strictly positive!");
+  }
+  effort_limit_ = effort_limit;
+}
 
 template <typename T>
 void JointActuator<T>::set_controller_gains(PdControllerGains gains) {

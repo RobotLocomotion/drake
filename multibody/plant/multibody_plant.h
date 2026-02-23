@@ -1693,6 +1693,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see AddJointActuator()
   void RemoveJointActuator(const JointActuator<T>& actuator);
 
+  /// Removes the effort limits on all joint actuators. (In other words, sets
+  /// all effort limits to +∞.) This is a convenient way to obtain a plant
+  /// without any built-in effort limits, in case models loaded by the Parser
+  /// have unwanted limits.
+  void RemoveAllJointActuatorEffortLimits();
+
   /// Creates a new model instance.  Returns the index for the model
   /// instance.
   ///

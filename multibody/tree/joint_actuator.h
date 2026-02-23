@@ -153,6 +153,9 @@ class JointActuator final : public MultibodyElement<T> {
   /// Returns the actuator effort limit.
   double effort_limit() const { return effort_limit_; }
 
+  /// Sets the actuator effort limit. (To clear the limit, set it to +∞.)
+  void set_effort_limit(double effort_limit);
+
   // Don't let clang-format wrap long @image lines.
   // clang-format off
   /// @anchor reflected_inertia
@@ -414,8 +417,8 @@ class JointActuator final : public MultibodyElement<T> {
   // joint().num_velocities().
   int actuator_dof_start_{-1};
 
-  // Actuator effort limit. It must be greater than 0.
-  double effort_limit_;
+  // Actuator effort limit. It must be strictly greater than 0.
+  double effort_limit_{};
 
   // The rotor inertia for this actuator. A zero value indicates that motor
   // inertial effects are not modeled for `this` actuator.
