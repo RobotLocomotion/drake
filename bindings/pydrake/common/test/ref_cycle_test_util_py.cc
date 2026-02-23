@@ -74,16 +74,28 @@ PYBIND11_MODULE(ref_cycle_test_util, m) {
   m.def("invalid_arg_index", [] {}, ref_cycle<0, 1>());
   // Returns its argument and creates a self-cycle.
   m.def("ouroboros", [](IsDynamic* x) { return x; }, ref_cycle<0, 1>());
-  m.def("arbitrary_ok", []() {
+  m.def("arbitrary_cycle_ok", []() {
     auto d1 = py::cast(new IsDynamic);
     auto d2 = py::cast(new IsDynamic);
-    internal::make_arbitrary_ref_cycle(d1, d2, "IsDynamic::arbitrary_ok");
+    internal::make_arbitrary_ref_cycle(d1, d2, "IsDynamic::arbitrary_cycle_ok");
     return d1;
   });
-  m.def("arbitrary_bad", []() {
+  m.def("arbitrary_cycle_bad", []() {
     auto dyn = py::cast(new IsDynamic);
     auto bad = py::cast(new NotDynamic);
-    internal::make_arbitrary_ref_cycle(dyn, bad, "IsDynamic::arbitrary_bad");
+    internal::make_arbitrary_ref_cycle(dyn, bad, "IsDynamic::arbitrary_cycle_bad");
+    return dyn;
+  });
+  m.def("arbitrary_link_ok", []() {
+    auto d1 = py::cast(new IsDynamic);
+    auto d2 = py::cast(new IsDynamic);
+    internal::make_arbitrary_ref_link(d1, d2, "IsDynamic::arbitrary_link_ok");
+    return d1;
+  });
+  m.def("arbitrary_link_bad", []() {
+    auto bad = py::cast(new NotDynamic);
+    auto dyn = py::cast(new IsDynamic);
+    internal::make_arbitrary_ref_link(bad, dyn, "IsDynamic::arbitrary_link_bad");
     return dyn;
   });
 }
