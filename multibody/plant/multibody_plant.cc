@@ -2733,7 +2733,8 @@ void MultibodyPlant<T>::AddJointActuationForces(
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->size() == num_velocities());
   if (num_actuators() > 0) {
-    const VectorX<T>& u = EvalActuationInput(context);
+    const VectorX<T>& u =
+        EvalActuationInput(context, /* effort_limit = */ true);
     for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
       const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
       const Joint<T>& joint = actuator.joint();
@@ -2794,15 +2795,18 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
 
 template <typename T>
 const VectorX<T>& MultibodyPlant<T>::EvalActuationInput(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>& context, bool effort_limit) const {
   this->ValidateContext(context);
-  return this->get_cache_entry(cache_indices_.actuation_input)
+  return this
+      ->get_cache_entry(
+          effort_limit ? cache_indices_.actuation_input_with_effort_limit
+                       : cache_indices_.actuation_input_without_effort_limit)
       .template Eval<VectorX<T>>(context);
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcActuationInput(const systems::Context<T>& context,
-                                           VectorX<T>* actuation_input) const {
+void MultibodyPlant<T>::CalcActuationInputWithoutEffortLimit(
+    const systems::Context<T>& context, VectorX<T>* actuation_input) const {
   this->ValidateContext(context);
 
   // Assemble the vector from the model instance input ports.
@@ -2847,6 +2851,25 @@ void MultibodyPlant<T>::CalcActuationInput(const systems::Context<T>& context,
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcActuationInputWithEffortLimit(
+    const systems::Context<T>& context, VectorX<T>* actuation_input) const {
+  // Start with the unlimited actuation.
+  *actuation_input = EvalActuationInput(context, /* effort_limit = */ false);
+
+  // Apply the limits.
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    const double e = actuator.effort_limit();
+    if (std::isfinite(e)) {
+      using std::max;
+      using std::min;
+      T& u = (*actuation_input)[actuator.input_start()];
+      u = max(-e, min(e, u));
+    }
+  }
+}
+
+template <typename T>
 template <bool sampled>
 void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
                                                BasicVector<T>* output) const {
@@ -2869,7 +2892,8 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
     }
   } else {
     DRAKE_DEMAND(!sampled);
-    output->SetFromVector(EvalActuationInput(context));
+    output->SetFromVector(
+        EvalActuationInput(context, /* effort_limit = */ true));
   }
 }
 
@@ -3721,17 +3745,32 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       &MultibodyPlant::CalcJointLocking, {this->all_parameters_ticket()});
   cache_indices_.joint_locking = joint_locking_cache_entry.cache_index();
 
-  // Cache actuation input data.
+  // Cache actuation input data (without effort limit).
   {
     std::set<DependencyTicket> prerequisites;
     prerequisites.insert(get_actuation_input_port().ticket());
     for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
       prerequisites.insert(get_actuation_input_port(i).ticket());
     }
-    const auto& actuation_input_cache_entry = this->DeclareCacheEntry(
-        "ActuationInput", VectorX<T>(num_actuators()),
-        &MultibodyPlant::CalcActuationInput, std::move(prerequisites));
-    cache_indices_.actuation_input = actuation_input_cache_entry.cache_index();
+    const auto& actuation_input_without_effort_limit_cache_entry =
+        this->DeclareCacheEntry(
+            "ActuationInputWithoutEffortLimit", VectorX<T>(num_actuators()),
+            &MultibodyPlant::CalcActuationInputWithoutEffortLimit,
+            std::move(prerequisites));
+    cache_indices_.actuation_input_without_effort_limit =
+        actuation_input_without_effort_limit_cache_entry.cache_index();
+  }
+
+  // Cache actuation input data (with effort limit).
+  {
+    const auto& actuation_input_with_effort_limit_cache_entry =
+        this->DeclareCacheEntry(
+            "ActuationInputWithEffortLimit", VectorX<T>(num_actuators()),
+            &MultibodyPlant::CalcActuationInputWithEffortLimit,
+            {this->cache_entry_ticket(
+                cache_indices_.actuation_input_without_effort_limit)});
+    cache_indices_.actuation_input_with_effort_limit =
+        actuation_input_with_effort_limit_cache_entry.cache_index();
   }
 
   // Cache desired state input data.

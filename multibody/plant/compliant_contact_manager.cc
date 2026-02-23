@@ -353,7 +353,10 @@ void CompliantContactManager<T>::DoCalcActuation(
   if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     DRAKE_DEMAND(tamsi_driver_ != nullptr);
     // TAMSI does not model additional actuation terms as SAP does.
-    *actuation = this->EvalActuationInput(context);
+    // TODO(jwnimmer-tri) The effort limiting being in effect here does not have
+    // any regression tests. If we were to decide to un-deprecate TAMSI, we'll
+    // need to circle back and add a regression test.
+    *actuation = this->EvalActuationInput(context, /* effort_limit = */ true);
   }
 }
 
