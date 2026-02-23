@@ -94,6 +94,10 @@ contains:
     * Binaries: A set of `drake-<version>-[...].tar.gz` files for each supported
     configuration (e.g. jammy, noble, and mac). In addition, there should be
     `.sha256` and `.sha512` files for each `.tar.gz` file.
+    * Wheels: A set of `drake-<version>-[...].whl` files for each supported
+    configuration (Python version and platform; e.g., cp3{10-14}-manylinux and
+    cp3{13-14}-macosx). In addition, there should be `.sha256` and `.sha512`
+    files for each `.whl` file.
     * Source: A `drake-<version>-src.tar.gz` file and corresponding `.sha256`
     and `.sha512` files.
 
