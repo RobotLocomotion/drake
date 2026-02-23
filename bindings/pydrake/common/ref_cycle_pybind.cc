@@ -14,6 +14,24 @@ namespace internal {
 
 namespace {
 
+// Create a one-way reference link from `a` to `b`. `a` will have a new/updated
+// attribute, containing a set of handles. Insert `b` into `a`'s handle
+// set. Create the set first if it is not yet existing.
+void make_link(handle a, handle b) {
+  static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
+  if (!hasattr(a, refcycle_peers)) {
+    py::set new_set;
+    DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_set.ptr())));
+    a.attr(refcycle_peers) = new_set;
+  }
+  handle peers = a.attr(refcycle_peers);
+  // Ensure the proper ref count on the `peers` set. If it is > 1, the
+  // objects will live forever. If it is < 1, the cycle will just be deleted
+  // immediately.
+  DRAKE_DEMAND(Py_REFCNT(peers.ptr()) == 1);
+  PySet_Add(peers.ptr(), b.ptr());
+}
+
 void make_ref_cycle(handle p0, handle p1) {
   DRAKE_DEMAND(static_cast<bool>(p0));
   DRAKE_DEMAND(static_cast<bool>(p1));
@@ -22,44 +40,50 @@ void make_ref_cycle(handle p0, handle p1) {
   DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(p0.ptr())));
   DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(p1.ptr())));
 
-  // Each peer will have a new/updated attribute, containing a set of
-  // handles. Insert each into the other's handle set. Create the set first
-  // if it is not yet existing.
-  auto make_link = [](handle a, handle b) {
-    static const char refcycle_peers[] = "_pydrake_internal_ref_cycle_peers";
-    if (!hasattr(a, refcycle_peers)) {
-      py::set new_set;
-      DRAKE_DEMAND(PyType_IS_GC(Py_TYPE(new_set.ptr())));
-      a.attr(refcycle_peers) = new_set;
-    }
-    handle peers = a.attr(refcycle_peers);
-    // Ensure the proper ref count on the `peers` set. If it is > 1, the
-    // objects will live forever. If it is < 1, the cycle will just be deleted
-    // immediately.
-    DRAKE_DEMAND(Py_REFCNT(peers.ptr()) == 1);
-    PySet_Add(peers.ptr(), b.ptr());
-  };
+  // The cycle is two one-way links; one in each direction.
   make_link(p0, p1);
   make_link(p1, p0);
 }
 
+// Returns false if the handle's value is None. Throws if the handle's value
+// is not of a garbage-collectable type.
+bool check_handle(size_t n, handle p,
+    std::function<std::string(size_t)> not_gc_message_function) {
+  if (p.is_none()) {
+    return false;
+  }
+  // Among the reasons the following check may fail is that one of the
+  // participating pybind11::class_ types does not declare
+  // pybind11::dynamic_attr().
+  if (!PyType_IS_GC(Py_TYPE(p.ptr()))) {
+    py::pybind11_fail(not_gc_message_function(n));
+  }
+  return true;
+}
+
+void check_and_make_link(handle p0, handle p1,
+    std::function<std::string(size_t)> not_gc_message_function) {
+  if (!check_handle(0, p0, not_gc_message_function)) {
+    // The handle is None. We can't construct a ref link, but neither should we
+    // complain. None variable values happen for any number of legitimate
+    // reasons; appearance of None doesn't imply a defective use of the
+    // one-way link API.
+    return;
+  }
+  // We explicitly don't check `p1` for GC and dynamic attributes.. One of the
+  // important use-cases of the one-way link API is the case where a non-GC,
+  // non-dynamic target object needs to be kept alive.
+  if (p1.is_none()) {
+    // If p1 is None, it is already immortal. There is no need to keep it alive.
+    return;
+  }
+  make_link(p0, p1);
+}
+
 void check_and_make_ref_cycle(size_t peer0, handle p0, size_t peer1, handle p1,
     std::function<std::string(size_t)> not_gc_message_function) {
-  // Returns false if the handle's value is None. Throws if the handle's value
-  // is not of a garbage-collectable type.
-  auto check_handle = [&](size_t n, handle p) -> bool {
-    if (p.is_none()) {
-      return false;
-    }
-    // Among the reasons the following check may fail is that one of the
-    // participating pybind11::class_ types does not declare
-    // pybind11::dynamic_attr().
-    if (!PyType_IS_GC(Py_TYPE(p.ptr()))) {
-      py::pybind11_fail(not_gc_message_function(n));
-    }
-    return true;
-  };
-  if (!check_handle(peer0, p0) || !check_handle(peer1, p1)) {
+  if (!check_handle(peer0, p0, not_gc_message_function) ||
+      !check_handle(peer1, p1, not_gc_message_function)) {
     // At least one of the handles is None. We can't construct a ref-cycle, but
     // neither should we complain. None variable values happen for any number of
     // legitimate reasons; appearance of None doesn't imply a defective use of
@@ -100,6 +124,19 @@ void ref_cycle_impl(
         n, call.func.name);
   };
   check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
+}
+
+void make_arbitrary_ref_link(
+    handle p0, handle p1, const std::string& location_hint) {
+  auto not_gc_error = [&location_hint](size_t n) -> std::string {
+    return fmt::format(
+        "Could not activate arbitrary ref link: object type at argument {} "
+        "for binding at '{}' is not tracked by garbage collection.  Was the "
+        "object defined with `pybind11::class_<...>(... "
+        "pybind11::dynamic_attr())`?",
+        n, location_hint);
+  };
+  check_and_make_link(p0, p1, not_gc_error);
 }
 
 void make_arbitrary_ref_cycle(
