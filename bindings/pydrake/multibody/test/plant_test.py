@@ -778,6 +778,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
         self.assertIsInstance(joint_actuator.effort_limit(), float)
+        joint_actuator.set_effort_limit(effort_limit=22.0)
         self.assertIsInstance(joint_actuator.default_rotor_inertia(), float)
         self.assertIsInstance(joint_actuator.default_gear_ratio(), float)
         joint_actuator.set_default_rotor_inertia(1.5)
@@ -785,6 +786,9 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.default_reflected_inertia(), float)
         self.assertGreaterEqual(joint_actuator.input_start(), 0)
         self.assertEqual(joint_actuator.num_inputs(), 1)
+
+        plant = MultibodyPlant_[T](0.0)
+        plant.RemoveAllJointActuatorEffortLimits()
 
     def _test_rotational_inertia_or_unit_inertia_api(self, T, Class):
         """

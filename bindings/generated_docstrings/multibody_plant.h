@@ -6466,6 +6466,15 @@ property is set in the perception properties (as documented above).
 
 See mbp_geometry "the overview" for more details.)""";
         } RegisterVisualGeometry;
+        // Symbol: drake::multibody::MultibodyPlant::RemoveAllJointActuatorEffortLimits
+        struct /* RemoveAllJointActuatorEffortLimits */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc =
+R"""(Removes the effort limits on all joint actuators. (In other words,
+sets all effort limits to +∞.) This is a convenient way to obtain a
+plant without any built-in effort limits, in case models loaded by the
+Parser have unwanted limits.)""";
+        } RemoveAllJointActuatorEffortLimits;
         // Symbol: drake::multibody::MultibodyPlant::RemoveConstraint
         struct /* RemoveConstraint */ {
           // Source: drake/multibody/plant/multibody_plant.h

@@ -21,6 +21,7 @@ namespace internal {
 namespace {
 
 using drake::math::RigidTransformd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
@@ -177,44 +178,39 @@ GTEST_TEST(IcfBuilder, RetryStep) {
   v.setConstant(plant.num_velocities(), 0.03);
   const auto& pool = model.gain_constraints_pool();
 
-  auto check_gain_constraints =
-      [&](IcfLinearFeedbackGains<double>* actuation_feedback,
-          IcfLinearFeedbackGains<double>* external_feedback) {
-        // This test model has two pendulums, and so two cliques.  External
-        // forces generate one constraint per clique. For actuation, there is
-        // only one, since the second pendulum is unactuated.
-        ASSERT_EQ(model.num_cliques(), 2);
-        EXPECT_EQ(pool.num_constraints(), 2 * (external_feedback != nullptr) +
-                                              (actuation_feedback != nullptr));
-        // Make a vector of flags predicting which constraints are actuation.
-        std::vector<int> is_actuation(pool.num_constraints(), 0);
-        if (actuation_feedback != nullptr) {
-          is_actuation[pool.num_constraints() - 1] = 1;
-        }
-        for (int k = 0; k < pool.num_constraints(); ++k) {
-          SCOPED_TRACE(fmt::format("index {}", k));
-          if (is_actuation[k]) {
-            EXPECT_EQ(pool.clique()[k], 0);
-            EXPECT_TRUE(CompareMatrices(pool.K()[k], feedback.K.head(2)));
-            EXPECT_TRUE(CompareMatrices(pool.b()[k], feedback.b.head(2)));
-            EXPECT_TRUE(CompareMatrices(pool.le()[k],
-                                        -builder.effort_limits().head(2)));
-            EXPECT_TRUE(
-                CompareMatrices(pool.ue()[k], builder.effort_limits().head(2)));
-          } else {
-            EXPECT_EQ(pool.clique()[k], k);
-            EXPECT_TRUE(
-                CompareMatrices(pool.K()[k], feedback.K.segment(2 * k, 2)));
-            EXPECT_TRUE(
-                CompareMatrices(pool.b()[k], feedback.b.segment(2 * k, 2)));
-            EXPECT_TRUE(CompareMatrices(
-                pool.le()[k], -builder.effort_limits().segment(2 * k, 2)));
-            EXPECT_TRUE(CompareMatrices(
-                pool.ue()[k], builder.effort_limits().segment(2 * k, 2)));
-          }
-          EXPECT_EQ(pool.constraint_size()[k], 2);
-        }
-      };
+  auto check_gain_constraints = [&](IcfLinearFeedbackGains<double>*
+                                        actuation_feedback,
+                                    IcfLinearFeedbackGains<double>*
+                                        external_feedback) {
+    // This test model has two pendulums, and so two cliques.  External
+    // forces generate one constraint per clique. For actuation, there is
+    // only one, since the second pendulum is unactuated.
+    ASSERT_EQ(model.num_cliques(), 2);
+    EXPECT_EQ(pool.num_constraints(), 2 * (external_feedback != nullptr) +
+                                          (actuation_feedback != nullptr));
+    // Make a vector of flags predicting which constraints are actuation.
+    std::vector<int> is_actuation(pool.num_constraints(), 0);
+    if (actuation_feedback != nullptr) {
+      is_actuation[pool.num_constraints() - 1] = 1;
+    }
+    for (int k = 0; k < pool.num_constraints(); ++k) {
+      SCOPED_TRACE(fmt::format("index {}", k));
+      if (is_actuation[k]) {
+        EXPECT_EQ(pool.clique()[k], 0);
+        EXPECT_TRUE(CompareMatrices(pool.K()[k], feedback.K.head(2)));
+        EXPECT_TRUE(CompareMatrices(pool.b()[k], feedback.b.head(2)));
+        EXPECT_TRUE(CompareMatrices(pool.le()[k], Vector2d::Constant(-kInf)));
+        EXPECT_TRUE(CompareMatrices(pool.ue()[k], Vector2d::Constant(kInf)));
+      } else {
+        EXPECT_EQ(pool.clique()[k], k);
+        EXPECT_TRUE(CompareMatrices(pool.K()[k], feedback.K.segment(2 * k, 2)));
+        EXPECT_TRUE(CompareMatrices(pool.b()[k], feedback.b.segment(2 * k, 2)));
+        EXPECT_TRUE(CompareMatrices(pool.le()[k], Vector2d::Constant(-kInf)));
+        EXPECT_TRUE(CompareMatrices(pool.ue()[k], Vector2d::Constant(kInf)));
+      }
+      EXPECT_EQ(pool.constraint_size()[k], 2);
+    }
+  };
 
   // Run a long step (pretending it failed error bounds) and then a "retry
   // step", for all combinations of feedback parameters. The retry step should

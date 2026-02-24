@@ -4315,6 +4315,12 @@ reflected_inertia.)""";
 R"""(Sets the default value for this actuator's rotor inertia. See
 reflected_inertia.)""";
         } set_default_rotor_inertia;
+        // Symbol: drake::multibody::JointActuator::set_effort_limit
+        struct /* set_effort_limit */ {
+          // Source: drake/multibody/tree/joint_actuator.h
+          const char* doc =
+R"""(Sets the actuator effort limit. (To clear the limit, set it to +∞.))""";
+        } set_effort_limit;
       } JointActuator;
       // Symbol: drake::multibody::JointActuatorIndex
       struct /* JointActuatorIndex */ {
