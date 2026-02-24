@@ -1,6 +1,6 @@
 # -*- bazel -*-
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load(":cc.bzl", "cc_library")
 
 cc_library(
     name = "glib",
@@ -16,5 +16,6 @@ cc_library(
         allow_empty = False,
     ),
     includes = ["include"],
+    isystem = True,
     visibility = ["//visibility:public"],
 )
