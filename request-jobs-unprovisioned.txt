@@ -5,7 +5,6 @@
 @drake-jenkins-bot linux-jammy-unprovisioned-gcc-cmake-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-unprovisioned-gcc-cmake-experimental-packaging please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-address-sanitizer please
-@drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-coverage please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-debug please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-everything-address-sanitizer please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-everything-debug please
@@ -19,7 +18,6 @@
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-thread-sanitizer please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-noble-unprovisioned-clang-bazel-experimental-valgrind-memcheck please
-@drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-coverage please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-debug please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-documentation please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-bazel-experimental-everything-debug please
