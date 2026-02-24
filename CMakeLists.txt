@@ -429,6 +429,11 @@ macro(override_module NAME)
     "${PROJECT_SOURCE_DIR}/cmake/external/workspace/conversion.bzl"
     "${local_path}/conversion.bzl"
     SYMBOLIC)
+  file(CREATE_LINK
+    "${PROJECT_SOURCE_DIR}/tools/skylark/cc.bzl"
+    "${local_path}/cc.bzl"
+    SYMBOLIC
+  )
   string(APPEND BAZEL_REPO_ENV
       " --override_module=${NAME}=${local_path}")
   string(APPEND BAZEL_REPO_ENV
