@@ -6,18 +6,10 @@ This program is supported only on Ubuntu (not macOS).
 
 Use bazel to build the tool.
 
-Here's an example of how to obtain the git sha for the release:
-
-  bazel run //tools/release_engineering:download_release_candidate -- \
-      --find-git-sha YYYYMMDD
-
 Here's an example of how download the release artifacts:
 
   bazel run //tools/release_engineering:download_release_candidate -- \
       --version vX.Y.Z
-
-In either example, the date/version placeholder must be replaced with a valid
-and sufficiently recent date/version.
 """
 
 # TODO(jwnimmer-tri) Rename this tool to something more general, like
@@ -120,51 +112,33 @@ def _check_urls(*, urls):
         raise UserError(error_message.getvalue())
 
 
-def _download_binaries(*, timestamp, staging, version):
+def _download_binaries(*, version):
     """Downloads the binaries as specified, and returns a list of (relative)
     paths.
 
-    The `timestamp` is a string like "YYYYMMDD", or None.
-    The `staging` is a bool (whether to download staged wheels / debian).
     The `version` is a string like "vM.m.p", or None.
     """
-
     # This is a partial inventory of our binary releases (tgz and wheel only).
     # The apt and Docker releases are handled separately.
-    if staging:
-        assert version is not None
-        assert timestamp is None
-
-        binaries = {
-            "https://drake-packages.csail.mit.edu/drake/staging": [
-                # Wheel filenames.
-                f"drake-{version[1:]}-cp310-cp310-manylinux_2_34_x86_64.whl",
-                f"drake-{version[1:]}-cp311-cp311-manylinux_2_34_x86_64.whl",
-                f"drake-{version[1:]}-cp312-cp312-manylinux_2_34_x86_64.whl",
-                f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_x86_64.whl",
-                f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_x86_64.whl",
-                f"drake-{version[1:]}-cp313-cp313-macosx_15_0_arm64.whl",
-                f"drake-{version[1:]}-cp314-cp314-macosx_15_0_arm64.whl",
-                # Deb filenames.
-                f"drake-dev_{version[1:]}-1_amd64-jammy.deb",
-                f"drake-dev_{version[1:]}-1_amd64-noble.deb",
-                # Tarball filenames.
-                f"drake-{version[1:]}-jammy.tar.gz",
-                f"drake-{version[1:]}-noble.tar.gz",
-                f"drake-{version[1:]}-mac-arm64.tar.gz",
-            ],
-        }
-    else:
-        assert timestamp is not None
-        assert version is None
-
-        binaries = {
-            "https://drake-packages.csail.mit.edu/drake/nightly": [
-                f"drake-0.0.{timestamp}-jammy.tar.gz",
-                f"drake-0.0.{timestamp}-noble.tar.gz",
-                f"drake-0.0.{timestamp}-mac-arm64.tar.gz",
-            ],
-        }
+    binaries = {
+        "https://drake-packages.csail.mit.edu/drake/staging": [
+            # Wheel filenames.
+            f"drake-{version[1:]}-cp310-cp310-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp311-cp311-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp312-cp312-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp313-cp313-macosx_15_0_arm64.whl",
+            f"drake-{version[1:]}-cp314-cp314-macosx_15_0_arm64.whl",
+            # Deb filenames.
+            f"drake-dev_{version[1:]}-1_amd64-jammy.deb",
+            f"drake-dev_{version[1:]}-1_amd64-noble.deb",
+            # Tarball filenames.
+            f"drake-{version[1:]}-jammy.tar.gz",
+            f"drake-{version[1:]}-noble.tar.gz",
+            f"drake-{version[1:]}-mac-arm64.tar.gz",
+        ],
+    }
 
     # Build a list of flat URLs and a list of (base_url, filename) pairs.
     download_urls = []  # list[str]
@@ -206,19 +180,6 @@ def _get_consistent_git_commit_sha(*, filenames):
     return result
 
 
-def _find_git_sha(*, timestamp):
-    """Implements the --find-git-sha command line action."""
-    with tempfile.TemporaryDirectory(prefix="drake-release-tmp-") as tmp_dir:
-        print(f"+ cd {tmp_dir}", file=sys.stderr)
-        os.chdir(tmp_dir)
-        filenames = _download_binaries(
-            timestamp=timestamp, staging=False, version=None
-        )
-        result = _get_consistent_git_commit_sha(filenames=filenames)
-        print()
-        print(f"The nightly binaries all have the same commit: {result}")
-
-
 def _check_deb_versions(*, filenames, version):
     """Check every `.deb` in filenames has the correct version, fail if not."""
     deb_filenames = [f for f in filenames if f.endswith(".deb")]
@@ -257,9 +218,7 @@ def _download_version(*, version):
     print(f"+ cd {tmp_dir}", file=sys.stderr)
     os.chdir(tmp_dir)
 
-    filenames = _download_binaries(
-        timestamp=None, staging=True, version=version
-    )
+    filenames = _download_binaries(version=version)
     git_sha = _get_consistent_git_commit_sha(filenames=filenames)
     print(f"The binaries all have the same git commit sha: {git_sha}")
 
@@ -269,8 +228,7 @@ def _download_version(*, version):
     print()
     print(
         f"Ready! Please continue with the release playbook. The files "
-        f"to uploaded are located in the following folder (Ctrl+Click "
-        f"in the terminal to open in your file explorer):\n"
+        f"to uploaded are located in the following folder:\n"
         f"\n"
         f"  file://{tmp_dir}\n"
     )
@@ -282,22 +240,15 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument(
-        "--find-git-sha",
-        metavar="TIMESTAMP",
-        help="Print the git sha to use for the release "
-        "matching the YYYYMMDD nightly.",
-    )
-    action.add_argument(
-        "--version", type=str, help="Download artifacts for the vX.Y.Z release."
+    parser.add_argument(
+        "--version",
+        type=str,
+        required=True,
+        help="Download artifacts for the vX.Y.Z release.",
     )
     args = parser.parse_args()
 
-    if args.version is None:
-        _find_git_sha(timestamp=args.find_git_sha)
-    else:
-        _download_version(version=args.version)
+    _download_version(version=args.version)
 
 
 if __name__ == "__main__":
