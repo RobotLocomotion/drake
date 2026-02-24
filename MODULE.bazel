@@ -131,28 +131,6 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
     for python_version in PYTHON_VERSIONS
 ]
 
-[
-    pip.override(
-        file = "mypy-1.19.1-{abi}-{abi}-{platform}.whl".format(
-            abi = abi,
-            platform = platform,
-        ),
-        patch_strip = 0,
-        patches = [
-            "//tools/workspace/mypy_internal:patches/timeout.patch",
-        ],
-    )
-    for abi in [
-        "cp3{minor}".format(minor = x[2:])
-        for x in PYTHON_VERSIONS
-    ]
-    for platform in [
-        "macosx_11_0_arm64",
-        "manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64",
-        "manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64",
-    ]
-]
-
 use_repo(pip, "drake_mypy")
 
 # Load dependencies which are "public", i.e., made available to downstream
