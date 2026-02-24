@@ -103,26 +103,14 @@ the main body of the document:
 
 ## Cutting the release
 
-1. Find a plausible nightly build to use:
-   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
-   2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
+1. Find the git sha of the most recent nightly build:
+   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
-      ignore).
-   3. Open the latest builds from the following builds:
-      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
-      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sequoia-clang-cmake-nightly-packaging/>
-   4. Check the logs for those packaging builds and find the URLs they posted
-      to (open the latest build, go to "View as plain text", and search for
-      ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
-      with today's date (they kick off after midnight).  All of the builds
-      should have the same date. If not, wait until the following night.
-   5. Use the
-      ``tools/release_engineering/download_release_candidate`` tool with the
-      ``--find-git-sha`` option to download and verify that all the nightlies
-      are built from the same commit.  (Its usage instructions are atop its
-      source code:
-      [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
+      ignore); if something is running, wait until it finishes.
+   2. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
+      If not, then wait until tomorrow to try again.
+   3. Open <https://github.com/RobotLocomotion/drake/commits/nightly-release/>;
+      the top (newest) commit will be the git sha for this release.
 2. Launch the staging builds for that git commit sha:
    1. Open the following Jenkins jobs (e.g., each in its own
       new window, so you can copy-and-paste sha1 and version easily):
