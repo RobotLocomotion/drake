@@ -1,0 +1,31 @@
+[eigen] Use Drake build rules to get -isystem headers
+
+Bazel 9 switched cc_library include paths from using -isystem to just -I, which
+introduces compiler warnings in Drake code than includes Eigen headers. Use
+Drake's cc_library wrapper here to include Eigen headers with -isystem.
+
+--- MODULE.bazel
++++ MODULE.bazel
+@@ -5,5 +5,6 @@
+     compatibility_level = 1,
+ )
+
++bazel_dep(name = "drake")
+ bazel_dep(name = "rules_cc", version = "0.0.17")
+ bazel_dep(name = "rules_license", version = "1.0.0")
+
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -1,4 +1,4 @@
+-load("@rules_cc//cc:cc_library.bzl", "cc_library")
++load("@drake//tools/skylark:cc.bzl", "cc_library")
+ load("@rules_license//rules:license.bzl", "license")
+
+ package(
+@@ -57,5 +57,6 @@
+     name = "eigen",
+     hdrs = HDRS,
+     includes = ["."],
++    isystem = True,
+     visibility = ["//visibility:public"],
+ )

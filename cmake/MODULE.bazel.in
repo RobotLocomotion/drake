@@ -31,3 +31,8 @@ python_repository(
 )
 
 register_toolchains("@python//:all")
+
+single_version_override(
+    module_name = "eigen",
+    patches = ["//:eigen_includes_isystem.patch"],
+)
