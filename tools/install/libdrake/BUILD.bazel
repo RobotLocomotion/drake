@@ -35,6 +35,26 @@ load(":header_lint.bzl", "cc_check_allowed_headers")
 
 package(default_visibility = ["//visibility:private"])
 
+# Keep this in sync with the platform-specific `--cxxopt` ranges in tools/*.
+config_setting(
+    name = "cxx20",
+    values = {
+        "cxxopt": "-std=c++20",
+    },
+)
+
+generate_file(
+    name = "cxx_standard.cmake",
+    content = select({
+        ":cxx20": (
+            "set(DRAKE_CXX_STANDARD cxx_std_20)"
+        ),
+        "//conditions:default": (
+            "set(DRAKE_CXX_STANDARD cxx_std_23)"
+        ),
+    }),
+)
+
 generate_file(
     name = "drake_install_java.cmake",
     content = select({
@@ -179,6 +199,7 @@ cmake_configure_file(
         ":bazel_eigen_defines.cmake",
         ":bazel_fmt_defines.cmake",
         ":bazel_spdlog_defines.cmake",
+        ":cxx_standard.cmake",
         ":drake_install_java.cmake",
         ":libdrake_was_linked_shared.cmake",
         ":python_version.cmake",

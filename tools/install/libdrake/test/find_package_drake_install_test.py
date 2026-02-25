@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import textwrap
 import unittest
 
@@ -24,6 +25,11 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
             f.write(textwrap.dedent(cc_content_drake))
 
         cmake_prefix_path = install_test_helper.get_install_dir()
+        # Keep this in sync with the platform-specific `--cxxopt` ranges in
+        # tools/*.
+        drake_cxx_std = "cxx_std_23"
+        if sys.version_info[0:2] <= (3, 10):
+            drake_cxx_std = "cxx_std_20"
 
         cmake_content = f"""
             cmake_minimum_required(VERSION 3.9...4.2)
@@ -38,6 +44,24 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
             if(NOT drake_type STREQUAL "SHARED_LIBRARY")
                 message(FATAL_ERROR "drake::drake is ${{drake_type}}, but expected SHARED_LIBRARY.")
             endif()
+
+            # Check that by linking against drake::drake, main_drake gets the
+            # correct CXX standard. Since INTERFACE_COMPILE_FEATURES aren't
+            # propagated until generate time, we generate a file that has the
+            # query result, and then check that file at build time.
+            set(cxx_std_out ${{CMAKE_CURRENT_BINARY_DIR}}/cxx_std_check.txt)
+            file(GENERATE
+                OUTPUT ${{cxx_std_out}}
+                CONTENT $<IN_LIST:{drake_cxx_std},$<TARGET_PROPERTY:main_drake,COMPILE_FEATURES>>
+            )
+            set(val_out ${{CMAKE_CURRENT_BINARY_DIR}}/validation.stamp)
+            add_custom_command(
+                OUTPUT ${{val_out}}
+                COMMAND grep "1" ${{cxx_std_out}}
+                COMMAND ${{CMAKE_COMMAND}} -E touch ${{val_out}}
+                DEPENDS ${{cxx_std_out}}
+            )
+            add_custom_target(check_cxx_std ALL DEPENDS ${{val_out}})
         """
 
         cmake_filename = os.path.join(cmake_source_dir, "CMakeLists.txt")
