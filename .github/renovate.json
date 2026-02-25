@@ -14,7 +14,7 @@
   ],
   "bazel-module": {
     "managerFilePatterns": [
-      "cmake/MODULE.bazel.in"
+      "/^cmake/.*/?MODULE\\.bazel\\.in$/"
     ]
   },
   "labels": [
