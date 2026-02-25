@@ -25,6 +25,17 @@ constexpr const char* const kLcmDefaultUrl = "udpm://239.255.76.67:7667?ttl=0";
 // Defined below.
 class DrakeSubscription;
 
+void ThrowIfLcmError(bool is_lcm_error) {
+  if (is_lcm_error) {
+    throw std::logic_error(
+        "LCM has encountered an error. The most likely cause is network "
+        "misconfiguration. See "
+        "https://drake.mit.edu/troubleshooting.html#lcm-macos and "
+        "https://lcm-proj.github.io/lcm/content/multicast-setup.html for "
+        "more information.");
+  }
+}
+
 }  // namespace
 
 class DrakeLcm::Impl {
@@ -97,7 +108,7 @@ DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
     // ctor) and NOT in the first HandleSubscriptions call.  Without this,
     // ThreadSanitizer builds may report false positives related to the
     // self-test happening concurrently with LCM publishing.
-    ::lcm_get_fileno(impl_->lcm_);
+    ThrowIfLcmError(::lcm_get_fileno(impl_->lcm_) < 0);
   }
 }
 
@@ -216,8 +227,8 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     native_subscription_ =
         ::lcm_subscribe(native_instance_, channel_regex_.c_str(),
                         &DrakeSubscription::NativeCallback, this);
-    ::lcm_subscription_set_queue_capacity(native_subscription_,
-                                          queue_capacity_);
+    ThrowIfLcmError(native_subscription_ == nullptr);
+    set_queue_capacity(queue_capacity_);
   }
 
   // This is ONLY called from the DrakeLcm dtor.  Thus, a HandleSubscriptions
