@@ -6,7 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
@@ -160,8 +161,13 @@ class MixedIntegerRotationConstraintGenerator {
       box_sphere_intersection_halfspace_;
 };
 
-std::string to_string(MixedIntegerRotationConstraintGenerator::Approach type);
+std::string to_string(
+    const MixedIntegerRotationConstraintGenerator::Approach& type);
 
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(
     std::ostream& os,
     const MixedIntegerRotationConstraintGenerator::Approach& type);
@@ -233,10 +239,6 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<
-    drake::solvers::MixedIntegerRotationConstraintGenerator::Approach>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::solvers,
+                   MixedIntegerRotationConstraintGenerator::Approach, x,
+                   drake::solvers::to_string(x))
