@@ -216,8 +216,7 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     native_subscription_ =
         ::lcm_subscribe(native_instance_, channel_regex_.c_str(),
                         &DrakeSubscription::NativeCallback, this);
-    ::lcm_subscription_set_queue_capacity(native_subscription_,
-                                          queue_capacity_);
+    set_queue_capacity(queue_capacity_);
   }
 
   // This is ONLY called from the DrakeLcm dtor.  Thus, a HandleSubscriptions
