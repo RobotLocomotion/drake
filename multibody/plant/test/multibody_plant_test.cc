@@ -3619,9 +3619,9 @@ TEST_F(MultibodyPlantRemodelingDiscrete, AddJointActuationForces) {
   // Actuator with index 1 has been removed.
   const systems::InputPort<double>& u_input =
       plant_->get_actuation_input_port();
-  u_input.FixValue(plant_context_, Vector2d(1.0, 3.0));
+  u_input.FixValue(plant_context_, Vector2d(0.25, 0.5));
 
-  const VectorXd forces_expected = (VectorXd(3) << 1.0, 0.0, 3.0).finished();
+  const VectorXd forces_expected = Vector3d(0.25, 0.0, 0.5);
 
   // Test that AddJointActuationForces uses the correct indices into 'u'
   // using JointActuator::input_start().
@@ -3811,6 +3811,28 @@ TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointWithPrismaticSpring) {
       "RemoveJoint: This plant has 1 user-added force elements. This plant "
       "must have 0 user-added force elements in order to remove joint with "
       "index.*");
+}
+
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointActuator) {
+  BuildModel();
+
+  for (bool has_actuator : {true, false}) {
+    if (!has_actuator) {
+      DoRemoval(true /* remove_actuator */, false /* remove joint */);
+    }
+    // Check whether the joint exists or was removed.
+    EXPECT_EQ(plant_->HasJointActuatorNamed("actuator1"), has_actuator);
+    EXPECT_EQ(
+        plant_->HasJointActuatorNamed("actuator1", default_model_instance()),
+        has_actuator);
+    EXPECT_EQ(plant_->has_joint_actuator(JointActuatorIndex{1}), has_actuator);
+  }
+
+  // This function only works post-finalize.
+  plant_->Finalize();
+  EXPECT_THAT(
+      plant_->GetJointActuatorIndices(default_model_instance()),
+      testing::ElementsAre(JointActuatorIndex{0}, JointActuatorIndex{2}));
 }
 
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic

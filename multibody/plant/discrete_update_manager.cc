@@ -274,9 +274,9 @@ DiscreteUpdateManager<T>::EvalJointLocking(
 
 template <typename T>
 const VectorX<T>& DiscreteUpdateManager<T>::EvalActuationInput(
-    const systems::Context<T>& context) const {
+    const systems::Context<T>& context, bool effort_limit) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalActuationInput(
-      plant(), context);
+      plant(), context, effort_limit);
 }
 
 template <typename T>
@@ -341,7 +341,8 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
   actuation_w_pd->setZero();
   actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
-    const VectorX<T>& u = EvalActuationInput(context);
+    const VectorX<T>& u =
+        EvalActuationInput(context, /* effort_limit = */ true);
     for (JointActuatorIndex actuator_index :
          plant().GetJointActuatorIndices()) {
       const JointActuator<T>& actuator =
