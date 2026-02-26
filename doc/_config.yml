@@ -66,6 +66,8 @@ custom:
 
   footer:
     menu_items:
+      - title: 'Accessibility'
+        url: https://accessibility.mit.edu/
       - title: 'C++'
         url: /doxygen_cxx/index.html
       - title: 'Python'
