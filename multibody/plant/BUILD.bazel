@@ -447,10 +447,12 @@ drake_cc_googletest(
         "@drake_models//:iiwa_description",
         "@drake_models//:wsg_50_description",
     ],
+    shard_count = 2,
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//multibody/parsing",
     ],
 )
