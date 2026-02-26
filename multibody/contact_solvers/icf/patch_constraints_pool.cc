@@ -1,4 +1,4 @@
-#include "multibody/contact_solvers/icf/patch_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
 
 #include <algorithm>
 #include <cmath>

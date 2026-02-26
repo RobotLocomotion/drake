@@ -1,4 +1,4 @@
-#include "manipulation/franka_panda/panda_status_receiver.h"
+#include "drake/manipulation/franka_panda/panda_status_receiver.h"
 
 #include <memory>
 #include <vector>
