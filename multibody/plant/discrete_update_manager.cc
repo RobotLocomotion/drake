@@ -698,23 +698,32 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     math::RotationMatrix<T> R_WC =
         math::RotationMatrix<T>::MakeFromOneVector(nhat_AB_W, 2);
 
+    // Note: if Ga is the geometry affixed to body A, then X_WA is equal to
+    // X_WGa iff X_AGa is identity. That is not generally true.
+    const RigidTransform<double>& X_AGa = inspector.GetPoseInFrame(pair.id_A);
     const RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
+    const RigidTransform<T> X_WGa = X_WA * X_AGa.cast<T>();
+
+    const RigidTransform<double>& X_BGb = inspector.GetPoseInFrame(pair.id_B);
     const RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
+    const RigidTransform<T> X_WGb = X_WB * X_BGb.cast<T>();
 
-    // Get surface velocity at Ca relative to A in coordinates of A and
-    // transform to world frame W.
-    const Vector3<T> v_ACa_W_ss =
-        X_WA.rotation() *
-        plant().GetSurfaceVelocity(pair.id_A, inspector, X_WA, pair.p_WCa);
-    // Get surface velocity at Cb relative to B in coordinates of B and
-    // transform to world frame W.
-    const Vector3<T> v_BCb_W_ss =
-        X_WB.rotation() *
-        plant().GetSurfaceVelocity(pair.id_B, inspector, X_WB, pair.p_WCb);
+    // The surface velocity is a vector expressed in Ga (or Gb, respectively).
+    // Based on the configuration of the robot, those vectors can be expressed
+    // in the common world frame so they can be combined.
+    // Finally, we'll re-express the result in the contact frame C.
+    const Vector3<T> v_A_ss = plant().GetSurfaceVelocity(
+        pair.id_A, inspector, X_WGa, -pair.nhat_BA_W);
+    const Vector3<T> v_A_ss_W = X_WGa.rotation() * v_A_ss;
+
+    const Vector3<T> v_B_ss =
+        plant().GetSurfaceVelocity(pair.id_B, inspector, X_WGb, pair.nhat_BA_W);
+    const Vector3<T> v_B_ss_W = X_WGb.rotation() * v_B_ss;
+
     // Relative separation velocity due to surface velocity in contact frame C.
-    const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_BCb_W_ss - v_ACa_W_ss);
+    const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_B_ss_W - v_A_ss_W);
 
     // Contact velocity stored in the current context (previous time step).
     const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;

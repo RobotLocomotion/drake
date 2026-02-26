@@ -1771,39 +1771,26 @@ MultibodyPlant<T>::GetSurfaceVelocityNormal(
 template <typename T>
 Vector3<T> MultibodyPlant<T>::GetSurfaceVelocity(
     geometry::GeometryId id, const geometry::SceneGraphInspector<T>& inspector,
-    const RigidTransform<T>& X_W, const Vector3<T>& p_WC) const {
-  Vector3<T> surface_velocity = Vector3<T>::Zero();
-
+    const RigidTransform<T>& X_WG, const Vector3<T>& n_W) const {
   // Get surface speed for this geometry
   std::optional<double> surface_speed = GetSurfaceSpeed(id, inspector);
   if (!surface_speed.has_value()) {
-    return surface_velocity;
+    return Vector3<T>::Zero();
   }
   // Get surface velocity normal for this geometry
-  std::optional<Eigen::Vector3<T>> velocity_normal =
+  std::optional<Eigen::Vector3<T>> n_ss_G =
       GetSurfaceVelocityNormal(id, inspector);
-  if (!velocity_normal.has_value()) {
-    return surface_velocity;
-  }
-
-  // Transform contact point from world frame to the local geometry frame.
-  const Vector3<T> p_GC = X_W.inverse() * p_WC;
-
-  // Use the shape of the collision geometry and the contact point to
-  // get the normal vector to the surface at that point
-  const geometry::Shape& shape = inspector.GetShape(id);
-  std::optional<Vector3<T>> normal_at_p_GC =
-      geometry::GetNormalAtPoint<T>(shape, p_GC);
-  if (!normal_at_p_GC.has_value()) {
-    return surface_velocity;
+  if (!n_ss_G.has_value()) {
+    return Vector3<T>::Zero();
   }
 
   // The velocity vector is the cross product between the velocity_normal
   // and the surface normal, in that order. Its magnitude is the surface speed.
-  surface_velocity =
-      surface_speed.value() *
-      (velocity_normal.value().cross(normal_at_p_GC.value()).normalized());
-  return surface_velocity;
+  // Note: we're *intentionally* not normalizing the vectors' cross product.
+  // Essentially, normals that are parallel with the velocity normal shouldn't
+  // produce any velocity. Not normalizing accounts for that organically.
+  const Vector3<T> n_G = X_WG.rotation().inverse() * n_W;
+  return surface_speed.value() * (n_ss_G->cross(n_G));
 }
 
 template <typename T>

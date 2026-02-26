@@ -5848,15 +5848,23 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().graph();
   }
 
-  // Get the surface velocity defined by the proximity properties
-  // drake:surface_speed and drake:surface_velocity_normal. The velocity
-  // is computed at the point p_WC, which should be point very close (1mm)
-  // to the surface and expressed in the world frame. The velocity is
-  // expressed in the local frame of geometry identified by id.
+  // Compute the possible surface velocity of the geometry G indicated by id.
+  // To have a non-zero surface velocity:
+  //
+  //    - The geometry must have a non-zero value for the
+  //      (surface_velocity, surface_speed) property, and
+  //    - A unit vector for the (surface_velocity, surface_velocity_normal)
+  //      property (we'll call n_ss), and
+  //    - the provided surface normal n_W is not (anti)parallel to n_ss.
+  //
+  // The velocity will be perpendicular to the normal n_W and have a maximum
+  // speed defined by the property.
+  //
+  // @retval v_GS, the velocity of the surface relative to the geometry G.
   Vector3<T> GetSurfaceVelocity(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector,
-      const math::RigidTransform<T>& X_W, const Vector3<T>& p_WC) const;
+      const math::RigidTransform<T>& X_WG, const Vector3<T>& n_W) const;
 
   /// @} <!-- Introspection -->
 
