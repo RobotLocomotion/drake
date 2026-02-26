@@ -3813,6 +3813,30 @@ TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointWithPrismaticSpring) {
       "index.*");
 }
 
+TEST_F(MultibodyPlantRemodelingDiscrete, RemoveJointActuator) {
+  BuildModel();
+
+  for (bool has_actuator : {true, false}) {
+    // The first time through the loop, the actuator remains intact.
+    // The second time through, we'll remove it.
+    if (!has_actuator) {
+      DoRemoval(true /* remove_actuator */, false /* remove joint */);
+    }
+    // Check whether the joint exists or was removed.
+    EXPECT_EQ(plant_->HasJointActuatorNamed("actuator1"), has_actuator);
+    EXPECT_EQ(
+        plant_->HasJointActuatorNamed("actuator1", default_model_instance()),
+        has_actuator);
+    EXPECT_EQ(plant_->has_joint_actuator(JointActuatorIndex{1}), has_actuator);
+  }
+
+  // This function only works post-finalize.
+  plant_->Finalize();
+  EXPECT_THAT(
+      plant_->GetJointActuatorIndices(default_model_instance()),
+      testing::ElementsAre(JointActuatorIndex{0}, JointActuatorIndex{2}));
+}
+
 // Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
 // update period of the plant. This allows us to test some of the plant's
 // functionality for both continuous and discrete models.
