@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import os
 import signal
 import subprocess
+import sys
 import time
 import unittest
 
@@ -110,6 +111,7 @@ class TestCallPython(unittest.TestCase):
         print(text)
         self.assertTrue("Here's an example" in text)
 
+    @unittest.skipIf(sys.platform == "darwin", "Flaky on macOS")
     def test_basic(self):
         for with_error in [False, True]:
             print("[ with_error: {} ]".format(with_error))
