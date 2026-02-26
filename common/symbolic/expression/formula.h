@@ -539,13 +539,10 @@ struct RelationalOpTraits {
   static constexpr int Cols = Eigen::internal::min_size_prefer_fixed(
       DerivedA::ColsAtCompileTime, DerivedB::ColsAtCompileTime);
 #else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
   static constexpr int Rows = EIGEN_SIZE_MIN_PREFER_FIXED(
       (DerivedA::RowsAtCompileTime), (DerivedB::RowsAtCompileTime));
   static constexpr int Cols = EIGEN_SIZE_MIN_PREFER_FIXED(
       (DerivedA::ColsAtCompileTime), (DerivedB::ColsAtCompileTime));
-#pragma GCC diagnostic pop
 #endif  // EIGEN_VERSION_AT_LEAST
   using ReturnType = Eigen::Array<Formula, Rows, Cols>;
 };
