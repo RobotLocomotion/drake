@@ -51,9 +51,6 @@ build --incompatible_default_to_explicit_init_py
 build --test_output=errors
 build --test_summary=terse
 
-# Provide a performance cushion for debug builds, 2x the default timeouts.
-build:dbg --test_timeout=120,600,1800,7200
-
 # By default, disable execution of tests that require proprietary software.
 # Individual targets that use proprietary software are responsible for ensuring
 # they can also build without it, typically by using a select statement.
