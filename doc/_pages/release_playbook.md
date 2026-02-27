@@ -14,8 +14,8 @@ increasing.
 
 Begin this process around 1 week prior to the intended release date.
 
-The release engineering tools (relnotes, download_release_candidate,
-push_release, etc.) are supported only on Ubuntu (not macOS).
+The release engineering tools (relnotes, download_release_candidate, push_apt,
+etc.) are supported only on Ubuntu (not macOS).
 
 ## Prior to release
 

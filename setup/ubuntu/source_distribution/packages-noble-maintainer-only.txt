@@ -1,6 +1,8 @@
 alien
+aptly
 diffstat
 fakeroot
+gnupg
 patchutils
 python3-boto3
 python3-git

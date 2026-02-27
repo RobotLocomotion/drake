@@ -36,5 +36,5 @@ body:
       options:
         - label: "Run push_docker.py script to push Docker images"
           required: false
-        - label: "Run push_release script for Apt repository updates"
+        - label: "Run push_apt script for Apt repository updates"
           required: false
