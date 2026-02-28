@@ -69,7 +69,7 @@ bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # n
 # is used by default.
 
 bazel_dep(name = "glib", version = "2.82.2.bcr.7", repo_name = "module_glib")
-bazel_dep(name = "zlib", version = "1.3.1.bcr.8", repo_name = "module_zlib")
+bazel_dep(name = "zlib", version = "1.3.2", repo_name = "module_zlib")
 
 # Add additional modules we use at build-time (not runtime dependencies).
 
