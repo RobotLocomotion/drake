@@ -11,9 +11,6 @@
 #include "drake/common/name_value.h"
 #include "drake/geometry/rgba.h"
 
-// Remove with deprecation 2026-03-01.
-#include <ostream>
-
 namespace drake {
 namespace geometry {
 namespace render {
@@ -30,9 +27,6 @@ enum class LightType { kPoint = 1, kSpot = 2, kDirectional = 3 };
 /** Returns the LightType as a string. */
 std::string_view to_string(const LightType& t);
 
-DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
-std::ostream& operator<<(std::ostream& out, const LightType& t);
-
 /** Instantiates a LightType from its string representation.
  @param spec  Must be one of 'point', 'spot', or 'directional'.
  @throws if `spec` is an unrecognized string. */
@@ -48,9 +42,6 @@ enum class LightFrame { kWorld = 0, kCamera = 1 };
 
 /** Returns the LightFrame as a string. */
 std::string_view to_string(const LightFrame& f);
-
-DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
-std::ostream& operator<<(std::ostream& out, const LightFrame& f);
 
 /** Instantiates a LightFrame from its string representation.
  @param spec  Must be one of 'world' or 'camera'.

@@ -9,9 +9,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
 
-// Remove with deprecation 2026-03-01.
-#include <sstream>
-
 namespace drake {
 namespace geometry {
 namespace render {
@@ -39,15 +36,6 @@ GTEST_TEST(LightParamterTest, ToString) {
   EXPECT_EQ(to_string(frame), "camera");
   EXPECT_EQ(fmt::to_string(light), "directional");
   EXPECT_EQ(fmt::to_string(frame), "camera");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  std::stringstream light_out;
-  std::stringstream frame_out;
-  light_out << light;
-  frame_out << frame;
-  EXPECT_EQ(light_out.str(), "directional");
-  EXPECT_EQ(frame_out.str(), "camera");
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(LightParameterTest, Serialization) {

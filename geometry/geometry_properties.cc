@@ -150,10 +150,5 @@ std::string GeometryProperties::to_string() const {
   return out.str();
 }
 
-std::ostream& operator<<(std::ostream& out, const GeometryProperties& props) {
-  out << fmt::to_string(props);
-  return out;
-}
-
 }  // namespace geometry
 }  // namespace drake

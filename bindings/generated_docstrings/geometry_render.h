@@ -1068,13 +1068,6 @@ Raises:
           const char* doc_1args_t = R"""(Returns the LightType as a string.)""";
           // Source: drake/geometry/render/light_parameter.h
           const char* doc_1args_f = R"""(Returns the LightFrame as a string.)""";
-          // Source: drake/geometry/render/render_label.h
-          const char* doc_deprecated_deprecated_1args_label =
-R"""((Deprecated.)
-
-Deprecated:
-    Use label.to_string(), instead This will be removed from Drake on
-    or after 2026-03-01.)""";
         } to_string;
       } render;
     } geometry;

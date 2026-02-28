@@ -9,9 +9,6 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-// Remove with deprecation 2026-03-01.
-#include <sstream>
-
 namespace drake {
 namespace geometry {
 namespace render {
@@ -154,13 +151,6 @@ GTEST_TEST(RenderLabelTest, ToString) {
   const RenderLabel dut = RenderLabel::kUnspecified;
   EXPECT_EQ(dut.to_string(), "32767");
   EXPECT_EQ(fmt::to_string(dut), "32767");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(to_string(dut), "32767");
-  std::stringstream out;
-  out << dut;
-  EXPECT_EQ(out.str(), "32767");
-#pragma GCC diagnostic pop
 }
 
 }  // namespace

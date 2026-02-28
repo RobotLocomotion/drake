@@ -10,9 +10,6 @@
 #include "drake/common/hash.h"
 #include "drake/systems/sensors/pixel_types.h"
 
-// Remove with deprecation 2026-03-01.
-#include <ostream>
-
 namespace drake {
 namespace geometry {
 namespace render {
@@ -170,14 +167,6 @@ class RenderLabel {
   // the maximum value.
   ValueType value_{kMaxValue};
 };
-
-DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
-std::ostream& operator<<(std::ostream& out, const RenderLabel& label);
-
-DRAKE_DEPRECATED("2026-03-01", "Use label.to_string(), instead")
-inline std::string to_string(const RenderLabel& label) {
-  return label.to_string();
-}
 
 }  // namespace render
 }  // namespace geometry

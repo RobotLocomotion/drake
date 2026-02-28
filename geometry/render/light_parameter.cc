@@ -16,11 +16,6 @@ std::string_view to_string(const LightType& t) {
   DRAKE_UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& out, const LightType& t) {
-  out << fmt::to_string(t);
-  return out;
-}
-
 LightType light_type_from_string(const std::string& spec) {
   if (spec == "point") {
     return LightType::kPoint;
@@ -42,11 +37,6 @@ std::string_view to_string(const LightFrame& f) {
       return "camera";
   }
   DRAKE_UNREACHABLE();
-}
-
-std::ostream& operator<<(std::ostream& out, const LightFrame& f) {
-  out << fmt::to_string(f);
-  return out;
 }
 
 LightFrame light_frame_from_string(const std::string& spec) {
