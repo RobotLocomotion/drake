@@ -50,7 +50,7 @@ use_repo(cc_configure, "local_config_cc")
 # For first-party Bazel builds (by Drake Developers), the pkgconfig flavor is
 # used by default but can be changed using the Bazel flags.
 
-bazel_dep(name = "eigen", version = "5.0.1", repo_name = "module_eigen")
+bazel_dep(name = "eigen", version = "5.0.1.bcr.1", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
