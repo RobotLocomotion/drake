@@ -244,7 +244,7 @@ single_version_override(
 
 bazel_dep(
     name = "ruff_prebuilt",
-    version = "0.14.10.1",
+    version = "0.15.0.1",
     dev_dependency = True,
     repo_name = "ruff",
 )
