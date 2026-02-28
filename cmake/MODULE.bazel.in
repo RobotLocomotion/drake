@@ -1,6 +1,6 @@
 module(name = "drake_cmake")
 
-bazel_dep(name = "apple_support", version = "2.2.0")
+bazel_dep(name = "apple_support", version = "2.3.0")
 bazel_dep(name = "rules_python", version = "1.8.3")
 
 bazel_dep(name = "drake")
