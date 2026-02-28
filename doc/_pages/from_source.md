@@ -32,6 +32,8 @@ officially supports when building from source:
      in the root CMakeLists.txt, and the version range should match that
      listed in tools/install/libdrake/drake-config.cmake.in (and all
      corresponding tests). -->
+<!-- When changing the Xcode version, update the list of blacklisted_includes
+     in tools/workspace/pkg_config.bzl with the appropriate include paths. -->
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
