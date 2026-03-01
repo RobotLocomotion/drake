@@ -16,23 +16,22 @@ namespace drake {
 namespace solvers {
 
 namespace {
-std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
-                          const std::string& name,
-                          const VectorX<symbolic::Variable>& vars) {
-  os << name;
+std::string DisplayCost(const Cost& cost, const std::string& name,
+                        const VectorX<symbolic::Variable>& vars) {
+  std::string result{name};
   // Append the expression.
   VectorX<symbolic::Expression> e;
   cost.Eval(vars, &e);
   DRAKE_DEMAND(e.size() == 1);
-  os << " " << e[0];
+  result.append(fmt::format(" {}", e[0]));
 
   // Append the description (when provided).
   const std::string& description = cost.get_description();
   if (!description.empty()) {
-    os << " described as '" << description << "'";
+    result.append(fmt::format(" described as '{}'", description));
   }
 
-  return os;
+  return result;
 }
 
 std::string ToLatexCost(const Cost& cost,
@@ -89,9 +88,9 @@ void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
   DoEvalGeneric(x, y);
 }
 
-std::ostream& LinearCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "LinearCost", vars);
+std::string LinearCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "LinearCost", vars);
 }
 
 std::string LinearCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
@@ -161,9 +160,9 @@ void QuadraticCost::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& QuadraticCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "QuadraticCost", vars);
+std::string QuadraticCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "QuadraticCost", vars);
 }
 
 std::string QuadraticCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
@@ -245,9 +244,9 @@ void L1NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
   (*y)(0) = (A_ * x + b_).cwiseAbs().sum();
 }
 
-std::ostream& L1NormCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "L1NormCost", vars);
+std::string L1NormCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "L1NormCost", vars);
 }
 
 std::string L1NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
@@ -316,9 +315,9 @@ void L2NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
   (*y)(0) = sqrt((A_.get_as_sparse() * x + b_).squaredNorm());
 }
 
-std::ostream& L2NormCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "L2NormCost", vars);
+std::string L2NormCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "L2NormCost", vars);
 }
 
 std::string L2NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
@@ -381,9 +380,9 @@ void LInfNormCost::DoEval(
   (*y)(0) = (A_ * x + b_).cwiseAbs().maxCoeff();
 }
 
-std::ostream& LInfNormCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "LInfNormCost", vars);
+std::string LInfNormCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "LInfNormCost", vars);
 }
 
 std::string LInfNormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
@@ -452,9 +451,9 @@ void PerspectiveQuadraticCost::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& PerspectiveQuadraticCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "PerspectiveQuadraticCost", vars);
+std::string PerspectiveQuadraticCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "PerspectiveQuadraticCost", vars);
 }
 
 std::string PerspectiveQuadraticCost::DoToLatex(
@@ -498,9 +497,9 @@ void ExpressionCost::DoEval(
   evaluator_->Eval(x, y);
 }
 
-std::ostream& ExpressionCost::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayCost(*this, os, "ExpressionCost", vars);
+std::string ExpressionCost::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, "ExpressionCost", vars);
 }
 
 std::string ExpressionCost::DoToLatex(const VectorX<symbolic::Variable>& vars,

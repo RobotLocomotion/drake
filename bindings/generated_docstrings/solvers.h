@@ -2064,16 +2064,37 @@ set of variables using the Binding<> class.)""";
         // Symbol: drake::solvers::EvaluatorBase::Display
         struct /* Display */ {
           // Source: drake/solvers/evaluator_base.h
-          const char* doc_2args =
+          const char* doc_deprecated_2args =
 R"""(Formats this evaluator into the given stream using ``vars`` for the
 bound decision variable names.
 
 The size of ``vars`` must match the ``num_vars()`` declared by this
 evaluator. (If ``num_vars()`` is ``Eigen∷Dynamic``, then ``vars`` may
-be any size.))""";
+be any size.) / (Deprecated.)
+
+Deprecated:
+    Use ``std∷string EvaluatorBase∷Display(const
+    VectorX<symbolic∷Variable>& vars) const`` instead. This will be
+    removed from Drake on or after 2026-07-01.)""";
           // Source: drake/solvers/evaluator_base.h
           const char* doc_1args =
+R"""(Returns a string representation of this evaluator using ``vars`` for
+the bound decision variable names.
+
+The size of ``vars`` must match the ``num_vars()`` declared by this
+evaluator. (If ``num_vars()`` is ``Eigen∷Dynamic``, then ``vars`` may
+be any size.))""";
+          // Source: drake/solvers/evaluator_base.h
+          const char* doc_deprecated_1args =
 R"""(Formats this evaluator into the given stream, without displaying the
+decision variables it is bound to. / (Deprecated.)
+
+Deprecated:
+    Use ``std∷string EvaluatorBase∷Display() const`` instead. This
+    will be removed from Drake on or after 2026-07-01.)""";
+          // Source: drake/solvers/evaluator_base.h
+          const char* doc_0args =
+R"""(Returns a string representation of this evaluator, excluding the
 decision variables it is bound to.)""";
         } Display;
         // Symbol: drake::solvers::EvaluatorBase::DoDisplay

@@ -43,28 +43,29 @@ symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
   }
 }
 
-std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
-                                const std::string& name,
-                                const VectorX<symbolic::Variable>& vars,
-                                bool equality) {
-  os << name;
+std::string DisplayConstraint(const Constraint& constraint,
+                              const std::string& name,
+                              const VectorX<symbolic::Variable>& vars,
+                              bool equality) {
+  std::string result{name};
   VectorX<symbolic::Expression> e(constraint.num_constraints());
   constraint.Eval(vars, &e);
   // Append the description (when provided).
   const std::string& description = constraint.get_description();
   if (!description.empty()) {
-    os << " described as '" << description << "'";
+    result.append(fmt::format(" described as '{}'", description));
   }
-  os << "\n";
+  result.append("\n");
   for (int i = 0; i < constraint.num_constraints(); ++i) {
     if (equality) {
-      os << e(i) << " == " << constraint.upper_bound()(i) << "\n";
+      result.append(
+          fmt::format("{} == {}\n", e(i), constraint.upper_bound()(i)));
     } else {
-      os << constraint.lower_bound()(i) << " <= " << e(i)
-         << " <= " << constraint.upper_bound()(i) << "\n";
+      result.append(fmt::format("{} <= {} <= {}\n", constraint.lower_bound()(i),
+                                e(i), constraint.upper_bound()(i)));
     }
   }
-  return os;
+  return result;
 }
 
 std::string ToLatexLowerBound(const Constraint& constraint, int precision) {
@@ -226,9 +227,9 @@ void QuadraticConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& QuadraticConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "QuadraticConstraint", vars, false);
+std::string QuadraticConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "QuadraticConstraint", vars, false);
 }
 
 std::string QuadraticConstraint::DoToLatex(
@@ -362,9 +363,9 @@ void LorentzConeConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& LorentzConeConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "LorentzConeConstraint", vars, false);
+std::string LorentzConeConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "LorentzConeConstraint", vars, false);
 }
 
 std::string LorentzConeConstraint::DoToLatex(
@@ -482,10 +483,9 @@ void RotatedLorentzConeConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& RotatedLorentzConeConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "RotatedLorentzConeConstraint", vars,
-                           false);
+std::string RotatedLorentzConeConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "RotatedLorentzConeConstraint", vars, false);
 }
 
 std::string RotatedLorentzConeConstraint::DoToLatex(
@@ -636,9 +636,9 @@ void LinearConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& LinearConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
+std::string LinearConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "LinearConstraint", vars, false);
 }
 
 std::string LinearConstraint::DoToLatex(const VectorX<symbolic::Variable>& vars,
@@ -655,9 +655,9 @@ std::string LinearConstraint::DoToLatex(const VectorX<symbolic::Variable>& vars,
                      ToLatexUpperBound(*this, precision));
 }
 
-std::ostream& LinearEqualityConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
+std::string LinearEqualityConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "LinearEqualityConstraint", vars, true);
 }
 
 namespace {
@@ -697,9 +697,9 @@ void BoundingBoxConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-std::ostream& BoundingBoxConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "BoundingBoxConstraint", vars, false);
+std::string BoundingBoxConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "BoundingBoxConstraint", vars, false);
 }
 
 std::string BoundingBoxConstraint::DoToLatex(
@@ -995,9 +995,9 @@ void ExpressionConstraint::DoEval(
   }
 }
 
-std::ostream& ExpressionConstraint::DoDisplay(
-    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  return DisplayConstraint(*this, os, "ExpressionConstraint", vars, false);
+std::string ExpressionConstraint::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, "ExpressionConstraint", vars, false);
 }
 
 std::string ExpressionConstraint::DoToLatex(

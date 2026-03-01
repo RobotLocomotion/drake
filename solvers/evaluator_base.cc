@@ -18,40 +18,54 @@ EvaluatorBase::~EvaluatorBase() = default;
 
 std::ostream& EvaluatorBase::Display(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return os << this->Display(vars);
+}
+
+std::string EvaluatorBase::Display(
+    const VectorX<symbolic::Variable>& vars) const {
   const int num_vars = this->num_vars();
   DRAKE_THROW_UNLESS(vars.rows() == num_vars || num_vars == Eigen::Dynamic);
-  return this->DoDisplay(os, vars);
+  return this->DoDisplay(vars);
 }
 
 std::ostream& EvaluatorBase::Display(std::ostream& os) const {
+  return os << this->Display();
+}
+
+std::string EvaluatorBase::Display() const {
   if (this->num_vars() == Eigen::Dynamic) {
     symbolic::Variable dynamic_var("dynamic_sized_variable");
-    return this->DoDisplay(os, Vector1<symbolic::Variable>(dynamic_var));
+    return this->DoDisplay(Vector1<symbolic::Variable>(dynamic_var));
   }
   return this->DoDisplay(
-      os, symbolic::MakeVectorContinuousVariable(this->num_vars(), "$"));
+      symbolic::MakeVectorContinuousVariable(this->num_vars(), "$"));
 }
 
 std::ostream& EvaluatorBase::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return os << this->DoDisplay(vars);
+}
+
+std::string EvaluatorBase::DoDisplay(
+    const VectorX<symbolic::Variable>& vars) const {
   // Display the evaluator's most derived type name.
-  os << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this));
+  std::string result{NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this))};
 
   // Append the description (when provided).
   const std::string& description = get_description();
   if (!description.empty()) {
-    os << " described as '" << description << "'";
+    result.append(fmt::format(" described as '{}'", description));
   }
 
   // Append the bound decision variables (when provided).
   const int vars_rows = vars.rows();
-  os << " with " << vars_rows << " decision variables";
+  result.append(fmt::format(" with {} decision variables", vars_rows));
   for (int i = 0; i < vars_rows; ++i) {
-    os << " " << vars(i).get_name();
+    result.append(fmt::format(" {}", vars(i).get_name()));
   }
-  os << "\n";
+  result.append("\n");
 
-  return os;
+  return result;
 }
 
 std::string EvaluatorBase::ToLatex(const VectorX<symbolic::Variable>& vars,
@@ -120,7 +134,7 @@ void EvaluatorBase::SetGradientSparsityPattern(
 }
 
 std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e) {
-  return e.Display(os);
+  return os << e.Display();
 }
 
 void PolynomialEvaluator::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -100,8 +100,7 @@ class LinearCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -239,8 +238,7 @@ class QuadraticCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -324,8 +322,7 @@ class L1NormCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -399,8 +396,7 @@ class L2NormCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -463,8 +459,7 @@ class LInfNormCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -533,8 +528,7 @@ class PerspectiveQuadraticCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -686,8 +680,7 @@ class ExpressionCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoDisplay(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
