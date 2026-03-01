@@ -1,11 +1,14 @@
 #include "drake/solvers/cost.h"
 
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
+
+// TODO(2026-07-01): Remove ostream header when `EvaluatorBase::operator<<` is
+// removed.
+#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -480,10 +483,17 @@ GTEST_TEST(TestL1NormCost, UpdateCoefficients) {
 
 GTEST_TEST(TestL1NormCost, Display) {
   L1NormCost cost(Matrix2d::Identity(), Vector2d::Ones());
+  EXPECT_EQ(cost.to_string(symbolic::MakeVectorContinuousVariable(2, "x")),
+            "L1NormCost (abs((1 + x(0))) + abs((1 + x(1))))");
+  // TODO(2026-07-01): delete `pragma` block when
+  // `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cost.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(fmt::format("{}", os.str()),
             "L1NormCost (abs((1 + x(0))) + abs((1 + x(1))))");
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestL2NormCost, Eval) {
@@ -568,10 +578,17 @@ GTEST_TEST(TestL2NormCost, UpdateCoefficients) {
 
 GTEST_TEST(TestL2NormCost, Display) {
   L2NormCost cost(Matrix2d::Identity(), Vector2d::Ones());
+  EXPECT_EQ(cost.to_string(symbolic::MakeVectorContinuousVariable(2, "x")),
+            "L2NormCost sqrt((pow((1 + x(0)), 2) + pow((1 + x(1)), 2)))");
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cost.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(fmt::format("{}", os.str()),
             "L2NormCost sqrt((pow((1 + x(0)), 2) + pow((1 + x(1)), 2)))");
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestLInfNormCost, Eval) {
@@ -647,10 +664,17 @@ GTEST_TEST(TestLInfNormCost, UpdateCoefficients) {
 
 GTEST_TEST(TestLInfNormCost, Display) {
   LInfNormCost cost(Matrix2d::Identity(), Vector2d::Ones());
+  EXPECT_EQ(cost.to_string(symbolic::MakeVectorContinuousVariable(2, "x")),
+            "LInfNormCost max(abs((1 + x(0))), abs((1 + x(1))))");
+  // TODO(2026-07-01): delete `pragma` block when
+  // `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cost.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(fmt::format("{}", os.str()),
             "LInfNormCost max(abs((1 + x(0))), abs((1 + x(1))))");
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestPerspectiveQuadraticCost, Eval) {
@@ -724,10 +748,17 @@ GTEST_TEST(TestPerspectiveQuadraticCost, UpdateCoefficients) {
 
 GTEST_TEST(TestPerspectiveQuadraticCost, Display) {
   PerspectiveQuadraticCost cost(Matrix2d::Identity(), Vector2d::Ones());
+  EXPECT_EQ(cost.to_string(symbolic::MakeVectorContinuousVariable(2, "x")),
+            "PerspectiveQuadraticCost (pow((1 + x(1)), 2) / (1 + x(0)))");
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cost.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(fmt::format("{}", os.str()),
             "PerspectiveQuadraticCost (pow((1 + x(1)), 2) / (1 + x(0)))");
+#pragma GCC diagnostic pop
 }
 
 class Evaluator2In1Out : public EvaluatorBase {
@@ -853,9 +884,15 @@ GTEST_TEST(ExpressionCost, Basic) {
   EXPECT_EQ(y_e.size(), 1);
   EXPECT_TRUE(y_e[0].EqualTo(e_expected));
 
+  EXPECT_EQ(cost.to_string(x_e), "ExpressionCost (x * sin(y))");
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cost.Display(os, x_e);
   EXPECT_EQ(os.str(), "ExpressionCost (x * sin(y))");
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(ToLatex, GenericCost) {

@@ -301,8 +301,7 @@ class QuadraticConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -409,8 +408,7 @@ class LorentzConeConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -490,8 +488,7 @@ class RotatedLorentzConeConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -706,8 +703,11 @@ class LinearConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  DRAKE_DEPRECATED("2026-07-01", "Use `LinearConstraint::DoToString` instead.")
+  std::ostream& DoDisplay(
+      std::ostream& os, const VectorX<symbolic::Variable>& vars) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -801,8 +801,7 @@ class LinearEqualityConstraint : public LinearConstraint {
         "This method should not be called form `LinearEqualityConstraint`");
   }
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 };
 
 /**
@@ -839,8 +838,7 @@ class BoundingBoxConstraint : public LinearConstraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -1148,8 +1146,12 @@ class ExpressionConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  DRAKE_DEPRECATED("2026-07-01",
+                   "Use `ExpressionConstraint::DoToString` instead.")
+  std::ostream& DoDisplay(
+      std::ostream& os, const VectorX<symbolic::Variable>& vars) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 

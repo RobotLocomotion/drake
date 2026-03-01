@@ -2064,28 +2064,41 @@ set of variables using the Binding<> class.)""";
         // Symbol: drake::solvers::EvaluatorBase::Display
         struct /* Display */ {
           // Source: drake/solvers/evaluator_base.h
-          const char* doc_2args =
+          const char* doc_deprecated_2args =
 R"""(Formats this evaluator into the given stream using ``vars`` for the
 bound decision variable names.
 
 The size of ``vars`` must match the ``num_vars()`` declared by this
 evaluator. (If ``num_vars()`` is ``Eigen∷Dynamic``, then ``vars`` may
-be any size.))""";
+be any size.) / (Deprecated.)
+
+Deprecated:
+    Use ``EvaluatorBase∷to_string(const VectorX<symbolic∷Variable>&)``
+    instead. This will be removed from Drake on or after 2026-07-01.)""";
           // Source: drake/solvers/evaluator_base.h
-          const char* doc_1args =
-R"""(Formats this evaluator into the given stream, without displaying the
-decision variables it is bound to.)""";
+          const char* doc_deprecated_1args =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``EvaluatorBase∷to_string()`` or fmt functions instead (e.g.,
+    fmt∷format(), fmt∷to_string(), fmt∷print()). Refer to GitHub issue
+    #17742 for more information. This will be removed from Drake on or
+    after 2026-07-01.)""";
         } Display;
         // Symbol: drake::solvers::EvaluatorBase::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/evaluator_base.h
-          const char* doc =
+          const char* doc_deprecated =
 R"""(NVI implementation of Display. The default implementation will report
 the NiceTypeName, get_description, and list the bound variables.
 Subclasses may override to customize the message.
 
 Precondition:
-    vars size is consistent with num_vars".)""";
+    vars size is consistent with num_vars". / (Deprecated.)
+
+Deprecated:
+    Use ``EvaluatorBase∷DoToString`` instead. This will be removed
+    from Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::EvaluatorBase::DoEval
         struct /* DoEval */ {
@@ -2110,6 +2123,17 @@ Postcondition:
           // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::EvaluatorBase::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/evaluator_base.h
+          const char* doc =
+R"""(NVI implementation of to_string. The default implementation will
+return a string containing the NiceTypeName, get_description, and list
+the bound variables. Subclasses may override to customize the string.
+
+Precondition:
+    vars size is consistent with num_vars".)""";
+        } DoToString;
         // Symbol: drake::solvers::EvaluatorBase::Eval
         struct /* Eval */ {
           // Source: drake/solvers/evaluator_base.h
@@ -2213,6 +2237,21 @@ R"""(Set a human-friendly description for the evaluator.)""";
           // Source: drake/solvers/evaluator_base.h
           const char* doc = R"""()""";
         } set_num_outputs;
+        // Symbol: drake::solvers::EvaluatorBase::to_string
+        struct /* to_string */ {
+          // Source: drake/solvers/evaluator_base.h
+          const char* doc_1args =
+R"""(Returns a string representation of this evaluator using ``vars`` for
+the bound decision variable names.
+
+The size of ``vars`` must match the ``num_vars()`` declared by this
+evaluator. (If ``num_vars()`` is ``Eigen∷Dynamic``, then ``vars`` may
+be any size.))""";
+          // Source: drake/solvers/evaluator_base.h
+          const char* doc_0args =
+R"""(Returns a string representation of this evaluator, excluding the
+decision variables it is bound to.)""";
+        } to_string;
       } EvaluatorBase;
       // Symbol: drake::solvers::EvaluatorConstraint
       struct /* EvaluatorConstraint */ {
@@ -2352,7 +2391,12 @@ method.)""";
         // Symbol: drake::solvers::ExpressionConstraint::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/constraint.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``ExpressionConstraint∷DoToString`` instead. This will be
+    removed from Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::ExpressionConstraint::DoEval
         struct /* DoEval */ {
@@ -2364,6 +2408,11 @@ method.)""";
           // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::ExpressionConstraint::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/constraint.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::ExpressionConstraint::ExpressionConstraint
         struct /* ctor */ {
           // Source: drake/solvers/constraint.h
@@ -2400,7 +2449,12 @@ method.)""";
         // Symbol: drake::solvers::ExpressionCost::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/cost.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``ExpressionCost∷DoToString`` instead. This will be removed
+    from Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::ExpressionCost::DoEval
         struct /* DoEval */ {
@@ -2412,6 +2466,11 @@ method.)""";
           // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::ExpressionCost::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/cost.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::ExpressionCost::ExpressionCost
         struct /* ctor */ {
           // Source: drake/solvers/cost.h
@@ -2967,7 +3026,12 @@ non-differentiable when any element of Ax + b equals zero.)""";
         // Symbol: drake::solvers::L1NormCost::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/cost.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``L1NormCost∷DoToString`` instead. This will be removed from
+    Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::L1NormCost::DoEval
         struct /* DoEval */ {
@@ -2979,6 +3043,11 @@ non-differentiable when any element of Ax + b equals zero.)""";
           // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::L1NormCost::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/cost.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::L1NormCost::L1NormCost
         struct /* ctor */ {
           // Source: drake/solvers/cost.h
@@ -3039,7 +3108,12 @@ R"""(Implements a cost of the form ‖Ax + b‖₂.)""";
         // Symbol: drake::solvers::L2NormCost::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/cost.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``L2NormCost∷DoToString`` instead. This will be removed from
+    Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::L2NormCost::DoEval
         struct /* DoEval */ {
@@ -3051,6 +3125,11 @@ R"""(Implements a cost of the form ‖Ax + b‖₂.)""";
           // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::L2NormCost::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/cost.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::L2NormCost::GetDenseA
         struct /* GetDenseA */ {
           // Source: drake/solvers/cost.h
@@ -3115,7 +3194,12 @@ non-differentiable when any two or more elements of Ax + b are equal.)""";
         // Symbol: drake::solvers::LInfNormCost::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/cost.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``LInfNormCost∷DoToString`` instead. This will be removed from
+    Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::LInfNormCost::DoEval
         struct /* DoEval */ {
@@ -3127,6 +3211,11 @@ non-differentiable when any two or more elements of Ax + b are equal.)""";
           // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::LInfNormCost::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/cost.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::LInfNormCost::LInfNormCost
         struct /* ctor */ {
           // Source: drake/solvers/cost.h
@@ -3261,7 +3350,12 @@ R"""(Implements a constraint of the form :math:`lb <= Ax <= ub`)""";
         // Symbol: drake::solvers::LinearConstraint::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/constraint.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``LinearConstraint∷DoToString`` instead. This will be removed
+    from Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::LinearConstraint::DoEval
         struct /* DoEval */ {
@@ -3273,6 +3367,11 @@ R"""(Implements a constraint of the form :math:`lb <= Ax <= ub`)""";
           // Source: drake/solvers/constraint.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::LinearConstraint::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/constraint.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::LinearConstraint::GetDenseA
         struct /* GetDenseA */ {
           // Source: drake/solvers/constraint.h
@@ -3364,7 +3463,12 @@ R"""(Implements a cost of the form
         // Symbol: drake::solvers::LinearCost::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/cost.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``LinearCost∷DoToString`` instead. This will be removed from
+    Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::LinearCost::DoEval
         struct /* DoEval */ {
@@ -3376,6 +3480,11 @@ R"""(Implements a cost of the form
           // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::LinearCost::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/cost.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::LinearCost::GetSparseMatrix
         struct /* GetSparseMatrix */ {
           // Source: drake/solvers/cost.h
@@ -8879,7 +8988,12 @@ linear".)""";
         // Symbol: drake::solvers::PerspectiveQuadraticCost::DoDisplay
         struct /* DoDisplay */ {
           // Source: drake/solvers/cost.h
-          const char* doc = R"""()""";
+          const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use ``PerspectiveQuadraticCost∷DoToString`` instead. This will be
+    removed from Drake on or after 2026-07-01.)""";
         } DoDisplay;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::DoEval
         struct /* DoEval */ {
@@ -8891,6 +9005,11 @@ linear".)""";
           // Source: drake/solvers/cost.h
           const char* doc = R"""()""";
         } DoToLatex;
+        // Symbol: drake::solvers::PerspectiveQuadraticCost::DoToString
+        struct /* DoToString */ {
+          // Source: drake/solvers/cost.h
+          const char* doc = R"""()""";
+        } DoToString;
         // Symbol: drake::solvers::PerspectiveQuadraticCost::PerspectiveQuadraticCost
         struct /* ctor */ {
           // Source: drake/solvers/cost.h

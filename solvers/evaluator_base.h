@@ -11,8 +11,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/math/autodiff.h"
@@ -94,14 +95,37 @@ class EvaluatorBase {
    * The size of `vars` must match the `num_vars()` declared by this evaluator.
    * (If `num_vars()` is `Eigen::Dynamic`, then `vars` may be any size.)
    */
+  DRAKE_DEPRECATED("2026-07-01",
+                   "Use `EvaluatorBase::to_string(const "
+                   "VectorX<symbolic::Variable>&)` instead.")
   std::ostream& Display(std::ostream& os,
                         const VectorX<symbolic::Variable>& vars) const;
+
+  /**
+   * Returns a string representation of this evaluator using `vars` for the
+   * bound decision variable names.
+   *
+   * The size of `vars` must match the `num_vars()` declared by this evaluator.
+   * (If `num_vars()` is `Eigen::Dynamic`, then `vars` may be any size.)
+   */
+  std::string to_string(const VectorX<symbolic::Variable>& vars) const;
 
   /**
    * Formats this evaluator into the given stream, without displaying the
    * decision variables it is bound to.
    */
+  DRAKE_DEPRECATED(
+      "2026-07-01",
+      "Use `EvaluatorBase::to_string()` or fmt functions instead (e.g., "
+      "fmt::format(), fmt::to_string(), "
+      "fmt::print()). Refer to GitHub issue #17742 for more information.")
   std::ostream& Display(std::ostream& os) const;
+
+  /**
+   * Returns a string representation of this evaluator, excluding the
+   * decision variables it is bound to.
+   */
+  std::string to_string() const;
 
   /** Returns a LaTeX string describing this evaluator. Does not include any
    * characters to enter/exit math mode; you might want, e.g. "$$" +
@@ -200,8 +224,17 @@ class EvaluatorBase {
    * Subclasses may override to customize the message.
    * @pre vars size is consistent with num_vars".
    */
+  DRAKE_DEPRECATED("2026-07-01", "Use `EvaluatorBase::DoToString` instead.")
   virtual std::ostream& DoDisplay(
       std::ostream& os, const VectorX<symbolic::Variable>& vars) const;
+
+  /**
+   * NVI implementation of to_string. The default implementation will return a
+   * string containing the NiceTypeName, get_description, and list the bound
+   * variables. Subclasses may override to customize the string.
+   * @pre vars size is consistent with num_vars".
+   */
+  virtual std::string DoToString(const VectorX<symbolic::Variable>& vars) const;
 
   virtual std::string DoToLatex(const VectorX<symbolic::Variable>& vars,
                                 int precision) const;
@@ -240,6 +273,10 @@ class EvaluatorBase {
 /**
  * Print out the evaluator.
  */
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e);
 
 /**
@@ -412,11 +449,14 @@ class VisualizationCallback : public EvaluatorBase {
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+// Specialize fmt::formatter for all derived types
 namespace fmt {
 template <typename T>
-struct formatter<
-    T,
-    std::enable_if_t<std::is_base_of_v<drake::solvers::EvaluatorBase, T>, char>>
-    : drake::ostream_formatter {};
+  requires std::derived_from<T, drake::solvers::EvaluatorBase>
+struct formatter<T> : formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const T& x, FormatContext& ctx) const {
+    return formatter<std::string>::format(x.to_string(), ctx);
+  }
+};
 }  // namespace fmt

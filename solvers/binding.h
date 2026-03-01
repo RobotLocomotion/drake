@@ -2,13 +2,15 @@
 
 #include <cstdint>
 #include <memory>
-#include <ostream>
-#include <sstream>
 #include <string>
 #include <utility>
 
+// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
+#include <ostream>
+
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
@@ -82,9 +84,7 @@ class Binding {
    * Returns string representation of Binding.
    */
   [[nodiscard]] std::string to_string() const {
-    std::ostringstream os;
-    os << *this;
-    return os.str();
+    return evaluator()->to_string(variables());
   }
 
   /** Returns a LaTeX description of this Binding. Does not include any
@@ -144,8 +144,13 @@ class Binding {
  * Print out the Binding.
  */
 template <typename C>
-std::ostream& operator<<(std::ostream& os, const Binding<C>& binding) {
-  return binding.evaluator()->Display(os, binding.variables());
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os, const Binding<C>& binding) {
+  return os << binding.to_string();
 }
 
 namespace internal {
@@ -179,8 +184,4 @@ template <typename C>
 struct hash<drake::solvers::Binding<C>> : public drake::DefaultHash {};
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename C>
-struct formatter<drake::solvers::Binding<C>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename C, drake::solvers, Binding<C>, x, x.to_string())

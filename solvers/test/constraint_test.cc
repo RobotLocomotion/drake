@@ -1,6 +1,7 @@
 #include "drake/solvers/constraint.h"
 
 #include <limits>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -299,12 +300,22 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
             QuadraticConstraint::HessianType::kPositiveSemidefinite);
   // The constraint is non-convex due to the lower bound not being -inf.
   EXPECT_FALSE(constraint1.is_convex());
+  EXPECT_EQ(
+      constraint1.to_string(symbolic::MakeVectorContinuousVariable(2, "x")),
+      "QuadraticConstraint\n"
+      "0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + 0.5 * pow(x(1), 2)) "
+      "<= 1\n");
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   constraint1.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(os.str(),
             "QuadraticConstraint\n"
             "0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + 0.5 * pow(x(1), 2)) "
             "<= 1\n");
+#pragma GCC diagnostic pop
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
@@ -453,13 +464,23 @@ void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   Vector1d y_expected(z(0) - z.tail(z.rows() - 1).norm());
   EXPECT_TRUE(CompareMatrices(y1, y_expected, 1e-12));
   EXPECT_TRUE(CompareMatrices(y2, y_expected, 1e-12));
+  std::string result{cnstr1.to_string(
+      symbolic::MakeVectorContinuousVariable(cnstr1.num_vars(), "x"))};
+  EXPECT_THAT(result, HasSubstr("LorentzConeConstraint\n"));
+  EXPECT_THAT(result, HasSubstr("pow"));
+  EXPECT_THAT(result, HasSubstr("sqrt"));
 
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cnstr1.Display(
       os, symbolic::MakeVectorContinuousVariable(cnstr1.num_vars(), "x"));
   EXPECT_THAT(os.str(), HasSubstr("LorentzConeConstraint\n"));
   EXPECT_THAT(os.str(), HasSubstr("pow"));
   EXPECT_THAT(os.str(), HasSubstr("sqrt"));
+#pragma GCC diagnostic pop
 
   Eigen::MatrixXd dx_test(x_test.rows(), 2);
   dx_test.col(0) = Eigen::VectorXd::LinSpaced(x_test.rows(), 0, 1);
@@ -504,13 +525,22 @@ void TestLorentzConeEvalNonconvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   bool is_in_cone_expected = (y(0) >= 0) && (y(1) >= 0);
   EXPECT_EQ(is_in_cone, is_in_cone_expected);
   EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
-
+  std::string result{cnstr.to_string(
+      symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"))};
+  EXPECT_THAT(result, HasSubstr("LorentzConeConstraint\n"));
+  EXPECT_THAT(result, HasSubstr("pow"));
+  EXPECT_THAT(result, Not(HasSubstr("sqrt")));
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cnstr.Display(os,
                 symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
   EXPECT_THAT(os.str(), HasSubstr("LorentzConeConstraint\n"));
   EXPECT_THAT(os.str(), HasSubstr("pow"));
   EXPECT_THAT(os.str(), Not(HasSubstr("sqrt")));
+#pragma GCC diagnostic pop
 
   auto tx = drake::math::InitializeAutoDiff(x_test);
   AutoDiffVecXd x_taylor = tx;
@@ -557,12 +587,21 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 
   EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_taylor)));
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
+  std::string result{cnstr.to_string(
+      symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"))};
+  EXPECT_THAT(result, HasSubstr("RotatedLorentzConeConstraint\n"));
+  EXPECT_THAT(result, HasSubstr("pow"));
 
+// TODO(2026-07-01): delete `pragma` block when
+// `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   cnstr.Display(os,
                 symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
   EXPECT_THAT(os.str(), HasSubstr("RotatedLorentzConeConstraint\n"));
   EXPECT_THAT(os.str(), HasSubstr("pow"));
+#pragma GCC diagnostic pop
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{
@@ -917,13 +956,22 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
   ASSERT_EQ(expressions.size(), 2);
   EXPECT_TRUE(e[0].EqualTo(expressions[0]));
   EXPECT_TRUE(e[1].EqualTo(expressions[1]));
+  EXPECT_EQ(constraint.to_string(vars),
+            "ExpressionConstraint\n"
+            "0 <= (1 + pow(x0, 2)) <= 2\n"
+            "0 <= (x2 + pow(x1, 2)) <= 2\n");
 
+  // TODO(2026-07-01): delete `pragma` block when
+  // `EvaluatorBase::Display(ostream&, const VectorX&)` is removed.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::ostringstream os;
   constraint.Display(os, vars);
   EXPECT_EQ(os.str(),
             "ExpressionConstraint\n"
             "0 <= (1 + pow(x0, 2)) <= 2\n"
             "0 <= (x2 + pow(x1, 2)) <= 2\n");
+#pragma GCC diagnostic pop
 
   const Vector3d x{.2, .4, .6};
   VectorXd y;

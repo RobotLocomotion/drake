@@ -100,8 +100,11 @@ class LinearCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  DRAKE_DEPRECATED("2026-07-01", "Use `LinearCost::DoToString` instead.")
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -239,8 +242,7 @@ class QuadraticCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  std::ostream& DoDisplay(std::ostream&,
-                          const VectorX<symbolic::Variable>&) const override;
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -324,8 +326,11 @@ class L1NormCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  DRAKE_DEPRECATED("2026-07-01", "Use `L1NormCost::DoToString` instead.")
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -399,8 +404,11 @@ class L2NormCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  DRAKE_DEPRECATED("2026-07-01", "Use `L2NormCost::DoToString` instead.")
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -463,8 +471,11 @@ class LInfNormCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  DRAKE_DEPRECATED("2026-07-01", "Use `LInfNormCost::DoToString` instead.")
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -533,8 +544,12 @@ class PerspectiveQuadraticCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  DRAKE_DEPRECATED("2026-07-01",
+                   "Use `PerspectiveQuadraticCost::DoToString` instead.")
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
@@ -686,8 +701,11 @@ class ExpressionCost : public Cost {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  DRAKE_DEPRECATED("2026-07-01", "Use `ExpressionCost::DoToString` instead.")
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToString(const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
