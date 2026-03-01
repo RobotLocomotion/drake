@@ -2362,10 +2362,10 @@ std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
   }
 
   for (const auto& b : prog.GetAllCosts()) {
-    os << b << "\n";
+    os << fmt::to_string(b) << "\n";
   }
   for (const auto& b : prog.GetAllConstraints()) {
-    os << b;
+    os << fmt::to_string(b);
   }
   return os;
 }

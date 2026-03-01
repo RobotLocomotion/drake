@@ -409,6 +409,12 @@ GTEST_TEST(testCost, testFunctionCost) {
   VerifyFunctionCost(make_unique<GenericTrivialCost2>(), x);
 }
 
+GTEST_TEST(testCost, ToStringFmtFormatter) {
+  test::GenericTrivialCost1 cost;
+  EXPECT_EQ(fmt::to_string(cost),
+            "GenericTrivialCost1 with 3 decision variables $(0) $(1) $(2)\n");
+}
+
 GTEST_TEST(TestL1NormCost, Eval) {
   Matrix<double, 2, 4> A;
   // clang-format off
