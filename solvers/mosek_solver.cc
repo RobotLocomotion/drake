@@ -11,6 +11,7 @@
 #include <Eigen/SparseCore>
 #include <mosek.h>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"

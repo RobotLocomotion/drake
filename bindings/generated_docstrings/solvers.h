@@ -10922,9 +10922,12 @@ it).)""";
       // Symbol: drake::solvers::to_string
       struct /* to_string */ {
         // Source: drake/solvers/common_solver_option.h
-        const char* doc =
+        const char* doc_1args_CommonSolverOption =
 R"""(Returns the short, unadorned name of the option, e.g.,
 ``kPrintFileName``.)""";
+        // Source: drake/solvers/evaluator_base.h
+        const char* doc_1args_e =
+R"""(Returns the string representation of the evaluator.)""";
       } to_string;
     } solvers;
   } drake;
