@@ -43,19 +43,6 @@ logging::logger* log() {
   return g_logger.access().get();
 }
 
-// Move into text_logging_spdlog.cc upon 2026-03-01 deprecation removal.
-logging::sink* logging::get_dist_sink() {
-  // Extract the dist_sink_mt from Drake's logger instance.
-  auto* sink = log()->sinks().empty() ? nullptr : log()->sinks().front().get();
-  auto* result = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink);
-  if (result == nullptr) {
-    throw std::logic_error(
-        "drake::logging::get_sink(): error: the spdlog sink configuration has"
-        "unexpectedly changed.");
-  }
-  return result;
-}
-
 std::string logging::set_log_level(const std::string& level) {
   spdlog::level::level_enum prev_value = drake::log()->level();
   spdlog::level::level_enum value{};
@@ -126,19 +113,10 @@ const char* const logging::kSetLogPatternHelpMessage =
 
 logging::logger::logger() {}
 
-logging::sink::sink() {}
-
 logging::logger* log() {
   // A do-nothing logger instance.
   static logging::logger g_logger;
   return &g_logger;
-}
-
-// Delete upon 2026-03-01 deprecation removal.
-logging::sink* logging::get_dist_sink() {
-  // An empty sink instance.
-  static logging::sink g_sink;
-  return &g_sink;
 }
 
 std::string logging::set_log_level(const std::string&) {
