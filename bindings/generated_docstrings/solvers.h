@@ -8486,31 +8486,6 @@ R"""(Resets the number of pivoting operations made by the last LCP solver
 to zero.)""";
         } reset_num_pivots;
       } MobyLcpSolver;
-      // Symbol: drake::solvers::MobyLcpSolverId
-      struct /* MobyLcpSolverId */ {
-        // Source: drake/solvers/moby_lcp_solver.h
-        const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use MobyLcpSolver∷id() directly. This will be removed from Drake
-    on or after 2026-03-01.)""";
-        // Symbol: drake::solvers::MobyLcpSolverId::MobyLcpSolverId
-        struct /* ctor */ {
-          // Source: drake/solvers/moby_lcp_solver.h
-          const char* doc = R"""()""";
-        } ctor;
-        // Symbol: drake::solvers::MobyLcpSolverId::id
-        struct /* id */ {
-          // Source: drake/solvers/moby_lcp_solver.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use MobyLcpSolver∷id() directly. This will be removed from Drake
-    on or after 2026-03-01.)""";
-        } id;
-      } MobyLcpSolverId;
       // Symbol: drake::solvers::MosekSolver
       struct /* MosekSolver */ {
         // Source: drake/solvers/mosek_solver.h

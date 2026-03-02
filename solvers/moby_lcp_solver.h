@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_base.h"
 
@@ -282,22 +281,6 @@ class MobyLcpSolver final : public SolverBase {
   // Vectors which correspond to indices into other data.
   mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
 };
-
-class DRAKE_DEPRECATED("2026-03-01", "Use MobyLcpSolver::id() directly.")
-    MobyLcpSolverId {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolverId);
-  MobyLcpSolverId() = delete;
-
-  DRAKE_DEPRECATED("2026-03-01", "Use MobyLcpSolver::id() directly.")
-  static SolverId id() { return MobyLcpSolver::id(); }
-};
-
-/// Deprecated template class; just an alias for MobyLcpSolver.
-/// @tparam T must be `double`
-template <class T>
-using MobyLCPSolver DRAKE_DEPRECATED(
-    "2026-03-01", "Use MobyLcpSolver directly.") = MobyLcpSolver;
 
 }  // namespace solvers
 }  // namespace drake
