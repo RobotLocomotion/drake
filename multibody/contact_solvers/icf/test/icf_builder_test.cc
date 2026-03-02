@@ -308,7 +308,7 @@ GTEST_TEST(IcfBuilder, TendonConstraintUnsupported) {
                               ".*not.*support.*1 tendon constraint\\(s\\).*");
 }
 
-GTEST_TEST(IcfBuilder, WeldConstraintUnsupported) {
+GTEST_TEST(IcfBuilder, WeldConstraintSupported) {
   systems::DiagramBuilder<double> diagram_builder;
   multibody::MultibodyPlantConfig plant_config{.time_step = 0.0};
   MultibodyPlant<double>& plant =
@@ -320,8 +320,9 @@ GTEST_TEST(IcfBuilder, WeldConstraintUnsupported) {
                           plant.get_body(BodyIndex(1)), RigidTransformd());
   plant.Finalize();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(IcfBuilder<double>(&plant),
-                              ".*not.*support.*1 weld constraint\\(s\\).*");
+  // Weld constraints are now supported.
+  IcfBuilder<double> builder(&plant);
+  unused(builder);
 }
 
 GTEST_TEST(IcfBuilder, DeformableUnsupported) {
