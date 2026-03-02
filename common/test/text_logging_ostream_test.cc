@@ -2,11 +2,8 @@
 #include "drake/common/text_logging.h"
 /* clang-format on */
 
-#include <memory>
 #include <ostream>
-#include <sstream>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 // The BUILD.bazel rules must supply this flag.  This test code is compiled and
@@ -27,13 +24,6 @@
   #endif
 #endif
 // clang-format on
-
-#ifdef HAVE_SPDLOG
-#include <spdlog/sinks/dist_sink.h>
-#include <spdlog/sinks/ostream_sink.h>
-
-#include "drake/common/text_logging_spdlog.h"
-#endif  // HAVE_SPDLOG
 
 #include "drake/common/fmt_ostream.h"
 
@@ -67,36 +57,6 @@ GTEST_TEST(TextLoggingTest, SmokeTestStreamable) {
                      fmt_streamed(obj));
   DRAKE_LOGGER_DEBUG("DRAKE_LOGGER_DEBUG macro test: {}, {}", "OK",
                      fmt_streamed(obj));
-}
-
-// We must run this test last because it changes the default configuration.
-GTEST_TEST(TextLoggingTest, ZZZ_ChangeDefaultSink) {
-  // The getter should never return nullptr, even with spdlog disabled.
-#if TEXT_LOGGING_TEST_SPDLOG
-  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
-#else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
-#pragma GCC diagnostic pop
-#endif
-  ASSERT_NE(sink_base, nullptr);
-
-// The remainder of the test case only makes sense when spdlog is enabled.
-#if TEXT_LOGGING_TEST_SPDLOG
-  // Our API promises that the result always has this subtype.
-  auto* const sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
-  ASSERT_NE(sink, nullptr);
-
-  // Redirect all logs to a memory stream.
-  std::ostringstream messages;
-  auto custom_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
-      messages, true /* flush */);
-  sink->set_sinks({custom_sink});
-  drake::log()->info("This is some good info!");
-  EXPECT_THAT(messages.str(),
-              testing::EndsWith("[console] [info] This is some good info!\n"));
-#endif
 }
 
 }  // namespace

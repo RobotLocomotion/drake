@@ -112,8 +112,6 @@ drake_cc_library(
         "eigen_types.h",
         "never_destroyed.h",
         "text_logging.h",
-        # Remove with deprecation on 2026-03-01.
-        "text_logging_spdlog.h",
         # Remove with deprecation on 2026-09-01.
         "ssize.h",
     ],
@@ -127,11 +125,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "text_logging_spdlog",
+    srcs = ["text_logging_spdlog.cc"],
     hdrs = ["text_logging_spdlog.h"],
-    tags = [
-        # Don't lint us twice. (Remove with deprecation on 2026-03-01.)
-        "nolint",
-    ],
     deps = [
         ":essential",
     ],
@@ -1283,9 +1278,6 @@ drake_cc_googletest(
         "test/text_logging_test.cc",
         "text_logging.cc",
         "text_logging.h",
-        # Remove both of these with deprecation on 2026-03-01.
-        "drake_deprecated.h",
-        "text_logging_spdlog.h",
     ],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
@@ -1306,9 +1298,6 @@ drake_cc_googletest(
         "test/text_logging_ostream_test.cc",
         "text_logging.cc",
         "text_logging.h",
-        # Remove both of these with deprecation on 2026-03-01.
-        "drake_deprecated.h",
-        "text_logging_spdlog.h",
     ],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
@@ -1316,6 +1305,13 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "text_logging_spdlog_test",
+    deps = [
+        ":text_logging_spdlog",
     ],
 )
 

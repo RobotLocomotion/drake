@@ -3165,11 +3165,9 @@ For example:
       struct /* get_dist_sink */ {
         // Source: drake/common/text_logging_spdlog.h
         const char* doc =
-R"""((Advanced) Retrieves the default sink for all Drake logs. When spdlog
-is enabled, the return value can be cast to spdlog∷sinks∷dist_sink_mt
-and thus allows consumers of Drake to redirect Drake's text logs to
-locations other than the default of stderr. When spdlog is disabled,
-the return value is an empty class.)""";
+R"""((Advanced) Retrieves the default sink for all Drake logs. This allows
+consumers of Drake to redirect Drake's text logs to locations other
+than the default of stderr.)""";
       } get_dist_sink;
       // Symbol: drake::logging::logger
       struct /* logger */ {
@@ -3203,6 +3201,16 @@ Parameter ``pattern``:
     Formatting for message. For more information, see:
     https://github.com/gabime/spdlog/wiki/3.-Custom-formatting)""";
       } set_log_pattern;
+      // Symbol: drake::logging::sink
+      struct /* sink */ {
+        // Source: drake/common/text_logging_spdlog.h
+        const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use spdlog∷sinks∷sink instead. This will be removed from Drake on
+    or after 2026-06-01.)""";
+      } sink;
     } logging;
     // Symbol: drake::never_destroyed
     struct /* never_destroyed */ {

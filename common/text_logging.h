@@ -206,8 +206,3 @@ extern const char* const kSetLogPatternHelpMessage;
 
 }  // namespace logging
 }  // namespace drake
-
-// Providing the `get_dist_sink()` API via "drake/common/text_logging.h" is
-// deprecated and will be removed from Drake on or after 2026-03-01. To access
-// the sink, instead `#include "drake/common/text_logging_spdlog.h"` directly.
-#include "drake/common/text_logging_spdlog.h"
