@@ -362,19 +362,6 @@ TEST_P(ActuatedModelsTest, GetSetPdGains) {
   if (param_.use_joint_locking) {
     return;
   }
-  // PD gains are not supported for a continuous-time plant.
-  if (param_.time_step == 0.0) {
-    SetUpModel(/* finalize = */ false);
-    plant_->get_mutable_joint_actuator(JointActuatorIndex{0})
-        .set_controller_gains({.p = 1.0});
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->Finalize(),
-        "Continuous model with PD controlled joint actuators. This feature is "
-        "only supported for discrete models. Refer to MultibodyPlant's "
-        "documentation for further details.");
-    return;
-  }
-  DRAKE_DEMAND(param_.time_step > 0.0);
 
   // For this test, we need to start from a clean slate (no gains).
   if (param_.use_pd_control) {
