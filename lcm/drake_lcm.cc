@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include <glib.h>
 #include <lcm/lcm.h>
 
 #include "drake/common/drake_assert.h"
@@ -135,11 +134,21 @@ namespace {
 
 // Given a literal string, escape it to be safe to use in an LCM channel regex.
 // For example ".foo" should be escaped to "\.foo" so that it only matches the
-// exact literal string, not "xfoo".
+// exact literal string, not "xfoo". LCM uses the PCRE regex syntax.
 std::string ConvertLiteralStringToLcmRegex(const std::string& literal) {
-  char* const result_cstr = g_regex_escape_string(literal.c_str(), -1);
-  const std::string result{result_cstr};
-  g_free(result_cstr);
+  std::string result;
+  for (const char ch : literal) {
+    // Any non-alpha-numeric character may be escaped to mean its
+    // literal value by prefixing a backslash before the character:
+    // https://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions#Consistent_escaping_rules
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+        (ch >= '0' && ch <= '9')) {
+      result.push_back(ch);
+    } else {
+      result.push_back('\\');
+      result.push_back(ch);
+    }
+  }
   return result;
 }
 
