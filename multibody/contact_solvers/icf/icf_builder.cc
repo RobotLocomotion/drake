@@ -8,6 +8,7 @@
 
 #include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/multibody_plant_icf_attorney.h"
 #include "drake/multibody/topology/graph.h"
@@ -22,6 +23,7 @@ using drake::multibody::internal::GetPointContactStiffness;
 using drake::multibody::internal::LinkJointGraph;
 using drake::multibody::internal::SpanningForest;
 using drake::multibody::internal::TreeIndex;
+using drake::multibody::internal::WeldConstraintSpec;
 
 namespace drake {
 namespace multibody {
@@ -212,6 +214,10 @@ void IcfBuilder<T>::UpdateModel(
   AllocateCouplerConstraints(model);
   SetCouplerConstraints(context, model);
 
+  // Weld constraints
+  AllocateWeldConstraints(model);
+  SetWeldConstraints(context, model);
+
   // Limit constraints
   AllocateLimitConstraints(model);
   SetLimitConstraints(context, model);
@@ -276,14 +282,15 @@ void IcfBuilder<T>::ValidatePlant() {
 
   // Revisit this condition as constraints are implemented. See issues #23759,
   // #23760, #23762, #23763.
-  if (plant_.num_constraints() - plant_.num_coupler_constraints() > 0) {
+  if (plant_.num_constraints() - plant_.num_coupler_constraints() -
+          plant_.num_weld_constraints() >
+      0) {
     throw std::logic_error(fmt::format(
         "The CENIC integrator does not yet support some constraints, but "
         "they are present in the given MultibodyPlant: {} distance "
-        "constraint(s), {} ball constraint(s), {} weld constraint(s), {} "
-        "tendon constraint(s)",
+        "constraint(s), {} ball constraint(s), {} tendon constraint(s)",
         plant_.num_distance_constraints(), plant_.num_ball_constraints(),
-        plant_.num_weld_constraints(), plant_.num_tendon_constraints()));
+        plant_.num_tendon_constraints()));
   }
 }
 
@@ -412,6 +419,74 @@ void IcfBuilder<T>::SetCouplerConstraints(const systems::Context<T>& context,
 
     couplers.Set(index, clique0, tree_dof0, tree_dof1, q0, q1, spec.gear_ratio,
                  spec.offset);
+    ++index;
+  }
+}
+
+template <typename T>
+void IcfBuilder<T>::AllocateWeldConstraints(IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  const std::map<MultibodyConstraintId, WeldConstraintSpec>& specs_map =
+      plant_.get_weld_constraint_specs();
+  WeldConstraintsPool<T>& welds = model->weld_constraints_pool();
+  welds.Resize(specs_map.size());
+}
+
+template <typename T>
+void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
+                                       IcfModel<T>* model) const {
+  DRAKE_ASSERT(model != nullptr);
+  using drake::math::RigidTransform;
+  using drake::math::RotationMatrix;
+
+  const std::map<MultibodyConstraintId, WeldConstraintSpec>& specs_map =
+      plant_.get_weld_constraint_specs();
+
+  WeldConstraintsPool<T>& welds = model->weld_constraints_pool();
+
+  int index = 0;
+  for (const auto& [id, spec] : specs_map) {
+    const RigidBody<T>& body_A = plant_.get_body(spec.body_A);
+    const RigidBody<T>& body_B = plant_.get_body(spec.body_B);
+
+    // By convention in the ICF weld constraint pool, body B must not be
+    // anchored. If body A is anchored, that's fine.
+    const bool A_anchored = plant_.IsAnchored(body_A);
+    const bool B_anchored = plant_.IsAnchored(body_B);
+    DRAKE_DEMAND(!(A_anchored && B_anchored));
+
+    // If B is anchored but A is not, swap roles so that the "B" body in the
+    // pool is always the dynamic one.
+    const RigidBody<T>& pool_bodyA = B_anchored ? body_B : body_A;
+    const RigidBody<T>& pool_bodyB = B_anchored ? body_A : body_B;
+    const auto& X_AP_spec = B_anchored ? spec.X_BQ : spec.X_AP;
+    const auto& X_BQ_spec = B_anchored ? spec.X_AP : spec.X_BQ;
+
+    const RigidTransform<T>& X_WA = pool_bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = pool_bodyB.EvalPoseInWorld(context);
+
+    // Constraint frame poses in world.
+    const RigidTransform<T> X_WP = X_WA * X_AP_spec.template cast<T>();
+    const RigidTransform<T> X_WQ = X_WB * X_BQ_spec.template cast<T>();
+
+    // Positions of P in A and Q in B, expressed in world.
+    const Vector3<T> p_AP_W =
+        X_WA.rotation() * X_AP_spec.translation().template cast<T>();
+    const Vector3<T> p_BQ_W =
+        X_WB.rotation() * X_BQ_spec.translation().template cast<T>();
+
+    // Relative translation p_PoQo in world.
+    const Vector3<T> p_PoQo_W = X_WQ.translation() - X_WP.translation();
+
+    // Relative rotation as Euler vector a_PQ = θ⋅k, expressed in world.
+    const Eigen::AngleAxis<T> aa_PQ =
+        X_WP.rotation().InvertAndCompose(X_WQ.rotation()).ToAngleAxis();
+    // a_PQ has the same components when expressed in P or Q, so we re-express
+    // in world using P's orientation.
+    const Vector3<T> a_PQ_W = X_WP.rotation() * (aa_PQ.angle() * aa_PQ.axis());
+
+    welds.Set(index, pool_bodyA.index(), pool_bodyB.index(), p_AP_W, p_BQ_W,
+              p_PoQo_W, a_PQ_W);
     ++index;
   }
 }
