@@ -606,9 +606,9 @@ couple controller and model dynamics.
 
 @note PD controllers are ignored when a joint is locked (see Joint::Lock()).
 
-@warning Currently, this feature is only supported for discrete models
-(is_discrete() is true) using the SAP solver (get_discrete_contact_solver()
-returns DiscreteContactSolver::kSap.)
+@warning For discrete models (is_discrete() is true), this feature is not
+supported when using the TAMSI solver (get_discrete_contact_solver() returns
+DiscreteContactSolver::kTamsi.)
 
 PD controlled joint actuators can be defined by setting PD gains for each joint
 actuator, see JointActuator::set_controller_gains(). Unless these gains are
@@ -5929,6 +5929,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex hydroelastic_contact_forces_continuous;
 
     // These are only valid for a continuous-time plant.
+    systems::CacheIndex net_actuation_continuous;
     systems::CacheIndex contact_results_point_pair_continuous;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex generalized_contact_forces_continuous;
@@ -6132,6 +6133,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void CalcActuationInputWithEffortLimit(const systems::Context<T>& context,
                                          VectorX<T>* actuation_input) const;
 
+  // Methods that calculate net actuation (accounting for actuation input ports,
+  // desired state input ports, and effort limits), only for a continuous-time
+  // plant.
+  const VectorX<T>& EvalNetActuationContinuous(
+      const systems::Context<T>& context) const;
+  void CalcNetActuationContinuous(const systems::Context<T>& context,
+                                  VectorX<T>* net_actuation) const;
+
   // Calc method for the "net_actuation" output port.
   template <bool sampled>
   void CalcNetActuationOutput(const systems::Context<T>& context,
@@ -6284,8 +6293,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   void CalcReactionForces(const systems::Context<T>& context,
                           std::vector<SpatialForce<T>>* output) const;
 
-  // Collect joint actuator forces and externally provided spatial and
-  // generalized forces.
+  // Collect joint actuator and desired state forces and externally provided
+  // spatial and generalized forces.
   void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
                                  MultibodyForces<T>* forces) const;
 

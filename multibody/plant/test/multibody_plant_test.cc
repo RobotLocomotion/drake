@@ -117,6 +117,7 @@ class MultibodyPlantTester {
   static void AddJointActuationForces(const MultibodyPlant<T>& plant,
                                       const systems::Context<T>& context,
                                       VectorX<T>* forces) {
+    DRAKE_DEMAND(!plant.is_discrete());
     plant.AddJointActuationForces(context, forces);
   }
 };
@@ -3611,7 +3612,7 @@ TEST_F(MultibodyPlantRemodelingDiscrete, MakeActuatorSelectorMatrix) {
   EXPECT_TRUE(CompareMatrices(Su, Su_expected));
 }
 
-TEST_F(MultibodyPlantRemodelingDiscrete, AddJointActuationForces) {
+TEST_F(MultibodyPlantRemodelingContinuous, AddJointActuationForces) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
