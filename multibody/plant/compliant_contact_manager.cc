@@ -353,7 +353,8 @@ void CompliantContactManager<T>::DoCalcActuation(
   if (plant().get_discrete_contact_solver() == kDiscreteContactSolverTamsi) {
     DRAKE_DEMAND(tamsi_driver_ != nullptr);
     // TAMSI does not model additional actuation terms as SAP does.
-    *actuation = this->EvalActuationInput(context);
+    *actuation =
+        this->EvalActuationInput(context, /* apply_effort_limit = */ true);
   }
 }
 
