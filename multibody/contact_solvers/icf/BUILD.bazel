@@ -1,6 +1,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -25,6 +26,7 @@ drake_cc_package_library(
         ":icf_solver_parameters",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
+        ":weld_constraints_data_pool",
     ],
 )
 
@@ -82,6 +84,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "weld_constraints_data_pool",
+    srcs = ["weld_constraints_data_pool.cc"],
+    hdrs = ["weld_constraints_data_pool.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "icf_search_direction_data",
     hdrs = ["icf_search_direction_data.h"],
     deps = [
@@ -101,6 +113,7 @@ drake_cc_library(
         ":gain_constraints_data_pool",
         ":limit_constraints_data_pool",
         ":patch_constraints_data_pool",
+        ":weld_constraints_data_pool",
         "//common:essential",
     ],
 )
@@ -116,6 +129,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     implementation_deps = [
+        "//math:geometric_transform",
         "//multibody/plant:contact_properties",
     ],
 )
@@ -170,6 +184,7 @@ drake_cc_library(
         "icf_model.cc",
         "limit_constraints_pool.cc",
         "patch_constraints_pool.cc",
+        "weld_constraints_pool.cc",
     ],
     hdrs = [
         "coupler_constraints_pool.h",
@@ -177,6 +192,7 @@ drake_cc_library(
         "icf_model.h",
         "limit_constraints_pool.h",
         "patch_constraints_pool.h",
+        "weld_constraints_pool.h",
     ],
     deps = [
         ":coupler_constraints_data_pool",
@@ -184,8 +200,11 @@ drake_cc_library(
         ":icf_data",
         ":icf_search_direction_data",
         ":limit_constraints_data_pool",
+        ":weld_constraints_data_pool",
         "//common:default_scalars",
         "//common:essential",
+        "//math:geometric_transform",
+        "//math:vector3_util",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
@@ -261,6 +280,39 @@ drake_cc_googletest(
         "//multibody/parsing:parser",
         "//multibody/plant:contact_properties",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "weld_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "weld_constraint_simulation",
+    timeout = "moderate",
+    args = [
+        "--simulation_time=0.5",
+        "--realtime_rate=0.0",
+        "--initial_gap=0.5",
+    ],
+    use_default_main = False,
+    deps = [
+        "//multibody/cenic:cenic_integrator",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram_builder",
+        "//visualization:visualization_config_functions",
+        "@gflags",
     ],
 )
 
