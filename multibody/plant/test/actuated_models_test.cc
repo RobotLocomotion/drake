@@ -30,8 +30,9 @@ namespace multibody {
 class MultibodyPlantTester {
  public:
   static const VectorXd& EvalActuationInput(const MultibodyPlant<double>& plant,
-                                            const Context<double>& context) {
-    return plant.EvalActuationInput(context);
+                                            const Context<double>& context,
+                                            bool effort_limit) {
+    return plant.EvalActuationInput(context, effort_limit);
   }
 
   static const DesiredStateInput<double>& EvalDesiredStateInput(
@@ -403,25 +404,32 @@ TEST_P(ActuatedModelsTest, GetSetPdGains) {
 TEST_P(ActuatedModelsTest, EvalActuationInput) {
   SetUpModel();
 
-  // Arbitrary expected actuation.
-  const VectorXd arm_u = VectorXd::Zero(expected_num_actuators(arm_model_));
-  const VectorXd acrobot_u =
-      VectorXd::LinSpaced(expected_num_actuators(acrobot_model_), 1.0, 2.0);
-  const VectorXd gripper_u =
-      VectorXd::LinSpaced(expected_num_actuators(gripper_model_), 3.0, 4.0);
+  for (const bool effort_limit : {false, true}) {
+    // Arbitrary expected actuation.
+    const VectorXd arm_u = VectorXd::Zero(expected_num_actuators(arm_model_));
+    const VectorXd acrobot_u =
+        VectorXd::LinSpaced(expected_num_actuators(acrobot_model_), 1.0, 2.0);
+    const VectorXd gripper_u =
+        VectorXd::LinSpaced(expected_num_actuators(gripper_model_), 90.0, 91.0);
 
-  // We leave the arm's port disconnected to verify its value defaults to zero.
-  plant_->get_actuation_input_port(acrobot_model_)
-      .FixValue(context_.get(), acrobot_u);
-  plant_->get_actuation_input_port(gripper_model_)
-      .FixValue(context_.get(), gripper_u);
+    // We leave the arm's port disconnected to verify its value defaults to
+    // zero.
+    plant_->get_actuation_input_port(acrobot_model_)
+        .FixValue(context_.get(), acrobot_u);
+    plant_->get_actuation_input_port(gripper_model_)
+        .FixValue(context_.get(), gripper_u);
 
-  // Check the input port assembly.
-  const VectorXd full_u =
-      MultibodyPlantTester::EvalActuationInput(*plant_, *context_);
-  const VectorXd expected_u =
-      AssembleFullModelActuation(arm_u, acrobot_u, gripper_u);
-  EXPECT_EQ(full_u, expected_u);
+    // Check the input port assembly.
+    const VectorXd expected_gripper_u =
+        effort_limit
+            ? VectorXd::Constant(expected_num_actuators(gripper_model_), 80.0)
+            : gripper_u;
+    const VectorXd full_u = MultibodyPlantTester::EvalActuationInput(
+        *plant_, *context_, effort_limit);
+    const VectorXd expected_u =
+        AssembleFullModelActuation(arm_u, acrobot_u, expected_gripper_u);
+    EXPECT_EQ(full_u, expected_u);
+  }
 }
 
 // Verify the assembly of desired state input ports. In particular, we check for
@@ -535,24 +543,8 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
             : (VectorXd(7) << 176, 176, 110, 110, 110, 40, 40).finished();
     const VectorXd arm_u_clamped =
         arm_u.array().min(limits.array()).max(-limits.array());
-    VectorXd expected_u_arm = arm_u;
-    if (param_.discrete_contact_approximation == "sap") {
-      if (param_.full_pd_control) {
-        // All actuators have PD control, which enables effort limiting.
-        expected_u_arm = arm_u_clamped;
-      } else if (param_.use_pd_control) {
-        // Only odd actuators have PD control.
-        expected_u_arm[1] = arm_u_clamped[1];
-        expected_u_arm[3] = arm_u_clamped[3];
-        expected_u_arm[5] = arm_u_clamped[5];
-      }
-      if (param_.use_joint_locking) {
-        // Joint 2 is locked, which disables PD control.
-        expected_u_arm[1] = arm_u[1];
-      }
-    }
     const VectorXd expected_u =
-        AssembleFullModelActuation(expected_u_arm, acrobot_u, gripper_u);
+        AssembleFullModelActuation(arm_u_clamped, acrobot_u, gripper_u);
 
     // Map actuation to generalized forces.
     const MatrixXd B = plant_->MakeActuationMatrix();
@@ -602,7 +594,7 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
                                 MatrixCompareType::relative));
 
     // Verify the actuation values reported by the plant.
-    VerifyNetActuationOutputPorts(expected_u_arm, acrobot_u, gripper_u,
+    VerifyNetActuationOutputPorts(arm_u_clamped, acrobot_u, gripper_u,
                                   expected_u, kTolerance);
   }
 }

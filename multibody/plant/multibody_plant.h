@@ -594,13 +594,6 @@ per-model instance actuation vectors, see SetActuationInArray() to gather the
 model instance vectors into a whole plant vector and GetActuationFromArray() to
 scatter the whole plant vector into per-model instance vectors.
 
-@warning Effort limits (JointActuator::effort_limit()) are not enforced, unless
-PD controllers are defined.
-See @ref pd_controllers "Using PD controlled actuators".
-
-<!-- TODO(amcastro-tri): Consider enforcing effort limits whether PD controllers
-     are defined or not. -->
-
 @anchor pd_controllers
   #### Using PD controlled actuators
 
@@ -1669,12 +1662,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   to the joint type it actuates. For instance, it will have units of
   ///   N⋅m (torque) for revolute joints while it will have units of N (force)
   ///   for prismatic joints.
-  /// @note The effort limit is unused by MultibodyPlant and is simply provided
-  /// here for bookkeeping purposes. It will not, for instance, saturate
-  /// external actuation inputs based on this value. If, for example, a user
-  /// intends to saturate the force/torque that is applied to the MultibodyPlant
-  /// via this actuator, the user-level code (e.g., a controller) should query
-  /// this effort limit and impose the saturation there.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant or until the
   /// JointActuator has been removed from the plant with RemoveJointActuator().
@@ -5934,7 +5921,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   struct CacheIndices {
     systems::CacheIndex geometry_contact_data;
     systems::CacheIndex joint_locking;
-    systems::CacheIndex actuation_input;
+    systems::CacheIndex actuation_input_without_effort_limit;
+    systems::CacheIndex actuation_input_with_effort_limit;
     systems::CacheIndex desired_state_input;
 
     // This is only valid for a continuous-time, hydroelastic-contact plant.
@@ -6134,11 +6122,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // JointActuator::input_start() in the returned vector (see
   // MultibodyPlant::get_actuation_input_port()). N.B. this does not include
   // actuation due to the desired_state input ports; this is only the
-  // feedforward actuation.
-  const VectorX<T>& EvalActuationInput(
-      const systems::Context<T>& context) const;
-  void CalcActuationInput(const systems::Context<T>& context,
-                          VectorX<T>* actuation_input) const;
+  // feedforward actuation. When `effort_limit` is true, the actuation will be
+  // clamped by each joint's `effort_lmit()`; when false, the limit is ignored.
+  const VectorX<T>& EvalActuationInput(const systems::Context<T>& context,
+                                       bool effort_limit) const;
+  void CalcActuationInputWithoutEffortLimit(const systems::Context<T>& context,
+                                            VectorX<T>* actuation_input) const;
+  void CalcActuationInputWithEffortLimit(const systems::Context<T>& context,
+                                         VectorX<T>* actuation_input) const;
 
   // Calc method for the "net_actuation" output port.
   template <bool sampled>
