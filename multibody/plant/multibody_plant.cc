@@ -2719,6 +2719,7 @@ void MultibodyPlant<T>::AddJointActuationForcesContinuous(
   DRAKE_DEMAND(forces->size() == num_velocities());
   DRAKE_DEMAND(!is_discrete());
   if (num_actuators() > 0) {
+    // XXX We lack a unit test that shows desired_state participates here.
     const VectorX<T>& u = EvalNetActuationContinuous(context);
     for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
       const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
@@ -2895,6 +2896,7 @@ void MultibodyPlant<T>::CalcNetActuationContinuous(
            GetJointActuatorIndices(model_instance_index)) {
         const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
         const Joint<T>& joint = actuator.joint();
+        // XXX We lack a unit test that both conditions here are effective.
         if (actuator.has_controller() && !joint.is_locked(context)) {
           const PdControllerGains& gains = actuator.get_controller_gains();
           const T& Kp = gains.p;
@@ -2948,6 +2950,7 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
     }
   } else {
     DRAKE_DEMAND(!sampled);
+    // XXX We lack a unit test that shows desired_state participates here.
     output->SetFromVector(EvalNetActuationContinuous(context));
   }
 }
