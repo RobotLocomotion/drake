@@ -8,6 +8,7 @@
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 
 namespace drake {
 namespace multibody {
@@ -47,7 +48,8 @@ class IcfData {
   struct Scratch {
     /* Resizes the scratch space, allocating memory as needed. */
     void Resize(int num_bodies, int num_velocities, int max_clique_size,
-                int num_couplers, std::span<const int> gain_sizes,
+                int num_couplers, int num_welds,
+                std::span<const int> gain_sizes,
                 std::span<const int> limit_sizes,
                 std::span<const int> patch_sizes);
 
@@ -78,6 +80,7 @@ class IcfData {
     GainConstraintsDataPool<T> gain_constraints_data;
     LimitConstraintsDataPool<T> limit_constraints_data;
     PatchConstraintsDataPool<T> patch_constraints_data;
+    WeldConstraintsDataPool<T> weld_constraints_data;
 
     // Scratch space for coupler constraints Hessian accumulation. Holds at most
     // one matrix of size max_clique_size() x max_clique_size().
@@ -111,7 +114,7 @@ class IcfData {
   @param patch_sizes Number of contact pairs for each patch constraint, of size
                      equal to the number of patches. */
   void Resize(int num_bodies, int num_velocities, int max_clique_size,
-              int num_couplers, std::span<const int> gain_sizes,
+              int num_couplers, int num_welds, std::span<const int> gain_sizes,
               std::span<const int> limit_sizes,
               std::span<const int> patch_sizes);
 
@@ -184,6 +187,14 @@ class IcfData {
     return patch_constraints_data_;
   }
 
+  /* Returns the data pool for weld constraints. */
+  const WeldConstraintsDataPool<T>& weld_constraints_data() const {
+    return weld_constraints_data_;
+  }
+  WeldConstraintsDataPool<T>& mutable_weld_constraints_data() {
+    return weld_constraints_data_;
+  }
+
   /* Returns a mutable scratch space for intermediate computations. We allow
   IcfModel to write on the scratch as needed. */
   Scratch& scratch() const { return scratch_; }
@@ -201,6 +212,7 @@ class IcfData {
   GainConstraintsDataPool<T> gain_constraints_data_;
   LimitConstraintsDataPool<T> limit_constraints_data_;
   PatchConstraintsDataPool<T> patch_constraints_data_;
+  WeldConstraintsDataPool<T> weld_constraints_data_;
 
   mutable Scratch scratch_;
 };
