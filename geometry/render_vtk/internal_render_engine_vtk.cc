@@ -673,7 +673,6 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
         uri_loader->MakeGltfStream();
     importer->SetStream(gltf_stream);
     importer->SetStreamURILoader(uri_loader);
-    importer->SetStreamIsBinary(false);
   }
   importer->Update();
 
