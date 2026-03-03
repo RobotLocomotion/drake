@@ -284,10 +284,9 @@ void IcfBuilder<T>::ValidatePlant() {
           plant_.num_weld_constraints() >
       0) {
     throw std::logic_error(fmt::format(
-        "The CENIK integrator does not yet support some constraints, but "
+        "The CENIC integrator does not yet support some constraints, but "
         "they are present in the given MultibodyPlant: {} distance "
-        "constraint(s), {} ball constraint(s), {} "
-        "tendon constraint(s)",
+        "constraint(s), {} ball constraint(s), {} tendon constraint(s)",
         plant_.num_distance_constraints(), plant_.num_ball_constraints(),
         plant_.num_tendon_constraints()));
   }
