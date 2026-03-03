@@ -116,14 +116,14 @@ bazel build common:polynomial                        # Build libpolynomial.
 bazel build common:all                               # Build everything in common but NOT its children.
 
 bazel test common:polynomial_test                    # Run one test.
-bazel test -c dbg common:polynomial_test             # Run one test in debug mode.
+bazel test --config=debug common:polynomial_test       # Run one test in debug mode.
 bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
 bazel test --config=fastmemcheck common:all          # Run common's tests under memcheck, with minimal recompiling.
 bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
-bazel build -c dbg common:polynomial_test && \
+bazel build --config=debug common:polynomial_test && \
   gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
 
-bazel test -c dbg --config=clang --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
+bazel test --config=debug --config=clang --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
 
 bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
 ```
