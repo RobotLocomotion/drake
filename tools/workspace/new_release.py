@@ -42,7 +42,6 @@ import shlex
 import subprocess
 from tempfile import TemporaryDirectory
 import time
-from typing import Optional, Set
 import urllib
 
 import git
@@ -122,8 +121,8 @@ _COHORTS = (
 class UpgradeResult:
     was_upgraded: bool
     can_be_committed: bool = False
-    modified_paths: Optional[Set[str]] = None
-    commit_message: Optional[str] = None
+    modified_paths: set[str] | None = None
+    commit_message: str | None = None
 
 
 def _str_replace_forced(original, old, new):

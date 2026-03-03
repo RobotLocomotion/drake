@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This example demonstrates using Monte Carlo verification to analyze task
 performance, for the task of stabilizing an inverted torque-limited pendulum

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import gc
 from types import SimpleNamespace
 import unittest
@@ -67,7 +65,7 @@ class CustomAdder(LeafSystem):
     def __init__(self, num_inputs, size):
         LeafSystem.__init__(self)
         for i in range(num_inputs):
-            self.DeclareVectorInputPort("input{}".format(i), size)
+            self.DeclareVectorInputPort(f"input{i}", size)
         self.DeclareVectorOutputPort("sum", size, self._calc_sum)
 
     def _calc_sum(self, context, sum_data):

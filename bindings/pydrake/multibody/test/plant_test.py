@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import collections
 import copy
 import itertools
@@ -154,7 +152,7 @@ def get_index_class(cls, T):
     for key_cls, index_cls in class_to_index_class_map.items():
         if issubclass(cls, key_cls):
             return index_cls
-    raise RuntimeError("Unknown class: {}".format(cls))
+    raise RuntimeError(f"Unknown class: {cls}")
 
 
 # Permits parametric scalar type conversion.

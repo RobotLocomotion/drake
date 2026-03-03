@@ -1,5 +1,4 @@
 import os
-import sys
 
 # Note: use setuptools.glob rather than the built-in glob; see
 # https://bugs.python.org/issue37578.

@@ -125,7 +125,7 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
         scalars are not emitted by pyyaml.)
         """
 
-        value: typing.Union[bool, int, float, str]
+        value: bool | int | float | str
         schema: type  # One of either bool, int, float, or str.
 
     def __init__(self, *args, **kwargs):
@@ -830,7 +830,7 @@ def _yaml_dump_typed_item(*, obj, schema):
         list_value = obj.tolist()
         list_schema = float
         for _ in obj.shape:
-            list_schema = typing.List[list_schema]
+            list_schema = list[list_schema]
         return _yaml_dump_typed_item(obj=list_value, schema=list_schema)
 
     # If no special case matched, then we'll assume it's a nested class and

@@ -81,7 +81,7 @@ def main():
     # Parse the test case name out of the runfiles directory name.
     match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
     if not match:
-        print("error: no test name match in {}".format(main_py))
+        print(f"error: no test name match in {main_py}")
         sys.exit(1)
     runfiles, test_package, _, test_name, = match.groups()
     test_basename = test_name + ".py"
@@ -228,14 +228,12 @@ def reexecute_if_unbuffered():
     ONLY use this at your entrypoint. Otherwise, you may have code be
     re-executed that will clutter your console."""
     import os
-    import shlex
     import sys
     if os.environ.get("PYTHONUNBUFFERED") in (None, ""):
         os.environ["PYTHONUNBUFFERED"] = "1"
         argv = list(sys.argv)
         if argv[0] != sys.executable:
             argv.insert(0, sys.executable)
-        cmd = " ".join([shlex.quote(arg) for arg in argv])
         sys.stdout.flush()
         os.environ["PYTHONPATH"] = ":".join(sys.path)
         os.execv(argv[0], argv)

@@ -88,7 +88,7 @@ class Scenario:
     scene_graph_config: SceneGraphConfig = SceneGraphConfig()
 
     # All of the fully deterministic elements of the simulation.
-    directives: typing.List[ModelDirective] = dc.field(default_factory=list)
+    directives: list[ModelDirective] = dc.field(default_factory=list)
 
     # A map of {bus_name: lcm_params} for LCM transceivers to be used by
     # drivers, sensors, etc.
@@ -100,11 +100,7 @@ class Scenario:
     # from, keyed on the ModelInstance name.
     model_drivers: typing.Mapping[
         str,
-        typing.Union[
-            IiwaDriver,
-            SchunkWsgDriver,
-            ZeroForceDriver,
-        ],
+        IiwaDriver | SchunkWsgDriver | ZeroForceDriver,
     ] = dc.field(default_factory=dict)
 
     # Cameras to add to the scene (and broadcast over LCM). The key for each

@@ -45,7 +45,7 @@ class TestInstallTestHelperTest(unittest.TestCase):
             with open(tmp_file, "w") as f:
                 f.write("")
             self.fail("File %s was writable!" % tmp_file)
-        except IOError as e:
+        except OSError as e:
             # Test is suppose to raise an exception.
             if e.errno == 13:  # Permission denied
                 pass
