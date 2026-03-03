@@ -144,9 +144,7 @@ def get_python_site_packages_dir(install_dir):
         os.path.join(
             install_dir,
             "lib",
-            "python{}.{}".format(
-                sys.version_info.major, sys.version_info.minor
-            ),
+            f"python{sys.version_info.major}.{sys.version_info.minor}",
             "site-packages",
         )
     )

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 @file
 Captures limitations for the present state of the Python bindings for the
