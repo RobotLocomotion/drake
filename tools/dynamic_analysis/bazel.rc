@@ -171,7 +171,7 @@ build:_memcheck --define=USING_MEMCHECK=ON
 # not alter the compile flags.  Thus, the already-cached compilation results
 # from a `bazel build` or `bazel test` can be reused.  This is useful to scan a
 # local build for memory errors quickly.  For more specific error reporting
-# when errors are found, try `-c dbg --config fastmemcheck` or `--config
+# when errors are found, try `--config=dbg --config fastmemcheck` or `--config
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools/dynamic_analysis:valgrind

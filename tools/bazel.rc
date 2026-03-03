@@ -77,6 +77,11 @@ build --test_env=LCM_DEFAULT_URL=memq://
 # Prevent matplotlib from showing windows (#11029).
 build --test_env=MPLBACKEND=Template
 
+### A wrapper configuration for debug builds. ###
+build:dbg --compilation_mode=dbg
+# Provide a performance cushion for debug builds, 2x the default timeouts.
+build:dbg --test_timeout=120,600,1800,7200
+
 ### A configuration that enables all optional dependencies. ###
 build:everything --test_tag_filters=-no_everything
 # We'll also use it to test our custom AutoDiff until 2026-04-01 when this flag
