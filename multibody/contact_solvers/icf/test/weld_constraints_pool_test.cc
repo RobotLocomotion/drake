@@ -23,8 +23,6 @@ namespace icf {
 namespace internal {
 namespace {
 
-constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-
 /* Sets up a simple model with 3 bodies in separate cliques, suitable for
 testing weld constraints. Body 0 is the world (anchored), bodies 1-3 are
 dynamic with 6 DOFs each. */
