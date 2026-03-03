@@ -2,7 +2,6 @@
 # //tools/wheel:builder for the user interface.
 
 from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass
@@ -21,7 +20,7 @@ class Platform:
 class Target:
     build_platform: Platform
     test_platform: Platform
-    python_version_tuple: Tuple[int]
+    python_version_tuple: tuple[int]
     python_sha: str = None
 
     def __post_init__(self):

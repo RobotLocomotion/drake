@@ -18,7 +18,7 @@ def debug_print(*args):
 
 
 def qualname(obj):
-    return "{}.{}".format(obj.__module__, obj.__name__)
+    return f"{obj.__module__}.{obj.__name__}"
 
 
 class Overloads:

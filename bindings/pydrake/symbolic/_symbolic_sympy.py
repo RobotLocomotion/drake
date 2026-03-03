@@ -5,7 +5,6 @@ does not directly depend on SymPy.
 
 import math
 import operator
-from typing import Dict, Union
 
 import sympy
 from sympy.printing.pycode import MpmathPrinter
@@ -101,7 +100,7 @@ _SYMPY_CONSTRUCTOR = {
 }
 
 
-def _var_to_sympy(drake_var: Variable, *, memo: Dict):
+def _var_to_sympy(drake_var: Variable, *, memo: dict):
     """Converts a Drake variable into a SymPy Variable.
 
     If the Drake variable was already in the `memo` dict, returns the value in
@@ -123,7 +122,7 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
     return sympy_var
 
 
-def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
+def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: dict):
     """Converts a SymPy variable into a Drake Variable.
 
     At the moment, the *only* supported conversion is to look up the variable
@@ -140,10 +139,10 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
 
 
 def _to_sympy(
-    x: Union[float, int, bool, Variable, Expression, Formula],
+    x: float | int | bool | Variable | Expression | Formula,
     *,
-    memo: Dict = None,
-) -> Union[float, int, bool, sympy.Expr]:
+    memo: dict = None,
+) -> float | int | bool | sympy.Expr:
     """This is the private implementation of pydrake.symbolic.to_sympy().
     Refer to that module-level function for the full docstring.
 
@@ -239,8 +238,8 @@ def _lambdify(*, expr, args):
 
 
 def _from_sympy(
-    x: Union[float, int, bool, sympy.Expr], *, memo: Dict = None
-) -> Union[float, int, bool, Variable, Expression, Formula]:
+    x: float | int | bool | sympy.Expr, *, memo: dict = None
+) -> float | int | bool | Variable | Expression | Formula:
     """This is the private implementation of pydrake.symbolic.from_sympy().
     Refer to that module-level function for the full docstring.
     """

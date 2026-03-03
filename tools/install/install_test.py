@@ -39,7 +39,7 @@ class InstallTest(unittest.TestCase):
         env["PYTHONPATH"] = ":".join(sys.path)
 
         # Execute the test_command.
-        print("+ {}".format(test_command), file=sys.stderr)
+        print(f"+ {test_command}", file=sys.stderr)
         subprocess.check_call(
             [python, os.path.join(os.getcwd(), test_command)], env=env
         )

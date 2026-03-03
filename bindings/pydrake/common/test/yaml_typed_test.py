@@ -81,13 +81,13 @@ class AllScalarsStruct:
 
 @dc.dataclass
 class ListStruct:
-    value: typing.List[float] = dc.field(default_factory=lambda: list((nan,)))
+    value: list[float] = dc.field(default_factory=lambda: list((nan,)))
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class MapStruct:
-    value: typing.Dict[str, float] = dc.field(
+    value: dict[str, float] = dc.field(
         default_factory=lambda: dict(nominal_float=nan)
     )
     __eq__ = _dataclass_eq
@@ -120,14 +120,14 @@ class OptionalStructNoDefault:
 @dc.dataclass
 class LegacyOptionalStruct:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
-    value: typing.Optional[float] = nan
+    value: float | None = nan
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class LegacyOptionalStructNoDefault:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
-    value: typing.Optional[float] = None
+    value: float | None = None
     __eq__ = _dataclass_eq
 
 
@@ -158,26 +158,26 @@ class RejectGetattrNumpyStruct:
 
 @dc.dataclass
 class VariantStruct:
-    value: typing.Union[str, float, FloatStruct, NumpyStruct] = nan
+    value: str | float | FloatStruct | NumpyStruct = nan
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class NullableVariantStruct:
-    value: typing.Union[None, FloatStruct, StringStruct] = None
+    value: None | FloatStruct | StringStruct = None
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class PrimitiveVariantStruct:
-    value: typing.Union[typing.List[float], bool, int, float, str, bytes] = nan
+    value: list[float] | bool | int | float | str | bytes = nan
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class ListVariantStruct:
-    value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
-        dc.field(default_factory=lambda: list([nan]))
+    value: list[str | float | FloatStruct | NumpyStruct] = dc.field(
+        default_factory=lambda: list([nan])
     )
     __eq__ = _dataclass_eq
 
@@ -1054,9 +1054,7 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         # N.B. This test covers python-specific error handling, so does not
         # have any corrresponding cases in the C++ unit tests.
         with self.assertRaisesRegex(Exception, "should have been a dict"):
-            yaml_load_typed(
-                schema=typing.List[float], data="[1.0]", defaults=[]
-            )
+            yaml_load_typed(schema=list[float], data="[1.0]", defaults=[])
 
 
 class TestYamlTypedWrite(unittest.TestCase):
@@ -1230,7 +1228,7 @@ class TestYamlTypedWrite(unittest.TestCase):
     def test_write_bad_map_key(self):
         @dc.dataclass
         class BadMapStruct:
-            value: typing.Dict[int, float]
+            value: dict[int, float]
 
         with self.assertRaisesRegex(Exception, "keys must be string"):
             yaml_dump_typed(BadMapStruct({1: 2}))
@@ -1257,7 +1255,7 @@ class TestYamlTypedWrite(unittest.TestCase):
                 """),
             ),
         ]
-        schema = typing.Dict[str, float]
+        schema = dict[str, float]
         for value, expected_doc in cases:
             actual_doc = yaml_dump_typed(value, schema=schema)
             self.assertEqual(actual_doc, expected_doc)
@@ -1748,7 +1746,7 @@ class TestYamlTypedWriteAcceptance(unittest.TestCase):
         # N.B. This test covers python-specific error handling, so does not
         # have any corrresponding cases in the C++ unit tests.
         with self.assertRaisesRegex(Exception, "should have been a dict"):
-            yaml_dump_typed([1.0], schema=typing.List[float])
+            yaml_dump_typed([1.0], schema=list[float])
 
 
 class TestYamlTypedReadPybind11(unittest.TestCase):

@@ -700,7 +700,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         obj = GeometryConfigurationVector()
         geometry_id = mut.GeometryId.get_new_id()
 
-        obj.set_value(id=geometry_id, value=np.ones((10)))
+        obj.set_value(id=geometry_id, value=np.ones(10))
         self.assertEqual(obj.size(), 1)
         obj_value = obj.value(id=geometry_id)
         self.assertIsInstance(obj_value, np.ndarray)

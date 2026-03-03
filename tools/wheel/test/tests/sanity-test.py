@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import platform
-
 import numpy
 
 import pydrake.all

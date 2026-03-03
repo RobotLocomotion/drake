@@ -28,7 +28,7 @@ class TestInstallMeta(unittest.TestCase):
 
     def get_python_site_packages_dir(self):
         major, minor = sys.version_info.major, sys.version_info.minor
-        return join("lib", "python{}.{}".format(major, minor), "site-packages")
+        return join("lib", f"python{major}.{minor}", "site-packages")
 
     def listdir_recursive(self, d):
         out = set()

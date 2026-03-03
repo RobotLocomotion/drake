@@ -4,7 +4,6 @@ from collections import namedtuple
 from functools import partial, wraps
 import math
 import textwrap
-import typing
 import unittest
 
 import numpy as np
@@ -688,7 +687,7 @@ class TestConstraints(unittest.TestCase):
         # Now set the new penalty function
         def penalty_fun(
             x: float, compute_grad: bool
-        ) -> typing.Tuple[float, typing.Optional[float]]:
+        ) -> tuple[float, float | None]:
             if x < 0:
                 if compute_grad:
                     return x**2, 2 * x
@@ -741,7 +740,7 @@ class TestConstraints(unittest.TestCase):
         # Now set the new penalty function
         def penalty_fun(
             x: float, compute_grad: bool
-        ) -> typing.Tuple[float, typing.Optional[float]]:
+        ) -> tuple[float, float | None]:
             if x < 0:
                 if compute_grad:
                     return x**2, 2 * x

@@ -13,7 +13,7 @@ bazel_wrapper = SourceFileLoader(
 
 class ExecDetail(Exception):
     def __init__(self, name, args):
-        super(ExecDetail, self).__init__()
+        super().__init__()
         self.name = name
         self.args = args
 

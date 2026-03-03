@@ -65,7 +65,7 @@ def print_recursive_comparison(d1, d2, level="root"):
         if d1.keys() != d2.keys():
             s1 = set(d1.keys())
             s2 = set(d2.keys())
-            print("{:<20} + {} - {}".format(level, s1 - s2, s2 - s1))
+            print(f"{level:<20} + {s1 - s2} - {s2 - s1}")
             common_keys = s1 & s2
         else:
             common_keys = set(d1.keys())
