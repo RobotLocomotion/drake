@@ -244,6 +244,8 @@ def _generate_array_specialization(*, array_prefix, vtk_type, concrete_type):
             "Composite",
             "Constant",
             "Indexed",
+            "ScaledSOA",
+            "StdFunction",
         ) else []),
         strict = True,
     )
