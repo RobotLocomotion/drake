@@ -63,7 +63,7 @@ class WeldConstraintsPool {
   /* Returns the total number of weld constraints stored in this pool. */
   int num_constraints() const { return ssize(body_pairs_); }
 
-  /* Resizes the constraints pool to store the given number of constraints.
+  /* Resizes the constraints pool to store the given number of weld constraints.
 
   @warning After resizing, constraints may hold invalid data until Set() is
   called for each constraint index in [0, num_constraints()). */
@@ -88,6 +88,14 @@ class WeldConstraintsPool {
   /* Computes the sparsity pattern for the pool. Clique i is connected to
   clique j > i iff sparsity[i] contains j. */
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
+
+  /* Precomputes the iteration-invariant Hessian blocks for every weld
+  constraint. Because the weld cost ℓ(vc) = ½(v̂ − vc)ᵀR⁻¹(v̂ − vc) is
+  purely quadratic in the constraint velocity, its Hessian ∂²ℓ/∂v² depends
+  only on the regularization R and the (constant) constraint Jacobians. This
+  method must be called after all Set() calls and before AccumulateHessian()
+  is used. */
+  void PrecomputeHessianBlocks();
 
   /* Computes problem data as a function of the body spatial velocities V_WB for
   the full IcfModel. */
@@ -139,6 +147,21 @@ class WeldConstraintsPool {
   // R is a diagonal 6×6 regularization matrix: R = diag(Rᵣ, Rₜ).
   std::vector<Vector6<T>> g_hat_;  // Precomputed bias ĝ = -g₀/(1 + β/π).
   std::vector<Vector6<T>> R_;      // Diagonal of the regularization matrix.
+
+  // Precomputed Hessian blocks for each weld constraint, populated by
+  // PrecomputeHessianBlocks(). These are iteration-invariant because the weld
+  // cost Hessian depends only on R and the constant constraint Jacobians.
+  struct HessianBlock {
+    int c_b{-1};         // Clique index for body B (always valid).
+    int c_a{-1};         // Clique index for body A (-1 if anchored).
+    MatrixX<T> H_BB;     // Diagonal block for body B's clique.
+    MatrixX<T> H_AA;     // Diagonal block for body A's clique (if dynamic).
+    MatrixX<T> H_cross;  // Off-diagonal (or same-clique cross) block.
+    int cross_row{-1};   // Block row index for the cross term.
+    int cross_col{-1};   // Block column index for the cross term.
+    bool a_is_dynamic{false};  // True when body A is not anchored.
+  };
+  std::vector<HessianBlock> hessian_blocks_;
 };
 
 }  // namespace internal

@@ -242,47 +242,31 @@ void WeldConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
 }
 
 template <typename T>
-void WeldConstraintsPool<T>::AccumulateHessian(
-    const IcfData<T>& data,
-    BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
-  DRAKE_ASSERT(hessian != nullptr);
-
-  auto& H_BB_pool = data.scratch().H_BB_pool;
-  auto& H_AA_pool = data.scratch().H_AA_pool;
-  auto& H_AB_pool = data.scratch().H_AB_pool;
-  auto& H_BA_pool = data.scratch().H_BA_pool;
-  auto& GJb_pool = data.scratch().GJb_pool;
-  auto& GJa_pool = data.scratch().GJa_pool;
+void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
+  hessian_blocks_.resize(num_constraints());
 
   for (int k = 0; k < num_constraints(); ++k) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
     const int c_b = model().body_to_clique(bodyB);
     const int c_a = model().body_to_clique(bodyA);  // negative if anchored.
-    const int nv_b = model().clique_size(c_b);
-    const int nv_a = model().clique_size(c_a);  // zero if anchored.
+
+    typename WeldConstraintsPool<T>::HessianBlock& hb = hessian_blocks_[k];
+    hb.c_b = c_b;
+    hb.c_a = c_a;
+    hb.a_is_dynamic = !model().is_anchored(bodyA);
 
     const Vector6<T>& R_diag = R_[k];
 
-    // The Hessian ∂²ℓ/∂v² of the weld cost ℓ = ½(v̂ - vc)ᵀR⁻¹(v̂ - vc)
-    // is simply R⁻¹ (diagonal).
     // G = diag(R⁻¹) ∈ ℝ⁶ˣ⁶
     const Vector6<T> R_inv = R_diag.cwiseInverse();
     Matrix6<T> G = Matrix6<T>::Zero();
     G.diagonal() = R_inv;
 
-    // The constraint Jacobian relates vc to body spatial velocities via:
-    //   vc = Φ_B(p_BoBm)⋅V_WB − Φ_A(p_AoAm)⋅V_WA
-    // where Φ(p) is the rigid body shift operator.
-    //
-    // The Hessian contribution to the BB block is:
-    //   H_BB = J_Bᵀ⋅Φ_Bᵀ⋅G⋅Φ_B⋅J_B
     const Vector3<T>& p_PoQo = p_PoQo_W_[k];
     const Vector3<T> p_BoBm_W = p_BQ_W_[k] - 0.5 * p_PoQo;
 
     // Compute G_Bp = Φ_B(p_BoBm)ᵀ⋅G⋅Φ_B(p_BoBm)
-    // Since G is diagonal, this is a shifted second-order tensor.
-    // Φ(p) = [I, 0; -pₓ, I], so Φᵀ⋅G⋅Φ involves the cross product terms.
     const Matrix3<T> px_B = Skew(p_BoBm_W);
     const Matrix3<T> Gr = G.template topLeftCorner<3, 3>();
     const Matrix3<T> Gt = G.template bottomRightCorner<3, 3>();
@@ -294,22 +278,19 @@ void WeldConstraintsPool<T>::AccumulateHessian(
 
     // Body B contribution: H_BB = J_WBᵀ⋅G_Bp⋅J_WB
     DRAKE_ASSERT(!model().is_anchored(bodyB));
-    H_BB_pool.Resize(1, nv_b, nv_b);
-    auto H_BB = H_BB_pool[0];
-
     auto J_WB = model().J_WB(bodyB);
     if (model().is_floating(bodyB)) {
-      H_BB.noalias() = G_Bp;
+      hb.H_BB = G_Bp;
     } else {
-      GJb_pool.Resize(1, 6, nv_b);
-      auto GJb = GJb_pool[0];
+      const int nv_b = model().clique_size(c_b);
+      Matrix6X<T> GJb(6, nv_b);
       GJb.noalias() = G_Bp * J_WB;
-      H_BB.noalias() = J_WB.transpose() * GJb;
+      hb.H_BB.resize(nv_b, nv_b);
+      hb.H_BB.noalias() = J_WB.transpose() * GJb;
     }
-    hessian->AddToBlock(c_b, c_b, H_BB);
 
     // Body A contribution, only if not anchored.
-    if (!model().is_anchored(bodyA)) {
+    if (hb.a_is_dynamic) {
       const Vector3<T> p_AoAm_W = p_AP_W_[k] + 0.5 * p_PoQo;
       auto J_WA = model().J_WB(bodyA);
 
@@ -322,19 +303,17 @@ void WeldConstraintsPool<T>::AccumulateHessian(
       G_Ap.template bottomRightCorner<3, 3>() = Gt;
 
       // H_AA = J_WAᵀ⋅G_Ap⋅J_WA
-      H_AA_pool.Resize(1, nv_a, nv_a);
-      auto H_AA = H_AA_pool[0];
       if (model().is_floating(bodyA)) {
-        H_AA.noalias() = G_Ap;
+        hb.H_AA = G_Ap;
       } else {
-        GJa_pool.Resize(1, 6, nv_a);
-        auto GJa = GJa_pool[0];
+        const int nv_a = model().clique_size(c_a);
+        Matrix6X<T> GJa(6, nv_a);
         GJa.noalias() = G_Ap * J_WA;
-        H_AA.noalias() = J_WA.transpose() * GJa;
+        hb.H_AA.resize(nv_a, nv_a);
+        hb.H_AA.noalias() = J_WA.transpose() * GJa;
       }
-      hessian->AddToBlock(c_a, c_a, H_AA);
 
-      // Cross-clique term: H_BA = −J_WBᵀ⋅Φ_Bᵀ⋅G⋅Φ_A⋅J_WA
+      // Cross term: H_BA = −J_WBᵀ⋅Φ_Bᵀ⋅G⋅Φ_A⋅J_WA
       // G_cross = −Φ_B(p_BoBm)ᵀ⋅G⋅Φ_A(p_AoAm)
       Matrix6<T> G_cross;
       G_cross.template topLeftCorner<3, 3>() = -(Gr - px_B * Gt * px_A);
@@ -342,35 +321,52 @@ void WeldConstraintsPool<T>::AccumulateHessian(
       G_cross.template bottomLeftCorner<3, 3>() = Gt * px_A;
       G_cross.template bottomRightCorner<3, 3>() = -Gt;
 
-      H_BA_pool.Resize(1, nv_b, nv_a);
-      auto H_BA = H_BA_pool[0];
-      if (model().is_floating(bodyB)) {
-        GJa_pool.Resize(1, 6, nv_a);
-        auto GJa = GJa_pool[0];
+      // Compute H_BA and store the final cross block in the correct
+      // orientation for AddToBlock.
+      const int nv_a = model().clique_size(c_a);
+      const int nv_b = model().clique_size(c_b);
+      MatrixX<T> H_BA(nv_b, nv_a);
+      {
+        Matrix6X<T> GJa(6, nv_a);
         GJa.noalias() = G_cross * J_WA;
-        H_BA.noalias() = GJa;
-      } else {
-        GJa_pool.Resize(1, 6, nv_a);
-        auto GJa = GJa_pool[0];
-        GJa.noalias() = G_cross * J_WA;
-        H_BA.noalias() = J_WB.transpose() * GJa;
+        if (model().is_floating(bodyB)) {
+          H_BA = GJa;
+        } else {
+          H_BA.noalias() = J_WB.transpose() * GJa;
+        }
       }
 
       if (c_b > c_a) {
-        hessian->AddToBlock(c_b, c_a, H_BA);
+        hb.cross_row = c_b;
+        hb.cross_col = c_a;
+        hb.H_cross = H_BA;
+      } else if (c_a > c_b) {
+        hb.cross_row = c_a;
+        hb.cross_col = c_b;
+        hb.H_cross = H_BA.transpose();
+      } else {
+        // c_a == c_b: both bodies in the same clique.
+        hb.cross_row = c_a;
+        hb.cross_col = c_b;
+        hb.H_cross = H_BA + H_BA.transpose();
       }
-      if (c_a > c_b) {
-        H_AB_pool.Resize(1, nv_a, nv_b);
-        auto H_AB = H_AB_pool[0];
-        H_AB = H_BA.transpose();
-        hessian->AddToBlock(c_a, c_b, H_AB);
-      }
-      if (c_b == c_a) {
-        // Both contribute to the same diagonal block. AddToBlock assumes
-        // symmetric blocks for diagonal blocks.
-        H_BB.noalias() = H_BA + H_BA.transpose();  // Re-use H_BB.
-        hessian->AddToBlock(c_a, c_b, H_BB);
-      }
+    }
+  }
+}
+
+template <typename T>
+void WeldConstraintsPool<T>::AccumulateHessian(
+    const IcfData<T>&, BlockSparseSymmetricMatrix<MatrixX<T>>* hessian) const {
+  DRAKE_ASSERT(hessian != nullptr);
+
+  for (int k = 0; k < num_constraints(); ++k) {
+    const typename WeldConstraintsPool<T>::HessianBlock& hb =
+        hessian_blocks_[k];
+    hessian->AddToBlock(hb.c_b, hb.c_b, hb.H_BB);
+
+    if (hb.a_is_dynamic) {
+      hessian->AddToBlock(hb.c_a, hb.c_a, hb.H_AA);
+      hessian->AddToBlock(hb.cross_row, hb.cross_col, hb.H_cross);
     }
   }
 }

@@ -307,6 +307,10 @@ void IcfModel<T>::SetSparsityPattern() {
   patch_constraints_pool_.CalcSparsityPattern(&sparsity);
   weld_constraints_pool_.CalcSparsityPattern(&sparsity);
 
+  // Precompute the iteration-invariant weld Hessian blocks now that all
+  // constraint data and model parameters are finalized.
+  weld_constraints_pool_.PrecomputeHessianBlocks();
+
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
 }
