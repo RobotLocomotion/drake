@@ -17,7 +17,6 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/deformable_model.h"
-#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_step_memory.h"
@@ -32,12 +31,18 @@ namespace drake {
 namespace multibody {
 
 #ifndef DRAKE_DOXYGEN_CXX
+// Forward declarations for multibody_plant.h.
 template <typename T>
 class MultibodyPlant;
 #endif
 
 namespace internal {
 
+// Forward declarations for desired_state_input.h.
+template <typename>
+class DesiredStateInput;
+
+// Forward declarations for multibody_plant.h.
 template <typename T>
 struct JointLockingCacheData;
 
