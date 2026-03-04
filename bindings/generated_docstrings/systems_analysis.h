@@ -4754,9 +4754,8 @@ is advanced:
 .. code-block:: c++
 
     simulator.set_monitor([](const Context<T>& root_context) {
-      std∷cout << root_context.get_time() << " "
-                << root_context.get_continuous_state_vector()
-                << std∷endl;
+      fmt∷print("{} {}\n", root_context.get_time(),
+                            root_context.get_continuous_state_vector());
       return EventStatus∷Succeeded();
     });
 
