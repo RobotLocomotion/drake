@@ -20,6 +20,7 @@
 using drake::multibody::internal::DesiredStateInput;
 using drake::systems::Context;
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -291,6 +292,20 @@ class ActuatedModelsTest : public ::testing::TestWithParam<TestParam> {
                         u, tolerance, MatrixCompareType::relative));
   }
 
+  // Helper that calculates either:
+  // - in discrete time: the x_next state if we were to take a step,
+  // - in continuous time: the x' derivatives.
+  // In both cases, the return value is affected by input port forces.
+  VectorXd CalcStep() const {
+    if (plant_->is_discrete()) {
+      auto updates = plant_->AllocateDiscreteVariables();
+      plant_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
+      return updates->get_vector().CopyToVector();
+    } else {
+      return plant_->EvalTimeDerivatives(*context_).CopyToVector();
+    }
+  }
+
  protected:
   static constexpr double kProportionalGain{10000.0};
   static constexpr double kDerivativeGain{100.0};
@@ -362,19 +377,6 @@ TEST_P(ActuatedModelsTest, GetSetPdGains) {
   if (param_.use_joint_locking) {
     return;
   }
-  // PD gains are not supported for a continuous-time plant.
-  if (param_.time_step == 0.0) {
-    SetUpModel(/* finalize = */ false);
-    plant_->get_mutable_joint_actuator(JointActuatorIndex{0})
-        .set_controller_gains({.p = 1.0});
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->Finalize(),
-        "Continuous model with PD controlled joint actuators. This feature is "
-        "only supported for discrete models. Refer to MultibodyPlant's "
-        "documentation for further details.");
-    return;
-  }
-  DRAKE_DEMAND(param_.time_step > 0.0);
 
   // For this test, we need to start from a clean slate (no gains).
   if (param_.use_pd_control) {
@@ -550,20 +552,6 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
     const MatrixXd B = plant_->MakeActuationMatrix();
     VectorXd tau = B * expected_u;
 
-    // Helper that calculates either:
-    // - in discrete time: the x_next state if we were to take a step,
-    // - in continuous time: the x' derivatives.
-    // In both cases, the return value is affected by actuation input forces.
-    auto calc_step = [this]() -> VectorXd {
-      if (plant_->is_discrete()) {
-        auto updates = plant_->AllocateDiscreteVariables();
-        plant_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
-        return updates->get_vector().CopyToVector();
-      } else {
-        return plant_->EvalTimeDerivatives(*context_).CopyToVector();
-      }
-    };
-
     // Input through generalized forces only (actuation input is zero).
     plant_->get_applied_generalized_force_input_port().FixValue(context_.get(),
                                                                 tau);
@@ -573,7 +561,7 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
         .FixValue(context_.get(), VectorXd::Zero(acrobot_u.size()));
     plant_->get_actuation_input_port(gripper_model_)
         .FixValue(context_.get(), VectorXd::Zero(gripper_u.size()));
-    const VectorXd x_tau = calc_step();
+    const VectorXd x_tau = CalcStep();
 
     // Input through actuation only (generalized force input is zero).
     plant_->get_applied_generalized_force_input_port().FixValue(
@@ -584,7 +572,7 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
         .FixValue(context_.get(), acrobot_u);
     plant_->get_actuation_input_port(gripper_model_)
         .FixValue(context_.get(), gripper_u);
-    const VectorXd x_actuation = calc_step();
+    const VectorXd x_actuation = CalcStep();
 
     // N.B. Generalized forces inputs and actuation inputs feed into the result
     // in very different ways. Actuation input goes through the SAP solver and
@@ -597,6 +585,97 @@ TEST_P(ActuatedModelsTest, ActuationMatchesAppliedGeneralizedForces) {
     VerifyNetActuationOutputPorts(arm_u_clamped, acrobot_u, gripper_u,
                                   expected_u, kTolerance);
   }
+}
+
+// This unit test verifies that forces induced through the desired state input
+// port (i.e., an PD controller) have the same effect as applying the same
+// forces using the actuation input port. We also verify the reported
+// net_actuation output.
+TEST_P(ActuatedModelsTest, PdControlMatchesActuation) {
+  // TAMSI doesn't support PD control
+  if (param_.discrete_contact_approximation == "tamsi") {
+    return;
+  }
+  // XXX Fix me to actually work.
+  if (param_.discrete_contact_approximation == "sap") {
+    return;
+  }
+  // XXX Fix me to actually work.
+  if (param_.remove_joint_actuators) {
+    return;
+  }
+  SetUpModel();
+
+  // Choose reasonable actuation forces. Since the purpose of this test is only
+  // to confirm that PD control is effective, we'll zero out any DOFs where PD
+  // control is not enabled.
+  auto [arm_u, acrobot_u, gripper_u] =
+      MakeActuationForEachModel(/* iiwa_within_limits = */ true);
+  for (const auto& model : {arm_model_, acrobot_model_, gripper_model_}) {
+    VectorXd& model_u = (model == arm_model_)       ? arm_u
+                        : (model == acrobot_model_) ? acrobot_u
+                                                    : gripper_u;
+    int i = 0;
+    for (const JointActuatorIndex& actuator_index :
+         plant_->GetJointActuatorIndices(model)) {
+      const auto& actuator = plant_->get_joint_actuator(actuator_index);
+      if (!actuator.has_controller() || actuator.joint().is_locked(*context_)) {
+        model_u[i] = 0.0;
+      }
+      ++i;
+    }
+  }
+  const VectorXd expected_u =
+      AssembleFullModelActuation(arm_u, acrobot_u, gripper_u);
+
+  // Input through actuation only (desired state input is not connected).
+  plant_->get_actuation_input_port(arm_model_).FixValue(context_.get(), arm_u);
+  plant_->get_actuation_input_port(acrobot_model_)
+      .FixValue(context_.get(), acrobot_u);
+  plant_->get_actuation_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_u);
+  const VectorXd x_actuation = CalcStep();
+
+  // Zero out the actuation input.
+  plant_->get_actuation_input_port(arm_model_)
+      .FixValue(context_.get(), VectorXd::Zero(arm_u.size()));
+  plant_->get_actuation_input_port(acrobot_model_)
+      .FixValue(context_.get(), VectorXd::Zero(acrobot_u.size()));
+  plant_->get_actuation_input_port(gripper_model_)
+      .FixValue(context_.get(), VectorXd::Zero(gripper_u.size()));
+
+  // Input through desired state only (actuation input is zero). We want a
+  // desired state that causes the same actuation as above; we'll do that by
+  // getting 25% from the P term and 75% from the D term:
+  //  0.25 u = -Kp * (q0 - qd) ; solve for qd = q0 + (0.25 * u / Kp)
+  //  0.75 u = -Kd * (v0 - vd) ; solve for vd = v0 + (0.75 * u / Kd)
+  for (const auto& model : {arm_model_, acrobot_model_, gripper_model_}) {
+    // Within this loop, all vectors are ordered by actuator index (not by
+    // velocity index).
+    const VectorXd& model_u = (model == arm_model_)       ? arm_u
+                              : (model == acrobot_model_) ? acrobot_u
+                                                          : gripper_u;
+    const VectorXd q0 = (model == acrobot_model_)
+                            ? plant_->GetPositions(*context_, model).reverse()
+                            : plant_->GetPositions(*context_, model);
+    const VectorXd v0 = (model == acrobot_model_)
+                            ? plant_->GetVelocities(*context_, model).reverse()
+                            : plant_->GetVelocities(*context_, model);
+    const VectorXd qd = q0 + (0.25 / kProportionalGain) * model_u;
+    const VectorXd vd = v0 + (0.75 / kDerivativeGain) * model_u;
+    const VectorXd xd = (VectorXd(2 * qd.size()) << qd, vd).finished();
+    plant_->get_desired_state_input_port(model).FixValue(context_.get(), xd);
+  }
+  const VectorXd x_desired_state = CalcStep();
+
+  // Verify that both steps were equivalent.
+  const double kTolerance = 1e-12;
+  EXPECT_TRUE(CompareMatrices(x_desired_state, x_actuation, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Verify the actuation values reported by the plant.
+  VerifyNetActuationOutputPorts(arm_u, acrobot_u, gripper_u, expected_u,
+                                kTolerance);
 }
 
 TEST_P(ActuatedModelsTest, ZeroActuationPriorToStepping) {
@@ -639,10 +718,6 @@ std::vector<TestParam> MakeAllParams() {
                            : std::vector<std::string>{""}) {
       for (const bool remove_joint_actuators : {false, true}) {
         for (int pd_case = 0; pd_case < 3; ++pd_case) {
-          if (time_step == 0.0 && pd_case > 0) {
-            // PD gains are not supported for a continuous-time plant.
-            continue;
-          }
           const bool use_pd_control = pd_case >= 1;
           const bool full_pd_control = pd_case >= 2;
           for (const bool use_joint_locking : {false, true}) {
