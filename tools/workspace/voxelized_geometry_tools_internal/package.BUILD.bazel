@@ -186,12 +186,28 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "voxel_raycasting_test",
+    srcs = ["test/voxel_raycasting_test.cpp"],
+    tags = ["no_kcov"],
+    deps = [
+        ":voxelized_geometry_tools",
+        ":cuda_voxelization_helpers",
+        ":opencl_voxelization_helpers",
+        ":pointcloud_voxelization",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@googletest//:gtest",
+    ],
+)
+
 test_suite(
     name = "test_suite",
     tests = [
         ":mesh_rasterization_test",
+        ":occupancy_map_conversions_test",
         ":pointcloud_voxelization_test",
         ":sdf_generation_test",
+        ":voxel_raycasting_test",
     ],
 )
 
