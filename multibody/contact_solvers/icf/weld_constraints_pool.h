@@ -61,7 +61,7 @@ class WeldConstraintsPool {
   const IcfModel<T>& model() const { return *model_; }
 
   /* Returns the total number of weld constraints stored in this pool. */
-  int num_constraints() const { return ssize(bodies_); }
+  int num_constraints() const { return ssize(body_pairs_); }
 
   /* Resizes the constraints pool to store the given number of constraints.
 
@@ -117,14 +117,16 @@ class WeldConstraintsPool {
                          T* d2cost) const;
 
   /* Testing only access. */
-  const std::vector<std::pair<int, int>>& bodies() const { return bodies_; }
+  const std::vector<std::pair<int, int>>& body_pairs() const {
+    return body_pairs_;
+  }
 
  private:
   const IcfModel<T>* const model_;  // The parent model.
 
-  // Bodies involved in each weld constraint, (bodyA, bodyB).
+  // Body pairs involved in each weld constraint, (bodyA, bodyB).
   // bodyB is always dynamic (not anchored).
-  std::vector<std::pair<int, int>> bodies_;
+  std::vector<std::pair<int, int>> body_pairs_;
 
   // Per-constraint data, all indexed by constraint index k.
   EigenPool<Vector3<T>> p_AP_W_;    // Position of P in A, expressed in W.

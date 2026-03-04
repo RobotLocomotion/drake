@@ -53,7 +53,7 @@ WeldConstraintsPool<T>::~WeldConstraintsPool() = default;
 
 template <typename T>
 void WeldConstraintsPool<T>::Resize(const int num_constraints) {
-  bodies_.resize(num_constraints);
+  body_pairs_.resize(num_constraints);
   p_AP_W_.Resize(num_constraints, 3, 1);
   p_BQ_W_.Resize(num_constraints, 3, 1);
   p_PoQo_W_.Resize(num_constraints, 3, 1);
@@ -70,7 +70,7 @@ void WeldConstraintsPool<T>::Set(int index, int bodyA, int bodyB,
   DRAKE_ASSERT(0 <= index && index < num_constraints());
   DRAKE_ASSERT(!model().is_anchored(bodyB));
 
-  bodies_[index] = std::make_pair(bodyA, bodyB);
+  body_pairs_[index] = std::make_pair(bodyA, bodyB);
   p_AP_W_[index] = p_AP_W;
   p_BQ_W_[index] = p_BQ_W;
   p_PoQo_W_[index] = p_PoQo_W;
@@ -123,8 +123,8 @@ void WeldConstraintsPool<T>::CalcSparsityPattern(
     std::vector<std::vector<int>>* sparsity) const {
   DRAKE_ASSERT(sparsity != nullptr);
   for (int k = 0; k < num_constraints(); ++k) {
-    const int bodyA = bodies_[k].first;
-    const int bodyB = bodies_[k].second;
+    const int bodyA = body_pairs_[k].first;
+    const int bodyB = body_pairs_[k].second;
     if (!model().is_anchored(bodyA)) {
       const int c_a = model().body_to_clique(bodyA);
       const int c_b = model().body_to_clique(bodyB);
@@ -145,8 +145,8 @@ void WeldConstraintsPool<T>::CalcData(
   T& cost = weld_data->mutable_cost();
   cost = 0;
   for (int k = 0; k < num_constraints(); ++k) {
-    const int bodyA = bodies_[k].first;
-    const int bodyB = bodies_[k].second;
+    const int bodyA = body_pairs_[k].first;
+    const int bodyB = body_pairs_[k].second;
 
     // Compute constraint velocity vc = V_W_AmBm at the midpoint M.
     // M is at the midpoint of P and Q: p_WM = 0.5(p_WP + p_WQ).
@@ -197,10 +197,12 @@ void WeldConstraintsPool<T>::AccumulateGradient(const IcfData<T>& data,
   const WeldConstraintsDataPool<T>& weld_data = data.weld_constraints_data();
 
   for (int k = 0; k < num_constraints(); ++k) {
-    const int bodyA = bodies_[k].first;
-    const int bodyB = bodies_[k].second;
+    const int bodyA = body_pairs_[k].first;
+    const int bodyB = body_pairs_[k].second;
     const int c_b = model().body_to_clique(bodyB);
 
+    // The gradient ∂ℓ/∂v of the weld cost ℓ = ½(v̂ - vc)ᵀR⁻¹(v̂ - vc) is
+    // γ = R⁻¹⋅(v̂ - vc) (R is diagonal).
     const Vector6<T>& gamma = weld_data.gamma(k);
 
     // The constraint Jacobian maps v → vc = V_W_AmBm.
@@ -253,8 +255,8 @@ void WeldConstraintsPool<T>::AccumulateHessian(
   auto& GJa_pool = data.scratch().GJa_pool;
 
   for (int k = 0; k < num_constraints(); ++k) {
-    const int bodyA = bodies_[k].first;
-    const int bodyB = bodies_[k].second;
+    const int bodyA = body_pairs_[k].first;
+    const int bodyB = body_pairs_[k].second;
     const int c_b = model().body_to_clique(bodyB);
     const int c_a = model().body_to_clique(bodyA);  // negative if anchored.
     const int nv_b = model().clique_size(c_b);
@@ -262,8 +264,8 @@ void WeldConstraintsPool<T>::AccumulateHessian(
 
     const Vector6<T>& R_diag = R_[k];
 
-    // The Hessian of the weld cost ℓ = ½(v̂ - vc)ᵀR⁻¹(v̂ - vc)
-    // with respect to the constraint velocity is simply R⁻¹ (diagonal).
+    // The Hessian ∂²ℓ/∂v² of the weld cost ℓ = ½(v̂ - vc)ᵀR⁻¹(v̂ - vc)
+    // is simply R⁻¹ (diagonal).
     // G = diag(R⁻¹) ∈ ℝ⁶ˣ⁶
     const Vector6<T> R_inv = R_diag.cwiseInverse();
     Matrix6<T> G = Matrix6<T>::Zero();
@@ -285,9 +287,9 @@ void WeldConstraintsPool<T>::AccumulateHessian(
     const Matrix3<T> Gr = G.template topLeftCorner<3, 3>();
     const Matrix3<T> Gt = G.template bottomRightCorner<3, 3>();
     Matrix6<T> G_Bp;
-    G_Bp.template topLeftCorner<3, 3>() = Gr + px_B * Gt * px_B;
-    G_Bp.template topRightCorner<3, 3>() = -px_B * Gt;
-    G_Bp.template bottomLeftCorner<3, 3>() = Gt * px_B;
+    G_Bp.template topLeftCorner<3, 3>() = Gr - px_B * Gt * px_B;
+    G_Bp.template topRightCorner<3, 3>() = px_B * Gt;
+    G_Bp.template bottomLeftCorner<3, 3>() = -Gt * px_B;
     G_Bp.template bottomRightCorner<3, 3>() = Gt;
 
     // Body B contribution: H_BB = J_WBᵀ⋅G_Bp⋅J_WB
@@ -314,9 +316,9 @@ void WeldConstraintsPool<T>::AccumulateHessian(
       // G_Ap = Φ_A(p_AoAm)ᵀ⋅G⋅Φ_A(p_AoAm)
       const Matrix3<T> px_A = Skew(p_AoAm_W);
       Matrix6<T> G_Ap;
-      G_Ap.template topLeftCorner<3, 3>() = Gr + px_A * Gt * px_A;
-      G_Ap.template topRightCorner<3, 3>() = -px_A * Gt;
-      G_Ap.template bottomLeftCorner<3, 3>() = Gt * px_A;
+      G_Ap.template topLeftCorner<3, 3>() = Gr - px_A * Gt * px_A;
+      G_Ap.template topRightCorner<3, 3>() = px_A * Gt;
+      G_Ap.template bottomLeftCorner<3, 3>() = -Gt * px_A;
       G_Ap.template bottomRightCorner<3, 3>() = Gt;
 
       // H_AA = J_WAᵀ⋅G_Ap⋅J_WA
@@ -333,11 +335,11 @@ void WeldConstraintsPool<T>::AccumulateHessian(
       hessian->AddToBlock(c_a, c_a, H_AA);
 
       // Cross-clique term: H_BA = −J_WBᵀ⋅Φ_Bᵀ⋅G⋅Φ_A⋅J_WA
-      // G_cross = Φ_B(p_BoBm)ᵀ⋅G⋅Φ_A(p_AoAm)
+      // G_cross = −Φ_B(p_BoBm)ᵀ⋅G⋅Φ_A(p_AoAm)
       Matrix6<T> G_cross;
       G_cross.template topLeftCorner<3, 3>() = -(Gr - px_B * Gt * px_A);
-      G_cross.template topRightCorner<3, 3>() = px_B * Gt;
-      G_cross.template bottomLeftCorner<3, 3>() = -(Gt * px_A);
+      G_cross.template topRightCorner<3, 3>() = -px_B * Gt;
+      G_cross.template bottomLeftCorner<3, 3>() = Gt * px_A;
       G_cross.template bottomRightCorner<3, 3>() = -Gt;
 
       H_BA_pool.Resize(1, nv_b, nv_a);
@@ -383,8 +385,8 @@ void WeldConstraintsPool<T>::CalcCostAlongLine(
   *d2cost = 0.0;
 
   for (int k = 0; k < num_constraints(); ++k) {
-    const int bodyA = bodies_[k].first;
-    const int bodyB = bodies_[k].second;
+    const int bodyA = body_pairs_[k].first;
+    const int bodyB = body_pairs_[k].second;
 
     // Compute the constraint "velocity" in the search direction w.
     // U_AmBm_W = uc (constraint velocity evaluated on w).
