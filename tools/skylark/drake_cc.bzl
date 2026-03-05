@@ -708,7 +708,8 @@ def drake_cc_package_library(
     confirm that all of the drake_cc_library targets have been listed as deps.
 
     Within Drake, by convention, every package (i.e., directory) that has any
-    C++ code should call this macro to create a library for its package.
+    C++ code should call this macro to create a library for its package,
+    except for code in `//examples/...`.
 
     The name must be the same as the final element of the current package.
     This rule does not accept srcs, hdrs, etc. -- only deps.
@@ -717,6 +718,9 @@ def drake_cc_package_library(
     The visibility must be explicitly provided, not relying on the BUILD file
     default.  Setting to "//visibility:public" is strongly recommended.
     """
+    if native.package_name().split("/")[0] == "examples":
+        fail("Do not use drake_cc_package_library for examples")
+
     _check_package_library_name(name)
     if not visibility:
         fail(("//{}:{} must provide a visibility setting; " +
