@@ -357,7 +357,7 @@ crate_universe = use_extension(
 use_repo(
     crate_universe,
     "crate",
-    "crate__cfg-if-1.0.3",
+    "crate__cfg-if-1.0.4",
     "crate__clarabel-0.11.1",
     "crate__paste-1.0.15",
     "crate_licenses",
