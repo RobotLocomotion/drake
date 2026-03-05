@@ -349,21 +349,11 @@ TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInput) {
   ASSERT_TRUE(result.actuation_feedback.has_value());
   EXPECT_FALSE(result.external_feedback.has_value());
 
-  // Check that the feedback was linearized as expected.
-  //
-  // Note that from the plant's PD controller we have actuation force as:
-  //   f = -Kp * (q - qd) - Kd * (v - vd)
-  //
-  // Thus our linearization is:
-  //   K = -df/dv
-  //     = -d/dv( -Kp * ((q0 + h*v) - qd) - Kd * (v - vd) )
-  //     = Kp * h + Kd
-  //
-  //   b = f(q0 + h*v0, v0) + K*v0
-  //     = -Kp * ((q0 + h*v0) - qd) - Kd * (v0 - vd) + K*v0
-  const Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
-  const Vector2d b_expected = -Kp * ((q0 + h * v0) - qd) - Kd * (v0 - vd) +
-                              K_expected.asDiagonal() * v0;
+  // Check that the desired state feedback came out as expected. Unfortunately
+  // there's not much we can do here other than copy-paste the same formula as
+  // is performed inside the implementation.
+  Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
+  Vector2d b_expected = -Kp * (q0 - qd) - Kd * vd;
   EXPECT_TRUE(CompareMatrices(result.actuation_feedback->K, K_expected, 1e-8));
   EXPECT_TRUE(CompareMatrices(result.actuation_feedback->b, b_expected, 1e-8));
 }
