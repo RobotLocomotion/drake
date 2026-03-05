@@ -2,6 +2,9 @@ r"""
 Downloads the to-be-released binaries, verifies they are all the same version,
 and prepares to upload them per the release playbook.
 
+When running this tool, the current Drake checkout must have been merged up
+to the latest master (or at least, newer than the intended release git sha).
+
 This program is supported only on Ubuntu (not macOS).
 
 Use bazel to build the tool.
@@ -16,6 +19,7 @@ Here's an example of how download the release artifacts:
 # `release_candidate` (without the "download" part).
 
 import argparse
+import hashlib
 from io import StringIO
 import os
 from pathlib import Path
@@ -203,6 +207,42 @@ def _check_deb_versions(*, filenames, version):
         raise UserError("\n".join(version_errors))
 
 
+def _create_tar_gz(*, git_sha, tmp_dir: str, version: str):
+    """Creates a Drake tar.gz source archive of the given `git_sha`, storing it
+    at the given `path`.
+    """
+    assert len(git_sha) == 40
+    assert version[0] == "v"
+
+    # Create the tar.gz using this program's git clone (but at the release sha,
+    # not the current revision).
+    output_name = f"drake-{version[1:]}-src.tar.gz"
+    output_path = f"{tmp_dir}/{output_name}"
+    drake_root = Path(__file__).resolve().parent.parent.parent
+    subprocess.check_call(
+        [
+            "git",
+            "archive",
+            "--format=tar.gz",
+            f"--output={output_path}",
+            f"--prefix=drake-{version[1:]}/",
+            git_sha,
+        ],
+        cwd=drake_root,
+    )
+
+    # Write checksum files.
+    content = Path(output_path).read_bytes()
+    for algorithm, hasher in dict(
+        sha256=hashlib.sha256(), sha512=hashlib.sha512()
+    ).items():
+        hasher.update(content)
+        Path(f"{output_path}.{algorithm}").write_text(
+            f"{hasher.hexdigest()} {output_name}\n",
+            encoding="utf-8",
+        )
+
+
 def _download_version(*, version):
     """Implements the --version (download) command line action."""
     if version[0] != "v":
@@ -224,6 +264,13 @@ def _download_version(*, version):
 
     _check_deb_versions(filenames=filenames, version=version)
     print("The debian binaries all have the same version.")
+
+    _create_tar_gz(
+        git_sha=git_sha,
+        tmp_dir=tmp_dir,
+        version=version,
+    )
+    print("The source archive was created successfully.")
 
     print()
     print(
