@@ -21,6 +21,7 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
@@ -2925,53 +2926,41 @@ void MultibodyPlant<T>::CalcDesiredStateInput(
     internal::DesiredStateInput<T>* desired_state_input) const {
   this->ValidateContext(context);
 
-  // Checks if desired state x for model_instance has NaNs. Only entries
-  // corresponding to PD-controlled actuators on non-locked joints are checked
-  // and otherwise ignored.
-  auto has_nans_unless_ignored = [&](ModelInstanceIndex model_instance,
-                                     const VectorX<T>& x) -> bool {
-    using std::isnan;
-    const int nu = num_actuators(model_instance);
-    DRAKE_DEMAND(x.size() == 2 * nu);
-    const auto q = x.head(nu);
-    const auto v = x.tail(nu);
-    int a = 0;  // Actuator index local to its model-instance.
-    for (JointActuatorIndex actuator_index :
-         GetJointActuatorIndices(model_instance)) {
-      const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
-      const bool is_locked = actuator.joint().is_locked(context);
-      if (actuator.has_controller() && !is_locked) {
-        if (isnan(q[a]) || isnan(v[a])) return true;
-      }
-      ++a;
-    }
-    return false;
-  };
+  auto& items = desired_state_input->items;
+  items.clear();
 
-  // Assemble the vector from the model instance input ports.
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    // Ignore the port if the model instance has no actuated DoFs.
-    const int instance_num_u = num_actuated_dofs(model_instance_index);
-    if (instance_num_u == 0) continue;
-
-    const auto& xd_input_port =
-        this->get_desired_state_input_port(model_instance_index);
-    if (xd_input_port.HasValue(context)) {
-      const auto& xd_instance = xd_input_port.Eval(context);
-      if (has_nans_unless_ignored(model_instance_index, xd_instance)) {
-        throw std::runtime_error(
-            fmt::format("Desired state input port for model "
-                        "instance {} contains NaN.",
-                        GetModelInstanceName(model_instance_index)));
+  for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+    const int nu = num_actuated_dofs(i);
+    if (nu > 0) {
+      const auto& port = this->get_desired_state_input_port(i);
+      if (port.HasValue(context)) {
+        const auto& xd = port.Eval(context);
+        DRAKE_ASSERT(xd.size() == 2 * nu);
+        const auto qd = xd.head(nu);
+        const auto vd = xd.tail(nu);
+        int a = 0;  // Actuator index local to its model-instance.
+        for (JointActuatorIndex actuator_index : GetJointActuatorIndices(i)) {
+          const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+          if (actuator.has_controller()) {
+            if (!actuator.joint().is_locked(context)) {
+              using std::isnan;
+              if (isnan(qd[a]) || isnan(vd[a])) {
+                throw std::runtime_error(fmt::format(
+                    "Desired state input port for model instance {} contains "
+                    "NaN.",
+                    GetModelInstanceName(i)));
+              }
+              items.push_back({
+                  .actuator_index = actuator_index,
+                  .qd = qd[a],
+                  .vd = vd[a],
+              });
+            }
+          }
+          ++a;
+        }
+        DRAKE_ASSERT(a == nu);
       }
-      const auto qd = xd_instance.head(instance_num_u);
-      const auto vd = xd_instance.tail(instance_num_u);
-      desired_state_input->SetModelInstanceDesiredStates(model_instance_index,
-                                                         qd, vd);
-    } else {
-      desired_state_input->ClearModelInstanceDesiredStates(
-          model_instance_index);
     }
   }
 }
@@ -3782,8 +3771,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       prerequisites.insert(get_desired_state_input_port(i).ticket());
     }
     const auto& desired_state_input_cache_entry = this->DeclareCacheEntry(
-        "DesiredStateInput",
-        internal::DesiredStateInput<T>(num_model_instances()),
+        "DesiredStateInput", internal::DesiredStateInput<T>(),
         &MultibodyPlant::CalcDesiredStateInput, std::move(prerequisites));
     cache_indices_.desired_state_input =
         desired_state_input_cache_entry.cache_index();
