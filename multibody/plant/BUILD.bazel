@@ -138,7 +138,6 @@ drake_cc_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
-        ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":distance_constraint_params",
@@ -165,6 +164,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":contact_properties",
+        ":desired_state_input",
         ":hydroelastic_traction_calculator",
     ],
 )
@@ -449,6 +449,7 @@ drake_cc_googletest(
     ],
     shard_count = 2,
     deps = [
+        ":desired_state_input",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -477,13 +478,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//multibody/plant/test_utilities:rigid_body_on_compliant_ground",
-    ],
-)
-
-drake_cc_googletest(
-    name = "desired_state_input_test",
-    deps = [
-        ":desired_state_input",
     ],
 )
 
