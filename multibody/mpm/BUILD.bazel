@@ -11,11 +11,15 @@ load(
     "drake_cc_optional_library",
 )
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "mpm",
-    visibility = ["//visibility:public"],
+    visibility = [
+        # TODO(jwnimmer-tri) We can make this public once MPM is used by
+        # something else in Drake (e.g., MbP or etc.).
+        "//visibility:private",
+    ],
     deps = [
         ":bspline_weights",
         ":grid_data",
