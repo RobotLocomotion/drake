@@ -24,7 +24,6 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/distance_constraint_params.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -109,6 +108,9 @@ struct ContactByPenaltyMethodParameters {
   std::optional<double> gravity;
 };
 
+// Forward declarations for desired_state_input.h.
+template <typename>
+struct DesiredStateInput;
 // Forward declarations for discrete_update_manager.h.
 template <typename>
 class DiscreteUpdateManager;
