@@ -314,6 +314,60 @@ class IcfExternalSystemsLinearizerChoosePortTest
     : public LinearizerTestFixture,
       public ::testing::TestWithParam<int /* choose_plant_port */> {};
 
+// Checks linearization of the desired state input port.
+TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInput) {
+  // Add a pendulum.
+  const ModelInstanceIndex model_instance =
+      Parser(builder_.get())
+          .AddModelsFromString(kActuatedPendulumXml, "xml")
+          .at(0);
+  plant_.Finalize();
+  Build();
+
+  // Configure its current state.
+  const Vector2d q0{0.1, 0.2};
+  const Vector2d v0{0.3, 0.4};
+  plant_.SetPositions(plant_context_, q0);
+  plant_.SetVelocities(plant_context_, v0);
+
+  // Configure its desired state.
+  const Vector2d qd{0.11, 0.22};
+  const Vector2d vd{0.33, 0.44};
+  plant_.get_desired_state_input_port(model_instance)
+      .FixValue(plant_context_, (Vector4d() << qd, vd).finished());
+  const double Kp = 0.5;
+  const double Kd = 0.25;
+  for (const JointActuatorIndex& actuator :
+       plant_.GetJointActuatorIndices(model_instance)) {
+    plant_.get_mutable_joint_actuator(actuator).set_controller_gains(
+        {.p = Kp, .d = Kd});
+  }
+
+  // Linearize the implicit PD controller actuation around the current state.
+  const double h = 0.01;
+  const auto result = LinearizeExternalSystem(h);
+  ASSERT_TRUE(result.actuation_feedback.has_value());
+  EXPECT_FALSE(result.external_feedback.has_value());
+
+  // Check that the feedback was linearized as expected.
+  //
+  // Note that from the plant's PD controller we have actuation force as:
+  //   f = -Kp * (q - qd) - Kd * (v - vd)
+  //
+  // Thus our linearization is:
+  //   K = -df/dv
+  //     = -d/dv( -Kp * ((q0 + h*v) - qd) - Kd * (v - vd) )
+  //     = Kp * h + Kd
+  //
+  //   b = f(q0 + h*v0, v0) + K*v0
+  //     = -Kp * ((q0 + h*v0) - qd) - Kd * (v0 - vd) + K*v0
+  const Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
+  const Vector2d b_expected = -Kp * ((q0 + h * v0) - qd) - Kd * (v0 - vd) +
+                              K_expected.asDiagonal() * v0;
+  EXPECT_TRUE(CompareMatrices(result.actuation_feedback->K, K_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(result.actuation_feedback->b, b_expected, 1e-8));
+}
+
 // Run a test with a pendulum and an external (PID) controller.
 TEST_P(IcfExternalSystemsLinearizerChoosePortTest, ActuationInput) {
   const int choose_plant_port = GetParam();

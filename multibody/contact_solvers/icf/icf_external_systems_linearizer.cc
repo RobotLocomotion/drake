@@ -47,6 +47,11 @@ std::tuple<bool, bool> IcfExternalSystemsLinearizer<T>::LinearizeExternalSystem(
     return {false, false};
   }
 
+  // TODO(#24175) If we have `has_external_forces == false` and the only
+  // actuation forces comes from desired_state input ports (i.e., none of the
+  // actuation input ports are connected), we could skip doing the finite
+  // differences and instead just read out the linearization directly.
+
   // Get references to the feedback gains that we'll set as output.
   VectorX<T>& Ku = actuation_feedback->K;
   VectorX<T>& bu = actuation_feedback->b;
@@ -200,7 +205,7 @@ void IcfExternalSystemsLinearizer<T>::CalcActuationForces(
     const Context<T>& context, VectorX<T>* tau) const {
   using Attorney = multibody::internal::MultibodyPlantIcfAttorney<T>;
   tau->setZero();
-  Attorney::AddJointActuationForces(plant_, context, tau);
+  Attorney::AddJointActuationForcesContinuous(plant_, context, tau);
 }
 
 template <typename T>
