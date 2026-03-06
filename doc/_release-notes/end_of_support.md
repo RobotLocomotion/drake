@@ -9,6 +9,9 @@ If you need to use these, you can use an old release of Drake.
 
 # Ubuntu packages
 
+* Ubuntu 22.04 (Jammy)
+  * The last version with support for Ubuntu 22.04 was
+    [v1.51.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.0).
 * Ubuntu 20.04 (Focal)
   * The last version with support for Ubuntu 20.04 was
     [v1.26.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.26.0).

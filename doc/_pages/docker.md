@@ -55,7 +55,6 @@ published X.Y.Z version numbers.
 
 The Docker tags for Drake's stable releases are spelled like:
 
-* ``jammy-X.Y.Z`` for the Ubuntu 22.04 image of Drake vX.Y.Z.
 * ``noble-X.Y.Z`` for the Ubuntu 24.04 image of Drake vX.Y.Z.
 * ``X.Y.Z`` is a synonym for ``noble-X.Y.Z``.
 
@@ -78,8 +77,6 @@ docker pull robotlocomotion/drake:latest
 
 The Docker tags for Drake's nightly releases are spelled like:
 
-* ``jammy-YYYYMMDD`` for the Ubuntu 22.04 image of Drake as of date YYYY-MM-DD.
-* ``jammy`` is a synonym for the most recent ``jammy-YYYYMMDD``.
 * ``noble-YYYYMMDD`` for the Ubuntu 24.04 image of Drake as of date YYYY-MM-DD.
 * ``noble`` is a synonym for the most recent ``noble-YYYYMMDD``.
 * ``YYYYMMDD`` is a synonym for the most recent ``noble-YYYYMMDD``.
