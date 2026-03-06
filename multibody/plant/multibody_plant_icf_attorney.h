@@ -43,10 +43,15 @@ class MultibodyPlantIcfAttorney {
     return plant.AddAppliedExternalSpatialForces(context, forces);
   }
 
-  static void AddJointActuationForces(const MultibodyPlant<T>& plant,
-                                      const systems::Context<T>& context,
-                                      VectorX<T>* forces) {
-    return plant.AddJointActuationForces(context, forces);
+  static const VectorX<T>& EvalActuationInput(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      bool apply_effort_limit) {
+    return plant.EvalActuationInput(context, apply_effort_limit);
+  }
+
+  static const DesiredStateInput<T>& EvalDesiredStateInput(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalDesiredStateInput(context);
   }
 
   static const ContactByPenaltyMethodParameters&
