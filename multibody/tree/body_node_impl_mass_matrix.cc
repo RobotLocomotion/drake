@@ -142,6 +142,157 @@ DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(6)
 
 #undef DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD
 
+template <typename T, class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::
+    CalcMassMatrixContributionViaM_TipToBase(
+        const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+        const std::vector<SpatialInertia<T>>& I_BMo_M_cache,
+        EigenPtr<MatrixX<T>> M) const {
+  if constexpr (kNv != 0) {
+    const MobodIndex B_index = mobod_index();
+    // This node's 6x6 composite body inertia.
+    const SpatialInertia<T>& I_BMo_M = I_BMo_M_cache[B_index];
+
+    // For now, calc_tau_from_M() needs these.
+    const math::RigidTransform<T>& X_FM = pcm.get_X_FM(B_index);
+    const T* const q = get_q(positions);
+
+    // The diagonal element for body B will be Hbᵀ⋅Ib⋅Hb, calculated like this:
+    //   Mₘₓₘ = Hb_FM_Mᵀₘₓ₆ ⋅ Fm_BMo_M₆ₓₘ
+    //   where Fm_BMo_M = I_BMo_M₆ₓ₆ ⋅ Hb_FM_M₆ₓₘ
+    // We'll need Fm_BMo_M again for the off-diagonals that also involve this
+    // body B.
+
+    // To calculate Fm, we can take one row at a time of I and multiply by H,
+    // producing a 1xm row, Fm.row(i) = I.row(i) ⋅ H. Better, though, if we
+    // calculate Fmᵀ = Hᵀ ⋅ Iᵀ because that looks like our force projection
+    // function calc_tau_from_M(). But, I is symmetric so we have
+    // Fmᵀ = Hᵀ * I. We'll do 6 applications of Hᵀ to columns of I to give
+    // columns of Fmᵀ which are rows of Fm. Then to compute M = Hᵀ⋅Fm we'll
+    // do m more applications of Hᵀ to columns of Fm to yield columns of M.
+
+    // This ugly code is just calculating Fm_BMo_Mᵀ = H_FM_Mᵀ * I_BMo_M, with
+    // the inertia considered as a 6x6 matrix. But that's not how we represent
+    // spatial inertia! We have cheap (1 flop) inline methods for constructing
+    // columns of a _unit_ spatial inertia suitable for our specialized inline
+    // methods for multiplying by H_FM_Mᵀ. For a revolute mobilizer that is
+    // just a 0-flop extraction of one of the elements of the I_BMo_M column.
+    // And since everything is inline, it is possible for the compiler to
+    // turn all of this into just 6 loads and 6 scalar multiplies (for a
+    // revolute or prismatic mobilizer).
+    Eigen::Matrix<T, 6, kNv> Fm_BMo_M;
+    {
+      Eigen::Matrix<T, 1, kNv> Fm_i;  // Contiguous storage needed.
+      const T& mass = I_BMo_M.get_mass();
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col0(), Fm_i.data());
+      Fm_BMo_M.row(0) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col1(), Fm_i.data());
+      Fm_BMo_M.row(1) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col2(), Fm_i.data());
+      Fm_BMo_M.row(2) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col3(), Fm_i.data());
+      Fm_BMo_M.row(3) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col4(), Fm_i.data());
+      Fm_BMo_M.row(4) = mass * Fm_i;
+      mobilizer_->calc_tau_from_M(X_FM, q, I_BMo_M.unit_col5(), Fm_i.data());
+      Fm_BMo_M.row(5) = mass * Fm_i;
+    }
+
+    const int B_start_in_v = mobilizer().velocity_start_in_v();
+
+    // Diagonal block corresponding to current node (mobod_index).
+    auto M_diag = M->template block<kNv, kNv>(B_start_in_v, B_start_in_v);
+
+    for (int j = 0; j < kNv; ++j) {
+      const Vector6<T>& F =
+          *reinterpret_cast<const Vector6<T>*>(Fm_BMo_M.col(j).data());
+      mobilizer_->calc_tau_from_M(X_FM, q, F, M_diag.col(j).data());
+    }
+
+    // We recurse the tree inwards from B all the way to the root. We define
+    // the frames:
+    //  - C: child composite body, initially B
+    //  - P: parent composite body, initially B's inboard body
+    const BodyNode<T>* child_node = this;
+    const BodyNode<T>* parent_node = this->parent_body_node();
+    Eigen::Matrix<T, 6, kNv> Fm_CMc_Mc = Fm_BMo_M;
+
+    while (parent_node->mobod_index() != world_mobod_index()) {
+      const math::RigidTransform<T>& X_MpMc =
+          pcm.get_X_MpM(child_node->mobod_index());  // From parent to child.
+      const math::RotationMatrix<T>& R_MpMc = X_MpMc.rotation();
+      const Vector3<T>& p_MpMc_Mp = X_MpMc.translation();
+
+      // We've got Fm_CMc_Mc but we need to shift and re-express to the parent's
+      // M frame Mp to yield Fm_PMp_Mp.
+      Eigen::Matrix<T, 6, kNv> Fm_PMp_Mp;
+      // This is
+      //   Fm_PMp_Mp = SpatialForce<T>::Shift(R_MpMc * Fm_CMc_Mc, -p_MpMc_Mp)
+      // but done with fixed sizes (no loop if kNv==1). 42 * kNv flops
+      for (int col = 0; col < kNv; ++col) {
+        // Ugly Eigen intermediate types; don't look!
+        const auto torque_C = Fm_CMc_Mc.template block<3, 1>(0, col);
+        const auto force_C = Fm_CMc_Mc.template block<3, 1>(3, col);
+        auto torque_P = Fm_PMp_Mp.template block<3, 1>(0, col);
+        auto force_P = Fm_PMp_Mp.template block<3, 1>(3, col);
+        torque_P = R_MpMc * torque_C;  // 15 flops
+        force_P = R_MpMc * force_C;    // 15 flops
+        // + because we're negating p_PC
+        torque_P += p_MpMc_Mp.cross(force_P);  // 12 flops
+      }
+
+      CalcMassMatrixOffDiagonalViaMDispatcher<T, kNv>::Dispatch(
+          *parent_node, positions, pcm, B_start_in_v, Fm_PMp_Mp, M);
+
+      child_node = parent_node;                      // Update child node C.
+      parent_node = child_node->parent_body_node();  // Update parent node P.
+      Fm_CMc_Mc = Fm_PMp_Mp;  // Former parent is now the child.
+    }
+  }
+}
+
+// This is the inner loop of the CalcMassMatrixViaM() algorithm. Bnv is the size
+// of the outer-loop body node B's mobilizer, kNv is the size of the current
+// inboard body P's ConcreteMobilizer encountered on B's inboard sweep. Cost
+// depends on the Hᵀ⋅F inline for P's mobilizer (very cheap for 1-dof
+// mobilizers).
+#define DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(Bnv)                      \
+  template <typename T, class ConcreteMobilizer>                              \
+  void BodyNodeImpl<T, ConcreteMobilizer>::                                   \
+      CalcMassMatrixOffDiagonalBlockViaM##Bnv(                                \
+          const T* positions, const PositionKinematicsCacheInM<T>& pcm,       \
+          int B_start_in_v, const Eigen::Matrix<T, 6, Bnv>& Fm_PMp_Mp,        \
+          EigenPtr<MatrixX<T>> M) const {                                     \
+    if constexpr (kNv != 0) {                                                 \
+      const MobodIndex P_index = mobod_index();                               \
+      /* For now, calc_tau_from_M() needs these. */                           \
+      const math::RigidTransform<T>& X_FM = pcm.get_X_FM(P_index);            \
+      const T* const q = get_q(positions); /* Body P's qs.*/                  \
+                                                                              \
+      const int P_start_in_v = mobilizer().velocity_start_in_v();             \
+                                                                              \
+      /* Locate the block we're filling and its symmetric partner. */         \
+      auto M_block = M->template block<kNv, Bnv>(P_start_in_v, B_start_in_v); \
+      auto M_sym = M->template block<Bnv, kNv>(B_start_in_v, P_start_in_v);   \
+      for (int j = 0; j < Bnv; ++j) {                                         \
+        /* Calculates tau = H_FM_Mᵀ * F_PMp_M */                              \
+        const Vector6<T>& F =                                                 \
+            *reinterpret_cast<const Vector6<T>*>(Fm_PMp_Mp.col(j).data());    \
+        mobilizer_->calc_tau_from_M(X_FM, q, F, M_block.col(j).data());       \
+      }                                                                       \
+      M_sym = M_block.transpose();                                            \
+    }                                                                         \
+  }
+
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(1)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(2)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(3)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(4)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(5)
+DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(6)
+
+#undef DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M
+
 // Macro used to explicitly instantiate implementations for every mobilizer.
 #define EXPLICITLY_INSTANTIATE_IMPLS(T)                           \
   template class BodyNodeImpl<T, CurvilinearMobilizer<T>>;        \
