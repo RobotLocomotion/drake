@@ -5,12 +5,14 @@
 #endif
 
 #include <limits>
+#include <string>
 #include <tuple>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/math/rotation_matrix.h"
 
 /* Note: many of the operations in the various SpatialVector-derived classes
@@ -299,26 +301,43 @@ class SpatialVector {
   CoeffsEigenType V_;
 };
 
+/// Returns string representation of a SpatialVector. Especially useful for
+/// debugging.
+/// @relates SpatialVector.
+template <template <typename> class SpatialQuantity, typename T>
+std::string to_string(const SpatialVector<SpatialQuantity, T>& V) {
+  std::string result{fmt::format("[{}", V[0])};
+  for (int i = 1; i < V.size(); ++i) {
+    result.append(fmt::format(", {}", V[i]));
+  }
+  result.append("]ᵀ");  // The "transpose" symbol.
+  return result;
+}
+
 /// Stream insertion operator to write SpatialVector objects into a
 /// `std::ostream`. Especially useful for debugging.
 /// @relates SpatialVector.
 template <template <typename> class SpatialQuantity, typename T>
-std::ostream& operator<<(std::ostream& o,
-                         const SpatialVector<SpatialQuantity, T>& V) {
-  o << "[" << fmt::to_string(V[0]);
-  for (int i = 1; i < V.size(); ++i) {
-    o << ", " << fmt::to_string(V[i]);
-  }
-  o << "]ᵀ";  // The "transpose" symbol.
-  return o;
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& o, const SpatialVector<SpatialQuantity, T>& V) {
+  return o << to_string(V);
 }
 
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <template <typename> class SpatialQuantity, typename T>
 struct formatter<drake::multibody::SpatialVector<SpatialQuantity, T>>
-    : drake::ostream_formatter {};
+    : formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const drake::multibody::SpatialVector<SpatialQuantity, T>& x,
+              FormatContext& ctx) const {
+    return formatter<std::string>::format(drake::multibody::to_string(x), ctx);
+  }
+};
 }  // namespace fmt
