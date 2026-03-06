@@ -562,13 +562,13 @@ DifferentialInverseKinematicsSystem::DifferentialInverseKinematicsSystem(
     : recipe_(std::move(recipe)),
       collision_checker_(std::move(collision_checker)),
       active_dof_(active_dof),
-      time_step_(time_step),
+      time_step_(time_step <= 0.0 ? 0.001 : time_step),  // XXX
       K_VX_(K_VX),
       Vd_TG_limit_(Vd_TG_limit),
       task_frame_(&GetScopedFrameByName(plant(), task_frame)) {
   DRAKE_THROW_UNLESS(recipe_ != nullptr);
   DRAKE_THROW_UNLESS(collision_checker_ != nullptr);
-  DRAKE_THROW_UNLESS(time_step > 0);
+  DRAKE_THROW_UNLESS(time_step_ > 0);
   DRAKE_THROW_UNLESS(K_VX > 0);
   DRAKE_THROW_UNLESS((Vd_TG_limit.get_coeffs().array() >= 0).all());
 

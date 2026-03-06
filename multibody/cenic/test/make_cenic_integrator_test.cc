@@ -39,7 +39,7 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureDiscrete) {
   RobotDiagramBuilder<double> builder;
   std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
   DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*robot_diagram),
-                              ".*continuous.*not.*discrete.*");
+                              ".*zero.*continuous.*");
 }
 
 GTEST_TEST(MakeCenicIntegratorTest, FailureNonDiagram) {
@@ -53,7 +53,7 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureNoPlant) {
   builder.AddSystem<ConstantVectorSource>(0.0);
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*diagram),
-                              ".*does not have a subsystem named plant.*");
+                              ".*zero.*continuous.*");
 }
 
 }  // namespace

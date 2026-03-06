@@ -2,6 +2,8 @@
 
 #include <limits>
 
+#include "drake/systems/framework/system_visitor.h"
+
 namespace drake {
 namespace multibody {
 
@@ -16,9 +18,42 @@ using systems::DiagramContinuousState;
 using systems::IntegratorBase;
 using systems::NamedStatistic;
 using systems::System;
+using systems::SystemVisitor;
 using systems::VectorBase;
 
 namespace {
+
+template <typename T>
+class MyVisitor : public SystemVisitor<T> {
+ public:
+  void VisitSystem(const System<T>& system) {
+    const auto* maybe_plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
+    if (maybe_plant == nullptr) {
+      return;
+    }
+    const MultibodyPlant<T>& plant{*maybe_plant};
+    if (plant.is_discrete()) {
+      return;
+    }
+    if (found_plant_ != nullptr) {
+      throw std::logic_error(
+          "CenicIntegrator found more than one continuous time plant in the "
+          "diagram!!");
+    }
+    found_plant_ = &plant;
+  }
+
+  void VisitDiagram(const Diagram<T>& diagram) {
+    for (const auto* system : diagram.GetSystems()) {
+      system->Accept(this);
+    }
+  }
+
+  const MultibodyPlant<T>* plant() { return found_plant_; }
+
+ private:
+  const MultibodyPlant<T>* found_plant_{};
+};
 
 template <typename T>
 const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
@@ -28,15 +63,14 @@ const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
         fmt::format("CenicIntegrator must be given a Diagram, not a {}",
                     NiceTypeName::Get(system)));
   }
-  const MultibodyPlant<T>& plant =
-      diagram->template GetDowncastSubsystemByName<MultibodyPlant>("plant");
-  if (plant.is_discrete()) {
-    throw std::logic_error(fmt::format(
-        "CenicIntegrator must be given a continuous time plant (time_step = "
-        "0.0), not a discrete time plant (time_step = {})",
-        plant.time_step()));
+  MyVisitor<T> visitor;
+  system.Accept(&visitor);
+  const MultibodyPlant<T>* maybe_plant = visitor.plant();
+  if (maybe_plant == nullptr) {
+    throw std::logic_error(
+        "CenicIntegrator found zero continuous time plants in the diagram!!");
   }
-  return plant;
+  return *maybe_plant;
 }
 
 template <typename T>
