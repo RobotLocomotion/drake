@@ -159,9 +159,10 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **36** release files from
+      them." and then choose for upload the **39** release files from
       ``/tmp/drake-release/v1.N.0/...``:
-      - 9: 3 `.tar.gz` + 6 checksums
+      - 9: 3 binary `.tar.gz` + 6 checksums
+      - 3: 1 source `.tar.gz` + 2 checksums
       - 6: 2 `.deb` + 4 checksums
       - 15: 5 linux `.whl` + 10 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
