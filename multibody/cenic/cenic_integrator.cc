@@ -40,6 +40,7 @@ class MyVisitor : public SystemVisitor<T> {
           "CenicIntegrator found more than one continuous time plant in the "
           "diagram!!");
     }
+    fmt::print("CENIC found plant at '{}'\n", plant.GetSystemPathname());
     found_plant_ = &plant;
   }
 
