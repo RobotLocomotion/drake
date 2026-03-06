@@ -166,10 +166,6 @@ the main body of the document:
       - 6: 2 `.deb` + 4 checksums
       - 15: 5 linux `.whl` + 10 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
-      * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
-        Nautilus will fail, and drop all of your release page inputs typed so
-        far. Use the Firefox-provided selection dialog instead, by clicking on
-        the box.
    6. Choose "Save draft" and take a deep breath.
 8. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
@@ -197,23 +193,6 @@ instructions to obtain a username and password.
 Most likely, you will want to use an api token to authenticate yourself to the
 ``twine`` uploader. See <https://pypi.org/help/#apitoken> and <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account>
 for advice on managing api tokens.
-
-For Jammy, ``apt install twine`` is too old. Instead, you must run it from a
-venv (detail below).
-
-1. Run ``twine`` to upload the wheel release, as follows:
-
-   1. You will need your PyPI username and password for this. (Do not use drake-robot.)
-   2. Run:
-      ```
-      $ cd tmp
-      $ python3 -m venv env
-      $ env/bin/pip install twine
-      $ env/bin/twine upload /tmp/drake-release/v1.N.0/*.whl
-      $ rm -rf env
-      ```
-   3. Confirm that all of the uploads succeeded without any error messages in
-      your terminal.
 
 ## Post-release tutorials updates
 
