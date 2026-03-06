@@ -2088,10 +2088,10 @@ Note:
     Joint∷Lock()).
 
 Warning:
-    Currently, this feature is only supported for discrete models
-    (is_discrete() is true) using the SAP solver
+    For discrete models (is_discrete() is true), this feature is not
+    supported when using the TAMSI solver
     (get_discrete_contact_solver() returns
-    DiscreteContactSolver∷kSap.)
+    DiscreteContactSolver∷kTamsi.)
 
 PD controlled joint actuators can be defined by setting PD gains for
 each joint actuator, see JointActuator∷set_controller_gains(). Unless
