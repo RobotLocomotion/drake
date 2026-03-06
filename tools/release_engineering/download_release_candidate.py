@@ -2,6 +2,9 @@ r"""
 Downloads the to-be-released binaries, verifies they are all the same version,
 and prepares to upload them per the release playbook.
 
+When running this tool, the current Drake checkout must have been merged up
+to the latest master (or at least, newer than the intended release git sha).
+
 This program is supported only on Ubuntu (not macOS).
 
 Use bazel to build the tool.
@@ -203,6 +206,44 @@ def _check_deb_versions(*, filenames, version):
         raise UserError("\n".join(version_errors))
 
 
+def _create_tar_gz(*, git_sha, tmp_dir: str, version: str):
+    """Creates a Drake tar.gz source archive of the given `git_sha`, storing it
+    in the given `tmp_dir`.
+    """
+    assert len(git_sha) == 40
+    assert version[0] == "v"
+
+    # Create the tar.gz using this program's git clone (but at the release sha,
+    # not the current revision).
+    output_name = f"drake-{version[1:]}-src.tar.gz"
+    output_path = f"{tmp_dir}/{output_name}"
+    drake_root = Path(__file__).resolve().parent.parent.parent
+    assert (drake_root / "MODULE.bazel").exists()
+    subprocess.check_call(
+        [
+            "git",
+            "archive",
+            "--format=tar.gz",
+            f"--output={output_path}",
+            f"--prefix=drake-{version[1:]}/",
+            git_sha,
+        ],
+        cwd=drake_root,
+    )
+
+    # Write checksum files.
+    _run(
+        f"sha256sum {output_name} > {output_name}.sha256",
+        shell=True,
+        cwd=tmp_dir,
+    )
+    _run(
+        f"sha512sum {output_name} > {output_name}.sha512",
+        shell=True,
+        cwd=tmp_dir,
+    )
+
+
 def _download_version(*, version):
     """Implements the --version (download) command line action."""
     if version[0] != "v":
@@ -224,6 +265,13 @@ def _download_version(*, version):
 
     _check_deb_versions(filenames=filenames, version=version)
     print("The debian binaries all have the same version.")
+
+    _create_tar_gz(
+        git_sha=git_sha,
+        tmp_dir=tmp_dir,
+        version=version,
+    )
+    print("The source archive was created successfully.")
 
     print()
     print(

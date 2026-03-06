@@ -62,8 +62,7 @@ Clone the drake repository:
 
 ## Run script for GitHub / S3
 
-The next step is to push the official source code archive to GitHub and mirror
-the release artifacts to S3.
+The next step is to mirror the GitHub release artifacts to S3.
 
 Once your machine is set up, run the `push_release` script as described below:
 
@@ -73,9 +72,6 @@ The release creator will provide the version. Throughout this process, don’t
 use `v` on the version string. For example:
 
     bazel run //tools/release_engineering/dev:push_release -- 1.0.0
-
-**Note:** If there is a timeout error uploading to GitHub, double-check
-the GitHub token created above, it is likely a permissions issue.
 
 ## Run script for Docker
 
@@ -106,12 +102,7 @@ contains:
 for each supported configuration (e.g. jammy and noble) as
 `/drake-dev_<version>-1_amd64-<configuration>.deb`.
 
-3. The [GitHub release](https://github.com/RobotLocomotion/drake/releases),
-found at `https://github.com/RobotLocomotion/drake/releases/tag/v<version>`,
-contains `drake-<version>-src.tar.gz` and corresponding `.sha256` and
-`.sha512` files.
-
-4. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
+3. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has a plain `<version>` tag as well as a `<version>` tag for each supported
 configuration (e.g. jammy and noble).
 

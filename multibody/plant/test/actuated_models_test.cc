@@ -12,6 +12,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -445,7 +446,7 @@ TEST_P(ActuatedModelsTest, EvalDesiredStateInput) {
     pd_models.insert(gripper_model_);
   }
 
-  std::unordered_map<ModelInstanceIndex, VectorXd> armed_models;
+  int expected_num_desired_states = 0;
   for (const auto& model : {arm_model_, acrobot_model_, gripper_model_}) {
     const auto& port = plant_->get_desired_state_input_port(model);
     const int nu = expected_num_actuators(model);
@@ -479,24 +480,39 @@ TEST_P(ActuatedModelsTest, EvalDesiredStateInput) {
     port.FixValue(context_.get(), xd);
     EXPECT_NO_THROW(
         MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_));
-    armed_models.emplace(model, xd);
 
-    // Check the values in the cache entry.
-    const DesiredStateInput<double> input =
-        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_);
-    EXPECT_EQ(input.num_model_instances(), plant_->num_model_instances());
-    for (const auto& i :
-         {arm_model_, acrobot_model_, gripper_model_, box_model_}) {
-      const bool should_be_armed = armed_models.count(i) > 0;
-      EXPECT_EQ(input.is_armed(i), should_be_armed);
-      if (input.is_armed(i) && should_be_armed) {
-        const VectorXd& xd_armed = armed_models.at(i);
-        EXPECT_TRUE(CompareMatrices(input.positions(i),
-                                    xd_armed.head(xd_armed.size() / 2)));
-        EXPECT_TRUE(CompareMatrices(input.velocities(i),
-                                    xd_armed.tail(xd_armed.size() / 2)));
+    // Amend our tally of expected items.
+    if (pd_models.contains(model)) {
+      if (model == arm_model_) {
+        int expected_num_arm_desired_states = 7;
+        if (param_.remove_joint_actuators) {
+          // The iiwa_joint_3 is unactuated.
+          --expected_num_arm_desired_states;
+        }
+        if (!param_.full_pd_control) {
+          // Only every other actuator is controlled.
+          expected_num_arm_desired_states /= 2;
+        }
+        if (param_.use_joint_locking) {
+          // The iiwa_joint_2 is locked.
+          --expected_num_arm_desired_states;
+        }
+        expected_num_desired_states += expected_num_arm_desired_states;
+      } else if (model == acrobot_model_) {
+        const int expected_num_acrobot_desired_states =
+            param_.remove_joint_actuators ? 1 : 2;
+        expected_num_desired_states += expected_num_acrobot_desired_states;
+      } else {
+        DRAKE_DEMAND(model == gripper_model_);
+        const int expected_num_gripper_desired_states = 2;
+        expected_num_desired_states += expected_num_gripper_desired_states;
       }
     }
+
+    // Check the number of values in the cache entry.
+    const DesiredStateInput<double> input =
+        MultibodyPlantTester::EvalDesiredStateInput(*plant_, *context_);
+    EXPECT_EQ(ssize(input.items), expected_num_desired_states);
   }
 }
 

@@ -48,8 +48,10 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
       ))
     )
     except("//lcmtypes/...")
+    except("//planning/dev/...")
     except("//tools/install/...")
     except("//tools/performance/...")
+    except("//tools/workspace/...")
     except(attr(tags, "exclude_from_libdrake", //...))
 """
     # First, find the drake_cc_package_library targets within that query.

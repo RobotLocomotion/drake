@@ -26,6 +26,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_tendon_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
@@ -738,59 +739,34 @@ void SapDriver<T>::AddPdControllerConstraints(
       manager_->EvalActuationInput(context, /* apply_effort_limit = */ false);
 
   const SpanningForest& forest = get_forest();
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < plant().num_model_instances();
-       ++model_instance_index) {
-    if (desired_states.is_armed(model_instance_index)) {
-      const VectorX<T>& instance_qd =
-          desired_states.positions(model_instance_index);
-      const VectorX<T>& instance_vd =
-          desired_states.velocities(model_instance_index);
+  for (const typename DesiredStateInput<T>::Item& item : desired_states.items) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(item.actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    const double effort_limit = actuator.effort_limit();
+    const T& qd = item.qd;
+    const T& vd = item.vd;
+    const T& u0 = feed_forward_actuation[actuator.input_start()];
 
-      // Sanity check sizes before accessing qd and vd below.
-      DRAKE_DEMAND(instance_qd.size() ==
-                   plant().num_actuators(model_instance_index));
-      DRAKE_DEMAND(instance_vd.size() ==
-                   plant().num_actuators(model_instance_index));
+    const T& q0 = joint.GetOnePosition(context);
+    const int dof = joint.velocity_start();
+    const TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    const int tree_nv = tree.nv();
 
-      int a = 0;  // Actuator index local to its model-instance.
-      for (JointActuatorIndex actuator_index :
-           plant().GetJointActuatorIndices(model_instance_index)) {
-        const JointActuator<T>& actuator =
-            plant().get_joint_actuator(actuator_index);
-        const Joint<T>& joint = actuator.joint();
-        // There is no point in modeling PD controllers if the joint is locked.
-        // Therefore we do not add these constraints and actuation due to PD
-        // controllers on locked joints is considered to be zero.
-        if (actuator.has_controller() && !joint.is_locked(context)) {
-          const double effort_limit = actuator.effort_limit();
-          const T& qd = instance_qd[a];
-          const T& vd = instance_vd[a];
-          const T& u0 = feed_forward_actuation[actuator.input_start()];
+    // Controller gains.
+    const PdControllerGains& gains = actuator.get_controller_gains();
+    const T& Kp = gains.p;
+    const T& Kd = gains.d;
 
-          const T& q0 = joint.GetOnePosition(context);
-          const int dof = joint.velocity_start();
-          const TreeIndex tree_index = forest.v_to_tree_index(dof);
-          const SpanningForest::Tree& tree = forest.trees(tree_index);
-          const int tree_dof = dof - tree.v_start();
-          const int tree_nv = tree.nv();
+    typename SapPdControllerConstraint<T>::Parameters parameters{Kp, Kd,
+                                                                 effort_limit};
+    typename SapPdControllerConstraint<T>::Configuration configuration{
+        tree_index, tree_dof, tree_nv, q0, qd, vd, u0};
 
-          // Controller gains.
-          const PdControllerGains& gains = actuator.get_controller_gains();
-          const T& Kp = gains.p;
-          const T& Kd = gains.d;
-
-          typename SapPdControllerConstraint<T>::Parameters parameters{
-              Kp, Kd, effort_limit};
-          typename SapPdControllerConstraint<T>::Configuration configuration{
-              tree_index, tree_dof, tree_nv, q0, qd, vd, u0};
-
-          problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
-              std::move(configuration), std::move(parameters)));
-        }
-        ++a;
-      }
-    }
+    problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+        std::move(configuration), std::move(parameters)));
   }
 }
 
