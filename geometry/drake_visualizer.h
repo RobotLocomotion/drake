@@ -157,7 +157,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
                   will allocate its own instance. If one is provided it must
                   remain valid for the lifetime of this object.
    @param params  The set of parameters to control this system's behavior.
-   @throws std::exception if `params.publish_period <= 0`.
+   @throws std::exception if `params.publish_period < 0`.
    @throws std::exception if `params.role == Role::kUnassigned`.  */
   DrakeVisualizer(lcm::DrakeLcmInterface* lcm = nullptr,
                   DrakeVisualizerParams params = {});
