@@ -114,10 +114,11 @@ class MultibodyPlantTester {
   }
 
   template <typename T>
-  static void AddJointActuationForces(const MultibodyPlant<T>& plant,
-                                      const systems::Context<T>& context,
-                                      VectorX<T>* forces) {
-    plant.AddJointActuationForces(context, forces);
+  static void AddJointActuationForcesContinuous(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context,
+      VectorX<T>* forces) {
+    DRAKE_DEMAND(!plant.is_discrete());
+    plant.AddJointActuationForcesContinuous(context, forces);
   }
 };
 
@@ -3611,7 +3612,7 @@ TEST_F(MultibodyPlantRemodelingDiscrete, MakeActuatorSelectorMatrix) {
   EXPECT_TRUE(CompareMatrices(Su, Su_expected));
 }
 
-TEST_F(MultibodyPlantRemodelingDiscrete, AddJointActuationForces) {
+TEST_F(MultibodyPlantRemodelingContinuous, AddJointActuationForcesContinuous) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
@@ -3623,12 +3624,12 @@ TEST_F(MultibodyPlantRemodelingDiscrete, AddJointActuationForces) {
 
   const VectorXd forces_expected = Vector3d(0.25, 0.0, 0.5);
 
-  // Test that AddJointActuationForces uses the correct indices into 'u'
-  // using JointActuator::input_start().
+  // Test that AddJointActuationForcesContinuous uses the correct indices into
+  // 'u' using JointActuator::input_start().
   VectorXd forces(3);
   forces.setZero();
-  MultibodyPlantTester::AddJointActuationForces(*plant_, *plant_context_,
-                                                &forces);
+  MultibodyPlantTester::AddJointActuationForcesContinuous(
+      *plant_, *plant_context_, &forces);
   EXPECT_TRUE(CompareMatrices(forces, forces_expected));
 }
 
