@@ -314,6 +314,63 @@ class IcfExternalSystemsLinearizerChoosePortTest
     : public LinearizerTestFixture,
       public ::testing::TestWithParam<int /* choose_plant_port */> {};
 
+// Checks linearization of the desired state input port.
+TEST_F(IcfExternalSystemsLinearizerTest, DesiredStateInput) {
+  // Add a pendulum.
+  const ModelInstanceIndex model_instance =
+      Parser(builder_.get())
+          .AddModelsFromString(kActuatedPendulumXml, "xml")
+          .at(0);
+  plant_.Finalize();
+  Build();
+
+  // Configure its current state.
+  const Vector2d q0{0.1, 0.2};
+  const Vector2d v0{0.3, 0.4};
+  plant_.SetPositions(plant_context_, q0);
+  plant_.SetVelocities(plant_context_, v0);
+
+  // Configure its desired state.
+  const Vector2d qd{0.11, 0.22};
+  const Vector2d vd{0.33, 0.44};
+  plant_.get_desired_state_input_port(model_instance)
+      .FixValue(plant_context_, (Vector4d() << qd, vd).finished());
+  const double Kp = 0.5;
+  const double Kd = 0.25;
+  for (const JointActuatorIndex& actuator :
+       plant_.GetJointActuatorIndices(model_instance)) {
+    plant_.get_mutable_joint_actuator(actuator).set_controller_gains(
+        {.p = Kp, .d = Kd});
+  }
+
+  // Linearize the implicit PD controller actuation around the current state.
+  const double h = 0.01;
+  const auto result = LinearizeExternalSystem(h);
+  ASSERT_TRUE(result.actuation_feedback.has_value());
+  EXPECT_FALSE(result.external_feedback.has_value());
+
+  // Check that the desired state feedback came out as expected. Unfortunately
+  // there's not much we can do here other than copy-paste the same formula as
+  // is performed inside the implementation.
+  Vector2d K_expected = Vector2d::Constant(Kp * h + Kd);
+  Vector2d b_expected = -Kp * (q0 - qd) - Kd * vd;
+  EXPECT_TRUE(CompareMatrices(result.actuation_feedback->K, K_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(result.actuation_feedback->b, b_expected, 1e-8));
+
+  // Check that feedforward terms are linearized in combination with desired
+  // state (i.e., that desired state doesn't accidentally overwrite them).
+  // We'll set a constant actuation and confirm it shows up in the `b` term
+  // (with `K` unchanged).
+  const Vector2d u = Vector2d{22, 23};
+  plant_.get_actuation_input_port(model_instance).FixValue(plant_context_, u);
+  const auto with_ff = LinearizeExternalSystem(h);
+  ASSERT_TRUE(with_ff.actuation_feedback.has_value());
+  EXPECT_FALSE(with_ff.external_feedback.has_value());
+  EXPECT_TRUE(CompareMatrices(with_ff.actuation_feedback->K, K_expected, 1e-8));
+  EXPECT_TRUE(
+      CompareMatrices(with_ff.actuation_feedback->b, b_expected + u, 1e-8));
+}
+
 // Run a test with a pendulum and an external (PID) controller.
 TEST_P(IcfExternalSystemsLinearizerChoosePortTest, ActuationInput) {
   const int choose_plant_port = GetParam();
