@@ -167,6 +167,26 @@ EnvironmentTexture ReadEquirectangularFile(std::string const& fileName) {
 
   return {texture, is_hdr};
 }
+
+// By design, all of the geometry is shared across clones of the render
+// engine. This is predicated upon the idea that the geometry is *not*
+// deformable and does *not* depend on the system's pose information.
+// (If there is deformable geometry, it will have to be handled differently.)
+// Having "shared geometry" means having shared vtkPolyDataAlgorithm and
+// vtkOpenGLShaderProperty instances. The shader callback gets registered to
+// the *mapper* instances, so they all, implicitly, share the same callback.
+// Making this member static facilitates that but it does preclude the
+// possibility of simultaneous renderings with different uniform parameters.
+// Currently, this doesn't happen because drake isn't particularly thread safe
+// (or executed in such a context). However, this renderer will need some
+// formal thread safe mechanism so that it doesn't rely on that in the future.
+// TODO(SeanCurtis-TRI): This is not threadsafe; investigate mechanisms to
+// prevent undesirable behaviors if used in multi-threaded application.
+ShaderCallback* uniform_setting_callback() {
+  never_destroyed<vtkNew<ShaderCallback>> result;
+  return result.access().Get();
+}
+
 }  // namespace
 
 ShaderCallback::ShaderCallback()
@@ -174,8 +194,6 @@ ShaderCallback::ShaderCallback()
        // *both* be overwritten upon every usage.
       z_near_(0.01),
       z_far_(100.0) {}
-
-vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
 RenderEngineVtk::RenderingPipeline::RenderingPipeline(
     RenderEngineVtkBackend backend_in)
@@ -1211,7 +1229,7 @@ void RenderEngineVtk::SetDepthShader(vtkActor* actor) {
   shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
   shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
   mapper->AddObserver(vtkCommand::UpdateShaderEvent,
-                      uniform_setting_callback_.Get());
+                      uniform_setting_callback());
 }
 
 void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
@@ -1267,9 +1285,9 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
 
 void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
                                    const RenderingPipeline& p) const {
-  uniform_setting_callback_->set_z_near(
+  uniform_setting_callback()->set_z_near(
       static_cast<float>(camera.depth_range().min_depth()));
-  uniform_setting_callback_->set_z_far(
+  uniform_setting_callback()->set_z_far(
       static_cast<float>(camera.depth_range().max_depth()));
   // Never show window for depth camera; it is a meaningless operation as the
   // raw depth rasterization is not human consummable.

@@ -77,12 +77,12 @@ class RenderLabel {
       systems::sensors::PixelType::kLabel16I>::ChannelType;
 
   /** Constructs a label with the reserved `unspecified` value.  */
-  RenderLabel() = default;
+  constexpr RenderLabel() = default;
 
   /** Constructs a label with the given `value`.
    @throws std::exception if a) is negative, or b) the `value` is one of the
                              reserved values.  */
-  explicit RenderLabel(int value) : RenderLabel(value, true) {}
+  explicit constexpr RenderLabel(int value) : RenderLabel(value, true) {}
 
   /** Compares this label with the `other` label. Reports true if they have the
    same value.  */
@@ -151,7 +151,7 @@ class RenderLabel {
 
   // Private constructor precludes general construction except by the approved
   // factories (see above).
-  RenderLabel(int value, bool needs_testing)
+  constexpr RenderLabel(int value, bool needs_testing)
       : value_(static_cast<ValueType>(value)) {
     if (value < 0 || (needs_testing && value > kMaxUnreserved)) {
       throw std::logic_error(
