@@ -15,6 +15,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 
