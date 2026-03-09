@@ -12,14 +12,13 @@ drake_cc_binary(
         "//examples/scene_graph:models",
     ],
     deps = [
-        "//geometry:meshcat_visualizer",
         "//geometry:scene_graph",
-        "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/framework:leaf_system",
+        "//visualization",
         "@gflags",
     ],
 )

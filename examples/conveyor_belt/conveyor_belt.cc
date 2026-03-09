@@ -5,13 +5,13 @@
 #include <gflags/gflags.h>
 
 #include "drake/geometry/meshcat.h"
-#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/visualization/visualization_config.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace examples {
@@ -31,16 +31,12 @@ int do_main_continous_plant() {
 
   // Set up visualization
   auto meshcat = std::make_shared<geometry::Meshcat>();
-  geometry::MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph,
-                                                    meshcat);
-  geometry::MeshcatVisualizerParams meshcat_params;
-  meshcat_params.delete_on_initialization_event = false;
-  auto& visualizer = geometry::MeshcatVisualizerd::AddToBuilder(
-      &builder, scene_graph, meshcat, std::move(meshcat_params));
-  multibody::meshcat::ContactVisualizerParams cparams;
-  cparams.newtons_per_meter = 60.0;
-  multibody::meshcat::ContactVisualizerd::AddToBuilder(&builder, plant, meshcat,
-                                                       std::move(cparams));
+  visualization::ApplyVisualizationConfig(
+      visualization::VisualizationConfig{
+          .default_proximity_color = geometry::Rgba{1, 0, 0, 0.25},
+          .enable_alpha_sliders = true,
+      },
+      &builder, nullptr, nullptr, nullptr, meshcat);
 
   // Set up context
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
@@ -55,9 +51,9 @@ int do_main_continous_plant() {
   systems::Simulator<double> simulator(*diagram);
   simulator.set_target_realtime_rate(1.0);
   simulator.Initialize();
-  visualizer.StartRecording();
+  meshcat->StartRecording();
   simulator.AdvanceTo(20.0);
-  visualizer.PublishRecording();
+  meshcat->PublishRecording();
 
   return 0;
 }
