@@ -424,8 +424,9 @@ class Simulator {
   /// Output time and continuous states whenever the trajectory is advanced:
   /// @code
   /// simulator.set_monitor([](const Context<T>& root_context) {
-  ///   fmt::print("{} {}\n", root_context.get_time(),
-  ///                         root_context.get_continuous_state_vector());
+  ///   std::cout << root_context.get_time() << " "
+  ///             << root_context.get_continuous_state_vector()
+  ///             << std::endl;
   ///   return EventStatus::Succeeded();
   /// });
   /// @endcode

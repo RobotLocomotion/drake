@@ -232,10 +232,6 @@ TEST_F(ContinuousStateTest, Clone) {
   EXPECT_EQ((*vector)[2], 1.75);
 }
 
-// TODO(2026-07-01): delete test `StringStream` when
-// `BasicVector<T>::operator<<` is removed.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests ability to stream a ContinuousState vector into a string.
 TEST_F(ContinuousStateTest, StringStream) {
   std::stringstream s;
@@ -244,16 +240,6 @@ TEST_F(ContinuousStateTest, StringStream) {
       fmt::format("hello {} world",
                   fmt_eigen(continuous_state_->CopyToVector().transpose()));
   EXPECT_EQ(s.str(), expected);
-}
-#pragma GCC diagnostic pop
-
-// Tests string representation of a ContinuousState vector.
-TEST_F(ContinuousStateTest, ToStringFmtFormatter) {
-  const std::string expected =
-      fmt::format("hello {} world",
-                  fmt_eigen(continuous_state_->CopyToVector().transpose()));
-  EXPECT_EQ(fmt::format("hello {} world", continuous_state_->get_vector()),
-            expected);
 }
 
 // Tests for DiagramContinuousState.
