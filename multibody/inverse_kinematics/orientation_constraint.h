@@ -59,13 +59,13 @@ class OrientationConstraint : public solvers::Constraint {
    * @throws std::exception if `plant_context` is nullptr.
    * @pydrake_mkdoc_identifier{double}
    */
-  OrientationConstraint(
-      const MultibodyPlant<double>* const plant,
-      const Frame<double>& frameAbar,
-      const math::RotationMatrix<double>& R_AbarA,
-      const Frame<double>& frameBbar,
-      const math::RotationMatrix<double>& R_BbarB, double theta_bound,
-      systems::Context<double>* plant_context);
+  OrientationConstraint(const MultibodyPlant<double>* const plant,
+                        const Frame<double>& frameAbar,
+                        const math::RotationMatrix<double>& R_AbarA,
+                        const Frame<double>& frameBbar,
+                        const math::RotationMatrix<double>& R_BbarB,
+                        double theta_bound,
+                        systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor.
@@ -80,7 +80,7 @@ class OrientationConstraint : public solvers::Constraint {
                         double theta_bound,
                         systems::Context<AutoDiffXd>* plant_context);
 
-  ~OrientationConstraint() override {}
+  ~OrientationConstraint() override;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

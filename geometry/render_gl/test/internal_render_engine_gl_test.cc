@@ -1,22 +1,28 @@
 #include "drake/geometry/render_gl/internal_render_engine_gl.h"
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <filesystem>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <source_location>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <tiny_gltf.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>  // vtkCommonDataModel
 #include <vtkNew.h>        // vtkCommonCore
 #include <vtkPNGReader.h>  // vtkIOImage
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/temp_directory.h"
@@ -58,9 +64,7 @@ class RenderEngineGlTester {
    the given `engine`; the engine must stay alive at least as long as the
    tester.  */
   explicit RenderEngineGlTester(const RenderEngineGl* engine)
-      : engine_(*engine) {
-    DRAKE_DEMAND(engine != nullptr);
-  }
+      : engine_(DRAKE_DEREF(engine)) {}
 
   const internal::OpenGlContext& opengl_context() const {
     return *engine_.opengl_context_;

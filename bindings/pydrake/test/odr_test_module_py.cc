@@ -1,3 +1,5 @@
+#include <string>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 

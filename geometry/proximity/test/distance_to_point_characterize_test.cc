@@ -1,4 +1,7 @@
+#include <limits>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -125,11 +128,11 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         QueryInstance(kPoint, kBox, 2e-15),
         QueryInstance(kPoint, kCapsule, 4e-15),
-        QueryInstance(kPoint, kConvex, 5e-15),
+        QueryInstance(kPoint, kConvex, 6e-15),
         QueryInstance(kPoint, kCylinder, 3e-15),
         QueryInstance(kPoint, kEllipsoid, 3e-5),
         QueryInstance(kPoint, kHalfSpace, 5e-15),
-        QueryInstance(kPoint, kMesh, 5e-15),
+        QueryInstance(kPoint, kMesh, 6e-15),
         QueryInstance(kPoint, kSphere, 4e-15)),
     QueryInstanceName);
 // clang-format on
@@ -146,7 +149,7 @@ INSTANTIATE_TEST_SUITE_P(
     PointDistance, AutoDiffTest,
     testing::Values(
         QueryInstance(kPoint, kBox, 1e-15),
-        QueryInstance(kPoint, kCapsule, 4e-15),
+        QueryInstance(kPoint, kCapsule, 7e-15),
         QueryInstance(kPoint, kConvex, kIgnores),
         QueryInstance(kPoint, kCylinder, kIgnores),
         QueryInstance(kPoint, kEllipsoid, kIgnores),

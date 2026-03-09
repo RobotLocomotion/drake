@@ -30,7 +30,7 @@ class QuinticScalarSystem : public LeafSystem<double> {
   void DoCalcTimeDerivatives(const Context<double>& context,
                              ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = t * (t * (t * (5*t + 8) + 9) + 8) + 5;
+    (*deriv)[0] = t * (t * (t * (5 * t + 8) + 9) + 8) + 5;
   }
 };
 

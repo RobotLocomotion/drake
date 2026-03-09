@@ -1,0 +1,19 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:py.bzl", "py_binary")
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:public"])
+
+py_binary(
+    name = "cpplint",
+    srcs = [
+        "cpplint.py",
+    ],
+    main = "cpplint.py",
+    python_version = "PY3",
+    srcs_version = "PY3",
+)
+
+exports_files(["drake_repository_metadata.json"])

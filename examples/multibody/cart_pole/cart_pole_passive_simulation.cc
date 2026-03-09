@@ -1,4 +1,6 @@
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -35,9 +37,9 @@ DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
 DEFINE_double(time_step, 0,
-            "If greater than zero, the plant is modeled as a system with "
-            "discrete updates and period equal to this time_step. "
-            "If 0, the plant is modeled as a continuous system.");
+              "If greater than zero, the plant is modeled as a system with "
+              "discrete updates and period equal to this time_step. "
+              "If 0, the plant is modeled as a continuous system.");
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -77,8 +79,6 @@ int do_main() {
   pole_pin.set_angle(&cart_pole_context, 2.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
-  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

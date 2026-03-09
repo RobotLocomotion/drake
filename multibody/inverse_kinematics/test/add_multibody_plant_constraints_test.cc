@@ -1,5 +1,8 @@
 #include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

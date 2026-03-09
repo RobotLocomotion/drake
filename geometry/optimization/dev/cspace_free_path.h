@@ -92,7 +92,7 @@ class CspaceFreePath {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult);
 
     SeparationCertificateResult() {}
-    ~SeparationCertificateResult() override = default;
+    ~SeparationCertificateResult() override;
   };
 
   /**
@@ -116,7 +116,7 @@ class CspaceFreePath {
       }
     }
 
-    ~SeparationCertificateProgram() override = default;
+    ~SeparationCertificateProgram() override;
 
     std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
   };
@@ -141,8 +141,7 @@ class CspaceFreePath {
     return map_geometries_to_separating_planes_;
   }
 
-  [[nodiscard]] const std::vector<
-      CSpaceSeparatingPlane<symbolic::Variable>>&
+  [[nodiscard]] const std::vector<CSpaceSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }

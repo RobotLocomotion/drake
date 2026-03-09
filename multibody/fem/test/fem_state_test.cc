@@ -1,5 +1,8 @@
 #include "drake/multibody/fem/fem_state.h"
 
+#include <memory>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

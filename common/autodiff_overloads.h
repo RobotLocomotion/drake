@@ -88,10 +88,11 @@ Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
                                         const T& y) {
   using std::isnan;
   if (isnan(x)) return (y >= 0) ? NAN : -NAN;
-  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0)) {
     return -x;
-  else
+  } else {
     return x;
+  }
 }
 
 /// Overloads copysign from <cmath>.
@@ -99,10 +100,11 @@ template <typename DerType>
 double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
   using std::isnan;
   if (isnan(x)) return (y >= 0) ? NAN : -NAN;
-  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0)) {
     return -x;
-  else
+  } else {
     return x;
+  }
 }
 
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the
@@ -119,13 +121,19 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
                     typename internal::remove_all<DerTypeA>::type::PlainObject,
                     typename internal::remove_all<DerTypeB>::type::PlainObject>,
                 "The derivative types must match.");
-
-  internal::make_coherent(base.derivatives(), exponent.derivatives());
+  using DerType = typename internal::remove_all<DerTypeB>::type::PlainObject;
 
   const auto& x = base.value();
-  const auto& xgrad = base.derivatives();
+  const DerType& xgrad = base.derivatives();
   const auto& y = exponent.value();
-  const auto& ygrad = exponent.derivatives();
+  const DerType& ygrad = exponent.derivatives();
+
+  // Make the derivative sizes coherenent.
+  if (xgrad.size() == 0 && ygrad.size() > 0) {
+    return pow(MakeAutoDiffScalar(x, DerType::Zero(ygrad.size())), exponent);
+  } else if (xgrad.size() > 0 && ygrad.size() == 0) {
+    return pow(base, MakeAutoDiffScalar(y, DerType::Zero(xgrad.size())));
+  }
 
   using std::log;
   using std::pow;

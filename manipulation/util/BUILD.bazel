@@ -35,7 +35,7 @@ drake_cc_library(
     ],
     deps = [
         ":robot_plan_utils",
-        "//lcmtypes:robot_plan",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//multibody/inverse_kinematics:constraint_relaxing_ik",
         "//multibody/parsing",
         "//multibody/plant",
@@ -52,7 +52,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
-        "//lcmtypes:robot_plan",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//multibody/plant",
     ],
 )
@@ -121,7 +121,7 @@ drake_cc_library(
     hdrs = ["robot_plan_interpolator.h"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
-        "//lcmtypes:robot_plan",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//multibody/parsing",
         "//systems/framework:leaf_system",
     ],

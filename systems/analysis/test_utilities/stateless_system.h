@@ -19,8 +19,7 @@ class StatelessSystem final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem);
 
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
-      : LeafSystem<T>(SystemTypeTag<StatelessSystem>{}),
-        offset_(offset) {
+      : LeafSystem<T>(SystemTypeTag<StatelessSystem>{}), offset_(offset) {
     witness_ = this->MakeWitnessFunction(
         "clock witness", dir_type, &StatelessSystem::CalcClockWitness,
         &StatelessSystem::InvokePublishCallback);
@@ -35,8 +34,7 @@ class StatelessSystem final : public LeafSystem<T> {
       : StatelessSystem<T>(other.get_trigger_time(),
                            other.witness_->direction_type()) {}
 
-  void set_publish_callback(
-      std::function<void(const Context<T>&)> callback) {
+  void set_publish_callback(std::function<void(const Context<T>&)> callback) {
     publish_callback_ = callback;
   }
 
@@ -52,7 +50,8 @@ class StatelessSystem final : public LeafSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename> friend class StatelessSystem;
+  template <typename>
+  friend class StatelessSystem;
 
   // The witness function is the time value itself less the offset value.
   T CalcClockWitness(const Context<T>& context) const {

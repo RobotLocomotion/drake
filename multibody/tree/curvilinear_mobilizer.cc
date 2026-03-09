@@ -14,7 +14,8 @@ template <typename T>
 CurvilinearMobilizer<T>::CurvilinearMobilizer(
     const SpanningForest::Mobod& mobod, const Frame<T>& inboard_frame_F,
     const Frame<T>& outboard_frame_M,
-    const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path)
+    const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+        curvilinear_path)
     : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
       curvilinear_path_(curvilinear_path) {}
 
@@ -228,7 +229,8 @@ CurvilinearMobilizer<T>::TemplatedDoCloneToScalar(
   return std::make_unique<CurvilinearMobilizer<ToScalar>>(
       tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
       outboard_frame_clone,
-      PiecewiseConstantCurvatureTrajectory<double>(curvilinear_path_));
+      trajectories::PiecewiseConstantCurvatureTrajectory<double>(
+          curvilinear_path_));
 }
 
 template <typename T>

@@ -8,17 +8,16 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
 
 --- src/SDF.cc
 +++ src/SDF.cc
-@@ -36,7 +36,6 @@
+@@ -38,6 +38,5 @@
  #include "EmbeddedSdf.hh"
  #include "Utils.hh"
- 
+
 -#include <gz/utils/Environment.hh>
- #include <gz/utils/NeverDestroyed.hh>
- 
+
  namespace sdf
 @@ -172,7 +171,8 @@ std::string findFile(sdf::Errors &_errors, const std::string &_filename,
    }
- 
+
    std::string sdfPathEnv;
 -  if(gz::utils::env("SDF_PATH", sdfPathEnv))
 +  // Drake opts-out the environment-variable-based include path tweaks.

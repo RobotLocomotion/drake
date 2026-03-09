@@ -1,4 +1,4 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import unittest
 

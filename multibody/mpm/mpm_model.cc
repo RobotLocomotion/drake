@@ -1,5 +1,7 @@
 #include "drake/multibody/mpm/mpm_model.h"
 
+#include <utility>
+
 #include "drake/multibody/mpm/mock_sparse_grid.h"
 #include "drake/multibody/mpm/solver_state.h"
 

@@ -8,6 +8,18 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "hydroelastic_user_guide_doxygen.h",
+    ] + glob([
+        "images/*.jpg",
+        "images/*.png",
+    ]),
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "hydroelastics",
     visibility = ["//visibility:public"],
@@ -39,4 +51,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

@@ -16,15 +16,9 @@ namespace internal {
 class CompliantContactManagerTester {
  public:
   template <typename T>
-  static const internal::MultibodyTreeTopology& topology(
+  static const internal::SpanningForest& get_forest(
       const CompliantContactManager<T>& manager) {
-    return manager.tree_topology();
-  }
-
-  template <typename T>
-  static const internal::SpanningForest& forest(
-      const CompliantContactManager<T>& manager) {
-    return manager.forest();
+    return manager.get_forest();
   }
 
   template <typename T>
@@ -75,7 +69,8 @@ class CompliantContactManagerTester {
     const int nc = contact_pairs.size();
     Eigen::MatrixX<T> J_AcBc_C(3 * nc, manager.plant().num_velocities());
     J_AcBc_C.setZero();
-    const auto& topology = CompliantContactManagerTester::topology(manager);
+    const SpanningForest& forest =
+        CompliantContactManagerTester::get_forest(manager);
     for (int i = 0; i < nc; ++i) {
       const int row_offset = 3 * i;
       const DiscreteContactPair<T>& contact_pair = contact_pairs[i];
@@ -83,10 +78,8 @@ class CompliantContactManagerTester {
                tree_jacobian : contact_pair.jacobian) {
         // If added to the Jacobian, it must have a valid index.
         EXPECT_TRUE(tree_jacobian.tree.is_valid());
-        const int col_offset =
-            topology.tree_velocities_start_in_v(tree_jacobian.tree);
-        const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
-        J_AcBc_C.block(row_offset, col_offset, 3, tree_nv) =
+        const SpanningForest::Tree& tree = forest.trees(tree_jacobian.tree);
+        J_AcBc_C.block(row_offset, tree.v_start(), 3, tree.nv()) =
             tree_jacobian.J.MakeDenseMatrix();
       }
     }

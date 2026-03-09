@@ -4,7 +4,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/autodiff.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 
 namespace drake {
@@ -67,26 +68,27 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType,
 }
 
 template <typename MatrixType, bool is_symmetric>
-MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
+MatrixX<typename MatrixType::Scalar>
+BlockSparseLowerTriangularOrSymmetricMatrix<
     MatrixType, is_symmetric>::MakeDenseMatrix() const {
   return MakeDenseBottomRightCorner(block_cols());
 }
 
 template <typename MatrixType, bool is_symmetric>
-MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
-    MatrixType, is_symmetric>::MakeDenseBottomRightCorner(const int num_blocks)
-    const {
+MatrixX<typename MatrixType::Scalar>
+BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
+    MakeDenseBottomRightCorner(const int num_blocks) const {
   DRAKE_DEMAND(0 <= num_blocks && num_blocks <= block_cols());
   if (num_blocks == 0) {
-    return MatrixX<double>::Zero(0, 0);
+    return MatrixX<Scalar>::Zero(0, 0);
   }
   const int block_col_start = block_cols() - num_blocks;
   /* The row/column in `this` matrix that corresponds to the 0,0-th entry in the
    dense result. */
   const int col_start = starting_cols_[block_col_start];
   const int row_start = col_start;
-  MatrixX<double> result =
-      MatrixX<double>::Zero(rows() - row_start, cols() - col_start);
+  MatrixX<Scalar> result =
+      MatrixX<Scalar>::Zero(rows() - row_start, cols() - col_start);
   for (int j = block_col_start; j < block_cols(); ++j) {
     for (int flat = 0; flat < ssize(block_row_indices(j)); ++flat) {
       const int i = block_row_indices(j)[flat];
@@ -183,9 +185,15 @@ template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>,
                                                            true>;
 template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<double>,
                                                            false>;
+
 template class BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>,
                                                            true>;
 template class BlockSparseLowerTriangularOrSymmetricMatrix<Matrix3<double>,
+                                                           false>;
+
+template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
+                                                           true>;
+template class BlockSparseLowerTriangularOrSymmetricMatrix<MatrixX<AutoDiffXd>,
                                                            false>;
 
 }  // namespace internal

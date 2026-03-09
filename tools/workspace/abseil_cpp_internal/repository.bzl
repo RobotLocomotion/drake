@@ -6,8 +6,8 @@ def abseil_cpp_internal_repository(
     github_archive(
         name = name,
         repository = "abseil/abseil-cpp",
-        commit = "d60e95741ce9d0ca5766084e7cc2a116c4eb45b2",
-        sha256 = "f78118223645a0478a8308d31acf1356a389b08267a0dc067408ece2356ea8b5",  # noqa
+        commit = "20260107.1",
+        sha256 = "4314e2a7cbac89cac25a2f2322870f343d81579756ceff7f431803c2c9090195",  # noqa
         patches = [
             ":patches/upstream/specific_iostream_includes.patch",
             ":patches/disable_int128_on_clang.patch",
@@ -15,6 +15,7 @@ def abseil_cpp_internal_repository(
             ":patches/inline_namespace.patch",
         ],
         patch_cmds = [
+            "echo 'exports_files([\"drake_repository_metadata.json\"])' >> BUILD.bazel",  # noqa
             # Force linkstatic = 1 everywhere. First, remove the few existing
             # uses so that we don't get "duplicate kwarg" errors. Then, add it
             # anywhere that linkopts already appears.

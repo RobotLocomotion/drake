@@ -1,8 +1,14 @@
 #include "drake/solvers/semidefinite_relaxation_internal.h"
 
+#include <limits>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/matrix_util.h"

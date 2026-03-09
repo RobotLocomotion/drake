@@ -1,6 +1,8 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 #include <cmath>
+#include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 

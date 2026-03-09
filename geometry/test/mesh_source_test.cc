@@ -1,5 +1,7 @@
 #include "drake/geometry/mesh_source.h"
 
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

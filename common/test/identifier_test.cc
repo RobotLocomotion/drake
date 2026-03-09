@@ -19,8 +19,8 @@ namespace {
 // Creates various dummy index types to test.
 using std::set;
 using std::stringstream;
-using std::unordered_set;
 using std::unordered_map;
+using std::unordered_set;
 using AId = Identifier<class ATag>;
 using BId = Identifier<class BTag>;
 
@@ -182,11 +182,18 @@ TEST_F(IdentifierTests, PutInSet) {
   EXPECT_TRUE(ids.contains(a1));
 }
 
-// Tests the streaming behavior.
+// Tests the streaming behavior. Remove with 2026-05-01 deprecation removal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(IdentifierTests, StreamOperator) {
   stringstream ss;
   ss << a2_;
   EXPECT_EQ(ss.str(), "2");
+}
+#pragma GCC diagnostic pop
+
+TEST_F(IdentifierTests, FmtFormatterProducesExpectedString) {
+  EXPECT_EQ(fmt::to_string(a2_), "2");
 }
 
 // Tests the ability to convert the id to string via std::to_string.
@@ -214,21 +221,27 @@ TEST_F(IdentifierTests, ToString) {
 //   ==     |   equals
 //    <     |   less_than
 //    +     |   add
-#define BINARY_TEST(OP, OP_NAME) \
-template <typename T, typename U, \
-    typename = decltype(std::declval<T>() OP std::declval<U>())> \
-bool has_ ## OP_NAME ## _helper(int) { return true; } \
-template <typename T, typename U> \
-bool has_ ## OP_NAME ## _helper(...) { return false; } \
-template <typename T, typename U> \
-bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
-TEST_F(IdentifierTests, OP_NAME ## OperatorAvailiblity) { \
-  EXPECT_FALSE((has_ ## OP_NAME<AId, BId>())); \
-  EXPECT_TRUE((has_ ## OP_NAME<AId, AId>())); \
-  EXPECT_FALSE((has_ ## OP_NAME<AId, int>())); \
-  EXPECT_FALSE((has_ ## OP_NAME<AId, size_t>())); \
-  EXPECT_FALSE((has_ ## OP_NAME<AId, int64_t>())); \
-}
+#define BINARY_TEST(OP, OP_NAME)                                         \
+  template <typename T, typename U,                                      \
+            typename = decltype(std::declval<T>() OP std::declval<U>())> \
+  bool has_##OP_NAME##_helper(int) {                                     \
+    return true;                                                         \
+  }                                                                      \
+  template <typename T, typename U>                                      \
+  bool has_##OP_NAME##_helper(...) {                                     \
+    return false;                                                        \
+  }                                                                      \
+  template <typename T, typename U>                                      \
+  bool has_##OP_NAME() {                                                 \
+    return has_##OP_NAME##_helper<T, U>(1);                              \
+  }                                                                      \
+  TEST_F(IdentifierTests, OP_NAME##OperatorAvailiblity) {                \
+    EXPECT_FALSE((has_##OP_NAME<AId, BId>()));                           \
+    EXPECT_TRUE((has_##OP_NAME<AId, AId>()));                            \
+    EXPECT_FALSE((has_##OP_NAME<AId, int>()));                           \
+    EXPECT_FALSE((has_##OP_NAME<AId, size_t>()));                        \
+    EXPECT_FALSE((has_##OP_NAME<AId, int64_t>()));                       \
+  }
 BINARY_TEST(==, Equals)
 BINARY_TEST(!=, NotEquals)
 BINARY_TEST(=, Assignment)
@@ -247,23 +260,27 @@ TEST_F(IdentifierTests, Convertible) {
 
 // Attempting to acquire the value is an error.
 TEST_F(IdentifierTests, InvalidGetValueCall) {
-  if (kDrakeAssertIsDisarmed) { return; }
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      invalid.get_value(),
-      ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(invalid.get_value(), ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidEqualityCompare) {
-  if (kDrakeAssertIsDisarmed) { return; }
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(invalid == a1_, ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidInequalityCompare) {
-  if (kDrakeAssertIsDisarmed) { return; }
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(invalid != a1_, ".*is_valid.*failed.*");
 }
@@ -290,10 +307,11 @@ TEST_F(IdentifierTests, InvalidHash) {
 
 // Streaming an invalid id is an error.
 TEST_F(IdentifierTests, InvalidStream) {
-  if (kDrakeAssertIsDisarmed) { return; }
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
   AId invalid;
-  std::stringstream ss;
-  DRAKE_EXPECT_THROWS_MESSAGE(ss << invalid, ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(fmt::to_string(invalid), ".*is_valid.*failed.*");
 }
 
 }  // namespace

@@ -1,10 +1,12 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import functools
 import operator
-import typing
 import sys
+import typing
 
 
 def logical_and(*formulas):
@@ -31,9 +33,9 @@ _symbolic_sympy_defer = None
 
 
 def to_sympy(
-    x: typing.Union[float, int, bool, Variable, Expression, Formula],
+    x: float | int | bool | Variable | Expression | Formula,
     *,
-    memo: typing.Dict = None
+    memo: dict = None,
 ) -> typing.Union[float, int, bool, "sympy.Expr"]:
     """Converts a pydrake object to the corresponding SymPy Expr.
 
@@ -64,10 +66,8 @@ def to_sympy(
 
 
 def from_sympy(
-    x: typing.Union[float, int, bool, "sympy.Expr"],
-    *,
-    memo: typing.Dict = None
-) -> typing.Union[float, int, bool, Variable, Expression, Formula]:
+    x: typing.Union[float, int, bool, "sympy.Expr"], *, memo: dict = None
+) -> float | int | bool | Variable | Expression | Formula:
     """Converts a SymPy Expr to the corresponding pydrake object.
 
     Certain expressions are not supported and will raise NotImplementedError.

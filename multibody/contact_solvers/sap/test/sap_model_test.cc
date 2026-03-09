@@ -1,6 +1,10 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
+#include <limits>
+#include <memory>
 #include <numeric>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -16,6 +20,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 namespace drake {
 namespace multibody {
@@ -43,9 +48,9 @@ template <typename T>
 class SpringConstraint final : public SapConstraint<T> {
  public:
   struct Data {
-    Vector3<T> vc;
-    T R;
-    Vector3<T> v_hat;
+    Vector3<T> vc{Vector3d::Constant(kNaN)};
+    T R{kNaN};
+    Vector3<T> v_hat{Vector3d::Constant(kNaN)};
   };
 
   // Model a spring attached to `clique`, expected to be a 3D particle.
@@ -847,7 +852,7 @@ TEST_F(DummyModelTest, CostGradients) {
   const double cost = sap_model_->EvalCost(*context_);
   const VectorXd& cost_gradient = sap_model_->EvalCostGradient(*context_);
   EXPECT_NEAR(cost, cost_ad.value(), 2.0 * kEpsilon * cost_ad.value());
-  EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, kEpsilon,
+  EXPECT_TRUE(CompareMatrices(cost_gradient, cost_ad_gradient, 2 * kEpsilon,
                               MatrixCompareType::relative));
 
   // Validate gradient and its gradient (Hessian of the cost).

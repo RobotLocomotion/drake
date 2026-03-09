@@ -9,8 +9,8 @@
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/tamsi_solver.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -63,9 +63,7 @@ class TamsiDriver {
 
   // Returns a reference to the underlying tree topology of the multibody
   // system.
-  const MultibodyTreeTopology& tree_topology() const {
-    return manager().tree_topology();
-  }
+  const SpanningForest& get_forest() const { return manager().get_forest(); }
 
   // Returns a reference to the MultibodyPlant model held by the manager
   // provided at construction.

@@ -33,6 +33,12 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
     const Eigen::Ref<const VectorX<T>>& delassus_estimation) const {
   using std::max;
 
+  // Prepare our return value storage in a way that avoids extra copies.
+  Value<SapHuntCrossleyConstraintData<T>>* downcast_result{};
+  std::unique_ptr<AbstractValue> result(
+      downcast_result = new Value<SapHuntCrossleyConstraintData<T>>());
+  SapHuntCrossleyConstraintData<T>& data = downcast_result->get_mutable_value();
+
   const T& mu = parameters_.friction;
   const T& d = parameters_.dissipation;
   const double stiction_tolerance = parameters_.stiction_tolerance;
@@ -49,7 +55,6 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
       max(0.5 * (delassus_estimation(0) + delassus_estimation(1)), w_rms);
   const T Rt = sigma * wt;  // SAP's regularization.
 
-  SapHuntCrossleyConstraintData<T> data;
   typename SapHuntCrossleyConstraintData<T>::InvariantData& p =
       data.invariant_data;
   p.dt = time_step;
@@ -61,7 +66,7 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
   const T sap_stiction_tolerance = mu * Rt * p.n0;
   p.epsilon_soft = max(stiction_tolerance, sap_stiction_tolerance);
 
-  return AbstractValue::Make(data);
+  return result;
 }
 
 template <typename T>

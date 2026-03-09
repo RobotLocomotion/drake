@@ -1,6 +1,8 @@
 #include "drake/systems/framework/abstract_values.h"
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

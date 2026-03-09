@@ -6,7 +6,6 @@
 #include <memory>
 #include <ostream>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -22,7 +21,6 @@ namespace symbolic {
 using std::equal;
 using std::lexicographical_compare;
 using std::ostream;
-using std::ostringstream;
 using std::runtime_error;
 using std::set;
 using std::shared_ptr;
@@ -234,12 +232,10 @@ bool FormulaVar::Evaluate(const Environment& env) const {
   if (it != env.cend()) {
     return static_cast<bool>(it->second);
   } else {
-    ostringstream oss;
-    oss << "The following environment does not have an entry for the "
-           "variable "
-        << var_ << "\n";
-    oss << env << "\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("The following environment does not have an entry for the "
+                    "variable {}\n{}\n",
+                    var_, env));
   }
 }
 
@@ -250,7 +246,7 @@ Formula FormulaVar::Substitute(const Substitution&) const {
 }
 
 ostream& FormulaVar::Display(ostream& os) const {
-  return os << var_;
+  return os << fmt::to_string(var_);
 }
 
 const Variable& FormulaVar::get_variable() const {
@@ -640,6 +636,24 @@ struct VariablesCollector {
   Variables vars_;
 };
 }  // namespace
+
+}  // namespace symbolic
+}  // namespace drake
+
+namespace Eigen {
+namespace internal {
+// Using Matrix::visit requires providing functor_traits.
+template <>
+struct functor_traits<drake::symbolic::VariablesCollector> {
+  static constexpr int Cost = 10;
+  [[maybe_unused]] static constexpr bool LinearAccess = false;
+  [[maybe_unused]] static constexpr bool PacketAccess = false;
+};
+}  // namespace internal
+}  // namespace Eigen
+
+namespace drake {
+namespace symbolic {
 
 void FormulaPositiveSemidefinite::HashAppendDetail(
     DelegatingHasher* hasher) const {

@@ -1,6 +1,8 @@
 #include "drake/multibody/optimization/quaternion_integration_constraint.h"
 
 #include <limits>
+#include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -95,12 +97,10 @@ void TestEval(const QuaternionEulerIntegrationConstraint& dut,
       Eigen::Quaternion<AutoDiffXd>(x_ad(0), x_ad(1), x_ad(2), x_ad(3)),
       Eigen::Quaternion<AutoDiffXd>(x_ad(4), x_ad(5), x_ad(6), x_ad(7)),
       x_ad.segment<3>(8), x_ad(11), dut.allow_quaternion_negation());
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractValue(y_ad),
-      math::ExtractValue(y_ad_expected), 10 * kEps));
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractGradient(y_ad),
-      math::ExtractGradient(y_ad_expected), 10 * kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_ad),
+                              math::ExtractValue(y_ad_expected), 10 * kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_ad),
+                              math::ExtractGradient(y_ad_expected), 10 * kEps));
 }
 
 GTEST_TEST(QuaternionEulerIntegrationConstraintTest, TestEval) {

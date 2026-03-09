@@ -420,9 +420,8 @@ std::string MaybeWriteCsdpParams(internal::SpecificOptions* options,
         static_cast<int>(RemoveFreeVariableMethod::kNullspace);
     constexpr int kLorentzConeSlack =
         static_cast<int>(RemoveFreeVariableMethod::kLorentzConeSlack);
-    const int method =
-        options->Pop<int>("drake::RemoveFreeVariableMethod")
-            .value_or(kNullspace);
+    const int method = options->Pop<int>("drake::RemoveFreeVariableMethod")
+                           .value_or(kNullspace);
     if (!(method >= kTwoSlackVariables && method <= kLorentzConeSlack)) {
       throw std::logic_error(fmt::format(
           "CsdpSolver: Bad value ({}) for drake::RemoveFreeVariableMethod",

@@ -1,6 +1,9 @@
 #include "drake/solvers/mosek_solver_internal.h"
 
 #include <limits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -1246,7 +1249,7 @@ GTEST_TEST(AddScalarPsdConstraint, MatrixVariable) {
     MSK_getnumcon(dut.task(), &num_mosek_constraint);
     EXPECT_EQ(num_mosek_constraint, 1);
     rescode =
-    // NOLINTNEXTLINE(whitespace/line_length)
+        // NOLINTNEXTLINE(whitespace/line_length)
         dut.AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable();
     ASSERT_EQ(rescode, MSK_RES_OK);
     EXPECT_TRUE(bbcon_dual_indices.empty());

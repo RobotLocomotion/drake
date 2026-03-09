@@ -1,9 +1,14 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <functional>
 #include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

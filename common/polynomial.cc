@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 
 using Eigen::Dynamic;
 using Eigen::Matrix;
@@ -297,9 +296,10 @@ Polynomial<T> Polynomial<T>::Substitute(
 template <typename T>
 Polynomial<T> Polynomial<T>::Derivative(int derivative_order) const {
   DRAKE_DEMAND(derivative_order >= 0);
-  if (!is_univariate_)
+  if (!is_univariate_) {
     throw runtime_error(
         "Derivative is only defined for univariate polynomials");
+  }
   if (derivative_order == 0) {
     return *this;
   }
@@ -357,7 +357,9 @@ Polynomial<T> Polynomial<T>::Integral(const T& integration_constant) const {
 }
 
 template <typename T>
-bool Polynomial<T>::is_univariate() const {return is_univariate_;}
+bool Polynomial<T>::is_univariate() const {
+  return is_univariate_;
+}
 
 template <typename T>
 bool Polynomial<T>::operator==(const Polynomial<T>& other) const {
@@ -846,6 +848,43 @@ class FromExpressionVisitor {
 template <typename T>
 Polynomial<T> Polynomial<T>::FromExpression(const Expression& e) {
   return FromExpressionVisitor<T>{}.Visit(e);
+}
+
+template <typename T>
+std::string Polynomial<T>::Monomial::to_string() const {
+  std::string result;
+  bool print_star = false;
+  if (coefficient != 1 || terms.empty()) {
+    result.append(fmt::format("({})", coefficient));
+    print_star = true;
+  }
+  for (const Term& term : terms) {
+    if (print_star) {
+      result.append("*");
+    } else {
+      print_star = true;
+    }
+    result.append(IdToVariableName(term.var));
+    if (term.power != 1) {
+      result.append(fmt::format("^{}", term.power));
+    }
+  }
+  return result;
+}
+
+template <typename T>
+std::string Polynomial<T>::to_string() const {
+  if (monomials_.empty()) {
+    return "0";
+  }
+  std::string result;
+  typename std::vector<Monomial>::const_iterator iter = monomials_.begin();
+  result.append((*iter).to_string());
+  for (++iter; iter != monomials_.end(); ++iter) {
+    result.append("+");
+    result.append((*iter).to_string());
+  }
+  return result;
 }
 
 // template class Polynomial<std::complex<double>>;

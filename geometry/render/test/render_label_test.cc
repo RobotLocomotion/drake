@@ -147,6 +147,12 @@ TEST_F(RenderLabelTests, ServeAsSetMember) {
   EXPECT_EQ(label_set.find(labels_[2]), label_set.end());
 }
 
+GTEST_TEST(RenderLabelTest, ToString) {
+  const RenderLabel dut = RenderLabel::kUnspecified;
+  EXPECT_EQ(dut.to_string(), "32767");
+  EXPECT_EQ(fmt::to_string(dut), "32767");
+}
+
 }  // namespace
 }  // namespace render
 }  // namespace geometry

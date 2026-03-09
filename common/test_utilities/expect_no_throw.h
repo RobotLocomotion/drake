@@ -11,18 +11,18 @@
 // TODO(eric.cousineau): Add support for ostream additions, e.g.
 // `DRAKE_EXPECT_NO_THROW(stuff) << "Message"`, like `GTEST_TEST_NO_THROW_`
 // does with labels. (Though TBH, `SCOPED_TRACE(...)` is better.)
-#define _DRAKE_TEST_NO_THROW(statement, fail_macro) \
-  try { \
-    statement; \
-  } catch (const std::exception& e) { \
-    fail_macro() \
-      << "Expected: Does not throw:\n  " << #statement << std::endl \
-      << "Actual: Throws " << ::drake::NiceTypeName::Get(e) << std::endl \
-      << "  " << e.what(); \
-  } catch (...) { \
-    fail_macro() \
-      << "Expected: Does not throw:\n  " << #statement << std::endl \
-      << "Actual: Throws type which does not inherit from std::exception"; \
+#define _DRAKE_TEST_NO_THROW(statement, fail_macro)                            \
+  try {                                                                        \
+    statement;                                                                 \
+  } catch (const std::exception& e) {                                          \
+    fail_macro() << "Expected: Does not throw:\n  " << #statement << std::endl \
+                 << "Actual: Throws " << ::drake::NiceTypeName::Get(e)         \
+                 << std::endl                                                  \
+                 << "  " << e.what();                                          \
+  } catch (...) {                                                              \
+    fail_macro()                                                               \
+        << "Expected: Does not throw:\n  " << #statement << std::endl          \
+        << "Actual: Throws type which does not inherit from std::exception";   \
   }
 
 /**

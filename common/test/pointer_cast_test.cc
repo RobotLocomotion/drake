@@ -1,5 +1,8 @@
 #include "drake/common/pointer_cast.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -47,8 +50,8 @@ GTEST_TEST(StaticPointerCastTest, Upcast) {
 // Downcasting while preserving const works.
 GTEST_TEST(StaticPointerCastTest, DowncastConst) {
   std::unique_ptr<const Base> u = std::make_unique<const Derived>();
-  std::unique_ptr<const Derived> t = static_pointer_cast<const Derived>(
-      std::move(u));
+  std::unique_ptr<const Derived> t =
+      static_pointer_cast<const Derived>(std::move(u));
   EXPECT_EQ(!!u, false);
   EXPECT_EQ(!!t, true);
 }
@@ -90,8 +93,8 @@ GTEST_TEST(DynamicPointerCastTest, Upcast) {
 // Downcasting while preserving const works.
 GTEST_TEST(DynamicPointerCastTest, DowncastConst) {
   std::unique_ptr<const Base> u = std::make_unique<const Derived>();
-  std::unique_ptr<const Derived> t = dynamic_pointer_cast<const Derived>(
-      std::move(u));
+  std::unique_ptr<const Derived> t =
+      dynamic_pointer_cast<const Derived>(std::move(u));
   EXPECT_EQ(!!u, false);
   EXPECT_EQ(!!t, true);
 }
@@ -101,8 +104,8 @@ GTEST_TEST(DynamicPointerCastTest, DowncastConst) {
 // Downcasting works.
 GTEST_TEST(DynamicPointerCastOrThrowTest, Downcast) {
   std::unique_ptr<Base> u = std::make_unique<Derived>();
-  std::unique_ptr<Derived> t = dynamic_pointer_cast_or_throw<Derived>(
-      std::move(u));
+  std::unique_ptr<Derived> t =
+      dynamic_pointer_cast_or_throw<Derived>(std::move(u));
   EXPECT_EQ(!!u, false);
   EXPECT_EQ(!!t, true);
 }
@@ -166,10 +169,9 @@ GTEST_TEST(BareDynamicPointerCastOrThrowTest, Downcast) {
 // Failed cast of nullptr.
 GTEST_TEST(BareDynamicPointerCastOrThrowTest, FailedCastFromNullptr) {
   Base* u = nullptr;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dynamic_pointer_cast_or_throw<MoreDerived>(u),
-      "Cannot cast a nullptr drake.*Base. "
-      "to drake.*MoreDerived..");
+  DRAKE_EXPECT_THROWS_MESSAGE(dynamic_pointer_cast_or_throw<MoreDerived>(u),
+                              "Cannot cast a nullptr drake.*Base. "
+                              "to drake.*MoreDerived..");
 }
 
 // Failed cast (type mismatch).

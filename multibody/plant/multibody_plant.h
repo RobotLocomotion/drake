@@ -24,7 +24,6 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/distance_constraint_params.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -109,6 +108,9 @@ struct ContactByPenaltyMethodParameters {
   std::optional<double> gravity;
 };
 
+// Forward declarations for desired_state_input.h.
+template <typename>
+struct DesiredStateInput;
 // Forward declarations for discrete_update_manager.h.
 template <typename>
 class DiscreteUpdateManager;
@@ -116,14 +118,17 @@ class DiscreteUpdateManager;
 template <typename>
 class GeometryContactData;
 // Forward declarations for hydroelastic_contact_forces_continuous_cache_data.h.
-template <typename T>
-struct HydroelasticContactForcesContinuousCacheData;
-// Forward declarations for plant_model_attorney.h.
 template <typename>
-class MultibodyPlantModelAttorney;
+struct HydroelasticContactForcesContinuousCacheData;
 // Forward declarations for multibody_plant_discrete_update_manager_attorney.h.
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
+// Forward declarations for multibody_plant_icf_attorney.h.
+template <typename>
+class MultibodyPlantIcfAttorney;
+// Forward declarations for multibody_plant_model_attorney.h.
+template <typename>
+class MultibodyPlantModelAttorney;
 
 }  // namespace internal
 
@@ -171,7 +176,8 @@ enum class ContactModel {
 ///   https://arxiv.org/abs/2110.10107.
 enum class DiscreteContactSolver {
   /// TAMSI solver, see [Castro et al., 2019].
-  kTamsi,
+  kTamsi DRAKE_DEPRECATED("2026-09-01",
+                          "The TAMSI solver is deprecated for removal."),
   /// SAP solver, see [Castro et al., 2022].
   kSap,
 };
@@ -228,7 +234,8 @@ enum class DiscreteContactSolver {
 ///   https://arxiv.org/abs/2312.03908
 enum class DiscreteContactApproximation {
   /// TAMSI solver approximation, see [Castro et al., 2019].
-  kTamsi,
+  kTamsi DRAKE_DEPRECATED("2026-09-01",
+                          "The TAMSI solver is deprecated for removal."),
   /// SAP solver model approximation, see [Castro et al., 2022].
   kSap,
   /// Similarity approximation found in [Castro et al., 2023].
@@ -316,7 +323,7 @@ geometry.
   Obtain and manipulate position and velocity state variables.
 - @ref mbp_parameters "Parameters"
   Working with system parameters for various multibody elements.
-- @ref mbp_working_with_free_bodies "Free bodies":
+- @ref mbp_working_with_free_bodies "Free and floating base bodies":
   Work conveniently with free (floating) bodies.
 - @ref mbp_kinematic_and_dynamic_computations "Kinematics and dynamics":
   Perform @ref systems::Context "Context"-dependent kinematic and dynamic
@@ -329,7 +336,7 @@ geometry.
 @anchor model_instances
                         ### Model Instances
 
-A MultiBodyPlant may contain multiple model instances. Each model instance
+A MultibodyPlant may contain multiple model instances. Each model instance
 corresponds to a
 set of bodies and their connections (joints). Model instances provide
 methods to get or set the state of the set of bodies (e.g., through
@@ -589,13 +596,6 @@ per-model instance actuation vectors, see SetActuationInArray() to gather the
 model instance vectors into a whole plant vector and GetActuationFromArray() to
 scatter the whole plant vector into per-model instance vectors.
 
-@warning Effort limits (JointActuator::effort_limit()) are not enforced, unless
-PD controllers are defined.
-See @ref pd_controllers "Using PD controlled actuators".
-
-<!-- TODO(amcastro-tri): Consider enforcing effort limits whether PD controllers
-     are defined or not. -->
-
 @anchor pd_controllers
   #### Using PD controlled actuators
 
@@ -605,6 +605,8 @@ at discrete-time steps can be compromised for high controller gains. For such
 cases, simulation stability and robustness can be improved significantly by
 moving your PD controller into the plant where the discrete solver can strongly
 couple controller and model dynamics.
+
+@note PD controllers are ignored when a joint is locked (see Joint::Lock()).
 
 @warning Currently, this feature is only supported for discrete models
 (is_discrete() is true) using the SAP solver (get_discrete_contact_solver()
@@ -659,7 +661,7 @@ the net actuation port (get_net_actuation_output_port()). That is, the net
 actuation port reports the total actuation applied by a given actuator.
 
 @note PD controllers are ignored when a joint is locked (see Joint::Lock()), and
-thus they have no effect on the actuation output.
+thus they have no effect on the actuation output nor reaction forces.
 
 @anchor sdf_loading
                  ### Loading models from SDFormat files
@@ -1089,7 +1091,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// step, the output value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
-  /// see Joint::Lock(). Therefore they do not contribute to this port.
+  /// see Joint::Lock(). Therefore they do not contribute to this port if the
+  /// joint is locked.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port() const;
@@ -1110,7 +1113,8 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// step, the output value will be all zeros.
   ///
   /// @note PD controllers are not considered for actuators on locked joints,
-  /// see Joint::Lock(). Therefore they do not contribute to this port.
+  /// see Joint::Lock(). Therefore they do not contribute to this port if the
+  /// joint is locked.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::OutputPort<T>& get_net_actuation_output_port(
@@ -1271,6 +1275,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// for details. When sampling is enabled and the plant has not yet taken a
   /// step, the output value will be all zeros.
   ///
+  /// @note PD controllers are not considered for actuators on locked joints,
+  /// see Joint::Lock(). Therefore they do not contribute to this port if the
+  /// joint is locked.
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_reaction_forces_output_port() const;
 
@@ -1657,12 +1664,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   to the joint type it actuates. For instance, it will have units of
   ///   N⋅m (torque) for revolute joints while it will have units of N (force)
   ///   for prismatic joints.
-  /// @note The effort limit is unused by MultibodyPlant and is simply provided
-  /// here for bookkeeping purposes. It will not, for instance, saturate
-  /// external actuation inputs based on this value. If, for example, a user
-  /// intends to saturate the force/torque that is applied to the MultibodyPlant
-  /// via this actuator, the user-level code (e.g., a controller) should query
-  /// this effort limit and impose the saturation there.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant or until the
   /// JointActuator has been removed from the plant with RemoveJointActuator().
@@ -1680,6 +1681,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the plant is already finalized.
   /// @see AddJointActuator()
   void RemoveJointActuator(const JointActuator<T>& actuator);
+
+  /// Removes the effort limits on all joint actuators. (In other words, sets
+  /// all effort limits to +∞.) This is a convenient way to obtain a plant
+  /// without any built-in effort limits, in case models loaded by the Parser
+  /// have unwanted limits.
+  void RemoveAllJointActuatorEffortLimits();
 
   /// Creates a new model instance.  Returns the index for the model
   /// instance.
@@ -1801,6 +1808,11 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// GetConstraintActiveStatus() and set its active status with
   /// SetConstraintActiveStatus().
   ///
+  /// @warning Adding constraints to a continuous time plant is allowed at
+  /// configuration time, but will raise exceptions at run time for results
+  /// that should have been affected by the constraints.
+  /// <!-- TODO(#23759,#23760,#23762,#23763,#23992): revisit this documentation
+  /// as constraints are implemented for CENIC. -->
   /// <!-- TODO(joemasterjohn): As different constraint types are added in a
   /// piecemeal fashion, the burden of managing and maintaining these different
   /// constraints becomes cumbersome for the plant. Consider a new
@@ -1939,8 +1951,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -1993,8 +2003,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not positive or zero.
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2052,8 +2060,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2074,8 +2080,6 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
@@ -2158,11 +2162,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @pre `damping >= 0` (if not std::nullopt).
   ///
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (`is_discrete() == false`).
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. `get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap`).
+  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap).
   MultibodyConstraintId AddTendonConstraint(std::vector<JointIndex> joints,
                                             std::vector<double> a,
                                             std::optional<double> offset,
@@ -2870,7 +2872,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// (Advanced) Populates output vector q_out with the generalized positions q
   /// of a specified model instance in a given Context.
   /// @note q_out is a dense vector of dimension
-  ///       `num_positions(model_instance)' associated with `model_instance`
+  ///       `num_positions(model_instance)` associated with `model_instance`
   ///       and is populated by copying from `context`.
   /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
@@ -3318,168 +3320,263 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @} <!-- State accessors and mutators -->
 
   /// @anchor mbp_working_with_free_bodies
-  /// @name                Working with free bodies
+  /// @name           Working with free and floating base bodies
   ///
-  /// A %MultibodyPlant user adds sets of RigidBody and Joint objects to `this`
-  /// plant to build a physical representation of a mechanical model.
-  /// At Finalize(), %MultibodyPlant builds a mathematical representation of
-  /// such system as a forest of trees, with each tree's root (which we call
-  /// that tree's _base body_) connected directly to World by a joint defining
-  /// the base body's mobility. If no input joint is provided for a base body,
-  /// one is added automatically. The function SetBaseBodyJointType() can be
-  /// used to change the type of joint used.
+  /// In robotics it is natural to think of some bodies as "floating", in the
+  /// sense that they may be posed independently of any other body. Manipulands
+  /// (objects to be manipulated by a robot) are the most obvious example since
+  /// they aren't connected to anything else. A mobile base or humanoid torso
+  /// can also be posed freely, though other bodies will move along with them.
+  /// %MultibodyPlant recognizes floating bodies at Finalize() by the fact that
+  /// they have no user-provided joint connecting them to any parent body. They
+  /// are given six degrees of freedom relative to the World frame and referred
+  /// to as _floating base bodies_.
   ///
-  /// In this representation each input Joint (including those added for base
-  /// bodies) is modeled internally using a Mobilizer, which grants a certain
-  /// number of degrees of freedom in accordance to the physical specification.
-  /// If a body has _six_ degrees of freedom with respect to its parent, it is
-  /// called a _free body_. If it also the root of a tree, such that its parent
-  /// is the world body, it is a _floating base body_. Bodies that are added to
-  /// the plant without specifying a joint normally become floating base bodies
-  /// after finalization.
+  /// We use the term _free body_ for _any_ body that has six degrees of freedom
+  /// relative to its parent. Floating base bodies are a special case of free
+  /// bodies, with World as the assumed parent. The distinction is where the
+  /// degrees of freedom come from: floating base bodies get theirs from
+  /// Finalize(); all other free bodies get theirs from user-defined joints. The
+  /// APIs below depend on that distinction. Those with "FreeBody" in their
+  /// names work on all free bodies. Those with "FloatingBaseBody" only work on
+  /// floating base bodies.
   ///
-  /// It is possible (and sometimes recommended) to explicitly create a 6-dof
-  /// joint between two bodies. The child body would be free, because it has six
-  /// degrees of freedom, but it would _not_ be a floating base body because its
-  /// parent is not the world. The effects of the various APIs below depend on
-  /// the distinction between "free" and "floating base bodies". Read carefully.
-  /// A user can request the set of all floating base bodies with a call to
-  /// GetFloatingBaseBodies(). Alternatively, a user can query whether a
-  /// RigidBody is a floating base body or not with RigidBody::is_floating().
-  /// For many applications, a user might need to work with indices in the
-  /// multibody state vector. For such applications,
-  /// RigidBody::floating_positions_start() and
-  /// RigidBody::floating_velocities_start_in_v() offer the additional level of
-  /// introspection needed. These APIs only apply to floating base bodies and
-  /// _not_ 6-dof free bodies generally.
+  /// To implement a floating base body at %Finalize(), %MultibodyPlant
+  /// automatically adds a floating joint between that body's frame and the
+  /// World frame. Prior to that there is no joint so we provide a
+  /// pre-Finalize() API here to set the default pose of a floating base body in
+  /// World. (See SetDefaultFloatingBaseBodyPose() below.) The default pose is
+  /// used to initialize the floating joint's coordinates once that joint has
+  /// been added. After %Finalize(), you can use the Joint API by accessing the
+  /// automatically-added floating joint (see below), or continue to use the
+  /// APIs in this group.
   ///
-  /// It is sometimes convenient for users to perform operations on RigidBodies
-  /// uniformly through the APIs of the Joint class. For that reason the plant
-  /// implicitly constructs a 6-dof joint, typically a QuaternionFloatingJoint,
-  /// between the body and the world for all bodies otherwise without declared
-  /// inboard joints at the time of Finalize(). Using Joint APIs to affect a
-  /// free body (setting  state, changing parameters, etc.) has the same effect
-  /// as using the free body APIs below. Each implicitly created joint is named
-  /// the same as the free body, as reported by `RigidBody::name()`. In the rare
-  /// case that there is already some (unrelated) joint with that name, we'll
-  /// prepend underscores to the name until it is unique.
+  /// Post-Finalize() there are a few additional APIs that apply only to
+  /// floating base bodies. For example, you can query whether a RigidBody is a
+  /// floating base body with RigidBody::is_floating_base_body(), and can
+  /// request a list of all floating base bodies with GetFloatingBaseBodies().
+  /// The relevant joint coordinate entries q and v in the multibody state
+  /// vector can be obtained with RigidBody::floating_positions_start() and
+  /// RigidBody::floating_velocities_start_in_v().
   ///
-  /// The APIs below provide affordances for working with free bodies without
-  /// explicitly accessing the corresponding floating joint. The pose of a free
-  /// body (as it is represented in %MultibodyPlant's state) is *always* the
-  /// pose of the free body relative to its parent frame. That is _not_
-  /// necessarily the body's pose in the world (unless the parent frame is the
-  /// world frame).
+  /// If there is a user-provided joint mobilizing a free body, use the Joint
+  /// API as you would for any other joint. You can also use the Joint API to
+  /// work with floating base bodies after %Finalize(), by accessing the
+  /// automatically-added floating joint. Use GetJointByName() with the name of
+  /// the floating base body (see RigidBody::name()). (In the rare case that
+  /// there is already some unrelated joint with that name, we prepend
+  /// underscores to the joint's name until it is unique.)
   /// @{
 
   /// Returns the set of body indices corresponding to the floating base
   /// bodies in the model, in no particular order.
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize, see Finalize().
   std::unordered_set<BodyIndex> GetFloatingBaseBodies() const;
 
-  /// Gets the pose of a given `body` in the parent frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details". To acquire X_WB,
-  /// regardless of what P is, kinematics need to be evaluated by calling
-  /// EvalBodyPoseInWorld().
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// Provisionally records a default World pose for `body`, to be used in case
+  /// `body` turns out to be a floating base body after Finalize().
+  ///
+  /// This may be called pre- or post-Finalize(). Pre-Finalize() this is the
+  /// only way to set the default pose of a floating base body. Post-Finalize(),
+  /// a floating base body's default pose may be set either by this function or
+  /// by setting the default pose directly through the Joint API applied to the
+  /// automatically-added floating joint. The most recent value set by either
+  /// method will be used to initialize the floating joint's coordinates in
+  /// subsequently-created Contexts.
+  ///
+  /// @warning If this is called on a `body` that does _not_ turn out to be a
+  /// floating base body after Finalize(), it will have no effect other than to
+  /// be echoed back in GetDefaultFloatingBaseBodyPose(); in particular it will
+  /// not affect the initial state in a subsequently-created Context. Use the
+  /// Joint API to set the default pose for any body that has an
+  /// explicitly-defined joint to its parent body.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @param[in] body
+  ///   RigidBody whose default pose will be set if it turns out to be a
+  ///   floating base body.
+  /// @param[in] X_WB
+  ///   Default pose of the floating base body in the World frame.
+  void SetDefaultFloatingBaseBodyPose(
+      const RigidBody<T>& body, const math::RigidTransform<double>& X_WB) {
+    this->mutable_tree().SetDefaultFloatingBaseBodyPose(body, X_WB);
+  }
+
+  /// Gets the provisional default pose of `body` as set by
+  /// SetDefaultFloatingBaseBodyPose(). If no pose was specified for `body`,
+  /// returns the identity pose. This may be called pre- or post-Finalize().
+  ///
+  /// @warning This value is only meaningful for bodies that turn out to be
+  /// floating base bodies after Finalize(). If called on any other body, the
+  /// result simply echoes whatever provisional pose was set in
+  /// SetDefaultFloatingBaseBodyPose() but has no other effect. Use the Joint
+  /// API to get the default pose for any body that has an explicitly-defined
+  /// joint to its parent body.
+  ///
+  /// @note Post-Finalize(), a floating base body's default pose may be set
+  /// either by SetDefaultFloatingBaseBodyPose() or by setting the default pose
+  /// directly through the Joint API applied to the automatically-added floating
+  /// joint. GetDefaultFloatingBaseBodyPose() will return the most-recent value
+  /// set by either method.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @param[in] body
+  ///   RigidBody whose default pose will be retrieved.
+  /// @retval X_WB The default pose of the floating base body B in World. Not
+  ///   meaningful if `body` is not a floating base body.
+  math::RigidTransform<double> GetDefaultFloatingBaseBodyPose(
+      const RigidBody<T>& body) const {
+    return internal_tree().GetDefaultFloatingBaseBodyPose(body);
+  }
+
+  /// Updates `context` to store the pose `X_WB` of a given floating base body
+  /// B's body frame in the World frame W.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a floating base body.
+  void SetFloatingBaseBodyPoseInWorldFrame(
+      systems::Context<T>* context, const RigidBody<T>& body,
+      const math::RigidTransform<T>& X_WB) const;
+
+  /// Updates `context` to store the World-frame pose of floating base body B,
+  /// given its pose `X_FB` in an arbitrary anchored frame F.
+  ///
+  /// Frame F must be _anchored_, meaning that it is either on a body which is
+  /// directly welded to a frame on the World body, or more generally, that it
+  /// is on a body for which there is a kinematic path between that body and the
+  /// world body that only includes weld joints.
+  ///
+  /// @warning The World-frame pose is calculated here and stored in `context`.
+  /// Moving F subsequently will not change the stored pose unless you call this
+  /// method again.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if frame F is not anchored to the world.
+  /// @throws std::exception if `body` is not a floating base body.
+  void SetFloatingBaseBodyPoseInAnchoredFrame(
+      systems::Context<T>* context, const Frame<T>& frame_F,
+      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const;
+
+  /// If there is a single base body in the model given by `model_instance`,
+  /// and that body is a floating base body, returns that floating base body.
+  /// Otherwise, throws an exception. Use HasUniqueFloatingBaseBody() to check
+  /// first.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  /// @throws std::exception if !HasUniqueFloatingBaseBody(model_instance).
+  /// @see HasUniqueFloatingBaseBody(), GetFloatingBaseBodies()
+  const RigidBody<T>& GetUniqueFloatingBaseBodyOrThrow(
+      ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().GetUniqueFloatingBaseBodyOrThrowImpl(model_instance);
+  }
+
+  /// Returns true if there is a single base body in the model given by
+  /// `model_instance`, and that body is a floating base body.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  /// @see GetUniqueFloatingBaseBodyOrThrow()
+  bool HasUniqueFloatingBaseBody(ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);
+  }
+
+  /// For any free body's 6-dof joint, gets the pose X_JpJc of the child frame
+  /// Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @retval X_JpJc The current pose of child frame Jc in its parent frame Jp.
+  ///                Returns X_WB if `body` B is a floating base body.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
                                           const RigidBody<T>& body) const {
     this->ValidateContext(context);
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
 
-  /// Sets `context` to store the pose `X_PB` of a given `body` B in the parent
-  /// frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// For any free body's 6-dof joint, sets `context` to store the pose
+  /// X_JpJc of child frame Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets X_WB, the
+  /// pose of body B in World.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   void SetFreeBodyPose(systems::Context<T>* context, const RigidBody<T>& body,
-                       const math::RigidTransform<T>& X_PB) const {
+                       const math::RigidTransform<T>& X_JpJc) const {
     this->ValidateContext(context);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_PB, context);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_JpJc, context);
   }
 
-  /// Sets `state` to store the pose `X_PB` of a given `body` B in its parent
-  /// frame P, for a given `context` of `this` model.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::exception if called pre-finalize.
-  /// @pre `state` comes from this MultibodyPlant.
+  /// (Advanced) Variant of SetFreeBodyPose() that writes to a given `state`
+  /// rather than directly to the Context.
+  /// @pre `state` comes from this %MultibodyPlant.
   void SetFreeBodyPose(const systems::Context<T>& context,
                        systems::State<T>* state, const RigidBody<T>& body,
-                       const math::RigidTransform<T>& X_PB) const {
+                       const math::RigidTransform<T>& X_JpJc) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_PB, context, state);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_JpJc, context, state);
   }
 
-  /// Sets the default pose of `body`. If `body.is_floating()` is true, this
-  /// will affect subsequent calls to SetDefaultState(); otherwise, the only
-  /// effect of the call is that the value will be echoed back in
-  /// GetDefaultFreeBodyPose().
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @param[in] body
-  ///   RigidBody whose default pose will be set.
-  /// @param[in] X_PB
-  ///   Default pose of the body.
-  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
-                              const math::RigidTransform<double>& X_PB) {
-    this->mutable_tree().SetDefaultFreeBodyPose(body, X_PB);
-  }
-
-  /// Gets the default pose of `body` as set by SetDefaultFreeBodyPose(). If no
-  /// pose is specified for the body, returns the identity pose.
-  /// @param[in] body
-  ///   RigidBody whose default pose will be retrieved.
-  /// @retval X_PB The pose of the free body relative to its parent frame.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  math::RigidTransform<double> GetDefaultFreeBodyPose(
-      const RigidBody<T>& body) const {
-    return internal_tree().GetDefaultFreeBodyPose(body);
-  }
-
-  /// Sets `context` to store the spatial velocity `V_PB` of a given `body` B in
-  /// its parent frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// For any free body's 6-dof joint, sets `context` to store the spatial
+  /// velocity V_JpJc of child frame Jc in its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets V_WB, the
+  /// spatial velocity of body B in World.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   void SetFreeBodySpatialVelocity(systems::Context<T>* context,
                                   const RigidBody<T>& body,
-                                  const SpatialVelocity<T>& V_PB) const {
+                                  const SpatialVelocity<T>& V_JpJc) const {
     this->ValidateContext(context);
-    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_PB, context);
+    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_JpJc, context);
   }
 
-  /// Sets `state` to store the spatial velocity `V_PB` of a given `body` B in
-  /// its parent frame P, for a given `context` of `this` model.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::exception if called pre-finalize.
-  /// @pre `state` comes from this MultibodyPlant.
+  /// (Advanced) Variant of SetFreeBodySpatialVelocity() that writes to a given
+  /// `state` rather than directly to the Context.
+  /// @pre `state` comes from this %MultibodyPlant.
   void SetFreeBodySpatialVelocity(const systems::Context<T>& context,
                                   systems::State<T>* state,
                                   const RigidBody<T>& body,
-                                  const SpatialVelocity<T>& V_PB) const {
+                                  const SpatialVelocity<T>& V_JpJc) const {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
-    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_PB, context,
+    internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_JpJc, context,
                                                       state);
   }
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's x-y-z `translation` with respect to its parent frame P.
-  /// @note The parent frame is not necessarily the world frame. See
-  /// @ref mbp_working_with_free_bodies "above for details".
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the x-y-z `translation` of its child frame Jc
+  /// with respect to its parent frame Jp.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of p_WBo, the position of body B's frame origin Bo in World.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
   /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   void SetFreeBodyRandomTranslationDistribution(
       const RigidBody<T>& body,
       const Vector3<symbolic::Expression>& translation) {
@@ -3487,21 +3584,28 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
         body, translation);
   }
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's orientation with respect to its parent frame, expressed as a
-  /// quaternion. Requires that the free body is modeled using a
-  /// QuaternionFloatingJoint.
-  /// @note The parent frame is not necessarily the world frame. See
-  ///   @ref mbp_working_with_free_bodies "above for details".
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the orientation of its child frame Jc with
+  /// respect to its parent frame Jp, expressed as a quaternion. Requires that
+  /// the free body is modeled using a QuaternionFloatingJoint.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of R_WB, the orientation of body B's frame in World (as a
+  /// quaternion).
+  ///
   /// @note This distribution is not necessarily uniform over the sphere
-  ///   reachable by the quaternion; that depends on the quaternion expression
-  ///   provided in `rotation`. See
-  ///   SetFreeBodyRandomRotationDistributionToUniform() for a uniform
-  ///   alternative.
-  /// @throws std::exception if `body` is not a free body in the model.
+  /// reachable by the quaternion; that depends on the quaternion expression
+  /// provided in `rotation`. See
+  /// SetFreeBodyRandomRotationDistributionToUniform() for a uniform
+  /// alternative.
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not a free body.
   /// @throws std::exception if the free body is not modeled with a
   ///   QuaternionFloatingJoint.
-  /// @throws std::exception if called pre-finalize.
   /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
   ///   modeled using an RpyFloatingJoint.
   /// @see SetBaseBodyJointType() for control over the type of automatically-
@@ -3513,36 +3617,50 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                                       rotation);
   }
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's orientation with respect to its parent frame using uniformly random
-  /// rotations (expressed as a quaternion). Requires that the free body is
-  /// modeled using a QuaternionFloatingJoint.
-  /// @note The parent frame is not necessarily the world frame. See
-  ///   @ref mbp_working_with_free_bodies "above for details".
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the orientation of its child frame Jc with
+  /// respect to its parent frame Jp using uniformly random rotations (expressed
+  /// as a quaternion). Requires that the free body is modeled using a
+  /// QuaternionFloatingJoint.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of R_WB, the orientation of body B's frame in World (as a
+  /// quaternion).
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if the free body is not modeled with a
   ///   QuaternionFloatingJoint.
-  /// @throws std::exception if called pre-finalize.
   /// @see SetFreeBodyRandomAnglesDistribution() for a free body that is
   ///   modeled using an RpyFloatingJoint.
   /// @see SetBaseBodyJointType() for control over the type of automatically-
   ///   added joints.
   void SetFreeBodyRandomRotationDistributionToUniform(const RigidBody<T>& body);
 
-  /// Sets the distribution used by SetRandomState() to populate the free
-  /// body's orientation with respect to its parent frame, expressed with
-  /// roll-pitch-yaw angles. Requires that the free body is modeled using an
-  /// RpyFloatingJoint.
-  /// @note The parent frame is not necessarily the world frame. See
-  ///   @ref mbp_working_with_free_bodies "above for details".
-  /// @note This distribution is not uniform over the sphere reachable by
-  ///   the three angles. For a uniform alternative, switch the joint to
-  ///   QuaternionFloatingJoint and use
-  ///   SetFreeBodyRandomRotationDistributionToUniform().
+  /// For any free body's 6-dof joint, sets the distribution used by
+  /// SetRandomState() to populate the orientation of its child frame Jc with
+  /// respect to its parent frame Jp, expressed with roll-pitch-yaw angles.
+  /// Requires that the free body is modeled using an RpyFloatingJoint.
+  ///
+  /// @note Unless `body` is a floating base body, the parent frame Jp is not
+  /// necessarily the World frame W, and the child frame Jc is not necessarily
+  /// the body frame B. For a floating base body B, this method sets the
+  /// distribution of R_WB, the orientation of body B's frame in World (as
+  /// roll-pitch-yaw angles).
+  ///
+  /// @note This distribution is not uniform over the sphere reachable by the
+  /// three angles. For a uniform alternative, switch the joint to
+  /// QuaternionFloatingJoint and use
+  /// SetFreeBodyRandomRotationDistributionToUniform().
+  ///
+  /// See @ref mbp_working_with_free_bodies "above for details".
+  /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if the free body is not modeled with an
   ///   RpyFloatingJoint.
-  /// @throws std::exception if called pre-finalize.
   /// @see SetFreeBodyRandomRotationDistribution() for a free body that is
   ///   modeled using a QuaternionFloatingJoint.
   /// @see SetBaseBodyJointType() for control over the type of automatically-
@@ -3554,59 +3672,47 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                                     angles);
   }
 
-  /// Sets `context` to store the pose `X_WB` of a given _floating base_ `body`
-  /// B in the world frame W.
-  /// @param[in] context
-  ///   The context to store the pose `X_WB` of `body_B`.
-  /// @param[in] body
-  ///   The _floating base_ body B corresponding to the pose `X_WB` to be stored
-  ///   in `context`.
-  /// @retval X_WB
-  ///   The pose of body frame B in the world frame W.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allows us
-  /// to simplify this process when we know the body is free in space.
-  /// @warning This method only applies to "floating base" bodies; i.e.,
-  /// `body.is_floating()` returns `true`. I.e., not just any free body, despite
-  /// the method name.
-  /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if `body.is_floating()` returns `false`.
+  DRAKE_DEPRECATED("2026-06-01",
+                   "Use SetFloatingBaseBodyPoseInWorldFrame() instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const RigidBody<T>& body,
-                                   const math::RigidTransform<T>& X_WB) const;
-
-  /// Updates `context` to store the pose `X_FB` of a given `body` B in a frame
-  /// F.
-  /// Frame F must be anchored, meaning that it is either directly welded to the
-  /// world frame W or, more generally, that there is a kinematic path between
-  /// frame F and the world frame W that only includes weld joints.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if frame F is not anchored to the world.
-  void SetFreeBodyPoseInAnchoredFrame(
-      systems::Context<T>* context, const Frame<T>& frame_F,
-      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const;
-
-  /// If there exists a unique base body that belongs to the model given by
-  /// `model_instance` and that unique base body is free
-  /// (see HasUniqueBaseBody()), return that free body. Throw an exception
-  /// otherwise.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if `model_instance` is not valid.
-  /// @throws std::exception if HasUniqueFreeBaseBody(model_instance) == false.
-  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
-      ModelInstanceIndex model_instance) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().GetUniqueFreeBaseBodyOrThrowImpl(model_instance);
+                                   const math::RigidTransform<T>& X_WB) const {
+    SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
   }
 
-  /// Return true if there exists a unique base body in the model given by
-  /// `model_instance` and that unique base body is free.
-  /// @throws std::exception if called pre-finalize.
-  /// @throws std::exception if `model_instance` is not valid.
+  DRAKE_DEPRECATED("2026-06-01",
+                   "Use SetFloatingBaseBodyPoseInAnchoredFrame() instead.")
+  void SetFreeBodyPoseInAnchoredFrame(
+      systems::Context<T>* context, const Frame<T>& frame_F,
+      const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const {
+    SetFloatingBaseBodyPoseInAnchoredFrame(context, frame_F, body, X_FB);
+  }
+
+  DRAKE_DEPRECATED("2026-06-01",
+                   "Use GetUniqueFloatingBaseBodyOrThrow() instead.")
+  const RigidBody<T>& GetUniqueFreeBaseBodyOrThrow(
+      ModelInstanceIndex model_instance) const {
+    return GetUniqueFloatingBaseBodyOrThrow(model_instance);
+  }
+
+  DRAKE_DEPRECATED("2026-06-01",
+                   "Use SetDefaultFloatingBaseBodyPose() instead.")
+  void SetDefaultFreeBodyPose(const RigidBody<T>& body,
+                              const math::RigidTransform<double>& X_PB) {
+    SetDefaultFloatingBaseBodyPose(body, X_PB);
+  }
+
+  DRAKE_DEPRECATED("2026-06-01",
+                   "Use GetDefaultFloatingBaseBodyPose() instead.")
+  math::RigidTransform<double> GetDefaultFreeBodyPose(
+      const RigidBody<T>& body) const {
+    return GetDefaultFloatingBaseBodyPose(body);
+  }
+
+  DRAKE_DEPRECATED("2026-06-01", "Use HasUniqueFloatingBaseBody() instead.")
   bool HasUniqueFreeBaseBody(ModelInstanceIndex model_instance) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().HasUniqueFreeBaseBodyImpl(model_instance);
+    return internal_tree().HasUniqueFloatingBaseBodyImpl(model_instance);
   }
 
   /// @} <!-- Working with free bodies -->
@@ -3703,6 +3809,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// each point `Qi` in the set as measured and expressed in another frame A,
   /// as a function of the generalized positions q of the model.
   ///
+  /// Example of usage: Given two points Q0 and Q1 that are fixed to a frame B,
+  /// the code below calculates their positions from the world frame origin,
+  /// expressed in the world frame W.
+  ///
+  /// @code
+  ///  constexpr int num_position_vectors = 2;
+  ///  MatrixX<double> p_BQi(3, num_position_vectors);
+  ///  p_BQi.col(0) = Vector3<double>(1.1, 2.2, 3.3);
+  ///  p_BQi.col(1) = Vector3<double>(-9.8, 7.6, -5.43);
+  ///  MatrixX<double> p_WQi(3, num_position_vectors);
+  ///  const Frame<double>& frame_W = plant.world_frame();
+  ///  plant.CalcPointsPositions(*context_, frame_B, p_BQi, frame_W, &p_WQi);
+  /// @endcode
+  ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q of the model.
@@ -3710,10 +3830,12 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
   ///   given.
   /// @param[in] p_BQi
-  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿᵖ` with
-  ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
+  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿ` with
+  ///   `n` the number of points in the set. Each column of `p_BQi` corresponds
   ///   to a vector in ℝ³ holding the position of one of the points in the set
-  ///   as measured and expressed in frame B.
+  ///   as measured and expressed in frame B. Each column of p_BQi is a position
+  ///   vector associated with one point Qi, and the number of columns in p_BQi
+  ///   is the number n of points.
   /// @param[in] frame_A
   ///   The frame A in which it is desired to compute the positions `p_AQi` of
   ///   each point `Qi` in the set.
@@ -3721,12 +3843,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   ///   The output positions of each point `Qi` now computed as measured and
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
-  ///   **must** be in `ℝ³ˣⁿᵖ`.
+  ///   **must** be in `ℝ³ˣⁿ`. Each column of p_AQi is a position vector
+  ///   associated with one point Qi, and the number of columns in p_BQi is the
+  ///   number n of points.
   ///
   /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
-  /// method will throw a std::exception. This method also throws
-  /// a std::exception if `p_BQi` and `p_AQi` differ in the number
-  /// of columns.
+  /// method will throw a std::exception. This method also throws a
+  /// std::exception if `p_BQi` and `p_AQi` differ in the number of columns.
   void CalcPointsPositions(const systems::Context<T>& context,
                            const Frame<T>& frame_B,
                            const Eigen::Ref<const MatrixX<T>>& p_BQi,
@@ -3736,6 +3859,52 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(p_AQi != nullptr);
     return internal_tree().CalcPointsPositions(context, frame_B, p_BQi, frame_A,
                                                p_AQi);
+  }
+
+  /// For a set of n points Qi (i = 0, ... n-1) that are regarded as fixed on a
+  /// frame B, calculates the velocities v_AQi_E of Qi measured in a frame A and
+  /// expressed in a frame E.
+  ///
+  /// Example of usage: Given two points Q0 and Q1 that are fixed to a frame B,
+  /// the code below calculates their velocities measured and expressed in the
+  /// world frame W.
+  ///
+  /// @code
+  ///  constexpr int num_position_vectors = 2;
+  ///  MatrixX<double> p_BQi(3, num_position_vectors);
+  ///  p_BQi.col(0) = Vector3<double>(1.1, 2.2, 3.3);
+  ///  p_BQi.col(1) = Vector3<double>(-9.8, 7.6, -5.43);
+  ///  MatrixX<double> v_WQi_W(3, num_position_vectors);
+  ///  const Frame<double>& frame_W = plant.world_frame();
+  ///  plant.CalcPointsVelocities(*context_, frame_B, p_BQi, frame_W, frame_W,
+  ///                             &v_WQi_W);
+  /// @endcode
+  ///
+  /// @param[in] context Contains the state of the multibody system, including
+  /// the generalized positions q and the generalized velocities v.
+  /// @param[in] frame_B The frame B in which each point Qi is fixed and whose
+  /// frame origin Bo is the starting point for position vectors in p_BQi.
+  /// frame_B is also the expressed-in-frame for position vectors p_BQi.
+  /// @param[in] p_BQi Position vectors from Bo (frame B's origin) to each
+  /// point Qi (i = 0, ... n-1), expressed in frame B. Each column of p_BQi
+  /// is a position vector associated with one point Qi, and the number of
+  /// columns in p_BQi is the number n of points.
+  /// @param[in] frame_A The frame in which the velocities are to be measured.
+  /// @param[in] frame_E The frame in which the velocities are to be expressed.
+  /// @param[out] v_AQi_E The velocities of each point Qi (i = 0, ... n-1)
+  /// measured in frame A and expressed in frame E. Each column of v_AQi_E is a
+  /// translational velocity vector associated with one point Qi, and the
+  /// number of columns in v_AQi_E is the number n of points.
+  /// @throws std::exception if p_BQi and v_AQi_E do not have three rows (are
+  /// not 3 element vectors) or do not have the same number (n > 0) of columns.
+  void CalcPointsVelocities(const systems::Context<T>& context,
+                            const Frame<T>& frame_B,
+                            const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                            const Frame<T>& frame_A, const Frame<T>& frame_E,
+                            EigenPtr<MatrixX<T>> v_AQi_E) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcPointsVelocities(context, frame_B, p_BQi,
+                                                frame_A, frame_E, v_AQi_E);
   }
 
   /// Calculates the total mass of all bodies in this MultibodyPlant.
@@ -4991,7 +5160,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
-  bool is_finalized() const { return internal_tree().topology_is_valid(); }
+  bool is_finalized() const { return internal_tree().is_finalized(); }
 
   /// (Advanced) If `this` plant is continuous (i.e., is_discrete() is `false`),
   /// returns false. If `this` plant is discrete, returns whether or not the
@@ -5502,7 +5671,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a Graphviz string describing the topology of this plant.
-  /// To render the string, use the Graphviz tool, ``dot``.
+  /// To render the string, use the Graphviz tool, `dot`.
   /// http://www.graphviz.org/
   ///
   /// Note: this method can be called either before or after `Finalize()`.
@@ -5716,8 +5885,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   // Friend attorney class to provide private access to those internal::
   // implementations that need it.
-  friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
+  friend class internal::MultibodyPlantIcfAttorney<T>;
+  friend class internal::MultibodyPlantModelAttorney<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.
@@ -5763,6 +5933,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   struct CacheIndices {
     systems::CacheIndex geometry_contact_data;
     systems::CacheIndex joint_locking;
+    systems::CacheIndex actuation_input_without_effort_limit;
+    systems::CacheIndex actuation_input_with_effort_limit;
+    systems::CacheIndex desired_state_input;
 
     // This is only valid for a continuous-time, hydroelastic-contact plant.
     systems::CacheIndex hydroelastic_contact_forces_continuous;
@@ -5956,7 +6129,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       MaybeModelInstanceIndex model_instance = {});
 
   // Estimates a global set of point contact parameters given a
-  // `penetration_allowance`. See set_penetration_allowance()` for details.
+  // `penetration_allowance`. See `set_penetration_allowance()` for details.
   // TODO(amcastro-tri): Once #13064 is resolved, make this a method outside MBP
   // with signature:
   // EstimatePointContactParameters(double penetration_allowance,
@@ -5965,11 +6138,20 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // have a place we can refer users to for details.
   void EstimatePointContactParameters(double penetration_allowance);
 
-  // Helper method to assemble actuation input vector from the appropriate
-  // ports. The actuation value for a particular actuator can be found at offset
+  // Methods that assemble actuation input vector from the appropriate ports.
+  // The actuation value for a particular actuator can be found at offset
   // JointActuator::input_start() in the returned vector (see
-  // MultibodyPlant::get_actuation_input_port()).
-  VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
+  // MultibodyPlant::get_actuation_input_port()). N.B. this does not include
+  // actuation due to the desired_state input ports; this is only the
+  // feedforward actuation. When `apply_effort_limit` is true, the actuation
+  // will be clamped by each joint's `effort_limit()`; when false, the limit
+  // is ignored.
+  const VectorX<T>& EvalActuationInput(const systems::Context<T>& context,
+                                       bool apply_effort_limit) const;
+  void CalcActuationInputWithoutEffortLimit(const systems::Context<T>& context,
+                                            VectorX<T>* actuation_input) const;
+  void CalcActuationInputWithEffortLimit(const systems::Context<T>& context,
+                                         VectorX<T>* actuation_input) const;
 
   // Calc method for the "net_actuation" output port.
   template <bool sampled>
@@ -5982,9 +6164,17 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                       const systems::Context<T>& context,
                                       systems::BasicVector<T>* output) const;
 
-  // This fuction evaluates the desired state input ports and returns them as a
+  // These methods evaluate the desired state input ports and return them as a
   // DesiredStateInput.
-  internal::DesiredStateInput<T> AssembleDesiredStateInput(
+  const internal::DesiredStateInput<T>& EvalDesiredStateInput(
+      const systems::Context<T>& context) const;
+  void CalcDesiredStateInput(
+      const systems::Context<T>& context,
+      internal::DesiredStateInput<T>* desired_state_input) const;
+
+  // Throws if the plant uses features not supported by continuous time
+  // calculations.
+  void ThrowIfUnsupportedContinuousTimeDynamics(
       const systems::Context<T>& context) const;
 
   // Computes all non-contact applied forces including:
@@ -6613,10 +6803,11 @@ struct AddMultibodyPlantSceneGraphResult final {
   // Provided to support C++'s structured binding.
   template <std::size_t N>
   decltype(auto) get() const {
-    if constexpr (N == 0)
+    if constexpr (N == 0) {
       return plant;
-    else if constexpr (N == 1)
+    } else if constexpr (N == 1) {
       return scene_graph;
+    }
   }
 #endif
 

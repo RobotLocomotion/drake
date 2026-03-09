@@ -42,7 +42,7 @@ drake_cc_library(
     hdrs = ["schunk_wsg_lcm.h"],
     deps = [
         "//lcm:lcm_messages",
-        "//lcmtypes:schunk",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
         "//systems/primitives:matrix_gain",
     ],

@@ -25,7 +25,6 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -1294,7 +1293,9 @@ namespace Eigen {
 template <>
 struct NumTraits<drake::symbolic::Expression>
     : GenericNumTraits<drake::symbolic::Expression> {
-  static inline int digits10() { return 0; }
+  constexpr static int digits() { return 0; }
+  constexpr static int digits10() { return 0; }
+  constexpr static int max_digits10() { return 0; }
 };
 
 // Informs Eigen that Variable op Variable gets Expression.

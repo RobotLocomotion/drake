@@ -102,17 +102,17 @@ Environment::mapped_type& Environment::operator[](const key_type& key) {
 const Environment::mapped_type& Environment::operator[](
     const key_type& key) const {
   if (!map_.contains(key)) {
-    ostringstream oss;
-    oss << "Environment::operator[] was called on a const Environment "
-        << "with a missing key \"" << key << "\".";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("Environment::operator[] was called on a const Environment "
+                    "with a missing key \"{}\".",
+                    key));
   }
   return map_.at(key);
 }
 
 ostream& operator<<(ostream& os, const Environment& env) {
   for (const auto& p : env) {
-    os << p.first << " -> " << p.second << endl;
+    os << fmt::to_string(p.first) << " -> " << p.second << endl;
   }
   return os;
 }

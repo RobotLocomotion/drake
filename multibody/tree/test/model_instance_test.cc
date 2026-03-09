@@ -1,3 +1,7 @@
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

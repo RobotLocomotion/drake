@@ -1,5 +1,10 @@
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

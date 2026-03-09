@@ -5,6 +5,8 @@
 
 #include <memory>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

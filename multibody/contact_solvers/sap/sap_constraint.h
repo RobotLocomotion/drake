@@ -304,7 +304,7 @@ class SapConstraint {
     return std::make_unique<Value<U>>(std::move(owned_data));
   }
 
-  // @group NVI implementations. Specific constraints must implement these
+  // @name NVI implementations. Specific constraints must implement these
   // methods. Refer to the specific NVI documentation for details.
   // Proper argument sizes and valid non-null pointers are already guaranteed by
   // checks in the correspondng NVIs.

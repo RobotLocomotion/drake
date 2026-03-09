@@ -3,8 +3,8 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_evaluator_utilities.h"
 
-using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::PtrOrThrow;
+using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
@@ -39,7 +39,7 @@ PositionCost::PositionCost(const MultibodyPlant<AutoDiffXd>* const plant,
 PositionCost::~PositionCost() = default;
 
 void PositionCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                Eigen::VectorXd* y) const {
+                          Eigen::VectorXd* y) const {
   y->resize(1);
   Eigen::VectorXd p_AQ;
   constraint_.Eval(x, &p_AQ);
@@ -49,7 +49,7 @@ void PositionCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 }
 
 void PositionCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                                AutoDiffVecXd* y) const {
+                          AutoDiffVecXd* y) const {
   y->resize(1);
   AutoDiffVecXd p_AQ;
   constraint_.Eval(x, &p_AQ);

@@ -38,27 +38,30 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
   const Vector3<double> p_BoBcm_B = M_expected.get_com();
   const UnitInertia<double> G_BBo_B = M_expected.get_unit_inertia();
   if (std::abs(mass - dut.get_mass()) > tolerance) {
-    return ::testing::AssertionFailure()
-           << "Expected equal masses\n"
-           << "  expected:   " << mass << "\n"
-           << "  tested:     " << dut.get_mass() << "\n"
-           << "  difference: " << std::abs(mass - dut.get_mass()) << "\n"
-           << "  is greater than tolerance: " << tolerance << "\n";
+    return ::testing::AssertionFailure() << fmt::format(
+               "Expected equal masses\n"
+               "  expected:   {}\n"
+               "  tested:     {}\n"
+               "  difference: {}\n"
+               "  is greater than tolerance: {}\n",
+               mass, dut.get_mass(), std::abs(mass - dut.get_mass()),
+               tolerance);
   }
   ::testing::AssertionResult result =
       CompareMatrices(dut.get_com(), p_BoBcm_B, tolerance);
   if (!result) return result;
   if (!dut.get_unit_inertia().IsNearlyEqualTo(G_BBo_B, tolerance)) {
-    return ::testing::AssertionFailure()
-           << "Expected equal unit inertias\n"
-           << "  expected\n"
-           << G_BBo_B << "\n"
-           << "  tested\n"
-           << dut.get_unit_inertia() << "\n"
-           << "  with tolerance: " << tolerance << "\n"
-           << "(with mass: " << dut.get_mass() << "\n"
-           << " and com: "
-           << fmt::to_string(fmt_eigen(dut.get_com().transpose())) << "\n";
+    return ::testing::AssertionFailure() << fmt::format(
+               "Expected equal unit inertias\n"
+               "  expected\n"
+               "{}\n"
+               "  tested\n"
+               "{}\n"
+               "  with tolerance: {}\n"
+               "  with mass: {}\n"
+               "  and com: {}\n",
+               G_BBo_B, dut.get_unit_inertia(), tolerance, dut.get_mass(),
+               fmt_eigen(dut.get_com().transpose()));
   }
   return ::testing::AssertionSuccess();
 }

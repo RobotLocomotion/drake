@@ -10,7 +10,9 @@
  *
  */
 #include <chrono>
+#include <limits>
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 
@@ -48,9 +50,9 @@ int DoMain() {
                   state_receiver->get_input_port(0));
 
   // Create command sender.
-  auto command_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(
-        channel_u, lcm, 0.001));
+  auto command_pub =
+      builder.AddSystem(systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(
+          channel_u, lcm, 0.001));
   auto command_sender = builder.AddSystem<AcrobotCommandSender>();
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port());

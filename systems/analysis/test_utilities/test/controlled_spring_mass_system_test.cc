@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 #include <Eigen/Dense>
 
@@ -9,31 +11,28 @@ namespace drake {
 namespace systems {
 namespace {
 
-const double kSpring = 300.0;  // N/m
-const double kMass = 2.0;      // kg
+const double kSpring = 300.0;              // N/m
+const double kMass = 2.0;                  // kg
 const double kProportionalConstant = 1.0;  // N/m
-const double kDerivativeConstant = 1.0;  // N*s/m
-const double kIntegralConstant = 1.0;  // N/(m*s)
-const double kTargetPosition = 1.0;  // m
+const double kDerivativeConstant = 1.0;    // N*s/m
+const double kIntegralConstant = 1.0;      // N/(m*s)
+const double kTargetPosition = 1.0;        // m
 
 // A unit test fixture to evaluate the correct functioning of the
 // PidControlledSpringMassSystem example.
 class SpringMassSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    model_ =
-        make_unique<PidControlledSpringMassSystem<double>>(
-            kSpring, kMass,
-            kProportionalConstant, kIntegralConstant, kDerivativeConstant,
-            kTargetPosition);
+    model_ = make_unique<PidControlledSpringMassSystem<double>>(
+        kSpring, kMass, kProportionalConstant, kIntegralConstant,
+        kDerivativeConstant, kTargetPosition);
 
     model_context_ = model_->CreateDefaultContext();
     output_ = model_->AllocateOutput();
 
     // Gets the plant subcontext.
-    plant_context_ =
-        &model_->GetMutableSubsystemContext(
-            model_->get_plant(), model_context_.get());
+    plant_context_ = &model_->GetMutableSubsystemContext(model_->get_plant(),
+                                                         model_context_.get());
   }
 
   std::unique_ptr<PidControlledSpringMassSystem<double>> model_;
@@ -96,7 +95,7 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   const double error = x0 - kTargetPosition;
   const double error_rate = v0;  // target velocity is zero.
   const double pid_actuation =
-      kProportionalConstant * error +  kDerivativeConstant * error_rate;
+      kProportionalConstant * error + kDerivativeConstant * error_rate;
   EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
             plant_xcdot.get_vector().GetAtIndex(1));
 

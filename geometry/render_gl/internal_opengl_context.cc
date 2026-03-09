@@ -7,13 +7,13 @@
 #include <string>
 #include <utility>
 
-// Note: This is intentionally included here since it's only needed at the
+// Note: These are intentionally included here since they are only needed at the
 // implementation level, and not in a grouping of more generic headers like
 // opengl_includes.h. See opengl_context.h for where pimpl is applied.
+#include <vtkX11Functions.h>
 #include <vtkglad/include/glad/glx.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
@@ -86,6 +86,9 @@ class OpenGlContext::Impl {
   // Open an X display and initialize an OpenGL context. The display will be
   // open and ready for offscreen rendering, but no window is visible.
   explicit Impl(bool debug, GLXContext source_context = NULL) : debug_(debug) {
+    // We must do this first to lazy-init X11 and GLX.
+    display();
+
     // See Offscreen Rendering section here:
     // https://sidvind.com/index.php?title=Opengl/windowless
 
@@ -108,7 +111,7 @@ class OpenGlContext::Impl {
                                   True,
                                   None};
     int fb_count = 0;
-    const int screen_id = DefaultScreen(display());
+    const int screen_id = vtkXDefaultScreen(display());
 
     // No matter what, we want to make sure that the context is not current
     // at the conclusion of construction.
@@ -119,7 +122,7 @@ class OpenGlContext::Impl {
     GLXFBConfig* fb_configs =
         glXChooseFBConfig(display(), screen_id, kVisualAttribs, &fb_count);
     ScopeExit guard([fb_configs]() {
-      XFree(fb_configs);
+      vtkXFree(fb_configs);
     });
     if (fb_configs == nullptr) {
       throw std::runtime_error(
@@ -139,7 +142,7 @@ class OpenGlContext::Impl {
           "unavailable.");
     }
     ScopeExit visual_guard([visual]() {
-      XFree(visual);
+      vtkXFree(visual);
     });
     XSetWindowAttributes window_attribs;
 
@@ -149,23 +152,24 @@ class OpenGlContext::Impl {
     bool is_complete = false;
 
     // This requires a call to XFreeColormap in the destructor.
-    window_attribs.colormap = XCreateColormap(
-        display(), RootWindow(display(), screen_id), visual->visual, AllocNone);
+    window_attribs.colormap =
+        vtkXCreateColormap(display(), vtkXRootWindow(display(), screen_id),
+                           visual->visual, AllocNone);
     ScopeExit colormap_guard(
         [colormap = window_attribs.colormap, &is_complete]() {
-          if (!is_complete) XFreeColormap(display(), colormap);
+          if (!is_complete) vtkXFreeColormap(display(), colormap);
         });
 
     // Enable just the Expose event so we know when the window is ready to be
     // redrawn.
     window_attribs.event_mask = ExposureMask;
     // This requires a call to XDestroyWindow in the destructor.
-    window_ = XCreateWindow(display(), RootWindow(display(), screen_id), 0, 0,
-                            window_width_, window_height_, 0, visual->depth,
-                            InputOutput, visual->visual,
-                            CWColormap | CWEventMask, &window_attribs);
+    window_ = vtkXCreateWindow(display(), vtkXRootWindow(display(), screen_id),
+                               0, 0, window_width_, window_height_, 0,
+                               visual->depth, InputOutput, visual->visual,
+                               CWColormap | CWEventMask, &window_attribs);
     ScopeExit window_guard([window = window_, &is_complete]() {
-      if (!is_complete) XDestroyWindow(display(), window);
+      if (!is_complete) vtkXDestroyWindow(display(), window);
     });
 
     // Create an OpenGL context.
@@ -185,7 +189,7 @@ class OpenGlContext::Impl {
       if (!is_complete) glXDestroyContext(display(), context);
     });
 
-    XSync(display(), False);
+    vtkXSync(display(), False);
 
     // Enable debug.
     if (debug) {
@@ -205,9 +209,9 @@ class OpenGlContext::Impl {
   ~Impl() {
     glXDestroyContext(display(), context_);
     XWindowAttributes window_attribs;
-    XGetWindowAttributes(display(), window_, &window_attribs);
-    XFreeColormap(display(), window_attribs.colormap);
-    XDestroyWindow(display(), window_);
+    vtkXGetWindowAttributes(display(), window_, &window_attribs);
+    vtkXFreeColormap(display(), window_attribs.colormap);
+    vtkXDestroyWindow(display(), window_);
   }
 
   void MakeCurrent() const {
@@ -230,14 +234,14 @@ class OpenGlContext::Impl {
 
   void DisplayWindow(const int width, const int height) {
     if (width != window_width_ || height != window_height_) {
-      XResizeWindow(display(), window_, width, height);
+      vtkXResizeWindow(display(), window_, width, height);
       // If the window isn't viewable, it won't send an expose event.
       if (IsWindowViewable()) WaitForExposeEvent();
       window_width_ = width;
       window_height_ = height;
     }
     if (!IsWindowViewable()) {
-      XMapRaised(display(), window_);
+      vtkXMapRaised(display(), window_);
       WaitForExposeEvent();
     }
     // We wait for confirmation events to make sure we don't attempt to draw
@@ -249,14 +253,14 @@ class OpenGlContext::Impl {
 
   void HideWindow() {
     if (IsWindowViewable()) {
-      XUnmapWindow(display(), window_);
+      vtkXUnmapWindow(display(), window_);
       // Unmapping a window provides no events on that window.
     }
   }
 
   bool IsWindowViewable() const {
     XWindowAttributes attr;
-    const Status status = XGetWindowAttributes(display(), window_, &attr);
+    const Status status = vtkXGetWindowAttributes(display(), window_, &attr);
 
     // In xlib, a zero status implies function failure.
     // https://tronche.com/gui/x/xlib/introduction/errors.html#Status
@@ -269,7 +273,7 @@ class OpenGlContext::Impl {
   }
 
   void UpdateWindow() {
-    XClearWindow(display(), window_);
+    vtkXClearWindow(display(), window_);
     glXSwapBuffers(display(), window_);
   }
 
@@ -277,7 +281,7 @@ class OpenGlContext::Impl {
   void WaitForExposeEvent() const {
     XEvent event;
     // This blocks until the window gets an "Expose" event.
-    XWindowEvent(display(), window_, ExposureMask, &event);
+    vtkXWindowEvent(display(), window_, ExposureMask, &event);
     DRAKE_DEMAND(event.type == Expose);
   }
 

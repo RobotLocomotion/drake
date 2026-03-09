@@ -312,24 +312,27 @@ namespace internal {
 // at least something that looks like "T = ..." in it.
 //
 // Returns true on success / false on failure.
-constexpr bool hash_template_argument_from_pretty_func(
-    const char* pretty, int which_argument,
-    bool discard_nested, bool discard_cast,
-    FNV1aHasher* result) {
+constexpr bool hash_template_argument_from_pretty_func(const char* pretty,
+                                                       int which_argument,
+                                                       bool discard_nested,
+                                                       bool discard_cast,
+                                                       FNV1aHasher* result) {
   // Advance to the desired template argument.  For example, if which_argument
   // is 0 and pretty == "... calc() [T = int]", then advance to the typename
   // after the "T = " so that the cursor `p` is pointing at the 'i' in "int".
   const char* p = pretty;
   for (int n = 0; n <= which_argument; ++n) {
-    for (; (*p != '='); ++p) {}  // Advance to the '=' that we want.
-    ++p;                         // Advance to ' '.
-    ++p;                         // Advance to the typename we want.
+    // NOLINTNEXTLINE(whitespace/empty_loop_body)
+    for (; (*p != '='); ++p);  // Advance to the '=' that we want.
+    ++p;                       // Advance to ' '.
+    ++p;                       // Advance to the typename we want.
   }
 
   // For enums, GCC 7's pretty says "(MyEnum)0" not "MyEnum::kFoo".  We'll strip
   // off the useless parenthetical.
   if (discard_cast && (*p == '(')) {
-    for (; (*p != ')'); ++p) {}  // Advance to the ')'.
+    // NOLINTNEXTLINE(whitespace/empty_loop_body)
+    for (; (*p != ')'); ++p);  // Advance to the ')'.
     ++p;
   }
 

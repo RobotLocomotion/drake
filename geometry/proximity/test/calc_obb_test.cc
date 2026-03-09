@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/calc_obb.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

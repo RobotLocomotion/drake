@@ -1,5 +1,8 @@
 #include "drake/math/unit_vector.h"
 
+#include <limits>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"

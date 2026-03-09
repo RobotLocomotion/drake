@@ -131,6 +131,7 @@ cc_library_vendored(
         "FCL_STATIC_DEFINE",
     ],
     includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = True,
     deps = [
         "@ccd_internal//:ccd",
@@ -142,3 +143,5 @@ install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -1,4 +1,5 @@
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -19,10 +20,9 @@ DEFINE_double(
     mbp_discrete_update_period, 0.01,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model. When using TAMSI, a smaller "
-    "time step of 1.0e-3 is recommended.");
+    "Set to zero for a continuous plant model.");
 DEFINE_string(contact_approximation, "sap",
-              "Discrete contact approximation. Options are: 'tamsi', 'sap', "
+              "Discrete contact approximation. Options are: 'sap', "
               "'similar', 'lagged'");
 
 namespace drake {
@@ -80,11 +80,11 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 36);
   DRAKE_DEMAND(plant.num_positions() == 37);
 
-  // Verify the "pelvis" body is free and modeled with quaternions dofs before
-  // moving on with that assumption.
+  // Verify the "pelvis" body is a floating base body and modeled with
+  // quaternions dofs before moving on with that assumption.
   const drake::multibody::RigidBody<double>& pelvis =
       plant.GetBodyByName("pelvis");
-  DRAKE_DEMAND(pelvis.is_floating());
+  DRAKE_DEMAND(pelvis.is_floating_base_body());
   DRAKE_DEMAND(pelvis.has_quaternion_dofs());
   // Since there is a single floating body, we know that the positions for it
   // lie first in the state vector.
@@ -108,7 +108,7 @@ int do_main() {
 
   // Set the pelvis frame P initial pose.
   const Translation3d X_WP(0.0, 0.0, 0.95);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));

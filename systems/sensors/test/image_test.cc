@@ -1,5 +1,8 @@
 #include "drake/systems/sensors/image.h"
 
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace drake {

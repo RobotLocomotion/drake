@@ -10,24 +10,24 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
-using drake::geometry::AddContactMaterial;
-using drake::geometry::AddRigidHydroelasticProperties;
 using drake::geometry::AddCompliantHydroelasticProperties;
 using drake::geometry::AddCompliantHydroelasticPropertiesForHalfSpace;
+using drake::geometry::AddContactMaterial;
+using drake::geometry::AddRigidHydroelasticProperties;
 using drake::geometry::ProximityProperties;
 using drake::geometry::Sphere;
+using drake::math::RigidTransformd;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UnitInertia;
-using drake::math::RigidTransformd;
 
-void PopulateBallPlant(
-    double radius, double mass, double hydroelastic_modulus,
-    double dissipation, const CoulombFriction<double>& surface_friction,
-    const Vector3<double>& gravity_W, bool rigid_sphere, bool compliant_ground,
-    MultibodyPlant<double>* plant) {
+void PopulateBallPlant(double radius, double mass, double hydroelastic_modulus,
+                       double dissipation,
+                       const CoulombFriction<double>& surface_friction,
+                       const Vector3<double>& gravity_W, bool rigid_sphere,
+                       bool compliant_ground, MultibodyPlant<double>* plant) {
   SpatialInertia<double> M_BBcm =
       SpatialInertia<double>::SolidSphereWithMass(mass, radius);
   const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_BBcm);

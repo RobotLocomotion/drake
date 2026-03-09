@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 env = os.environ.copy()
-env['PYTHONPATH'] = ':'.join([p for p in sys.path if p])
+env["PYTHONPATH"] = ":".join([p for p in sys.path if p])
 
 assert len(sys.argv) >= 2
 subprocess.check_call(sys.argv[1:], env=env)

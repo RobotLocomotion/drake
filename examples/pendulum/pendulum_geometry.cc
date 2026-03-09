@@ -25,9 +25,9 @@ using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::MakePhongIllustrationProperties;
 using geometry::PerceptionProperties;
-using geometry::render::RenderLabel;
 using geometry::Rgba;
 using geometry::Sphere;
+using geometry::render::RenderLabel;
 using std::make_unique;
 
 const PendulumGeometry* PendulumGeometry::AddToBuilder(
@@ -38,11 +38,8 @@ const PendulumGeometry* PendulumGeometry::AddToBuilder(
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
 
   auto pendulum_geometry = builder->AddSystem(
-      std::unique_ptr<PendulumGeometry>(
-          new PendulumGeometry(scene_graph)));
-  builder->Connect(
-      pendulum_state_port,
-      pendulum_geometry->get_input_port(0));
+      std::unique_ptr<PendulumGeometry>(new PendulumGeometry(scene_graph)));
+  builder->Connect(pendulum_state_port, pendulum_geometry->get_input_port(0));
   builder->Connect(
       pendulum_geometry->get_output_port(0),
       scene_graph->get_source_pose_port(pendulum_geometry->source_id_));
@@ -56,8 +53,8 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   frame_id_ = scene_graph->RegisterFrame(source_id_, GeometryFrame("arm"));
 
   this->DeclareVectorInputPort("state", PendulumState<double>());
-  this->DeclareAbstractOutputPort(
-      "geometry_pose", &PendulumGeometry::OutputGeometryPose);
+  this->DeclareAbstractOutputPort("geometry_pose",
+                                  &PendulumGeometry::OutputGeometryPose);
 
   // TODO(jwnimmer-tri) This registration fails to reflect any non-default
   // parameters.  Ideally, it should happen in an Initialize event that

@@ -1,5 +1,10 @@
 #include "drake/multibody/plant/deformable_model.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -86,7 +91,7 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
           default_body_config_, kRezHint),
       ".*RegisterDeformableBody.*after system resources have been declared.*");
 
-  /* Registering a deformable body within a continous plant throws. */
+  /* Registering a deformable body within a continuous plant throws. */
   MultibodyPlant<double> continuous_plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       continuous_plant.mutable_deformable_model().RegisterDeformableBody(
@@ -94,6 +99,29 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
                                         make_unique<Sphere>(1), "sphere"),
           default_body_config_, kRezHint),
       ".*RegisterDeformableBody.*continuous MultibodyPlant.*not allowed.*");
+}
+
+/* Tests that deformable models can be added with all supported element
+ subdivision counts. */
+TEST_F(DeformableModelTest, RegisterWithSubdivision) {
+  for (int subd = 0; subd <= 4; subd++) {
+    Sphere sphere(1.0);
+    auto geometry = make_unique<GeometryInstance>(
+        RigidTransformd(), make_unique<Sphere>(sphere),
+        fmt::format("sphere_subd_{}", subd));
+    constexpr double kRezHint = 0.5;
+
+    /* Copy default config with desired element subdivision count. */
+    fem::DeformableBodyConfig<double> body_config_{default_body_config_};
+    body_config_.set_element_subdivision_count(subd);
+    DeformableBodyId body_id = deformable_model_ptr_->RegisterDeformableBody(
+        std::move(geometry), body_config_, kRezHint);
+
+    /* Verify that a corresponding FemModel has been built. */
+    EXPECT_NO_THROW(deformable_model_ptr_->GetFemModel(body_id));
+  }
+
+  plant_->Finalize();
 }
 
 /* Coarsely tests that SetWallBoundaryCondition adds some sort of boundary
@@ -439,7 +467,7 @@ TEST_F(DeformableModelTest, ExternalForces) {
     }
   }
 
-  /* Registering an external force within a continous plant throws. */
+  /* Registering an external force within a continuous plant throws. */
   MultibodyPlant<double> continuous_plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       continuous_plant.mutable_deformable_model().AddExternalForce(
@@ -534,6 +562,9 @@ TEST_F(DeformableModelTest, NonEmptyClone) {
             deformable_model_ptr_->HasConstraint(body_id));
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 /* An empty DeformableModel doesn't get in the way of a TAMSI plant. */
 TEST_F(DeformableModelTest, EmptyDeformableModelWorksWithTamsi) {
   plant_->set_discrete_contact_approximation(
@@ -541,6 +572,7 @@ TEST_F(DeformableModelTest, EmptyDeformableModelWorksWithTamsi) {
   EXPECT_TRUE(deformable_model_ptr_->is_empty());
   EXPECT_NO_THROW(plant_->Finalize());
 }
+#pragma GCC diagnostic push
 
 /* If a DeformableModel is not empty, we require the owning plant to use the SAP
  solver. */

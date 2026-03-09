@@ -3,9 +3,8 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
@@ -244,9 +243,10 @@ int SapContactProblem<T>::AddConstraint(std::unique_ptr<SapConstraint<T>> c) {
   }
 
   for (int object_index : c->objects()) {
-    if (object_index < 0 || object_index >= num_objects())
+    if (object_index < 0 || object_index >= num_objects()) {
       throw std::runtime_error(
           "Constraint object indices must be in the range [0, num_objects()).");
+    }
   }
 
   // Update graph.

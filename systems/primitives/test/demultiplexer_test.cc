@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

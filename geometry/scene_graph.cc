@@ -544,13 +544,6 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) const {
-  // TODO(#20962) We have deleted drake_visualizer. This warning is probably no
-  // longer accurate.
-  static const logging::Warn one_time(
-      "Due to a bug (see issue #13597), changing the illustration roles or "
-      "properties in the context will not have any apparent effect in "
-      "some viewer applications. Please change the illustration role in the "
-      "model prior to allocating the Context.");
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
@@ -694,7 +687,7 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context, int*) const {
               "SceneGraph encountered a non-finite value (e.g., NaN or "
               "infinity) on a pose input port. It came from the input "
               "associated with source id {} and name '{}'.",
-              fmt_streamed(source_id), state.GetName(source_id)));
+              source_id, state.GetName(source_id)));
         }
         state.SetFramePoses(source_id, poses, &kinematics_data);
       }
@@ -739,7 +732,7 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
               "SceneGraph encountered a non-finite value (e.g., Nan or "
               "infinity) on a deformable configuration input port. It came "
               "from the input associated with source id {} and name '{}'.",
-              fmt_streamed(source_id), state.GetName(source_id)));
+              source_id, state.GetName(source_id)));
         }
         state.SetGeometryConfiguration(source_id, configs, &kinematics_data);
       }

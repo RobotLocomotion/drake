@@ -1,5 +1,7 @@
 #include "drake/planning/distance_and_interpolation_provider.h"
 
+#include <limits>
+
 #include <common_robotics_utilities/math.hpp>
 #include <gtest/gtest.h>
 

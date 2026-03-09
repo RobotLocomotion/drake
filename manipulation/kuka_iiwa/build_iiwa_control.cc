@@ -38,23 +38,6 @@ const OutputPort<double>& NegatedPort(DiagramBuilder<double>* builder,
 
 }  // namespace
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void BuildIiwaControl(
-    const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant, DrakeLcmInterface* lcm,
-    DiagramBuilder<double>* builder, double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
-  IiwaDriver config;
-  config.ext_joint_filter_tau = ext_joint_filter_tau;
-  config.desired_kp_gains = desired_iiwa_kp_gains;
-  config.control_mode = FormatIiwaControlMode(control_mode);
-  BuildIiwaControl(builder, lcm, plant, iiwa_instance, config,
-                   controller_plant);
-}
-#pragma GCC diagnostic pop
-
 void BuildIiwaControl(DiagramBuilder<double>* builder, DrakeLcmInterface* lcm,
                       const MultibodyPlant<double>& plant,
                       const ModelInstanceIndex iiwa_instance,
@@ -127,23 +110,6 @@ void BuildIiwaControl(DiagramBuilder<double>* builder, DrakeLcmInterface* lcm,
   builder->Connect(*sim_ports.external_torque,
                    status_encode->get_torque_external_input_port());
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-IiwaControlPorts BuildSimplifiedIiwaControl(
-    const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
-    const MultibodyPlant<double>& controller_plant,
-    DiagramBuilder<double>* builder, double ext_joint_filter_tau,
-    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
-  IiwaDriver config;
-  config.ext_joint_filter_tau = ext_joint_filter_tau;
-  config.desired_kp_gains = desired_iiwa_kp_gains;
-  config.control_mode = FormatIiwaControlMode(control_mode);
-  return BuildSimplifiedIiwaControl(builder, plant, iiwa_instance, config,
-                                    controller_plant);
-}
-#pragma GCC diagnostic pop
 
 IiwaControlPorts BuildSimplifiedIiwaControl(
     DiagramBuilder<double>* builder, const MultibodyPlant<double>& plant,

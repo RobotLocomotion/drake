@@ -23,6 +23,7 @@ Frame<T>::~Frame() = default;
 
 template <typename T>
 ScopedName Frame<T>::scoped_name() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   return ScopedName(
       this->get_parent_tree().GetModelInstanceName(this->model_instance()),
       name_);
@@ -141,6 +142,7 @@ SpatialAcceleration<T> Frame<T>::CalcSpatialAcceleration(
         frame_M.CalcSpatialAccelerationInWorld(context);
     const Vector3<T>& alpha_WM_W = A_WM_W.rotational();
     const Vector3<T>& w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
+    DRAKE_ASSERT(this->has_parent_tree());
     const Frame<T>& frame_W = this->get_parent_tree().world_frame();
     const SpatialVelocity<T> V_MF_W =
         CalcSpatialVelocity(context, frame_M, frame_W);

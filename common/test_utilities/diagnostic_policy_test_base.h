@@ -9,7 +9,6 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 
 namespace drake {
 namespace test {
@@ -36,7 +35,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
         });
   }
 
-  ~DiagnosticPolicyTestBase() { FlushDiagnostics(); }
+  ~DiagnosticPolicyTestBase() override;
 
   /// Remove an error from internal records and return its formatted string.
   std::string TakeError() {

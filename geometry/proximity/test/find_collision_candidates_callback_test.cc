@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 
+#include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 

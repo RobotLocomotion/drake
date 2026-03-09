@@ -10,6 +10,8 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+ComPositionConstraint::~ComPositionConstraint() = default;
+
 ComPositionConstraint::ComPositionConstraint(
     const MultibodyPlant<double>* const plant,
     std::optional<std::vector<ModelInstanceIndex>> model_instances,

@@ -1,6 +1,11 @@
 #include "drake/solvers/branch_and_bound.h"
 
 #include <algorithm>
+#include <limits>
+#include <list>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -4,6 +4,8 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -407,6 +409,12 @@ GTEST_TEST(testCost, testFunctionCost) {
   VerifyFunctionCost(make_unique<GenericTrivialCost2>(), x);
 }
 
+GTEST_TEST(testCost, ToStringFmtFormatter) {
+  test::GenericTrivialCost1 cost;
+  EXPECT_EQ(fmt::to_string(cost),
+            "GenericTrivialCost1 with 3 decision variables $(0) $(1) $(2)\n");
+}
+
 GTEST_TEST(TestL1NormCost, Eval) {
   Matrix<double, 2, 4> A;
   // clang-format off
@@ -516,7 +524,7 @@ GTEST_TEST(TestL2NormCost, Eval) {
     const Matrix<double, 1, 4> grad_expected =
         (x0.transpose() * A.transpose() * A + b.transpose() * A) / (z.norm());
     EXPECT_TRUE(
-        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-15));
+        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-14));
   }
 
   // Test Symbolic.

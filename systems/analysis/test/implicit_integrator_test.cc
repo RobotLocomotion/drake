@@ -1,5 +1,8 @@
 #include "drake/systems/analysis/implicit_integrator.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/pointer_cast.h"
@@ -146,6 +149,11 @@ GTEST_TEST(ImplicitIntegratorTest, Clone) {
   SpringMassSystem<double> dummy_system(spring_k, mass, false /* unforced */);
 
   for (auto& scheme : GetIntegrationSchemes()) {
+    // Skip CENIC, since it requires a MultibodyPlant.
+    if (scheme == "cenic") {
+      continue;
+    }
+
     // Create the original implicit integrator.
     Simulator<double> tmp(dummy_system);
     auto original = dynamic_cast<ImplicitIntegrator<double>*>(

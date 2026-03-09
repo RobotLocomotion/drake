@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

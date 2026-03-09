@@ -1,4 +1,7 @@
+#include <algorithm>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

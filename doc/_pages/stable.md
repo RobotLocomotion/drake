@@ -107,30 +107,17 @@ part of the Stable API.
 
 For Drake's dependencies:
 
-* When using Bazel to depend on Drake as a Bazel Module (i.e., using bzlmod):
-  * The extension module
-    `use_extension("@drake//tools/workspace:default.bzl", "drake_dep_repositories")`
-    is part of the Stable API, including the names of the repositories it offers
-    as extensions (e.g., `"eigen"`).
-    * For any repository provided by the extension, we will deprecate
-      it prior to removing it.
-* When using Bazel to depend on Drake via `WORKSPACE.bazel` (i.e., without
-  bzlmod):
-  * WARNING: Using Drake as a WORKSPACE style external is deprecated and will
-    be removed from Drake on or after 2025-09-01. Please switch to MODULE style
-    externals (i.e., Bzlmod) instead; for an example, see
-    [drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external).
-  * The `add_default_...` macros defined in
-    `@drake//tools/workspace:default.bzl` are all part of the Stable API.
-    * For any Bazel external loaded by these functions (e.g., `"@eigen"`), we
-      will deprecate it prior to removing our definition of the dependency.
-      * Excluding any items documented as "internal use only".
-      * Excluding any items documented with an "experimental" warning.
+* The extension module
+  `use_extension("@drake//tools/workspace:default.bzl", "drake_dep_repositories")`
+  is part of the Stable API, including the names of the repositories it offers
+  as extensions (e.g., `"eigen"`).
+  * For any repository provided by the extension, we will deprecate it prior to
+    removing it.
 
 We may upgrade any of our dependencies to a newer version without prior notice.
 If you require an older version, you will need to rebuild Drake from source and
-customize your own `WORKSPACE.bazel` or `MODULE.bazel` file to refer to the
-older version of the dependency.
+customize your own `MODULE.bazel` file to refer to the older version of the
+dependency.
 
 We may add new dependencies without prior notice. All of our dependencies will
 either be installed via the host system via our `install_prereqs` scripts,
@@ -238,15 +225,30 @@ Drake intends to support the two most recent versions of Ubuntu LTS and macOS
 on an ongoing basis. That generally means that your OS must be no more than
 ~2-4 years old for Ubuntu, or ~2 years old for macOS.
 
-On Ubuntu, Drake only intends to support Ubuntu's default version of Python (at
-``/usr/bin/python3``), except when installing from pip in which case any newer
-version is also intended to be supported. This is consistent with
-[NEP-29](https://numpy.org/neps/nep-0029-deprecation_policy.html).
+Refer to [Installation and Quickstart](/installation.html) for the current
+details, and [End of support releases](/release_notes/end_of_support.html)
+for historical details.
 
-On macOS, Drake only intends to support the one newest version of Python
-available via Homebrew.
-See [#18791](https://github.com/RobotLocomotion/drake/issues/18791) for a
-discussion of possible improvements.
+# Python support
+
+On Ubuntu when installing from PyPI, Drake intends to support many versions of
+Python, up to and including the most recent version at the time of our release.
+The *oldest* version of Python we intend to support is the penultimate Ubuntu
+LTS's default Python version at the time of our release. This is consistent with
+[NEP-29](https://numpy.org/neps/nep-0029-deprecation_policy.html). We hope that
+our `manylinux` wheels are able to install and run on non-Ubuntu Linux, but it
+is not tested (and thus, unsupported).
+
+On Ubuntu when installing a binary package (`*.tar.gz`), Drake intends to
+support only Ubuntu's default version of Python (at ``/usr/bin/python3``).
+
+On macOS when installing from PyPI, Drake intends to support the most recent two
+versions Python at the time of our release. This range is shorter than NEP-29's
+recommended window, but is the best we can do for now. (This may improve once
+[#23683](https://github.com/RobotLocomotion/drake/issues/23683) is finished.)
+
+On macOS when installing a binary package (`*.tar.gz`), Drake intends to
+support only Homebrew's newest version of Python at the time of our release.
 
 Refer to [Installation and Quickstart](/installation.html) for the current
 details, and [End of support releases](/release_notes/end_of_support.html)

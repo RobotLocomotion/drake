@@ -56,32 +56,24 @@ class AcrobotParameters {
   ///  - [Spong 1994] Spong, M.W., 1994. Swing up control of the acrobot.
   ///    In Robotics and Automation, 1994. Proceedings., 1994 IEEE International
   ///    Conference on (pp. 2356-2361). IEEE.
-  AcrobotParameters(
-      double m1 = 1.0,
-      double m2 = 1.0,
-      double l1 = 1.0,
-      double l2 = 2.0,
-      double lc1 = 0.5,
-      double lc2 = 1.0,
-      double Ic1 = .083,
-      double Ic2 = .33,
-      double b1 = 0.1,
-      double b2 = 0.1,
-      double g = 9.81) :
-      m1_(m1),
-      m2_(m2),
-      l1_(l1),
-      l2_(l2),
-      lc1_(lc1),
-      lc2_(lc2),
-      Ic1_(Ic1),
-      Ic2_(Ic2),
-      b1_(b1),
-      b2_(b2),
-      g_(g) {
-        DRAKE_DEMAND(m1_ > 0);
-        DRAKE_DEMAND(m2_ > 0);
-      }
+  AcrobotParameters(double m1 = 1.0, double m2 = 1.0, double l1 = 1.0,
+                    double l2 = 2.0, double lc1 = 0.5, double lc2 = 1.0,
+                    double Ic1 = .083, double Ic2 = .33, double b1 = 0.1,
+                    double b2 = 0.1, double g = 9.81)
+      : m1_(m1),
+        m2_(m2),
+        l1_(l1),
+        l2_(l2),
+        lc1_(lc1),
+        lc2_(lc2),
+        Ic1_(Ic1),
+        Ic2_(Ic2),
+        b1_(b1),
+        b2_(b2),
+        g_(g) {
+    DRAKE_DEMAND(m1_ > 0);
+    DRAKE_DEMAND(m2_ > 0);
+  }
 
   // getters for robot parameters
   double m1() const { return m1_; }
@@ -109,9 +101,7 @@ class AcrobotParameters {
   const std::string& shoulder_joint_name() const {
     return shoulder_joint_name_;
   }
-  const std::string& elbow_joint_name() const {
-    return elbow_joint_name_;
-  }
+  const std::string& elbow_joint_name() const { return elbow_joint_name_; }
   const std::string& actuator_name() const { return actuator_name_; }
 
  private:
@@ -153,9 +143,9 @@ class AcrobotParameters {
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
-std::unique_ptr<MultibodyPlant<double>>
-MakeAcrobotPlant(const AcrobotParameters& default_parameters, bool finalize,
-                 geometry::SceneGraph<double>* scene_graph = nullptr);
+std::unique_ptr<MultibodyPlant<double>> MakeAcrobotPlant(
+    const AcrobotParameters& default_parameters, bool finalize,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace acrobot
 }  // namespace benchmarks

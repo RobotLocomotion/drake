@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_compass_gait.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/compass_gait/compass_gait.h"
@@ -15,7 +15,8 @@ void DefineExamplesCompassGait(py::module m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::compass_gait;
-  constexpr auto& doc = pydrake_doc.drake.examples.compass_gait;
+  constexpr auto& doc =
+      pydrake_doc_examples_compass_gait.drake.examples.compass_gait;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar

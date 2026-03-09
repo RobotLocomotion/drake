@@ -1,7 +1,6 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/generated_docstrings/manipulation_kuka_iiwa.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
@@ -25,7 +24,8 @@ using systems::LeafSystem;
 void DefineManipulationKukaIiwa(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation::kuka_iiwa;
-  constexpr auto& doc = pydrake_doc.drake.manipulation.kuka_iiwa;
+  constexpr auto& doc =
+      pydrake_doc_manipulation_kuka_iiwa.drake.manipulation.kuka_iiwa;
 
   // Constants.
   m.attr("kIiwaArmNumJoints") = kIiwaArmNumJoints;
@@ -217,35 +217,6 @@ void DefineManipulationKukaIiwa(py::module m) {
         // Use the builder as an adequate lifetime proxy, since it will be kept
         // alive via lifetime management associated with Build() calls.
         py::keep_alive<1, 6>(), doc.BuildIiwaControl.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    m.def("BuildIiwaControl",
-        WrapDeprecated(doc.BuildIiwaControl.doc_deprecated,
-            overload_cast_explicit<void,
-                const multibody::MultibodyPlant<double>&,
-                const multibody::ModelInstanceIndex,
-                const multibody::MultibodyPlant<double>&,
-                lcm::DrakeLcmInterface*, systems::DiagramBuilder<double>*,
-                double, const std::optional<Eigen::VectorXd>&, IiwaControlMode>(
-                &BuildIiwaControl)),
-        py::arg("plant"), py::arg("iiwa_instance"), py::arg("controller_plant"),
-        py::arg("lcm"), py::arg("builder"),
-        py::arg("ext_joint_filter_tau") = 0.01,
-        py::arg("desired_iiwa_kp_gains") = std::nullopt,
-        py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
-        // Using builder_life_support_stash makes the
-        // builder temporarily immortal (uncollectible self cycle). This
-        // will be resolved by the Build() step. See BuilderLifeSupport
-        // for rationale.
-        internal::builder_life_support_stash<double, 5>(),
-        // Keep alive, reference: `builder` keeps `controller_plant` alive.  It
-        // would be preferable to attach the keep-alive to the SimIiwaDriver
-        // diagram/system, but it does not appear in the function signature.
-        // Use the builder as an adequate lifetime proxy, since it will be kept
-        // alive via lifetime management associated with Build() calls.
-        py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 }
 

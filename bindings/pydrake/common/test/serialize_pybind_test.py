@@ -12,7 +12,6 @@ from pydrake.common.test.serialize_test_util import (
 
 
 class TestSerializePybind(unittest.TestCase):
-
     @staticmethod
     def _make_data1():
         return MyData1(quux=22.0)
@@ -29,12 +28,12 @@ class TestSerializePybind(unittest.TestCase):
             some_eigen=[4.4],
             some_optional=None,
             some_vector=[5.0, 6.0],
-            some_map={'key': 7},
-            some_variant=8.0)
+            some_map={"key": 7},
+            some_variant=8.0,
+        )
 
     def test_attributes_using_serialize_no_docs(self):
-        """Tests the DefAttributesUsingSerialize overload WITHOUT docstrings.
-        """
+        """Tests the DefAttributesUsingSerialize overload WITHOUT docstrings."""
         # Basic read / write.
         dut = MyData1(quux=1.0)
         self.assertEqual(dut.quux, 1.0)
@@ -46,13 +45,12 @@ class TestSerializePybind(unittest.TestCase):
 
         # Test fields.
         fields = getattr(MyData1, "__fields__")
-        self.assertSequenceEqual([(x.name, x.type) for x in fields], (
-            ("quux", float),
-        ))
+        self.assertSequenceEqual(
+            [(x.name, x.type) for x in fields], (("quux", float),)
+        )
 
     def test_attributes_using_serialize_with_docs(self):
-        """Tests the DefAttributesUsingSerialize overload WITH docstrings.
-        """
+        """Tests the DefAttributesUsingSerialize overload WITH docstrings."""
         # Basic read / write.
         dut = MyData2(some_double=1.0)
         self.assertEqual(dut.some_double, 1.0)
@@ -60,10 +58,12 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_double, -1.0)
 
         # We'll just spot-check a few of the docs; that should be enough.
-        self.assertEqual(inspect.getdoc(MyData2.some_double),
-                         "Field docstring for a double.")
-        self.assertEqual(inspect.getdoc(MyData2.some_vector),
-                         "Field docstring for a vector.")
+        self.assertEqual(
+            inspect.getdoc(MyData2.some_double), "Field docstring for a double."
+        )
+        self.assertEqual(
+            inspect.getdoc(MyData2.some_vector), "Field docstring for a vector."
+        )
 
         # N.B. Fields are tested below.
 
@@ -83,7 +83,7 @@ class TestSerializePybind(unittest.TestCase):
         dut.some_eigen = [44.4]
         dut.some_optional = -1.0
         dut.some_vector = [50.0, 60.0]
-        dut.some_map = {'new_key': 70}
+        dut.some_map = {"new_key": 70}
         dut.some_variant = 80.0
 
         # Read back all fields.
@@ -96,51 +96,55 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_eigen, [44.4])
         self.assertEqual(dut.some_optional, -1.0)
         self.assertEqual(dut.some_vector, [50.0, 60.0])
-        self.assertEqual(dut.some_map, {'new_key': 70})
+        self.assertEqual(dut.some_map, {"new_key": 70})
         self.assertEqual(dut.some_variant, 80.0)
 
         # Check all field types.
         fields = getattr(MyData2, "__fields__")
-        self.assertSequenceEqual([(x.name, x.type) for x in fields], (
-            ("some_bool", bool),
-            ("some_int", int),
-            ("some_uint64", int),
-            ("some_float", float),
-            ("some_double", float),
-            ("some_string", str),
-            ("some_eigen", np.ndarray),
-            ("some_optional", typing.Optional[float]),
-            ("some_vector", list[float]),
-            ("some_map", dict[str, float]),
-            ("some_variant", typing.Union[float, MyData1])))
+        self.assertSequenceEqual(
+            [(x.name, x.type) for x in fields],
+            (
+                ("some_bool", bool),
+                ("some_int", int),
+                ("some_uint64", int),
+                ("some_float", float),
+                ("some_double", float),
+                ("some_string", str),
+                ("some_eigen", np.ndarray),
+                ("some_optional", typing.Optional[float]),
+                ("some_vector", list[float]),
+                ("some_map", dict[str, float]),
+                ("some_variant", typing.Union[float, MyData1]),
+            ),
+        )
 
     def test_repr_using_serialize_no_docs(self):
         """Tests the repr() for a class bound WITHOUT docstrings.
         (The docstrings shouldn't make any difference one way or another.)
         """
-        self.assertEqual(repr(self._make_data1()),
-                         "MyData1(quux=22.0)")
+        self.assertEqual(repr(self._make_data1()), "MyData1(quux=22.0)")
 
     def test_repr_using_serialize_with_docs(self):
         """Tests the repr() for a class bound WITH docstrings.
         (The docstrings shouldn't make any difference one way or another.)
         """
-        self.assertEqual(repr(self._make_data2()),
-                         "MyData2("
-                         "some_bool=False, "
-                         "some_int=1, "
-                         "some_uint64=281474976710656, "
-                         "some_float=0.5, "
-                         "some_double=2.0, "
-                         "some_string='3', "
-                         "some_eigen=array([[4.4]]), "
-                         "some_optional=None, "
-                         "some_vector=[5.0, 6.0], "
-                         "some_map={'key': 7.0}, "
-                         "some_variant=8.0)")
+        self.assertEqual(
+            repr(self._make_data2()),
+            "MyData2("
+            "some_bool=False, "
+            "some_int=1, "
+            "some_uint64=281474976710656, "
+            "some_float=0.5, "
+            "some_double=2.0, "
+            "some_string='3', "
+            "some_eigen=array([[4.4]]), "
+            "some_optional=None, "
+            "some_vector=[5.0, 6.0], "
+            "some_map={'key': 7.0}, "
+            "some_variant=8.0)",
+        )
 
     def test_repr_with_templates(self):
-        """Tests the automatically generated repr() of a templated class.
-        """
+        """Tests the automatically generated repr() of a templated class."""
         self.assertEqual(repr(MyData3[float]()), "MyData3[float](quux=0.0)")
         self.assertEqual(repr(MyData3[int]()), "MyData3[int](quux=0)")

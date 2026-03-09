@@ -364,12 +364,10 @@ double ExpressionVar::Evaluate(const Environment& env) const {
     DRAKE_ASSERT(!std::isnan(it->second));
     return it->second;
   }
-  ostringstream oss;
-  oss << "The following environment does not have an entry for the "
-         "variable "
-      << var_ << endl;
-  oss << env << endl;
-  throw runtime_error{oss.str()};
+  throw runtime_error{
+      fmt::format("The following environment does not have an entry for the "
+                  "variable {}\n{}\n",
+                  var_, env)};
 }
 
 Expression ExpressionVar::Expand() const {
@@ -400,7 +398,7 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
 }
 
 ostream& ExpressionVar::Display(ostream& os) const {
-  return os << var_;
+  return os << fmt::to_string(var_);
 }
 
 ExpressionNaN::ExpressionNaN()
@@ -2111,7 +2109,8 @@ Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
       // hope that users can generally avoid this in practice, eg by using min
       // and max instead.
       ostringstream oss;
-      Display(oss) << " is not differentiable with respect to " << x << ".";
+      Display(oss) << " is not differentiable with respect to "
+                   << fmt::to_string(x) << ".";
       throw runtime_error(oss.str());
     }
   } else {
@@ -2225,7 +2224,8 @@ Expression ExpressionUninterpretedFunction::Differentiate(
     ostringstream oss;
     oss << "Uninterpreted-function expression ";
     Display(oss);
-    oss << " is not differentiable with respect to " << x << ".";
+    oss << " is not differentiable with respect to " << fmt::to_string(x)
+        << ".";
     throw runtime_error(oss.str());
   } else {
     // `x` is free in this uninterpreted function.

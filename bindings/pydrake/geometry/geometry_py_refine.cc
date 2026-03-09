@@ -1,6 +1,6 @@
 /* @file This contains the mesh refinement functions for pydrake.geometry. */
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/geometry_proximity.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -12,7 +12,7 @@ namespace pydrake {
 void DefineGeometryRefine(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
   m.def("RefineVolumeMesh", &RefineVolumeMesh, py::arg("mesh"),
       doc.RefineVolumeMesh.doc);

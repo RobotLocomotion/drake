@@ -1,5 +1,8 @@
 #include "drake/math/rotation_matrix.h"
 
+#include <limits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/extract_double.h"
@@ -717,7 +720,6 @@ GTEST_TEST(RotationMatrix, AxialRotationOperators) {
 
   // Test ApplyAxialRotation().
   const Vector3d v_C(1.0, 2.0, 3.0);
-  Vector3d v_B;  // reusable result
   EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<0>(xR_BC, v_C),
                               xR_BC * v_C, kTol));
   EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<1>(yR_BC, v_C),
@@ -800,7 +802,6 @@ GTEST_TEST(RotationMatrix, AxialRotationOptimizations) {
 
     // But ... ApplyAxialRotation() should work anyway with this junk in place.
     const Vector3d v_C(1.0, 2.0, 3.0);
-    Vector3d v_B;
     EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<1>(yR_BC_mangled, v_C),
                                 yR_BC * v_C, kTol));
 

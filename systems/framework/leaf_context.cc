@@ -50,50 +50,57 @@ std::unique_ptr<State<T>> LeafContext<T>::DoCloneState() const {
 
 template <typename T>
 std::string LeafContext<T>::do_to_string() const {
-  std::ostringstream os;
+  std::string result;
 
-  os << this->GetSystemPathname() << " Context\n";
-  os << std::string(this->GetSystemPathname().size() + 9, '-') << "\n";
-  os << "Time: " << this->get_time() << "\n";
+  result.append(fmt::format("{} Context\n", this->GetSystemPathname()));
+  result.append(fmt::format(
+      "{}\n", std::string(this->GetSystemPathname().size() + 9, '-')));
+  result.append(fmt::format("Time: {}\n", fmt::to_string(this->get_time())));
 
   if (this->num_continuous_states() || this->num_discrete_state_groups() ||
       this->num_abstract_states()) {
-    os << "States:\n";
+    result.append("States:\n");
     if (this->num_continuous_states()) {
-      os << "  " << this->num_continuous_states() << " continuous states\n";
-      os << "    " << this->get_continuous_state_vector() << "\n";
+      result.append(fmt::format("  {} continuous states\n",
+                                this->num_continuous_states()));
+      result.append(
+          fmt::format("    {}\n", this->get_continuous_state_vector()));
     }
     if (this->num_discrete_state_groups()) {
-      os << "  " << this->num_discrete_state_groups()
-         << " discrete state groups with\n";
+      result.append(fmt::format("  {} discrete state groups with\n",
+                                this->num_discrete_state_groups()));
       for (int i = 0; i < this->num_discrete_state_groups(); i++) {
-        os << "     " << this->get_discrete_state(i).size() << " states\n";
-        os << "       " << this->get_discrete_state(i) << "\n";
+        result.append(fmt::format("     {} states\n",
+                                  this->get_discrete_state(i).size()));
+        result.append(fmt::format("       {}\n", this->get_discrete_state(i)));
       }
     }
     if (this->num_abstract_states()) {
-      os << "  " << this->num_abstract_states() << " abstract states\n";
+      result.append(
+          fmt::format("  {} abstract states\n", this->num_abstract_states()));
     }
-    os << "\n";
+    result.append("\n");
   }
 
   if (this->num_numeric_parameter_groups() || this->num_abstract_parameters()) {
-    os << "Parameters:\n";
+    result.append("Parameters:\n");
     if (this->num_numeric_parameter_groups()) {
-      os << "  " << this->num_numeric_parameter_groups()
-         << " numeric parameter groups";
-      os << " with\n";
+      result.append(fmt::format("  {} numeric parameter groups with\n",
+                                this->num_numeric_parameter_groups()));
       for (int i = 0; i < this->num_numeric_parameter_groups(); i++) {
-        os << "     " << this->get_numeric_parameter(i).size()
-           << " parameters\n";
-        os << "       " << this->get_numeric_parameter(i) << "\n";
+        result.append(fmt::format("     {} parameters\n",
+                                  this->get_numeric_parameter(i).size()));
+        result.append(
+            fmt::format("       {}\n", this->get_numeric_parameter(i)));
       }
     }
     if (this->num_abstract_parameters()) {
-      os << "  " << this->num_abstract_parameters() << " abstract parameters\n";
+      result.append(fmt::format("  {} abstract parameters\n",
+                                this->num_abstract_parameters()));
     }
   }
-  return os.str();
+
+  return result;
 }
 
 template <typename T>

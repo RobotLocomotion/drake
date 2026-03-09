@@ -1,5 +1,9 @@
 #include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/random.h"
@@ -20,8 +24,7 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
       "iiwa14_polytope_collision.urdf");
   MultibodyPlant<double> iiwa(0);
   Parser(&iiwa).AddModels(kModelPath);
-  iiwa.WeldFrames(iiwa.world_frame(),
-                  iiwa.GetBodyByName("base").body_frame());
+  iiwa.WeldFrames(iiwa.world_frame(), iiwa.GetBodyByName("base").body_frame());
   iiwa.Finalize();
 
   const std::string kEndEffectorLinkName = "iiwa_link_ee";
@@ -49,11 +52,11 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
   RandomGenerator rand_generator(1234);
 
   for (int i = 0; i < 100; ++i) {
-    iiwa.SetRandomState(
-        *context, &context->get_mutable_state(), &rand_generator);
+    iiwa.SetRandomState(*context, &context->get_mutable_state(),
+                        &rand_generator);
 
-    math::RigidTransformd fk_pose = iiwa.EvalBodyPoseInWorld(
-        *context, end_effector);
+    math::RigidTransformd fk_pose =
+        iiwa.EvalBodyPoseInWorld(*context, end_effector);
     waypoints[0].pose = fk_pose;
 
     std::vector<Eigen::VectorXd> q_sol;
@@ -62,8 +65,8 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
     ASSERT_TRUE(ret);
 
     iiwa.SetPositions(context.get(), q_sol.front());
-    const math::RigidTransformd ik_pose = iiwa.EvalBodyPoseInWorld(
-        *context, end_effector);
+    const math::RigidTransformd ik_pose =
+        iiwa.EvalBodyPoseInWorld(*context, end_effector);
 
     const Vector3<double> pos_diff =
         ik_pose.translation() - fk_pose.translation();
@@ -97,13 +100,15 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
     return keep_going;
   };
   // Giving up early should return a planner failure.
-  EXPECT_FALSE(ik_planner.PlanSequentialTrajectory(
-      waypoints, kQcurrent, &q_sol, give_up_early));
+  EXPECT_FALSE(ik_planner.PlanSequentialTrajectory(waypoints, kQcurrent, &q_sol,
+                                                   give_up_early));
   EXPECT_EQ(prior_index, 2);
   // Bash on regardless.
-  auto never_stop = [](int) { return true; };
-  EXPECT_TRUE(ik_planner.PlanSequentialTrajectory(
-      waypoints, kQcurrent, &q_sol, never_stop));
+  auto never_stop = [](int) {
+    return true;
+  };
+  EXPECT_TRUE(ik_planner.PlanSequentialTrajectory(waypoints, kQcurrent, &q_sol,
+                                                  never_stop));
 }
 
 }  // namespace multibody

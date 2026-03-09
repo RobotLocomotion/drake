@@ -1,7 +1,9 @@
 #include "drake/multibody/contact_solvers/minimum_degree_ordering.h"
 
 #include <memory>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

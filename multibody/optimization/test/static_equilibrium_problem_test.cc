@@ -1,5 +1,7 @@
 #include "drake/multibody/optimization/static_equilibrium_problem.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -60,8 +62,8 @@ GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
               free_spheres.get_mutable_plant_context(),
               q_sol.cast<AutoDiffXd>());
           const Vector6<double> F_Cb_W_expected = math::ExtractValue(
-                  free_spheres.plant().CalcGravityGeneralizedForces(
-                      free_spheres.plant_context()));
+              free_spheres.plant().CalcGravityGeneralizedForces(
+                  free_spheres.plant_context()));
           EXPECT_TRUE(CompareMatrices(contact_wrench_sol[0].F_Cb_W.get_coeffs(),
                                       F_Cb_W_expected, tol));
         }

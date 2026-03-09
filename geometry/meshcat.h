@@ -552,7 +552,7 @@ class Meshcat {
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  /** @group Realtime Rate Reporting
+  /** @name Realtime Rate Reporting
 
    %Meshcat can be used to visualize the realtime rate of a simulation's
    computation in the meshcat visualizer webpage. Meshcat broadcasts a realtime
@@ -903,7 +903,20 @@ class Meshcat {
 
   You can also use your browser to download this file, by typing "/download"
   on the end of the URL (i.e., accessing `web_url() + "/download"`). */
-  std::string StaticHtml();
+  std::string StaticHtml() const;
+
+  /** Like StaticHtml(), returns a standalone snapshot of the visualizer and its
+  contents; the return value is a ZIP file containing a thin `meshcat.html` page
+  and the assets (meshes, textures, etc.) as separate files.
+
+  When you are uploading the unzipped files to a website, this will typically be
+  a more efficient representation as compared to StaticHtml(). However, it
+  cannot be opened directly by a browser from disk. A simple web server like
+  `python -m http.server` is required.
+
+  You can also use your browser to download this file, by typing "/download.zip"
+  on the end of the URL (i.e., accessing `web_url() + "/download.zip"`). */
+  std::string StaticZip() const;
 
   /** Sets a flag indicating that subsequent calls to SetTransform and
   SetProperty should also be "recorded" into a MeshcatAnimation when their

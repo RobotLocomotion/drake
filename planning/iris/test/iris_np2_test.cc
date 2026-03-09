@@ -1,5 +1,8 @@
 #include "drake/planning/iris/iris_np2.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -83,7 +86,7 @@ GTEST_TEST(IrisNp2OptionsTest, Serialize) {
 
 TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
   HPolyhedron region =
@@ -94,7 +97,7 @@ TEST_F(JointLimits1D, JointLimitsBasic) {
 // Check unsupported features.
 TEST_F(JointLimits1D, UnsupportedOptions) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -139,7 +142,7 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
 // with multiple collision geometries.)
 TEST_F(DoublePendulum, PaddingUnsupported) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -149,25 +152,50 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
       ".*negative padding.*");
 }
 
-// Check the error message for a parameterization from rational kinematics.
+// Test growing a region for the double pendulum along a parameterization of the
+// configuration space built from RationalForwardKinematics. This also
+// implicitly ensures that the IrisParameterizationFunction constructor that
+// takes in a RationalForwardKinematics object populates the double- and
+// AutoDiffXd-valued parameterization functions, since both must be available in
+// order to call IrisNp2.
 TEST_F(DoublePendulumRationalForwardKinematics,
-       ParameterizationMissingAutodiff) {
+       ParameterizationFromStaticConstructor) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
   options.parameterization =
       IrisParameterizationFunction(&rational_kinematics_,
                                    /* q_star_val */ Vector2d::Zero());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
-      ".*autodiff-compatible parameterization.*");
+  options.sampled_iris_options.verbose = true;
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  // Check that the parameterization was set correctly.
+  EXPECT_EQ(options.parameterization.get_parameterization_is_threadsafe(),
+            true);
+  ASSERT_TRUE(
+      options.parameterization.get_parameterization_dimension().has_value());
+  EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
+            2);
+
+  CheckParameterization(options.parameterization.get_parameterization_double());
+
+  HPolyhedron region = IrisNp2(*scene_graph_checker,
+                               starting_ellipsoid_rational_forward_kinematics_,
+                               domain_rational_forward_kinematics_, options);
+
+  CheckRegionRationalForwardKinematics(region);
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.parameterization.get_parameterization_double(),
+      region_query_point_1_);
 }
 
 TEST_F(DoublePendulum, IrisNp2Test) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -201,7 +229,7 @@ TEST_F(DoublePendulum, PositivePadding) {
     meshcat_->Delete();
     auto& options = options_to_try[i];
     options.sampled_iris_options.meshcat = meshcat_;
-    auto scene_graph_checker =
+    auto* scene_graph_checker =
         dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
     ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -223,7 +251,7 @@ TEST_F(DoublePendulum, PositivePadding) {
 // Check that we can filter out certain collisions.
 TEST_F(DoublePendulum, FilterCollisions) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -256,7 +284,7 @@ TEST_F(DoublePendulum, FilterCollisions) {
 // catch the error message.
 TEST_F(DoublePendulum, SpecifySolver) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -270,7 +298,7 @@ TEST_F(DoublePendulum, SpecifySolver) {
 
 TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -295,9 +323,28 @@ TEST_F(DoublePendulum, PostprocessRemoveCollisions) {
   EXPECT_FALSE(region.PointInSet(query_point));
 }
 
+TEST_F(DoublePendulum, RelaxMargin) {
+  IrisNp2Options options;
+  auto* scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  // Deliberately set the configuration space margin to be very large, so that
+  // the hyperplanes added will cut off the seed point and cause an error.
+  options.sampled_iris_options.configuration_space_margin = 1e8;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*within sampled_iris_options\\.configuration_space_margin of being "
+      "infeasible.*");
+
+  options.sampled_iris_options.relax_margin = true;
+  EXPECT_NO_THROW(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options));
+}
+
 TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -351,7 +398,7 @@ TEST_F(DoublePendulumRationalForwardKinematics, FunctionParameterization) {
 
 TEST_F(BlockOnGround, IrisNp2Test) {
   IrisNp2Options options;
-  auto scene_graph_checker =
+  auto* scene_graph_checker =
       dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
   ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -373,7 +420,7 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
   for (int i = 0; i < ssize(options_to_try); ++i) {
     meshcat_->Delete();
     auto& options = options_to_try[i];
-    auto scene_graph_checker =
+    auto* scene_graph_checker =
         dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
     ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -390,10 +437,9 @@ TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
     options.sampled_iris_options.meshcat = meshcat_;
     options.sampled_iris_options.verbose = true;
 
-    // We use IPOPT for this test since SNOPT has a large number of solve
-    // failures in this environment.
-    solvers::IpoptSolver solver;
-    options.solver = &solver;
+    // SNOPT has a large number of solve failures in this environment, but the
+    // add_hyperplane_if_solve_fails helps mitigate them.
+    options.add_hyperplane_if_solve_fails = true;
 
     HPolyhedron region =
         IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options);
@@ -415,7 +461,7 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   for (int i = 0; i < ssize(options_to_try); ++i) {
     meshcat_->Delete();
     auto& options = options_to_try[i];
-    auto scene_graph_checker =
+    auto* scene_graph_checker =
         dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
     ASSERT_TRUE(scene_graph_checker != nullptr);
 
@@ -448,6 +494,58 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
       PlotEnvironmentAndRegionSubspace(
           region, options.parameterization.get_parameterization_double());
     }
+  }
+}
+
+// Test that we can grow regions along a parameterized subspace that is not
+// full-dimensional when we have additional constraints.
+TEST_F(ConvexConfigurationSubspace,
+       FunctionParameterizationWithAdditionalConstraint) {
+  IrisNp2Options options;
+  auto* scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  std::vector<IrisNp2Options> options_to_try(3);
+  options_to_try[0].sampling_strategy = "greedy";
+  options_to_try[1].sampling_strategy = "ray";
+  options_to_try[2].sampling_strategy = "ray";
+  options_to_try[2].ray_sampler_options.only_walk_toward_collisions = true;
+
+  for (int i = 0; i < ssize(options_to_try); ++i) {
+    auto parameterization_double = [](const Vector1d& config) -> Vector2d {
+      return Vector2d{config[0], 2 * config[0] + 1};
+    };
+    auto parameterization_autodiff =
+        [](const Vector1<AutoDiffXd>& config) -> Vector2<AutoDiffXd> {
+      return Vector2<AutoDiffXd>{config[0], 2 * config[0] + 1};
+    };
+
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables(1, "x");
+    prog.AddLinearConstraint(Vector1d(1.0),
+                             -std::numeric_limits<float>::infinity(), -0.25, x);
+    options_to_try[i].sampled_iris_options.prog_with_additional_constraints =
+        &prog;
+
+    options_to_try[i].parameterization = IrisParameterizationFunction(
+        parameterization_double, parameterization_autodiff,
+        /* parameterization_is_threadsafe */ true,
+        /* parameterization_dimension */ 1);
+
+    HPolyhedron region = IrisNp2(*scene_graph_checker, starting_ellipsoid_,
+                                 domain_, options_to_try[i]);
+
+    Vector1d query_point_in(-0.3);
+    Vector1d query_point_out(-0.2);
+
+    EXPECT_TRUE(region.PointInSet(query_point_in));
+    EXPECT_FALSE(region.PointInSet(query_point_out));
+
+    // Verify that query_point_out is still collision free. (It just violates
+    // the added constraint.)
+    EXPECT_TRUE(scene_graph_checker->CheckConfigCollisionFree(
+        parameterization_double(query_point_out)));
   }
 }
 

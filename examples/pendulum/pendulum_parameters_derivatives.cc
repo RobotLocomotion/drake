@@ -55,8 +55,9 @@ int DoMain() {
   fmt::print("ω̇ = {omegadot:8.4f}\n", "omegadot"_a = xdot.thetadot().value());
 
   // Partial derivative of xdot with respect to mass parameter.
-  fmt::print("Partial derivative of the forward dynamics with respect to mass, "
-                 "i.e. ∂ẋ/∂m:\n");
+  fmt::print(
+      "Partial derivative of the forward dynamics with respect to mass, "
+      "i.e. ∂ẋ/∂m:\n");
   // θ̇ is independent of the mass parameter. We verify this by checking the
   // size of its vector of derivatives. Since we are using AutoDiffXd, we expect
   // this size to be zero (a constant).

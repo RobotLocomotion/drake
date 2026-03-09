@@ -2,7 +2,13 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <filesystem>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>

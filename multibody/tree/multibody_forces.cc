@@ -8,7 +8,7 @@ namespace multibody {
 template <typename T>
 MultibodyForces<T>::MultibodyForces(const internal::MultibodyTree<T>& model)
     : MultibodyForces(model.num_bodies(), model.num_velocities()) {
-  DRAKE_DEMAND(model.topology_is_valid());
+  DRAKE_DEMAND(model.is_finalized());
 }
 
 template <typename T>

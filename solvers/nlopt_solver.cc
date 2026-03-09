@@ -355,9 +355,9 @@ nlopt::algorithm ParseNloptAlgorithm(const std::string& algorithm_string) {
     auto c_enum = static_cast<nlopt_algorithm>(i);
     known.push_back(nlopt_algorithm_to_string(c_enum));
   }
-  throw std::logic_error(fmt::format(
-      "Unknown NLopt algorithm {}; valid choices are: {}",
-      algorithm_string, fmt::join(known, ", ")));
+  throw std::logic_error(
+      fmt::format("Unknown NLopt algorithm {}; valid choices are: {}",
+                  algorithm_string, fmt::join(known, ", ")));
 }
 
 struct KnownOptions {

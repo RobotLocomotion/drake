@@ -15,7 +15,6 @@
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -132,8 +131,10 @@ class BodyNode : public MultibodyElement<T> {
   // Returns a constant reference to the unique parent body P of the body B
   // associated with this node. This method aborts in Debug builds if called on
   // the root node corresponding to the _world_ body.
+  // @pre has_parent_tree() is true.
   const RigidBody<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
+    DRAKE_ASSERT(this->has_parent_tree());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
@@ -187,6 +188,7 @@ class BodyNode : public MultibodyElement<T> {
   //   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const SpanningForest& forest = this->get_parent_tree().forest();
     DRAKE_DEMAND(static_cast<int>(H_array.size()) == forest.num_velocities());
     const int start_index_in_v = mobod().v_start();
@@ -196,20 +198,6 @@ class BodyNode : public MultibodyElement<T> {
     const T* H_col0 = nv == 0 ? nullptr : H_array[start_index_in_v].data();
     // Create an Eigen map to the full H_PB_W for this node:
     return Eigen::Map<const MatrixUpTo6<T>>(H_col0, 6, nv);
-  }
-
-  // Mutable version of GetJacobianFromArray().
-  Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
-      std::vector<Vector6<T>>* H_array) const {
-    const SpanningForest& forest = this->get_parent_tree().forest();
-    DRAKE_DEMAND(static_cast<int>(H_array->size()) == forest.num_velocities());
-    const int start_index_in_v = mobod().v_start();
-    const int nv = mobod().nv();
-    DRAKE_DEMAND(nv == 0 || start_index_in_v < forest.num_velocities());
-    // The first column of this node's hinge matrix H_PB_W:
-    T* H_col0 = nv == 0 ? nullptr : (*H_array)[start_index_in_v].data();
-    // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<MatrixUpTo6<T>>(H_col0, 6, nv);
   }
 
   // This method is used by MultibodyTree within a base-to-tip loop to compute
@@ -228,7 +216,7 @@ class BodyNode : public MultibodyElement<T> {
       PositionKinematicsCache<T>* pc) const = 0;
 
   // Calculates the hinge matrix H_PB_W, the `6 x nm` hinge matrix that relates
-  // V_PB_W`(body B's spatial velocity in its parent body P, expressed in world
+  // `V_PB_W`(body B's spatial velocity in its parent body P, expressed in world
   // W) to this node's nm generalized velocities (or mobilities) v_B as
   // V_PB_W = H_PB_W * v_B.
   //
@@ -494,7 +482,7 @@ class BodyNode : public MultibodyElement<T> {
   // @param[out] aba_force_cache
   //   A pointer to a valid, non nullptr, force bias cache.
   //
-  // @pre pc, vc, and abic previously computed to be in sync with `context.
+  // @pre pc, vc, and abic previously computed to be in sync with `context`.
   // @pre CalcArticulatedBodyForceCache_TipToBase() must have already been
   // called for all the child nodes of `this` node (and, by recursive
   // precondition, all successor nodes in the tree.)
@@ -541,7 +529,7 @@ class BodyNode : public MultibodyElement<T> {
   // @param[out] ac
   //   A pointer to a valid, non nullptr, acceleration kinematics cache.
   //
-  // @pre pc, vc, and abic previously computed to be in sync with `context.
+  // @pre pc, vc, and abic previously computed to be in sync with `context`.
   // @pre CalcArticulatedBodyAccelerations_BaseToTip() must have already been
   // called for the parent node (and, by recursive precondition, all
   // predecessor nodes in the tree.)
@@ -639,6 +627,7 @@ class BodyNode : public MultibodyElement<T> {
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const MultibodyTree<T>& tree = this->get_parent_tree();
     return tree.get_state_segment(
         context, tree.num_positions() + mobod().v_start(), mobod().nv());
@@ -658,8 +647,7 @@ class BodyNode : public MultibodyElement<T> {
   friend class BodyNodeTester;
 
   // Implementation for MultibodyElement::DoSetTopology().
-  // TODO(sherm1) Get rid of this.
-  void DoSetTopology(const MultibodyTreeTopology&) final {
+  void DoSetTopology() final {
     // BodyNode gets everything it needs at construction.
     DRAKE_DEMAND(body_ != nullptr && mobilizer_ != nullptr);
   }

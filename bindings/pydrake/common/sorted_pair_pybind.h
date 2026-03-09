@@ -13,7 +13,8 @@ struct type_caster<drake::SortedPair<T>> {
   using InnerCaster = make_caster<T>;
 
   // N.B. This macro assumes placement in `pybind11::detail`.
-  PYBIND11_TYPE_CASTER(Type, _("Tuple[") + type_caster<T>::name + _("]"));
+  PYBIND11_TYPE_CASTER(
+      Type, const_name("Tuple[") + type_caster<T>::name + const_name("]"));
 
   bool load(handle src, bool convert) {
     if (!convert && !tuple::check_(src)) {

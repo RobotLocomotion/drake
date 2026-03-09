@@ -1,6 +1,7 @@
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 
 #include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 

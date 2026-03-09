@@ -21,4 +21,6 @@ int do_main() {
 }  // namespace common
 }  // namespace drake
 
-int main() { return drake::common::do_main(); }
+int main() {
+  return drake::common::do_main();
+}

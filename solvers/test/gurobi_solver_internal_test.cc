@@ -1,6 +1,7 @@
 #include "drake/solvers/gurobi_solver_internal.h"
 
 #include <limits>
+#include <vector>
 
 #include <gtest/gtest.h>
 

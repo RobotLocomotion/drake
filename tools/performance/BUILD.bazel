@@ -24,7 +24,7 @@ drake_cc_library(
     srcs = ["fixture_common.cc"],
     hdrs = ["fixture_common.h"],
     deps = [
-        "@googlebenchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -51,7 +51,7 @@ drake_cc_library(
     hdrs = ["fixture_memory.h"],
     deps = [
         "//common:essential",
-        "@googlebenchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -61,7 +61,7 @@ drake_cc_library(
     deps = [
         ":fixture_memory",
         "@gflags",
-        "@googlebenchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 

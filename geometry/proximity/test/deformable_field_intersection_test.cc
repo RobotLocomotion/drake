@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/deformable_field_intersection.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

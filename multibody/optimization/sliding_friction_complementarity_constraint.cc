@@ -38,6 +38,9 @@ Eigen::Matrix<double, 11, 1> GetConstraintUpperBound(
 }  // namespace
 
 SlidingFrictionComplementarityNonlinearConstraint::
+    ~SlidingFrictionComplementarityNonlinearConstraint() = default;
+
+SlidingFrictionComplementarityNonlinearConstraint::
     SlidingFrictionComplementarityNonlinearConstraint(
         const ContactWrenchEvaluator* const contact_wrench_evaluator,
         double complementarity_tolerance)

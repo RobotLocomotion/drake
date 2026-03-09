@@ -1,6 +1,9 @@
 #include "drake/multibody/mpm/particle_sorter.h"
 
+#include <algorithm>
 #include <numeric>
+#include <set>
+#include <vector>
 
 #include <gtest/gtest.h>
 

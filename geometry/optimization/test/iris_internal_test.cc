@@ -1,5 +1,8 @@
 #include "drake/geometry/optimization/iris_internal.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

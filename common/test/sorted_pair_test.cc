@@ -1,7 +1,9 @@
 #include "drake/common/sorted_pair.h"
 
+#include <memory>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <fmt/ranges.h>

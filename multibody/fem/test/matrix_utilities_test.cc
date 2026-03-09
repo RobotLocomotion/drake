@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/matrix_utilities.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

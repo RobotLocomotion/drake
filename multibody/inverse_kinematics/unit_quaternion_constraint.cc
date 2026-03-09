@@ -4,6 +4,9 @@
 
 namespace drake {
 namespace multibody {
+
+UnitQuaternionConstraint::~UnitQuaternionConstraint() = default;
+
 UnitQuaternionConstraint::UnitQuaternionConstraint()
     : solvers::Constraint(1, 4, Vector1d(1), Vector1d(1)) {}
 
@@ -49,9 +52,8 @@ AddUnitQuaternionConstraintOnPlant(
   return bindings;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &AddUnitQuaternionConstraintOnPlant<T>
-));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&AddUnitQuaternionConstraintOnPlant<T>));
 
 }  // namespace multibody
 }  // namespace drake

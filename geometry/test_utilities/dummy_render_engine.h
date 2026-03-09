@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/ssize.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 
@@ -50,7 +49,7 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
         depth_camera_{color_camera_.core(), {0.01, 0.011}},
         label_camera_{color_camera_} {}
 
-  /* @group No-op implementation of RenderEngine interface.  */
+  /* @name No-op implementation of RenderEngine interface.  */
   //@{
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override {
     X_WC_ = X_WC;

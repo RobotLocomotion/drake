@@ -42,14 +42,15 @@ class PleidesSystem : public LeafSystem<double> {
   // Number of particles being simulated.
   constexpr static int kNumParticles = 7;
 
-  void SetDefaultState(
-      const Context<double>& context, State<double>* state) const override {
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {
     VectorX<double> q(kNumParticles * 2), v(kNumParticles * 2);
 
     // Set the initial positions. Note that these are all representable in
     // IEEE 754 without any representation error. Each pair of initial positions
     // corresponds to the (x, y) location of a particle. From plei.pdf,
     // the first particle's initial position is x0 = q[0] = 3, y0 = q[7] = 3.
+    // clang-format off
     q.head(kNumParticles)[0] =  3.0;   q.tail(kNumParticles)[0] =  3.0;
     q.head(kNumParticles)[1] =  3.0;   q.tail(kNumParticles)[1] = -3.0;
     q.head(kNumParticles)[2] = -1.0;   q.tail(kNumParticles)[2] =  2.0;
@@ -57,9 +58,11 @@ class PleidesSystem : public LeafSystem<double> {
     q.head(kNumParticles)[4] =  2.0;   q.tail(kNumParticles)[4] =  0.0;
     q.head(kNumParticles)[5] = -2.0;   q.tail(kNumParticles)[5] = -4.0;
     q.head(kNumParticles)[6] =  2.0;   q.tail(kNumParticles)[6] =  4.0;
+    // clang-format on
 
     // Set the initial velocities. Uses the same representation layout as with
     // the positions.
+    // clang-format off
     v.head(kNumParticles)[0] =  0.0;   v.tail(kNumParticles)[0] =  0.0;
     v.head(kNumParticles)[1] =  0.0;   v.tail(kNumParticles)[1] =  0.0;
     v.head(kNumParticles)[2] =  0.0;   v.tail(kNumParticles)[2] =  0.0;
@@ -67,19 +70,22 @@ class PleidesSystem : public LeafSystem<double> {
     v.head(kNumParticles)[4] =  0.0;   v.tail(kNumParticles)[4] =  1.0;
     v.head(kNumParticles)[5] =  1.75;  v.tail(kNumParticles)[5] =  0.0;
     v.head(kNumParticles)[6] = -1.5;   v.tail(kNumParticles)[6] =  0.0;
+    // clang-format on
 
-    state->get_mutable_continuous_state().
-        get_mutable_generalized_position().SetFromVector(q);
-    state->get_mutable_continuous_state().
-        get_mutable_generalized_velocity().SetFromVector(v);
+    state->get_mutable_continuous_state()
+        .get_mutable_generalized_position()
+        .SetFromVector(q);
+    state->get_mutable_continuous_state()
+        .get_mutable_generalized_velocity()
+        .SetFromVector(v);
   }
 
   void DoCalcTimeDerivatives(const Context<double>& context,
                              ContinuousState<double>* deriv) const override {
-    const VectorBase<double>& q = context.get_continuous_state().
-        get_generalized_position();
-    const VectorBase<double>& v = context.get_continuous_state().
-        get_generalized_velocity();
+    const VectorBase<double>& q =
+        context.get_continuous_state().get_generalized_position();
+    const VectorBase<double>& v =
+        context.get_continuous_state().get_generalized_velocity();
 
     // Get the positions of each particle.
     const VectorX<double> x = q.CopyToVector().head(kNumParticles);
@@ -102,7 +108,7 @@ class PleidesSystem : public LeafSystem<double> {
         const Vector2d rij(x[j] - x[i], y[j] - y[i]);
         const double distance = rij.norm();
         Fi += G() * (mass_[i] * mass_[j]) * rij /
-            (distance * distance * distance);
+              (distance * distance * distance);
       }
 
       vdot.head(kNumParticles)[i] = Fi[0] / mass_[i];
@@ -123,6 +129,7 @@ class PleidesSystem : public LeafSystem<double> {
   static VectorX<double> GetSolution(double t) {
     DRAKE_DEMAND(t == 3.0);
     VectorX<double> sol(kNumParticles * 2);
+    // clang-format off
     sol(0) =   0.3706139143970502;
     sol(1) =   0.3237284092057233 * 10.0;
     sol(2) =  -0.3222559032418324 * 10.0;
@@ -137,6 +144,7 @@ class PleidesSystem : public LeafSystem<double> {
     sol(11) =  0.1198213693392275 * 10.0;
     sol(12) = -0.2429682344935824;
     sol(13) =  0.1091449240428980 * 10.0;
+    // clang-format on
     return sol;
   }
 

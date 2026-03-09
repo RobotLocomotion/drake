@@ -2,6 +2,9 @@
 Measures the performance of the MultilayerPerceptron implementation.
 Refer to the README.md for more information. */
 
+#include <memory>
+#include <vector>
+
 #include <gflags/gflags.h>
 
 #include "drake/systems/primitives/multilayer_perceptron.h"

@@ -12,8 +12,8 @@ def _is_binary(path: Path):
     we end up converting other file types, it will require appending the
     types here; they can't be added by accident.
     """
-    BINARY_EXT = ['.jpg']
-    ASCII_EXT = ['.glsl']
+    BINARY_EXT = [".jpg"]
+    ASCII_EXT = [".glsl"]
     ext = path.suffix.lower()
     if ext in BINARY_EXT:
         return True
@@ -44,13 +44,13 @@ def _print_binary_as_hex(in_file):
     """Converts a binary file to a sequence of comma-separated hexadecimal byte
     values, suitable for initializing an array of bytes in C++.
     """
-    all_hex = ', '.join([f'0x{b:02x}' for b in in_file.read()])
+    all_hex = ", ".join([f"0x{b:02x}" for b in in_file.read()])
     # Don't write a single line with a billion columns. Each byte takes
     # six characters (0xAA, ). Chop off chunks to fit 80-column lines.
     width = 78  # 13 * 6
     start = 0
     while start < len(all_hex):
-        print(f"  {all_hex[start:start+width].strip()}")
+        print(f"  {all_hex[start : start + width].strip()}")
         start += width
 
 
@@ -69,12 +69,11 @@ def _print_conversion(source: Path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "in_path", type=Path, help="The source file to convert")
+    parser.add_argument("in_path", type=Path, help="The source file to convert")
     args = parser.parse_args()
 
     _print_conversion(args.in_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

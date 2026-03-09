@@ -19,20 +19,20 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ |
-|------------------------------------|--------------|------------|-----------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
-| macOS Sonoma (14)                  | arm64        | 3.13 ⁽³⁾   | October 2025    |
-| macOS Sequoia (15)                 | arm64        | 3.13 ⁽³⁾   | October 2026    |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ ⁽³⁾ | End of life ⁽⁴⁾ |
+|------------------------------------|--------------|----------------|-----------------|
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10           | March 2026      |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁵⁾   | 3.12           | March 2028      |
+| macOS Sequoia (15)                 | arm64        | 3.14           | October 2026    |
+| macOS Tahoe (26)                   | arm64        | 3.14           | October 2027    |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
 
 Unofficially, Drake is also likely to be compatible with newer versions of
-Ubuntu or macOS than what are listed, or with Ubuntu 22.04 running on arm64, or
-with other versions of Python. However, these are not supported so if it doesn't
-work for you then please file a pull request with the fix, not a bug report.
+Ubuntu or macOS than what are listed, or with other versions of Python. However,
+these are not supported so if it doesn't work for you then please file a pull
+request with the fix, not a bug report.
 
 ⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
 maybe require extra setup. See the
@@ -45,13 +45,21 @@ that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, when installing via ``pip``
-on Ubuntu Python versions 3.10 through 3.13 (inclusive) are supported and
-on macOS Python versions 3.12 through 3.13 (inclusive) are supported.
+on Ubuntu Python versions 3.10 through 3.14 (inclusive) are supported and
+on macOS Python versions 3.13 through 3.14 (inclusive) are supported.
 Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
 timeline for changing which Python versions are supported.
 
 ⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
+
+⁽⁵⁾ Nightly binaries for Ubuntu 24.04 (Noble) on aarch64 are available for all
+[binary installation methods](#choose-an-installation-method). Drake's support
+for Ubuntu on aarch64 is currently experimental, and binaries are not available
+for stable releases. Follow
+[#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
+If you encounter installation issues with the experimental nightly binaries,
+please post to the issue.
 
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
@@ -61,11 +69,14 @@ Drake's pre-compiled binaries:
 |------------------------------------|----------------------------|-------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                     | C++20 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                     | C++23 |
-| macOS Sonoma (14)                  | Apple LLVM 16 (Xcode 16.2) | C++23 |
-| macOS Sequoia (15)                 | Apple LLVM 17 (Xcode 16.4) | C++23 |
+| macOS Sequoia (15)                 | Apple LLVM 17 (Xcode 26.3) | C++23 |
+| macOS Tahoe (26)                   | Apple LLVM 17 (Xcode 26.3) | C++23 |
 
 Any other configuration not listed here will lead to undefined behavior
 (as a violation of the C++ One-Definition Rule).
+
+The above information covers the current version of Drake. For historical
+details, see [End of support releases](/release_notes/end_of_support.html).
 
 ## Available Versions
 
@@ -91,7 +102,6 @@ Stable and nightly release versions are available for each method.
 * [Pip](/pip.html) (only supports Python)
 * [APT](/apt.html) (only supports Ubuntu)
 * [Binary (`*.tar.gz`) download](/from_binary.html)
-* [Docker Hub](/docker.html)
 
 Alternatively, you can skip the pre-compiled binaries and build Drake
 following the instructions in [Source Installation](/from_source.html).

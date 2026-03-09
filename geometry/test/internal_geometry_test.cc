@@ -1,5 +1,7 @@
 #include "drake/geometry/internal_geometry.h"
 
+#include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 

@@ -45,7 +45,7 @@ selects.config_setting_group(
 alias(
     name = "eigen",
     actual = select({
-        ":use_pkgconfig": "@pkgconfig_eigen",
+        ":use_pkgconfig": "@pkgconfig_eigen_internal",
         "//conditions:default": "@module_eigen//:eigen",
     }),
     visibility = ["//visibility:public"],

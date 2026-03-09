@@ -1,5 +1,9 @@
 #include "drake/systems/framework/bus_value.h"
 
+#include <algorithm>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

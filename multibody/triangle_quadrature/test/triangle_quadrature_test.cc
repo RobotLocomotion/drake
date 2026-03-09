@@ -1,7 +1,9 @@
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -18,7 +20,8 @@ GTEST_TEST(TriangleQuadrature, GaussianQuadratureRuleThrowsAboveMaxOrder) {
   // TODO(edrumwri): Consider adding a max_order() method to the
   // TriangleQuadratureRule class (if more quadrature rules are added).
   const int max_order = 5;
-  DRAKE_EXPECT_THROWS_MESSAGE(GaussianTriangleQuadratureRule(max_order + 1),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GaussianTriangleQuadratureRule(max_order + 1),
       ".*quadrature only supported up to fifth order.*");
 }
 
@@ -27,8 +30,7 @@ GTEST_TEST(TriangleQuadrature, WeightsSumToUnity) {
     GaussianTriangleQuadratureRule rule(order);
     const std::vector<double>& weights = rule.weights();
     const double sum = std::accumulate(weights.begin(), weights.end(), 0.0);
-    const double tol = weights.size() *
-        std::numeric_limits<double>::epsilon();
+    const double tol = weights.size() * std::numeric_limits<double>::epsilon();
     EXPECT_NEAR(sum, 1.0, tol);
   }
 }
@@ -60,7 +62,8 @@ class UnityQuadratureTest : public ::testing::Test {
       double result = TriangleQuadrature<double, double>::Integrate(
           f, rule, 0.5 /* triangle area */);
       EXPECT_NEAR(result, 1.0,
-          5 * num_weights * std::numeric_limits<double>::epsilon()) << order;
+                  5 * num_weights * std::numeric_limits<double>::epsilon())
+          << order;
     }
   }
 };

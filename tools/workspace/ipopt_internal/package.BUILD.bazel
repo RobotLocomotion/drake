@@ -252,6 +252,9 @@ _HDRS_PRIVATE = glob([
 
 _AUTOCONF_DEFINES = [
     "IPOPT_VERSION=\"drake_vendor\"",
+    "IPOPT_VERSION_MAJOR=0",
+    "IPOPT_VERSION_MINOR=0",
+    "IPOPT_VERSION_RELEASE=0",
     # Features of the standard library and/or host system.
     "HAVE_CFLOAT=1",
     "HAVE_CMATH=1",
@@ -323,9 +326,6 @@ _AUTOCONF_UNDEFINES = [
     "PARDISO_LIB",
     # Chaff that's not used by the C++ code anyway.
     "IPOPT_LAPACK_FUNC_",
-    "IPOPT_VERSION_MAJOR",
-    "IPOPT_VERSION_MINOR",
-    "IPOPT_VERSION_RELEASE",
     "LT_OBJDIR",
     "PACKAGE_BUGREPORT",
     "PACKAGE_NAME",

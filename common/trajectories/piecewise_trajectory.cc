@@ -63,12 +63,13 @@ int PiecewiseTrajectory<T>::GetSegmentIndexRecursive(const T& time, int start,
   // one or two numbers
   if (end - start <= 1) return start;
 
-  if (time < breaks_[mid])
+  if (time < breaks_[mid]) {
     return GetSegmentIndexRecursive(time, start, mid);
-  else if (time > breaks_[mid])
+  } else if (time > breaks_[mid]) {
     return GetSegmentIndexRecursive(time, mid, end);
-  else
+  } else {
     return mid;
+  }
 }
 
 template <typename T>

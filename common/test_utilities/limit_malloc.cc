@@ -17,6 +17,7 @@
 // compilers). For ASan background, see #14901.
 #define DRAKE_INSTALL_HEAP_HOOKS 1
 
+// clang-format off
 #ifdef __APPLE__
 #  undef DRAKE_INSTALL_HEAP_HOOKS
 #  define DRAKE_INSTALL_HEAP_HOOKS 0
@@ -33,6 +34,7 @@
 #    define DRAKE_INSTALL_HEAP_HOOKS 0
 #  endif
 #endif
+// clang-format on
 
 // Functions that are called during dl_init must not use the sanitizer runtime.
 #ifdef __clang__
@@ -103,6 +105,7 @@ class never_destroyed {
  public:
   never_destroyed() { new (&storage_) T(); }
   T& access() { return *reinterpret_cast<T*>(&storage_); }
+
  private:
   alignas(T) std::byte storage_[sizeof(T)];
 };
@@ -178,7 +181,9 @@ class ActiveMonitor {
 };
 
 void Monitor::ObserveAllocation() {
-  if (!IsSupportedConfiguration()) { return; }
+  if (!IsSupportedConfiguration()) {
+    return;
+  }
 
   bool failure = false;
 
@@ -191,7 +196,9 @@ void Monitor::ObserveAllocation() {
 
   // TODO(jwnimmer-tri) Add more limits (requested bytes?) here.
 
-  if (!failure) { return; }
+  if (!failure) {
+    return;
+  }
 
   // Non-fatal breakpoint action; use with helper script:
   // tools/dynamic_analysis/dump_limit_malloc_stacks
@@ -205,8 +212,8 @@ void Monitor::ObserveAllocation() {
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();
   std::cerr << "abort due to malloc #" << observed
-            << " while max_num_allocations = "
-            << args_.max_num_allocations << " in effect";
+            << " while max_num_allocations = " << args_.max_num_allocations
+            << " in effect";
   std::cerr << std::endl;
   // TODO(jwnimmer-tri) It would be nice to print a backtrace here.
   std::abort();
@@ -214,7 +221,7 @@ void Monitor::ObserveAllocation() {
 
 }  // namespace
 
-LimitMalloc::LimitMalloc() : LimitMalloc({ .max_num_allocations = 0 }) {}
+LimitMalloc::LimitMalloc() : LimitMalloc({.max_num_allocations = 0}) {}
 
 LimitMalloc::LimitMalloc(LimitMallocParams args) {
   // Make sure the configuration check is warm before trying it within a malloc
@@ -257,7 +264,6 @@ LimitMalloc::~LimitMalloc() {
 }  // namespace test
 }  // namespace drake
 
-
 // Optionally compile the code that places the heap hooks.
 #if DRAKE_INSTALL_HEAP_HOOKS
 // https://www.gnu.org/software/libc/manual/html_node/Replacing-malloc.html#Replacing-malloc
@@ -284,12 +290,14 @@ void* realloc(void* ptr, size_t size) {
 }
 
 static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {
-  if (!drake::test::IsSupportedConfiguration()) { return; }
+  if (!drake::test::IsSupportedConfiguration()) {
+    return;
+  }
 
   if ((min_num_allocations >= 0) && (observed < min_num_allocations)) {
-    std::cerr << "abort due to scope end with "
-              << observed << " mallocs while min_num_allocations = "
-              << min_num_allocations << " in effect";
+    std::cerr << "abort due to scope end with " << observed
+              << " mallocs while min_num_allocations = " << min_num_allocations
+              << " in effect";
     std::cerr << std::endl;
     std::abort();
   }

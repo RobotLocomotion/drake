@@ -1,5 +1,7 @@
 #include "drake/common/symbolic/latex.h"
 
+#include <algorithm>
+#include <limits>
 #include <vector>
 
 #include <fmt/format.h>

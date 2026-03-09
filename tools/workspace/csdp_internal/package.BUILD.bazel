@@ -35,8 +35,6 @@ cc_library(
         "lib/packed.c",
         "lib/psd_feas.c",
         "lib/qreig.c",
-        "lib/readprob.c",
-        "lib/readsol.c",
         "lib/sdp.c",
         "lib/solvesys.c",
         "lib/sortentries.c",
@@ -65,6 +63,7 @@ cc_library(
         "-fno-openmp",
     ],
     includes = ["includes"],
+    isystem = True,
     linkstatic = 1,
     deps = [
         "@blas",
@@ -81,3 +80,5 @@ install(
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

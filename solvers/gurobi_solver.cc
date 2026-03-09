@@ -40,10 +40,11 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// Returns the (base) URL for Gurobi's online reference manual.
+// Returns the base URL for Gurobi's online reference manual.
 std::string refman() {
-  return fmt::format("https://www.gurobi.com/documentation/{}.{}/refman",
-                     GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+  return fmt::format(
+      "https://www.docs.gurobi.com/projects/optimizer/en/{}.{}/reference",
+      GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
 }
 
 // Information to be passed through a Gurobi C callback to
@@ -225,53 +226,40 @@ GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
   return solve_status;
 }
 
+// Handles the Gurobi C callback function. The where values should match the
+// value of the Gurobi where callback codes at
+// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html.
+// When handling a particular callback where code, be very careful to handle the
+// associated what callback codes correctly as this has caused bugs in the past.
 int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
   GurobiCallbackInformation* callback_info =
       reinterpret_cast<GurobiCallbackInformation*>(usrdata);
-
-  if (where == GRB_CB_POLLING) {
-  } else if (where == GRB_CB_PRESOLVE) {
-  } else if (where == GRB_CB_SIMPLEX) {
-  } else if (where == GRB_CB_MIP) {
-  } else if (where == GRB_CB_MIPSOL &&
-             callback_info->mip_sol_callback != nullptr) {
-    // Extract variable values from Gurobi, and set the current
-    // solution of the MathematicalProgram to these values.
-    int error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
-                         callback_info->solver_sol_vector.data());
-    if (error) {
-      drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n", error,
-                          GRBgeterrormsg(GRBgetenv(model)));
+  if (callback_info->mip_sol_callback == nullptr) {
+    // Skip if no callback is provided.
+    return 0;
+  }
+  switch (where) {
+    case GRB_CB_POLLING: {
       return 0;
     }
-    SetProgramSolutionVector(callback_info->is_new_variable,
-                             callback_info->solver_sol_vector,
-                             &(callback_info->prog_sol_vector));
-    callback_info->result->set_x_val(callback_info->prog_sol_vector);
-
-    GurobiSolver::SolveStatusInfo solve_status =
-        GetGurobiSolveStatus(cbdata, where);
-
-    callback_info->mip_sol_callback(*(callback_info->prog), solve_status);
-
-  } else if (where == GRB_CB_MIPNODE &&
-             callback_info->mip_node_callback != nullptr) {
-    int sol_status;
-    int error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
-    if (error) {
-      drake::log()->error(
-          "GRB error {} in MIPNode callback getting sol status: {}\n", error,
-          GRBgeterrormsg(GRBgetenv(model)));
+    case GRB_CB_PRESOLVE: {
       return 0;
-    } else if (sol_status == GRB_OPTIMAL) {
+    }
+    case GRB_CB_SIMPLEX: {
+      return 0;
+    }
+    case GRB_CB_MIP: {
+      return 0;
+    }
+    case GRB_CB_MIPSOL: {
       // Extract variable values from Gurobi, and set the current
       // solution of the MathematicalProgram to these values.
-      error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
-                       callback_info->solver_sol_vector.data());
+      int error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+                           callback_info->solver_sol_vector.data());
       if (error) {
         drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n",
                             error, GRBgeterrormsg(GRBgetenv(model)));
-        return 0;
+        return 1;
       }
       SetProgramSolutionVector(callback_info->is_new_variable,
                                callback_info->solver_sol_vector,
@@ -281,33 +269,77 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
       GurobiSolver::SolveStatusInfo solve_status =
           GetGurobiSolveStatus(cbdata, where);
 
-      Eigen::VectorXd vals;
-      VectorXDecisionVariable vars;
-      callback_info->mip_node_callback(*(callback_info->prog), solve_status,
-                                       &vals, &vars);
-
-      // The callback may return an assignment of some number of variables
-      // as a new heuristic solution seed. If so, feed those back to Gurobi.
-      if (vals.size() > 0) {
-        std::vector<double> new_sol(callback_info->prog->num_vars(),
-                                    GRB_UNDEFINED);
-        for (int i = 0; i < vals.size(); i++) {
-          double val = vals[i];
-          int k = callback_info->prog->FindDecisionVariableIndex(vars[i]);
-          new_sol[k] = val;
-        }
-        double objective_solution;
-        error = GRBcbsolution(cbdata, new_sol.data(), &objective_solution);
+      callback_info->mip_sol_callback(*(callback_info->prog), solve_status);
+      return 0;
+    }
+    case GRB_CB_MIPNODE: {
+      int sol_status;
+      int error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
+      if (error) {
+        drake::log()->error(
+            "GRB error {} in MIPNode callback getting sol status: {}\n", error,
+            GRBgeterrormsg(GRBgetenv(model)));
+        return 1;
+      }
+      if (sol_status == GRB_OPTIMAL) {
+        // Fetch the current node relaxation solution values.
+        error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL,
+                         callback_info->solver_sol_vector.data());
         if (error) {
-          drake::log()->error("GRB error {} in injection: {}\n", error,
-                              GRBgeterrormsg(GRBgetenv(model)));
+          drake::log()->error("GRB error {} in MIPNode callback cbget: {}\n",
+                              error, GRBgeterrormsg(GRBgetenv(model)));
+          return 1;
+        }
+        SetProgramSolutionVector(callback_info->is_new_variable,
+                                 callback_info->solver_sol_vector,
+                                 &(callback_info->prog_sol_vector));
+        callback_info->result->set_x_val(callback_info->prog_sol_vector);
+
+        GurobiSolver::SolveStatusInfo solve_status =
+            GetGurobiSolveStatus(cbdata, where);
+
+        Eigen::VectorXd vals;
+        VectorXDecisionVariable vars;
+        callback_info->mip_node_callback(*(callback_info->prog), solve_status,
+                                         &vals, &vars);
+
+        // The callback may return an assignment of some number of variables
+        // as a new heuristic solution seed. If so, feed those back to Gurobi.
+        if (vals.size() > 0) {
+          std::vector<double> new_sol(callback_info->prog->num_vars(),
+                                      GRB_UNDEFINED);
+          for (int i = 0; i < vals.size(); i++) {
+            double val = vals[i];
+            int k = callback_info->prog->FindDecisionVariableIndex(vars[i]);
+            new_sol[k] = val;
+          }
+          double objective_solution;
+          error = GRBcbsolution(cbdata, new_sol.data(), &objective_solution);
+          if (error) {
+            drake::log()->error("GRB error {} in injection: {}\n", error,
+                                GRBgeterrormsg(GRBgetenv(model)));
+            return 1;
+          }
         }
       }
+      return 0;
     }
-  } else if (where == GRB_CB_BARRIER) {
-  } else if (where == GRB_CB_MESSAGE) {
+    case GRB_CB_MESSAGE: {
+      return 0;
+    }
+    case GRB_CB_BARRIER: {
+      return 0;
+    }
+    case GRB_CB_MULTIOBJ: {
+      return 0;
+    }
+    case GRB_CB_IIS: {
+      return 0;
+    }
   }
-  return 0;
+  // This switch statement should be an exhaustive reference to the Gurobi what
+  // codes.
+  DRAKE_UNREACHABLE();
 }
 
 // Checks if the number of variables in the Gurobi model is as expected. This
@@ -1058,7 +1090,7 @@ void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
             fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
         throw std::runtime_error(fmt::format(
             "GurobiSolver(): setting GRBwrite to {}, this is not supported. "
-            "Check {}/py_model_write.html for more details.",
+            "Check {}/python/model.html#Write for more details.",
             grb_write.value(), refman()));
       }
     }

@@ -21,10 +21,9 @@ import shutil
 import subprocess
 import tempfile
 from textwrap import dedent
-from typing import Dict, Union
 
-from python.runfiles import Create as CreateRunfiles
 from flask import Flask, request, send_file
+from python.runfiles import Create as CreateRunfiles
 
 """The main flask application."""
 app = Flask(__name__)
@@ -96,9 +95,9 @@ class RenderError(Exception):
     def __init__(self, message: str, error_code: int = 400):
         super().__init__(message)
         # Do not allow successful HTTP codes to be used, this is an Error.
-        assert (
-            error_code >= 400
-        ), f"RenderError: provided error code {error_code} is less than 400"
+        assert error_code >= 400, (
+            f"RenderError: provided error code {error_code} is less than 400"
+        )
         self.message = message
         self.error_code = error_code
 
@@ -149,7 +148,7 @@ class RenderRequest:
     # request <form>. It's used for validation and should be kept consistent
     # with Drake's documentation on `Render Endpoint <form> Data` section.
     # See also: https://drake.mit.edu/doxygen_cxx/group__render__engine__gltf__client__server__api.html  # noqa
-    EXPECTED_FORM_FIELDS: Dict[str, FieldType] = {
+    EXPECTED_FORM_FIELDS: dict[str, FieldType] = {
         "scene": FieldType.File,
         "scene_sha256": FieldType.String,
         "image_type": FieldType.String,
@@ -247,7 +246,7 @@ class RenderRequest:
             )
         self._fields_map["scene"] = self._parse_scene("scene")
 
-    def get_field(self, field_name: str) -> Union[int, float, str]:
+    def get_field(self, field_name: str) -> int | float | str:
         """Queries the value of a field in the form. This function should be
         the **only** function called outside this class."""
         return self._fields_map[field_name]
@@ -264,13 +263,11 @@ class RenderRequest:
         # the two sets may not match exactly.
         extras = provided_fields.difference(expected_fields)
         if extras:
-            raise RenderError(
-                f"Extra field(s) {extras} in the request <form>."
-            )
+            raise RenderError(f"Extra field(s) {extras} in the request <form>.")
 
     def _parse_numeric(
         self, field_name: str, field_type: FieldType
-    ) -> Union[int, float]:
+    ) -> int | float:
         """Checks if the raw string value can be converted to the expected type
         and the numeric value is greater than 0 (as an indication of being
         sensible)."""
@@ -334,9 +331,7 @@ class RenderRequest:
                 )
 
             # Create a timestamp for saving the file to avoid collisions.
-            timestamp = datetime.datetime.now().strftime(
-                "%Y-%m-%d_%H-%M-%S-%f"
-            )
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
             scene_path = TMP_DIR / f"{timestamp}.gltf"
             temp_path.rename(scene_path)
 
@@ -528,9 +523,7 @@ def render_endpoint():
             elif image_extension in {".tif", ".tiff"}:
                 mime_type = "image/tiff"
             else:
-                raise RuntimeError(
-                    f"Missing mime_type for '{image_extension}'"
-                )
+                raise RuntimeError(f"Missing mime_type for '{image_extension}'")
             # If we are not deleting the file, use the file path directly for
             # simplicity.  Otherwise, we load the image into RAM, delete it,
             # and then send that.  See the documentation:
@@ -615,7 +608,7 @@ def render_endpoint():
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,)
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--host",
         type=str,

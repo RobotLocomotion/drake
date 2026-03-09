@@ -37,7 +37,10 @@ drake_py_library(
 
 drake_pybind_library(
     name = "benchmarks_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_benchmarks_acrobot",
+        "//bindings/generated_docstrings:multibody_benchmarks_mass_damper_spring",  # noqa
+    ],
     cc_srcs = ["benchmarks_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -47,9 +50,39 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "cenic_py",
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_cenic",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+    ],
+    cc_srcs = ["cenic_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":contact_solvers_py",
+        ":module_py",
+        ":plant_py",
+        "//bindings/pydrake/systems:analysis_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "contact_solvers_py",
+    cc_deps = [
+        "//bindings/generated_docstrings:multibody_contact_solvers_icf",
+        "//bindings/pydrake/common:serialize_pybind",
+    ],
+    cc_srcs = ["contact_solvers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
     name = "fem_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_fem",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:type_pack",
@@ -75,7 +108,7 @@ drake_py_library(
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_math",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:type_pack",
@@ -92,7 +125,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "tree_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_tree",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -122,12 +155,11 @@ drake_pybind_library(
 drake_pybind_library(
     name = "plant_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_plant",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
-        "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
@@ -152,7 +184,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_parsing",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -169,7 +201,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "meshcat_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_meshcat",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -186,7 +218,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "inverse_kinematics_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_inverse_kinematics",
+        "//bindings/generated_docstrings:solvers",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
@@ -210,7 +243,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "optimization_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_optimization",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
@@ -229,7 +262,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rational_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:multibody_rational",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
     ],
@@ -315,6 +348,8 @@ install_files(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
+    ":cenic_py",
+    ":contact_solvers_py",
     ":fem_py",
     ":inverse_kinematics_py",
     ":math_py",
@@ -404,6 +439,22 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "cenic_test",
+    deps = [
+        ":cenic_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "contact_solvers_test",
+    deps = [
+        ":contact_solvers_py",
+    ],
+)
+
+drake_py_unittest(
     name = "fem_test",
     deps = [
         ":fem_py",
@@ -431,7 +482,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/common/test_utilities/scipy_stub",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
     ],

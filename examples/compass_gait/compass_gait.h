@@ -96,7 +96,7 @@ class CompassGait final : public systems::LeafSystem<T> {
                                                                          value);
   }
 
-  static bool left_leg_is_stance(const systems::Context<T> &context) {
+  static bool left_leg_is_stance(const systems::Context<T>& context) {
     return context.template get_abstract_state<bool>(0);
   }
 
@@ -116,8 +116,8 @@ class CompassGait final : public systems::LeafSystem<T> {
   /// - M is the 2x2 mass matrix.
   /// - bias is a 2x1 vector that includes the Coriolis term and gravity term,
   ///   i.e. bias = C(q,v)*v - τ_g(q).
-  Vector2<T> DynamicsBiasTerm(const systems::Context<T> &context) const;
-  Matrix2<T> MassMatrix(const systems::Context<T> &context) const;
+  Vector2<T> DynamicsBiasTerm(const systems::Context<T>& context) const;
+  Matrix2<T> MassMatrix(const systems::Context<T>& context) const;
   ///@}
 
  private:
@@ -143,9 +143,9 @@ class CompassGait final : public systems::LeafSystem<T> {
   T FootCollision(const systems::Context<T>& context) const;
 
   // Handles the impact dynamics, including resetting the stance and swing legs.
-  void CollisionDynamics(const systems::Context<T> &context,
-                         const systems::UnrestrictedUpdateEvent<T> &,
-                         systems::State<T> *state) const;
+  void CollisionDynamics(const systems::Context<T>& context,
+                         const systems::UnrestrictedUpdateEvent<T>&,
+                         systems::State<T>* state) const;
 
   void MinimalStateOut(const systems::Context<T>& context,
                        CompassGaitContinuousState<T>* output) const;
@@ -158,9 +158,9 @@ class CompassGait final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const final;
 
-  void DoGetWitnessFunctions(const systems::Context<T>&,
-                             std::vector<const systems::WitnessFunction<T>*>*
-                                 witnesses) const final;
+  void DoGetWitnessFunctions(
+      const systems::Context<T>&,
+      std::vector<const systems::WitnessFunction<T>*>* witnesses) const final;
 
   // The system stores its witness function internally.
   std::unique_ptr<systems::WitnessFunction<T>> foot_collision_;

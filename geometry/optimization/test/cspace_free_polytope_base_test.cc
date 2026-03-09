@@ -1,5 +1,8 @@
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 
+#include <unordered_map>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

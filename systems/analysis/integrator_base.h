@@ -4,14 +4,15 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -20,9 +21,12 @@
 namespace drake {
 namespace systems {
 
-/** @addtogroup simulation
+/** Helper type for IntegratorBase<T>::GetStatisticsSummary. */
+using NamedStatistic = std::pair<std::string, std::variant<int64_t, double>>;
+
+/** @defgroup integrators Integrators
+ @ingroup simulation
  @{
- @defgroup integrators Integrators
 
  Apart from solving initial value problems, for which the integrator is a
  key component of a simulator, integrators can also be used to solve
@@ -220,10 +224,11 @@ class IntegratorBase {
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
   void set_target_accuracy(double accuracy) {
-    if (!supports_error_estimation())
+    if (!supports_error_estimation()) {
       throw std::logic_error(
           "Integrator does not support accuracy estimation "
           "and user has requested error control");
+    }
     target_accuracy_ = accuracy;
     accuracy_in_use_ = accuracy;
   }
@@ -657,10 +662,11 @@ class IntegratorBase {
    */
   void request_initial_step_size_target(const T& step_size) {
     using std::isnan;
-    if (!supports_error_estimation())
+    if (!supports_error_estimation()) {
       throw std::logic_error(
           "Integrator does not support error estimation and "
           "user has initial step size target");
+    }
     req_initial_step_size_ = step_size;
   }
 
@@ -1067,10 +1073,11 @@ class IntegratorBase {
           "IntegrateWithSingleFixedStepToTime() called with "
           "a negative step size.");
     }
-    if (!this->get_fixed_step_mode())
+    if (!this->get_fixed_step_mode()) {
       throw std::logic_error(
           "IntegrateWithSingleFixedStepToTime() requires "
           "fixed stepping.");
+    }
 
     if (!Step(h)) {
       return false;
@@ -1181,6 +1188,13 @@ class IntegratorBase {
    or ResetStatistics() call.
    */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
+
+  /**
+   Returns all integrator statistics as a single collection. The data is
+   organized as a list of (key, value) pairs.  The types allowed by the
+   `variant` may grow over time; be sure to use `std::visit` for access.
+   */
+  std::vector<NamedStatistic> GetStatisticsSummary() const;
 
   /** Manually increments the statistic for the number of ODE evaluations.
    @warning Implementations should generally avoid calling this method;
@@ -1340,7 +1354,15 @@ class IntegratorBase {
    collects its own statistics, you should re-implement this method and
    reset them there.
    */
-  virtual void DoResetStatistics() {}
+  virtual void DoResetStatistics();
+
+  /**
+   Returns statistics particular to a specific integrator, in service of
+   GetStatisticsSummary(). The default implementation of this function does
+   nothing. If your integrator collects its own statistics, you should
+   re-implement this method and return them there.
+   */
+  virtual std::vector<NamedStatistic> DoGetStatisticsSummary() const;
 
   /**
    Evaluates the derivative function and updates call statistics.
@@ -1409,7 +1431,7 @@ class IntegratorBase {
    largest error in any state vector component.
    @returns the norm (a non-negative value)
    */
-  T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
+  virtual T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
 
   /**
    Calculates adjusted integrator step sizes toward keeping state variables

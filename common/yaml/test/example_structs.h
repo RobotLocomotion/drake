@@ -325,6 +325,24 @@ using EigenMatrix00Struct = EigenStruct<0, 0>;
 using EigenMatrixUpTo6Struct =
     EigenStruct<Eigen::Dynamic, Eigen::Dynamic, 6, 6>;
 
+template <int Cols>
+struct EigenArrayStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  EigenArrayStruct() {
+    value.resize(1, Cols);
+    value.setConstant(kNominalDouble);
+  }
+
+  explicit EigenArrayStruct(const Eigen::ArrayXXd& value_in)
+      : value(value_in) {}
+
+  Eigen::Array<double, Eigen::Dynamic, Cols> value;
+};
+
 using Variant4 =
     std::variant<std::string, double, DoubleStruct, EigenVecStruct>;
 
@@ -373,6 +391,38 @@ struct PrimitiveVariantStruct {
   }
 
   PrimitiveVariant value = kNominalDouble;
+};
+
+struct PromotionBasicStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(double_type));
+    a->Visit(DRAKE_NVP(eigen_type));
+    a->Visit(DRAKE_NVP(path_type));
+    a->Visit(DRAKE_NVP(truthy_type));
+  }
+
+  // This struct matches PromotionVariantStruct without the variant options.
+  double double_type{kNominalDouble};
+  Eigen::VectorXd eigen_type{Eigen::VectorXd::Constant(1, kNominalDouble)};
+  std::filesystem::path path_type{"/path/to/nowhere"};
+  bool truthy_type{false};
+};
+
+struct PromotionVariantStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(double_type));
+    a->Visit(DRAKE_NVP(eigen_type));
+    a->Visit(DRAKE_NVP(path_type));
+    a->Visit(DRAKE_NVP(truthy_type));
+  }
+
+  std::variant<double, DoubleStruct> double_type{kNominalDouble};
+  std::variant<Eigen::VectorXd, DoubleStruct> eigen_type{
+      Eigen::VectorXd::Constant(1, kNominalDouble)};
+  std::variant<std::filesystem::path, DoubleStruct> path_type;
+  std::variant<bool, DoubleStruct> truthy_type{false};
 };
 
 struct OuterStruct {

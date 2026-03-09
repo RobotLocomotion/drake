@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/math/rotation_matrix.h"
@@ -111,21 +113,19 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
       0.2 * M_PI, Eigen::Vector3d(0.2, 0.4, -0.5).normalized()));
   const math::RotationMatrix<double> R_BbarB(Eigen::AngleAxisd(
       -0.4 * M_PI, Eigen::Vector3d(0.1, 1.2, -0.7).normalized()));
-  const math::RotationMatrixd R_AbarBbar(
-      body1_quaternion.inverse() * body2_quaternion);
+  const math::RotationMatrixd R_AbarBbar(body1_quaternion.inverse() *
+                                         body2_quaternion);
   const math::RotationMatrixd R_AB = R_AbarA.transpose() * R_AbarBbar * R_BbarB;
   const double theta = R_AB.ToAngleAxis().angle();
 
   OrientationConstraint good_constraint(
       plant_, plant_->get_frame(body1_index_), R_AbarA,
-      plant_->get_frame(body2_index_), R_BbarB, theta * 1.01,
-      plant_context_);
+      plant_->get_frame(body2_index_), R_BbarB, theta * 1.01, plant_context_);
   EXPECT_TRUE(good_constraint.CheckSatisfied(q));
 
-  OrientationConstraint bad_constraint(
-      plant_, plant_->get_frame(body1_index_), R_AbarA,
-      plant_->get_frame(body2_index_), R_BbarB, theta * 0.99,
-      plant_context_);
+  OrientationConstraint bad_constraint(plant_, plant_->get_frame(body1_index_),
+                                       R_AbarA, plant_->get_frame(body2_index_),
+                                       R_BbarB, theta * 0.99, plant_context_);
   EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
 }
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraintConstructionError) {

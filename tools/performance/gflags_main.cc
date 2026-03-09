@@ -9,12 +9,13 @@
 DEFINE_bool(memory_manager, true, "Enable memory reporting");
 
 int main(int argc, char** argv) {
+  benchmark::MaybeReenterWithoutASLR(argc, argv);
   gflags::SetUsageMessage("see drake/tools/performance/README.md");
   for (int i = 1; i < argc; ++i) {
     if (std::string_view(argv[i]) == "--help") {
       gflags::ShowUsageWithFlags(argv[0]);
       std::cout << "\n\n";
-      std::cout << "Flags from @googlebenchmark:\n";
+      std::cout << "Flags from @google_benchmark:\n";
       benchmark::Initialize(&argc, argv);
       return 0;
     }

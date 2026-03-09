@@ -12,7 +12,6 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/name_value.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
@@ -246,14 +245,13 @@ b = [{}]
         out_file << "  clarabel.SecondOrderConeT(" << cone.nvars() << "),"
                  << std::endl;
         break;
-      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT:
-        {
-          const clarabel::PSDTriangleConeT<double>* psd_cone =
-              static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
-          out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
-                  << ")," << std::endl;
-        }
+      case clarabel::SupportedConeT<double>::Tag::PSDTriangleConeT: {
+        const clarabel::PSDTriangleConeT<double>* psd_cone =
+            static_cast<const clarabel::PSDTriangleConeT<double>*>(&cone);
+        out_file << "  clarabel.PSDTriangleConeT(" << psd_cone->dimension()
+                 << ")," << std::endl;
         break;
+      }
       case clarabel::SupportedConeT<double>::Tag::ExponentialConeT:
         out_file << "  clarabel.ExponentialConeT()," << std::endl;
         break;

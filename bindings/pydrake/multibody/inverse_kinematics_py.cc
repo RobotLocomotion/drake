@@ -1,10 +1,15 @@
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/multibody_inverse_kinematics.h"
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
@@ -55,8 +60,9 @@ using solvers::Constraint;
 PYBIND11_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
-  constexpr auto& constraint_doc = pydrake_doc.drake.solvers.Constraint;
+  constexpr auto& doc =
+      pydrake_doc_multibody_inverse_kinematics.drake.multibody;
+  constexpr auto& constraint_doc = pydrake_doc_solvers.drake.solvers.Constraint;
 
   m.doc() = "InverseKinematics module";
 
@@ -655,7 +661,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<double>* plant_context) {
           return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
               frameB, p_BQ, plant_context);
@@ -673,7 +679,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<double>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<double>* plant_context) {
           return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
               p_AQ_upper, frameB, p_BQ, plant_context);
@@ -690,7 +696,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
               frameB, p_BQ, plant_context);
@@ -708,7 +714,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<AutoDiffXd>& frameB,
-                          const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                          std::optional<Eigen::Vector3d> p_BQ,
                           systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(plant, frameAbar, X_AbarA, p_AQ_lower,
               p_AQ_upper, frameB, p_BQ, plant_context);

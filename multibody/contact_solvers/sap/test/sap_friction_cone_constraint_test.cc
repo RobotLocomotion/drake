@@ -1,5 +1,9 @@
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

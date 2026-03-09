@@ -22,10 +22,12 @@ GTEST_TEST(FindRunfilesFailTest, ErrorMessageTest) {
   EXPECT_FALSE(HasRunfiles());
   const auto result = FindRunfile("drake/nothing");
   EXPECT_EQ(result.abspath, "");
-  EXPECT_THAT(result.error, testing::MatchesRegex(
-      "ERROR: .* cannot find runfiles .*"
-      "created using TEST_SRCDIR with TEST_SRCDIR=/no_such_srcdir "
-      "and RUNFILES_MANIFEST_FILE=nullptr and RUNFILES_DIR=nullptr."));
+  EXPECT_THAT(
+      result.error,
+      testing::MatchesRegex(
+          "ERROR: .* cannot find runfiles .*"
+          "created using TEST_SRCDIR with TEST_SRCDIR=/no_such_srcdir "
+          "and RUNFILES_MANIFEST_FILE=nullptr and RUNFILES_DIR=nullptr."));
 }
 
 }  // namespace

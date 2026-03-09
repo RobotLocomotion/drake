@@ -1,8 +1,9 @@
 #include "drake/multibody/tree/rotational_inertia.h"
 
-#include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -182,9 +183,9 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
   extra = 64 * kEpsilon * trace / 2.0;
   expected_message =
       "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
-      "\\[2  0  0\\]\n"
-      "\\[0  4  0\\]\n"
-      "\\[0  0  6\\]\n"
+      "\\[                2                  0                  0\\]\n"
+      "\\[                0                  4                  0\\]\n"
+      "\\[                0                  0  6.000000000000085\\]\n"
       "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
   // TODO(Mitiguy) It is unnecessary (and confusing) to append information about
   //  associated principal moments of inertia when the moments of inertia for
@@ -883,16 +884,30 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ia_over_a.get_products(), p / a);
 }
 
+// TODO(2026-06-01): delete test ShiftOperator.
 // Test the shift operator to write into a stream.
 GTEST_TEST(RotationalInertia, ShiftOperator) {
   std::stringstream stream;
   RotationalInertia<double> I(1, 2.718, 3.14);
-  stream << std::fixed << std::setprecision(4) << I;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  stream << I;
+#pragma GCC diagnostic pop
   std::string expected_string =
-      "[1.0000  0.0000  0.0000]\n"
-      "[0.0000  2.7180  0.0000]\n"
-      "[0.0000  0.0000  3.1400]\n";
+      "[    1      0      0]\n"
+      "[    0  2.718      0]\n"
+      "[    0      0   3.14]\n";
   EXPECT_EQ(expected_string, stream.str());
+}
+
+// Verify the output string from RotationalInertia's fmt formatter.
+GTEST_TEST(RotationalInertia, ToStringFmtFormatter) {
+  RotationalInertia<double> I(1, 2.718, 3.14);
+  std::string expected_string =
+      "[    1      0      0]\n"
+      "[    0  2.718      0]\n"
+      "[    0      0   3.14]\n";
+  EXPECT_EQ(fmt::to_string(I), expected_string);
 }
 
 // Tests that we can correctly cast a RotationalInertia<double> to a

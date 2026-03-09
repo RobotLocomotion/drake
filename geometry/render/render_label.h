@@ -2,11 +2,10 @@
 
 #include <cstdint>
 #include <limits>
-#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/systems/sensors/pixel_types.h"
 
@@ -142,11 +141,8 @@ class RenderLabel {
   /** Implicit conversion to its underlying integer representation.  */
   operator ValueType() const { return value_; }
 
-  /** Enables use of labels with the streaming operator.  */
-  friend std::ostream& operator<<(std::ostream& out, const RenderLabel& label);
-
   /** Converts the RenderLabel value to a string representation.  */
-  friend std::string to_string(const RenderLabel& label);
+  std::string to_string() const;
 
  private:
   // RenderEngine needs access to encode labels as raster colors and to convert
@@ -185,9 +181,4 @@ struct hash<drake::geometry::render::RenderLabel> : public drake::DefaultHash {
 
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::geometry::render::RenderLabel>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry::render, RenderLabel, x, x.to_string())

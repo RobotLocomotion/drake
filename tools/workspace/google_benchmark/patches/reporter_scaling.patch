@@ -1,0 +1,17 @@
+Add an environment variable that suppresses the scaling warning
+
+When running under our benchmark_tool.py, we pin the benchmark to a
+specific cpu and set only that one cpu to performance mode. However,
+googlebench doesn't realize that it's cpu-pinned so it checks that
+*all* cores are in performance mode, and emits this spurious warning
+because most cores are still in power-save mode. The benchmark_tool.py
+uses this variable to suppress the false message.
+
+--- src/reporter.cc
++++ src/reporter.cc
+@@ -82,3 +82,4 @@
+ 
+-  if (CPUInfo::Scaling::ENABLED == info.scaling) {
++  if (CPUInfo::Scaling::ENABLED == info.scaling &&
++      ::getenv("DRAKE_GOOGLEBENCH_SUPPRESS_SCALING_WARNING") == nullptr) {
+     Out << "***WARNING*** CPU scaling is enabled, the benchmark "

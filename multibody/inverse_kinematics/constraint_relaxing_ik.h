@@ -74,8 +74,7 @@ class ConstraintRelaxingIk {
    */
   bool PlanSequentialTrajectory(
       const std::vector<IkCartesianWaypoint>& waypoints,
-      const VectorX<double>& q_current,
-      std::vector<Eigen::VectorXd>* q_sol,
+      const VectorX<double>& q_current, std::vector<Eigen::VectorXd>* q_sol,
       const std::function<bool(int)>& keep_going = {});
 
  private:

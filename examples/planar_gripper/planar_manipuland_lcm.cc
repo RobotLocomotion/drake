@@ -18,6 +18,8 @@ PlanarManipulandStatusDecoder::PlanarManipulandStatusDecoder() {
       &PlanarManipulandStatusDecoder::UpdateDiscreteState);
 }
 
+PlanarManipulandStatusDecoder::~PlanarManipulandStatusDecoder() = default;
+
 systems::EventStatus PlanarManipulandStatusDecoder::UpdateDiscreteState(
     const systems::Context<double>& context,
     systems::DiscreteValues<double>* discrete_state) const {
@@ -46,9 +48,8 @@ void PlanarManipulandStatusDecoder::OutputStatus(
 
 PlanarManipulandStatusEncoder::PlanarManipulandStatusEncoder() {
   this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 6);
-  this->DeclareAbstractOutputPort(
-      systems::kUseDefaultName,
-      &PlanarManipulandStatusEncoder::OutputStatus);
+  this->DeclareAbstractOutputPort(systems::kUseDefaultName,
+                                  &PlanarManipulandStatusEncoder::OutputStatus);
 }
 
 void PlanarManipulandStatusEncoder::OutputStatus(

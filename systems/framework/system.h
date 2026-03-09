@@ -17,7 +17,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
@@ -1502,8 +1501,8 @@ class System : public SystemBase {
   // For unfortunate historical reasons the Drake Simulator needs access to
   // forced publish events to implement its optional publish_every_time_step
   // feature. Now we have PerStep events that serve the same purpose.
-  // Move this to protected with the other forced events when the Simulator
-  // feature is removed.
+  // TODO(2026-06-01): Move this to protected with the other forced events when
+  // the Simulator feature is removed.
   const EventCollection<PublishEvent<T>>& get_forced_publish_events() const {
     DRAKE_DEMAND(forced_publish_events_ != nullptr);
     return *forced_publish_events_;

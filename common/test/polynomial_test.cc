@@ -1,10 +1,12 @@
 #include "drake/common/polynomial.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -181,12 +183,9 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = test::RandomPolynomialMatrix<T>(num_coefficients,
-                                                         rows_A, cols_A);
-  auto B = test::RandomPolynomialMatrix<T>(num_coefficients,
-                                                         rows_B, cols_B);
-  auto C = test::RandomPolynomialMatrix<T>(num_coefficients,
-                                                         rows_A, cols_A);
+  auto A = test::RandomPolynomialMatrix<T>(num_coefficients, rows_A, cols_A);
+  auto B = test::RandomPolynomialMatrix<T>(num_coefficients, rows_B, cols_B);
+  auto C = test::RandomPolynomialMatrix<T>(num_coefficients, rows_A, cols_A);
   auto product = A * B;
   auto sum = A + C;
 
@@ -194,17 +193,18 @@ void testPolynomialMatrix() {
   for (int row = 0; row < A.rows(); ++row) {
     for (int col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
-      EXPECT_NEAR(sum(row, col).evaluateUnivariate(t),
-                  A(row, col).evaluateUnivariate(t) +
-                  C(row, col).evaluateUnivariate(t), 1e-8);
+      EXPECT_NEAR(
+          sum(row, col).evaluateUnivariate(t),
+          A(row, col).evaluateUnivariate(t) + C(row, col).evaluateUnivariate(t),
+          1e-8);
 
       double expected_product = 0.0;
       for (int i = 0; i < A.cols(); ++i) {
-        expected_product += A(row, i).evaluateUnivariate(t) *
-                            B(i, col).evaluateUnivariate(t);
+        expected_product +=
+            A(row, i).evaluateUnivariate(t) * B(i, col).evaluateUnivariate(t);
       }
-      EXPECT_NEAR(product(row, col).evaluateUnivariate(t),
-                  expected_product, 1e-8);
+      EXPECT_NEAR(product(row, col).evaluateUnivariate(t), expected_product,
+                  1e-8);
     }
   }
 
@@ -242,11 +242,17 @@ GTEST_TEST(PolynomialTest, TestMakeMonomialsUnique) {
   EXPECT_EQ(poly_squared.GetNumberOfCoefficients(), 3);
 }
 
-GTEST_TEST(PolynomialTest, Operators) { testOperators<double>(); }
+GTEST_TEST(PolynomialTest, Operators) {
+  testOperators<double>();
+}
 
-GTEST_TEST(PolynomialTest, Roots) { testRoots<double>(); }
+GTEST_TEST(PolynomialTest, Roots) {
+  testRoots<double>();
+}
 
-GTEST_TEST(PolynomialTest, EvalType) { testEvalType(); }
+GTEST_TEST(PolynomialTest, EvalType) {
+  testEvalType();
+}
 
 GTEST_TEST(PolynomialTest, IsAffine) {
   Polynomiald x("x");
@@ -285,11 +291,7 @@ GTEST_TEST(PolynomialTest, VariableIdGeneration) {
                std::runtime_error);  // Illegal ID.
 
   // Test that ID generation round-trips correctly.
-  std::stringstream test_stream;
-  test_stream << Polynomial<double>("x", 1);
-  std::string result;
-  test_stream >> result;
-  EXPECT_EQ(result, "x1");
+  EXPECT_EQ(fmt::to_string(Polynomial<double>("x", 1)), "x1");
 }
 
 GTEST_TEST(PolynomialTest, GetVariables) {
@@ -322,20 +324,62 @@ GTEST_TEST(PolynomialTest, Simplification) {
   Polynomiald y = Polynomiald("y");
 
   {  // Test duplicate monomials.
-    std::stringstream test_stream;
-    test_stream << ((x * y) + (x * y));
-    std::string result;
-    test_stream >> result;
-    EXPECT_EQ(result, "(2)*x1*y1");
+    EXPECT_EQ(fmt::to_string((x * y) + (x * y)), "(2)*x1*y1");
   }
 
   {  // Test monomials that are duplicates under commutativity.
-    std::stringstream test_stream;
-    test_stream << ((x * y) + (y * x));
-    std::string result;
-    test_stream >> result;
-    EXPECT_EQ(result, "(2)*x1*y1");
+    EXPECT_EQ(fmt::to_string((x * y) + (y * x)), "(2)*x1*y1");
   }
+}
+
+GTEST_TEST(PolynomialTest, MonomialToStringFmtFormatter) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  // "m_" prefix denotes monomial.
+  Polynomiald::Monomial m_minus_one = Polynomiald(-1).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_minus_one), "(-1)");
+  Polynomiald::Monomial m_one = Polynomiald(1).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_one), "(1)");
+  Polynomiald::Monomial m_two = Polynomiald(2).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_two), "(2)");
+  Polynomiald::Monomial m_minus_x = (x * -5).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_minus_x), "(-5)*x1");
+  Polynomiald::Monomial m_x2 = (x * x).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_x2), "x1^2");
+  Polynomiald::Monomial m_5x2y = (5 * x * x * y).GetMonomials()[0];
+  EXPECT_EQ(fmt::to_string(m_5x2y), "(5)*x1^2*y1");
+}
+
+GTEST_TEST(PolynomialTest, PolynomialToStringFmtFormatter) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  Polynomiald z = Polynomiald("z");
+  EXPECT_EQ(fmt::to_string(Polynomiald()), "0");
+  EXPECT_EQ(fmt::to_string(Polynomiald(x)), "x1");
+  EXPECT_EQ(fmt::to_string(Polynomiald(x * x + 5 * x * y - z)),
+            "x1^2+(5)*x1*y1+(-1)*z1");
+}
+
+GTEST_TEST(PolynomialTest, EigenMatrixPolynomialToStringFmtFormatter) {
+  Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
+  poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
+      Polynomiald("w");
+  EXPECT_EQ(fmt::to_string(fmt_eigen(poly_mat)), "x1 y1\nz1 w1");
+}
+
+// TODO(2026-06-01): delete test
+// DeprecatedEigenMatrixPolynomialOutStreemOperator on removal date.
+GTEST_TEST(PolynomialTest, DeprecatedEigenMatrixPolynomialOutputOperator) {
+  Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
+  poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
+      Polynomiald("w");
+  std::stringstream test_stream;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  test_stream << poly_mat;
+#pragma GCC diagnostic pop
+  std::string result{test_stream.str()};
+  EXPECT_EQ(result, "[ x1 , y1 ]\n[ z1 , w1 ]\n");
 }
 
 GTEST_TEST(PolynomialTest, MonomialFactor) {
@@ -371,8 +415,7 @@ GTEST_TEST(PolynomialTest, MultivariateValue) {
   const Polynomiald pow_p_3{pow(p, 3)};
   const Polynomiald pow_p_7{pow(p, 7)};
   const std::map<Polynomiald::VarType, double> eval_point = {
-    {x.GetSimpleVariable(), 1},
-    {y.GetSimpleVariable(), 2}};
+      {x.GetSimpleVariable(), 1}, {y.GetSimpleVariable(), 2}};
   EXPECT_EQ((x * x + y).EvaluateMultivariate(eval_point), 3);
   EXPECT_EQ((2 * x * x + y).EvaluateMultivariate(eval_point), 4);
   EXPECT_EQ((x * x + 2 * y).EvaluateMultivariate(eval_point), 5);
@@ -401,12 +444,11 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
 
   const std::map<Polynomiald::VarType, double> eval_point_null;
   const std::map<Polynomiald::VarType, double> eval_point_x = {
-    {x.GetSimpleVariable(), 7}};
+      {x.GetSimpleVariable(), 7}};
   const std::map<Polynomiald::VarType, double> eval_point_y = {
-    {y.GetSimpleVariable(), 11}};
+      {y.GetSimpleVariable(), 11}};
   const std::map<Polynomiald::VarType, double> eval_point_xy = {
-    {x.GetSimpleVariable(), 7},
-    {y.GetSimpleVariable(), 11}};
+      {x.GetSimpleVariable(), 7}, {y.GetSimpleVariable(), 11}};
 
   // Test a couple of straightforward explicit cases.
   EXPECT_EQ(dut.EvaluatePartial(eval_point_null).GetMonomials(),
@@ -436,11 +478,11 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
       expected_result);
 
   // Test that zeroing out one term gives a sensible result.
-  EXPECT_EQ(dut.EvaluatePartial(
-      std::map<Polynomiald::VarType, double>{{x.GetSimpleVariable(), 0}}),
+  EXPECT_EQ(dut.EvaluatePartial(std::map<Polynomiald::VarType, double>{
+                {x.GetSimpleVariable(), 0}}),
             (2 * y) + 1);
-  EXPECT_EQ(dut.EvaluatePartial(
-      std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
+  EXPECT_EQ(dut.EvaluatePartial(std::map<Polynomiald::VarType, double>{
+                {y.GetSimpleVariable(), 0}}),
             (5 * x * x * x) + 1);
 }
 
@@ -544,8 +586,7 @@ void TestScalarType() {
   Polynomial<T> x("x", 1);
   Polynomial<T> y("y", 1);
   const std::map<Polynomiald::VarType, double> eval_point = {
-    {x.GetSimpleVariable(), 1},
-    {y.GetSimpleVariable(), 2}};
+      {x.GetSimpleVariable(), 1}, {y.GetSimpleVariable(), 2}};
   EXPECT_NEAR(
       ExtractDoubleOrThrow((x * x + y).EvaluateMultivariate(eval_point)), 3,
       1e-14);
@@ -627,7 +668,7 @@ GTEST_TEST(PolynomialTest, IsUnivariateTrue) {
 GTEST_TEST(PolynomialTest, IsUnivariateFalse) {
   Polynomiald x("x");
   Polynomiald y("y");
-  EXPECT_FALSE((x+y).is_univariate());
+  EXPECT_FALSE((x + y).is_univariate());
 }
 
 }  // namespace

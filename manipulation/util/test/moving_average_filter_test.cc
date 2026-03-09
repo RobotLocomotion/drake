@@ -1,6 +1,7 @@
 #include "drake/manipulation/util/moving_average_filter.h"
 
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 

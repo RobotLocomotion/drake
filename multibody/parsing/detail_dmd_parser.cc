@@ -113,7 +113,7 @@ void ApplyAddModelDefaultFreeBodyPose(
     // dmd. Our preference for using the body frame here is motivated by
     // backwards compatibility, so we could reconsider this decision if it
     // becomes a pain point.)
-    plant.SetDefaultFreeBodyPose(child_frame.body(), X_PC);
+    plant.SetDefaultFloatingBaseBodyPose(child_frame.body(), X_PC);
   } else {
     // Add a floating joint so that we can set a default posture.
     // TODO(SeanCurtis-TRI): When the new multibody graph code lands,

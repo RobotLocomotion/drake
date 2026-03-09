@@ -62,6 +62,7 @@ cc_library(
     name = "pybind11",
     hdrs = _HDRS,
     includes = ["include"],
+    isystem = True,
     deps = [
         "@eigen",
         "@drake//tools/workspace/python:cc_headers",
@@ -108,3 +109,5 @@ install(
 )
 
 python_lint()
+
+exports_files(["drake_repository_metadata.json"])

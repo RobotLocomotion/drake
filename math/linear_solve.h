@@ -23,11 +23,33 @@ inline constexpr bool is_double_or_symbolic_v =
 template <typename T>
 struct is_autodiff : std::false_type {};
 
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 template <int N>
 struct is_autodiff<drake::AutoDiffd<N>> : std::true_type {};
+#else
+template <>
+struct is_autodiff<drake::AutoDiffXd> : std::true_type {};
+#endif
 
 template <typename T>
 inline constexpr bool is_autodiff_v = is_autodiff<T>::value;
+
+// Eigen 5 added an extra template argument to some linear solvers. We'll alias
+// it away so that Drake can compile with multiple different versions of Eigen.
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+template <typename MatrixType>
+using ColPivHouseholderQR =
+    Eigen::ColPivHouseholderQR<MatrixType, Eigen::DefaultPermutationIndex>;
+template <typename MatrixType>
+using PartialPivLU =
+    Eigen::PartialPivLU<MatrixType, Eigen::DefaultPermutationIndex>;
+#else
+template <typename MatrixType>
+using ColPivHouseholderQR = Eigen::ColPivHouseholderQR<MatrixType>;
+template <typename MatrixType>
+using PartialPivLU = Eigen::PartialPivLU<MatrixType>;
+#endif
+
 }  // namespace internal
 
 /**

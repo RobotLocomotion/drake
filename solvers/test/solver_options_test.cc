@@ -1,9 +1,8 @@
 #include "drake/solvers/solver_options.h"
 
 #include <limits>
-
-// Remove this include on 2025-09-01 upon completion of deprecation.
-#include <sstream>
+#include <string>
+#include <unordered_set>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -67,43 +66,6 @@ GTEST_TEST(SolverOptionsTest, Comparison) {
   EXPECT_FALSE(bar != foo);
 }
 
-// Deprecated 2025-09-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(SolverOptionsTest, SetGetOptionDeprecated) {
-  SolverOptions dut;
-  EXPECT_EQ(to_string(dut), "SolverOptions(options={})");
-  EXPECT_EQ(dut.get_print_file_name(), "");
-  EXPECT_EQ(dut.get_print_to_console(), false);
-  EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "");
-  EXPECT_EQ(dut.get_max_threads(), std::nullopt);  // The value is unset.
-
-  dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
-  dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
-  dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
-  dut.SetOption(CommonSolverOption::kMaxThreads, 2);
-  EXPECT_EQ(dut.get_print_file_name(), "foo.txt");
-  EXPECT_EQ(dut.get_print_to_console(), true);
-  EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "bar.py");
-  EXPECT_EQ(dut.get_max_threads(), 2);
-
-  const SolverId id1("id1");
-  const SolverId id2("id2");
-  dut.SetOption(id1, "some_double", 1.1);
-  dut.SetOption(id1, "some_int", 2);
-  dut.SetOption(id2, "some_string", "foo");
-  EXPECT_THAT(dut.template GetOptions<double>(id1),
-              UnorderedElementsAre(Pair("some_double", 1.1)));
-  EXPECT_THAT(dut.template GetOptions<int>(id1),
-              UnorderedElementsAre(Pair("some_int", 2)));
-  EXPECT_TRUE(dut.template GetOptions<std::string>(id1).empty());
-  EXPECT_TRUE(dut.template GetOptions<double>(id2).empty());
-  EXPECT_TRUE(dut.template GetOptions<int>(id2).empty());
-  EXPECT_THAT(dut.template GetOptions<std::string>(id2),
-              UnorderedElementsAre(Pair("some_string", "foo")));
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(SolverOptionsTest, SetGetOption) {
   SolverOptions dut;
   EXPECT_TRUE(dut.options.empty());
@@ -148,34 +110,6 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
             "})");
 }
 
-// Deprecated 2025-09-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(SolverOptionsTest, Ids) {
-  using Set = std::unordered_set<SolverId>;
-
-  SolverOptions dut;
-  EXPECT_EQ(dut.GetSolverIds(), Set{});
-
-  // Each type (double, int, string) can affect the "known IDs" result.
-  const SolverId id1("id1");
-  dut.SetOption(id1, "some_double", 0.0);
-  EXPECT_EQ(dut.GetSolverIds(), Set({id1}));
-  const SolverId id2("id2");
-  dut.SetOption(id2, "some_int", 1);
-  EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2}));
-  const SolverId id3("id3");
-  dut.SetOption(id3, "some_string", "foo");
-  EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
-
-  // Having the same ID used by in more than one type is okay.
-  dut.SetOption(id1, "some_int", 2);
-  dut.SetOption(id1, "some_string", "bar");
-  dut.SetOption(id1, "some_double", 1.0);
-  EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(SolverOptionsTest, Merge) {
   const SolverId id1("foo1");
   const SolverId id2("foo2");
@@ -215,37 +149,6 @@ GTEST_TEST(SolverOptionsTest, Merge) {
   dut.Merge(foo);
   EXPECT_EQ(dut, dut_expected);
 }
-
-// Deprecated 2025-09-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
-  const SolverId id1("id1");
-  const SolverId id2("id2");
-
-  SolverOptions solver_options;
-  solver_options.SetOption(id1, "key1", 1.2);
-  solver_options.SetOption(id1, "key2", 1);
-  solver_options.SetOption(id1, "key3", "foo");
-
-  // First check a solver id not in solver_options.
-  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
-      id2, {"key1"}, {"key2"}, {"key3"}));
-  // Check the solver id in solver_options.
-  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
-      id1, {"key1"}, {"key2"}, {"key3"}));
-
-  // Check an option not set for id1.
-  solver_options.SetOption(id1, "key2", 1.3);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
-                                              {"key3"}),
-      "key2 is not allowed in the SolverOptions for id1");
-
-  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
-      id1, {"key1", "key2"}, {"key2"}, {"key3"}));
-}
-#pragma GCC diagnostic pop
 
 GTEST_TEST(SolverOptionsTest, SetOptionError) {
   SolverOptions solver_options;

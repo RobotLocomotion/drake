@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_copyable.h"
@@ -16,7 +18,7 @@
 #include "drake/visualization/visualization_config_functions.h"
 
 // Parameters for squeezing the spatula.
-DEFINE_double(gripper_force, 1,
+DEFINE_double(gripper_force, 1.5,
               "The baseline force to be applied by the gripper. [N].");
 DEFINE_double(amplitude, 5,
               "The amplitude of the oscillations "
@@ -37,8 +39,8 @@ DEFINE_string(contact_model, "hydroelastic",
 DEFINE_string(contact_surface_representation, "polygon",
               "Contact-surface representation for hydroelastics. "
               "Options are: 'triangle' or 'polygon'.");
-DEFINE_string(contact_approximation, "tamsi",
-              "Discrete contact approximation. Options are: 'tamsi', "
+DEFINE_string(contact_approximation, "lagged",
+              "Discrete contact approximation. Options are: "
               "'sap', 'similar', 'lagged'");
 
 // Simulator settings.
@@ -194,7 +196,6 @@ int DoMain() {
   sim_config.max_step_size = FLAGS_max_time_step;
   sim_config.accuracy = FLAGS_accuracy;
   sim_config.target_realtime_rate = FLAGS_realtime_rate;
-  sim_config.publish_every_time_step = false;
 
   systems::Simulator<double> simulator(*diagram);
   ApplySimulatorConfig(sim_config, &simulator);
@@ -228,13 +229,13 @@ int DoMain() {
   // TODO(#19142) According to issue 19142, we can playback contact forces and
   //  torques; however, contact surfaces are not recorded properly.
   //  For now, we delete contact surfaces to prevent confusion in the playback.
-  //  Remove deletion when 19142 is resovled.
-  meshcat->Delete("/drake/contact_forces/hydroelastic/"
-                 "left_finger_bubble+spatula/"
-                 "contact_surface");
-  meshcat->Delete("/drake/contact_forces/hydroelastic/"
-                  "right_finger_bubble+spatula/"
-                  "contact_surface");
+  //  Remove deletion when 19142 is resolved.
+  meshcat->Delete(
+      "/drake/contact_forces/hydroelastic/"
+      "left_finger_bubble+spatula/contact_surface");
+  meshcat->Delete(
+      "/drake/contact_forces/hydroelastic/"
+      "right_finger_bubble+spatula/contact_surface");
   meshcat->PublishRecording();
 
   systems::PrintSimulatorStatistics(simulator);

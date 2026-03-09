@@ -1,5 +1,9 @@
 #include "drake/systems/primitives/bus_creator.h"
 
+#include <map>
+#include <string>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"

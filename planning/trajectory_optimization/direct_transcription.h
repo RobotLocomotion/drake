@@ -89,7 +89,7 @@ class DirectTranscription : public MultipleShooting {
   /// @throws std::exception if `context.has_only_discrete_state() == false`.
   ///
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.  When
-  /// we do bind it, we should probably rename `system` to tv_linear_system` or
+  /// we do bind it, we should probably rename `system` to `tv_linear_system` or
   /// similar, so that kwargs determine which overload is suggested, instead of
   /// hoping that type checking does the right thing.}
   DirectTranscription(

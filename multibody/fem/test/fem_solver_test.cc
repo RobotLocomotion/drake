@@ -1,5 +1,9 @@
 #include "drake/multibody/fem/fem_solver.h"
 
+#include <limits>
+#include <memory>
+#include <unordered_set>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

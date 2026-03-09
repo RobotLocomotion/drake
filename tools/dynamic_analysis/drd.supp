@@ -1,6 +1,0 @@
-{
-   zmq: conflicting load/store by thread
-   drd:ConflictingAccess
-   ...
-   obj:/usr/lib/x86_64-linux-gnu/libzmq.so.*
-}

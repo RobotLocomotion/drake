@@ -21,9 +21,7 @@ template <class T>
 class RobertsonSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobertsonSystem);
-  RobertsonSystem() {
-    this->DeclareContinuousState(3);
-  }
+  RobertsonSystem() { this->DeclareContinuousState(3); }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* deriv) const override {
@@ -44,8 +42,8 @@ class RobertsonSystem : public LeafSystem<T> {
   }
 
   /// Sets the initial conditions for the Robertson system.
-  void SetDefaultState(
-      const Context<T>& context, State<T>* state) const override {
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override {
     auto& xc = state->get_mutable_continuous_state().get_mutable_vector();
     xc.SetAtIndex(0, 1);
     xc.SetAtIndex(1, 0);

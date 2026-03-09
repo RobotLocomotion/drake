@@ -1,6 +1,6 @@
-import collections
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import functools
-import inspect
 import logging as _logging
 import sys
 import typing
@@ -47,6 +47,7 @@ def _monkey_patch_logger_level_events():
     """Adds a hook into Drake's Python Logger object such that changes to
     Python logging levels are reflected back into Drake's C++ spdlog level.
     """
+
     # To notice log level changes (whether to the root logger or our logger) we
     # intercept calls to our logger's cache-clearing function. Specifically,
     # when a user calls `Logger.setLevel(...)`, the logger tells the manager
@@ -218,8 +219,7 @@ class _MangledName:
 
     @staticmethod
     def demangle(name: str) -> str:
-        """Given a mangled name, returns the pretty name.
-        """
+        """Given a mangled name, returns the pretty name."""
         name = name.replace(_MangledName.UNICODE_LEFT_BRACKET, "[")
         name = name.replace(_MangledName.UNICODE_RIGHT_BRACKET, "]")
         name = name.replace(_MangledName.UNICODE_COMMA, ",")
@@ -227,9 +227,12 @@ class _MangledName:
         return name
 
     @staticmethod
-    def module_getattr(*, module_name: str,
-                       module_globals: typing.Mapping[str, typing.Any],
-                       name: str) -> typing.Any:
+    def module_getattr(
+        *,
+        module_name: str,
+        module_globals: typing.Mapping[str, typing.Any],
+        name: str,
+    ) -> typing.Any:
         """Looks up a name in a module's globals(), accounting for mangling.
         If the name is a pretty name, it's first converted to a mangled name.
         Then, the name is looked up in the module_globals.
@@ -256,13 +259,15 @@ class _MangledName:
             return module_globals[name]
         float_tag = "_{}float{}".format(
             _MangledName.UNICODE_LEFT_BRACKET,
-            _MangledName.UNICODE_RIGHT_BRACKET)
+            _MangledName.UNICODE_RIGHT_BRACKET,
+        )
         if name.endswith(float_tag):
-            shorter_name = name[:-len(float_tag)]
+            shorter_name = name[: -len(float_tag)]
             if shorter_name in module_globals:
                 return module_globals[shorter_name]
         raise AttributeError(
-            f"module {module_name!r} has no attribute {name!r}")
+            f"module {module_name!r} has no attribute {name!r}"
+        )
 
 
 def pretty_class_name(cls: type, *, use_qualname: bool = False) -> str:
@@ -288,6 +293,7 @@ def _add_extraneous_repr_functions():
     """Defines repr functions for various classes in common where defining it
     in python is simply more convenient.
     """
+
     def mem_file_repr(file):
         # We only want to show the first k bytes. Showing the whole contents
         # wouldn't be practical and we assume that one can confirm the file
@@ -303,6 +309,7 @@ def _add_extraneous_repr_functions():
             f"extension={repr(file.extension())}, "
             f"filename_hint={repr(file.filename_hint())})"
         )
+
     MemoryFile.__repr__ = mem_file_repr
 
 

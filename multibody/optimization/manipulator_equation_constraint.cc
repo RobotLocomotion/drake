@@ -18,6 +18,8 @@ int GetLambdaSize(const std::map<SortedPair<geometry::GeometryId>,
 }
 }  // namespace
 
+ManipulatorEquationConstraint::~ManipulatorEquationConstraint() = default;
+
 ManipulatorEquationConstraint::ManipulatorEquationConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
@@ -68,8 +70,8 @@ void ManipulatorEquationConstraint::DoEval(
   *y += plant_->CalcGravityGeneralizedForces(*context_);  // g(q[n+1])
 
   // Calc the bias term C(qₙ₊₁, vₙ₊₁)
-  Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, 1>
-      C_bias(plant_->num_velocities(), 1);
+  Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, 1> C_bias(plant_->num_velocities(),
+                                                      1);
   plant_->CalcBiasTerm(*context_, &C_bias);
   *y -= C_bias;
 
@@ -186,7 +188,6 @@ ManipulatorEquationConstraint::MakeBinding(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& v_next_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars,
     const symbolic::Variable& dt_var) {
-
   // contact_pair_to_wrench_evaluator will be used in the constructor of
   // ManipulatorEquationConstraint.
   std::map<SortedPair<geometry::GeometryId>,

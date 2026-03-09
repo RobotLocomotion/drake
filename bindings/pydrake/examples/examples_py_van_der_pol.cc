@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/examples_van_der_pol.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/van_der_pol/van_der_pol.h"
@@ -12,7 +12,8 @@ void DefineExamplesVanDerPol(py::module m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::van_der_pol;
-  constexpr auto& doc = pydrake_doc.drake.examples.van_der_pol;
+  constexpr auto& doc =
+      pydrake_doc_examples_van_der_pol.drake.examples.van_der_pol;
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar

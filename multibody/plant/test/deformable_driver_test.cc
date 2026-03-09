@@ -1,5 +1,8 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

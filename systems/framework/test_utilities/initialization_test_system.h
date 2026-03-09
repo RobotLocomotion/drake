@@ -62,9 +62,7 @@ class InitializationTestSystem : public LeafSystem<double> {
   bool get_unres_update_init() const { return unres_update_init_; }
 
  private:
-  void InitPublish() const {
-    pub_init_ = true;
-  }
+  void InitPublish() const { pub_init_ = true; }
 
   void InitDiscreteUpdate(DiscreteValues<double>* discrete_state) const {
     dis_update_init_ = true;

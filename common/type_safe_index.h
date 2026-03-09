@@ -5,7 +5,7 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -87,7 +87,8 @@ namespace internal {
 /// __Construction from integral types__
 ///
 /// C++ will do
-/// [implicit integer conversions](https://en.cppreference.com/w/cpp/language/implicit_conversion#Integral_conversions).
+/// [implicit integer
+/// conversions](https://en.cppreference.com/w/cpp/language/implicit_conversion#Integral_conversions).
 /// This allows construction of %TypeSafeIndex values with arbitrary integral
 /// types. Index values must lie in the range of [0, 2³¹). The constructor will
 /// validate the input value (in Debug mode). Ultimately, the caller is
@@ -577,8 +578,5 @@ template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename Tag>
-struct formatter<drake::TypeSafeIndex<Tag>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename Tag, drake, TypeSafeIndex<Tag>, x,
+                   std::to_string(int{x}))

@@ -51,13 +51,14 @@ inline void LinkJointGraph::set_primary_mobod_for_link(
   link.joint_ = primary_joint_index;
 }
 
-inline bool LinkJointGraph::link_and_its_composite_are_massless(
+inline bool LinkJointGraph::link_and_its_assembly_are_massless(
     LinkOrdinal link_ordinal) const {
   const Link& link = links(link_ordinal);
   if (!link.is_massless()) return false;
 
-  return link.composite().has_value()
-             ? link_composites(*link.composite()).is_massless
+  return link.welded_links_assembly().has_value()
+             ? welded_links_assemblies(*link.welded_links_assembly())
+                   .is_massless()
              : true;
 }
 

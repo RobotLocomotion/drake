@@ -10,6 +10,18 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "contact_defaults_doxygen.h",
+        "contact_model_doxygen.h",
+        "hydroelastic_parameters_doxygen.h",
+        "simulation_and_solvers_doxygen.h",
+    ],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "plant",
     visibility = ["//visibility:public"],
@@ -112,6 +124,7 @@ drake_cc_library(
         "make_discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
+        "multibody_plant_icf_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
         "physical_model_collection.h",
@@ -125,7 +138,6 @@ drake_cc_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
-        ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":distance_constraint_params",
@@ -152,6 +164,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":contact_properties",
+        ":desired_state_input",
         ":hydroelastic_traction_calculator",
     ],
 )
@@ -226,8 +239,7 @@ drake_cc_library(
         ":contact_results",
         ":plant",
         "//geometry:geometry_ids",
-        "//lcmtypes:contact_results_for_viz",
-        "//lcmtypes:point_pair_contact_info_for_viz",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
     ],
@@ -420,7 +432,7 @@ drake_cc_library(
         "contact_properties.h",
     ],
     internal = True,
-    visibility = ["//visibility:private"],
+    visibility = ["//multibody/contact_solvers:__subpackages__"],
     deps = [
         "//common:default_scalars",
         "//geometry:scene_graph_inspector",
@@ -435,10 +447,13 @@ drake_cc_googletest(
         "@drake_models//:iiwa_description",
         "@drake_models//:wsg_50_description",
     ],
+    shard_count = 2,
     deps = [
+        ":desired_state_input",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//multibody/parsing",
     ],
 )

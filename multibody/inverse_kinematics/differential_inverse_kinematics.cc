@@ -73,12 +73,11 @@ DifferentialInverseKinematicsParameters::get_linear_velocity_constraints()
 }
 
 void DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint(
-      const std::shared_ptr<solvers::LinearConstraint>
-          constraint) {
+    const std::shared_ptr<solvers::LinearConstraint> constraint) {
   if (constraint->num_vars() != get_num_velocities()) {
     throw std::invalid_argument(fmt::format(
-          "Number of variables, {}, does not match number of velocities, {}.",
-          constraint->num_vars(), get_num_velocities()));
+        "Number of variables, {}, does not match number of velocities, {}.",
+        constraint->num_vars(), get_num_velocities()));
   }
   linear_velocity_constraints_.push_back(constraint);
 }
@@ -258,28 +257,25 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const Vector6<double>& V_WE_desired,
-    const Frame<double>& frame_E,
+    const Vector6<double>& V_WE_desired, const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const Frame<double>& frame_W = plant.world_frame();
   return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_W,
-                                          frame_E, parameters);
+                                         frame_E, parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const Vector6<double>& V_AE_desired,
-    const Frame<double>& frame_A,
+    const Vector6<double>& V_AE_desired, const Frame<double>& frame_A,
     const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const math::RigidTransform<double> X_AE =
       plant.CalcRelativeTransform(context, frame_A, frame_E);
   MatrixX<double> J_AE(6, plant.num_velocities());
-  plant.CalcJacobianSpatialVelocity(context,
-                                    JacobianWrtVariable::kV,
-                                    frame_E, Vector3<double>::Zero(),
-                                    frame_A, frame_A, &J_AE);
+  plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV, frame_E,
+                                    Vector3<double>::Zero(), frame_A, frame_A,
+                                    &J_AE);
 
   std::optional<Eigen::SparseMatrix<double>> N = std::nullopt;
   std::optional<Eigen::SparseMatrix<double>> Nplus = std::nullopt;
@@ -301,17 +297,15 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const Frame<double>& frame_W = plant.world_frame();
-  return DoDifferentialInverseKinematics(plant, context, X_WE_desired,
-                                         frame_W, frame_E, parameters);
+  return DoDifferentialInverseKinematics(plant, context, X_WE_desired, frame_W,
+                                         frame_E, parameters);
 }
-
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const math::RigidTransform<double>& X_AE_desired,
-    const Frame<double>& frame_A,
-    const Frame<double>& frame_E,
+    const Frame<double>& frame_A, const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const math::RigidTransform<double> X_AE =
       plant.CalcRelativeTransform(context, frame_A, frame_E);

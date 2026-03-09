@@ -230,20 +230,26 @@
  *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
  *     SMT</a></td>
  * </tr>
- * <tr><td><a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
- *    SNOPT</a> † ‡</td></tr>
+ * <tr>
+ *    <td><a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
+ *    SNOPT</a> † ‡</td>
  *    <td align="center">♦</td>
  *    <td>⟐</td>
  *    <td></td>
- * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td></tr>
+ * </tr>
+ * <tr>
+ *    <td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td>
  *    <td align="center">♦</td>
  *    <td>⟐</td>
  *    <td></td>
- * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
- *    NLopt</a></td></tr>
+ * </tr>
+ * <tr>
+ *    <td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
+ *    NLopt</a></td>
  *    <td align="center">♦</td>
  *    <td>⟐</td>
  *    <td></td>
+ * </tr>
  * <tr><td><a href="https://github.com/PositronicsLab/Moby">
  *    Moby LCP</a></td>
  *    <td></td>
@@ -262,6 +268,7 @@
  * require a license when invoked via Drake's SnoptSolver wrapper class.
  *
  * ♦ A preferred solver for the given category.
+ *
  * ⟐ SNOPT/IPOPT/NLOPT might be able to solve LCP, but they are not the
  * preferred solver.
  *

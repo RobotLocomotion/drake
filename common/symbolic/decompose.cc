@@ -63,6 +63,24 @@ class IsAffineVisitor {
 
 }  // namespace
 
+}  // namespace symbolic
+}  // namespace drake
+
+namespace Eigen {
+namespace internal {
+// Using Matrix::visit requires providing functor_traits.
+template <>
+struct functor_traits<drake::symbolic::IsAffineVisitor> {
+  static constexpr int Cost = 10;
+  [[maybe_unused]] static constexpr bool LinearAccess = false;
+  [[maybe_unused]] static constexpr bool PacketAccess = false;
+};
+}  // namespace internal
+}  // namespace Eigen
+
+namespace drake {
+namespace symbolic {
+
 bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
               const Variables& vars) {
   if (m.size() == 0) {
@@ -198,20 +216,6 @@ void ExtractAndAppendVariablesFromExpression(
   }
 }
 
-void ExtractAndAppendVariablesFromExpression(
-    const Expression& e, VectorX<Variable>* vars,
-    std::unordered_map<Variable::Id, int>* map_var_to_index) {
-  DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());
-  for (const Variable& var : e.GetVariables()) {
-    if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
-      map_var_to_index->emplace(var.get_id(), vars->size());
-      const int vars_size = vars->size();
-      vars->conservativeResize(vars_size + 1, Eigen::NoChange);
-      (*vars)(vars_size) = var;
-    }
-  }
-}
-
 std::pair<VectorX<Variable>, std::unordered_map<Variable::Id, int>>
 ExtractVariablesFromExpression(const Expression& e) {
   int var_count = 0;
@@ -261,12 +265,10 @@ void DecomposeQuadraticPolynomial(
     const double coefficient = get_constant_value(p.second);
     const symbolic::Monomial& p_monomial = p.first;
     if (p_monomial.total_degree() > 2) {
-      ostringstream oss;
-      oss << p.first
-          << " has order higher than 2 and it cannot be handled by "
-             "DecomposeQuadraticPolynomial."
-          << std::endl;
-      throw runtime_error(oss.str());
+      throw runtime_error(
+          fmt::format("{} has order higher than 2 and it cannot be handled by "
+                      "DecomposeQuadraticPolynomial.\n",
+                      p.first));
     }
     const auto& monomial_powers = p_monomial.get_powers();
     if (monomial_powers.size() == 2) {

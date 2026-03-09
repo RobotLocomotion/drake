@@ -1,4 +1,4 @@
-import pydrake.geometry as mut
+import pydrake.geometry as mut  # ruff: isort: skip
 
 import copy
 import unittest
@@ -28,8 +28,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
         pose = aabb.pose()
         self.assertIsInstance(pose, RigidTransform)
         numpy_compare.assert_float_equal(pose.translation(), center)
-        numpy_compare.assert_float_equal(pose.rotation().matrix(),
-                                         np.eye(3))
+        numpy_compare.assert_float_equal(pose.rotation().matrix(), np.eye(3))
 
         # Test volume calculation.
         expected_volume = 8 * half_width[0] * half_width[1] * half_width[2]
@@ -49,8 +48,9 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertTrue(aabb.Equal(aabb_deepcopy))
 
         # Test pickle.
-        assert_pickle(self, aabb,
-                      lambda x: f"Aabb({x.center()}, {x.half_width()})")
+        assert_pickle(
+            self, aabb, lambda x: f"Aabb({x.center()}, {x.half_width()})"
+        )
 
     def test_aabb_overlap(self):
         # Test HasOverlap static methods.
@@ -62,12 +62,26 @@ class TestGeometryBoundingBox(unittest.TestCase):
         center2 = np.array([3.0, 0.0, 0.0])
         aabb2 = mut.Aabb(p_HoBo=center2, half_width=half_width1)
         identity_transform = RigidTransform()
-        self.assertFalse(mut.Aabb.HasOverlap(aabb1, aabb2,
-                                             identity_transform))
+        self.assertFalse(mut.Aabb.HasOverlap(aabb1, aabb2, identity_transform))
 
         # Test with transform.
         transform = RigidTransform(p=[-2.0, 0.0, 0.0])
         self.assertTrue(mut.Aabb.HasOverlap(aabb1, aabb2, transform))
+
+        # Test Aabb-HalfSpace overlap.
+        half_space = mut.HalfSpace()
+        # Default half space has normal [0,0,1] and passes through origin.
+        # aabb1 is centered at origin with half_width [1,1,1], so it
+        # should overlap the half space (extends into negative z).
+        self.assertTrue(
+            mut.Aabb.HasOverlap(aabb1, half_space, identity_transform)
+        )
+
+        # Test Aabb-Plane overlap.
+        plane_normal = np.array([0.0, 0.0, 1.0])
+        point_on_plane = np.array([0.0, 0.0, 0.5])
+        plane = mut.Plane(plane_normal, point_on_plane)
+        self.assertTrue(mut.Aabb.HasOverlap(aabb1, plane, identity_transform))
 
     def test_obb_api(self):
         # Test Obb construction and basic API.
@@ -78,16 +92,19 @@ class TestGeometryBoundingBox(unittest.TestCase):
 
         # Test getters.
         numpy_compare.assert_float_equal(obb.center(), pose.translation())
-        numpy_compare.assert_float_allclose(obb.half_width(), half_width,
-                                            atol=1e-13)
+        numpy_compare.assert_float_allclose(
+            obb.half_width(), half_width, atol=1e-13
+        )
 
         # Test pose.
         returned_pose = obb.pose()
         self.assertIsInstance(returned_pose, RigidTransform)
-        numpy_compare.assert_float_equal(returned_pose.translation(),
-                                         pose.translation())
-        numpy_compare.assert_float_equal(returned_pose.rotation().matrix(),
-                                         pose.rotation().matrix())
+        numpy_compare.assert_float_equal(
+            returned_pose.translation(), pose.translation()
+        )
+        numpy_compare.assert_float_equal(
+            returned_pose.rotation().matrix(), pose.rotation().matrix()
+        )
 
         # Test volume calculation.
         expected_volume = 8 * half_width[0] * half_width[1] * half_width[2]
@@ -108,8 +125,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertTrue(obb.Equal(obb_deepcopy))
 
         # Test pickle.
-        assert_pickle(self, obb,
-                      lambda x: f"Obb({x.pose()}, {x.half_width()})")
+        assert_pickle(self, obb, lambda x: f"Obb({x.pose()}, {x.half_width()})")
 
     def test_obb_overlap(self):
         # Test HasOverlap static methods.
@@ -128,7 +144,15 @@ class TestGeometryBoundingBox(unittest.TestCase):
         # Default half space has normal [0,0,1] and passes through origin.
         # Our obb1 is centered at origin with half_width [1,1,1], so it
         # should overlap the half space (extends into negative z).
-        self.assertTrue(mut.Obb.HasOverlap(obb1, identity_transform))
+        self.assertTrue(
+            mut.Obb.HasOverlap(obb1, half_space, identity_transform)
+        )
+
+        # Test Obb-Plane overlap.
+        plane_normal = np.array([0.0, 0.0, 1.0])
+        point_on_plane = np.array([0.0, 0.0, 0.5])
+        plane = mut.Plane(plane_normal, point_on_plane)
+        self.assertTrue(mut.Obb.HasOverlap(obb1, plane, identity_transform))
 
     def test_aabb_obb_cross_overlap(self):
         # Test cross-type overlap between Aabb and Obb.
@@ -159,18 +183,20 @@ class TestGeometryBoundingBox(unittest.TestCase):
         t_b = mut.SurfaceTriangle(v0=2, v1=1, v2=0)
         self.assertEqual(t_a.vertex(0), 3)
         self.assertEqual(t_b.vertex(1), 1)
-        v0 = (-1,  1, 0)
-        v1 = (1,  1, 0)
+        v0 = (-1, 1, 0)
+        v1 = (1, 1, 0)
         v2 = (-1, -1, 0)
         v3 = (1, -1, 0)
-        mesh = mut.TriangleSurfaceMesh(triangles=(t_a, t_b),
-                                       vertices=(v0, v1, v2, v3))
+        mesh = mut.TriangleSurfaceMesh(
+            triangles=(t_a, t_b), vertices=(v0, v1, v2, v3)
+        )
 
         vertex_indices = {0, 1, 2, 3}  # Include all vertices.
 
         # Test ComputeAabbForTriangleMesh function.
-        aabb = mut.ComputeAabbForTriangleMesh(mesh_M=mesh,
-                                              vertices=vertex_indices)
+        aabb = mut.ComputeAabbForTriangleMesh(
+            mesh_M=mesh, vertices=vertex_indices
+        )
         self.assertIsInstance(aabb, mut.Aabb)
 
         # The bounding box should contain all vertices.
@@ -178,14 +204,17 @@ class TestGeometryBoundingBox(unittest.TestCase):
         expected_center = np.array([0.0, 0.0, 0.0])
         expected_half_width = np.array([1.0, 1.0, 0.0])
 
-        numpy_compare.assert_float_allclose(aabb.center(), expected_center,
-                                            atol=1e-14)
-        numpy_compare.assert_float_allclose(aabb.half_width(),
-                                            expected_half_width, atol=1e-14)
+        numpy_compare.assert_float_allclose(
+            aabb.center(), expected_center, atol=1e-14
+        )
+        numpy_compare.assert_float_allclose(
+            aabb.half_width(), expected_half_width, atol=1e-14
+        )
 
         # Test ComputeObbForTriangleMesh function.
-        obb = mut.ComputeObbForTriangleMesh(mesh_M=mesh,
-                                            vertices=vertex_indices)
+        obb = mut.ComputeObbForTriangleMesh(
+            mesh_M=mesh, vertices=vertex_indices
+        )
         self.assertIsInstance(obb, mut.Obb)
 
         # The OBB should be a reasonable bounding box for the vertices.
@@ -194,9 +223,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertGreater(obb.CalcVolume(), 0.0)
         self.assertIsInstance(obb.pose(), RigidTransform)
         self.assertEqual(len(obb.half_width()), 3)
-        self.assertTrue(
-            all(half_width >= 0 for half_width in obb.half_width())
-        )
+        self.assertTrue(all(half_width >= 0 for half_width in obb.half_width()))
 
     def test_compute_bounding_boxes_for_volume_mesh(self):
         # Create a mesh out of two tetrahedra with a single, shared face
@@ -223,14 +250,16 @@ class TestGeometryBoundingBox(unittest.TestCase):
         v3 = (0, 0, 1)
         v4 = (-1, 0, 0)
 
-        mesh = mut.VolumeMesh(elements=(t_left, t_right),
-                              vertices=(v0, v1, v2, v3, v4))
+        mesh = mut.VolumeMesh(
+            elements=(t_left, t_right), vertices=(v0, v1, v2, v3, v4)
+        )
 
         vertex_indices = {0, 1, 2, 3, 4}  # Include all vertices.
 
         # Test ComputeAabbForVolumeMesh function.
-        aabb = mut.ComputeAabbForVolumeMesh(mesh_M=mesh,
-                                            vertices=vertex_indices)
+        aabb = mut.ComputeAabbForVolumeMesh(
+            mesh_M=mesh, vertices=vertex_indices
+        )
         self.assertIsInstance(aabb, mut.Aabb)
 
         # The bounding box should contain all vertices.
@@ -238,14 +267,15 @@ class TestGeometryBoundingBox(unittest.TestCase):
         expected_center = np.array([0.0, 0.5, 0.5])
         expected_half_width = np.array([1.0, 0.5, 0.5])
 
-        numpy_compare.assert_float_allclose(aabb.center(), expected_center,
-                                            atol=1e-14)
-        numpy_compare.assert_float_allclose(aabb.half_width(),
-                                            expected_half_width, atol=1e-14)
+        numpy_compare.assert_float_allclose(
+            aabb.center(), expected_center, atol=1e-14
+        )
+        numpy_compare.assert_float_allclose(
+            aabb.half_width(), expected_half_width, atol=1e-14
+        )
 
         # Test ComputeObbForVolumeMesh function.
-        obb = mut.ComputeObbForVolumeMesh(mesh_M=mesh,
-                                          vertices=vertex_indices)
+        obb = mut.ComputeObbForVolumeMesh(mesh_M=mesh, vertices=vertex_indices)
         self.assertIsInstance(obb, mut.Obb)
 
         # The OBB should be a reasonable bounding box for the vertices.
@@ -254,9 +284,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertGreater(obb.CalcVolume(), 0.0)
         self.assertIsInstance(obb.pose(), RigidTransform)
         self.assertEqual(len(obb.half_width()), 3)
-        self.assertTrue(
-            all(half_width >= 0 for half_width in obb.half_width())
-        )
+        self.assertTrue(all(half_width >= 0 for half_width in obb.half_width()))
 
     def test_calc_obb(self):
         box = mut.Box([1.0, 2.0, 3.0])

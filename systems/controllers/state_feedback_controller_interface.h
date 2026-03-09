@@ -17,7 +17,7 @@ template <typename T>
 class StateFeedbackControllerInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateFeedbackControllerInterface);
-
+  virtual ~StateFeedbackControllerInterface();
   /**
    * Returns the input port for the estimated state.
    */
@@ -35,9 +35,11 @@ class StateFeedbackControllerInterface {
 
  protected:
   StateFeedbackControllerInterface() {}
-  virtual ~StateFeedbackControllerInterface() {}
 };
 
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::StateFeedbackControllerInterface);

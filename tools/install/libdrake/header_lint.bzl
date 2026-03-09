@@ -1,4 +1,4 @@
-load("//tools/skylark:cc.bzl", "CcInfo")
+load("//tools/skylark:cc.bzl", "CcInfo", "cc_common")
 load("//tools/skylark:sh.bzl", "sh_test")
 
 # This file contains a linter rule that ensures that only our allowed set of
@@ -10,9 +10,9 @@ load("//tools/skylark:sh.bzl", "sh_test")
 # without consulting Drake's build system maintainers (see #7451). Keep this
 # list in sync with test/header_dependency_test.py.
 _ALLOWED_EXTERNALS = [
-    "+_repo_rules+pkgconfig_eigen",
-    "+_repo_rules2+pkgconfig_fmt",
-    "+_repo_rules3+pkgconfig_spdlog",
+    "+internal_repositories+pkgconfig_eigen_internal",
+    "+internal_repositories+pkgconfig_fmt_internal",
+    "+internal_repositories+pkgconfig_spdlog_internal",
     # N.B. LCM is not allowed by the header_dependency_test; our allowed use
     # of LCM is only for linking to, not for direct inclusion in our headers.
     "+drake_dep_repositories+lcm",

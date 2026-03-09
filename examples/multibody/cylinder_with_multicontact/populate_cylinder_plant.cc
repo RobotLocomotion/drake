@@ -19,10 +19,12 @@ using geometry::Sphere;
 using math::RigidTransformd;
 
 namespace {
-void AddCylinderWithMultiContact(
-    MultibodyPlant<double>* plant, const RigidBody<double>& body,
-    double radius, double length, const CoulombFriction<double>& friction,
-    double contact_spheres_radius, int num_contacts) {
+void AddCylinderWithMultiContact(MultibodyPlant<double>* plant,
+                                 const RigidBody<double>& body, double radius,
+                                 double length,
+                                 const CoulombFriction<double>& friction,
+                                 double contact_spheres_radius,
+                                 int num_contacts) {
   const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
   const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
 
@@ -62,8 +64,8 @@ void PopulateCylinderPlant(double radius, double length, double mass,
                            const Vector3<double>& gravity_W,
                            MultibodyPlant<double>* plant) {
   const SpatialInertia<double> M_Bcm =
-      SpatialInertia<double>::SolidCylinderWithMass(
-          mass, radius, length, Vector3<double>::UnitZ());
+      SpatialInertia<double>::SolidCylinderWithMass(mass, radius, length,
+                                                    Vector3<double>::UnitZ());
   const RigidBody<double>& cylinder = plant->AddRigidBody("Cylinder", M_Bcm);
 
   // The radius of the small spheres used to emulate multicontact.
@@ -74,10 +76,8 @@ void PopulateCylinderPlant(double radius, double length, double mass,
   const int num_contact_spheres = 10;
 
   // Add geometry to the cylinder for both contact and visualization.
-  AddCylinderWithMultiContact(
-      plant,
-      cylinder, radius, length, surface_friction,
-      contact_radius, num_contact_spheres);
+  AddCylinderWithMultiContact(plant, cylinder, radius, length, surface_friction,
+                              contact_radius, num_contact_spheres);
 
   // Add a model for the ground.
   Vector3<double> normal_W(0, 0, 1);
@@ -89,8 +89,8 @@ void PopulateCylinderPlant(double radius, double length, double mass,
                                    "collision", surface_friction);
 
   // Add visual for the ground.
-  plant->RegisterVisualGeometry(
-      plant->world_body(), X_WG, HalfSpace(), "visual");
+  plant->RegisterVisualGeometry(plant->world_body(), X_WG, HalfSpace(),
+                                "visual");
 
   plant->mutable_gravity_field().set_gravity_vector(gravity_W);
 }

@@ -1,7 +1,9 @@
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <limits>
+#include <memory>
 #include <optional>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

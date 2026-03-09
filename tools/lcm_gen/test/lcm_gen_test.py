@@ -14,23 +14,19 @@ from tools.lcm_gen import (
 
 
 class BaseTest(unittest.TestCase):
+    @staticmethod
+    def _resource(relative_path: str) -> Path:
+        resource_path = f"drake/tools/lcm_gen/test/{relative_path}"
+        return Path(runfiles.Create().Rlocation(resource_path))
 
     def setUp(self):
         self.maxDiff = None
-        self._manifest = runfiles.Create()
-
-        self._lima_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/lima.lcm"))
-        self._lima_hpp_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/lima.hpp"))
-        self._mike_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/mike.lcm"))
-        self._mike_hpp_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/mike.hpp"))
-        self._november_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/november.lcm"))
-        self._november_hpp_path = Path(self._manifest.Rlocation(
-            "drake/tools/lcm_gen/test/goal/november.hpp"))
+        self._lima_path = self._resource("lima.lcm")
+        self._lima_hpp_path = self._resource("goal/papa/lima.hpp")
+        self._mike_path = self._resource("mike.lcm")
+        self._mike_hpp_path = self._resource("goal/papa/mike.hpp")
+        self._november_path = self._resource("november.lcm")
+        self._november_hpp_path = self._resource("goal/papa/november.hpp")
 
         assert self._lima_path.exists()
         assert self._lima_hpp_path.exists()
@@ -52,42 +48,58 @@ class TestParser(BaseTest):
         error messages).
         """
         self.assertMultiLineEqual(
-            Parser._remove_c_comments(self._join_lines([
-                "foo",
-                "bar /* comment",
-                "still comment ",
-                "comment */ eol",
-                "bar/*quux*/baz",
-            ])),
-            self._join_lines([
-                "foo",
-                "bar           ",
-                "              ",
-                "           eol",
-                "bar        baz",
-            ]))
+            Parser._remove_c_comments(
+                self._join_lines(
+                    [
+                        "foo",
+                        "bar /* comment",
+                        "still comment ",
+                        "comment */ eol",
+                        "bar/*quux*/baz",
+                    ]
+                )
+            ),
+            self._join_lines(
+                [
+                    "foo",
+                    "bar           ",
+                    "              ",
+                    "           eol",
+                    "bar        baz",
+                ]
+            ),
+        )
 
     def test_remove_cpp_comments(self):
         """C++ comments are snipped to end-of-line."""
 
         self.assertMultiLineEqual(
-            Parser._remove_cpp_comments(self._join_lines([
-                "foo",
-                "bar // eol",
-                "// line",
-                "next",
-            ])),
-            self._join_lines([
-                "foo",
-                "bar ",
-                "",
-                "next"
-            ]))
+            Parser._remove_cpp_comments(
+                self._join_lines(
+                    [
+                        "foo",
+                        "bar // eol",
+                        "// line",
+                        "next",
+                    ]
+                )
+            ),
+            self._join_lines(
+                [
+                    "foo",
+                    "bar ",
+                    "",
+                    "next",
+                ]
+            ),
+        )
 
     def test_parse_lima(self):
         """Checks the parse tree for `lima.lcm`."""
         lima = Parser.parse(filename=self._lima_path)
-        self.assertEqual(str(lima), """\
+        self.assertEqual(
+            str(lima),
+            """\
 struct papa.lima {
   const double charlie_delta = 3.25e1;
   const float charlie_foxtrot = 4.5e2;
@@ -104,7 +116,8 @@ struct papa.lima {
   int32_t india32;
   int64_t india64;
 }
-""")
+""",
+        )
         # Check the value <=> value_str equivalence.
         for c in lima.constants:
             if c.typ in (PrimitiveType.float, PrimitiveType.double):
@@ -117,7 +130,9 @@ struct papa.lima {
     def test_parse_mike(self):
         """Checks the parse tree for `mike.lcm`."""
         mike = Parser.parse(filename=self._mike_path)
-        self.assertEqual(str(mike), """\
+        self.assertEqual(
+            str(mike),
+            """\
 struct papa.mike {
   double delta[3];
   float foxtrot[4][5];
@@ -133,7 +148,8 @@ struct papa.mike {
   papa.lima yankee[rows];
   papa.lima zulu[rows][2];
 }
-""")
+""",
+        )
         # Check one field carefully for its exact representation.
         (zulu,) = [f for f in mike.fields if f.name == "zulu"]
         self.assertEqual(zulu.typ.package, "papa")
@@ -144,13 +160,16 @@ struct papa.mike {
     def test_parse_november(self):
         """Checks the parse tree for `november.lcm`."""
         november = Parser.parse(filename=self._november_path)
-        self.assertEqual(str(november), """\
+        self.assertEqual(
+            str(november),
+            """\
 struct papa.november {
   papa.lima alpha;
   papa.lima bravo;
   int32_t charlie;
 }
-""")
+""",
+        )
 
     def test_type_str(self):
         """Tests UserType.__str__. The end-to-end tests of the parser wouldn't
@@ -164,19 +183,18 @@ struct papa.november {
 
     def _parse_str(self, content):
         with tempfile.NamedTemporaryFile(
-                mode="w",
-                prefix="lcm_gen_test_",
-                encoding="utf-8") as f:
+            mode="w", prefix="lcm_gen_test_", encoding="utf-8"
+        ) as f:
             f.write(content)
             f.flush()
             return Parser.parse(filename=f.name)
 
     def test_missing_package_semi(self):
         with self.assertRaisesRegex(SyntaxError, "Expected ';'.*got.*struct"):
-            self._parse_str('package foo /*;*/ struct empty { }')
+            self._parse_str("package foo /*;*/ struct empty { }")
 
     def test_multiline_const(self):
-        foo = self._parse_str('struct foo { const int8_t x = 1, y = 2; }')
+        foo = self._parse_str("struct foo { const int8_t x = 1, y = 2; }")
         self.assertEqual(foo.constants[0].name, "x")
         self.assertEqual(foo.constants[0].value, 1)
         self.assertEqual(foo.constants[1].name, "y")
@@ -186,15 +204,15 @@ struct papa.november {
         with self.assertRaisesRegex(SyntaxError, "Expected.*primitive type"):
             self._parse_str('struct bad { const string name = "foo"; }')
         with self.assertRaisesRegex(SyntaxError, "Expected.*primitive type"):
-            self._parse_str('struct bad { const bignum x = 2222; }')
+            self._parse_str("struct bad { const bignum x = 2222; }")
 
     def test_bad_const_value(self):
         with self.assertRaisesRegex(SyntaxError, "Invalid.*value.*0x7f"):
-            self._parse_str('struct bad { const int8_t x = 0x7f; }')
+            self._parse_str("struct bad { const int8_t x = 0x7f; }")
 
     def test_missing_const_name(self):
         with self.assertRaisesRegex(SyntaxError, "Expected.*NAME"):
-            self._parse_str('struct bad { const double /* name */ = 1; }')
+            self._parse_str("struct bad { const double /* name */ = 1; }")
 
 
 class TestCppGen(BaseTest):
@@ -207,8 +225,8 @@ class TestCppGen(BaseTest):
 ===========================================================================
 To replace the goal files with newly-regenerated copies, run this command:
 
-bazel run //tools/lcm_gen -- \
-  tools/lcm_gen/test/*.lcm --outdir=tools/lcm_gen/test/goal
+bazel run -- //tools/lcm_gen \
+  tools/lcm_gen/test/*.lcm --cpp-hpath=tools/lcm_gen/test/goal
 
 ===========================================================================
 """

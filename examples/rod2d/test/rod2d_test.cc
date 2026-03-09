@@ -1,6 +1,9 @@
 #include "drake/examples/rod2d/rod2d.h"
 
+#include <limits>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

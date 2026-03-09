@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
@@ -9,8 +11,8 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 namespace {
 
-using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 using test_utilities::SpatialKinematicsPVA;
 
 // Compare Drake's MultibodyTree kinematics with MotionGenesis solution.

@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@rules_python//python:py_exec_tools_toolchain.bzl", "py_exec_tools_toolchain")  # noqa
 load("@rules_python//python:py_runtime.bzl", "py_runtime")
 load("@rules_python//python:py_runtime_pair.bzl", "py_runtime_pair")
@@ -43,6 +44,10 @@ cc_library(
 py_runtime(
     name = "runtime",
     interpreter_path = PYTHON_BIN_PATH,
+    interpreter_version_info = {
+        "major": PYTHON_VERSION.split(".")[0],
+        "minor": PYTHON_VERSION.split(".")[1],
+    },
     python_version = "PY3",
 )
 

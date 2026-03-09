@@ -1,18 +1,21 @@
 #include "drake/common/eigen_types.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 
-using Eigen::MatrixXd;
-using Eigen::Matrix3d;
-using Eigen::VectorXd;
-using Eigen::Vector3d;
-using Eigen::ArrayXXd;
 using Eigen::Array33d;
-using Eigen::ArrayXd;
 using Eigen::Array3d;
+using Eigen::ArrayXd;
+using Eigen::ArrayXXd;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace {
@@ -46,8 +49,7 @@ bool IsEigen(...) {
   return false;
 }
 template <typename T,
-          typename Cond = typename std::enable_if_t<
-              is_eigen_type<T>::value>>
+          typename Cond = typename std::enable_if_t<is_eigen_type<T>::value>>
 bool IsEigen(const T&) {
   return true;
 }
@@ -56,9 +58,8 @@ bool IsEigen(const T&) {
 bool IsEigenOfDouble(...) {
   return false;
 }
-template <typename T,
-          typename Cond = typename std::enable_if_t<
-              is_eigen_scalar_same<T, double>::value>>
+template <typename T, typename Cond = typename std::enable_if_t<
+                          is_eigen_scalar_same<T, double>::value>>
 bool IsEigenOfDouble(const T&) {
   return true;
 }

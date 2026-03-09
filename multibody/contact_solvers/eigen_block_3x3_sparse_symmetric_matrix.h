@@ -7,6 +7,7 @@
 #include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
+#ifndef DRAKE_DOXYGEN_CXX
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -32,19 +33,20 @@ struct traits<drake::multibody::contact_solvers::internal::
 
 }  // namespace internal
 }  // namespace Eigen
+#endif  // DRAKE_DOXYGEN_CXX
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-/* Wrapper class around Block3x3SparseSymmetricMatrix that's compatible
+/* Wrapper class around BlockSparseSymmetricMatrix3d that's compatible
  with Eigen::ConjugateGradient. This wrapper is supposed to be short-lived
  It should be constructed, used in an Eigen solver, and then discarded.
 
  Example usage:
  {
-  // A_blocks is a Block3x3SparseSymmetricMatrix.
+  // A_blocks is a BlockSparseSymmetricMatrix3d.
   EigenBlock3x3SparseSymmetricMatrix A(&A_blocks, Parallelism(true));
   Eigen::ConjugateGradient<EigenBlock3x3SparseSymmetricMatrix,
                             Eigen::Lower | Eigen::Upper>
@@ -72,9 +74,9 @@ class EigenBlock3x3SparseSymmetricMatrix
     IsRowMajor = false
   };
 
-  /* Constructs a matrix wrapper for Block3x3SparseSymmetricMatrix.
+  /* Constructs a matrix wrapper for BlockSparseSymmetricMatrix3d.
    @pre A is not null and outlives this object. */
-  EigenBlock3x3SparseSymmetricMatrix(const Block3x3SparseSymmetricMatrix* A,
+  EigenBlock3x3SparseSymmetricMatrix(const BlockSparseSymmetricMatrix3d* A,
                                      Parallelism parallelism = false);
 
   /* Required by EigenBase */
@@ -136,7 +138,7 @@ class EigenBlock3x3SparseSymmetricMatrix
   };
 
  private:
-  const Block3x3SparseSymmetricMatrix* const A_{};
+  const BlockSparseSymmetricMatrix3d* const A_{};
   VectorX<double> diagonal_;
   /* The connectivity pattern of the blocks in A. More specifically,
    `row_neighbors_[i][k]` gives the block column index of the k-th non-zero
@@ -155,6 +157,7 @@ class EigenBlock3x3SparseSymmetricMatrix
 }  // namespace multibody
 }  // namespace drake
 
+#ifndef DRAKE_DOXYGEN_CXX
 namespace Eigen {
 namespace internal {
 
@@ -187,3 +190,4 @@ struct generic_product_impl<drake::multibody::contact_solvers::internal::
 
 }  // namespace internal
 }  // namespace Eigen
+#endif  // DRAKE_DOXYGEN_CXX

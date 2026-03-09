@@ -30,8 +30,8 @@ int DoMain() {
   auto& desired_state = pendulum->get_mutable_state(pendulum_context.get());
   desired_state.set_theta(M_PI);
   desired_state.set_thetadot(0);
-  pendulum->get_input_port().FixValue(
-      pendulum_context.get(), PendulumInput<double>{}.with_tau(0.0));
+  pendulum->get_input_port().FixValue(pendulum_context.get(),
+                                      PendulumInput<double>{}.with_tau(0.0));
 
   // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
   // The factor of 10 is heuristic, but roughly accounts for the unit conversion
@@ -51,8 +51,8 @@ int DoMain() {
   builder.Connect(controller->get_output_port(), pendulum->get_input_port());
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  PendulumGeometry::AddToBuilder(
-      &builder, pendulum->get_state_output_port(), scene_graph);
+  PendulumGeometry::AddToBuilder(&builder, pendulum->get_state_output_port(),
+                                 scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
 
@@ -69,8 +69,8 @@ int DoMain() {
   simulator.AdvanceTo(10);
 
   // Adds a numerical test to make sure we're stabilizing the fixed point.
-  DRAKE_DEMAND(is_approx_equal_abstol(state.value(),
-                                      desired_state.value(), 1e-3));
+  DRAKE_DEMAND(
+      is_approx_equal_abstol(state.value(), desired_state.value(), 1e-3));
 
   return 0;
 }

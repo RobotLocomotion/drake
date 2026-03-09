@@ -1,5 +1,7 @@
 #include "drake/lcm/lcm_messages.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"

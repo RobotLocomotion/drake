@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/bit_cast.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -85,6 +84,8 @@ class IndexOrFlag {
     return value_;
   }
 
+  bool operator==(const IndexOrFlag&) const = default;
+
  private:
   /* Note that the enum values are not arbitrary; kInactive must be -1 as in the
    class documentation. */
@@ -116,7 +117,12 @@ struct GridData {
 
   /* Returns true iff `this` GridData is bit-wise equal to `other`. */
   bool operator==(const GridData<T>& other) const {
-    return std::memcmp(this, &other, sizeof(GridData<T>)) == 0;
+    if constexpr (std::is_floating_point_v<T>) {
+      return std::memcmp(this, &other, sizeof(GridData<T>)) == 0;
+    } else {
+      return std::tie(v, m, scratch, index_or_flag) ==
+             std::tie(other.v, other.m, other.scratch, other.index_or_flag);
+    }
   }
 
   /* Returns true iff `this` GridData is inactive. A grid node inactive when

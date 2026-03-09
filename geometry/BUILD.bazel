@@ -14,6 +14,17 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "doxygen_input",
+    srcs = [
+        "geometry_doxygen.h",
+        "geometry_file_formats_doxygen.h",
+        "geometry_infrastructure_doxygen.h",
+    ],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
+
 drake_cc_package_library(
     name = "geometry",
     visibility = ["//visibility:public"],
@@ -147,7 +158,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         "//lcm:drake_lcm",
-        "//lcmtypes:viewer",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/lcm:lcm_system_graphviz",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
@@ -502,14 +513,6 @@ drake_cc_library(
 )
 
 genrule(
-    name = "stats_js_genrule",
-    srcs = ["@statsjs//:build/stats.min.js"],
-    outs = ["stats.min.js"],
-    cmd = "cp $< $@",
-    visibility = ["//visibility:private"],
-)
-
-genrule(
     name = "meshcat_ico_genrule",
     srcs = ["//doc:favicon.ico"],
     outs = ["meshcat.ico"],
@@ -531,7 +534,6 @@ filegroup(
         "meshcat.html",
         ":meshcat.ico",
         ":meshcat.js",
-        ":stats.min.js",
     ],
     visibility = ["//visibility:private"],
 )
@@ -562,6 +564,20 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
+    name = "meshcat_zip_factory_internal",
+    srcs = ["meshcat_zip_factory_internal.cc"],
+    hdrs = ["meshcat_zip_factory_internal.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+    ],
+    implementation_deps = [
+        "@libzip_internal//:libzip",
+    ],
+)
+
+drake_cc_library(
     name = "meshcat",
     srcs = [
         "meshcat.cc",
@@ -587,6 +603,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":meshcat_animation",
+        ":meshcat_zip_factory_internal",
         ":rgba",
         ":scene_graph_inspector",
         ":shape_specification",
@@ -646,6 +663,13 @@ drake_py_binary(
     srcs = ["test/meshcat_websocket_client.py"],
     visibility = [
         "//bindings/pydrake/visualization:__pkg__",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_zip_factory_internal_test",
+    deps = [
+        ":meshcat_zip_factory_internal",
     ],
 )
 
@@ -857,6 +881,7 @@ filegroup(
         "test/rotated_cube_squished.obj",
         "test/rotated_cube_unit_scale.obj",
         "test/two_cube_objects.obj",
+        "test/two_inverted_faces.obj",
     ],
 )
 
@@ -889,6 +914,7 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/env_256_brick_room.jpg",
+        "test/env_256_cornell_box.hdr",
         "test/env_256_cornell_box.png",
         "test/env_256_six_color_room.hdr",
         "test/env_256_six_color_room.png",
@@ -931,7 +957,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//lcm",
-        "//lcmtypes:viewer",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:simulator",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",

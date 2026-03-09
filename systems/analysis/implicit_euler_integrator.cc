@@ -43,10 +43,11 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
-    if (isnan(this->get_maximum_step_size()))
+    if (isnan(this->get_maximum_step_size())) {
       throw std::logic_error(
           "Neither initial step size target nor maximum step size has been "
           "set!");
+    }
 
     this->request_initial_step_size_target(this->get_maximum_step_size());
   }
@@ -57,10 +58,11 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   // If the user asks for accuracy that is looser than the loosest this
   // integrator can provide, use the integrator's loosest accuracy setting
   // instead.
-  if (isnan(working_accuracy))
+  if (isnan(working_accuracy)) {
     working_accuracy = kDefaultAccuracy;
-  else if (working_accuracy > kLoosestAccuracy)
+  } else if (working_accuracy > kLoosestAccuracy) {
     working_accuracy = kLoosestAccuracy;
+  }
   this->set_accuracy_in_use(working_accuracy);
 
   // Reset the Jacobian matrix (so that recomputation is forced).

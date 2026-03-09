@@ -9,6 +9,8 @@
 // TODO(jadecastro) Transcribe this example into Python.
 #include <cmath>
 #include <iostream>
+#include <map>
+#include <utility>
 
 #include "drake/common/proto/call_python.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -198,8 +200,8 @@ void ComputeBackwardReachableSet() {
   // Serialize the result and generate Python plots.  In particular, plot the
   // true indicator function of B and w (its polynomial outer-approximation).
   // Execute:
-  //    > bazel run //examples/cubic_polynomial:backward_reachability -c dbg
-  //         --config mosek
+  //    > bazel run //examples/cubic_polynomial:backward_reachability
+  //         --config debug --config mosek
   //    > bazel run //common/proto:call_python_client_cli
   const int N{1000};
   Eigen::VectorXd x_val(N), w_val(N), v_val(N), ground_val(N);

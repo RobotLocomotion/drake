@@ -24,7 +24,7 @@ def drake_cc_googlebench_binary(
         fail("Missing srcs")
     if add_test_rule == None:
         fail("Missing add_test_rule")
-    new_deps = (deps or []) + ["@googlebenchmark//:benchmark"]
+    new_deps = (deps or []) + ["@google_benchmark//:benchmark"]
 
     # We need this to be a cc_binary (not a cc_test) so that Bazel's flag
     # --trim_test_configuration will permit the py_experiment_binary target
@@ -52,10 +52,10 @@ def drake_cc_googlebench_binary(
             timeout = test_timeout,
             display = test_display,
             args = [
-                # When running as a unit test, run each function only once to
-                # save time. (Once should be sufficient to prove the lack of
-                # runtime errors.)
-                "--benchmark_min_time=0s",
+                # Google benchmark has a flag designed to do the minimal work
+                # to confirm that the tests run: dry run. For tests, that's
+                # sufficient.
+                "--benchmark_dry_run",
             ] + (test_args or []),
             tags = (test_tags or []) + ["nolint", "no_kcov"],
         )

@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -113,16 +115,6 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
   for (int i = 0; i < N; ++i) {
     EXPECT_NEAR(sub.message().joint_position_measured[i], q2[i], kTolerance);
   }
-}
-
-TEST_F(BuildIiwaControlTest, DeprecatedBuildIiwaControl) {
-  int tare = builder_.GetSystems().size();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  BuildIiwaControl(*sim_plant_, iiwa7_info_.model_instance, *controller_plant_,
-                   &lcm_, &builder_, 0.01, {}, IiwaControlMode::kTorqueOnly);
-#pragma GCC diagnostic pop
-  EXPECT_GT(builder_.GetSystems().size(), tare);
 }
 
 TEST_F(BuildIiwaControlTest, PositionOnly) {
@@ -260,16 +252,6 @@ TEST_F(BuildIiwaControlTest, PositionAndTorque) {
   }
 }
 
-TEST_F(BuildIiwaControlTest, DeprecatedSimplified) {
-  IiwaControlPorts control_ports{};
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  control_ports = BuildSimplifiedIiwaControl(
-      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kTorqueOnly);
-#pragma GCC diagnostic pop
-  ASSERT_NE(control_ports.commanded_torque, nullptr);
-}
 }  // namespace
 }  // namespace kuka_iiwa
 }  // namespace manipulation

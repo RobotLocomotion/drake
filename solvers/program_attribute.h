@@ -1,10 +1,12 @@
 #pragma once
 
+// TODO(2026-06-01): Remove ostream header when `operator<<` is removed.
 #include <ostream>
 #include <string>
 #include <unordered_set>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -53,8 +55,19 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
                                     std::string* unsupported_message = nullptr);
 
 std::string to_string(const ProgramAttribute&);
+
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
+
 std::string to_string(const ProgramAttributes&);
+
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
 
 /**
@@ -95,18 +108,19 @@ enum class ProgramType {
 };
 
 std::string to_string(const ProgramType&);
+
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream&, const ProgramType&);
+
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::solvers::ProgramAttribute> : drake::ostream_formatter {
-};
-template <>
-struct formatter<drake::solvers::ProgramAttributes> : drake::ostream_formatter {
-};
-template <>
-struct formatter<drake::solvers::ProgramType> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::solvers, ProgramAttribute, x,
+                   drake::solvers::to_string(x))
+DRAKE_FORMATTER_AS(, drake::solvers, ProgramAttributes, x,
+                   drake::solvers::to_string(x))
+DRAKE_FORMATTER_AS(, drake::solvers, ProgramType, x,
+                   drake::solvers::to_string(x))

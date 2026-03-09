@@ -1,7 +1,9 @@
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 

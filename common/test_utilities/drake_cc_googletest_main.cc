@@ -1,6 +1,8 @@
 /// @file
 /// This is Drake's default main() function for gtest-based unit tests.
 
+#include <iostream>
+
 #include <gflags/gflags.h>
 #include <gmock/gmock.h>
 

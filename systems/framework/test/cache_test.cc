@@ -1,5 +1,7 @@
 #include "drake/systems/framework/cache.h"
 
+#include <string>
+
 #include "drake/common/test_utilities/expect_no_throw.h"
 
 // Tests the Context (runtime) side of caching, which consists of a

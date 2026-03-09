@@ -1,5 +1,8 @@
 #include "drake/multibody/fem/force_density_field_base.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/plant/multibody_plant.h"

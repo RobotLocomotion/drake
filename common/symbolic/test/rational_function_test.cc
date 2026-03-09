@@ -1,5 +1,7 @@
 #include "drake/common/symbolic/rational_function.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"
@@ -381,6 +383,14 @@ TEST_F(SymbolicRationalFunctionTest, SetIndetermiantes) {
   f.SetIndeterminates(var_xy_);
   EXPECT_EQ(f.numerator().indeterminates(), var_xy_);
   EXPECT_EQ(f.denominator().indeterminates(), var_xy_);
+}
+
+TEST_F(SymbolicRationalFunctionTest, ToStringFmtFormatter) {
+  EXPECT_EQ(fmt::to_string(RationalFunction{}), "(0) / (1*1)");
+  EXPECT_EQ(fmt::to_string(RationalFunction{p1_, polynomial_one_}),
+            "(1*y + 2*x^2) / (1*1)");
+  EXPECT_EQ(fmt::to_string(RationalFunction{p1_, p2_}),
+            "(1*y + 2*x^2) / (2*y + 1*x^2)");
 }
 
 }  // namespace

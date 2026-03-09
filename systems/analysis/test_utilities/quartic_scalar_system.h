@@ -30,7 +30,7 @@ class QuarticScalarSystem : public LeafSystem<double> {
   void DoCalcTimeDerivatives(const Context<double>& context,
                              ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = t * (t * (4*t + 6) + 6) + 4;
+    (*deriv)[0] = t * (t * (4 * t + 6) + 6) + 4;
   }
 };
 

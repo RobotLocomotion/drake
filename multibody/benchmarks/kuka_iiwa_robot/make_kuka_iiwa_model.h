@@ -33,9 +33,8 @@ class KukaIiwaModelBuilder {
   //   The model's acceleration of gravity. `gravity > 0` means the gravity
   //   field is directed opposite the world upward z-unit vector (i.e.
   //   downwards).
-  KukaIiwaModelBuilder(bool finalize_model, double gravity) :
-      gravity_(gravity),
-      finalize_model_(finalize_model) {}
+  KukaIiwaModelBuilder(bool finalize_model, double gravity)
+      : gravity_(gravity), finalize_model_(finalize_model) {}
 
   // Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   // The robot is constructed with 7 revolute joints.
@@ -70,8 +69,7 @@ class KukaIiwaModelBuilder {
   //   The MultibodyTree to which the new joint will be added.
   // @return RevoluteJoint from frame Ab on Body A to frame Ba on Body B.
   static const RevoluteJoint<T>& AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      const std::string& joint_name,
-      const RigidBody<T>& A,
+      const std::string& joint_name, const RigidBody<T>& A,
       const Vector3<double>& q123A, const Vector3<double>& xyzA,
       const RigidBody<T>& B, const Vector3<double>& revolute_unit_vector,
       MultibodyTree<T>* model);
@@ -90,6 +88,7 @@ class KukaIiwaModelBuilder {
   // Position of each body's center of mass from body origin, expressed in body.
   // Example: For a body B with center of mass Bcm and origin Bo, p_BoBcm_B is
   // the position from Bo to Bcm, expressed in terms of Bx, By, Bz (in meters).
+  // clang-format off
   Eigen::Vector3d p_AoAcm_A_{0,     -0.03,   0.12};
   Eigen::Vector3d p_BoBcm_B_{0.0003, 0.059,  0.042};
   Eigen::Vector3d p_CoCcm_C_{0,      0.03,   0.13};
@@ -97,10 +96,12 @@ class KukaIiwaModelBuilder {
   Eigen::Vector3d p_EoEcm_E_{0.0001, 0.021,  0.076};
   Eigen::Vector3d p_FoFcm_F_{0,      0.0006, 0.0004};
   Eigen::Vector3d p_GoGcm_G_{0,      0,      0.02};
+  // clang-format on
 
   // Inertia matrix of each body about its center of mass, expressed in body.
   // Example: For a body B with center of mass Bcm, I_Bcm_B is B's inertia
   // matrix about Bcm, expressed in terms of Bx, By, Bz (in kg * meters^2).
+  // clang-format off
   RotationalInertia<double> I_AAcm_A_{0.033,  0.0333, 0.0123};
   RotationalInertia<double> I_BBcm_B_{0.0305, 0.0304, 0.011};
   RotationalInertia<double> I_CCcm_C_{0.025,  0.0238, 0.0076};
@@ -108,6 +109,7 @@ class KukaIiwaModelBuilder {
   RotationalInertia<double> I_EEcm_E_{0.01,   0.0087, 0.00449};
   RotationalInertia<double> I_FFcm_F_{0.0049, 0.0047, 0.0036};
   RotationalInertia<double> I_GGcm_G_{0.001,  0.001,  0.001};
+  // clang-format on
 
   // These parameters define the pose X_PF of each joint's inboard frame F in
   // the frame of the inboard body P.
@@ -116,20 +118,13 @@ class KukaIiwaModelBuilder {
   // inboard frame F in the parent body frame P.
   // joint_1_xyz_ provides the position p_PoFo_P of the i-th joint's inboard
   // frame origin Fo measured and expressed in the parent body frame P.
-  Eigen::Vector3d
-      joint_1_rpy_{0, 0, 0}, joint_1_xyz_{0, 0, 0.1575};
-  Eigen::Vector3d
-      joint_2_rpy_{M_PI_2, 0, M_PI}, joint_2_xyz_{0, 0, 0.2025};
-  Eigen::Vector3d
-      joint_3_rpy_{M_PI_2, 0, M_PI}, joint_3_xyz_{0, 0.2045, 0};
-  Eigen::Vector3d
-      joint_4_rpy_{M_PI_2, 0, 0}, joint_4_xyz_{0, 0, 0.2155};
-  Eigen::Vector3d
-      joint_5_rpy_{-M_PI_2, M_PI, 0}, joint_5_xyz_{0, 0.1845, 0};
-  Eigen::Vector3d
-      joint_6_rpy_{M_PI_2, 0, 0}, joint_6_xyz_{0, 0, 0.2155};
-  Eigen::Vector3d
-      joint_7_rpy_{-M_PI_2, M_PI, 0}, joint_7_xyz_{0, 0.081, 0};
+  Eigen::Vector3d joint_1_rpy_{0, 0, 0}, joint_1_xyz_{0, 0, 0.1575};
+  Eigen::Vector3d joint_2_rpy_{M_PI_2, 0, M_PI}, joint_2_xyz_{0, 0, 0.2025};
+  Eigen::Vector3d joint_3_rpy_{M_PI_2, 0, M_PI}, joint_3_xyz_{0, 0.2045, 0};
+  Eigen::Vector3d joint_4_rpy_{M_PI_2, 0, 0}, joint_4_xyz_{0, 0, 0.2155};
+  Eigen::Vector3d joint_5_rpy_{-M_PI_2, M_PI, 0}, joint_5_xyz_{0, 0.1845, 0};
+  Eigen::Vector3d joint_6_rpy_{M_PI_2, 0, 0}, joint_6_xyz_{0, 0, 0.2155};
+  Eigen::Vector3d joint_7_rpy_{-M_PI_2, M_PI, 0}, joint_7_xyz_{0, 0.081, 0};
 
   // Earth's default gravitational acceleration, in m/s².
   double gravity_{9.81};

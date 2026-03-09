@@ -21,7 +21,6 @@ drake_cc_library(
         "MG_chaotic_babyboot_auto_generated.h",
     ],
     copts = [
-        "-Wno-old-style-cast",
         "-Wno-unused-parameter",
     ],
     deps = [
@@ -37,4 +36,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

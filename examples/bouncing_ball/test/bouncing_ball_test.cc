@@ -1,6 +1,7 @@
 #include "drake/examples/bouncing_ball/bouncing_ball.h"
 
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -22,9 +23,9 @@ double CalcDropTime(const double g, const double q0) {
   // The time that the ball will impact the ground is:
   // gt^2/2 + q0 = 0
   // Solve the quadratic equation at^2 + bt + c = 0 for t.
-  const double a = g/2;
+  const double a = g / 2;
   const double c = q0;
-  return std::sqrt(-c/a);
+  return std::sqrt(-c / a);
 }
 
 // Computes the closed form height and velocity at tf seconds for a bouncing
@@ -33,8 +34,7 @@ double CalcDropTime(const double g, const double q0) {
 // is zero. Restitution coefficients of 0 and 1 are the only ones supported.
 // Returns a pair of values, the first corresponding to the height at tf,
 // the second corresponding to the velocity at tf.
-std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
-                                                          double e,
+std::pair<double, double> CalcClosedFormHeightAndVelocity(double g, double e,
                                                           double q0,
                                                           double tf) {
   const double drop_time = CalcDropTime(g, q0);
@@ -45,7 +45,7 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
     // problem.
     if (tf < drop_time) {
       // In a ballistic phase.
-      return std::make_pair(g*tf*tf/2 + q0, g*tf);
+      return std::make_pair(g * tf * tf / 2 + q0, g * tf);
     } else {
       // Ball has hit the ground.
       return std::make_pair(0.0, 0.0);
@@ -57,16 +57,16 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
     int num_phases = static_cast<int>(std::floor(tf / drop_time));
 
     // Get the time within the phase.
-    const double t = tf - num_phases*drop_time;
+    const double t = tf - num_phases * drop_time;
 
     // Even phases mean that the ball is falling, odd phases mean that it is
     // rising.
     if ((num_phases & 1) == 0) {
-      return std::make_pair(g*t*t/2 + q0, g*t);
+      return std::make_pair(g * t * t / 2 + q0, g * t);
     } else {
       // Get the ball velocity at the time of impact.
-      const double vf = g*drop_time;
-      return std::make_pair(g*t*t/2 - vf*t, g*t - vf);
+      const double vf = g * drop_time;
+      return std::make_pair(g * t * t / 2 - vf * t, g * t - vf);
     }
   }
 
@@ -200,8 +200,8 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.Initialize();
 
   // Set the initial state for the bouncing ball.
-  systems::VectorBase<double>& xc = simulator.get_mutable_context().
-      get_mutable_continuous_state_vector();
+  systems::VectorBase<double>& xc =
+      simulator.get_mutable_context().get_mutable_continuous_state_vector();
   xc.SetAtIndex(0, q0);
   xc.SetAtIndex(1, v0);
 
@@ -214,8 +214,8 @@ TEST_F(BouncingBallTest, Simulate) {
   const double tol = accuracy;
   double height, velocity;
   std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
-      dut_->get_gravitational_acceleration(),
-      dut_->get_restitution_coef(), q0, t_final);
+      dut_->get_gravitational_acceleration(), dut_->get_restitution_coef(), q0,
+      t_final);
   EXPECT_NEAR(xc.GetAtIndex(0), height, tol);
   EXPECT_NEAR(xc.GetAtIndex(1), velocity, tol);
 }

@@ -5,7 +5,7 @@
 set -eu -o pipefail
 
 if [[ "$(uname)" == "Darwin" ]]; then
-    HOMEBREW="$(brew config | \grep -E '^HOMEBREW_PREFIX' | cut -c18-)"
+    HOMEBREW="$(brew --prefix)"
 
     # Use GNU 'cp' on macOS so we have a consistent CLI.
     cp()
@@ -71,7 +71,15 @@ cp -r -t ${WHEEL_DIR}/pydrake \
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
     /tmp/drake-wheel-build/drake-dist/lib/libdrake*.so
 
-if [[ "$(uname)" == "Darwin" ]]; then
+# MOSEK's published wheels declare an upper bound on their supported Python
+# version, which is currently Python < 3.15. When that changes to a larger
+# version number, we should bump this up to match, and also grep tools/wheel
+# for other mentions of MOSEK version bounds and fix those as well.
+PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
+MOSEK_ENABLED=1
+[ ${PYTHON_MINOR} -ge 15 ] && MOSEK_ENABLED=
+
+if [[ "$(uname)" == "Darwin" && -n "${MOSEK_ENABLED}" ]]; then
     # MOSEK is "sort of" third party, but is procured as part of Drake's build
     # and ends up in /tmp/drake-wheel-build/drake-dist/. It should end up in
     # the same place as libdrake.so.
@@ -102,12 +110,6 @@ cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /tmp/drake-wheel-build/drake-dist/share/drake/tutorials
 
 if [[ "$(uname)" == "Linux" ]]; then
-    mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
-    cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
-        /tmp/drake-wheel-build/drake-dist/share/drake/setup/deepnote
-fi
-
-if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib
 fi
 
@@ -131,40 +133,42 @@ if [[ "$(uname)" == "Darwin" ]]; then
     delocate-wheel -w wheelhouse -v dist/drake*.whl
 
     # Remove libmosek from wheels.
-    for w in wheelhouse/drake*.whl; do
-        mkdir fixup-wheel
-        wheel unpack --dest fixup-wheel "$w"
+    if [[ -n "${MOSEK_ENABLED}" ]]; then
+        for w in wheelhouse/drake*.whl; do
+            mkdir fixup-wheel
+            wheel unpack --dest fixup-wheel "$w"
 
-        rm fixup-wheel/drake-*/pydrake/lib/libmosek*
-        rm fixup-wheel/drake-*/pydrake/lib/libtbb*
-        rm fixup-wheel/drake-*/pydrake/doc/mosek/mosek-eula.pdf
-        rm fixup-wheel/drake-*/pydrake/doc/mosek/LICENSE.third_party
+            rm fixup-wheel/drake-*/pydrake/lib/libmosek*
+            rm fixup-wheel/drake-*/pydrake/lib/libtbb*
+            rm fixup-wheel/drake-*/pydrake/doc/mosek/mosek-eula.pdf
+            rm fixup-wheel/drake-*/pydrake/doc/mosek/LICENSE.third_party
 
-        change_lpath \
-            --old='@loader_path/libtbb' \
-            --old='@loader_path/libmosek' \
-            --new='@loader_path/../../mosek/libtbb' \
-            --new='@loader_path/../../mosek/libmosek' \
-            fixup-wheel/drake-*/pydrake/lib/*.so
-        change_lpath \
-            --old='@loader_path/lib/libtbb' \
-            --old='@loader_path/lib/libmosek' \
-            --new='@loader_path/../mosek/libtbb' \
-            --new='@loader_path/../mosek/libmosek' \
-            fixup-wheel/drake-*/pydrake/*.so
-        change_lpath \
-            --old='@loader_path/../lib/libtbb' \
-            --old='@loader_path/../lib/libmosek' \
-            --new='@loader_path/../../mosek/libtbb' \
-            --new='@loader_path/../../mosek/libmosek' \
-            fixup-wheel/drake-*/pydrake/*/*.so
+            change_lpath \
+                --old='@loader_path/libtbb' \
+                --old='@loader_path/libmosek' \
+                --new='@loader_path/../../mosek/libtbb' \
+                --new='@loader_path/../../mosek/libmosek' \
+                fixup-wheel/drake-*/pydrake/lib/*.so
+            change_lpath \
+                --old='@loader_path/lib/libtbb' \
+                --old='@loader_path/lib/libmosek' \
+                --new='@loader_path/../mosek/libtbb' \
+                --new='@loader_path/../mosek/libmosek' \
+                fixup-wheel/drake-*/pydrake/*.so
+            change_lpath \
+                --old='@loader_path/../lib/libtbb' \
+                --old='@loader_path/../lib/libmosek' \
+                --new='@loader_path/../../mosek/libtbb' \
+                --new='@loader_path/../../mosek/libmosek' \
+                fixup-wheel/drake-*/pydrake/*/*.so
 
-        rm "$w"
-        wheel pack --dest wheelhouse fixup-wheel/drake-*/
-        rm -rf fixup-wheel
-    done
+            rm "$w"
+            wheel pack --dest wheelhouse fixup-wheel/drake-*/
+            rm -rf fixup-wheel
+        done
+    fi
 else
     GLIBC_VERSION=$(ldd --version | sed -n '1{s/.* //;s/[.]/_/p}')
 
-    auditwheel repair --plat manylinux_${GLIBC_VERSION}_x86_64 dist/drake*.whl
+    auditwheel repair --plat manylinux_${GLIBC_VERSION}_$(arch) dist/drake*.whl
 fi

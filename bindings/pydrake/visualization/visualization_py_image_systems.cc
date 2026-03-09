@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/visualization.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/visualization/visualization_py.h"
 #include "drake/visualization/colorize_depth_image.h"
@@ -12,7 +12,7 @@ namespace internal {
 void DefineVisualizationImageSystems(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::visualization;
-  constexpr auto& doc = pydrake_doc.drake.visualization;
+  constexpr auto& doc = pydrake_doc_visualization.drake.visualization;
 
   {
     using Class = ColorizeDepthImage<double>;

@@ -1,8 +1,8 @@
 #include <Eigen/Dense>
 
+#include "drake/bindings/generated_docstrings/systems_rendering.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
@@ -15,7 +15,7 @@ PYBIND11_MODULE(rendering, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::rendering;
-  constexpr auto& doc = pydrake_doc.drake.systems.rendering;
+  constexpr auto& doc = pydrake_doc_systems_rendering.drake.systems.rendering;
 
   m.doc() = "Bindings for the rendering portion of the Systems framework.";
 

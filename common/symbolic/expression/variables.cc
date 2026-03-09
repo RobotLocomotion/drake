@@ -8,6 +8,7 @@
 #include <iterator>
 #include <numeric>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -147,7 +148,7 @@ ostream& operator<<(ostream& os, const Variables& vars) {
     // output 1st ... N-1th elements by adding ", " at the end
     copy(vars.begin(), prev(vars.end()), ostream_iterator<Variable>(os, ", "));
     // output the last one (without ",").
-    os << *(vars.rbegin());
+    os << fmt::to_string(*(vars.rbegin()));
   }
   os << "}";
   return os;

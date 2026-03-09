@@ -13,7 +13,7 @@ SchurComplement::SchurComplement() = default;
 
 SchurComplement::~SchurComplement() = default;
 
-SchurComplement::SchurComplement(const Block3x3SparseSymmetricMatrix& A,
+SchurComplement::SchurComplement(const BlockSparseSymmetricMatrix3d& A,
                                  const std::unordered_set<int>& D_indices)
     : D_indices_(D_indices.begin(), D_indices.end()) {
   /* Keep D_indices_ sorted. */

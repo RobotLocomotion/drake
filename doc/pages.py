@@ -5,7 +5,6 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
 import os
-import tempfile
 
 from doc.defs import (
     check_call,
@@ -25,11 +24,16 @@ def _build(*, out_dir, temp_dir):
     symlink_input("drake/doc/pages_input.txt", temp_dir, copy=True)
 
     # Run the documentation generator.
-    check_call([
-        "jekyll", "build",
-        "--source", os.path.join(temp_dir, "drake/doc"),
-        "--destination", out_dir,
-    ])
+    check_call(
+        [
+            "jekyll",
+            "build",
+            "--source",
+            os.path.join(temp_dir, "drake/doc"),
+            "--destination",
+            out_dir,
+        ]
+    )
 
     # Tidy up.
     perl_cleanup_html_output(out_dir=out_dir)
@@ -39,5 +43,5 @@ def _build(*, out_dir, temp_dir):
     return [""]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(build=_build, subdir="", description=__doc__.strip())

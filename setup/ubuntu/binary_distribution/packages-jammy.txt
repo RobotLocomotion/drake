@@ -1,4 +1,3 @@
-default-jre
 jupyter-notebook
 libblas-dev
 libegl1
@@ -7,7 +6,6 @@ libgfortran5
 libglib2.0-0
 libglx0
 libgomp1
-libjchart2d-java
 liblapack3
 libopengl0
 libpython3.10

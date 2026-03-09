@@ -1,5 +1,6 @@
 #include <limits>
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 

@@ -1,6 +1,6 @@
 #include "drake/multibody/fem/damping_model.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace multibody {

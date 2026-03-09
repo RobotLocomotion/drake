@@ -61,7 +61,8 @@ void RunNonlinearProgram(const MathematicalProgram& prog,
       continue;
     }
     DRAKE_ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result));
-    EXPECT_TRUE(result->is_success());
+    EXPECT_TRUE(result->is_success())
+        << fmt::format("solution_result: {}", result->get_solution_result());
     DRAKE_EXPECT_NO_THROW(test_func());
   }
 }
@@ -331,6 +332,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
 
   // Given a degenerate polynomial, get the trivial solution.
   {
+    SCOPED_TRACE("Degenerate polynomial");
     const Polynomiald x("x");
     MathematicalProgram problem;
     const auto x_var = problem.NewContinuousVariables(1);
@@ -355,6 +357,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
 
   // Given a small univariate polynomial, find a low point.
   {
+    SCOPED_TRACE("Small univariate polynomial");
     const Polynomiald x("x");
     const Polynomiald poly = (x - 1) * (x - 1);
     MathematicalProgram problem;
@@ -378,6 +381,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
 
   // Given a small multivariate polynomial, find a low point.
   {
+    SCOPED_TRACE("Small multivariate polynomial");
     const Polynomiald x("x");
     const Polynomiald y("y");
     const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
@@ -405,6 +409,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
 
   // Given two polynomial constraints, satisfy both.
   {
+    SCOPED_TRACE("Two polynomial constraints");
     // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
     // constrain x < 0 and EXPECT that the solver finds the negative one.)
     const Polynomiald x("x");

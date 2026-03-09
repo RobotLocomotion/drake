@@ -1,13 +1,17 @@
 /* @file This contains the bindings for the various visualizer System types
  found in drake::geometry. They can be found in the pydrake.geometry module. */
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/geometry.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -26,7 +30,7 @@ using systems::LeafSystem;
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry;
-constexpr auto& doc = pydrake_doc.drake.geometry;
+constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
@@ -396,6 +400,20 @@ void DefineMeshcat(py::module m) {
             // This function costs a non-trivial amount of CPU time and blocks
             // on a worker thread; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.StaticHtml.doc)
+        .def(
+            "StaticZip",
+            [](const Class& self) {
+              // This function costs a non-trivial amount of CPU time and blocks
+              // on a worker thread; for both reasons, we must release the GIL.
+              // We must then re-acquire it before touching py::bytes.
+              std::string result;
+              {
+                py::gil_scoped_release unlock;
+                result = self.StaticZip();
+              }
+              return py::bytes(result);
+            },
+            cls_doc.StaticZip.doc)
         .def("StartRecording", &Class::StartRecording,
             py::arg("frames_per_second") = 64.0,
             py::arg("set_visualizations_while_recording") = true,

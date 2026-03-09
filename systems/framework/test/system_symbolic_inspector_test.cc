@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 

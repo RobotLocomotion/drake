@@ -1,6 +1,10 @@
 #include "drake/geometry/optimization/hyperellipsoid.h"
 
 #include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

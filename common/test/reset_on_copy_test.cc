@@ -1,6 +1,8 @@
 #include "drake/common/reset_on_copy.h"
 
+#include <algorithm>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -166,7 +168,7 @@ GTEST_TEST(ResetOnCopyTest, Copy) {
 
   EXPECT_EQ(source.items().size(), 3);
   EXPECT_EQ(copy.items().size(), 3);
-  for (size_t i=0; i < 3; ++i) {
+  for (size_t i = 0; i < 3; ++i) {
     EXPECT_EQ(source.items()[i], i + 1);
     EXPECT_EQ(copy.items()[i], i + 1);
   }

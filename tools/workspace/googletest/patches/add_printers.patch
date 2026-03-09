@@ -1,0 +1,46 @@
+[googletest] Adds more printer options for displaying values under test
+
+The EigenPrinter knows how to print Eigen matrices. We need to inject
+it prior to the ContainerPrinter because Eigen vectors offer container
+concepts as of Eigen 3.4.
+
+The FmtFormatPrinter knows how to ask fmt::to_string to print values.
+We need to inject it prior to the osteam formatter, because we should
+prefer fmt over ostream anytime fmt is offered.
+
+Reasoning for not upstreaming this patch: Drake-specific dependency.
+
+--- MODULE.bazel
++++ MODULE.bazel
+@@ -5,1 +5,2 @@
+ )
++bazel_dep(name = "drake")
+
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -144,3 +144,5 @@
+     }),
+-    deps = select({
++    deps = [
++        "@drake//common/test_utilities:gtest_printers",
++    ] + select({
+         ":has_absl": [
+
+--- googletest/include/gtest/gtest-printers.h
++++ googletest/include/gtest/gtest-printers.h
+@@ -115,3 +115,6 @@
+ #include "gtest/internal/gtest-port.h"
+ 
++#include "drake/common/test_utilities/eigen_printer.h"
++#include "drake/common/test_utilities/fmt_format_printer.h"
++
+ #if GTEST_INTERNAL_HAS_STD_SPAN
+@@ -306,4 +308,7 @@
+ void PrintWithFallback(const T& value, ::std::ostream* os) {
+   using Printer = typename FindFirstPrinter<
+-      T, void, ContainerPrinter, FunctionPointerPrinter, PointerPrinter,
++      T, void,
++      drake::internal::EigenPrinter,
++      ContainerPrinter, FunctionPointerPrinter, PointerPrinter,
++      drake::internal::FmtFormatPrinter,
+       ProtobufPrinter,

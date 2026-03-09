@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/velocity_implicit_euler_integrator.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"

@@ -26,7 +26,7 @@ GTEST_TEST(DrakeAssertTest, MatchingConfigTest) {
 
 namespace {
 [[maybe_unused]] void VoidFunction() {}
-}
+}  // namespace
 
 GTEST_TEST(DrakeAssertTest, AssertVoidCompilesOkay) {
   DRAKE_ASSERT_VOID(VoidFunction());
@@ -43,7 +43,9 @@ GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
       "condition 'false' failed");
 }
 
-struct BoolConvertible { operator bool() const { return true; } };
+struct BoolConvertible {
+  operator bool() const { return true; }
+};
 GTEST_TEST(DrakeAssertDeathTest, AssertSyntaxTest) {
   // These should compile.
   DRAKE_ASSERT((2 + 2) == 4);
@@ -65,9 +67,7 @@ GTEST_TEST(DrakeAssertDeathTest, AssertFalseTest) {
 GTEST_TEST(DrakeAssertDeathTest, AssertVoidTestArmed) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   if (::drake::kDrakeAssertIsArmed) {
-    ASSERT_DEATH(
-        { DRAKE_ASSERT_VOID(::abort()); },
-        "");
+    ASSERT_DEATH({ DRAKE_ASSERT_VOID(::abort()); }, "");
   } else {
     DRAKE_ASSERT_VOID(::abort());
   }

@@ -170,10 +170,26 @@ std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
   Vector3<double> radii;
   std::tie(radii, X_BE) =
       M_BBo_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
-  // An ellipse that has one of its diameters >100x greater than another one
-  // does not render well on the screen, so we'll make sure no dimension of the
-  // unit inertia's ellipsoid is smaller than 1/100 of the maximum dimension.
+  const double max_radius = radii.maxCoeff();
+  Vector3d abc;
+  if (max_radius == 0.0) {
+    // A point mass has no volume, so all radii will be zero. We still need to
+    // visualize it with *something*. So, we'll pick a sphere whose radius is
+    // proportional to its mass; specifically, with the constraint that a 1-kg
+    // mass gets a 6.2-cm radius. 6.2 cm is the radius of a 1-kg sphere of
+    // water.
+    abc = Vector3d::Constant(std::cbrt(mass) * 0.062);
+    return std::make_pair(
+        Ellipsoid(abc),
+        RigidTransform<double>(ExtractDoubleOrThrow(M_BBo_B.get_com())));
+  }
+
+  // At least one measure is non-zero. An ellipsoid that has one of its
+  // diameters >100x greater than another one does not render well on the
+  // screen, so we'll make sure no dimension of this unit inertia's ellipsoid
+  // is smaller than 1/100 of its maximum dimension.
   radii = radii.array().max(1e-2 * radii.maxCoeff());
+
   // Assuming the ~density of water for the visualization ellipsoid, scale up
   // the ellipsoid representation of the unit inertia to have a volume that
   // matches the body's actual mass, so that our ellipsoid actually has the
@@ -182,8 +198,7 @@ std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
   const double unit_inertia_ellipsoid_mass =
       density * (4.0 / 3.0) * M_PI * radii(0) * radii(1) * radii(2);
   const double volume_scale = mass / unit_inertia_ellipsoid_mass;
-  const Vector3d abc = radii * std::cbrt(volume_scale);
-
+  abc = radii * std::cbrt(volume_scale);
   return std::make_pair(Ellipsoid(abc), X_BE);
 }
 

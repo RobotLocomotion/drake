@@ -1,5 +1,12 @@
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

@@ -1,5 +1,8 @@
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -51,8 +54,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, Ownership) {
   mbp->Finalize();
 
   const MultibodyPositionToGeometryPose<double> dut(std::move(mbp));
-  EXPECT_EQ(dut.get_input_port().size(),
-            dut.multibody_plant().num_positions());
+  EXPECT_EQ(dut.get_input_port().size(), dut.multibody_plant().num_positions());
 
   EXPECT_EQ(&dut.multibody_plant(), raw_ptr);
   EXPECT_TRUE(dut.owns_plant());

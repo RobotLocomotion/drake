@@ -2,10 +2,12 @@
 #include "drake/multibody/tree/multibody_tree.h"
 /* clang-format on */
 
+#include <limits>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include <gtest/gtest.h>
 

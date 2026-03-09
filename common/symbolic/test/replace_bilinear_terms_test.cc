@@ -1,5 +1,7 @@
 #include "drake/common/symbolic/replace_bilinear_terms.h"
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"

@@ -23,7 +23,7 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
-        "//lcmtypes:allegro",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
@@ -46,7 +46,7 @@ drake_cc_binary(
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
         "//lcm:drake_lcm",
-        "//lcmtypes:allegro",
+        "//lcmtypes:lcmtypes_drake_cc",
         "@gflags",
     ],
 )

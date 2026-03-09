@@ -39,8 +39,8 @@ template <typename Constraint>
   for (int i = 0; i < binding1.variables().rows(); ++i) {
     if (!binding1.variables()(i).equal_to(binding2.variables()(i))) {
       return ::testing::AssertionFailure()
-             << "Constraint variable mismatch:(" << binding1.variables()(i)
-             << " vs. " << binding2.variables()(i) << ")";
+             << fmt::format("Constraint variable mismatch:({} vs. {})",
+                            binding1.variables()(i), binding2.variables()(i));
     }
   }
 

@@ -1,6 +1,9 @@
 #include "drake/geometry/read_obj.h"
 
 #include <filesystem>
+#include <memory>
+#include <set>
+#include <string>
 #include <unordered_set>
 
 #include <gmock/gmock.h>

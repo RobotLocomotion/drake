@@ -10,10 +10,13 @@ Utilities for arithmetic on AutoDiffScalar. */
 #include <utility>
 
 #include <Eigen/Dense>
+
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 #include <unsupported/Eigen/AutoDiff>
+#endif
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 
@@ -165,10 +168,15 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
 
 /** The appropriate AutoDiffScalar matrix type given the value type and the
 number of derivatives at compile time. */
+#if DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF == 1
 template <typename Derived, int nq>
 using AutoDiffMatrixType =
-    MatrixLikewise<Eigen::AutoDiffScalar<Vector<typename Derived::Scalar, nq>>,
+    MatrixLikewise<Eigen::AutoDiffScalar<Vector<typename Derived::Scalar, nq> >,
                    Derived>;
+#else
+template <typename Derived, int nq>
+using AutoDiffMatrixType = MatrixLikewise<AutoDiffXd, Derived>;
+#endif
 
 /** Initializes a single AutoDiff matrix given the corresponding value matrix.
 

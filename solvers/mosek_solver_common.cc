@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/aggregate_costs_constraints.h"

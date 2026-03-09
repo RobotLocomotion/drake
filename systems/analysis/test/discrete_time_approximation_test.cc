@@ -1,5 +1,11 @@
 #include "drake/systems/analysis/discrete_time_approximation.h"
 
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -278,7 +284,7 @@ class DirectFeedthroughSystem : public LeafSystem<T> {
 
     for (int i = 0; i < num_input_ports; ++i) {
       this->DeclareAbstractInputPort(kUseDefaultName,
-                                     Value(Eigen::Matrix3<T>()));
+                                     Value(Eigen::Matrix3<T>::Zero().eval()));
     }
 
     for (int j = 0; j < num_output_ports; ++j) {
@@ -302,7 +308,7 @@ class DirectFeedthroughSystem : public LeafSystem<T> {
           kUseDefaultName,
           []() {
             return std::make_unique<Value<Eigen::Matrix3<T>>>(
-                Eigen::Matrix3<T>());
+                Eigen::Matrix3<T>::Zero());
           },
           [this, connected_input_ports](const Context<T>& context,
                                         AbstractValue* out) {

@@ -1,6 +1,8 @@
 #include "drake/geometry/meshcat_params.h"
 
+#include <string>
 #include <tuple>
+#include <vector>
 
 #include <gtest/gtest.h>
 

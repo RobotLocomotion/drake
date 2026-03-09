@@ -14,13 +14,14 @@ exports_files([
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
+    ".ruff.toml",
     "package.xml",
 ])
 
 exports_files(
     [
         "MODULE.bazel",
-        "WORKSPACE.bzlmod",
+        "cmake/MODULE.bazel.in",
     ],
     visibility = ["//tools/workspace:__pkg__"],
 )
@@ -98,19 +99,53 @@ _INSTALL_TEST_COMMANDS = "install_test_commands"
 # the default repository is named "_main" not "drake").
 install(
     name = "install_files",
-    data = ["package.xml"],
+    data = [
+        ".drake-find_resource-sentinel",
+        "package.xml",
+    ],
     data_dest = "share/drake",
     docs = ["LICENSE.TXT"],
     doc_dest = "share/doc/drake",
     visibility = ["//visibility:private"],
 )
 
+config_setting(
+    name = "install_python_true",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+    },
+)
+
+config_setting(
+    name = "lcm_runtime_true_and_install_libdrake_static",
+    flag_values = {
+        "//tools/flags:with_lcm_runtime": "True",
+        "//tools/flags:install_libdrake": "static",
+    },
+)
+
+config_setting(
+    name = "install_python_true_and_install_libdrake_static",
+    flag_values = {
+        "//tools/flags:install_python": "True",
+        "//tools/flags:install_libdrake": "static",
+    },
+)
+
 install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
+    target_compatible_with = select({
+        "install_python_true_and_install_libdrake_static": [
+            "@platforms//:incompatible",
+        ],
+        "lcm_runtime_true_and_install_libdrake_static": [
+            "@platforms//:incompatible",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         ":install_files",
-        "//bindings/pydrake:install",
         "//common:install",
         "//examples:install",
         "//geometry:install",
@@ -119,8 +154,13 @@ install(
         "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
-        "//tutorials:install",
-    ],
+    ] + select({
+        "//:install_python_true": [
+            "//bindings/pydrake:install",
+            "//tutorials:install",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 install_test(

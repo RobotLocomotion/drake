@@ -142,7 +142,7 @@ class FrameworkFactory {
 // own Bazel libraries.
 class SystemMessageInterface {
  public:
-  virtual ~SystemMessageInterface() = default;
+  virtual ~SystemMessageInterface();
 
   // Returns a human-readable simple name of this subsystem, suitable for use
   // in constructing a system pathname. If there is no name this should return
@@ -195,7 +195,7 @@ class SystemMessageInterface {
 // substructure.) See SystemMessageInterface for motivation.
 class ContextMessageInterface {
  public:
-  virtual ~ContextMessageInterface() = default;
+  virtual ~ContextMessageInterface();
 
   // Returns a human-readable simple name of this subcontext's corresponding
   // subsystem, suitable for use in constructing a system pathname. If there is
@@ -227,7 +227,7 @@ class ContextMessageInterface {
 // Diagram functionality to Leaf subsystems.
 class SystemParentServiceInterface {
  public:
-  virtual ~SystemParentServiceInterface() = default;
+  virtual ~SystemParentServiceInterface();
 
   // Generates and returns the full path name of the parent subsystem, starting
   // at the root of the containing Diagram, with path name separators between

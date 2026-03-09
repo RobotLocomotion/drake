@@ -17,8 +17,8 @@ using drake::examples::acrobot::AcrobotPlant;
 using drake::examples::acrobot::AcrobotSpongController;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
-using drake::yaml::SaveYamlFile;
 using drake::yaml::LoadYamlFile;
+using drake::yaml::SaveYamlFile;
 
 namespace drake {
 namespace examples {
@@ -28,8 +28,7 @@ namespace {
 DEFINE_string(scenario, "", "Scenario file to load (required).");
 DEFINE_string(dump_scenario, "", "Scenario file to save.");
 DEFINE_string(output, "", "Output file to save (required).");
-DEFINE_int32(random_seed, drake::RandomGenerator::default_seed,
-             "Random seed");
+DEFINE_int32(random_seed, drake::RandomGenerator::default_seed, "Random seed");
 
 // The YAML format for --scenario.
 struct Scenario {
@@ -67,11 +66,10 @@ Scenario SampleScenario(const Scenario& input) {
   drake::RandomGenerator random(FLAGS_random_seed);
   Scenario result = input;
   result.controller_params =
-      drake::schema::ToDistributionVector(input.controller_params)->
-      Sample(&random);
+      drake::schema::ToDistributionVector(input.controller_params)
+          ->Sample(&random);
   result.initial_state =
-      drake::schema::ToDistributionVector(input.initial_state)->
-      Sample(&random);
+      drake::schema::ToDistributionVector(input.initial_state)->Sample(&random);
   return result;
 }
 
@@ -97,16 +95,14 @@ Output Simulate(const Scenario& stochastic_scenario) {
   Simulator<double> simulator(*diagram);
   auto& context = simulator.get_mutable_context();
 
-  auto& plant_context = diagram->GetMutableSubsystemContext(
-      *plant, &context);
+  auto& plant_context = diagram->GetMutableSubsystemContext(*plant, &context);
   DRAKE_DEMAND(drake::schema::IsDeterministic(scenario.initial_state));
   plant_context.SetContinuousState(
       drake::schema::GetDeterministicValue(scenario.initial_state));
 
-  auto& controller_context = diagram->GetMutableSubsystemContext(
-      *controller, &context);
-  DRAKE_DEMAND(drake::schema::IsDeterministic(
-      scenario.controller_params));
+  auto& controller_context =
+      diagram->GetMutableSubsystemContext(*controller, &context);
+  DRAKE_DEMAND(drake::schema::IsDeterministic(scenario.controller_params));
   controller_context.get_mutable_numeric_parameter(0).SetFromVector(
       drake::schema::GetDeterministicValue(scenario.controller_params));
 

@@ -133,9 +133,9 @@ class TestGltfRenderBinary(unittest.TestCase):
             "drake/geometry/render_gltf_client/client_demo"
         )
         proc_args = [
-          client_demo,
-          "--render_engine=client",
-          "--simulation_time=-1",  # N.B. Negative means don't call AdvanceTo.
+            client_demo,
+            "--render_engine=client",
+            "--simulation_time=-1",  # N.B. Negative means don't call AdvanceTo.
         ]
         self._check_call(proc_args)
 
@@ -146,8 +146,8 @@ class TestGltfRenderBinary(unittest.TestCase):
             "drake/geometry/render_gltf_client/client_demo"
         )
         proc_args = [
-          client_demo,
-          "--render_engine=vtk",
-          "--simulation_time=0.1",
+            client_demo,
+            "--render_engine=vtk",
+            "--simulation_time=0.1",
         ]
         self._check_call(proc_args)

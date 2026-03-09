@@ -49,7 +49,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/framework:leaf_system",
-        "@gtest//:without_main",
+        "@googletest//:gtest_for_library",
     ],
 )
 
@@ -76,4 +76,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

@@ -15,9 +15,13 @@ from pydrake.systems.framework import DiagramBuilder
 
 
 def find_model_files(base_dir):
-    return (
-        glob.glob(os.path.join(base_dir, "**/*.sdf"), recursive=True)
-        + glob.glob(os.path.join(base_dir, "**/*.urdf"), recursive=True))
+    return glob.glob(
+        os.path.join(base_dir, "**/*.sdf"),
+        recursive=True,
+    ) + glob.glob(
+        os.path.join(base_dir, "**/*.urdf"),
+        recursive=True,
+    )
 
 
 def parse_model_and_create_context(file):
@@ -34,8 +38,9 @@ def parse_model_and_create_context(file):
 class TestParseModels(unittest.TestCase):
     def test_available_runfiles(self):
         # Find all available Drake models from runfiles.
-        drake_dir = os.path.dirname(FindResourceOrThrow(
-            "drake/.drake-find_resource-sentinel"))
+        drake_dir = os.path.dirname(
+            FindResourceOrThrow("drake/.drake-find_resource-sentinel")
+        )
         model_files = find_model_files(drake_dir)
         # Filter model files.
         for model_file in copy.copy(model_files):

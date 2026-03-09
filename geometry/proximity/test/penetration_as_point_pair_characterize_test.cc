@@ -1,4 +1,5 @@
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>

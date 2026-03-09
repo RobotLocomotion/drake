@@ -19,7 +19,9 @@ namespace solvers {
  * result is stored in the return argument.
  * @param prog Contains the formulation of the program, and possibly solver
  * options.
- * @param initial_guess The initial guess for the decision variables.
+ * @param initial_guess The initial guess for the decision variables. If an
+ * @p initial_guess is provided, then the solver uses @p initial_guess and
+ * ignores the initial guess stored in @p prog.
  * @param solver_options The options in addition to those stored in @p prog.
  * For each option entry (like print out), there are 4 ways to set that option,
  * and the priority given to the solver options is as follows (from lowest /

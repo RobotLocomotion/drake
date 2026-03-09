@@ -1,6 +1,9 @@
 #include "drake/geometry/optimization/minkowski_sum.h"
 
 #include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

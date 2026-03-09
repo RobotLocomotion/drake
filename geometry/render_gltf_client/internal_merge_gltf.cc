@@ -10,7 +10,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_ostream.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
 // For more explanation of the glTF fun and games:

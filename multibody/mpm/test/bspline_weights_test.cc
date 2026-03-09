@@ -1,5 +1,8 @@
 #include "drake/multibody/mpm/bspline_weights.h"
 
+#include <limits>
+#include <memory>
+
 #include <gtest/gtest.h>
 
 namespace drake {

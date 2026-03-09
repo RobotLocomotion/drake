@@ -1,6 +1,8 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+# ruff: noqa: F821 (undefined-name). This file is only a fragment.
+
 import numpy as np
 
 
@@ -30,9 +32,9 @@ def InitializeAutoDiffTuple(*args):
     autodiff_tuple = []
     deriv_num_start = 0
     for arg in args:
-        autodiff_tuple.append(InitializeAutoDiff(arg,
-                                                 num_derivatives,
-                                                 deriv_num_start))
+        autodiff_tuple.append(
+            InitializeAutoDiff(arg, num_derivatives, deriv_num_start)
+        )
         deriv_num_start += np.asarray(arg).size
 
     return tuple(autodiff_tuple)

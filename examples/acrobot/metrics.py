@@ -7,13 +7,16 @@ def _wrap_to(value, low, high):
 
 
 def deviation_from_upright_equilibrium(x):
-    return np.array([
-        # The upright equilibrium theta0 is pi; rotate this angle accordingly.
-        _wrap_to(x[0], 0, 2 * np.pi) - np.pi,
-        _wrap_to(x[1], -np.pi, np.pi),
-        x[2],
-        x[3],
-    ])
+    return np.array(
+        [
+            # The upright equilibrium theta0 is pi; rotate this angle
+            # accordingly.
+            _wrap_to(x[0], 0, 2 * np.pi) - np.pi,
+            _wrap_to(x[1], -np.pi, np.pi),
+            x[2],
+            x[3],
+        ]
+    )
 
 
 def final_state_cost(x_tape):

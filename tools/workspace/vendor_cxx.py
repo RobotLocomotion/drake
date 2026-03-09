@@ -24,6 +24,7 @@ def _designate_wrapped_lines(lines):
     wrapping status of their neighbors in order to minimize the number of
     added lines.
     """
+
     class Flag(Enum):
         WRAP = 1
         NO_WRAP = -1
@@ -31,11 +32,11 @@ def _designate_wrapped_lines(lines):
 
     # Regexs to match various kinds of code patterns.
     is_include = re.compile(r'^\s*#\s*include\s*["<].*$')
-    is_preprocessor = re.compile(r'^\s*#.*$')
-    is_blank = re.compile(r'^\s*$')
-    is_blank_cpp_comment = re.compile(r'^\s*//.*$')
-    is_blank_c_comment_begin = re.compile(r'^\s*/\*.*$')
-    is_c_comment_end = re.compile(r'^.*\*/\s*(.*)$')
+    is_preprocessor = re.compile(r"^\s*#.*$")
+    is_blank = re.compile(r"^\s*$")
+    is_blank_cpp_comment = re.compile(r"^\s*//.*$")
+    is_blank_c_comment_begin = re.compile(r"^\s*/\*.*$")
+    is_c_comment_end = re.compile(r"^.*\*/\s*(.*)$")
 
     # Loop over all lines and determine each one's flag.
     flags = [None] * len(lines)
@@ -43,7 +44,7 @@ def _designate_wrapped_lines(lines):
     while i < len(lines):
         line = lines[i]
         # When the prior line has continuation, this line inherits its Flag.
-        if i > 0 and lines[i - 1].endswith('\\'):
+        if i > 0 and lines[i - 1].endswith("\\"):
             flags[i] = flags[i - 1]
             i += 1
             continue
@@ -155,22 +156,22 @@ def _rewrite_one_text(*, text, inline_namespace):
         return text
 
     # Prepare to edit one line at a time.
-    lines = text.split('\n')
-    if lines[-1] == '':
+    lines = text.split("\n")
+    if lines[-1] == "":
         lines.pop()
     hidden = '__attribute__ ((visibility ("hidden")))'
 
     # If we are only changing namespaces (not adding new ones), do that now:
     if not inline_namespace:
         # Match either 'namespace foo' or 'namespace foo {'.
-        regex = re.compile(r'^\s*namespace\s+([^{]+?)(\s*{)?$')
+        regex = re.compile(r"^\s*namespace\s+([^{]+?)(\s*{)?$")
         for i, line in enumerate(lines):
             match = regex.match(line)
             if not match:
                 continue
             name, brace = match.groups()
-            lines[i] = f'namespace {name} {hidden}{brace or ""}'
-        text = '\n'.join(lines) + '\n'
+            lines[i] = f"namespace {name} {hidden}{brace or ''}"
+        text = "\n".join(lines) + "\n"
         return text
 
     # We'll add an inline namespace around the C++ code in this file.
@@ -179,11 +180,8 @@ def _rewrite_one_text(*, text, inline_namespace):
 
     # Anytime the sense of wrapping switches, we'll insert a line.
     # Do this in reverse order so that the indices into lines[] are stable.
-    open_inline = ' '.join([
-        'inline namespace drake_vendor',
-        hidden,
-        '{'])
-    close_inline = '}  /* inline namespace drake_vendor */'
+    open_inline = " ".join(["inline namespace drake_vendor", hidden, "{"])
+    close_inline = "}  /* inline namespace drake_vendor */"
     for i in range(len(lines), -1, -1):
         this_wrap = should_wrap[i] if i < len(lines) else False
         prior_wrap = should_wrap[i - 1] if i > 1 else False
@@ -192,7 +190,7 @@ def _rewrite_one_text(*, text, inline_namespace):
         insertion = open_inline if this_wrap else close_inline
         lines.insert(i, insertion)
 
-    text = '\n'.join(lines) + '\n'
+    text = "\n".join(lines) + "\n"
     return text
 
 
@@ -201,39 +199,46 @@ def _rewrite_one_file(*, old_filename, new_filename, inline_namespace):
     alterations as described by _rewrite_one_string().
     """
     # Read the original.
-    with open(old_filename, 'r', encoding='utf-8') as in_file:
+    with open(old_filename, "r", encoding="utf-8") as in_file:
         old_text = in_file.read()
 
-    new_text = _rewrite_one_text(text=old_text,
-                                 inline_namespace=inline_namespace)
+    new_text = _rewrite_one_text(
+        text=old_text, inline_namespace=inline_namespace
+    )
 
     # Write out the altered file.
-    with open(new_filename, 'w', encoding='utf-8') as out_file:
+    with open(new_filename, "w", encoding="utf-8") as out_file:
         out_file.write(new_text)
 
 
 def _split_pair(arg):
-    """Helper function to split ':'-delimited pairs on the command line.
-    """
-    old, new = arg.split(':')
+    """Helper function to split ':'-delimited pairs on the command line."""
+    old, new = arg.split(":")
     return (old, new)
 
 
 def _main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--no-inline-namespace', dest='inline_namespace', action='store_false',
-        help='Set visibility directly without an inline namespace wrapper')
+        "--no-inline-namespace",
+        dest="inline_namespace",
+        action="store_false",
+        help="Set visibility directly without an inline namespace wrapper",
+    )
     parser.add_argument(
-        'rewrite', nargs='+', type=_split_pair,
-        help='Filename pairs to rewrite, given as IN:OUT')
+        "rewrite",
+        nargs="+",
+        type=_split_pair,
+        help="Filename pairs to rewrite, given as IN:OUT",
+    )
     args = parser.parse_args()
     for old_filename, new_filename in args.rewrite:
         _rewrite_one_file(
             inline_namespace=args.inline_namespace,
             old_filename=old_filename,
-            new_filename=new_filename)
+            new_filename=new_filename,
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

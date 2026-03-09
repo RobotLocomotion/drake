@@ -16,7 +16,7 @@ AutoDiffVecXd EvalGazeTargetConstraintAutoDiff(
     double cone_half_angle, const Context<AutoDiffXd>& context) {
   Vector3<AutoDiffXd> p_AT;
   plant.CalcPointsPositions(context, frameB, p_BT.cast<AutoDiffXd>(), frameA,
-                           &p_AT);
+                            &p_AT);
   const Vector3<AutoDiffXd> p_ST_A = p_AT - p_AS;
   Vector2<AutoDiffXd> y_autodiff;
   const Vector3<double> n_A_normalized = n_A.normalized();
@@ -55,9 +55,8 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
 
   plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   Vector2<AutoDiffXd> y_autodiff_expected = EvalGazeTargetConstraintAutoDiff(
-      *plant_autodiff_,
-      plant_autodiff_->GetFrameByName(frameA.name()), p_AS, n_A,
-      plant_autodiff_->GetFrameByName(frameB.name()), p_BT,
+      *plant_autodiff_, plant_autodiff_->GetFrameByName(frameA.name()), p_AS,
+      n_A, plant_autodiff_->GetFrameByName(frameB.name()), p_BT,
       cone_half_angle, *plant_context_autodiff_);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 
@@ -66,9 +65,8 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
   plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalGazeTargetConstraintAutoDiff(
-      *plant_autodiff_,
-      plant_autodiff_->GetFrameByName(frameA.name()), p_AS, n_A,
-      plant_autodiff_->GetFrameByName(frameB.name()), p_BT,
+      *plant_autodiff_, plant_autodiff_->GetFrameByName(frameA.name()), p_AS,
+      n_A, plant_autodiff_->GetFrameByName(frameB.name()), p_BT,
       cone_half_angle, *plant_context_autodiff_);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 
@@ -121,10 +119,10 @@ TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
   }
   {
-    GazeTargetConstraint bad_constraint(
-        plant_, plant_->get_frame(body1_index_), p_AS, n_A,
-        plant_->get_frame(body2_index_), p_BT, angle - 0.01 * M_PI,
-        plant_context_);
+    GazeTargetConstraint bad_constraint(plant_, plant_->get_frame(body1_index_),
+                                        p_AS, n_A,
+                                        plant_->get_frame(body2_index_), p_BT,
+                                        angle - 0.01 * M_PI, plant_context_);
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }
 }

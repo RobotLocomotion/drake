@@ -29,6 +29,7 @@ RevoluteSpring<T>::~RevoluteSpring() = default;
 
 template <typename T>
 const RevoluteJoint<T>& RevoluteSpring<T>::joint() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   const RevoluteJoint<T>* joint = dynamic_cast<const RevoluteJoint<T>*>(
       &this->get_parent_tree().get_joint(joint_index_));
   DRAKE_DEMAND(joint != nullptr);

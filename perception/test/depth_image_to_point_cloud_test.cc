@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 
 #include <gtest/gtest.h>

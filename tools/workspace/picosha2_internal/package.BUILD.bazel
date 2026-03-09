@@ -13,9 +13,12 @@ cc_library(
     name = "picosha2",
     hdrs = ["picosha2.h"],
     includes = ["."],
+    isystem = True,
 )
 
 install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

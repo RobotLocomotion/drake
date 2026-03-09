@@ -13,13 +13,17 @@
 #include <common_robotics_utilities/parallelism.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <fmt/format.h>
-#include <voxelized_geometry_tools/collision_map.hpp>
-#include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
+#include <voxelized_geometry_tools/occupancy_map.hpp>
+#include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
 #include "drake/common/parallelism.h"
-#include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
+
+// Our linter rejects logging from header files, but this isn't really a header
+// file. It is listed as `srcs` not `hdrs` in the BUILD file and is more like an
+// `*.inc` file than a true header.
+#include "drake/common/text_logging.h"  // drakelint: ignore
 
 namespace drake {
 namespace planning {
@@ -53,7 +57,7 @@ void FillVoxelGrid(
         grid) {
   DRAKE_THROW_UNLESS(grid != nullptr);
   DRAKE_THROW_UNLESS(grid->IsInitialized());
-  DRAKE_THROW_UNLESS(grid->GetGridSizes().UniformCellSize());
+  DRAKE_THROW_UNLESS(grid->HasUniformVoxelSize());
 
   // Get the parent body of the voxel grid.
   const auto& grid_body = plant.get_body(parent_body_index);
@@ -61,12 +65,12 @@ void FillVoxelGrid(
   // Get pose of grid in world.
   const Eigen::Isometry3d X_WB =
       plant.EvalBodyPoseInWorld(plant_context, grid_body).GetAsIsometry3();
-  const Eigen::Isometry3d& X_BGrid = grid->GetOriginTransform();
+  const Eigen::Isometry3d& X_BGrid = grid->OriginTransform();
   const Eigen::Isometry3d X_WGrid = X_WB * X_BGrid;
   const Eigen::Isometry3d X_GridW = X_WGrid.inverse();
 
   // Note that cells are uniform in size.
-  const double cell_size = grid->GetCellSizes().x();
+  const double cell_size = grid->VoxelXSize();
   const double query_radius = cell_size;
 
   // The closest possible free space is 1/2 cell size away.
@@ -139,7 +143,7 @@ void FillVoxelGrid(
   common_robotics_utilities::parallelism::StaticParallelForIndexLoop(
       common_robotics_utilities::parallelism::DegreeOfParallelism(
           parallelism.num_threads()),
-      0, grid->GetTotalCells(), per_voxel_work,
+      0, grid->NumTotalVoxels(), per_voxel_work,
       common_robotics_utilities::parallelism::ParallelForBackend::
           BEST_AVAILABLE);
 

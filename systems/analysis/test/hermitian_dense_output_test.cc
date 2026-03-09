@@ -1,5 +1,8 @@
 #include "drake/systems/analysis/hermitian_dense_output.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

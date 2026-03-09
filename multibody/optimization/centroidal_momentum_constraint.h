@@ -51,7 +51,7 @@ class CentroidalMomentumConstraint final : public solvers::Constraint {
   // TODO(hongkai.dai): provide the constructor with MBP<double> and
   // Context<double> when #14924 is resolved.
 
-  ~CentroidalMomentumConstraint() override {}
+  ~CentroidalMomentumConstraint() override;
 
   template <typename T>
   void ComposeVariable(const Eigen::Ref<const VectorX<T>>& q,

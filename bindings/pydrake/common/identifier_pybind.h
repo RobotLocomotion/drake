@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/common.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/identifier.h"
 
@@ -13,7 +13,7 @@ namespace pydrake {
 template <typename Class, typename ModuleOrClass>
 void BindIdentifier(
     ModuleOrClass m, const std::string& name, const char* id_doc) {
-  constexpr auto& cls_doc = pydrake_doc.drake.Identifier;
+  constexpr auto& cls_doc = pydrake_doc_common.drake.Identifier;
 
   py::class_<Class>(m, name.c_str(), id_doc)
       .def("get_value", &Class::get_value, cls_doc.get_value.doc)

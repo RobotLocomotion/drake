@@ -38,16 +38,16 @@ template <typename ToType, typename FromType>
     const std::string from_name{NiceTypeName::Get<FromType>()};
     const std::string to_name{NiceTypeName::Get<ToType>()};
     return ::testing::AssertionFailure()
-        << "is_dynamic_castable<" << to_name << ">(" << from_name << "* ptr)"
-        << " failed because ptr was already nullptr.";
+           << "is_dynamic_castable<" << to_name << ">(" << from_name << "* ptr)"
+           << " failed because ptr was already nullptr.";
   }
   if (dynamic_cast<const ToType* const>(ptr) == nullptr) {
     const std::string from_name{NiceTypeName::Get<FromType>()};
     const std::string to_name{NiceTypeName::Get<ToType>()};
     const std::string dynamic_name{NiceTypeName::Get(*ptr)};
     return ::testing::AssertionFailure()
-        << "is_dynamic_castable<" << to_name << ">(" << from_name << "* ptr)"
-        << " failed because ptr is of dynamic type " << dynamic_name << ".";
+           << "is_dynamic_castable<" << to_name << ">(" << from_name << "* ptr)"
+           << " failed because ptr is of dynamic type " << dynamic_name << ".";
   }
   return ::testing::AssertionSuccess();
 }

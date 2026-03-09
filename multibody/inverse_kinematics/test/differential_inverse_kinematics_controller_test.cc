@@ -1,6 +1,10 @@
 #include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_controller.h"
 
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

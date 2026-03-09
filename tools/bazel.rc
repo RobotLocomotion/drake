@@ -6,11 +6,14 @@ common --@drake//tools/flags:private_runtime_repo_default=external
 
 # Tell spdlog to build a library, not header-only. This *substantially* reduces
 # build size and improves build speed.
-build --@@spdlog+//:header_only=False
+common --@@spdlog+//:header_only=False
 
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.
 common --incompatible_autoload_externally=
+
+# Use cloudflare's mirror for improved reliability of external downloads.
+common --module_mirrors=https://bcr.cloudflaremirrors.com
 
 # Default to an optimized build.
 build -c opt
@@ -23,9 +26,21 @@ build --strict_system_includes
 # Use the host Python interpreter by default.
 build --extra_toolchains=@python//:all
 
+# For background, see https://bazel.build/docs/bazel-and-java.
+# The java_runtime_version defaults to local_jdk, which is some uncontrolled
+# version from Ubuntu or Homebrew that can lead to build failures. Instead,
+# we'll set it (and correspondingly the java_language_version) to an arbitrary
+# value that's compatible with what `lcm.jar` needs.
+build --java_language_version=11
+build --java_runtime_version=remotejdk_11
+
 # Use C++23 by default.
 build --cxxopt=-std=c++23
 build --host_cxxopt=-std=c++23
+
+# Suppress warnings from module externals.
+build --per_file_copt=external/libx11./.*@-w
+build --per_file_copt=external/libxcb./.*@-w
 
 # The legacy __init__.py causes runfiles test flakes with Bazel >= 7, and
 # in any case we don't want this feature in the first place. We should
@@ -62,8 +77,16 @@ build --test_env=LCM_DEFAULT_URL=memq://
 # Prevent matplotlib from showing windows (#11029).
 build --test_env=MPLBACKEND=Template
 
+### A wrapper configuration for debug builds. ###
+build:debug --compilation_mode=dbg
+# Provide a performance cushion for debug builds, 2x the default timeouts.
+build:debug --test_timeout=120,600,1800,7200
+
 ### A configuration that enables all optional dependencies. ###
 build:everything --test_tag_filters=-no_everything
+# We'll also use it to test our custom AutoDiff until 2026-04-01 when this flag
+# gets flipped.
+build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set

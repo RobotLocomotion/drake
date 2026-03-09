@@ -15,7 +15,8 @@ namespace drake {
 /// trivially destructable.  We shouldn't call their destructor at program exit
 /// because of the "indeterminate order of ... destruction" as mentioned in
 /// cppguide's
-/// <a href="https://drake.mit.edu/styleguide/cppguide.html#Static_and_Global_Variables">Static
+/// <a
+/// href="https://drake.mit.edu/styleguide/cppguide.html#Static_and_Global_Variables">Static
 /// and Global Variables</a> section, but other solutions to this problem place
 ///  the objects on the heap through an indirection.
 ///

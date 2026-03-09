@@ -37,8 +37,8 @@ namespace cylinder_with_multicontact {
 ///   model once you are done populating it.
 void PopulateCylinderPlant(
     double radius, double length, double mass,
-    const drake::multibody::CoulombFriction<double>&
-    surface_friction, const Vector3<double>& gravity_W,
+    const drake::multibody::CoulombFriction<double>& surface_friction,
+    const Vector3<double>& gravity_W,
     drake::multibody::MultibodyPlant<double>* plant);
 
 }  // namespace cylinder_with_multicontact

@@ -25,6 +25,7 @@ cc_library_vendored(
         "TINYGLTF_NO_STB_IMAGE_WRITE",
     ],
     includes = ["drake_vendor"],
+    isystem = True,
     linkstatic = 1,
     deps = [
         "@nlohmann_internal//:nlohmann",
@@ -35,3 +36,5 @@ install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

@@ -149,7 +149,7 @@ class FingerNoSlidingConstraint : public solvers::Constraint {
                             systems::Context<double>* from_context,
                             systems::Context<double>* to_context);
 
-  ~FingerNoSlidingConstraint() override {}
+  ~FingerNoSlidingConstraint() override;
 
  private:
   template <typename T>
@@ -187,7 +187,7 @@ class FingerNoSlidingFromFixedPostureConstraint : public solvers::Constraint {
       BrickFace face, const systems::Context<double>* from_context,
       systems::Context<double>* to_context);
 
-  ~FingerNoSlidingFromFixedPostureConstraint() override {}
+  ~FingerNoSlidingFromFixedPostureConstraint() override;
 
  private:
   template <typename T>

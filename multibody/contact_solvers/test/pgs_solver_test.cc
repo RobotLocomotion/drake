@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/SparseCore>
 #include <gtest/gtest.h>

@@ -34,6 +34,9 @@ This simplifies the process of testing changes locally. On macOS, the current
 checkout is used directly. In some cases, it may be necessary to run
 ``bazel clean`` before building a wheel.
 
+The wheels are sanity tested as part of the build. All files in the ``test``
+subdirectory are run against the installed wheel.
+
 On successful completion, the requested set of wheels will be written to the
 specified output directory (by default, the current working directory, unless
 overridden by ``--output-dir``), unless ``--no-extract`` was specified.

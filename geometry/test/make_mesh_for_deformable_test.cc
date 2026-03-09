@@ -1,5 +1,7 @@
 #include "drake/geometry/make_mesh_for_deformable.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

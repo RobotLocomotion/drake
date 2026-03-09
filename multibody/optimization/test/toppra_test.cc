@@ -1,6 +1,9 @@
 #include "drake/multibody/optimization/toppra.h"
 
+#include <memory>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 

@@ -17,6 +17,7 @@ cc_library_vendored(
     hdrs_vendored = ["drake_src/tiny_obj_loader.h"],
     defines = ["TINYOBJLOADER_USE_DOUBLE=1"],
     includes = ["drake_src"],
+    isystem = True,
     linkstatic = 1,
 )
 
@@ -24,3 +25,5 @@ install(
     name = "install",
     docs = ["LICENSE"],
 )
+
+exports_files(["drake_repository_metadata.json"])

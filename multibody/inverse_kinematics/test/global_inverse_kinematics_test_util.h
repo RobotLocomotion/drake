@@ -16,7 +16,7 @@ class KukaTest : public ::testing::Test {
  public:
   KukaTest();
 
-  ~KukaTest() override{};
+  ~KukaTest() override {};
 
   /**
    * Given the solution computed from global IK, reconstruct the posture, then

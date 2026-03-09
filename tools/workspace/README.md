@@ -116,8 +116,14 @@ external "foo"):
   bazel run //tools/workspace:new_release -- --lint --commit foo
 ```
 
-If the automated update doesn't succeed, then you'll need to make the edits
-manually.  Ask for help in drake developers slack channel for ``#build``.
+If the automated update doesn't succeed and the error message is
+"Reversed (or previously applied) patch detected!" and refers to a patch
+named /upstream/, try to remove the patch from Drake by deleting the patch
+file and removing its mention in the repository.bzl. If the update then works,
+the deletions can be amended into the commit for that external.
+
+If it still fails, or for any other errors, you'll need to make the edits
+manually. Ask for help in drake developers slack channel for ``#build``.
 
 If the automated update succeeded, check the output of ``new_release`` for any
 additional steps that need to be manually performed to complete the upgrade.
@@ -184,6 +190,35 @@ the most efficient path to resolve the problem.
 If an external required non-trivial changes, even if you were able to make the
 changes yourself, consider separating that external into its own pull request
 and assigning it to the associated feature owner.
+
+## drake-external-examples
+
+The
+[drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_external)
+example demonstrates the use of some of Drake's CMake options for user-provided
+external packages as part of the public API. While users may be able to provide
+their own versions which don't necessarily match those officially supported by
+Drake, the official examples should match and be kept up-to-date as part of the
+monthly upgrades process.
+
+The packages with their canonical versions are listed in Drake's `MODULE.bazel`,
+and the corresponding user-provided versions in drake-external-examples are
+found in the calls to `ExternalProject_Add` in the example's
+[CMakeLists.txt](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_cmake_external/CMakeLists.txt).
+Any time these packages are upgraded in Drake (via the steps above, or separate
+from the monthly upgrades), use the
+[automated upgrade script](https://github.com/RobotLocomotion/drake-external-examples/blob/main/private/upgrade_cmake_externals.py)
+to create a pull request on drake-external-examples. See the script for its
+usage requirements; it mirrors the workflow of the `new_release` tool. For the
+automated upgrades, it's best to wait to perform upgrades in
+drake-external-examples until after the Renovate bot is scheduled to open pull
+requests with upgrades, and those upgrades have been merged by Drake
+maintainers. See `.github/renovate.json` for the most up-to-date schedule for
+automated upgrades.
+
+The continuous integration (via GitHub Actions) in that repository runs the
+upgrade script to verify that packages are in sync with Drake, which should
+serve as a reminder to maintainers to perform regular upgrades.
 
 # Changing the version of third-party software manually
 
@@ -318,6 +353,7 @@ roughly:
   `foo_repository()` macro or rule.
 - Load the module extension in `MODULE.bazel`.
 - Add a courtesy mention of the software in `doc/_pages/credits.md`.
+- List the `drake_repository_metadata.json` in `tools/workspace/BUILD.bazel`.
 
 When indicating licenses in the source, use the identifier from the
 [SPDX License List](https://spdx.org/licenses/).

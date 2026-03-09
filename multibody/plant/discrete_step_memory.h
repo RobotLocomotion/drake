@@ -11,7 +11,6 @@
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {

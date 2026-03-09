@@ -9,6 +9,8 @@
 #include <ostream>
 #include <set>
 #include <sstream>
+#include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER

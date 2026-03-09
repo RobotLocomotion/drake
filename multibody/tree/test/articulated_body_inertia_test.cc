@@ -1,5 +1,7 @@
 #include "drake/multibody/tree/articulated_body_inertia.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

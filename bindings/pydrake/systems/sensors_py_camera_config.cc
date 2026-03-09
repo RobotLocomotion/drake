@@ -1,5 +1,5 @@
+#include "drake/bindings/generated_docstrings/systems_sensors.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/common/overloaded.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
@@ -14,7 +14,7 @@ using systems::DiagramBuilder;
 void DefineSensorsCameraConfig(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;
 
   {
     // To bind nested serializable structs without errors, we declare the outer

@@ -15,6 +15,10 @@ controller operates the robot, without extra hassle.
 Drake maintainers should keep this file in sync with hardware_sim.py. */
 
 #include <fstream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <gflags/gflags.h>
 
@@ -36,16 +40,19 @@ Drake maintainers should keep this file in sync with hardware_sim.py. */
 #include "drake/visualization/visualization_config_functions.h"
 
 DEFINE_string(scenario_file, "",
-    "Scenario filename, e.g., "
-    "drake/examples/hardware_sim/example_scenarios.yaml");
-DEFINE_string(scenario_name, "",
+              "Scenario filename, e.g., "
+              "drake/examples/hardware_sim/example_scenarios.yaml");
+DEFINE_string(
+    scenario_name, "",
     "Scenario name within the scenario_file, e.g., Demo in the "
     "example_scenarios.yaml; scenario names appears as the keys of the "
     "YAML document's top-level mapping item");
-DEFINE_string(scenario_text, "{}",
+DEFINE_string(
+    scenario_text, "{}",
     "Additional YAML scenario text to load, in order to override values "
     "in the scenario_file, e.g., timeouts");
-DEFINE_string(graphviz, "",
+DEFINE_string(
+    graphviz, "",
     "Dump the Simulator's Diagram to this file in Graphviz format as a "
     "debugging aid");
 
@@ -69,8 +76,7 @@ using visualization::ApplyVisualizationConfig;
 /* Class that holds the configuration and data of a simulation. */
 class Simulation {
  public:
-  explicit Simulation(const Scenario& scenario)
-      : scenario_(scenario) {}
+  explicit Simulation(const Scenario& scenario) : scenario_(scenario) {}
 
   /* Performs all of the initial setup of the simulation diagram and context. */
   void Setup();

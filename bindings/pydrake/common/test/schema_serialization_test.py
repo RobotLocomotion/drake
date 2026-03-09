@@ -1,36 +1,36 @@
+import pydrake.common.schema as mut  # ruff: isort: skip
+
 import dataclasses as dc
 import math
 from textwrap import dedent
-import typing
 import unittest
 
 import numpy as np
 from numpy.testing import assert_allclose
 
-import pydrake.common.schema as mut
 from pydrake.common.yaml import yaml_dump_typed, yaml_load, yaml_load_typed
 from pydrake.math import RollPitchYaw
 
 
 @dc.dataclass
 class StochasticSingular:
-    deterministic: typing.Optional[mut.Deterministic] = None
-    gaussian: typing.Optional[mut.Gaussian] = None
-    uniform: typing.Optional[mut.Uniform] = None
-    discrete: typing.Optional[mut.UniformDiscrete] = None
+    deterministic: mut.Deterministic | None = None
+    gaussian: mut.Gaussian | None = None
+    uniform: mut.Uniform | None = None
+    discrete: mut.UniformDiscrete | None = None
 
 
 @dc.dataclass
 class StochasticVectors:
-    deterministic: typing.Optional[mut.DeterministicVectorX] = None
-    gaussian: typing.Optional[mut.GaussianVectorX] = None
-    uniform: typing.Optional[mut.UniformVectorX] = None
+    deterministic: mut.DeterministicVectorX | None = None
+    gaussian: mut.GaussianVectorX | None = None
+    uniform: mut.UniformVectorX | None = None
 
 
 class BaseTest(unittest.TestCase):
-
-    def _check_yaml_semantic_equality(self, expected_yaml_string,
-                                      actual_yaml_string):
+    def _check_yaml_semantic_equality(
+        self, expected_yaml_string, actual_yaml_string
+    ):
         """Given two yaml strings, parses them into dictionaries (i.e., do not
         deserialize into pydrake types) and then compares them for equality.
         """
@@ -161,7 +161,7 @@ class TestTransformSerialization(BaseTest):
         assert_allclose(x.translation.min, [1.0, 2.0, 3.0])
         assert_allclose(x.translation.max, [4.0, 5.0, 6.0])
         assert_allclose(x.rotation.value.deg.min, [380, -0.25, -1.0])
-        assert_allclose(x.rotation.value.deg.max, [400,  0.25,  1.0])
+        assert_allclose(x.rotation.value.deg.max, [400, 0.25, 1.0])
         self._check_yaml_semantic_equality(yaml_dump_typed(x), data)
 
     def test_random_angle_axis(self):

@@ -70,8 +70,8 @@ class ExampleCppClass {
 /// Serves as an example for binding (and deprecating) a simple struct. This
 /// allows the struct to be constructed with ParamInit and deprecated using
 /// the corresponding DeprecatedParamInit.
-struct DRAKE_DEPRECATED(
-    "2038-01-19", "Do not use ExampleCppStruct") ExampleCppStruct {
+struct DRAKE_DEPRECATED("2038-01-19", "Do not use ExampleCppStruct")
+    ExampleCppStruct {
   int i{};
   int j{};
 };

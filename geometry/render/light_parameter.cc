@@ -4,19 +4,16 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-std::ostream& operator<<(std::ostream& out, const LightType& t) {
+std::string_view to_string(const LightType& t) {
   switch (t) {
     case LightType::kPoint:
-      out << "point";
-      break;
+      return "point";
     case LightType::kSpot:
-      out << "spot";
-      break;
+      return "spot";
     case LightType::kDirectional:
-      out << "directional";
-      break;
+      return "directional";
   }
-  return out;
+  DRAKE_UNREACHABLE();
 }
 
 LightType light_type_from_string(const std::string& spec) {
@@ -32,16 +29,14 @@ LightType light_type_from_string(const std::string& spec) {
   }
 }
 
-std::ostream& operator<<(std::ostream& out, const LightFrame& t) {
-  switch (t) {
+std::string_view to_string(const LightFrame& f) {
+  switch (f) {
     case LightFrame::kWorld:
-      out << "world";
-      break;
+      return "world";
     case LightFrame::kCamera:
-      out << "camera";
-      break;
+      return "camera";
   }
-  return out;
+  DRAKE_UNREACHABLE();
 }
 
 LightFrame light_frame_from_string(const std::string& spec) {

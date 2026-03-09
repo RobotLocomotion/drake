@@ -1,9 +1,5 @@
 #include "drake/math/roll_pitch_yaw.h"
 
-#include <string>
-
-#include <fmt/format.h>
-
 #include "drake/common/cond.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -454,6 +450,11 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
 
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
+  return out << fmt::to_string(rpy);
+}
+
+template <typename T>
+std::string to_string(const RollPitchYaw<T>& rpy) {
   // Helper to represent an angle as a terse string.  If the angle is symbolic
   // and ends up a string that's too long, return a placeholder instead.
   auto repr = [](const T& angle) {
@@ -466,16 +467,21 @@ std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
   const T& roll = rpy.roll_angle();
   const T& pitch = rpy.pitch_angle();
   const T& yaw = rpy.yaw_angle();
-  out << fmt::format("rpy = {} {} {}", repr(roll), repr(pitch), repr(yaw));
-  return out;
+  return fmt::format("rpy = {} {} {}", repr(roll), repr(pitch), repr(yaw));
 }
 
+// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RollPitchYaw<T>&)>(
-        &operator<< )
+        &operator<< ),
+    static_cast<std::string(*)(const RollPitchYaw<T>&)>(
+        &to_string)
 ));
 // clang-format on
+#pragma GCC diagnostic pop
 
 }  // namespace math
 }  // namespace drake

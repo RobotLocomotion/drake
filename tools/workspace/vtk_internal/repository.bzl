@@ -181,11 +181,8 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        # TODO(jwnimmer-tri) Once there's a tagged release with support for
-        # VTK_ABI_NAMESPACE, we should switch to an official version number
-        # here. That probably means waiting for the VTK 10 release.
-        commit = "557befa04130f42d7287b86e5f9c6397117fd4d8",
-        sha256 = "2240f29d8a21f46388407d8ace20f51d00f35a5fb0c4b1fa10d6d7d6e597b4eb",  # noqa
+        commit = "75e132bef404533d6e409d0678934be246bed84e",
+        sha256 = "4539fe013d68d4d4514a1ec4155bd4f2dbc169dd8c0f65cd3cd20d92832195ad",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -195,14 +192,9 @@ def vtk_internal_repository(
             # - Patch file names should begin with the name of the module being
             #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
             # - Use alphabetical order within a directory when listing patches.
-            ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/common_datamodel_vtkdatasetattributes_iterator.patch",  # noqa
-            ":patches/upstream/common_executionmodel_vtkalgorithm_ternary.patch",  # noqa
-            ":patches/upstream/io_geometry_gltf_default_scene.patch",
-            ":patches/upstream/io_import_errors.patch",
-            ":patches/upstream/rendering_core_vtkcomposite_exception.patch",
-            ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
-            ":patches/upstream/vtkpugixml_global_ctor.patch",
+            ":patches/upstream/rendering_opengl2_replace_single_scattering_with_multi_scattering_in_pbr.patch",
+            ":patches/upstream/utilities_x11_more_functions.patch",
+            ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
@@ -212,10 +204,12 @@ def vtk_internal_repository(
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
             ":patches/rendering_opengl2_no_global_display_counter.patch",
+            ":patches/rendering_opengl2_no_global_x11_counter.patch",
             ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
-            ":patches/vtkdoubleconversion_hidden.patch",
+            ":patches/utilities_x11_dlsym.patch",
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
+            ":patches/vtkscn_hidden.patch",
             ":patches/vtksys_hidden.patch",
         ],
         settings_bzl = ":settings.bzl",

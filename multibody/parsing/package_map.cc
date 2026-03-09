@@ -17,7 +17,6 @@
 #include <tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
@@ -361,7 +360,7 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   const std::string downloader =
       FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
   const std::string command =
-      fmt::format("/usr/bin/python3 {} {} {} {}", downloader, json_filename,
+      fmt::format("/usr/bin/python3 -E {} {} {} {}", downloader, json_filename,
                   error_filename, "--disable-drake-valgrind-tracing");
   const int returncode = std::system(command.c_str());
   if (returncode != 0) {
@@ -977,15 +976,20 @@ void PackageMap::AddPackageXml(const char* filename) {
   this->AddPackageXml(std::string(filename));
 }
 
+std::string PackageMap::to_string() const {
+  std::string result{"PackageMap:\n"};
+  if (size() == 0) {
+    result.append("  [EMPTY!]\n");
+  }
+  for (const auto& [package_name, data] : impl_->map()) {
+    result.append(
+        fmt::format("  - {}: {}\n", package_name, data.display_path()));
+  }
+  return result;
+}
+
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
-  out << "PackageMap:\n";
-  if (package_map.size() == 0) {
-    out << "  [EMPTY!]\n";
-  }
-  for (const auto& [package_name, data] : package_map.impl_->map()) {
-    out << "  - " << package_name << ": " << data.display_path() << "\n";
-  }
-  return out;
+  return out << fmt::to_string(package_map);
 }
 
 }  // namespace multibody

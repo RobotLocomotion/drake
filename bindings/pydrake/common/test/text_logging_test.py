@@ -1,4 +1,3 @@
-import functools
 from logging import (
     CRITICAL,
     DEBUG,
@@ -23,8 +22,9 @@ from pydrake.common.test_utilities.meta import (
 DRAKE_TRACE = 5
 
 
-class TestTextLoggingExample(unittest.TestCase,
-                             metaclass=ValueParameterizedTest):
+class TestTextLoggingExample(
+    unittest.TestCase, metaclass=ValueParameterizedTest
+):
     """Proves that Python logging is in effect, by checking all combinations of
     log level settings for both C++ and Python.
 
@@ -36,7 +36,7 @@ class TestTextLoggingExample(unittest.TestCase,
         """Enumerates all permutations of logging configurations to test."""
         all_levels = [
             -1,  # The test program uses "-1" to denote leaving the level at
-                 # its default value, i.e., not calling setLevel().
+            # its default value, i.e., not calling setLevel().
             NOTSET,
             DRAKE_TRACE,
             DEBUG,
@@ -53,21 +53,32 @@ class TestTextLoggingExample(unittest.TestCase,
                             use_nice_format=use_nice_format,
                             use_native_cpp_logging=use_native_cpp_logging,
                             root_level=root_level,
-                            drake_level=drake_level)
+                            drake_level=drake_level,
+                        )
 
     @run_with_multiple_values(_all_permutations())
-    def test_example(self, *, use_nice_format, use_native_cpp_logging,
-                     root_level, drake_level):
+    def test_example(
+        self,
+        *,
+        use_nice_format,
+        use_native_cpp_logging,
+        root_level,
+        drake_level,
+    ):
         """Runs the text_logging_example and checks its output."""
         # Invoke the test program.
         try:
             output = subprocess.check_output(
-                ["bindings/pydrake/common/text_logging_example",
-                 f"--use_nice_format={int(use_nice_format)}",
-                 f"--use_native_cpp_logging={int(use_native_cpp_logging)}",
-                 f"--root_level={root_level}",
-                 f"--drake_level={drake_level}"],
-                stderr=subprocess.STDOUT, encoding="utf8")
+                [
+                    "bindings/pydrake/common/text_logging_example",
+                    f"--use_nice_format={int(use_nice_format)}",
+                    f"--use_native_cpp_logging={int(use_native_cpp_logging)}",
+                    f"--root_level={root_level}",
+                    f"--drake_level={drake_level}",
+                ],
+                stderr=subprocess.STDOUT,
+                encoding="utf8",
+            )
         except subprocess.CalledProcessError as e:
             print(e.output, file=sys.stderr, flush=True)
             raise
@@ -182,14 +193,17 @@ class TestTextLoggingExample(unittest.TestCase,
         python_level = CRITICAL + 1
         try:
             output = subprocess.check_output(
-                ["bindings/pydrake/common/text_logging_example",
+                [
+                    "bindings/pydrake/common/text_logging_example",
                     "--use_nice_format=1",
                     "--use_native_cpp_logging=0",
                     f"--root_level={python_level}",
-                    f"--drake_level={python_level}"],
+                    f"--drake_level={python_level}",
+                ],
                 stderr=subprocess.STDOUT,
                 encoding="utf8",
-                env=env)
+                env=env,
+            )
         except subprocess.CalledProcessError as e:
             print(e.output, file=sys.stderr, flush=True)
             raise

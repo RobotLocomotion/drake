@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 

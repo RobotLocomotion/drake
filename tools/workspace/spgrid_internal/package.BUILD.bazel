@@ -17,6 +17,7 @@ cc_library(
     include_prefix = "SPGrid/Core",
     # TODO(xuchenhan-tri): Enable Haswell on builds that support it.
     includes = ["."],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )

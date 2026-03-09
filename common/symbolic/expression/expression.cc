@@ -4,8 +4,14 @@
 /* clang-format on */
 
 #include <algorithm>
+#include <functional>
 #include <ios>
+#include <limits>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
@@ -1006,6 +1012,23 @@ struct GetDistinctVariablesVisitor {
   Variables variables;
 };
 }  // namespace
+}  // namespace symbolic
+}  // namespace drake
+
+namespace Eigen {
+namespace internal {
+// Using Matrix::visit requires providing functor_traits.
+template <>
+struct functor_traits<drake::symbolic::GetDistinctVariablesVisitor> {
+  static constexpr int Cost = 10;
+  [[maybe_unused]] static constexpr bool LinearAccess = false;
+  [[maybe_unused]] static constexpr bool PacketAccess = false;
+};
+}  // namespace internal
+}  // namespace Eigen
+
+namespace drake {
+namespace symbolic {
 
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
   GetDistinctVariablesVisitor visitor;

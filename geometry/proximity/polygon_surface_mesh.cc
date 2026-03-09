@@ -53,6 +53,18 @@ void PolygonSurfaceMesh<T>::ReverseFaceWinding() {
 }
 
 template <typename T>
+template <typename C>
+typename PolygonSurfaceMesh<T>::template Barycentric<promoted_numerical_t<T, C>>
+PolygonSurfaceMesh<T>::CalcBarycentric(const Vector3<C>& p_MQ, int p) const
+  requires scalar_predicate<C>::is_bool
+{
+  unused(p_MQ, p);
+  throw std::runtime_error(
+      "PolygonSurfaceMesh::CalcBarycentric(): PolygonSurfaceMesh does not have "
+      "barycentric coordinates.");
+}
+
+template <typename T>
 std::pair<Vector3<T>, Vector3<T>> PolygonSurfaceMesh<T>::CalcBoundingBox()
     const {
   Vector3<T> min_extent =
@@ -242,6 +254,9 @@ void PolygonSurfaceMesh<T>::SetAllPositions(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class PolygonSurfaceMesh);
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&PolygonSurfaceMesh<T>::template CalcBarycentric<U>));
 
 }  // namespace geometry
 }  // namespace drake

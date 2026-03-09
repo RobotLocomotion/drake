@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 
 #include <cmath>
+#include <limits>
 
 #include <gtest/gtest.h>
 

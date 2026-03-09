@@ -1,5 +1,7 @@
 #include "drake/geometry/render_gl/render_engine_gl_params.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/yaml/yaml_io.h"

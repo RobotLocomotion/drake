@@ -1,5 +1,7 @@
 #include "drake/geometry/render_gltf_client/factory.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/render/render_engine.h"

@@ -195,16 +195,7 @@ class InputPort final : public InputPortBase {
             InputPortIndex index, DependencyTicket ticket,
             PortDataType data_type, int size,
             const std::optional<RandomDistribution>& random_type,
-            EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc)
-      : InputPortBase(system_interface, system_id, std::move(name), index,
-                      ticket, data_type, size, random_type, std::move(eval),
-                      std::move(alloc)),
-        system_(*system) {
-    DRAKE_DEMAND(system != nullptr);
-    // Check the precondition on identical parameters; note that comparing as
-    // void* is only valid because we have single inheritance.
-    DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
-  }
+            EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc);
 
   const System<T>& system_;
 };

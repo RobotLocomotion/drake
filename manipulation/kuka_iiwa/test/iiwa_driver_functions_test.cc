@@ -1,5 +1,9 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

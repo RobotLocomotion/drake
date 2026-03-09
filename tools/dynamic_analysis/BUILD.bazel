@@ -16,12 +16,6 @@ sh_binary(
 )
 
 sh_binary(
-    name = "msan",
-    srcs = ["msan.sh"],
-    data = ["msan.supp"],
-)
-
-sh_binary(
     name = "tsan",
     srcs = ["tsan.sh"],
     data = ["tsan.supp"],
@@ -43,18 +37,6 @@ filegroup(
 sh_binary(
     name = "kcov",
     srcs = ["kcov.sh"],
-)
-
-sh_binary(
-    name = "drd",
-    srcs = ["drd.sh"],
-    data = ["drd.supp"],
-)
-
-sh_binary(
-    name = "helgrind",
-    srcs = ["helgrind.sh"],
-    data = ["helgrind.supp"],
 )
 
 sh_binary(

@@ -4,18 +4,18 @@
 
 This process only needs to be done once per system.
 
-Note that these scripts are tested on Ubuntu Jammy;
+Note that these scripts are tested on Ubuntu Noble;
 other platforms are not supported.
 
 ### Install required packages
 
-Linux:
+    apt install aptly
 
-    apt install gnupg1 aptly docker awscli
+Follow instructions to install Docker
+https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
 
-
-**Note:** There are compatibility issues with `gnupg2` and `aptly`. See
-[this issue](https://github.com/aptly-dev/aptly/issues/657), for example.
+Follow instructions to install awscli
+https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 
 ### Configure aptly
 
@@ -36,9 +36,7 @@ Download the public key from S3.
 
 Using the passphrase from the AWS Secrets Manager, run:
 
-    gpg[1] --import <key.asc>
-
-**Note:** It is not clear if `gpg` or `gpg1` is correct to use on Ubuntu.
+    gpg --import <key.asc>
 
 ### Log into Docker
 
@@ -62,12 +60,11 @@ Clone the drake repository:
     git clone https://github.com/RobotLocomotion/drake.git
     cd drake
 
-## Run script for Docker / S3 / GitHub
+## Run script for GitHub / S3
 
-The next step is to push docker images, mirror the .tar/.deb artifacts to S3,
-and push the official source code archive to GitHub.
+The next step is to mirror the GitHub release artifacts to S3.
 
-Once your machine is set-up, run the `push_release` script as described below:
+Once your machine is set up, run the `push_release` script as described below:
 
     bazel run //tools/release_engineering/dev:push_release -- <version>
 
@@ -75,6 +72,13 @@ The release creator will provide the version. Throughout this process, don’t
 use `v` on the version string. For example:
 
     bazel run //tools/release_engineering/dev:push_release -- 1.0.0
+
+## Run script for Docker
+
+The next step is to push Docker images. Run the `push_docker` script as
+described below:
+
+    bazel run //tools/release_engineering/dev:push_docker -- <version>
 
 ### Verification
 
@@ -86,6 +90,10 @@ contains:
     * Binaries: A set of `drake-<version>-[...].tar.gz` files for each supported
     configuration (e.g. jammy, noble, and mac). In addition, there should be
     `.sha256` and `.sha512` files for each `.tar.gz` file.
+    * Wheels: A set of `drake-<version>-[...].whl` files for each supported
+    configuration (Python version and platform; e.g., cp3{10-14}-manylinux and
+    cp3{13-14}-macosx). In addition, there should be `.sha256` and `.sha512`
+    files for each `.whl` file.
     * Source: A `drake-<version>-src.tar.gz` file and corresponding `.sha256`
     and `.sha512` files.
 
@@ -94,12 +102,7 @@ contains:
 for each supported configuration (e.g. jammy and noble) as
 `/drake-dev_<version>-1_amd64-<configuration>.deb`.
 
-3. The [GitHub release](https://github.com/RobotLocomotion/drake/releases),
-found at `https://github.com/RobotLocomotion/drake/releases/tag/v<version>`,
-contains `drake-<version>-src.tar.gz` and corresponding `.sha256` and
-`.sha512` files.
-
-4. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
+3. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has a plain `<version>` tag as well as a `<version>` tag for each supported
 configuration (e.g. jammy and noble).
 
@@ -121,6 +124,10 @@ version string. For example:
 
 The script will prompt for the GPG passphrase, which may be found in the AWS
 Secrets Manager. The script may prompt for this multiple times.
+
+### Verification
+
+Verify that you can install drake via APT, see https://drake.mit.edu/apt.html for instructions.
 
 ### [Optional] Add a new configuration
 

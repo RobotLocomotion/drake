@@ -1,6 +1,8 @@
 #include "drake/multibody/tree/screw_mobilizer.h"
 
 #include <exception>
+#include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 

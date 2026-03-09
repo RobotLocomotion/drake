@@ -15,11 +15,12 @@ export G_SLICE=always-malloc
 # tests.
 export GTEST_DEATH_TEST_USE_FORK=1
 
-# If unset, set to empty string.
-export VALGRIND_OPTS="$VALGRIND_OPTS"
+# Set to empty so that tests can rely on the presence of this variable to check
+# if they're running under valgrind.
+export VALGRIND_OPTS=""
 
 # Note the "--disable-drake-valgrind-tracing" skip-by-arg option below. Any
-# subprocesslaunched by a test with that as a commanad-line argument won't
+# subprocess launched by a test with that as a command-line argument won't
 # be instrumented by valgrind. This is useful when you want to instrument
 # a C++ unit test but not a helper program that it calls.
 
@@ -34,7 +35,7 @@ valgrind \
     --suppressions=/usr/lib/valgrind/python3.supp \
     --tool=memcheck \
     --trace-children=yes \
-    --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-15,/usr/bin/clang-format-15,/usr/bin/curl,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/patchelf,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
+    --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-15,/usr/bin/clang-format-15,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
     --trace-children-skip-by-arg=--disable-drake-valgrind-tracing \
     --track-origins=yes \
     "$@"

@@ -1,4 +1,4 @@
-/* clang-format off to disable clang-format-includes */
+/* clang-format off */
 #include "drake/common/autodiff.h"
 #include "drake/common/ad/test/standard_operations_test.h"
 /* clang-format on */

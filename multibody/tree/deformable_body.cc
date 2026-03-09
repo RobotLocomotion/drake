@@ -1,5 +1,7 @@
 #include "drake/multibody/tree/deformable_body.h"
 
+#include <utility>
+
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
@@ -8,6 +10,7 @@
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/neohookean_model.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
+#include "drake/multibody/fem/tet_subdivision_quadrature.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/tree/force_density_field.h"
@@ -24,6 +27,7 @@ using geometry::VolumeMesh;
 
 template <typename T>
 ScopedName DeformableBody<T>::scoped_name() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   return ScopedName(
       this->get_parent_tree().GetModelInstanceName(this->model_instance()),
       name_);
@@ -59,6 +63,7 @@ template <typename T>
 MultibodyConstraintId DeformableBody<T>::AddFixedConstraint(
     const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BA,
     const geometry::Shape& shape_G, const math::RigidTransform<double>& X_BG) {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   if (&this->get_parent_tree().get_body(body_B.index()) != &body_B) {
     throw std::logic_error(fmt::format(
         "AddFixedConstraint(): The rigid body with name {} is not registered "
@@ -372,20 +377,20 @@ DeformableBody<T>::BuildLinearVolumetricModel(
     const Vector3<double>& weights) {
   switch (config.material_model()) {
     case MaterialModel::kLinear:
-      BuildLinearVolumetricModelHelper<fem::internal::LinearConstitutiveModel>(
-          mesh, config, weights);
+      SelectSubdivisionAndBuildVolumetricModel<
+          fem::internal::LinearConstitutiveModel>(mesh, config, weights);
       break;
     case MaterialModel::kCorotated:
-      BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(
+      SelectSubdivisionAndBuildVolumetricModel<fem::internal::CorotatedModel>(
           mesh, config, weights);
       break;
     case MaterialModel::kNeoHookean:
-      BuildLinearVolumetricModelHelper<fem::internal::NeoHookeanModel>(
+      SelectSubdivisionAndBuildVolumetricModel<fem::internal::NeoHookeanModel>(
           mesh, config, weights);
       break;
     case MaterialModel::kLinearCorotated:
-      BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(
-          mesh, config, weights);
+      SelectSubdivisionAndBuildVolumetricModel<
+          fem::internal::LinearCorotatedModel>(mesh, config, weights);
       break;
   }
 }
@@ -393,8 +398,35 @@ DeformableBody<T>::BuildLinearVolumetricModel(
 template <typename T>
 template <template <typename> class Model, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
+DeformableBody<T>::SelectSubdivisionAndBuildVolumetricModel(
+    const geometry::VolumeMesh<double>& mesh,
+    const fem::DeformableBodyConfig<T>& config,
+    const Vector3<double>& weights) {
+  switch (config.element_subdivision_count()) {
+    case 0:
+      BuildLinearVolumetricModelHelper<Model, 0>(mesh, config, weights);
+      break;
+    case 1:
+      BuildLinearVolumetricModelHelper<Model, 1>(mesh, config, weights);
+      break;
+    case 2:
+      BuildLinearVolumetricModelHelper<Model, 2>(mesh, config, weights);
+      break;
+    case 3:
+      BuildLinearVolumetricModelHelper<Model, 3>(mesh, config, weights);
+      break;
+    case 4:
+      BuildLinearVolumetricModelHelper<Model, 4>(mesh, config, weights);
+      break;
+  }
+}
+
+template <typename T>
+template <template <typename> class Model, int num_subd, typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
 DeformableBody<T>::BuildLinearVolumetricModelHelper(
-    const VolumeMesh<double>& mesh, const fem::DeformableBodyConfig<T>& config,
+    const geometry::VolumeMesh<double>& mesh,
+    const fem::DeformableBodyConfig<T>& config,
     const Vector3<double>& weights) {
   constexpr int kNaturalDimension = 3;
   constexpr int kSpatialDimension = 3;
@@ -414,9 +446,17 @@ DeformableBody<T>::BuildLinearVolumetricModelHelper(
           ConstitutiveModelType>,
       "The template parameter 'Model' must be derived from "
       "ConstitutiveModel.");
-  using FemElementType =
-      fem::internal::VolumetricElement<IsoparametricElementType, QuadratureType,
-                                       ConstitutiveModelType>;
+  using SubdQuadratureType =
+      std::conditional_t<(num_subd <= 0), QuadratureType,
+                         fem::internal::TetSubdivisionQuadrature<num_subd>>;
+  using SubdIsoparametricElementType =
+      std::conditional_t<(num_subd <= 0), IsoparametricElementType,
+                         fem::internal::LinearSimplexElement<
+                             T, kNaturalDimension, kSpatialDimension,
+                             SubdQuadratureType::num_quadrature_points>>;
+  using FemElementType = fem::internal::VolumetricElement<
+      IsoparametricElementType, QuadratureType, ConstitutiveModelType,
+      SubdIsoparametricElementType, SubdQuadratureType>;
   using FemModelType = fem::internal::VolumetricModel<FemElementType>;
 
   const fem::DampingModel<T> damping_model(

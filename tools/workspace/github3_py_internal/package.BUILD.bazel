@@ -20,3 +20,5 @@ py_library(
         "@uritemplate_py_internal//:uritemplate_py",
     ],
 )
+
+exports_files(["drake_repository_metadata.json"])

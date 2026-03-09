@@ -18,9 +18,10 @@ struct is_less_than_comparable_helper : std::false_type {};
 // `operator<`. If this exists, the is_less_than_comparable implicitly
 // prefers this overload over the default overload.
 template <typename T>
-struct is_less_than_comparable_helper<T, typename std::enable_if_t<true,
-    decltype(unused(std::declval<T&>() < std::declval<T&>()),
-    (void)0)>> : std::true_type {};
+struct is_less_than_comparable_helper<
+    T, typename std::enable_if_t<true, decltype(unused(std::declval<T&>() <
+                                                       std::declval<T&>()),
+                                                (void)0)>> : std::true_type {};
 
 }  // namespace is_less_than_comparable_internal
 

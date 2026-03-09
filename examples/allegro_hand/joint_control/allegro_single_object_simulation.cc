@@ -7,6 +7,12 @@
 /// current state of the hand, and a subscriber to read the posiiton commands
 /// of the finger joints.
 
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"

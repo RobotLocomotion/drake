@@ -1,9 +1,13 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -52,9 +56,11 @@ using geometry::SceneGraph;
 // uses the SAP solver. More specifically, we call
 // set_discrete_contact_approximation(DiscreteContactApproximation::kSap) on the
 // MultibodyPlant used for testing before parsing.
-class UrdfParserTest : public test::DiagnosticPolicyTestBase {
+class UrdfParserTestBase : public test::DiagnosticPolicyTestBase {
  public:
-  UrdfParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
+  explicit UrdfParserTestBase(double time_step) : plant_(time_step) {
+    plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
+  }
 
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name, const std::string& model_name) {
@@ -96,6 +102,16 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
   CollisionFilterGroupsImpl<std::string> last_parsed_groups_;
+};
+
+class UrdfParserTest : public UrdfParserTestBase {
+ public:
+  UrdfParserTest() : UrdfParserTestBase(0.1) {}
+};
+
+class UrdfParserTestContinuous : public UrdfParserTestBase {
+ public:
+  UrdfParserTestContinuous() : UrdfParserTestBase(0.0) {}
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
@@ -391,32 +407,45 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
               MatchesRegex(".*Joint 'joint' has unrecognized type: 'who'"));
 }
 
-// TODO(rpoyner-tri): Add MimicContinuousTime (which should throw the same
-// warning as MimicNoSap).
+static constexpr char kMimicModel[] = R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='revolute'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0'/>
+      </joint>
+    </robot>)""";
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(UrdfParserTest, MimicNoSap) {
   // Currently the <mimic> tag is only supported by SAP. Setting the solver
   // to TAMSI should be a warning.
   plant_.set_discrete_contact_approximation(
       DiscreteContactApproximation::kTamsi);
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='a'>
-      <link name='parent'/>
-      <link name='child'/>
-      <joint name='joint' type='revolute'>
-        <parent link='parent'/>
-        <child link='child'/>
-        <mimic/>
-      </joint>
-    </robot>)""",
-                                   ""),
-            std::nullopt);
+  EXPECT_NE(AddModelFromUrdfString(kMimicModel, ""), std::nullopt);
   EXPECT_THAT(
       TakeWarning(),
       MatchesRegex(
           ".*Mimic elements are currently only supported by MultibodyPlant "
-          "with a discrete time step and using DiscreteContactSolver::kSap."));
+          "with a discrete time step and using "
+          "DiscreteContactSolver::kSap..*or.*continuous.*CENIC.*"));
 }
+
+TEST_F(UrdfParserTestContinuous, MimicContinuous) {
+  // Feature support in continuous plants depends on integrator selection, so
+  // can't be checked at parsing time.
+  EXPECT_NE(AddModelFromUrdfString(kMimicModel, ""), std::nullopt);
+}
+#pragma GCC diagnostic pop
 
 TEST_F(UrdfParserTest, MimicNoJoint) {
   // Currently the <mimic> tag is only supported by SAP.
@@ -1498,15 +1527,17 @@ template <typename ShapeType>
     const std::string_view shape_type =
         inspector.GetShape(geometry_id).type_name();
     if (shape_type != name) {
-      return ::testing::AssertionFailure()
-             << "Geometry with role " << role << " has wrong shape type."
-             << "\nExpected: " << name << "\nFound: " << shape_type;
+      return ::testing::AssertionFailure() << fmt::format(
+                 "Geometry with role {} has wrong shape type.\n"
+                 "  Expected: {}\n"
+                 "  Found: {}",
+                 role, name, shape_type);
     }
   } catch (const std::exception& e) {
-    return ::testing::AssertionFailure()
-           << "Frame " << frame_id << " does not have a geometry with role "
-           << role << " and name " << name
-           << ".\n  Exception message: " << e.what();
+    return ::testing::AssertionFailure() << fmt::format(
+               "Frame {} does not have a geometry with role {} and name {}.\n"
+               "  Exception message: {}",
+               frame_id, role, name, e.what());
   }
   return ::testing::AssertionSuccess();
 }
@@ -1723,6 +1754,252 @@ TEST_F(UrdfParserTest, BadInertiaFormats) {
                   "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0' izz='0 2 3'"),
       "f");
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*izz.*"));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingGood) {
+  // Test successful parsing.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+
+  // MBP will always create a UniformGravityField, so the only other
+  // ForceElement should be the LinearSpringDamper element parsed.
+  EXPECT_EQ(plant_.num_force_elements(), 2);
+
+  const LinearSpringDamper<double>& linear_spring_damper =
+      plant_.GetForceElement<LinearSpringDamper>(ForceElementIndex(1));
+
+  EXPECT_STREQ(linear_spring_damper.bodyA().name().c_str(), "A");
+  EXPECT_STREQ(linear_spring_damper.bodyB().name().c_str(), "B");
+  EXPECT_EQ(linear_spring_damper.bodyA().model_instance(),
+            linear_spring_damper.model_instance());
+  EXPECT_EQ(linear_spring_damper.p_AP(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(linear_spring_damper.p_BQ(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(linear_spring_damper.free_length(), 7.0);
+  EXPECT_EQ(linear_spring_damper.stiffness(), 8.0);
+  EXPECT_EQ(linear_spring_damper.damping(), 9.0);
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoBody) {
+  // Test missing body tag.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to find the "
+                           "<drake:linear_spring_damper_body_B> tag"));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoBodyName) {
+  // Test missing body tag name attribute.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to read the 'name' attribute for the "
+                           "<drake:linear_spring_damper_body_B> tag"));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNonExistentBody) {
+  // Test non-existent body tag.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="C"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Body: C specified for "
+                   "<drake:linear_spring_damper_body_B> does not exist in the "
+                   "model."));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoPosition) {
+  // Test no body A position tag.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to find the "
+                           "<drake:linear_spring_damper_p_AP> tag"));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoPositionAttribute) {
+  // Test no value attribute on the body A position tag.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to read the 'value' attribute for the "
+                           "<drake:linear_spring_damper_p_AP> tag"));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidFreeLength) {
+  // Test zero free length.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="0"/>
+          <drake:linear_spring_damper_stiffness value="8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*The 'value' attribute for the "
+                   "<drake:linear_spring_damper_free_length> tag must be "
+                   "strictly positive."));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoStiffness) {
+  // Test with missing stiffness tag.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to find the "
+                           "<drake:linear_spring_damper_stiffness> tag"));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingInvalidStiffness) {
+  // Test negative stiffness.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness value="-8.0"/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*The 'value' attribute for the "
+                           "<drake:linear_spring_damper_stiffness> tag must be "
+                           "non-negative."));
+}
+
+TEST_F(UrdfParserTest, LinearSpringDamperParsingNoStiffnessValue) {
+  // Test negative stiffness.
+  const std::string model_string = R"""(
+    <robot name="Model">
+        <link name='A'/>
+        <link name='B'/>
+        <drake:linear_spring_damper>
+          <drake:linear_spring_damper_body_A name="A"/>
+          <drake:linear_spring_damper_p_AP value="1 2 3"/>
+          <drake:linear_spring_damper_body_B name="B"/>
+          <drake:linear_spring_damper_p_BQ value="4 5 6"/>
+          <drake:linear_spring_damper_free_length value="7.0"/>
+          <drake:linear_spring_damper_stiffness/>
+          <drake:linear_spring_damper_damping value="9.0"/>
+        </drake:linear_spring_damper>
+    </robot>)""";
+
+  AddModelFromUrdfString(model_string, "");
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to read the 'value' attribute for the "
+                           "<drake:linear_spring_damper_stiffness> tag"));
 }
 
 TEST_F(UrdfParserTest, BushingParsing) {

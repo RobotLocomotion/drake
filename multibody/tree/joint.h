@@ -324,6 +324,7 @@ class Joint : public MultibodyElement<T> {
                      const T& joint_tau, MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_velocities());
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInOneForce(context, joint_dof, joint_tau, forces);
   }
@@ -342,18 +343,21 @@ class Joint : public MultibodyElement<T> {
   void AddInDamping(const systems::Context<T>& context,
                     MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(this->has_parent_tree());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInDamping(context, forces);
   }
 
-  /// Lock the joint. Its generalized velocities will be 0 until it is
-  /// unlocked.
+  /// Lock the joint. Its generalized velocities will be 0 until it is unlocked.
+  /// If actuated, its PD controllers will be ignored and thus will have no
+  /// effect on the reported actuation output nor reaction forces.
   void Lock(systems::Context<T>* context) const {
     DRAKE_DEMAND(has_mobilizer());
     mobilizer_->Lock(context);
   }
 
-  /// Unlock the joint.
+  /// Unlock the joint.  If actuated, its PD controllers (if any) will no longer
+  /// be ignored.
   void Unlock(systems::Context<T>* context) const {
     DRAKE_DEMAND(has_mobilizer());
     mobilizer_->Unlock(context);
@@ -722,11 +726,14 @@ class Joint : public MultibodyElement<T> {
   /// Refer to default_damping_vector() for details.
   /// @throws std::exception if damping.size() != num_velocities().
   /// @throws std::exception if any of the damping coefficients is negative.
+  /// @throws std::exception if this element is not associated with a
+  ///   MultibodyPlant.
   /// @pre the MultibodyPlant must not be finalized.
   void set_default_damping_vector(const VectorX<double>& damping) {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
-    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    DRAKE_DEMAND(!this->get_parent_tree().is_finalized());
     damping_ = damping;
   }
 
@@ -747,7 +754,7 @@ class Joint : public MultibodyElement<T> {
   void SetDampingVector(systems::Context<T>* context,
                         const VectorX<T>& damping) const {
     DRAKE_THROW_UNLESS(damping.size() == num_velocities());
-    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).template cast<bool>().all());
     context->get_mutable_numeric_parameter(damping_parameter_index_)
         .set_value(damping);
   }
@@ -917,7 +924,7 @@ class Joint : public MultibodyElement<T> {
 
   // Implements MultibodyElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
-  void DoSetTopology(const internal::MultibodyTreeTopology&) override {}
+  void DoSetTopology() override {}
 
   /// @name Methods to make a clone, optionally templated on different scalar
   /// types.

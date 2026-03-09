@@ -946,7 +946,7 @@ class GraphOfConvexSets {
   // Specifically given a constraint h(x) ≤ b, this method implements its
   // perspective:
   // h(x) ≤ b ⇒ h(ϕx) ≤ ϕb
-  // vars` is a vector of variables to be used in the constraint consisting of
+  // `vars` is a vector of variables to be used in the constraint consisting of
   // ϕ, and ϕ times the variables in the original constraint.
   void AddPerspectiveConstraint(
       solvers::MathematicalProgram* prog,

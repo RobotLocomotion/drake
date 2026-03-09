@@ -13,11 +13,13 @@ load(
 )
 load(
     "//tools/skylark:pybind.bzl",
-    "drake_pybind_cc_googletest",
     "drake_pybind_library",
-    "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
+)
+load(
+    "//tools/workspace/mkdoc_internal:defs.bzl",
+    "generate_pybind_documentation_header",
 )
 load(
     "//tools/workspace/pybind11:repository.bzl",
@@ -35,7 +37,7 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     visibility = [
         "//bindings/pydrake:__pkg__",
-        "//bindings/pydrake/common/test_utilities:__pkg__",
+        "//bindings/pydrake/common/test_utilities:__subpackages__",
     ],
     deps = [
         # This `_init_py` is redundant since `pydrake:module_py` uses it, but
@@ -56,8 +58,9 @@ drake_pybind_library(
         ":serialize_pybind",
         ":type_pack",
         ":value_pybind",
+        "//bindings/generated_docstrings:common",
+        "//bindings/generated_docstrings:common_schema",
         "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/autodiffutils:autodiffutils_py",
@@ -191,7 +194,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//:drake_shared_library",
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:common",
     ],
 )
 
@@ -230,7 +233,7 @@ drake_cc_library(
     deps = [
         ":value_pybind",
         "//:drake_shared_library",
-        "//bindings/pydrake:documentation_pybind",
+        "//bindings/generated_docstrings:common",
     ],
 )
 
@@ -325,46 +328,55 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "cpp_param_test",
-    deps = [
-        ":common",
-    ],
-)
-
-drake_pybind_cc_googletest(
-    name = "cpp_param_pybind_test",
+drake_pybind_library(
+    name = "cpp_param_test_util_py",
+    testonly = True,
+    add_install = False,
     cc_deps = [
         ":cpp_param_pybind",
-        "//bindings/pydrake:test_util_pybind",
     ],
+    cc_srcs = ["test/cpp_param_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":common",
     ],
 )
 
 drake_py_unittest(
+    name = "cpp_param_test",
+    deps = [
+        ":common",
+        ":cpp_param_test_util_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "cpp_template_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_deps = [
+        ":cpp_template_pybind",
+        "//common:nice_type_name",
+    ],
+    cc_srcs = ["test/cpp_template_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":common"],
+)
+
+drake_py_unittest(
     name = "cpp_template_test",
     deps = [
         ":common",
+        ":cpp_template_test_util_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
 
-drake_pybind_cc_googletest(
-    name = "cpp_template_pybind_test",
-    cc_deps = [
-        ":cpp_template_pybind",
-        "//bindings/pydrake:test_util_pybind",
-        "//common:nice_type_name",
-        "//common/test_utilities:expect_throws_message",
-    ],
-    py_deps = [":common"],
-)
-
 drake_cc_library(
     name = "deprecation_example_class",
-    testonly = True,
+    # N.B. We would like to say `testonly = True` here but that causes a crash
+    # with Bazel 8.5.1. This target has private visibility anyway, so it's not
+    # too bad to omit the `testonly` attribute.
     srcs = ["test/deprecation_example/example_class.cc"],
     hdrs = ["test/deprecation_example/example_class.h"],
     deps = [
@@ -411,6 +423,7 @@ generate_pybind_documentation_header(
     name = "deprecation_example_class_documentation_genrule",
     testonly = True,
     out = "test/deprecation_example/example_class_documentation.h",
+    hdr_subdir = "drake/bindings/pydrake/common/test/deprecation_example",
     targets = [":deprecation_example_class"],
 )
 
@@ -601,14 +614,6 @@ drake_py_unittest(
     ],
 )
 
-drake_pybind_cc_googletest(
-    name = "sorted_pair_pybind_test",
-    cc_deps = [
-        ":sorted_pair_pybind",
-        "//bindings/pydrake:test_util_pybind",
-    ],
-)
-
 drake_pybind_library(
     name = "text_logging_test_helpers_py",
     testonly = True,
@@ -625,6 +630,25 @@ drake_py_binary(
     deps = [
         ":common",
         ":text_logging_test_helpers_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "sorted_pair_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_deps = [
+        ":sorted_pair_pybind",
+    ],
+    cc_srcs = ["test/sorted_pair_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
+    name = "sorted_pair_test",
+    deps = [
+        ":common",
+        ":sorted_pair_test_util_py",
     ],
 )
 
@@ -674,14 +698,22 @@ drake_cc_googletest(
     ],
 )
 
-drake_pybind_cc_googletest(
-    name = "type_safe_index_pybind_test",
+drake_pybind_library(
+    name = "type_safe_index_test_util_py",
+    testonly = True,
+    add_install = False,
     cc_deps = [
         ":type_safe_index_pybind",
-        "//bindings/pydrake:test_util_pybind",
     ],
-    py_deps = [
+    cc_srcs = ["test/type_safe_index_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
+    name = "type_safe_index_test",
+    deps = [
         ":common",
+        ":type_safe_index_test_util_py",
     ],
 )
 

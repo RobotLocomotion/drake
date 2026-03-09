@@ -13,7 +13,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/mesh_traits.h"
-#include "drake/math/linear_solve.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -241,36 +240,14 @@ class VolumeMesh {
    @note  If p_MQ is outside the tetrahedral element, the barycentric
           coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
           however, some bᵢ will be negative.
-   */
+   @tparam C must be either `double` or `AutoDiffXd`. */
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, int e) const {
-    // We have two conditions to satisfy.
-    // 1. b₀ + b₁ + b₂ + b₃ = 1
-    // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
-    // Together they create this 4x4 linear system:
-    //
-    //      | 1  1  1  1 ||b₀|   | 1 |
-    //      | |  |  |  | ||b₁| = | | |
-    //      | v0 v1 v2 v3||b₂|   |p_M|
-    //      | |  |  |  | ||b₃|   | | |
-    //
-    // q = p_M - v0 = b₀*u0 + b₁*u1 + b₂*u2 + b₃*u3
-    //              = 0 + b₁*u1 + b₂*u2 + b₃*u3
-    using ReturnType = promoted_numerical_t<T, C>;
-    Matrix4<ReturnType> A;
-    for (int i = 0; i < 4; ++i) {
-      A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i));
-    }
-    Vector4<ReturnType> b;
-    b << ReturnType(1.0), p_MQ;
-    const math::LinearSolver<Eigen::PartialPivLU, Matrix4<ReturnType>> A_lu(A);
-    const Vector4<ReturnType> b_Q = A_lu.Solve(b);
-    // TODO(DamrongGuoy): Save the inverse of the matrix instead of
-    //  calculating it on the fly. We can reduce to 3x3 system too.  See
-    //  issue #11653.
-    return b_Q;
-  }
+      const Vector3<C>& p_MQ, int e) const
+#ifndef DRAKE_DOXYGEN_CXX
+    requires scalar_predicate<C>::is_bool
+#endif
+  ;  // NOLINT(whitespace/semicolon)
 
   /** Checks to see whether the given VolumeMesh object is equal via deep
    comparison (up to a tolerance). NaNs are treated as not equal as per the IEEE

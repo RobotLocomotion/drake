@@ -13,7 +13,7 @@ class TriangleQuadratureRule {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TriangleQuadratureRule);
   TriangleQuadratureRule() = default;
-  virtual ~TriangleQuadratureRule() {}
+  virtual ~TriangleQuadratureRule();
 
   /// Returns the order of this rule.
   int order() const {
@@ -31,9 +31,7 @@ class TriangleQuadratureRule {
 
   /// Returns the vector of weights. These sum to 1 and there is one weight
   /// for each point returned by quadrature_points().
-  const std::vector<double>& weights() const {
-    return do_weights();
-  }
+  const std::vector<double>& weights() const { return do_weights(); }
 
  protected:
   /// Derived classes shall return the order (>= 1) of this rule.

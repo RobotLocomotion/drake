@@ -5,11 +5,13 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
+
+// TODO(2026-06-01): remove ostream header
+#include <ostream>
 
 #include <Eigen/Eigenvalues>
 
@@ -17,8 +19,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -1072,17 +1075,23 @@ class RotationalInertia {
 /// Writes an instance of RotationalInertia into a std::ostream.
 /// @relates RotationalInertia
 template <typename T>
-std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
+DRAKE_DEPRECATED(
+    "2026-06-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& out, const RotationalInertia<T>& I);
+
+/// Returns the string representation of a RotationalInertia object.
+/// @relates RotationalInertia
+template <typename T>
+std::string to_string(const RotationalInertia<T>& I);
 
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::multibody::RotationalInertia<T>>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename T, drake::multibody, RotationalInertia<T>, x,
+                   drake::multibody::to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::RotationalInertia);

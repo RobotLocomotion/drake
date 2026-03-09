@@ -26,8 +26,9 @@ int DoMain() {
   compass_gait->set_name("compass_gait");
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  CompassGaitGeometry::AddToBuilder(&builder,
-      compass_gait->get_floating_base_state_output_port(), scene_graph);
+  CompassGaitGeometry::AddToBuilder(
+      &builder, compass_gait->get_floating_base_state_output_port(),
+      scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
 
   auto diagram = builder.Build();

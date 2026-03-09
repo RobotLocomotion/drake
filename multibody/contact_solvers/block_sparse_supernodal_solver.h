@@ -71,7 +71,7 @@ class BlockSparseSuperNodalSolver final : public SuperNodalSolver {
   }
 
   /* Matrix H in the sparse system H⋅x = b where H = M + Jᵀ⋅G⋅J. */
-  std::unique_ptr<BlockSparseSymmetricMatrix> H_;
+  std::unique_ptr<BlockSparseSymmetricMatrixXd> H_;
   /* The i-th entry contains the indices into `jacobian_blocks_` for the
    jacobian blocks associated with the i-th block row of the full jacobian
    matrix. Each entry contains at least one and at most two entries. */

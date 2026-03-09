@@ -14,8 +14,8 @@ namespace {
 
 GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
   EXPECT_TRUE(HasRunfiles());
-  const auto result = FindRunfile(
-      "drake/common/test/find_resource_test_data.txt");
+  const auto result =
+      FindRunfile("drake/common/test/find_resource_test_data.txt");
   drake::log()->debug("result.abspath: {}", result.abspath);
   EXPECT_GT(result.abspath.size(), 0);
   EXPECT_TRUE(std::filesystem::is_regular_file({result.abspath}));
@@ -24,22 +24,22 @@ GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
 
 GTEST_TEST(FindRunfilesTest, NotDeclaredTest) {
   const auto result = FindRunfile("foo");
-  EXPECT_THAT(result.error, testing::MatchesRegex(
-      "Sought 'foo' in runfiles directory '.*' but "
-      "the file does not exist at that location nor is it on the "
-      "manifest; perhaps a 'data = ..' dependency is missing."));
+  EXPECT_THAT(result.error,
+              testing::MatchesRegex(
+                  "Sought 'foo' in runfiles directory '.*' but "
+                  "the file does not exist at that location nor is it on the "
+                  "manifest; perhaps a 'data = ..' dependency is missing."));
 };
 
 GTEST_TEST(FindRunfilesTest, AbsolutePathTest) {
   const auto result = FindRunfile("/dev/null");
-  EXPECT_THAT(result.error, testing::MatchesRegex(
-      ".*must not be an absolute path.*"));
+  EXPECT_THAT(result.error,
+              testing::MatchesRegex(".*must not be an absolute path.*"));
 };
 
 GTEST_TEST(FindRunfilesTest, EmptyPathTest) {
   const auto result = FindRunfile("");
-  EXPECT_THAT(result.error, testing::MatchesRegex(
-      ".*must not be empty.*"));
+  EXPECT_THAT(result.error, testing::MatchesRegex(".*must not be empty.*"));
 };
 
 }  // namespace

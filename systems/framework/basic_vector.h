@@ -5,9 +5,10 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -211,3 +212,6 @@ class BasicVector : public VectorBase<T> {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::BasicVector);
+
+DRAKE_FORMATTER_AS(typename T, drake::systems, BasicVector<T>, x,
+                   drake::systems::to_string(x))

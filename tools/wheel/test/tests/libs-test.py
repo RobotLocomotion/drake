@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 from pathlib import Path
-import re
 import sys
 from zipfile import ZipFile
-
 
 # Everything here must have its license installed as part of the wheel build.
 # This list must be kept in sync with the calls to copy_ubuntu_license in

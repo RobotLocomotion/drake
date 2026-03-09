@@ -1,5 +1,8 @@
 #include "drake/manipulation/kinova_jaco/jaco_status_receiver.h"
 
+#include <memory>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -25,8 +28,8 @@ class JacoStatusReceiverTestBase : public testing::Test {
 
   // Test cases should call this to set the DUT's input value.
   void SetInput() {
-    fixed_input_.GetMutableData()->
-        template get_mutable_value<lcmt_jaco_status>() = status_;
+    fixed_input_.GetMutableData()
+        ->template get_mutable_value<lcmt_jaco_status>() = status_;
   }
 
   void Copy(const Eigen::VectorXd& from, std::vector<double>* to) {
@@ -44,15 +47,14 @@ class JacoStatusReceiverTestBase : public testing::Test {
 class JacoStatusReceiverTest : public JacoStatusReceiverTestBase {
  public:
   JacoStatusReceiverTest()
-      : JacoStatusReceiverTestBase(
-            kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) {}
+      : JacoStatusReceiverTestBase(kJacoDefaultArmNumJoints,
+                                   kJacoDefaultArmNumFingers) {}
 };
 
 class JacoStatusReceiverNoFingersTest : public JacoStatusReceiverTestBase {
  public:
   JacoStatusReceiverNoFingersTest()
-      : JacoStatusReceiverTestBase(
-            kJacoDefaultArmNumJoints, 0) {}
+      : JacoStatusReceiverTestBase(kJacoDefaultArmNumJoints, 0) {}
 };
 
 TEST_F(JacoStatusReceiverTest, ZeroOutputTest) {
@@ -61,8 +63,8 @@ TEST_F(JacoStatusReceiverTest, ZeroOutputTest) {
   for (int i = 0; i < num_output_ports; ++i) {
     const systems::LeafSystem<double>& leaf = dut_;
     const auto& port = leaf.get_output_port(i);
-    EXPECT_TRUE(CompareMatrices(
-        port.Eval(context_), VectorXd::Zero(port.size())));
+    EXPECT_TRUE(
+        CompareMatrices(port.Eval(context_), VectorXd::Zero(port.size())));
   }
 }
 
@@ -106,12 +108,12 @@ TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
   EXPECT_TRUE(
       CompareMatrices(dut_.get_time_measured_output_port().Eval(context_),
                       Vector1d(utime) / 1e6));
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_position_measured_output_port().Eval(context_),
-      position_expected));
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_velocity_measured_output_port().Eval(context_),
-      velocity_expected));
+  EXPECT_TRUE(
+      CompareMatrices(dut_.get_position_measured_output_port().Eval(context_),
+                      position_expected));
+  EXPECT_TRUE(
+      CompareMatrices(dut_.get_velocity_measured_output_port().Eval(context_),
+                      velocity_expected));
   EXPECT_TRUE(CompareMatrices(
       dut_.get_torque_measured_output_port().Eval(context_).head(N), t0));
   EXPECT_TRUE(CompareMatrices(
@@ -153,8 +155,8 @@ TEST_F(JacoStatusReceiverNoFingersTest, AcceptanceTestNoFingers) {
       dut_.get_torque_measured_output_port().Eval(context_), t0));
   EXPECT_TRUE(CompareMatrices(
       dut_.get_torque_external_output_port().Eval(context_), t_ext0));
-  EXPECT_TRUE(CompareMatrices(
-      dut_.get_current_output_port().Eval(context_), current0));
+  EXPECT_TRUE(
+      CompareMatrices(dut_.get_current_output_port().Eval(context_), current0));
 }
 
 }  // namespace

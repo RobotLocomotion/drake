@@ -61,7 +61,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         ":flag_spdlog_repo_disabled": [],
-        ":use_pkgconfig": ["@pkgconfig_spdlog"],
+        ":use_pkgconfig": ["@pkgconfig_spdlog_internal"],
         "//conditions:default": ["@module_spdlog//:spdlog"],
     }),
 )

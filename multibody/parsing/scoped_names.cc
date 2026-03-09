@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/scoped_names.h"
 
+#include <string>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/scoped_name.h"
 

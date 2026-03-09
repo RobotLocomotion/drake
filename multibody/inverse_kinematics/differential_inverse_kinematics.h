@@ -48,7 +48,8 @@ Vector6<double> ComputePoseDiffInCommonFrame(
     const math::RigidTransform<double>& X_C1);
 
 /**
- * Contains parameters for differential inverse kinematics.
+ * Contains parameters for the family of differential inverse kinematics
+ * function overloads below, each named DoDifferentialInverseKinematics().
  */
 class DifferentialInverseKinematicsParameters {
  public:
@@ -357,6 +358,12 @@ class DifferentialInverseKinematicsParameters {
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -387,13 +394,18 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
-    const Vector6<double>& V_WE_desired,
-    const Frame<double>& frame_E,
+    const Vector6<double>& V_WE_desired, const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
@@ -413,13 +425,18 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
-    const Vector6<double>& V_AE_desired,
-    const Frame<double>& frame_A,
+    const Vector6<double>& V_AE_desired, const Frame<double>& frame_A,
     const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
@@ -438,6 +455,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
  *
  * @ingroup planning_kinematics
  */
@@ -465,14 +488,19 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
+ * @note There is a newer framework-based formulation for differential inverse
+ * kinematics: DifferentialInverseKinematicsSystem. This implementation has been
+ * shown to be more effective for real-world robots. Furthermore, its
+ * architecture is more flexible, allowing for more customization of the cost
+ * and constraint functions.
+ *
  * @ingroup planning_kinematics
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const math::RigidTransform<double>& X_AE_desired,
-    const Frame<double>& frame_A,
-    const Frame<double>& frame_E,
+    const Frame<double>& frame_A, const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -484,8 +512,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const Matrix6X<double>>& J_WE_W,
     const SpatialVelocity<double>& V_WE_desired,
     const DifferentialInverseKinematicsParameters& parameters,
-    const std::optional<Eigen::Ref<const MatrixX<double>>>& N =
-        std::nullopt,
+    const std::optional<Eigen::Ref<const MatrixX<double>>>& N = std::nullopt,
     const std::optional<Eigen::Ref<const MatrixX<double>>>& Nplus =
         std::nullopt);
 }  // namespace internal

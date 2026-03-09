@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -13,27 +14,29 @@ namespace systems {
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
-    : Simulator(&system, nullptr, std::move(context)) {}
+    : Simulator(&system, nullptr, std::move(context), false) {}
 
 template <typename T>
 Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
                         std::unique_ptr<Context<T>> context)
-    : Simulator(nullptr, std::move(owned_system), std::move(context)) {}
+    : Simulator(nullptr, std::move(owned_system), std::move(context), true) {}
 
 template <typename T>
 std::unique_ptr<Simulator<T>> Simulator<T>::MakeWithSharedContext(
     const System<T>& system, std::shared_ptr<Context<T>> context) {
   // This slightly odd spelling allows access to the private constructor.
   return std::unique_ptr<Simulator<T>>(
-      new Simulator(&system, nullptr, std::move(context)));
+      new Simulator(&system, nullptr, std::move(context), false));
 }
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
-                        std::shared_ptr<Context<T>> context)
+                        std::shared_ptr<Context<T>> context,
+                        bool use_owned_system)
     : owned_system_(std::move(owned_system)),
-      system_(owned_system_ ? *owned_system_ : *system),
+      system_(use_owned_system ? DRAKE_DEREF(owned_system_)
+                               : DRAKE_DEREF(system)),
       context_{std::move(context)} {
   // TODO(dale.mcconachie) move this default to SimulatorConfig
   constexpr double kDefaultInitialStepSizeTarget = 1e-4;
@@ -61,6 +64,18 @@ Simulator<T>::Simulator(const System<T>* system,
 
   // Allocate the necessary temporary for witness-based event handling.
   event_handler_xc_ = system_.AllocateTimeDerivatives();
+}
+
+template <typename T>
+IntegratorBase<T>& Simulator<T>::reset_integrator(
+    std::unique_ptr<IntegratorBase<T>> integrator) {
+  DRAKE_THROW_UNLESS(integrator != nullptr);
+  DRAKE_THROW_UNLESS(&integrator->get_system() == &this->get_system());
+  integrator->reset_context(&this->get_mutable_context());
+  IntegratorBase<T>* result = integrator.get();
+  integrator_ = std::move(integrator);
+  initialization_done_ = false;
+  return *result;
 }
 
 template <typename T>
@@ -172,6 +187,7 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
     accumulated_event_status.KeepMoreSevere(
         HandlePublish(merged_events_->get_publish_events()));
 
+    // Delete the if block with publish_every_time_step 2026-06-01.
     // If requested, do a force-publish before the simulation starts.
     if (publish_at_initialization_) {
       accumulated_event_status.KeepMoreSevere(
@@ -423,12 +439,14 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
       accumulated_event_status.KeepMoreSevere(
           HandlePublish(merged_events_->get_publish_events()));
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // delete with publish_every_time_step 2026-06-01
       if (get_publish_every_time_step()) {
         accumulated_event_status.KeepMoreSevere(
             HandlePublish(system_.get_forced_publish_events()));
       }
-
+#pragma GCC diagnostic pop
       // Invoke the monitor() if there is one. This is logically like a
       // Diagram-level Publish event so we handle it similarly.
       if (get_monitor())

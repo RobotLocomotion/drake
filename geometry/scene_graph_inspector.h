@@ -120,7 +120,7 @@ class SceneGraphInspector {
    will be returned.
 
    @note Specifying `role` *can* have the effect of filtering geometries *from*
-   the given geometry_set` -- if a GeometryId is an explicit member of the
+   the given `geometry_set` -- if a GeometryId is an explicit member of the
    geometry set but does not have the requested role, it will not be contained
    in the output.
 

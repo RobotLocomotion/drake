@@ -1,3 +1,9 @@
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -130,7 +136,7 @@ class DeformableDriverContactTest : public ::testing::Test {
                                        DeformableBodyIndex index) const {
     DeformableBodyId body_id = model_->GetBodyId(index);
     const FemModel<double>& fem_model = model_->GetFemModel(body_id);
-    std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+    std::unique_ptr<contact_solvers::internal::BlockSparseSymmetricMatrix3d>
         fem_tangent_matrix = fem_model.MakeTangentMatrix();
     const FemState<double>& free_motion_state =
         EvalFreeMotionFemState(context, index);

@@ -1,6 +1,7 @@
 #include "drake/solvers/ipopt_solver.h"
 
 #include <filesystem>
+#include <string>
 
 #include <gtest/gtest.h>
 

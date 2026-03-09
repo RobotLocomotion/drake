@@ -10,69 +10,64 @@ _TAG_EXCLUDE_FROM_PACKAGE = "exclude_from_package"
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog='library_lint',
-        description=__doc__)
+    parser = argparse.ArgumentParser(prog="library_lint", description=__doc__)
     parser.add_argument(
-        '--package-name', metavar='LABEL', type=str, required=True,
-        help='Required name of package, e.g., //common/test_utilities')
+        "--package-name",
+        metavar="LABEL",
+        type=str,
+        required=True,
+        help="Required name of package, e.g., //common/test_utilities",
+    )
     parser.add_argument(
-        '--missing-deps', metavar='FILE', type=str,
-        help=('Filename containing list of labels that are missing. '
-              'It is a lint error when this file is non-empty.'))
+        "--missing",
+        metavar="LABEL",
+        type=str,
+        action="append",
+        help="One label that is missing from the package library.",
+    )
     parser.add_argument(
-        '--extra-deps', metavar='FILE', type=str,
-        help=('Filename containing list of labels that are extra. '
-              'It is a lint error when this file is non-empty.'))
-    parser.add_argument(
-        '--untagged-package-library', action='store_true', default=False,
-        help=('A cc_library exists with the short_package_name but it '
-              'does not use drake_cc_package_library'))
+        "--extra",
+        metavar="LABEL",
+        type=str,
+        action="append",
+        help="One label that is extra in the package library.",
+    )
     args = parser.parse_args()
     build_file_name = args.package_name[2:] + "/BUILD.bazel"
-    short_package_name = args.package_name.split("/")[-1]
 
     return_code = 0
 
-    if args.untagged_package_library:
-        print(("ERROR: The package {} has a cc_library(name = \":{}\") "
-               "declared without using drake_cc_package_library().").format(
-            args.package_name,
-            short_package_name))
+    if args.missing:
+        print(
+            f"ERROR: Missing deps in {args.package_name}'s "
+            "drake_cc_package_library."
+        )
+        print(
+            f"note: In the {build_file_name} rule for "
+            "drake_cc_package_library, add the following lines to the deps:"
+        )
+        for dep in sorted(args.missing):
+            print(f'        "{dep}",')
+        print(
+            "note: Alternatively, if some of these libraries should not be "
+            "added to the drake_cc_package_library, you may tag them with "
+            f'"{_TAG_EXCLUDE_FROM_PACKAGE}" in order to explicitly exclude '
+            "them."
+        )
         return_code = 1
 
-    with open(args.missing_deps or '/dev/null') as opened:
-        missing_deps = opened.readlines()
-    if missing_deps:
-        print(("ERROR: Missing deps in {}'s drake_cc_package_library.").format(
-            args.package_name))
-        print(("note: In the {} rule for drake_cc_package_library, "
-               "add the following lines to the deps:").format(
-                   build_file_name))
-        for dep in sorted(missing_deps):
-            print("        \":{}\",".format(dep.strip().split(":")[-1]))
-        print(("note: Alternatively, if some of these libraries should not be "
-               "added to the drake_cc_package_library, you may tag them with "
-               "\"{}\" in order to explicitly exclude them.").format(
-                   _TAG_EXCLUDE_FROM_PACKAGE))
-        return_code = 1
-
-    with open(args.extra_deps or '/dev/null') as opened:
-        extra_deps = opened.readlines()
-    extra_deps = [
-        # Filter out false positives.  All C++ code is OK to depend on these.
-        item for item in extra_deps
-        if not (item.startswith("//tools/cc_toolchain:")
-                or "@bazel_tools//" in item)
-    ]
-    if extra_deps:
-        print(("ERROR: Extra deps in {}'s drake_cc_package_library.").format(
-            args.package_name))
-        print(("note: In the {} rule for drake_cc_package_library, "
-               "remove the following lines from the deps:").format(
-                   build_file_name))
-        for dep in sorted(extra_deps):
-            print("        \"{}\",".format(dep.strip()))
+    if args.extra:
+        print(
+            f"ERROR: Extra deps in {args.package_name}'s "
+            "drake_cc_package_library."
+        )
+        print(
+            f"note: In the {build_file_name} rule for "
+            "drake_cc_package_library, remove the following lines from the "
+            "deps:"
+        )
+        for dep in sorted(args.extra):
+            print(f'        "{dep}",')
         return_code = 1
 
     return return_code

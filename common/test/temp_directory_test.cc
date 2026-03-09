@@ -67,8 +67,7 @@ GTEST_TEST(TempDirectoryTest, TestTmpdirTrailingSlash) {
   // Check the expected result.
   fs::path expected_prefix(test_tmpdir);
   expected_prefix.append("robotlocomotion_drake_");
-  EXPECT_THAT(temp_directory_result,
-              testing::Not(testing::EndsWith("/")));
+  EXPECT_THAT(temp_directory_result, testing::Not(testing::EndsWith("/")));
 }
 
 }  // namespace

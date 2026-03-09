@@ -5,7 +5,7 @@ load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_library")
 
-# ---- Logic for choosing which blas to use. ---
+# ---- Logic for choosing which zlib to use. ---
 
 cc_library(
     name = "hardcoded",

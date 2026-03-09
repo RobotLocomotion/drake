@@ -1,0 +1,82 @@
+load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
+load("@drake//tools/skylark:drake_cc.bzl", "cc_nolink_library")
+load(
+    "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
+load("//tools/install:install.bzl", "install", "install_license")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+# LCM is LGPL-licensed and therefore we must build it as a shared library.
+# Because our `vendor_namespace.patch` uses different symbol names, we'll also
+# name it `libdrake_vendor_lcm.so` instead of `liblcm.so`, which means we can't
+# use the upstream shared_library rule. The following targets create our own
+# link of the library, with the Bazel label `":shared_library"` (the compile
+# commands are re-used from upstream; only the linking step is changed.)
+#
+# The "whole archive" annotates all of the object code as `alwayslink = True`,
+# so that we use the --whole-archive linker flag on libdrake_vendor_lcm.so.
+cc_whole_archive_library(
+    name = "whole_archive",
+    deps = ["@lcm_internal//lcm:lcm-shared"],
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+cc_binary(
+    name = "libdrake_vendor_lcm.so",
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_vendor_lcm.so"],
+        "//conditions:default": [],
+    }),
+    linkshared = True,
+    deps = [":whole_archive"],
+)
+
+cc_nolink_library(
+    name = "hdrs",
+    deps = ["@lcm_internal//lcm:lcm-shared"],
+)
+
+cc_library(
+    name = "shared_library",
+    srcs = [":libdrake_vendor_lcm.so"],
+    visibility = ["//visibility:public"],
+    deps = [":hdrs"],
+)
+
+# Rules for installing LCM.
+
+config_setting(
+    name = "flag_with_lcm_runtime_true",
+    flag_values = {"//tools/flags:with_lcm_runtime": "True"},
+)
+
+cc_library(
+    name = "shared_library_maybe",
+    visibility = ["//tools/install/libdrake:__pkg__"],
+    deps = select({
+        ":flag_with_lcm_runtime_true": [":shared_library"],
+        "//conditions:default": [],
+    }),
+)
+
+install_license(
+    name = "install_license",
+    doc_dest = "share/doc/lcm_internal",
+    licenses = ["@lcm_internal//:license"],
+)
+
+install(
+    name = "install",
+    targets = [":libdrake_vendor_lcm.so"],
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [":install_license"],
+)
+
+add_lint_tests()

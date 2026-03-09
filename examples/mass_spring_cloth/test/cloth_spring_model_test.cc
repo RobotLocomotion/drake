@@ -1,5 +1,8 @@
 #include "drake/examples/mass_spring_cloth/cloth_spring_model.h"
 
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/simulator.h"

@@ -27,3 +27,4 @@ libXt-devel
 # Build dependencies (Python).
 openssl-devel
 xz
+sqlite-devel

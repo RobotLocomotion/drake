@@ -1,8 +1,14 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
+#include <limits>
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -62,7 +68,7 @@ class PointShapeAutoDiffSignedDistanceTester {
   PointShapeAutoDiffSignedDistanceTester(const Shape* shape,
                                          const RigidTransformd& X_WG,
                                          double tolerance)
-      : shape_(*shape), X_WG_(X_WG), tolerance_(tolerance) {}
+      : shape_(DRAKE_DEREF(shape)), X_WG_(X_WG), tolerance_(tolerance) {}
 
   // Perform the test with the particular N and Q.
   ::testing::AssertionResult Test(const Vector3d& p_GN_G,

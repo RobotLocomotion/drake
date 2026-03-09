@@ -2,9 +2,10 @@
  calculations -- specifically, the mesh field classes and property helper
  functions. They can be found in the pydrake.geometry module. */
 
+#include "drake/bindings/generated_docstrings/geometry.h"
+#include "drake/bindings/generated_docstrings/geometry_proximity.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/proximity/make_convex_hull_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh_field.h"
@@ -18,7 +19,7 @@ namespace {
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
@@ -110,7 +111,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 
   // MakeConvexHull
   {

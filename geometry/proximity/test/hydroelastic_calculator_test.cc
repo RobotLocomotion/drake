@@ -181,8 +181,9 @@ class TestScene {
     // transformation of both points and vectors will accumulate derivatives.
 
     if (this->shape_A_type_ == ShapeType::kHalfSpace &&
-        this->shape_B_type_ == ShapeType::kHalfSpace)
+        this->shape_B_type_ == ShapeType::kHalfSpace) {
       return;
+    }
 
     // The distance from the world origin to the surface of a shape. In other
     // words, a point at Wo needs to be moved `distance` units to lie on the

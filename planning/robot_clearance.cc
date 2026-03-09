@@ -1,6 +1,6 @@
 #include "drake/planning/robot_clearance.h"
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace planning {

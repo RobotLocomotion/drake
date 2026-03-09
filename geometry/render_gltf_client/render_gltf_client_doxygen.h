@@ -8,7 +8,7 @@ namespace render_gltf_client {
 /** @defgroup render_engine_gltf_client_server_api glTF Render Client-Server API
     @ingroup render_engines
 
-<h2 id="overview">Overview</h2>
+## Overview {#overview}
 
 Drake offers built-in renderers (RenderEngineVtk, RenderEngineGl), but in some
 cases users may want to use their own custom rendering implementations.  One way
@@ -51,7 +51,7 @@ its own.
 - [Existing Server Implementations](#existing-server-implementations)
 - [Developing your own Server](#developing-your-own-server)
 
-<h2 id="server-api">Server API</h2>
+## Server API {#server-api}
 <hr>
 
 A given server implementation is required to implement a "Render Endpoint" to
@@ -86,7 +86,7 @@ any unhandled errors.
 [html_post]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST
 [http_responses]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
 
-<h3 id="render-endpoint">Render Endpoint</h3>
+### Render Endpoint {#render-endpoint}
 <hr>
 
 The render endpoint (by default: `/render`) is responsible for receiving an
@@ -95,7 +95,7 @@ client.  In addition to the scene file, the render endpoint is provided with the
 full specification of the systems::sensors::CameraInfo object, and optionally
 the depth range of the systems::sensors::DepthRange object.
 
-<h3 id="render-endpoint-form-data">Render Endpoint `<form>` Data</h3>
+### Render Endpoint `<form>` Data {#render-endpoint-form-data}
 <hr>
 
 The client will `POST` a `<form>` with an `enctype=multipart/form-data` to the
@@ -239,7 +239,7 @@ expect them to be consistent.
 
 [gltf_mimetypes]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_media_type_registrations
 
-<h3 id="allowed-image-response-types">Allowed Image Response Types</h3>
+### Allowed Image Response Types {#allowed-image-response-types}
 <hr>
 
 The client accepts the following image types from a server render:
@@ -261,7 +261,7 @@ The client accepts the following image types from a server render:
     [this section](#notes-on-rendering-label-images) for other requirements for
     returning a label image.
 
-<h3 id="notes-on-gltf-camera-specification">Notes on glTF Camera Specification</h3>
+### Notes on glTF Camera Specification {#notes-on-gltf-camera-specification}
 <hr>
 
 For a [glTF scene][glTF] file, note that there are two locations that describe
@@ -342,7 +342,7 @@ the camera:
 [glTF_proj]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#projection-matrices
 
 
-<h3 id="notes-on-communicating-errors">Notes on Communicating Errors</h3>
+### Notes on Communicating Errors {#notes-on-communicating-errors}
 <hr>
 
 When errors occur on the server side, the server should explicitly return an
@@ -354,7 +354,7 @@ required, the user of the server will have no hints as to what is going wrong
 with the client-server communication.  When the file response is provided, this
 information will be included in the exception message produced by the client.
 
-<h2 id="notes-on-rendering-label-images">Notes on Rendering Label Images</h2>
+## Notes on Rendering Label Images {#notes-on-rendering-label-images}
 <hr>
 
 Renderers typically can't render objects with "labels". Drake encodes the labels
@@ -384,7 +384,7 @@ render features:
   - Lighting
   - Color transformations on the rendered image
 
-<h2 id="existing-server-implementations">Existing Server Implementations</h2>
+## Existing Server Implementations {#existing-server-implementations}
 <hr>
 
 [drake-blender] is a glTF render server using [Blender] as the backend.
@@ -392,7 +392,7 @@ render features:
 [drake-blender]: https://github.com/RobotLocomotion/drake-blender
 [Blender]: https://www.blender.org
 
-<h2 id="developing-your-own-server">Developing your own Server</h2>
+## Developing your own Server {#developing-your-own-server}
 <hr>
 
 To test the basic client-server communication and rendering, Drake provides a

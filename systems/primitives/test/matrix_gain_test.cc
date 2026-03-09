@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/matrix_gain.h"
 
+#include <memory>
+
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 

@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -14,7 +13,6 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
@@ -264,7 +262,6 @@ class Mobilizer : public MultibodyElement<T> {
       throw std::runtime_error(
           "The provided inboard and outboard frames reference the same object");
     }
-    this->set_is_ephemeral(true);  // Mobilizers are never added by users.
   }
 
   ~Mobilizer() override;
@@ -358,6 +355,10 @@ class Mobilizer : public MultibodyElement<T> {
   // and any spatial velocity to machine precision.
   bool has_six_dofs() const { return num_velocities() == 6; }
 
+  bool is_floating_base_mobilizer() const {
+    return is_floating_base_mobilizer_;
+  }
+
   // Returns `true` if `this` uses a quaternion parameterization of rotations.
   virtual bool has_quaternion_dofs() const { return false; }
 
@@ -432,6 +433,7 @@ class Mobilizer : public MultibodyElement<T> {
   // velocity V_FM. (Not virtual)
   SpatialVelocity<T> GetSpatialVelocity(
       const systems::Context<T>& context) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     const Eigen::VectorBlock<const VectorX<T>> all_v =
         this->get_parent_tree().get_velocities(context);
     const Eigen::Ref<const VectorX<T>> my_v = get_velocities_from_array(all_v);
@@ -689,6 +691,7 @@ class Mobilizer : public MultibodyElement<T> {
   // @pre @p q_array is of size MultibodyTree::num_positions().
   Eigen::Ref<const VectorX<T>> get_positions_from_array(
       const Eigen::Ref<const VectorX<T>>& q_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(q_array.size() == this->get_parent_tree().num_positions());
     return q_array.segment(position_start_in_q(), num_positions());
   }
@@ -696,6 +699,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Mutable version of get_positions_from_array().
   Eigen::Ref<VectorX<T>> get_mutable_positions_from_array(
       EigenPtr<VectorX<T>> q_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(q_array != nullptr);
     DRAKE_DEMAND(q_array->size() == this->get_parent_tree().num_positions());
     return q_array->segment(position_start_in_q(), num_positions());
@@ -707,6 +711,7 @@ class Mobilizer : public MultibodyElement<T> {
   // @pre @p v_array is of size MultibodyTree::num_velocities().
   Eigen::Ref<const VectorX<T>> get_velocities_from_array(
       const Eigen::Ref<const VectorX<T>>& v_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(v_array.size() == this->get_parent_tree().num_velocities());
     return v_array.segment(velocity_start_in_v(), num_velocities());
   }
@@ -714,6 +719,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Mutable version of get_velocities_from_array().
   Eigen::Ref<VectorX<T>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v_array) const {
+    DRAKE_ASSERT(this->has_parent_tree());
     DRAKE_DEMAND(v_array != nullptr);
     DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
     return v_array->segment(velocity_start_in_v(), num_velocities());
@@ -771,7 +777,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Lock the mobilizer. Its generalized velocities will be 0 until it is
   // unlocked.
   void Lock(systems::Context<T>* context) const {
-    // Joint locking is only supported for discrete mode.
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(true);
     this->get_parent_tree()
@@ -780,8 +786,7 @@ class Mobilizer : public MultibodyElement<T> {
         .setZero();
   }
 
-  // Unlock the mobilizer. Unlocking is not yet supported for continuous-mode
-  // systems.
+  // Unlock the mobilizer.
   void Unlock(systems::Context<T>* context) const {
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(false);
@@ -791,6 +796,10 @@ class Mobilizer : public MultibodyElement<T> {
   bool is_locked(const systems::Context<T>& context) const {
     return context.get_parameters().template get_abstract_parameter<bool>(
         is_locked_parameter_index_);
+  }
+
+  void set_is_floating_base_mobilizer(bool is_floating) {
+    is_floating_base_mobilizer_ = is_floating;
   }
 
  protected:
@@ -889,9 +898,7 @@ class Mobilizer : public MultibodyElement<T> {
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().
-  // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
-  // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology&) final {
+  void DoSetTopology() final {
     // Mobod provides topology info at construction.
   }
 
@@ -902,6 +909,13 @@ class Mobilizer : public MultibodyElement<T> {
   // System parameter index for `this` mobilizer's lock state stored in a
   // context.
   systems::AbstractParameterIndex is_locked_parameter_index_;
+
+  // Set according to the policy that defines a "floating base body". See
+  // MultibodyTree::CreateJointImplementations() which enforces that policy.
+  // (We define a floating base body as one for which we automatically added
+  // a 6-dof joint to connect it directly to World; a floating base mobilizer
+  // is the mobilizer implementing that joint.)
+  bool is_floating_base_mobilizer_{false};
 };
 
 }  // namespace internal

@@ -7,13 +7,13 @@ def scs_internal_repository(
         name = name,
         repository = "cvxgrp/scs",
         upgrade_advice = """
-        When updating this commit, see drake/tools/workspace/qdldl/README.md.
+        When updating this commit, see
+        drake/tools/workspace/qdldl_internal/README.md.
         """,
-        commit = "3.2.7",
-        sha256 = "bc8211cfd213f3117676ceb7842f4ed8a3bc7ed9625c4238cc7d83f666e22cc9",  # noqa
+        commit = "3.2.11",
+        sha256 = "ceb5d9ecf35836ee7e0ce64566190f11a99314ec8143dbb909329809afa3f77f",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/upstream/fix_arg.patch",
             ":patches/upstream/include_paths.patch",
         ],
         mirrors = mirrors,

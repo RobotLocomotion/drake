@@ -25,18 +25,28 @@ void RigidTransform<T>::ThrowInvalidMultiplyVector4(const Vector4<T>& vec_B) {
 
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
-  const RollPitchYaw<T> rpy(X.rotation());
-  const Vector3<T>& p = X.translation();
-  out << fmt::format("{} xyz = {} {} {}", rpy, p.x(), p.y(), p.z());
-  return out;
+  return out << fmt::to_string(X);
 }
 
+template <typename T>
+std::string to_string(const RigidTransform<T>& X) {
+  const RollPitchYaw<T> rpy(X.rotation());
+  const Vector3<T>& p = X.translation();
+  return fmt::format("{} xyz = {} {} {}", rpy, p.x(), p.y(), p.z());
+}
+
+// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RigidTransform<T>&)>(
-        &operator<< )
+        &operator<< ),
+    static_cast<std::string(*)(const RigidTransform<T>&)>(
+        &to_string)
 ));
 // clang-format on
+#pragma GCC diagnostic pop
 
 }  // namespace math
 }  // namespace drake

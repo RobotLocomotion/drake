@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/generated_docstrings/solvers.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -12,7 +12,7 @@ namespace internal {
 void DefineSolversMixedIntegerRotationConstraint(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
-  constexpr auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
 
   {
     using Class = MixedIntegerRotationConstraintGenerator;

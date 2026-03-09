@@ -16,7 +16,7 @@ Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutput(
     const T& t) const {
   // TODO(@mitiguy) Enhance algorithm to allow for any real values of m, b, k,
   // (except m = 0), e.g., to allow for unstable control systems.
-  DRAKE_DEMAND(m_ > 0  &&  b_ >= 0  &&  k_ > 0);
+  DRAKE_DEMAND(m_ > 0 && b_ >= 0 && k_ > 0);
 
   const T zeta = CalculateDampingRatio();
   const T wn = CalculateNaturalFrequency();
@@ -32,18 +32,18 @@ Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutput(
 //   https://ecommons.cornell.edu/handle/1813/637
 template <typename T>
 Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutputImpl(
-    const T& zeta, const T& wn, const T& x0, const T& xDt0,  const T& t) {
+    const T& zeta, const T& wn, const T& x0, const T& xDt0, const T& t) {
   // TODO(@mitiguy) Enhance algorithm to allow for any real values of zeta, wn.
-  DRAKE_DEMAND(zeta >= 0  &&  wn > 0);
+  DRAKE_DEMAND(zeta >= 0 && wn > 0);
 
   // Quantities x, ẋ, ẍ are put into a three-element matrix and returned.
   T x, xDt, xDtDt;
 
   using std::abs;
-  using std::exp;
-  using std::sqrt;
   using std::cos;
+  using std::exp;
   using std::sin;
+  using std::sqrt;
 
   constexpr double epsilon = std::numeric_limits<double>::epsilon();
   const bool is_zeta_nearly_1 = abs(zeta - 1) < 10 * epsilon;
@@ -77,8 +77,9 @@ Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutputImpl(
     xDt = factor1Dt * factor2 + factor1 * factor2Dt;
 
     const T factor1DtDt = -wd * wd * factor1;
-    const T factor2DtDt = (-zeta*wn) * (-zeta*wn) * exp(-zeta * wn * t);
-    xDtDt = factor1DtDt*factor2 + 2*factor1Dt*factor2Dt + factor1*factor2DtDt;
+    const T factor2DtDt = (-zeta * wn) * (-zeta * wn) * exp(-zeta * wn * t);
+    xDtDt = factor1DtDt * factor2 + 2 * factor1Dt * factor2Dt +
+            factor1 * factor2DtDt;
   } else {
     DRAKE_DEMAND(zeta > 1);
     // Overdamped  free vibration (zeta > 1).

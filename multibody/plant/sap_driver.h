@@ -14,8 +14,8 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/topology/forest.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -128,9 +128,7 @@ class SapDriver {
 
   const MultibodyPlant<T>& plant() const { return manager().plant(); }
 
-  const MultibodyTreeTopology& tree_topology() const {
-    return manager().tree_topology();
-  }
+  const SpanningForest& get_forest() const { return manager().get_forest(); }
 
   // Computes the linearized momentum equation matrix A to build the SAP
   // contact problem. The matrices for deformable bodies come after those for

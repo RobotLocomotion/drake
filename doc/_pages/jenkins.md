@@ -21,18 +21,27 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-noble-clang-bazel-experimental-valgrind-memcheck please``
 
 A list of Jenkins bot commands for experimental builds that covers the full
 set of continuous and nightly production jobs is available
 [here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental.txt).
-Both provisioned and unprovisioned jobs are listed.
+Both provisioned and unprovisioned jobs are listed. A subset of this list which
+excludes the jobs that normally run pre-merge is available
+[here](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-experimental-extra.txt).
 
 To rerun all regular builds on an open pull request (if the previous build(s)
 failed for various reasons), comment:
 
 * ``@drake-jenkins-bot retest this please``
+
+**Note:** Immediately after opening a pull request, it can take up to 10
+minutes for the branches of all experimental jobs in Jenkins to be created.
+Requesting special build flavors with the ``@drake-jenkins-bot ... please``
+comments will _not_ work until this occurs. In general, it's safe to wait until
+the statuses of all required pre-merge jobs change from "expected" to "pending"
+before requesting any additional builds.
 
 ## Rebuilding via Reviewable
 
@@ -134,7 +143,7 @@ or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
 * ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-cmake-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
@@ -167,7 +176,7 @@ To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-noble-unprovisioned-gcc-wheel-experimental-release please``
-* ``@drake-jenkins-bot mac-arm-sonoma-clang-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sequoia-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)

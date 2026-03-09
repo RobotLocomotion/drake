@@ -57,6 +57,7 @@ RigidBody<T>::~RigidBody() = default;
 
 template <typename T>
 ScopedName RigidBody<T>::scoped_name() const {
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   return ScopedName(
       this->get_parent_tree().GetModelInstanceName(this->model_instance()),
       name_);
@@ -160,6 +161,7 @@ void RigidBody<T>::AddInForce(const systems::Context<T>& context,
                               const Frame<T>& frame_E,
                               MultibodyForces<T>* forces) const {
   DRAKE_THROW_UNLESS(forces != nullptr);
+  DRAKE_THROW_UNLESS(this->has_parent_tree());
   DRAKE_THROW_UNLESS(
       forces->CheckHasRightSizeForModel(this->get_parent_tree()));
   const math::RotationMatrix<T> R_WE =

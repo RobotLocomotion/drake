@@ -34,7 +34,6 @@ def assert_pickle(test, obj, value_to_compare=lambda x: x.__dict__, T=None):
             pass the scalar type T. This is used because `Expression` is
             currently not a serializable type.
     """
-    metaclass = type(type(obj))
     if T == Expression:
         # Pickling not enabled for Expression.
         return

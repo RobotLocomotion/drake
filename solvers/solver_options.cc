@@ -40,9 +40,6 @@ std::string OptionValueToString(const OptionValue& option_value) {
 void SolverOptions::SetOption(const SolverId& solver_id, std::string key,
                               OptionValue option_value) {
   options[solver_id.name()][std::move(key)] = std::move(option_value);
-
-  // Remove on 2025-09-01 upon completion of deprecation.
-  solver_ids.insert(solver_id);
 }
 
 void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
@@ -93,135 +90,6 @@ void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
     }
   }
   DRAKE_UNREACHABLE();
-}
-
-namespace {
-// If options has an entry for the given solver_id, returns a copy of the mapped
-// value, filered by the requested type `T`. Otherwise, returns an empty map.
-// This function should be removed when the deprecations 2025-09-01 expire.
-template <typename T>
-std::unordered_map<std::string, T> GetOptionsHelper(
-    const SolverId& solver_id, const SolverOptions& solver_options) {
-  std::unordered_map<std::string, T> result;
-  const auto iter = solver_options.options.find(solver_id.name());
-  if (iter != solver_options.options.end()) {
-    const string_unordered_map<OptionValue>& items = iter->second;
-    for (const auto& [key, value] : items) {
-      if (std::holds_alternative<T>(value)) {
-        result[key] = std::get<T>(value);
-      }
-    }
-  }
-  return result;
-}
-}  // namespace
-
-// Deprecated 2025-09-01.
-std::unordered_map<std::string, double> SolverOptions::GetOptionsDouble(
-    const SolverId& solver_id) const {
-  return GetOptionsHelper<double>(solver_id, *this);
-}
-
-// Deprecated 2025-09-01.
-std::unordered_map<std::string, int> SolverOptions::GetOptionsInt(
-    const SolverId& solver_id) const {
-  return GetOptionsHelper<int>(solver_id, *this);
-}
-
-// Deprecated 2025-09-01.
-std::unordered_map<std::string, std::string> SolverOptions::GetOptionsStr(
-    const SolverId& solver_id) const {
-  return GetOptionsHelper<std::string>(solver_id, *this);
-}
-
-// Deprecated 2025-09-01.
-std::unordered_map<CommonSolverOption, OptionValue>
-SolverOptions::common_solver_options() const {
-  std::unordered_map<CommonSolverOption, OptionValue> result;
-  const auto iter1 = options.find(kCommonKey);
-  if (iter1 != options.end()) {
-    const string_unordered_map<OptionValue>& common = iter1->second;
-    for (auto key : {CommonSolverOption::kPrintFileName,
-                     CommonSolverOption::kPrintToConsole,
-                     CommonSolverOption::kStandaloneReproductionFileName,
-                     CommonSolverOption::kMaxThreads}) {
-      const auto iter2 = common.find(fmt::to_string(key));
-      if (iter2 != common.end()) {
-        const OptionValue& value = iter2->second;
-        result[key] = value;
-      }
-    }
-  }
-  return result;
-}
-
-// Deprecated 2025-09-01.
-std::string SolverOptions::get_print_file_name() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const std::unordered_map<CommonSolverOption, OptionValue> common =
-      common_solver_options();
-#pragma GCC diagnostic pop
-  // N.B. SetOption sanity checks the value; we don't need to re-check here.
-  std::string result;
-  auto iter = common.find(CommonSolverOption::kPrintFileName);
-  if (iter != common.end()) {
-    result = std::get<std::string>(iter->second);
-  }
-  return result;
-}
-
-// Deprecated 2025-09-01.
-bool SolverOptions::get_print_to_console() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const std::unordered_map<CommonSolverOption, OptionValue> common =
-      common_solver_options();
-#pragma GCC diagnostic pop
-  // N.B. SetOption sanity checks the value; we don't need to re-check here.
-  bool result = false;
-  auto iter = common.find(CommonSolverOption::kPrintToConsole);
-  if (iter != common.end()) {
-    const int value = std::get<int>(iter->second);
-    result = static_cast<bool>(value);
-  }
-  return result;
-}
-
-// Deprecated 2025-09-01.
-std::string SolverOptions::get_standalone_reproduction_file_name() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const std::unordered_map<CommonSolverOption, OptionValue> common =
-      common_solver_options();
-#pragma GCC diagnostic pop
-  // N.B. SetOption sanity checks the value; we don't need to re-check here.
-  std::string result;
-  auto iter = common.find(CommonSolverOption::kStandaloneReproductionFileName);
-  if (iter != common.end()) {
-    result = std::get<std::string>(iter->second);
-  }
-  return result;
-}
-
-// Deprecated 2025-09-01.
-std::optional<int> SolverOptions::get_max_threads() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const std::unordered_map<CommonSolverOption, OptionValue> common =
-      common_solver_options();
-#pragma GCC diagnostic pop
-  // N.B. SetOption sanity checks the value; we don't need to re-check here.
-  auto iter = common.find(CommonSolverOption::kMaxThreads);
-  if (iter != common.end()) {
-    return std::get<int>(iter->second);
-  }
-  return std::nullopt;
-}
-
-// Deprecated 2025-09-01.
-std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
-  return solver_ids;
 }
 
 void SolverOptions::Merge(const SolverOptions& other) {
@@ -287,48 +155,6 @@ std::string SolverOptions::to_string() const {
   }
   result << "})";
   return result.str();
-}
-
-// Deprecated 2025-09-01.
-std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
-  os << x.to_string();
-  return os;
-}
-
-// Deprecated 2025-09-01.
-std::string to_string(const SolverOptions& x) {
-  return x.to_string();
-}
-
-// Deprecated 2025-09-01.
-void SolverOptions::CheckOptionKeysForSolver(
-    const SolverId& solver_id,
-    const std::unordered_set<std::string>& double_keys,
-    const std::unordered_set<std::string>& int_keys,
-    const std::unordered_set<std::string>& str_keys) const {
-  auto iter = options.find(solver_id.name());
-  if (iter == options.end()) {
-    return;
-  }
-  for (const auto& [key, value] : iter->second) {
-    const std::string& key_str = key;  // Allow lambda capture.
-    const bool allowed =
-        std::visit(overloaded{[&key_str, &double_keys](const double&) {
-                                return double_keys.contains(key_str);
-                              },
-                              [&key_str, &int_keys](const int&) {
-                                return int_keys.contains(key_str);
-                              },
-                              [&key_str, &str_keys](const std::string&) {
-                                return str_keys.contains(key_str);
-                              }},
-                   value);
-    if (!allowed) {
-      throw std::invalid_argument(
-          fmt::format("{} is not allowed in the SolverOptions for {}", key,
-                      solver_id.name()));
-    }
-  }
 }
 
 }  // namespace solvers

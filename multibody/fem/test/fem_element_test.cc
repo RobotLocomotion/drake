@@ -1,5 +1,8 @@
 #include "drake/multibody/fem/fem_element.h"
 
+#include <memory>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/fem/test/dummy_element.h"

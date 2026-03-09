@@ -47,7 +47,11 @@
 // TODO(rcory) Include a README.md that explains the use cases for this
 //  example.
 
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 
@@ -74,6 +78,7 @@ namespace examples {
 namespace planar_gripper {
 namespace {
 
+using Eigen::Vector3d;
 using geometry::SceneGraph;
 using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::JointActuatorIndex;
@@ -82,7 +87,6 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
-using Eigen::Vector3d;
 
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
@@ -90,9 +94,9 @@ DEFINE_double(target_realtime_rate, 1.0,
 DEFINE_double(simulation_time, 4.5,
               "Desired duration of the simulation in seconds.");
 DEFINE_double(time_step, 1e-3,
-            "If greater than zero, the plant is modeled as a system with "
-            "discrete updates and period equal to this time_step. "
-            "If 0, the plant is modeled as a continuous system.");
+              "If greater than zero, the plant is modeled as a system with "
+              "discrete updates and period equal to this time_step. "
+              "If 0, the plant is modeled as a continuous system.");
 DEFINE_double(penetration_allowance, 1e-3,
               "The contact penetration allowance.");
 DEFINE_double(floor_coef_static_friction, 0.5,
@@ -106,8 +110,7 @@ DEFINE_double(brick_floor_penetration, 1e-5,
 DEFINE_string(orientation, "vertical",
               "The orientation of the planar gripper. Options are {vertical, "
               "horizontal}.");
-DEFINE_bool(visualize_contacts, false,
-            "Visualize contacts in Meldis.");
+DEFINE_bool(visualize_contacts, false, "Visualize contacts in Meldis.");
 DEFINE_bool(
     use_position_control, true,
     "If true (default) we simulate position control via inverse dynamics "
@@ -148,7 +151,8 @@ void AddFloor(MultibodyPlant<double>* plant,
   const math::RigidTransformd X_WF(
       Eigen::AngleAxisd(M_PI_2, Vector3d::UnitY()),
       Vector3d(kSphereTipXOffset - (kFloorHeight / 2.0) +
-                   FLAGS_brick_floor_penetration, 0, 0));
+                   FLAGS_brick_floor_penetration,
+               0, 0));
   const Vector4<double> black(0.2, 0.2, 0.2, 1.0);
   plant->RegisterVisualGeometry(plant->world_body(), X_WF,
                                 geometry::Cylinder(.125, kFloorHeight),
@@ -214,7 +218,7 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
   }
 
   void CalcOutput(const drake::systems::Context<double>& context,
-                 drake::systems::BasicVector<double>* output) const {
+                  drake::systems::BasicVector<double>* output) const {
     const std::vector<multibody::SpatialForce<double>>& spatial_vec =
         this->get_input_port(0)
             .Eval<std::vector<multibody::SpatialForce<double>>>(context);
@@ -263,10 +267,8 @@ int DoMain() {
         0, 0, -multibody::UniformGravityFieldElement<double>::kDefaultStrength);
   } else if (FLAGS_orientation == "horizontal") {
     plant.AddJoint<PrismaticJoint>(
-        "brick_translate_x_joint",
-        plant.world_body(), std::nullopt,
-        plant.GetBodyByName("brick_base"), std::nullopt,
-        Vector3d::UnitX());
+        "brick_translate_x_joint", plant.world_body(), std::nullopt,
+        plant.GetBodyByName("brick_base"), std::nullopt, Vector3d::UnitX());
     gravity = Vector3d(
         -multibody::UniformGravityFieldElement<double>::kDefaultStrength, 0, 0);
   } else {
@@ -308,7 +310,9 @@ int DoMain() {
     // Create the gains for the inverse dynamics controller. These gains were
     // chosen arbitrarily.
     Vector<double, kNumJoints> Kp, Kd, Ki;
-    Kp.setConstant(1500); Kd.setConstant(500); Ki.setConstant(500);
+    Kp.setConstant(1500);
+    Kd.setConstant(500);
+    Ki.setConstant(500);
 
     auto id_controller =
         builder.AddSystem<systems::controllers::InverseDynamicsController>(

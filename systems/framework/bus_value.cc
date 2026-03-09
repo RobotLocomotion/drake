@@ -1,5 +1,9 @@
 #include "drake/systems/framework/bus_value.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "absl/container/flat_hash_map.h"
 
 #include "drake/common/drake_export.h"

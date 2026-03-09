@@ -28,18 +28,15 @@ GTEST_TEST(DeterministicTest, TransformTest) {
   EXPECT_EQ(*transform.base_frame, "foo");
 
   drake::math::RigidTransformd expected(
-      drake::math::RollPitchYawd(
-          Eigen::Vector3d(10., 20., 30.) * (M_PI / 180.0)),
-      Eigen::Vector3d(1., 2., 3.));
+      drake::math::RollPitchYawd(Eigen::Vector3d(10.0, 20.0, 30.0) *
+                                 (M_PI / 180.0)),
+      Eigen::Vector3d(1.0, 2.0, 3.0));
   constexpr double kTol = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(drake::CompareMatrices(
-      transform.GetDeterministicValue().GetAsMatrix34(),
-      expected.GetAsMatrix34(),
-      kTol));
-  EXPECT_TRUE(drake::CompareMatrices(
-      transform.Mean().GetAsMatrix34(),
-      expected.GetAsMatrix34(),
-      kTol));
+  EXPECT_TRUE(
+      drake::CompareMatrices(transform.GetDeterministicValue().GetAsMatrix34(),
+                             expected.GetAsMatrix34(), kTol));
+  EXPECT_TRUE(drake::CompareMatrices(transform.Mean().GetAsMatrix34(),
+                                     expected.GetAsMatrix34(), kTol));
 }
 
 const char* random = R"""(
@@ -53,11 +50,10 @@ GTEST_TEST(StochasticTest, TransformTest) {
 
   EXPECT_EQ(*transform.base_frame, "bar");
   EXPECT_FALSE(IsDeterministic(transform.translation));
-  EXPECT_TRUE(std::holds_alternative<Rotation::Uniform>(
-      transform.rotation.value));
-  EXPECT_TRUE(drake::CompareMatrices(
-      transform.Mean().translation(),
-      Eigen::Vector3d(2.5, 3.5, 4.5)));
+  EXPECT_TRUE(
+      std::holds_alternative<Rotation::Uniform>(transform.rotation.value));
+  EXPECT_TRUE(drake::CompareMatrices(transform.Mean().translation(),
+                                     Eigen::Vector3d(2.5, 3.5, 4.5)));
 }
 
 const char* random_bounded = R"""(
@@ -82,13 +78,11 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
     EXPECT_GT(sampled_transform.translation()[i], translation_domain.min[i]);
     EXPECT_LT(sampled_transform.translation()[i], translation_domain.max[i]);
   }
-  const auto& rotation_domain =
-      std::get<schema::UniformVector<3>>(
-          std::get<schema::Rotation::Rpy>(
-              transform.rotation.value).deg);
+  const auto& rotation_domain = std::get<schema::UniformVector<3>>(
+      std::get<schema::Rotation::Rpy>(transform.rotation.value).deg);
   const Eigen::Vector3d rpy =
-      drake::math::RollPitchYawd(sampled_transform.rotation())
-      .vector() * (180 / M_PI);
+      drake::math::RollPitchYawd(sampled_transform.rotation()).vector() *
+      (180 / M_PI);
   EXPECT_LT(rpy[0], rotation_domain.max[0] - 360);
   EXPECT_GT(rpy[0], rotation_domain.min[0] - 360);
   EXPECT_LT(rpy[1], rotation_domain.max[1]);
@@ -103,8 +97,8 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
 
   // Check the mean.
   drake::math::RigidTransformd expected_mean(
-      drake::math::RollPitchYawd(
-          Eigen::Vector3d(390., 0., 0.) * (M_PI / 180.0)),
+      drake::math::RollPitchYawd(Eigen::Vector3d(390.0, 0.0, 0.0) *
+                                 (M_PI / 180.0)),
       Eigen::Vector3d(2.5, 3.5, 4.5));
   EXPECT_TRUE(transform.Mean().IsExactlyEqualTo(expected_mean));
 }
@@ -126,8 +120,8 @@ GTEST_TEST(StochasticSampleTest, TransformTestWithBaseFrame) {
   EXPECT_EQ(sampled_transform.GetDeterministicValue().translation(),
             sampled_rigidtransformd.translation());
   EXPECT_TRUE(
-    sampled_transform.GetDeterministicValue().rotation().IsNearlyEqualTo(
-        sampled_rigidtransformd.rotation(), 1e-14));
+      sampled_transform.GetDeterministicValue().rotation().IsNearlyEqualTo(
+          sampled_rigidtransformd.rotation(), 1e-14));
 }
 
 }  // namespace

@@ -1,5 +1,17 @@
 #include "drake/systems/framework/event_collection.h"
 
+namespace drake {
+namespace systems {
+
+template <typename EventType>
+EventCollection<EventType>::~EventCollection() = default;
+
+template <typename T>
+CompositeEventCollection<T>::~CompositeEventCollection() = default;
+
+}  // namespace systems
+}  // namespace drake
+
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::CompositeEventCollection);
 
@@ -17,9 +29,6 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::WitnessTriggeredEventData);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::Event);
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::PublishEvent);
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
@@ -27,3 +36,24 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::UnrestrictedUpdateEvent);
+
+template class ::drake::systems::EventCollection<
+    ::drake::systems::DiscreteUpdateEvent<double>>;
+template class ::drake::systems::EventCollection<
+    ::drake::systems::DiscreteUpdateEvent<::drake::AutoDiffXd>>;
+template class ::drake::systems::EventCollection<
+    ::drake::systems::DiscreteUpdateEvent<::drake::symbolic::Expression>>;
+
+template class ::drake::systems::EventCollection<
+    ::drake::systems::UnrestrictedUpdateEvent<double>>;
+template class ::drake::systems::EventCollection<
+    ::drake::systems::UnrestrictedUpdateEvent<::drake::AutoDiffXd>>;
+template class ::drake::systems::EventCollection<
+    ::drake::systems::UnrestrictedUpdateEvent<::drake::symbolic::Expression>>;
+
+template class ::drake::systems::EventCollection<
+    ::drake::systems::PublishEvent<double>>;
+template class ::drake::systems::EventCollection<
+    ::drake::systems::PublishEvent<::drake::AutoDiffXd>>;
+template class ::drake::systems::EventCollection<
+    ::drake::systems::PublishEvent<::drake::symbolic::Expression>>;

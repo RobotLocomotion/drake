@@ -1,27 +1,34 @@
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
-    "drake_cc_test",
 )
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_unittest",
 )
+load("//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "doxygen_input",
+    srcs = ["cxx_doxygen.h"],
+    tags = ["nolint"],
+    visibility = ["//doc/doxygen_cxx:__pkg__"],
+)
 
 drake_cc_package_library(
     name = "common",
     visibility = ["//visibility:public"],
     deps = [
         ":autodiff",
-        ":bit_cast",
         ":cond",
         ":copyable_unique_ptr",
         ":cpu_capabilities",
@@ -60,6 +67,7 @@ drake_cc_package_library(
         ":sorted_pair",
         ":string_container",
         ":temp_directory",
+        ":text_logging_spdlog",
         ":timer",
         ":type_safe_index",
         ":unused",
@@ -90,7 +98,7 @@ drake_cc_library(
 drake_cc_library(
     name = "essential",
     srcs = [
-        "drake_assert_and_throw.cc",
+        "drake_assert.cc",
         "drake_deprecated.cc",
         "text_logging.cc",
     ],
@@ -103,8 +111,9 @@ drake_cc_library(
         "drake_throw.h",
         "eigen_types.h",
         "never_destroyed.h",
-        "ssize.h",
         "text_logging.h",
+        # Remove with deprecation on 2026-09-01.
+        "ssize.h",
     ],
     deps = [
         ":fmt",
@@ -115,8 +124,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "bit_cast",
-    hdrs = ["bit_cast.h"],
+    name = "text_logging_spdlog",
+    srcs = ["text_logging_spdlog.cc"],
+    hdrs = ["text_logging_spdlog.h"],
+    deps = [
+        ":essential",
+    ],
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
@@ -164,19 +177,49 @@ drake_cc_library(
     hdrs = ["double_overloads.h"],
 )
 
+# TODO(jwnimmer-tri) On 2026-07-01 remove all of the deprecated legacy stuff.
+config_setting(
+    name = "flag_use_eigen_legacy_autodiff_true",
+    flag_values = {
+        "//tools/flags:use_eigen_legacy_autodiff": "True",
+    },
+)
+
+generate_file(
+    name = "autodiff_config.h",
+    content = select({
+        ":flag_use_eigen_legacy_autodiff_true": (
+            "#define DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF 1\n"
+        ),
+        "//conditions:default": (
+            "#define DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF 0\n"
+        ),
+    }),
+)
+
 drake_cc_library(
     name = "autodiff",
     hdrs = [
         "autodiff.h",
-        "autodiff_overloads.h",
-        "autodiffxd.h",
-        "eigen_autodiff_types.h",
-    ],
-    deps = [
-        ":cond",
-        ":dummy_value",
-        ":essential",
-    ],
+        ":autodiff_config.h",
+    ] + select({
+        ":flag_use_eigen_legacy_autodiff_true": [
+            "autodiff_overloads.h",
+            "autodiffxd.h",
+            "eigen_autodiff_types.h",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        ":flag_use_eigen_legacy_autodiff_true": [
+            ":cond",
+            ":dummy_value",
+            ":essential",
+        ],
+        "//conditions:default": [
+            "//common/ad",
+        ],
+    }),
 )
 
 drake_cc_library(
@@ -429,7 +472,11 @@ drake_cc_library(
     name = "nice_type_name_override_header",
     hdrs = ["nice_type_name_override.h"],
     install_hdrs_exclude = ["nice_type_name_override.h"],
-    tags = ["exclude_from_package"],
+    tags = [
+        "exclude_from_package",
+        # This is linted using `extra_srcs`, below.
+        "nolint",
+    ],
     visibility = ["//bindings/pydrake/common:__pkg__"],
 )
 
@@ -441,6 +488,10 @@ drake_cc_library(
     ],
     hdrs = [
         "nice_type_name.h",
+    ],
+    tags = [
+        # This is linted using `extra_srcs`, below.
+        "nolint",
     ],
     deps = [
         ":essential",
@@ -616,39 +667,36 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "resource_tool",
-    srcs = ["resource_tool.cc"],
-    deps = [
-        ":add_text_logging_gflags",
-        ":essential",
-        ":find_resource",
-    ],
-)
-
-install(
-    name = "install_drake_marker",
-    targets = [":libdrake_marker.so"],
-)
-
 install(
     name = "install",
-    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
+        # TODO(tyler-yankee): As written, find_resource relies on dynamic
+        # loading and disregards //tools/flags:install_libdrake=static.
+        # We should determine alternatives to make this work, so that users
+        # linking libdrake statically can distribute a single archive file.
         ":libdrake_marker.so",
-        ":resource_tool",
     ],
     runtime_dest = "share/drake/common",
-    data_dest = "share/drake",
-    guess_data = "WORKSPACE",
-    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    deps = [
-        ":install_drake_marker",
-    ],
 )
 
 # === test/ ===
 
+# A config file that forces legacy mode (for legacy-specific tests).
+# TODO(jwnimmer-tri) On 2026-07-01 remove all of the deprecated legacy stuff.
+generate_file(
+    name = "test/drake/common/autodiff_config.h",
+    content = "#define DRAKE_INTERNAL_USE_EIGEN_LEGACY_AUTODIFF 1\n",
+)
+
+cc_library(
+    name = "autodiff_config_legacy",
+    testonly = True,
+    hdrs = [":test/drake/common/autodiff_config.h"],
+    strip_include_prefix = "test",
+    visibility = ["//visibility:private"],
+)
+
+# TODO(jwnimmer-tri) On 2026-07-01 remove this test of deprecated code.
 drake_cc_googletest(
     name = "autodiffxd_test",
     # The following `autodiffxd_*_test.cc` files were in a single
@@ -656,6 +704,10 @@ drake_cc_googletest(
     # this test. So we split it into multiple .cc files. We observed about
     # 8x speed-up.
     srcs = [
+        "autodiff.h",
+        "autodiff_overloads.h",
+        "autodiffxd.h",
+        "eigen_autodiff_types.h",
         "test/autodiffxd_abs2_test.cc",
         "test/autodiffxd_abs_test.cc",
         "test/autodiffxd_acos_test.cc",
@@ -686,7 +738,13 @@ drake_cc_googletest(
         "-DStandardOperationsTest=AutoDiffXdTest",
     ],
     deps = [
-        ":autodiff",
+        # We must not use ":autodiff" but instead use ":autodiff_config_legacy"
+        # and put all of the autodiff headers in `srcs` because this test should
+        # always check the legacy AutoDiffXd, even if the build has enabled the
+        # new AutoDiffXd.
+        ":autodiff_config_legacy",
+        ":cond",
+        ":dummy_value",
         "//common/ad:standard_operations_test_h",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -704,16 +762,11 @@ drake_cc_googletest(
     name = "autodiff_overloads_test",
     deps = [
         ":autodiff",
+        ":cond",
+        ":dummy_value",
         ":essential",
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "bit_cast_test",
-    deps = [
-        ":bit_cast",
     ],
 )
 
@@ -734,13 +787,6 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ssize_test",
-    deps = [
-        ":essential",
     ],
 )
 
@@ -850,6 +896,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "drake_deref_test",
+    deps = [
+        ":essential",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_cloneable_test",
     deps = [
         ":is_cloneable",
@@ -888,6 +943,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1207,6 +1263,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         ":essential",
+        ":text_logging_spdlog",
     ],
 )
 
@@ -1248,6 +1305,13 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "text_logging_spdlog_test",
+    deps = [
+        ":text_logging_spdlog",
     ],
 )
 
@@ -1301,18 +1365,6 @@ drake_py_unittest(
     data = [":drake_cc_googletest_main_test_device"],
 )
 
-drake_py_unittest(
-    name = "resource_tool_test",
-    args = [
-        "$(location :resource_tool)",
-    ],
-    data = [
-        "test/resource_tool_test_data.txt",
-        ":resource_tool",
-        "//examples/pendulum:models",
-    ],
-)
-
 drake_cc_googletest(
     name = "value_test",
     deps = [
@@ -1334,8 +1386,10 @@ drake_cc_googletest(
 )
 
 add_lint_tests(
-    enable_clang_format_lint = False,
-    python_lint_extra_srcs = [
-        ":test/resource_tool_installed_test.py",
+    cpplint_extra_srcs = [
+        "nice_type_name.cc",
+        "nice_type_name.h",
+        "nice_type_name_override.cc",
+        "nice_type_name_override.h",
     ],
 )

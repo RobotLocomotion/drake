@@ -9,7 +9,9 @@
  * LcmPublisherSystem
  *
  */
+#include <limits>
 #include <memory>
+#include <string>
 #include <thread>
 
 #include <gflags/gflags.h>
@@ -51,8 +53,8 @@ int DoMain() {
   acrobot->set_name("acrobot");
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  AcrobotGeometry::AddToBuilder(
-      &builder, acrobot->get_output_port(0), scene_graph);
+  AcrobotGeometry::AddToBuilder(&builder, acrobot->get_output_port(0),
+                                scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph, lcm);
 
   // Creates command receiver and subscriber.

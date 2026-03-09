@@ -19,15 +19,15 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
  /////////////////////////////////////////////////
 --- src/Root.cc
 +++ src/Root.cc
-@@ -218,7 +218,7 @@ Errors Root::LoadSdfString(const std::string &_sdf, const ParserConfig &_config)
- {
-   Errors errors;
-   SDFPtr sdfParsed(new SDF());
--  init(sdfParsed);
-+  init(sdfParsed, sdf::ParserConfig{});
- 
-   // Read an SDF string, and store the result in sdfParsed.
-   if (!readString(_sdf, _config, sdfParsed, errors))
+@@ -41,7 +41,7 @@ struct SdfCache {
+
+   /// \brief Constructor.
+   SdfCache(): sdfParsed(new SDF()) {
+-    init(this->sdfParsed);
++    init(this->sdfParsed, sdf::ParserConfig{});
+   }
+
+   /// \brief The parsed SDF Spec
 --- src/cmd/gz.cc
 +++ src/cmd/gz.cc
 @@ -51,7 +51,7 @@ namespace sdf

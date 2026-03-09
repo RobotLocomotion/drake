@@ -6,7 +6,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/ssize.h"
 #include "drake/math/eigen_sparse_triplet.h"
 
 namespace drake {

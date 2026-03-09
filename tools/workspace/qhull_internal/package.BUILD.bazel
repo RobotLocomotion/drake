@@ -63,6 +63,7 @@ cc_library(
         "-w",
     ],
     includes = ["src"],
+    isystem = True,
     srcs = _SRCS_C,
     linkstatic = 1,
 )
@@ -82,6 +83,7 @@ cc_library_vendored(
     hdrs = _HDRS_CPP,
     hdrs_vendored = _HDRS_CPP_VENDORED,
     includes = ["drake_hdr"],
+    isystem = True,
     srcs = _SRCS_CPP,
     srcs_vendored = _SRCS_CPP_VENDORED,
     copts = ["-w"],
@@ -119,3 +121,5 @@ install(
     doc_strip_prefix = ["patches"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["drake_repository_metadata.json"])

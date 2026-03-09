@@ -1,6 +1,10 @@
 #include "drake/systems/primitives/selector.h"
 
+#include <algorithm>
 #include <deque>
+#include <map>
+#include <set>
+#include <utility>
 
 #include "drake/systems/primitives/selector_internal.h"
 

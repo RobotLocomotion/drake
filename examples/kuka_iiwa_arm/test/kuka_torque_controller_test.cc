@@ -1,5 +1,7 @@
 #include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
 
+#include <memory>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

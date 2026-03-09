@@ -1,10 +1,13 @@
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
 
+#include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <set>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <fmt/ranges.h>
@@ -235,7 +238,7 @@ class SliceTest : public ::testing::TestWithParam<SliceFunctionType> {
         cut_edges_[edges[i]] = new_index;
       }
 
-      const Vector3<double> nhat_W = X_WF_.rotation() * plane_F.normal();
+      const Vector3<double> nhat_W = X_WF_.rotation() * plane_F.unit_normal();
       const Vector3<double> grad_e_FN_W =
           X_WF_.rotation() * field_F_->EvaluateGradient(tet_index);
 
@@ -623,7 +626,7 @@ TEST_P(SliceTest, TriangleIntersections) {
 
         // Further consistency analysis.
         ASSERT_TRUE(HasNVertices(*mesh_W, *field_W, 3));
-        const Vector3d nhat_W = X_WF_.rotation() * plane_F.normal();
+        const Vector3d nhat_W = X_WF_.rotation() * plane_F.unit_normal();
         EXPECT_TRUE(FaceNormalMatches(*mesh_W, 0 /* poly index */, nhat_W));
       }
     }
@@ -717,7 +720,7 @@ TEST_P(SliceTest, QuadIntersections) {
 
         // Further consistency analysis.
         ASSERT_TRUE(HasNVertices(*mesh_W, *field_W, 4));
-        const Vector3d nhat_W = X_WF_.rotation() * plane_F.normal();
+        const Vector3d nhat_W = X_WF_.rotation() * plane_F.unit_normal();
         ASSERT_TRUE(FaceNormalMatches(*mesh_W, 0 /* poly index */, nhat_W));
       }
     }

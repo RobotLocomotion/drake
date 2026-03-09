@@ -47,7 +47,7 @@ def main(argv, execvp, write_stderr, popen):
 
     # If this magic argument is found and we're in Drake's workspace, then
     # replace it with Drake's hooks instead.
-    old_magic = "--aspects=@intellij_aspect//:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
+    old_magic = "--aspects=//.clwb_aspects:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
     new_magic = "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"
     if old_magic in args:
         args[args.index(old_magic)] = new_magic

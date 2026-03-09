@@ -1,8 +1,10 @@
 #include "drake/geometry/query_results/deformable_contact.h"
 
+#include <unordered_set>
+#include <vector>
+
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {

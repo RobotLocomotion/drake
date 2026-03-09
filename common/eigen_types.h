@@ -9,6 +9,7 @@
 /// usage of `<Scalar>` in Eigen's code base.
 /// @see also eigen_autodiff_types.h
 
+#include <iterator>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -22,6 +23,10 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 5),
 #include "drake/common/fmt_eigen.h"  // Clang-16 workaround; see #22061.
 
 namespace drake {
+
+// Provide easy access to `std::ssize` without relying on ADL.
+// This is especially helpful for using ssize on Eigen vectors.
+using std::ssize;
 
 /// The empty column vector (zero rows, one column), templated on scalar type.
 template <typename Scalar>
@@ -90,7 +95,6 @@ using RowVector = Eigen::Matrix<Scalar, 1, Cols>;
 template <typename Scalar>
 using RowVectorX = Eigen::Matrix<Scalar, 1, Eigen::Dynamic>;
 
-
 /// A matrix of 2 rows and 2 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
@@ -132,7 +136,7 @@ using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 /// columns, are allowed.
 template <typename Scalar>
 using MatrixUpTo6 =
-Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
 
 /// A matrix of 6 rows and dynamic column size up to a maximum of 6, templated
 /// on scalar type.
@@ -142,10 +146,11 @@ using Matrix6xUpTo6 = Eigen::Matrix<Scalar, 6, Eigen::Dynamic, 0, 6, 6>;
 /// A matrix with the same compile-time sizes and storage order as Derived, but
 /// with a different scalar type and its default alignment (Eigen::AutoAlign).
 template <typename Scalar, typename Derived>
-using MatrixLikewise = Eigen::Matrix<Scalar,
-    Derived::RowsAtCompileTime, Derived::ColsAtCompileTime,
-    Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor,
-    Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
+using MatrixLikewise =
+    Eigen::Matrix<Scalar, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime,
+                  Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor,
+                  Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
 /// A fully dynamic Eigen stride.
 using StrideX = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
@@ -162,6 +167,14 @@ using AngleAxis = Eigen::AngleAxis<Scalar>;
 template <typename Scalar>
 using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0) || defined(DRAKE_DOXYGEN_CXX)
+/// A portable alias for Eigen::placeholders::all.
+static constexpr auto eigen_all = Eigen::placeholders::all;
+#else
+// Backwards compatibility for Eigen < 5.
+static const auto eigen_all = Eigen::all;
+#endif
+
 /*
  * Determines if a type is derived from EigenBase<> (e.g. ArrayBase<>,
  * MatrixBase<>).
@@ -174,18 +187,16 @@ struct is_eigen_type : std::is_base_of<Eigen::EigenBase<Derived>, Derived> {};
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_scalar_same
-    : std::bool_constant<
-          is_eigen_type<Derived>::value &&
-              std::is_same_v<typename Derived::Scalar, Scalar>> {};
+    : std::bool_constant<is_eigen_type<Derived>::value &&
+                         std::is_same_v<typename Derived::Scalar, Scalar>> {};
 
 /*
  * Determines if an EigenBase<> type is a compile-time (column) vector.
  * This will not check for run-time size.
  */
 template <typename Derived>
-struct is_eigen_vector
-    : std::bool_constant<is_eigen_type<Derived>::value &&
-                         Derived::ColsAtCompileTime == 1> {};
+struct is_eigen_vector : std::bool_constant<is_eigen_type<Derived>::value &&
+                                            Derived::ColsAtCompileTime == 1> {};
 
 /*
  * Determines if an EigenBase<> type is a compile-time (column) vector of a
@@ -193,9 +204,8 @@ struct is_eigen_vector
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_vector_of
-    : std::bool_constant<
-          is_eigen_scalar_same<Derived, Scalar>::value &&
-              is_eigen_vector<Derived>::value> {};
+    : std::bool_constant<is_eigen_scalar_same<Derived, Scalar>::value &&
+                         is_eigen_vector<Derived>::value> {};
 
 // TODO(eric.cousineau): A 1x1 matrix will be disqualified in this case, and
 // this logic will qualify it as a vector. Address the downstream logic if this
@@ -209,9 +219,8 @@ struct is_eigen_vector_of
  */
 template <typename Derived, typename Scalar>
 struct is_eigen_nonvector_of
-    : std::bool_constant<
-          is_eigen_scalar_same<Derived, Scalar>::value &&
-              !is_eigen_vector<Derived>::value> {};
+    : std::bool_constant<is_eigen_scalar_same<Derived, Scalar>::value &&
+                         !is_eigen_vector<Derived>::value> {};
 
 // TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
 // appropriate.
@@ -364,9 +373,7 @@ class EigenPtr {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ReassignableRef);
     ReassignableRef() {}
-    ~ReassignableRef() {
-      reset();
-    }
+    ~ReassignableRef() { reset(); }
 
     // Reset value to null.
     void reset() {
@@ -426,9 +433,7 @@ class EigenPtr {
     return m_.value();
   }
 
-  bool is_valid() const {
-    return m_.has_value();
-  }
+  bool is_valid() const { return m_.has_value(); }
 };
 
 }  // namespace drake

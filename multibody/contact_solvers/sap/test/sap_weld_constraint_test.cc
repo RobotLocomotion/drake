@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"

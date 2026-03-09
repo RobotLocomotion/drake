@@ -1,5 +1,7 @@
 #include "drake/solvers/ipopt_solver_internal.h"
 
+#include <vector>
+
 #include <IpIpoptApplication.hpp>
 #include <IpTNLP.hpp>
 #include <gtest/gtest.h>

@@ -1,6 +1,9 @@
 /* @file This contains the bounding box functions for pydrake.geometry. */
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
+#include <set>
+#include <utility>
+
+#include "drake/bindings/generated_docstrings/geometry_proximity.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/calc_obb.h"
@@ -14,7 +17,7 @@ namespace pydrake {
 void DefineGeometryBoundingBox(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
   // Define Aabb class first.
   py::class_<Aabb> aabb_cls(m, "Aabb", doc.Aabb.doc);
@@ -75,9 +78,16 @@ void DefineGeometryBoundingBox(py::module m) {
       doc.Aabb.HasOverlap.doc_aabb_obb);
 
   aabb_cls.def_static("HasOverlap",
-      py::overload_cast<const Aabb&, const math::RigidTransformd&>(
-          &Aabb::HasOverlap),
-      py::arg("bv_H"), py::arg("X_CH"), doc.Aabb.HasOverlap.doc_aabb_halfspace);
+      py::overload_cast<const Aabb&, const HalfSpace&,
+          const math::RigidTransformd&>(&Aabb::HasOverlap),
+      py::arg("bv_H"), py::arg("hs_C"), py::arg("X_CH"),
+      doc.Aabb.HasOverlap.doc_aabb_halfspace);
+
+  aabb_cls.def_static("HasOverlap",
+      py::overload_cast<const Aabb&, const Plane<double>&,
+          const math::RigidTransformd&>(&Aabb::HasOverlap),
+      py::arg("bv_H"), py::arg("plane_P"), py::arg("X_PH"),
+      doc.Aabb.HasOverlap.doc_aabb_plane);
 
   // Obb static methods.
   obb_cls.def_static("HasOverlap",
@@ -96,6 +106,12 @@ void DefineGeometryBoundingBox(py::module m) {
       py::overload_cast<const Obb&, const math::RigidTransformd&>(
           &Obb::HasOverlap),
       py::arg("bv_H"), py::arg("X_CH"), doc.Obb.HasOverlap.doc_obb_halfspace);
+
+  obb_cls.def_static("HasOverlap",
+      py::overload_cast<const Obb&, const Plane<double>&,
+          const math::RigidTransformd&>(&Obb::HasOverlap),
+      py::arg("bv_H"), py::arg("plane_P"), py::arg("X_PH"),
+      doc.Obb.HasOverlap.doc_obb_plane);
 
   // AabbMaker and ObbMaker utility functions
   // Instead of binding the classes directly (which have lifetime issues with

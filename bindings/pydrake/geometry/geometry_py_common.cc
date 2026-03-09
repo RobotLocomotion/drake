@@ -4,12 +4,18 @@
  represent the input values to all of those computations. They can be found in
  the pydrake.geometry module. */
 
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/bindings/generated_docstrings/geometry.h"
+#include "drake/bindings/generated_docstrings/geometry_proximity.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/collision_filter_declaration.h"
@@ -22,6 +28,7 @@
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/mesh_source.h"
+#include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -31,7 +38,7 @@ namespace {
 
 // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
 using namespace drake::geometry;
-constexpr auto& doc = pydrake_doc.drake.geometry;
+constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
@@ -217,14 +224,7 @@ void DefineGeometryProperties(py::module m) {
             py::arg("name"), cls_doc.RemoveProperty.doc)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
-        .def(
-            "__str__",
-            [](const Class& self) {
-              std::stringstream ss;
-              ss << self;
-              return ss.str();
-            },
-            "Returns formatted string.");
+        .def("__str__", &Class::to_string, "Returns formatted string.");
   }
 }
 
@@ -731,6 +731,43 @@ void def_testing_module(py::module m) {
 }
 }  // namespace testing
 
+template <typename T>
+void DefinePlane(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+  {
+    using Class = Plane<T>;
+    constexpr auto& cls_doc =
+        pydrake_doc_geometry_proximity.drake.geometry.Plane;
+    auto cls =
+        DefineTemplateClassWithDefault<Class>(m, "Plane", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const Vector3<T>&, const Vector3<T>&, bool>(),
+            py::arg("normal"), py::arg("point_on_plane"),
+            py::arg("already_normalized") = false, cls_doc.ctor.doc)
+        .def(
+            "CalcHeight",
+            [](const Class* self, const Vector3<T>& point) {
+              return self->CalcHeight(point);
+            },
+            py::arg("point"), cls_doc.CalcHeight.doc)
+        .def("unit_normal", &Class::unit_normal, py_rvp::reference_internal,
+            cls_doc.unit_normal.doc)
+        .def("reference_point", &Class::reference_point,
+            cls_doc.reference_point.doc)
+        .def("BoxOverlaps", &Class::BoxOverlaps, py::arg("half_width"),
+            py::arg("box_center_in_plane"), py::arg("box_orientation_in_plane"),
+            cls_doc.BoxOverlaps.doc)
+        .def(py::pickle(
+            [](const Plane<T>& self) {
+              return std::make_pair(self.unit_normal(), self.reference_point());
+            },
+            [](std::pair<Vector3<T>, Vector3<T>> data) {
+              return Plane<T>(data.first, data.second);
+            }));
+    DefCopyAndDeepCopy(&cls);
+  }
+}
+
 }  // namespace
 
 void DefineGeometryCommon(py::module m) {
@@ -756,6 +793,13 @@ void DefineGeometryCommon(py::module m) {
   DefineMiscFunctions(m);
 
   testing::def_testing_module(m.def_submodule("_testing"));
+
+  type_visit(
+      [m](auto dummy) {
+        // This list must remain in topological dependency order.
+        DefinePlane(m, dummy);
+      },
+      NonSymbolicScalarPack{});
 }
 
 }  // namespace pydrake

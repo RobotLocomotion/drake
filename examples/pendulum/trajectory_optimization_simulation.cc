@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <utility>
 
 #include <gflags/gflags.h>
 
@@ -119,12 +120,11 @@ int DoMain() {
   simulator.Initialize();
   simulator.AdvanceTo(pp_xtraj.end_time());
 
-  const auto& pendulum_state =
-      PendulumPlant<double>::get_state(diagram->GetSubsystemContext(
-          *pendulum_ptr, simulator.get_context()));
+  const auto& pendulum_state = PendulumPlant<double>::get_state(
+      diagram->GetSubsystemContext(*pendulum_ptr, simulator.get_context()));
 
-  if (!is_approx_equal_abstol(pendulum_state.value(),
-                              final_state.value(), 1e-3)) {
+  if (!is_approx_equal_abstol(pendulum_state.value(), final_state.value(),
+                              1e-3)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
   return 0;

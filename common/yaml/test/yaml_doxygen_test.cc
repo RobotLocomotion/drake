@@ -1,5 +1,8 @@
 #include <fstream>
+#include <map>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>

@@ -11,6 +11,7 @@ def _impl(repo_ctx):
         fail(error)
     repo_ctx.file("BUILD.bazel", """
 load("@drake//tools/workspace/libjpeg_turbo_internal:defs.bzl", "cc_library")
+exports_files(["drake_repository_metadata.json"])
 """ + repo_ctx.read(Label(
         "@drake//third_party:com_github_tensorflow_tensorflow/third_party/jpeg/jpeg.BUILD",  # noqa
     )))

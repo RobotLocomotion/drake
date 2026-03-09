@@ -1,5 +1,9 @@
 #include "drake/multibody/mpm/sparse_grid.h"
 
+#include <limits>
+#include <set>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

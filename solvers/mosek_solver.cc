@@ -11,6 +11,7 @@
 #include <Eigen/SparseCore>
 #include <mosek.h>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
@@ -52,7 +53,7 @@ class MosekSolver::License {
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error(
           fmt::format("Could not acquire MOSEK license: {}. See "
-                      "https://docs.mosek.com/11.0/capi/"
+                      "https://docs.mosek.com/11.1/capi/"
                       "response-codes.html#mosek.rescode for details.",
                       fmt_streamed(rescode)));
     }
@@ -258,7 +259,7 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
 
   // Since Mosek 10, it allows setting the initial guess for both continuous and
   // integer/binary variables. See
-  // https://docs.mosek.com/11.0/rmosek/tutorial-mio-shared.html#specifying-an-initial-solution
+  // https://docs.mosek.com/11.1/rmosek/tutorial-mio-shared.html#specifying-an-initial-solution
   // for more details.
   if (initial_guess.array().isFinite().any()) {
     DRAKE_ASSERT(initial_guess.size() == prog.num_vars());
@@ -284,7 +285,7 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(impl.task(), &trmcode);
     // Refer to
-    // https://docs.mosek.com/11.0/capi/debugging-tutorials.html#debugging-tutorials
+    // https://docs.mosek.com/11.1/capi/debugging-tutorials.html#debugging-tutorials
     // on printing the solution summary.
     if (is_printing) {
       if (rescode == MSK_RES_OK) {

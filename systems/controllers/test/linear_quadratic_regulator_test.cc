@@ -1,5 +1,7 @@
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

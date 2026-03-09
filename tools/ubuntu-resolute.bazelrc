@@ -1,0 +1,24 @@
+# Options for explicitly using Clang.
+# Keep this in sync with doc/_pages/from_source.md.
+common:clang --repo_env=CC=clang-19
+common:clang --repo_env=CXX=clang++-19
+build:clang --action_env=CC=clang-19
+build:clang --action_env=CXX=clang++-19
+build:clang --host_action_env=CC=clang-19
+build:clang --host_action_env=CXX=clang++-19
+# https://github.com/RobotLocomotion/drake/issues/22204
+# TODO(jwnimmer-tri) Ideally, our drake_cc.bzl logic for compiler-specific flags
+# should take over this option so we can ensure it's being used even in CMake
+# installs of Drake from source (if and only if Clang >= 17 is being used).
+build:clang --copt=-fno-assume-unique-vtables
+build:clang --host_copt=-fno-assume-unique-vtables
+
+build --define=UBUNTU_VERSION=26.04
+
+# This flag tells our drake_cc.bzl rules which GCC version they should expect to
+# see, so that the rules can tweak our warning flags. Note that this is not
+# changing which compiler the build will use; it is only telling what to expect.
+#
+# Note that when building Drake via CMake, our cmake/bazelrc.in overrides this
+# value to match the CC and CXX override that CMake has told Drake to use.
+build --@drake//tools/cc_toolchain:compiler_major=15

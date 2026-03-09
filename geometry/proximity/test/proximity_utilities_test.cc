@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>

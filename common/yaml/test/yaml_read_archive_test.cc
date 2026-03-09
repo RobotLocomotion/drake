@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
 #include <filesystem>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -802,6 +803,51 @@ TEST_P(YamlReadArchiveTest, VariantMissing) {
   EXPECT_EQ(std::get<double>(x.value), kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, VariantTypePromotion) {
+  const std::string doc = R"""(
+doc:
+  double_type: 1
+  eigen_type: [1]
+  path_type: /path/to/somewhere
+  truthy_type: true
+)""";
+
+  const double expected_double = 1.0;
+  const Eigen::VectorXd expected_eigen = Eigen::VectorXd::Constant(1, 1.0);
+  const std::filesystem::path expected_path("/path/to/somewhere");
+  const bool expected_bool = true;
+
+  // Check that loading the above document into non-variant values promotes them
+  // appropriately.
+  const auto& basic = AcceptNoThrow<PromotionBasicStruct>(Load(doc));
+  EXPECT_EQ(basic.double_type, expected_double);
+  EXPECT_EQ(basic.eigen_type, expected_eigen);
+  EXPECT_EQ(basic.path_type, expected_path);
+  EXPECT_EQ(basic.truthy_type, expected_bool);
+
+  // Check that loading the same document into variant values promotes them
+  // exactly the same way.
+  const auto& variant1 = AcceptNoThrow<PromotionVariantStruct>(Load(doc));
+  EXPECT_EQ(std::get<0>(variant1.double_type), expected_double);
+  EXPECT_EQ(std::get<0>(variant1.eigen_type), expected_eigen);
+  EXPECT_EQ(std::get<0>(variant1.path_type), expected_path);
+  EXPECT_EQ(std::get<0>(variant1.truthy_type), expected_bool);
+
+  // Check the same thing but with the struct defaults initialized to the second
+  // type in the variant instead of the first.
+  PromotionVariantStruct variant2{
+      .double_type = DoubleStruct{},
+      .eigen_type = DoubleStruct{},
+      .path_type = DoubleStruct{},
+      .truthy_type = DoubleStruct{},
+  };
+  EXPECT_NO_THROW(YamlReadArchive(Load(doc), GetParam()).Accept(&variant2));
+  EXPECT_EQ(std::get<0>(variant2.double_type), expected_double);
+  EXPECT_EQ(std::get<0>(variant2.eigen_type), expected_eigen);
+  EXPECT_EQ(std::get<0>(variant2.path_type), expected_path);
+  EXPECT_EQ(std::get<0>(variant2.truthy_type), expected_bool);
+}
+
 TEST_P(YamlReadArchiveTest, EigenVector) {
   const auto test = [](const std::string& value,
                        const Eigen::VectorXd& expected) {
@@ -815,6 +861,17 @@ TEST_P(YamlReadArchiveTest, EigenVector) {
   };
 
   test("[1.0, 2.0, 3.0]", Eigen::Vector3d(1.0, 2.0, 3.0));
+}
+
+TEST_P(YamlReadArchiveTest, EigenArraySingleColumn) {
+  const auto test = [](const std::string& value,
+                       const Eigen::ArrayXd& expected) {
+    const auto& vec =
+        AcceptNoThrow<EigenArrayStruct<1>>(LoadSingleValue(value));
+    EXPECT_TRUE(drake::CompareMatrices(vec.value.matrix(), expected.matrix()));
+  };
+
+  test("[1.0, 2.0, 3.0]", Eigen::Array3d(1.0, 2.0, 3.0));
 }
 
 TEST_P(YamlReadArchiveTest, EigenVectorX) {
@@ -857,6 +914,34 @@ doc:
   - [8.0, 9.0, 10.0, 11.0]
 )""",
        (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+}
+
+TEST_P(YamlReadArchiveTest, EigenMatrixFixedSizeBadValue) {
+  DRAKE_EXPECT_THROWS_MESSAGE(AcceptIntoDummy<EigenMatrix34Struct>(Load(R"""(
+doc:
+  value:
+  - [1.0, 2.0, 3.0]
+  - [4.0, 5.0, 6.0]
+  - [7.0, 8.0, 9.0]
+)""")),
+                              ".*has dimension 3x3.*wanted 3x4.*");
+}
+
+TEST_P(YamlReadArchiveTest, EigenArrayRectangular) {
+  using Array34d = Eigen::Array<double, 3, 4>;
+  const auto test = [](const std::string& doc, const Array34d& expected) {
+    const auto& mat = AcceptNoThrow<EigenArrayStruct<4>>(Load(doc));
+    EXPECT_TRUE(drake::CompareMatrices(mat.value.matrix(), expected.matrix()));
+  };
+
+  test(R"""(
+doc:
+  value:
+  - [1.0, 2.0, 3.0, 4.0]
+  - [5.0, 6.0, 7.0, 8.0]
+  - [9.0, 10.0, 11.0, 12.0]
+)""",
+       (Array34d{} << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).finished());
 }
 
 TEST_P(YamlReadArchiveTest, EigenMatrixUpTo6) {

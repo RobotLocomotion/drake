@@ -15,7 +15,10 @@ def _check_expected(caught, expected_count):
         return
     raise ValueError(
         "Expected {} deprecation warnings but got {} instead:\n".format(
-            expected_count, len(caught)) + "\n".join([str(x) for x in caught]))
+            expected_count, len(caught)
+        )
+        + "\n".join([str(x) for x in caught])
+    )
 
 
 @contextlib.contextmanager

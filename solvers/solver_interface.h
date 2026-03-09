@@ -59,6 +59,8 @@ class SolverInterface {
   /// Solves an optimization program with optional initial guess and solver
   /// options. Note that these initial guess and solver options are not written
   /// to @p prog.
+  /// If the @p prog has set an initial guess, and @p initial_guess is
+  /// set, then @p initial_guess takes priority.
   /// If the @p prog has set an option for a solver, and @p solver_options
   /// contains a different value for the same option on the same solver, then @p
   /// solver_options takes priority.

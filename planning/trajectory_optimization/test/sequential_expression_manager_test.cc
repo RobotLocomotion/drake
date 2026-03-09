@@ -1,5 +1,8 @@
 #include "drake/planning/trajectory_optimization/sequential_expression_manager.h"
 
+#include <string>
+#include <vector>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

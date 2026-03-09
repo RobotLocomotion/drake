@@ -9,6 +9,9 @@ using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
+
+AngleBetweenVectorsConstraint::~AngleBetweenVectorsConstraint() = default;
+
 AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& a_A, const Frame<double>& frameB,
@@ -98,10 +101,10 @@ void EvalConstraintGradient(
                                     Eigen::Vector3d::Zero() /* p_BQ */, frameA,
                                     frameA, &Jq_V_AB);
   const Eigen::Vector3d b_unit_A = R_AB * b_unit_B;
-  *y = math::InitializeAutoDiff(
-      a_unit_A.transpose() * b_unit_A,
-      b_unit_A.cross(a_unit_A).transpose() * Jq_V_AB.topRows<3>() *
-          math::ExtractGradient(x));
+  *y = math::InitializeAutoDiff(a_unit_A.transpose() * b_unit_A,
+                                b_unit_A.cross(a_unit_A).transpose() *
+                                    Jq_V_AB.topRows<3>() *
+                                    math::ExtractGradient(x));
 }
 
 template <typename T, typename S>

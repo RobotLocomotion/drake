@@ -9,11 +9,15 @@
 #include <common_robotics_utilities/parallelism.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/parallelism.h"
-#include "drake/common/text_logging.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+
+// Our linter rejects logging from header files, but this isn't really a header
+// file. It is listed as `srcs` not `hdrs` in the BUILD file and is more like an
+// `*.inc` file than a true header.
+#include "drake/common/text_logging.h"  // drakelint: ignore
 
 namespace drake {
 namespace planning {
@@ -32,11 +36,11 @@ void SetSphereCells(
     const SphereSpecification& sphere, double padding, const T& cell_value) {
   DRAKE_THROW_UNLESS(environment != nullptr);
   DRAKE_THROW_UNLESS(environment->IsInitialized());
-  DRAKE_THROW_UNLESS(environment->HasUniformCellSize());
+  DRAKE_THROW_UNLESS(environment->HasUniformVoxelSize());
   DRAKE_THROW_UNLESS(padding >= 0.0);
 
   // Add check buffer equal to the cell center->cell corner distance.
-  const double cell_size = environment->GetCellSizes().x();
+  const double cell_size = environment->VoxelXSize();
   const double center_to_corner = cell_size * 0.5 * std::sqrt(3.0);
 
   const Eigen::Vector4d& p_BSo = sphere.Origin();
@@ -59,7 +63,7 @@ void SetSphereCells(
         const common_robotics_utilities::voxel_grid::GridIndex query_index(
             x_index, y_index, z_index);
 
-        if (environment->IndexInBounds(query_index)) {
+        if (environment->CheckGridIndexInBounds(query_index)) {
           // Compute the position of the center of the voxel.
           const Eigen::Vector4d p_BCo =
               environment->GridIndexToLocation(query_index);
@@ -83,7 +87,7 @@ void SetSphereCells(
 /// @param q Current configuration of the robot.
 /// @param padding Padding to inflate the spheres of the collision model to use
 /// in the self-filter. @pre >= 0.0.
-/// @param collision_map Current environment. @pre != nullptr.
+/// @param environment Current environment. @pre != nullptr.
 /// @param empty_cell_value Value for empty cells.
 /// @param parallelism Parallelism to use.
 /// @param context_number Optional context number for use in parallel contexts.
@@ -99,7 +103,7 @@ void SelfFilter(
   DRAKE_THROW_UNLESS(padding >= 0.0);
   DRAKE_THROW_UNLESS(environment != nullptr);
   DRAKE_THROW_UNLESS(environment->IsInitialized());
-  DRAKE_THROW_UNLESS(environment->HasUniformCellSize());
+  DRAKE_THROW_UNLESS(environment->HasUniformVoxelSize());
 
   const auto start_time = std::chrono::steady_clock::now();
 

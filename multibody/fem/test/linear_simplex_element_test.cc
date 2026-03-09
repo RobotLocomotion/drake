@@ -1,5 +1,6 @@
 #include "drake/multibody/fem/linear_simplex_element.h"
 
+#include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>

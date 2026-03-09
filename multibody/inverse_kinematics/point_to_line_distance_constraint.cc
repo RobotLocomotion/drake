@@ -12,6 +12,8 @@ namespace drake {
 namespace multibody {
 const double kEps = std::numeric_limits<double>::epsilon();
 
+PointToLineDistanceConstraint::~PointToLineDistanceConstraint() = default;
+
 PointToLineDistanceConstraint::PointToLineDistanceConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frame_point,
     const Eigen::Ref<const Eigen::Vector3d>& p_B1P,

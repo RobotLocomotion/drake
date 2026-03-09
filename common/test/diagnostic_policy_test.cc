@@ -54,8 +54,9 @@ GTEST_TEST(DiagnosticPolicyTest, SetActionForWarnings) {
   DiagnosticDetail detail{"a.txt", 22, "well"};
 
   std::vector<DiagnosticDetail> details;
-  auto warning_action =
-      [&details](const DiagnosticDetail& d) { details.push_back(d); };
+  auto warning_action = [&details](const DiagnosticDetail& d) {
+    details.push_back(d);
+  };
   dut.SetActionForWarnings(warning_action);
 
   // Errors are unchanged; they still throw.
@@ -88,8 +89,9 @@ GTEST_TEST(DiagnosticPolicyTest, SetActionForErrors) {
   DiagnosticDetail detail{"a.txt", 22, "well"};
 
   std::vector<DiagnosticDetail> details;
-  auto error_action =
-      [&details](const DiagnosticDetail& d) { details.push_back(d); };
+  auto error_action = [&details](const DiagnosticDetail& d) {
+    details.push_back(d);
+  };
   dut.SetActionForErrors(error_action);
 
   // Warnings are unchanged; they do not throw, and log a message.

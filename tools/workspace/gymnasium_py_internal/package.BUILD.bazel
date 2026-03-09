@@ -1,0 +1,14 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # MIT
+
+py_library(
+    name = "gymnasium_py",
+    srcs = glob(["gymnasium/**/*.py"]),
+    imports = ["gymnasium"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["drake_repository_metadata.json"])

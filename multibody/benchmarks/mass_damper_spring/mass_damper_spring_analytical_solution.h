@@ -34,14 +34,17 @@ class MassDamperSpringAnalyticalSolution {
   /// @param[in] mass Mass of system (particle Q).
   /// @param[in] b Linear damping constant.
   /// @param[in] k Linear spring constant.
-  MassDamperSpringAnalyticalSolution(const T& mass, const T& b, const T& k) :
-                                     m_(mass), b_(b), k_(k) {}
+  MassDamperSpringAnalyticalSolution(const T& mass, const T& b, const T& k)
+      : m_(mass), b_(b), k_(k) {}
 
   /// Sets the initial values of x and ẋ for `this` system.
   ///
   /// @param[in] x0 Initial value of x (value of x at time t = 0).
   /// @param[in] xDt0 Initial value of ẋ (value of ẋ at time t = 0).
-  void SetInitialValue(const T& x0, const T& xDt0)  { x0_ = x0;  xDt0_ = xDt0; }
+  void SetInitialValue(const T& x0, const T& xDt0) {
+    x0_ = x0;
+    xDt0_ = xDt0;
+  }
 
   /// For `this` mass-damper-spring system, and with the given initial
   /// values, this method calculates the values of x, ẋ, ẍ at time t.
@@ -52,13 +55,13 @@ class MassDamperSpringAnalyticalSolution {
   Vector3<T> CalculateOutput(const T& t) const;
 
   /// Returns x (Nx measure of Q's position from No) at time t.
-  T get_x(const T& t) const  { return CalculateOutput(t)(0); }
+  T get_x(const T& t) const { return CalculateOutput(t)(0); }
 
   /// Returns ẋ (Nx measure of Q's velocity in N) at time t.
-  T get_xDt(const T& t) const  { return CalculateOutput(t)(1); }
+  T get_xDt(const T& t) const { return CalculateOutput(t)(1); }
 
   /// Returns ẍ (Nx measure of Q's acceleration in N) at time t.
-  T get_xDtDt(const T& t) const  { return CalculateOutput(t)(2); }
+  T get_xDtDt(const T& t) const { return CalculateOutput(t)(2); }
 
  private:
   // Class data.
@@ -70,13 +73,13 @@ class MassDamperSpringAnalyticalSolution {
   T m_, b_, k_, x0_, xDt0_;
 
   // Calculate `this` mass-damper-spring system's natural frequency (wn).
-  T CalculateNaturalFrequency() const  {
+  T CalculateNaturalFrequency() const {
     using std::sqrt;
     return sqrt(k_ / m_);
   }
 
   // Calculate `this` mass-damper-spring system's damping ratio (zeta).
-  T CalculateDampingRatio() const  {
+  T CalculateDampingRatio() const {
     using std::sqrt;
     return b_ / (2 * sqrt(m_ * k_));
   }
@@ -96,12 +99,10 @@ class MassDamperSpringAnalyticalSolution {
   //              The units of t are typically in seconds.
   //
   // @returns Three-element matrix consisting of x, ẋ, ẍ, respectively.
-  static Vector3<T> CalculateOutputImpl(const T& zeta, const T& wn,
-                                        const T& x0, const T& xDt0, const T& t);
+  static Vector3<T> CalculateOutputImpl(const T& zeta, const T& wn, const T& x0,
+                                        const T& xDt0, const T& t);
 };
-
 
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
-

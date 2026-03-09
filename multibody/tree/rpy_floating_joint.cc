@@ -30,6 +30,7 @@ std::unique_ptr<Joint<ToScalar>> RpyFloatingJoint<T>::TemplatedDoCloneToScalar(
   auto joint_clone = std::make_unique<RpyFloatingJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
       this->default_angular_damping(), this->default_translational_damping());
+  joint_clone->set_is_ephemeral(this->is_ephemeral());
   joint_clone->set_position_limits(this->position_lower_limits(),
                                    this->position_upper_limits());
   joint_clone->set_velocity_limits(this->velocity_lower_limits(),

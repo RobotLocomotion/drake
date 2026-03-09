@@ -21,6 +21,9 @@ If you need to use these, you can use an old release of Drake.
 
 # macOS packages
 
+* macOS 14 (Sonoma)
+  * The last version with support for macOS 14 was
+    [v1.45.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.45.0).
 * macOS 13 (Ventura)
   * The last version with support for macOS 13 was
     [v1.33.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.33.0).
@@ -45,13 +48,17 @@ If you need to use these, you can use an old release of Drake.
 
 # Wheel packages
 
+* Python 3.14 (Wheel)
+  * On Linux, Drake still supports Python 3.14 wheels.
+  * On macOS arm64, Drake still supports Python 3.14 wheels.
 * Python 3.13 (Wheel)
   * On Linux, Drake still supports Python 3.13 wheels.
   * On macOS arm64, Drake still supports Python 3.13 wheels.
   * On macOS x86_64, there was never support for Python 3.13 wheels.
 * Python 3.12 (Wheel)
   * On Linux, Drake still supports Python 3.12 wheels.
-  * On macOS arm64, Drake still supports Python 3.12 wheels.
+  * On macOS arm64, the last version with support for Python 3.12 wheels was
+    [v1.46.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.46.0).
   * On macOS x86_64, the last version with support for Python 3.12 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.11 (Wheel)

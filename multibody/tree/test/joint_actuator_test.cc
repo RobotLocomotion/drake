@@ -1,6 +1,8 @@
 #include "drake/multibody/tree/joint_actuator.h"
 
 #include <limits>
+#include <memory>
+#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -54,7 +56,7 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
           Eigen::Vector3d(0, 0, 1)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tree.AddJointActuator("act2", body2_body1, kNegativeEffortLimit),
-      "Effort limit must be strictly positive!");
+      ".*effort limit.*positive.*");
 
   // Throw if the effort limit is set to be negative.
   const Joint<double>& body3_body2 =
@@ -63,12 +65,10 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
           Eigen::Vector3d(0, 0, 1)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tree.AddJointActuator("act3", body3_body2, kZeroEffortLimit),
-      "Effort limit must be strictly positive!");
+      ".*effort limit.*positive.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(actuator1.input_start(),
-                              ".*after the MultibodyPlant is finalized.");
-  DRAKE_EXPECT_THROWS_MESSAGE(actuator1.num_inputs(),
-                              ".*after the MultibodyPlant is finalized.");
+  EXPECT_EQ(actuator1.input_start(), 0);  // First & only actuated dof.
+  EXPECT_EQ(actuator1.num_inputs(), 1);   // Prismatic is 1 dof.
 
   const auto body4 = &tree.AddRigidBody("body4", M_NaN());
   const Joint<double>& body4_world =
@@ -78,6 +78,8 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   const auto& actuator4 =
       tree.AddJointActuator("act4", body4_world, kPositiveEffortLimit);
+  tree.get_mutable_joint_actuator(actuator4.index()).set_effort_limit(22.0);
+  EXPECT_EQ(actuator4.effort_limit(), 22.0);
 
   tree.Finalize();
 

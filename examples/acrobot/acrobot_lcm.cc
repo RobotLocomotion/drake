@@ -16,14 +16,13 @@ static const int kNumJoints = 2;
 // methods implementation for AcrobotStateReceiver.
 
 AcrobotStateReceiver::AcrobotStateReceiver() {
-  this->DeclareAbstractInputPort("lcmt_acrobot_x",
-                                 Value<lcmt_acrobot_x>{});
+  this->DeclareAbstractInputPort("lcmt_acrobot_x", Value<lcmt_acrobot_x>{});
   this->DeclareVectorOutputPort("acrobot_state",
                                 &AcrobotStateReceiver::CopyStateOut);
 }
 
-void AcrobotStateReceiver::CopyStateOut(
-    const Context<double>& context, AcrobotState<double>* output) const {
+void AcrobotStateReceiver::CopyStateOut(const Context<double>& context,
+                                        AcrobotState<double>* output) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& state = input->get_value<lcmt_acrobot_x>();
@@ -55,8 +54,7 @@ void AcrobotCommandSender::OutputCommand(const Context<double>& context,
 // methods implementation for AcrobotCommandReceiver
 
 AcrobotCommandReceiver::AcrobotCommandReceiver() {
-  this->DeclareAbstractInputPort("lcmt_acrobot_u",
-                                 Value<lcmt_acrobot_u>());
+  this->DeclareAbstractInputPort("lcmt_acrobot_u", Value<lcmt_acrobot_u>());
   this->DeclareVectorOutputPort("elbow_torque", 1,
                                 &AcrobotCommandReceiver::OutputCommandAsVector);
 }

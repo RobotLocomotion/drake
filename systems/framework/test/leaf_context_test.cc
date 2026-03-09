@@ -1,6 +1,8 @@
 #include "drake/systems/framework/leaf_context.h"
 
+#include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>

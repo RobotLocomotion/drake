@@ -1,19 +1,20 @@
 #pragma once
 
 #include <initializer_list>
-#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
-#include <fmt/format.h>
+// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
+#include <ostream>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 
@@ -271,22 +272,31 @@ class VectorBase {
   }
 };
 
+/// Returns the string representation of a VectorBase<T> as a row vector
+/// RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.
+template <typename T>
+std::string to_string(const VectorBase<T>& vec) {
+  return fmt::to_string(fmt_eigen(vec.CopyToVector().transpose()));
+}
+
 /// Allows a VectorBase<T> to be streamed into a string as though it were a
 /// RowVectorX<T>. This is useful for debugging purposes.
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const VectorBase<T>& vec) {
-  os << fmt::to_string(fmt_eigen(vec.CopyToVector().transpose()));
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os, const VectorBase<T>& vec) {
+  os << to_string(vec);
   return os;
 }
 
 }  // namespace systems
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::systems::VectorBase<T>> : drake::ostream_formatter {};
-}  // namespace fmt
-
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::VectorBase);
+
+DRAKE_FORMATTER_AS(typename T, drake::systems, VectorBase<T>, x,
+                   drake::systems::to_string(x))

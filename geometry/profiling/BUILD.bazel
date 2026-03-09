@@ -19,7 +19,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//lcm",
-        "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis:explicit_euler_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",

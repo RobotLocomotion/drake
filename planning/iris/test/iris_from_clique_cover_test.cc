@@ -1,10 +1,14 @@
 #include "drake/planning/iris/iris_from_clique_cover.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/overloaded.h"
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/optimization/hpolyhedron.h"

@@ -288,10 +288,9 @@ void MixedIntegerBranchAndBoundNode::FixBinaryVariable(
     }
   }
   if (!found_binary_variable) {
-    std::ostringstream oss;
-    oss << binary_variable
-        << " is not a remaining binary variable in this node.\n";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(
+        fmt::format("{} is not a remaining binary variable in this node.\n",
+                    binary_variable));
   }
   // Set fixed_binary_variable_ and fixed_binary_value_.
   fixed_binary_variable_ = binary_variable;
@@ -460,10 +459,9 @@ const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
     const symbolic::Variable& old_variable) const {
   const auto it = map_old_vars_to_new_vars_.find(old_variable.get_id());
   if (it == map_old_vars_to_new_vars_.end()) {
-    std::ostringstream oss;
-    oss << old_variable
-        << " is not a variable in the original mixed-integer problem.\n";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format(
+        "{} is not a variable in the original mixed-integer problem.\n",
+        old_variable));
   }
   return it->second;
 }

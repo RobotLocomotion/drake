@@ -14,7 +14,7 @@ using common_robotics_utilities::parallelism::ParallelForBackend;
 using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 
 EigenBlock3x3SparseSymmetricMatrix::EigenBlock3x3SparseSymmetricMatrix(
-    const Block3x3SparseSymmetricMatrix* A, Parallelism parallelism)
+    const BlockSparseSymmetricMatrix3d* A, Parallelism parallelism)
     : A_(A), parallelism_(parallelism) {
   /* Precompute, for each block-row i, the list of block-cols j≤i
    such that A(i,j) is stored in blocks[j][…]. This is useful for the Multiply

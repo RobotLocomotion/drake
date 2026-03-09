@@ -1,5 +1,9 @@
 #include "drake/multibody/tree/rpy_floating_mobilizer.h"
 
+#include <limits>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"

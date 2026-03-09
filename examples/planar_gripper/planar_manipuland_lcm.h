@@ -42,7 +42,7 @@ class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
 
   PlanarManipulandStatusDecoder();
 
-  ~PlanarManipulandStatusDecoder() {}
+  ~PlanarManipulandStatusDecoder() override;
 
  private:
   void OutputStatus(const systems::Context<double>& context,

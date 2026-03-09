@@ -623,8 +623,9 @@ std::pair<T, int> SapSolver<T>::PerformExactLineSearch(
   // small, we allow the Newton solver to take a full step and therefore we
   // return with a step size of one.
   if (-dell_dalpha0 <
-      parameters_.cost_abs_tolerance + parameters_.cost_rel_tolerance * ell0)
+      parameters_.cost_abs_tolerance + parameters_.cost_rel_tolerance * ell0) {
     return std::make_pair(1.0, 0);
+  }
 
   // N.B. We place the data needed to evaluate cost and gradients into a single
   // struct so that cost_and_gradient only needs to capture a single pointer.

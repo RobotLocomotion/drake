@@ -10,8 +10,7 @@
 
 #include <fmt/ranges.h>
 
-#include "drake/common/drake_throw.h"
-#include "drake/common/ssize.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -22,6 +21,7 @@
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
@@ -251,6 +251,13 @@ struct JointLimitsPenaltyParametersEstimator {
 
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
+constexpr auto kDiscreteContactApproximationTamsi =
+    DiscreteContactApproximation::kTamsi;
+#pragma GCC diagnostic push
+
 // Hack to fully qualify frame names, pending resolution of #9128. Used by
 // geometry registration routines. When this hack is removed, also undo the
 // de-hacking step within internal_geometry_names.cc. Note that unlike the
@@ -286,6 +293,17 @@ const DiscreteStepMemory::Data<T>* get_discrete_step_memory(
     const Context<T>& context) {
   return context.template get_abstract_state<DiscreteStepMemory>(0)
       .template get<T>();
+}
+
+// Checks the given vector for NaNs, unless the vector is symbolic in which case
+// always returns false.
+template <typename EigenMatrix>
+bool HasNaN(const EigenMatrix& x) {
+  if constexpr (scalar_predicate<typename EigenMatrix::Scalar>::is_bool) {
+    return x.hasNaN();
+  } else {
+    return false;
+  }
 }
 
 }  // namespace
@@ -483,22 +501,21 @@ MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently coupler constraints are only supported for discrete "
-        "MultibodyPlant models.");
+  if (is_discrete()) {
+    switch (get_discrete_contact_solver()) {
+      case kDiscreteContactSolverTamsi:
+        // TAMSI does not support coupler constraints.
+        throw std::runtime_error(
+            "Currently this MultibodyPlant is set to use the TAMSI solver. "
+            "TAMSI does not support coupler constraints. Use "
+            "set_discrete_contact_approximation() to set a model approximation "
+            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
+      case DiscreteContactSolver::kSap:
+        // SAP supports coupler constraints.
+        break;
+    }
   }
-
-  // TAMSI does not support tendon constraints. We've already confirmed that
-  // this model is discrete. The only remaining discrete solver is SAP, so we
-  // can safely proceed.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
-    throw std::runtime_error(
-        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
-        "does not support coupler constraints. Use "
-        "set_discrete_contact_approximation() to set a model approximation "
-        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
-  }
+  // Feature support for continuous time plants depends on the integrator used.
 
   if (joint0.num_velocities() != 1 || joint1.num_velocities() != 1) {
     const std::string message = fmt::format(
@@ -528,21 +545,21 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently distance constraints are only supported for discrete "
-        "MultibodyPlant models.");
+  if (is_discrete()) {
+    switch (get_discrete_contact_solver()) {
+      case kDiscreteContactSolverTamsi:
+        // TAMSI does not support distance constraints.
+        throw std::runtime_error(
+            "Currently this MultibodyPlant is set to use the TAMSI solver. "
+            "TAMSI does not support distance constraints. Use "
+            "set_discrete_contact_approximation() to set a model approximation "
+            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
+      case DiscreteContactSolver::kSap:
+        // SAP supports distance constraints.
+        break;
+    }
   }
-
-  // TAMSI does not support distance constraints. For all other solvers, we let
-  // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
-    throw std::runtime_error(
-        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
-        "does not support distance constraints. Use "
-        "set_discrete_contact_approximation() to set a model approximation "
-        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
-  }
+  // Feature support for continuous time plants depends on the integrator used.
 
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
@@ -639,21 +656,21 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently ball constraints are only supported for discrete "
-        "MultibodyPlant models.");
+  if (is_discrete()) {
+    switch (get_discrete_contact_solver()) {
+      case kDiscreteContactSolverTamsi:
+        // TAMSI does not support ball constraints.
+        throw std::runtime_error(
+            "Currently this MultibodyPlant is set to use the TAMSI solver. "
+            "TAMSI does not support ball constraints. Use "
+            "set_discrete_contact_approximation() to set a model approximation "
+            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
+      case DiscreteContactSolver::kSap:
+        // SAP supports ball constraints.
+        break;
+    }
   }
-
-  // TAMSI does not support ball constraints. For all other solvers, we let
-  // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
-    throw std::runtime_error(
-        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
-        "does not support ball constraints. Use "
-        "set_discrete_contact_approximation() to set a model approximation "
-        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
-  }
+  // Feature support for continuous time plants depends on the integrator used.
 
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
@@ -682,21 +699,21 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently weld constraints are only supported for discrete "
-        "MultibodyPlant models.");
+  if (is_discrete()) {
+    switch (get_discrete_contact_solver()) {
+      case kDiscreteContactSolverTamsi:
+        // TAMSI does not support weld constraints.
+        throw std::runtime_error(
+            "Currently this MultibodyPlant is set to use the TAMSI solver. "
+            "TAMSI does not support weld constraints. Use "
+            "set_discrete_contact_approximation() to set a model approximation "
+            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
+      case DiscreteContactSolver::kSap:
+        // SAP supports weld constraints.
+        break;
+    }
   }
-
-  // TAMSI does not support weld constraints. For all other solvers, we let
-  // the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
-    throw std::runtime_error(
-        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
-        "does not support weld constraints. Use "
-        "set_discrete_contact_approximation() to set a model approximation "
-        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
-  }
+  // Feature support for continuous time plants depends on the integrator used.
 
   const MultibodyConstraintId constraint_id =
       MultibodyConstraintId::get_new_id();
@@ -728,21 +745,21 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
 
-  if (!is_discrete()) {
-    throw std::runtime_error(
-        "Currently tendon constraints are only supported for discrete "
-        "MultibodyPlant models.");
+  if (is_discrete()) {
+    switch (get_discrete_contact_solver()) {
+      case kDiscreteContactSolverTamsi:
+        // TAMSI does not support tendon constraints.
+        throw std::runtime_error(
+            "Currently this MultibodyPlant is set to use the TAMSI solver. "
+            "TAMSI does not support tendon constraints. Use "
+            "set_discrete_contact_approximation() to set a model approximation "
+            "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
+      case DiscreteContactSolver::kSap:
+        // SAP supports tendon constraints.
+        break;
+    }
   }
-
-  // TAMSI does not support tendon constraints. For all other solvers, we
-  // let the discrete update manager throw an exception at finalize time.
-  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
-    throw std::runtime_error(
-        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
-        "does not support tendon constraints. Use "
-        "set_discrete_contact_approximation() to set a model approximation "
-        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
-  }
+  // Feature support for continuous time plants depends on the integrator used.
 
   DRAKE_THROW_UNLESS(joints.size() > 0);
 
@@ -869,8 +886,8 @@ void MultibodyPlant<T>::set_contact_model(ContactModel model) {
 template <typename T>
 DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver() const {
   // Only the TAMSI approximation uses the TAMSI solver.
-  if (discrete_contact_approximation_ == DiscreteContactApproximation::kTamsi)
-    return DiscreteContactSolver::kTamsi;
+  if (discrete_contact_approximation_ == kDiscreteContactApproximationTamsi)
+    return kDiscreteContactSolverTamsi;
   // All other approximations use the SAP solver.
   return DiscreteContactSolver::kSap;
 }
@@ -881,7 +898,7 @@ void MultibodyPlant<T>::set_discrete_contact_approximation(
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
 
-  if (approximation == DiscreteContactApproximation::kTamsi &&
+  if (approximation == kDiscreteContactApproximationTamsi &&
       num_constraints() > 0) {
     throw std::runtime_error(fmt::format(
         "You selected TAMSI as the contact approximation, but you have "
@@ -1012,6 +1029,14 @@ const JointActuator<T>& MultibodyPlant<T>::AddJointActuator(
 template <typename T>
 void MultibodyPlant<T>::RemoveJointActuator(const JointActuator<T>& actuator) {
   this->mutable_tree().RemoveJointActuator(actuator);
+}
+
+template <typename T>
+void MultibodyPlant<T>::RemoveAllJointActuatorEffortLimits() {
+  for (const JointActuatorIndex& i : GetJointActuatorIndices()) {
+    get_mutable_joint_actuator(i).set_effort_limit(
+        std::numeric_limits<double>::infinity());
+  }
 }
 
 template <typename T>
@@ -1221,7 +1246,7 @@ std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
   std::unordered_set<BodyIndex> floating_bodies;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    if (body.is_floating()) floating_bodies.insert(body.index());
+    if (body.is_floating_base_body()) floating_bodies.insert(body.index());
   }
   return floating_bodies;
 }
@@ -1273,20 +1298,21 @@ void MultibodyPlant<T>::RegisterRigidBodyWithSceneGraph(
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
+void MultibodyPlant<T>::SetFloatingBaseBodyPoseInWorldFrame(
     systems::Context<T>* context, const RigidBody<T>& body,
     const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(body.is_floating());
+  DRAKE_THROW_UNLESS(body.is_floating_base_body());
   this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
 template <typename T>
-void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
+void MultibodyPlant<T>::SetFloatingBaseBodyPoseInAnchoredFrame(
     systems::Context<T>* context, const Frame<T>& frame_F,
     const RigidBody<T>& body, const math::RigidTransform<T>& X_FB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(body.is_floating_base_body());
   this->ValidateContext(context);
 
   if (!internal_tree()
@@ -1297,13 +1323,15 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
                            "' must be anchored to the world frame.");
   }
 
-  // Pose of frame F in its parent body frame P.
+  // Pose of frame F in its parent body frame P (not state dependent).
   const RigidTransform<T>& X_PF = frame_F.EvalPoseInBodyFrame(*context);
   // Pose of frame F's parent body P in the world.
+  // TODO(sherm1) This shouldn't be state dependent since F is anchored, but
+  //  it currently is due to the way we evaluate poses.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
-  // Pose of "body" B in the world frame.
+  // Pose of floating base body C's body frame in the world frame.
   const RigidTransform<T> X_WB = X_WP * X_PF * X_FB;
-  SetFreeBodyPoseInWorldFrame(context, body, X_WB);
+  SetFloatingBaseBodyPoseInWorldFrame(context, body, X_WB);
 }
 
 template <typename T>
@@ -1532,9 +1560,11 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   }
 
   // Since currently MBP only handles joint limits for discrete models, we
-  // verify that there are no joint limits when the model is continuous.
-  // If there are limits defined, we prepare a warning message that will be
-  // logged iff the user attempts to do anything that would have needed them.
+  // verify that there are no joint limits when the model is continuous.  If
+  // there are limits defined, we prepare a warning message that will be logged
+  // iff the user attempts to do anything that would have needed them.
+  // TODO(#24074) revisit this warning when CENIC net actuation output
+  // calculations are corrected.
   if (!is_discrete() && !joint_limits_parameters_.joints_with_limits.empty()) {
     std::string joint_names_with_limits;
     for (auto joint_index : joint_limits_parameters_.joints_with_limits) {
@@ -1971,6 +2001,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -2004,6 +2036,8 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     // Sanity check: joint positions are in range.
     DRAKE_DEMAND(joint.position_start() >= position_offset);
     DRAKE_DEMAND(joint.position_start() + joint.num_positions() -
@@ -2034,6 +2068,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (JointIndex joint_index : GetJointIndices()) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     const std::string prefix =
         add_model_instance_prefix
             ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
@@ -2067,6 +2103,8 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
 
   for (const auto& joint_index : joint_indices) {
     const Joint<T>& joint = get_joint(joint_index);
+    if (joint.num_positions() == 0) continue;  // Skip welds.
+
     // Sanity check: joint velocities are in range.
     DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);
     DRAKE_DEMAND(joint.velocity_start() + joint.num_velocities() -
@@ -2701,7 +2739,7 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   if (applied_generalized_force_input.HasValue(context)) {
     const VectorX<T>& applied_generalized_force =
         applied_generalized_force_input.Eval(context);
-    if (applied_generalized_force.hasNaN()) {
+    if (HasNaN(applied_generalized_force)) {
       throw std::runtime_error(
           "Detected NaN in applied generalized force input port.");
     }
@@ -2749,9 +2787,9 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   auto throw_if_contains_nan = [this](const ExternallyAppliedSpatialForce<T>&
                                           external_spatial_force) {
     const SpatialForce<T>& spatial_force = external_spatial_force.F_Bq_W;
-    if (external_spatial_force.p_BoBq_B.hasNaN() ||
-        spatial_force.rotational().hasNaN() ||
-        spatial_force.translational().hasNaN()) {
+    if (HasNaN(external_spatial_force.p_BoBq_B) ||
+        HasNaN(spatial_force.rotational()) ||
+        HasNaN(spatial_force.translational())) {
       throw std::runtime_error(fmt::format(
           "Spatial force applied on body {} contains NaN.",
           internal_tree().get_body(external_spatial_force.body_index).name()));
@@ -2783,7 +2821,8 @@ void MultibodyPlant<T>::AddJointActuationForces(
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->size() == num_velocities());
   if (num_actuators() > 0) {
-    const VectorX<T> u = AssembleActuationInput(context);
+    const VectorX<T>& u =
+        EvalActuationInput(context, /* apply_effort_limit = */ true);
     for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
       const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
       const Joint<T>& joint = actuator.joint();
@@ -2843,15 +2882,26 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
 }
 
 template <typename T>
-VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
-    const systems::Context<T>& context) const {
+const VectorX<T>& MultibodyPlant<T>::EvalActuationInput(
+    const systems::Context<T>& context, bool apply_effort_limit) const {
+  this->ValidateContext(context);
+  return this
+      ->get_cache_entry(
+          apply_effort_limit
+              ? cache_indices_.actuation_input_with_effort_limit
+              : cache_indices_.actuation_input_without_effort_limit)
+      .template Eval<VectorX<T>>(context);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcActuationInputWithoutEffortLimit(
+    const systems::Context<T>& context, VectorX<T>* actuation_input) const {
   this->ValidateContext(context);
 
   // Assemble the vector from the model instance input ports.
-  // TODO(sherm1) Heap allocation here. Get rid of it.
   // We initialize to zero. Actuation inputs are assumed to have zero values if
   // not connected.
-  VectorX<T> actuation_input = VectorX<T>::Zero(num_actuated_dofs());
+  actuation_input->setZero();
 
   // Contribution from the per model-instance input ports.
   for (ModelInstanceIndex model_instance_index(0);
@@ -2865,12 +2915,12 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
     if (input_port.HasValue(context)) {
       const auto& u_instance = input_port.Eval(context);
-      if (u_instance.hasNaN()) {
+      if (HasNaN(u_instance)) {
         throw std::runtime_error(fmt::format(
             "Actuation input port for model instance {} contains NaN.",
             GetModelInstanceName(model_instance_index)));
       }
-      SetActuationInArray(model_instance_index, u_instance, &actuation_input);
+      SetActuationInArray(model_instance_index, u_instance, actuation_input);
     }
   }
 
@@ -2880,15 +2930,33 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
       this->get_input_port(input_port_indices_.actuation);
   if (actuation_port.HasValue(context)) {
     const auto& u = actuation_port.Eval(context);
-    if (u.hasNaN()) {
+    if (HasNaN(u)) {
       throw std::runtime_error(
           "Detected NaN in the actuation input port for all instances.");
     }
     // Contribution is added to the per model-instance contribution.
-    actuation_input += u;
+    *actuation_input += u;
   }
+}
 
-  return actuation_input;
+template <typename T>
+void MultibodyPlant<T>::CalcActuationInputWithEffortLimit(
+    const systems::Context<T>& context, VectorX<T>* actuation_input) const {
+  // Start with the unlimited actuation.
+  *actuation_input =
+      EvalActuationInput(context, /* apply_effort_limit = */ false);
+
+  // Apply the limits.
+  for (JointActuatorIndex actuator_index : GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    const double e = actuator.effort_limit();
+    if (std::isfinite(e)) {
+      using std::max;
+      using std::min;
+      T& u = (*actuation_input)[actuator.input_start()];
+      u = max(-e, min(e, u));
+    }
+  }
 }
 
 template <typename T>
@@ -2914,7 +2982,8 @@ void MultibodyPlant<T>::CalcNetActuationOutput(const Context<T>& context,
     }
   } else {
     DRAKE_DEMAND(!sampled);
-    output->SetFromVector(AssembleActuationInput(context));
+    output->SetFromVector(
+        EvalActuationInput(context, /* apply_effort_limit = */ true));
   }
 }
 
@@ -2931,61 +3000,56 @@ void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
 }
 
 template <typename T>
-internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
+const internal::DesiredStateInput<T>& MultibodyPlant<T>::EvalDesiredStateInput(
     const systems::Context<T>& context) const {
   this->ValidateContext(context);
+  return this->get_cache_entry(cache_indices_.desired_state_input)
+      .template Eval<internal::DesiredStateInput<T>>(context);
+}
 
-  // Checks if desired state x for model_instance has NaNs. Only entries
-  // corresponding to PD-controlled actuators on non-locked joints are checked
-  // and otherwise ignored.
-  auto has_nans_unless_ignored = [&](ModelInstanceIndex model_instance,
-                                     const VectorX<T>& x) -> bool {
-    using std::isnan;
-    const int nu = num_actuators(model_instance);
-    DRAKE_DEMAND(x.size() == 2 * nu);
-    const auto q = x.head(nu);
-    const auto v = x.tail(nu);
-    int a = 0;  // Actuator index local to its model-instance.
-    for (JointActuatorIndex actuator_index :
-         GetJointActuatorIndices(model_instance)) {
-      const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
-      const bool is_locked = actuator.joint().is_locked(context);
-      if (actuator.has_controller() && !is_locked) {
-        if (isnan(q[a]) || isnan(v[a])) return true;
+template <typename T>
+void MultibodyPlant<T>::CalcDesiredStateInput(
+    const systems::Context<T>& context,
+    internal::DesiredStateInput<T>* desired_state_input) const {
+  this->ValidateContext(context);
+
+  auto& items = desired_state_input->items;
+  items.clear();
+
+  for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+    const int nu = num_actuated_dofs(i);
+    if (nu > 0) {
+      const auto& port = this->get_desired_state_input_port(i);
+      if (port.HasValue(context)) {
+        const auto& xd = port.Eval(context);
+        DRAKE_ASSERT(xd.size() == 2 * nu);
+        const auto qd = xd.head(nu);
+        const auto vd = xd.tail(nu);
+        int a = 0;  // Actuator index local to its model-instance.
+        for (JointActuatorIndex actuator_index : GetJointActuatorIndices(i)) {
+          const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+          if (actuator.has_controller()) {
+            if (!actuator.joint().is_locked(context)) {
+              using std::isnan;
+              if (isnan(qd[a]) || isnan(vd[a])) {
+                throw std::runtime_error(fmt::format(
+                    "Desired state input port for model instance {} contains "
+                    "NaN.",
+                    GetModelInstanceName(i)));
+              }
+              items.push_back({
+                  .actuator_index = actuator_index,
+                  .qd = qd[a],
+                  .vd = vd[a],
+              });
+            }
+          }
+          ++a;
+        }
+        DRAKE_ASSERT(a == nu);
       }
-      ++a;
-    }
-    return false;
-  };
-
-  // Assemble the vector from the model instance input ports.
-  // TODO(amcastro-tri): Heap allocation here. Get rid of it. Make it EvalFoo().
-  internal::DesiredStateInput<T> desired_states(num_model_instances());
-
-  for (ModelInstanceIndex model_instance_index(0);
-       model_instance_index < num_model_instances(); ++model_instance_index) {
-    // Ignore the port if the model instance has no actuated DoFs.
-    const int instance_num_u = num_actuated_dofs(model_instance_index);
-    if (instance_num_u == 0) continue;
-
-    const auto& xd_input_port =
-        this->get_desired_state_input_port(model_instance_index);
-    if (xd_input_port.HasValue(context)) {
-      const auto& xd_instance = xd_input_port.Eval(context);
-      if (has_nans_unless_ignored(model_instance_index, xd_instance)) {
-        throw std::runtime_error(
-            fmt::format("Desired state input port for model "
-                        "instance {} contains NaN.",
-                        GetModelInstanceName(model_instance_index)));
-      }
-      const auto qd = xd_instance.head(instance_num_u);
-      const auto vd = xd_instance.tail(instance_num_u);
-      desired_states.SetModelInstanceDesiredStates(model_instance_index, qd,
-                                                   vd);
     }
   }
-
-  return desired_states;
 }
 
 template <typename T>
@@ -3062,18 +3126,18 @@ void MultibodyPlant<T>::CalcGeometryContactData(
     return;
   }
   const auto& geometry_id_to_body_index = geometry_id_to_body_index_;
-  const internal::MultibodyTreeTopology& topology =
-      internal_tree().get_topology();
+  const internal::SpanningForest& forest = internal_tree().forest();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
       joint_locking.unlocked_velocity_indices_per_tree;
   const auto is_irrelevant_geometry =
-      [&geometry_id_to_body_index, &topology,
+      [&geometry_id_to_body_index, &forest,
        &per_tree_unlocked_indices](GeometryId geometry_id) {
         // Checks whether `geometry_id` belongs to a zero-dof tree.
         const BodyIndex body_index = geometry_id_to_body_index.at(geometry_id);
         const internal::TreeIndex tree_index =
-            topology.body_to_tree_index(body_index);
-        return !topology.tree_has_dofs(tree_index) ||
+            forest.link_to_tree_index(body_index);
+        const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+        return !tree.has_dofs() ||
                per_tree_unlocked_indices[tree_index].size() == 0;
       };
   const auto is_irrelevant_point_pair =
@@ -3108,7 +3172,7 @@ void MultibodyPlant<T>::CalcJointLocking(
     internal::JointLockingCacheData<T>* data) const {
   DRAKE_DEMAND(data != nullptr);
 
-  const auto& topology = internal_tree().get_topology();
+  const internal::SpanningForest& forest = internal_tree().forest();
 
   auto& unlocked = data->unlocked_velocity_indices;
   auto& locked = data->locked_velocity_indices;
@@ -3119,8 +3183,8 @@ void MultibodyPlant<T>::CalcJointLocking(
   locked_per_tree.clear();
   unlocked.resize(num_velocities());
   locked.resize(num_velocities());
-  unlocked_per_tree.resize(topology.num_trees());
-  locked_per_tree.resize(topology.num_trees());
+  unlocked_per_tree.resize(forest.num_trees());
+  locked_per_tree.resize(forest.num_trees());
 
   int unlocked_cursor = 0;
   int locked_cursor = 0;
@@ -3153,15 +3217,17 @@ void MultibodyPlant<T>::CalcJointLocking(
   internal::DemandIndicesValid(locked, num_velocities());
 
   for (int dof : unlocked) {
-    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
-    unlocked_per_tree[tree].push_back(tree_dof);
+    const internal::TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    unlocked_per_tree[tree_index].push_back(tree_dof);
   }
 
   for (int dof : locked) {
-    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
-    locked_per_tree[tree].push_back(tree_dof);
+    const internal::TreeIndex tree_index = forest.v_to_tree_index(dof);
+    const internal::SpanningForest::Tree& tree = forest.trees(tree_index);
+    const int tree_dof = dof - tree.v_start();
+    locked_per_tree[tree_index].push_back(tree_dof);
   }
 }
 
@@ -3292,6 +3358,25 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
 }
 
 template <typename T>
+void MultibodyPlant<T>::ThrowIfUnsupportedContinuousTimeDynamics(
+    const systems::Context<T>&) const {
+  // Reject constraints.
+  // TODO(#23759,#23760,#23762,#23763,#23992): revisit this check and error
+  // message as constraints are implemented for CENIC.
+  if (num_constraints() > 0) {
+    throw std::logic_error(
+        "Currently this MultibodyPlant is set to use continuous time. "
+        "Continuous time does not support constraints. Use a discrete time "
+        "model and set_discrete_contact_approximation() to set a model "
+        "approximation that uses the SAP solver instead (kSap, kSimilar, or "
+        "kLagged).");
+  }
+
+  // TODO(#24061): consider rejecting models with joint limits here, once CENIC
+  // has correct behavior for joint limits, and errors/warnings are rearranged.
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcNonContactForcesContinuous(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
@@ -3319,6 +3404,7 @@ void MultibodyPlant<T>::AddInForcesContinuous(
   this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(!is_discrete());
+  ThrowIfUnsupportedContinuousTimeDynamics(context);
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(
@@ -3736,6 +3822,47 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       "JointLocking", internal::JointLockingCacheData<T>{},
       &MultibodyPlant::CalcJointLocking, {this->all_parameters_ticket()});
   cache_indices_.joint_locking = joint_locking_cache_entry.cache_index();
+
+  // Cache actuation input data (without effort limit).
+  {
+    std::set<DependencyTicket> prerequisites;
+    prerequisites.insert(get_actuation_input_port().ticket());
+    for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+      prerequisites.insert(get_actuation_input_port(i).ticket());
+    }
+    const auto& actuation_input_without_effort_limit_cache_entry =
+        this->DeclareCacheEntry(
+            "ActuationInputWithoutEffortLimit", VectorX<T>(num_actuators()),
+            &MultibodyPlant::CalcActuationInputWithoutEffortLimit,
+            std::move(prerequisites));
+    cache_indices_.actuation_input_without_effort_limit =
+        actuation_input_without_effort_limit_cache_entry.cache_index();
+  }
+
+  // Cache actuation input data (with effort limit).
+  {
+    const auto& actuation_input_with_effort_limit_cache_entry =
+        this->DeclareCacheEntry(
+            "ActuationInputWithEffortLimit", VectorX<T>(num_actuators()),
+            &MultibodyPlant::CalcActuationInputWithEffortLimit,
+            {this->cache_entry_ticket(
+                cache_indices_.actuation_input_without_effort_limit)});
+    cache_indices_.actuation_input_with_effort_limit =
+        actuation_input_with_effort_limit_cache_entry.cache_index();
+  }
+
+  // Cache desired state input data.
+  {
+    std::set<DependencyTicket> prerequisites;
+    for (ModelInstanceIndex i(0); i < num_model_instances(); ++i) {
+      prerequisites.insert(get_desired_state_input_port(i).ticket());
+    }
+    const auto& desired_state_input_cache_entry = this->DeclareCacheEntry(
+        "DesiredStateInput", internal::DesiredStateInput<T>(),
+        &MultibodyPlant::CalcDesiredStateInput, std::move(prerequisites));
+    cache_indices_.desired_state_input =
+        desired_state_input_cache_entry.cache_index();
+  }
 }
 
 template <typename T>
