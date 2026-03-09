@@ -14,6 +14,18 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
+using RecursiveSubsystemIndex = std::vector<systems::SubsystemIndex>;
+template <typename T>
+struct DiagramStructureFacts {
+  /* The plant used as the basis of the convex optimization problem. */
+  const MultibodyPlant<T>* plant{};
+  RecursiveSubsystemIndex plant_path;
+  /* Which subsystems in our Diagram have continuous state other than the
+     plant. */
+  std::vector<RecursiveSubsystemIndex> non_plant_xc_paths;
+};
+}  // namespace internal
 
 /** Convex Error-controlled Numerical Integration for Contact (CENIC) is a
 specialized error-controlled implicit integrator for contact-rich robotics
@@ -103,7 +115,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   /** Gets a reference to the MultibodyPlant used to formulate the convex
   optimization problem. */
-  const MultibodyPlant<T>& plant() const { return plant_; }
+  const MultibodyPlant<T>& plant() const { return *structure_.plant; }
 
   /** Gets the current convex solver tolerances and iteration limits. */
   const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
@@ -188,12 +200,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  /* The plant used as the basis of the convex optimization problem. */
-  const MultibodyPlant<T>& plant_;
-  const systems::SubsystemIndex plant_subsystem_index_;
-  /* Which subsystems in our Diagram have continuous state other than the
-  plant. */
-  const std::vector<int> non_plant_xc_subsystem_indices_;
+  const internal::DiagramStructureFacts<T> structure_;
 
   /* Helper class that linearizes torques dτ/dv from plant input ports. */
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>

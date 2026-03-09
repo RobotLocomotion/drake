@@ -1,5 +1,6 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
+#include <algorithm>
 #include <limits>
 
 #include "drake/systems/framework/system_visitor.h"
@@ -11,12 +12,15 @@ using contact_solvers::icf::IcfSolverParameters;
 using contact_solvers::icf::internal::IcfBuilder;
 using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using contact_solvers::icf::internal::IcfModel;
+using internal::DiagramStructureFacts;
+using internal::RecursiveSubsystemIndex;
 using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
 using systems::DiagramContinuousState;
 using systems::IntegratorBase;
 using systems::NamedStatistic;
+using systems::SubsystemIndex;
 using systems::System;
 using systems::SystemVisitor;
 using systems::VectorBase;
@@ -27,65 +31,113 @@ template <typename T>
 class MyVisitor : public SystemVisitor<T> {
  public:
   void VisitSystem(const System<T>& system) {
+    if (root_ == nullptr) {
+      throw std::logic_error("CenicIntegrator must be given a Diagram.");
+    }
+    RecursiveSubsystemIndex path = MakePath(system);
     const auto* maybe_plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
     if (maybe_plant == nullptr) {
+      if (system.num_continuous_states() > 0) {
+        structure_.non_plant_xc_paths.push_back(path);
+      }
       return;
     }
     const MultibodyPlant<T>& plant{*maybe_plant};
     if (plant.is_discrete()) {
       return;
     }
-    if (found_plant_ != nullptr) {
+    if (structure_.plant != nullptr) {
       throw std::logic_error(
           "CenicIntegrator found more than one continuous time plant in the "
           "diagram!!");
     }
+    structure_.plant = &plant;
+    structure_.plant_path = path;
     fmt::print("CENIC found plant at '{}'\n", plant.GetSystemPathname());
-    found_plant_ = &plant;
   }
 
   void VisitDiagram(const Diagram<T>& diagram) {
+    if (root_ == nullptr) {
+      root_ = &diagram;
+    }
+    if (&diagram != root_) {
+      diagram_stack_.push_back(current_->GetSystemIndexOrAbort(&diagram));
+    }
+    current_ = &diagram;
     for (const auto* system : diagram.GetSystems()) {
       system->Accept(this);
     }
+    if (!diagram_stack_.empty()) {
+      diagram_stack_.pop_back();
+    }
+    if (&diagram == root_ && structure_.plant == nullptr) {
+      throw std::logic_error(
+          "CenicIntegrator found zero continuous time plants in the diagram!!");
+    }
   }
 
-  const MultibodyPlant<T>* plant() { return found_plant_; }
+  RecursiveSubsystemIndex MakePath(const System<T>& system) {
+    RecursiveSubsystemIndex result;
+    result.reserve(1 + ssize(diagram_stack_));
+    std::copy(diagram_stack_.begin(), diagram_stack_.end(),
+              std::back_inserter(result));
+    result.push_back(current_->GetSystemIndexOrAbort(&system));
+    return result;
+  }
+
+  DiagramStructureFacts<T> GetDiagramStructure() const { return structure_; }
 
  private:
-  const MultibodyPlant<T>* found_plant_{};
+  const Diagram<T>* root_{};
+  const Diagram<T>* current_{};
+  std::vector<SubsystemIndex> diagram_stack_;
+  DiagramStructureFacts<T> structure_;
 };
 
 template <typename T>
-const MultibodyPlant<T>& GetPlantFromDiagram(const System<T>& system) {
-  const auto* const diagram = dynamic_cast<const Diagram<T>*>(&system);
-  if (diagram == nullptr) {
-    throw std::logic_error(
-        fmt::format("CenicIntegrator must be given a Diagram, not a {}",
-                    NiceTypeName::Get(system)));
-  }
+DiagramStructureFacts<T> FindDiagramStructure(const System<T>& system) {
   MyVisitor<T> visitor;
   system.Accept(&visitor);
-  const MultibodyPlant<T>* maybe_plant = visitor.plant();
-  if (maybe_plant == nullptr) {
-    throw std::logic_error(
-        "CenicIntegrator found zero continuous time plants in the diagram!!");
-  }
-  return *maybe_plant;
+  return visitor.GetDiagramStructure();
 }
 
 template <typename T>
-std::vector<int> CalcNonPlantXcSubsystemIndices(
-    const Diagram<T>& diagram, systems::SubsystemIndex plant_subsystem_index) {
-  std::vector<int> result;
-  std::vector<const System<T>*> subsystems = diagram.GetSystems();
-  for (int i = 0; i < ssize(subsystems); ++i) {
-    if (subsystems[i]->num_continuous_states() > 0 &&
-        i != plant_subsystem_index) {
-      result.push_back(i);
-    }
+const ContinuousState<T>& GetSubstateByPath(
+    const ContinuousState<T>& state, const RecursiveSubsystemIndex& path) {
+  const ContinuousState<T>* cursor{&state};
+  DRAKE_DEMAND(cursor != nullptr);
+  for (const SubsystemIndex& k : path) {
+    const auto* diagram_state =
+        dynamic_cast<const DiagramContinuousState<T>*>(cursor);
+    DRAKE_DEMAND(diagram_state != nullptr);
+    cursor = &diagram_state->get_substate(k);
   }
-  return result;
+  return *cursor;
+}
+
+template <typename T>
+ContinuousState<T>& GetMutableSubstateByPath(
+    ContinuousState<T>& state, const RecursiveSubsystemIndex& path) {
+  ContinuousState<T>* cursor{&state};
+  DRAKE_DEMAND(cursor != nullptr);
+  for (const SubsystemIndex& k : path) {
+    auto* diagram_state = dynamic_cast<DiagramContinuousState<T>*>(cursor);
+    DRAKE_DEMAND(diagram_state != nullptr);
+    cursor = &diagram_state->get_mutable_substate(k);
+  }
+  return *cursor;
+}
+
+template <typename T>
+const System<T>& GetSubsystemByPath(const Diagram<T>& diagram,
+                                    const RecursiveSubsystemIndex& path) {
+  const System<T>* cursor = &diagram;
+  for (const SubsystemIndex& k : path) {
+    const auto* maybe_diagram = dynamic_cast<const Diagram<T>*>(cursor);
+    DRAKE_DEMAND(maybe_diagram != nullptr);
+    cursor = maybe_diagram->GetSystems().at(k);
+  }
+  return *cursor;
 }
 
 }  // namespace
@@ -94,13 +146,8 @@ template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
     : IntegratorBase<T>(system, context),
-      plant_(GetPlantFromDiagram(system)),
-      plant_subsystem_index_(
-          static_cast<const Diagram<T>&>(system).GetSystemIndexOrAbort(
-              &plant_)),
-      non_plant_xc_subsystem_indices_(CalcNonPlantXcSubsystemIndices(
-          static_cast<const Diagram<T>&>(system), plant_subsystem_index_)),
-      external_systems_linearizer_(&plant_) {
+      structure_(FindDiagramStructure(system)),
+      external_systems_linearizer_(structure_.plant) {
   this->set_target_accuracy(kDefaultAccuracy);
 }
 
@@ -200,8 +247,7 @@ template <typename T>
 T CenicIntegrator<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   const VectorBase<T>& plant_q =
-      dynamic_cast<const DiagramContinuousState<T>&>(dx_state)
-          .get_substate(plant_subsystem_index_)
+      GetSubstateByPath(dx_state, structure_.plant_path)
           .get_generalized_position();
   const T norm = plant_q.CopyToVector().template lpNorm<Eigen::Infinity>();
   return norm;
@@ -287,7 +333,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // the full step, so we can reuse all of the constraints, avoiding expensive
     // geometry queries and such.
     model_at_x0_.UpdateTimeStep(0.5 * h);
-    v_guess += x_next_full.get_substate(plant_subsystem_index_)
+    v_guess += GetSubstateByPath(x_next_full, structure_.plant_path)
                    .get_generalized_velocity()
                    .CopyToVector();
     v_guess /= 2.0;
@@ -304,7 +350,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // we will reuse the linearizations of any external systems, if they exist.
     builder_->UpdateModel(plant_context, 0.5 * h, actuation_feedback,
                           external_feedback, &model_at_xh_);
-    v_guess = scratch_.x_next_full->get_substate(plant_subsystem_index_)
+    v_guess = GetSubstateByPath(*scratch_.x_next_full, structure_.plant_path)
                   .get_generalized_velocity()
                   .CopyToVector();
     systems::DiagramContinuousState<T>& x_next_half_2 = *scratch_.x_next_half_2;
@@ -369,12 +415,10 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   AdvancePlantConfiguration(h, v, &q);
 
   // Set the updated plant state, x = [q; v].
-  x_next->get_mutable_substate(plant_subsystem_index_)
-      .get_mutable_generalized_position()
-      .SetFromVector(q);
-  x_next->get_mutable_substate(plant_subsystem_index_)
-      .get_mutable_generalized_velocity()
-      .SetFromVector(v);
+  ContinuousState<T>& mutable_plant_state =
+      GetMutableSubstateByPath<T>(*x_next, structure_.plant_path);
+  mutable_plant_state.get_mutable_generalized_position().SetFromVector(q);
+  mutable_plant_state.get_mutable_generalized_velocity().SetFromVector(v);
 
   // Advance the non-plant state with explicit euler,
   //   x = x₀ + h⋅ẋ.
@@ -382,10 +426,9 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   // dynamics are usually pretty simple (e.g., the integral term from a PID
   // controller), so forward euler is sufficient.
   const auto& diagram = static_cast<const Diagram<T>&>(this->get_system());
-  for (int subsystem_index : non_plant_xc_subsystem_indices_) {
-    const System<T>& subsystem = *diagram.GetSystems().at(subsystem_index);
-    const Context<T>& subcontext =
-        this->get_system().GetSubsystemContext(subsystem, context);
+  for (const auto& path : structure_.non_plant_xc_paths) {
+    const System<T>& subsystem = GetSubsystemByPath(diagram, path);
+    const Context<T>& subcontext = subsystem.GetMyContextFromRoot(context);
 
     // TODO(vincekurtz): eliminate these heap allocations.
     const VectorX<T> sub_xc_dot =
@@ -393,7 +436,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
     VectorX<T> sub_xc_next = subcontext.get_continuous_state().CopyToVector();
     sub_xc_next += h * sub_xc_dot;
 
-    x_next->get_mutable_substate(subsystem_index).SetFromVector(sub_xc_next);
+    GetMutableSubstateByPath(*x_next, path).SetFromVector(sub_xc_next);
   }
 }
 
