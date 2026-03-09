@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "drake/common/overloaded.h"
 #include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"

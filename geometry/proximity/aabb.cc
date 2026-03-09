@@ -55,8 +55,7 @@ bool Aabb::HasOverlap(const Aabb& bv_H, const Plane<double>& plane_P,
   return plane_P.BoxOverlaps(bv_H.half_width(), X_PH * p_HBo, X_PH.rotation());
 }
 
-bool Aabb::HasOverlap(const Aabb& bv_H, const HalfSpace&,
-                      const math::RigidTransformd& X_CH) {
+bool Aabb::HasOverlap(const Aabb& bv_H, const math::RigidTransformd& X_CH) {
   /*
                         By  ╱╲       Bx
                           ╲╱  ╲    ╱

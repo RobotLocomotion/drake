@@ -78,10 +78,9 @@ void DefineGeometryBoundingBox(py::module m) {
       doc.Aabb.HasOverlap.doc_aabb_obb);
 
   aabb_cls.def_static("HasOverlap",
-      py::overload_cast<const Aabb&, const HalfSpace&,
-          const math::RigidTransformd&>(&Aabb::HasOverlap),
-      py::arg("bv_H"), py::arg("hs_C"), py::arg("X_CH"),
-      doc.Aabb.HasOverlap.doc_aabb_halfspace);
+      py::overload_cast<const Aabb&, const math::RigidTransformd&>(
+          &Aabb::HasOverlap),
+      py::arg("bv_H"), py::arg("X_CH"), doc.Aabb.HasOverlap.doc_aabb_halfspace);
 
   aabb_cls.def_static("HasOverlap",
       py::overload_cast<const Aabb&, const Plane<double>&,

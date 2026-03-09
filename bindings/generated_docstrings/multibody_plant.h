@@ -5726,6 +5726,11 @@ Raises:
     RuntimeError if the plant is not finalized or if the
     ``model_instance`` is invalid.)""";
         } GetStateNames;
+        // Symbol: drake::multibody::MultibodyPlant::GetSurfaceVelocity
+        struct /* GetSurfaceVelocity */ {
+          // Source: drake/multibody/plant/multibody_plant.h
+          const char* doc = R"""()""";
+        } GetSurfaceVelocity;
         // Symbol: drake::multibody::MultibodyPlant::GetTopologyGraphvizString
         struct /* GetTopologyGraphvizString */ {
           // Source: drake/multibody/plant/multibody_plant.h

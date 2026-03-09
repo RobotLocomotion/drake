@@ -69,13 +69,10 @@ class TestGeometryBoundingBox(unittest.TestCase):
         self.assertTrue(mut.Aabb.HasOverlap(aabb1, aabb2, transform))
 
         # Test Aabb-HalfSpace overlap.
-        half_space = mut.HalfSpace()
         # Default half space has normal [0,0,1] and passes through origin.
         # aabb1 is centered at origin with half_width [1,1,1], so it
         # should overlap the half space (extends into negative z).
-        self.assertTrue(
-            mut.Aabb.HasOverlap(aabb1, half_space, identity_transform)
-        )
+        self.assertTrue(mut.Aabb.HasOverlap(aabb1, identity_transform))
 
         # Test Aabb-Plane overlap.
         plane_normal = np.array([0.0, 0.0, 1.0])
@@ -144,9 +141,7 @@ class TestGeometryBoundingBox(unittest.TestCase):
         # Default half space has normal [0,0,1] and passes through origin.
         # Our obb1 is centered at origin with half_width [1,1,1], so it
         # should overlap the half space (extends into negative z).
-        self.assertTrue(
-            mut.Obb.HasOverlap(obb1, half_space, identity_transform)
-        )
+        self.assertTrue(mut.Obb.HasOverlap(obb1, identity_transform))
 
         # Test Obb-Plane overlap.
         plane_normal = np.array([0.0, 0.0, 1.0])

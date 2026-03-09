@@ -1,3 +1,4 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -22,3 +23,5 @@ drake_cc_binary(
         "@gflags",
     ],
 )
+
+add_lint_tests()

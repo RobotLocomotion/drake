@@ -1,3 +1,7 @@
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/geometry/geometry_ids.h"
@@ -64,7 +68,7 @@ GTEST_TEST(SurfaceVelocityTest, BoxSurfaceVelocity) {
   const double yaw = 0.78;
   math::RigidTransformd body_pose(math::RollPitchYaw(0., 0., yaw),
                                   Eigen::Vector3d(0., 0., 1.));
-  plant.SetFreeBodyPoseInWorldFrame(&(*context), belt, body_pose);
+  plant.SetFloatingBaseBodyPoseInWorldFrame(&(*context), belt, body_pose);
   math::RigidTransformd pose = plant.GetFreeBodyPose(*context, belt);
 
   // Assume there are some contacts on each face of the conveyor belt.

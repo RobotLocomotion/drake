@@ -1,3 +1,7 @@
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gflags/gflags.h>
 
 #include "drake/geometry/meshcat.h"

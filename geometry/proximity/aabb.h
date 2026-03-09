@@ -6,7 +6,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/plane.h"
-#include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 
@@ -157,16 +156,11 @@ class Aabb {
    a height less than or equal to zero.
 
    @param bv_H      The bounding box to test.
-   @param hs_C      The half space to test against the `bv`. The half space is
-                    expressed in Frame C, therefore, to evaluate the signed
-                    distance of a point with respect to it, that point must be
-                    measured and expressed in C.
    @param X_CH      The relative pose between the hierarchy halfspace canonical
                     frame C and the box frame B.
    @returns `true` if the half space intersects the box.
    @pydrake_mkdoc_identifier{aabb_halfspace} */
-  static bool HasOverlap(const Aabb& bv_H, const HalfSpace& hs_C,
-                         const math::RigidTransformd& X_CH);
+  static bool HasOverlap(const Aabb& bv_H, const math::RigidTransformd& X_CH);
 
   /** Compares the values of the two Aabb instances for exact equality down to
    the last bit. Assumes that the quantities are measured and expressed in
