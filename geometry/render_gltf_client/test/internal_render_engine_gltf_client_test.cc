@@ -7,9 +7,12 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <common_robotics_utilities/base64_helpers.hpp>
+#include <fmt/ranges.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
@@ -30,6 +33,7 @@
 #include "drake/geometry/render_gltf_client/internal_merge_gltf.h"
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 #include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
+#include "drake/geometry/scene_graph.h"
 
 // This might *seem* to be unused, but don't remove it! We rely on this to dump
 // images to the console when calling `EXPECT_EQ(Image<...>, Image<...>)`.
@@ -293,7 +297,7 @@ class RenderEngineGltfClientGltfTest : public ::testing::Test {
         Mesh(FindResourceOrThrow(
                  "drake/geometry/render_gltf_client/test/tri.obj"),
              scale_),
-        properties_, X_WG_));
+        properties_, X_WG_, /* needs_update= */ true, "tri_obj"));
     EXPECT_TRUE(engine_.has_geometry(id));
     return id;
   }
@@ -305,7 +309,7 @@ class RenderEngineGltfClientGltfTest : public ::testing::Test {
         Mesh(FindResourceOrThrow(
                  "drake/geometry/render_gltf_client/test/tri_tree.gltf"),
              scale_),
-        properties_, X_WG_));
+        properties_, X_WG_, /* needs_update= */ true, "tri_tree_gltf"));
     EXPECT_TRUE(engine_.has_geometry(id));
     return id;
   }
@@ -535,90 +539,95 @@ TEST_F(RenderEngineGltfClientGltfTest, InMemorySupportingFilesToDataUris) {
   }
 }
 
-/* Currently, our server expects us to output a z-up gltf (because (a) Drake is
- z-up and (b) VTK does not correct it). The input gltf files are y-up.
- Therefore, we have to do some special math to apply a z-up pose to a y-up
- object.
+/* Pose computation works as follows:
 
- We do this update twice: once when the geometry is registered and once
- when we call UpdatePoses(). This will check both.
+   - record.contents stores the glTF file *unmodified*. Root nodes retain their
+     original file-frame transforms T_FN (translation/rotation/scale or matrix).
+   - record.X_WG stores the current world pose and is updated cheaply by
+     DoUpdateVisualPose().
+   - At ExportScene() time, a single wrapper node is injected that:
+       (a) carries record.geometry_name as its "name",
+       (b) carries T_WF = X_WG * S_WG * X_GF as its "matrix", and
+       (c) parents all of the source glTF's root nodes as "children".
+     The effective world transform of each root node N is then T_WF * T_FN.
 
- The transform located in the gltf contents should be as follows:
-
-    T = X_t * X_r * S * R_zy * F
-
- where:
-    X_t: a transform that translates the geometry.
-    X_r: a transform that rotates the geometry.
-    S: a transform that scales the geometry (possibly non-uniformly).
-    R_zy: The rotation from y-up to z-up.
-    F: The transform (not necessarily rigid) of the root node in the file.
-
- We'll extract the matrix X out of the glTF contents, and gradually remove
- each of the T, R, S, R_zy and compare the resultant F with that stored in the
- GltfRecord. */
+ This test verifies:
+   1. record.X_WG correctly tracks the geometry's pose after registration and
+      after UpdatePoses().
+   2. record.contents root nodes are unmodified (retain original file format).
+   3. The exported wrapper node carries the expected T_WF matrix and children.
+ */
 TEST_F(RenderEngineGltfClientGltfTest, PoseComputation) {
   const GeometryId gltf_id = AddGltf();
 
-  /* Given the non-rigid transform of a node (T_WN), the rigid pose of the
-   file's frame (T_WF) and the scale factor, extract the transform of the node
-   in the file's frame (T_FN). */
-  auto extract_T_FN = [](const Matrix4<double> T_WN,
-                         const RigidTransformd& X_WF,
+  /* Compute the expected wrapper-node matrix:
+       T_WF = X_WG * S_WG * X_GF
+     where S_WG scales the columns of X_WG and X_GF is the y-up-to-z-up
+     rotation (MakeXRotation(π/2)). */
+  auto compute_T_WF = [](const RigidTransformd& X_WG,
                          const Vector3d& scale_in) -> Matrix4<double> {
-    Matrix4<double> X_t_inv = Matrix4<double>::Identity();
-    X_t_inv.block<3, 1>(0, 3) = -X_WF.translation();
-    Matrix4<double> X_R_inv = Matrix4<double>::Identity();
-    X_R_inv.block<3, 3>(0, 0) = X_WF.rotation().inverse().matrix();
-    Matrix4<double> S_inv = Matrix4<double>::Identity();
-    S_inv(0, 0) /= scale_in.x();
-    S_inv(1, 1) /= scale_in.y();
-    S_inv(2, 2) /= scale_in.z();
-    const RigidTransformd X_zy_inv(RotationMatrixd::MakeXRotation(-M_PI / 2));
-    const Matrix4<double> R_zy_inv = X_zy_inv.GetAsMatrix4();
-    return R_zy_inv * S_inv * X_R_inv * X_t_inv * T_WN;
+    Matrix4<double> T = X_WG.GetAsMatrix4();
+    for (int i = 0; i < 3; ++i) T.block<3, 1>(0, i) *= scale_in(i);
+    T *= RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2))
+             .GetAsMatrix4();
+    return T;
   };
 
-  // Extract the transform matrix from a node's specification. Also validate
-  // that it *only* includes "matrix" and not "translation", "rotation", or
-  // "scale".
-  auto extract_T_WN = [](const json& node) {
-    EXPECT_FALSE(node.contains("translation"));
-    EXPECT_FALSE(node.contains("rotation"));
-    EXPECT_FALSE(node.contains("scale"));
-    EXPECT_TRUE(node.contains("matrix"));
-    return EigenMatrixFromGltfMatrix(node["matrix"]);
-  };
-
-  // Previous tests already showed that there's a single root node. We'll get
-  // that node's T_FN.
   const std::map<GeometryId, Tester::GltfRecord>& gltfs =
       Tester::gltfs(engine_);
   const Tester::GltfRecord& record = gltfs.at(gltf_id);
+
+  // 1a. After registration, record.X_WG should hold the initial pose.
+  EXPECT_TRUE(
+      CompareMatrices(record.X_WG.GetAsMatrix4(), X_WG_.GetAsMatrix4(), 1e-15));
+
+  // 2. Contents are unmodified: glTF-original root nodes retain their original
+  // file-frame pose. In this case, we exploit the fact that all root nodes
+  // in tri_tree.gltf have only translation components.
+  // TODO(SeanCurtis-TRI): If this proves too brittle, we'll parse the original
+  // glTF and get the node transformation data directly.
   for (const auto& [node_index, T_FN_expected] : record.root_nodes) {
     const json& root = record.contents["nodes"][node_index];
     SCOPED_TRACE(fmt::format("Node {}({})", root["name"].get<std::string>(),
                              node_index));
-    // Confirm computation of X_WN during registration.
-    const Matrix4<double> X_WN_init = extract_T_WN(root);
-    const Matrix4<double> T_FN_init = extract_T_FN(X_WN_init, X_WG_, scale_);
-    EXPECT_TRUE(CompareMatrices(T_FN_init, T_FN_expected, 1e-15));
+    EXPECT_FALSE(root.contains("matrix"));
+    EXPECT_TRUE(root.contains("translation"));
   }
 
+  // 1b. After UpdatePoses(), record.X_WG should hold the updated pose.
   const RigidTransformd X_WG_update(RollPitchYawd{M_PI * 0.5, 0, 3 * M_PI / 2},
                                     Vector3d(-3, 1, 2));
   engine_.UpdatePoses(
       std::unordered_map<GeometryId, RigidTransformd>{{gltf_id, X_WG_update}});
-  for (const auto& [node_index, T_FN_expected] : record.root_nodes) {
-    const json& root = record.contents["nodes"][node_index];
-    SCOPED_TRACE(fmt::format("Node {}({})", root["name"].get<std::string>(),
-                             node_index));
-    // Confirm computation of X_WN during UpdatePoses.
-    const Matrix4<double> T_WN_update = extract_T_WN(root);
-    const Matrix4<double> T_FN_update =
-        extract_T_FN(T_WN_update, X_WG_update, scale_);
-    EXPECT_TRUE(CompareMatrices(T_FN_update, T_FN_expected, 1e-15));
+  EXPECT_TRUE(CompareMatrices(record.X_WG.GetAsMatrix4(),
+                              X_WG_update.GetAsMatrix4(), 1e-15));
+
+  // 3. Export and verify the wrapper node carries T_WF and the right children.
+  const json exported = ExportAndReadJson("pose_test.gltf", ImageType::kColor);
+  const json* wrapper_node{};
+  for (const auto& node : exported["nodes"]) {
+    if (node.contains("name") && node["name"] == "tri_tree_gltf") {
+      wrapper_node = &node;
+      break;
+    }
   }
+  ASSERT_NE(wrapper_node, nullptr)
+      << "Wrapper node named 'tri_tree_gltf' not found in exported glTF";
+
+  ASSERT_TRUE(wrapper_node->contains("matrix"));
+  const Matrix4<double> T_WF_actual =
+      EigenMatrixFromGltfMatrix((*wrapper_node)["matrix"]);
+  const Matrix4<double> T_WF_expected = compute_T_WF(X_WG_update, scale_);
+  EXPECT_TRUE(CompareMatrices(T_WF_actual, T_WF_expected, 1e-13));
+
+  // The wrapper must parent exactly the same number of children as the source
+  // glTF had root nodes (two for tri_tree.gltf: "root_tri" and "empty_root").
+  ASSERT_TRUE(wrapper_node->contains("children"));
+  EXPECT_EQ(ssize((*wrapper_node)["children"]), ssize(record.root_nodes));
+
+  // The wrapper node itself should not reference any mesh directly; it is
+  // a pure pose/grouping node.
+  EXPECT_FALSE(wrapper_node->contains("mesh"));
 }
 
 /* ExportScene() is responsible for merging gltf geometries into the VTK-made
@@ -637,24 +646,31 @@ TEST_F(RenderEngineGltfClientGltfTest, ExportScene) {
   const json gltf_obj_only =
       ExportAndReadJson("only_obj.gltf", ImageType::kColor);
   /* We should have three nodes, the mesh and VTK's "Renderer Node" and "Camera
-   Node". */
+   Node".
+
+   Note: in VTK logic, we only get the Camera Node because we have the mesh
+   node. If we don't have at least one vtkActor in VTK proper, we won't get the
+   camera node. */
   ASSERT_EQ(gltf_obj_only["nodes"].size(), 3);
 
-  /* Now we add the gltf. It adds three nodes: "empty_root", "root_tri", and
-   "child_tri". */
+  /* Now we add the gltf. It adds *four* nodes: the three in the glTF file
+   ("empty_root", "root_tri", and "child_tri") and a novel root node based on
+   the geometry name, "tri_tree_gltf". */
   AddGltf();
 
   const json gltf_color = ExportAndReadJson("color.gltf", ImageType::kColor);
-  ASSERT_EQ(gltf_color["nodes"].size(), 6);
-  bool root_tri_present = false;
-  bool empty_root_present = false;
+
+  // These are the nodes we expect to see. We'll remove everyone we find. Note:
+  // this doesn't account for extra nodes.
+  std::set<std::string> expected_nodes{
+      "Camera Node", "Renderer Node", "tri_tree_gltf", "root_tri",
+      "empty_root",  "child_tri",     "tri_obj"};
   for (const auto& n : gltf_color["nodes"]) {
     const std::string& name = n["name"].get<std::string>();
-    root_tri_present = root_tri_present || name == "root_tri";
-    empty_root_present = empty_root_present || name == "empty_root";
+    expected_nodes.erase(name);
   }
-  EXPECT_TRUE(root_tri_present);
-  EXPECT_TRUE(empty_root_present);
+  EXPECT_EQ(expected_nodes.size(), 0)
+      << fmt::to_string(fmt::join(expected_nodes, ", "));
 
   /* Finally, let's compare label and color. */
   auto find_mat_for_node = [](const json& gltf, std::string_view node_name) {
@@ -727,6 +743,85 @@ TEST_F(RenderEngineGltfClientGltfTest, RemoveGltf) {
   const json gltf_empty = ExportAndReadJson("empty.gltf", ImageType::kColor);
   /* An empty scene has no nodes (not even renderer and camera). */
   ASSERT_EQ(gltf_empty["nodes"].size(), 0);
+}
+
+/* When geometry is registered with a specific name via RegisterVisual, those
+ names should appear as node names in the exported glTF scene. This confirms
+ that geometry names assigned in SceneGraph propagate all the way through to
+ the exported representation. */
+GTEST_TEST(RenderEngineGltfClientNamesTest, GeometryNamesInExportedScene) {
+  // 1. Instantiate a SceneGraph.
+  SceneGraph<double> scene_graph;
+  const SourceId source_id = scene_graph.RegisterSource("test");
+
+  // 2. & 3. Instantiate a RenderEngineGltfClient, keeping a raw pointer.
+  auto engine = std::make_unique<RenderEngineGltfClient>();
+  // We'll save a reference to the engine so we can (a) exercise the ExportScene
+  // functionality and (b) easily test the cloned behavior.
+  const RenderEngineGltfClient& engine_ref = *engine;
+
+  // 4. Add the render engine to SceneGraph.
+  scene_graph.AddRenderer("gltf_client", std::move(engine));
+
+  // 5. Register geometries directly on the engine with known, distinct names.
+  const RigidTransformd X_WG;
+  PerceptionProperties properties;
+  properties.AddProperty("label", "id", render::RenderLabel(1));
+
+  const GeometryId obj_id = scene_graph.RegisterAnchoredGeometry(
+      source_id, std::make_unique<GeometryInstance>(
+                     X_WG,
+                     Mesh(FindResourceOrThrow(
+                              "drake/geometry/render_gltf_client/test/tri.obj"),
+                          Vector3d::Ones()),
+                     "my_obj_geom"));
+  scene_graph.AssignRole(source_id, obj_id, properties);
+
+  const GeometryId gltf_id = scene_graph.RegisterAnchoredGeometry(
+      source_id,
+      std::make_unique<GeometryInstance>(
+          X_WG,
+          Mesh(FindResourceOrThrow(
+                   "drake/geometry/render_gltf_client/test/tri_tree.gltf"),
+               Vector3d::Ones()),
+          "my_gltf_geom"));
+  scene_graph.AssignRole(source_id, gltf_id, properties);
+
+  // 6. Export the scene.
+  const fs::path temp_dir = temp_directory();
+  const fs::path output_path = temp_dir / "names_test.gltf";
+  RenderEngineGltfClientTester::ExportScene(engine_ref, output_path,
+                                            ImageType::kColor);
+
+  // 7. Read the exported glTF and verify the known names appear as node names.
+  const json gltf = ReadJsonFile(output_path);
+  std::set<std::string> node_names;
+  for (const auto& node : gltf["nodes"]) {
+    if (node.contains("name")) {
+      node_names.insert(node["name"].get<std::string>());
+    }
+  }
+  EXPECT_THAT(node_names, ::testing::Contains("my_obj_geom"));
+  EXPECT_THAT(node_names, ::testing::Contains("my_gltf_geom"));
+
+  // 8. Verify that cloning the engine preserves the geometry names.
+  std::unique_ptr<RenderEngine> clone_base = engine_ref.Clone();
+  auto* clone = dynamic_cast<RenderEngineGltfClient*>(clone_base.get());
+  ASSERT_NE(clone, nullptr);
+
+  const fs::path clone_output_path = temp_dir / "names_test_clone.gltf";
+  RenderEngineGltfClientTester::ExportScene(*clone, clone_output_path,
+                                            ImageType::kColor);
+
+  const json clone_gltf = ReadJsonFile(clone_output_path);
+  std::set<std::string> clone_node_names;
+  for (const auto& node : clone_gltf["nodes"]) {
+    if (node.contains("name")) {
+      clone_node_names.insert(node["name"].get<std::string>());
+    }
+  }
+  EXPECT_THAT(clone_node_names, ::testing::Contains("my_obj_geom"));
+  EXPECT_THAT(clone_node_names, ::testing::Contains("my_gltf_geom"));
 }
 
 }  // namespace

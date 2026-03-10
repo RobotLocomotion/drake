@@ -222,73 +222,6 @@ std::map<int, Matrix4<double>> FindRootNodes(const nlohmann::json& gltf) {
   return roots;
 }
 
-/* Effectively sets the world pose of the single "geometry" represented by one
- or more nodes defined in a glTF file. It achieves this by setting the
- transforms on the `root_nodes` of the glTF and *only* the root nodes. All other
- nodes should maintain their fixed poses *relative* to their root nodes. It's
- important that `root_nodes` contain *only* root nodes, such as those found by
- FindRootNodes().
-
- @param gltf         The json representing the gltf file; its contents will be
-                     modified.
- @param root_nodes   The set of nodes to set (indicated by integers in the range
-                     [0, N-1] such that the gltf contains N nodes.
- @param X_WG         The pose of the Drake geometry in the world frame.
- @param scale        The scale to apply to all the indicated nodes (i.e., S_WF).
- @param strip        If true, removes any translation, rotation, or scale
-                     properties from the targeted nodes. */
-void SetRootPoses(nlohmann::json* gltf,
-                  const std::map<int, Matrix4<double>>& root_nodes,
-                  const math::RigidTransformd& X_WG,
-                  const Vector3<double>& scale, bool strip) {
-  /* We have to do some extra work for poses. A *correct* glTF file is defined
-   in the file's frame F as y up. Drake poses things in a geometry frame G which
-   is z up. When VTK exports a glTF file, it doesn't rotate from F to G (y up
-   to z up). We can't simply apply the geometry pose X_WG to the glTF's data. We
-   need to introduce X_GF, the transform necessary to take the data from the
-   y-up glTF frame to the z-up Drake frame.
-
-   Furthermore, the transform in glTF is not a Drake RigidTransform; it is
-   an affine transform. glTF documents the transform T = X_t * X_r * S, where
-   X_t and X_r are RigidTransforms consisting of a translation and rotation,
-   respectively. S is a (possibly non-uniform) scale transform.
-
-   Therefore, the transform we need to apply to indicated nodes includes: the
-   geometry pose X_WG, the geometry scale transform determined by scale (S_WG),
-   the y-up-to-z-up transform (X_GF), and the node's transform within its file,
-   T_FN. Or, more succinctly:
-
-      T_WN = X_WG * S_WG * X_GF * T_FN, or
-      T_WN =               T_WF * T_FN.
-   */
-
-  // T_WF isn't truly T_WF at construction. We'll construct it piecemeal as
-  // we concatenate transforms on its right side as indicated above.
-  Matrix4<double> T_WF = X_WG.GetAsMatrix4();
-  // S_WG is `scale` on the diagonal. Multiplication with X_WG has the effect of
-  // scaling the corresponding columns.
-  for (int i = 0; i < 3; ++i) {
-    T_WF.block<3, 1>(0, i) *= scale(i);
-  }
-  const math::RigidTransformd X_GF(
-      math::RotationMatrixd::MakeXRotation(M_PI / 2));
-  T_WF *= X_GF.GetAsMatrix4();
-
-  if (gltf->contains("nodes")) {
-    nlohmann::json& nodes = (*gltf)["nodes"];
-    const int node_count = ssize(nodes);
-    for (const auto& [n, T_FN] : root_nodes) {
-      DRAKE_DEMAND(n >= 0 && n < node_count);
-      if (strip) {
-        nodes[n].erase("translation");
-        nodes[n].erase("position");
-        nodes[n].erase("scale");
-      }
-      nodes[n]["matrix"] = GltfMatrixFromEigenMatrix(T_WF * T_FN);
-    }
-  }
-}
-
 // TODO(SeanCurtis-TRI): This is a vague hack. It provides the right label
 // colors, but it leaves a great deal of cruft in the gltf: samplers, textures,
 // images, and, most importantly, data in the buffer. Ideally, label and depth
@@ -505,6 +438,57 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
       const Rgba color = RenderEngine::MakeRgbFromLabel(record.label);
       ChangeToLabelMaterials(&temp, color);
     }
+
+    // Compute T_WF: the transform from the glTF file frame F (y-up) into the
+    // world frame W, incorporating the current geometry pose X_WG, the
+    // geometry's anisotropic scale S_WG, and the y-up-to-z-up correction
+    // X_GF:
+    //
+    //   T_WF = X_WG * S_WG * X_GF,  so  T_WN = T_WF * T_FN.
+    //
+    // This consolidates what was previously computed per root node into a
+    // single matrix placed on the wrapper node.
+    Matrix4<double> T_WF = record.X_WG.GetAsMatrix4();
+    for (int i = 0; i < 3; ++i) {
+      T_WF.block<3, 1>(0, i) *= record.scale(i);
+    }
+    T_WF *=
+        math::RigidTransformd(math::RotationMatrixd::MakeXRotation(M_PI / 2))
+            .GetAsMatrix4();
+
+    // Build a wrapper node that:
+    //   (a) carries the SceneGraph geometry name, and
+    //   (b) carries the world-pose matrix T_WF, and
+    //   (c) parents all of the source glTF's root nodes as children.
+    // Each child root node retains its original file-frame transform T_FN, so
+    // the effective world transform for each descendant is T_WF * T_FN.
+    nlohmann::json wrapper;
+    wrapper["name"] = record.geometry_name;
+    wrapper["matrix"] = GltfMatrixFromEigenMatrix(T_WF);
+    nlohmann::json children_array = nlohmann::json::array();
+    for (const auto& [root_idx, unused] : record.root_nodes) {
+      children_array.push_back(root_idx);
+    }
+    wrapper["children"] = std::move(children_array);
+
+    // Add the wrapper to temp's nodes array and make it the sole root of the
+    // default scene. MergeGltf will then offset all node indices (including
+    // the wrapper's children list) to account for gltf's existing nodes.
+    if (!temp.contains("nodes")) {
+      temp["nodes"] = nlohmann::json::array();
+    }
+    const int wrapper_idx = ssize(temp["nodes"]);
+    temp["nodes"].push_back(std::move(wrapper));
+
+    const int scene_idx = temp.contains("scene") ? temp["scene"].get<int>() : 0;
+    if (!temp.contains("scenes")) {
+      temp["scenes"] = nlohmann::json::array();
+    }
+    while (ssize(temp["scenes"]) <= scene_idx) {
+      temp["scenes"].push_back(nlohmann::json::object());
+    }
+    temp["scenes"][scene_idx]["nodes"] = nlohmann::json::array({wrapper_idx});
+
     MergeGltf(&gltf, std::move(temp), record.name, &merge_record);
   }
 
@@ -529,9 +513,7 @@ void RenderEngineGltfClient::DoUpdateVisualPose(
     GeometryId id, const math::RigidTransformd& X_WG) {
   auto iter = gltfs_.find(id);
   if (iter != gltfs_.end()) {
-    GltfRecord& gltf = iter->second;
-    SetRootPoses(&gltf.contents, gltf.root_nodes, X_WG, gltf.scale,
-                 false /* strip */);
+    iter->second.X_WG = X_WG;
     return;
   }
   RenderEngineVtk::DoUpdateVisualPose(id, X_WG);
@@ -646,14 +628,18 @@ bool RenderEngineGltfClient::ImplementGltf(
   // of materials.
 
   std::map<int, Matrix4<double>> root_nodes = FindRootNodes(mesh_data);
-  SetRootPoses(&mesh_data, root_nodes, data.X_WG, mesh.scale3(), true);
 
   DRAKE_DEMAND(!gltfs_.contains(data.id));
   const MeshSource& mesh_source = mesh.source();
   const std::string gltf_name = mesh_source.description();
   gltfs_.insert({data.id,
-                 {gltf_name, std::move(mesh_data), std::move(root_nodes),
-                  mesh.scale3(), GetRenderLabelOrThrow(data.properties)}});
+                 {.name = gltf_name,
+                  .geometry_name = std::string(data.name),
+                  .contents = std::move(mesh_data),
+                  .root_nodes = std::move(root_nodes),
+                  .scale = mesh.scale3(),
+                  .X_WG = data.X_WG,
+                  .label = GetRenderLabelOrThrow(data.properties)}});
   return true;
 }
 

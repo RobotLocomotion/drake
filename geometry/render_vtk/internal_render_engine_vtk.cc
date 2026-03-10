@@ -324,11 +324,20 @@ void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
-bool RenderEngineVtk::DoRegisterVisual(GeometryId id, const Shape& shape,
-                                       const PerceptionProperties& properties,
-                                       const RigidTransformd& X_WG) {
+bool RenderEngineVtk::DoRegisterVisual(GeometryId, const Shape&,
+                                       const PerceptionProperties&,
+                                       const RigidTransformd&) {
+  throw std::runtime_error("RenderEngineVtk uses named visuals.");
+}
+
+bool RenderEngineVtk::DoRegisterNamedVisual(
+    GeometryId id, const Shape& shape, const PerceptionProperties& properties,
+    const RigidTransformd& X_WG, std::string_view name) {
   // Note: the user_data interface on reification requires a non-const pointer.
-  RegistrationData data{properties, X_WG, id};
+  RegistrationData data{.properties = properties,
+                        .X_WG = X_WG,
+                        .id = id,
+                        .name = std::string(name)};
   shape.Reify(this, &data);
   return data.accepted;
 }
@@ -606,6 +615,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       for (const auto& source_part : source_prop.parts) {
         vtkNew<vtkActor> target_actor;
         target_actor->ShallowCopy(source_part.actor);
+        target_actor->SetObjectName(source_part.actor->GetObjectName());
         vtkNew<vtkOpenGLPolyDataMapper> target_mapper;
         target_mapper->ShallowCopy(source_part.actor->GetMapper());
         target_actor->SetMapper(target_mapper);
@@ -1075,9 +1085,10 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
 
   // Adds the actor into the specified pipeline.
   PropArray props;
-  auto connect_actor = [this, &actors, &mappers, &props,
-                        &vtk_X_WG](ImageType image_type) {
+  auto connect_actor = [this, &actors, &mappers, &props, &vtk_X_WG,
+                        &data](ImageType image_type) {
     vtkSmartPointer<vtkActor>& actor = actors[image_type];
+    actor->SetObjectName(data.name);
     actor->SetMapper(mappers[image_type].Get());
     actor->SetUserTransform(vtk_X_WG);
     pipelines_[image_type]->renderer->AddActor(actor);
