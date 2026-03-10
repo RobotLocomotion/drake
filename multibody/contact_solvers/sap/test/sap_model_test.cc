@@ -101,10 +101,17 @@ class SpringConstraint final : public SapConstraint<T> {
  private:
   SpringConstraint(const SpringConstraint&) = default;
 
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const override {
     return std::unique_ptr<SpringConstraint<T>>(new SpringConstraint<T>(*this));
   }
-
   std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
     throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }
@@ -307,10 +314,17 @@ class DummyConstraint final : public SapConstraint<T> {
   }
 
  private:
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<DummyConstraint<T>>(new DummyConstraint<T>(*this));
   }
-
   std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
     throw std::runtime_error("DoToDouble() not used in these unit tests.");
   }

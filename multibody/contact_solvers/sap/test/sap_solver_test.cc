@@ -767,6 +767,14 @@ class LimitConstraint final : public SapConstraint<T> {
     Project(y, &gamma, G);
     (*G) *= R_.cwiseSqrt().asDiagonal();
   }
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<LimitConstraint<T>>(new LimitConstraint<T>(*this));
   }
@@ -1110,6 +1118,14 @@ class ConstantForceConstraint final : public SapConstraint<double> {
     // The cost is linear, therefore its Hessian is Zero.
     const int ne = num_constraint_equations();
     G->setZero(ne, ne);
+  }
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorXd>&,
+                                       EigenPtr<VectorXd>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorXd>&,
+                                   SpatialForce<double>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
   }
   std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::unique_ptr<ConstantForceConstraint>(

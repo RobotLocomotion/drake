@@ -120,6 +120,9 @@ class SapHolonomicConstraintData {
    Unconstrained Convex Formulation of Compliant Contact. Available at
    https://arxiv.org/abs/2110.10107
 
+ This is an abstract base class. Specific concrete constraints should inherit
+ from it.
+
  @tparam_nonsymbolic_scalar */
 template <typename T>
 class SapHolonomicConstraint : public SapConstraint<T> {
@@ -246,7 +249,8 @@ class SapHolonomicConstraint : public SapConstraint<T> {
   SapHolonomicConstraint(const SapHolonomicConstraint&) = default;
 
  private:
-  /* Implementations of SapConstraint NVI functions. */
+  /* Implementations of some SapConstraint NVI functions. Subclasses should
+  implement the remaining NVI functions. */
   std::unique_ptr<AbstractValue> DoMakeData(
       const T& time_step,
       const Eigen::Ref<const VectorX<T>>& delassus_estimation) const final;
@@ -257,11 +261,6 @@ class SapHolonomicConstraint : public SapConstraint<T> {
                      EigenPtr<VectorX<T>> gamma) const final;
   void DoCalcCostHessian(const AbstractValue& abstract_data,
                          MatrixX<T>* G) const final;
-  std::unique_ptr<SapConstraint<T>> DoClone() const override {
-    return std::unique_ptr<SapHolonomicConstraint<T>>(
-        new SapHolonomicConstraint<T>(*this));
-  }
-  std::unique_ptr<SapConstraint<double>> DoToDouble() const override;
 
   VectorX<T> g_;
   VectorX<T> bias_;
