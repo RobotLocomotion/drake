@@ -68,6 +68,7 @@
 // #include "drake/common/string_unordered_set.h"
 // #include "drake/common/temp_directory.h"
 // #include "drake/common/text_logging.h"
+// #include "drake/common/text_logging_level.h"
 // #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
 // #include "drake/common/type_safe_index.h"
@@ -3169,6 +3170,16 @@ R"""((Advanced) Retrieves the default sink for all Drake logs. This allows
 consumers of Drake to redirect Drake's text logs to locations other
 than the default of stderr.)""";
       } get_dist_sink;
+      // Symbol: drake::logging::level
+      struct /* level */ {
+      } level;
+      // Symbol: drake::logging::level_enum
+      struct /* level_enum */ {
+        // Source: drake/common/text_logging_level.h
+        const char* doc =
+R"""(An enumeration of log severity levels. Specfic values are named like
+drake∷logging∷level∷info, etc.)""";
+      } level_enum;
       // Symbol: drake::logging::logger
       struct /* logger */ {
         // Source: drake/common/text_logging.h

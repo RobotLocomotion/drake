@@ -47,6 +47,7 @@ Drake's linter.) */
 #include <string>
 
 #include "drake/common/fmt.h"
+#include "drake/common/text_logging_level.h"
 
 #ifndef DRAKE_DOXYGEN_CXX
 #ifdef HAVE_SPDLOG
@@ -63,7 +64,8 @@ Drake's linter.) */
     /* variable name to avoid potential variable name shadowing warnings. */ \
     ::drake::logging::logger* const drake_spdlog_macro_logger_alias =        \
         ::drake::log();                                                      \
-    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::trace) {  \
+    if (drake_spdlog_macro_logger_alias->level() <=                          \
+        ::drake::logging::level::trace) {                                    \
       SPDLOG_LOGGER_TRACE(drake_spdlog_macro_logger_alias, __VA_ARGS__);     \
     }                                                                        \
   } while (0)
@@ -73,7 +75,8 @@ Drake's linter.) */
     /* variable name to avoid potential variable name shadowing warnings. */ \
     ::drake::logging::logger* const drake_spdlog_macro_logger_alias =        \
         ::drake::log();                                                      \
-    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::debug) {  \
+    if (drake_spdlog_macro_logger_alias->level() <=                          \
+        ::drake::logging::level::debug) {                                    \
       SPDLOG_LOGGER_DEBUG(drake_spdlog_macro_logger_alias, __VA_ARGS__);     \
     }                                                                        \
   } while (0)
