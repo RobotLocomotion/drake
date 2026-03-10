@@ -63,8 +63,8 @@ class MyVisitor : public SystemVisitor<T> {
     if (&diagram != root_) {
       diagram_stack_.push_back(current_->GetSystemIndexOrAbort(&diagram));
     }
-    current_ = &diagram;
     for (const auto* system : diagram.GetSystems()) {
+      current_ = &diagram;
       system->Accept(this);
     }
     if (!diagram_stack_.empty()) {
