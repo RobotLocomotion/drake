@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
@@ -14,97 +15,76 @@ namespace drake {
 namespace multibody {
 namespace {
 
-GTEST_TEST(SurfaceVelocityTest, BoxSurfaceVelocity) {
+using Eigen::Vector3d;
+using geometry::GeometryId;
+using geometry::internal::kSurfaceSpeed;
+using geometry::internal::kSurfaceVelocityGroup;
+using geometry::internal::kSurfaceVelocityNormal;
+
+// Simply exercises the MbP::GetSurfaceVelocity() API. Given arbitrary normal
+// directions, we'll confirm we get the expected surface velocity, based on
+// the registered geometry properties. Essentially, we're testing the property
+// look up and calculations. No contact logic is tested here.
+GTEST_TEST(MultibodyPlantTest, GetSurfaceVelocity) {
   constexpr double tol = 1e-5;
 
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
 
-  CoulombFriction<double> friction(0.5, 0.3);
+  const CoulombFriction<double> friction(0.5, 0.3);
 
-  // Create ground
-  geometry::GeometryId ground_id = plant.RegisterCollisionGeometry(
-      plant.world_body(),
-      geometry::HalfSpace::MakePose(Eigen::Vector3d::UnitY(),
-                                    Eigen::Vector3d::Zero()),
-      geometry::HalfSpace(), "floor", friction);
-
-  // Crate an thin, elongated box that ressembles a conveyor belt
+  // The "conveyor belt". We don't actually need a body or a geometry registered
+  // to it -- GetSurfaceVelocity() is provided the id and an inspector. However,
+  // we use a body and the MbP API to register the collision geometry for
+  // convenience.
   const RigidBody<double>& belt =
       plant.AddRigidBody("belt", SpatialInertia<double>::MakeUnitary());
-  const double belt_stiffness = 980;
-  const double belt_dissipation = 3.2;
-  const double surface_speed = 0.5;
-  const Eigen::Vector3d velocity_n(1.0, 0.0, 0.0);
 
   geometry::ProximityProperties belt_props;
-  belt_props.AddProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kFriction, friction);
-  belt_props.AddProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kPointStiffness, belt_stiffness);
-  belt_props.AddProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kHcDissipation, belt_dissipation);
-  belt_props.AddProperty(geometry::internal::kSurfaceVelocityGroup,
-                         geometry::internal::kSurfaceSpeed, surface_speed);
-  belt_props.AddProperty(geometry::internal::kSurfaceVelocityGroup,
-                         geometry::internal::kSurfaceVelocityNormal,
-                         velocity_n);
-  const double w = 3;
-  const double d = 0.5;
-  const double h = 0.1;
-  geometry::GeometryId belt_geom_id = plant.RegisterCollisionGeometry(
-      belt, math::RigidTransformd(Eigen::Vector3d(0., 0., 0.)),
-      geometry::Box(Eigen::Vector3d(w, d, h)), "belt_collision",
+  const double surface_speed = 0.5;
+  const Vector3d velocity_n_G(1.0, 0.0, 0.0);
+  belt_props.AddProperty(kSurfaceVelocityGroup, kSurfaceSpeed, surface_speed);
+  belt_props.AddProperty(kSurfaceVelocityGroup, kSurfaceVelocityNormal,
+                         velocity_n_G);
+
+  // Note: the actual *shape* doesn't matter. We just need something that can
+  // carry the surface velocity proximity properties.
+  const GeometryId belt_geom_id = plant.RegisterCollisionGeometry(
+      belt, math::RigidTransformd(), geometry::Sphere(1.0), "belt_collision",
       std::move(belt_props));
 
-  plant.Finalize();
-  std::unique_ptr<drake::systems::Context<double>> context =
-      plant.CreateDefaultContext();
-  auto diagram = builder.Build();
-
-  // Set pose of body (and read it again just to make sure this
-  // is doing what it is supposed to do).
+  // GetSurfaceVelocity() doesn't find the body pose for a geometry id, it is
+  // provided. So, we can simply provide an arbitrary pose, as long as n_G is
+  // consistent with X_WG, the results are meaningful.
   const double yaw = 0.78;
-  math::RigidTransformd body_pose(math::RollPitchYaw(0., 0., yaw),
-                                  Eigen::Vector3d(0., 0., 1.));
-  plant.SetFloatingBaseBodyPoseInWorldFrame(&(*context), belt, body_pose);
-  math::RigidTransformd pose = plant.GetFreeBodyPose(*context, belt);
+  math::RigidTransformd X_WG(math::RollPitchYaw(0.0, 0.0, yaw),
+                             Vector3d(0.0, 0.0, 1.0));
 
-  // Assume there are some contacts on each face of the conveyor belt.
-  // For ease of reading, these are expressed in coordinates of its body
-  // frame and later will be transformed to world coordinates
-  std::vector<Eigen::Vector3d> contacts_G = {
-      {w / 2, 0., 0.},    // Contact at +x face
-      {-w / 2, 0., 0.},   // Contact at -x face
-      {0., d / 2, 0.},    // Contact at +y face
-      {0., -d / 2, 0.},   // Contact at -y face
-      {0., 0., h / 2},    // Contact at +z face
-      {0., 0., -h / 2}};  // Contact at -z face
+  // A normal and the expected surface velocity for that normal.
+  struct TestData {
+    Vector3d n_G;
+    Vector3d v_G_expect;
+  };
 
-  for (const Eigen::Vector3d& c_G : contacts_G) {
-    const Eigen::Vector3d c_W = pose * c_G;
-    Eigen::Vector3d surface_v = plant.GetSurfaceVelocity(
-        belt_geom_id, scene_graph.model_inspector(), pose, c_W);
+  // Produce multiple contact points: one in the middle of each face. Normals
+  // parallel with velocity_n_G (i.e., Gx) produce a zero surface velocity.
+  const std::vector<TestData> test_data{
+      {.n_G = Vector3d(1, 0, 0), .v_G_expect = Vector3d(0, 0, 0)},
+      {.n_G = Vector3d(-1, 0, 0), .v_G_expect = Vector3d(0, 0, 0)},
+      {.n_G = Vector3d(0, 1, 0), .v_G_expect = Vector3d(0, 0, surface_speed)},
+      {.n_G = Vector3d(0, -1, 0), .v_G_expect = Vector3d(0, 0, -surface_speed)},
+      {.n_G = Vector3d(0, 0, 1), .v_G_expect = Vector3d(0, -surface_speed, 0)},
+      {.n_G = Vector3d(0, 0, -1), .v_G_expect = Vector3d(0, surface_speed, 0)},
+  };
+  for (const auto& data : test_data) {
+    const Vector3d n_W = X_WG.rotation() * data.n_G;
+    const Vector3d v_ss_G = plant.GetSurfaceVelocity(
+        belt_geom_id, scene_graph.model_inspector(), X_WG, n_W);
 
-    // Verify the direction of surface velocity is equal to cross product
-    // between the surface normal at each contact point and the velocity
-    // normal vector
-    Eigen::Vector3d v_ref_W =
-        surface_speed *
-        (body_pose.rotation() * velocity_n.cross(c_G.normalized()));
-    Eigen::Vector3d v_ss_W = pose.rotation() * surface_v;
-    EXPECT_LT((v_ss_W - v_ref_W).norm(), tol);
-
-    // When the velocity normal and the surface normal vectors are parallel,
-    // their cross product is 0 meaning the surface velocity should be also
-    // very close to 0. This occurs in this case for a contact at the +x and -x
-    // faces because they are parallel to the velocity normal.
-    EXPECT_NEAR(v_ss_W.norm(), v_ref_W.norm() > 1e-3 ? surface_speed : 0., tol);
+    EXPECT_TRUE(CompareMatrices(v_ss_G, data.v_G_expect, tol))
+        << fmt::format("with n_G = [{}]", fmt_eigen(data.n_G.transpose()));
   }
-
-  (void)ground_id;
-  (void)belt_geom_id;
 }
 
 }  // namespace

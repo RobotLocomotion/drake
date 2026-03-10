@@ -1301,6 +1301,7 @@ drake_cc_googletest(
     srcs = ["test/surface_velocity_test.cc"],
     deps = [
         ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
