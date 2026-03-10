@@ -104,6 +104,10 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
     return registered_geometries_.contains(id);
   }
 
+  /* The names registered on each registered id; every registered id will have
+   an entry, but it may be the empty string. */
+  const std::map<GeometryId, std::string>& names() const { return names_; }
+
   // These six functions (and supporting members) facilitate testing while there
   // are two APIs for specifying the camera for rendering images. They should
   // go away when the legacy "simple" intrinsics are removed.
@@ -156,14 +160,24 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
   using RenderEngine::MakeRgbFromLabel;
 
  protected:
+  bool DoRegisterVisual(GeometryId id, const Shape&,
+                        const PerceptionProperties& properties,
+                        const math::RigidTransformd& X_WG) {
+    throw std::runtime_error(
+        "DoRegisterNamedVisual is implemented instead; this should never get "
+        "invoked.");
+  }
+
   /* Dummy implementation that registers the given `shape` if the `properties`
    contains the "in_test" group or the render engine has been forced to accept
    all geometries (via set_force_accept()). (Also counts the number of
    successfully registered shape over the lifespan of `this` instance.) */
-  bool DoRegisterVisual(GeometryId id, const Shape&,
-                        const PerceptionProperties& properties,
-                        const math::RigidTransformd& X_WG) override {
+  bool DoRegisterNamedVisual(GeometryId id, const Shape&,
+                             const PerceptionProperties& properties,
+                             const math::RigidTransformd& X_WG,
+                             std::string_view name) override {
     X_WGs_[id] = X_WG;
+    names_[id] = std::string(name);
     GetRenderLabelOrThrow(properties);
     if (force_accept_ || properties.HasGroup(include_group_name_)) {
       registered_geometries_.insert(id);
@@ -254,6 +268,9 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
   bool force_accept_{};
 
   std::unordered_set<GeometryId> registered_geometries_;
+
+  // The names associated with the geometries.
+  std::map<GeometryId, std::string> names_;
 
   // The current poses of the geometries in the world frame.
   std::map<GeometryId, math::RigidTransformd> X_WGs_;
