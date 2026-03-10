@@ -112,6 +112,7 @@ drake_cc_library(
         "eigen_types.h",
         "never_destroyed.h",
         "text_logging.h",
+        "text_logging_level.h",
         # Remove with deprecation on 2026-09-01.
         "ssize.h",
     ],
@@ -1278,6 +1279,7 @@ drake_cc_googletest(
         "test/text_logging_test.cc",
         "text_logging.cc",
         "text_logging.h",
+        "text_logging_level.h",
     ],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
@@ -1298,6 +1300,7 @@ drake_cc_googletest(
         "test/text_logging_ostream_test.cc",
         "text_logging.cc",
         "text_logging.h",
+        "text_logging_level.h",
     ],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
