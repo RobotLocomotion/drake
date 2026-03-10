@@ -68,6 +68,7 @@
 // #include "drake/common/string_unordered_set.h"
 // #include "drake/common/temp_directory.h"
 // #include "drake/common/text_logging.h"
+// #include "drake/common/text_logging_impl_spdlog.h"
 // #include "drake/common/text_logging_level.h"
 // #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
@@ -3107,7 +3108,8 @@ certain absolute elementwise ``tolerance``. Special values
     struct /* log */ {
       // Source: drake/common/text_logging.h
       const char* doc =
-R"""(Retrieve an instance of a logger to use for logging; for example:
+R"""(Retrieve Drake's singleton instance of the ``class logger``; for
+example:
 
 
 .. raw:: html
@@ -3177,36 +3179,162 @@ than the default of stderr.)""";
       struct /* level_enum */ {
         // Source: drake/common/text_logging_level.h
         const char* doc =
-R"""(An enumeration of log severity levels. Specfic values are named like
-drake∷logging∷level∷info, etc.)""";
+R"""(The severity level associated with a log message.)""";
+        // Symbol: drake::logging::level_enum::critical
+        struct /* critical */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } critical;
+        // Symbol: drake::logging::level_enum::debug
+        struct /* debug */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } debug;
+        // Symbol: drake::logging::level_enum::err
+        struct /* err */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } err;
+        // Symbol: drake::logging::level_enum::info
+        struct /* info */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } info;
+        // Symbol: drake::logging::level_enum::off
+        struct /* off */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } off;
+        // Symbol: drake::logging::level_enum::trace
+        struct /* trace */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } trace;
+        // Symbol: drake::logging::level_enum::warn
+        struct /* warn */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } warn;
       } level_enum;
       // Symbol: drake::logging::logger
       struct /* logger */ {
         // Source: drake/common/text_logging.h
         const char* doc =
-R"""(The drake∷logging∷logger class provides text logging methods. See the
-text_logging.h documentation for a short tutorial.)""";
+R"""(The singleton class returned by Drake's drake∷log() function, offering
+functions to emit log messages. Refer to the file overview for
+details.)""";
+        // Symbol: drake::logging::logger::critical
+        struct /* critical */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``critical`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``critival`` severity.)""";
+        } critical;
+        // Symbol: drake::logging::logger::debug
+        struct /* debug */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``debug`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``debug`` severity.)""";
+        } debug;
+        // Symbol: drake::logging::logger::error
+        struct /* error */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``error`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``error`` severity.)""";
+        } error;
+        // Symbol: drake::logging::logger::info
+        struct /* info */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``info`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``info`` severity.)""";
+        } info;
+        // Symbol: drake::logging::logger::level
+        struct /* level */ {
+          // Source: drake/common/text_logging.h
+          const char* doc = R"""(Returns the current log level.)""";
+        } level;
+        // Symbol: drake::logging::logger::log
+        struct /* log */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_3args =
+R"""(Logs a formatted message at the given ``severity``.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a string at the given ``severity``.)""";
+        } log;
+        // Symbol: drake::logging::logger::logger
+        struct /* ctor */ {
+          // Source: drake/common/text_logging.h
+          const char* doc = R"""()""";
+        } ctor;
+        // Symbol: drake::logging::logger::set_level
+        struct /* set_level */ {
+          // Source: drake/common/text_logging.h
+          const char* doc = R"""(Sets the currently log level.)""";
+        } set_level;
+        // Symbol: drake::logging::logger::set_pattern
+        struct /* set_pattern */ {
+          // Source: drake/common/text_logging.h
+          const char* doc =
+R"""(Invokes ``spdlog∷logger∷set_pattern(pattern)``. This has no effect
+unless spdlog is enabled.
+
+Parameter ``pattern``:
+    Formatting for message. For more information, see:
+    https://github.com/gabime/spdlog/wiki/3.-Custom-formatting)""";
+        } set_pattern;
+        // Symbol: drake::logging::logger::should_log
+        struct /* should_log */ {
+          // Source: drake/common/text_logging.h
+          const char* doc =
+R"""(Returns true iff the current level() threshold meets the given
+``severity``.)""";
+        } should_log;
+        // Symbol: drake::logging::logger::trace
+        struct /* trace */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``trace`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``trace`` severity.)""";
+        } trace;
+        // Symbol: drake::logging::logger::warn
+        struct /* warn */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``warn`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``warn`` severity.)""";
+        } warn;
       } logger;
       // Symbol: drake::logging::set_log_level
       struct /* set_log_level */ {
         // Source: drake/common/text_logging.h
         const char* doc =
-R"""(Sets the log threshold used by Drake's C++ code.
+R"""(Sets the log threshold used by Drake's C++ code. This has no effect
+unless spdlog is enabled.
 
 Parameter ``level``:
-    Must be a string from spdlog enumerations: ``trace``, `debug`,
+    Must be a string from level enumeration: ``trace``, `debug`,
     ``info``, `warn`, ``err``, `critical`, ``off``, or ``unchanged``
     (not an enum, but useful for command-line).
 
 Returns:
-    The string value of the previous log level. If SPDLOG is disabled,
-    then this returns an empty string.)""";
+    The string value of the previous log level.)""";
       } set_log_level;
       // Symbol: drake::logging::set_log_pattern
       struct /* set_log_pattern */ {
         // Source: drake/common/text_logging.h
         const char* doc =
-R"""(Invokes ``drake∷log()->set_pattern(pattern)``.
+R"""(Invokes ``drake∷log()->set_pattern(pattern)``. This has no effect
+unless spdlog is enabled.
 
 Parameter ``pattern``:
     Formatting for message. For more information, see:

@@ -101,7 +101,14 @@ drake_cc_library(
         "drake_assert.cc",
         "drake_deprecated.cc",
         "text_logging.cc",
-    ],
+    ] + select({
+        "//tools/workspace/spdlog:flag_spdlog_repo_disabled": [
+            "text_logging_impl_none.cc",
+        ],
+        "//conditions:default": [
+            "text_logging_impl_spdlog.cc",
+        ],
+    }),
     hdrs = [
         "constants.h",
         "drake_assert.h",
@@ -112,6 +119,7 @@ drake_cc_library(
         "eigen_types.h",
         "never_destroyed.h",
         "text_logging.h",
+        "text_logging_impl_spdlog.h",
         "text_logging_level.h",
         # Remove with deprecation on 2026-09-01.
         "ssize.h",
@@ -1279,6 +1287,7 @@ drake_cc_googletest(
         "test/text_logging_test.cc",
         "text_logging.cc",
         "text_logging.h",
+        "text_logging_impl_none.cc",
         "text_logging_level.h",
     ],
     defines = [
@@ -1300,6 +1309,7 @@ drake_cc_googletest(
         "test/text_logging_ostream_test.cc",
         "text_logging.cc",
         "text_logging.h",
+        "text_logging_impl_none.cc",
         "text_logging_level.h",
     ],
     defines = [
@@ -1394,5 +1404,8 @@ add_lint_tests(
         "nice_type_name.h",
         "nice_type_name_override.cc",
         "nice_type_name_override.h",
+        "text_logging_impl_none.cc",
+        "text_logging_impl_spdlog.cc",
+        "text_logging_impl_spdlog.h",
     ],
 )
