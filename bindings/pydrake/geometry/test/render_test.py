@@ -286,6 +286,9 @@ class TestGeometryRender(unittest.TestCase):
                 DummyRenderEngine.latest_instance = self
 
             def DoRegisterVisual(self, id, shape, properties, X_WG):
+                raise RuntimeError("DummyRenderEngine registers named visuals")
+
+            def DoRegisterNamedVisual(self, id, shape, properties, X_WG, name):
                 DummyRenderEngine.latest_instance = self
                 mut.GetRenderLabelOrThrow(properties)
                 if self.force_accept or properties.HasGroup(

@@ -1939,9 +1939,10 @@ class ChangeShapeRenderEngine : public DummyRenderEngine {
   }
 
  protected:
-  bool DoRegisterVisual(GeometryId id, const Shape&,
-                        const PerceptionProperties&,
-                        const math::RigidTransformd&) override {
+  bool DoRegisterNamedVisual(GeometryId id, const Shape&,
+                             const PerceptionProperties&,
+                             const math::RigidTransformd&,
+                             std::string_view) override {
     registered_id_ = id;
     return true;
   }

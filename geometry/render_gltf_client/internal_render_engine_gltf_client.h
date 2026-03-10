@@ -12,6 +12,7 @@
 #include "drake/geometry/render_gltf_client/internal_merge_gltf.h"
 #include "drake/geometry/render_gltf_client/internal_render_client.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -120,15 +121,22 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
     //   If the glTF came from disk, it will be the file path, otherwise the
     //   filename hint associated with the in-memory mesh.
     std::string name;
-    // The contents of a glTF file registered as Mesh or Convex.
+    // The SceneGraph geometry name (from RegistrationData::name). Used as the
+    // name of the wrapper root node injected during ExportScene().
+    std::string geometry_name;
+    // The contents of the glTF file in its original, unposed form. Root nodes
+    // retain their file-frame transforms T_FN; world posing is deferred to
+    // ExportScene() via the wrapper node.
     nlohmann::json contents;
     // The root nodes of the gltf file represented as a mapping from the node's
-    // *local* index in the gltf to the pose of that node relative to the
+    // *local* index in the gltf to the original transform of that node in the
     // file's frame F. Note this "pose" is not necessarily a RigidTransform. It
     // can include scale. It is the node matrix stored in the gltf.
     std::map<int, Matrix4<double>> root_nodes;
     // The anisotropic scale of the mesh.
     Vector3<double> scale = Vector3<double>::Ones();
+    // The current world pose of the geometry, updated by DoUpdateVisualPose().
+    math::RigidTransformd X_WG;
     // The render label associated with the geometry.
     render::RenderLabel label;
   };

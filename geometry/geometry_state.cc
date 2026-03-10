@@ -1604,7 +1604,8 @@ void GeometryState<T>::AddRenderer(
         } else {
           accepted |= render_engine->RegisterVisual(
               id, geometry.shape(), *properties,
-              RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
+              RigidTransformd(geometry.X_FG()), geometry.is_dynamic(),
+              geometry.name());
         }
       }
     }
@@ -2148,7 +2149,7 @@ bool GeometryState<T>::AddRigidToCompatibleRenderersUnchecked(
   for (auto& engine : *candidate_renderers) {
     added_to_renderer =
         engine->RegisterVisual(geometry.id(), geometry.shape(), properties,
-                               X_WG, geometry.is_dynamic()) ||
+                               X_WG, geometry.is_dynamic(), geometry.name()) ||
         added_to_renderer;
   }
   return added_to_renderer;
