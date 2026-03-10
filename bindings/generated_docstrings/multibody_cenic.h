@@ -96,10 +96,8 @@ https://arxiv.org/abs/2511.08771.)""";
 R"""(Constructs the integrator.
 
 Parameter ``system``:
-    The overall system diagram to simulate. Must include a
-    MultibodyPlant and associated SceneGraph, with the plant found as
-    a direct child of the ``system`` diagram using the subsystem name
-    ``"plant"``. The plant must be a continuous-time plant. This
+    The overall system diagram to simulate. Must include exactly one
+    continuous-time MultibodyPlant and associated SceneGraph. This
     system is aliased by this object so must remain alive longer than
     the integrator.
 

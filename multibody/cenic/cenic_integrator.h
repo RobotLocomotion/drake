@@ -14,6 +14,23 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
+/* A sequence of subsystem indices that allows finding an arbitrary
+ * nested-diagram asset from the root. */
+using SubsystemPath = std::vector<systems::SubsystemIndex>;
+
+/* Facts of nested diagram structure used at run-time by CenicIntegrator. */
+template <typename T>
+struct DiagramStructureFacts {
+  /* The plant used as the basis of the convex optimization problem. */
+  const MultibodyPlant<T>* plant{};
+  /* The path to the plant from the root diagram. */
+  SubsystemPath plant_path;
+  /* Paths to subsystems, other than the targeted plant, that have continuous
+  state. */
+  std::vector<SubsystemPath> non_plant_xc_paths;
+};
+}  // namespace internal
 
 /** Convex Error-controlled Numerical Integration for Contact (CENIC) is a
 specialized error-controlled implicit integrator for contact-rich robotics
@@ -89,12 +106,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   static constexpr double kDefaultAccuracy = 1e-3;
 
   /** Constructs the integrator.
-  @param system The overall system diagram to simulate. Must include a
-                MultibodyPlant and associated SceneGraph, with the plant
-                found as a direct child of the `system` diagram using the
-                subsystem name `"plant"`. The plant must be a continuous-time
-                plant. This system is aliased by this object so must remain
-                alive longer than the integrator.
+  @param system The overall system diagram to simulate. Must include exactly one
+                continuous-time MultibodyPlant and associated SceneGraph. This
+                system is aliased by this object so must remain alive longer
+                than the integrator.
   @param context context for the overall system.  */
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
@@ -188,12 +203,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
+  /* Locations of plant and non-plant continuous state. */
+  const internal::DiagramStructureFacts<T> structure_;
   /* The plant used as the basis of the convex optimization problem. */
   const MultibodyPlant<T>& plant_;
-  const systems::SubsystemIndex plant_subsystem_index_;
-  /* Which subsystems in our Diagram have continuous state other than the
-  plant. */
-  const std::vector<int> non_plant_xc_subsystem_indices_;
 
   /* Helper class that linearizes torques dτ/dv from plant input ports. */
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>
