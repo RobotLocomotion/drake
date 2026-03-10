@@ -472,7 +472,7 @@ void LogConstraintViolations(const MathematicalProgram& prog,
       fmt::join(infeasible_constraint_names, ", "));
 
   // Debugging information for all constraints.
-  if (log()->should_log(spdlog::level::debug)) {
+  if (log()->should_log(logging::level::debug)) {
     for (const auto& binding : prog.GetAllConstraints()) {
       const auto& constraint = binding.evaluator();
 
