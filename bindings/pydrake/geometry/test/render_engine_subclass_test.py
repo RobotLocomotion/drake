@@ -25,13 +25,36 @@ class TestRenderEngineSubclass(unittest.TestCase):
         that don't override DoRender*Image. This test confirms that behavior
         propagates down to Python."""
 
-        class MinimalEngine(mut.RenderEngine):
-            """Minimal implementation of the RenderEngine virtual API"""
+        class LegacyEngine(mut.RenderEngine):
+            """Minimal implementation of the RenderEngine virtual API which
+            only implements DoRegisterVisual (no name)."""
 
             def UpdateViewpoint(self, X_WC):
                 pass
 
             def DoRegisterVisual(self, id, shape, properties, X_WG):
+                pass
+
+            def DoUpdateVisualPose(self, id, X_WG):
+                pass
+
+            def DoRemoveGeometry(self, id):
+                pass
+
+            def __deepcopy__(self, memo):
+                return type(self)()
+
+        class MinimalEngine(mut.RenderEngine):
+            """(Almost) Minimal implementation of the RenderEngine virtual API.
+            This implements the named-visual API instead."""
+
+            def UpdateViewpoint(self, X_WC):
+                pass
+
+            def DoRegisterVisual(self, id, shape, properties, X_WG):
+                raise RuntimeError("Minimal engine uses the name API")
+
+            def DoRegisterNamedVisual(self, id, shape, properties, X_WG, name):
                 pass
 
             def DoUpdateVisualPose(self, id, X_WG):
@@ -72,6 +95,19 @@ class TestRenderEngineSubclass(unittest.TestCase):
         depth_image = ImageDepth32F(intrinsics.width(), intrinsics.height())
         label_image = ImageLabel16I(intrinsics.width(), intrinsics.height())
 
+        legacy_engine = LegacyEngine()
+        props = mut.PerceptionProperties()
+        props.AddProperty("label", "id", mut.RenderLabel(1))
+        # Passing a name causes no problems.
+        legacy_engine.RegisterVisual(
+            id=mut.GeometryId.get_new_id(),
+            shape=mut.Sphere(1.0),
+            properties=props,
+            X_WG=RigidTransform.Identity(),
+            needs_updates=False,
+            name="ignored",
+        )
+
         color_only = ColorOnlyEngine()
         color_only.RenderColorImage(color_cam, color_image)
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
@@ -79,6 +115,15 @@ class TestRenderEngineSubclass(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
             color_only.RenderLabelImage(color_cam, label_image)
         self.assertIsInstance(color_only.Clone(), ColorOnlyEngine)
+        # Passing a name won't tickle the throw in DoRegisterVisual().
+        color_only.RegisterVisual(
+            id=mut.GeometryId.get_new_id(),
+            shape=mut.Sphere(1.0),
+            properties=props,
+            X_WG=RigidTransform.Identity(),
+            needs_updates=False,
+            name="foo",
+        )
 
         depth_only = DepthOnlyEngine()
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):

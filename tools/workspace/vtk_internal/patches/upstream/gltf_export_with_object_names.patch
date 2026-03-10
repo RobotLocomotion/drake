@@ -1,0 +1,27 @@
+By default, when exporting meshes/nodes to glTF files, VTK simply enumerates the
+meshes in order and assigns the same generic name to mesh and corresponding
+node. This changes the behavior so that *if* the actor has a non-empty object
+name assigned, that object name will be used instead.
+
+--- IO/Export/vtkGLTFExporter.cxx
++++ IO/Export/vtkGLTFExporter.cxx
+@@ -320,7 +320,18 @@ void WriteMesh(nlohmann::json& accessors, nlohmann::json& buffers, nlohmann::jso
+   }
+ 
+   nlohmann::json amesh;
+-  std::string meshName = "mesh" + vtk::to_string(meshes.size());
++  auto make_mesh_name = [&meshes](vtkActor* aPart) {
++    if (aPart->GetObjectName().empty())
++    {
++      return "mesh" + vtk::to_string(meshes.size());
++    }
++    else
++    {
++      return aPart->GetObjectName();
++    }
++  };
++  
++  std::string meshName = make_mesh_name(aPart);
+   amesh["name"] = meshName;
+   amesh["primitives"] = prims;
+   meshes.emplace_back(amesh);
