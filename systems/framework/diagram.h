@@ -108,6 +108,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// Returns the list of contained Systems.
   std::vector<const systems::System<T>*> GetSystems() const;
 
+  /// Returns a System by index.
+  /// @pre index is valid for this Diagram.
+  const systems::System<T>& get_system(SubsystemIndex index) const;
+
   /// Implements a visitor pattern.  @see SystemVisitor<T>.
   void Accept(SystemVisitor<T>* v) const final;
 
