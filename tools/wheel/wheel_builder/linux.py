@@ -49,18 +49,6 @@ targets = {
     "x86_64": (
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            test_platform=Platform("ubuntu", "22.04", "jammy"),
-            python_version_tuple=(3, 10, 16),
-            python_sha="bfb249609990220491a1b92850a07135ed0831e41738cf681d63cf01b2a8fbd1",  # noqa
-        ),
-        Target(
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            test_platform=Platform("ubuntu", "22.04", "jammy"),
-            python_version_tuple=(3, 11, 11),
-            python_sha="2a9920c7a0cd236de33644ed980a13cbbc21058bfdc528febb6081575ed73be3",  # noqa
-        ),
-        Target(
-            build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
             test_platform=Platform("ubuntu", "24.04", "noble"),
             python_version_tuple=(3, 12, 8),
             python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
