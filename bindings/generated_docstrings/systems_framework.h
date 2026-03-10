@@ -3766,6 +3766,15 @@ R"""(Returns a reference to the map of connections between Systems.)""";
 R"""(Returns the "locator" for the subsystem output port that was exported
 as the ``port_index`` output port for the Diagram.)""";
         } get_output_port_locator;
+        // Symbol: drake::systems::Diagram::get_system
+        struct /* get_system */ {
+          // Source: drake/systems/framework/diagram.h
+          const char* doc =
+R"""(Returns a System by index.
+
+Precondition:
+    index is valid for this Diagram.)""";
+        } get_system;
       } Diagram;
       // Symbol: drake::systems::DiagramBuilder
       struct /* DiagramBuilder */ {

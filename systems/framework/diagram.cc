@@ -33,6 +33,12 @@ std::vector<const systems::System<T>*> Diagram<T>::GetSystems() const {
 }
 
 template <typename T>
+const systems::System<T>& Diagram<T>::get_system(SubsystemIndex index) const {
+  DRAKE_DEMAND(index >= 0 && index < ssize(registered_systems_));
+  return *registered_systems_[index];
+}
+
+template <typename T>
 void Diagram<T>::Accept(SystemVisitor<T>* v) const {
   DRAKE_DEMAND(v != nullptr);
   v->VisitDiagram(*this);
