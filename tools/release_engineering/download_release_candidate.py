@@ -126,18 +126,14 @@ def _download_binaries(*, version):
     binaries = {
         "https://drake-packages.csail.mit.edu/drake/staging": [
             # Wheel filenames.
-            f"drake-{version[1:]}-cp310-cp310-manylinux_2_34_x86_64.whl",
-            f"drake-{version[1:]}-cp311-cp311-manylinux_2_34_x86_64.whl",
             f"drake-{version[1:]}-cp312-cp312-manylinux_2_34_x86_64.whl",
             f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_x86_64.whl",
             f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_x86_64.whl",
             f"drake-{version[1:]}-cp313-cp313-macosx_15_0_arm64.whl",
             f"drake-{version[1:]}-cp314-cp314-macosx_15_0_arm64.whl",
             # Deb filenames.
-            f"drake-dev_{version[1:]}-1_amd64-jammy.deb",
             f"drake-dev_{version[1:]}-1_amd64-noble.deb",
             # Tarball filenames.
-            f"drake-{version[1:]}-jammy.tar.gz",
             f"drake-{version[1:]}-noble.tar.gz",
             f"drake-{version[1:]}-mac-arm64.tar.gz",
         ],
