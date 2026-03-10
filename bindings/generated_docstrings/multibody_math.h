@@ -1552,6 +1552,13 @@ equal to V_MBo_E.Shift(p_BoBc_E).
 See also:
     Shift(), ShiftInPlace(), and ComposeWithMovingFrameVelocity().)""";
       } operator_sub;
+      // Symbol: drake::multibody::to_string
+      struct /* to_string */ {
+        // Source: drake/multibody/math/spatial_vector.h
+        const char* doc =
+R"""(Returns string representation of a SpatialVector. Especially useful
+for debugging.)""";
+      } to_string;
     } multibody;
   } drake;
 } pydrake_doc_multibody_math;
