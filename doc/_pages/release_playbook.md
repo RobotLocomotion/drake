@@ -246,31 +246,12 @@ the email address associated with your github account.
       ```
       %%bash
       set -euo pipefail
-      # We need to upgrade libc and libstdc++ to Drake's minimum versions, because the
-      # base of Deepnote's Docker image is ANCIENT (Debian 11 Bullseye from 2021 OMG).
-      # This should be exciting ...
-      cat > /etc/apt/sources.list.d/bookworm.sources <<'EOF'
-      Types: deb
-      URIs: http://deb.debian.org/debian/
-      Suites: bookworm
-      Components: main
-      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-      EOF
-      cat > /etc/apt/preferences.d/bookworm.pref <<'EOF'
-      Package: *
-      Pin: release n=bookworm
-      Pin-Priority: 1
-      EOF
       apt-get -q update
-      apt-get autoremove -y
-      apt-get -q install -t bookworm -y --no-install-recommends libc6 libc6-dev libstdc++6 libstdc++-10-dev
 
       # Rendering needs EGL.
-      # The bullseye version is satisfactory.
       apt-get install -y --no-install-recommends libegl1 libgl1-mesa-dri
 
       # We'll also need nginx installed (for websocket proxying).
-      # The bullseye version is satisfactory.
       apt-get -q install -y --no-install-recommends nginx-light
       rm -f /etc/nginx/sites-enabled/default
       cat > /etc/nginx/sites-available/deepnote-meshcat-proxy <<'EOF'
