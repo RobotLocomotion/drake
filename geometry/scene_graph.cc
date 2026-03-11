@@ -1,6 +1,7 @@
 #include "drake/geometry/scene_graph.h"
 
 #include <algorithm>
+#include <mutex>
 #include <string>
 #include <utility>
 

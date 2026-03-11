@@ -97,11 +97,9 @@ GTEST_TEST(TextLoggingTest, CaptureOutputTest) {
 GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   int tracearg = 0, debugarg = 0;
 
-// Shouldn't increment argument whether the macro expanded or not, since
-// logging is off.
-#if TEXT_LOGGING_TEST_SPDLOG
+  // Shouldn't increment argument whether the macro expanded or not, since
+  // logging is off.
   drake::log()->set_level(drake::logging::level::off);
-#endif
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
   EXPECT_EQ(tracearg, 0);
@@ -109,10 +107,8 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   tracearg = 0;
   debugarg = 0;
 
-// Should increment arg only if the macro expanded.
-#if TEXT_LOGGING_TEST_SPDLOG
+  // Should increment arg only if the macro expanded.
   drake::log()->set_level(drake::logging::level::trace);
-#endif
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
 #ifndef NDEBUG
@@ -125,10 +121,8 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   tracearg = 0;
   debugarg = 0;
 
-// Only DEBUG should increment arg since trace is not enabled.
-#if TEXT_LOGGING_TEST_SPDLOG
+  // Only DEBUG should increment arg since trace is not enabled.
   drake::log()->set_level(drake::logging::level::debug);
-#endif
   DRAKE_LOGGER_TRACE("tracearg={}", ++tracearg);
   DRAKE_LOGGER_DEBUG("debugarg={}", ++debugarg);
 #ifndef NDEBUG
@@ -154,8 +148,9 @@ GTEST_TEST(TextLoggingTest, LogLevelEnum) {
 GTEST_TEST(TextLoggingTest, SetLogLevel) {
   using drake::logging::set_log_level;
 
-#if TEXT_LOGGING_TEST_SPDLOG
   EXPECT_THROW(set_log_level("bad"), std::runtime_error);
+
+#if TEXT_LOGGING_TEST_SPDLOG
   const std::vector<std::string> levels = {"trace", "debug",    "info", "warn",
                                            "err",   "critical", "off"};
   const std::string first_level = set_log_level("unchanged");
@@ -167,7 +162,7 @@ GTEST_TEST(TextLoggingTest, SetLogLevel) {
   }
   set_log_level(first_level);
 #else
-  ASSERT_EQ(drake::logging::set_log_level("anything really"), "");
+  ASSERT_EQ(drake::logging::set_log_level("unchanged"), "off");
 #endif
 }
 
