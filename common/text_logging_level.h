@@ -1,24 +1,12 @@
 #pragma once
 
-#ifdef HAVE_SPDLOG
-
-#include <spdlog/spdlog.h>
-
 namespace drake {
 namespace logging {
 
+// Ideally we would have named this just `enum class level`, but then the
+// logger::level() function would end up shadowing us.
 /** The severity level associated with a log message.
 Specfic values are named like drake::logging::level::info, etc. */
-using level_enum = spdlog::level::level_enum;
-
-}  // namespace logging
-}  // namespace drake
-
-#else  // HAVE_SPDLOG
-
-namespace drake {
-namespace logging {
-
 enum class level_enum {
   trace,
   debug,
@@ -29,13 +17,6 @@ enum class level_enum {
   off,
 };
 
-}  // namespace logging
-}  // namespace drake
-
-#endif  // HAVE_SPDLOG
-
-namespace drake {
-namespace logging {
 // We need to alias the values into a namespace, so that drake::logging::level
 // maintains backwards compatibility.
 namespace level {
