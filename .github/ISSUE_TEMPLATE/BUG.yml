@@ -32,8 +32,7 @@ body:
       multiple: true
       options:
         - Unknown / Other
-        - Ubuntu 22.04
-        - Ubuntu 24.04
+        - Ubuntu 24.04 (Noble)
         - macOS 15 (Sequoia)
         - macOS 26 (Tahoe)
         - Other
