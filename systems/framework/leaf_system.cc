@@ -1,5 +1,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
+#include <unistd.h>
+
 #include <cmath>
 #include <limits>
 
@@ -19,7 +21,12 @@ template <typename T>
 T GetNextSampleTime(const PeriodicEventData& attribute,
                     const T& current_time_sec) {
   const double period = attribute.period_sec();
-  DRAKE_ASSERT(period > 0);
+  if (period <= 0) {
+    fmt::print(stderr, "process {} sleeping for gdb!\n", ::getpid());
+    sleep(1000);
+  }
+
+  DRAKE_DEMAND(period > 0);
   const double offset = attribute.offset_sec();
   DRAKE_ASSERT(offset >= 0);
 
