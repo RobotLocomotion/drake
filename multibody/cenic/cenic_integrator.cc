@@ -14,7 +14,7 @@ using contact_solvers::icf::IcfSolverParameters;
 using contact_solvers::icf::internal::IcfBuilder;
 using contact_solvers::icf::internal::IcfLinearFeedbackGains;
 using contact_solvers::icf::internal::IcfModel;
-using internal::DiagramStructureFacts;
+using internal::CenicDiagramStructure;
 using internal::SubsystemPath;
 using systems::Context;
 using systems::ContinuousState;
@@ -40,7 +40,7 @@ class DiagramScanner : public SystemVisitor<T> {
   // Throws if: not a diagram;
   //            not exactly one conforming plant (continuous time, registered
   //            with SceneGraph).
-  static DiagramStructureFacts<T> ScanAndValidateDiagram(
+  static CenicDiagramStructure<T> ScanAndValidateDiagram(
       const System<T>& system) {
     const auto* const diagram = dynamic_cast<const Diagram<T>*>(&system);
     if (diagram == nullptr) {
@@ -122,7 +122,7 @@ class DiagramScanner : public SystemVisitor<T> {
   SubsystemPath current_path_;
 
   // Our work-in-progress result.
-  DiagramStructureFacts<T> structure_;
+  CenicDiagramStructure<T> structure_;
 };
 
 // The Get*ByPath functions below assume that their path parameters were
@@ -169,8 +169,7 @@ CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
     : IntegratorBase<T>(system, context),
       structure_(DiagramScanner<T>::ScanAndValidateDiagram(system)),
-      plant_(DRAKE_DEREF(structure_.plant)),
-      external_systems_linearizer_(&plant_) {
+      external_systems_linearizer_(structure_.plant) {
   this->set_target_accuracy(kDefaultAccuracy);
 }
 

@@ -16,12 +16,12 @@ namespace drake {
 namespace multibody {
 namespace internal {
 /* A sequence of subsystem indices that allows finding an arbitrary
- * nested-diagram asset from the root. */
+nested-diagram asset from the root. */
 using SubsystemPath = std::vector<systems::SubsystemIndex>;
 
 /* Facts of nested diagram structure used at run-time by CenicIntegrator. */
 template <typename T>
-struct DiagramStructureFacts {
+struct CenicDiagramStructure {
   /* The plant used as the basis of the convex optimization problem. */
   const MultibodyPlant<T>* plant{};
   /* The path to the plant from the root diagram. */
@@ -75,7 +75,7 @@ simple half-stepping strategy provides a second-order error estimate for
 automatic step-size selection.
 
 Because CENIC is specific to multibody systems, this integrator requires a
-system diagram with a `MultibodyPlant` subsystem named `"plant"`.
+system diagram with a `MultibodyPlant` subsystem.
 
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
@@ -108,7 +108,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   /** Constructs the integrator.
   @param system The overall system diagram to simulate. Must include exactly one
                 continuous-time MultibodyPlant and associated SceneGraph. This
-                system is aliased by this object so must remain alive longer
+                `system` is aliased by this object so must remain alive longer
                 than the integrator.
   @param context context for the overall system.  */
   explicit CenicIntegrator(const systems::System<T>& system,
@@ -118,7 +118,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   /** Gets a reference to the MultibodyPlant used to formulate the convex
   optimization problem. */
-  const MultibodyPlant<T>& plant() const { return plant_; }
+  const MultibodyPlant<T>& plant() const { return *structure_.plant; }
 
   /** Gets the current convex solver tolerances and iteration limits. */
   const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
@@ -203,10 +203,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  /* Locations of plant and non-plant continuous state. */
-  const internal::DiagramStructureFacts<T> structure_;
-  /* The plant used as the basis of the convex optimization problem. */
-  const MultibodyPlant<T>& plant_;
+  /* Locations of plant and non-plant continuous state. Note that the contained
+  `plant` pointer is guaranteed to be non-null by the CenicInegrator
+  constructor .*/
+  const internal::CenicDiagramStructure<T> structure_;
 
   /* Helper class that linearizes torques dτ/dv from plant input ports. */
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>
