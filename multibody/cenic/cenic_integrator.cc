@@ -1,9 +1,5 @@
 #include "drake/multibody/cenic/cenic_integrator.h"
 
-#include <algorithm>
-#include <limits>
-#include <utility>
-
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/system_visitor.h"
 
