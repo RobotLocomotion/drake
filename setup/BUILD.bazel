@@ -23,6 +23,12 @@ exports_files([
     "ubuntu/source_distribution/packages-noble-doc-only.txt",
     "ubuntu/source_distribution/packages-noble-maintainer-only.txt",
     "ubuntu/source_distribution/packages-noble-test-only.txt",
+    "ubuntu/binary_distribution/packages-resolute.txt",
+    "ubuntu/source_distribution/packages-resolute.txt",
+    "ubuntu/source_distribution/packages-resolute-clang.txt",
+    "ubuntu/source_distribution/packages-resolute-doc-only.txt",
+    "ubuntu/source_distribution/packages-resolute-maintainer-only.txt",
+    "ubuntu/source_distribution/packages-resolute-test-only.txt",
 ])
 
 install_files(
@@ -40,6 +46,7 @@ install_files(
             "ubuntu/binary_distribution/install_prereqs.sh",
             "ubuntu/binary_distribution/packages-jammy.txt",
             "ubuntu/binary_distribution/packages-noble.txt",
+            "ubuntu/binary_distribution/packages-resolute.txt",
         ],
         "//conditions:default": [],
     }),
