@@ -1,8 +1,8 @@
 # Per our style guide.
 line-length = 80
 
-# Per our oldest supported platform (currently Ubuntu 22.04 "Jammy").
-target-version = "py310"
+# Per our oldest supported platform (currently Ubuntu 24.04 "Noble").
+target-version = "py312"
 
 [lint]
 

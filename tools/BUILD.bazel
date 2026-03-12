@@ -64,4 +64,9 @@ config_setting(
     values = {"define": "UBUNTU_VERSION=24.04"},
 )
 
+config_setting(
+    name = "ubuntu_resolute",
+    values = {"define": "UBUNTU_VERSION=26.04"},
+)
+
 add_lint_tests()
