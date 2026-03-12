@@ -29,39 +29,74 @@ using systems::VectorBase;
 
 namespace {
 
-// Validate a diagram for CenicIntegrator, and to capture the structure details
-// needed at run-time. Don't access this directly; use the
-// ScanAndValidateDiagram() function below.
+// Validate a diagram for CenicIntegrator, and capture the structure details
+// needed at run-time.
 template <typename T>
 class DiagramScanner : public SystemVisitor<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramScanner);
+
+  // Validates a diagram for CenicIntegrator, and returns the structure facts.
+  // Throws if: not a diagram;
+  //            not exactly one conforming plant (continuous time, registered
+  //            with SceneGraph).
+  static DiagramStructureFacts<T> ScanAndValidateDiagram(
+      const System<T>& system) {
+    const auto* const diagram = dynamic_cast<const Diagram<T>*>(&system);
+    if (diagram == nullptr) {
+      throw std::logic_error(
+          fmt::format("CenicIntegrator must be given a Diagram, not a {}.",
+                      NiceTypeName::Get(system)));
+    }
+    DiagramScanner<T> visitor;
+    diagram->Accept(&visitor);
+    DRAKE_DEMAND(visitor.current_path_.empty());
+    if (visitor.structure_.plant == nullptr) {
+      throw std::logic_error(
+          "CenicIntegrator found zero conforming plants (continuous time, "
+          "registered with SceneGraph) in the diagram.");
+    }
+    return visitor.structure_;
+  }
+
+  void VisitDiagram(const Diagram<T>& diagram) override {
+    DRAKE_LOGGER_TRACE("depth {} visit diagram", ssize(current_path_));
+    current_path_.push_back(SubsystemIndex(0));
+    for (const auto* system : diagram.GetSystems()) {
+      system->Accept(this);
+      ++current_path_.back();
+    }
+    current_path_.pop_back();
+  }
+
+  void VisitSystem(const System<T>& system) override {
+    DRAKE_LOGGER_TRACE("depth {} visit system", ssize(current_path_));
+    // Our styleguide eschews using run-time type information (RTTI) for control
+    // flow. However, since CenicInegrator is strongly coupled to a specific
+    // class (MultibodyPlant) without any design intention to operate on any
+    // other class, using the case to find the plant needle in the diagram
+    // haystack if the best choice among the available options.
+    const auto* maybe_plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
+    if (maybe_plant != nullptr) {
+      VisitPlant(*maybe_plant);
+    } else {
+      VisitNonPlantLeafSystem(system);
+    }
+  }
+
+ private:
   DiagramScanner() = default;
   ~DiagramScanner() override = default;
 
-  void VisitSystem(const System<T>& system) override {
-    DRAKE_LOGGER_TRACE("depth {} visit system", ssize(diagram_stack_));
-    if (root_ == nullptr) {
-      throw std::logic_error("CenicIntegrator must be given a Diagram.");
-    }
-    SubsystemPath path = MakePath(system);
-    const auto* maybe_plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
-    if (maybe_plant == nullptr) {
-      if (system.num_continuous_states() > 0) {
-        DRAKE_LOGGER_TRACE("path {} is non plant continuous",
-                           fmt::join(path, ","));
-        structure_.non_plant_xc_paths.push_back(path);
-      }
-      return;
-    }
-    const MultibodyPlant<T>& plant{*maybe_plant};
+  void VisitPlant(const MultibodyPlant<T>& plant) {
     if (plant.is_discrete()) {
-      DRAKE_LOGGER_TRACE("path {} is discrete plant", fmt::join(path, ","));
+      DRAKE_LOGGER_TRACE("path {} is discrete plant",
+                         fmt::join(current_path_, ","));
       return;
     }
     if (!plant.geometry_source_is_registered()) {
       DRAKE_LOGGER_TRACE("path {} is non-scene-graph plant",
-                         fmt::join(path, ","));
+                         fmt::join(current_path_, ","));
       return;
     }
     if (structure_.plant != nullptr) {
@@ -69,64 +104,26 @@ class DiagramScanner : public SystemVisitor<T> {
           "CenicIntegrator found more than one conforming plant (continuous "
           "time, registered with SceneGraph) in the diagram.");
     }
-    DRAKE_LOGGER_TRACE("path {} is conforming plant", fmt::join(path, ","));
+    DRAKE_LOGGER_TRACE("path {} is conforming plant",
+                       fmt::join(current_path_, ","));
     structure_.plant = &plant;
-    structure_.plant_path = path;
+    structure_.plant_path = current_path_;
   }
 
-  void VisitDiagram(const Diagram<T>& diagram) override {
-    DRAKE_LOGGER_TRACE("depth {} visit diagram", ssize(diagram_stack_));
-    if (root_ == nullptr) {
-      root_ = &diagram;
-    }
-    if (&diagram != root_) {
-      diagram_stack_.push_back(current_->GetSystemIndexOrAbort(&diagram));
-    }
-    for (const auto* system : diagram.GetSystems()) {
-      current_ = &diagram;
-      system->Accept(this);
-    }
-    if (!diagram_stack_.empty()) {
-      diagram_stack_.pop_back();
-    }
-    if (&diagram == root_ && structure_.plant == nullptr) {
-      throw std::logic_error(
-          "CenicIntegrator found zero conforming plants (continuous time, "
-          "registered with SceneGraph) in the diagram.");
+  void VisitNonPlantLeafSystem(const System<T>& system) {
+    if (system.num_continuous_states() > 0) {
+      DRAKE_LOGGER_TRACE("path {} is non plant continuous",
+                         fmt::join(current_path_, ","));
+      structure_.non_plant_xc_paths.push_back(current_path_);
     }
   }
 
-  DiagramStructureFacts<T> GetDiagramStructure() const {
-    DRAKE_DEMAND(structure_.plant != nullptr);
-    return structure_;
-  }
+  // The path to the currently-being-visited item.
+  SubsystemPath current_path_;
 
- private:
-  SubsystemPath MakePath(const System<T>& system) {
-    SubsystemPath result;
-    result.reserve(1 + ssize(diagram_stack_));
-    std::copy(diagram_stack_.begin(), diagram_stack_.end(),
-              std::back_inserter(result));
-    result.push_back(current_->GetSystemIndexOrAbort(&system));
-    return result;
-  }
-
-  const Diagram<T>* root_{};
-  const Diagram<T>* current_{};
-  std::vector<SubsystemIndex> diagram_stack_;
+  // Our work-in-progress result.
   DiagramStructureFacts<T> structure_;
 };
-
-// Validate a diagram for CenicIntegrator, and return the structure facts.
-// @throws if: not a diagram;
-//             not exactly one conforming plant (continuous time, registered
-//             with SceneGraph).
-template <typename T>
-DiagramStructureFacts<T> ScanAndValidateDiagram(const System<T>& system) {
-  DiagramScanner<T> visitor;
-  system.Accept(&visitor);
-  return visitor.GetDiagramStructure();
-}
 
 // The Get*ByPath functions below assume that their path parameters were
 // constructed by scanning the diagram (see DiagramScanner above). Hence, the
@@ -171,7 +168,7 @@ template <typename T>
 CenicIntegrator<T>::CenicIntegrator(const System<T>& system,
                                     Context<T>* context)
     : IntegratorBase<T>(system, context),
-      structure_(std::move(ScanAndValidateDiagram(system))),
+      structure_(DiagramScanner<T>::ScanAndValidateDiagram(system)),
       plant_(DRAKE_DEREF(structure_.plant)),
       external_systems_linearizer_(&plant_) {
   this->set_target_accuracy(kDefaultAccuracy);
