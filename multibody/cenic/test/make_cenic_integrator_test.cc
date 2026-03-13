@@ -88,8 +88,7 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureNoSceneGraph) {
 GTEST_TEST(MakeCenicIntegratorTest, FailureExtraPlant) {
   DiagramBuilder<double> builder;
   RobotDiagramBuilder<double> robot_builder{/* time_step = */ 0.0};
-  std::unique_ptr<RobotDiagram<double>> robot_diagram = robot_builder.Build();
-  builder.AddSystem(std::move(robot_diagram));
+  builder.AddSystem(robot_builder.Build());
   auto result = AddMultibodyPlantSceneGraph(&builder, 0.0);
   result.plant.Finalize();
   std::unique_ptr<Diagram<double>> diagram = builder.Build();

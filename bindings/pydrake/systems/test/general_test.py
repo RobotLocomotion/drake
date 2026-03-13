@@ -57,6 +57,7 @@ from pydrake.systems.framework import (
     PublishEvent_,
     State,
     State_,
+    SubsystemIndex,
     Subvector,
     Subvector_,
     Supervector,
@@ -634,6 +635,7 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(diagram.HasSubsystemNamed("adder0"))
         self.assertEqual(diagram.GetSubsystemByName("adder0"), adder0)
         self.assertEqual(diagram.GetSystems(), [adder0, adder1, integrator])
+        self.assertEqual(diagram.get_system(SubsystemIndex(2)), integrator)
         # TODO(eric.cousineau): Figure out unicode handling if needed.
         # See //systems/framework/test/diagram_test.cc:349 (sha: bc84e73)
         # for an example name.

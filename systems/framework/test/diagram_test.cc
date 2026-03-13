@@ -1248,7 +1248,8 @@ GTEST_TEST(PythonDiagramTest, Unwrap) {
   ASSERT_EQ(diagram_autodiff->GetSystems().size(), 1);
 
   // Check that the child is an Adder, not a WrappedSystem.
-  const System<AutoDiffXd>* child = diagram_autodiff->GetSystems().at(0);
+  const System<AutoDiffXd>* child =
+      &diagram_autodiff->get_system(SubsystemIndex{0});
   ASSERT_THAT(child, testing::WhenDynamicCastTo<const Adder<AutoDiffXd>*>(
                          testing::NotNull()));
   EXPECT_EQ(child->get_name(), "my_adder");
@@ -1895,7 +1896,7 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   EXPECT_EQ(vmutable[1], 17);
 }
 
-// Test for GetSystems.
+// Test for GetSystems and get_system.
 GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ(
@@ -1904,6 +1905,11 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
           diagram->stateless(), diagram->integrator0(), diagram->integrator1(),
           diagram->sink(), diagram->kitchen_sink()}),
       diagram->GetSystems());
+  int index{0};
+  for (const auto* system : diagram->GetSystems()) {
+    EXPECT_EQ(system, &diagram->get_system(SubsystemIndex{index}));
+    ++index;
+  }
 }
 
 const double kTestPublishPeriod = 19.0;

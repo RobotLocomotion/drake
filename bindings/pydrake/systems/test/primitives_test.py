@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     DiagramBuilder,
     DiagramBuilder_,
     InputPort,
+    SubsystemIndex,
     TriggerType,
     VectorBase,
     kUseDefaultName,
@@ -992,7 +993,7 @@ class TestGeneral(unittest.TestCase):
         )
         diagram = builder.Build()
         del builder
-        readback = diagram.GetSystems()[0].get()
+        readback = diagram.get_system(SubsystemIndex(0)).get()
         self.assertListEqual(readback, [1, 2, 3])
         del diagram
         self.assertListEqual(readback, [1, 2, 3])
