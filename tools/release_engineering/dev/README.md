@@ -88,23 +88,22 @@ Verify that:
 contains:
 
     * Binaries: A set of `drake-<version>-[...].tar.gz` files for each supported
-    configuration (e.g. jammy, noble, and mac). In addition, there should be
+    configuration (e.g. noble, and mac). In addition, there should be
     `.sha256` and `.sha512` files for each `.tar.gz` file.
-    * Wheels: A set of `drake-<version>-[...].whl` files for each supported
-    configuration (Python version and platform; e.g., cp3{10-14}-manylinux and
-    cp3{13-14}-macosx). In addition, there should be `.sha256` and `.sha512`
+    * Wheels: A set of `drake-<version>-[...].whl` files for each support
+    configuration. In addition, there should be `.sha256` and `.sha512`
     files for each `.whl` file.
     * Source: A `drake-<version>-src.tar.gz` file and corresponding `.sha256`
     and `.sha512` files.
 
 2. The `*.deb` and corresponding `.sha256` and `.sha512`  files are in AWS
 [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-for each supported configuration (e.g. jammy and noble) as
+for each supported configuration (e.g. noble) as
 `/drake-dev_<version>-1_amd64-<configuration>.deb`.
 
 3. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has a plain `<version>` tag as well as a `<version>` tag for each supported
-configuration (e.g. jammy and noble).
+configuration (e.g. noble).
 
 
 ## Run script for apt

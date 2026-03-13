@@ -115,7 +115,6 @@ the main body of the document:
       new window, so you can copy-and-paste sha1 and version easily):
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
-      - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
    2. In the upper right, click "sign in" (unless you're already signed in). This
@@ -158,14 +157,14 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **39** release files from
+      them." and then choose for upload the **27** release files from
       ``/tmp/drake-release/v1.N.0/...``:
-      - 9: 3 binary `.tar.gz` + 6 checksums
+      - 6: 2 binary `.tar.gz` + 4 checksums
       - 3: 1 source `.tar.gz` + 2 checksums
-      - 6: 2 `.deb` + 4 checksums
-      - 15: 5 linux `.whl` + 10 checksums
+      - 3: 1 `.deb` + 2 checksums
+      - 9: 3 linux `.whl` + 6 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
-      * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
+      * Note that with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
         the box.
@@ -196,9 +195,6 @@ instructions to obtain a username and password.
 Most likely, you will want to use an api token to authenticate yourself to the
 ``twine`` uploader. See <https://pypi.org/help/#apitoken> and <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account>
 for advice on managing api tokens.
-
-For Jammy, ``apt install twine`` is too old. Instead, you must run it from a
-venv (detail below).
 
 1. Run ``twine`` to upload the wheel release, as follows:
 

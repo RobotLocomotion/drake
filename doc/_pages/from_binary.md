@@ -28,23 +28,23 @@ Gurobi, you will need to build Drake from source following the instructions in
 
 ## Stable Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble), and
+Binary packages of Drake for Ubuntu 24.04 (Noble) and
 Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.51.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.0):
+[v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.51.0/drake-1.51.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.51.0/drake-1.51.0-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.51.0/drake-1.51.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.51.0/drake-1.51.0-noble.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.51.0/drake-1.51.0-mac-arm64.tar.gz (for arm64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-1.51.1-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-1.51.1-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-1.51.1-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-1.51.1-noble.tar.gz)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-1.51.1-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
 software. For example:
 
 ```
-curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.51.0/drake-1.51.0-mac-arm64.tar.gz
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-1.51.1-mac-arm64.tar.gz
 ```
 
 ### Use as a C++ library
@@ -119,10 +119,9 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 22.04 (Jammy), Ubuntu 24.04 (Noble) ⁽¹⁾,
+Binary packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾
 and Mac are generated nightly and are available to download at:
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-aarch64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
@@ -130,7 +129,6 @@ and Mac are generated nightly and are available to download at:
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded by ``0.0.``. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-aarch64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-mac-arm64.tar.gz
