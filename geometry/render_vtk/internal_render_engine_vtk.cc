@@ -49,6 +49,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/geometry/render/mesh_source_cache_key.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
@@ -81,6 +82,7 @@ using render::LightParameter;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
+using render::internal::GetMeshSourceCacheKey;
 using std::make_unique;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
@@ -261,18 +263,35 @@ void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
 
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
   auto& data = *static_cast<RegistrationData*>(user_data);
-  const TriangleSurfaceMesh<double> tri_hull =
-      geometry::internal::MakeTriangleFromPolygonMesh(convex.GetConvexHull());
-  RenderMesh render_mesh =
-      geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
-          tri_hull, data.properties);
-  if (!render_mesh.material.has_value()) {
-    render_mesh.material = MakeDiffuseMaterial(default_diffuse_);
+
+  const std::string cache_key =
+      GetMeshSourceCacheKey(convex.source(), /*is_convex=*/true);
+
+  if (!mesh_cache_.contains(cache_key)) {
+    // Compute the hull from the *unscaled* source so the cached VTK geometry
+    // is independent of any particular instance's scale. If the current
+    // convex already has unit scale its hull is already unscaled; otherwise
+    // we re-instantiate from the source to get the unscaled hull, matching
+    // the strategy used by RenderEngineGl::CacheConvexHullMesh.
+    const bool unit_scale = (convex.scale3().array() == 1.0).all();
+    const TriangleSurfaceMesh<double> tri_hull =
+        geometry::internal::MakeTriangleFromPolygonMesh(
+            unit_scale ? convex.GetConvexHull()
+                       : Convex(convex.source()).GetConvexHull());
+    // Pass empty properties so that no material is baked into the cached
+    // geometry; material is always resolved per-instance (convex hulls never
+    // have file-defined materials).
+    RenderMesh render_mesh =
+        geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
+            tri_hull, PerceptionProperties{});
+    CachedMesh cached;
+    cached.parts.push_back(
+        {.material = std::nullopt,
+         .vtk_source = CreateVtkMesh(std::move(render_mesh))});
+    mesh_cache_[cache_key] = std::move(cached);
   }
-  // We don't use convex.scale3() because it's already built in to the convex
-  // hull.
-  const Vector3d kUnitScale(1, 1, 1);
-  ImplementRenderMesh(std::move(render_mesh), kUnitScale, data);
+
+  ImplementCachedMesh(mesh_cache_.at(cache_key), convex.scale3(), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
@@ -597,6 +616,11 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       use_pbr_materials_(other.use_pbr_materials_) {
   InitializePipelines();
 
+  // Shallow-copy the mesh cache: the vtkSmartPointers inside are reference-
+  // counted, so this clone shares the same vtkPolyDataAlgorithm sources as
+  // the original without duplicating any vertex data.
+  mesh_cache_ = other.mesh_cache_;
+
   for (const auto& [id, source_props] : other.props_) {
     PropArray target_props;
     for (int i = 0; i < kNumPipelines; ++i) {
@@ -661,11 +685,36 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
 
 bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
                                    const RegistrationData& data) {
-  std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
-      mesh.source(), data.properties, default_diffuse_, diagnostic_);
-  for (auto& render_mesh : meshes) {
-    ImplementRenderMesh(std::move(render_mesh), mesh.scale3(), data);
+  const std::string cache_key =
+      GetMeshSourceCacheKey(mesh.source(), /*is_convex=*/false);
+
+  if (!mesh_cache_.contains(cache_key)) {
+    // On cache miss: parse the OBJ file and immediately convert each part into
+    // a vtkPolyDataAlgorithm. Subsequent registrations of the same mesh will
+    // share these VTK sources, so vertex data is allocated and uploaded to the
+    // GPU only once.
+    auto render_meshes = LoadRenderMeshesFromObj(mesh.source(), data.properties,
+                                                 default_diffuse_, diagnostic_);
+    CachedMesh cached;
+    for (auto& render_mesh : render_meshes) {
+      // Only cache materials that originated from the OBJ/MTL file itself
+      // (signalled by from_mesh_file == true). Fallback materials derived
+      // from perception properties or the engine default are per-instance
+      // and must be re-derived at each registration, so we store nullopt for
+      // those cases.
+      std::optional<RenderMaterial> file_material;
+      if (render_mesh.material.has_value() &&
+          render_mesh.material->from_mesh_file) {
+        file_material = render_mesh.material;
+      }
+      cached.parts.push_back(
+          {.material = file_material,
+           .vtk_source = CreateVtkMesh(std::move(render_mesh))});
+    }
+    mesh_cache_[cache_key] = std::move(cached);
   }
+
+  ImplementCachedMesh(mesh_cache_.at(cache_key), mesh.scale3(), data);
   return true;
 }
 
@@ -1293,6 +1342,33 @@ void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
   // Never show window for depth camera; it is a meaningless operation as the
   // raw depth rasterization is not human consummable.
   UpdateWindow(camera.core(), false, p, "");
+}
+
+void RenderEngineVtk::ImplementCachedMesh(const CachedMesh& cached,
+                                          const Vector3d& scale,
+                                          const RegistrationData& data) {
+  const bool unit_scale = (scale.array() == 1).all();
+  for (const auto& part : cached.parts) {
+    // File-defined materials (OBJ/MTL) always win. When none was present
+    // (nullopt -- either no MTL, or a convex hull), resolve per-instance via
+    // DefineMaterial so that phong/diffuse properties and the engine default
+    // are both honoured.
+    const RenderMaterial material =
+        part.material.has_value()
+            ? *part.material
+            : DefineMaterial(data.properties, default_diffuse_);
+    if (unit_scale) {
+      ImplementPolyData(part.vtk_source.GetPointer(), material, data);
+    } else {
+      vtkNew<vtkTransform> transform;
+      transform->Scale(scale.x(), scale.y(), scale.z());
+      vtkNew<vtkTransformPolyDataFilter> transform_filter;
+      transform_filter->SetInputConnection(part.vtk_source->GetOutputPort());
+      transform_filter->SetTransform(transform.GetPointer());
+      transform_filter->Update();
+      ImplementPolyData(transform_filter.GetPointer(), material, data);
+    }
+  }
 }
 
 }  // namespace internal
