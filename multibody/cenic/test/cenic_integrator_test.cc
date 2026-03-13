@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -36,6 +37,7 @@ using systems::DiagramBuilder;
 using systems::NamedStatistic;
 using systems::Simulator;
 using systems::SpringMassSystem;
+using systems::System;
 using systems::controllers::PidController;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -67,10 +69,19 @@ constexpr char kBallOnTableMjcf[] = R"""(
   </mujoco>
   )""";
 
+// get<0>() is plant depth.
+// get<1>() is external system with continuous state depth.
+using TestParam = std::tuple<int, int>;
+
 /* A base test case with utilities for setting up a CENIC simulation. */
-class SimulationTestScenario : public testing::Test {
+class SimulationTestScenario : public testing::TestWithParam<TestParam> {
  protected:
-  void SetUp() override { AddModels(); }
+  void SetUp() override {
+    const TestParam depths = GetParam();
+    plant_depth_ = std::get<0>(depths);
+    external_depth_ = std::get<1>(depths);
+    AddModels();
+  }
 
   /* Add models to the plant. */
   virtual void AddModels() = 0;
@@ -85,6 +96,11 @@ class SimulationTestScenario : public testing::Test {
     }
 
     diagram_ = builder_->Build();
+    for (int k = 0; k < plant_depth_; ++k) {
+      DiagramBuilder<double> builder;
+      builder.AddSystem(std::move(diagram_));
+      diagram_ = builder.Build();
+    }
     std::unique_ptr<Context<double>> context = diagram_->CreateDefaultContext();
 
     // Set initial conditions.
@@ -111,6 +127,8 @@ class SimulationTestScenario : public testing::Test {
   CenicIntegrator<double>* integrator_{nullptr};
 
   // Always available.
+  int plant_depth_{0};
+  int external_depth_{0};
   MultibodyPlant<double>& plant_{
       AddMultibodyPlantSceneGraph(builder_.get(), 0.0).plant};
 };
@@ -140,7 +158,7 @@ class BallOnTable : public SimulationTestScenario {
 
 /* Checks that the integrator complains when no initial step size is
 configured. */
-TEST_F(DoublePendulum, NoStep) {
+TEST_P(DoublePendulum, NoStep) {
   Build();
   integrator_ = &simulator_->reset_integrator<CenicIntegrator<double>>();
   DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(1e-2),
@@ -149,7 +167,7 @@ TEST_F(DoublePendulum, NoStep) {
 
 /* Checks that the integrator reports expected statistics, and that they may be
 reset. */
-TEST_F(DoublePendulum, Stats) {
+TEST_P(DoublePendulum, Stats) {
   Build();
 
   const std::set<std::string> expected_keys{
@@ -224,7 +242,7 @@ TEST_F(DoublePendulum, Stats) {
 /* Checks that solver parameter setting is effective. Since the methods tested
 here only forward to the ICF solver, only one field is checked. Detailed
 testing of parameter effects can be found in icf_solver_test. */
-TEST_F(DoublePendulum, Parameters) {
+TEST_P(DoublePendulum, Parameters) {
   Build();
   EXPECT_NO_THROW(simulator_->AdvanceTo(1e-2));
   IcfSolverParameters params = integrator_->get_solver_parameters();
@@ -237,7 +255,7 @@ TEST_F(DoublePendulum, Parameters) {
 /* Checks that a double pendulum simulation in fixed-step mode matches the
 discrete solver. Simulation time and stepping are carefully chosen to
 facilitate matching of results. */
-TEST_F(DoublePendulum, FixedStep) {
+TEST_P(DoublePendulum, FixedStep) {
   const double time_step = 1e-2;
   const double simulation_time = 0.5;
   Build();
@@ -271,7 +289,7 @@ TEST_F(DoublePendulum, FixedStep) {
 
 /* Verifies that energy conservation and error metrics for an undamped double
 pendulum are improved with tightened accuracy. */
-TEST_F(DoublePendulum, AccuracyTrends) {
+TEST_P(DoublePendulum, AccuracyTrends) {
   const double simulation_time = 2.0;
 
   // Remove joint damping for this test.
@@ -324,7 +342,7 @@ TEST_F(DoublePendulum, AccuracyTrends) {
 }
 
 /* Simulates the double pendulum with PID actuation. */
-TEST_F(DoublePendulum, ExternalActuation) {
+TEST_P(DoublePendulum, ExternalActuation) {
   // Add some actuators to the plant.
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
@@ -376,8 +394,19 @@ TEST_F(DoublePendulum, ExternalActuation) {
 continuous state.*/
 // TODO(#23921): Revisit this test when implementing an error estimate that
 // accounts for external systems.
-TEST_F(DoublePendulum, PositionVelocityExternalSystem) {
-  auto spring_mass_system = builder_->AddSystem<SpringMassSystem>(100.0, 1.0);
+TEST_P(DoublePendulum, PositionVelocityExternalSystem) {
+  SpringMassSystem<double>* spring_mass_system{};
+  {
+    auto temp_owner = std::make_unique<SpringMassSystem<double>>(100.0, 1.0);
+    spring_mass_system = temp_owner.get();
+    std::unique_ptr<System<double>> system(std::move(temp_owner));
+    for (int k = 0; k < external_depth_; ++k) {
+      DiagramBuilder<double> builder;
+      builder.AddSystem(std::move(system));
+      system = builder.Build();
+    }
+    builder_->AddSystem(std::move(system));
+  }
   Build();
 
   const double q0 = 0.2;
@@ -407,7 +436,7 @@ TEST_F(DoublePendulum, PositionVelocityExternalSystem) {
 }
 
 /* Checks that the integrator can enforce joint limits. */
-TEST_F(DoublePendulum, JointLimits) {
+TEST_P(DoublePendulum, JointLimits) {
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
     joint.set_position_limits(VectorXd::Constant(1, 0.2 * (i + 1)),
@@ -424,7 +453,7 @@ TEST_F(DoublePendulum, JointLimits) {
 }
 
 /* Checks that effort limits are enforced by the integrator. */
-TEST_F(DoublePendulum, EffortLimits) {
+TEST_P(DoublePendulum, EffortLimits) {
   // Add some actuators with tight effort limits to the plant.
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
@@ -473,7 +502,7 @@ TEST_F(DoublePendulum, EffortLimits) {
 }
 
 /* Checks that coupler constraints are handled correctly by the integrator. */
-TEST_F(DoublePendulum, CoupledJoints) {
+TEST_P(DoublePendulum, CoupledJoints) {
   const double gear_ratio = 0.5;
   plant_.AddCouplerConstraint(plant_.GetJointByName("joint1"),
                               plant_.GetJointByName("joint2"), gear_ratio);
@@ -493,7 +522,7 @@ TEST_F(DoublePendulum, CoupledJoints) {
 }
 
 /* Checks that a ball rolling along the ground produces the expected result. */
-TEST_F(BallOnTable, RollingContact) {
+TEST_P(BallOnTable, RollingContact) {
   Build();
 
   // Place the ball on the ground, with initial linear and angular velocity
@@ -525,7 +554,7 @@ TEST_F(BallOnTable, RollingContact) {
 }
 
 /* Checks that quaternions always remain normalized. */
-TEST_F(BallOnTable, QuaternionNormalization) {
+TEST_P(BallOnTable, QuaternionNormalization) {
   Build();
 
   // Set initial velocities that will yeet the ball into the distance while
@@ -547,7 +576,7 @@ TEST_F(BallOnTable, QuaternionNormalization) {
 }
 
 /* Verifies that we can simulate non-actuator external forces. */
-TEST_F(BallOnTable, ExternalForces) {
+TEST_P(BallOnTable, ExternalForces) {
   const double simulation_time = 0.3;
   Build();
   const double initial_height = plant_.GetPositions(*plant_context_)[6];
@@ -570,6 +599,22 @@ TEST_F(BallOnTable, ExternalForces) {
   const double final_height = plant_.GetPositions(*plant_context_)[6];
   EXPECT_NEAR(final_height, expected_height, 1e-3);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    AllDepthsPendulum, DoublePendulum,
+    testing::Combine(testing::Range(0, 3), testing::Range(0, 3)),
+    [](const testing::TestParamInfo<DoublePendulum::ParamType>& x) {
+      return fmt::format("plant_depth_{}_external_depth_{}",
+                         std::get<0>(x.param), std::get<1>(x.param));
+    });
+
+INSTANTIATE_TEST_SUITE_P(
+    AllDepthsBall, BallOnTable,
+    testing::Combine(testing::Range(0, 3), testing::Range(0, 3)),
+    [](const testing::TestParamInfo<BallOnTable::ParamType>& x) {
+      return fmt::format("plant_depth_{}_external_depth_{}",
+                         std::get<0>(x.param), std::get<1>(x.param));
+    });
 
 }  // namespace
 }  // namespace cenic
