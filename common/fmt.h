@@ -14,25 +14,12 @@
 
 namespace drake {
 
-#if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
-/** When using fmt >= 8, this is an alias for
-<a
-href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
-When using fmt < 8, this is a no-op. */
+[[deprecated(
+    "\nDRAKE DEPRECATED: Use fmt::runtime instead.\n"
+    "The deprecated code will be removed from Drake on or after 2026-07-01.")]]
 inline auto fmt_runtime(std::string_view s) {
   return fmt::runtime(s);
 }
-/** When using fmt >= 8, this is defined to be `const` to indicate that the
-`fmt::formatter<T>::format(...)` function should be object-const.
-When using fmt < 8, the function signature was incorrect (lacking the const),
-so this macro will be empty. */
-#define DRAKE_FMT8_CONST const
-#else  // FMT_VERSION
-inline auto fmt_runtime(std::string_view s) {
-  return s;
-}
-#define DRAKE_FMT8_CONST
-#endif  // FMT_VERSION
 
 /** Returns `fmt::to_string(x)` but always with at least one digit after the
 decimal point. Different versions of fmt disagree on whether to omit the
@@ -167,7 +154,7 @@ Drake drops support for earlier version of fmt. */
     /* Shadow our base class member function template of the same name. */     \
     template <typename FormatContext>                                          \
     auto format(const typename MyTraits::InputType& x,                         \
-                FormatContext& ctx) DRAKE_FMT8_CONST {                         \
+                FormatContext& ctx) const {                                    \
       /* Call the base class member function after laundering the object   */  \
       /* through the user's provided format_as function. Older versions of */  \
       /* fmt have const-correctness bugs, which we can fix with some good  */  \

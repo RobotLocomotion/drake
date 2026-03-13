@@ -14,7 +14,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/math/autodiff.h"

@@ -7,7 +7,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"

@@ -9,10 +9,11 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ostream.h>
+
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -524,5 +525,5 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 namespace fmt {
 template <>
 struct formatter<drake::multibody::DifferentialInverseKinematicsStatus>
-    : drake::ostream_formatter {};
+    : fmt::ostream_formatter {};
 }  // namespace fmt
