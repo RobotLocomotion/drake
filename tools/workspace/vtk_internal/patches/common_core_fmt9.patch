@@ -1,4 +1,4 @@
-[vtk] Backport vtkStringFormatter to fmt 9.1 for Jammy
+[vtk] Backport vtkStringFormatter to fmt 9.1 for Noble
 
 Reasoning for not upstreaming this patch: Drake-specific build compatibility.
 
@@ -8,7 +8,7 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
  /**
   * The result type of a format_to operation.
   */
-+#if 0  // Not defined in fmt 9, required for Drake's Jammy support.
++#if 0  // Not defined in fmt 9, required for Drake's Noble support.
  using fmt::format_to_result;
 +#endif
 
@@ -18,7 +18,7 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
   * @remark `format_to_n` does not append a terminating null character.
   * @note The standard library provides this function as of C++20, but we support up to C++17.
   */
-+#if 0  // Not defined correctly in fmt 9, required for Drake's Jammy support.
++#if 0  // Not defined correctly in fmt 9, required for Drake's Noble support.
  using fmt::format_to_n;
 +#else
 +template <typename OutputIt, typename... T>
@@ -34,7 +34,7 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
   *
   * @note The standard library provides this function as of C++23, but we support up to C++17.
   */
-+#if 0 // Not defined in fmt 9, required for Drake's Jammy support.
++#if 0 // Not defined in fmt 9, required for Drake's Noble support.
  using fmt::println;
 +#endif
 
