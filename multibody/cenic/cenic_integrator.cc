@@ -48,6 +48,21 @@ class DiagramScanner : public SystemVisitor<T> {
     diagram->Accept(&visitor);
     DRAKE_DEMAND(visitor.current_path_.empty());
     if (visitor.structure_.plant == nullptr) {
+      if (visitor.rejected_plant_ != nullptr) {
+        if (visitor.rejected_plant_->is_discrete()) {
+          throw std::logic_error(fmt::format(
+              "CenicIntegrator requires a continuous-time MultibodyPlant, but "
+              "only found a plant with time_step={} at {}",
+              visitor.rejected_plant_->time_step(),
+              visitor.rejected_plant_->GetSystemPathname()));
+        }
+        if (!visitor.rejected_plant_->geometry_source_is_registered()) {
+          throw std::logic_error(fmt::format(
+              "CenicIntegrator requires that the MultibodyPlant is connected "
+              "to a SceneGraph, but {} has no SceneGraph",
+              visitor.rejected_plant_->GetSystemPathname()));
+        }
+      }
       throw std::logic_error(
           "CenicIntegrator found zero conforming plants (continuous time, "
           "registered with SceneGraph) in the diagram.");
@@ -70,7 +85,7 @@ class DiagramScanner : public SystemVisitor<T> {
     // Our styleguide eschews using run-time type information (RTTI) for control
     // flow. However, since CenicInegrator is strongly coupled to a specific
     // class (MultibodyPlant) without any design intention to operate on any
-    // other class, using the case to find the plant needle in the diagram
+    // other class, using the cast to find the plant needle in the diagram
     // haystack if the best choice among the available options.
     const auto* maybe_plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
     if (maybe_plant != nullptr) {
@@ -88,11 +103,13 @@ class DiagramScanner : public SystemVisitor<T> {
     if (plant.is_discrete()) {
       DRAKE_LOGGER_TRACE("path {} is discrete plant",
                          fmt::join(current_path_, ","));
+      rejected_plant_ = &plant;
       return;
     }
     if (!plant.geometry_source_is_registered()) {
       DRAKE_LOGGER_TRACE("path {} is non-scene-graph plant",
                          fmt::join(current_path_, ","));
+      rejected_plant_ = &plant;
       return;
     }
     if (structure_.plant != nullptr) {
@@ -119,6 +136,10 @@ class DiagramScanner : public SystemVisitor<T> {
 
   // Our work-in-progress result.
   CenicDiagramStructure<T> structure_;
+
+  // If we found a MbP but couldn't use it (because it was misconfigured), then
+  // we note it here for possible error reporting after visitation is complete.
+  const MultibodyPlant<T>* rejected_plant_{};
 };
 
 // The Get*ByPath functions below assume that their path parameters were
