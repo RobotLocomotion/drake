@@ -173,7 +173,8 @@ class RenderEngine {
    @returns True if the %RenderEngine implementation accepted the geometry for
             registration. */
   bool RegisterDeformableVisual(
-      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
       const PerceptionProperties& properties);
 
   //@}
@@ -334,7 +335,8 @@ class RenderEngine {
 
    @experimental */
   virtual bool DoRegisterDeformableVisual(
-      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
       const PerceptionProperties& properties);
 
   /** The NVI-function for updating the pose of a rigid render geometry

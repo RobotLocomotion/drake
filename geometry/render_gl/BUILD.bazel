@@ -144,6 +144,7 @@ drake_cc_optional_library(
         "//common:string_container",
         "//common/yaml:yaml_io",
         "//geometry/proximity:polygon_to_triangle_mesh",
+        "//geometry/render:mesh_source_cache_key",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//systems/sensors:image",
