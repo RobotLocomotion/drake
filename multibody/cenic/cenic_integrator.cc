@@ -67,6 +67,11 @@ class DiagramScanner : public SystemVisitor<T> {
           "CenicIntegrator found zero conforming plants (continuous time, "
           "registered with SceneGraph) in the diagram.");
     }
+    // TODO(rpoyner-tri): It might make sense here to "compact" the non-plant
+    // paths; only keeping paths describing non-plant subtrees, rather than
+    // keeping all paths to leaf continuous state. This may turn out to
+    // conflict with the goal of minimizing allocations at run-time. See the
+    // #compact_paths comment below.
     return visitor.structure_;
   }
 
@@ -494,6 +499,8 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
     const Context<T>& subcontext = subsystem.GetMyContextFromRoot(context);
 
     // TODO(vincekurtz): eliminate these heap allocations.
+    // #compact_paths: It may turn out that using compact paths conflicts with
+    // the goal of minimizing heap allocations.
     const VectorX<T> sub_xc_dot =
         subsystem.EvalTimeDerivatives(subcontext).CopyToVector();
     VectorX<T> sub_xc_next = subcontext.get_continuous_state().CopyToVector();
