@@ -104,7 +104,7 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
               'pydrake/INSTALLATION',
           )
       },
-      python_requires='>=3.10',
+      python_requires='>=3.12',
       install_requires=python_required,
       # Ensure the wheel is not platform-agnostic.
       ext_modules=[
