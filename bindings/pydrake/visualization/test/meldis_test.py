@@ -77,12 +77,13 @@ import pydrake.visualization.meldis
 
 # https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
 #
-# Jammy shipped with python3-u-msgpack 2.3.0, which tries to use
-# `collections.Hashable`, which was removed in Python 3.10. Work around this by
-# monkey-patching `Hashable` into `umsgpack.collections`.
+# python3-u-msgpack 2.3.0, which tries to use `collections.Hashable`, which was
+# removed in Python 3.10. Work around this by monkey-patching `Hashable` into
+# `umsgpack.collections`.
 #
-# TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
-# updated to 2.5.2 or later.
+# TODO(mwoehlke-kitware): Remove this when our minimum supported msgpack
+# is updated to 2.5.2 or later, which is currently blocked on Noble still
+# shipping 2.3.0.
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
