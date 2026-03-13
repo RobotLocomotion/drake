@@ -57,8 +57,9 @@ GTEST_TEST(MakeCenicIntegratorTest, SuccessNested) {
 GTEST_TEST(MakeCenicIntegratorTest, FailureDiscrete) {
   RobotDiagramBuilder<double> builder;
   std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
-  DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*robot_diagram),
-                              ".*zero.*continuous.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCenicIntegrator(*robot_diagram),
+      ".*requires.*continuous.*found.*time_step=0.001.*");
 }
 
 GTEST_TEST(MakeCenicIntegratorTest, FailureNonDiagram) {
@@ -81,7 +82,7 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureNoSceneGraph) {
   builder.AddSystem<MultibodyPlant<double>>(0.0);
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*diagram),
-                              ".*zero.*continuous.*");
+                              ".*requires.*SceneGraph.*");
 }
 
 GTEST_TEST(MakeCenicIntegratorTest, FailureExtraPlant) {
