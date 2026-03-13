@@ -155,7 +155,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
         external_feedback_storage;
 
     /* Intermediate states for error control, which compares a single large
-    step (x_next_full_) to the result of two smaller steps (x_next_half_2_). */
+    step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
+    Note that these states include continuous state for the entire diagram. */
     /* x_{t+h}. */
     std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full;
     /* x_{t+h/2}. */
