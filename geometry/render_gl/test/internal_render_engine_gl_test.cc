@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ostream.h>
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
@@ -2798,7 +2799,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
         continue;
       }
       SCOPED_TRACE(
-          fmt::format("{} - {}", fmt_streamed(l_type), config.description));
+          fmt::format("{} - {}", fmt::streamed(l_type), config.description));
       LightParameter test_light = config.light;
       test_light.type = l_type;
       const RenderEngineGlParams params{.lights = {test_light}};

@@ -6,7 +6,8 @@
 #include <cstdio>
 #include <limits>
 
-#include "drake/common/fmt_ostream.h"
+#include <fmt/ostream.h>
+
 #include "drake/common/never_destroyed.h"
 #include "drake/common/parallelism.h"
 #include "drake/math/quadratic_form.h"
@@ -1625,7 +1626,7 @@ void ThrowForInvalidOption(MSKrescodee rescode, const std::string& option,
         "https://docs.mosek.com/{version}/pythonapi/param-groups.html "
         "for allowable values in python.",
         fmt::arg("option", option), fmt::arg("value", val),
-        fmt::arg("code", fmt_streamed(rescode)),
+        fmt::arg("code", fmt::streamed(rescode)),
         fmt::arg("version", mosek_version)));
   }
 }
@@ -1665,7 +1666,7 @@ void MosekSolverProgram::UpdateOptions(
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error(fmt::format(
             "MosekSolver(): kPrintToConsole=1 failed with response code {}",
-            fmt_streamed(rescode)));
+            fmt::streamed(rescode)));
       }
       *is_printing = true;
     }
@@ -1676,7 +1677,7 @@ void MosekSolverProgram::UpdateOptions(
       if (rescode != MSK_RES_OK) {
         throw std::runtime_error(fmt::format(
             "MosekSolver(): kPrintToFile={} failed with response code {}",
-            common.print_file_name, fmt_streamed(rescode)));
+            common.print_file_name, fmt::streamed(rescode)));
       }
       *is_printing = true;
     }

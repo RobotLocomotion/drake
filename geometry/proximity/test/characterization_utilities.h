@@ -17,11 +17,11 @@
 #include <vector>
 
 #include <fcl/fcl.h>
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_export.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/shape_specification.h"
@@ -444,7 +444,7 @@ class CharacterizeResultTest : public ::testing::Test {
 namespace fmt {
 template <>
 struct formatter<drake::geometry::internal::GeometryType>
-    : drake::ostream_formatter {};
+    : fmt::ostream_formatter {};
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

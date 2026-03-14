@@ -1,12 +1,12 @@
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 
-#ifdef HAVE_SPDLOG
-
 #include <atomic>
 #include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
+
+#ifdef HAVE_SPDLOG
 
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/dist_sink.h>
@@ -108,10 +108,8 @@ class pylogging_sink final
         return 50;
       case Enum::off:
         break;
-#if SPDLOG_VERSION >= 10600
       case Enum::n_levels:
         break;
-#endif
     }
     DRAKE_UNREACHABLE();
   }

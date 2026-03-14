@@ -8,31 +8,22 @@
 
 #include "drake/common/drake_assert.h"
 
-// Drake currently supports a wide range of fmt versions (8..11), which vary
+// Drake currently supports a wide range of fmt versions (9..11), which vary
 // heavily in terms of how they format maps (i.e., range-of-pairs) and variant.
 // When formatting the supported_files, we can't use fmt's built-in std::map
 // formatter because as of fmt 11 it forces the "debug presentation format"
 // which when combined with our DRAKE_FORMATTER_AS on FileSource ends up
 // re-quoting the formatted FileSource as if it were a string. Instead, we'll
 // use a helper struct that more directly controls the format of a map entry.
-// Once we drop Jammy and fmt8, we can clean this up even further by removing
-// DRAKE_FORMATTER_AS on FileSource since variant<> will be natively formattable
-// in that version.
+// TODO(jwnimmer-tri) We can clean this up even further by removing
+// DRAKE_FORMATTER_AS on FileSource because variant<> is natively formattable.
 namespace drake {
 namespace {
 struct FormattableSupportingFileMapEntry {
   std::string to_string() const {
     DRAKE_DEMAND(key != nullptr && value != nullptr);
     return fmt::format(
-#if FMT_VERSION >= 90000
         "{:?}: {}",  // Use '?' specifier to format the key as a string literal.
-#else
-        // TODO(jwnimmer-tri) On Ubuntu Jammy we use fmt8 which does not offer
-        // the capability to represent strings as literals, so we'll just toss
-        // quotes around and call it a day. Most filenames won't have quotes in
-        // them anyway.
-        "\"{}\": {}",
-#endif
         *key, *value);
   }
   const std::string* key{};
