@@ -41,7 +41,21 @@ if(env.CHANGE_ID) {
 
 // N.B. Load the drake-ci utilities after parsing the parameters, above, so
 // we can optionally load a branched version.
-library "drake-ci@${params.ciSha}"
+library identifier: "drake-ci@${params.ciSha}", retriever: modernSCM(
+  [
+    $class: 'GitSCM',
+    branches: [[name: "${params.ciSha}"]],
+    extensions: [
+      [$class: 'AuthorInChangelog'],
+      [$class: 'CloneOption', honorRefspec: true, noTags: true],
+    ],
+    userRemoteConfigs: [[
+      credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+      name: 'origin',
+      refspec: '+refs/heads/*:refs/remotes/origin/* ',
+      url: 'git@github.com:RobotLocomotion/drake-ci.git']]
+  ]
+)
 
 node(utils.getNodeLabel()) {
   stage('test') {
