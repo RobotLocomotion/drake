@@ -547,6 +547,25 @@ Warning:
     or be removed at any time, without any deprecation notice ahead of
     time.)""";
           } DoRegisterDeformableVisual;
+          // Symbol: drake::geometry::render::RenderEngine::DoRegisterNamedVisual
+          struct /* DoRegisterNamedVisual */ {
+            // Source: drake/geometry/render/render_engine.h
+            const char* doc =
+R"""(A variant of the DoRegisterVisual(). This includes an optional name
+for the geometry. If a derived class cannot meaningfully make use of
+the name, it need not implement this method. The default
+implementation is to invoke the previous overload by stripping out the
+name.
+
+This* is the method that RegisterVisual() will always call. If a
+derived engine can make use of a name, it has two options:
+
+- Implement all registration acts in this overload (and use a no-op
+implementation for the previous overload), or
+- implement DoRegisterVisual() to do the work, delegate to that method for
+the work, and then handle the name in this method as a result of a
+successful registration.)""";
+          } DoRegisterNamedVisual;
           // Symbol: drake::geometry::render::RenderEngine::DoRegisterVisual
           struct /* DoRegisterVisual */ {
             // Source: drake/geometry/render/render_engine.h

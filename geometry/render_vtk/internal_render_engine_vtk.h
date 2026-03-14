@@ -167,12 +167,20 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
     const math::RigidTransformd& X_WG;
     const GeometryId id;
     bool accepted{true};
+    std::string name;
   };
 
-  // @see RenderEngine::DoRegisterVisual().
+  // @see RenderEngine::DoRegisterVisual(). This throws; RenderEngineVtk wants
+  // to capture names; DoRegisterNamedVisual() is the true implementation.
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
                         const PerceptionProperties& properties,
-                        const math::RigidTransformd& X_WG) override;
+                        const math::RigidTransformd& X_WG) final;
+
+  // @see RenderEngine::DoRegisterNamedVisual().
+  bool DoRegisterNamedVisual(GeometryId id, const Shape& shape,
+                             const PerceptionProperties& properties,
+                             const math::RigidTransformd& X_WG,
+                             std::string_view name) override;
 
   // @see RenderEngine::DoRegisterDeformableVisual().
   bool DoRegisterDeformableVisual(
