@@ -29,8 +29,8 @@ officially supports when building from source:
 <!-- The minimum Python version(s) should match those listed in both the root
      CMakeLists.txt and setup/python/pyproject.toml. -->
 <!-- The minimum CMake version across all platforms should match that listed
-     in the root CMakeLists.txt, and the version range should match that
-     listed in tools/install/libdrake/drake-config.cmake.in (and all
+     in the root CMakeLists.txt. The maximum version should match the policy
+     version listed in tools/install/libdrake/drake-config.cmake.in (and all
      corresponding tests). -->
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
