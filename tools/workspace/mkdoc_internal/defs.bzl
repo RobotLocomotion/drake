@@ -75,7 +75,7 @@ def _generate_pybind_documentation_header_impl(ctx):
     args.add("-root-name=" + ctx.attr.root_name)
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
-    args.add("-std=c++20")
+    args.add("-std=c++23")
     args.add("-w")
     args.add_all(header_info.target_headers)
 

@@ -36,10 +36,4 @@ struct overloaded : Ts... {
   using Ts::operator()...;
 };
 
-// Even though Drake requires C++20, Clang versions prior to 17 do not implement
-// P1816 yet, so we need to write out a deduction guide. We can remove this once
-// Drake requires Clang 17 or newer (as well as the matching Apple Clang).
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
 }  // namespace
