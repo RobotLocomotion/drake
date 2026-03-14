@@ -1,6 +1,7 @@
 #include "drake/multibody/cenic/make_cenic_integrator.h"
 
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -21,7 +22,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::IntegratorBase;
 
-GTEST_TEST(MakeCenicIntegratorTest, Success) {
+GTEST_TEST(MakeCenicIntegratorTest, SuccessTrivial) {
   RobotDiagramBuilder<double> builder{/* time_step = */ 0.0};
   std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
 
@@ -35,11 +36,30 @@ GTEST_TEST(MakeCenicIntegratorTest, Success) {
   EXPECT_EQ(&dut_plant, &diagram_plant);
 }
 
+GTEST_TEST(MakeCenicIntegratorTest, SuccessNested) {
+  RobotDiagramBuilder<double> builder{/* time_step = */ 0.0};
+  std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
+  const auto& diagram_plant = robot_diagram->plant();
+
+  DiagramBuilder<double> root_builder;
+  root_builder.AddSystem(std::move(robot_diagram));
+  const auto root_diagram = root_builder.Build();
+
+  std::unique_ptr<IntegratorBase<double>> dut =
+      MakeCenicIntegrator(*root_diagram);
+  auto& cenic = dynamic_cast<CenicIntegrator<double>&>(*dut);
+
+  // The CENIC plant is the same object as the robot diagram's plant.
+  const auto& dut_plant = cenic.plant();
+  EXPECT_EQ(&dut_plant, &diagram_plant);
+}
+
 GTEST_TEST(MakeCenicIntegratorTest, FailureDiscrete) {
   RobotDiagramBuilder<double> builder;
   std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
-  DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*robot_diagram),
-                              ".*continuous.*not.*discrete.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCenicIntegrator(*robot_diagram),
+      ".*requires.*continuous.*found.*time_step=0.001.*");
 }
 
 GTEST_TEST(MakeCenicIntegratorTest, FailureNonDiagram) {
@@ -53,7 +73,27 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureNoPlant) {
   builder.AddSystem<ConstantVectorSource>(0.0);
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*diagram),
-                              ".*does not have a subsystem named plant.*");
+                              ".*zero.*continuous.*");
+}
+
+GTEST_TEST(MakeCenicIntegratorTest, FailureNoSceneGraph) {
+  DiagramBuilder<double> builder;
+  builder.AddSystem<ConstantVectorSource>(0.0);
+  builder.AddSystem<MultibodyPlant<double>>(0.0);
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+  DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*diagram),
+                              ".*requires.*SceneGraph.*");
+}
+
+GTEST_TEST(MakeCenicIntegratorTest, FailureExtraPlant) {
+  DiagramBuilder<double> builder;
+  RobotDiagramBuilder<double> robot_builder{/* time_step = */ 0.0};
+  builder.AddSystem(robot_builder.Build());
+  auto result = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  result.plant.Finalize();
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+  DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*diagram),
+                              ".*more.*continuous.*");
 }
 
 }  // namespace

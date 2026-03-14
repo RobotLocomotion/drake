@@ -1149,6 +1149,8 @@ Note: The above is for the C++ documentation. For Python, use
             doc.Diagram.GetSubsystemByName.doc)
         .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
             doc.Diagram.GetSystems.doc)
+        .def("get_system", &Diagram<T>::get_system, py_rvp::reference_internal,
+            doc.Diagram.get_system.doc)
         .def("AreConnected", &Diagram<T>::AreConnected, py::arg("output"),
             py::arg("input"), doc.Diagram.AreConnected.doc);
   }
