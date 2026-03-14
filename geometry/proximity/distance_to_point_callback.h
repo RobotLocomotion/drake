@@ -22,6 +22,8 @@ namespace geometry {
 namespace internal {
 namespace point_distance DRAKE_NO_EXPORT {
 
+using Eigen::Vector3d;
+
 /* Supporting data for the distance-to-point callback (see Callback below).
  It includes:
     - The fcl collision object representing the query point, Q.

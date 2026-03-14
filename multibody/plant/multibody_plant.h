@@ -5848,6 +5848,24 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().graph();
   }
 
+  // Compute the possible surface velocity of the geometry G indicated by id.
+  // To have a non-zero surface velocity:
+  //
+  //    - The geometry must have a non-zero value for the
+  //      (surface_velocity, surface_speed) property, and
+  //    - A unit vector for the (surface_velocity, surface_velocity_normal)
+  //      property (we'll call n_ss), and
+  //    - the provided surface normal n_W is not (anti)parallel to n_ss.
+  //
+  // The velocity will be perpendicular to the normal n_W and have a maximum
+  // speed defined by the property.
+  //
+  // @retval v_GS, the velocity of the surface relative to the geometry G.
+  Vector3<T> GetSurfaceVelocity(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector,
+      const math::RigidTransform<T>& X_WG, const Vector3<T>& n_W) const;
+
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -6020,6 +6038,15 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   // Helper to acquire per-geometry Coulomb friction coefficients from
   // SceneGraph.
   const CoulombFriction<double>& GetCoulombFriction(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
+  // Helper to acquire per-geometry surface speed value from SceneGraph.
+  const std::optional<double> GetSurfaceSpeed(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
+  const std::optional<Vector3<T>> GetSurfaceVelocityNormal(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
