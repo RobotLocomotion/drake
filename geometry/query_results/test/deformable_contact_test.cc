@@ -246,7 +246,7 @@ GTEST_TEST(DeformableContact, AddDeformableDeformableContactSurface) {
   ASSERT_EQ(surfaces.size(), 1);
   const DeformableContactSurface<double>& s = surfaces[0];
 
-  // TODO(DamrongGuoy) When C++20 is available, define `default operator==`
+  // TODO(DamrongGuoy) Define `default operator==`
   //  for DeformableContactSurface (and PolygonSurfaceMesh), so we can
   //  verify it with the following one statement instead of 12 statements.
   //  EXPECT_EQ(dut.contact_surfaces()[0],
