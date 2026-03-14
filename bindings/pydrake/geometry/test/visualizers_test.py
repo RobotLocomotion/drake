@@ -22,8 +22,14 @@ from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import DiagramBuilder_, InputPort_
 from pydrake.systems.test.test_util import call_build_from_cpp
 
-# TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
-# updated to 2.5.2 or later.
+# https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
+#
+# python3-u-msgpack 2.3.0 tries to use `collections.Hashable`, which was removed
+# in Python 3.10. Work around this by monkey-patching `Hashable` into it.
+#
+# TODO(mwoehlke-kitware): Remove this when our minimum supported msgpack
+# is updated to 2.5.2 or later, which is currently blocked on Noble still
+# shipping 2.3.0.
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
