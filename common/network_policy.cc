@@ -42,7 +42,6 @@ bool IsNetworkingAllowed(std::string_view component) {
   // N.B. We purposefully do not warn for unknown tokens because they may evolve
   // over time and we don't want to force users to churn their policy variables
   // to be congruent with their Drake version pin.
-  // TODO(jwnimmer-tri) As of C++20, use std::ranges::lazy_split_view.
   bool match = false;
   std::string_view worklist = env_view;
   while (!worklist.empty()) {
