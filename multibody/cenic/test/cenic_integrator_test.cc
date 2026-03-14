@@ -34,7 +34,9 @@ using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::InputPort;
 using systems::NamedStatistic;
+using systems::OutputPort;
 using systems::Simulator;
 using systems::SpringMassSystem;
 using systems::System;
@@ -76,6 +78,14 @@ using TestParam = std::tuple<int, int>;
 /* A base test case with utilities for setting up a CENIC simulation. */
 class SimulationTestScenario : public testing::TestWithParam<TestParam> {
  protected:
+  static std::vector<std::string> plant_export_input_names() {
+    return {"actuation"};
+  }
+
+  static std::vector<std::string> plant_export_output_names() {
+    return {"state"};
+  }
+
   void SetUp() override {
     const TestParam depths = GetParam();
     plant_depth_ = std::get<0>(depths);
@@ -83,24 +93,86 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     AddModels();
   }
 
-  /* Add models to the plant. */
+  /* Adds models to the plant. */
   virtual void AddModels() = 0;
 
-  /* Set defualt initial conditions. */
+  /* Sets default initial conditions. */
   virtual void SetInitialConditions() = 0;
+
+  /* Prepares a `system` to be nested within the diagram eventually produced by
+  `builder`, by exporting all of its ports with their original unqualified
+  names. */
+  void ReExportAllPorts(DiagramBuilder<double>* builder,
+                        const System<double>& system) {
+    for (int m = 0; m < system.num_input_ports(); ++m) {
+      const InputPort<double>& input = system.get_input_port(m);
+      builder->ExportInput(input, input.get_name());
+    }
+    for (int m = 0; m < system.num_output_ports(); ++m) {
+      const OutputPort<double>& output = system.get_output_port(m);
+      builder->ExportOutput(output, output.get_name());
+    }
+  }
+
+  /* Wraps `my_system` in extra nested diagrams, according to the "external
+  depth" test parameter, add the entire thing to the top-level builder, and
+  return a pointer to the wrapped system. */
+  template <typename MySystem>
+  std::tuple<MySystem*, System<double>*> BurySystem(
+      std::unique_ptr<MySystem> my_system) {
+    MySystem* alias = my_system.get();
+    std::unique_ptr<System<double>> owned_system(std::move(my_system));
+    for (int k = 0; k < external_depth_; ++k) {
+      DiagramBuilder<double> builder;
+      auto* system = builder.AddSystem(std::move(owned_system));
+      ReExportAllPorts(&builder, *system);
+      owned_system = builder.Build();
+    }
+    auto* nest = builder_->AddSystem(std::move(owned_system));
+    return std::tie(alias, nest);
+  }
+
+  /* Like ReExportAllPorts, but only export ports named by
+  plant_export_input_names() and plant_export_output_names(). */
+  void ReExportSelectedPlantPorts(DiagramBuilder<double>* builder,
+                                  const System<double>& system) {
+    for (const std::string& input_name : plant_export_input_names()) {
+      const InputPort<double>& input = system.GetInputPort(input_name);
+      builder->ExportInput(input, input_name);
+    }
+    for (const std::string& output_name : plant_export_output_names()) {
+      const OutputPort<double>& output = system.GetOutputPort(output_name);
+      builder->ExportOutput(output, output_name);
+    }
+  }
+
+  void Finalize() {
+    plant_.Finalize();
+
+    // Wrapping the plant requires re-exporting of selected ports. The logic
+    // here is different from BurySystem because it needs to preserve the
+    // plant, scene graph, and their port connections.24~
+    if (plant_depth_ > 0) {
+      ReExportSelectedPlantPorts(builder_.get(), plant_);
+      diagram_ = builder_->Build();
+      for (int k = 1; k < plant_depth_; ++k) {
+        DiagramBuilder<double> builder;
+        auto* system = builder.AddSystem(std::move(diagram_));
+        ReExportSelectedPlantPorts(&builder, *system);
+        diagram_ = builder.Build();
+      }
+      builder_ = std::make_unique<DiagramBuilder<double>>();
+      plant_nest_ = builder_->AddSystem(std::move(diagram_));
+    }
+  }
 
   /* Creates the system diagram and sets up a simulation with CENIC. */
   void Build() {
     if (!plant_.is_finalized()) {
-      plant_.Finalize();
+      Finalize();
     }
 
     diagram_ = builder_->Build();
-    for (int k = 0; k < plant_depth_; ++k) {
-      DiagramBuilder<double> builder;
-      builder.AddSystem(std::move(diagram_));
-      diagram_ = builder.Build();
-    }
     std::unique_ptr<Context<double>> context = diagram_->CreateDefaultContext();
 
     // Set initial conditions.
@@ -131,6 +203,7 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
   int external_depth_{0};
   MultibodyPlant<double>& plant_{
       AddMultibodyPlantSceneGraph(builder_.get(), 0.0).plant};
+  System<double>* plant_nest_{&plant_};
 };
 
 class DoublePendulum : public SimulationTestScenario {
@@ -290,6 +363,10 @@ TEST_P(DoublePendulum, FixedStep) {
 /* Verifies that energy conservation and error metrics for an undamped double
 pendulum are improved with tightened accuracy. */
 TEST_P(DoublePendulum, AccuracyTrends) {
+  // This test is relatively slow; skip extra nesting variations.
+  if (plant_depth_ + external_depth_ > 0) {
+    return;
+  }
   const double simulation_time = 2.0;
 
   // Remove joint damping for this test.
@@ -348,7 +425,7 @@ TEST_P(DoublePendulum, ExternalActuation) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
     plant_.AddJointActuator(joint.name() + "_actuator", joint);
   }
-  plant_.Finalize();
+  Finalize();
   EXPECT_EQ(plant_.num_actuators(), 2);
 
   // Set up a PID controller.
@@ -357,15 +434,17 @@ TEST_P(DoublePendulum, ExternalActuation) {
   const Vector2d Ki(0.5, 0.4);
   const Vector4d x_nom(M_PI_2, -M_PI_2, 0.0, 0.0);
 
-  auto target_sender = builder_->AddSystem<ConstantVectorSource<double>>(x_nom);
-  auto pid_controller = builder_->AddSystem<PidController<double>>(Kp, Ki, Kd);
+  auto [target_sender, target_nest] =
+      BurySystem(std::make_unique<ConstantVectorSource<double>>(x_nom));
+  auto [pid_controller, pid_nest] =
+      BurySystem(std::make_unique<PidController<double>>(Kp, Ki, Kd));
 
-  builder_->Connect(target_sender->get_output_port(),
-                    pid_controller->get_input_port_desired_state());
-  builder_->Connect(plant_.get_state_output_port(),
-                    pid_controller->get_input_port_estimated_state());
-  builder_->Connect(pid_controller->get_output_port(),
-                    plant_.get_actuation_input_port());
+  builder_->Connect(target_nest->get_output_port(),
+                    pid_nest->GetInputPort("desired_state"));
+  builder_->Connect(plant_nest_->GetOutputPort("state"),
+                    pid_nest->GetInputPort("estimated_state"));
+  builder_->Connect(pid_nest->GetOutputPort("control"),
+                    plant_nest_->GetInputPort("actuation"));
 
   Build();
 
@@ -395,18 +474,8 @@ continuous state.*/
 // TODO(#23921): Revisit this test when implementing an error estimate that
 // accounts for external systems.
 TEST_P(DoublePendulum, PositionVelocityExternalSystem) {
-  SpringMassSystem<double>* spring_mass_system{};
-  {
-    auto temp_owner = std::make_unique<SpringMassSystem<double>>(100.0, 1.0);
-    spring_mass_system = temp_owner.get();
-    std::unique_ptr<System<double>> system(std::move(temp_owner));
-    for (int k = 0; k < external_depth_; ++k) {
-      DiagramBuilder<double> builder;
-      builder.AddSystem(std::move(system));
-      system = builder.Build();
-    }
-    builder_->AddSystem(std::move(system));
-  }
+  auto [spring_mass_system, spring_mass_nest] =
+      BurySystem(std::make_unique<SpringMassSystem<double>>(100.0, 1.0));
   Build();
 
   const double q0 = 0.2;
