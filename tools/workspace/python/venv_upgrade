@@ -17,7 +17,7 @@
 set -eux -o pipefail
 
 # When changing this, see drake/tools/workspace/python/README.md.
-readonly python_versions=( 3.10 3.11 3.12 3.13 3.14 )
+readonly python_versions=( 3.12 3.13 3.14 )
 
 purge=1
 commit=
@@ -117,7 +117,7 @@ done
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
 # Upgrade the mypy lockfile.
-readonly mypy_requirements="./setup/python/mypy/requirements.txt" 
+readonly mypy_requirements="./setup/python/mypy/requirements.txt"
 bazel run //setup/python/mypy:lock.update
 files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
 
