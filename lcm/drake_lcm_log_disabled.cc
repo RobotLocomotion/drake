@@ -14,15 +14,10 @@ namespace lcm {
 namespace {
 [[noreturn]] void ThrowError(
     std::source_location caller = std::source_location::current()) {
-  const char* name = caller.function_name();
-  if (*name == 0) {
-    // This fallback is only necessary for broken Clang 15 on Jammy.
-    name = "DrakeLcmLog";
-  }
   throw std::logic_error(fmt::format(
       "{} cannot be used because the LCM runtime library has been disabled "
       "in this build of Drake",
-      name));
+      caller.function_name()));
 }
 }  // namespace
 
