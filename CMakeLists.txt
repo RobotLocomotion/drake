@@ -217,7 +217,7 @@ endif()
 # standard nor CMAKE_CXX_FLAGS to Bazel, but we should.
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 # The supported Python major/minor versions.
 # When changing any of these, see drake/tools/workspace/python/README.md.

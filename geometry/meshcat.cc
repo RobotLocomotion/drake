@@ -2117,7 +2117,7 @@ class Meshcat::Impl {
       // until we know that the main thread is no longer adding more callbacks.
       // It signals that by setting mode_ to kFinshed.
       while (mode_.load() != kFinished) {
-        // TODO(jwnimmer-tri) Use atomic::wait instead, once we have C++20.
+        // TODO(jwnimmer-tri) Use atomic::wait instead.
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
       loop_ = nullptr;
