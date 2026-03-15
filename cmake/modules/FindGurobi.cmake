@@ -36,7 +36,7 @@ set(Gurobi_VERSION
   "${Gurobi_VERSION_MAJOR}.${Gurobi_VERSION_MINOR}.${Gurobi_VERSION_PATCH}"
 )
 
-get_filename_component(_GUROBI_ROOT "${Gurobi_INCLUDE_DIR}" DIRECTORY)
+cmake_path(GET Gurobi_INCLUDE_DIR PARENT_PATH _GUROBI_ROOT)
 
 find_library(Gurobi_LIBRARY
   NAMES "gurobi${Gurobi_VERSION_MAJOR}${Gurobi_VERSION_MINOR}"
