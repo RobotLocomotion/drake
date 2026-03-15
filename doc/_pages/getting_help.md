@@ -46,7 +46,7 @@ When reporting an issue, please consider providing the following information
     * If using C++:
       * C++ compiler (e.g., GCC 11.4, Clang 14.0)
     * If using Python:
-      * Python version (e.g., Python 3.10)
+      * Python version (e.g., Python 3.14)
       * Python distribution (e.g., Ubuntu apt, macOS homebrew)
 * If building from source:
     * Build system (Bazel or CMake)
