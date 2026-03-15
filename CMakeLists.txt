@@ -104,13 +104,12 @@ if(NOT Bazel_FOUND)
   message(STATUS "Using Bazelisk as Bazel_EXECUTABLE to fetch Bazel on demand")
 endif()
 
-get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
-get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
+find_program(CCACHE_FOUND NAMES "ccache")
 
-get_filename_component(CXX_COMPILER_REALPATH "${CMAKE_CXX_COMPILER}" REALPATH)
-get_filename_component(CXX_COMPILER_NAME "${CXX_COMPILER_REALPATH}" NAME)
-
-if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
+if(CCACHE_FOUND AND
+  (CMAKE_CXX_COMPILER_LAUNCHER STREQUAL "${CCACHE_FOUND}" OR
+   CMAKE_C_COMPILER_LAUNCHER STREQUAL "${CCACHE_FOUND}")
+)
   message(FATAL_ERROR
     "Compilation with ccache is NOT supported due to incompatibility with Bazel"
   )
@@ -304,12 +303,8 @@ if(NOT APPLE)
   )
 endif()
 
-get_filename_component(PROJECT_BINARY_DIR_REALPATH
-  "${PROJECT_BINARY_DIR}" REALPATH
-)
-get_filename_component(PROJECT_SOURCE_DIR_REALPATH
-  "${PROJECT_SOURCE_DIR}" REALPATH
-)
+file(REAL_PATH "${PROJECT_BINARY_DIR}" PROJECT_BINARY_DIR_REALPATH)
+file(REAL_PATH "${PROJECT_SOURCE_DIR}" PROJECT_SOURCE_DIR_REALPATH)
 
 # Check whether the PROJECT_BINARY_DIR is a subdirectory of the
 # PROJECT_SOURCE_DIR.
@@ -379,7 +374,7 @@ function(symlink_external_repository_libs NAME TARGET)
   )
 
   function(_create_links lib_dir location)
-    get_filename_component(basename "${location}" NAME)
+    cmake_path(GET location FILENAME basename)
     file(CREATE_LINK "${location}" "${lib_dir}/${basename}" SYMBOLIC)
     # Link the SONAME spelling in case of shared libraries.
     # If the basename does not match this pattern, this part is all a no-op.
@@ -636,7 +631,7 @@ if(WITH_GUROBI)
   string(APPEND BAZEL_CONFIG " --config=gurobi")
 
   if(NOT APPLE)
-    get_filename_component(GUROBI_HOME "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    cmake_path(GET Gurobi_INCLUDE_DIRS PARENT_PATH GUROBI_HOME)
     string(APPEND BAZEL_REPO_ENV " --repo_env=GUROBI_HOME=${GUROBI_HOME}")
   endif()
 endif()
