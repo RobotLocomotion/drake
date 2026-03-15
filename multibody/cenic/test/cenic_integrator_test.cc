@@ -78,14 +78,6 @@ using TestParam = std::tuple<int, int>;
 /* A base test case with utilities for setting up a CENIC simulation. */
 class SimulationTestScenario : public testing::TestWithParam<TestParam> {
  protected:
-  static std::vector<std::string> plant_export_input_names() {
-    return {"actuation"};
-  }
-
-  static std::vector<std::string> plant_export_output_names() {
-    return {"state"};
-  }
-
   void SetUp() override {
     const TestParam depths = GetParam();
     plant_depth_ = std::get<0>(depths);
@@ -106,6 +98,9 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
                         const System<double>& system) {
     for (int m = 0; m < system.num_input_ports(); ++m) {
       const InputPort<double>& input = system.get_input_port(m);
+      if (builder->IsConnectedOrExported(input)) {
+        continue;
+      }
       builder->ExportInput(input, input.get_name());
     }
     for (int m = 0; m < system.num_output_ports(); ++m) {
@@ -132,20 +127,6 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     return std::tie(alias, nest);
   }
 
-  /* Like ReExportAllPorts, but only export ports named by
-  plant_export_input_names() and plant_export_output_names(). */
-  void ReExportSelectedPlantPorts(DiagramBuilder<double>* builder,
-                                  const System<double>& system) {
-    for (const std::string& input_name : plant_export_input_names()) {
-      const InputPort<double>& input = system.GetInputPort(input_name);
-      builder->ExportInput(input, input_name);
-    }
-    for (const std::string& output_name : plant_export_output_names()) {
-      const OutputPort<double>& output = system.GetOutputPort(output_name);
-      builder->ExportOutput(output, output_name);
-    }
-  }
-
   void Finalize() {
     plant_.Finalize();
 
@@ -153,12 +134,12 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
     // here is different from BurySystem because it needs to preserve the
     // plant, scene graph, and their port connections.24~
     if (plant_depth_ > 0) {
-      ReExportSelectedPlantPorts(builder_.get(), plant_);
+      ReExportAllPorts(builder_.get(), plant_);
       diagram_ = builder_->Build();
       for (int k = 1; k < plant_depth_; ++k) {
         DiagramBuilder<double> builder;
         auto* system = builder.AddSystem(std::move(diagram_));
-        ReExportSelectedPlantPorts(&builder, *system);
+        ReExportAllPorts(&builder, *system);
         diagram_ = builder.Build();
       }
       builder_ = std::make_unique<DiagramBuilder<double>>();
