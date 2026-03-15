@@ -24,8 +24,8 @@ officially supports when building from source:
 
 <!-- The operating system requirements should match those listed in the root
      CMakeLists.txt. -->
-<!-- The minimum compiler versions should match those listed in both the root
-     CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
+<!-- The minimum compiler versions should match those listed in the root
+     CMakeLists.txt. -->
 <!-- The minimum Python version(s) should match those listed in both the root
      CMakeLists.txt and setup/python/pyproject.toml. -->
 <!-- The minimum CMake version across all platforms should match that listed

@@ -125,10 +125,10 @@ if(NOT DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR)
 endif()
 
 # The minimum compiler versions should match those listed in both
-# doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 16)
-set(MINIMUM_CLANG_VERSION 15)
-set(MINIMUM_GNU_VERSION 11)
+# doc/_pages/from_source.md.
+set(MINIMUM_APPLE_CLANG_VERSION 17)
+set(MINIMUM_CLANG_VERSION 19)
+set(MINIMUM_GNU_VERSION 13)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
