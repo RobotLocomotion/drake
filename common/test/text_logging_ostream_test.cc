@@ -4,6 +4,7 @@
 
 #include <ostream>
 
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 // The BUILD.bazel rules must supply this flag.  This test code is compiled and
@@ -25,8 +26,6 @@
 #endif
 // clang-format on
 
-#include "drake/common/fmt_ostream.h"
-
 namespace {
 
 class Streamable {
@@ -37,26 +36,26 @@ class Streamable {
   }
 };
 
-using drake::fmt_streamed;
-
 // Call each API function and macro to ensure that all of them compile.
 // These should all compile and run both with and without spdlog.
 GTEST_TEST(TextLoggingTest, SmokeTestStreamable) {
   Streamable obj;
   drake::log()->trace("drake::log()->trace test: {} {}", "OK",
-                      fmt_streamed(obj));
+                      fmt::streamed(obj));
   drake::log()->debug("drake::log()->debug test: {} {}", "OK",
-                      fmt_streamed(obj));
-  drake::log()->info("drake::log()->info test: {} {}", "OK", fmt_streamed(obj));
-  drake::log()->warn("drake::log()->warn test: {} {}", "OK", fmt_streamed(obj));
+                      fmt::streamed(obj));
+  drake::log()->info("drake::log()->info test: {} {}", "OK",
+                     fmt::streamed(obj));
+  drake::log()->warn("drake::log()->warn test: {} {}", "OK",
+                     fmt::streamed(obj));
   drake::log()->error("drake::log()->error test: {} {}", "OK",
-                      fmt_streamed(obj));
+                      fmt::streamed(obj));
   drake::log()->critical("drake::log()->critical test: {} {}", "OK",
-                         fmt_streamed(obj));
+                         fmt::streamed(obj));
   DRAKE_LOGGER_TRACE("DRAKE_LOGGER_TRACE macro test: {}, {}", "OK",
-                     fmt_streamed(obj));
+                     fmt::streamed(obj));
   DRAKE_LOGGER_DEBUG("DRAKE_LOGGER_DEBUG macro test: {}, {}", "OK",
-                     fmt_streamed(obj));
+                     fmt::streamed(obj));
 }
 
 }  // namespace

@@ -176,8 +176,8 @@ void DoScalarIndependentDefinitions(py::module m) {
           py::str py_namespace = std::string{self.get_namespace()};
           py::str py_element = std::string{self.get_element()};
           return fmt::format("ScopedName({}, {})",
-              fmt_streamed(py::repr(py_namespace)),
-              fmt_streamed(py::repr(py_element)));
+              std::string(py::repr(py_namespace)),
+              std::string(py::repr(py_element)));
         });
     DefCopyAndDeepCopy(&cls);
   }

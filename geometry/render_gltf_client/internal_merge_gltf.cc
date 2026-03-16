@@ -7,9 +7,9 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/fmt_ostream.h"
 #include "drake/common/text_logging.h"
 
 // For more explanation of the glTF fun and games:
@@ -136,7 +136,7 @@ void MergeTrees(json* j1, json&& j2, const string& blob_name,
             "Error in merging '{}.{}.{}'; two glTF files have different "
             "values. '{}' defines it as {}, but '{}' defines it as {}.",
             to_string(container_type), blob_name, key, j1_name,
-            fmt_streamed((*j1)[key]), j2_name, fmt_streamed(value)));
+            fmt::streamed((*j1)[key]), j2_name, fmt::streamed(value)));
       }
     }
   }

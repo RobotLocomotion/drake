@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include <fmt/ostream.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/Root.hh>
@@ -81,7 +82,7 @@ sdf::SDFPtr ReadString(const std::string& input) {
   const bool success = sdf::readString(input, config, result, errors);
   if (!success) {
     for (const auto& error : errors) {
-      drake::log()->error("Parse error: {}", fmt_streamed(error));
+      drake::log()->error("Parse error: {}", fmt::streamed(error));
     }
     // Note that we don't throw here, we just spam the console.  This is not
     // great, but it matches the pre-existing behavior which wants this helper
