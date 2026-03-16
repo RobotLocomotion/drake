@@ -3,6 +3,7 @@
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,12 +18,14 @@
 #include <vtkRenderer.h>             // vtkRenderingCore
 #include <vtkShaderProgram.h>        // vtkRenderingOpenGL2
 #include <vtkSmartPointer.h>         // vtkCommonCore
+#include <vtkTexture.h>              // vtkRenderingCore
 #include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
@@ -303,9 +306,16 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // If T_GA = I, then `T_GA` is set to nullptr. Otherwise, posing the actor
   // using geometry's world pose X_WG should set the transform to
   // T_WA = X_WG * T_GA.
+  //
+  // For the color-pipeline parts that carry a texture, `texture_key` records
+  // the key into `texture_cache_` (and `texture_use_count_`) so that
+  // DoRemoveGeometry can perform correct reference-count-based eviction.
   struct Part {
     vtkSmartPointer<vtkActor> actor;
     vtkSmartPointer<vtkMatrix4x4> T_GA;
+    // Non-empty only for color-pipeline parts whose texture came from
+    // texture_cache_.
+    std::optional<std::string> texture_key;
   };
 
   // Some geometries are represented by multiple parts (such as when importing
@@ -363,7 +373,31 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // computed from MeshSource::GetCacheKey() to uniquely identify a mesh source.
   // This eliminates redundant re-parsing and re-rendering when the same mesh
   // is registered multiple times.
-  std::unordered_map<std::string, CachedMesh> mesh_cache_;
+  string_unordered_map<CachedMesh> mesh_cache_;
+
+  // Cache mapping texture keys to loaded vtkTexture objects. The key is based
+  // on a hash of the image data (whether the image was specified as a path or a
+  // MemoryFile). While it requires us to read the bytes from disk with every
+  // reference, a cached image will still avoid decoding the image and maximize
+  // reuse on the GPU.
+  // The full image key contains the hash plus various suffixes to capture
+  // varying per-texture parameters (OpenGl requires different texture objects
+  // for different parameter combinations).
+  string_unordered_map<vtkSmartPointer<vtkTexture>> texture_cache_;
+
+  // Explicit reference count per texture cache key: tracks how many live
+  // color-pipeline parts currently reference each entry.
+  //
+  // When the count for a key reaches zero (i.e. the last geometry using that
+  // texture is removed), the corresponding vtkSmartPointer is erased from
+  // texture_cache_. This removes *our* contribution to the vtkTexture's
+  // reference count. However, because VTK itself holds additional internal
+  // references (e.g. through actor bookkeeping), removing the cache entry does
+  // not guarantee that the vtkTexture object will be immediately destroyed; it
+  // will be destroyed only once all VTK-internal references are also released.
+  // The cache therefore ensures we never hold textures alive longer than
+  // necessary, without making any stronger claim about timing of destruction.
+  string_unordered_map<int> texture_use_count_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.

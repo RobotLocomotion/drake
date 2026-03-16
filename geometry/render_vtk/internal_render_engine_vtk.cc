@@ -433,6 +433,26 @@ bool RenderEngineVtk::DoRemoveGeometry(GeometryId id) {
 
   if (iter != props_.end()) {
     PropArray& pipe_props = iter->second;
+    // Decrement the use counts for every texture named by this geometry's
+    // parts. There are two thread-safety questions here: is manipulating this
+    // cache threadsafe? What happens inside VTK?
+    //
+    // Manipulating this cache is *not* threadsafe. We rely on Drake's practice
+    // of one-thread-per-Context (an individual RenderEngineVtk lives in each
+    // Context).
+    //
+    // VTK reference counting *is* threadsafe. So, two contexts can evict cache
+    // entries in parallel safely (each reducing VTK's internal ref count on the
+    // shared vtkTexture).
+    for (const auto& part : pipe_props[ImageType::kColor].parts) {
+      if (part.texture_key.has_value()) {
+        const std::string& key = *part.texture_key;
+        if (--texture_use_count_[key] == 0) {
+          texture_cache_.erase(key);
+          texture_use_count_.erase(key);
+        }
+      }
+    }
     for (int i = 0; i < kNumPipelines; ++i) {
       for (const auto& part : pipe_props[i].parts) {
         pipelines_[i]->renderer->RemoveActor(part.actor);
@@ -627,6 +647,16 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   // the original without duplicating any vertex data.
   mesh_cache_ = other.mesh_cache_;
 
+  // Cloning the cache is subtle. The cache _data_ is a vtkTexture. That data is
+  // shared across cloned RenderEngineVtk instances. It has an internal VTK
+  // reference count across all uses (including VTK's internal uses). Drake's
+  // reference counting (texture_use_count_) only counts the uses of the texture
+  // in _this_ RenderEngineVtk instance. So, while VTK's internal reference
+  // count increases with each engine clone, the cloned engine has the same
+  // *local* reference count as its source.
+  texture_cache_ = other.texture_cache_;
+  texture_use_count_ = other.texture_use_count_;
+
   for (const auto& [id, source_props] : other.props_) {
     PropArray target_props;
     for (int i = 0; i < kNumPipelines; ++i) {
@@ -645,7 +675,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
           SetDepthShader(target_actor);
         }
         target_prop.parts.push_back(
-            Part{.actor = std::move(target_actor), .T_GA = source_part.T_GA});
+            Part{.actor = std::move(target_actor),
+                 .T_GA = source_part.T_GA,
+                 .texture_key = source_part.texture_key});
       }
     }
     props_.insert({id, std::move(target_props)});
@@ -1160,52 +1192,96 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   if (use_pbr_materials_) {
     color_actor->GetProperty()->SetInterpolationToPBR();
   }
+  // When this part uses a cached texture we record the key here so that
+  // DoRemoveGeometry can decrement the per-key use-count when the geometry
+  // is later unregistered.
+  std::optional<std::string> active_texture_key;
   if (!IsEmpty(material.diffuse_map)) {
     // Parsing via VTK should never require an image to be flipped.
     DRAKE_DEMAND(material.flip_y == false);
 
-    vtkNew<vtkPNGReader> texture_reader;
-    const std::string description = std::visit<std::string>(
-        overloaded{
-            [](const auto&) -> std::string {
-              throw std::runtime_error(
-                  "RenderEngineVtk: diffuse map must be on-disk or in-memory");
-            },
-            [reader = texture_reader.Get()](const std::filesystem::path& path) {
-              reader->SetFileName(path.c_str());
-              return path.string();
-            },
-            [reader = texture_reader.Get()](const MemoryFile& file) {
-              const std::string& contents = file.contents();
-              vtkNew<vtkMemoryResourceStream> stream;
-              stream->SetBuffer(contents.c_str(), contents.size());
-              reader->SetStream(stream);
-              return file.filename_hint();
-            }},
-        material.diffuse_map);
-    texture_reader->Update();
-    if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
-      log()->warn(
-          "Texture map '{}' has an unsupported bit depth, casting it to uchar "
-          "channels.",
-          description);
-    }
-
-    vtkNew<vtkImageCast> caster;
-    caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
-    caster->SetInputConnection(texture_reader->GetOutputPort());
-    caster->Update();
-    DRAKE_DEMAND(caster->GetOutput() != nullptr);
-
-    vtkNew<vtkOpenGLTexture> texture;
-    texture->SetInputConnection(caster->GetOutputPort());
     // TODO(SeanCurtis-TRI): It doesn't seem like the scale is used to actually
     // *scale* the image.
     const Vector2d uv_scale = data.properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d{1, 1});
     const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
-    texture->SetRepeat(need_repeat);
-    texture->InterpolateOn();
+
+    // Build a cache key from the image identity plus the per-texture flags
+    // configurable from input.
+    const std::string texture_key = std::visit<std::string>(
+        overloaded{
+            [](const auto&) -> std::string {
+              throw std::runtime_error(
+                  "RenderEngineVtk: diffuse map must be on-disk or in-memory");
+            },
+            [](const std::filesystem::path& path) {
+              return MemoryFile::Make(path).sha256().to_string();
+            },
+            [](const MemoryFile& file) {
+              return file.sha256().to_string();
+            }},
+        material.diffuse_map);
+    // Tweak the key based on the texture parameters we actually configure.
+    // Unfortunately, every tweak of vtkTexture parameters will require a new
+    // instance of the texture data; so we'll need to modify the key to
+    // encompass every texture parameter we end up setting.
+    // We use '?' as the concatenation operator knowing that it can't appear in
+    // filenames.
+    const std::string full_key =
+        texture_key + (need_repeat ? "?repeat" : "?no_repeat");
+    active_texture_key = full_key;
+
+    vtkSmartPointer<vtkTexture> texture;
+    auto cache_iter = texture_cache_.find(full_key);
+    if (cache_iter != texture_cache_.end()) {
+      // Cache hit: reuse the existing vtkTexture to avoid redundant file I/O
+      // and duplicate GPU texture uploads.
+      texture = cache_iter->second;
+    } else {
+      // Cache miss: parse the image and build a new vtkTexture.
+      vtkNew<vtkPNGReader> texture_reader;
+      const std::string description = std::visit<std::string>(
+          overloaded{[](const auto&) -> std::string {
+                       throw std::runtime_error(
+                           "RenderEngineVtk: diffuse map must be on-disk or "
+                           "in-memory");
+                     },
+                     [reader = texture_reader.Get()](
+                         const std::filesystem::path& path) {
+                       reader->SetFileName(path.c_str());
+                       return path.string();
+                     },
+                     [reader = texture_reader.Get()](const MemoryFile& file) {
+                       const std::string& contents = file.contents();
+                       vtkNew<vtkMemoryResourceStream> stream;
+                       stream->SetBuffer(contents.c_str(), contents.size());
+                       reader->SetStream(stream);
+                       return file.filename_hint();
+                     }},
+          material.diffuse_map);
+      texture_reader->Update();
+      if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
+        log()->warn(
+            "Texture map '{}' has an unsupported bit depth, casting it to "
+            "uchar channels.",
+            description);
+      }
+
+      vtkNew<vtkImageCast> caster;
+      caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
+      caster->SetInputConnection(texture_reader->GetOutputPort());
+      caster->Update();
+      DRAKE_DEMAND(caster->GetOutput() != nullptr);
+
+      vtkNew<vtkOpenGLTexture> new_texture;
+      new_texture->SetInputConnection(caster->GetOutputPort());
+      new_texture->SetRepeat(need_repeat);
+      new_texture->InterpolateOn();
+
+      texture_cache_[full_key] = new_texture;
+      texture = new_texture;
+    }
+
     if (use_pbr_materials_) {
       texture->SetUseSRGBColorSpace(true);
       color_actor->GetProperty()->SetBaseColorTexture(texture);
@@ -1221,6 +1297,12 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   color_actor->GetProperty()->SetOpacity(diffuse.a());
 
   connect_actor(ImageType::kColor);
+  // If a cached texture was applied, record its key in the color Part and
+  // bump the use-count so DoRemoveGeometry knows when to evict.
+  if (active_texture_key.has_value()) {
+    props[ImageType::kColor].parts.back().texture_key = active_texture_key;
+    ++texture_use_count_[*active_texture_key];
+  }
 
   // Depth actor; always gets wired in with no additional work.
   connect_actor(ImageType::kDepth);

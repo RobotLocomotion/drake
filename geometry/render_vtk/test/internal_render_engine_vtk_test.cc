@@ -112,6 +112,24 @@ class RenderEngineVtkTester {
   static int GetMeshCacheSize(const RenderEngineVtk& renderer) {
     return static_cast<int>(renderer.mesh_cache_.size());
   }
+
+  // Returns the number of entries currently in the texture cache.
+  static int GetTextureCacheSize(const RenderEngineVtk& renderer) {
+    return static_cast<int>(renderer.texture_cache_.size());
+  }
+
+  // Returns the vtkTexture from the first color-pipeline part of `id` that
+  // actually has a texture attached. Robustly searches against meshes that may
+  // have multiple parts.
+  static vtkTexture* GetFirstTexture(const RenderEngineVtk& renderer,
+                                     GeometryId id) {
+    for (const auto& part : renderer.props_.at(id).at(0).parts) {
+      if (vtkTexture* tex = part.actor.Get()->GetTexture(); tex != nullptr) {
+        return tex;
+      }
+    }
+    return nullptr;
+  }
 };
 
 namespace {
@@ -333,6 +351,32 @@ RigidTransformd PoseCamera(const Vector3d& p_WC, const Vector3d& p_WT,
       RotationMatrixd::MakeFromOrthonormalColumns(v_WCx, v_WCy, v_WCz), p_WC);
 }
 
+template <typename ImageType>
+::testing::AssertionResult ImagesAreSimilar(const ImageType& test_image,
+                                            const ImageType& ref_image,
+                                            double tolerance,
+                                            double conformity = 0.995) {
+  using T = typename ImageType::T;
+  DRAKE_DEMAND(ref_image.size() == test_image.size());
+  Eigen::Map<const VectorX<T>> data_expected(ref_image.at(0, 0),
+                                             ref_image.size());
+  Eigen::Map<const VectorX<T>> data_actual(test_image.at(0, 0),
+                                           test_image.size());
+  const Eigen::ArrayXd differences = (data_expected.template cast<double>() -
+                                      data_actual.template cast<double>())
+                                         .array()
+                                         .abs();
+  const int num_acceptable = (differences <= tolerance).count();
+  const float conformity_actual =
+      num_acceptable / static_cast<float>(ref_image.size());
+  return conformity_actual >= conformity
+             ? ::testing::AssertionSuccess()
+             : ::testing::AssertionFailure()
+                   << "Images differ:\n"
+                   << "  observed conformity = " << conformity_actual << "\n"
+                   << "  required conformity = " << conformity;
+}
+
 // Compares the test image against a reference image.
 //
 // The bytes of `test_image` are compared with the bytes of `ref_image`.
@@ -353,18 +397,7 @@ RigidTransformd PoseCamera(const Vector3d& p_WC, const Vector3d& p_WT,
 template <typename ImageType>
 void CompareImages(const ImageType& test_image, const ImageType& ref_image,
                    double tolerance, double conformity = 0.995) {
-  using T = typename ImageType::T;
-  ASSERT_EQ(ref_image.size(), test_image.size());
-  Eigen::Map<const VectorX<T>> data_expected(ref_image.at(0, 0),
-                                             ref_image.size());
-  Eigen::Map<const VectorX<T>> data_actual(test_image.at(0, 0),
-                                           test_image.size());
-  const Eigen::ArrayXd differences = (data_expected.template cast<double>() -
-                                      data_actual.template cast<double>())
-                                         .array()
-                                         .abs();
-  const int num_acceptable = (differences <= tolerance).count();
-  EXPECT_GE(num_acceptable / static_cast<float>(ref_image.size()), conformity);
+  EXPECT_TRUE(ImagesAreSimilar(test_image, ref_image, tolerance, conformity));
 }
 
 // Compares the test image against a reference image named by its file path.
@@ -3499,6 +3532,194 @@ TEST_F(RenderEngineVtkTest, DifferentObjsDontShare) {
   ASSERT_NE(src_a, nullptr);
   ASSERT_NE(src_b, nullptr);
   EXPECT_NE(src_a, src_b);
+}
+
+// ---------------------------------------------------------------------------
+// Texture-cache source-sharing tests
+//
+// These tests verify that registering the same image file multiple times
+// results in exactly one cache entry and that all registrations share the same
+// underlying vtkTexture object.
+// ---------------------------------------------------------------------------
+
+vtkTexture* RegisterAndGetTexture(RenderEngineVtk* engine, const Shape& shape,
+                                  const PerceptionProperties& props) {
+  DRAKE_DEMAND(engine != nullptr);
+  const RigidTransformd I = RigidTransformd::Identity();
+  const GeometryId id = GeometryId::get_new_id();
+  engine->RegisterVisual(id, shape, props, I);
+  return RenderEngineVtkTester::GetFirstTexture(*engine, id);
+}
+
+// Examines cache correctness for an image that resides *on disk*. Also, by
+// using a Sphere, we're showing that the cache isn't limited to Meshes.
+TEST_F(RenderEngineVtkTest, TextureSharingPathBased) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string png_a =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
+  const std::string png_b =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/checker.png");
+
+  auto make_props = [](const std::string& png_path) {
+    PerceptionProperties props;
+    props.AddProperty("label", "id", RenderLabel::kDontCare);
+    props.AddProperty("phong", "diffuse_map", png_path);
+    return props;
+  };
+
+  vtkTexture* tex1a =
+      RegisterAndGetTexture(&engine, Sphere(0.5), make_props(png_a));
+  vtkTexture* tex1b =
+      RegisterAndGetTexture(&engine, Sphere(0.5), make_props(png_b));
+  vtkTexture* tex2a =
+      RegisterAndGetTexture(&engine, Sphere(1.5), make_props(png_a));
+  vtkTexture* tex2b =
+      RegisterAndGetTexture(&engine, Sphere(0.5), make_props(png_b));
+
+  // We registered two unique images.
+  EXPECT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 2);
+
+  // Textures for png_a should be the same.
+  ASSERT_NE(tex1a, nullptr);
+  EXPECT_EQ(tex1a, tex2a);
+  // Texture for png_b should be the same.
+  ASSERT_NE(tex1b, nullptr);
+  EXPECT_EQ(tex1b, tex2b);
+  // Textures for png_a should be different from png_b.
+  EXPECT_NE(tex1a, tex1b);
+}
+
+// Examines cache correctness for an image that is in memory. In-memory images
+// are only supported with MeshSources.
+TEST_F(RenderEngineVtkTest, TextureSharingWithMemoryFile) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const auto obj_data = MemoryFile::Make(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj"));
+  const auto mtl_data = MemoryFile::Make(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.mtl"));
+  const auto png_data_a = MemoryFile::Make(FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/rainbow_stripes.png"));
+  const auto png_data_b = MemoryFile::Make(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/checker.png"));
+
+  // Build a fresh InMemoryMesh each time; the SHA-256 of rainbow_box.obj's
+  // bytes is the same for all three calls, so they map to a single mesh-cache
+  // entry and the Rainbow_Stripes texture maps to a single texture-cache entry.
+  int i = 0;
+  auto make_mesh = [&](const MemoryFile& png_data) {
+    // To avoid artifacts from caching the root .obj file, we'll perturb the
+    // file contents of the obj_data so each obj is considered unique. Note:
+    // this is necessary because, as documented, the cache key for meshes only
+    // considers the root file contents and can't distinguish two models that
+    // differ in supporting files. (See mesh_source_cache_key.cc.)
+    return Mesh(InMemoryMesh{
+        MemoryFile(fmt::format("# {}\n", ++i) + obj_data.contents(),
+                   obj_data.extension(), obj_data.filename_hint()),
+        {{"rainbow_box.mtl", mtl_data}, {"rainbow_stripes.png", png_data}}});
+  };
+
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  vtkTexture* tex1a =
+      RegisterAndGetTexture(&engine, make_mesh(png_data_a), props);
+  vtkTexture* tex1b =
+      RegisterAndGetTexture(&engine, make_mesh(png_data_b), props);
+  vtkTexture* tex2a =
+      RegisterAndGetTexture(&engine, make_mesh(png_data_a), props);
+  vtkTexture* tex2b =
+      RegisterAndGetTexture(&engine, make_mesh(png_data_b), props);
+
+  // We registered two unique images.
+  EXPECT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 2);
+
+  // Textures for png_a should be the same.
+  ASSERT_NE(tex1a, nullptr);
+  EXPECT_EQ(tex1a, tex2a);
+  // Texture for png_b should be the same.
+  ASSERT_NE(tex1b, nullptr);
+  EXPECT_EQ(tex1b, tex2b);
+  // Textures for png_a should be different from png_b.
+  EXPECT_NE(tex1a, tex1b);
+}
+
+// Registers two geometries that share the same texture. Removing the first
+// geometry must *not* evict the texture (it is still in use). Only after the
+// second geometry is removed should the cache entry be evicted.
+TEST_F(RenderEngineVtkTest, TextureCacheEviction) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string png_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel::kDontCare);
+  props.AddProperty("phong", "diffuse_map", png_path);
+
+  const GeometryId id1 = GeometryId::get_new_id();
+  const GeometryId id2 = GeometryId::get_new_id();
+  engine.RegisterVisual(id1, Sphere(0.5), props, RigidTransformd::Identity());
+  engine.RegisterVisual(id2, Sphere(1.5), props, RigidTransformd::Identity());
+  ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 1);
+
+  // Removing the first user must not disturb the cache.
+  engine.RemoveGeometry(id1);
+  EXPECT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 1);
+
+  // Removing the final user must evict the now-unreferenced texture.
+  engine.RemoveGeometry(id2);
+  EXPECT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 0);
+}
+
+// Confirms that cloned engines' caches are not harmed by eviction from another
+// engine.
+TEST_F(RenderEngineVtkTest, TextureCacheEvictionAcrossClones) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string png_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel::kDontCare);
+  props.AddProperty("phong", "diffuse_map", png_path);
+
+  const GeometryId id = GeometryId::get_new_id();
+  engine.RegisterVisual(id, Sphere(0.5), props, RigidTransformd::Identity());
+  ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 1);
+
+  std::unique_ptr<RenderEngine> clone_base = engine.Clone();
+  auto* clone_ptr = dynamic_cast<RenderEngineVtk*>(clone_base.get());
+  ASSERT_NE(clone_ptr, nullptr);
+  ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(*clone_ptr), 1);
+
+  // Now render a reference image from each engine.
+  const ColorRenderCamera color_camera(depth_camera_.core(), FLAGS_show_window);
+
+  // Originally, the images should match.
+  ImageRgba8U source_image_ref(color_);
+  engine.RenderColorImage(color_camera, &source_image_ref);
+  ImageRgba8U clone_image_ref(color_);
+  clone_ptr->RenderColorImage(color_camera, &clone_image_ref);
+  ASSERT_TRUE(ImagesAreSimilar(source_image_ref, clone_image_ref, 1e-5, 1.0));
+
+  // Removing the geometry (and texture) from the original engine.
+  engine.RemoveGeometry(id);
+  ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 0);
+
+  // Rendering each image; the source engine has a different image, the cloned
+  // is unchanged.
+  ImageRgba8U source_image_dut(color_);
+  engine.RenderColorImage(color_camera, &source_image_dut);
+  ImageRgba8U clone_image_dut(color_);
+  clone_ptr->RenderColorImage(color_camera, &clone_image_dut);
+
+  ASSERT_FALSE(
+      ImagesAreSimilar(source_image_ref, source_image_dut, 1e-5, 0.75));
+  ASSERT_TRUE(ImagesAreSimilar(source_image_ref, clone_image_dut, 1e-5, 1.0));
 }
 
 }  // namespace
