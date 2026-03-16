@@ -55,7 +55,7 @@ maybe require extra setup. See the
 
 ⁽²⁾ CPython is the only Python implementation supported.
 
-⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
+⁽³⁾ Drake requires a compiler running in C++23 (or greater) mode.
 
 ⁽⁴⁾ On an experimental basis, Drake also supports aarch64 on Ubuntu 24.04
 (Noble). Follow [#13514](https://github.com/RobotLocomotion/drake/issues/13514)
