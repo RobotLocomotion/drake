@@ -136,10 +136,6 @@ config_setting(
 selects.config_setting_group(
     name = "use_mold_linker",
     match_all = [
-        # TODO(rpoyner-tri): consider removing the "noble" requirement when
-        # Drake's support of "jammy" ends. Jammy is excluded because its
-        # version of the mold linker is too old.
-        "//tools:ubuntu_noble",
         ":debug",
         ":mold_linker_allowed",
     ],

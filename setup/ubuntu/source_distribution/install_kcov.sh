@@ -1,8 +1,6 @@
 #!/bin/bash
 #
-# On Ubuntu 24.04 Noble, installs kcov from a drake-mirror download. (For Ubuntu
-# 22.04 Jammy, the packages-jammy-test-only.txt already has kcov, so this script
-# should not be used.)
+# On Ubuntu 24.04 Noble, installs kcov from a drake-mirror download.
 #
 # This script does not accept any command line arguments.
 
