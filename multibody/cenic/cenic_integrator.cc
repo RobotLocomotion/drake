@@ -106,14 +106,10 @@ class DiagramScanner : public SystemVisitor<T> {
 
   void VisitPlant(const MultibodyPlant<T>& plant) {
     if (plant.is_discrete()) {
-      DRAKE_LOGGER_TRACE("path {} is discrete plant",
-                         fmt::join(current_path_, ","));
       rejected_plant_ = &plant;
       return;
     }
     if (!plant.geometry_source_is_registered()) {
-      DRAKE_LOGGER_TRACE("path {} is non-scene-graph plant",
-                         fmt::join(current_path_, ","));
       rejected_plant_ = &plant;
       return;
     }
@@ -143,7 +139,7 @@ class DiagramScanner : public SystemVisitor<T> {
   CenicDiagramStructure<T> structure_;
 
   // If we found a MbP but couldn't use it (because it was misconfigured), then
-  // we note it here for possible error reporting after visitation is complete.
+  // we note it here for error reporting after visitation is complete.
   const MultibodyPlant<T>* rejected_plant_{};
 };
 
@@ -155,7 +151,7 @@ class DiagramScanner : public SystemVisitor<T> {
 
 // Condition (1) is guaranteed by the scanner above and integrator constructor
 // below. Condition (2) is guaranteed by chains of custody leading back to the
-// root diagram (see #created_for_root_diagram comments below), and few
+// root diagram (see #created_for_root_diagram comments below), and a few
 // explicit checks. Hence, the functions can safely traverse the data using
 // static_cast, rather than dynamic_cast.
 
@@ -173,12 +169,10 @@ const ContinuousState<T>& GetSubstateByPath(const ContinuousState<T>& state,
 template <typename T>
 ContinuousState<T>& GetMutableSubstateByPath(ContinuousState<T>& state,
                                              const SubsystemPath& path) {
-  ContinuousState<T>* cursor{&state};
-  for (const SubsystemIndex& k : path) {
-    auto* states = static_cast<DiagramContinuousState<T>*>(cursor);
-    cursor = &states->get_mutable_substate(k);
-  }
-  return *cursor;
+  // The data and logic are identical to the const version; only the const-ness
+  // is different. Since we accepted a non-const `state` to get here, returning
+  // a non-const substate reference is ok.
+  return const_cast<ContinuousState<T>&>(GetSubstateByPath(state, path));
 }
 
 template <typename T>

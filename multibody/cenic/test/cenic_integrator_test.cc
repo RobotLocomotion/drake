@@ -71,8 +71,9 @@ constexpr char kBallOnTableMjcf[] = R"""(
   </mujoco>
   )""";
 
-// get<0>() is plant depth.
-// get<1>() is external system with continuous state depth.
+// TestParam uses tuple for compatibility with ::testing::Combine.
+// get<0>() is nesting depth for the plant and scene graph.
+// get<1>() is nesting depth for external systems.
 using TestParam = std::tuple<int, int>;
 
 /* A base test case with utilities for setting up a CENIC simulation. */

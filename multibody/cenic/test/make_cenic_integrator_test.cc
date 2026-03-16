@@ -96,6 +96,41 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureExtraPlant) {
                               ".*more.*continuous.*");
 }
 
+GTEST_TEST(MakeCenicIntegratorTest, SuccessExtraDiscretePlant) {
+  DiagramBuilder<double> builder;
+  RobotDiagramBuilder<double> robot_builder{/* time_step = */ 0.0};
+  auto robot_diagram = builder.AddSystem(robot_builder.Build());
+  auto result = AddMultibodyPlantSceneGraph(&builder, 0.01);
+  result.plant.Finalize();
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<IntegratorBase<double>> dut =
+      MakeCenicIntegrator(*robot_diagram);
+  auto& cenic = dynamic_cast<CenicIntegrator<double>&>(*dut);
+
+  // The CENIC plant is the same object as the robot diagram's plant.
+  const auto& dut_plant = cenic.plant();
+  const auto& diagram_plant = robot_diagram->plant();
+  EXPECT_EQ(&dut_plant, &diagram_plant);
+}
+
+// TODO(rpoyner-tri): This test should fail; see #24226.
+GTEST_TEST(MakeCenicIntegratorTest, SuccessExtraNoSceneGraphPlant) {
+  DiagramBuilder<double> builder;
+  RobotDiagramBuilder<double> robot_builder{/* time_step = */ 0.0};
+  auto robot_diagram = builder.AddSystem(robot_builder.Build());
+  auto extra_plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+  extra_plant->Finalize();
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<IntegratorBase<double>> dut =
+      MakeCenicIntegrator(*robot_diagram);
+  auto& cenic = dynamic_cast<CenicIntegrator<double>&>(*dut);
+
+  // The CENIC plant is the same object as the robot diagram's plant.
+  const auto& dut_plant = cenic.plant();
+  const auto& diagram_plant = robot_diagram->plant();
+  EXPECT_EQ(&dut_plant, &diagram_plant);
+}
+
 }  // namespace
 }  // namespace cenic
 }  // namespace multibody
