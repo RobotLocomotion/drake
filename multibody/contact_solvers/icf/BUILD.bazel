@@ -1,6 +1,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -289,6 +290,27 @@ drake_cc_googletest(
         ":icf_search_direction_data",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
+    ],
+)
+
+drake_cc_binary(
+    name = "weld_constraint_simulation",
+    srcs = ["weld_constraint_simulation.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.5",
+        "--realtime_rate=0.0",
+    ],
+    deps = [
+        "//multibody/cenic:cenic_integrator",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram_builder",
+        "//visualization:visualization_config_functions",
+        "@gflags",
     ],
 )
 
