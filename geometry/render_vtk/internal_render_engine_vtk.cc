@@ -627,6 +627,11 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   // the original without duplicating any vertex data.
   mesh_cache_ = other.mesh_cache_;
 
+  // Shallow-copy the texture cache: vtkSmartPointers are reference-counted,
+  // so clones share the same vtkTexture objects (and thus the same GPU texture
+  // handles) without duplicating any image data.
+  texture_cache_ = other.texture_cache_;
+
   for (const auto& [id, source_props] : other.props_) {
     PropArray target_props;
     for (int i = 0; i < kNumPipelines; ++i) {
@@ -1164,48 +1169,87 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
     // Parsing via VTK should never require an image to be flipped.
     DRAKE_DEMAND(material.flip_y == false);
 
-    vtkNew<vtkPNGReader> texture_reader;
-    const std::string description = std::visit<std::string>(
-        overloaded{
-            [](const auto&) -> std::string {
-              throw std::runtime_error(
-                  "RenderEngineVtk: diffuse map must be on-disk or in-memory");
-            },
-            [reader = texture_reader.Get()](const std::filesystem::path& path) {
-              reader->SetFileName(path.c_str());
-              return path.string();
-            },
-            [reader = texture_reader.Get()](const MemoryFile& file) {
-              const std::string& contents = file.contents();
-              vtkNew<vtkMemoryResourceStream> stream;
-              stream->SetBuffer(contents.c_str(), contents.size());
-              reader->SetStream(stream);
-              return file.filename_hint();
-            }},
-        material.diffuse_map);
-    texture_reader->Update();
-    if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
-      log()->warn(
-          "Texture map '{}' has an unsupported bit depth, casting it to uchar "
-          "channels.",
-          description);
-    }
-
-    vtkNew<vtkImageCast> caster;
-    caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
-    caster->SetInputConnection(texture_reader->GetOutputPort());
-    caster->Update();
-    DRAKE_DEMAND(caster->GetOutput() != nullptr);
-
-    vtkNew<vtkOpenGLTexture> texture;
-    texture->SetInputConnection(caster->GetOutputPort());
     // TODO(SeanCurtis-TRI): It doesn't seem like the scale is used to actually
     // *scale* the image.
     const Vector2d uv_scale = data.properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d{1, 1});
     const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
-    texture->SetRepeat(need_repeat);
-    texture->InterpolateOn();
+
+    // Build a cache key from the image identity plus the per-texture flags
+    // configurable from input.
+    const std::string texture_key = std::visit<std::string>(
+        overloaded{
+            [](const auto&) -> std::string {
+              throw std::runtime_error(
+                  "RenderEngineVtk: diffuse map must be on-disk or in-memory");
+            },
+            [](const std::filesystem::path& path) {
+              return std::filesystem::weakly_canonical(path).string();
+            },
+            [](const MemoryFile& file) {
+              return file.sha256().to_string();
+            }},
+        material.diffuse_map);
+    // Tweak the key based on the texture parameters we actually configure.
+    // Unfortunately, every tweak of vtkTexture parameters will require a new
+    // instance of the texture data; so we'll need to modify the key to
+    // encompass every texture parameter we end up setting.
+    // We use '?' as the concatenation operator knowing that it can't appear in
+    // filenames.
+    const std::string full_key =
+        texture_key + (need_repeat ? "?repeat" : "?no_repeat");
+
+    vtkSmartPointer<vtkTexture> texture;
+    auto cache_iter = texture_cache_.find(full_key);
+    if (cache_iter != texture_cache_.end()) {
+      // Cache hit: reuse the existing vtkTexture to avoid redundant file I/O
+      // and duplicate GPU texture uploads.
+      texture = cache_iter->second;
+    } else {
+      // Cache miss: parse the image and build a new vtkTexture.
+      vtkNew<vtkPNGReader> texture_reader;
+      const std::string description = std::visit<std::string>(
+          overloaded{[](const auto&) -> std::string {
+                       throw std::runtime_error(
+                           "RenderEngineVtk: diffuse map must be on-disk or "
+                           "in-memory");
+                     },
+                     [reader = texture_reader.Get()](
+                         const std::filesystem::path& path) {
+                       reader->SetFileName(path.c_str());
+                       return path.string();
+                     },
+                     [reader = texture_reader.Get()](const MemoryFile& file) {
+                       const std::string& contents = file.contents();
+                       vtkNew<vtkMemoryResourceStream> stream;
+                       stream->SetBuffer(contents.c_str(), contents.size());
+                       reader->SetStream(stream);
+                       return file.filename_hint();
+                     }},
+          material.diffuse_map);
+      texture_reader->Update();
+      if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
+        log()->warn(
+            "Texture map '{}' has an unsupported bit depth, casting it to "
+            "uchar channels.",
+            description);
+      }
+
+      vtkNew<vtkImageCast> caster;
+      caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
+      caster->SetInputConnection(texture_reader->GetOutputPort());
+      caster->Update();
+      DRAKE_DEMAND(caster->GetOutput() != nullptr);
+
+      vtkNew<vtkOpenGLTexture> new_texture;
+      new_texture->SetInputConnection(caster->GetOutputPort());
+      new_texture->SetRepeat(need_repeat);
+      new_texture->InterpolateOn();
+
+      texture_cache_[full_key] = new_texture;
+      texture = new_texture;
+    }
+
     if (use_pbr_materials_) {
       texture->SetUseSRGBColorSpace(true);
       color_actor->GetProperty()->SetBaseColorTexture(texture);
