@@ -506,7 +506,7 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
     VectorX<T> sub_xc_next = subcontext.get_continuous_state().CopyToVector();
     sub_xc_next += h * sub_xc_dot;
 
-    // #created_for_root_diagram: See explicit check above..
+    // #created_for_root_diagram: See explicit check above.
     GetMutableSubstateByPath(*x_next, path).SetFromVector(sub_xc_next);
   }
 }

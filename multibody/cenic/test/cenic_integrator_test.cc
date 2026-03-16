@@ -110,8 +110,10 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
   }
 
   /* Wraps `my_system` in extra nested diagrams, according to the "external
-  depth" test parameter, add the entire thing to the top-level builder, and
-  return a pointer to the wrapped system. */
+  depth" test parameter, and adds the entire thing to the top-level builder.
+  Returns a tuple of [0] the derived-class pointer to the wrapped system (for
+  type-specific access), and [1] a system-typed pointer to the new wrapping
+  diagram. */
   template <typename MySystem>
   std::tuple<MySystem*, System<double>*> BurySystem(
       std::unique_ptr<MySystem> my_system) {
@@ -132,18 +134,18 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
 
     // Wrapping the plant requires re-exporting of selected ports. The logic
     // here is different from BurySystem because it needs to preserve the
-    // plant, scene graph, and their port connections.24~
+    // plant, scene graph, and their port connections.
     if (plant_depth_ > 0) {
       ReExportAllPorts(builder_.get(), plant_);
-      diagram_ = builder_->Build();
+      auto wrapper = builder_->Build();
       for (int k = 1; k < plant_depth_; ++k) {
         DiagramBuilder<double> builder;
-        auto* system = builder.AddSystem(std::move(diagram_));
+        auto* system = builder.AddSystem(std::move(wrapper));
         ReExportAllPorts(&builder, *system);
-        diagram_ = builder.Build();
+        wrapper = builder.Build();
       }
       builder_ = std::make_unique<DiagramBuilder<double>>();
-      plant_nest_ = builder_->AddSystem(std::move(diagram_));
+      plant_nest_ = builder_->AddSystem(std::move(wrapper));
     }
   }
 
@@ -182,8 +184,14 @@ class SimulationTestScenario : public testing::TestWithParam<TestParam> {
   // Always available.
   int plant_depth_{0};
   int external_depth_{0};
+  // A direct reference to the plant. Use it for type-specific API access.
   MultibodyPlant<double>& plant_{
       AddMultibodyPlantSceneGraph(builder_.get(), 0.0).plant};
+  // Depending on the value of plant_depth_, plant_nest_ will either be a
+  // pointer to the plant (depth 0), or a pointer to a stack of diagrams
+  // wrapping plant and scene graph, with all of their available ports
+  // re-exported. Use it for establishing top-level connections between wrapped
+  // systems.
   System<double>* plant_nest_{&plant_};
 };
 
