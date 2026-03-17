@@ -19,6 +19,7 @@
 #include "drake/common/unused.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/geometry/render/mesh_source_cache_key.h"
 
 namespace drake {
 namespace geometry {
@@ -47,6 +48,7 @@ using render::LightParameter;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
+using render::internal::GetMeshSourceCacheKey;
 using std::make_shared;
 using std::make_unique;
 using std::map;
@@ -664,62 +666,6 @@ void main() {
 })""";
 };
 
-// Given a filename (e.g., of a mesh), this produces a string that we use in
-// our maps to guarantee we only load the file once.
-std::string GetPathKey(const MeshSource& mesh_source, bool is_convex) {
-  std::string prefix;
-  if (mesh_source.is_in_memory()) {
-    // TODO(SeanCurtis-TRI): This uses the sha of the core mesh file to identify
-    // a unique mesh. However, there is a weird, adversarial case:
-    //
-    //  - User loads a geometry from foo.mesh that references foo.bin.
-    //    - the data for foo.mesh and foo.bin gets processed and loaded into
-    //      the cache.
-    //  - The hash of foo.mesh serves as its unique key.
-    //  - User then changes contents of foo.bin.
-    //  - User loads another geometry with foo.mesh (which has now appreciably
-    //    changed because foo.bin is different).
-    //  - The cache will believe it is the same file as before, even though the
-    //    geometry has changed and not load the new version, using the old
-    //    instead.
-    //
-    // For example, if a user runs a simulation, rendering images out, resets
-    // the simulation with changes to the foo.bin file (e.g. material properties
-    // in a .mtl file), with the intent of creating a visual variant of the
-    // previous simulation, the geometry in the second pass will not have
-    // changed appearance.
-    //
-    // This problem applies to both on-disk and in-memory meshes. For on-disk
-    // meshes, the problem is worse because it strictly uses the mesh file name
-    // as cache id and therefore won't even detect changes in the core mesh file
-    // (let alone any of the supporting files).
-    //
-    // To address this we'll have to have a key predicated on the contents on
-    // the whole file *ecosystem* so that we can detect if any part of the file
-    // family is unique, creating, in some sense, a unique geometry.
-    //
-    // The urgency is low for now because if someone is doing multiple passes
-    // to create render variations, they're probably using the higher-fidelity
-    // RenderEngineVtk. As we improve the fidelity of RenderEngineGl, we'll
-    // want to shore up this hole.
-    prefix = mesh_source.in_memory().mesh_file.sha256().to_string() +
-             (is_convex ? "?convex" : "");
-  } else {
-    DRAKE_DEMAND(mesh_source.is_path());
-    prefix = mesh_source.path().string();
-    std::error_code path_error;
-    const fs::path path = fs::canonical(mesh_source.path(), path_error);
-    if (path_error) {
-      throw std::runtime_error(
-          fmt::format("RenderEngineGl: unable to access the file {}; {}",
-                      prefix, path_error.message()));
-    }
-  }
-  // Note: We're using "?". It isn't valid for filenames, so using it in the
-  // key guarantees we won't collide with potential file names.
-  return prefix + (is_convex ? "?convex" : "");
-}
-
 // We want to make sure the lights are as clean as possible. So, we'll
 // re-normalize unit vectors (where possible). We're not testing for "bad"
 // values because those values which *might* be considered "bad" can be used
@@ -889,7 +835,7 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
                                               const Vector3<double>& scale,
                                               const MeshSource& mesh_source,
                                               bool is_convex) {
-  const std::string file_key = GetPathKey(mesh_source, is_convex);
+  const std::string file_key = GetMeshSourceCacheKey(mesh_source, is_convex);
   // If mesh_source is in memory, we want to pass an *empty* filename to
   // MaybeMakeMeshFallbackmaterial() to avoid looking for foo.png.
   const fs::path filename =
@@ -1334,7 +1280,8 @@ int RenderEngineGl::GetBox() {
 
 void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
                                          const RegistrationData& data) {
-  const std::string file_key = GetPathKey(convex.source(), /*is_convex=*/true);
+  const std::string file_key =
+      GetMeshSourceCacheKey(convex.source(), /*is_convex=*/true);
 
   if (!meshes_.contains(file_key)) {
     const bool unscaled = (convex.scale3().array() == 1.0).all();
@@ -2187,7 +2134,8 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& mesh_source,
     return;
   }
 
-  const std::string file_key = GetPathKey(mesh_source, /* is_convex= */ false);
+  const std::string file_key =
+      GetMeshSourceCacheKey(mesh_source, /*is_convex=*/false);
 
   if (!meshes_.contains(file_key)) {
     vector<RenderGlMesh> file_meshes;

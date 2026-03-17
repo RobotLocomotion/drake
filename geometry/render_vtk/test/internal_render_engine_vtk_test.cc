@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkMapper.h>         // vtkRenderingCore
 #include <vtkOpenGLTexture.h>  // vtkRenderingOpenGL2
 #include <vtkPNGReader.h>      // vtkIOImage
 #include <vtkProperty.h>       // vtkRenderingCore
@@ -94,6 +95,22 @@ class RenderEngineVtkTester {
   // Return the full props map for the renderer.
   static const auto& GetProps(const RenderEngineVtk& renderer) {
     return renderer.props_;
+}
+
+  // Returns the upstream vtkAlgorithm feeding the color-pipeline mapper for
+  // the first part of the given geometry. For unit-scale registrations this
+  // is the DrakeObjSource directly; for scaled registrations it is the
+  // vtkTransformPolyDataFilter that wraps the source.
+  static vtkAlgorithm* GetColorMapperSource(const RenderEngineVtk& renderer,
+                                            GeometryId id) {
+    vtkActor* actor = renderer.props_.at(id).at(0).parts.at(0).actor.Get();
+    DRAKE_DEMAND(actor != nullptr);
+    return actor->GetMapper()->GetInputAlgorithm(0, 0);
+  }
+
+  // Returns the number of entries currently in the mesh cache.
+  static int GetMeshCacheSize(const RenderEngineVtk& renderer) {
+    return static_cast<int>(renderer.mesh_cache_.size());
   }
 };
 
@@ -3330,6 +3347,155 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
   CompareImages(color,
                 "drake/geometry/render_vtk/test/whole_image_custom_color.png",
                 /* tolerance = */ 2);
+}
+
+// ---------------------------------------------------------------------------
+// Mesh-cache source-sharing tests
+//
+// These tests verify that registering the same OBJ file multiple times results
+// in exactly one cache entry and that all registrations share the same
+// underlying vtkPolyDataAlgorithm source (i.e. vertex data is not duplicated).
+// ---------------------------------------------------------------------------
+//
+// Registers the same no-MTL OBJ three times and confirms that:
+//   (a) the mesh cache has exactly one entry, and
+//   (b) every registration's color-pipeline mapper feeds from the same upstream
+//       vtkAlgorithm pointer.
+//
+// Note: registering as Mesh and Convex will produce different cache entries.
+TEST_F(RenderEngineVtkTest, ObjMeshSourceSharing) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj");
+
+  // Each registration uses a distinct diffuse color to demonstrate that the
+  // geometry source is shared even when per-instance materials differ.
+  auto make_props = [](const Rgba& color) {
+    PerceptionProperties props;
+    props.AddProperty("label", "id", RenderLabel::kDontCare);
+    props.AddProperty("phong", "diffuse", color);
+    return props;
+  };
+
+  const GeometryId mesh_id1 = GeometryId::get_new_id();
+  const GeometryId mesh_id2 = GeometryId::get_new_id();
+  const GeometryId mesh_id3 = GeometryId::get_new_id();
+  engine.RegisterVisual(mesh_id1, Mesh(obj_path), make_props(Rgba(1, 0, 0)),
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(mesh_id2, Mesh(obj_path), make_props(Rgba(0, 1, 0)),
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(mesh_id3, Mesh(obj_path), make_props(Rgba(0, 0, 1)),
+                        RigidTransformd::Identity());
+
+  // Register the same source file as Convex three times with distinct colors.
+  // These get a separate cache entry (the is_convex flag is part of the key).
+  const GeometryId convex_id1 = GeometryId::get_new_id();
+  const GeometryId convex_id2 = GeometryId::get_new_id();
+  const GeometryId convex_id3 = GeometryId::get_new_id();
+  engine.RegisterVisual(convex_id1, Convex(obj_path), make_props(Rgba(1, 0, 0)),
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(convex_id2, Convex(obj_path), make_props(Rgba(0, 1, 0)),
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(convex_id3, Convex(obj_path), make_props(Rgba(0, 0, 1)),
+                        RigidTransformd::Identity());
+
+  // Two cache entries: one for Mesh, one for Convex (different cache keys).
+  EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 2);
+
+  // All three Mesh mappers feed from the same upstream source.
+  vtkAlgorithm* mesh_src1 =
+      RenderEngineVtkTester::GetColorMapperSource(engine, mesh_id1);
+  vtkAlgorithm* mesh_src2 =
+      RenderEngineVtkTester::GetColorMapperSource(engine, mesh_id2);
+  vtkAlgorithm* mesh_src3 =
+      RenderEngineVtkTester::GetColorMapperSource(engine, mesh_id3);
+  ASSERT_NE(mesh_src1, nullptr);
+  EXPECT_EQ(mesh_src1, mesh_src2);
+  EXPECT_EQ(mesh_src2, mesh_src3);
+
+  // All three Convex mappers feed from the same upstream source.
+  vtkAlgorithm* convex_src1 =
+      RenderEngineVtkTester::GetColorMapperSource(engine, convex_id1);
+  vtkAlgorithm* convex_src2 =
+      RenderEngineVtkTester::GetColorMapperSource(engine, convex_id2);
+  vtkAlgorithm* convex_src3 =
+      RenderEngineVtkTester::GetColorMapperSource(engine, convex_id3);
+  ASSERT_NE(convex_src1, nullptr);
+  EXPECT_EQ(convex_src1, convex_src2);
+  EXPECT_EQ(convex_src2, convex_src3);
+
+  // Mesh and Convex of the same file use different cached sources (hull vs
+  // full mesh geometry).
+  EXPECT_NE(mesh_src1, convex_src1);
+}
+
+// Same as above but with an OBJ that carries its own MTL material. The VTK
+// geometry source should still be shared across registrations.
+TEST_F(RenderEngineVtkTest, ObjWithMtlSourceSharing) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
+
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  const GeometryId id1 = GeometryId::get_new_id();
+  const GeometryId id2 = GeometryId::get_new_id();
+  const GeometryId id3 = GeometryId::get_new_id();
+  engine.RegisterVisual(id1, Mesh(obj_path), props,
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(id2, Mesh(obj_path), props,
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(id3, Mesh(obj_path), props,
+                        RigidTransformd::Identity());
+
+  EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
+
+  vtkAlgorithm* src1 = RenderEngineVtkTester::GetColorMapperSource(engine, id1);
+  vtkAlgorithm* src2 = RenderEngineVtkTester::GetColorMapperSource(engine, id2);
+  vtkAlgorithm* src3 = RenderEngineVtkTester::GetColorMapperSource(engine, id3);
+  ASSERT_NE(src1, nullptr);
+  EXPECT_EQ(src1, src2);
+  EXPECT_EQ(src2, src3);
+}
+
+// Registers two *different* OBJ files and confirms they produce independent
+// cache entries with distinct upstream sources.
+TEST_F(RenderEngineVtkTest, DifferentObjsDontShare) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string obj_path_a =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj");
+  const std::string obj_path_b =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
+
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  const GeometryId id_a = GeometryId::get_new_id();
+  const GeometryId id_b = GeometryId::get_new_id();
+  engine.RegisterVisual(id_a, Mesh(obj_path_a), props,
+                        RigidTransformd::Identity());
+  engine.RegisterVisual(id_b, Mesh(obj_path_b), props,
+                        RigidTransformd::Identity());
+
+  // Two distinct files → two distinct cache entries.
+  EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 2);
+
+  // The two sources must be different objects.
+  vtkAlgorithm* src_a =
+      RenderEngineVtkTester::GetColorMapperSource(engine, id_a);
+  // rainbow_box.obj has multiple parts; grab the first one.
+  vtkAlgorithm* src_b =
+      RenderEngineVtkTester::GetColorMapperSource(engine, id_b);
+  ASSERT_NE(src_a, nullptr);
+  ASSERT_NE(src_b, nullptr);
+  EXPECT_NE(src_a, src_b);
 }
 
 }  // namespace
