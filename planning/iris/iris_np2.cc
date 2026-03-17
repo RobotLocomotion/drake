@@ -158,6 +158,9 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
   DRAKE_THROW_UNLESS(options.ray_sampler_options.ray_search_num_steps >= 1);
   DRAKE_THROW_UNLESS(
       options.ray_sampler_options.num_particles_to_walk_towards >= 1);
+  DRAKE_THROW_UNLESS(
+      options.ray_sampler_options.num_particles_to_walk_towards <=
+      options.sampled_iris_options.num_particles);
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -598,7 +601,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       k_squared *= k_squared;
       double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
 
-      // The number of particles sampled is the max of the number requested by the user and the number required by the probabilistic test.
+      // The number of particles sampled is the max of the number requested by
+      // the user and the number required by the probabilistic test.
       int this_test_num_samples = internal::unadaptive_test_samples(
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
