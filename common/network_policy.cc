@@ -45,7 +45,7 @@ bool IsNetworkingAllowed(std::string_view component) {
   // to be congruent with their Drake version pin.
   bool match = false;
   for (auto subrange : env_view | std::views::split(':')) {
-    const std::string_view token{subrange};
+    const std::string_view token(subrange.begin(), subrange.end());
     if (token == "none") {
       static const logging::Warn log_once(
           "Setting DRAKE_ALLOW_NETWORK={} combines 'none' with non-none "
