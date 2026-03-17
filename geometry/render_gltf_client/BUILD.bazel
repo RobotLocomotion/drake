@@ -292,6 +292,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:scene_graph",
         "//systems/sensors/test_utilities:image_compare",
         "@nlohmann_internal//:nlohmann",
         "@vtk_internal//:vtkCommonMath",

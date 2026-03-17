@@ -90,6 +90,11 @@ class RenderEngineVtkTester {
     }
     return actors;
   }
+
+  // Return the full props map for the renderer.
+  static const auto& GetProps(const RenderEngineVtk& renderer) {
+    return renderer.props_;
+  }
 };
 
 namespace {
@@ -589,7 +594,7 @@ class RenderEngineVtkTest : public ::testing::Test {
       material.AddProperty("phong", "diffuse", kTerrainColor.ToRgba());
       engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
                              RigidTransformd::Identity(),
-                             false /* needs update */);
+                             false /* needs update */, "terrain");
     }
   }
 
@@ -634,7 +639,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     expected_label_ = RenderLabel(12345);  // an arbitrary value.
     renderer->RegisterVisual(geometry_id_, sphere, simple_material(use_texture),
                              RigidTransformd::Identity(),
-                             true /* needs update */);
+                             true /* needs update */, "sphere");
     RigidTransformd X_WV{Vector3d{0, 0, 0.5}};
     X_WV_.clear();
     X_WV_.insert({geometry_id_, X_WV});
@@ -649,7 +654,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     const GeometryId id = GeometryId::get_new_id();
     PerceptionProperties props = simple_material(false);
     renderer->RegisterVisual(id, box, props, RigidTransformd::Identity(),
-                             true /* needs update */);
+                             true /* needs update */, "box");
     // Leave the box centered on the xy plane, but raise it up for the expected
     // depth in the camera (distance from eye to near surface):
     //      expected depth = p_WC.z - length / 2 - p_WV.z;
@@ -799,7 +804,8 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
     PerceptionProperties material = simple_material();
     const GeometryId id = GeometryId::get_new_id();
     renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                              true /* needs update */);
+                              true /* needs update */,
+                              use_texture ? "box.obj" : "box_no_mtl.obj");
     renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
         {id, RigidTransformd::Identity()}});
 
@@ -843,19 +849,19 @@ TEST_F(RenderEngineVtkTest, NonUniformScale) {
     const Vector3d unit_scale(1, 1, 1);
     ref_engine.RegisterVisual(mesh_id, Mesh(unit_mesh, unit_scale), material,
                               RigidTransformd(Vector3d(-1.5, 0, 0)),
-                              /* needs_update =*/false);
+                              false /* needs update */, "unit_mesh");
     ref_engine.RegisterVisual(convex_id, Convex(unit_mesh, unit_scale),
                               material, RigidTransformd(Vector3d(1.5, 0, 0)),
-                              /* needs_update =*/false);
+                              false /* needs update */, "unit_convex");
 
     // This should be the scale factor documented in rotated_cube_squished.obj
     const Vector3d stretch(2, 4, 8);
     scale_engine.RegisterVisual(mesh_id, Mesh(scale_mesh, stretch), material,
                                 RigidTransformd(Vector3d(-1.5, 0, 0)),
-                                /* needs_update =*/false);
+                                false /* needs update */, "scale_mesh");
     scale_engine.RegisterVisual(convex_id, Convex(scale_mesh, stretch),
                                 material, RigidTransformd(Vector3d(1.5, 0, 0)),
-                                /* needs_update =*/false);
+                                false /* needs update */, "scale_convex");
 
     ref_engine.UpdateViewpoint(X_WC);
     scale_engine.UpdateViewpoint(X_WC);
@@ -894,14 +900,15 @@ TEST_F(RenderEngineVtkTest, InMemoryMesh) {
                                     const Mesh& memory_mesh) {
     renderer_->RemoveGeometry(id);
     renderer_->RegisterVisual(id, file_mesh, props, RigidTransformd::Identity(),
-                              false);
+                              false, "file_mesh");
     ImageRgba8U file_image(kWidth, kHeight);
     Render(fmt::format("{}_file", file_prefix), nullptr, nullptr, &file_image,
            nullptr, nullptr);
 
     renderer_->RemoveGeometry(id);
     renderer_->RegisterVisual(id, memory_mesh, props,
-                              RigidTransformd::Identity(), false);
+                              RigidTransformd::Identity(), false,
+                              "memory_mesh");
     ImageRgba8U memory_image(kWidth, kHeight);
     Render(fmt::format("{}_memory", file_prefix), nullptr, nullptr,
            &memory_image, nullptr, nullptr);
@@ -968,7 +975,7 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
       "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
   renderer_->RegisterVisual(id, Mesh(filename), material,
                             RigidTransformd::Identity(),
-                            false /* needs update */);
+                            false /* needs update */, "fully_textured_pyramid");
   ImageRgba8U image(64, 64);
   const ColorRenderCamera camera(
       {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
@@ -1014,7 +1021,8 @@ TEST_F(RenderEngineVtkTest, GltfAssetFormats) {
     // Add the i'th cube to the scene.
     const GeometryId id = GeometryId::get_new_id();
     renderer_->RegisterVisual(id, Mesh(filenames[i]), PerceptionProperties{},
-                              RigidTransformd::Identity(), true);
+                              RigidTransformd::Identity(), true,
+                              fmt::format("cube{}", i));
     renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
         {id, RigidTransformd::Identity()}});
 
@@ -1049,7 +1057,7 @@ TEST_F(RenderEngineVtkTest, GltfUnsupportedExtensionRequired) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       renderer_->RegisterVisual(id, Mesh(filename), material,
                                 RigidTransformd::Identity(),
-                                false /* needs update */),
+                                false /* needs update */, "basisu_required"),
       ".*KHR_texture_basisu is required.*");
 }
 
@@ -1112,9 +1120,9 @@ TEST_F(RenderEngineVtkTest, MultiMaterialObjects) {
     Init(X_WR, false);
     Mesh mesh(f);
     renderer_->RegisterVisual(id1, mesh, material, X_WM1,
-                              false /* needs update */);
+                              false /* needs update */, "mesh1");
     renderer_->RegisterVisual(id2, mesh, material, X_WM2,
-                              false /* needs update */);
+                              false /* needs update */, "mesh2");
 
     const std::string name =
         fmt::format("image for {}", f.extension().string());
@@ -1168,7 +1176,7 @@ TEST_F(RenderEngineVtkTest, VtkGltfBehavior) {
   material.AddProperty("label", "id", expected_label_);
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
+                            true /* needs update */, "rainbow_box");
   for (vtkActor* actor :
        RenderEngineVtkTester::GetColorActors(*renderer_, id)) {
     ASSERT_TRUE(TransformComponentsAreIdentity(actor));
@@ -1374,6 +1382,31 @@ TEST_F(RenderEngineVtkTest, SimpleClone) {
   EXPECT_NE(dynamic_cast<RenderEngineVtk*>(clone.get()), nullptr);
   PerformCenterShapeTest(static_cast<RenderEngineVtk*>(clone.get()),
                          "Simple clone");
+
+  // We also need to test the cloning of fields that don't directly affect the
+  // rendered output.
+
+  // Verify that every actor in the clone has the same ObjectName as the
+  // corresponding actor in the original renderer.
+  RenderEngineVtk* clone_vtk = static_cast<RenderEngineVtk*>(clone.get());
+  const auto& orig_props = RenderEngineVtkTester::GetProps(*renderer_);
+  const auto& clone_props = RenderEngineVtkTester::GetProps(*clone_vtk);
+  ASSERT_EQ(orig_props.size(), clone_props.size());
+  for (const auto& [id, orig_prop_array] : orig_props) {
+    ASSERT_TRUE(clone_props.count(id) > 0)
+        << "Clone missing geometry " << fmt::to_string(id);
+    const auto& clone_prop_array = clone_props.at(id);
+    for (size_t pipeline = 0; pipeline < orig_prop_array.size(); ++pipeline) {
+      const auto& orig_prop = orig_prop_array[pipeline];
+      const auto& clone_prop = clone_prop_array[pipeline];
+      ASSERT_EQ(orig_prop.parts.size(), clone_prop.parts.size());
+      for (size_t p = 0; p < orig_prop.parts.size(); ++p) {
+        EXPECT_FALSE(orig_prop.parts[p].actor->GetObjectName().empty());
+        EXPECT_EQ(orig_prop.parts[p].actor->GetObjectName(),
+                  clone_prop.parts[p].actor->GetObjectName());
+      }
+    }
+  }
 }
 
 // Tests that the cloned renderer still works, even when the original is
