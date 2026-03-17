@@ -116,10 +116,10 @@ done
 # Check for changes to the pdm lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
-# Upgrade the mypy lockfile.
-readonly mypy_requirements="./setup/python/mypy/requirements.txt"
-bazel run //setup/python/mypy:lock.update
-files_to_commit+=( "$(git diff --name-only HEAD -- "${mypy_requirements}")" )
+# Upgrade the uv-managed lockfile.
+readonly uv_requirements="./setup/python/uv/requirements.txt"
+bazel run //setup/python/uv:lock.update
+files_to_commit+=( "$(git diff --name-only HEAD -- "${uv_requirements}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
