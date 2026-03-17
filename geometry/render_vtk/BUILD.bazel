@@ -105,6 +105,7 @@ drake_cc_optional_library(
         "//common/yaml:yaml_io",
         "//geometry:vtk_gltf_uri_loader",
         "//geometry/proximity:polygon_to_triangle_mesh",
+        "//geometry/render:mesh_source_cache_key",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//geometry/render/shaders:depth_shaders",

@@ -13,6 +13,7 @@
 #endif
 
 // #include "drake/geometry/render/light_parameter.h"
+// #include "drake/geometry/render/mesh_source_cache_key.h"
 // #include "drake/geometry/render/render_camera.h"
 // #include "drake/geometry/render/render_engine.h"
 // #include "drake/geometry/render/render_label.h"

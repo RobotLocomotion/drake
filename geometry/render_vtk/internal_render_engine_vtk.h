@@ -271,6 +271,32 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // @pre actor is not null.
   static void SetDepthShader(vtkActor* actor);
 
+  // Stores cached mesh data to avoid redundant re-parsing and re-instantiation
+  // of geometry when the same mesh is registered multiple times.
+  //
+  // Each `Part` holds the VTK geometry source (a vtkPolyDataAlgorithm) and
+  // the resolved material for one OBJ sub-mesh. Multiple geometry
+  // registrations that reference the same OBJ file share these sources,
+  // so VTK only allocates and uploads the vertex data once.
+  struct CachedMesh {
+    struct Part {
+      // The material from the OBJ/MTL file (RenderMaterial::from_mesh_file ==
+      // true), or nullopt when the file defined no material. When nullopt, the
+      // per-instance material is resolved at registration time via
+      // DefineMaterial() so that phong/diffuse perception properties and the
+      // engine default_diffuse are both honoured correctly for each instance.
+      std::optional<geometry::internal::RenderMaterial> material;
+      vtkSmartPointer<vtkPolyDataAlgorithm> vtk_source;
+    };
+    std::vector<Part> parts;
+  };
+
+  // Instantiates the parts of a CachedMesh. Materials and scale factors are
+  // resolved on a per-instance basis.
+  void ImplementCachedMesh(const CachedMesh& cached,
+                           const Eigen::Vector3d& scale,
+                           const RegistrationData& data);
+
   // A geometry is modeled with one or more "parts". A part maps to the actor
   // representing it in VTK and an optional transform mapping the actor's frame
   // A to the Drake geometry frame G. This mapping can include scaling terms.
@@ -332,6 +358,12 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // The collection of per-geometry actors -- one actor per pipeline (color,
   // depth, and label) -- keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, PropArray> props_;
+
+  // Cache mapping mesh source keys to parsed/rendered mesh data. The key is
+  // computed from GetMeshSourceCacheKey() to uniquely identify a mesh source.
+  // This eliminates redundant re-parsing and re-rendering when the same mesh
+  // is registered multiple times.
+  std::unordered_map<std::string, CachedMesh> mesh_cache_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.

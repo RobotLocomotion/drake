@@ -21,6 +21,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":light_parameter",
+        ":mesh_source_cache_key",
         ":render_camera",
         ":render_engine",
         ":render_label",
@@ -96,6 +97,16 @@ drake_cc_library(
     ],
     implementation_deps = [
         "@tinyobjloader_internal//:tinyobjloader",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_source_cache_key",
+    srcs = ["mesh_source_cache_key.cc"],
+    hdrs = ["mesh_source_cache_key.h"],
+    deps = [
+        "//common:essential",
+        "//geometry:mesh_source",
     ],
 )
 
@@ -206,6 +217,17 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//geometry:geometry_roles",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_source_cache_key_test",
+    deps = [
+        ":mesh_source_cache_key",
+        "//common:memory_file",
+        "//common:temp_directory",
+        "//geometry:in_memory_mesh",
+        "//geometry:mesh_source",
     ],
 )
 
