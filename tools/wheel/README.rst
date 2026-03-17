@@ -95,7 +95,7 @@ debugging purposes and should not be needed in ordinary use.
     build step will be left, allowing for post-mortem examination. Don't forget
     to manually delete the container later.
 
-``-k``, ``--keep-containers`` (macOS only)
+``-k``, ``--keep-build`` (macOS only)
     Do not delete the various build trees and artifacts, which can be found in
     various subdirectories under ``${HOME}/.drake-wheel-build`` in a unique,
     per-build subdirectory.
