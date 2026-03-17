@@ -7,7 +7,7 @@ py_binary(
     name = "gen",
     srcs = ["implib-gen.py"],
     deps = [uv_requirement("lief")],
-    data = glob(["arch/**"], allow_empty = False),
+    data = glob(["arch/**", "implib/**"], allow_empty = False),
     main = "implib-gen.py",
     python_version = "PY3",
     srcs_version = "PY3",
