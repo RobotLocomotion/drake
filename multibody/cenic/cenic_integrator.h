@@ -14,6 +14,23 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
+/* A sequence of subsystem indices that allows finding an arbitrary
+nested-diagram asset from the root. */
+using SubsystemPath = std::vector<systems::SubsystemIndex>;
+
+/* Facts of nested diagram structure used at run-time by CenicIntegrator. */
+template <typename T>
+struct CenicDiagramStructure {
+  /* The plant used as the basis of the convex optimization problem. */
+  const MultibodyPlant<T>* plant{};
+  /* The path to the plant from the root diagram. */
+  SubsystemPath plant_path;
+  /* Paths to subsystems, other than the targeted plant, that have continuous
+  state. */
+  std::vector<SubsystemPath> non_plant_xc_paths;
+};
+}  // namespace internal
 
 /** Convex Error-controlled Numerical Integration for Contact (CENIC) is a
 specialized error-controlled implicit integrator for contact-rich robotics
@@ -58,7 +75,7 @@ simple half-stepping strategy provides a second-order error estimate for
 automatic step-size selection.
 
 Because CENIC is specific to multibody systems, this integrator requires a
-system diagram with a `MultibodyPlant` subsystem named `"plant"`.
+system diagram with a `MultibodyPlant` subsystem.
 
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
@@ -89,12 +106,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   static constexpr double kDefaultAccuracy = 1e-3;
 
   /** Constructs the integrator.
-  @param system The overall system diagram to simulate. Must include a
-                MultibodyPlant and associated SceneGraph, with the plant
-                found as a direct child of the `system` diagram using the
-                subsystem name `"plant"`. The plant must be a continuous-time
-                plant. This system is aliased by this object so must remain
-                alive longer than the integrator.
+  @param system The overall system diagram to simulate. Must include exactly one
+                conforming MultibodyPlant; a conforming plant is continuous-time
+                and registered with a SceneGraph. Other (discrete-time) plants
+                are allowed in the diagram. This `system` is aliased by this
+                object so must remain alive longer than the integrator.
   @param context context for the overall system.  */
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
@@ -103,7 +119,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   /** Gets a reference to the MultibodyPlant used to formulate the convex
   optimization problem. */
-  const MultibodyPlant<T>& plant() const { return plant_; }
+  const MultibodyPlant<T>& plant() const { return *structure_.plant; }
 
   /** Gets the current convex solver tolerances and iteration limits. */
   const contact_solvers::icf::IcfSolverParameters& get_solver_parameters()
@@ -140,7 +156,8 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
         external_feedback_storage;
 
     /* Intermediate states for error control, which compares a single large
-    step (x_next_full_) to the result of two smaller steps (x_next_half_2_). */
+    step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
+    Note that these states include continuous state for the entire diagram. */
     /* x_{t+h}. */
     std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full;
     /* x_{t+h/2}. */
@@ -188,12 +205,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void AdvancePlantConfiguration(const T& h, const VectorX<T>& v,
                                  VectorX<T>* q) const;
 
-  /* The plant used as the basis of the convex optimization problem. */
-  const MultibodyPlant<T>& plant_;
-  const systems::SubsystemIndex plant_subsystem_index_;
-  /* Which subsystems in our Diagram have continuous state other than the
-  plant. */
-  const std::vector<int> non_plant_xc_subsystem_indices_;
+  /* Locations of plant and non-plant continuous state. Note that the contained
+  `plant` pointer is guaranteed to be non-null by the CenicInegrator
+  constructor .*/
+  const internal::CenicDiagramStructure<T> structure_;
 
   /* Helper class that linearizes torques dτ/dv from plant input ports. */
   const contact_solvers::icf::internal::IcfExternalSystemsLinearizer<T>

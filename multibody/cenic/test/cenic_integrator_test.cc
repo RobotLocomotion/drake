@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -33,9 +34,12 @@ using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::InputPort;
 using systems::NamedStatistic;
+using systems::OutputPort;
 using systems::Simulator;
 using systems::SpringMassSystem;
+using systems::System;
 using systems::controllers::PidController;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -67,21 +71,89 @@ constexpr char kBallOnTableMjcf[] = R"""(
   </mujoco>
   )""";
 
-/* A base test case with utilities for setting up a CENIC simulation. */
-class SimulationTestScenario : public testing::Test {
- protected:
-  void SetUp() override { AddModels(); }
+// TestParam uses tuple for compatibility with ::testing::Combine.
+// get<0>() is nesting depth for the plant and scene graph.
+// get<1>() is nesting depth for external systems.
+using TestParam = std::tuple<int, int>;
 
-  /* Add models to the plant. */
+/* A base test case with utilities for setting up a CENIC simulation. */
+class SimulationTestScenario : public testing::TestWithParam<TestParam> {
+ protected:
+  void SetUp() override {
+    const TestParam depths = GetParam();
+    plant_depth_ = std::get<0>(depths);
+    external_depth_ = std::get<1>(depths);
+    AddModels();
+  }
+
+  /* Adds models to the plant. */
   virtual void AddModels() = 0;
 
-  /* Set defualt initial conditions. */
+  /* Sets default initial conditions. */
   virtual void SetInitialConditions() = 0;
+
+  /* Prepares a `system` to be nested within the diagram eventually produced by
+  `builder`, by exporting all of its ports with their original unqualified
+  names. */
+  void ReExportAllPorts(DiagramBuilder<double>* builder,
+                        const System<double>& system) {
+    for (int m = 0; m < system.num_input_ports(); ++m) {
+      const InputPort<double>& input = system.get_input_port(m);
+      if (builder->IsConnectedOrExported(input)) {
+        continue;
+      }
+      builder->ExportInput(input, input.get_name());
+    }
+    for (int m = 0; m < system.num_output_ports(); ++m) {
+      const OutputPort<double>& output = system.get_output_port(m);
+      builder->ExportOutput(output, output.get_name());
+    }
+  }
+
+  /* Wraps `my_system` in extra nested diagrams, according to the "external
+  depth" test parameter, and adds the entire thing to the top-level builder.
+  Returns a tuple of [0] the derived-class pointer to the wrapped system (for
+  type-specific access), and [1] a system-typed pointer to the new wrapping
+  diagram. */
+  template <typename MySystem>
+  std::tuple<MySystem*, System<double>*> BurySystem(
+      std::unique_ptr<MySystem> my_system) {
+    MySystem* alias = my_system.get();
+    std::unique_ptr<System<double>> owned_system(std::move(my_system));
+    for (int k = 0; k < external_depth_; ++k) {
+      DiagramBuilder<double> builder;
+      auto* system = builder.AddSystem(std::move(owned_system));
+      ReExportAllPorts(&builder, *system);
+      owned_system = builder.Build();
+    }
+    auto* nest = builder_->AddSystem(std::move(owned_system));
+    return std::tie(alias, nest);
+  }
+
+  void Finalize() {
+    plant_.Finalize();
+
+    // Wrapping the plant requires re-exporting of selected ports. The logic
+    // here is different from BurySystem because it needs to preserve the
+    // plant, scene graph, and their port connections.
+    if (plant_depth_ > 0) {
+      ReExportAllPorts(builder_.get(), plant_);
+      auto wrapper = builder_->Build();
+      for (int k = 1; k < plant_depth_; ++k) {
+        DiagramBuilder<double> builder;
+        auto* system = builder.AddSystem(std::move(wrapper));
+        ReExportAllPorts(&builder, *system);
+        wrapper = builder.Build();
+      }
+      builder_ = std::make_unique<DiagramBuilder<double>>();
+      plant_nest_ = builder_->AddSystem(std::move(wrapper));
+    }
+  }
 
   /* Creates the system diagram and sets up a simulation with CENIC. */
   void Build() {
     if (!plant_.is_finalized()) {
-      plant_.Finalize();
+      Finalize();
     }
 
     diagram_ = builder_->Build();
@@ -111,8 +183,17 @@ class SimulationTestScenario : public testing::Test {
   CenicIntegrator<double>* integrator_{nullptr};
 
   // Always available.
+  int plant_depth_{0};
+  int external_depth_{0};
+  // A direct reference to the plant. Use it for type-specific API access.
   MultibodyPlant<double>& plant_{
       AddMultibodyPlantSceneGraph(builder_.get(), 0.0).plant};
+  // Depending on the value of plant_depth_, plant_nest_ will either be a
+  // pointer to the plant (depth 0), or a pointer to a stack of diagrams
+  // wrapping plant and scene graph, with all of their available ports
+  // re-exported. Use it for establishing top-level connections between wrapped
+  // systems.
+  System<double>* plant_nest_{&plant_};
 };
 
 class DoublePendulum : public SimulationTestScenario {
@@ -140,7 +221,7 @@ class BallOnTable : public SimulationTestScenario {
 
 /* Checks that the integrator complains when no initial step size is
 configured. */
-TEST_F(DoublePendulum, NoStep) {
+TEST_P(DoublePendulum, NoStep) {
   Build();
   integrator_ = &simulator_->reset_integrator<CenicIntegrator<double>>();
   DRAKE_EXPECT_THROWS_MESSAGE(simulator_->AdvanceTo(1e-2),
@@ -149,7 +230,7 @@ TEST_F(DoublePendulum, NoStep) {
 
 /* Checks that the integrator reports expected statistics, and that they may be
 reset. */
-TEST_F(DoublePendulum, Stats) {
+TEST_P(DoublePendulum, Stats) {
   Build();
 
   const std::set<std::string> expected_keys{
@@ -224,7 +305,7 @@ TEST_F(DoublePendulum, Stats) {
 /* Checks that solver parameter setting is effective. Since the methods tested
 here only forward to the ICF solver, only one field is checked. Detailed
 testing of parameter effects can be found in icf_solver_test. */
-TEST_F(DoublePendulum, Parameters) {
+TEST_P(DoublePendulum, Parameters) {
   Build();
   EXPECT_NO_THROW(simulator_->AdvanceTo(1e-2));
   IcfSolverParameters params = integrator_->get_solver_parameters();
@@ -237,7 +318,7 @@ TEST_F(DoublePendulum, Parameters) {
 /* Checks that a double pendulum simulation in fixed-step mode matches the
 discrete solver. Simulation time and stepping are carefully chosen to
 facilitate matching of results. */
-TEST_F(DoublePendulum, FixedStep) {
+TEST_P(DoublePendulum, FixedStep) {
   const double time_step = 1e-2;
   const double simulation_time = 0.5;
   Build();
@@ -271,7 +352,11 @@ TEST_F(DoublePendulum, FixedStep) {
 
 /* Verifies that energy conservation and error metrics for an undamped double
 pendulum are improved with tightened accuracy. */
-TEST_F(DoublePendulum, AccuracyTrends) {
+TEST_P(DoublePendulum, AccuracyTrends) {
+  // This test is relatively slow; skip extra nesting variations.
+  if (plant_depth_ + external_depth_ > 0) {
+    return;
+  }
   const double simulation_time = 2.0;
 
   // Remove joint damping for this test.
@@ -324,13 +409,13 @@ TEST_F(DoublePendulum, AccuracyTrends) {
 }
 
 /* Simulates the double pendulum with PID actuation. */
-TEST_F(DoublePendulum, ExternalActuation) {
+TEST_P(DoublePendulum, ExternalActuation) {
   // Add some actuators to the plant.
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
     plant_.AddJointActuator(joint.name() + "_actuator", joint);
   }
-  plant_.Finalize();
+  Finalize();
   EXPECT_EQ(plant_.num_actuators(), 2);
 
   // Set up a PID controller.
@@ -339,15 +424,17 @@ TEST_F(DoublePendulum, ExternalActuation) {
   const Vector2d Ki(0.5, 0.4);
   const Vector4d x_nom(M_PI_2, -M_PI_2, 0.0, 0.0);
 
-  auto target_sender = builder_->AddSystem<ConstantVectorSource<double>>(x_nom);
-  auto pid_controller = builder_->AddSystem<PidController<double>>(Kp, Ki, Kd);
+  auto [target_sender, target_nest] =
+      BurySystem(std::make_unique<ConstantVectorSource<double>>(x_nom));
+  auto [pid_controller, pid_nest] =
+      BurySystem(std::make_unique<PidController<double>>(Kp, Ki, Kd));
 
-  builder_->Connect(target_sender->get_output_port(),
-                    pid_controller->get_input_port_desired_state());
-  builder_->Connect(plant_.get_state_output_port(),
-                    pid_controller->get_input_port_estimated_state());
-  builder_->Connect(pid_controller->get_output_port(),
-                    plant_.get_actuation_input_port());
+  builder_->Connect(target_nest->get_output_port(),
+                    pid_nest->GetInputPort("desired_state"));
+  builder_->Connect(plant_nest_->GetOutputPort("state"),
+                    pid_nest->GetInputPort("estimated_state"));
+  builder_->Connect(pid_nest->GetOutputPort("control"),
+                    plant_nest_->GetInputPort("actuation"));
 
   Build();
 
@@ -376,8 +463,9 @@ TEST_F(DoublePendulum, ExternalActuation) {
 continuous state.*/
 // TODO(#23921): Revisit this test when implementing an error estimate that
 // accounts for external systems.
-TEST_F(DoublePendulum, PositionVelocityExternalSystem) {
-  auto spring_mass_system = builder_->AddSystem<SpringMassSystem>(100.0, 1.0);
+TEST_P(DoublePendulum, PositionVelocityExternalSystem) {
+  auto [spring_mass_system, spring_mass_nest] =
+      BurySystem(std::make_unique<SpringMassSystem<double>>(100.0, 1.0));
   Build();
 
   const double q0 = 0.2;
@@ -407,7 +495,7 @@ TEST_F(DoublePendulum, PositionVelocityExternalSystem) {
 }
 
 /* Checks that the integrator can enforce joint limits. */
-TEST_F(DoublePendulum, JointLimits) {
+TEST_P(DoublePendulum, JointLimits) {
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
     joint.set_position_limits(VectorXd::Constant(1, 0.2 * (i + 1)),
@@ -424,7 +512,7 @@ TEST_F(DoublePendulum, JointLimits) {
 }
 
 /* Checks that effort limits are enforced by the integrator. */
-TEST_F(DoublePendulum, EffortLimits) {
+TEST_P(DoublePendulum, EffortLimits) {
   // Add some actuators with tight effort limits to the plant.
   for (multibody::JointIndex i : plant_.GetJointIndices()) {
     multibody::Joint<double>& joint = plant_.get_mutable_joint(i);
@@ -473,7 +561,7 @@ TEST_F(DoublePendulum, EffortLimits) {
 }
 
 /* Checks that coupler constraints are handled correctly by the integrator. */
-TEST_F(DoublePendulum, CoupledJoints) {
+TEST_P(DoublePendulum, CoupledJoints) {
   const double gear_ratio = 0.5;
   plant_.AddCouplerConstraint(plant_.GetJointByName("joint1"),
                               plant_.GetJointByName("joint2"), gear_ratio);
@@ -493,7 +581,7 @@ TEST_F(DoublePendulum, CoupledJoints) {
 }
 
 /* Checks that a ball rolling along the ground produces the expected result. */
-TEST_F(BallOnTable, RollingContact) {
+TEST_P(BallOnTable, RollingContact) {
   Build();
 
   // Place the ball on the ground, with initial linear and angular velocity
@@ -525,7 +613,7 @@ TEST_F(BallOnTable, RollingContact) {
 }
 
 /* Checks that quaternions always remain normalized. */
-TEST_F(BallOnTable, QuaternionNormalization) {
+TEST_P(BallOnTable, QuaternionNormalization) {
   Build();
 
   // Set initial velocities that will yeet the ball into the distance while
@@ -547,7 +635,7 @@ TEST_F(BallOnTable, QuaternionNormalization) {
 }
 
 /* Verifies that we can simulate non-actuator external forces. */
-TEST_F(BallOnTable, ExternalForces) {
+TEST_P(BallOnTable, ExternalForces) {
   const double simulation_time = 0.3;
   Build();
   const double initial_height = plant_.GetPositions(*plant_context_)[6];
@@ -570,6 +658,22 @@ TEST_F(BallOnTable, ExternalForces) {
   const double final_height = plant_.GetPositions(*plant_context_)[6];
   EXPECT_NEAR(final_height, expected_height, 1e-3);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    AllDepthsPendulum, DoublePendulum,
+    testing::Combine(testing::Range(0, 3), testing::Range(0, 3)),
+    [](const testing::TestParamInfo<DoublePendulum::ParamType>& x) {
+      return fmt::format("plant_depth_{}_external_depth_{}",
+                         std::get<0>(x.param), std::get<1>(x.param));
+    });
+
+INSTANTIATE_TEST_SUITE_P(
+    AllDepthsBall, BallOnTable,
+    testing::Combine(testing::Range(0, 3), testing::Range(0, 3)),
+    [](const testing::TestParamInfo<BallOnTable::ParamType>& x) {
+      return fmt::format("plant_depth_{}_external_depth_{}",
+                         std::get<0>(x.param), std::get<1>(x.param));
+    });
 
 }  // namespace
 }  // namespace cenic
