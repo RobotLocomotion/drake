@@ -96,8 +96,7 @@ R"""(Constructs the integrator.
 
 Parameter ``system``:
     The overall system diagram to simulate. Must include exactly one
-    conforming MultibodyPlant; a conforming plant is continuous-time
-    and registered with a SceneGraph. Other (discrete-time) plants are
+    continuous-time MultibodyPlant. Other (discrete-time) plants are
     allowed in the diagram. This ``system`` is aliased by this object
     so must remain alive longer than the integrator.
 
