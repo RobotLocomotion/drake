@@ -6,7 +6,10 @@ load("@drake//tools/skylark:py.bzl", "py_binary")
 py_binary(
     name = "gen",
     srcs = ["implib-gen.py"],
-    deps = [uv_requirement("lief")],
+    deps = [
+        uv_requirement("lief"),
+        "@cxxfilt_internal//:cxxfilt",
+    ],
     data = glob(["arch/**", "implib/**"], allow_empty = False),
     main = "implib-gen.py",
     python_version = "PY3",
