@@ -5,8 +5,8 @@
 # - Users can make edits to drake/setup/python/pyproject.toml, and then
 #   run this script to compile it to drake/setup/python/pdm.lock.
 #
-# - Users can make edits to drake/setup/python/mypy/requirements.in, and then
-#   run this script to compile it to drake/setup/python/mypy/requirements.txt.
+# - Users can make edits to drake/setup/python/uv/requirements.in, and then
+#   run this script to compile it to drake/setup/python/uv/requirements.txt.
 #
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
