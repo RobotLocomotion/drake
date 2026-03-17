@@ -1,4 +1,4 @@
-load("@drake_mypy//:requirements.bzl", mypy_requirement = "requirement")
+load("@drake_uv//:requirements.bzl", uv_requirement = "requirement")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//bindings/pydrake:stubgen.bzl", "generate_python_stubs")
 load("//tools/install:install.bzl", "install")
@@ -388,7 +388,7 @@ drake_py_binary(
     deps = [
         ":all_py",
         "@stable_baselines3_internal//:stable_baselines3",
-        mypy_requirement("mypy"),
+        uv_requirement("mypy"),
     ],
 )
 
@@ -471,7 +471,7 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
-        mypy_requirement("mypy"),
+        uv_requirement("mypy"),
     ],
 )
 
