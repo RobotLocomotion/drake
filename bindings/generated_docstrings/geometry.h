@@ -3322,6 +3322,27 @@ R"""(Provides a general abstraction to the definition of a mesh. A mesh
 definition can come from disk or memory. APIs that support both can
 take as specification an instance of MeshSource to communicate that
 ability.)""";
+        // Symbol: drake::geometry::MeshSource::GetCacheKey
+        struct /* GetCacheKey */ {
+          // Source: drake/geometry/mesh_source.h
+          const char* doc =
+R"""(Returns a unique cache key for this mesh source.
+
+The key uniquely identifies the mesh data. For on-disk meshes, it uses
+the canonicalized file path. For in-memory meshes, it uses the SHA256
+hash of the mesh file contents.
+
+Parameter ``is_convex``:
+    Whether the mesh is being used as a convex shape. This affects the
+    key because convex shapes undergo additional processing (convex
+    hull computation).
+
+Returns:
+    A string suitable for use as a cache key.
+
+Raises:
+    RuntimeError if the mesh source path cannot be canonicalized.)""";
+        } GetCacheKey;
         // Symbol: drake::geometry::MeshSource::MeshSource
         struct /* ctor */ {
           // Source: drake/geometry/mesh_source.h

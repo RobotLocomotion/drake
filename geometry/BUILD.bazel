@@ -363,6 +363,10 @@ drake_cc_library(
     deps = [
         ":in_memory_mesh",
     ],
+    implementation_deps = [
+        "//common:essential",
+        "@fmt",
+    ],
 )
 
 drake_cc_library(
@@ -960,6 +964,8 @@ drake_cc_googletest(
     deps = [
         ":in_memory_mesh",
         ":mesh_source",
+        "//common:memory_file",
+        "//common:temp_directory",
     ],
 )
 

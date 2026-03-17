@@ -49,7 +49,6 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
-#include "drake/geometry/render/mesh_source_cache_key.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
@@ -82,7 +81,6 @@ using render::LightParameter;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
-using render::internal::GetMeshSourceCacheKey;
 using std::make_unique;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
@@ -264,8 +262,7 @@ void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
   auto& data = *static_cast<RegistrationData*>(user_data);
 
-  const std::string cache_key =
-      GetMeshSourceCacheKey(convex.source(), /*is_convex=*/true);
+  const std::string cache_key = convex.source().GetCacheKey(/*is_convex=*/true);
 
   if (!mesh_cache_.contains(cache_key)) {
     // Compute the hull from the *unscaled* source so the cached VTK geometry
@@ -695,8 +692,7 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
 
 bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
                                    const RegistrationData& data) {
-  const std::string cache_key =
-      GetMeshSourceCacheKey(mesh.source(), /*is_convex=*/false);
+  const std::string cache_key = mesh.source().GetCacheKey(/*is_convex=*/false);
 
   if (!mesh_cache_.contains(cache_key)) {
     // On cache miss: parse the OBJ file and immediately convert each part into
