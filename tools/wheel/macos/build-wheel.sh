@@ -48,6 +48,8 @@ build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
 build --repo_env=SNOPT_PATH=${SNOPT_PATH}
 build --config=packaging
+# Enable MOSEK lazy loading.
+build --@drake//solvers:mosek_lazy_load=True
 # See tools/wheel/wheel_builder/macos.py for more on this env variable.
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 EOF
