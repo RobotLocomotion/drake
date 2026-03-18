@@ -177,7 +177,12 @@ void WeldConstraintsPool<T>::CalcData(
       vc.template tail<3>() = v_WBm;
     }
 
-    const Vector6<T> v_hat = g_hat_[k] / model().time_step();
+    // When the initial constraint error is very large, CENIC will shrink the
+    // step drastically and we'll never satisfy the accuracy requirement if we
+    // let v_hat keep growing. Cap it at a small enough step size.
+    using std::max;
+    const T dt = max(1e-8, model().time_step());
+    const Vector6<T> v_hat = g_hat_[k] / dt;
     const Vector6<T>& R_diag = R_[k];
 
     // γ = R⁻¹⋅(v̂ - vc), where R is diagonal.
