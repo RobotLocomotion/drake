@@ -143,7 +143,7 @@ the main body of the document:
 6. Merge the release notes PR.
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-noble-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
-      * If you don't have "Build now" click "Log in" first in upper right.
+      * If you don't have "Build now" click "Sign in" first in upper right.
 7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
    a new release".  Note that this page has neither history nor undo.  Be
    slow and careful!
