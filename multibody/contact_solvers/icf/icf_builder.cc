@@ -4,6 +4,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/geometry/scene_graph_config.h"
@@ -449,7 +450,17 @@ void IcfBuilder<T>::SetWeldConstraints(const systems::Context<T>& context,
     // anchored. If body A is anchored, that's fine.
     const bool A_anchored = plant_.IsAnchored(body_A);
     const bool B_anchored = plant_.IsAnchored(body_B);
-    DRAKE_DEMAND(!(A_anchored && B_anchored));
+
+    // TODO(sherm1): Move this exception up to the plant level so
+    //  that it fails as fast as possible. Currently, the earliest this can
+    //  happen is in MbP::Finalize() after the topology has been finalized.
+    if (A_anchored && B_anchored) {
+      const std::string msg = fmt::format(
+          "Creating a weld constraint between bodies '{}' and '{}' where "
+          "both are welded to the world is not allowed.",
+          body_A.name(), body_B.name());
+      throw std::logic_error(msg);
+    }
 
     // If B is anchored but A is not, swap roles so that the "B" body in the
     // pool is always the dynamic one.

@@ -150,7 +150,7 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   // And therefore we arrive to the conclusion that:
   //   p_PQ(t) + δt⋅v_AmBm ≈ p_PQ(t+δt)
   //                       = p_PQ(t) + δt⋅ᵂd(p_PQ)/dt + O(δt²)
-  //                       = p_PQ(t) + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
+  //                       = p_PQ(t) + O(δt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
   // and thus the cost ℓₜ(vc) penalizes a first order approximation to
   // p_PQ(t+δt).
   // We show conservation of angular momentum in DoAccumulateSpatialImpulses().
