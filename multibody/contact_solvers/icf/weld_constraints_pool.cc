@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "drake/math/cross_product.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -12,20 +13,9 @@ namespace icf {
 namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
+using math::VectorToSkewSymmetric;
 
 namespace {
-
-// Forms the skew symmetric matrix pₓ(p) such that pₓ⋅a = p×a.
-template <typename T>
-Matrix3<T> Skew(const Vector3<T>& p) {
-  // clang-format off
-  Matrix3<T> S;
-  S <<     T(0), -p.z(),  p.y(),
-        p.z(),     T(0), -p.x(),
-       -p.y(),  p.x(),     T(0);
-  // clang-format on
-  return S;
-}
 
 // Given spatial impulse Γ_Bo applied at B and the relative position p_AB of B
 // from A, computes the spatial impulse Γ_Ao shifted to A.
@@ -272,7 +262,7 @@ void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
     const Vector3<T> p_BoBm_W = p_BQ_W_[k] - 0.5 * p_PoQo;
 
     // Compute G_Bp = Φ_B(p_BoBm)ᵀ⋅G⋅Φ_B(p_BoBm)
-    const Matrix3<T> px_B = Skew(p_BoBm_W);
+    const Matrix3<T> px_B = VectorToSkewSymmetric(p_BoBm_W);
     const Matrix3<T> Gr = G.template topLeftCorner<3, 3>();
     const Matrix3<T> Gt = G.template bottomRightCorner<3, 3>();
     Matrix6<T> G_Bp;
@@ -300,7 +290,7 @@ void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
       auto J_WA = model().J_WB(bodyA);
 
       // G_Ap = Φ_A(p_AoAm)ᵀ⋅G⋅Φ_A(p_AoAm)
-      const Matrix3<T> px_A = Skew(p_AoAm_W);
+      const Matrix3<T> px_A = VectorToSkewSymmetric(p_AoAm_W);
       Matrix6<T> G_Ap;
       G_Ap.template topLeftCorner<3, 3>() = Gr - px_A * Gt * px_A;
       G_Ap.template topRightCorner<3, 3>() = px_A * Gt;

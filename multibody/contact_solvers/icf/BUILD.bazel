@@ -204,6 +204,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//math:geometric_transform",
+        "//math:vector3_util",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
