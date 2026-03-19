@@ -1,8 +1,10 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <limits>
+#include <map>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -15,6 +17,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
@@ -61,82 +64,61 @@ class FclDynamicAABBTreeCollisionManager
     : public fcl::DynamicAABBTreeCollisionManager<double> {};
 class MapGeometryIdToFclCollisionObject
     : public unordered_map<GeometryId, unique_ptr<CollisionObjectd>> {};
+// Cache entry for a single mesh source file (independent of scale). Stores the
+// convex hull topology and unit-scale vertex positions once, then maps each
+// encountered scale factor to its own fcl::Convexd.
+struct ConvexHullCacheEntry {
+  // Vertex positions of the convex hull evaluated at unit scale (1, 1, 1).
+  shared_ptr<std::vector<Vector3d>> unit_vertices;
+  // Face topology data; identical across all scale factors.
+  shared_ptr<std::vector<int>> faces;
+  // Number of convex hull faces.
+  int num_faces{0};
+  // Sub-cache of fcl::Convexd objects keyed by (scale_x, scale_y, scale_z,
+  // margin). Scale values are validated as finite by Mesh/Convex; margin is
+  // non-negative and finite (and is validated in AddGeometry()). Two entries
+  // that differ only in margin need distinct fcl::Convexd objects because
+  // InflateAabbForHydroelasticTypesOnly() mutates the geometry's aabb_local
+  // in-place.
+  std::map<std::array<double, 4>, shared_ptr<fcl::Convexd>> scaled_hulls;
+};
 
-// Returns a copy of the given fcl collision geometry; throws an exception for
-// unsupported collision geometry types. This supplements the *missing* cloning
-// functionality in FCL. Issue has been submitted to FCL:
-// https://github.com/flexible-collision-library/fcl/issues/246
-shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
-    const fcl::CollisionGeometryd& geometry) {
-  // NOTE: Returns a shared pointer because of the FCL API in assigning
-  // collision geometry to collision objects.
-  switch (geometry.getNodeType()) {
-    case fcl::GEOM_SPHERE: {
-      const auto& sphere = dynamic_cast<const fcl::Sphered&>(geometry);
-      return make_shared<fcl::Sphered>(sphere.radius);
-    }
-    case fcl::GEOM_CYLINDER: {
-      const auto& cylinder = dynamic_cast<const fcl::Cylinderd&>(geometry);
-      return make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.lz);
-    }
-    case fcl::GEOM_ELLIPSOID: {
-      const auto& ellipsoid = dynamic_cast<const fcl::Ellipsoidd&>(geometry);
-      return make_shared<fcl::Ellipsoidd>(ellipsoid.radii);
-    }
-    case fcl::GEOM_HALFSPACE:
-      // All half spaces are defined exactly the same.
-      return make_shared<fcl::Halfspaced>(0, 0, 1, 0);
-    case fcl::GEOM_BOX: {
-      const auto& box = dynamic_cast<const fcl::Boxd&>(geometry);
-      return make_shared<fcl::Boxd>(box.side);
-    }
-    case fcl::GEOM_CAPSULE: {
-      const auto& capsule = dynamic_cast<const fcl::Capsuled&>(geometry);
-      return make_shared<fcl::Capsuled>(capsule.radius, capsule.lz);
-    }
-    case fcl::GEOM_CONVEX: {
-      const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
-      // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
-      //  we figure out why "Convex(const Convex& other) = default" created
-      //  link errors for Xenial Debug build.  For now we do deep copy of the
-      //  vertices and faces instead of simply copying the shared pointer.
-      return make_shared<fcl::Convexd>(
-          make_shared<const std::vector<Vector3d>>(convex.getVertices()),
-          convex.getFaceCount(),
-          make_shared<const std::vector<int>>(convex.getFaces()));
-    }
-    case fcl::GEOM_CONE:
-    case fcl::GEOM_PLANE:
-    case fcl::GEOM_TRIANGLE:
-      throw std::logic_error(
-          "Trying to copy fcl::CollisionGeometry of unsupported GEOM_* type");
-    default:
-      throw std::logic_error(
-          "Trying to copy fcl::CollisionGeometry of non GEOM_* type");
-  }
-}
+class MapStringToConvexHullCache
+    : public string_unordered_map<ConvexHullCacheEntry> {};
 
-// Helper function that creates a *deep* copy of the given collision object.
+// Helper function that creates a copy of the given collision object.
+// The underlying FCL collision geometry is shared with the source rather than
+// deep-copied; FCL geometry objects are treated as immutable after
+// construction.
 unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
     const CollisionObjectd& object_source) {
   const auto& shape_source = *object_source.collisionGeometry();
 
-  shared_ptr<fcl::ShapeBased> shape_copy = CopyShapeOrThrow(shape_source);
+  // Store the geometry rather than copying it. However, we have to stash away
+  // the local AABB configuration. See below for why.
+  const Vector3d local_aabb_min = shape_source.aabb_local.min_;
+  const Vector3d local_aabb_max = shape_source.aabb_local.max_;
+  const double aabb_radius = shape_source.aabb_radius;
 
-  // A copy of the geometry is passed to FCL, but CollisionObject's constructor
-  // resets that copy's local bounding box to fit the _instantiated_ shape. So
-  // we retain a pointer to the shape copy long enough after handing it off to
-  // FCL to fix it back up to its original AABB.
-  auto object_copy = make_unique<CollisionObjectd>(shape_copy);
+  shared_ptr<fcl::CollisionGeometryd> shared_geom =
+      std::const_pointer_cast<fcl::CollisionGeometryd>(
+          object_source.collisionGeometry());
 
-  // The source's local AABB may have been inflated if the underlying object is
-  // associated with a compliant hydroelastic shape with a non-zero margin;
+  auto object_copy = make_unique<CollisionObjectd>(shared_geom);
+
+  // The source's local AABB may have been inflated if the underlying object
+  // is associated with a compliant hydroelastic shape with a non-zero margin;
   // therefore the AABB that fits the shape may not be what we want. We can't
-  // tell simply by looking at the fcl object if this is the case, so, we'll
-  // simply copy the source's local AABB verbatim to preserve the effect.
-  shape_copy->aabb_local.min_ = shape_source.aabb_local.min_;
-  shape_copy->aabb_local.max_ = shape_source.aabb_local.max_;
-  shape_copy->aabb_radius = shape_source.aabb_radius;
+  // tell simply by looking at the FCL object if this is the case, so, we'll
+  // simply copy the source's local _original_ AABB verbatim to preserve the
+  // effect.
+  //
+  // Note: this has to be done *after* the collision object is created because
+  // CollisionObjectd's constructor calls computeLocalAABB() on the geometry,
+  // which would otherwise reset any inflation.
+  shared_geom->aabb_local.min_ = local_aabb_min;
+  shared_geom->aabb_local.max_ = local_aabb_max;
+  shared_geom->aabb_radius = aabb_radius;
 
   object_copy->setUserData(object_source.getUserData());
   object_copy->setTransform(object_source.getTransform());
@@ -271,7 +253,7 @@ void CullFlatten(std::vector<X>* maybes, std::vector<R>* objects) {
 
 }  // namespace
 
-// The implementation class for the fcl engine. Each of these functions
+// The implementation class for the FCL engine. Each of these functions
 // mirrors a method on the ProximityEngine (unless otherwise indicated.
 // See ProximityEngine for documentation.
 template <typename T>
@@ -284,6 +266,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
     mesh_sdf_data_ = other.mesh_sdf_data_;
+    convex_hull_cache_ = other.convex_hull_cache_;
+    geometry_to_hull_key_ = other.geometry_to_hull_key_;
     dynamic_tree_.clear();
     dynamic_objects_.clear();
     anchored_tree_.clear();
@@ -333,6 +317,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     engine->geometries_for_deformable_contact_ =
         this->geometries_for_deformable_contact_;
     engine->mesh_sdf_data_ = this->mesh_sdf_data_;
+    engine->convex_hull_cache_ = this->convex_hull_cache_;
+    engine->geometry_to_hull_key_ = this->geometry_to_hull_key_;
     engine->distance_tolerance_ = this->distance_tolerance_;
 
     return engine;
@@ -394,8 +380,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
-
-    if (margin == 0) return;  // nothing to update.
 
     CollisionObjectd* object = geometry.is_dynamic()
                                    ? dynamic_objects_[geometry.id()].get()
@@ -480,6 +464,27 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_.RemoveGeometry(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
     mesh_sdf_data_.erase(id);
+
+    // Evict the convex hull cache entry for this geometry if it is the last
+    // user. The CollisionObjectd was already destroyed above (by the inner
+    // RemoveGeometry overload), so the cache entry's shared_ptr is the sole
+    // remaining owner when use_count() == 1.
+    if (auto it = geometry_to_hull_key_.find(id);
+        it != geometry_to_hull_key_.end()) {
+      const auto& [file_key, scale_key] = it->second;
+      if (auto cache_it = convex_hull_cache_.find(file_key);
+          cache_it != convex_hull_cache_.end()) {
+        auto& scaled_hulls = cache_it->second.scaled_hulls;
+        if (auto hull_it = scaled_hulls.find(scale_key);
+            hull_it != scaled_hulls.end() && hull_it->second.use_count() == 1) {
+          scaled_hulls.erase(hull_it);
+          if (scaled_hulls.empty()) {
+            convex_hull_cache_.erase(cache_it);
+          }
+        }
+      }
+      geometry_to_hull_key_.erase(it);
+    }
   }
 
   void RemoveDeformableGeometry(GeometryId id) {
@@ -620,7 +625,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    // We currently represent Mesh shapes with their convex hulls in fcl.
+    // We currently represent Mesh shapes with their convex hulls in FCL.
     ImplementFromConvexHull(mesh, user_data);
     // Set up data for ComputeSignedDistanceToPoint() from non-convex meshes.
     ImplementMeshSdfData(mesh, user_data);
@@ -659,7 +664,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   /* Searches for an fcl::CollisionObject associated with the given `id`.
-   Note: this strips the const away from the collision object because fcl's
+   Note: this strips the const away from the collision object because FCL's
    API requires non-const inputs.
    @throws if the proximity engine has no geometry for the id. */
   CollisionObjectd* FindCollisionObject(GeometryId id,
@@ -1007,6 +1012,38 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return nullptr;
   }
 
+  int convex_hull_cache_file_entries() const {
+    return ssize(convex_hull_cache_);
+  }
+
+  int convex_hull_cache_hull_entries() const {
+    int n = 0;
+    for (const auto& [_, entry] : convex_hull_cache_) {
+      n += ssize(entry.scaled_hulls);
+    }
+    return n;
+  }
+
+  bool geometry_hull_key_valid(GeometryId id) const {
+    if (!geometry_to_hull_key_.contains(id)) return false;
+
+    const auto& [file_key, scale_key] = geometry_to_hull_key_.at(id);
+    if (!convex_hull_cache_.contains(file_key)) return false;
+
+    return convex_hull_cache_.at(file_key).scaled_hulls.contains(scale_key);
+  }
+
+  bool geometry_hull_key_absent(GeometryId id) const {
+    return geometry_to_hull_key_.count(id) == 0;
+  }
+
+  bool geometry_hull_reverse_map_consistent() const {
+    for (const auto& [geometry_id, _] : geometry_to_hull_key_) {
+      if (!geometry_hull_key_valid(geometry_id)) return false;
+    }
+    return true;
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
@@ -1035,7 +1072,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // geometry's frame (its "local AABB") during construction. The hydroelastic
   // representations are larger than the specified shapes and we want to make
   // sure that the bounding volumes associated with those hydro geometries
-  // properly enclose them. So, we'll edit fcl's bounding box definition after
+  // properly enclose them. So, we'll edit FCL's bounding box definition after
   // the fact to account for the inflation.
   //
   // The fcl::CollisionObject likewise has a bounding box based on the
@@ -1049,12 +1086,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // set of vertices.
   //
   // @pre `id` has a compliant hydroelastic representation.
-  // @pre `margin` > 0.
+  // @pre `margin` >= 0.
   // @pre `object != nullptr`.
   void InflateAabbForHydroelasticTypesOnly(const Shape& shape,
                                            const GeometryId id, double margin,
                                            fcl::CollisionObjectd* object) {
-    DRAKE_DEMAND(margin > 0);
+    DRAKE_DEMAND(margin >= 0);
     DRAKE_DEMAND(hydroelastic_geometries_.hydroelastic_type(id) ==
                  HydroelasticType::kCompliant);
     DRAKE_DEMAND(object != nullptr);
@@ -1069,7 +1106,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(g != nullptr);
 
     std::string_view shape_name = shape.type_name();
-    if (shape_name == "Mesh" || shape_name == "Convex") {
+    if (margin == 0) {
+      // No inflation needed; reset to the tight-fitting local AABB.
+      g->computeLocalAABB();
+    } else if (shape_name == "Mesh" || shape_name == "Convex") {
       // Meshes can have their vertices move an arbitrary amount, we simply need
       // to recompute the bounding box based on the *moved* vertex positions
       // defined in the hydro mesh.
@@ -1102,6 +1142,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
     const double margin =
         props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
+    if (!(margin >= 0 && std::isfinite(margin))) {
+      throw std::logic_error("Margin must be non-negative and finite.");
+    }
     ReifyData data{nullptr, id, props, X_WG, margin};
     shape.Reify(this, &data);
 
@@ -1139,7 +1182,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // Helper method called by the various ImplementGeometry overrides to
   // facilitate the logistics of creating shapes from specifications. `data`
-  // is a unique_ptr of an fcl CollisionObject that should be instantiated
+  // is a unique_ptr of an FCL CollisionObject that should be instantiated
   // with the given shape.
   void TakeShapeOwnership(const std::shared_ptr<fcl::ShapeBased>& shape,
                           void* data) {
@@ -1152,15 +1195,64 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // from its convex hull (rather than from the actual mesh data).
   template <typename MeshType>
   void ImplementFromConvexHull(const MeshType& mesh, void* user_data) {
-    // Create fcl::Convex for the fcl bounding volume hierarchy.
-    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
-    auto shared_verts = make_shared<std::vector<Vector3d>>();
-    for (int vi = 0; vi < hull.num_vertices(); ++vi) {
-      shared_verts->push_back(hull.vertex(vi));
+    // Look up (or build) the per-file cache entry for this mesh source.
+    const std::string cache_key =
+        mesh.source().GetCacheKey(/* is_convex= */ true);
+    ConvexHullCacheEntry& entry = convex_hull_cache_[cache_key];
+
+    // Populate unit-scale vertex positions and face topology on first visit.
+    // The convex hull topology is the same for all scale factors; only vertex
+    // positions differ.  We therefore store vertices at unit scale (1,1,1) and
+    // derive per-scale copies on demand.
+    const Vector3d scale = mesh.scale3();
+    const bool is_unit_scale = (scale == Vector3d::Ones());
+    if (entry.unit_vertices == nullptr) {
+      const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+      auto unit_verts = make_shared<std::vector<Vector3d>>();
+      unit_verts->reserve(hull.num_vertices());
+      if (is_unit_scale) {
+        for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+          unit_verts->push_back(hull.vertex(vi));
+        }
+      } else {
+        for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+          unit_verts->push_back(hull.vertex(vi).array() / scale.array());
+        }
+      }
+      entry.unit_vertices = std::move(unit_verts);
+      entry.faces = make_shared<std::vector<int>>(hull.face_data());
+      entry.num_faces = hull.num_elements();
     }
-    auto shared_faces = make_shared<std::vector<int>>(hull.face_data());
-    auto fcl_convex = make_shared<fcl::Convexd>(
-        std::move(shared_verts), hull.num_elements(), std::move(shared_faces));
+
+    // Look up (or create) the fcl::Convexd for the current (scale, margin)
+    // pair. Scale values are validated as finite by Mesh/Convex; margin is
+    // non-negative. Margin is part of the key because
+    // InflateAabbForHydroelasticTypesOnly() mutates the geometry's aabb_local
+    // in-place, so two geometries with the same scale but different margins
+    // must not share an fcl::Convexd.
+    const double margin = static_cast<const ReifyData*>(user_data)->margin;
+    const std::array<double, 4> scale_key{scale[0], scale[1], scale[2], margin};
+    shared_ptr<fcl::Convexd>& fcl_convex = entry.scaled_hulls[scale_key];
+    if (fcl_convex == nullptr) {
+      // For the unit-scale case (the common case), share the unit_vertices
+      // shared_ptr directly rather than allocating and filling a second vector.
+      shared_ptr<std::vector<Vector3d>> verts_for_fcl;
+      if (is_unit_scale) {
+        verts_for_fcl = entry.unit_vertices;
+      } else {
+        verts_for_fcl = make_shared<std::vector<Vector3d>>();
+        verts_for_fcl->reserve(entry.unit_vertices->size());
+        for (const Vector3d& uv : *entry.unit_vertices) {
+          verts_for_fcl->push_back(uv.array() * scale.array());
+        }
+      }
+      fcl_convex = make_shared<fcl::Convexd>(std::move(verts_for_fcl),
+                                             entry.num_faces, entry.faces);
+    }
+
+    // Record the reverse mapping so RemoveGeometry() can evict stale entries.
+    geometry_to_hull_key_[static_cast<const ReifyData*>(user_data)->id] = {
+        cache_key, scale_key};
 
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(mesh, user_data);
@@ -1295,6 +1387,21 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // Data for ComputeSignedDistanceToPoint from meshes (Mesh and Convex).
   std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_sdf_data_{};
+
+  // Two-level cache used by ImplementFromConvexHull().
+  //   Level 1: mesh-source cache key  →  ConvexHullCacheEntry
+  //     Stores unit-scale vertex positions and shared face topology so that
+  //     parsing each mesh file is done at most once.
+  //   Level 2 (inside ConvexHullCacheEntry): scale factor  →  fcl::Convexd
+  //     Stores one fcl::Convexd per distinct scale, sharing face topology
+  //     across all scales of the same source file.
+  MapStringToConvexHullCache convex_hull_cache_{};
+
+  // Reverse map from GeometryId to its convex hull cache key. Populated in
+  // ImplementFromConvexHull() for Mesh and Convex geometries; used by
+  // RemoveGeometry() to evict stale cache entries.
+  std::unordered_map<GeometryId, std::pair<std::string, std::array<double, 4>>>
+      geometry_to_hull_key_{};
 };
 
 template <typename T>
@@ -1565,6 +1672,31 @@ bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
 template <typename T>
 void* ProximityEngine<T>::GetCollisionObject(GeometryId id) const {
   return impl_->GetCollisionObject(id);
+}
+
+template <typename T>
+int ProximityEngine<T>::convex_hull_cache_file_entries() const {
+  return impl_->convex_hull_cache_file_entries();
+}
+
+template <typename T>
+int ProximityEngine<T>::convex_hull_cache_hull_entries() const {
+  return impl_->convex_hull_cache_hull_entries();
+}
+
+template <typename T>
+bool ProximityEngine<T>::geometry_hull_key_valid(GeometryId id) const {
+  return impl_->geometry_hull_key_valid(id);
+}
+
+template <typename T>
+bool ProximityEngine<T>::geometry_hull_key_absent(GeometryId id) const {
+  return impl_->geometry_hull_key_absent(id);
+}
+
+template <typename T>
+bool ProximityEngine<T>::geometry_hull_reverse_map_consistent() const {
+  return impl_->geometry_hull_reverse_map_consistent();
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -14,6 +15,7 @@
 
 #include <fcl/fcl.h>
 #include <fmt/ostream.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -100,6 +102,39 @@ class ProximityEngineTester {
   static const TriangleSurfaceMesh<double>* get_mesh_distance_boundary(
       const ProximityEngine<T>& engine, GeometryId id) {
     return engine.mesh_distance_boundary(id);
+  }
+
+  // Returns the number of top-level file entries in the convex hull cache.
+  static int convex_hull_cache_file_entries(
+      const ProximityEngine<double>& engine) {
+    return engine.convex_hull_cache_file_entries();
+  }
+
+  // Returns the total number of scaled_hulls sub-entries across all file
+  // entries in the convex hull cache.
+  static int convex_hull_cache_hull_entries(
+      const ProximityEngine<double>& engine) {
+    return engine.convex_hull_cache_hull_entries();
+  }
+
+  // Returns true if the given geometry id is in the reverse map AND its
+  // recorded (file_key, scale_key) refer to a valid cache entry.
+  static bool geometry_hull_key_valid(const ProximityEngine<double>& engine,
+                                      GeometryId id) {
+    return engine.geometry_hull_key_valid(id);
+  }
+
+  // Returns true if the given geometry id is absent from the reverse map.
+  static bool geometry_hull_key_absent(const ProximityEngine<double>& engine,
+                                       GeometryId id) {
+    return engine.geometry_hull_key_absent(id);
+  }
+
+  // Returns true if every entry currently in geometry_to_hull_key points to
+  // a valid (file_key, scale_key) pair in convex_hull_cache.
+  static bool geometry_hull_reverse_map_consistent(
+      const ProximityEngine<double>& engine) {
+    return engine.geometry_hull_reverse_map_consistent();
   }
 };
 
@@ -545,8 +580,351 @@ GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
   }
 }
 
+// Tests that registering the same mesh source multiple times reuses the same
+// underlying fcl::Convex collision geometry object (i.e. the convex hull cache
+// is working).
+GTEST_TEST(ProximityEngineTests, ConvexHullCacheDuplicatesShareGeometry) {
+  ProximityEngine<double> engine;
+  const std::string path_a =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const std::string path_b =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+
+  // Add the shape (dynamic vs anchored as indicated). Returns a pointer to the
+  // underlying collision geometry -- the cached quantity.
+  auto add_geometry = [&engine](const Shape& shape, bool is_dynamic = true) {
+    const GeometryId id = GeometryId::get_new_id();
+    if (is_dynamic) {
+      engine.AddDynamicGeometry(shape, {}, id);
+    } else {
+      engine.AddAnchoredGeometry(shape, {}, id);
+    }
+    const fcl::CollisionObjectd* obj =
+        ProximityEngineTester::GetCollisionObject(engine, id);
+    DRAKE_DEMAND(obj != nullptr);
+    return obj->collisionGeometry().get();
+  };
+
+  // We'll register one path as multiple geometry (some Mesh, some Convex).
+  const fcl::CollisionGeometryd* convex_a1 = add_geometry(Convex(path_a));
+  const fcl::CollisionGeometryd* convex_a2 = add_geometry(Convex(path_a));
+  const fcl::CollisionGeometryd* mesh_a1 = add_geometry(Mesh(path_a));
+  const fcl::CollisionGeometryd* mesh_a2 = add_geometry(Mesh(path_a));
+
+  // Start by confirming our reference geometry isn't null.
+  ASSERT_NE(convex_a1, nullptr);
+
+  // All of the collision objects instantiated by path_a (whether Mesh or
+  // Convex) should all share the same collision geometry.
+  EXPECT_EQ(convex_a1, convex_a2);
+  EXPECT_EQ(convex_a1, mesh_a1);
+  EXPECT_EQ(convex_a1, mesh_a2);
+
+  // We'll use a second mesh to show that not all meshes get cached the same.
+  // We'll also use the second mesh to show that anchored/dynamic doesn't
+  // matter.
+  const fcl::CollisionGeometryd* convex_b = add_geometry(Convex(path_b));
+  const fcl::CollisionGeometryd* mesh_b =
+      add_geometry(Mesh(path_b), /* is_dynamic= */ false);
+
+  // From a different path, we should get a different geometry.
+  EXPECT_NE(convex_b, nullptr);
+  EXPECT_NE(convex_a1, convex_b);
+  EXPECT_EQ(convex_b, mesh_b);
+}
+
+// Tests that the convex hull cache correctly handles multiple registrations of
+// the same mesh file with different anisotropic scale factors. The cache must
+// produce a distinct fcl::Convexd—with correctly-scaled vertex positions for
+// each unique scale, rather than reusing the hull built for the first scale
+// seen.
+//
+// Setup: three Convex instances all sourced from the same obj file (a 2m cube;
+// unit half-extents of 1m in each axis). Each has an anisotropic scale that
+// doubles exactly one axis, and each box is placed 10m along that axis from the
+// origin.
+//
+//   Instance  Position        Scale      Active half-extent  Expected distance
+//      A      (-10,  0,  0)  (2, 1, 1)   x: 2 m              8.0 m
+//      B      ( 0, -10,  0)  (1, 2, 1)   y: 2 m              8.0 m
+//      C      ( 0,  0, -10)  (1, 1, 2)   z: 2 m              8.0 m
+//
+// If the scale is wrong, things could fail in two ways: at the broadphase and
+// at the narrowphase. To test the broadphase, we introduce a query threshold
+// that is farther than the correct distance (8.0m) but closer than the distance
+// associated with an unscaled box (9.0m). If the box hasn't been scaled
+// properly, the broadphase will prune it and there will be no result for the
+// geometry.
+//
+// For the narrow phase, we simply confirm that the reported distances are all
+// as expected.
+GTEST_TEST(ProximityEngineTests, ConvexHullCacheScaleIsRespected) {
+  ProximityEngine<double> engine;
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+
+  // Each box is placed 10m along a different axis and scaled to double only
+  // that axis' half-extent, so the distance from the origin to each box's
+  // nearest face is exactly 10 - 2 = 8 m.
+  const RigidTransformd X_WA(Vector3d(-10, 0, 0));
+  const RigidTransformd X_WB(Vector3d(0, -10, 0));
+  const RigidTransformd X_WC(Vector3d(0, 0, -10));
+
+  engine.AddAnchoredGeometry(Convex(path, Vector3d(2.0, 1.0, 1.0)), X_WA, id_A);
+  engine.AddAnchoredGeometry(Convex(path, Vector3d(1.0, 2.0, 1.0)), X_WB, id_B);
+  engine.AddAnchoredGeometry(Convex(path, Vector3d(1.0, 1.0, 2.0)), X_WC, id_C);
+
+  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_A, X_WA}, {id_B, X_WB}, {id_C, X_WC}};
+
+  // Threshold chosen between the correct nearest-face distance (8.0 m) and the
+  // nearest distance produced by a wrong-scale (x-doubled) hull placed at
+  // y/z = -10 m (which would be 9.0 m).
+  const double threshold = 8.5;
+  const auto results =
+      engine.ComputeSignedDistanceToPoint(Vector3d::Zero(), X_WGs, threshold);
+
+  // All three geometries must appear in results with their correct distances.
+  // If any cache entry returned the wrong scale, the corresponding geometry's
+  // FCL AABB would be too far from the origin to pass the threshold and it
+  // would be missing from results.
+  ASSERT_EQ(results.size(), 3);
+  std::unordered_map<GeometryId, double> dist_by_id;
+  for (const auto& r : results) {
+    dist_by_id[r.id_G] = r.distance;
+  }
+  constexpr double kTol = 1e-14;
+  EXPECT_NEAR(dist_by_id.at(id_A), 8.0, kTol);  // confirms x-scale of Box A
+  EXPECT_NEAR(dist_by_id.at(id_B), 8.0, kTol);  // confirms y-scale of Box B
+  EXPECT_NEAR(dist_by_id.at(id_C), 8.0, kTol);  // confirms z-scale of Box C
+}
+
 // TODO(SeanCurtis-TRI): Confirm that SDF data gets computed for Mesh(vtk) and
 // all Convex().
+
+// Tests that Convex shapes sourced from the same file but registered with
+// different margins receive distinct fcl::Convexd objects (as each Convexd
+// stores a local AABB encompassing the geometry *and* its margin). The
+// declarations can't interfere with each other.
+//
+// We'll declare three convex geometries (A, B, C in that order). A and C have
+// zero margin and B has a non-zero margin. The boxes will be arrayed along an
+// axis with a gap between them slightly smaller than the non-zero margin.
+// They are arrayed in the order: A C B.
+//
+//                     ┌┄┄┄┄┄┄┄┄┄┄┄┐
+//        ┏━━━━━┓ ┏━━━━┿┓ ┏━━━━━┓  ┊
+//        ┃  A  ┃ ┃  C ┊┃ ┃  B  ┃  ┊
+//        ┗━━━━━┛ ┗━━━━┿┛ ┗━━━━━┛  ┊ <-- B with margin
+//                     └┄┄┄┄┄┄┄┄┄┄┄┘
+//
+// Failure modes we're looking to detect:
+//
+//   1. Subsequent registrations stomp on previous registrations.
+//      In this case, the overlap between B and C would be lost (C's last
+//      zero-margin registration would replace B's margin).
+//   2. Subsequent registrations don't get a new margin.
+//      In this case, the overlap between B and C would be lost (this time
+//      because B -- and C -- simply picked up the original zero-margin AABB).
+GTEST_TEST(ProximityEngineTests, ConvexHullCacheMarginIsRespected) {
+  ProximityEngine<double> engine;
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  const double kResHint = 0.5;
+  const double kE = 1e8;
+  const double kMarginValue = 0.1;
+  const double kBoxExtent = 2.0;
+
+  // Spatial order A C B; registration order A B C.
+  const double kOffset = kBoxExtent + kMarginValue / 2;
+  const RigidTransformd X_WA(Vector3d(-kOffset, 0, 0));
+  const RigidTransformd X_WC(Vector3d(0, 0, 0));
+  const RigidTransformd X_WB(Vector3d(kOffset, 0, 0));
+
+  ProximityProperties props_no_margin;
+  props_no_margin.AddProperty(kHydroGroup, kMargin, 0.0);
+  AddCompliantHydroelasticProperties(kResHint, kE, &props_no_margin);
+
+  ProximityProperties props_with_margin;
+  props_with_margin.AddProperty(kHydroGroup, kMargin, kMarginValue);
+  AddCompliantHydroelasticProperties(kResHint, kE, &props_with_margin);
+
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(Convex(path), X_WA, id_A, props_no_margin);
+  engine.AddDynamicGeometry(Convex(path), X_WB, id_B, props_with_margin);
+  engine.AddDynamicGeometry(Convex(path), X_WC, id_C, props_no_margin);
+
+  // Call UpdateWorldPoses for the three dynamic geometries. This triggers
+  // computeAABB() for B, which reads the shared geometry's aabb_local. In
+  // the bug case, C's registration reset that aabb_local and B loses its
+  // inflation here.
+  engine.UpdateWorldPoses({{id_A, X_WA}, {id_B, X_WB}, {id_C, X_WC}});
+
+  // B's inflated AABB must overlap C; A is far away and never a candidate.
+  std::vector<SortedPair<GeometryId>> candidates =
+      engine.FindCollisionCandidates();
+  auto formattable_view =
+      candidates | std::views::transform([](const SortedPair<GeometryId>& p) {
+        return fmt::format("({}, {})", p.first(), p.second());
+      });
+  EXPECT_EQ(candidates.size(), 1) << fmt::format(
+      "For A={}, B={}, C={}, we have the following candidates:\n{}", id_A, id_B,
+      id_C, fmt::join(formattable_view, ", "));
+}
+
+// Tests that updating the margin of an existing geometry (via
+// UpdateRepresentationForNewProperties()) does not corrupt the broad-phase AABB
+// of another geometry registered from the same source file but with a different
+// margin.
+//
+// We place two convex shapes near a reference sphere at the origin. With a
+// zero-valued margin, the AABBs would not overlap. With the initial non-zero
+// margin, they both overlap. We'll reduce the margin of one shape and show
+// that it no longer overlaps, but the other still does; its margin has been
+// unaffected.
+GTEST_TEST(ProximityEngineTests,
+           ConvexHullCacheMarginUpdateDoesNotCorruptSiblings) {
+  ProximityEngine<double> engine;
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  const double kResHint = 0.5;
+  const double kE = 1e8;
+  const double kSmallMargin = 0.1;   // A's margin.
+  const double kLargeMargin = 0.2;   // B's margin.
+  const double kSphereRadius = 0.5;  // Reference geometry radius.
+
+  const double kBoxExtent = 2;
+  const double kOffset = kBoxExtent / 2 + kSphereRadius;
+
+  const RigidTransformd X_WA(Vector3d(-kOffset - kSmallMargin / 2, 0, 0));
+  const RigidTransformd X_WB(Vector3d(kOffset + kLargeMargin / 2, 0, 0));
+  const RigidTransformd X_WS;  // sphere at origin
+
+  ProximityProperties props_small;
+  props_small.AddProperty(kHydroGroup, kMargin, kSmallMargin);
+  AddCompliantHydroelasticProperties(kResHint, kE, &props_small);
+
+  ProximityProperties props_large;
+  props_large.AddProperty(kHydroGroup, kMargin, kLargeMargin);
+  AddCompliantHydroelasticProperties(kResHint, kE, &props_large);
+
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_S = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(Convex(path), X_WA, id_A, props_small);
+  engine.AddDynamicGeometry(Convex(path), X_WB, id_B, props_large);
+  engine.AddAnchoredGeometry(Sphere(kSphereRadius), X_WS, id_S,
+                             ProximityProperties());
+  engine.UpdateWorldPoses({{id_A, X_WA}, {id_B, X_WB}});
+
+  // Both inflated AABBs must overlap the sphere => 2 candidates.
+  ASSERT_EQ(engine.FindCollisionCandidates().size(), 2);
+
+  // Update A to zero margin. B must be unaffected.
+  ProximityProperties props_zero;
+  props_zero.AddProperty(kHydroGroup, kMargin, 0.0);
+  AddCompliantHydroelasticProperties(kResHint, kE, &props_zero);
+  const InternalGeometry geo_A(SourceId::get_new_id(),
+                               std::make_unique<Convex>(path),
+                               FrameId::get_new_id(), id_A, "A", X_WA);
+  engine.UpdateRepresentationForNewProperties(geo_A, props_zero);
+
+  // UpdateWorldPoses triggers computeAABB() on all dynamic objects (A and B).
+  // In the bug case, B's aabb_local was reset when A's was updated (shared
+  // Convexd), so B would lose its inflation here.
+  engine.UpdateWorldPoses({{id_A, X_WA}, {id_B, X_WB}});
+
+  // A-sphere overlap is gone; B-sphere overlap must persist.
+  EXPECT_EQ(engine.FindCollisionCandidates().size(), 1);
+}
+
+// Tests that the convex hull cache is correctly evicted when geometries are
+// removed. Exercises three eviction cases in sequence using the same initial
+// population, plus a running invariant check on the reverse map.
+//
+// Initial setup (all from the same .obj, all dynamic):
+//   G1: scale (1,1,1) — sole occupant of the (1,1,1,0) sub-entry.
+//   G2: scale (2,1,1) — shares the (2,1,1,0) sub-entry with G3.
+//   G3: scale (2,1,1) — shares the (2,1,1,0) sub-entry with G2.
+//
+// This yields 2 sub-entries under 1 file entry initially.
+//
+// Removal sequence and expected outcomes:
+//   Remove G3: G2 still holds the (2,1,1,0) hull → no eviction.
+//              2 sub-entries, 1 file entry.
+//   Remove G2: cache is now sole owner of (2,1,1,0) → sub-entry evicted.
+//              1 sub-entry, 1 file entry.
+//   Remove G1: cache is sole owner of (1,1,1,0) → evicted; file entry empty →
+//              file entry also evicted.
+//              0 sub-entries, 0 file entries.
+//
+// After each removal, the reverse-map invariant is checked:
+//   a) The removed geometry is no longer in geometry_to_hull_key.
+//   b) Every remaining entry in geometry_to_hull_key has a corresponding
+//      valid pair in convex_hull_cache.
+GTEST_TEST(ProximityEngineTests, ConvexHullCacheEviction) {
+  ProximityEngine<double> engine;
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  const double kResHint = 0.5;
+  const double kE = 1e8;
+
+  ProximityProperties props;
+  AddCompliantHydroelasticProperties(kResHint, kE, &props);
+
+  const Convex convex_unit(path, 1.0);
+  const Convex convex_scaled(path, Vector3d(2, 1, 1));
+
+  const GeometryId id_G1 = GeometryId::get_new_id();
+  const GeometryId id_G2 = GeometryId::get_new_id();
+  const GeometryId id_G3 = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(convex_unit, {}, id_G1, props);
+  engine.AddDynamicGeometry(convex_scaled, {}, id_G2, props);
+  engine.AddDynamicGeometry(convex_scaled, {}, id_G3, props);
+
+  // Helper that checks the reverse-map invariant: every entry in
+  // geometry_to_hull_key has a corresponding valid entry in convex_hull_cache,
+  // and the given removed_id is absent.
+  auto validate_eviction = [&](GeometryId removed_id, int expected_files,
+                               int expected_hulls, const std::string& label) {
+    SCOPED_TRACE(label);
+    EXPECT_TRUE(
+        ProximityEngineTester::geometry_hull_key_absent(engine, removed_id));
+    EXPECT_TRUE(
+        ProximityEngineTester::geometry_hull_reverse_map_consistent(engine));
+    EXPECT_EQ(ProximityEngineTester::convex_hull_cache_file_entries(engine),
+              expected_files);
+    EXPECT_EQ(ProximityEngineTester::convex_hull_cache_hull_entries(engine),
+              expected_hulls);
+  };
+
+  // Confirm initial conditions.
+  int expected_files = 1;
+  int expected_hulls = 2;
+  validate_eviction(GeometryId::get_new_id(), expected_files, expected_hulls,
+                    "Fake Geometry");
+
+  // Remove G3 — G2 still holds the (2,1,1,0) hull; no eviction expected.
+  engine.RemoveGeometry(id_G3, /* is_dynamic= */ true);
+  validate_eviction(id_G3, expected_files, expected_hulls, "G3 removed");
+
+  // Remove G2 — cache is now sole owner of (2,1,1,0); sub-entry evicted.
+  engine.RemoveGeometry(id_G2, /* is_dynamic= */ true);
+  validate_eviction(id_G2, expected_files, --expected_hulls, "G2 removed");
+
+  // Remove G1 — cache is sole owner of (1,1,1,0); fully evicted.
+  engine.RemoveGeometry(id_G1, /* is_dynamic= */ true);
+  validate_eviction(id_G1, --expected_files, --expected_hulls, "G1 removed");
+}
 
 // Tests that the signed distance field (SDF) data computed for an obj correctly
 // accounts for its scale factor.
@@ -959,37 +1337,24 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
 
 // Tests for copy/move semantics.  ---------------------------------------------
 
-// Tests the copy semantics of the ProximityEngine -- the copy is a complete,
-// deep copy. Every type of shape specification must be included in this test.
+// Tests the copy semantics of the ProximityEngine -- the copy is a complete
+// copy. Each CollisionObjectd (and its transform, user data, and AABB) is
+// individually duplicated, but the underlying fcl collision geometry is shared
+// rather than deep-copied, since FCL geometry is treated as immutable after
+// construction. As cloning makes no special effort based on geometry type, we
+// can use one or two arbitrary, representative shapes for this test.
 GTEST_TEST(ProximityEngineTests, CopySemantics) {
   ProximityEngine<double> ref_engine;
-  Sphere sphere{0.5};
-  RigidTransformd pose = RigidTransformd::Identity();
+  const RigidTransformd pose = RigidTransformd::Identity();
 
   // NOTE: The GeometryId values are all lies; the values are arbitrary but
   // do not matter in the context of this test.
-  ref_engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
+  ref_engine.AddAnchoredGeometry(Sphere{0.5}, pose, GeometryId::get_new_id());
+  ref_engine.AddDynamicGeometry(Sphere{0.5}, pose, GeometryId::get_new_id());
 
-  ref_engine.AddDynamicGeometry(sphere, pose, GeometryId::get_new_id());
-
-  Cylinder cylinder{0.1, 1.0};
-  ref_engine.AddDynamicGeometry(cylinder, pose, GeometryId::get_new_id());
-
-  Box box{0.1, 0.2, 0.3};
-  ref_engine.AddDynamicGeometry(box, pose, GeometryId::get_new_id());
-
-  Capsule capsule{0.1, 1.0};
-  ref_engine.AddDynamicGeometry(capsule, pose, GeometryId::get_new_id());
-
-  Ellipsoid ellipsoid{0.1, 0.2, 0.3};
-  ref_engine.AddDynamicGeometry(ellipsoid, pose, GeometryId::get_new_id());
-
-  HalfSpace half_space{};
-  ref_engine.AddDynamicGeometry(half_space, pose, GeometryId::get_new_id());
-
-  Convex convex{
-      drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj")};
-  ref_engine.AddDynamicGeometry(convex, pose, GeometryId::get_new_id());
+  ref_engine.AddDynamicGeometry(
+      Convex{drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj")},
+      pose, GeometryId::get_new_id());
 
   ProximityEngine<double> copy_construct(ref_engine);
   ProximityEngineTester::IsDeepCopy(copy_construct, ref_engine);
