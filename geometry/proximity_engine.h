@@ -43,12 +43,9 @@ namespace internal {
    - distance
    - ray-intersection
 
- Not all shape queries are fully supported. To add support for a shape:
- 1. for fcl versions of the specification, modify CopyShapeOrThrow().
- 2. add an instance of the new shape to the CopySemantics test in
-    proximity_engine_test.cc.
- 3. for penetration, test the new shape in the class BoxPenetrationTest of
-    proximity_engine_test.cc and document its configuration.
+ Not all shape queries are fully supported. If adding a shape that supports
+ point penetration, add the new shape in the BoxPenetrationTest of
+ proximity_engine_test.cc and document its configuration.
 
  <!-- TODO(SeanCurtis-TRI): Fully document the semantics of the proximity
  properties that will affect the proximity engine -- hydroelastic semantics,
@@ -383,6 +380,18 @@ class ProximityEngine {
   // pointer type. But if the return value is not null, it can be safely cast to
   // fcl::CollisionObjectd*. This is for testing only.
   void* GetCollisionObject(GeometryId id) const;
+
+  // Returns the number of top-level file entries in the convex hull cache.
+  int convex_hull_cache_file_entries() const;
+  // Returns the total number of (scale,margin) sub-entries across all file
+  // entries in the convex hull cache.
+  int convex_hull_cache_hull_entries() const;
+  // Returns true if id is in the reverse map and its key pair is valid.
+  bool geometry_hull_key_valid(GeometryId id) const;
+  // Returns true if id is absent from the reverse map.
+  bool geometry_hull_key_absent(GeometryId id) const;
+  // Returns true if every reverse-map entry points to a valid cache entry.
+  bool geometry_hull_reverse_map_consistent() const;
 };
 
 }  // namespace internal
