@@ -186,7 +186,7 @@ drake_cc_library(
     hdrs = ["collision_filter.h"],
     deps = [
         "//common:essential",
-        "//common:unused",
+        "//common:sorted_pair",
         "//geometry:collision_filter_declaration",
         "//geometry:geometry_ids",
     ],
@@ -1184,6 +1184,17 @@ drake_cc_googletest(
     name = "collision_filter_test",
     deps = [
         ":collision_filter",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_filter_memory_test",
+    deps = [
+        ":collision_filter",
+    ],
+    tags =  [
+        # The allocation counting trick is not compatible with lsan.
+        "no_lsan",
     ],
 )
 

@@ -1,11 +1,11 @@
 #pragma once
 
 #include <functional>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
 
@@ -80,10 +80,7 @@ class CollisionFilter {
                           const ExtractIds& extract_ids);
 
   /* Reports true if there are any active transient declarations.  */
-  bool has_transient_history() const {
-    /* Remember: filter_history_[0] is the persistent state. */
-    return filter_history_.size() > 1;
-  }
+  bool has_transient_history() const { return !transient_history_.empty(); }
 
   /* Reports if the given filter id is part of the active, transient history. */
   bool IsActive(FilterId id) const;
@@ -115,8 +112,11 @@ class CollisionFilter {
 
   /* Reports if two collision filters are configured the same. They are
    considered the same if the two filter systems report the same results for
-   all calls to `CanCollideWith()`. This implies they have the same geometries
-   registered, and equivalent filter state for each pair. */
+   all calls to `CanCollideWith()`. This is only a superficial equality;
+   the filters are equal if they report the same pairs as (un)filtered. However,
+   structurally, that effect can be achieved in arbitrary ways (e.g., different
+   declarations of invariance, transient versus permanent declarations, etc.).
+   */
   bool operator==(const CollisionFilter& other) const;
 
   /* Reports if two collision filters are configured differently.  See
@@ -126,7 +126,7 @@ class CollisionFilter {
   }
 
   /* Reports if the given `id` has been added to this filter system. */
-  bool HasGeometry(GeometryId id) const { return filter_state_.contains(id); }
+  bool HasGeometry(GeometryId id) const { return geometries_.contains(id); }
 
  private:
   friend class CollisionFilterTest;
@@ -135,130 +135,103 @@ class CollisionFilter {
    of the registered geometry but no collision filters. */
   CollisionFilter MakeClearCopy() const;
 
-  /* The collision filter state between a pair of geometries. */
-  enum PairRelationship {
-    kUndefined,        // No relationship has been defined; used for transient
-                       // declarations.
-    kUnfiltered,       // No filter has been declared.
-    kFiltered,         // A user-declared filter exists, the user can remove it.
-    kInvariantFilter,  // The filter supports a SceneGraph filter invariant and
-                       // cannot be removed by the user.
+  /* The representation of a pair of geometry ids in a hash set. The presence of
+   this key in a FilteredPairs set implies filtering of the pair. */
+  using PairKey = SortedPair<GeometryId>;
+
+  using FilteredPairs = std::unordered_set<PairKey>;
+
+  /* Sparse representation of the collision filter state. Only filtered pairs
+   are stored; an absent pair is unfiltered by default.
+
+   The `filtered` and `invariant` sets are always disjoint: a pair is in at
+   most one of them. Membership in either set means CanCollideWith returns
+   false. The distinction is that `invariant` pairs cannot be removed by the
+   user via Allow*() declarations. */
+  struct FilterState {
+    /* User-removable filtered pairs. */
+    FilteredPairs filtered;
+    /* SceneGraph-invariant filtered pairs (cannot be removed by Allow*). */
+    FilteredPairs invariant;
   };
 
-  /* The "filter state" is a 2d table. For N registered geometries, it is
-   an NxN table where cell (i, j) reports the filter status of the ith and jth
-   geometries (although i and j are actually GeometryIds).
+  /* A resolved statement: the GeometrySets of the original declaration have
+   been expanded to explicit vectors of GeometryIds at the time the transient
+   was applied. Storing resolved IDs means the extract_ids callback is not
+   needed at replay time.
 
-   Because a pair's filter status is symmetric (e.g., (a, b) and (b, a) are
-   equivalent), we only encode a triangular portion of the table. We have two
-   types that work together to define the table: GeometryMap and FilterState.
+   For Within operations, set_B is empty and the cross product is set_A × set_A.
+   For Between operations, the cross product is set_A × set_B. */
+  struct ResolvedStatement {
+    using Operation = CollisionFilterDeclaration::StatementOp;
+    Operation operation{};
+    std::vector<GeometryId> set_A;
+    std::vector<GeometryId> set_B;
+  };
 
-   FilterState maps a GeometryId to the filter relationship with all other
-   registered geometries with *greater* GeometryId values. That set of
-   geometries is contained in a GeometryMap, where each entry on that "row"
-   is the key-value pair (other_id, filter_pair_state).
-
-   So, given a FilterState instance (filter_state) and two GeometryIds, a and b,
-   we could set the filtered state as (assuming a < b):
-
-      filter_state[a][b] = kFiltered;
-
-   As a concrete example, if we've registered GeometryId values 10, 20, 30, 40,
-   the filter state would have keys {10, 20, 30, 40} which each maps to a
-   corresponding GeometryMap as illustrated below.
-     10 -> {(20, PairRelationship), (30, PairRelationship),
-            (40, PairRelationship)}
-     20 -> {(30, PairRelationship), (40, PairRelationship)}
-     30 -> {(40, PairRelationship)}
-     40 -> {} */
-  using GeometryMap = std::unordered_map<GeometryId, PairRelationship>;
-
-  using FilterState = std::unordered_map<GeometryId, GeometryMap>;
-
-  /* Applies the given declaration to an arbitrary `filter_state`. */
-  static void Apply(const CollisionFilterDeclaration& declaration,
-                    const ExtractIds& extract_ids, bool is_invariant,
-                    FilterState* filter_state);
-
-  /* Adds the geometry with the given `id` to the given filter state with the
-   given initial_state for all pairs including the new id. */
-  static void AddGeometry(GeometryId id, FilterState* filter_state_out,
-                          PairRelationship relationship);
-
-  /* Removes the geometry with the given `id` from the given filter state. */
-  static void RemoveGeometry(GeometryId id, FilterState* filter_state_out);
-
-  /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A*, id_B ∈ set_B*` to be
-   filtered, where `set_A*` and `set_B*` are the geometry ids in `set_A` and
-   `set_B`, respectively, consistent with the given `scope`. For each
-   pair, if they are already filtered, no discernible change is made.
-
-   The filtered pair can be made "invariant" such that subsequent calls to
-   RemoveFiltersBetween will not remove the filter. This is intended to support
-   SceneGraph invariants that geometries affixed to the same frame are filtered
-   or pairs of anchored geometries are likewise filtered. GeometryState is
-   responsible for determining invariance when adding filters.
-
-   @pre All ids in `id_A` and `id_B` are part of this filter system.  */
-  static void AddFiltersBetween(const GeometrySet& set_A,
-                                const GeometrySet& set_B,
-                                const ExtractIds& extract_ids,
-                                CollisionFilterScope scope, bool is_invariant,
-                                FilterState* state_out);
-
-  /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A*, id_B ∈ set_B*` to be
-   unfiltered (if the filter isn't invariant) where `set_A*` and `set_B*` are
-   the geometry ids in `set_A` and `set_B`, respectively, consistent with the
-   given `scope`. For each pair, if they are already unfiltered, no discernible
-   change is made.
-
-   @pre All ids `id_A` and `id_B` are part of the system.  */
-  static void RemoveFiltersBetween(const GeometrySet& set_A,
-                                   const GeometrySet& set_B,
-                                   const ExtractIds& extract_ids,
-                                   CollisionFilterScope scope,
-                                   FilterState* state_out);
-
-  /* Atomic operation in support of AddFiltersBetween().  */
-  static void AddFilteredPair(GeometryId id_A, GeometryId id_B,
-                              bool is_invariant, FilterState* state_out);
-
-  /* Atomic operation in support of RemoveFilterBetween().  */
-  static void RemoveFilteredPair(GeometryId id_A, GeometryId id_B,
-                                 FilterState* state_out);
-
-  /* Instantiates a FilterState such that all known pairs have given
-   default relationship. */
-  static FilterState InitializeTransientState(
-      const FilterState& reference, PairRelationship default_relationship);
-
-  /* The filter state of all pairs of geometry.
-
-   This is neither the persistent base configuration nor the history. It is
-   the cached result of the base with all transient declarations applied. We
-   store this composite result in order to make collision filter lookups as
-   fast as possible. The implication is that when we update the history, we
-   must *also* update this so that it always reflects the final configuration.
-   */
-  FilterState filter_state_;
-
-  /* The underlying data for transient history: the assigned filter id and
-   the filter state instance which represents the applied transient declaration.
-   The filter state has been initialized with all registered geometry and
-   *no* collision filters and has the transient declaration applied directly
-   to it. In other words, any geometry pair that isn't explicitly accounted
-   for in the declaration is marked with PairRelationship::kUndefined. */
+  /* A transient declaration stored as its resolved statements. */
   struct StateDelta {
-    /* Default constructor to support resize of vector<StateDelta>. */
     StateDelta() = default;
+    StateDelta(std::vector<ResolvedStatement> stmts, FilterId id_in)
+        : statements(std::move(stmts)), id(id_in) {}
 
-    StateDelta(FilterState state, FilterId id_in)
-        : filter_state(std::move(state)), id(id_in) {}
-
-    FilterState filter_state;
+    std::vector<ResolvedStatement> statements;
     FilterId id{};
   };
-  std::vector<StateDelta> filter_history_;
+
+  /* Applies the resolved statements in `delta` to `state`. Used when first
+   applying a transient and when replaying history in RebuildComposite(). */
+  static void ApplyStatements(const StateDelta& delta, FilterState* state);
+
+  /* Applies a single resolved statement to `state`. */
+  static void ApplyStatement(const ResolvedStatement& stmt, FilterState* state);
+
+  /* For each pair (a, b) with a ∈ set_A, b ∈ set_B (a ≠ b), adds the pair
+   to `state->filtered` or `state->invariant` depending on `is_invariant`.
+   Pairs already in `invariant` are never downgraded. */
+  static void AddPairsBetween(const std::vector<GeometryId>& set_A,
+                              const std::vector<GeometryId>& set_B,
+                              bool is_invariant, FilterState* state);
+
+  /* For each pair (a, b) with a ∈ set_A, b ∈ set_B (a ≠ b), removes the pair
+   from `state->filtered`. Pairs in `state->invariant` are not affected. */
+  static void RemovePairsBetween(const std::vector<GeometryId>& set_A,
+                                 const std::vector<GeometryId>& set_B,
+                                 FilterState* state);
+
+  /* Removes all entries in `state->filtered` and `state->invariant` that
+   involve `id`. Called when a geometry is unregistered. */
+  static void RemovePairsFor(GeometryId id, FilterState* state);
+
+  /* Applies the given declaration (using the extract_ids callback) to `state`.
+   Used by the public Apply(). */
+  static void ApplyDeclarationToState(
+      const CollisionFilterDeclaration& declaration,
+      const ExtractIds& extract_ids, bool is_invariant, FilterState* state);
+
+  /* Rebuilds filter_state_ from persistent_base_ plus all entries in
+   transient_history_ replayed in order. Called after RemoveDeclaration() or
+   RemoveGeometry() when transient history is active. */
+  void RebuildComposite();
+
+  /* The cached composite filter state: persistent_base_ with all transient
+   declarations applied in order. CanCollideWith() reads only from this, keeping
+   query cost at O(1) regardless of history depth. */
+  FilterState filter_state_;
+
+  /* The persistent base configuration. Apply() modifies this (and keeps
+   filter_state_ in sync). Transient declarations do not touch this directly. */
+  FilterState persistent_base_;
+
+  /* The set of geometry IDs registered with this filter system. Geometry
+   add/remove is never part of a transient declaration, so this is owned
+   directly by CollisionFilter. */
+  std::unordered_set<GeometryId> geometries_;
+
+  /* The ordered list of active transient declarations. Each entry stores
+   resolved statements (not a full NxN copy), so memory per entry is O(|A|+|B|)
+   rather than O(N²). */
+  std::vector<StateDelta> transient_history_;
 };
 
 }  // namespace internal
