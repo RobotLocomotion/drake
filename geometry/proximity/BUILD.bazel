@@ -186,7 +186,7 @@ drake_cc_library(
     hdrs = ["collision_filter.h"],
     deps = [
         "//common:essential",
-        "//common:unused",
+        "//common:sorted_pair",
         "//geometry:collision_filter_declaration",
         "//geometry:geometry_ids",
     ],

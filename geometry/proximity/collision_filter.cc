@@ -1,25 +1,15 @@
 #include "drake/geometry/proximity/collision_filter.h"
 
+#include <algorithm>
+
 #include "drake/common/drake_assert.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
-using std::unordered_set;
+CollisionFilter::CollisionFilter() = default;
 
-CollisionFilter::CollisionFilter() {
-  /* The filter history always has at least one entry -- entry[0] is the
-   persistent base. We associate it with a filter id that can never be
-   accessed via ApplyTransient() so that it can't accidentally be removed. */
-  filter_history_.emplace_back(FilterState{}, FilterId::get_new_id());
-}
-
-// TODO(SeanCurtis-TRI): Multiple calls to Apply will lead to multiple
-//  constructions of std::unordered_set from GeometrySet (as opposed to
-//  re-using a single set). If this is a performance issue, revisit this so
-//  that I can operate on multiple filter states *per statement*.
 void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
                             const CollisionFilter::ExtractIds& extract_ids,
                             bool is_invariant) {
@@ -28,284 +18,275 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
         "You cannot attempt to modify the persistent collision filter "
         "configuration when there are active, transient filter declarations");
   }
-  // TODO(SeanCurtis-TRI): We're using a brute-force approach to update the
-  //  cached composite state and the persistent state. We assume it's cheaper
-  //  to "apply" the declaration twice than to apply once and copy. If this
-  //  introduces too much cost during configuration, we have a couple of options
-  //    - Find out if copying is faster.
-  //    - In the case where there is *only* persistent state, don't use the
-  //      copy as the persistent state *is* its own composite state.
-  /* Keep current configuration and persistent base in sync. */
-  Apply(declaration, extract_ids, is_invariant, &filter_state_);
-  Apply(declaration, extract_ids, is_invariant,
-        &filter_history_[0].filter_state);
+  /* Keep the cached composite and the persistent base in sync. */
+  ApplyDeclarationToState(declaration, extract_ids, is_invariant,
+                          &filter_state_);
+  ApplyDeclarationToState(declaration, extract_ids, is_invariant,
+                          &persistent_base_);
 }
 
 FilterId CollisionFilter::ApplyTransient(
     const CollisionFilterDeclaration& declaration,
     const CollisionFilter::ExtractIds& extract_ids) {
-  /* By its very definition, transient declarations *cannot* be invariant. They
-   are never used by the system to implement invariants and users cannot declare
-   a filter to be invariant. */
-  const bool is_invariant = false;
+  /* Transient declarations are never invariant. */
+  using Op = CollisionFilterDeclaration::StatementOp;
+  const CollisionFilterScope scope = declaration.scope();
 
-  /* Using the same brute-force approach as in Apply(), we need to apply the
-   declaration to our cached, composite result (filter_state_). Then we need
-   to add it to the history by:
+  /* Resolve every statement's GeometrySets to explicit GeometryId vectors now,
+   while we have the extract_ids callback. The resolved statements are stored
+   compactly in the StateDelta and replayed cheaply in RebuildComposite()
+   without needing the callback again. */
+  std::vector<ResolvedStatement> resolved;
+  resolved.reserve(declaration.statements().size());
+  for (const auto& stmt : declaration.statements()) {
+    ResolvedStatement rs;
+    rs.operation = stmt.operation;
+    const auto ids_A = extract_ids(stmt.set_A, scope);
+    rs.set_A.assign(ids_A.begin(), ids_A.end());
+    if (stmt.operation == Op::kExcludeBetween ||
+        stmt.operation == Op::kAllowBetween) {
+      const auto ids_B = extract_ids(stmt.set_B, scope);
+      rs.set_B.assign(ids_B.begin(), ids_B.end());
+    }
+    resolved.push_back(std::move(rs));
+  }
 
-     1. Creating a new FilterState instance (with all the registered geometry
-        in final_state_).
-     2. Apply the declaration to that new state in the history. */
-  // TODO(SeanCurtis-TRI): The brute force approach introduces several costs.
-  //  In addition to the cost of converting GeometrySet --> set<GeometryId>
-  //  twice, we are instantiating a full FilterState for what might be a small
-  //  declaration and applying the declaration twice. If this cost is too high,
-  //  even for out-of-the-loop configuration, revisit how we represent the
-  //  history and maintain the composite copy.
-  Apply(declaration, extract_ids, is_invariant, &filter_state_);
-  filter_history_.emplace_back(
-      InitializeTransientState(filter_state_, kUndefined),
-      FilterId::get_new_id());
-  Apply(declaration, extract_ids, is_invariant,
-        &filter_history_.back().filter_state);
-  return filter_history_.back().id;
+  const FilterId new_id = FilterId::get_new_id();
+  StateDelta delta{std::move(resolved), new_id};
+
+  /* Apply to the cached composite first, then store the delta. */
+  ApplyStatements(delta, &filter_state_);
+  transient_history_.push_back(std::move(delta));
+  return new_id;
 }
 
 bool CollisionFilter::IsActive(FilterId id) const {
-  for (const auto& delta : filter_history_) {
+  for (const auto& delta : transient_history_) {
     if (id == delta.id) return true;
   }
   return false;
 }
 
 bool CollisionFilter::RemoveDeclaration(FilterId id) {
-  /* We skip the first entry, that is always the persistent base and can't be
-   removed. */
-  for (auto it = filter_history_.begin() + 1; it != filter_history_.end();
+  for (auto it = transient_history_.begin(); it != transient_history_.end();
        ++it) {
     if (it->id != id) continue;
 
-    /* We found a declaration to remove. We simply pop it out, relying on the
-     std::vector to use move semantics to slide the subsequent entries down.
-     Then we just copy the persistent base and "replay" the transient
-     declarations. */
-    filter_history_.erase(it);
-    filter_state_ = filter_history_[0].filter_state;
-    for (size_t i = 1; i < filter_history_.size(); ++i) {
-      const FilterState& state = filter_history_[i].filter_state;
-      /* Note: If the filtered state in transient declarations was sparse, this
-       application algorithm would directly benefit. It only requires that the
-       persistent state has all of the required pairs. See the TODO in
-       AddGeometry() for more discussion. */
-      for (const auto& [source_id, source_map] : state) {
-        for (const auto& [pair_id, pair_relation] : source_map) {
-          if (pair_relation != kUndefined) {
-            if (filter_state_[source_id][pair_id] != kInvariantFilter) {
-              filter_state_[source_id][pair_id] = pair_relation;
-            }
-          }
-        }
-      }
-    }
+    /* Remove the target delta, then rebuild the composite from the persistent
+     base plus the remaining transient deltas. Because multiple deltas can
+     touch the same pair, we cannot simply invert the removed delta in place --
+     we must replay from scratch to get the correct result. */
+    transient_history_.erase(it);
+    RebuildComposite();
     return true;
   }
   return false;
 }
 
 void CollisionFilter::Flatten() {
-  if (filter_history_.size() > 1) {
-    filter_history_.resize(1);
-    filter_history_[0].filter_state = filter_state_;
+  if (!transient_history_.empty()) {
+    /* The composite already reflects all transient deltas applied, so just
+     promote it to the persistent base and clear the history. */
+    persistent_base_ = filter_state_;
+    transient_history_.clear();
   }
 }
 
 void CollisionFilter::AddGeometry(GeometryId new_id) {
-  /* Current and persistent configurations should simply add the id with
-   unfiltered status. */
-  AddGeometry(new_id, &filter_state_, kUnfiltered);
-  AddGeometry(new_id, &filter_history_[0].filter_state, kUnfiltered);
-  // TODO(SeanCurtis): Can I skip this work by allowing delta filter state to be
-  //  incomplete? If each transient delta *only* contains explicitly declared
-  //  changes, iterating through it would be faster. More complex, but faster.
-  /* Active transient history should add the id with undefined status. */
-  for (size_t i = 1; i < filter_history_.size(); ++i) {
-    AddGeometry(new_id, &filter_history_[i].filter_state, kUndefined);
-  }
+  DRAKE_DEMAND(!geometries_.contains(new_id));
+  geometries_.insert(new_id);
+  /* No pair entries are needed: the sparse representation stores only filtered
+   pairs, and new geometry is unfiltered by default. Transient deltas store
+   only resolved GeometryId sets, so they also require no update. */
 }
 
 void CollisionFilter::RemoveGeometry(GeometryId remove_id) {
-  /* Simply remove the geometry from everything. */
-  RemoveGeometry(remove_id, &filter_state_);
-  for (auto& delta : filter_history_) {
-    RemoveGeometry(remove_id, &delta.filter_state);
+  DRAKE_DEMAND(geometries_.contains(remove_id));
+  geometries_.erase(remove_id);
+
+  RemovePairsFor(remove_id, &filter_state_);
+  RemovePairsFor(remove_id, &persistent_base_);
+
+  /* Purge the removed id from all resolved statement sets in transient history
+   so that future replays do not reference a geometry that no longer exists. */
+  for (auto& delta : transient_history_) {
+    for (auto& stmt : delta.statements) {
+      stmt.set_A.erase(
+          std::remove(stmt.set_A.begin(), stmt.set_A.end(), remove_id),
+          stmt.set_A.end());
+      stmt.set_B.erase(
+          std::remove(stmt.set_B.begin(), stmt.set_B.end(), remove_id),
+          stmt.set_B.end());
+    }
+  }
+
+  /* Rebuild composite from the updated persistent base + purged transients. */
+  if (has_transient_history()) {
+    RebuildComposite();
   }
 }
 
 bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
   if (id_A == id_B) return false;
-  if (id_A < id_B) {
-    return filter_state_.at(id_A).at(id_B) == kUnfiltered;
-  } else {
-    return filter_state_.at(id_B).at(id_A) == kUnfiltered;
-  }
-}
-
-void CollisionFilter::AddFiltersBetween(
-    const GeometrySet& set_A, const GeometrySet& set_B,
-    const CollisionFilter::ExtractIds& extract_ids, CollisionFilterScope scope,
-    bool is_invariant, FilterState* state_out) {
-  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A, scope);
-  const std::unordered_set<GeometryId>& ids_B =
-      &set_A == &set_B ? ids_A : extract_ids(set_B, scope);
-  for (GeometryId id_A : ids_A) {
-    for (GeometryId id_B : ids_B) {
-      AddFilteredPair(id_A, id_B, is_invariant, state_out);
-    }
-  }
-}
-
-void CollisionFilter::RemoveFiltersBetween(
-    const GeometrySet& set_A, const GeometrySet& set_B,
-    const CollisionFilter::ExtractIds& extract_ids, CollisionFilterScope scope,
-    FilterState* state_out) {
-  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A, scope);
-  const std::unordered_set<GeometryId>& ids_B =
-      &set_A == &set_B ? ids_A : extract_ids(set_B, scope);
-  for (GeometryId id_A : ids_A) {
-    for (GeometryId id_B : ids_B) {
-      RemoveFilteredPair(id_A, id_B, state_out);
-    }
-  }
-}
-
-void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
-                                      bool is_invariant,
-                                      FilterState* state_out) {
-  FilterState& filter_state = *state_out;
-  DRAKE_DEMAND(filter_state.contains(id_A) && filter_state.contains(id_B));
-
-  if (id_A == id_B) return;
-  PairRelationship& pair_relation =
-      id_A < id_B ? filter_state[id_A][id_B] : filter_state[id_B][id_A];
-  if (pair_relation == kInvariantFilter) return;
-  pair_relation = is_invariant ? kInvariantFilter : kFiltered;
-}
-
-void CollisionFilter::RemoveFilteredPair(GeometryId id_A, GeometryId id_B,
-                                         FilterState* state_out) {
-  FilterState& filter_state = *state_out;
-  DRAKE_DEMAND(filter_state.contains(id_A) && filter_state.contains(id_B));
-  if (id_A == id_B) return;
-  PairRelationship& pair_relation =
-      id_A < id_B ? filter_state[id_A][id_B] : filter_state[id_B][id_A];
-  if (pair_relation == kInvariantFilter) return;
-  pair_relation = kUnfiltered;
+  const PairKey key(id_A, id_B);
+  return !filter_state_.filtered.contains(key) &&
+         !filter_state_.invariant.contains(key);
 }
 
 bool CollisionFilter::operator==(const CollisionFilter& other) const {
   if (this == &other) return true;
-  if (filter_state_.size() != other.filter_state_.size()) return false;
-  for (const auto& [this_id, this_map] : filter_state_) {
-    if (!other.HasGeometry(this_id)) return false;
-    for (const auto& [this_pair_id, can_collide] : this_map) {
-      unused(can_collide);
-      if (!other.HasGeometry(this_pair_id)) return false;
-      if (CanCollideWith(this_id, this_pair_id) !=
-          other.CanCollideWith(this_id, this_pair_id)) {
-        return false;
-      }
-    }
+  if (geometries_ != other.geometries_) return false;
+  /* Two filters are equal iff CanCollideWith() agrees on every pair. A pair is
+   blocked iff it is in filtered OR invariant, so we check that every blocked
+   pair in either filter is also blocked in the other. */
+  auto is_blocked = [](const FilterState& fs, const PairKey& k) {
+    return fs.filtered.contains(k) || fs.invariant.contains(k);
+  };
+  for (const auto& key : filter_state_.filtered) {
+    if (!is_blocked(other.filter_state_, key)) return false;
+  }
+  for (const auto& key : filter_state_.invariant) {
+    if (!is_blocked(other.filter_state_, key)) return false;
+  }
+  for (const auto& key : other.filter_state_.filtered) {
+    if (!is_blocked(filter_state_, key)) return false;
+  }
+  for (const auto& key : other.filter_state_.invariant) {
+    if (!is_blocked(filter_state_, key)) return false;
   }
   return true;
 }
 
 CollisionFilter CollisionFilter::MakeClearCopy() const {
-  auto clear_state = CollisionFilter::InitializeTransientState(
-      filter_state_, CollisionFilter::kUnfiltered);
-  CollisionFilter new_filter;
-  new_filter.filter_state_ = clear_state;
-  new_filter.filter_history_[0].filter_state = clear_state;
-  return new_filter;
+  CollisionFilter copy;
+  copy.geometries_ = geometries_;
+  /* filtered and invariant sets are intentionally left empty. */
+  return copy;
 }
 
-void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
-                            const CollisionFilter::ExtractIds& extract_ids,
-                            bool is_invariant, FilterState* filter_state) {
-  using Operation = CollisionFilterDeclaration::StatementOp;
+/* static */
+void CollisionFilter::AddPairsBetween(const std::vector<GeometryId>& set_A,
+                                      const std::vector<GeometryId>& set_B,
+                                      bool is_invariant, FilterState* state) {
+  for (GeometryId id_A : set_A) {
+    for (GeometryId id_B : set_B) {
+      if (id_A == id_B) continue;
+      const PairKey key(id_A, id_B);
+      /* Never downgrade an invariant pair. */
+      if (state->invariant.contains(key)) continue;
+      if (is_invariant) {
+        state->filtered.erase(key);
+        state->invariant.insert(key);
+      } else {
+        state->filtered.insert(key);
+      }
+    }
+  }
+}
+
+/* static */
+void CollisionFilter::RemovePairsBetween(const std::vector<GeometryId>& set_A,
+                                         const std::vector<GeometryId>& set_B,
+                                         FilterState* state) {
+  for (GeometryId id_A : set_A) {
+    for (GeometryId id_B : set_B) {
+      if (id_A == id_B) continue;
+      const PairKey key(id_A, id_B);
+      /* Invariant pairs cannot be removed by Allow* declarations. */
+      if (state->invariant.contains(key)) continue;
+      state->filtered.erase(key);
+    }
+  }
+}
+
+/* static */
+void CollisionFilter::RemovePairsFor(GeometryId id, FilterState* state) {
+  auto erase_matching = [&id](CollisionFilter::FilteredPairs& pair_set) {
+    for (auto it = pair_set.begin(); it != pair_set.end();) {
+      if (it->first() == id || it->second() == id) {
+        it = pair_set.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  };
+  erase_matching(state->filtered);
+  erase_matching(state->invariant);
+}
+
+/* static */
+void CollisionFilter::ApplyStatement(const ResolvedStatement& stmt,
+                                     FilterState* state) {
+  using Op = CollisionFilterDeclaration::StatementOp;
+  switch (stmt.operation) {
+    case Op::kExcludeBetween:
+      AddPairsBetween(stmt.set_A, stmt.set_B, /*is_invariant=*/false, state);
+      break;
+    case Op::kExcludeWithin:
+      AddPairsBetween(stmt.set_A, stmt.set_A, /*is_invariant=*/false, state);
+      break;
+    case Op::kAllowBetween:
+      RemovePairsBetween(stmt.set_A, stmt.set_B, state);
+      break;
+    case Op::kAllowWithin:
+      RemovePairsBetween(stmt.set_A, stmt.set_A, state);
+      break;
+  }
+}
+
+/* static */
+void CollisionFilter::ApplyStatements(const StateDelta& delta,
+                                      FilterState* state) {
+  for (const auto& stmt : delta.statements) {
+    ApplyStatement(stmt, state);
+  }
+}
+
+/* static */
+void CollisionFilter::ApplyDeclarationToState(
+    const CollisionFilterDeclaration& declaration,
+    const CollisionFilter::ExtractIds& extract_ids, bool is_invariant,
+    FilterState* state) {
+  using Op = CollisionFilterDeclaration::StatementOp;
   const CollisionFilterScope scope = declaration.scope();
-  for (const auto& statement : declaration.statements()) {
-    switch (statement.operation) {
-      case Operation::kAllowBetween:
-        // Note: GeometryState should never be declaring is_invariant is true
-        // while removing collision filters.
+  for (const auto& stmt : declaration.statements()) {
+    const auto ids_A_set = extract_ids(stmt.set_A, scope);
+    const std::vector<GeometryId> ids_A(ids_A_set.begin(), ids_A_set.end());
+
+    switch (stmt.operation) {
+      case Op::kExcludeBetween: {
+        const auto ids_B_set = extract_ids(stmt.set_B, scope);
+        const std::vector<GeometryId> ids_B(ids_B_set.begin(), ids_B_set.end());
+        AddPairsBetween(ids_A, ids_B, is_invariant, state);
+        break;
+      }
+      case Op::kExcludeWithin:
+        AddPairsBetween(ids_A, ids_A, is_invariant, state);
+        break;
+      case Op::kAllowBetween: {
         DRAKE_DEMAND(!is_invariant);
-        RemoveFiltersBetween(statement.set_A, statement.set_B, extract_ids,
-                             scope, filter_state);
+        const auto ids_B_set = extract_ids(stmt.set_B, scope);
+        const std::vector<GeometryId> ids_B(ids_B_set.begin(), ids_B_set.end());
+        RemovePairsBetween(ids_A, ids_B, state);
         break;
-      case Operation::kAllowWithin:
+      }
+      case Op::kAllowWithin:
         DRAKE_DEMAND(!is_invariant);
-        RemoveFiltersBetween(statement.set_A, statement.set_A, extract_ids,
-                             scope, filter_state);
-        break;
-      case Operation::kExcludeWithin:
-        AddFiltersBetween(statement.set_A, statement.set_A, extract_ids, scope,
-                          is_invariant, filter_state);
-        break;
-      case Operation::kExcludeBetween:
-        AddFiltersBetween(statement.set_A, statement.set_B, extract_ids, scope,
-                          is_invariant, filter_state);
+        RemovePairsBetween(ids_A, ids_A, state);
         break;
     }
   }
 }
 
-void CollisionFilter::AddGeometry(GeometryId new_id,
-                                  FilterState* filter_state_out,
-                                  PairRelationship relationship) {
-  FilterState& filter_state = *filter_state_out;
-  DRAKE_DEMAND(!filter_state.contains(new_id));
-  GeometryMap& new_map = filter_state[new_id] = {};
-  for (auto& [other_id, other_map] : filter_state) {
-    /* Whichever id is *smaller* tracks the relationship with the other.
-     That relationship defaults to unfiltered (i.e., "can collide").
-
-     Note: we're iterating over filter_state_ and assigning to either new_map
-     or other_map. This doesn't invalidate the implicit iterator of the range
-     operator. We never change the *keys* of filter_state_ in this loop, only
-     its values. And we don't do any iteration in the new_map or other_map
-     so don't depend on their iterators. */
-    if (other_id < new_id) {
-      other_map[new_id] = relationship;
-    } else {
-      new_map[other_id] = relationship;
-    }
+void CollisionFilter::RebuildComposite() {
+  /* Start from the persistent base and replay all transient deltas in order. */
+  filter_state_.filtered = persistent_base_.filtered;
+  filter_state_.invariant = persistent_base_.invariant;
+  for (const auto& delta : transient_history_) {
+    ApplyStatements(delta, &filter_state_);
   }
 }
 
-void CollisionFilter::RemoveGeometry(GeometryId remove_id,
-                                     FilterState* filter_state_out) {
-  FilterState& filter_state = *filter_state_out;
-  DRAKE_DEMAND(filter_state.contains(remove_id));
-  filter_state.erase(remove_id);
-  for (auto& [other_id, other_map] : filter_state) {
-    /* remove_id will only be found in maps belonging to geometries with ids
-     that are smaller than remove_id. Those that are larger were deleted when we
-     removed remove_id's entry. */
-    if (other_id < remove_id) {
-      other_map.erase(remove_id);
-    }
-  }
-}
-
-CollisionFilter::FilterState CollisionFilter::InitializeTransientState(
-    const FilterState& reference, PairRelationship default_relationship) {
-  FilterState new_state;
-  for (const auto& [id, _] : reference) {
-    unused(_);
-    AddGeometry(id, &new_state, default_relationship);
-  }
-  return new_state;
-}
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
