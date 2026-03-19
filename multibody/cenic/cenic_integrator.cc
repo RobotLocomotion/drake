@@ -34,8 +34,7 @@ class DiagramScanner : public SystemVisitor<T> {
 
   // Validates a diagram for CenicIntegrator, and returns the structure facts.
   // Throws if: not a diagram;
-  //            not exactly one conforming plant (continuous time, registered
-  //            with SceneGraph).
+  //            not exactly one continuous-time plant.
   static CenicDiagramStructure<T> ScanAndValidateDiagram(
       const System<T>& system) {
     const auto* const diagram = dynamic_cast<const Diagram<T>*>(&system);
@@ -56,16 +55,9 @@ class DiagramScanner : public SystemVisitor<T> {
               visitor.rejected_plant_->time_step(),
               visitor.rejected_plant_->GetSystemPathname()));
         }
-        if (!visitor.rejected_plant_->geometry_source_is_registered()) {
-          throw std::logic_error(fmt::format(
-              "CenicIntegrator requires that the MultibodyPlant is connected "
-              "to a SceneGraph, but {} has no SceneGraph",
-              visitor.rejected_plant_->GetSystemPathname()));
-        }
       }
       throw std::logic_error(
-          "CenicIntegrator found zero conforming plants (continuous time, "
-          "registered with SceneGraph) in the diagram.");
+          "CenicIntegrator found zero continuous-time plants in the diagram.");
     }
     // TODO(rpoyner-tri): It might make sense here to "compact" the non-plant
     // paths; only keeping paths describing non-plant subtrees, rather than
@@ -109,16 +101,12 @@ class DiagramScanner : public SystemVisitor<T> {
       rejected_plant_ = &plant;
       return;
     }
-    if (!plant.geometry_source_is_registered()) {
-      rejected_plant_ = &plant;
-      return;
-    }
     if (structure_.plant != nullptr) {
       throw std::logic_error(
-          "CenicIntegrator found more than one conforming plant (continuous "
-          "time, registered with SceneGraph) in the diagram.");
+          "CenicIntegrator found more than one continuous-time plants in the "
+          "diagram.");
     }
-    DRAKE_LOGGER_TRACE("path {} is conforming plant",
+    DRAKE_LOGGER_TRACE("path {} is a continuous-time plant",
                        fmt::join(current_path_, ","));
     structure_.plant = &plant;
     structure_.plant_path = current_path_;

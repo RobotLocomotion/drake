@@ -76,15 +76,18 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureNoPlant) {
                               ".*zero.*continuous.*");
 }
 
-// TODO(rpoyner-tri): This test setup should allow successfully making the
-// integrator; see #24226.
-GTEST_TEST(MakeCenicIntegratorTest, FailureNoSceneGraph) {
+GTEST_TEST(MakeCenicIntegratorTest, SuccessNoSceneGraph) {
   DiagramBuilder<double> builder;
   builder.AddSystem<ConstantVectorSource>(0.0);
-  builder.AddSystem<MultibodyPlant<double>>(0.0);
+  auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+  plant->Finalize();
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
-  DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(*diagram),
-                              ".*requires.*SceneGraph.*");
+  std::unique_ptr<IntegratorBase<double>> dut = MakeCenicIntegrator(*diagram);
+  auto& cenic = dynamic_cast<CenicIntegrator<double>&>(*dut);
+
+  // The CENIC plant is the same object as the diagram's plant.
+  const auto& dut_plant = cenic.plant();
+  EXPECT_EQ(&dut_plant, plant);
 }
 
 GTEST_TEST(MakeCenicIntegratorTest, FailureExtraPlant) {
@@ -113,25 +116,6 @@ GTEST_TEST(MakeCenicIntegratorTest, SuccessExtraDiscretePlant) {
   const auto& dut_plant = cenic.plant();
   const auto& diagram_plant = robot_diagram->plant();
   EXPECT_EQ(&dut_plant, &diagram_plant);
-}
-
-// TODO(rpoyner-tri): This test setup should throw an error trying to make the
-// integrator; see #24226.
-GTEST_TEST(MakeCenicIntegratorTest, SuccessExtraNoSceneGraphPlant) {
-  DiagramBuilder<double> builder;
-  RobotDiagramBuilder<double> robot_builder{/* time_step = */ 0.0};
-  auto robot_diagram = builder.AddSystem(robot_builder.Build());
-  const auto& robot_diagram_plant = robot_diagram->plant();
-  auto extra_plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
-  extra_plant->Finalize();
-  std::unique_ptr<Diagram<double>> root_diagram = builder.Build();
-  std::unique_ptr<IntegratorBase<double>> dut =
-      MakeCenicIntegrator(*root_diagram);
-  auto& cenic = dynamic_cast<CenicIntegrator<double>&>(*dut);
-
-  // The CENIC plant is the same object as the robot diagram's plant.
-  const auto& dut_plant = cenic.plant();
-  EXPECT_EQ(&dut_plant, &robot_diagram_plant);
 }
 
 }  // namespace

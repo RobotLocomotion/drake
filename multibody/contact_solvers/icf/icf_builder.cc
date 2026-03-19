@@ -201,10 +201,12 @@ void IcfBuilder<T>::UpdateModel(
   model->ResetParameters(std::move(params));
 
   // Contact constraints
-  CalcGeometryContactData(context);
-  AllocatePatchConstraints(model);
-  SetPatchConstraintsForPointContact(context, model);
-  SetPatchConstraintsForHydroelasticContact(context, model);
+  if (plant_.geometry_source_is_registered()) {
+    CalcGeometryContactData(context);
+    AllocatePatchConstraints(model);
+    SetPatchConstraintsForPointContact(context, model);
+    SetPatchConstraintsForHydroelasticContact(context, model);
+  }
 
   // Coupler constraints
   AllocateCouplerConstraints(model);
@@ -302,6 +304,7 @@ void IcfBuilder<T>::ValidateContext(const systems::Context<T>& context) {
 template <typename T>
 void IcfBuilder<T>::CalcGeometryContactData(
     const systems::Context<T>& context) {
+  DRAKE_DEMAND(plant_.geometry_source_is_registered());
   surfaces_.clear();
   point_pairs_.clear();
 
@@ -330,6 +333,7 @@ void IcfBuilder<T>::CalcGeometryContactData(
 
 template <typename T>
 void IcfBuilder<T>::AllocatePatchConstraints(IcfModel<T>* model) const {
+  DRAKE_DEMAND(plant_.geometry_source_is_registered());
   // N.B. This assumes that geometry info has already been computed
   DRAKE_ASSERT(model != nullptr);
   PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
@@ -460,6 +464,7 @@ void IcfBuilder<T>::SetLimitConstraints(const systems::Context<T>& context,
 template <typename T>
 void IcfBuilder<T>::SetPatchConstraintsForPointContact(
     const systems::Context<T>& context, IcfModel<T>* model) const {
+  DRAKE_DEMAND(plant_.geometry_source_is_registered());
   const int num_point_contacts = point_pairs_.size();
   if (num_point_contacts == 0) {
     return;
@@ -535,6 +540,7 @@ void IcfBuilder<T>::SetPatchConstraintsForPointContact(
 template <typename T>
 void IcfBuilder<T>::SetPatchConstraintsForHydroelasticContact(
     const systems::Context<T>& context, IcfModel<T>* model) const {
+  DRAKE_DEMAND(plant_.geometry_source_is_registered());
   using std::max;
   const geometry::SceneGraphInspector<T>& inspector =
       plant_.EvalSceneGraphInspector(context);
