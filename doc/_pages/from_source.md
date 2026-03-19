@@ -104,7 +104,7 @@ can be specified by the user to be parsed by Drake's CMake and passed to the
 Bazel build.
 
 * [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
-* [`CMAKE_(C|CXX)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_(C|CXX|Fortran)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
 * [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
 
 Building and installing Drake also requires a working installation of Python.
