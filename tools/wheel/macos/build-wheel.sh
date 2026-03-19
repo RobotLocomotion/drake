@@ -62,6 +62,7 @@ PYTHON_MINOR=$($python_executable -c "import sys; print(sys.version_info.minor)"
 if [[ ${PYTHON_MINOR} -ge 15 ]]; then
     cat >> "$build_root/drake.bazelrc" << EOF
 build --@drake//tools/flags:with_mosek=False
+build --@drake//solvers:mosek_lazy_load=False
 EOF
 fi
 
