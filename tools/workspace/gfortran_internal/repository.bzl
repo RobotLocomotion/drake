@@ -2,7 +2,11 @@ load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
 
 def _gfortran_impl(repo_ctx):
     # Find the compiler.
-    compiler = which(repo_ctx, "gfortran")
+    fc_env = repo_ctx.os.environ.get("FC")
+    if fc_env:
+        compiler = which(repo_ctx, fc_env)
+    else:
+        compiler = which(repo_ctx, "gfortran")
     if not compiler:
         fail("Could not find gfortran")
     compiler = str(compiler)

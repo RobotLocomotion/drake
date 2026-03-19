@@ -1,7 +1,8 @@
 # Core compilers.
-gcc
-gcc-c++
-gcc-gfortran
+# When changing this, see wheel/image/build-drake.sh.
+gcc-toolset-14-gcc
+gcc-toolset-14-gcc-c++
+gcc-toolset-14-gcc-gfortran
 nasm
 
 # Clang (for mkdoc).

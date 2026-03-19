@@ -299,6 +299,7 @@ if(NOT APPLE)
   # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
   # interfere with here.
   string(APPEND BAZEL_REPO_ENV
+    " --repo_env=FC=${CMAKE_Fortran_COMPILER}"
     " --repo_env=CC=${CMAKE_C_COMPILER}"
     " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
