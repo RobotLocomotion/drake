@@ -946,7 +946,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                               other.anchored_objects_)) {
         return false;
       }
-      if (this->collision_filter_ != other.collision_filter_) return false;
+      if (!this->collision_filter_.IsEquivalent(other.collision_filter_)) {
+        return false;
+      }
       return true;
     }
     return false;
