@@ -51,15 +51,6 @@ namespace drake {
 namespace test {
 namespace {
 
-// LimitMalloc does not work properly with some configurations. Check this
-// predicate and disarm to avoid erroneous results.
-bool IsSupportedConfiguration() {
-  static const bool is_supported{DRAKE_INSTALL_HEAP_HOOKS &&
-                                 !std::getenv("LSAN_OPTIONS") &&
-                                 !std::getenv("VALGRIND_OPTS")};
-  return is_supported;
-}
-
 // This variable is used as an early short-circuit for our malloc hooks.  When
 // false, we execute as minimal code footprint as possible.  This keeps dl_init
 // happy when its invoke malloc and we can't yet execute our C++ code.
@@ -181,7 +172,7 @@ class ActiveMonitor {
 };
 
 void Monitor::ObserveAllocation() {
-  if (!IsSupportedConfiguration()) {
+  if (!LimitMalloc::IsSupportedConfiguration()) {
     return;
   }
 
@@ -246,6 +237,13 @@ const LimitMallocParams& LimitMalloc::params() const {
   return ActiveMonitor::load()->params();
 }
 
+bool LimitMalloc::IsSupportedConfiguration() {
+  static const bool is_supported{DRAKE_INSTALL_HEAP_HOOKS &&
+                                 !std::getenv("LSAN_OPTIONS") &&
+                                 !std::getenv("VALGRIND_OPTS")};
+  return is_supported;
+}
+
 LimitMalloc::~LimitMalloc() {
   // Copy out the monitor's data before we delete it.
   const int observed = num_allocations();
@@ -290,7 +288,7 @@ void* realloc(void* ptr, size_t size) {
 }
 
 static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {
-  if (!drake::test::IsSupportedConfiguration()) {
+  if (!drake::test::LimitMalloc::IsSupportedConfiguration()) {
     return;
   }
 
