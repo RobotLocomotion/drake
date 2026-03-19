@@ -360,7 +360,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   std::unordered_map<GeometryId, PropArray> props_;
 
   // Cache mapping mesh source keys to parsed/rendered mesh data. The key is
-  // computed from GetMeshSourceCacheKey() to uniquely identify a mesh source.
+  // computed from MeshSource::GetCacheKey() to uniquely identify a mesh source.
   // This eliminates redundant re-parsing and re-rendering when the same mesh
   // is registered multiple times.
   std::unordered_map<std::string, CachedMesh> mesh_cache_;

@@ -19,7 +19,6 @@
 #include "drake/common/unused.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
-#include "drake/geometry/render/mesh_source_cache_key.h"
 
 namespace drake {
 namespace geometry {
@@ -48,7 +47,6 @@ using render::LightParameter;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
-using render::internal::GetMeshSourceCacheKey;
 using std::make_shared;
 using std::make_unique;
 using std::map;
@@ -835,7 +833,7 @@ void RenderEngineGl::ImplementMeshesForSource(void* user_data,
                                               const Vector3<double>& scale,
                                               const MeshSource& mesh_source,
                                               bool is_convex) {
-  const std::string file_key = GetMeshSourceCacheKey(mesh_source, is_convex);
+  const std::string file_key = mesh_source.GetCacheKey(is_convex);
   // If mesh_source is in memory, we want to pass an *empty* filename to
   // MaybeMakeMeshFallbackmaterial() to avoid looking for foo.png.
   const fs::path filename =
@@ -1280,8 +1278,7 @@ int RenderEngineGl::GetBox() {
 
 void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
                                          const RegistrationData& data) {
-  const std::string file_key =
-      GetMeshSourceCacheKey(convex.source(), /*is_convex=*/true);
+  const std::string file_key = convex.source().GetCacheKey(/*is_convex=*/true);
 
   if (!meshes_.contains(file_key)) {
     const bool unscaled = (convex.scale3().array() == 1.0).all();
@@ -2134,8 +2131,7 @@ void RenderEngineGl::CacheFileMeshesMaybe(const MeshSource& mesh_source,
     return;
   }
 
-  const std::string file_key =
-      GetMeshSourceCacheKey(mesh_source, /*is_convex=*/false);
+  const std::string file_key = mesh_source.GetCacheKey(/*is_convex=*/false);
 
   if (!meshes_.contains(file_key)) {
     vector<RenderGlMesh> file_meshes;
