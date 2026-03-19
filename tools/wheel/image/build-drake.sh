@@ -43,7 +43,8 @@ build --@drake//solvers:mosek_lazy_load=False
 EOF
 fi
 
-# Install Drake using our wheel-build-specific Python interpreter.
+# Install Drake using our wheel-build-specific Python interpreter and
+# C/CXX/Fortran compilers.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
 cmake ../drake-src \
     -DWITH_USER_EIGEN=OFF \
@@ -56,5 +57,8 @@ cmake ../drake-src \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DDRAKE_GIT_SHA_OVERRIDE="${DRAKE_GIT_SHA}" \
     -DCMAKE_INSTALL_PREFIX=/tmp/drake-wheel-build/drake-dist \
-    -DPython_EXECUTABLE=/usr/local/bin/python
+    -DPython_EXECUTABLE=/usr/local/bin/python \
+    -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-14/root/usr/bin/gcc \
+    -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-14/root/usr/bin/g++ \
+    -DCMAKE_Fortran_COMPILER=/opt/rh/gcc-toolset-14/root/usr/bin/gfortran
 make install

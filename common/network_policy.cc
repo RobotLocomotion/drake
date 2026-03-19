@@ -45,11 +45,7 @@ bool IsNetworkingAllowed(std::string_view component) {
   // to be congruent with their Drake version pin.
   bool match = false;
   for (auto subrange : env_view | std::views::split(':')) {
-    // Note: rather than simply string_view(subrange), we have to jump through
-    // hoops to maintain compatibility with our antiquated wheel construction.
-    const std::string_view token{
-        &*subrange.begin(),
-        static_cast<size_t>(std::ranges::distance(subrange))};
+    const std::string_view token{subrange};
     if (token == "none") {
       static const logging::Warn log_once(
           "Setting DRAKE_ALLOW_NETWORK={} combines 'none' with non-none "

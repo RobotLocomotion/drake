@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
-  LANGUAGES C CXX
+  LANGUAGES C CXX Fortran
 )
 
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
@@ -180,6 +180,20 @@ else()
   )
 endif()
 
+if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
+    message(FATAL_ERROR
+      "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
+      "supported"
+    )
+  endif()
+else()
+  message(WARNING
+    "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
+    "Compilation of project drake_install may fail."
+  )
+endif()
+
 # Determine the CMAKE_BUILD_TYPE. We'll store it as BUILD_TYPE_LOWER so that
 # we can treat it as case-insensitive in our string comparisons.
 get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -299,6 +313,7 @@ if(NOT APPLE)
   # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
   # interfere with here.
   string(APPEND BAZEL_REPO_ENV
+    " --repo_env=FC=${CMAKE_Fortran_COMPILER}"
     " --repo_env=CC=${CMAKE_C_COMPILER}"
     " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
@@ -707,24 +722,7 @@ if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
 endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
-  enable_language(Fortran)
-
-  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
-    if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
-      message(FATAL_ERROR
-        "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
-        "supported"
-      )
-    endif()
-  else()
-    message(WARNING
-      "Compilation with ${CMAKE_Fortran_COMPILER_ID} is NOT supported. "
-      "Compilation of project drake_install may fail."
-    )
-  endif()
-
   string(APPEND BAZEL_CONFIG " --config=snopt")
-
   if(WITH_ROBOTLOCOMOTION_SNOPT)
     string(APPEND BAZEL_REPO_ENV " --repo_env=SNOPT_PATH=git")
   else()
