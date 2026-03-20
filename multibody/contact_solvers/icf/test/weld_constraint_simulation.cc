@@ -14,16 +14,21 @@
 /// each time step, pulling box2 into alignment with box1 despite the initial
 /// displacement error and gravity.
 ///
-/// Run:
-///   bazel run //multibody/contact_solvers/icf:weld_constraint_simulation
+/// Run (interactive with visualization):
+///   bazel run //multibody/contact_solvers/icf:weld_constraint_simulation --
+///   --visualize
 ///
 /// Then open http://localhost:7000 in your browser to see Meshcat.
+///
+/// Test (no visualization, uses gtest; this is the default from BUILD args):
+///   bazel test //multibody/contact_solvers/icf:weld_constraint_simulation
 
 #include <iostream>
 #include <memory>
 #include <utility>
 
 #include <gflags/gflags.h>
+#include <gtest/gtest.h>
 
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/cenic/cenic_integrator.h"
@@ -43,6 +48,9 @@ DEFINE_double(initial_gap, 0.0, "Weld constraint error to be overcome.");
 DEFINE_bool(fixed_step, false,
             "If true, run the CENIC integrator in fixed-step mode (disables "
             "error control). Recovers the 'Lagged' discrete-time ICF variant.");
+DEFINE_bool(visualize, false,
+            "If true, enable Meshcat visualization and the interactive prompt. "
+            "Set to false for automated testing.");
 
 namespace drake {
 namespace multibody {
@@ -110,8 +118,10 @@ int do_main() {
 
   plant.Finalize();
 
-  // Add Meshcat visualization.
-  visualization::AddDefaultVisualization(&builder);
+  // Add Meshcat visualization (only in interactive mode).
+  if (FLAGS_visualize) {
+    visualization::AddDefaultVisualization(&builder);
+  }
 
   auto diagram = builder.Build();
 
@@ -121,8 +131,6 @@ int do_main() {
   // constraint, box2 would fall freely under gravity.
   auto context = diagram->CreateDefaultContext();
   auto& plant_context = plant.GetMyMutableContextFromRoot(context.get());
-  // @sherm move the lower box down, to say 0.7 and you'll see the bug.
-  // 0.75 is the exact constrained position.
   plant.SetFloatingBaseBodyPoseInWorldFrame(
       &plant_context, box2,
       RigidTransformd(Vector3d(0.0, 0.0, 0.75 - FLAGS_initial_gap)));
@@ -137,24 +145,56 @@ int do_main() {
     integrator.set_target_accuracy(FLAGS_target_accuracy);
   }
 
-  simulator->set_target_realtime_rate(FLAGS_realtime_rate);
+  simulator->set_target_realtime_rate(FLAGS_visualize ? FLAGS_realtime_rate
+                                                      : 0.0);
   simulator->Initialize();
-  std::cout << "Simulating for " << FLAGS_simulation_time
-            << " seconds. Enter to continue ..." << std::endl;
-  std::cin.get();  // Wait for user input before starting the simulation.
+  if (FLAGS_visualize) {
+    std::cout << "Simulating for " << FLAGS_simulation_time
+              << " seconds. Enter to continue ..." << std::endl;
+    std::cin.get();  // Wait for user input before starting the simulation.
+  }
   simulator->AdvanceTo(FLAGS_simulation_time);
 
   systems::PrintSimulatorStatistics(*simulator);
+
+  // Verify the weld constraint held: box2's center should be at z=0.75.
+  // box1 center is at z=1.0. Frame P is at z=-0.15 on box1 (world z=0.85).
+  // Frame Q is at z=+0.10 on box2, so box2 center = 0.85 - 0.10 = 0.75.
+  const auto& final_plant_context =
+      plant.GetMyContextFromRoot(simulator->get_context());
+  const Vector3d& p_WB2 =
+      plant.EvalBodyPoseInWorld(final_plant_context, box2).translation();
+  const double kTolerance = 1e-2;  // 1 cm tolerance.
+  const Vector3d expected_position(0.0, 0.0, 0.75);
+  const double position_error = (p_WB2 - expected_position).norm();
+  std::cout << "Final box2 position: " << p_WB2[0] << " " << p_WB2[1] << " "
+            << p_WB2[2] << std::endl;
+  std::cout << "Position error: " << position_error << " m" << std::endl;
+
+  if (position_error > kTolerance) {
+    std::cerr << "ERROR: Weld constraint not satisfied. Position error "
+              << position_error << " exceeds tolerance " << kTolerance
+              << std::endl;
+    return 1;
+  }
   return 0;
 }
 
 }  // namespace
+
+// Gtest wrapper: calls do_main() and expects success.
+GTEST_TEST(WeldConstraintSimulation, LargeInitialError) {
+  EXPECT_EQ(do_main(), 0);
+}
+
 }  // namespace icf
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  // Initialize gtest first, then gflags (so gtest flags are already consumed).
+  testing::InitGoogleTest(&argc, argv);
   gflags::SetUsageMessage(
       "Simulation demonstrating the ICF weld constraint.\n"
       "\n"
@@ -166,11 +206,16 @@ int main(int argc, char* argv[]) {
       "(ICF solver) enforces the weld constraint each step, drawing box2\n"
       "back into alignment with box1 against gravity.\n"
       "\n"
-      "Open http://localhost:7000 in your browser for Meshcat visualization.\n"
+      "Run interactively with --visualize for Meshcat visualization, or\n"
+      "with --novisualize for automated gtest verification.\n"
       "\n"
       "Use --fixed_step to disable error control and run at a fixed step "
       "size,\n"
       "recovering the 'Lagged' discrete-time ICF variant.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+  if (!FLAGS_visualize) {
+    return RUN_ALL_TESTS();
+  }
   return drake::multibody::contact_solvers::icf::do_main();
 }

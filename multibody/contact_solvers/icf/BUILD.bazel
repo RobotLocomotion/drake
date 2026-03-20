@@ -294,14 +294,15 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_binary(
+drake_cc_googletest(
     name = "weld_constraint_simulation",
-    srcs = ["weld_constraint_simulation.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
+    timeout = "moderate",
+    args = [
         "--simulation_time=0.5",
         "--realtime_rate=0.0",
+        "--initial_gap=0.5",
     ],
+    use_default_main = False,
     deps = [
         "//multibody/cenic:cenic_integrator",
         "//multibody/parsing",
