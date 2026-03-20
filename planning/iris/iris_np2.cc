@@ -134,10 +134,12 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
 
   // The input domain must be bounded.
   DRAKE_THROW_UNLESS(domain.IsBounded());
-  DRAKE_THROW_UNLESS(
-      starting_ellipsoid.center().size() ==
+
+  const int parameterization_dimension =
       options.parameterization.get_parameterization_dimension().value_or(
-          checker.plant().num_positions()));
+          checker.plant().num_positions());
+  DRAKE_THROW_UNLESS(starting_ellipsoid.center().size() ==
+                     parameterization_dimension);
 
   // Do a basic check of the parameterization dimension.
   const Eigen::VectorXd starting_ellipsoid_center_ambient =
@@ -161,6 +163,70 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
   DRAKE_THROW_UNLESS(
       options.ray_sampler_options.num_particles_to_walk_towards <=
       options.sampled_iris_options.num_particles);
+
+  // Check if seed point is in collision.
+  const auto& context =
+      checker.UpdatePositions(starting_ellipsoid_center_ambient);
+  auto query_object = checker.plant()
+                          .get_geometry_query_input_port()
+                          .Eval<geometry::QueryObject<double>>(context);
+  const auto& inspector = query_object.inspector();
+  for (const auto& [geomA, geomB] : inspector.GetCollisionCandidates()) {
+    const double distance =
+        query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
+            .distance;
+    const double padding =
+        GetPaddingBetweenGeometries(checker, inspector, geomA, geomB);
+    if (distance < padding) {
+      throw std::runtime_error(fmt::format(
+          "IrisNp2: Starting ellipsoid center {} is in collision; geometry {} "
+          "is in collision with geometry {}.",
+          fmt_eigen(starting_ellipsoid.center().transpose()),
+          inspector.GetName(geomA), inspector.GetName(geomB)));
+    }
+  }
+
+  // Check if seed point satisfies user-specified constraints.
+  if (options.sampled_iris_options.prog_with_additional_constraints) {
+    DRAKE_THROW_UNLESS(options.sampled_iris_options
+                           .prog_with_additional_constraints->num_vars() ==
+                       parameterization_dimension);
+
+    // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
+    const double constraints_tol = 1e-6;
+    if (!internal::CheckProgConstraints(
+            options.sampled_iris_options.prog_with_additional_constraints,
+            starting_ellipsoid.center(), constraints_tol)) {
+      throw std::runtime_error(fmt::format(
+          "IrisNp2: Starting ellipsoid center {} violates a constraint in "
+          "options.sampled_iris_options.prog_with_additional_constraints.",
+          fmt_eigen(starting_ellipsoid.center().transpose())));
+    }
+
+    // Check if the center point is numerically "vulnerable" to stalling in the
+    // counterexample search. If the center point is too close to a constraint
+    // boundary, competing tolerances (solver feasibility tolerance vs.
+    // constraint violation threshold) can lead to the solver returning the
+    // center point as the "optimal violator".
+    const double vulnerability_margin =
+        100.0 * geometry::optimization::internal::CounterexampleConstraint::
+                    kSolverConstraintTolerance;
+    if (!internal::CheckProgConstraints(
+            options.sampled_iris_options.prog_with_additional_constraints,
+            starting_ellipsoid.center(), -vulnerability_margin)) {
+      drake::log()->warn(
+          "IrisNp2: The starting ellipsoid center {} is numerically very close "
+          "to a constraint boundary (within {}). This may cause the nonlinear "
+          "solver to return the ellipsoid center during the counterexample "
+          "search due to competing tolerances (solver feasibility tolerance "
+          "vs. constraint violation threshold). If the algorithm fails, "
+          "consider loosening your constraint limits or setting the solver "
+          "tolerance to be tighter, in order to provide a larger numerical "
+          "buffer.",
+          fmt_eigen(starting_ellipsoid.center().transpose()),
+          vulnerability_margin);
+    }
+  }
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -337,7 +403,11 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const auto& plant = checker.plant();
   const int nq = plant.num_positions();
 
+  // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
+  const double constraints_tol = 1e-6;
+
   const auto& context = checker.UpdatePositions(
+
       options.parameterization.get_parameterization_double()(
           starting_ellipsoid.center()));
   plant.ValidateContext(context);
@@ -408,21 +478,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   }
   std::sort(sorted_pairs.begin(), sorted_pairs.end());
 
-  if (options.sampled_iris_options.prog_with_additional_constraints) {
-    DRAKE_THROW_UNLESS(options.sampled_iris_options
-                           .prog_with_additional_constraints->num_vars() ==
-                       parameterization_dimension);
-  }
-  // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
-  const double constraints_tol = 1e-6;
-  if (!internal::CheckProgConstraints(
-          options.sampled_iris_options.prog_with_additional_constraints,
-          E.center(), constraints_tol)) {
-    throw std::runtime_error(fmt::format(
-        "Starting ellipsoid center {} violates a constraint in "
-        "options.sampled_iris_options.prog_with_additional_constraints.",
-        fmt_eigen(E.center().transpose())));
-  }
   geometry::optimization::VPolytope containment_points_vpolytope =
       internal::ParseAndCheckContainmentPoints(
           checker, options.sampled_iris_options, options.parameterization,
@@ -926,6 +981,21 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints, &max_relaxation);
           } else {
+            const Eigen::VectorXd difference =
+                *point_to_add_hyperplane - E.center();
+            if (difference.norm() < 1e-9) {
+              throw std::runtime_error(fmt::format(
+                  "IrisNp2: The solver returned the center of the ellipsoid as "
+                  "the optimal violator (difference norm: {}). This indicates "
+                  "that the center point is numerically too close to a "
+                  "constraint boundary, causing the solver to stall due to "
+                  "competing tolerances (solver feasibility tolerance vs. "
+                  "constraint violation threshold). Please loosen your "
+                  "constraint limits or set the solver tolerance to be "
+                  "tighter, in order to provide a larger numerical buffer.",
+                  difference.norm()));
+            }
+
             internal::AddTangentToPolytope(
                 E, *point_to_add_hyperplane,
                 options.sampled_iris_options.configuration_space_margin,
