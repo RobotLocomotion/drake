@@ -335,6 +335,11 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   r_ = Av0_ - time_step * k0();
 
   params_->time_step = time_step;
+
+  // Weld constraint regularization R depends on the time step.
+  // Recompute Hessian blocks whenever dt changes so
+  // AccumulateHessian() uses up-to-date values.
+  weld_constraints_pool_.PrecomputeHessianBlocks();
 }
 
 template <typename T>

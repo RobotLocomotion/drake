@@ -30,6 +30,15 @@ Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
   return result;
 }
 
+// Near-rigid parameter β.
+constexpr double kBeta = 0.1;
+
+// Minimum time scale h_min for weld constraints.
+// For δt ≥ h_min the formula recovers the near-rigid model;
+// for δt < h_min stiffness and dissipation are capped at
+// the h_min near-rigid values.
+constexpr double kHMin = 1e-4;
+
 }  // namespace
 
 template <typename T>
@@ -47,7 +56,7 @@ void WeldConstraintsPool<T>::Resize(const int num_constraints) {
   p_AP_W_.Resize(num_constraints, 3, 1);
   p_BQ_W_.Resize(num_constraints, 3, 1);
   p_PoQo_W_.Resize(num_constraints, 3, 1);
-  g_hat_.resize(num_constraints);
+  g0_.resize(num_constraints);
   R_.resize(num_constraints);
 }
 
@@ -65,47 +74,9 @@ void WeldConstraintsPool<T>::Set(int index, int bodyA, int bodyB,
   p_BQ_W_[index] = p_BQ_W;
   p_PoQo_W_[index] = p_PoQo_W;
 
-  // Near-rigid regularization [Castro et al., 2022].
-  const double beta = 0.1;
-  const double eps = beta * beta / (4 * M_PI * M_PI) / (1 + beta / M_PI);
-
   // Constraint function g₀ = (a_PQ, p_PoQo) ∈ ℝ⁶.
-  const Vector6<T> g0 = (Vector6<T>() << a_PQ_W, p_PoQo_W).finished();
-
-  // Precompute ĝ = -g₀/(1 + β/π), so that v̂ = ĝ/δt.
-  g_hat_[index] = -g0 / (1.0 + beta / M_PI);
-
-  // Compute the regularization R = ε⋅W, where W ≈ J⋅diag(M)⁻¹⋅Jᵀ.
-  // For a weld constraint between two bodies, the Jacobian maps generalized
-  // velocities to the relative spatial velocity V_W_AmBm. For the diagonal
-  // approximation, we need the sum of contributions from both bodies.
-
-  // Body B always contributes.
-  const int c_b = model().body_to_clique(bodyB);
-  DRAKE_ASSERT(c_b >= 0);
-
-  // Approximate W_B = J_WB⋅diag(M_B)⁻¹⋅J_WBᵀ using body mass.
-  // For a single rigid body, this is approximately 1/mass for translational
-  // DOFs. We use a scalar approximation: w ≈ 1/m_B (+ 1/m_A if not anchored).
-  const T& mass_B = model().body_mass(bodyB);
-  T w_translational = 1.0 / mass_B;
-
-  if (!model().is_anchored(bodyA)) {
-    const T& mass_A = model().body_mass(bodyA);
-    w_translational += 1.0 / mass_A;
-  }
-
-  // For the rotational part, the Delassus approximation is more complex as it
-  // depends on the inertia tensor. We use the same scalar mass-based
-  // approximation as for translation, which is consistent with SAP's near-rigid
-  // approach where the exact value of R is not critical as long as it
-  // regularizes appropriately.
-  const T w_rotational = w_translational;
-
-  Vector6<T> R_diag;
-  R_diag.template head<3>().setConstant(eps * w_rotational);
-  R_diag.template tail<3>().setConstant(eps * w_translational);
-  R_[index] = R_diag;
+  // R and v̂ are time-step-dependent and computed in PrecomputeHessianBlocks().
+  g0_[index] = (Vector6<T>() << a_PQ_W, p_PoQo_W).finished();
 }
 
 template <typename T>
@@ -131,6 +102,13 @@ void WeldConstraintsPool<T>::CalcData(
     const EigenPool<Vector6<T>>& V_WB,
     WeldConstraintsDataPool<T>* weld_data) const {
   DRAKE_ASSERT(weld_data != nullptr);
+
+  using std::max;
+  const T dt = model().time_step();
+  // Effective time scale for computing stiffness and dissipation.
+  const T dt_eff = max(dt, static_cast<T>(kHMin));
+  const T taud = kBeta * dt_eff / M_PI;
+  const T dt_plus_taud = dt + taud;
 
   T& cost = weld_data->mutable_cost();
   cost = 0;
@@ -167,12 +145,9 @@ void WeldConstraintsPool<T>::CalcData(
       vc.template tail<3>() = v_WBm;
     }
 
-    // When the initial constraint error is very large, CENIC will shrink the
-    // step drastically and we'll never satisfy the accuracy requirement if we
-    // let v_hat keep growing. Cap it at a small enough step size.
-    using std::max;
-    const T dt = max(1e-8, model().time_step());
-    const Vector6<T> v_hat = g_hat_[k] / dt;
+    // v̂ = g₀/(dt + taud) where taud = β·dt_eff/π.
+    // This is bounded as dt → 0 (v̂ → g₀/taud).
+    const Vector6<T> v_hat = -g0_[k] / dt_plus_taud;
     const Vector6<T>& R_diag = R_[k];
 
     // γ = R⁻¹⋅(v̂ - vc), where R is diagonal.
@@ -240,6 +215,16 @@ template <typename T>
 void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
   hessian_blocks_.resize(num_constraints());
 
+  using std::max;
+  const T dt = model().time_step();
+  // Effective time scale for computing stiffness and dissipation.
+  const T dt_eff = max(dt, static_cast<T>(kHMin));
+  const T taud = kBeta * dt_eff / M_PI;
+  // R⁻¹ = K·dt·(dt + taud) where K = 4π²/(β²·dt_eff²·w), so
+  // R_diag = w / (K·dt·(dt + taud)) = β²·dt_eff²·w / (4π²·dt·(dt + taud)).
+  const T r_scale = (kBeta * kBeta * dt_eff * dt_eff) /
+                    (4.0 * M_PI * M_PI * dt * (dt + taud));
+
   for (int k = 0; k < num_constraints(); ++k) {
     const int bodyA = body_pairs_[k].first;
     const int bodyB = body_pairs_[k].second;
@@ -250,6 +235,27 @@ void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
     hb.c_b = c_b;
     hb.c_a = c_a;
     hb.a_is_dynamic = !model().is_anchored(bodyA);
+
+    // Compute the regularization R = ε⋅W, where W ≈ J⋅diag(M)⁻¹⋅Jᵀ.
+    // For a weld constraint between two bodies, the Jacobian maps generalized
+    // velocities to the relative spatial velocity V_W_AmBm. For the diagonal
+    // approximation, we need the sum of contributions from both bodies.
+
+    // Approximate W_B = J_WB⋅diag(M_B)⁻¹⋅J_WBᵀ using body mass.
+    // For a single rigid body, this is approximately 1/mass for translational
+    // DOFs. We use a scalar approximation: w ≈ 1/m_B (+ 1/m_A if not anchored).
+    const T& mass_B = model().body_mass(bodyB);
+    T w = 1.0 / mass_B;
+    if (!model().is_anchored(bodyA)) {
+      w += 1.0 / model().body_mass(bodyA);
+    }
+
+    // For the rotational part, the Delassus approximation is more complex
+    // as it depends on the inertia tensor. We use the same scalar mass-based
+    // approximation as for translation, which is consistent with SAP's
+    // near-rigid approach where the exact value of R is not critical as long
+    // as it regularizes appropriately.
+    R_[k].setConstant(r_scale * w);
 
     const Vector6<T>& R_diag = R_[k];
 
