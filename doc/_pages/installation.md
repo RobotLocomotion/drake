@@ -19,11 +19,15 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ ⁽³⁾ | End of life ⁽⁴⁾ |
-|------------------------------------|--------------|----------------|-----------------|
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁵⁾   | 3.12           | March 2028      |
-| macOS Sequoia (15)                 | arm64        | 3.14           | October 2026    |
-| macOS Tahoe (26)                   | arm64        | 3.14           | October 2027    |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
+|------------------------------------|--------------|------------|---------------------|-----------------|
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | Pip, Binary, APT    | March 2028      |
+|                                    | x86_64 ⁽⁴⁾   | 3.13-3.14  | Pip                 | March 2028      |
+| macOS Sequoia (15)                 | arm64        | 3.13       | Pip                 | October 2026    |
+|                                    | arm64        | 3.14       | Pip, Binary         | October 2026    |
+| macOS Tahoe (26)                   | arm64        | 3.13       | Pip                 | October 2026    |
+|                                    | arm64        | 3.14       | Pip, Binary         | October 2027    |
+| Amazon Linux 2023                  | x86_64       | 3.12-3.14  | Pip                 | March 2028      |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -42,17 +46,10 @@ Drake is not tested regularly with Anaconda, so if you are using Anaconda you
 may experience compatibility hiccups; when asking for help, be sure to mention
 that Conda is involved.
 
-⁽³⁾ The Python version shown in the table is supported for all installation
-channels. Additionally, when installing via ``pip``
-on Ubuntu Python versions 3.12 through 3.14 (inclusive) are supported and
-on macOS Python versions 3.13 through 3.14 (inclusive) are supported.
-Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
-timeline for changing which Python versions are supported.
-
-⁽⁴⁾ These end-of-life dates are estimates.
+⁽³⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
 
-⁽⁵⁾ Nightly binaries for Ubuntu 24.04 (Noble) on aarch64 are available for all
+⁽⁴⁾ Nightly binaries for Ubuntu 24.04 (Noble) on aarch64 are available for all
 [binary installation methods](#choose-an-installation-method). Drake's support
 for Ubuntu on aarch64 is currently experimental, and binaries are not available
 for stable releases. Follow

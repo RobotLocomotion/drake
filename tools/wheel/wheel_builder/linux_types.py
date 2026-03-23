@@ -19,7 +19,7 @@ class Platform:
 @dataclass
 class Target:
     build_platform: Platform
-    test_platform: Platform
+    test_platforms: tuple[Platform]
     python_version_tuple: tuple[int]
     python_sha: str = None
 
@@ -29,9 +29,17 @@ class Target:
         self.python_version = ".".join(pv_parts[:2])
         self.python_tag = "".join(pv_parts[:2])
 
-    def platform(self, role: Role):
-        p = getattr(self, f"{role.name}_platform")
-        return p if p is not None else self.build_platform
+    def platform(self, role: Role, test_index: int | None = None) -> Platform:
+        """Returns the Platform for the given `role`. For the test role, the
+        `test_index` into the `self.test_platforms` tuple is required. For the
+        build role, the `test_index` must be None."""
+        if role.name == "build":
+            assert test_index is None
+            return self.build_platform
+        if role.name == "test":
+            assert test_index is not None
+            return self.test_platforms[test_index]
+        raise NotImplementedError(role.name)
 
 
 BUILD = Role("build")
