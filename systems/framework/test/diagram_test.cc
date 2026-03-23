@@ -65,7 +65,7 @@ class EmptySystem : public LeafSystem<T> {
 
   // Adds a specific periodic discrete update.
   void AddPeriodicDiscreteUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdateEvent(period, offset,
+    this->DeclarePeriodicDiscreteUpdateEvent(0.001 + period, offset,
                                              &EmptySystem::Noop);
   }
 
