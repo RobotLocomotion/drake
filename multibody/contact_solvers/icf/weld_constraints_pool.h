@@ -141,12 +141,13 @@ class WeldConstraintsPool {
   EigenPool<Vector3<T>> p_BQ_W_;    // Position of Q in B, expressed in W.
   EigenPool<Vector3<T>> p_PoQo_W_;  // Relative translation, expressed in W.
 
-  // Near-rigid regularization and bias per constraint.
-  // The constraint function is g = (a_PQ, p_PoQo) ∈ ℝ⁶.
-  // ĝ = -g₀/(1 + β/π) is the precomputed bias (so v̂ = ĝ/δt).
+  std::vector<Vector6<T>> g0_;  // Constraint function at start of step.
+
+  // Near-rigid regularization per constraint.
+  // R depends on the current time step δt and is computed in
+  // PrecomputeHessianBlocks(), which must be called whenever δt changes.
   // R is a diagonal 6×6 regularization matrix: R = diag(Rᵣ, Rₜ).
-  std::vector<Vector6<T>> g_hat_;  // Precomputed bias ĝ = -g₀/(1 + β/π).
-  std::vector<Vector6<T>> R_;      // Diagonal of the regularization matrix.
+  std::vector<Vector6<T>> R_; // Diagonal of the regularization matrix.
 
   // Precomputed Hessian blocks for each weld constraint, populated by
   // PrecomputeHessianBlocks(). These are iteration-invariant because the weld
