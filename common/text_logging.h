@@ -272,11 +272,20 @@ void set_log_pattern(const std::string& pattern);
 set_log_pattern(). */
 extern const char* const kSetLogPatternHelpMessage;
 
+#ifndef DRAKE_DOXYGEN_CXX
+// DRAKE DEPRECATED: The preprocessor definition HAVE_SPDLOG is deprecated
+// and will be removed from Drake on or after 2026-07-01.
 #ifdef HAVE_SPDLOG
-/** True only if spdlog is enabled in this build. */
+[[deprecated(
+    "DRAKE DEPRECATED: kHaveSpdlog is deprecated and will be removed from "
+    "Drake on or after 2026-07-01.")]]
 constexpr bool kHaveSpdlog = true;
 #else
+[[deprecated(
+    "DRAKE DEPRECATED: kHaveSpdlog is deprecated and will be removed from "
+    "Drake on or after 2026-07-01.")]]
 constexpr bool kHaveSpdlog = false;
+#endif
 #endif
 
 }  // namespace logging

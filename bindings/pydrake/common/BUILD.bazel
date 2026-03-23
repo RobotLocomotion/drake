@@ -51,6 +51,12 @@ drake_py_library(
 # `pydrake:module_py`.
 drake_pybind_library(
     name = "_init_py",
+    cc_copts = select({
+        "//tools/workspace/spdlog:flag_spdlog_repo_disabled": [],
+        "//conditions:default": [
+            "-DDRAKE_SPDLOG_ENABLED",
+        ],
+    }),
     cc_deps = [
         ":cpp_template_pybind",
         ":default_scalars_pybind",
