@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#ifdef HAVE_SPDLOG
+#ifdef DRAKE_SPDLOG_ENABLED
 
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/dist_sink.h>
@@ -265,7 +265,7 @@ void UseNativeCppLogging() {
 }  // namespace pydrake
 }  // namespace drake
 
-#else  // HAVE_SPDLOG
+#else  // DRAKE_SPDLOG_ENABLED
 
 namespace drake {
 namespace pydrake {
@@ -278,4 +278,4 @@ void UseNativeCppLogging() {}
 }  // namespace pydrake
 }  // namespace drake
 
-#endif  // HAVE_SPDLOG
+#endif  // DRAKE_SPDLOG_ENABLED
