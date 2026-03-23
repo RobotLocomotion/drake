@@ -3993,6 +3993,11 @@ Note:
           const char* doc = R"""()""";
         } ctor;
       } UnitQuaternionConstraint;
+      // Symbol: drake::multibody::to_string
+      struct /* to_string */ {
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
+        const char* doc = R"""()""";
+      } to_string;
     } multibody;
   } drake;
 } pydrake_doc_multibody_inverse_kinematics;

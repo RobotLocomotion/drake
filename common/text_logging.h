@@ -34,9 +34,7 @@ When logging a third-party type whose only affordance for string output is
 `operator<<`, use fmt::streamed(); see its documentation for details. This is
 very rare (only a couple uses in Drake so far).
 
-When implementing a string output for a Drake type, eventually this page will
-demonstrate how to use fmt::formatter<T>. In the meantime, you can implement
-`operator<<` and use fmt::ostream_formatter, or else use the macro helper
+To implement a string output for a Drake type, use the macro helper
 DRAKE_FORMATTER_AS(). Grep around in Drake's existing code to find examples.
 
 @warning This file should only be included from cc files, not header files.

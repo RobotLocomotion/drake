@@ -206,6 +206,10 @@ struct TestColor {
 
   bool operator!=(const TestColor& c) const { return !(*this == c); }
 
+  std::string to_string() const {
+    return fmt::format("({}, {}, {}, {})", r, g, b, a);
+  }
+
   int r{0};
   int g{0};
   int b{0};
@@ -213,8 +217,7 @@ struct TestColor {
 };
 
 std::ostream& operator<<(std::ostream& out, const TestColor& c) {
-  out << "(" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << ")";
-  return out;
+  return out << c.to_string();
 }
 
 // Background (sky) and terrain colors.
@@ -786,7 +789,7 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
         .backend = FLAGS_backend,
     };
     RenderEngineVtk engine(params);
-    Render(fmt::to_string(fmt::streamed(bg)), &engine);
+    Render(bg.to_string(), &engine);
     VerifyUniformColor(bg);
   }
 }
@@ -1992,7 +1995,7 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
         continue;
       }
       const std::string unambiguous_description =
-          fmt::format("{} - {}", fmt::streamed(l_type), config.description);
+          fmt::format("{} - {}", l_type, config.description);
       SCOPED_TRACE(unambiguous_description);
       LightParameter test_light = config.light;
       test_light.type = l_type;

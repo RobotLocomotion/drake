@@ -3,17 +3,19 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fmt/ostream.h>
+// Remove with deprecation 2026-07-01.
+#include <ostream>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -29,6 +31,12 @@ enum class DifferentialInverseKinematicsStatus {
                      /// likely due to constraints.
 };
 
+std::string_view to_string(DifferentialInverseKinematicsStatus value);
+
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value);
 
@@ -522,8 +530,5 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }  // namespace multibody
 }  // namespace drake
 
-namespace fmt {
-template <>
-struct formatter<drake::multibody::DifferentialInverseKinematicsStatus>
-    : fmt::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::multibody, DifferentialInverseKinematicsStatus, x,
+                   ::drake::multibody::to_string(x))
