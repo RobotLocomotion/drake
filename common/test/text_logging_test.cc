@@ -60,6 +60,9 @@ GTEST_TEST(TextLoggingTest, FloatingPoint) {
   EXPECT_EQ(fmt::format("{}", 0.009), "0.009");
 }
 
+// Remove with deprecation 2026-07-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Check that the constexpr bool is set correctly.
 GTEST_TEST(TextLoggingTest, ConstantTest) {
 #if TEXT_LOGGING_TEST_SPDLOG
@@ -68,6 +71,7 @@ GTEST_TEST(TextLoggingTest, ConstantTest) {
   EXPECT_FALSE(kHaveSpdlog);
 #endif
 }
+#pragma GCC diagnostic pop
 
 // Check that the "warn once" idiom compiles and doesn't crash at runtime.
 // We use a pattern substitution to cover both arguments of the Warn's ctor.
