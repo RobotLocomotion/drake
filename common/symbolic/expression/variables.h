@@ -7,10 +7,13 @@
 #include <cstddef>
 #include <functional>
 #include <initializer_list>
-#include <ostream>
 #include <set>
 #include <string>
 
+// Remove with deprecation 2026-07-01.
+#include <ostream>
+
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -136,8 +139,6 @@ class Variables {
 
   friend bool operator<(const Variables& vars1, const Variables& vars2);
 
-  friend std::ostream& operator<<(std::ostream&, const Variables& vars);
-
   friend Variables intersect(const Variables& vars1, const Variables& vars2);
 
  private:
@@ -146,6 +147,12 @@ class Variables {
 
   std::set<Variable> vars_;
 };
+
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream& operator<<(std::ostream& os, const Variables& vars);
 
 /** Updates @p var1 with the result of set-union(@p var1, @p var2). */
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.

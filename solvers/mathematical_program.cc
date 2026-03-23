@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
-#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -13,6 +12,9 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+// Remove with deprecation 2026-07-01.
+#include <ostream>
 
 #include <fmt/format.h>
 
@@ -67,7 +69,24 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
 
 string MathematicalProgram::to_string() const {
   std::ostringstream os;
-  os << *this;
+  if (num_vars() > 0) {
+    os << fmt::format("Decision variables: {}\n\n",
+                      fmt_eigen(decision_variables().transpose()));
+  } else {
+    os << "No decision variables.\n";
+  }
+
+  if (num_indeterminates() > 0) {
+    os << fmt::format("Indeterminates: {}\n\n",
+                      fmt_eigen(indeterminates().transpose()));
+  }
+
+  for (const auto& b : GetAllCosts()) {
+    os << fmt::to_string(b) << "\n";
+  }
+  for (const auto& b : GetAllConstraints()) {
+    os << fmt::to_string(b);
+  }
   return os.str();
 }
 
@@ -883,9 +902,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Expression " << e << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format("Expression {} is non-linear.", e));
   }
 }
 
@@ -917,9 +934,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Formula " << f << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format("Formula {} is non-linear.", f));
   }
 }
 
@@ -2349,25 +2364,7 @@ bool MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
-  if (prog.num_vars() > 0) {
-    os << fmt::format("Decision variables: {}\n\n",
-                      fmt_eigen(prog.decision_variables().transpose()));
-  } else {
-    os << "No decision variables.\n";
-  }
-
-  if (prog.num_indeterminates() > 0) {
-    os << fmt::format("Indeterminates: {}\n\n",
-                      fmt_eigen(prog.indeterminates().transpose()));
-  }
-
-  for (const auto& b : prog.GetAllCosts()) {
-    os << fmt::to_string(b) << "\n";
-  }
-  for (const auto& b : prog.GetAllConstraints()) {
-    os << fmt::to_string(b);
-  }
-  return os;
+  return os << prog.to_string();
 }
 
 }  // namespace solvers

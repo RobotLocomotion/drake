@@ -8,7 +8,6 @@
 #endif
 
 #include <memory>
-#include <ostream>
 #include <set>
 #include <string>
 
@@ -48,8 +47,8 @@ class FormulaCell {
    * expressions in @p s.
    */
   [[nodiscard]] virtual Formula Substitute(const Substitution& s) const = 0;
-  /** Outputs string representation of formula into output stream @p os. */
-  virtual std::ostream& Display(std::ostream& os) const = 0;
+  /** Returns string representation of this formula. */
+  virtual std::string Display() const = 0;
 
   /** Default constructor (deleted). */
   FormulaCell() = delete;
@@ -136,7 +135,7 @@ class NaryFormulaCell : public FormulaCell {
   }
 
  protected:
-  std::ostream& DisplayWithOp(std::ostream& os, const std::string& op) const;
+  std::string DisplayWithOp(const std::string& op) const;
 
  private:
   const std::set<Formula> formulas_;
@@ -154,7 +153,7 @@ class FormulaTrue : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing false. */
@@ -169,7 +168,7 @@ class FormulaFalse : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing a Boolean variable. */
@@ -186,7 +185,7 @@ class FormulaVar : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& subst) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
   [[nodiscard]] const Variable& get_variable() const;
 
  private:
@@ -201,7 +200,7 @@ class FormulaEq : public RelationalFormulaCell {
   ~FormulaEq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing disequality (e1 ≠ e2). */
@@ -212,7 +211,7 @@ class FormulaNeq : public RelationalFormulaCell {
   ~FormulaNeq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing 'greater-than' (e1 > e2). */
@@ -223,7 +222,7 @@ class FormulaGt : public RelationalFormulaCell {
   ~FormulaGt() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing 'greater-than-or-equal-to' (e1 ≥ e2). */
@@ -234,7 +233,7 @@ class FormulaGeq : public RelationalFormulaCell {
   ~FormulaGeq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing 'less-than' (e1 < e2). */
@@ -245,7 +244,7 @@ class FormulaLt : public RelationalFormulaCell {
   ~FormulaLt() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing 'less-than-or-equal-to' (e1 ≤ e2). */
@@ -256,7 +255,7 @@ class FormulaLeq : public RelationalFormulaCell {
   ~FormulaLeq() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing conjunctions (f1 ∧ ... ∧ fn). */
@@ -269,7 +268,7 @@ class FormulaAnd : public NaryFormulaCell {
   ~FormulaAnd() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing disjunctions (f1 ∨ ... ∨ fn). */
@@ -282,7 +281,7 @@ class FormulaOr : public NaryFormulaCell {
   ~FormulaOr() override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
 };
 
 /** Symbolic formula representing negations (¬f). */
@@ -297,7 +296,7 @@ class FormulaNot : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
   /** Returns the operand. */
   [[nodiscard]] const Formula& get_operand() const { return f_; }
 
@@ -319,7 +318,7 @@ class FormulaForall : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
   /** Returns the quantified variables. */
   [[nodiscard]] const Variables& get_quantified_variables() const {
     return vars_;
@@ -343,7 +342,7 @@ class FormulaIsnan : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
   /** Returns the operand expression. */
   [[nodiscard]] const Expression& get_unary_expression() const { return e_; }
 
@@ -417,7 +416,7 @@ class FormulaPositiveSemidefinite : public FormulaCell {
   [[nodiscard]] bool Less(const FormulaCell& f) const override;
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
-  std::ostream& Display(std::ostream& os) const override;
+  std::string Display() const override;
   /** Returns the corresponding matrix in this PSD formula. */
   [[nodiscard]] const MatrixX<symbolic::Expression>& get_matrix() const {
     return m_;

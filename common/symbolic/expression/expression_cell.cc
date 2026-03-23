@@ -10,11 +10,12 @@
 #include <map>
 #include <memory>
 #include <numeric>
-#include <ostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
+
+#include <fmt/ranges.h>
 
 #include "drake/common/drake_assert.h"
 
@@ -397,8 +398,8 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
   return Expression::Zero();
 }
 
-ostream& ExpressionVar::Display(ostream& os) const {
-  return os << fmt::to_string(var_);
+string ExpressionVar::Display() const {
+  return fmt::to_string(var_);
 }
 
 ExpressionNaN::ExpressionNaN()
@@ -444,8 +445,8 @@ Expression ExpressionNaN::Differentiate(const Variable&) const {
   throw runtime_error("NaN is detected during differentiation.");
 }
 
-ostream& ExpressionNaN::Display(ostream& os) const {
-  return os << "NaN";
+string ExpressionNaN::Display() const {
+  return "NaN";
 }
 
 ExpressionAdd::ExpressionAdd(const double constant,
@@ -571,12 +572,13 @@ Expression ExpressionAdd::Differentiate(const Variable& x) const {
   return std::move(fac).GetExpression();
 }
 
-ostream& ExpressionAdd::Display(ostream& os) const {
+string ExpressionAdd::Display() const {
+  ostringstream os;
   DRAKE_ASSERT(!expr_to_coeff_map_.empty());
   bool print_plus{false};
   os << "(";
   if (constant_ != 0.0) {
-    os << constant_;
+    os << fmt::to_string(constant_);
     print_plus = true;
   }
   for (const auto& p : expr_to_coeff_map_) {
@@ -584,12 +586,12 @@ ostream& ExpressionAdd::Display(ostream& os) const {
     print_plus = true;
   }
   os << ")";
-  return os;
+  return os.str();
 }
 
-ostream& ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
-                                    const double coeff,
-                                    const Expression& term) const {
+void ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
+                                const double coeff,
+                                const Expression& term) const {
   DRAKE_ASSERT(coeff != 0.0);
   if (coeff > 0.0) {
     if (print_plus) {
@@ -597,17 +599,16 @@ ostream& ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
     }
     // Do not print "1 * t"
     if (coeff != 1.0) {
-      os << coeff << " * ";
+      os << fmt::format("{} * ", coeff);
     }
   } else {
     // Instead of printing "+ (- E)", just print "- E".
     os << " - ";
     if (coeff != -1.0) {
-      os << (-coeff) << " * ";
+      os << fmt::format("{} * ", -coeff);
     }
   }
-  os << term;
-  return os;
+  os << term.to_string();
 }
 
 ExpressionAddFactory::ExpressionAddFactory(
@@ -906,12 +907,13 @@ Expression ExpressionMul::Differentiate(const Variable& x) const {
   return std::move(add_fac).GetExpression();
 }
 
-ostream& ExpressionMul::Display(ostream& os) const {
+string ExpressionMul::Display() const {
+  ostringstream os;
   DRAKE_ASSERT(!base_to_exponent_map_.empty());
   bool print_mul{false};
   os << "(";
   if (constant_ != 1.0) {
-    os << constant_;
+    os << fmt::to_string(constant_);
     print_mul = true;
   }
   for (const auto& p : base_to_exponent_map_) {
@@ -919,12 +921,12 @@ ostream& ExpressionMul::Display(ostream& os) const {
     print_mul = true;
   }
   os << ")";
-  return os;
+  return os.str();
 }
 
-ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
-                                    const Expression& base,
-                                    const Expression& exponent) const {
+void ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
+                                const Expression& base,
+                                const Expression& exponent) const {
   // Print " * pow(base, exponent)" if print_mul is true
   // Print "pow(base, exponent)" if print_mul is false
   // Print "base" instead of "pow(base, exponent)" if exponent == 1.0
@@ -932,11 +934,10 @@ ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
     os << " * ";
   }
   if (is_one(exponent)) {
-    os << base;
+    os << base.to_string();
   } else {
-    os << "pow(" << base << ", " << exponent << ")";
+    os << fmt::format("pow({}, {})", base, exponent);
   }
-  return os;
 }
 
 ExpressionMulFactory::ExpressionMulFactory(
@@ -1279,17 +1280,14 @@ Expression ExpressionDiv::Differentiate(const Variable& x) const {
   return (f.Differentiate(x) * g - f * g.Differentiate(x)) / pow(g, 2.0);
 }
 
-ostream& ExpressionDiv::Display(ostream& os) const {
-  return os << "(" << get_first_argument() << " / " << get_second_argument()
-            << ")";
+string ExpressionDiv::Display() const {
+  return fmt::format("({} / {})", get_first_argument(), get_second_argument());
 }
 
 double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
   if (v2 == 0.0) {
-    ostringstream oss;
-    oss << "Division by zero: " << v1 << " / " << v2;
-    this->Display(oss) << endl;
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("Division by zero: {} / {} ({})", v1, v2, this->Display()));
   }
   return v1 / v2;
 }
@@ -1327,8 +1325,8 @@ Expression ExpressionLog::Differentiate(const Variable& x) const {
   return f.Differentiate(x) / f;
 }
 
-ostream& ExpressionLog::Display(ostream& os) const {
-  return os << "log(" << get_argument() << ")";
+string ExpressionLog::Display() const {
+  return fmt::format("log({})", get_argument());
 }
 
 double ExpressionLog::DoEvaluate(const double v) const {
@@ -1365,8 +1363,8 @@ Expression ExpressionAbs::Differentiate(const Variable& x) const {
   }
 }
 
-ostream& ExpressionAbs::Display(ostream& os) const {
-  return os << "abs(" << get_argument() << ")";
+string ExpressionAbs::Display() const {
+  return fmt::format("abs({})", get_argument());
 }
 
 double ExpressionAbs::DoEvaluate(const double v) const {
@@ -1397,8 +1395,8 @@ Expression ExpressionExp::Differentiate(const Variable& x) const {
   return exp(f) * f.Differentiate(x);
 }
 
-ostream& ExpressionExp::Display(ostream& os) const {
-  return os << "exp(" << get_argument() << ")";
+string ExpressionExp::Display() const {
+  return fmt::format("exp({})", get_argument());
 }
 
 double ExpressionExp::DoEvaluate(const double v) const {
@@ -1438,8 +1436,8 @@ Expression ExpressionSqrt::Differentiate(const Variable& x) const {
   return 1 / (2 * sqrt(f)) * f.Differentiate(x);
 }
 
-ostream& ExpressionSqrt::Display(ostream& os) const {
-  return os << "sqrt(" << get_argument() << ")";
+string ExpressionSqrt::Display() const {
+  return fmt::format("sqrt({})", get_argument());
 }
 
 double ExpressionSqrt::DoEvaluate(const double v) const {
@@ -1486,9 +1484,9 @@ Expression ExpressionPow::Differentiate(const Variable& x) const {
   return DifferentiatePow(get_first_argument(), get_second_argument(), x);
 }
 
-ostream& ExpressionPow::Display(ostream& os) const {
-  return os << "pow(" << get_first_argument() << ", " << get_second_argument()
-            << ")";
+string ExpressionPow::Display() const {
+  return fmt::format("pow({}, {})", get_first_argument(),
+                     get_second_argument());
 }
 
 double ExpressionPow::DoEvaluate(const double v1, const double v2) const {
@@ -1520,8 +1518,8 @@ Expression ExpressionSin::Differentiate(const Variable& x) const {
   return cos(f) * f.Differentiate(x);
 }
 
-ostream& ExpressionSin::Display(ostream& os) const {
-  return os << "sin(" << get_argument() << ")";
+string ExpressionSin::Display() const {
+  return fmt::format("sin({})", get_argument());
 }
 
 double ExpressionSin::DoEvaluate(const double v) const {
@@ -1552,8 +1550,8 @@ Expression ExpressionCos::Differentiate(const Variable& x) const {
   return -sin(f) * f.Differentiate(x);
 }
 
-ostream& ExpressionCos::Display(ostream& os) const {
-  return os << "cos(" << get_argument() << ")";
+string ExpressionCos::Display() const {
+  return fmt::format("cos({})", get_argument());
 }
 
 double ExpressionCos::DoEvaluate(const double v) const {
@@ -1584,8 +1582,8 @@ Expression ExpressionTan::Differentiate(const Variable& x) const {
   return (1 / pow(cos(f), 2)) * f.Differentiate(x);
 }
 
-ostream& ExpressionTan::Display(ostream& os) const {
-  return os << "tan(" << get_argument() << ")";
+string ExpressionTan::Display() const {
+  return fmt::format("tan({})", get_argument());
 }
 
 double ExpressionTan::DoEvaluate(const double v) const {
@@ -1625,8 +1623,8 @@ Expression ExpressionAsin::Differentiate(const Variable& x) const {
   return (1 / sqrt(1 - pow(f, 2))) * f.Differentiate(x);
 }
 
-ostream& ExpressionAsin::Display(ostream& os) const {
-  return os << "asin(" << get_argument() << ")";
+string ExpressionAsin::Display() const {
+  return fmt::format("asin({})", get_argument());
 }
 
 double ExpressionAsin::DoEvaluate(const double v) const {
@@ -1667,8 +1665,8 @@ Expression ExpressionAcos::Differentiate(const Variable& x) const {
   return -1 / sqrt(1 - pow(f, 2)) * f.Differentiate(x);
 }
 
-ostream& ExpressionAcos::Display(ostream& os) const {
-  return os << "acos(" << get_argument() << ")";
+string ExpressionAcos::Display() const {
+  return fmt::format("acos({})", get_argument());
 }
 
 double ExpressionAcos::DoEvaluate(const double v) const {
@@ -1700,8 +1698,8 @@ Expression ExpressionAtan::Differentiate(const Variable& x) const {
   return (1 / (1 + pow(f, 2))) * f.Differentiate(x);
 }
 
-ostream& ExpressionAtan::Display(ostream& os) const {
-  return os << "atan(" << get_argument() << ")";
+string ExpressionAtan::Display() const {
+  return fmt::format("atan({})", get_argument());
 }
 
 double ExpressionAtan::DoEvaluate(const double v) const {
@@ -1739,9 +1737,9 @@ Expression ExpressionAtan2::Differentiate(const Variable& x) const {
          (pow(f, 2) + pow(g, 2));
 }
 
-ostream& ExpressionAtan2::Display(ostream& os) const {
-  return os << "atan2(" << get_first_argument() << ", " << get_second_argument()
-            << ")";
+string ExpressionAtan2::Display() const {
+  return fmt::format("atan2({}, {})", get_first_argument(),
+                     get_second_argument());
 }
 
 double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
@@ -1772,8 +1770,8 @@ Expression ExpressionSinh::Differentiate(const Variable& x) const {
   return cosh(f) * f.Differentiate(x);
 }
 
-ostream& ExpressionSinh::Display(ostream& os) const {
-  return os << "sinh(" << get_argument() << ")";
+string ExpressionSinh::Display() const {
+  return fmt::format("sinh({})", get_argument());
 }
 
 double ExpressionSinh::DoEvaluate(const double v) const {
@@ -1804,8 +1802,8 @@ Expression ExpressionCosh::Differentiate(const Variable& x) const {
   return sinh(f) * f.Differentiate(x);
 }
 
-ostream& ExpressionCosh::Display(ostream& os) const {
-  return os << "cosh(" << get_argument() << ")";
+string ExpressionCosh::Display() const {
+  return fmt::format("cosh({})", get_argument());
 }
 
 double ExpressionCosh::DoEvaluate(const double v) const {
@@ -1836,8 +1834,8 @@ Expression ExpressionTanh::Differentiate(const Variable& x) const {
   return 1 / pow(cosh(f), 2) * f.Differentiate(x);
 }
 
-ostream& ExpressionTanh::Display(ostream& os) const {
-  return os << "tanh(" << get_argument() << ")";
+string ExpressionTanh::Display() const {
+  return fmt::format("tanh({})", get_argument());
 }
 
 double ExpressionTanh::DoEvaluate(const double v) const {
@@ -1879,9 +1877,9 @@ Expression ExpressionMin::Differentiate(const Variable& x) const {
   }
 }
 
-ostream& ExpressionMin::Display(ostream& os) const {
-  return os << "min(" << get_first_argument() << ", " << get_second_argument()
-            << ")";
+string ExpressionMin::Display() const {
+  return fmt::format("min({}, {})", get_first_argument(),
+                     get_second_argument());
 }
 
 double ExpressionMin::DoEvaluate(const double v1, const double v2) const {
@@ -1923,9 +1921,9 @@ Expression ExpressionMax::Differentiate(const Variable& x) const {
   }
 }
 
-ostream& ExpressionMax::Display(ostream& os) const {
-  return os << "max(" << get_first_argument() << ", " << get_second_argument()
-            << ")";
+string ExpressionMax::Display() const {
+  return fmt::format("max({}, {})", get_first_argument(),
+                     get_second_argument());
 }
 
 double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
@@ -1961,8 +1959,8 @@ Expression ExpressionCeiling::Differentiate(const Variable& x) const {
   }
 }
 
-ostream& ExpressionCeiling::Display(ostream& os) const {
-  return os << "ceil(" << get_argument() << ")";
+string ExpressionCeiling::Display() const {
+  return fmt::format("ceil({})", get_argument());
 }
 
 double ExpressionCeiling::DoEvaluate(const double v) const {
@@ -1998,8 +1996,8 @@ Expression ExpressionFloor::Differentiate(const Variable& x) const {
   }
 }
 
-ostream& ExpressionFloor::Display(ostream& os) const {
-  return os << "floor(" << get_argument() << ")";
+string ExpressionFloor::Display() const {
+  return fmt::format("floor({})", get_argument());
 }
 
 double ExpressionFloor::DoEvaluate(const double v) const {
@@ -2108,19 +2106,16 @@ Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
       // differentiation where the condition contains the differentiand.  We
       // hope that users can generally avoid this in practice, eg by using min
       // and max instead.
-      ostringstream oss;
-      Display(oss) << " is not differentiable with respect to "
-                   << fmt::to_string(x) << ".";
-      throw runtime_error(oss.str());
+      throw runtime_error(fmt::format(
+          "{} is not differentiable with respect to {}.", Display(), x));
     }
   } else {
     return Expression::Zero();
   }
 }
 
-ostream& ExpressionIfThenElse::Display(ostream& os) const {
-  return os << "(if " << f_cond_ << " then " << e_then_ << " else " << e_else_
-            << ")";
+string ExpressionIfThenElse::Display() const {
+  return fmt::format("(if {} then {} else {})", f_cond_, e_then_, e_else_);
 }
 
 // ExpressionUninterpretedFunction
@@ -2221,28 +2216,18 @@ Expression ExpressionUninterpretedFunction::Differentiate(
   if (GetVariables().include(x)) {
     // This uninterpreted function does have `x` as an argument, but we don't
     // have sufficient information to differentiate it with respect to `x`.
-    ostringstream oss;
-    oss << "Uninterpreted-function expression ";
-    Display(oss);
-    oss << " is not differentiable with respect to " << fmt::to_string(x)
-        << ".";
-    throw runtime_error(oss.str());
+    throw runtime_error(fmt::format(
+        "Uninterpreted-function expression {} is not differentiable with "
+        "respect to {}.",
+        Display(), x));
   } else {
     // `x` is free in this uninterpreted function.
     return Expression::Zero();
   }
 }
 
-ostream& ExpressionUninterpretedFunction::Display(ostream& os) const {
-  os << name_ << "(";
-  if (!arguments_.empty()) {
-    auto it = arguments_.begin();
-    os << *(it++);
-    for (; it != arguments_.end(); ++it) {
-      os << ", " << *it;
-    }
-  }
-  return os << ")";
+string ExpressionUninterpretedFunction::Display() const {
+  return fmt::format("{}({})", name_, fmt::join(arguments_, ", "));
 }
 
 bool is_variable(const ExpressionCell& c) {

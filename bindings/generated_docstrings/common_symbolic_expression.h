@@ -1086,7 +1086,7 @@ Raises:
         struct /* Display */ {
           // Source: drake/common/symbolic/expression/expression_cell.h
           const char* doc =
-R"""(Outputs string representation of expression into output stream ``os``.)""";
+R"""(Returns string representation of this expression.)""";
         } Display;
         // Symbol: drake::symbolic::ExpressionCell::EqualTo
         struct /* EqualTo */ {
@@ -2493,7 +2493,7 @@ Note:
         struct /* Display */ {
           // Source: drake/common/symbolic/expression/formula_cell.h
           const char* doc =
-R"""(Outputs string representation of formula into output stream ``os``.)""";
+R"""(Returns string representation of this formula.)""";
         } Display;
         // Symbol: drake::symbolic::FormulaCell::EqualTo
         struct /* EqualTo */ {
