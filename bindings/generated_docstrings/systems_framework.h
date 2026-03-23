@@ -6811,6 +6811,9 @@ Precondition:
 Precondition:
     ``update`` must not be null.
 
+Raises:
+    RuntimeError if period_sec <= 0.0.
+
 See also:
     DeclarePeriodicPublishEvent()
 
@@ -6856,7 +6859,10 @@ this call.
 
 Precondition:
     `event`'s associated trigger type must be TriggerType∷kUnknown or
-    already set to TriggerType∷kPeriodic.)""";
+    already set to TriggerType∷kPeriodic.
+
+Raises:
+    RuntimeError if period_sec <= 0.0.)""";
         } DeclarePeriodicEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePeriodicPublishEvent
         struct /* DeclarePeriodicPublishEvent */ {
@@ -6890,6 +6896,9 @@ Precondition:
 
 Precondition:
     ``publish`` must not be null.
+
+Raises:
+    RuntimeError if period_sec <= 0.0.
 
 See also:
     DeclarePeriodicDiscreteUpdateEvent()
@@ -6932,6 +6941,9 @@ Precondition:
 
 Precondition:
     ``update`` must not be null.
+
+Raises:
+    RuntimeError if period_sec <= 0.0.
 
 See also:
     DeclarePeriodicPublishEvent()

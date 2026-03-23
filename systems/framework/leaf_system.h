@@ -259,6 +259,7 @@ class LeafSystem : public System<T> {
 
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `publish` must not be null.
+  @throws std::exception if period_sec <= 0.0.
 
   @see DeclarePeriodicDiscreteUpdateEvent()
   @see DeclarePeriodicUnrestrictedUpdateEvent()
@@ -324,6 +325,7 @@ class LeafSystem : public System<T> {
 
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `update` must not be null.
+  @throws std::exception if period_sec <= 0.0.
 
   @see DeclarePeriodicPublishEvent()
   @see DeclarePeriodicUnrestrictedUpdateEvent()
@@ -390,6 +392,7 @@ class LeafSystem : public System<T> {
 
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `update` must not be null.
+  @throws std::exception if period_sec <= 0.0.
 
   @see DeclarePeriodicPublishEvent()
   @see DeclarePeriodicDiscreteUpdateEvent()
@@ -463,10 +466,14 @@ class LeafSystem : public System<T> {
   internally so you do not need to keep the object around after this call.
 
   @pre `event`'s associated trigger type must be TriggerType::kUnknown or
-  already set to TriggerType::kPeriodic. */
+  already set to TriggerType::kPeriodic.
+  @throws std::exception if period_sec <= 0.0. */
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
                             const EventType& event) {
+    if (period_sec <= 0.0) {
+      ThrowNonPositiveEventPeriod(period_sec, typeid(event));
+    }
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
                  event.get_trigger_type() == TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
@@ -1866,6 +1873,9 @@ class LeafSystem : public System<T> {
       const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
           get_vector_from_context);
+
+  [[noreturn]] void ThrowNonPositiveEventPeriod(
+      double period_sec, const std::type_info& event_type) const;
 
   // Periodic Update or Publish events declared by this system.
   LeafCompositeEventCollection<T> periodic_events_;
