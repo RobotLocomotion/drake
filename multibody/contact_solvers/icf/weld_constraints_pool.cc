@@ -34,8 +34,9 @@ Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
 constexpr double kBeta = 0.1;
 
 // Minimum time scale h_min for weld constraints.
-// For δt ≥ h_min the formula recovers the near-rigid model; for
-// δt < h_min stiffness and dissipation are capped at the h_min near-rigid values.
+// For δt ≥ h_min the formula recovers the near-rigid model;
+// for δt < h_min stiffness and dissipation are capped at
+// the h_min near-rigid values.
 constexpr double kHMin = 1e-4;
 
 }  // namespace
@@ -249,12 +250,11 @@ void WeldConstraintsPool<T>::PrecomputeHessianBlocks() {
       w += 1.0 / model().body_mass(bodyA);
     }
 
-    // For the rotational part, the Delassus approximation is more complex as it
-    // depends on the inertia tensor. We use the same scalar mass-based
-    // approximation as for translation, which is consistent with SAP's near-rigid
-    // approach where the exact value of R is not critical as long as it
-    // regularizes appropriately.
-
+    // For the rotational part, the Delassus approximation is more complex
+    // as it depends on the inertia tensor. We use the same scalar mass-based
+    // approximation as for translation, which is consistent with SAP's
+    // near-rigid approach where the exact value of R is not critical as long
+    // as it regularizes appropriately.
     R_[k].setConstant(r_scale * w);
 
     const Vector6<T>& R_diag = R_[k];

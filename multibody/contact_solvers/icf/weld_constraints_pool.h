@@ -147,7 +147,7 @@ class WeldConstraintsPool {
   // R depends on the current time step δt and is computed in
   // PrecomputeHessianBlocks(), which must be called whenever δt changes.
   // R is a diagonal 6×6 regularization matrix: R = diag(Rᵣ, Rₜ).
-  std::vector<Vector6<T>> R_; // Diagonal of the regularization matrix.
+  std::vector<Vector6<T>> R_;  // Diagonal of the regularization matrix.
 
   // Precomputed Hessian blocks for each weld constraint, populated by
   // PrecomputeHessianBlocks(). These are iteration-invariant because the weld
