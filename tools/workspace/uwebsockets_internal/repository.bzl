@@ -12,5 +12,8 @@ def uwebsockets_internal_repository(
         commit = "v20.75.0",
         sha256 = "05c384e410d374ce81abc17c9ee9574f33611d4a020f1da26f444f0dfe9691d7",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/max_fallback_size.patch",
+        ],
         mirrors = mirrors,
     )
