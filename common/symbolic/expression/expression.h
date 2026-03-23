@@ -508,7 +508,6 @@ class Expression {
   friend Expression uninterpreted_function(std::string name,
                                            std::vector<Expression> arguments);
 
-  friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) {
     std::swap(a.boxed_, b.boxed_);
   }
@@ -683,6 +682,10 @@ Expression uninterpreted_function(std::string name,
                                   std::vector<Expression> arguments);
 void swap(Expression& a, Expression& b);
 
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** Checks if @p e is a constant expression. */
@@ -907,6 +910,8 @@ Expression TaylorExpand(const Expression& f, const Environment& a, int order);
 }  // namespace symbolic
 }  // namespace drake
 
+DRAKE_FORMATTER_AS(, drake::symbolic, Expression, e, e.to_string())
+
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
 template <>
@@ -1037,10 +1042,11 @@ inline bool operator!=(
 }
 
 // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
+// XXX
 inline std::ostream& operator<<(
     std::ostream& os,
     const uniform_real_distribution<drake::symbolic::Expression>& d) {
-  return os << d.a() << " " << d.b();
+  return os << fmt::format("{} {}", d.a(), d.b());
 }
 
 /// Provides std::normal_distribution, N(μ, σ), for symbolic expressions.
@@ -1179,10 +1185,11 @@ inline bool operator!=(
 }
 
 // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
+// XXX
 inline std::ostream& operator<<(
     std::ostream& os,
     const normal_distribution<drake::symbolic::Expression>& d) {
-  return os << d.mean() << " " << d.stddev();
+  return os << fmt::format("{} {}", d.mean(), d.stddev());
 }
 
 /// Provides std::exponential_distribution, Exp(λ), for symbolic expressions.
@@ -1278,10 +1285,11 @@ inline bool operator!=(
 }
 
 // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
+// XXX
 inline std::ostream& operator<<(
     std::ostream& os,
     const exponential_distribution<drake::symbolic::Expression>& d) {
-  return os << d.lambda();
+  return os << fmt::to_string(d.lambda());
 }
 
 }  // namespace std
@@ -1761,5 +1769,3 @@ struct is_eigen_vector_expression_double_pair
           is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake
-
-DRAKE_FORMATTER_AS(, drake::symbolic, Expression, e, e.to_string())

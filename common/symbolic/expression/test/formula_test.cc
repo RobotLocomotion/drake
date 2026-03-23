@@ -53,32 +53,32 @@ void CheckOrdering(const vector<Formula>& formulas) {
     for (size_t j{0}; j < formulas.size(); ++j) {
       if (i < j) {
         EXPECT_PRED2(FormulaLess, formulas[i], formulas[j])
-            << "(Formulas[" << i << "] = " << formulas[i] << ")"
+            << "(Formulas[" << i << "] = " << formulas[i].to_string() << ")"
             << " is not less than "
-            << "(Formulas[" << j << "] = " << formulas[j] << ")";
+            << "(Formulas[" << j << "] = " << formulas[j].to_string() << ")";
         EXPECT_PRED2(FormulaNotLess, formulas[j], formulas[i])
-            << "(Formulas[" << j << "] = " << formulas[j] << ")"
+            << "(Formulas[" << j << "] = " << formulas[j].to_string() << ")"
             << " is less than "
-            << "(Formulas[" << i << "] = " << formulas[i] << ")";
+            << "(Formulas[" << i << "] = " << formulas[i].to_string() << ")";
       } else if (i > j) {
         EXPECT_PRED2(FormulaLess, formulas[j], formulas[i])
-            << "(Formulas[" << j << "] = " << formulas[j] << ")"
+            << "(Formulas[" << j << "] = " << formulas[j].to_string() << ")"
             << " is not less than "
-            << "(Formulas[" << i << "] = " << formulas[i] << ")";
+            << "(Formulas[" << i << "] = " << formulas[i].to_string() << ")";
         EXPECT_PRED2(FormulaNotLess, formulas[i], formulas[j])
-            << "(Formulas[" << i << "] = " << formulas[i] << ")"
+            << "(Formulas[" << i << "] = " << formulas[i].to_string() << ")"
             << " is less than "
-            << "(Formulas[" << j << "] = " << formulas[j] << ")";
+            << "(Formulas[" << j << "] = " << formulas[j].to_string() << ")";
       } else {
         // i == j
         EXPECT_PRED2(FormulaNotLess, formulas[i], formulas[j])
-            << "(Formulas[" << i << "] = " << formulas[i] << ")"
+            << "(Formulas[" << i << "] = " << formulas[i].to_string() << ")"
             << " is less than "
-            << "(Formulas[" << j << "] = " << formulas[j] << ")";
+            << "(Formulas[" << j << "] = " << formulas[j].to_string() << ")";
         EXPECT_PRED2(FormulaNotLess, formulas[j], formulas[i])
-            << "(Formulas[" << j << "] = " << formulas[j] << ")"
+            << "(Formulas[" << j << "] = " << formulas[j].to_string() << ")"
             << " is less than "
-            << "(Formulas[" << i << "] = " << formulas[i] << ")";
+            << "(Formulas[" << i << "] = " << formulas[i].to_string() << ")";
       }
     }
   }
@@ -1389,9 +1389,9 @@ TEST_F(SymbolicFormulaTest, MemcpyKeepsFomrulaIntact) {
   } else {
     return ::testing::AssertionFailure()
            << "Different evaluation results:\n"
-           << "f = " << f << "\n"
-           << "env = " << env << "\n"
-           << "env_extended = " << env_extended << "\n"
+           << "f = " << f.to_string() << "\n"
+           << "env = " << env.to_string() << "\n"
+           << "env_extended = " << env_extended.to_string() << "\n"
            << "b1 = " << b1 << " and b2 = " << b2;
   }
 }

@@ -112,7 +112,8 @@ Formula Formula::Substitute(const Substitution& s) const {
 
 string Formula::to_string() const {
   ostringstream oss;
-  oss << *this;
+  DRAKE_ASSERT(ptr_ != nullptr);
+  ptr_->Display(oss);
   return oss.str();
 }
 
@@ -243,8 +244,7 @@ Formula operator!(const Variable& v) {
 }
 
 ostream& operator<<(ostream& os, const Formula& f) {
-  DRAKE_ASSERT(f.ptr_ != nullptr);
-  return f.ptr_->Display(os);
+  return os << f.to_string();
 }
 
 Formula operator==(const Expression& e1, const Expression& e2) {

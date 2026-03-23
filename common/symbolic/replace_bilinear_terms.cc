@@ -111,11 +111,9 @@ Expression ReplaceBilinearTerms(
       } else {
         if (intersect(w_xy_expr.GetVariables(), variables_in_x_y).size() != 0) {
           // w_xy_expr contains a variable in x or y.
-          ostringstream oss;
-          oss << "W(" + std::to_string(it_x_idx->second) + "," +
-                     std::to_string(it_y_idx->second) + ")="
-              << w_xy_expr << "contains variables in x or y.";
-          throw std::runtime_error(oss.str());
+          throw std::runtime_error(
+              fmt::format("W({},{})={} contains variables in x or y.",
+                          it_x_idx->second, it_y_idx->second, w_xy_expr));
         }
         poly.AddProduct(w_xy_expr * p.second, symbolic::Monomial{});
       }

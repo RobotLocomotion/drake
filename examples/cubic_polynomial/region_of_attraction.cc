@@ -87,8 +87,8 @@ void ComputeRegionOfAttraction() {
   const solvers::MathematicalProgramResult result = Solve(prog);
   DRAKE_DEMAND(result.is_success());
 
-  cout << "Verified that " << V << " < " << result.GetSolution(rho)
-       << " is in the region of attraction." << endl;
+  fmt::print("Verified that {} < {} is in the region of attraction.\n", V,
+             result.GetSolution(rho));
 
   // Check that ρ ≃ 1.0.
   DRAKE_DEMAND(std::abs(result.GetSolution(rho) - 1.0) < 1e-6);

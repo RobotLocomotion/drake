@@ -241,9 +241,13 @@ RowVectorX<Expression> Expression::Jacobian(
 }
 
 string Expression::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  if (is_constant(*this)) {
+    return fmt::to_string(get_constant_value(*this));
+  } else {
+    ostringstream oss;
+    cell().Display(oss);
+    return oss.str();
+  }
 }
 
 void Expression::AddImpl(const Expression& rhs) {
@@ -511,9 +515,7 @@ void Expression::DivImpl(const Expression& rhs) {
   // really is NaN.
   if (is_constant(lhs) && is_constant(rhs)) {
     if (is_zero(rhs)) {
-      ostringstream oss{};
-      oss << "Division by zero: " << lhs << "/0";
-      throw runtime_error(oss.str());
+      throw runtime_error(fmt::format("Division by zero: {}/0", lhs));
     }
     ConstructExpressionCellNaN();
     return;
@@ -528,34 +530,8 @@ void Expression::DivImpl(const Expression& rhs) {
   lhs = Expression{make_unique<ExpressionDiv>(lhs, rhs)};
 }
 
-namespace {
-// Changes the precision of `os` to be the `new_precision` and saves the
-// original precision so that it can be reverted when an instance of this class
-// is destructed. It is used in `operator<<` of symbolic expression.
-class PrecisionGuard {
- public:
-  PrecisionGuard(ostream* const os, const streamsize& new_precision)
-      : os_{os}, original_precision_{os->precision()} {
-    os_->precision(new_precision);
-  }
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrecisionGuard);
-  ~PrecisionGuard() { os_->precision(original_precision_); }
-
- private:
-  ostream* const os_;
-  const streamsize original_precision_;
-};
-}  // namespace
-
 ostream& operator<<(ostream& os, const Expression& e) {
-  const PrecisionGuard precision_guard{&os,
-                                       numeric_limits<double>::max_digits10};
-  if (is_constant(e)) {
-    os << get_constant_value(e);
-  } else {
-    e.cell().Display(os);
-  }
-  return os;
+  return os << e.to_string();
 }
 
 Expression log(const Expression& e) {

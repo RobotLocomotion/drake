@@ -1,4 +1,3 @@
-#include <iostream>
 #include <string>
 
 #include "drake/common/symbolic/expression.h"
@@ -62,16 +61,16 @@ VectorX<Expression> MultibodyPlantDynamics() {
 }
 
 int main() {
-  std::cout << "PendulumPlantDynamics:\n";
+  fmt::print("PendulumPlantDynamics:\n");
   auto dynamics = PendulumPlantDynamics();
-  std::cout << "d/dt theta    = " << dynamics[0] << "\n";
-  std::cout << "d/dt thetadot = " << dynamics[1] << "\n";
-  std::cout << "\n";
+  fmt::print("d/dt theta    = {}\n", dynamics[0]);
+  fmt::print("d/dt thetadot = {}\n", dynamics[1]);
+  fmt::print("\n");
 
-  std::cout << "MultibodyPlantDynamics:\n";
+  fmt::print("MultibodyPlantDynamics:\n");
   dynamics = MultibodyPlantDynamics();
-  std::cout << "d/dt theta    = " << dynamics[0] << "\n";
-  std::cout << "d/dt thetadot = " << dynamics[1] << "\n";
+  fmt::print("d/dt theta    = {}\n", dynamics[0]);
+  fmt::print("d/dt thetadot = {}\n", dynamics[1]);
 
   return 0;
 }

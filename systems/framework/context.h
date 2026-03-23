@@ -893,7 +893,12 @@ class Context : public ContextBase {
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const Context<T>& context) {
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os, const Context<T>& context) {
   os << context.to_string();
   return os;
 }

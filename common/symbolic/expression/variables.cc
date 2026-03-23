@@ -13,6 +13,8 @@
 #include <string>
 #include <utility>
 
+#include <fmt/ranges.h>
+
 #include "drake/common/hash.h"
 
 using std::includes;
@@ -37,9 +39,7 @@ Variables::Variables(const Eigen::Ref<const VectorX<Variable>>& vec)
 Variables::~Variables() = default;
 
 string Variables::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  return fmt::format("{{{}}}", fmt::join(vars_, ", "));
 }
 
 Variables::size_type Variables::erase(const Variables& vars) {
@@ -143,15 +143,7 @@ Variables intersect(const Variables& vars1, const Variables& vars2) {
 }
 
 ostream& operator<<(ostream& os, const Variables& vars) {
-  os << "{";
-  if (!vars.vars_.empty()) {
-    // output 1st ... N-1th elements by adding ", " at the end
-    copy(vars.begin(), prev(vars.end()), ostream_iterator<Variable>(os, ", "));
-    // output the last one (without ",").
-    os << fmt::to_string(*(vars.rbegin()));
-  }
-  os << "}";
-  return os;
+  return os << vars.to_string();
 }
 
 }  // namespace symbolic

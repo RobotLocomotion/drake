@@ -62,31 +62,43 @@ void CheckOrdering(const vector<Expression>& expressions) {
     for (size_t j{0}; j < expressions.size(); ++j) {
       if (i < j) {
         EXPECT_PRED2(ExprLess, expressions[i], expressions[j])
-            << "(Expressions[" << i << "] = " << expressions[i] << ")"
+            << "(Expressions[" << i << "] = " << expressions[i].to_string()
+            << ")"
             << " is not less than "
-            << "(Expressions[" << j << "] = " << expressions[j] << ")";
+            << "(Expressions[" << j << "] = " << expressions[j].to_string()
+            << ")";
         EXPECT_PRED2(ExprNotLess, expressions[j], expressions[i])
-            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << "(Expressions[" << j << "] = " << expressions[j].to_string()
+            << ")"
             << " is less than "
-            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+            << "(Expressions[" << i << "] = " << expressions[i].to_string()
+            << ")";
       } else if (i > j) {
         EXPECT_PRED2(ExprLess, expressions[j], expressions[i])
-            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << "(Expressions[" << j << "] = " << expressions[j].to_string()
+            << ")"
             << " is not less than "
-            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+            << "(Expressions[" << i << "] = " << expressions[i].to_string()
+            << ")";
         EXPECT_PRED2(ExprNotLess, expressions[i], expressions[j])
-            << "(Expressions[" << i << "] = " << expressions[i] << ")"
+            << "(Expressions[" << i << "] = " << expressions[i].to_string()
+            << ")"
             << " is less than "
-            << "(Expressions[" << j << "] = " << expressions[j] << ")";
+            << "(Expressions[" << j << "] = " << expressions[j].to_string()
+            << ")";
       } else {
         EXPECT_PRED2(ExprNotLess, expressions[i], expressions[j])
-            << "(Expressions[" << i << "] = " << expressions[i] << ")"
+            << "(Expressions[" << i << "] = " << expressions[i].to_string()
+            << ")"
             << " is less than "
-            << "(Expressions[" << j << "] = " << expressions[j] << ")";
+            << "(Expressions[" << j << "] = " << expressions[j].to_string()
+            << ")";
         EXPECT_PRED2(ExprNotLess, expressions[j], expressions[i])
-            << "(Expressions[" << j << "] = " << expressions[j] << ")"
+            << "(Expressions[" << j << "] = " << expressions[j].to_string()
+            << ")"
             << " is less than "
-            << "(Expressions[" << i << "] = " << expressions[i] << ")";
+            << "(Expressions[" << i << "] = " << expressions[i].to_string()
+            << ")";
       }
     }
   }
@@ -1962,9 +1974,8 @@ TEST_F(SymbolicExpressionTest, ToString) {
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
   EXPECT_EQ(e3.to_string(),
-            "(3.1415926535897931 * x * pow(y, 2.7182818284590451))");
-  EXPECT_EQ(e4.to_string(),
-            "(2.7182818284590451 + x + 3.1415926535897931 * y)");
+            "(3.141592653589793 * x * pow(y, 2.718281828459045))");
+  EXPECT_EQ(e4.to_string(), "(2.718281828459045 + x + 3.141592653589793 * y)");
   EXPECT_EQ(e_uf_.to_string(), "uf(x, y)");
 }
 
@@ -2698,9 +2709,9 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
   } else {
     return ::testing::AssertionFailure()
            << "Different evaluation results:\n"
-           << "e = " << e << "\n"
-           << "env = " << env << "\n"
-           << "env_extended = " << env_extended << "\n"
+           << "e = " << e.to_string() << "\n"
+           << "env = " << env.to_string() << "\n"
+           << "env_extended = " << env_extended.to_string() << "\n"
            << "v1 = " << v1 << " and v2 = " << v2;
   }
 }

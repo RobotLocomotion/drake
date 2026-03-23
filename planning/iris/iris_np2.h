@@ -19,9 +19,6 @@ enum class IrisNp2SamplingStrategy {
   kRaySampler,
 };
 
-/** Writes the IrisNp2SamplingStrategy as a string. */
-std::ostream& operator<<(std::ostream& out, const IrisNp2SamplingStrategy& t);
-
 /** Instantiates a IrisNp2SamplingStrategy from its string representation.
  @param spec  Must be 'greedy' or 'ray'.
  @throws if `spec` is an unrecognized string. */

@@ -288,18 +288,6 @@ bool RaySamplerProcess(const SceneGraphCollisionChecker& checker,
 
 namespace internal {
 
-std::ostream& operator<<(std::ostream& out, const IrisNp2SamplingStrategy& t) {
-  switch (t) {
-    case IrisNp2SamplingStrategy::kGreedySampler:
-      out << "greedy";
-      break;
-    case IrisNp2SamplingStrategy::kRaySampler:
-      out << "ray";
-      break;
-  }
-  return out;
-}
-
 IrisNp2SamplingStrategy iris_np2_sampling_strategy_from_string(
     const std::string& spec) {
   if (spec == "greedy") {
