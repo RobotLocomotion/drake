@@ -21,37 +21,28 @@ using Eigen::Vector3d;
 using math::RigidTransform;
 using std::vector;
 
-std::ostream& operator<<(std::ostream& out, GeometryType s) {
+std::string_view to_string(GeometryType s) {
   switch (s) {
     case kBox:
-      out << "Box";
-      break;
+      return "Box";
     case kCapsule:
-      out << "Capsule";
-      break;
+      return "Capsule";
     case kConvex:
-      out << "Convex";
-      break;
+      return "Convex";
     case kCylinder:
-      out << "Cylinder";
-      break;
+      return "Cylinder";
     case kEllipsoid:
-      out << "Ellipsoid";
-      break;
+      return "Ellipsoid";
     case kHalfSpace:
-      out << "HalfSpace";
-      break;
+      return "HalfSpace";
     case kMesh:
-      out << "Mesh";
-      break;
+      return "Mesh";
     case kPoint:
-      out << "Point";
-      break;
+      return "Point";
     case kSphere:
-      out << "Sphere";
-      break;
+      return "Sphere";
   }
-  return out;
+  DRAKE_UNREACHABLE();
 }
 
 QueryInstance::QueryInstance(GeometryType shape1_in, GeometryType shape2_in,

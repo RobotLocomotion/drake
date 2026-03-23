@@ -12,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -22,6 +23,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/fmt.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/shape_specification.h"
@@ -78,7 +80,7 @@ enum GeometryType {
   kPoint,
   kSphere
 };
-std::ostream& operator<<(std::ostream& out, GeometryType s);
+std::string_view to_string(GeometryType s);
 
 /* This represents a single cell of the table -- an instance of invoking a
  proximity query. It explicitly calls out the two shapes and the expected
@@ -441,11 +443,7 @@ class CharacterizeResultTest : public ::testing::Test {
 }  // namespace geometry
 }  // namespace drake
 
-namespace fmt {
-template <>
-struct formatter<drake::geometry::internal::GeometryType>
-    : fmt::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::geometry::internal, GeometryType, x, to_string(x))
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::geometry::internal::CharacterizeResultTest);

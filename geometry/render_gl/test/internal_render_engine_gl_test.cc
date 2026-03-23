@@ -2798,8 +2798,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
       if (!config.target_type.empty() && l_type != config.target_type) {
         continue;
       }
-      SCOPED_TRACE(
-          fmt::format("{} - {}", fmt::streamed(l_type), config.description));
+      SCOPED_TRACE(fmt::format("{} - {}", l_type, config.description));
       LightParameter test_light = config.light;
       test_light.type = l_type;
       const RenderEngineGlParams params{.lights = {test_light}};

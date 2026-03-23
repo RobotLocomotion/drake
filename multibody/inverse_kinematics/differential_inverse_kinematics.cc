@@ -53,17 +53,21 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematicsImpl(
 
 }  // namespace
 
-std::ostream& operator<<(std::ostream& os,
-                         const DifferentialInverseKinematicsStatus value) {
+std::string_view to_string(const DifferentialInverseKinematicsStatus value) {
   switch (value) {
-    case (DifferentialInverseKinematicsStatus::kSolutionFound):
-      return os << "Solution found.";
-    case (DifferentialInverseKinematicsStatus::kNoSolutionFound):
-      return os << "No solution found.";
-    case (DifferentialInverseKinematicsStatus::kStuck):
-      return os << "Stuck!";
+    case DifferentialInverseKinematicsStatus::kSolutionFound:
+      return "Solution found.";
+    case DifferentialInverseKinematicsStatus::kNoSolutionFound:
+      return "No solution found.";
+    case DifferentialInverseKinematicsStatus::kStuck:
+      return "Stuck!";
   }
   DRAKE_UNREACHABLE();
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         const DifferentialInverseKinematicsStatus value) {
+  return os << to_string(value);
 }
 
 const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
