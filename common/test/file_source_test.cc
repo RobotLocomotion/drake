@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <string>
 
+#include <fmt/std.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/memory_file.h"
@@ -22,12 +23,20 @@ GTEST_TEST(FileSourceTest, DefaultPath) {
 }
 
 GTEST_TEST(FileSourceTest, ToString) {
-  EXPECT_EQ(to_string(FileSource("a/b/c")), "\"a/b/c\"");
-  EXPECT_EQ(fmt::to_string(FileSource("a/b/c")), "\"a/b/c\"");
+  EXPECT_EQ(fmt::to_string(FileSource("a/b/c")), "variant(\"a/b/c\")");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(to_string(FileSource("a/b/c")), "variant(\"a/b/c\")");
+#pragma GCC diagnostic pop
 
   const MemoryFile file("012345789", ".ext", "hint");
-  EXPECT_EQ(to_string(FileSource(file)), file.to_string());
-  EXPECT_EQ(fmt::to_string(FileSource(file)), file.to_string());
+  EXPECT_EQ(fmt::to_string(FileSource(file)),
+            fmt::format("variant({})", file.to_string()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(to_string(FileSource(file)),
+            fmt::format("variant({})", file.to_string()));
+#pragma GCC diagnostic pop
 }
 
 /* Quick and dirty struct that has a FileSource and can be serialized. */
