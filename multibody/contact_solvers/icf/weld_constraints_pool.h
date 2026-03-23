@@ -24,23 +24,26 @@ class IcfModel;
 
 /* A pool of weld constraints between pairs of bodies.
 
-Each weld constraint enforces the constraint function
+Each weld constraint connects distinct bodies A and B, enforcing coincidence
+of a frame P on A and a frame Q on B. The constraint function is defined as
   g = (a_PQ, p_PoQo) = 0 ∈ ℝ⁶
 where a_PQ = θ⋅k is the Euler vector for the relative rotation R_PQ, and
 p_PoQo is the relative translation between the constraint frames P and Q.
 
-Following the SAP weld constraint formulation [Castro et al., 2022], we define
-the constraint velocity as the relative spatial velocity of points Am and Bm
-coincident at the midpoint M between P and Q:
+Following the SAP weld constraint formulation (see sap_weld_constraint.h), we
+define the constraint velocity as the relative spatial velocity of points Am
+(fixed to A) and Bm (fixed to B) coincident at the midpoint M between P and Q:
   vc = V_W_AmBm ∈ ℝ⁶
 and the convex cost as:
   ℓ(vc) = ½(v̂ - vc)ᵀR⁻¹(v̂ - vc)
 where R is a 6×6 diagonal "near-rigid" regularization matrix and v̂ is a bias
-velocity computed from the current constraint error g₀.
+velocity computed from g₀, the constraint function evaluated at q₀.
 
-This produces impulses γ = (γᵣ, γₜ) ∈ ℝ⁶ which are interpreted as equal and
-opposite spatial impulses at the midpoint M, ensuring conservation of angular
-momentum and satisfaction of Newton's third law.
+This produces spatial impulse γ ≜ dℓ(vc)/dv = (γᵣ, γₜ) ∈ ℝ⁶ which we use to
+apply equal and opposite impulses at Am and Bm (co-located at the midpoint M),
+ensuring conservation of angular momentum and satisfaction of Newton's third
+law. Our sign convention is such that γ is the impulse on B, so the impulse on A
+is -γ.
 
 Like patch constraints, weld constraints involve two bodies and can introduce
 cross-clique coupling (off-diagonal blocks in the Hessian) when the two bodies
@@ -80,7 +83,9 @@ class WeldConstraintsPool {
   @param a_PQ_W Euler vector a_PQ = θ⋅k for relative rotation, in world frame.
 
   Calling this function several times with the same `index` overwrites the
-  previous constraint for that index. */
+  previous constraint for that index.
+  
+  @pre all indices are in range, bodyA ≠ bodyB, bodyB not anchored. */
   void Set(int index, int bodyA, int bodyB, const Vector3<T>& p_AP_W,
            const Vector3<T>& p_BQ_W, const Vector3<T>& p_PoQo_W,
            const Vector3<T>& a_PQ_W);
@@ -147,7 +152,7 @@ class WeldConstraintsPool {
   // R depends on the current time step δt and is computed in
   // PrecomputeHessianBlocks(), which must be called whenever δt changes.
   // R is a diagonal 6×6 regularization matrix: R = diag(Rᵣ, Rₜ).
-  std::vector<Vector6<T>> R_;  // Diagonal of the regularization matrix.
+  std::vector<Vector6<T>> R_;  // The diagonal regularization matrix.
 
   // Precomputed Hessian blocks for each weld constraint, populated by
   // PrecomputeHessianBlocks(). These are iteration-invariant because the weld
