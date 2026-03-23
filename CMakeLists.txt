@@ -316,9 +316,15 @@ string(FIND "${PROJECT_BINARY_DIR_REALPATH}/" "${PROJECT_SOURCE_DIR_REALPATH}/"
 if(STRING_FIND_RESULT_VARIABLE EQUAL 0)
   # The --output_base cannot be within the WORKSPACE (a subdirectory of
   # PROJECT_SOURCE_DIR), so fallback to the using the same parent directory
-  # that Bazel uses by default for its --output_base.
+  # that Bazel uses by default for its --output_base. For that, see
+  # https://bazel.build/remote/output-directories#layout, especially w.r.t.
+  # the changes on macOS as of Bazel 9.0.
   if(APPLE)
-    set(BAZEL_OUTPUT_BASE "/var/tmp")
+    if (Bazel_VERSION VERSION_GREATER_EQUAL "9")
+      set(BAZEL_OUTPUT_BASE "$ENV{HOME}/Library/Caches/bazel")
+    else()
+      set(BAZEL_OUTPUT_BASE "/private/var/tmp")
+    endif()
   else()
     set(BAZEL_OUTPUT_BASE "$ENV{HOME}/.cache/bazel")
   endif()
