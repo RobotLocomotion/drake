@@ -62,8 +62,7 @@ def remove_kcov_data(path):
     and from any bazel-constructed zip file.
     """
     kcov_dir = os.path.join(path, "kcov")
-    # TODO(jwnimmer-tri) Once we have Python >= 3.12, use onexc (not onerror).
-    shutil.rmtree(kcov_dir, onerror=_on_rmtree_error)
+    shutil.rmtree(kcov_dir, onexc=_on_rmtree_error)
     zip_path = os.path.join(path, "outputs.zip")
     if not os.path.exists(zip_path):
         return
