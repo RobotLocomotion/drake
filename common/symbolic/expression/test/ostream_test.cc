@@ -46,8 +46,8 @@ TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutputStream) {
   oss1 << expr_mat_;
 
   ostringstream oss2;
-  oss2 << "      (x + z)       (x + w)\n"
-       << "      (y + z)       (y + w)";
+  oss2 << "(x + z) (x + w)\n"
+       << "(y + z) (y + w)";
 
   EXPECT_EQ(oss1.str(), oss2.str());
 }

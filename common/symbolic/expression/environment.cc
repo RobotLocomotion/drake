@@ -91,7 +91,9 @@ Variables Environment::domain() const {
 
 string Environment::to_string() const {
   ostringstream oss;
-  oss << *this;
+  for (const auto& [var, value] : *this) {
+    oss << fmt::format("{} -> {}\n", var, value);
+  }
   return oss.str();
 }
 
@@ -111,10 +113,7 @@ const Environment::mapped_type& Environment::operator[](
 }
 
 ostream& operator<<(ostream& os, const Environment& env) {
-  for (const auto& p : env) {
-    os << fmt::to_string(p.first) << " -> " << p.second << endl;
-  }
-  return os;
+  return os << env.to_string();
 }
 
 Environment PopulateRandomVariables(Environment env, const Variables& variables,

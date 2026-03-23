@@ -74,11 +74,10 @@ Binding<QuadraticCost> ParseQuadraticCost(const Expression& e,
 
 Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
   if (!e.is_polynomial()) {
-    ostringstream oss;
-    oss << "Expression" << e
-        << " is not a polynomial. ParsePolynomialCost"
-           " only supports polynomial expression.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(fmt::format(
+        "Expression {} is not a polynomial. ParsePolynomialCost only supports "
+        "polynomial expression.\n",
+        e));
   }
   const symbolic::Variables& vars = e.GetVariables();
   const Polynomiald polynomial = Polynomiald::FromExpression(e);

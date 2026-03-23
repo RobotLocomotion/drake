@@ -7,7 +7,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <ostream>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -17,12 +16,16 @@
 #include <utility>
 #include <vector>
 
+// Remove with deprecation 2026-07-01.
+#include <ostream>
+
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/polynomial.h"
@@ -3989,6 +3992,10 @@ class MathematicalProgram {
   std::unordered_map<int, double> var_scaling_map_{};
 };
 
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);
 
 }  // namespace solvers

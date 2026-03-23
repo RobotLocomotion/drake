@@ -4,13 +4,12 @@
 
 #include <algorithm>
 #include <memory>
-#include <ostream>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
@@ -20,7 +19,6 @@ namespace symbolic {
 
 using std::equal;
 using std::lexicographical_compare;
-using std::ostream;
 using std::runtime_error;
 using std::set;
 using std::shared_ptr;
@@ -111,19 +109,20 @@ bool NaryFormulaCell::Less(const FormulaCell& f) const {
       });
 }
 
-ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
+string NaryFormulaCell::DisplayWithOp(const string& op) const {
+  std::stringstream os;
   const set<Formula>& formulas{get_operands()};
   auto it(formulas.cbegin());
   DRAKE_ASSERT(formulas.size() > 1U);
   os << "(";
-  os << *it;
+  os << it->to_string();
   ++it;
   while (it != formulas.cend()) {
-    os << " " << op << " " << *it;
+    os << " " << op << " " << it->to_string();
     ++it;
   }
   os << ")";
-  return os;
+  return os.str();
 }
 
 FormulaTrue::FormulaTrue() : FormulaCell{FormulaKind::True} {}
@@ -157,8 +156,8 @@ Formula FormulaTrue::Substitute(const Substitution&) const {
   return Formula::True();
 }
 
-ostream& FormulaTrue::Display(ostream& os) const {
-  return os << "True";
+string FormulaTrue::Display() const {
+  return "True";
 }
 
 FormulaFalse::FormulaFalse() : FormulaCell{FormulaKind::False} {}
@@ -192,8 +191,8 @@ Formula FormulaFalse::Substitute(const Substitution&) const {
   return Formula::False();
 }
 
-ostream& FormulaFalse::Display(ostream& os) const {
-  return os << "False";
+string FormulaFalse::Display() const {
+  return "False";
 }
 
 FormulaVar::FormulaVar(Variable v)
@@ -245,8 +244,8 @@ Formula FormulaVar::Substitute(const Substitution&) const {
   return Formula{var_};
 }
 
-ostream& FormulaVar::Display(ostream& os) const {
-  return os << fmt::to_string(var_);
+string FormulaVar::Display() const {
+  return fmt::to_string(var_);
 }
 
 const Variable& FormulaVar::get_variable() const {
@@ -268,9 +267,8 @@ Formula FormulaEq::Substitute(const Substitution& s) const {
          get_rhs_expression().Substitute(s);
 }
 
-ostream& FormulaEq::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " == " << get_rhs_expression()
-            << ")";
+string FormulaEq::Display() const {
+  return fmt::format("({} == {})", get_lhs_expression(), get_rhs_expression());
 }
 
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
@@ -288,9 +286,8 @@ Formula FormulaNeq::Substitute(const Substitution& s) const {
          get_rhs_expression().Substitute(s);
 }
 
-ostream& FormulaNeq::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " != " << get_rhs_expression()
-            << ")";
+string FormulaNeq::Display() const {
+  return fmt::format("({} != {})", get_lhs_expression(), get_rhs_expression());
 }
 
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
@@ -308,9 +305,8 @@ Formula FormulaGt::Substitute(const Substitution& s) const {
          get_rhs_expression().Substitute(s);
 }
 
-ostream& FormulaGt::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " > " << get_rhs_expression()
-            << ")";
+string FormulaGt::Display() const {
+  return fmt::format("({} > {})", get_lhs_expression(), get_rhs_expression());
 }
 
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
@@ -328,9 +324,8 @@ Formula FormulaGeq::Substitute(const Substitution& s) const {
          get_rhs_expression().Substitute(s);
 }
 
-ostream& FormulaGeq::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " >= " << get_rhs_expression()
-            << ")";
+string FormulaGeq::Display() const {
+  return fmt::format("({} >= {})", get_lhs_expression(), get_rhs_expression());
 }
 
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
@@ -348,9 +343,8 @@ Formula FormulaLt::Substitute(const Substitution& s) const {
          get_rhs_expression().Substitute(s);
 }
 
-ostream& FormulaLt::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " < " << get_rhs_expression()
-            << ")";
+string FormulaLt::Display() const {
+  return fmt::format("({} < {})", get_lhs_expression(), get_rhs_expression());
 }
 
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
@@ -368,9 +362,8 @@ Formula FormulaLeq::Substitute(const Substitution& s) const {
          get_rhs_expression().Substitute(s);
 }
 
-ostream& FormulaLeq::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " <= " << get_rhs_expression()
-            << ")";
+string FormulaLeq::Display() const {
+  return fmt::format("({} <= {})", get_lhs_expression(), get_rhs_expression());
 }
 
 FormulaAnd::FormulaAnd(const set<Formula>& formulas)
@@ -404,8 +397,8 @@ Formula FormulaAnd::Substitute(const Substitution& s) const {
   return ret;
 }
 
-ostream& FormulaAnd::Display(ostream& os) const {
-  return DisplayWithOp(os, "and");
+string FormulaAnd::Display() const {
+  return DisplayWithOp("and");
 }
 
 FormulaOr::FormulaOr(const set<Formula>& formulas)
@@ -439,8 +432,8 @@ Formula FormulaOr::Substitute(const Substitution& s) const {
   return ret;
 }
 
-ostream& FormulaOr::Display(ostream& os) const {
-  return DisplayWithOp(os, "or");
+string FormulaOr::Display() const {
+  return DisplayWithOp("or");
 }
 
 FormulaNot::FormulaNot(Formula f)
@@ -480,8 +473,8 @@ Formula FormulaNot::Substitute(const Substitution& s) const {
   return !f_.Substitute(s);
 }
 
-ostream& FormulaNot::Display(ostream& os) const {
-  return os << "!(" << f_ << ")";
+string FormulaNot::Display() const {
+  return fmt::format("!({})", f_);
 }
 
 FormulaForall::FormulaForall(Variables vars, Formula f)
@@ -541,8 +534,8 @@ Formula FormulaForall::Substitute(const Substitution& s) const {
   return forall(vars_, f_.Substitute(new_s));
 }
 
-ostream& FormulaForall::Display(ostream& os) const {
-  return os << "forall(" << vars_ << ". " << f_ << ")";
+string FormulaForall::Display() const {
+  return fmt::format("forall({}. {})", vars_, f_);
 }
 
 FormulaIsnan::FormulaIsnan(Expression e)
@@ -583,8 +576,8 @@ Formula FormulaIsnan::Substitute(const Substitution& s) const {
   return isnan(e_.Substitute(s));
 }
 
-ostream& FormulaIsnan::Display(ostream& os) const {
-  return os << "isnan(" << e_ << ")";
+string FormulaIsnan::Display() const {
+  return fmt::format("isnan({})", e_);
 }
 
 namespace {
@@ -723,9 +716,8 @@ Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
   }));
 }
 
-ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
-  fmt::print(os, "positive_semidefinite({})", fmt_eigen(m_));
-  return os;
+string FormulaPositiveSemidefinite::Display() const {
+  return fmt::format("positive_semidefinite({})", fmt_eigen(m_));
 }
 
 bool is_false(const FormulaCell& f) {

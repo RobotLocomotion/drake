@@ -8,7 +8,6 @@
 #include <memory>
 #include <ostream>
 #include <set>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -23,7 +22,6 @@ namespace symbolic {
 using std::make_shared;
 using std::numeric_limits;
 using std::ostream;
-using std::ostringstream;
 using std::set;
 using std::shared_ptr;
 using std::string;
@@ -111,9 +109,8 @@ Formula Formula::Substitute(const Substitution& s) const {
 }
 
 string Formula::to_string() const {
-  ostringstream oss;
-  oss << *this;
-  return oss.str();
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->Display();
 }
 
 Formula Formula::True() {
@@ -243,8 +240,7 @@ Formula operator!(const Variable& v) {
 }
 
 ostream& operator<<(ostream& os, const Formula& f) {
-  DRAKE_ASSERT(f.ptr_ != nullptr);
-  return f.ptr_->Display(os);
+  return os << f.to_string();
 }
 
 Formula operator==(const Expression& e1, const Expression& e2) {
