@@ -73,18 +73,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
           for (const auto& term : monomial.terms) {
             terms.emplace_back(term.var, term.power);
           }
-          polynomial.emplace_back(monomial.coefficient, terms);
+          polynomial.emplace_back(monomial.coefficient, std::move(terms));
         }
         return polynomial;
       },
       [](PickledPolynomial polynomial) {
         std::vector<typename Class::Monomial> monomials;
-        for (int i = 0; i < ssize(polynomial); ++i) {
+        for (const auto& [coefficient, pickled_terms] : polynomial) {
           std::vector<typename Class::Term> monomial_terms;
-          for (const auto& [var, power] : polynomial[i].second) {
+          for (const auto& [var, power] : pickled_terms) {
             monomial_terms.emplace_back(var, power);
           }
-          monomials.emplace_back(polynomial[i].first, monomial_terms);
+          monomials.emplace_back(coefficient, monomial_terms);
         }
         return Class(
             monomials.begin(), monomials.end(), /* canonicalize= */ false);
