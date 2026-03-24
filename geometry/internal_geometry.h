@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/lazy_shared.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -283,7 +284,7 @@ class InternalGeometry {
 
   // Allows the deferred computation of the OBB on an otherwise const
   // InternalGeometry.
-  mutable std::shared_ptr<std::optional<Obb>> obb_{nullptr};
+  mutable LazyShared<std::optional<Obb>> obb_;
 };
 
 }  // namespace internal
