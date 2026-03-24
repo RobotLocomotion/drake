@@ -707,12 +707,12 @@ if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
   )
 endif()
 
-if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
+if(WITH_IPOPT OR WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   enable_language(Fortran)
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
-      message(FATAL_ERROR
+      message(WARNING
         "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
         "supported"
       )
@@ -724,8 +724,12 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
     )
   endif()
 
-  string(APPEND BAZEL_CONFIG " --config=snopt")
+  string(APPEND BAZEL_REPO_ENV
+    " --repo_env=FC=${CMAKE_Fortran_COMPILER}")
+endif()
 
+if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
+  string(APPEND BAZEL_CONFIG " --config=snopt")
   if(WITH_ROBOTLOCOMOTION_SNOPT)
     string(APPEND BAZEL_REPO_ENV " --repo_env=SNOPT_PATH=git")
   else()
