@@ -361,8 +361,8 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   const std::string downloader =
       FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
   const std::string command =
-      fmt::format("/usr/bin/python3 -E {} {} {} {}", downloader, json_filename,
-                  error_filename, "--disable-drake-valgrind-tracing");
+      fmt::format("/usr/bin/python3 -E {} {} {}", downloader, json_filename,
+                  error_filename);
   const int returncode = std::system(command.c_str());
   if (returncode != 0) {
     // Try to read the error message text from the downloader.
