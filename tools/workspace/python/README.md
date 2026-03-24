@@ -3,8 +3,7 @@ version on macOS), the following files need attention:
 
 - `drake/CMakeLists.txt` near `SUPPORTED_PYTHON_VERSION`,
 - `drake/MODULE.bazel` near `PYTHON_VERSIONS`,
-- `drake/doc/_pages/installation.md` in the support matrix column for `Python`
-  as well as that column's footnotes,
+- `drake/doc/_pages/installation.md` in the support matrix column for `Python`,
 - `drake/doc/_pages/from_source.md` in the support matrix column for `Python`,
 - `drake/doc/_release-notes/end_of_support.md` if dropping support,
 - `drake/setup/mac/binary_distribution/Brewfile`,
