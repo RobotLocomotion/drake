@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -88,7 +90,8 @@ GTEST_TEST(WeldConstraintsPool, BasicConstruction) {
 
 /* Verifies that the weld constraint correctly computes impulses, cost,
 gradient, and Hessian for a simple case: a weld between a floating body
-(body 1) and the world (body 0, anchored). */
+(body 1) and the world (body 0, anchored). Expected values are computed
+by hand from the weld constraint formulation. */
 GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   IcfModel<double> model;
   MakeModelForWeld(&model);
@@ -113,20 +116,80 @@ GTEST_TEST(WeldConstraintsPool, WeldToWorld) {
   model.ResizeData(&data);
 
   // Use v = v0 for simplicity.
-  const VectorXd v = model.v0();
+  const VectorXd& v0 = model.v0();
+  const VectorXd v = v0;
   model.CalcData(v, &data);
 
-  // The weld constraint should add positive cost.
-  const double weld_cost = data.weld_constraints_data().cost();
-  EXPECT_GT(weld_cost, 0.0);
+  // --- Hand calculation of expected weld constraint values ---
+  //
+  // Body 1 is floating in clique 0, so V_WB[1] = v0[0:6].
+  const double dt = model.time_step();
+  const double mass_B = model.body_mass(1);
 
-  // Impulse should be finite and non-zero (constraint error is non-zero).
+  // Body B spatial velocity components (body 1, floating).
+  const Vector3<double> w_WB = v0.head<3>();       // angular
+  const Vector3<double> v_WBo = v0.segment<3>(3);  // linear at Bo
+
+  // Midpoint M is halfway between P and Q.
+  // Bm is on B, coincident with M: p_BoBm = p_BQ - 0.5*p_PoQo.
+  const Vector3<double> p_BoBm_W = p_BQ_W - 0.5 * p_PoQo_W;
+  // Linear velocity of Bm: v_WBm = v_WBo + w_WB × p_BoBm.
+  const Vector3<double> v_WBm = v_WBo + w_WB.cross(p_BoBm_W);
+
+  // Body A is anchored, so vc = V_WBm (relative to zero).
+  Vector6<double> vc;
+  vc.head<3>() = w_WB;
+  vc.tail<3>() = v_WBm;
+
+  // Near-rigid regularization (from weld_constraints_pool.cc constants).
+  constexpr double kBeta = 0.1;
+  const double taud = kBeta * dt / M_PI;
+  const double dt_plus_taud = dt + taud;
+
+  // Constraint function g0 = (a_PQ, p_PoQo).
+  Vector6<double> g0;
+  g0 << a_PQ_W, p_PoQo_W;
+
+  // Bias velocity: v̂ = -g0 / (dt + τ_d).
+  const Vector6<double> v_hat = -g0 / dt_plus_taud;
+
+  // Regularization R is a uniform diagonal: R = (r_scale/mass_B) * I₆,
+  // (body A is anchored so only B contributes).
+  const double r_scale =
+      (kBeta * kBeta * dt * dt) / (4.0 * M_PI * M_PI * dt * dt_plus_taud);
+  const double R_scalar = r_scale / mass_B;
+
+  // Expected impulse: γ = R⁻¹(v̂ - vc), with R diagonal and uniform.
+  const Vector6<double> expected_gamma = (v_hat - vc) / R_scalar;
+
+  // Expected weld cost: ℓ = ½(v̂ - vc)ᵀ R⁻¹ (v̂ - vc) = ½(v̂ - vc)ᵀ γ.
+  const double expected_weld_cost = 0.5 * (v_hat - vc).dot(expected_gamma);
+
+  // Expected momentum cost for v = v0.
+  // A = M + dt*D (block diagonal), r = A*v0 - dt*k0.
+  // momentum_cost = v0ᵀ(½A v0 - r).
+  MatrixXd A_mat = model.M0();
+  A_mat.diagonal() += dt * model.D0();
+  const VectorXd Av0 = A_mat * v0;
+  const VectorXd r = Av0 - dt * model.k0();
+  const double expected_momentum_cost = v0.dot(0.5 * Av0 - r);
+  const double expected_total_cost =
+      expected_momentum_cost + expected_weld_cost;
+
+  // --- Verify computed values match hand calculation ---
+
   const Vector6<double>& gamma = data.weld_constraints_data().gamma(0);
-  EXPECT_TRUE(gamma.allFinite());
-  EXPECT_GT(gamma.norm(), 0.0);
+  EXPECT_TRUE(CompareMatrices(gamma, expected_gamma, 4 * kEpsilon,
+                              MatrixCompareType::relative));
 
-  // The total cost should include the weld contribution.
-  EXPECT_GT(data.cost(), data.momentum_cost());
+  const double weld_cost = data.weld_constraints_data().cost();
+  EXPECT_NEAR(weld_cost, expected_weld_cost,
+              4 * kEpsilon * std::abs(expected_weld_cost));
+
+  EXPECT_NEAR(data.momentum_cost(), expected_momentum_cost,
+              4 * kEpsilon * std::abs(expected_momentum_cost));
+  EXPECT_NEAR(data.cost(), expected_total_cost,
+              4 * kEpsilon * std::abs(expected_total_cost));
 
   // Build Hessian and verify it is finite.
   auto hessian = model.MakeHessian(data);
