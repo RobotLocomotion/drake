@@ -142,8 +142,16 @@ class TestTrajectories(unittest.TestCase):
         for expr in curve_expression:
             self.assertTrue(isinstance(expr, Expression))
 
+        assert_pickle(
+            self, curve, lambda traj: np.array(traj.control_points()), T=T
+        )
+
         curve.ElevateOrder()
         self.assertEqual(curve.order(), 2)
+
+        assert_pickle(
+            self, curve, lambda traj: np.array(traj.control_points()), T=T
+        )
 
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
