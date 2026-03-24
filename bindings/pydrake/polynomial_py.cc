@@ -60,36 +60,31 @@ void DoScalarDependentDefinitions(py::module m, T) {
       // Logical comparison
       .def(py::self == py::self);
 
-  typedef std::vector<T> CoefficientsType;
-  typedef std::vector<std::vector<
-      std::pair<typename Class::VarType, typename Class::PowerType>>>
-      TermsType;
+  using PickledTerm =
+      std::pair<typename Class::VarType, typename Class::PowerType>;
+  using PickledMonomial =
+      std::pair<T /* coefficient */, std::vector<PickledTerm>>;
+  using PickledPolynomial = std::vector<PickledMonomial>;
   cls.def(py::pickle(
       [](const Class& self) {
-        std::vector<typename Class::Monomial> monomials = self.GetMonomials();
-        CoefficientsType coefficients;
-        TermsType terms;
-        for (const auto& monomial : monomials) {
-          coefficients.emplace_back(monomial.coefficient);
-          terms.emplace_back();
+        PickledPolynomial polynomial;
+        for (const auto& monomial : self.GetMonomials()) {
+          std::vector<PickledTerm> terms;
           for (const auto& term : monomial.terms) {
-            terms.back().emplace_back(term.var, term.power);
+            terms.emplace_back(term.var, term.power);
           }
+          polynomial.emplace_back(monomial.coefficient, terms);
         }
-        return std::make_pair(coefficients, terms);
+        return polynomial;
       },
-      [](std::pair<CoefficientsType, TermsType> args) {
-        const CoefficientsType& coefficients = std::get<0>(args);
-        const TermsType& terms_data = std::get<1>(args);
-        DRAKE_DEMAND(coefficients.size() == terms_data.size());
-
+      [](PickledPolynomial polynomial) {
         std::vector<typename Class::Monomial> monomials;
-        for (int i = 0; i < static_cast<int>(coefficients.size()); ++i) {
+        for (int i = 0; i < ssize(polynomial); ++i) {
           std::vector<typename Class::Term> monomial_terms;
-          for (const auto& [var, power] : terms_data[i]) {
+          for (const auto& [var, power] : polynomial[i].second) {
             monomial_terms.emplace_back(var, power);
           }
-          monomials.emplace_back(coefficients[i], monomial_terms);
+          monomials.emplace_back(polynomial[i].first, monomial_terms);
         }
         return Class(
             monomials.begin(), monomials.end(), /* canonicalize= */ false);
