@@ -67,7 +67,6 @@ class StressTestDownloader(unittest.TestCase):
                             "multibody/parsing/package_downloader.py",
                             kwargs,
                             error_filename,
-                            "UNUSED_ARGUMENT",
                         ]
                     )
                 )
