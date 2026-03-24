@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/lazy_shared.h"
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
@@ -363,7 +364,7 @@ class Convex final : public Shape {
   MeshSource source_;
   Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Convex.
-  mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
+  mutable internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the
@@ -618,7 +619,7 @@ class Mesh final : public Shape {
   MeshSource source_;
   Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Mesh.
-  mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
+  mutable internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
