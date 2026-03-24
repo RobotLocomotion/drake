@@ -76,13 +76,16 @@ Polynomial<T>::Polynomial(const T coefficient, const vector<Term>& terms) {
 template <typename T>
 Polynomial<T>::Polynomial(
     typename vector<typename Polynomial<T>::Monomial>::const_iterator start,
-    typename vector<typename Polynomial<T>::Monomial>::const_iterator finish) {
+    typename vector<typename Polynomial<T>::Monomial>::const_iterator finish,
+    const bool canonicalize) {
   is_univariate_ = true;
   for (typename vector<typename Polynomial<T>::Monomial>::const_iterator iter =
            start;
        iter != finish; iter++)
     monomials_.push_back(*iter);
-  MakeMonomialsUnique();
+  if (canonicalize) {
+    MakeMonomialsUnique();
+  }
 }
 
 template <typename T>
