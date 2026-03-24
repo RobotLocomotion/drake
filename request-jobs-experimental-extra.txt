@@ -48,3 +48,6 @@
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-packaging please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-cmake-experimental-release please
 @drake-jenkins-bot linux-noble-unprovisioned-gcc-wheel-experimental-release please
+@drake-jenkins-bot linux-resolute-unprovisioned-clang-bazel-experimental-everything-release please
+@drake-jenkins-bot linux-resolute-unprovisioned-gcc-bazel-experimental-everything-debug please
+@drake-jenkins-bot linux-resolute-unprovisioned-gcc-cmake-experimental-packaging please
