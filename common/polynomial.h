@@ -119,10 +119,11 @@ class Polynomial {
   Polynomial(const T coeff, const std::vector<Term>& terms);
 
   /// Construct a Polynomial from a sequence of Monomials. If `canonicalize` is
-  /// true, calls `Polynomial::MakeMonomialsUnique`.
+  /// true, monomials with coefficient zero will be dropped, and monomials with
+  /// common powers will be combined.
   Polynomial(typename std::vector<Monomial>::const_iterator start,
              typename std::vector<Monomial>::const_iterator finish,
-             const bool canonicalize = true);
+             bool canonicalize = true);
 
   /// Constructs a polynomial consisting of a single Monomial of the variable
   /// named `varname1`.

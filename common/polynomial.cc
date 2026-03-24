@@ -77,7 +77,7 @@ template <typename T>
 Polynomial<T>::Polynomial(
     typename vector<typename Polynomial<T>::Monomial>::const_iterator start,
     typename vector<typename Polynomial<T>::Monomial>::const_iterator finish,
-    const bool canonicalize) {
+    bool canonicalize) {
   is_univariate_ = true;
   for (typename vector<typename Polynomial<T>::Monomial>::const_iterator iter =
            start;
