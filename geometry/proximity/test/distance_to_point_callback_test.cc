@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <fcl/fcl.h>
@@ -24,9 +25,6 @@ namespace internal {
 namespace point_distance {
 namespace {
 
-// TODO(SeanCurtis-TRI): Run through proximity_engine_test and pull the tests
-// from there that better belong here.
-
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
@@ -37,395 +35,32 @@ using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_shared;
 using std::shared_ptr;
-using std::unordered_map;
 
-// Performs a point-to-shape signed-distance query and tests the result. This
-// particularly focuses on the AutoDiff-valued version of these methods. It
-// does a limited smoke-test on the results.
-//
-// It computes ∂distance / ∂p_WQ and compares it with the reported grad_W value
-// with the assumption that they should be the same.
-//
-// The caller provides the nearest point p_GN_G (in the geometry frame G) and
-// the offset from the nearest point to the query point Q (p_NQ_G) also in the
-// geometry frame G. The query point is inferred from these two values. It
-// performs the query and examines the results. It generally assumes
-// non-negative signed distance. If the point is inside (i.e., negative signed
-// distance), then the additional boolean `is_inside` should be set to true.
-// To test robustness, the frame G can have an arbitrary pose in the world
-// frame (defined by X_WG). Finally, an absolute tolerance is provided to
-// define the scope of correctness.
-//
-// Note: this is *not* the complete test; we should also confirm that the
-// derivatives of grad_W and the witness points are likewise correct.
-// TODO(hongkai.dai): Extend these tests to test the AutoDiff derivatives of
-// the reported gradient and witness points w.r.t. arbitrary basis as well.
-template <typename Shape>
-class PointShapeAutoDiffSignedDistanceTester {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointShapeAutoDiffSignedDistanceTester);
-
-  // Constructs a tester for a given shape G, pose in world X_WG, and tolerance.
-  // The shape must be non-null and must persist beyond the life of the tester
-  // as a reference to the shape will be stored.
-  PointShapeAutoDiffSignedDistanceTester(const Shape* shape,
-                                         const RigidTransformd& X_WG,
-                                         double tolerance)
-      : shape_(DRAKE_DEREF(shape)), X_WG_(X_WG), tolerance_(tolerance) {}
-
-  // Perform the test with the particular N and Q.
-  ::testing::AssertionResult Test(const Vector3d& p_GN_G,
-                                  const Vector3d& p_NQ_G,
-                                  bool is_inside = false,
-                                  bool is_grad_W_unique = true) {
-    const double sign = is_inside ? -1 : 1;
-    const double expected_distance = sign * p_NQ_G.norm();
-    const Vector3d p_GQ = p_GN_G + p_NQ_G;
-    const Vector3d p_WQ = X_WG_ * p_GQ;
-
-    ::testing::AssertionResult failure = ::testing::AssertionFailure();
-    bool error = false;
-
-    // We take the gradient of the signed distance query w.r.t p_WQ.
-    Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
-    // The size of the variables we take gradient with (p_WQ) is 3.
-    const int grad_size = 3;
-    DistanceToPoint<AutoDiffXd> distance_to_point(
-        GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
-
-    SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
-    if (std::abs(result.distance.value() - expected_distance) > tolerance_) {
-      error = true;
-      failure << "The difference between expected distance and tested distance "
-                 "is greater than the given tolerance_:\n"
-              << "  Expected distance: " << expected_distance << "\n"
-              << "  Tested distance: " << result.distance.value() << "\n"
-              << "  tolerance: " << tolerance_ << "\n"
-              << "  difference: "
-              << (std::abs(result.distance.value() - expected_distance));
-    }
-    // The hand-computed `grad_W` value should match the autodiff-computed
-    // gradient.
-    if (result.distance.derivatives().size() != 3) {
-      if (error) failure << "\n";
-      error = true;
-      failure << "Test distance has no derivatives";
-    }
-    const Vector3d ddistance_dp_WQ = result.distance.derivatives();
-    const Vector3d grad_W_val = math::ExtractValue(result.grad_W);
-    if (grad_W_val.array().isNaN().any()) {
-      if (error) failure << "\n";
-      error = true;
-      failure << fmt::format("Analytical gradient contains NaN: {}",
-                             fmt_eigen(grad_W_val.transpose()));
-    }
-    auto gradient_compare =
-        CompareMatrices(ddistance_dp_WQ, grad_W_val, tolerance_);
-    if (!gradient_compare) {
-      if (error) failure << "\n";
-      error = true;
-      failure << "grad_W and distance.derivatives() don't match:\n"
-              << gradient_compare.message();
-    }
-
-    // Since grad_W is a unit vector, we know that grad_Wᵀ * grad_W = 1.
-    const AutoDiffXd grad_W_squared_norm = result.grad_W.dot(result.grad_W);
-    EXPECT_NEAR(grad_W_squared_norm.value(), 1, tolerance_);
-    // The gradient of grad_W_squared_norm should be 0.
-    if (grad_W_squared_norm.derivatives().size() > 0) {
-      auto grad_W_unit_length_derivative_compare =
-          CompareMatrices(grad_W_squared_norm.derivatives(),
-                          Eigen::VectorXd::Zero(grad_size), 1.4 * tolerance_);
-      if (!grad_W_unit_length_derivative_compare) {
-        if (error) failure << "\n";
-        error = true;
-        failure << "grad_W_squared_norm.derivatives() isn't right:\n"
-                << grad_W_unit_length_derivative_compare.message();
-      }
-    }
-
-    // We have the invariance p_WQ = p_WN + distance * grad_W.
-    const Vector3<AutoDiffXd> p_WN_ad = X_WG_.cast<AutoDiffXd>() * result.p_GN;
-    const Vector3<AutoDiffXd> p_WQ_ad_expected =
-        p_WN_ad + result.distance * result.grad_W;
-    auto p_WQ_val_compare =
-        CompareMatrices(math::ExtractValue(p_WQ_ad),
-                        math::ExtractValue(p_WQ_ad_expected), tolerance_);
-    if (!p_WQ_val_compare) {
-      if (error) failure << "\n";
-      error = true;
-      failure << "p_WQ does not equal to p_WN + distance * grad_W:\n"
-              << p_WQ_val_compare.message();
-    }
-
-    // We'll only test the derivatives of the gradient if we expect it to be
-    // unique.
-    if (is_grad_W_unique) {
-      auto p_WQ_derivative_compare =
-          CompareMatrices(math::ExtractGradient(p_WQ_ad),
-                          math::ExtractGradient(p_WQ_ad_expected), tolerance_);
-      if (!p_WQ_derivative_compare) {
-        if (error) failure << "\n";
-        error = true;
-        failure << "Gradient of p_WQ does not equal to gradient of (p_WN + "
-                   "distance * grad_W):\n"
-                << p_WQ_derivative_compare.message();
-      }
-    }
-
-    if (!error) return ::testing::AssertionSuccess();
-    return failure;
-  }
-
- private:
-  const Shape& shape_;
-  const RigidTransformd X_WG_;
-  const double tolerance_{1.4 * std::numeric_limits<double>::epsilon()};
-};
-
-// Simple smoke test for signed distance to Box. It does the following:
-//   Perform test of three different points w.r.t. a box: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Box) {
-  const double kEps = 4 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the box in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransformd X_WG(R_WG, p_WG);
-  const fcl::Boxd box(1.0, 2.0, 3.0);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Boxd> tester(&box, X_WG, kEps);
-
-  // Case: Nearest point is a vertex.
-  {
-    for (double x : {-1, 1}) {
-      for (double y : {-1, 1}) {
-        for (double z : {-1, 1}) {
-          const Vector3d p_NQ_G{x, y, z};
-          const Vector3d p_GN_G = p_NQ_G.cwiseProduct(box.side / 2);
-          // The query point lies outside the box.
-          EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-          // The query point lies on the vertex of the box.
-          EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero(),
-                                  false /* not inside the box */,
-                                  false /* gradient ill defined */));
-        }
-      }
-    }
-    // A query point *inside* the box would not be nearest the vertex.
-  }
-
-  // Case: Nearest point lies on an edge.
-  for (int coord1 = 0; coord1 < 3; ++coord1) {
-    // p_NQ_G(coord1) = 0
-    int coord2 = (coord1 + 1) % 3;
-    int coord3 = (coord1 + 2) % 3;
-    for (double coord2_val : {-1, 1}) {
-      for (double coord3_val : {-1, 1}) {
-        Vector3d p_NQ_G;
-        p_NQ_G(coord1) = 0;
-        p_NQ_G(coord2) = coord2_val;
-        p_NQ_G(coord3) = coord3_val;
-        const Vector3d p_GN_G = p_NQ_G.cwiseProduct(box.side / 2);
-        // The query point lies outside the box.
-        EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-        // The query point lies on the edge of the box.
-        EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero(),
-                                false /* not inside the box */,
-                                false /* gradient ill defined */));
-
-        // A query point *inside* the box would not be nearest the edge.
-      }
-    }
-  }
-
-  // Case point lies *outside* the box, nearest a face.
-  {
-    for (double sign : {-1, 1}) {
-      for (int axis : {0, 1, 2}) {
-        Vector3d vhat_NG = Vector3d::Zero();
-        vhat_NG(axis) = sign;
-        Vector3d p_NQ_G = 1.5 * vhat_NG;
-        const Vector3d p_GN_G = vhat_NG.cwiseProduct(box.side / 2);
-
-        // The query point lies outside the box.
-        EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-        // The query point lies on the face of the box.
-        EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-        // The query point lies inside the box.
-        EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * vhat_NG, true /* is inside */));
-      }
-    }
-  }
-}
-
-// Simple smoke test for signed distance to Capsule. It does the following:
-//   Perform test of three different points w.r.t. a capsule: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Capsule) {
-  const double kEps = 6 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the capsule G in the world.
+// Test the evaluation of signed distance to Ellipsoid: medial-axis special
+// case. A query point at the geometric center of the ellipsoid is equidistant
+// from multiple surface points, so the nearest point is only determined up to
+// sign and cannot be expressed as an exact expected value. This case is
+// therefore kept as a standalone test rather than folded into
+// SignedDistanceToPointTest. The 9 surface-sample cases (outside, on boundary,
+// inside at several orientations) are covered by
+// Ellipsoid/SignedDistanceToPointTest.
+GTEST_TEST(DistanceToPoint, EllipsoidMedialAxis) {
   const RotationMatrix<double> R_WG(
       AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
   const Vector3d p_WG{0.5, 1.25, -2};
   const RigidTransform<double> X_WG(R_WG, p_WG);
-  const fcl::Capsuled capsule(0.7, 1.3);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Capsuled> tester(&capsule, X_WG,
-                                                               kEps);
-  // We want to test the 3 sections for when the point Q is nearest to:
-  //   1. The top end cap of the capsule.
-  //   2. The spine of the capsule.
-  //   3. The bottom end cap of the capsule.
-  // In each section, we pick a direction away from the capsule that *isn't*
-  // aligned with the frame basis and prepare the witness point N accordingly.
-  const Vector3d vhat_NQ_Gs[3] = {
-      Vector3d{2, -3, 6}.normalized(),  // Upwards and away.
-      Vector3d{2, -3, 0}.normalized(),  // Perpendicularly outwards.
-      Vector3d{2, -3, -6}.normalized()  // Downwards and away.
-  };
-  const Vector3d p_GN_Gs[3] = {
-      capsule.radius * vhat_NQ_Gs[0] + Vector3d{0, 0, capsule.lz / 2},
-      capsule.radius * vhat_NQ_Gs[1] + Vector3d{0, 0, capsule.lz / 4},
-      capsule.radius * vhat_NQ_Gs[2] + Vector3d{0, 0, -capsule.lz / 2}};
-
-  for (int i = 0; i < 3; ++i) {
-    const Vector3d& vhat_NQ_G = vhat_NQ_Gs[i];
-    const Vector3d& p_GN_G = p_GN_Gs[i];
-
-    // Case: point lies *outside* the capsule.
-    {
-      const Vector3d p_NQ_G = 1.5 * vhat_NQ_G;
-      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-    }
-
-    // Case: point lies *on* the capsule.
-    {
-      const Vector3d p_NQ_G = Vector3d::Zero();
-      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-    }
-
-    // Case: point lies *in* the capsule.
-    {
-      const Vector3d p_NQ_G = -(0.5 * capsule.radius) * vhat_NQ_G;
-      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G, true /* is inside */));
-    }
-
-    // Case: point lies on the capsule's spine.
-    {
-      const Vector3d p_NQ_G = -capsule.radius * vhat_NQ_G;
-      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G, true /* is inside */,
-                              false /* gradient ill defined */));
-    }
-  }
-}
-
-// Test the evaluation of signed distance to Ellipsoid. This explicitly spells
-// out a double-valued test because AutoDiffXd is not yet supported. We hand
-// construct a few points (and corresponding normals) on the surface of the
-// ellipsoid and construct query points relative to those surface points.
-// The surface points should report as the witness point, the normal is the
-// gradient, etc.
-//
-// For each sample, we try a different distance and confirm all the fields of
-// the returned type.
-GTEST_TEST(DistanceToPoint, Ellipsoid) {
-  // Provide some arbitrary pose of the ellipsoid G in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransform<double> X_WG(R_WG, p_WG);
-
-  // Note: the more eccentric the ellipsoid becomes (with higher curvature), the
-  // more error there will be near the regions with high curvature. This is
-  // because we're using GJK/EPA to compute distance. So, to avoid highly
-  // variable error across the point samples, we'll keep the ellipsoid "close"
-  // to a sphere. If we stretch it out, we need either a) a larger tolerance
-  // value for the vectors or b) a per-sample tolerance values.
   const fcl::Ellipsoidd ellipsoid(1.5, 0.75, 1.25);
 
-  // TODO(SeanCurtis-TRI): When point-to-ellipsoid supports AutoDiffXd, modify
-  //  this to exercise PointShapeAutoDiffSignedDistanceTester.
-
-  auto get_sample = [&ellipsoid](double theta, double phi) {
-    // Compute a point on the surface of the ellipsoid and the normal at
-    // that point. For the point, we use the parametric equation of the
-    // ellipsoid (on two periodic parameters):
-    //    E = [a⋅cos(θ)⋅sin(ϕ), b⋅sin(θ)⋅sin(ϕ), c⋅cos(ϕ)].
-    // For the normal, we normalize the gradient of
-    //    f = x² / a² + y² / b² + z² / c²
-    //    ∇f = <2x / a², 2y / b², 2z / c²>
-    //    n = ∇f / |∇f|
-    const double a = ellipsoid.radii.x();
-    const double b = ellipsoid.radii.y();
-    const double c = ellipsoid.radii.z();
-    const double x = a * std::cos(theta) * std::sin(phi);
-    const double y = b * std::sin(theta) * std::sin(phi);
-    const double z = c * std::cos(phi);
-    // Because we're normalizing the gradient, we simply omit the redundant
-    // scale factor of 2.
-    return std::make_pair(
-        Vector3d{x, y, z},
-        Vector3d{x / a / a, y / b / b, z / c / c}.normalized());
-  };
-
-  struct EllipseCoord {
-    double theta{};
-    double phi{};
-  };
-
-  std::vector<EllipseCoord> coords{
-      EllipseCoord{0, 0},                       // Bottom pole.
-      EllipseCoord{7 * M_PI / 5, M_PI / 6},     // Lower half.
-      EllipseCoord{3 * M_PI / 7, 4 * M_PI / 5}  // Upper half.
-  };
-
+  // The query point lies on the medial axis. We don't know which of the two
+  // antipodal surface points FCL will choose, but we can confirm:
+  //   - |distance| equals the shortest semi-axis length (0.75).
+  //   - The nearest point lies on the ±y axis.
+  //   - The gradient points along ±y in G.
   constexpr double kDistTolerance = 5e-5;
   constexpr double kVectorTolerance = 5e-4;
-  const GeometryId id = GeometryId::get_new_id();
-
-  for (const auto& coord : coords) {
-    const auto& [p_GN, n_G] = get_sample(coord.theta, coord.phi);
-    for (const double distance : {-0.125, 0.0, 0.2}) {
-      const Vector3d p_GQ = p_GN + n_G * distance;
-      const Vector3d p_WQ = X_WG * p_GQ;
-      DistanceToPoint<double> distance_to_point(id, X_WG, p_WQ);
-      const SignedDistanceToPoint<double> result = distance_to_point(ellipsoid);
-
-      SCOPED_TRACE(fmt::format(
-          "theta = {}, phi = {}, distance = {}\n  p_GQ: {} {} {}", coord.theta,
-          coord.phi, distance, p_GQ.x(), p_GQ.y(), p_GQ.z()));
-      EXPECT_EQ(result.id_G, id);
-      EXPECT_NEAR(result.distance, distance, kDistTolerance);
-      EXPECT_TRUE(CompareMatrices(result.p_GN, p_GN, kVectorTolerance));
-      EXPECT_TRUE(CompareMatrices(result.grad_W, X_WG.rotation() * n_G,
-                                  kVectorTolerance));
-    }
-  }
-
-  // Special case where the query point lies on the medial axis of
-  // the ellipsoid. We don't know what FCL will produce as the nearest point.
-  // However, we can confirm:
-  //   - distance from query to nearest point.
-  //   - gradient is perpendicular to a known circle.
-  //   - id is correct.
-  // To facilitate this, we'll pick the query point (0, 0, 0). Then the nearest
-  // point must be a distance equal to the shortest radii (0.75), it must lie
-  // either on the +y or -y axis (the axis with the shortest radii) and have
-  // a normal that points in one of those two directions.
   const double min_radius = ellipsoid.radii.y();
   const Vector3d min_axis_G(0, 1, 0);
+  const GeometryId id = GeometryId::get_new_id();
   const Vector3d p_WQ = X_WG * Vector3d::Zero();
   DistanceToPoint<double> distance_to_point(id, X_WG, p_WQ);
   const SignedDistanceToPoint<double> result = distance_to_point(ellipsoid);
@@ -438,46 +73,13 @@ GTEST_TEST(DistanceToPoint, Ellipsoid) {
                       min_axis_G, kVectorTolerance));
 }
 
-// Simple smoke test for signed distance to Halfspace. It does the following:
-//   Perform test of three different points w.r.t. a halfspace: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Halfspace) {
-  const double kEps = 4 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the halfspace in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransformd X_WG(R_WG, p_WG);
-  const fcl::Halfspaced hs(Vector3d::UnitZ(), 0);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Halfspaced> tester(&hs, X_WG,
-                                                                 kEps);
-
-  // An arbitrary direction away from the origin that *isn't* aligned with the
-  // frame basis.
-  const Vector3d phat_NQ_G = Vector3d::UnitZ();
-  const Vector3d p_NQ_G = 1.5 * phat_NQ_G;
-  const Vector3d p_GN_G = Vector3d(0.25, 0.5, 0);
-
-  // Case: point lies *outside* the halfspace.
-  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-  // Case: point lies *on* the halfspace.
-  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-  // Case: point lies *in* the halfspace.
-  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * phat_NQ_G, true /* is inside */));
-}
-
-// Test the DistanceToPoint functor interacting with MeshDistanceBoundary.
+// For general meshes, distance to point is computed using
+// CalcSignedDistanceToSurfaceMesh(). That code is already tested in its own
+// unit tests. This test focuses on the callback's particular responsibilities;
 // 1. If the VolumeMeshBoundary doesn't have feature normals, it should throw
 //    with whatever message is there.
-// 2. It calls CalcSignedDistanceToSurfaceMesh() and packages the results
-//    correctly (copies most values, but re-expresses gradient).
+// 2. Correctly invokes CalcSignedDistanceToSurfaceMesh() and packages the
+//    results correctly (copies most values, but re-expresses gradient).
 GTEST_TEST(DistanceToPoint, MeshDistanceBoundary) {
   const GeometryId mesh_geometry_id = GeometryId::get_new_id();
   // A generic pose of frame G of the mesh in World frame.
@@ -522,157 +124,10 @@ GTEST_TEST(DistanceToPoint, MeshDistanceBoundary) {
   }
 }
 
-// Simple smoke test for signed distance to Sphere. It does the following:
-//   Perform test of three different points w.r.t. a sphere: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Sphere) {
-  const double kEps = 5 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the sphere in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransform<double> X_WG(R_WG, p_WG);
-  const fcl::Sphered sphere(0.7);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Sphered> tester(&sphere, X_WG,
-                                                              kEps);
-
-  // An arbitrary direction away from the origin that *isn't* aligned with the
-  // frame basis.
-  const Vector3d vhat_NQ = Vector3d{2, -3, 6}.normalized();
-  const Vector3d p_NQ_G = 1.5 * vhat_NQ;
-  const Vector3d p_GN_G = sphere.radius * vhat_NQ;
-
-  // Case: point lies *outside* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-  // Case: point lies *on* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-  // Case: point lies *in* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
-
-  // Case: point lies at origin of the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
-                          true /* is inside */,
-                          false /* gradient ill defined */));
-}
-
-// TODO(SeanCurtis-TRI): Point-to-cylinder with AutoDiff has been "disabled".
-//  However, this has been done at the callback level and these tests are
-//  structured to exercise DistanceToPoint directly. This is a short-term
-//  issue and will be addressed with a reformulation of the point-cylinder
-//  calculation. When fixed, these tests will become meaningful, so we're
-//  leaving it in to prevent losing the effort.
-#if 0
-// Simple smoke test for signed distance to Cylinder. It does the following:
-//   Perform test of three different points w.r.t. a cylinder: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Cylinder) {
-  const double kEps = 4 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the cylinder in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransform<double> X_WG(R_WG, p_WG);
-  const fcl::Cylinderd cylinder(0.75, 2.5);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Cylinderd> tester(&cylinder, X_WG,
-                                                                kEps);
-
-  // Case: Nearest point is on the cap.
-  {
-    // Test top and bottom caps.
-    for (double sign : {-1, 1}) {
-      // The nearest point N is the cap of the cylinder -- slightly perturbed to
-      // be away from the cap center.
-      const Vector3d p_GN_G{cylinder.radius * 0.25, cylinder.radius * 0.25,
-                            sign * cylinder.lz / 2};
-
-      // The query point lies outside the cylinder
-      EXPECT_TRUE(tester.Test(p_GN_G, Vector3d{0, 0, sign * 0.75}));
-
-      // The query point lies on the cap of the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, Vector3d{0, 0, 0}));
-
-      // The query point lies just inside the cap of the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, Vector3d{0, 0, -0.1 * sign},
-                              true /* is inside */));
-
-      // The query point lies outside, but *on* the central axis.
-      EXPECT_TRUE(
-          tester.Test(Vector3d{0, 0, cylinder.lz / 2}, Vector3d{0, 0, 1.5}));
-      EXPECT_TRUE(
-          tester.Test(Vector3d{0, 0, cylinder.lz / 2}, Vector3d{0, 0, 0}));
-      EXPECT_TRUE(tester.Test(Vector3d{0, 0, cylinder.lz / 2},
-                              Vector3d{0, 0, -0.1}, true /* is inside */));
-    }
-  }
-
-  // Case: Nearest point is on circular rim.
-  {
-    // The dimensions of the boundary of the cylinder. Used to find the
-    // "support" point on the cylinder rim in an arbitrary direction.
-    const Vector3d dim{cylinder.radius, cylinder.radius, cylinder.lz / 2};
-
-    // Test top and bottom rims.
-    for (double sign : {-1, 1}) {
-      // Put the nearest point on the rim at some arbitrary, non-trivial angle.
-      const double theta = M_PI / 7;
-      const Vector3d p_NQ_G{std::cos(theta), std::sin(theta), sign};
-      const Vector3d p_GN_G = p_NQ_G.cwiseProduct(dim);
-
-      // The query point lies outside the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-      // The query point lies on the cap of the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-      // A query point *inside* the cylinder would not be nearest the rim.
-    }
-  }
-
-  // Case: Nearest point is on the barrel.
-  {
-    // The dimensions of the cylinder -- note it's shorter to make sure that the
-    // query points are well within the region of the barrel.
-    const Vector3d dim{cylinder.radius, cylinder.radius, cylinder.lz / 4};
-
-    // Test upper- and lower-halves of the barrel.
-    for (double sign : {-1, 1}) {
-      // Put the nearest point on the rim at some arbitrary, non-trivial angle.
-      const double theta = M_PI / 7;
-      const double cos_theta = std::cos(theta);
-      const double sin_theta = std::sin(theta);
-      const Vector3d p_NQ_G{cos_theta, sin_theta, 0};
-      const Vector3d p_GN_G =
-          dim.cwiseProduct(Vector3d{cos_theta, sin_theta, sign});
-
-      // The query point lies outside the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-      // The query point lies on the barrel of the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-      // The query point lies inside the cylinder.
-      EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
-    }
-  }
-}
-#endif
-
 // Helper function to indicate expectation on whether I get a distance result
 // based on scalar type T and fcl shape S.
 template <typename T, typename S>
-int ExpectedResult() {
+int ExpectedResultCount() {
   if constexpr (std::is_same_v<T, double>) {
     return 1;
   }
@@ -728,13 +183,13 @@ void TestScalarShapeSupport() {
   // Box
   {
     run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Boxd>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Boxd>()));
   }
 
   // Capsule
   {
     run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Capsuled>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Capsuled>()));
   }
 
   // Convex and Mesh. Both drake::geometry::Mesh and Convex use fcl::Convexd.
@@ -746,31 +201,31 @@ void TestScalarShapeSupport() {
     run_callback(make_shared<fcl::Convexd>(
         make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
         make_shared<const std::vector<int>>()));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Convexd>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Convexd>()));
   }
 
   // Cylinder
   {
     run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Cylinderd>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Cylinderd>()));
   }
 
   // Ellipsoid
   {
     run_callback(make_shared<fcl::Ellipsoidd>(1.5, 0.7, 3));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Ellipsoidd>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Ellipsoidd>()));
   }
 
   // HalfSpace
   {
     run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Halfspaced>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Halfspaced>()));
   }
 
   // Sphere
   {
     run_callback(make_shared<fcl::Sphered>(1.0));
-    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Sphered>()));
+    EXPECT_EQ(distances.size(), (ExpectedResultCount<T, fcl::Sphered>()));
   }
 }
 
@@ -862,56 +317,119 @@ GTEST_TEST(Callback, MeshAndConvex) {
   }
 }
 
-// Test the narrow-phase part of ComputeSignedDistanceToPoint.
+// ============================================================================
+// Unified signed-distance-to-point tests.
+//
+// A test case comprises a shape, a range of query points (sampling relevant
+// geometric regions -- inside, outside, and on boundary), and hand-constructed
+// expected results. They get evaluated in both both axis-aligned and arbitrary
+// poses.
+//
+// Each test case is evaluated twice:
+//
+//   Double pass (always):
+//     - Calls Callback<double>.
+//     - Checks the exact values of returned values against hand-constructed
+//       ground truth.
+//
+//   AutoDiff pass (when `supports_autodiff` is true):
+//     - Calls Callback<AutoDiffXd> with InitializeAutoDiff(p_WQ).
+//     - Verifies grad_W == ∂distance/∂p_WQ; the analytic formula agrees with
+//       the autodiff-computed derivative.
+//     - Verifies grad_W is a unit vector with zero derivative w.r.t. p_WQ.
+//     - Verifies the invariant p_WQ = p_WN + distance⋅grad_W in both value
+//       and (when is_grad_W_unique) derivatives.
+//
+// `supports_autodiff`: Not all shapes (e.g., Cylinder) support AutoDiff.
+//  `supports_autodiff` will be false for incompatible shapes.
+//
+// `is_grad_W_unique`: the query point is at a degenerate location where
+//   the gradient direction is arbitrary (sphere center, box edge/vertex); the
+//   AutoDiff pass still runs but skips the full Jacobian-of-invariant check.
+// ============================================================================
 
-// Parameter for the value-parameterized test fixture SignedDistanceToPointTest.
+// Holds one parameterized test case for SignedDistanceToPointTest.
+//
+// Each instance carries:
+//   - A collision object against which the query is performed.
+//   - Query inputs X_WG and p_WQ.
+//   - Expected output (GeometryId, p_GN, distance, grad_W).
+//   - supports_autodiff: false for shapes where DistanceToPoint<AutoDiffXd> is
+//     not implemented (e.g. Cylinder).
+//   - is_grad_W_unique: false at degenerate locations (sphere center, box
+//     edge/vertex) where the gradient direction is algorithm-dependent, so the
+//     AutoDiff derivative-of-invariant check is skipped.
 struct SignedDistanceToPointTestData {
-  SignedDistanceToPointTestData(shared_ptr<Shape> geometry_in,
-                                const RigidTransformd& X_WG_in,
-                                const Vector3d& p_WQ_in,
-                                const SignedDistanceToPoint<double>& expect_in)
-      : geometry(geometry_in),
-        X_WG(X_WG_in),
-        p_WQ(p_WQ_in),
-        expected_result(expect_in) {}
-
-  static SignedDistanceToPointTestData Make(shared_ptr<Shape> shape,
-                                            const RigidTransformd& X_WG,
-                                            const Vector3d& p_WQ,
-                                            const Vector3d& p_GN,
-                                            double distance,
-                                            const Vector3d& grad_W) {
-    return SignedDistanceToPointTestData{
-        shape, X_WG, p_WQ,
-        SignedDistanceToPoint{GeometryId::get_new_id(), p_GN, distance,
-                              grad_W}};
+  // Builds a test record. A fresh GeometryId is minted and embedded in
+  // expected_result; the same id is passed to query_fn and autodiff_query_fn
+  // at test time.
+  static SignedDistanceToPointTestData Make(
+      shared_ptr<fcl::CollisionObjectd> object, const RigidTransformd& X_WG,
+      const Vector3d& p_WQ, const Vector3d& p_GN, double distance,
+      const Vector3d& grad_W, bool supports_autodiff = true,
+      bool is_grad_W_unique = true, double tolerance = 1e-14) {
+    EncodedData encoded(*object);
+    return {.collision_object = std::move(object),
+            .X_WG = X_WG,
+            .p_WQ = p_WQ,
+            .expected_result = {encoded.id(), p_GN, distance, grad_W},
+            .supports_autodiff = supports_autodiff,
+            .is_grad_W_unique = is_grad_W_unique,
+            .tolerance = tolerance};
   }
 
-  // Google Test uses this operator to report the test data in the log file
-  // when a test fails.
   friend std::ostream& operator<<(std::ostream& os,
                                   const SignedDistanceToPointTestData& obj) {
-    os << fmt::format(
-        "{{\n"
-        "  geometry: (not printed)\n"
-        "  X_WG: (not printed)\n"
-        "  p_WQ: {}\n"
-        "  expected_result.p_GN: {}\n"
-        "  expected_result.distance: {}\n"
-        "  expected_result.grad_W: {}\n"
-        "}}",
-        fmt_eigen(obj.p_WQ.transpose()),
-        fmt_eigen(obj.expected_result.p_GN.transpose()),
-        obj.expected_result.distance,
-        fmt_eigen(obj.expected_result.grad_W.transpose()));
+    os << fmt::format("{{ p_WQ: {}, expected distance: {} }}",
+                      fmt_eigen(obj.p_WQ.transpose()),
+                      obj.expected_result.distance);
     return os;
   }
 
-  shared_ptr<Shape> geometry;
-  const RigidTransformd X_WG;
-  const Vector3d p_WQ;
-  const SignedDistanceToPoint<double> expected_result;
+  shared_ptr<fcl::CollisionObjectd> collision_object;
+  RigidTransformd X_WG;
+  Vector3d p_WQ;
+  SignedDistanceToPoint<double> expected_result;
+  bool supports_autodiff{true};
+  bool is_grad_W_unique{true};
+  // Tolerance for value checks in SingleQueryPoint. Defaults to 1e-14 (exact
+  // analytical shapes). Set higher for GJK/EPA-backed shapes (e.g. Ellipsoid).
+  double tolerance{1e-14};
 };
+
+// Helper to convert a Drake Shape to an equivalent FCL collision object.
+// Supports the shape types used in the test data generators.
+shared_ptr<fcl::CollisionObjectd> MakeFclCollision(const Shape& shape) {
+  shared_ptr<fcl::ShapeBase<double>> shape_base;
+  if (const auto* box = dynamic_cast<const Box*>(&shape)) {
+    shape_base = make_shared<fcl::Boxd>(box->size());
+  } else if (const auto* capsule = dynamic_cast<const Capsule*>(&shape)) {
+    shape_base =
+        make_shared<fcl::Capsuled>(capsule->radius(), capsule->length());
+  } else if (const auto* cylinder = dynamic_cast<const Cylinder*>(&shape)) {
+    shape_base =
+        make_shared<fcl::Cylinderd>(cylinder->radius(), cylinder->length());
+  } else if (const auto* ellipsoid = dynamic_cast<const Ellipsoid*>(&shape)) {
+    const Vector3d radii(ellipsoid->a(), ellipsoid->b(), ellipsoid->c());
+    shape_base = make_shared<fcl::Ellipsoidd>(radii);
+  } else if (dynamic_cast<const HalfSpace*>(&shape) != nullptr) {
+    shape_base = make_shared<fcl::Halfspaced>(0, 0, 1, 0);
+  } else if (const auto* sphere = dynamic_cast<const Sphere*>(&shape)) {
+    shape_base = make_shared<fcl::Sphered>(sphere->radius());
+  } else {
+    throw std::logic_error(fmt::format(
+        "Unsupported shape type ({}) in MakeFclGeometry", shape.type_name()));
+  }
+
+  shared_ptr<fcl::CollisionGeometryd> geometry(std::move(shape_base));
+  auto collision_object = make_shared<fcl::CollisionObjectd>(geometry);
+  const GeometryId geometry_id = GeometryId::get_new_id();
+  EncodedData(geometry_id, true).write_to(collision_object.get());
+  return collision_object;
+}
+
+// ---------------------------------------------------------------------------
+// Sphere generators
 
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
@@ -942,7 +460,7 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
   // set p_GQ to (0.1, 0.15, 0.3), so it will be inside G at the negative
   // distance 0.35 - 0.7 = -0.35. Both positions of Q will have the same
   // nearest point N and the gradient vector.
-  auto sphere = make_shared<Sphere>(0.7);
+  shared_ptr<fcl::CollisionObjectd> sphere = MakeFclCollision(Sphere(0.7));
   std::vector<SignedDistanceToPointTestData> test_data{
       // p_GQ = (2,3,6) is outside G at the positive distance 6.3 = 7 - 0.7.
       SignedDistanceToPointTestData::Make(
@@ -955,10 +473,11 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
           X_WG.rotation() * Vector3d(2, 3, 6) / 7),
       // Reports an arbitrary gradient vector (as defined in the
       // QueryObject::ComputeSignedDistanceToPoint() documentation) at the
-      // center of the sphere.
+      // center of the sphere. The AutoDiffXd is skipped in this case.
       SignedDistanceToPointTestData::Make(
           sphere, X_WG, X_WG * Vector3d{0, 0, 0}, Vector3d(0.7, 0, 0), -0.7,
-          X_WG.rotation() * Vector3d(1, 0, 0))};
+          X_WG.rotation() * Vector3d(1, 0, 0), true /* supports_autodiff */,
+          false /* is_grad_W_unique */)};
   return test_data;
 }
 
@@ -967,6 +486,9 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformSphere() {
                              Vector3d{10, 11, 12});
   return GenDistanceTestDataSphere(X_WG);
 }
+
+// ---------------------------------------------------------------------------
+// Box generators
 
 // We declare this function here, so we can call it from
 // GenDistanceTestDataOutsideBox() below.
@@ -984,20 +506,19 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   const std::vector<SignedDistanceToPointTestData> test_data_box_boundary =
       GenDistanceTestDataBoxBoundary(X_WG);
+
+  // Must match the box dimensions in GenDistanceTestDataBoxBoundary.
+  shared_ptr<fcl::CollisionObjectd> box = MakeFclCollision(Box(20, 30, 10));
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const auto& data : test_data_box_boundary) {
-    const shared_ptr<Shape> shape = data.geometry;
-    // We expect the shape to be a box.
-    DRAKE_DEMAND(dynamic_cast<Box*>(shape.get()) != nullptr);
-    // The gradient grad_W has unit length by construction.
     const Vector3d p_WQ = data.p_WQ + data.expected_result.grad_W;
-    const GeometryId& id = data.expected_result.id_G;
-    const Vector3d& p_GN = data.expected_result.p_GN;
-    const double distance = 1;
-    const Vector3d& grad_W = data.expected_result.grad_W;
-    test_data.emplace_back(
-        shape, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
+    // Propagate is_grad_W_unique from the source boundary point: the derivative
+    // of the nearest-point function remains undefined when Q is directly
+    // outside a box edge or vertex direction.
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        box, X_WG, p_WQ, data.expected_result.p_GN, 1.0,
+        data.expected_result.grad_W, true /* supports_autodiff */,
+        data.is_grad_W_unique));
   }
   return test_data;
 }
@@ -1035,8 +556,9 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformOutsideBox() {
 // the vector s.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
     const RigidTransformd& X_WG) {
-  auto box = make_shared<Box>(20.0, 30.0, 10.0);
-  const Vector3d h_G = box->size() / 2;
+  const Vector3d size(20, 30, 10);
+  shared_ptr<fcl::CollisionObjectd> box = MakeFclCollision(Box(size));
+  const Vector3d h_G = size / 2;
   const double distance = 0;
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const double sx : {-1, 0, 1}) {
@@ -1047,17 +569,18 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
         const Vector3d s_G(sx, sy, sz);
         const Vector3d p_GQ = s_G.cwiseProduct(h_G);
         const Vector3d p_WQ = X_WG * p_GQ;
-        // We create new id for each test case to help distinguish them.
-        const GeometryId id = GeometryId::get_new_id();
         // Q is its own nearest point on ∂G.
         const Vector3d& p_GN = p_GQ;
-        // Rotation matrix for transforming vector expression from G to world.
-        const RotationMatrixd& R_WG = X_WG.rotation();
-        const Vector3d grad_G = s_G.normalized();
-        const Vector3d grad_W = R_WG * grad_G;
-        test_data.emplace_back(
-            box, X_WG, p_WQ,
-            SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
+        const Vector3d grad_W = X_WG.rotation() * s_G.normalized();
+        // Q is on a box edge (2 non-zero coords) or vertex (3 non-zero): the
+        // gradient direction is algorithm-dependent, so skip the derivative
+        // check in the AutoDiff pass.
+        const int num_nonzero =
+            (sx != 0 ? 1 : 0) + (sy != 0 ? 1 : 0) + (sz != 0 ? 1 : 0);
+        const bool is_grad_W_unique = (num_nonzero == 1);
+        test_data.emplace_back(SignedDistanceToPointTestData::Make(
+            box, X_WG, p_WQ, p_GN, distance, grad_W,
+            true /* supports_autodiff */, is_grad_W_unique));
       }
     }
   }
@@ -1094,8 +617,9 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformBoxBoundary() {
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   // Create a box [-10,10]x[-15,15]x[-5,5],
-  auto box = make_shared<Box>(20.0, 30.0, 10.0);
-  const Vector3d h_G = box->size() / 2;
+  const Vector3d size(20, 30, 10);
+  shared_ptr<fcl::CollisionObjectd> box = MakeFclCollision(Box(size));
+  const Vector3d h_G = size / 2;
   const double d = h_G.minCoeff() / 2;
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const Vector3d unit_vector :
@@ -1107,16 +631,11 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
       const Vector3d p_GC = s_G.cwiseProduct(h_G);
       const Vector3d p_GQ = p_GC - d * s_G;
       const Vector3d p_WQ = X_WG * p_GQ;
-      // We create new id for each test case to help distinguish them.
-      const GeometryId id = GeometryId::get_new_id();
       // The nearest point is at the face center.
       const Vector3d& p_GN = p_GC;
-      // Rotation matrix for transforming vector expression from G to world.
-      const RotationMatrixd R_WG = X_WG.rotation();
-      const Vector3d& grad_G = s_G;
-      const Vector3d grad_W = R_WG * grad_G;
-      test_data.emplace_back(
-          box, X_WG, p_WQ, SignedDistanceToPoint<double>(id, p_GN, -d, grad_W));
+      const Vector3d grad_W = X_WG.rotation() * s_G;
+      test_data.emplace_back(SignedDistanceToPointTestData::Make(
+          box, X_WG, p_WQ, p_GN, -d, grad_W));
     }
   }
   return test_data;
@@ -1138,7 +657,7 @@ GenDistTestTransformInsideBoxUnique() {
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxNonUnique() {
   // We set up a 20x10x10 box [-10,10]x[-5,5]x[-5,5].  Having the same depth
   // and height allows Q to have five nearest faces in the last case below.
-  auto box = make_shared<Box>(20.0, 10.0, 10.0);
+  shared_ptr<fcl::CollisionObjectd> box = MakeFclCollision(Box(20, 10, 10));
   const RigidTransformd& X_WG = RigidTransformd::Identity();
   std::vector<SignedDistanceToPointTestData> test_data{
       // Q is nearest to the face [-10,10]x[-5,5]x{5}.
@@ -1168,9 +687,10 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxNonUnique() {
   return test_data;
 }
 
+// Translation test: box translated away from origin, Q outside.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataTranslateBox() {
   // We set up a 20x10x30 box G centered at the origin [-10,10]x[-5,5]x[-15,15].
-  auto box = make_shared<Box>(20.0, 10.0, 30.0);
+  shared_ptr<fcl::CollisionObjectd> box = MakeFclCollision(Box(20, 10, 30));
   std::vector<SignedDistanceToPointTestData> test_data{
       // We translate G by (10,20,30) to [0,20]x[15,25]x[15,45] in World frame.
       // The position of the query point p_WQ(23,20,30) is closest to G at
@@ -1182,8 +702,9 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataTranslateBox() {
   return test_data;
 }
 
-// Generate test data for a query point Q from a cylinder G.
-
+// ---------------------------------------------------------------------------
+// Cylinder generators
+//
 // We separate the test data for Q on the boundary ∂G into two parts: Q on
 // the top/bottom circles (GenDistTestDataCylinderBoundaryCircle) and Q on
 // the cap/barrel surfaces (GenDistTestDataCylinderBoundarySurface).
@@ -1215,9 +736,11 @@ std::vector<SignedDistanceToPointTestData>
 GenDistTestDataCylinderBoundaryCircle(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   const RotationMatrixd& R_WG = X_WG.rotation();
-  auto cylinder = make_shared<Cylinder>(3.0, 5.0);
-  const double radius = cylinder->radius();
-  const double half_length = cylinder->length() / 2;
+  const double radius = 3.0;
+  const double length = 5.0;
+  shared_ptr<fcl::CollisionObjectd> cylinder =
+      MakeFclCollision(Cylinder(radius, length));
+  const double half_length = length / 2;
   // We want the test to cover all the combinations of positive, negative,
   // and zero values of both x and y coordinates on the two boundary circles
   // of the cylinder. Furthermore, each (x,y) has |x| ≠ |y| to avoid
@@ -1237,20 +760,19 @@ GenDistTestDataCylinderBoundaryCircle(
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const auto& z_vector : {Vector3d(0, 0, 1), Vector3d(0, 0, -1)}) {
     for (const auto& xy_vector : all_xy_vectors) {
-      const GeometryId id = GeometryId::get_new_id();
       // xy_vector and z_vector are unit vectors in x-y plane and z-axis of G.
       const Vector3d p_GQ = radius * xy_vector + half_length * z_vector;
       const Vector3d p_WQ = X_WG * p_GQ;
       // Q is its own nearest point on ∂G.
-      const Vector3d p_GN = p_GQ;
+      const Vector3d& p_GN = p_GQ;
       // We set the gradient vector according to the convention described in
       // QueryObject::ComputeSignedDistanceToPoint().  Mathematically it is
       // undefined.
-      const Vector3d grad_G = (xy_vector + z_vector).normalized();
-      const Vector3d grad_W = R_WG * grad_G;
-      test_data.emplace_back(
-          cylinder, X_WG, p_WQ,
-          SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
+      const Vector3d grad_W = R_WG * (xy_vector + z_vector).normalized();
+      // Cylinder does not support AutoDiffXd.
+      test_data.emplace_back(SignedDistanceToPointTestData::Make(
+          cylinder, X_WG, p_WQ, p_GN, distance, grad_W,
+          false /* supports_autodiff */));
     }
   }
   return test_data;
@@ -1262,9 +784,11 @@ std::vector<SignedDistanceToPointTestData>
 GenDistTestDataCylinderBoundarySurface(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   const RotationMatrixd& R_WG = X_WG.rotation();
-  auto cylinder = make_shared<Cylinder>(3.0, 5.0);
-  const double radius = cylinder->radius();
-  const double half_length = cylinder->length() / 2;
+  const double radius = 3.0;
+  const double length = 5.0;
+  shared_ptr<fcl::CollisionObjectd> cylinder =
+      MakeFclCollision(Cylinder(radius, length));
+  const double half_length = length / 2;
   // We want the test to cover all the combinations of positive, negative,
   // and zero values of both x and y coordinates on some circles on the
   // barrel or on the caps. Furthermore, each (x,y) has |x| ≠ |y| to avoid
@@ -1280,70 +804,39 @@ GenDistTestDataCylinderBoundarySurface(
         RotationMatrixd(RollPitchYawd(0, 0, 2 * M_PI * c / kNumVectors)) *
         kXVector);
   }
-  struct LocalTestData {
-    LocalTestData(const Vector3d& p_GQ_in, const Vector3d& grad_G_in)
-        : p_GQ(p_GQ_in), grad_G(grad_G_in) {}
+  // Generate LocalData that will convert to SignedDistanceToPointTestData
+  // later.
+  struct LocalData {
     Vector3d p_GQ;
     Vector3d grad_G;
   };
-  // Generate LocalTestData that will convert to
-  // SignedDistanceToPointTestData later.
-  std::vector<LocalTestData> test_data_barrel;
-  std::vector<LocalTestData> test_data_caps;
-  std::vector<LocalTestData> test_data_cap_centers;
+  std::vector<LocalData> barrel_data, cap_data, cap_center_data;
   for (const auto& z_vector : {Vector3d(0, 0, 1), Vector3d(0, 0, -1)}) {
     // Q at the centers of the top and bottom caps.
-    {
-      // z_vector is a unit vector.
-      const Vector3d p_GQ = half_length * z_vector;
-      // The gradient vector on the circular disks is along the z-axis of G.
-      const Vector3d grad_G = z_vector;
-      test_data_cap_centers.emplace_back(p_GQ, grad_G);
-    }
+    cap_center_data.push_back(
+        {half_length * z_vector, z_vector});  // cap center
     for (const auto& xy_vector : all_xy_vectors) {
-      // Q on the barrel.
-      {
-        // Control how far vertically Q is from x-y plane of G.
-        const double kZFactor = 0.5;
-        // xy_vector and z_vector are unit vectors in x-y plane and z-axis of G.
-        const Vector3d p_GQ =
-            radius * xy_vector + half_length * kZFactor * z_vector;
-        // The gradient vector on the barrel is parallel to the x-y plane of G.
-        const Vector3d grad_G = xy_vector;
-        test_data_barrel.emplace_back(p_GQ, grad_G);
-      }
-      // Q on the top and bottom caps.
-      {
-        // Control how far radially Q is from z-axis of G.
-        const double kRFactor = 0.6;
-        // xy_vector and z_vector are unit vectors in x-y plane and z-axis of G.
-        const Vector3d p_GQ =
-            radius * kRFactor * xy_vector + half_length * z_vector;
-        // The gradient vector on the caps is along the z-axis of G.
-        const Vector3d grad_G = z_vector;
-        test_data_caps.emplace_back(p_GQ, grad_G);
-      }
+      // Barrel: at 0.5 * half_length along z.
+      barrel_data.push_back(
+          {radius * xy_vector + half_length * 0.5 * z_vector, xy_vector});
+      // Cap: at 0.6 * radius radially.
+      cap_data.push_back(
+          {radius * 0.6 * xy_vector + half_length * z_vector, z_vector});
     }
   }
   std::vector<SignedDistanceToPointTestData> test_data;
-  // Convert LocalTestData to SignedDistanceToPointTestData and add to
-  // test_data.
-  auto convert = [&cylinder, &X_WG, &R_WG,
-                  &test_data](const LocalTestData& local) {
+  // Convert LocalData to SignedDistanceToPointTestData and add to test_data.
+  // Note: Cylinder does not support AutoDiffXd.
+  auto convert = [&](const LocalData& local) {
     const Vector3d p_WQ = X_WG * local.p_GQ;
-    // Q on ∂G has distance zero.
-    const double distance = 0;
-    // Q is its own nearest point on ∂G.
-    const Vector3d p_GN = local.p_GQ;
     const Vector3d grad_W = R_WG * local.grad_G;
-    // Implicitly generate a new geometry id for every test record.
     test_data.push_back(SignedDistanceToPointTestData::Make(
-        cylinder, X_WG, p_WQ, p_GN, distance, grad_W));
+        cylinder, X_WG, p_WQ, local.p_GQ, 0.0, grad_W,
+        false /* supports_autodiff */));
   };
-  std::for_each(test_data_barrel.begin(), test_data_barrel.end(), convert);
-  std::for_each(test_data_caps.begin(), test_data_caps.end(), convert);
-  std::for_each(test_data_cap_centers.begin(), test_data_cap_centers.end(),
-                convert);
+  std::for_each(barrel_data.begin(), barrel_data.end(), convert);
+  std::for_each(cap_data.begin(), cap_data.end(), convert);
+  std::for_each(cap_center_data.begin(), cap_center_data.end(), convert);
   return test_data;
 }
 
@@ -1356,8 +849,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderBoundary(
   const auto test_data_boundary_surface =
       GenDistTestDataCylinderBoundarySurface(X_WG);
   for (const auto& data : test_data_boundary_surface) {
-    test_data.emplace_back(data.geometry, data.X_WG, data.p_WQ,
-                           data.expected_result);
+    test_data.push_back(data);
   }
   return test_data;
 }
@@ -1370,22 +862,14 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderBoundary(
 // stays the same.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataOutsideCylinder(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
-  const auto test_data_cylinder_boundary =
-      GenDistTestDataCylinderBoundary(X_WG);
+  shared_ptr<fcl::CollisionObjectd> cylinder = MakeFclCollision(Cylinder(3, 5));
   std::vector<SignedDistanceToPointTestData> test_data;
-  for (const auto& data : test_data_cylinder_boundary) {
-    const shared_ptr<Shape>& shape = data.geometry;
-    // We expect the shape to be a cylinder.
-    DRAKE_DEMAND(dynamic_cast<Cylinder*>(shape.get()) != nullptr);
-    // The gradient grad_W has unit length by construction.
+  for (const auto& data : GenDistTestDataCylinderBoundary(X_WG)) {
     const Vector3d p_WQ = data.p_WQ + data.expected_result.grad_W;
-    const GeometryId& id = data.expected_result.id_G;
-    const Vector3d& p_GN = data.expected_result.p_GN;
-    const double distance = 1;
-    const Vector3d& grad_W = data.expected_result.grad_W;
-    test_data.emplace_back(
-        shape, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
+    // Cylinder does not support AutoDiffXd.
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        cylinder, X_WG, p_WQ, data.expected_result.p_GN, 1.0,
+        data.expected_result.grad_W, false /* supports_autodiff */));
   }
   return test_data;
 }
@@ -1401,23 +885,15 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataOutsideCylinder(
 // gradient vector stays the same.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideCylinder(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
-  const auto test_data_cylinder_boundary_surface =
-      GenDistTestDataCylinderBoundarySurface(X_WG);
+  shared_ptr<fcl::CollisionObjectd> cylinder = MakeFclCollision(Cylinder(3, 5));
+  const double kNegDist = -0.1;
   std::vector<SignedDistanceToPointTestData> test_data;
-  const double kNegativeDistance = -0.1;
-  for (const auto& data : test_data_cylinder_boundary_surface) {
-    const shared_ptr<Shape>& shape = data.geometry;
-    // We expect the shape to be a cylinder.
-    DRAKE_DEMAND(dynamic_cast<Cylinder*>(shape.get()) != nullptr);
-    // The gradient grad_W has unit length by construction.
-    const Vector3d p_WQ =
-        data.p_WQ + kNegativeDistance * data.expected_result.grad_W;
-    const GeometryId& id = data.expected_result.id_G;
-    const Vector3d& p_GN = data.expected_result.p_GN;
-    const Vector3d& grad_W = data.expected_result.grad_W;
-    test_data.emplace_back(
-        shape, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, kNegativeDistance, grad_W));
+  for (const auto& data : GenDistTestDataCylinderBoundarySurface(X_WG)) {
+    const Vector3d p_WQ = data.p_WQ + kNegDist * data.expected_result.grad_W;
+    // Cylinder does not support AutoDiffXd.
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        cylinder, X_WG, p_WQ, data.expected_result.p_GN, kNegDist,
+        data.expected_result.grad_W, false /* supports_autodiff */));
   }
   return test_data;
 }
@@ -1427,22 +903,18 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideCylinder(
 // on the x's axis of G's frame.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderCenter(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
-  const RotationMatrixd& R_WG = X_WG.rotation();
-  auto long_cylinder = make_shared<Cylinder>(1.0, 20.0);
-  const double radius = long_cylinder->radius();
-  const GeometryId id = GeometryId::get_new_id();
-  // The query point Q is at the center of the cylinder.
-  const Vector3d p_GQ(0, 0, 0);
-  const Vector3d p_WQ = X_WG * p_GQ;
-  const double distance = -radius;
+  const double radius = 1.0;
+  shared_ptr<fcl::CollisionObjectd> cylinder =
+      MakeFclCollision(Cylinder(radius, 20));
+  const Vector3d p_WQ = X_WG * Vector3d(0, 0, 0);
   // The nearest point N is on the x's axis of G's frame by convention.
   const Vector3d p_GN = radius * Vector3d(1, 0, 0);
-  const Vector3d grad_G = Vector3d(1, 0, 0);
-  const Vector3d grad_W = R_WG * grad_G;
+  const Vector3d grad_W = X_WG.rotation() * Vector3d(1, 0, 0);
   std::vector<SignedDistanceToPointTestData> test_data;
-  test_data.emplace_back(
-      long_cylinder, X_WG, p_WQ,
-      SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
+  // Cylinder does not support AutoDiffXd.
+  test_data.emplace_back(SignedDistanceToPointTestData::Make(
+      cylinder, X_WG, p_WQ, p_GN, -radius, grad_W,
+      false /* supports_autodiff */));
   return test_data;
 }
 
@@ -1463,165 +935,266 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderTransform() {
   return test_data;
 }
 
+// ---------------------------------------------------------------------------
+// HalfSpace generators
+
 // Generate test data for a query point Q relative to a half space.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataHalfSpace() {
   std::vector<SignedDistanceToPointTestData> test_data;
-
   const RigidTransformd X_WG1(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
                               Vector3d{10, 11, 12});
-  auto hs = make_shared<HalfSpace>();
-  const GeometryId id = GeometryId::get_new_id();
+  shared_ptr<fcl::CollisionObjectd> half_space = MakeFclCollision(HalfSpace());
 
   for (const auto& X_WG : {RigidTransformd(), X_WG1}) {
-    const auto& R_WG = X_WG.rotation();
-    const Vector3d grad_W = R_WG.col(2);
+    const Vector3d grad_W = X_WG.rotation().col(2);
     const Vector3d p_GN(1.25, 1.5, 0);
     const Vector3d p_WN = X_WG * p_GN;
 
     // Outside the half space.
     const double distance = 1.5;
     const Vector3d p_WQ1 = p_WN + distance * grad_W;
-    test_data.emplace_back(
-        hs, X_WG, p_WQ1,
-        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        half_space, X_WG, p_WQ1, p_GN, distance, grad_W));
 
     // On the half space boundary.
     const Vector3d p_WQ2 = p_WN;
-    test_data.emplace_back(
-        hs, X_WG, p_WQ2, SignedDistanceToPoint<double>(id, p_GN, 0.0, grad_W));
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        half_space, X_WG, p_WQ2, p_GN, 0.0, grad_W));
 
     // Inside the half space.
     const Vector3d p_WQ3 = p_WN - distance * grad_W;
-    test_data.emplace_back(
-        hs, X_WG, p_WQ3,
-        SignedDistanceToPoint<double>(id, p_GN, -distance, grad_W));
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        half_space, X_WG, p_WQ3, p_GN, -distance, grad_W));
   }
-
   return test_data;
 }
 
-// Helper to convert a Drake Shape to an equivalent FCL collision geometry.
-// Supports the shape types used in the test data generators.
-shared_ptr<fcl::CollisionGeometryd> MakeFclGeometry(const Shape& shape) {
-  if (const auto* sphere = dynamic_cast<const Sphere*>(&shape)) {
-    return make_shared<fcl::Sphered>(sphere->radius());
-  } else if (const auto* box = dynamic_cast<const Box*>(&shape)) {
-    return make_shared<fcl::Boxd>(box->size());
-  } else if (const auto* cylinder = dynamic_cast<const Cylinder*>(&shape)) {
-    return make_shared<fcl::Cylinderd>(cylinder->radius(), cylinder->length());
-  } else if (dynamic_cast<const HalfSpace*>(&shape) != nullptr) {
-    return make_shared<fcl::Halfspaced>(0, 0, 1, 0);
+// ---------------------------------------------------------------------------
+// Ellipsoid generators
+//
+// Point-to-ellipsoid uses GJK/EPA internally, so tolerances are significantly
+// looser than for analytically-computed shapes. AutoDiffXd is not supported.
+// The medial-axis degenerate case is covered by GTEST_TEST(DistanceToPoint,
+// EllipsoidMedialAxis) because the nearest point is only determined up to sign.
+std::vector<SignedDistanceToPointTestData> GenDistTestDataEllipsoid() {
+  const Vector3d radii(1.5, 0.75, 1.25);
+  shared_ptr<fcl::CollisionObjectd> ellipsoid =
+      MakeFclCollision(Ellipsoid(radii));
+
+  // Matches the pose used in GTEST_TEST(DistanceToPoint, EllipsoidMedialAxis).
+  const RotationMatrixd R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const RigidTransformd X_WG(R_WG, Vector3d{0.5, 1.25, -2});
+
+  // Compute a surface point and outward unit normal from parametric angles.
+  // Parametric surface:  E = [a cos(θ)sin(ϕ),  b sin(θ)sin(ϕ),  c cos(ϕ)].
+  // Outward normal: normalize ∇(x²/a² + y²/b² + z²/c²) = (2x/a², 2y/b², 2z/c²).
+  const double a = radii.x();
+  const double b = radii.y();
+  const double c = radii.z();
+  auto get_sample = [&](double theta, double phi) {
+    const double x = a * std::cos(theta) * std::sin(phi);
+    const double y = b * std::sin(theta) * std::sin(phi);
+    const double z = c * std::cos(phi);
+    return std::make_pair(
+        Vector3d{x, y, z},
+        Vector3d{x / a / a, y / b / b, z / c / c}.normalized());
+  };
+
+  // GJK/EPA accuracy for this near-spherical ellipsoid; covers both distance
+  // and vector fields. See the note in GTEST_TEST(DistanceToPoint, Ellipsoid)
+  // about why the ellipsoid is kept close to a sphere.
+  constexpr double kEllipsoidTol = 5e-4;
+
+  struct EllipseCoord {
+    double theta{};
+    double phi{};
+  };
+  const std::vector<EllipseCoord> coords{
+      {0, 0},                        // Bottom pole.
+      {7 * M_PI / 5, M_PI / 6},      // Lower half.
+      {3 * M_PI / 7, 4 * M_PI / 5},  // Upper half.
+  };
+
+  std::vector<SignedDistanceToPointTestData> test_data;
+  for (const auto& coord : coords) {
+    const auto& [p_GN, n_G] = get_sample(coord.theta, coord.phi);
+    const Vector3d grad_W = X_WG.rotation() * n_G;
+    for (const double distance : {-0.125, 0.0, 0.2}) {
+      const Vector3d p_WQ = X_WG * (p_GN + n_G * distance);
+      test_data.emplace_back(SignedDistanceToPointTestData::Make(
+          ellipsoid, X_WG, p_WQ, p_GN, distance, grad_W,
+          false /* supports_autodiff */, true /* is_grad_W_unique */,
+          kEllipsoidTol));
+    }
   }
-  throw std::logic_error("Unsupported shape type in MakeFclGeometry");
+  return test_data;
 }
 
-// This test fixture takes data generated by GenDistanceTestData*(),
-// GenDistTestData*(), and GenDistTestTransform*() above.
-class SignedDistanceToPointTest
+// ---------------------------------------------------------------------------
+// Capsule generators
+
+// Q outside, on the surface, and inside the capsule, in three representative
+// regions: toward the top end cap, toward the barrel, and toward the bottom
+// end cap.
+std::vector<SignedDistanceToPointTestData> GenDistTestDataCapsule(
+    const RigidTransformd& X_WG = RigidTransformd::Identity()) {
+  const double radius = 0.7;
+  const double length = 1.3;
+  shared_ptr<fcl::CollisionObjectd> capsule =
+      MakeFclCollision(Capsule(radius, length));
+  const double half_lz = length / 2;
+  // Three unit outward directions: upward (top cap), lateral (barrel),
+  // downward (bottom cap).
+  const Vector3d vhats[3] = {Vector3d{2, -3, 6}.normalized(),
+                             Vector3d{2, -3, 0}.normalized(),
+                             Vector3d{2, -3, -6}.normalized()};
+  // Nearest surface points for each direction/region.
+  const Vector3d p_GNs[3] = {radius * vhats[0] + Vector3d{0, 0, half_lz},
+                             radius * vhats[1] + Vector3d{0, 0, half_lz / 2},
+                             radius * vhats[2] + Vector3d{0, 0, -half_lz}};
+  std::vector<SignedDistanceToPointTestData> test_data;
+  for (int i = 0; i < 3; ++i) {
+    const Vector3d& vhat = vhats[i];
+    const Vector3d& p_GN = p_GNs[i];
+    const Vector3d grad_W = X_WG.rotation() * vhat;
+    // Outside.
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        capsule, X_WG, X_WG * (p_GN + 1.5 * vhat), p_GN, 1.5, grad_W));
+    // On surface.
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        capsule, X_WG, X_WG * p_GN, p_GN, 0.0, grad_W));
+    // Inside (halfway to surface from p_GN inward).
+    test_data.emplace_back(SignedDistanceToPointTestData::Make(
+        capsule, X_WG, X_WG * (p_GN - 0.5 * radius * vhat), p_GN, -0.5 * radius,
+        grad_W));
+  }
+  return test_data;
+}
+
+std::vector<SignedDistanceToPointTestData> GenDistTestTransformCapsule() {
+  return GenDistTestDataCapsule(RigidTransformd(
+      RollPitchYawd(M_PI / 6, M_PI / 3, M_PI_2), Vector3d{10, 11, 12}));
+}
+
+// ---------------------------------------------------------------------------
+// Test fixture and test body
+
+// Calls point_distance::Callback() with the given shape and test data.
+template <typename T>
+std::vector<SignedDistanceToPoint<T>> CallCallback(
+    const SignedDistanceToPointTestData& data, const Vector3<T>& p_WQ) {
+  // Build the query point FCL object (a zero-radius sphere).
+  fcl::CollisionObjectd query_point(make_shared<fcl::Sphered>(0.0));
+  query_point.setTranslation(ExtractDoubleOrThrow(p_WQ));
+
+  const GeometryId geometry_id = data.expected_result.id_G;
+  const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+      {geometry_id, data.X_WG.cast<T>()}};
+  std::vector<SignedDistanceToPoint<T>> results;
+  const std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_boundaries;
+  CallbackData<T> callback_data{&query_point, 1e8 /*data.tolerance*/, p_WQ,
+                                &X_WGs,       &mesh_boundaries,       &results};
+  double threshold_out = 1e8;  // data.tolerance;
+  Callback<T>(&query_point, data.collision_object.get(), &callback_data,
+              threshold_out);
+  return results;
+}
+
+// Fixture for SignedDistanceToPointTest.
+//
+// SingleQueryPoint runs a double pass (always) and an AutoDiff pass (when
+// supports_autodiff is true). See the section comment above for the full
+// description of what each pass verifies.
+struct SignedDistanceToPointTest
     : public testing::TestWithParam<SignedDistanceToPointTestData> {
- public:
-  SignedDistanceToPointTest()
-      : geometry_id_(GetParam().expected_result.id_G),
-        fcl_geometry_(MakeFclGeometry(*GetParam().geometry)),
-        geometry_object_(fcl_geometry_) {
-    EncodedData(geometry_id_, true).write_to(&geometry_object_);
-  }
-
- protected:
-  template <typename T>
-  std::vector<SignedDistanceToPoint<T>> CallCallback(
-      const SignedDistanceToPointTestData& data,
-      double threshold = std::numeric_limits<double>::infinity()) {
-    // Build the query point FCL object (a zero-radius sphere).
-    fcl::CollisionObjectd query_point(make_shared<fcl::Sphered>(0.0));
-    query_point.setTranslation(data.p_WQ);
-
-    const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
-        {geometry_id_, data.X_WG.cast<T>()}};
-    const Vector3<T> p_WQ = data.p_WQ.cast<T>();
-
-    std::vector<SignedDistanceToPoint<T>> results;
-    const std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_boundaries;
-    CallbackData<T> callback_data{&query_point, threshold,        p_WQ,
-                                  &X_WGs,       &mesh_boundaries, &results};
-    double threshold_out = threshold;
-    Callback<T>(&query_point, &geometry_object_, &callback_data, threshold_out);
-    return results;
-  }
-
-  GeometryId geometry_id_;
-  // Note: fcl_geometry_ must be declared before geometry_object_ so that it
-  // is initialized first in the member initializer list.
-  shared_ptr<fcl::CollisionGeometryd> fcl_geometry_;
-  fcl::CollisionObjectd geometry_object_;
-
-  // The tolerance value for determining equivalency between expected and
-  // tested results. The underlying algorithms have an empirically-determined,
-  // hard-coded tolerance of 1e-14 to account for loss of precision due to
-  // rigid transformations and this tolerance reflects that.
-  static constexpr double kTolerance = 1e-14;
+  // Tolerance for AutoDiff derivative checks: should be near machine precision.
+  static constexpr double kAutoDiffTol =
+      8 * std::numeric_limits<double>::epsilon();
 };
 
 TEST_P(SignedDistanceToPointTest, SingleQueryPoint) {
   const auto& data = GetParam();
 
-  std::vector<SignedDistanceToPoint<double>> results =
-      CallCallback<double>(data);
+  // --- Double pass: verify output values ---
+  const SignedDistanceToPoint<double> result_d =
+      CallCallback<double>(data, data.p_WQ).front();
 
-  EXPECT_EQ(results.size(), 1);
-  EXPECT_EQ(results[0].id_G, data.expected_result.id_G);
-  EXPECT_TRUE(
-      CompareMatrices(results[0].p_GN, data.expected_result.p_GN, kTolerance))
-      << "Incorrect nearest point.";
-  EXPECT_NEAR(results[0].distance, data.expected_result.distance, kTolerance)
-      << "Incorrect signed distance.";
-  EXPECT_TRUE(CompareMatrices(results[0].grad_W, data.expected_result.grad_W,
-                              kTolerance))
-      << "Incorrect gradient vector.";
+  EXPECT_EQ(result_d.id_G, data.expected_result.id_G);
+  EXPECT_TRUE(CompareMatrices(result_d.p_GN, data.expected_result.p_GN,
+                              data.tolerance));
+  EXPECT_NEAR(result_d.distance, data.expected_result.distance, data.tolerance);
+  EXPECT_TRUE(CompareMatrices(result_d.grad_W, data.expected_result.grad_W,
+                              data.tolerance));
+
+  if (!data.supports_autodiff) return;
+
+  // --- AutoDiff pass: gradient consistency ---
+  // Initialize p_WQ as the three independent variables.
+  const Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(data.p_WQ);
+  const SignedDistanceToPoint<AutoDiffXd> result_ad =
+      CallCallback<AutoDiffXd>(data, p_WQ_ad).front();
+
+  // Distance value matches.
+  EXPECT_NEAR(result_ad.distance.value(), data.expected_result.distance,
+              data.tolerance)
+      << "AutoDiff: incorrect signed distance value.";
+
+  // The analytic grad_W equals ∂distance/∂p_WQ.  The tolerance here matches
+  // the double pass: the distance algorithm involves rotations and
+  // normalizations that introduce O(eps * condition_number) round-off, so
+  // near-machine-precision tolerance is too tight under an arbitrary pose.
+  DRAKE_DEMAND(result_ad.distance.derivatives().size() == 3);
+  const Vector3d ddistance_dp_WQ = result_ad.distance.derivatives();
+  const Vector3d grad_W_val = math::ExtractValue(result_ad.grad_W);
+  EXPECT_FALSE(grad_W_val.array().isNaN().any())
+      << "AutoDiff: grad_W contains NaN.";
+  EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W_val, data.tolerance))
+      << "AutoDiff: grad_W != ∂distance/∂p_WQ.";
+
+  // grad_W is a unit vector with zero derivative w.r.t. p_WQ.
+  const AutoDiffXd grad_W_sq_norm = result_ad.grad_W.dot(result_ad.grad_W);
+  EXPECT_NEAR(grad_W_sq_norm.value(), 1.0, kAutoDiffTol);
+  if (grad_W_sq_norm.derivatives().size() > 0) {
+    EXPECT_TRUE(CompareMatrices(grad_W_sq_norm.derivatives(),
+                                Eigen::VectorXd::Zero(3), 1.4 * kAutoDiffTol));
+  }
+
+  // The invariant p_WQ = p_WN + distance * grad_W holds in values.
+  const Vector3<AutoDiffXd> p_WN_ad =
+      data.X_WG.cast<AutoDiffXd>() * result_ad.p_GN;
+  const Vector3<AutoDiffXd> p_WQ_ad_expected =
+      p_WN_ad + result_ad.distance * result_ad.grad_W;
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WQ_ad),
+                              math::ExtractValue(p_WQ_ad_expected),
+                              data.tolerance))
+      << "AutoDiff: p_WQ != p_WN + distance * grad_W (values).";
+
+  // The invariant also holds in derivatives when the gradient is unique, i.e.,
+  // not at degenerate locations such as a sphere center or box edge/vertex.
+  if (data.is_grad_W_unique) {
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(p_WQ_ad),
+                                math::ExtractGradient(p_WQ_ad_expected),
+                                kAutoDiffTol))
+        << "AutoDiff: p_WQ != p_WN + distance * grad_W (derivatives).";
+  }
 }
 
-TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
-  const auto& data = GetParam();
-
-  const double large_threshold = data.expected_result.distance + 0.01;
-  std::vector<SignedDistanceToPoint<double>> results =
-      CallCallback<double>(data, large_threshold);
-  // The large threshold allows one object in the results.
-  EXPECT_EQ(results.size(), 1);
-
-  const double small_threshold = data.expected_result.distance - 0.01;
-  results = CallCallback<double>(data, small_threshold);
-  EXPECT_EQ(results.size(), 0);
-}
-
-TEST_P(SignedDistanceToPointTest, SingleQueryPointSymbolic) {
-  const auto& data = GetParam();
-  const double large_threshold = data.expected_result.distance + 0.01;
-
-  using Expression = symbolic::Expression;
-  std::vector<SignedDistanceToPoint<Expression>> results =
-      CallCallback<Expression>(data, large_threshold);
-  // No geometries are supported yet for Expression. Currently, this call
-  // succeeds, but will always return empty results.
-  EXPECT_EQ(results.size(), 0);
-}
-
-// To debug a specific test, you can use Bazel flag --test_filter and
-// --test_output.  For example, you can use the command:
-// ```
-//   bazel test //geometry:proximity_engine_test
-//       --test_filter=Sphere/SignedDistanceToPointTest.SingleQueryPoint/0
-//       --test_output=all
-// ```
-// to run the first case from the test data generated by
-// GenDistanceTestDataSphere() with the function
-// TEST_P(SignedDistanceToPointTest, SingleQueryPoint).
 // Sphere
 INSTANTIATE_TEST_SUITE_P(Sphere, SignedDistanceToPointTest,
                          testing::ValuesIn(GenDistanceTestDataSphere()));
-
 INSTANTIATE_TEST_SUITE_P(TransformSphere, SignedDistanceToPointTest,
                          testing::ValuesIn(GenDistTestTransformSphere()));
+
+// Ellipsoid (GJK/EPA-backed; AutoDiffXd not supported; looser tolerance)
+INSTANTIATE_TEST_SUITE_P(Ellipsoid, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataEllipsoid()));
+
+// Capsule
+INSTANTIATE_TEST_SUITE_P(Capsule, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataCapsule()));
+INSTANTIATE_TEST_SUITE_P(TransformCapsule, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestTransformCapsule()));
 
 // Box
 INSTANTIATE_TEST_SUITE_P(OutsideBox, SignedDistanceToPointTest,
