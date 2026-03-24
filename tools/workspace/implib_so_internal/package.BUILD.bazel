@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
-load("@drake_uv//:requirements.bzl", uv_requirement = "requirement")
 load("@drake//tools/skylark:py.bzl", "py_binary")
+load("@drake_uv//:requirements.bzl", uv_requirement = "requirement")
 
 py_binary(
     name = "gen",
