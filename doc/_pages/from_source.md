@@ -35,7 +35,7 @@ officially supports when building from source:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 | OpenJDK 21 |
 | macOS Sequoia (15)                 | arm64        | 3.14       | 9.0   | 4.2   | Apple LLVM 17 (Xcode 26.3)   | OpenJDK 23 |
 | macOS Tahoe (26)                   | arm64        | 3.14       | 9.0   | 4.2   | Apple LLVM 17 (Xcode 26.3)   | OpenJDK 23 |
 

@@ -1,4 +1,4 @@
-clang-19
-libclang-rt-19-dev
-libomp-19-dev
-llvm-19
+clang-20
+libclang-rt-20-dev
+libomp-20-dev
+llvm-20
