@@ -69,7 +69,7 @@ class LazyShared {
   `shared_ptr<const T>`), and should not have side-effects since it might be
   called twice. */
   template <typename Factory>
-  const T& GetOrMake(Factory&& factory)
+  const T& GetOrMake(Factory&& factory) const
     requires(std::is_invocable_r_v<std::shared_ptr<const T>, Factory>)
   {
     std::shared_ptr<const T> result = data_.load();
@@ -88,7 +88,7 @@ class LazyShared {
   }
 
  private:
-  std::atomic<std::shared_ptr<const T>> data_;
+  mutable std::atomic<std::shared_ptr<const T>> data_;
 };
 
 #else  // __cpp_lib_atomic_shared_ptr
@@ -129,7 +129,7 @@ class LazyShared {
   }
 
  private:
-  std::shared_ptr<T> data_;
+  mutable std::shared_ptr<T> data_;
 };
 
 #endif  // __cpp_lib_atomic_shared_ptr

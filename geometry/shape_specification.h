@@ -363,8 +363,7 @@ class Convex final : public Shape {
 
   MeshSource source_;
   Vector3<double> scale_;
-  // Allows the deferred computation of the hull on an otherwise const Convex.
-  mutable internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
+  internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the
@@ -618,8 +617,7 @@ class Mesh final : public Shape {
   // NOTE: Cannot be const to support default copy/move semantics.
   MeshSource source_;
   Vector3<double> scale_;
-  // Allows the deferred computation of the hull on an otherwise const Mesh.
-  mutable internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
+  internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the

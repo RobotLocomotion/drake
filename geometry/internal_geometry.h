@@ -282,9 +282,7 @@ class InternalGeometry {
   // frame, G. It's a nullptr if the geometry is rigid.
   copyable_unique_ptr<VolumeMesh<double>> reference_mesh_;
 
-  // Allows the deferred computation of the OBB on an otherwise const
-  // InternalGeometry.
-  mutable LazyShared<std::optional<Obb>> obb_;
+  LazyShared<std::optional<Obb>> obb_;
 };
 
 }  // namespace internal
