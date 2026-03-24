@@ -34,11 +34,8 @@ bool is_positive_integer(double v);
 // Checks if @p v contains a non-negative integer value.
 bool is_non_negative_integer(double v);
 
-/** Represents an abstract class which is the base of concrete
+/* Represents an abstract class which is the base of concrete
  * symbolic-expression classes.
- *
- * @note It provides virtual function, ExpressionCell::Display, because
- * operator<< is not allowed to be a virtual function.
  */
 class ExpressionCell {
  public:
@@ -46,47 +43,47 @@ class ExpressionCell {
 
   virtual ~ExpressionCell();
 
-  /** Returns the intrusive use count (ala boost::intrusive_ptr). */
+  /* Returns the intrusive use count (ala boost::intrusive_ptr). */
   std::atomic<int>& use_count() const { return use_count_; }
 
-  /** Returns expression kind. */
+  /* Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const { return kind_; }
 
-  /** Sends all hash-relevant bytes for this ExpressionCell type into the given
+  /* Sends all hash-relevant bytes for this ExpressionCell type into the given
    * hasher, per the @ref hash_append concept -- except for get_kind(), because
    * Expression already sends that.
    */
   virtual void HashAppendDetail(DelegatingHasher*) const = 0;
 
-  /** Collects variables in expression. */
+  /* Collects variables in expression. */
   [[nodiscard]] virtual Variables GetVariables() const = 0;
 
-  /** Checks structural equality. */
+  /* Checks structural equality. */
   [[nodiscard]] virtual bool EqualTo(const ExpressionCell& c) const = 0;
 
-  /** Provides lexicographical ordering between expressions. */
+  /* Provides lexicographical ordering between expressions. */
   [[nodiscard]] virtual bool Less(const ExpressionCell& c) const = 0;
 
-  /** Checks if this symbolic expression is convertible to Polynomial. */
+  /* Checks if this symbolic expression is convertible to Polynomial. */
   [[nodiscard]] bool is_polynomial() const { return is_polynomial_; }
 
-  /** Checks if this symbolic expression is already expanded. */
+  /* Checks if this symbolic expression is already expanded. */
   [[nodiscard]] bool is_expanded() const { return is_expanded_; }
 
-  /** Sets this symbolic expression as already expanded. */
+  /* Sets this symbolic expression as already expanded. */
   void set_expanded() { is_expanded_ = true; }
 
-  /** Evaluates under a given environment (by default, an empty environment).
+  /* Evaluates under a given environment (by default, an empty environment).
    *  @throws std::exception if NaN is detected during evaluation.
    */
   [[nodiscard]] virtual double Evaluate(const Environment& env) const = 0;
 
-  /** Expands out products and positive integer powers in expression.
+  /* Expands out products and positive integer powers in expression.
    * @throws std::exception if NaN is detected during expansion.
    */
   [[nodiscard]] virtual Expression Expand() const = 0;
 
-  /** Returns an Expression obtained by replacing all occurrences of the
+  /* Returns an Expression obtained by replacing all occurrences of the
    * variables in @p env in the current expression cell with the corresponding
    * values in @p env.
    * @throws std::exception if NaN is detected during substitution.
@@ -94,24 +91,24 @@ class ExpressionCell {
   [[nodiscard]] virtual Expression EvaluatePartial(
       const Environment& env) const = 0;
 
-  /** Returns an Expression obtained by replacing all occurrences of the
+  /* Returns an Expression obtained by replacing all occurrences of the
    * variables in @p s in the current expression cell with the corresponding
    * expressions in @p s.
    * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] virtual Expression Substitute(const Substitution& s) const = 0;
 
-  /** Differentiates this symbolic expression with respect to the variable @p
+  /* Differentiates this symbolic expression with respect to the variable @p
    * var.
    * @throws std::exception if it is not differentiable.
    */
   [[nodiscard]] virtual Expression Differentiate(const Variable& x) const = 0;
 
-  /** Returns string representation of this expression. */
+  /* Returns string representation of this expression. */
   virtual std::string Display() const = 0;
 
  protected:
-  /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded,
+  /* Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded,
   with a @p use_count of zero. */
   ExpressionCell(ExpressionKind k, bool is_poly, bool is_expanded);
 
@@ -122,7 +119,7 @@ class ExpressionCell {
   bool is_expanded_{false};
 };
 
-/** Represents the base class for unary expressions.  */
+/* Represents the base class for unary expressions.  */
 class UnaryExpressionCell : public ExpressionCell {
  public:
   ~UnaryExpressionCell() override;
@@ -131,22 +128,22 @@ class UnaryExpressionCell : public ExpressionCell {
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
-  /** Returns the argument. */
+  /* Returns the argument. */
   [[nodiscard]] const Expression& get_argument() const { return e_; }
 
  protected:
-  /** Constructs UnaryExpressionCell of kind @p k with @p e, @p is_poly, and @p
+  /* Constructs UnaryExpressionCell of kind @p k with @p e, @p is_poly, and @p
    * is_expanded. */
   UnaryExpressionCell(ExpressionKind k, Expression e, bool is_poly,
                       bool is_expanded);
-  /** Returns the evaluation result f(@p v ). */
+  /* Returns the evaluation result f(@p v ). */
   [[nodiscard]] virtual double DoEvaluate(double v) const = 0;
 
  private:
   const Expression e_;
 };
 
-/** Represents the base class for binary expressions.
+/* Represents the base class for binary expressions.
  */
 class BinaryExpressionCell : public ExpressionCell {
  public:
@@ -156,18 +153,18 @@ class BinaryExpressionCell : public ExpressionCell {
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
   [[nodiscard]] bool Less(const ExpressionCell& e) const override;
   [[nodiscard]] double Evaluate(const Environment& env) const override;
-  /** Returns the first argument. */
+  /* Returns the first argument. */
   [[nodiscard]] const Expression& get_first_argument() const { return e1_; }
-  /** Returns the second argument. */
+  /* Returns the second argument. */
   [[nodiscard]] const Expression& get_second_argument() const { return e2_; }
 
  protected:
-  /** Constructs BinaryExpressionCell of kind @p k with @p e1, @p e2,
+  /* Constructs BinaryExpressionCell of kind @p k with @p e1, @p e2,
    * @p is_poly, and @p is_expanded.
    */
   BinaryExpressionCell(ExpressionKind k, Expression e1, Expression e2,
                        bool is_poly, bool is_expanded);
-  /** Returns the evaluation result f(@p v1, @p v2 ). */
+  /* Returns the evaluation result f(@p v1, @p v2 ). */
   [[nodiscard]] virtual double DoEvaluate(double v1, double v2) const = 0;
 
  private:
@@ -175,10 +172,10 @@ class BinaryExpressionCell : public ExpressionCell {
   const Expression e2_;
 };
 
-/** Symbolic expression representing a variable. */
+/* Symbolic expression representing a variable. */
 class ExpressionVar : public ExpressionCell {
  public:
-  /** Constructs an expression from @p var.
+  /* Constructs an expression from @p var.
    * @pre @p var is not a BOOLEAN variable.
    */
   explicit ExpressionVar(Variable v);
@@ -200,7 +197,7 @@ class ExpressionVar : public ExpressionCell {
   const Variable var_;
 };
 
-/** Symbolic expression representing NaN (not-a-number). */
+/* Symbolic expression representing NaN (not-a-number). */
 class ExpressionNaN : public ExpressionCell {
  public:
   ExpressionNaN();
@@ -218,7 +215,7 @@ class ExpressionNaN : public ExpressionCell {
   std::string Display() const override;
 };
 
-/** Symbolic expression representing an addition which is a sum of products.
+/* Symbolic expression representing an addition which is a sum of products.
  *
  * @f[
  *     c_0 + \sum c_i * e_i
@@ -233,7 +230,7 @@ class ExpressionNaN : public ExpressionCell {
  */
 class ExpressionAdd : public ExpressionCell {
  public:
-  /** Constructs ExpressionAdd from @p constant_term and @p term_to_coeff_map.
+  /* Constructs ExpressionAdd from @p constant_term and @p term_to_coeff_map.
    */
   ExpressionAdd(double constant,
                 std::map<Expression, double> expr_to_coeff_map);
@@ -249,9 +246,9 @@ class ExpressionAdd : public ExpressionCell {
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::string Display() const override;
-  /** Returns the constant. */
+  /* Returns the constant. */
   [[nodiscard]] double get_constant() const { return constant_; }
-  /** Returns map from an expression to its coefficient. */
+  /* Returns map from an expression to its coefficient. */
   [[nodiscard]] const std::map<Expression, double>& get_expr_to_coeff_map()
       const {
     return expr_to_coeff_map_;
@@ -265,39 +262,39 @@ class ExpressionAdd : public ExpressionCell {
   const std::map<Expression, double> expr_to_coeff_map_;
 };
 
-/** Factory class to help build ExpressionAdd expressions. */
+/* Factory class to help build ExpressionAdd expressions. */
 class ExpressionAddFactory {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionAddFactory);
 
-  /** Default constructor. */
+  /* Default constructor. */
   ExpressionAddFactory() = default;
 
-  /** Constructs ExpressionAddFactory with @p constant and @p
+  /* Constructs ExpressionAddFactory with @p constant and @p
    * expr_to_coeff_map. */
   ExpressionAddFactory(double constant,
                        std::map<Expression, double> expr_to_coeff_map);
 
-  /** Constructs ExpressionAddFactory from @p add. */
+  /* Constructs ExpressionAddFactory from @p add. */
   explicit ExpressionAddFactory(const ExpressionAdd& add);
 
   ~ExpressionAddFactory();
 
-  /** Adds @p e to this factory. */
+  /* Adds @p e to this factory. */
   void AddExpression(const Expression& e);
-  /** Adds ExpressionAdd pointed by @p ptr to this factory. */
+  /* Adds ExpressionAdd pointed by @p ptr to this factory. */
   void Add(const ExpressionAdd& add);
-  /** Assigns a factory from a an ExpressionAdd.  */
+  /* Assigns a factory from a an ExpressionAdd.  */
   ExpressionAddFactory& operator=(const ExpressionAdd& ptr);
 
-  /** Negates the expressions in factory.
+  /* Negates the expressions in factory.
    * If it represents c0 + c1 * t1 + ... + * cn * tn,
    * this method flips it into -c0 - c1 * t1 - ... - cn * tn.
    * @returns *this.
    */
   ExpressionAddFactory&& Negate() &&;
 
-  /** Returns a symbolic expression. */
+  /* Returns a symbolic expression. */
   [[nodiscard]] Expression GetExpression() &&;
 
  private:
@@ -327,7 +324,7 @@ class ExpressionAddFactory {
   std::map<Expression, double> expr_to_coeff_map_;
 };
 
-/** Symbolic expression representing a multiplication of powers.
+/* Symbolic expression representing a multiplication of powers.
  *
  * @f[
  *     c_0 \cdot \prod b_i^{e_i}
@@ -342,7 +339,7 @@ class ExpressionAddFactory {
  */
 class ExpressionMul : public ExpressionCell {
  public:
-  /** Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
+  /* Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
                 std::map<Expression, Expression> base_to_exponent_map);
   ~ExpressionMul() override;
@@ -357,9 +354,9 @@ class ExpressionMul : public ExpressionCell {
   [[nodiscard]] Expression Substitute(const Substitution& s) const override;
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::string Display() const override;
-  /** Returns constant term. */
+  /* Returns constant term. */
   [[nodiscard]] double get_constant() const { return constant_; }
-  /** Returns map from a term to its coefficient. */
+  /* Returns map from a term to its coefficient. */
   [[nodiscard]] const std::map<Expression, Expression>&
   get_base_to_exponent_map() const {
     return base_to_exponent_map_;
@@ -373,45 +370,45 @@ class ExpressionMul : public ExpressionCell {
   std::map<Expression, Expression> base_to_exponent_map_;
 };
 
-/** Factory class to help build ExpressionMul expressions. */
+/* Factory class to help build ExpressionMul expressions. */
 class ExpressionMulFactory {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionMulFactory);
 
-  /** Default constructor. */
+  /* Default constructor. */
   ExpressionMulFactory() = default;
 
-  /** Constructs ExpressionMulFactory with @p constant and Expression-valued
+  /* Constructs ExpressionMulFactory with @p constant and Expression-valued
    * @p base_to_exponent_map. Note that this constructor runs in constant-time
    * because it moves the map into storage; it does not loop over the map. */
   ExpressionMulFactory(double constant,
                        std::map<Expression, Expression> base_to_exponent_map);
 
-  /** Constructs ExpressionMulFactory with a Monomial-like (Variable to integer
+  /* Constructs ExpressionMulFactory with a Monomial-like (Variable to integer
    * power) @p base_to_exponent_map. */
   explicit ExpressionMulFactory(
       const std::map<Variable, int>& base_to_exponent_map);
 
-  /** Constructs ExpressionMulFactory from @p mul. */
+  /* Constructs ExpressionMulFactory from @p mul. */
   explicit ExpressionMulFactory(const ExpressionMul& mul);
 
   ~ExpressionMulFactory();
 
-  /** Adds @p e to this factory. */
+  /* Adds @p e to this factory. */
   void AddExpression(const Expression& e);
-  /** Adds ExpressionMul pointed by @p ptr to this factory. */
+  /* Adds ExpressionMul pointed by @p ptr to this factory. */
   void Add(const ExpressionMul& ptr);
-  /** Assigns a factory from an ExpressionMul.  */
+  /* Assigns a factory from an ExpressionMul.  */
   ExpressionMulFactory& operator=(const ExpressionMul& ptr);
 
-  /** Negates the expressions in factory.
+  /* Negates the expressions in factory.
    * If it represents c0 * p1 * ... * pn,
    * this method flips it into -c0 * p1 * ... * pn.
    * @returns *this.
    */
   ExpressionMulFactory&& Negate() &&;
 
-  /** Returns a symbolic expression. */
+  /* Returns a symbolic expression. */
   [[nodiscard]] Expression GetExpression() &&;
 
  private:
@@ -443,7 +440,7 @@ class ExpressionMulFactory {
   std::map<Expression, Expression> base_to_exponent_map_;
 };
 
-/** Symbolic expression representing division. */
+/* Symbolic expression representing division. */
 class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
@@ -459,7 +456,7 @@ class ExpressionDiv : public BinaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v1, double v2) const override;
 };
 
-/** Symbolic expression representing logarithms. */
+/* Symbolic expression representing logarithms. */
 class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
@@ -479,7 +476,7 @@ class ExpressionLog : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing absolute value function. */
+/* Symbolic expression representing absolute value function. */
 class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
@@ -497,7 +494,7 @@ class ExpressionAbs : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing exponentiation using the base of
+/* Symbolic expression representing exponentiation using the base of
  * natural logarithms. */
 class ExpressionExp : public UnaryExpressionCell {
  public:
@@ -514,7 +511,7 @@ class ExpressionExp : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing square-root. */
+/* Symbolic expression representing square-root. */
 class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
@@ -534,7 +531,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing power function. */
+/* Symbolic expression representing power function. */
 class ExpressionPow : public BinaryExpressionCell {
  public:
   ExpressionPow(const Expression& e1, const Expression& e2);
@@ -555,7 +552,7 @@ class ExpressionPow : public BinaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v1, double v2) const override;
 };
 
-/** Symbolic expression representing sine function. */
+/* Symbolic expression representing sine function. */
 class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
@@ -571,7 +568,7 @@ class ExpressionSin : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing cosine function. */
+/* Symbolic expression representing cosine function. */
 class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
@@ -587,7 +584,7 @@ class ExpressionCos : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing tangent function. */
+/* Symbolic expression representing tangent function. */
 class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
@@ -603,7 +600,7 @@ class ExpressionTan : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing arcsine function. */
+/* Symbolic expression representing arcsine function. */
 class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
@@ -623,7 +620,7 @@ class ExpressionAsin : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing arccosine function. */
+/* Symbolic expression representing arccosine function. */
 class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
@@ -643,7 +640,7 @@ class ExpressionAcos : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing arctangent function. */
+/* Symbolic expression representing arctangent function. */
 class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
@@ -659,7 +656,7 @@ class ExpressionAtan : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing atan2 function (arctangent function with
+/* Symbolic expression representing atan2 function (arctangent function with
  * two arguments). atan2(y, x) is defined as atan(y/x). */
 class ExpressionAtan2 : public BinaryExpressionCell {
  public:
@@ -676,7 +673,7 @@ class ExpressionAtan2 : public BinaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v1, double v2) const override;
 };
 
-/** Symbolic expression representing hyperbolic sine function. */
+/* Symbolic expression representing hyperbolic sine function. */
 class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
@@ -692,7 +689,7 @@ class ExpressionSinh : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing hyperbolic cosine function. */
+/* Symbolic expression representing hyperbolic cosine function. */
 class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
@@ -708,7 +705,7 @@ class ExpressionCosh : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing hyperbolic tangent function. */
+/* Symbolic expression representing hyperbolic tangent function. */
 class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
@@ -724,7 +721,7 @@ class ExpressionTanh : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing min function. */
+/* Symbolic expression representing min function. */
 class ExpressionMin : public BinaryExpressionCell {
  public:
   ExpressionMin(const Expression& e1, const Expression& e2);
@@ -740,7 +737,7 @@ class ExpressionMin : public BinaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v1, double v2) const override;
 };
 
-/** Symbolic expression representing max function. */
+/* Symbolic expression representing max function. */
 class ExpressionMax : public BinaryExpressionCell {
  public:
   ExpressionMax(const Expression& e1, const Expression& e2);
@@ -756,7 +753,7 @@ class ExpressionMax : public BinaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v1, double v2) const override;
 };
 
-/** Symbolic expression representing ceil function. */
+/* Symbolic expression representing ceil function. */
 class ExpressionCeiling : public UnaryExpressionCell {
  public:
   explicit ExpressionCeiling(const Expression& e);
@@ -772,7 +769,7 @@ class ExpressionCeiling : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing floor function. */
+/* Symbolic expression representing floor function. */
 class ExpressionFloor : public UnaryExpressionCell {
  public:
   explicit ExpressionFloor(const Expression& e);
@@ -788,10 +785,10 @@ class ExpressionFloor : public UnaryExpressionCell {
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing if-then-else expression.  */
+/* Symbolic expression representing if-then-else expression.  */
 class ExpressionIfThenElse : public ExpressionCell {
  public:
-  /** Constructs if-then-else expression from @p f_cond, @p e_then, and @p
+  /* Constructs if-then-else expression from @p f_cond, @p e_then, and @p
    * e_else. */
   ExpressionIfThenElse(Formula f_cond, Expression e_then, Expression e_else);
   ~ExpressionIfThenElse() override;
@@ -807,15 +804,15 @@ class ExpressionIfThenElse : public ExpressionCell {
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::string Display() const override;
 
-  /** Returns the conditional formula. */
+  /* Returns the conditional formula. */
   [[nodiscard]] const Formula& get_conditional_formula() const {
     return f_cond_;
   }
-  /** Returns the 'then' expression. */
+  /* Returns the 'then' expression. */
   [[nodiscard]] const Expression& get_then_expression() const {
     return e_then_;
   }
-  /** Returns the 'else' expression. */
+  /* Returns the 'else' expression. */
   [[nodiscard]] const Expression& get_else_expression() const {
     return e_else_;
   }
@@ -826,10 +823,10 @@ class ExpressionIfThenElse : public ExpressionCell {
   const Expression e_else_;
 };
 
-/** Symbolic expression representing an uninterpreted function. */
+/* Symbolic expression representing an uninterpreted function. */
 class ExpressionUninterpretedFunction : public ExpressionCell {
  public:
-  /** Constructs an uninterpreted-function expression from @p name and @p
+  /* Constructs an uninterpreted-function expression from @p name and @p
    * arguments.
    */
   ExpressionUninterpretedFunction(std::string name,
@@ -847,10 +844,10 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   [[nodiscard]] Expression Differentiate(const Variable& x) const override;
   std::string Display() const override;
 
-  /** Returns the name of this expression. */
+  /* Returns the name of this expression. */
   [[nodiscard]] const std::string& get_name() const { return name_; }
 
-  /** Returns the arguments of this expression. */
+  /* Returns the arguments of this expression. */
   [[nodiscard]] const std::vector<Expression>& get_arguments() const {
     return arguments_;
   }
@@ -860,59 +857,59 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   const std::vector<Expression> arguments_;
 };
 
-/** Checks if @p c is a variable expression. */
+/* Checks if @p c is a variable expression. */
 bool is_variable(const ExpressionCell& c);
-/** Checks if @p c is a unary expression. */
+/* Checks if @p c is a unary expression. */
 bool is_unary(const ExpressionCell& c);
-/** Checks if @p c is a binary expression. */
+/* Checks if @p c is a binary expression. */
 bool is_binary(const ExpressionCell& c);
-/** Checks if @p c is an addition expression. */
+/* Checks if @p c is an addition expression. */
 bool is_addition(const ExpressionCell& c);
-/** Checks if @p c is an multiplication expression. */
+/* Checks if @p c is an multiplication expression. */
 bool is_multiplication(const ExpressionCell& c);
-/** Checks if @p c is a division expression. */
+/* Checks if @p c is a division expression. */
 bool is_division(const ExpressionCell& c);
-/** Checks if @p c is a log expression. */
+/* Checks if @p c is a log expression. */
 bool is_log(const ExpressionCell& c);
-/** Checks if @p c is an absolute-value-function expression. */
+/* Checks if @p c is an absolute-value-function expression. */
 bool is_abs(const ExpressionCell& c);
-/** Checks if @p c is an exp expression. */
+/* Checks if @p c is an exp expression. */
 bool is_exp(const ExpressionCell& c);
-/** Checks if @p c is a square-root expression. */
+/* Checks if @p c is a square-root expression. */
 bool is_sqrt(const ExpressionCell& c);
-/** Checks if @p c is a power-function expression. */
+/* Checks if @p c is a power-function expression. */
 bool is_pow(const ExpressionCell& c);
-/** Checks if @p c is a sine expression. */
+/* Checks if @p c is a sine expression. */
 bool is_sin(const ExpressionCell& c);
-/** Checks if @p c is a cosine expression. */
+/* Checks if @p c is a cosine expression. */
 bool is_cos(const ExpressionCell& c);
-/** Checks if @p c is a tangent expression. */
+/* Checks if @p c is a tangent expression. */
 bool is_tan(const ExpressionCell& c);
-/** Checks if @p c is an arcsine expression. */
+/* Checks if @p c is an arcsine expression. */
 bool is_asin(const ExpressionCell& c);
-/** Checks if @p c is an arccosine expression. */
+/* Checks if @p c is an arccosine expression. */
 bool is_acos(const ExpressionCell& c);
-/** Checks if @p c is an arctangent expression. */
+/* Checks if @p c is an arctangent expression. */
 bool is_atan(const ExpressionCell& c);
-/** Checks if @p c is a arctangent2  expression. */
+/* Checks if @p c is a arctangent2  expression. */
 bool is_atan2(const ExpressionCell& c);
-/** Checks if @p c is a hyperbolic-sine expression. */
+/* Checks if @p c is a hyperbolic-sine expression. */
 bool is_sinh(const ExpressionCell& c);
-/** Checks if @p c is a hyperbolic-cosine expression. */
+/* Checks if @p c is a hyperbolic-cosine expression. */
 bool is_cosh(const ExpressionCell& c);
-/** Checks if @p c is a hyperbolic-tangent expression. */
+/* Checks if @p c is a hyperbolic-tangent expression. */
 bool is_tanh(const ExpressionCell& c);
-/** Checks if @p c is a min expression. */
+/* Checks if @p c is a min expression. */
 bool is_min(const ExpressionCell& c);
-/** Checks if @p c is a max expression. */
+/* Checks if @p c is a max expression. */
 bool is_max(const ExpressionCell& c);
-/** Checks if @p c is a ceil expression. */
+/* Checks if @p c is a ceil expression. */
 bool is_ceil(const ExpressionCell& c);
-/** Checks if @p c is a floor expression. */
+/* Checks if @p c is a floor expression. */
 bool is_floor(const ExpressionCell& c);
-/** Checks if @p c is an if-then-else expression. */
+/* Checks if @p c is an if-then-else expression. */
 bool is_if_then_else(const ExpressionCell& c);
-/** Checks if @p c is an uninterpreted-function expression. */
+/* Checks if @p c is an uninterpreted-function expression. */
 bool is_uninterpreted_function(const ExpressionCell& c);
 
 }  // namespace symbolic

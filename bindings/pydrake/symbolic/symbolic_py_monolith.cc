@@ -637,8 +637,8 @@ void DefineSymbolicMonolith(py::module m) {
       .def("__hash__",
           [](const Formula& self) { return std::hash<Formula>{}(self); })
       // `True` and `False` are reserved keywords as of Python3.
-      .def_static("True_", &Formula::True, doc_expr.FormulaTrue.doc)
-      .def_static("False_", &Formula::False, doc_expr.FormulaFalse.doc)
+      .def_static("True_", &Formula::True, doc_expr.Formula.True.doc)
+      .def_static("False_", &Formula::False, doc_expr.Formula.False.doc)
       .def("__nonzero__", [](const Formula&) {
         throw std::runtime_error(
             "You should not call `__bool__` / `__nonzero__` on `Formula`. "
