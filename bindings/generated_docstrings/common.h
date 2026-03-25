@@ -3147,10 +3147,10 @@ For example:
 
     </details>)""";
         // Symbol: drake::logging::Warn::Warn
-        struct /* Warn */ {
+        struct /* ctor */ {
           // Source: drake/common/text_logging.h
           const char* doc = R"""()""";
-        } Warn;
+        } ctor;
       } Warn;
       // Symbol: drake::logging::get_dist_sink
       struct /* get_dist_sink */ {
