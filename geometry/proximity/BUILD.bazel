@@ -1189,10 +1189,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "collision_filter_memory_test",
-    tags = [
-        # The allocation counting trick is not compatible with lsan.
-        "no_lsan",
-    ],
     deps = [
         ":collision_filter",
         "//common/test_utilities:limit_malloc",

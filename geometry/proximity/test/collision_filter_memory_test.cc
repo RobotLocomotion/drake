@@ -33,6 +33,9 @@ using drake::test::LimitMallocParams;
  It does so by counting the memory allocations performed. See implementation for
  more details. */
 GTEST_TEST(CollisionFilterMemoryTest, MemoryGrowth) {
+  if (!LimitMalloc::IsSupportedConfiguration()) {
+    GTEST_SKIP() << "This test is not supported on this platform.";
+  }
   constexpr int num_geometries = 10000;
 
   CollisionFilter filter;

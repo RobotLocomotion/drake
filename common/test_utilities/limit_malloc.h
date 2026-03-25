@@ -68,6 +68,10 @@ class LimitMalloc final {
   /// Returns the parameters structure used to construct this object.
   const LimitMallocParams& params() const;
 
+  /// LimitMalloc does not work properly with some configurations. Check this
+  /// predicate and disarm to avoid erroneous results.
+  static bool IsSupportedConfiguration();
+
   // We write this out by hand, to avoid depending on Drake *at all*.
   /// @name Does not allow copy, move, or assignment
   //@{
