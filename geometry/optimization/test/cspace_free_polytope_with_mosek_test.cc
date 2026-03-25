@@ -1256,7 +1256,6 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   result = tester.cspace_free_polytope().BinarySearch(ignored_collision_pairs,
                                                       C, d, s_center, options);
   ASSERT_FALSE(result.has_value());
-  EXPECT_EQ(result->num_iter(), 0);
 }
 }  // namespace optimization
 }  // namespace geometry
