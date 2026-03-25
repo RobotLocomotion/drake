@@ -240,8 +240,12 @@ double* SanityCheck(double* data) {
 }
 </pre> */
 struct [[maybe_unused]] Warn {  // NOLINT(whitespace/braces)
+  explicit Warn(std::string_view message) { drake::log()->warn(message); }
+
   template <typename... Args>
-  Warn(fmt::format_string<Args...> pattern, Args&&... args) {
+  Warn(fmt::format_string<Args...> pattern, Args&&... args)
+    requires(sizeof...(args) > 0)
+  {
     drake::log()->warn(pattern, std::forward<Args>(args)...);
   }
 };
