@@ -68,8 +68,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
   cls.def(py::pickle(
       [](const Class& self) {
         PickledPolynomial pickled_polynomial;
+        pickled_polynomial.reserve(self.GetMonomials().size());
         for (const auto& monomial : self.GetMonomials()) {
           std::vector<PickledTerm> pickled_terms;
+          pickled_terms.reserve(monomial.terms.size());
           for (const auto& term : monomial.terms) {
             pickled_terms.emplace_back(term.var, term.power);
           }
@@ -80,8 +82,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
       },
       [](PickledPolynomial pickled_polynomial) {
         std::vector<typename Class::Monomial> monomials;
+        monomials.reserve(pickled_polynomial.size());
         for (const auto& [coefficient, pickled_terms] : pickled_polynomial) {
           std::vector<typename Class::Term> monomial_terms;
+          monomial_terms.reserve(pickled_terms.size());
           for (const auto& [var, power] : pickled_terms) {
             monomial_terms.emplace_back(var, power);
           }
