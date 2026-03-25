@@ -186,12 +186,10 @@ def _wrapped_main(*, config_json):
 
 
 def _main(argv):
-    # We expect exactly three command-line arguments to this program:
+    # We expect exactly two command-line arguments to this program:
     # - The input filename containing JSON data with our *actual* arguments.
     # - The output filename we should use to report error message text.
-    # - A dummy argument that we'll ignore. (It's sometimes used by our caller
-    #    to suppress valgrind when we're called from C++ code).
-    json_filename, error_filename, _ = argv
+    json_filename, error_filename = argv
     with open(error_filename, "w", encoding="utf-8") as error_file:
         try:
             _wrapped_main(config_json=json_filename)
