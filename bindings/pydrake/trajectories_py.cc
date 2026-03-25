@@ -721,7 +721,32 @@ struct Impl {
                 }
                 return CompositeTrajectory<T>::AlignAndConcatenate(segments);
               },
-              py::arg("segments"), cls_doc.AlignAndConcatenate.doc);
+              py::arg("segments"), cls_doc.AlignAndConcatenate.doc)
+          .def(py::pickle(
+              [](const CompositeTrajectory<T>& self) {
+                py::list segments_pickle;
+                for (int i = 0; i < self.get_number_of_segments(); ++i) {
+                  segments_pickle.append(self.segment(i).Clone());
+                }
+                return segments_pickle;
+              },
+              [](py::list segments_pickle) {
+                std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+                segments.reserve(segments_pickle.size());
+                for (py::handle segment_pickle : segments_pickle) {
+                  const auto* segment =
+                      segment_pickle.cast<const Trajectory<T>*>();
+                  if (segment) {
+                    segments.emplace_back(segment->Clone());
+                  } else {
+                    throw std::runtime_error(
+                        "CompositeTrajectory pickle load error: segment is "
+                        "null or invalid type.");
+                  }
+                }
+                return std::make_unique<CompositeTrajectory<T>>(
+                    std::move(segments));
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
