@@ -79,12 +79,12 @@ _IMPLIB_SRCS = [
     "{}.init.c".format(_MOSEK_SO_NAME),
 ]
 
-genrule(
+gen_implib(
     name = "_gen_implib",
-    srcs = [_MOSEK_MAJMIN_GLOB[0]],
+    src = _MOSEK_MAJMIN_GLOB[0],
     outs = _IMPLIB_SRCS,
-    cmd = "$(execpath @implib_so_internal//:gen) --dlopen-callback=drake_dlopen_mosek --outdir=$(RULEDIR) $<",
-    tools = ["@implib_so_internal//:gen"],
+    drake_dlopen_mosek = "drake_dlopen_mosek",
+    tool = "@implib_so_internal//:gen",
 )
 
 cc_library(
