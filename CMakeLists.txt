@@ -68,29 +68,24 @@ else()
   endif()
   list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
 
-  find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
-  mark_as_advanced(LSB_RELEASE_EXECUTABLE)
-  if(NOT LSB_RELEASE_EXECUTABLE)
-    message(WARNING "Could NOT find the lsb_release executable")
+  execute_process(
+    COMMAND "bash" "-c" ". /etc/os-release && echo \${VERSION_CODENAME}"
+    RESULT_VARIABLE OS_RELEASE_RESULT
+    OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(NOT OS_RELEASE_RESULT EQUAL 0)
+    message(WARNING "Could NOT read the /etc/os-release VERSION_CODENAME.")
   else()
-    execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --codename --short
-      RESULT_VARIABLE LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE
-      OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if(NOT LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
-      message(WARNING "Could NOT run the lsb_release executable")
+    set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
+    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
+      message(WARNING "Could not find config file ${MAYBE_RC}. "
+        "This may indicate that you're using an OS or OS version that "
+        "is not officially supported, so the build configuration cannot be "
+        "fine-tuned. See https://drake.mit.edu/from_source.html for details "
+        "on officially supported platforms when building from source.")
     else()
-      set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
-      if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-        message(WARNING "Could not find config file ${MAYBE_RC}. "
-          "This may indicate that you're using an OS or OS version that "
-          "is not officially supported, so the build configuration cannot be "
-          "fine-tuned. See https://drake.mit.edu/from_source.html for details "
-          "on officially supported platforms when building from source.")
-      else()
-        list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
-      endif()
+      list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
     endif()
   endif()
 endif()
