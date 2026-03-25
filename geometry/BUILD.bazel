@@ -46,6 +46,7 @@ drake_cc_package_library(
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
+        ":lazy_shared",
         ":make_mesh_for_deformable",
         ":mesh_deformation_interpolator",
         ":mesh_source",
@@ -302,6 +303,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lazy_shared",
+    hdrs = ["lazy_shared.h"],
+)
+
+drake_cc_library(
     name = "poisson_disk",
     srcs = ["poisson_disk.cc"],
     hdrs = ["poisson_disk.h"],
@@ -438,6 +444,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":internal_frame",
+        ":lazy_shared",
         ":make_mesh_for_deformable",
         ":shape_specification",
         "//common:copyable_unique_ptr",
@@ -472,6 +479,7 @@ drake_cc_library(
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = [
+        ":lazy_shared",
         ":mesh_source",
         "//common:essential",
         "//geometry/proximity:polygon_surface_mesh",
@@ -1064,6 +1072,13 @@ drake_cc_googletest(
     name = "in_memory_mesh_test",
     deps = [
         ":in_memory_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "lazy_shared_test",
+    deps = [
+        ":lazy_shared",
     ],
 )
 
