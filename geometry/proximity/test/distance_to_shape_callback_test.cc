@@ -1,80 +1,166 @@
-// Tests that an unsupported geometry causes the engine to throw.
-GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
-  ProximityEngine<Expression> engine;
+#include "drake/geometry/proximity/distance_to_shape_callback.h"
 
+#include <limits>
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
+#include <fcl/fcl.h>
+#include <fmt/ostream.h>
+#include <gtest/gtest.h>
+
+#include "drake/common/fmt_eigen.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
+
+namespace drake {
+namespace geometry {
+namespace internal {
+
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using math::RotationMatrixd;
+using std::make_shared;
+using std::shared_ptr;
+using std::unordered_map;
+using symbolic::Expression;
+
+namespace {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
+
+// Creates an fcl::CollisionObjectd for a given Drake Shape, stamping the
+// geometry id into the FCL object's user data (as required by
+// shape_distance::Callback).
+std::unique_ptr<fcl::CollisionObjectd> MakeFclObject(const Shape& shape,
+                                                     GeometryId id,
+                                                     bool is_dynamic) {
+  struct FclObjectMaker final : public ShapeReifier {
+    using ShapeReifier::ImplementGeometry;
+    void ImplementGeometry(const Sphere& sphere, void* data) override {
+      *static_cast<std::shared_ptr<fcl::CollisionGeometryd>*>(data) =
+          std::make_shared<fcl::Sphered>(sphere.radius());
+    }
+    void ImplementGeometry(const Box& box, void* data) override {
+      *static_cast<std::shared_ptr<fcl::CollisionGeometryd>*>(data) =
+          std::make_shared<fcl::Boxd>(box.size());
+    }
+    void ImplementGeometry(const Capsule& capsule, void* data) override {
+      *static_cast<std::shared_ptr<fcl::CollisionGeometryd>*>(data) =
+          std::make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
+    }
+    void ImplementGeometry(const Cylinder& cylinder, void* data) override {
+      *static_cast<std::shared_ptr<fcl::CollisionGeometryd>*>(data) =
+          std::make_shared<fcl::Cylinderd>(cylinder.radius(),
+                                           cylinder.length());
+    }
+    void ImplementGeometry(const HalfSpace&, void* data) override {
+      *static_cast<std::shared_ptr<fcl::CollisionGeometryd>*>(data) =
+          std::make_shared<fcl::Halfspaced>(0, 0, 1, 0);
+    }
+  };
+  FclObjectMaker maker;
+  std::shared_ptr<fcl::CollisionGeometryd> fcl_geometry;
+  shape.Reify(&maker, &fcl_geometry);
+  auto object = std::make_unique<fcl::CollisionObjectd>(fcl_geometry);
+  EncodedData(id, is_dynamic).write_to(object.get());
+  return object;
+}
+
+// Tests that an unsupported geometry causes the callback to throw.
+GTEST_TEST(SignedDistanceCallbackTests, ExpressionUnsupported) {
   // Add two geometries that can't be queried.
   const GeometryId id1 = GeometryId::get_new_id();
   const GeometryId id2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Box(1, 2, 3), {}, id1);
-  engine.AddDynamicGeometry(Box(2, 4, 6), {}, id2);
+  std::unique_ptr<fcl::CollisionObjectd> obj1 =
+      MakeFclObject(Box(1, 2, 3), id1, /* is_dynamic= */ true);
+  std::unique_ptr<fcl::CollisionObjectd> obj2 =
+      MakeFclObject(Box(2, 4, 6), id2, /* is_dynamic= */ true);
 
-  const unordered_map<GeometryId, RigidTransform<Expression>> X_WGs{
-      {id1, RigidTransform<Expression>::Identity()},
-      {id2, RigidTransform<Expression>::Identity()}};
+  const unordered_map<GeometryId, math::RigidTransform<Expression>> X_WGs{
+      {id1, math::RigidTransform<Expression>::Identity()},
+      {id2, math::RigidTransform<Expression>::Identity()}};
+  std::vector<SignedDistancePair<Expression>> pairs;
+  shape_distance::CallbackData<Expression> data{nullptr, &X_WGs, kInf, &pairs};
+  data.request.enable_nearest_points = true;
+  data.request.enable_signed_distance = true;
+  data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  data.request.distance_tolerance = 1e-6;
+  double max_dist = kInf;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::symbolic::Expression.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs),
+      shape_distance::Callback<Expression>(obj1.get(), obj2.get(), &data,
+                                           max_dist),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::symbolic::Expression.*");
 }
-
 
 // Confirms that non-positive thresholds produce the right value. Creates three
 // spheres: A, B, & C. A is separated from B & C and B & C are penetrating.
 // We confirm that query tolerance of 0, returns B & C and that a tolerance
 // of penetration depth + epsilon returns B & C, and depth - epsilon omits
 // everything.
-GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
-  ProximityEngine<double> engine;
+GTEST_TEST(SignedDistanceCallbackTests,
+           PairwiseSignedDistanceNonPositiveThreshold) {
   const GeometryId id1 = GeometryId::get_new_id();
   const GeometryId id2 = GeometryId::get_new_id();
   const GeometryId id3 = GeometryId::get_new_id();
   const double kRadius = 0.5;
   const unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id1, RigidTransformd{Translation3d{0, 2 * kRadius, 0}}},
-      {id2, RigidTransformd{Translation3d{-kRadius * 0.9, 0, 0}}},
-      {id3, RigidTransformd{Translation3d{kRadius * 0.9, 0, 0}}}};
+      {id1, RigidTransformd{Vector3d{0, 2 * kRadius, 0}}},
+      {id2, RigidTransformd{Vector3d{-kRadius * 0.9, 0, 0}}},
+      {id3, RigidTransformd{Vector3d{kRadius * 0.9, 0, 0}}}};
 
   Sphere sphere{kRadius};
-  engine.AddDynamicGeometry(sphere, {}, id1);
-  engine.AddDynamicGeometry(sphere, {}, id2);
-  engine.AddDynamicGeometry(sphere, {}, id3);
-  engine.UpdateWorldPoses(X_WGs);
-  std::vector<SignedDistancePair<double>> results_all =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  ASSERT_EQ(results_all.size(), 3u);
-  // Make sure the result is sorted
-  auto parameters_in_order = [](const SignedDistancePair<double>& p1,
-                                const SignedDistancePair<double>& p2) {
-    if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-    return p1.id_B < p2.id_B;
-  };
-  EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
-  EXPECT_TRUE(parameters_in_order(results_all[1], results_all[2]));
+  std::unique_ptr<fcl::CollisionObjectd> obj1 =
+      MakeFclObject(sphere, id1, /* is_dynamic= */ true);
+  std::unique_ptr<fcl::CollisionObjectd> obj2 =
+      MakeFclObject(sphere, id2, /* is_dynamic= */ true);
+  std::unique_ptr<fcl::CollisionObjectd> obj3 =
+      MakeFclObject(sphere, id3, /* is_dynamic= */ true);
 
-  std::vector<SignedDistancePair<double>> results_zero =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, 0);
-  EXPECT_EQ(results_zero.size(), 1u);
+  // Calls shape_distance::Callback for all three pairs with the given threshold
+  // and returns the collected results.
+  auto invoke_all_pairs =
+      [&](double threshold) -> std::vector<SignedDistancePair<double>> {
+    std::vector<SignedDistancePair<double>> results;
+    shape_distance::CallbackData<double> data{nullptr, &X_WGs, threshold,
+                                              &results};
+    data.request.enable_nearest_points = true;
+    data.request.enable_signed_distance = true;
+    data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    data.request.distance_tolerance = 1e-6;
+    double max_dist = threshold;
+    shape_distance::Callback<double>(obj1.get(), obj2.get(), &data, max_dist);
+    max_dist = threshold;
+    shape_distance::Callback<double>(obj1.get(), obj3.get(), &data, max_dist);
+    max_dist = threshold;
+    shape_distance::Callback<double>(obj2.get(), obj3.get(), &data, max_dist);
+    return results;
+  };
+
+  EXPECT_EQ(invoke_all_pairs(kInf).size(), 3u);
+
+  EXPECT_EQ(invoke_all_pairs(0).size(), 1u);
 
   const double penetration = -kRadius * 0.2;
   const double kEps = std::numeric_limits<double>::epsilon();
 
-  std::vector<SignedDistancePair<double>> results_barely_in =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        penetration + kEps);
-  EXPECT_EQ(results_barely_in.size(), 1u);
+  EXPECT_EQ(invoke_all_pairs(penetration + kEps).size(), 1u);
 
-  std::vector<SignedDistancePair<double>> results_barely_out =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        penetration - kEps);
-  EXPECT_EQ(results_barely_out.size(), 0u);
+  EXPECT_EQ(invoke_all_pairs(penetration - kEps).size(), 0u);
 }
 
-// Test ComputeSignedDistancePairwiseClosestPoints with sphere-sphere,
-// sphere-box, sphere-capsule, sphere-cylinder pairs, and sphere-half space.
+// Test shape_distance::Callback with sphere-sphere, sphere-box,
+// sphere-capsule, sphere-cylinder pairs, and sphere-half space.
 // The definition of this test suite consists of four sections.
 // 1. Generate test data as a vector of SignedDistancePairTestData. Each
 //    record consists of both input and expected result.  See the function
@@ -83,7 +169,7 @@ GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
 //    each test according to the test data. See the class
 //    SignedDistancePairTest below.
 // 3. Define one or more test procedures for the same test fixture. We call
-//    ComputeSignedDistancePairwiseClosestPoints() from here.
+//    shape_distance::Callback directly from here.
 //    See TEST_P(SignedDistancePairTest, SinglePair), for example.
 // 4. Initiate all the tests by specifying the test fixture and the test data.
 //    See INSTANTIATE_TEST_SUITE_P() below.
@@ -794,18 +880,15 @@ class SignedDistancePairTest
  public:
   SignedDistancePairTest() {
     const auto& data = GetParam();
-    engine_.AddAnchoredGeometry(*data.a_, data.X_WA_,
-                                data.expected_result_.id_A);
-
-    engine_.AddDynamicGeometry(*(data.b_), {}, data.expected_result_.id_B);
-
+    fcl_object_A_ = MakeFclObject(*data.a_, data.expected_result_.id_A, false);
+    fcl_object_B_ = MakeFclObject(*data.b_, data.expected_result_.id_B, true);
     X_WGs_[data.expected_result_.id_A] = data.X_WA_;
     X_WGs_[data.expected_result_.id_B] = data.X_WB_;
-    engine_.UpdateWorldPoses(X_WGs_);
   }
 
  protected:
-  ProximityEngine<double> engine_;
+  std::unique_ptr<fcl::CollisionObjectd> fcl_object_A_;
+  std::unique_ptr<fcl::CollisionObjectd> fcl_object_B_;
   unordered_map<GeometryId, RigidTransformd> X_WGs_;
 
  public:
@@ -818,10 +901,18 @@ class SignedDistancePairTest
 
 TEST_P(SignedDistancePairTest, SinglePair) {
   const auto& data = GetParam();
-  const auto results =
-      engine_.ComputeSignedDistancePairwiseClosestPoints(X_WGs_, kInf);
-  ASSERT_EQ(results.size(), 1);
-  const auto& result = results[0];
+  std::vector<SignedDistancePair<double>> witness_pairs;
+  shape_distance::CallbackData<double> callback_data{nullptr, &X_WGs_, kInf,
+                                                     &witness_pairs};
+  callback_data.request.enable_nearest_points = true;
+  callback_data.request.enable_signed_distance = true;
+  callback_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  callback_data.request.distance_tolerance = 1e-6;
+  double max_dist = kInf;
+  shape_distance::Callback<double>(fcl_object_A_.get(), fcl_object_B_.get(),
+                                   &callback_data, max_dist);
+  ASSERT_EQ(witness_pairs.size(), 1);
+  const auto& result = witness_pairs[0];
   const double tolerance = data.tolerance_ ? data.tolerance_ : kTolerance;
 
   EXPECT_NEAR(result.distance, data.expected_result_.distance, tolerance)
@@ -916,21 +1007,29 @@ GTEST_TEST(SignedDistancePairError, HalfspaceException) {
   // second geometry in the pair being tested. However, this test isn't
   // intended to be long-lasting; we want to correct FCL's short-coming soon
   // so that the behavior (and this test) can be removed.
-  ProximityEngine<double> engine;
+
+  // We can't use sphere, because sphere-halfspace is supported.
+  const GeometryId id_box = GeometryId::get_new_id();
+  const GeometryId id_hs = GeometryId::get_new_id();
+  std::unique_ptr<fcl::CollisionObjectd> box_obj =
+      MakeFclObject(Box{0.5, 0.25, 0.75}, id_box, true);
+  std::unique_ptr<fcl::CollisionObjectd> hs_obj =
+      MakeFclObject(HalfSpace{}, id_hs, false);
+
   // NOTE: It's not necessary to put any poses into X_WGs; they never get
   // evaluated due to the error condition.
   unordered_map<GeometryId, RigidTransformd> X_WGs;
-
-  // We can't use sphere, because sphere-halfspace is supported.
-  Box box{0.5, 0.25, 0.75};
-  engine.AddDynamicGeometry(box, {}, GeometryId::get_new_id());
-
-  HalfSpace halfspace;
-  engine.AddAnchoredGeometry(halfspace, RigidTransformd::Identity(),
-                             GeometryId::get_new_id());
+  std::vector<SignedDistancePair<double>> pairs;
+  shape_distance::CallbackData<double> data{nullptr, &X_WGs, kInf, &pairs};
+  data.request.enable_nearest_points = true;
+  data.request.enable_signed_distance = true;
+  data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  data.request.distance_tolerance = 1e-6;
+  double max_dist = kInf;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
+      shape_distance::Callback<double>(box_obj.get(), hs_obj.get(), &data,
+                                       max_dist),
       "Signed distance queries between shapes .* and .* are not supported.*");
 }
 
@@ -942,10 +1041,18 @@ class SignedDistancePairConcentricTest : public SignedDistancePairTest {};
 
 TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
   const auto& data = GetParam();
-  const auto results =
-      engine_.ComputeSignedDistancePairwiseClosestPoints(X_WGs_, kInf);
-  ASSERT_EQ(results.size(), 1);
-  const auto& result = results[0];
+  std::vector<SignedDistancePair<double>> witness_pairs;
+  shape_distance::CallbackData<double> callback_data{nullptr, &X_WGs_, kInf,
+                                                     &witness_pairs};
+  callback_data.request.enable_nearest_points = true;
+  callback_data.request.enable_signed_distance = true;
+  callback_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+  callback_data.request.distance_tolerance = 1e-6;
+  double max_dist = kInf;
+  shape_distance::Callback<double>(fcl_object_A_.get(), fcl_object_B_.get(),
+                                   &callback_data, max_dist);
+  ASSERT_EQ(witness_pairs.size(), 1);
+  const auto& result = witness_pairs[0];
 
   EXPECT_NEAR(result.distance, data.expected_result_.distance, kTolerance)
       << "Incorrect signed distance";
@@ -1085,3 +1192,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     SphereBoxConcentricTransform, SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentricTransform()));
+
+}  // namespace
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake
