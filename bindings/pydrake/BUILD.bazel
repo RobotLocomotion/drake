@@ -340,6 +340,7 @@ drake_py_unittest(
     deps = [
         ":polynomial_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 

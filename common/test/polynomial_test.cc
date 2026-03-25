@@ -231,6 +231,41 @@ GTEST_TEST(PolynomialTest, CoefficientsConstructorNoMatrix) {
   EXPECT_THROW(Polynomial<double>{coefficients}, std::exception);
 }
 
+GTEST_TEST(PolynomialTest, MonomialIteratorConstructor) {
+  using Monomial = Polynomial<double>::Monomial;
+  Polynomiald x("x");
+
+  // Prepare a vector of Monomials. We include two terms with the same power
+  // (x²) to test canonicalization.
+  Monomial m1 = (2.0 * x * x).GetMonomials().at(0);  // 2*x²
+  Monomial m2 = (3.0 * x * x).GetMonomials().at(0);  // 3*x²
+  Monomial m3 = (4.0 * x).GetMonomials().at(0);      // 4*x
+
+  std::vector<Monomial> monomial_vec = {m1, m2, m3};
+
+  // Test with canonicalize = true. This should merge 2*x² and 3*x² into a
+  // single 5*x² term.
+  Polynomiald dut_canonical(monomial_vec.begin(), monomial_vec.end(),
+                            /* canonicalize= */ true);
+
+  // Expect 2 unique terms: 5*x² and 4*x.
+  EXPECT_EQ(dut_canonical.GetNumberOfCoefficients(), 2);
+
+  // Verify evaluation: at x = 2, 5*(2²) + 4*(2) = 20 + 8 = 28.
+  const std::map<Polynomiald::VarType, double> eval_point = {
+      {x.GetSimpleVariable(), 2.0}};
+  EXPECT_NEAR(dut_canonical.EvaluateMultivariate(eval_point), 28.0, 1e-14);
+
+  // 3. Test with canonicalize = false. This should keep the vector exactly as
+  // provided (3 terms).
+  Polynomiald dut_raw(monomial_vec.begin(), monomial_vec.end(),
+                      /* canonicalize= */ false);
+  EXPECT_EQ(dut_raw.GetMonomials().size(), 3);
+
+  // Evaluation should still yield 28.0 because the sum of terms is the same.
+  EXPECT_NEAR(dut_raw.EvaluateMultivariate(eval_point), 28.0, 1e-14);
+}
+
 GTEST_TEST(PolynomialTest, IntegralAndDerivative) {
   testIntegralAndDerivative<double>();
 }
