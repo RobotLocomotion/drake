@@ -95,9 +95,9 @@ wget
 EOF
 )
 
-codename=$(lsb_release -sc)
+. /etc/os-release
 
-packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
@@ -113,7 +113,7 @@ else
 fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-doc-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
@@ -122,20 +122,20 @@ if [[ "${with_bazel}" -eq 1 ]]; then
 fi
 
 if [[ "${with_clang}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-clang.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-clang.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-test-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
-  if [[ "${codename}" == "noble" ]]; then
+  if [[ "${VERSION_CODENAME}" == "noble" ]]; then
     "${BASH_SOURCE%/*}/install_kcov.sh"
   fi
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-maintainer-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
@@ -144,7 +144,7 @@ fi
 # them correctly as a group, Drake's documentation header file parser will fail
 # with a libclang-related complaint. Therefore, we'll help the user clean up
 # their mess, to avoid apparent Drake build errors.
-if [[ "${codename}" == "noble" ]]; then
+if [[ "${VERSION_CODENAME}" == "noble" ]]; then
   status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-14-dev 2>/dev/null || true)
   if [[ "${status}" == "ii " ]]; then
     status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-14-dev 2>/dev/null || true)
