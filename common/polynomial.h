@@ -118,9 +118,12 @@ class Polynomial {
   /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
   Polynomial(const T coeff, const std::vector<Term>& terms);
 
-  /// Construct a Polynomial from a sequence of Monomials.
+  /// Construct a Polynomial from a sequence of Monomials. If `canonicalize` is
+  /// true, monomials with coefficient zero will be dropped, and monomials with
+  /// common powers will be combined.
   Polynomial(typename std::vector<Monomial>::const_iterator start,
-             typename std::vector<Monomial>::const_iterator finish);
+             typename std::vector<Monomial>::const_iterator finish,
+             bool canonicalize = true);
 
   /// Constructs a polynomial consisting of a single Monomial of the variable
   /// named `varname1`.

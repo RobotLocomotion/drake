@@ -418,6 +418,21 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(readback.cols(), 3)
         self.assertTrue(readback.isApprox(expected, tol=0))
 
+        assert_pickle(
+            self, dut, lambda traj: traj.get_number_of_segments(), T=float
+        )
+        assert_pickle(
+            self,
+            dut,
+            lambda traj: np.array(
+                [
+                    traj.getPolynomialMatrix(i)
+                    for i in range(traj.get_number_of_segments())
+                ]
+            ),
+            T=float,
+        )
+
     def test_piecewise_polynomial_serialize_cubic(self):
         PiecewisePolynomial = PiecewisePolynomial_[float]
         dut = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
@@ -429,6 +444,21 @@ class TestTrajectories(unittest.TestCase):
         yaml = yaml_dump_typed(dut)
         readback = yaml_load_typed(schema=PiecewisePolynomial, data=yaml)
         self.assertTrue(readback.isApprox(dut, tol=0))
+
+        assert_pickle(
+            self, dut, lambda traj: traj.get_number_of_segments(), T=float
+        )
+        assert_pickle(
+            self,
+            dut,
+            lambda traj: np.array(
+                [
+                    traj.getPolynomialMatrix(i)
+                    for i in range(traj.get_number_of_segments())
+                ]
+            ),
+            T=float,
+        )
 
     def test_piecewise_polynomial_serialize_empty(self):
         data = dedent("""\
