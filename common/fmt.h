@@ -163,6 +163,8 @@ Drake drops support for earlier version of fmt. */
       const Base* const self = this;                                           \
       return const_cast<Base*>(self)->format(MyTraits::Functor::call(x), ctx); \
     }                                                                          \
+    /* Disable re-quoting the return value of the EXPR (e.g., in std::map). */ \
+    void set_debug_format() = delete;                                          \
   };                                                                           \
   } /* namespace drake::internal::formatter_as */                              \
                                                                                \
