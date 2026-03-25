@@ -4,6 +4,7 @@
 #include <string>
 
 #include <fmt/std.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/memory_file.h"
@@ -23,10 +24,15 @@ GTEST_TEST(FileSourceTest, DefaultPath) {
 }
 
 GTEST_TEST(FileSourceTest, ToString) {
-  EXPECT_EQ(fmt::to_string(FileSource("a/b/c")), "variant(\"a/b/c\")");
+  // Different versions of fmt differ on whether a variant<path, ...> formats
+  // with quotes or not: versions <= 9.1 and >= 12.1+ have quotes; inbetween
+  // versions do not. We'll allow either spelling here.
+  EXPECT_THAT(fmt::to_string(FileSource("a/b/c")),
+              testing::AnyOf("variant(a/b/c)", "variant(\"a/b/c\")"));
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(to_string(FileSource("a/b/c")), "variant(\"a/b/c\")");
+  EXPECT_THAT(to_string(FileSource("a/b/c")),
+              testing::AnyOf("variant(a/b/c)", "variant(\"a/b/c\")"));
 #pragma GCC diagnostic pop
 
   const MemoryFile file("012345789", ".ext", "hint");
