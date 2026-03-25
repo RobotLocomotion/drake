@@ -68,19 +68,10 @@ else()
   endif()
   list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
 
-  find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
-  mark_as_advanced(LSB_RELEASE_EXECUTABLE)
-  if(NOT LSB_RELEASE_EXECUTABLE)
-    message(WARNING "Could NOT find the lsb_release executable")
-  else()
-    execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --codename --short
-      RESULT_VARIABLE LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE
-      OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if(NOT LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
-      message(WARNING "Could NOT run the lsb_release executable")
-    else()
+  if(EXISTS "/etc/os-release")
+    file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+    if(OS_RELEASE_CONTENT MATCHES "VERSION_CODENAME=([A-Za-z]+)")
+      set(UNIX_DISTRIBUTION_CODENAME ${CMAKE_MATCH_1})
       set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
       if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
         message(WARNING "Could not find config file ${MAYBE_RC}. "

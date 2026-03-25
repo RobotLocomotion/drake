@@ -27,16 +27,17 @@ if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
   exit 1
 fi
 
+. /etc/os-release
+
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
 arch=$(/usr/bin/arch)
-codename=$(lsb_release -sc)
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
 import %workspace%/tools/ubuntu.bazelrc
 import %workspace%/tools/ubuntu-arch-${arch}.bazelrc
-import %workspace%/tools/ubuntu-${codename}.bazelrc
+import %workspace%/tools/ubuntu-${VERSION_CODENAME}.bazelrc
 EOF
 
 # Prefetch the bazelisk download of bazel.
