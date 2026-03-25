@@ -260,8 +260,7 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
           found_match = true;
           // Modifying the vector during range iteration is ok, because this
           // modifications triggers dropping out of the iteration.
-          unmatched_from_expected[j] = unmatched_from_expected.back();
-          unmatched_from_expected.pop_back();
+          std::erase(unmatched_from_expected, j);
           break;
         }
       }
