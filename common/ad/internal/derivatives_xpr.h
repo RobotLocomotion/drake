@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -17,11 +19,11 @@ using DerivativesStride = Eigen::Stride<
 
 /* The base class of ad::DerivativesConstXpr. It is the type of an Eigen
 expression tree where a Map<VectorXd> is scaled elementwise by a constant. */
-using DerivativesConstXprBase = decltype(  // BR
+using DerivativesConstXprBase = std::remove_const_t<decltype(  // BR
     0.0 *
     Eigen::Map<const Eigen::VectorXd, /* Options = */ 0, DerivativesStride>{
         static_cast<const double*>(nullptr), Eigen::Index{0},
-        DerivativesStride{0, 0}});
+        DerivativesStride{0, 0}})>;
 
 }  // namespace internal
 

@@ -1,11 +1,11 @@
 # Options for explicitly using Clang.
 # Keep this in sync with doc/_pages/from_source.md.
-common:clang --repo_env=CC=clang-19
-common:clang --repo_env=CXX=clang++-19
-build:clang --action_env=CC=clang-19
-build:clang --action_env=CXX=clang++-19
-build:clang --host_action_env=CC=clang-19
-build:clang --host_action_env=CXX=clang++-19
+common:clang --repo_env=CC=clang-20
+common:clang --repo_env=CXX=clang++-20
+build:clang --action_env=CC=clang-20
+build:clang --action_env=CXX=clang++-20
+build:clang --host_action_env=CC=clang-20
+build:clang --host_action_env=CXX=clang++-20
 # https://github.com/RobotLocomotion/drake/issues/22204
 # TODO(jwnimmer-tri) Ideally, our drake_cc.bzl logic for compiler-specific flags
 # should take over this option so we can ensure it's being used even in CMake
