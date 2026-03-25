@@ -49,23 +49,32 @@ targets = {
     "x86_64": (
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            test_platform=Platform("ubuntu", "24.04", "noble"),
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                Platform("ubuntu", "24.04", "noble"),
+            ),
             python_version_tuple=(3, 12, 8),
             python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
-            # released.
-            test_platform=Platform("ubuntu", "25.10", "questing"),
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
+                # released.
+                Platform("ubuntu", "25.10", "questing"),
+            ),
             python_version_tuple=(3, 13, 0),
             python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
         ),
         Target(
             build_platform=Platform("amd64/almalinux", "9", "almalinux9"),
-            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
-            # released.
-            test_platform=Platform("ubuntu", "25.10", "questing"),
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
+                # released.
+                Platform("ubuntu", "25.10", "questing"),
+            ),
             python_version_tuple=(3, 14, 0),
             python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
         ),
@@ -73,23 +82,32 @@ targets = {
     "aarch64": (
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            test_platform=Platform("ubuntu", "24.04", "noble"),
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                Platform("ubuntu", "24.04", "noble"),
+            ),
             python_version_tuple=(3, 12, 8),
             python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
-            # released.
-            test_platform=Platform("ubuntu", "25.10", "questing"),
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
+                # released.
+                Platform("ubuntu", "25.10", "questing"),
+            ),
             python_version_tuple=(3, 13, 0),
             python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
         ),
         Target(
             build_platform=Platform("arm64v8/almalinux", "9", "almalinux9"),
-            # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
-            # released.
-            test_platform=Platform("ubuntu", "25.10", "questing"),
+            test_platforms=(
+                Platform("amazonlinux", "2023", "AL2023"),
+                # TODO(jwnimmer-tri) Switch testing to 26.04 once it's been
+                # released.
+                Platform("ubuntu", "25.10", "questing"),
+            ),
             python_version_tuple=(3, 14, 0),
             python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
         ),
@@ -195,11 +213,14 @@ def _create_source_tar(path):
     out.close()
 
 
-def _tagname(target: Target, role: Role, tag_prefix: str):
+def _tagname(
+    target: Target, role: Role, tag_prefix: str, test_index: int | None = None
+):
     """
     Generates a Docker tag name for a target and tag prefix.
+    Iff the role is the TEST role, then the test_index must be provided.
     """
-    platform = target.platform(role).alias
+    platform = target.platform(role, test_index).alias
     return f"{tag_base}:{tag_prefix}-{platform}-py{target.python_tag}"
 
 
@@ -224,12 +245,13 @@ def _build_stage(target, args, tag_prefix, stage=None):
     return tag
 
 
-def _target_args(target: Target, role: Role):
+def _target_args(target: Target, role: Role, test_index: int | None = None):
     """
     Returns the Docker build arguments for the specified platform target.
+    Iff the role is the TEST role, then the test_index must be provided.
     """
-    platform_name = target.platform(role).name
-    platform_version = target.platform(role).version
+    platform_name = target.platform(role, test_index).name
+    platform_version = target.platform(role, test_index).version
     python_version = target.python_version
 
     if role == BUILD and target.python_sha is not None:
@@ -304,46 +326,54 @@ def _test_wheel(target, identifier, options):
         wheel_platform=f"manylinux_{glibc}_{ARCH}",
     )
 
-    test_image = _tagname(target, TEST, f"test-{identifier}")
-    test_container = test_image.replace(":", "__")
-    if options.tag_stages:
-        base_image = _tagname(target, TEST, "test")
-    else:
-        base_image = test_image
-    test_dir = os.path.join(resource_root, "test")
+    for test_index, test_platform in enumerate(target.test_platforms):
+        print(f"[-] Testing on {test_platform.alias} ...")
+        test_image = _tagname(target, TEST, f"test-{identifier}", test_index)
+        test_container = test_image.replace(":", "__")
+        if options.tag_stages:
+            base_image = _tagname(target, TEST, "test", test_index)
+        else:
+            base_image = test_image
+        test_dir = os.path.join(resource_root, "test")
 
-    # Build the test base image.
-    _docker("build", "-t", base_image, *_target_args(target, TEST), test_dir)
-    if not options.tag_stages:
-        _images_to_remove.append(base_image)
-
-    # Install the wheel.
-    install_script = "/test/install-wheel.sh"
-    _docker(
-        "run", "-t", f"--name={test_container}",
-        f"-v{test_dir}:/test",
-        f"-v{options.output_dir}:{wheelhouse}",
-        base_image, install_script, os.path.join(wheelhouse, wheel),
-    )  # fmt: skip
-
-    # Tag the container with the wheel installed.
-    _docker("commit", test_container, test_image)
-    _docker("container", "rm", test_container)
-    if options.tag_stages:
-        _images_to_remove.append(test_image)
-
-    # Run individual tests.
-    test_script = "/test/test-wheel.sh"
-    for test in find_tests("hermetic"):
-        print(f"[-] Executing test {test}")
+        # Build the test base image.
         _docker(
-            "run", "--rm", "-t",
+            "build",
+            "-t",
+            base_image,
+            *_target_args(target, TEST, test_index),
+            test_dir,
+        )
+        if not options.tag_stages:
+            _images_to_remove.append(base_image)
+
+        # Install the wheel.
+        install_script = "/test/install-wheel.sh"
+        _docker(
+            "run", "-t", f"--name={test_container}",
             f"-v{test_dir}:/test",
             f"-v{options.output_dir}:{wheelhouse}",
-            test_image,
-            test_script, f"/test/{test}", os.path.join(wheelhouse, wheel),
+            base_image, install_script, os.path.join(wheelhouse, wheel),
         )  # fmt: skip
-        print(f"[-] Executing test {test} - PASSED")
+
+        # Tag the container with the wheel installed.
+        _docker("commit", test_container, test_image)
+        _docker("container", "rm", test_container)
+        if options.tag_stages:
+            _images_to_remove.append(test_image)
+
+        # Run individual tests.
+        test_script = "/test/test-wheel.sh"
+        for test in find_tests("hermetic"):
+            print(f"[-] Executing test {test}")
+            _docker(
+                "run", "--rm", "-t",
+                f"-v{test_dir}:/test",
+                f"-v{options.output_dir}:{wheelhouse}",
+                test_image,
+                test_script, f"/test/{test}", os.path.join(wheelhouse, wheel),
+            )  # fmt: skip
+            print(f"[-] Executing test {test} - PASSED")
 
 
 def build(options):
