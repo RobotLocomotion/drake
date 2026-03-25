@@ -21,14 +21,14 @@ GTEST_TEST(InMemoryMeshTest, ToString) {
   mesh.supporting_files.emplace("name", file);
   EXPECT_EQ(mesh.to_string(),
             fmt::format("InMemoryMesh(mesh_file={file}, "
-                        "supporting_files={{\"name\": {file}}})",
+                        "supporting_files={{\"name\": variant({file})}})",
                         fmt::arg("file", file_str)));
 
   mesh.supporting_files.emplace("name2", file);
   EXPECT_EQ(mesh.to_string(),
             fmt::format("InMemoryMesh(mesh_file={file}, "
-                        "supporting_files={{\"name\": {file}, "
-                        "\"name2\": {file}}})",
+                        "supporting_files={{\"name\": variant({file}), "
+                        "\"name2\": variant({file})}})",
                         fmt::arg("file", file_str)));
 }
 

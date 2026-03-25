@@ -71,9 +71,9 @@ repository from the [Jenkins UI](https://drake-jenkins.csail.mit.edu/),
 4. Click on "Pull Requests" towards the top, and select your pull request.
 5. Click on "Build with Parameters" in the left menu.
 6. (Optional) If you need to test your changes alongside a pull request or
-   branch of the ``RobotLocomotion/drake-ci`` repository, enter ``pr/XYZ/head``
-   (HEAD of pull request), ``pr/XYZ/merge`` (pull request merged with master)
-   for ``ciSha``. Otherwise, leave it set to "main."
+   branch of the ``RobotLocomotion/drake-ci`` repository, enter the git commit
+   SHA associated with the HEAD of the pull request. Otherwise, leave it set to
+   "main."
 7. Click ``Build``.
 
 The list of experimental builds includes builds that automatically run on opened
