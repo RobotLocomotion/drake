@@ -145,8 +145,8 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
                                 &MultilayerPerceptron<T>::CalcOutput);
 
   num_parameters_ = 0;
-  weight_indices_.reserve(num_weights_);
-  bias_indices_.reserve(num_weights_);
+  weight_indices_.resize(num_weights_);
+  bias_indices_.resize(num_weights_);
   for (int i = 0; i < num_weights_; ++i) {
     weight_indices_[i] = num_parameters_;
     num_parameters_ += layers_[i + 1] * layers_[i];
