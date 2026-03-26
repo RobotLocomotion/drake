@@ -1,4 +1,4 @@
-[vtk] Backport vtkStringFormatter to fmt 9.1 for Noble
+[vtk] Backport vtkStringFormatter and vtkNumberToString to fmt 9.1 for Noble
 
 Reasoning for not upstreaming this patch: Drake-specific build compatibility.
 
@@ -40,3 +40,30 @@ Reasoning for not upstreaming this patch: Drake-specific build compatibility.
 
  /**
   * Check if the given string is a printf style format.
+
+--- Common/Core/vtkNumberToString.cxx
++++ Common/Core/vtkNumberToString.cxx
+@@ -129,12 +129,12 @@
+     case vtkNumberToString::Scientific:
+     {
+       // Scientific notation
+-      return vtk::format(FMT_STRING("{:.{}e}"), val, precision);
++      return vtk::format("{:.{}e}", val, precision);
+     }
+     case vtkNumberToString::Fixed:
+     {
+       // Fixed notation
+-      return vtk::format(FMT_STRING("{:.{}f}"), val, precision);
++      return vtk::format("{:.{}f}", val, precision);
+     }
+     case vtkNumberToString::Mixed:
+     default:
+@@ -145,7 +145,7 @@
+         // Scientific notation
+         static constexpr int maxDigits = std::numeric_limits<T>::max_digits10;
+         // Use maximum precision to ensure accuracy, and remove trailing zeros
+-        return RemoveTrailingZerosScientific(vtk::format(FMT_STRING("{:.{}e}"), val, maxDigits));
++        return RemoveTrailingZerosScientific(vtk::format("{:.{}e}", val, maxDigits));
+       }
+       // Shortest notation
+       return vtk::to_string(val);

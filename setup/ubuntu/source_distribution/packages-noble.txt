@@ -1,5 +1,5 @@
 gfortran
-libclang-19-dev
+libclang-20-dev
 libgl-dev
 libglib2.0-dev
 libglx-dev

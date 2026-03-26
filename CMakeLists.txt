@@ -126,7 +126,7 @@ endif()
 # The minimum compiler versions should match those listed in
 # doc/_pages/from_source.md.
 set(MINIMUM_APPLE_CLANG_VERSION 17)
-set(MINIMUM_CLANG_VERSION 19)
+set(MINIMUM_CLANG_VERSION 20)
 set(MINIMUM_GNU_VERSION 13)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
