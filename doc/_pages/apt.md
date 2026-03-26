@@ -32,34 +32,24 @@ container image, you may need to install the following packages before continuin
 
 ```bash
 sudo apt-get update
-sudo apt-get install --no-install-recommends \
-  ca-certificates gnupg lsb-release wget
+sudo apt-get install --no-install-recommends ca-certificates wget
 ```
 
 ## Stable Releases
 
-To add the Drake APT repository to your machine and install the `drake-dev` package,
-please do the following in order.
+APT packages (``*.deb``) are available to download as attachments from Drake's
+GitHub [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
-Download a copy of the Drake GPG signing key and add it to an APT trusted keychain:
+The most recent release is
+[v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1):
 
-```bash
-wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
-  | sudo tee /etc/apt/trusted.gpg.d/drake.gpg >/dev/null
-```
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-dev_1.51.1-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-dev_1.51.1-1_amd64-noble.deb)
 
-Add the Drake repository to your APT sources list:
+To download and install the `drake-dev` package:
 
 ```bash
-echo "deb [arch=$(dpkg-architecture -qDEB_HOST_ARCH)] https://drake-apt.csail.mit.edu/$(lsb_release -cs) $(lsb_release -cs) main" \
-  | sudo tee /etc/apt/sources.list.d/drake.list >/dev/null
-```
-
-Update your local APT package index and install the `drake-dev` package:
-
-```bash
-sudo apt-get update
-sudo apt-get install --no-install-recommends drake-dev
+wget https://github.com/RobotLocomotion/drake/releases/download/v1.51.1/drake-dev_1.51.1-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+sudo apt-get install --no-install-recommends ./drake-dev_1.51.1-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
 ```
 
 Most content installs to `/opt/drake`, so setting the following environment
@@ -74,8 +64,8 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Unsigned nightly apt packages of Drake for
-Ubuntu 24.04 (Noble) ⁽¹⁾ are available to download at:
+Nightly apt packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾ are available to
+download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb)
@@ -99,3 +89,46 @@ sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-noble.de
 ⁽¹⁾ Drake's support for Ubuntu arm64 APT packages is currently experimental.
 Packages are only available on a nightly basis, not for stable releases. Follow
 [#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
+
+## APT site (Ubuntu 24.04 only)
+
+For backwards compatibility for Ubuntu 24.04 only, Drake offers an APT site that
+you can add to your `sources.list` to automatically install the newest version
+of Drake's stable releases.
+
+To add the Drake APT repository to your machine and install the `drake-dev` package,
+please do the following in order.
+
+Download a copy of the Drake GPG signing key and add it to an APT trusted keychain:
+
+```bash
+sudo apt-get update
+sudo apt-get install --no-install-recommends \
+  ca-certificates gnupg wget
+wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
+  | sudo tee /etc/apt/trusted.gpg.d/drake.gpg >/dev/null
+```
+
+Add the Drake repository to your APT sources list:
+
+```bash
+echo "deb [arch=$(dpkg-architecture -qDEB_HOST_ARCH)] https://drake-apt.csail.mit.edu/noble noble main" \
+  | sudo tee /etc/apt/sources.list.d/drake.list >/dev/null
+```
+
+Update your local APT package index and install the `drake-dev` package:
+
+```bash
+sudo apt-get update
+sudo apt-get install --no-install-recommends drake-dev
+```
+
+Most content installs to `/opt/drake`, so setting the following environment
+variables may be useful:
+
+```bash
+export PATH="/opt/drake/bin${PATH:+:${PATH}}"
+export PYTHONPATH="/opt/drake/lib/python$(python3 -c 'import sys; print("{0}.{1}".format(*sys.version_info))')/site-packages${PYTHONPATH:+:${PYTHONPATH}}"
+```
+
+Refer to [Quickstart](/installation.html#quickstart) for next steps.
