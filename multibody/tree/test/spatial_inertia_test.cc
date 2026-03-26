@@ -758,7 +758,7 @@ GTEST_TEST(SpatialInertia, CastToAutoDiff) {
   ASSERT_EQ(com_gradient.size(), 0);
 }
 
-// TODO(2026-06-01): delete test ShiftOperator.
+// TODO(2026-07-01): delete test ShiftOperator.
 // Test the shift operator to write into a stream.
 GTEST_TEST(SpatialInertia, ShiftOperator) {
   const double mass = 2.5;

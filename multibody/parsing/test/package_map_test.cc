@@ -395,7 +395,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
       ".*use PopulateFromRosPackagePath.*");
 }
 
-// TODO(2026-06-01): delete TestStreamingToString
+// TODO(2026-07-01): delete TestStreamingToString
 //  Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
   fs::create_directory("package_foo");

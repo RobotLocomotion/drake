@@ -10,7 +10,7 @@
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
-// Remove with deprecation 2026-05-01.
+// Remove with deprecation 2026-07-01.
 #include <ostream>
 
 namespace drake {
@@ -237,7 +237,7 @@ class Identifier {
  */
 template <typename Tag>
 DRAKE_DEPRECATED(
-    "2026-05-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream&

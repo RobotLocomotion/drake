@@ -13,7 +13,7 @@
 #include "drake/common/symbolic/monomial_basis_element.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
 
-// Remove with deprecation 2026-05-01.
+// Remove with deprecation 2026-07-01.
 #include <ostream>
 
 namespace drake {
@@ -510,7 +510,7 @@ std::string to_string(const GenericPolynomial<BasisElement>& p);
 
 template <typename BasisElement>
 DRAKE_DEPRECATED(
-    "2026-05-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream&

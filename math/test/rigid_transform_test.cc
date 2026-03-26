@@ -946,7 +946,7 @@ GTEST_TEST(RigidTransform, Hash) {
   EXPECT_NE(hash_func(X_AB), hash_func(X_CD));
 }
 
-// TODO(2026-06-01): delete VerifyStreamInsertionOperator.
+// TODO(2026-07-01): delete VerifyStreamInsertionOperator.
 //  This utility function helps verify the output string from RigidTransform's
 //  stream insertion operator <<.  Specifically, it does the following:
 //  1. Verifies the output string has form: "rpy = 0.125 0.25 0.5 xyz = 7 6 5";
@@ -982,7 +982,7 @@ void VerifyStreamInsertionOperator(const RigidTransform<T> X_AB,
   EXPECT_THAT(stream_string, testing::ContainsRegex(xyz_expected_string));
 }
 
-// TODO(2026-06-01): delete test StreamInsertionOperator.
+// TODO(2026-07-01): delete test StreamInsertionOperator.
 //  Test the stream insertion operator to write into a stream.
 GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   // Test stream insertion for RigidTransform<double>.
