@@ -29,6 +29,7 @@
 // #include "drake/geometry/internal_frame.h"
 // #include "drake/geometry/internal_geometry.h"
 // #include "drake/geometry/kinematics_vector.h"
+// #include "drake/geometry/lazy_shared.h"
 // #include "drake/geometry/make_mesh_for_deformable.h"
 // #include "drake/geometry/mesh_deformation_interpolator.h"
 // #include "drake/geometry/mesh_source.h"
