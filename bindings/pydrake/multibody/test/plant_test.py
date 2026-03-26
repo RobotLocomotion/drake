@@ -59,6 +59,7 @@ from pydrake.multibody.plant import (
     AddMultibodyPlant,
     AddMultibodyPlantSceneGraph,
     ApplyMultibodyPlantConfig,
+    BaseBodyJointType,
     CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactModel,
@@ -3500,6 +3501,21 @@ class TestPlant(unittest.TestCase):
         for model in models:
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
+
+    def test_base_body_joint_type(self):
+        plant = MultibodyPlant_[float](0.1)
+        joint_types = [
+            BaseBodyJointType.kQuaternionFloatingJoint,
+            BaseBodyJointType.kRpyFloatingJoint,
+            BaseBodyJointType.kWeldJoint,
+        ]
+        for joint_type in joint_types:
+            plant.SetBaseBodyJointType(
+                joint_type=joint_type, model_instance=None
+            )
+            self.assertEqual(
+                plant.GetBaseBodyJointType(model_instance=None), joint_type
+            )
 
     def test_discrete_contact_approximation(self):
         plant = MultibodyPlant_[float](0.1)
