@@ -227,11 +227,10 @@ Adjusting closed-source (commercial) software dependencies:
 
 Adjusting features:
 
-* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `ON`).
+* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `OFF`).
   When `ON`, Drake uses `<unsupported/Eigen/AutoDiff>` for its autodiff support.
   When `OFF`, Drake uses a custom re-implementation. Using `ON` is deprecated
-  and will be removed from Drake on or after 2026-07-01. The default will change
-  to `OFF` on or after 2026-04-01.
+  and will be removed from Drake on or after 2026-07-01.
 
 Adjusting installation methods (advanced):
 
