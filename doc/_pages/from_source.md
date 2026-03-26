@@ -163,8 +163,6 @@ Adjusting open-source dependencies:
   * This option is only available if pkg-config is at least version 1.0.
 * `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to
   locate a user-provided `ZLIB::ZLIB` library instead of building from source.
-  * Caveat: on macOS, for now this hardcodes `-lz`
-    instead of calling `find_package`.
 * `WITH_CLARABEL` (default `ON`). When `ON`, enables the `ClarabelSolver`
   in the build. See `ClarabelSolver::available()` to retrieve this setting at
   runtime.
