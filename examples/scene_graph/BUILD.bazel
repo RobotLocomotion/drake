@@ -90,6 +90,7 @@ filegroup(
     ]),
     visibility = [
         "//:__pkg__",
+        "//examples/conveyor_belt:__pkg__",
         "//geometry:__pkg__",
         "//geometry/render_gl:__pkg__",
         "//geometry/render_vtk:__pkg__",

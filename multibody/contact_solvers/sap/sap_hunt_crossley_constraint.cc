@@ -59,7 +59,7 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
       data.invariant_data;
   p.dt = time_step;
   const T& fe0 = configuration_.fe;
-  const T& vn0 = configuration_.vn;
+  const T& vn0 = configuration_.vn + configuration_.v_b.z();
   const T damping = max(0.0, 1.0 - d * vn0);
   const T ne0 = max(0.0, time_step * fe0);
   p.n0 = ne0 * damping;
@@ -171,9 +171,9 @@ void SapHuntCrossleyConstraint<T>::DoCalcData(
   const T& epsilon_soft = data.invariant_data.epsilon_soft;
 
   // Computations dependent on vc.
-  data.vc = vc;
-  data.vn = vc[2];
-  data.vt = vc.template head<2>();
+  data.vc = vc + configuration_.v_b;
+  data.vn = data.vc.z();
+  data.vt = data.vc.template head<2>();
   data.vt_soft = SoftNorm(data.vt, epsilon_soft);
   data.t_soft = data.vt / (data.vt_soft + epsilon_soft);
   switch (parameters_.model) {
