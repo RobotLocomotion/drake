@@ -158,6 +158,9 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
   DRAKE_THROW_UNLESS(options.ray_sampler_options.ray_search_num_steps >= 1);
   DRAKE_THROW_UNLESS(
       options.ray_sampler_options.num_particles_to_walk_towards >= 1);
+  DRAKE_THROW_UNLESS(
+      options.ray_sampler_options.num_particles_to_walk_towards <=
+      options.sampled_iris_options.num_particles);
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -536,16 +539,19 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       outer_delta_min,
       options.sampled_iris_options.max_iterations_separating_planes);
 
-  int N_max = internal::unadaptive_test_samples(
+  int test_max_samples = internal::unadaptive_test_samples(
       options.sampled_iris_options.epsilon, delta_min,
       options.sampled_iris_options.tau);
+  int max_particles =
+      std::max(test_max_samples, options.sampled_iris_options.num_particles);
 
   if (options.sampled_iris_options.verbose) {
     log()->info(
         "IrisNp2 finding region that is {} collision free with {} certainty ",
         1 - options.sampled_iris_options.epsilon,
         1 - options.sampled_iris_options.delta);
-    log()->info("IrisNp2 worst case test requires {} samples.", N_max);
+    log()->info("IrisNp2 worst case test requires {} samples.",
+                test_max_samples);
   }
 
   // TODO(cohnt): Do an argsort so we don't have to have two separate copies.
@@ -553,8 +559,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   // VectorXd heap allocations.
   std::vector<Eigen::VectorXd> particles;
   std::vector<Eigen::VectorXd> particles_in_collision;
-  particles.reserve(N_max);
-  particles_in_collision.reserve(N_max);
+  particles.reserve(max_particles);
+  particles_in_collision.reserve(max_particles);
 
   while (true) {
     log()->info("IrisNp2 iteration {}", iteration);
@@ -582,21 +588,28 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       int k_squared = num_iterations_separating_planes + 1;
       k_squared *= k_squared;
       double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
-      int N_k = internal::unadaptive_test_samples(
+
+      // The number of particles sampled is the max of the number requested by
+      // the user and the number required by the probabilistic test.
+      int this_test_num_samples = internal::unadaptive_test_samples(
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
+      int this_iteration_num_samples = std::max(
+          this_test_num_samples, options.sampled_iris_options.num_particles);
 
-      particles.resize(N_k);  // Entries will be overwritten.
+      particles.resize(
+          this_iteration_num_samples);  // Entries will be overwritten.
       internal::PopulateParticlesByUniformSampling(
-          P_candidate, N_k, options.sampled_iris_options.mixing_steps,
-          &generators, &particles);
+          P_candidate, this_iteration_num_samples,
+          options.sampled_iris_options.mixing_steps, &generators, &particles);
 
       // Copy top slice of particles, applying thet parameterization function to
       // each one, due to collision checker only accepting vectors of
       // configurations.
       // TODO(cohnt): Make ambient_particles an Eigen::MatrixXd and don't
       // recreate it on each iteration.
-      std::vector<Eigen::VectorXd> ambient_particles(N_k);
+      std::vector<Eigen::VectorXd> ambient_particles(
+          this_iteration_num_samples);
       const auto apply_parameterization = [&particles, &ambient_particles,
                                            &options](const int thread_num,
                                                      const int64_t index) {
@@ -612,8 +625,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               ? options.sampled_iris_options.parallelism.num_threads()
               : 1;
       StaticParallelForIndexLoop(
-          DegreeOfParallelism(num_threads_for_calling_parameterization), 0, N_k,
-          apply_parameterization, ParallelForBackend::BEST_AVAILABLE);
+          DegreeOfParallelism(num_threads_for_calling_parameterization), 0,
+          this_iteration_num_samples, apply_parameterization,
+          ParallelForBackend::BEST_AVAILABLE);
 
       for (int i = 0; i < ssize(ambient_particles); ++i) {
         // Only run this check in debug mode, because it's expensive.
@@ -625,7 +639,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       std::vector<uint8_t> particle_col_free =
           checker.CheckConfigsCollisionFree(
               ambient_particles, options.sampled_iris_options.parallelism);
-      int number_particles_in_collision = 0;
 
       std::vector<uint8_t> particle_satisfies_additional_constraints =
           internal::CheckProgConstraintsParallel(
@@ -634,14 +647,19 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               additional_constraints_threadsafe
                   ? options.sampled_iris_options.parallelism
                   : Parallelism::None(),
-              constraints_tol, N_k);
+              constraints_tol, this_iteration_num_samples);
 
+      // This counter is specifically for the probabilistic test, so we only
+      // count for the first this_test_num_samples particles.
+      int number_test_particles_in_collision = 0;
       particles_in_collision.clear();
-      for (size_t i = 0; i < particle_col_free.size(); ++i) {
+      for (int i = 0; i < ssize(particle_col_free); ++i) {
         if (particle_col_free.at(i) == 0 ||
             particle_satisfies_additional_constraints[i] == 0) {
           particles_in_collision.push_back(particles.at(i));
-          ++number_particles_in_collision;
+          if (i < this_test_num_samples) {
+            ++number_test_particles_in_collision;
+          }
         }
       }
 
@@ -653,24 +671,25 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                  (t2 - E_comparator.center()).squaredNorm();
           // TODO(cohnt): Support a custom comparator function?
         };
-        std::sort(
-            std::begin(particles_in_collision),
-            std::begin(particles_in_collision) + number_particles_in_collision,
-            std::bind(my_comparator, std::placeholders::_1,
-                      std::placeholders::_2, E));
+        std::sort(std::begin(particles_in_collision),
+                  std::end(particles_in_collision),
+                  std::bind(my_comparator, std::placeholders::_1,
+                            std::placeholders::_2, E));
       }
 
       if (options.sampled_iris_options.verbose) {
-        log()->info("IrisNp2 N_k {}, N_col {}, thresh {}", N_k,
-                    number_particles_in_collision,
-                    (1 - options.sampled_iris_options.tau) *
-                        options.sampled_iris_options.epsilon * N_k);
+        log()->info(
+            "IrisNp2 probabilistic test: number of samples {}, number of "
+            "invalid samples {}, thresh {}",
+            this_test_num_samples, number_test_particles_in_collision,
+            (1 - options.sampled_iris_options.tau) *
+                options.sampled_iris_options.epsilon * this_test_num_samples);
       }
 
       const bool probabilistic_test_passed =
-          number_particles_in_collision <=
+          number_test_particles_in_collision <=
           (1 - options.sampled_iris_options.tau) *
-              options.sampled_iris_options.epsilon * N_k;
+              options.sampled_iris_options.epsilon * this_test_num_samples;
 
       if (options.sampled_iris_options.verbose) {
         if (!options.sampled_iris_options.remove_all_collisions_possible &&
