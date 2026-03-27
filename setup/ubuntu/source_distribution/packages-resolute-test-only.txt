@@ -1,3 +1,4 @@
+libclang-20-dev
 mold
 python3-dateutil
 python3-flask
