@@ -685,6 +685,16 @@ class TestTrajectories(unittest.TestCase):
             traj.segment(segment_index=1), PiecewisePolynomial
         )
 
+        assert_pickle(self, traj, lambda t: t.get_number_of_segments(), T=T)
+        assert_pickle(
+            self,
+            traj,
+            lambda t: [
+                type(t.segment(i)) for i in range(t.get_number_of_segments())
+            ],
+            T=T,
+        )
+
         traj = CompositeTrajectory.AlignAndConcatenate(segments=[pp1, pp2])
         self.assertIsInstance(traj, CompositeTrajectory)
 
