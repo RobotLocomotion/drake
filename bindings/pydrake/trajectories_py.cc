@@ -457,7 +457,27 @@ struct Impl {
           .def("path", &Class::path, py_rvp::reference_internal,
               cls_doc.path.doc)
           .def("time_scaling", &Class::time_scaling, py_rvp::reference_internal,
-              cls_doc.time_scaling.doc);
+              cls_doc.time_scaling.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                // Explicitly use reference_internal to avoid copying the
+                // abstract Trajectory class. We tie the reference to 'self' to
+                // ensure validity during the pickle operation.
+                return py::make_tuple(
+                    py::cast(self.path(),
+                        py::return_value_policy::reference_internal,
+                        py::cast(&self)),
+                    py::cast(self.time_scaling(),
+                        py::return_value_policy::reference_internal,
+                        py::cast(&self)));
+              },
+              [](py::tuple t) {
+                // t[0] and t[1] are Python objects. We can cast them back to
+                // C++ references, and the constructor will then clone them
+                // internally.
+                return Class(t[0].cast<const Trajectory<T>&>(),
+                    t[1].cast<const Trajectory<T>&>());
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
