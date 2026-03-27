@@ -1308,6 +1308,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_to_shape_callback_test",
+    deps = [
+        ":distance_to_shape_callback",
+        ":proximity_utilities",
+        "//common/test_utilities",
+        "//geometry:shape_specification",
+        "//math",
+    ],
+)
+
+drake_cc_googletest(
     name = "distance_to_shape_characterize_test",
     deps = [
         ":characterization_utilities",
