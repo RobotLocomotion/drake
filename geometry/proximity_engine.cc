@@ -1,8 +1,10 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <limits>
+#include <map>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -61,6 +63,22 @@ class FclDynamicAABBTreeCollisionManager
     : public fcl::DynamicAABBTreeCollisionManager<double> {};
 class MapGeometryIdToFclCollisionObject
     : public unordered_map<GeometryId, unique_ptr<CollisionObjectd>> {};
+// Cache entry for a single mesh source file (independent of scale). Stores the
+// convex hull topology and unit-scale vertex positions once, then maps each
+// encountered scale factor to its own fcl::Convexd.
+struct ConvexHullCacheEntry {
+  // Vertex positions of the convex hull evaluated at unit scale (1, 1, 1).
+  shared_ptr<std::vector<Vector3d>> unit_vertices;
+  // Face topology data; identical across all scale factors.
+  shared_ptr<std::vector<int>> faces;
+  // Number of convex hull faces.
+  int num_faces{0};
+  // Sub-cache of fcl::Convexd objects keyed by scale (x, y, z).
+  std::map<std::array<double, 3>, shared_ptr<fcl::Convexd>> scaled_hulls;
+};
+
+class MapStringToConvexHullCache
+    : public unordered_map<std::string, ConvexHullCacheEntry> {};
 
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
@@ -284,6 +302,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
     mesh_sdf_data_ = other.mesh_sdf_data_;
+    convex_hull_cache_ = other.convex_hull_cache_;
     dynamic_tree_.clear();
     dynamic_objects_.clear();
     anchored_tree_.clear();
@@ -333,6 +352,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     engine->geometries_for_deformable_contact_ =
         this->geometries_for_deformable_contact_;
     engine->mesh_sdf_data_ = this->mesh_sdf_data_;
+    engine->convex_hull_cache_ = this->convex_hull_cache_;
     engine->distance_tolerance_ = this->distance_tolerance_;
 
     return engine;
@@ -1152,15 +1172,54 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // from its convex hull (rather than from the actual mesh data).
   template <typename MeshType>
   void ImplementFromConvexHull(const MeshType& mesh, void* user_data) {
-    // Create fcl::Convex for the fcl bounding volume hierarchy.
-    const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
-    auto shared_verts = make_shared<std::vector<Vector3d>>();
-    for (int vi = 0; vi < hull.num_vertices(); ++vi) {
-      shared_verts->push_back(hull.vertex(vi));
+    // Look up (or build) the per-file cache entry for this mesh source.
+    const std::string cache_key =
+        mesh.source().GetCacheKey(/* is_convex= */ true);
+    ConvexHullCacheEntry& entry = convex_hull_cache_[cache_key];
+
+    // Populate unit-scale vertex positions and face topology on first visit.
+    // The convex hull topology is the same for all scale factors; only vertex
+    // positions differ.  We therefore store vertices at unit scale (1,1,1) and
+    // derive per-scale copies on demand.
+    const Vector3d scale = mesh.scale3();
+    const bool is_unit_scale = (scale == Vector3d::Ones());
+    if (!entry.unit_vertices) {
+      const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
+      auto unit_verts = make_shared<std::vector<Vector3d>>();
+      unit_verts->reserve(hull.num_vertices());
+      if (is_unit_scale) {
+        for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+          unit_verts->push_back(hull.vertex(vi));
+        }
+      } else {
+        for (int vi = 0; vi < hull.num_vertices(); ++vi) {
+          unit_verts->push_back(hull.vertex(vi).array() / scale.array());
+        }
+      }
+      entry.unit_vertices = std::move(unit_verts);
+      entry.faces = make_shared<std::vector<int>>(hull.face_data());
+      entry.num_faces = hull.num_elements();
     }
-    auto shared_faces = make_shared<std::vector<int>>(hull.face_data());
-    auto fcl_convex = make_shared<fcl::Convexd>(
-        std::move(shared_verts), hull.num_elements(), std::move(shared_faces));
+
+    // Look up (or create) the fcl::Convexd scaled to the current mesh scale.
+    const std::array<double, 3> scale_key{scale[0], scale[1], scale[2]};
+    shared_ptr<fcl::Convexd>& fcl_convex = entry.scaled_hulls[scale_key];
+    if (!fcl_convex) {
+      // For the unit-scale case (the common case), share the unit_vertices
+      // shared_ptr directly rather than allocating and filling a second vector.
+      shared_ptr<std::vector<Vector3d>> verts_for_fcl;
+      if (is_unit_scale) {
+        verts_for_fcl = entry.unit_vertices;
+      } else {
+        verts_for_fcl = make_shared<std::vector<Vector3d>>();
+        verts_for_fcl->reserve(entry.unit_vertices->size());
+        for (const Vector3d& uv : *entry.unit_vertices) {
+          verts_for_fcl->push_back(uv.array() * scale.array());
+        }
+      }
+      fcl_convex = make_shared<fcl::Convexd>(std::move(verts_for_fcl),
+                                             entry.num_faces, entry.faces);
+    }
 
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(mesh, user_data);
@@ -1295,6 +1354,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // Data for ComputeSignedDistanceToPoint from meshes (Mesh and Convex).
   std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_sdf_data_{};
+
+  // Two-level cache used by ImplementFromConvexHull().
+  //   Level 1: mesh-source cache key  →  ConvexHullCacheEntry
+  //     Stores unit-scale vertex positions and shared face topology so that
+  //     parsing each mesh file is done at most once.
+  //   Level 2 (inside ConvexHullCacheEntry): scale factor  →  fcl::Convexd
+  //     Stores one fcl::Convexd per distinct scale, sharing face topology
+  //     across all scales of the same source file.
+  MapStringToConvexHullCache convex_hull_cache_{};
 };
 
 template <typename T>

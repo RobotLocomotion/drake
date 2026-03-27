@@ -545,6 +545,129 @@ GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
   }
 }
 
+// Tests that registering the same mesh source multiple times reuses the same
+// underlying fcl::Convex collision geometry object (i.e. the convex hull cache
+// is working).
+GTEST_TEST(ProximityEngineTests, ConvexHullCacheDuplicatesShareGeometry) {
+  ProximityEngine<double> engine;
+  const std::string path_a =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const std::string path_b =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
+
+  // Add the shape (dynamic vs anchored as indicated). Returns a pointer to the
+  // underlying collision geometry -- the cached quantity.
+  auto add_geometry = [&engine](const Shape& shape, bool is_dynamic = true) {
+    const GeometryId id = GeometryId::get_new_id();
+    if (is_dynamic) {
+      engine.AddDynamicGeometry(shape, {}, id);
+    } else {
+      engine.AddAnchoredGeometry(shape, {}, id);
+    }
+    const fcl::CollisionObjectd* obj =
+        ProximityEngineTester::GetCollisionObject(engine, id);
+    DRAKE_DEMAND(obj != nullptr);
+    return obj->collisionGeometry().get();
+  };
+
+  // We'll register one path as multiple geometry (some Mesh, some Convex).
+  const fcl::CollisionGeometryd* convex_a1 = add_geometry(Convex(path_a));
+  const fcl::CollisionGeometryd* convex_a2 = add_geometry(Convex(path_a));
+  const fcl::CollisionGeometryd* mesh_a1 = add_geometry(Mesh(path_a));
+  const fcl::CollisionGeometryd* mesh_a2 = add_geometry(Mesh(path_a));
+
+  // Start by confirming our reference geometry isn't null.
+  ASSERT_NE(convex_a1, nullptr);
+
+  // All of the collision objects instantiated by path_a (whether Mesh or
+  // Convex) should all share the same collision geometry.
+  EXPECT_EQ(convex_a1, convex_a2);
+  EXPECT_EQ(convex_a1, mesh_a1);
+  EXPECT_EQ(convex_a1, mesh_a2);
+
+  // We'll use a second mesh to show that not all meshes get cached the same.
+  // We'll also use the second mesh to show that anchored/dynamic doesn't
+  // matter.
+  const fcl::CollisionGeometryd* convex_b = add_geometry(Convex(path_b));
+  const fcl::CollisionGeometryd* mesh_b =
+      add_geometry(Mesh(path_b), /* is_dynamic= */ false);
+
+  // From a different path, we should get a different geometry.
+  EXPECT_NE(convex_b, nullptr);
+  EXPECT_NE(convex_a1, convex_b);
+  EXPECT_EQ(convex_b, mesh_b);
+}
+
+// Tests that the convex hull cache correctly handles multiple registrations of
+// the same mesh file with different anisotropic scale factors. The cache must
+// produce a distinct fcl::Convexd—with correctly-scaled vertex positions for
+// each unique scale, rather than reusing the hull built for the first scale
+// seen.
+//
+// Setup: three Convex instances all sourced from the same obj file (a 2m cube;
+// unit half-extents of 1m in each axis). Each has an anisotropic scale that
+// doubles exactly one axis, and each box is placed 10m along that axis from the
+// origin.
+//
+//   Instance  Position        Scale      Active half-extent  Expected distance
+//      A      (-10,  0,  0)  (2, 1, 1)   x: 2 m              8.0 m
+//      B      ( 0, -10,  0)  (1, 2, 1)   y: 2 m              8.0 m
+//      C      ( 0,  0, -10)  (1, 1, 2)   z: 2 m              8.0 m
+//
+// If the scale is wrong, things could fail in two ways: at the broadphase and
+// at the narrowphase. To test the broadphase, we introduce a query threshold
+// that is farther than the correct distance (8.0m) but closer than the distance
+// associated with an unscaled box (9.0m). If the box hasn't been scaled
+// properly, the broadphase will prune it and there will be no result for the
+// geometry.
+//
+// For the narrow phase, we simply confirm that the reported distances are all
+// as expected.
+GTEST_TEST(ProximityEngineTests, ConvexHullCacheScaleIsRespected) {
+  ProximityEngine<double> engine;
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  const GeometryId id_C = GeometryId::get_new_id();
+
+  // Each box is placed 10m along a different axis and scaled to double only
+  // that axis' half-extent, so the distance from the origin to each box's
+  // nearest face is exactly 10 - 2 = 8 m.
+  const RigidTransformd X_WA(Vector3d(-10, 0, 0));
+  const RigidTransformd X_WB(Vector3d(0, -10, 0));
+  const RigidTransformd X_WC(Vector3d(0, 0, -10));
+
+  engine.AddAnchoredGeometry(Convex(path, Vector3d(2.0, 1.0, 1.0)), X_WA, id_A);
+  engine.AddAnchoredGeometry(Convex(path, Vector3d(1.0, 2.0, 1.0)), X_WB, id_B);
+  engine.AddAnchoredGeometry(Convex(path, Vector3d(1.0, 1.0, 2.0)), X_WC, id_C);
+
+  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_A, X_WA}, {id_B, X_WB}, {id_C, X_WC}};
+
+  // Threshold chosen between the correct nearest-face distance (8.0 m) and the
+  // nearest distance produced by a wrong-scale (x-doubled) hull placed at
+  // y/z = -10 m (which would be 9.0 m).
+  const double threshold = 8.5;
+  const auto results =
+      engine.ComputeSignedDistanceToPoint(Vector3d::Zero(), X_WGs, threshold);
+
+  // All three geometries must appear in results with their correct distances.
+  // If any cache entry returned the wrong scale, the corresponding geometry's
+  // FCL AABB would be too far from the origin to pass the threshold and it
+  // would be missing from results.
+  ASSERT_EQ(results.size(), 3);
+  std::unordered_map<GeometryId, double> dist_by_id;
+  for (const auto& r : results) {
+    dist_by_id[r.id_G] = r.distance;
+  }
+  constexpr double kTol = 1e-14;
+  EXPECT_NEAR(dist_by_id.at(id_A), 8.0, kTol);  // confirms x-scale of Box A
+  EXPECT_NEAR(dist_by_id.at(id_B), 8.0, kTol);  // confirms y-scale of Box B
+  EXPECT_NEAR(dist_by_id.at(id_C), 8.0, kTol);  // confirms z-scale of Box C
+}
+
 // TODO(SeanCurtis-TRI): Confirm that SDF data gets computed for Mesh(vtk) and
 // all Convex().
 
