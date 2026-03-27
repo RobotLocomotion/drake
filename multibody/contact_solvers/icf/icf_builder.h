@@ -118,6 +118,14 @@ class IcfBuilder {
   void SetCouplerConstraints(const systems::Context<T>& context,
                              IcfModel<T>* model) const;
 
+  /* Resizes the model to accommodate weld constraints. */
+  void AllocateWeldConstraints(IcfModel<T>* model) const;
+
+  /* Sets weld constraints in the model.
+  @pre AllocateWeldConstraints() has already been called. */
+  void SetWeldConstraints(const systems::Context<T>& context,
+                          IcfModel<T>* model) const;
+
   /* Resizes the model to accommodate limit constraints. */
   void AllocateLimitConstraints(IcfModel<T>* model) const;
 

@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/math/cross_product.h"
 #include "drake/multibody/contact_solvers/icf/icf_model.h"
 
 namespace drake {
@@ -15,24 +16,13 @@ namespace icf {
 namespace internal {
 
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
+using math::VectorToSkewSymmetric;
 
 // Computes the soft norm ‖x‖ₛ = sqrt(xᵀx + ε²) - ε.
 template <typename T>
 T SoftNorm(const Vector3<T>& x, const T& eps) {
   using std::sqrt;
   return sqrt(x.squaredNorm() + eps * eps) - eps;
-}
-
-// Forms the skew symmetric matrix pₓ(p) such that pₓ⋅a = p×a.
-template <typename T>
-Matrix3<T> Skew(const Vector3<T>& p) {
-  // clang-format off
-    Matrix3<T> S;
-    S <<     0, -p.z(),  p.y(),
-          p.z(),     0, -p.x(),
-         -p.y(),  p.x(),     0;
-  // clang-format on
-  return S;
 }
 
 // Given spatial force F_Bo applied at B and the relative position p_AB of B
@@ -63,7 +53,7 @@ Vector6<T> ShiftSpatialForce(const Vector6<T>& F, const Vector3<T>& p) {
 // @returns The shifted second-order tensor G_Ao.
 template <typename T>
 Matrix6<T> ShiftSecondOrderTensor(const Matrix3<T>& G, const Vector3<T>& p) {
-  const Matrix3<T> px = Skew(p);
+  const Matrix3<T> px = VectorToSkewSymmetric(p);
   const Matrix3<T> pxG = px * G;
   Matrix6<T> Gp;
   Gp.template topLeftCorner<3, 3>() = -pxG * px;
@@ -80,7 +70,7 @@ Matrix6<T> ShiftFromTheRight(const Matrix6<T>& G, const Vector3<T>& p) {
   const auto Gwv = G.template topRightCorner<3, 3>();
   const auto Gvw = G.template bottomLeftCorner<3, 3>();
   const auto Gv = G.template bottomRightCorner<3, 3>();
-  const Matrix3<T> px = Skew(p);
+  const Matrix3<T> px = VectorToSkewSymmetric(p);
 
   Matrix6<T> R;
   R.template topLeftCorner<3, 3>() = Gw - Gwv * px;
@@ -98,7 +88,7 @@ Matrix6<T> ShiftFromTheLeft(const Matrix6<T>& G, const Vector3<T>& p) {
   const auto Gwv = G.template topRightCorner<3, 3>();
   const auto Gvw = G.template bottomLeftCorner<3, 3>();
   const auto Gv = G.template bottomRightCorner<3, 3>();
-  const Matrix3<T> px = Skew(p);
+  const Matrix3<T> px = VectorToSkewSymmetric(p);
 
   Matrix6<T> R;
   R.template topLeftCorner<3, 3>() = Gw + px * Gvw;
