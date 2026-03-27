@@ -12,9 +12,12 @@ For more details, please review the following documentation:
 
 import pydrake.common.test_utilities.deprecation as mut  # ruff: isort: skip
 
+import importlib
+import os
 import unittest
 
 from pydrake.common import Parallelism
+import pydrake.common.deprecation as dep
 
 import deprecation_example.cc_module as example  # ruff: isort: skip
 
@@ -61,8 +64,9 @@ class TestDeprecationExample(unittest.TestCase):
 
     def test_cc_wrap_deprecated_for_parallelism(self):
         obj = example.ExampleCppClass()
-        with mut.catch_drake_warnings(expected_count=1):
+        with mut.catch_drake_warnings(expected_count=1) as w:
             obj.ParallelWork(Parallelism.Max())
+            self.assertIn("Do not use ParallelWork", str(w[0].message))
 
     def test_cc_wrap_deprecated_for_old_kwarg(self):
         obj = example.ExampleCppClass()
@@ -76,3 +80,56 @@ class TestDeprecationExample(unittest.TestCase):
             self.assertIn(
                 "FunctionWithArgumentName(old_name)", str(w[0].message)
             )
+
+
+class TestDeprecationExampleEnv(unittest.TestCase):
+    SEVERITY_KEY = "DRAKE_DEPRECATION_RUNTIME_SEVERITY"
+
+    def tearDown(self):
+        os.environ.pop(self.SEVERITY_KEY, None)
+
+    def test_ignore_deprecation_warnings(self):
+        os.environ[self.SEVERITY_KEY] = "ignore"
+        importlib.reload(dep)
+
+        with mut.catch_drake_warnings(expected_count=0):
+            with self.subTest("DeprecatedParamInit"):
+                obj = example.ExampleCppStruct()
+
+            with self.subTest("py_init_deprecated"):
+                example.ExampleCppClass(0)
+                example.ExampleCppClass(0.0)
+
+            obj = example.ExampleCppClass()
+
+            with self.subTest("DeprecateAttribute"):
+                obj.DeprecatedMethod()
+                obj.DeprecatedMethod(int())
+
+            with self.subTest("WrapDeprecated"):
+                obj.overload(0)
+                obj.ParallelWork(Parallelism.Max())
+                obj.FunctionWithArgumentName(old_name=1)
+
+    def test_deprecation_as_errors(self):
+        os.environ[self.SEVERITY_KEY] = "error"
+        importlib.reload(dep)
+
+        obj = example.ExampleCppClass()
+
+        cases = [
+            (lambda: example.ExampleCppStruct(), "Do not use ExampleCppStruct"),
+            (lambda: example.ExampleCppClass(0), "Do not use ExampleCppClass(int)"),
+            (lambda: example.ExampleCppClass(0.0), "Do not use ExampleCppClass(double)"),
+            (lambda: obj.DeprecatedMethod(), "Do not use DeprecatedMethod"),
+            (lambda: obj.DeprecatedMethod(int()), "Do not use DeprecatedMethod"),
+            (lambda: obj.overload(0), "Do not use overload(int)"),
+            (lambda: obj.ParallelWork(Parallelism.Max()), "Do not use ParallelWork"),
+            (lambda: obj.FunctionWithArgumentName(old_name=1), "FunctionWithArgumentName(old_name)"),
+        ]
+
+        for action, expected_message in cases:
+            with self.assertRaises(dep.DrakeDeprecationWarning) as exception_context:
+                action()
+
+            self.assertIn(expected_message, str(exception_context.exception))

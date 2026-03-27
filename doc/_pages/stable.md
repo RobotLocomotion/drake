@@ -25,7 +25,12 @@ highlight the change when possible (`[[deprecated]]` for C++; `warnings.warn`
 for Python). However, those mechanisms will not always trigger in every case,
 and some deprecations will reach beyond what those tools can denote.
 Therefore, we still recommend that you monitor the release notes as the final
-arbiter of deprecation announcements.
+arbiter of deprecation announcements. The severity of deprecation warnings can
+be controlled at compile time via `-Werror=deprecated-declarations` and
+`DRAKE_DEPRECATION_IS_SILENT`, and at runtime via
+`DRAKE_DEPRECATION_RUNTIME_SEVERITY`; see the
+[Deprecation Severity Controls](/doxygen_cxx/group__deprecation__severity.html)
+documentation for details.
 
 Due to our 3-month announcement window, we recommend upgrading your pinned
 version of Drake at least that frequently. If you wish to upgrade less
