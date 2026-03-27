@@ -464,7 +464,7 @@ Polynomial<T> pow(const Polynomial<T>& base,
 
 template <typename T>
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream&
@@ -474,7 +474,7 @@ operator<<(std::ostream& os, const typename Polynomial<T>::Monomial& m) {
 
 template <typename T>
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream&
@@ -484,7 +484,7 @@ operator<<(std::ostream& os, const Polynomial<T>& poly) {
 
 template <typename T, int Rows, int Cols>
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Wrap Eigen objects M with fmt_eigen() to format Eigen data into fmt "
     "strings e.g., fmt::to_string(fmt_eigen(M)), "
     "fmt::format(\"M = {}\", fmt_eigen(M)). You'll need to "

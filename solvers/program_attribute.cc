@@ -4,7 +4,7 @@
 #include <deque>
 #include <vector>
 
-// TODO(2026-06-01): Remove sstream header when `operator<<` is removed.
+// TODO(2026-07-01): Remove sstream header when `operator<<` is removed.
 #include <sstream>
 
 namespace drake {

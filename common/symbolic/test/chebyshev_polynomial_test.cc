@@ -196,7 +196,7 @@ GTEST_TEST(ChebyshevPolynomial, ToStringFmtFormatter) {
   EXPECT_EQ(fmt::to_string(ChebyshevPolynomial(x, 2)), "T2(x)");
 }
 
-// Remove OperatorOut test with deprecation 2026-06-01.
+// Remove OperatorOut test with deprecation 2026-07-01.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(ChebyshevPolynomial, OperatorOut) {

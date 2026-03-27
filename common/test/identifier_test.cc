@@ -182,7 +182,7 @@ TEST_F(IdentifierTests, PutInSet) {
   EXPECT_TRUE(ids.contains(a1));
 }
 
-// Tests the streaming behavior. Remove with 2026-05-01 deprecation removal.
+// Tests the streaming behavior. Remove with 2026-07-01 deprecation removal.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(IdentifierTests, StreamOperator) {
