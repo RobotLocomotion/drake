@@ -724,7 +724,21 @@ struct Impl {
           .def("time_comparison_tolerance", &Class::time_comparison_tolerance,
               cls_doc.time_comparison_tolerance.doc)
           .def("num_times", &Class::num_times, cls_doc.num_times.doc)
-          .def("get_times", &Class::get_times, cls_doc.get_times.doc);
+          .def("get_times", &Class::get_times, cls_doc.get_times.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                std::vector<MatrixX<T>> values_pickle;
+                for (const auto& time : self.get_times()) {
+                  values_pickle.push_back(self.value(time));
+                }
+                return std::make_tuple(self.get_times(), values_pickle,
+                    self.time_comparison_tolerance());
+              },
+              [](std::tuple<std::vector<T>, std::vector<MatrixX<T>>, double>
+                      args) {
+                return Class(
+                    std::get<0>(args), std::get<1>(args), std::get<2>(args));
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
