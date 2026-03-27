@@ -294,6 +294,9 @@ T CenicIntegrator<T>::CalcStateChangeNorm(
 
 template <typename T>
 bool CenicIntegrator<T>::DoStep(const T& h) {
+  if (h == T(0)) {
+    return true;
+  }
   DRAKE_DEMAND(builder_ != nullptr);
 
   // TODO(vincekurtz): consider delaying this to encourage cache hits
@@ -364,6 +367,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // N.B. this is slightly faster than x_next.SetFrom(x_next_full), because
     // it saves an intermediate Eigen representation.
     x_next.get_mutable_vector().SetFrom(x_next_full.get_vector());
+    context.SetTimeAndNoteContinuousStateChange(t0 + h);
   } else {
     // We're using error control, and will compare with two half-sized steps.
 
