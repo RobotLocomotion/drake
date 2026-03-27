@@ -251,12 +251,9 @@ struct JointLimitsPenaltyParametersEstimator {
 
 namespace {
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
 constexpr auto kDiscreteContactApproximationTamsi =
     DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
 
 // Hack to fully qualify frame names, pending resolution of #9128. Used by
 // geometry registration routines. When this hack is removed, also undo the

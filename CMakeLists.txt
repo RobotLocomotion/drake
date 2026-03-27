@@ -687,6 +687,30 @@ else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
 endif()
 
+option(DRAKE_COMPILE_IGNORE_DEPRECATED
+  "Silence compile-time warnings at deprecated Drake C++ API call sites (does not affect runtime deprecation logging; see DRAKE_ENV_IGNORE_DEPRECATED)" OFF)
+option(DRAKE_COMPILE_DEPRECATION_IS_ERROR
+  "Make use of deprecated Drake C++ APIs a compile error (does not affect runtime deprecation logging; see DRAKE_ENV_DEPRECATION_IS_ERROR)" OFF)
+if(DRAKE_COMPILE_IGNORE_DEPRECATED AND DRAKE_COMPILE_DEPRECATION_IS_ERROR)
+  message(FATAL_ERROR
+    "DRAKE_COMPILE_IGNORE_DEPRECATED and DRAKE_COMPILE_DEPRECATION_IS_ERROR "
+    "are mutually exclusive.")
+endif()
+if(DRAKE_COMPILE_IGNORE_DEPRECATED)
+  string(APPEND BAZEL_CONFIG
+    " --@drake//tools/flags:compile_ignore_deprecated=True")
+else()
+  string(APPEND BAZEL_CONFIG
+    " --@drake//tools/flags:compile_ignore_deprecated=False")
+endif()
+if(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
+  string(APPEND BAZEL_CONFIG
+    " --@drake//tools/flags:compile_deprecation_is_error=True")
+else()
+  string(APPEND BAZEL_CONFIG
+    " --@drake//tools/flags:compile_deprecation_is_error=False")
+endif()
+
 if(BUILD_TYPE_LOWER STREQUAL debug)
   string(APPEND BAZEL_CONFIG " --config=Debug")
 elseif(BUILD_TYPE_LOWER STREQUAL minsizerel)

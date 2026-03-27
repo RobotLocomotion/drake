@@ -385,6 +385,26 @@ bool_flag(
     build_setting_default = False,
 )
 
+# When True, the DRAKE_DEPRECATED(...) C++ attribute expands to a no-op at
+# compile time, silencing compiler warnings at deprecated call sites in
+# downstream code.  Does not affect runtime deprecation logging; for that see
+# the DRAKE_ENV_IGNORE_DEPRECATED environment variable.
+# Mutually exclusive with :compile_deprecation_is_error.
+bool_flag(
+    name = "compile_ignore_deprecated",
+    build_setting_default = False,
+)
+
+# When True, the DRAKE_DEPRECATED(...) C++ attribute expands to
+# [[unavailable(...)]] at compile time, turning any use of a deprecated Drake
+# API into a hard compile error in downstream code.  Does not affect runtime
+# deprecation logging; for that see the DRAKE_ENV_DEPRECATION_IS_ERROR
+# environment variable.  Mutually exclusive with :compile_ignore_deprecated.
+bool_flag(
+    name = "compile_deprecation_is_error",
+    build_setting_default = False,
+)
+
 # -----------------------------------------------------------------------------
 # Configuration for Drake's CMake install.
 #

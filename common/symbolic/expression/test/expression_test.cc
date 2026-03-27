@@ -2351,13 +2351,10 @@ TEST_F(SymbolicExpressionTest, UniformRealDistribution) {
                 uniform_real_distribution<Expression>(0.0, 1.0));
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // operator<<
   ostringstream oss;
   oss << symbolic_distribution;
   EXPECT_EQ(oss.str(), "-10 10");
-#pragma GCC diagnostic pop
 }
 
 // Tests std::normal_distribution<drake::symbolic::Expression>.
@@ -2517,13 +2514,10 @@ TEST_F(SymbolicExpressionTest, NormalDistribution) {
                 normal_distribution<Expression>(0.0, 1.0));
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // operator<<
   ostringstream oss;
   oss << symbolic_distribution;
   EXPECT_EQ(oss.str(), "5 10");
-#pragma GCC diagnostic pop
 }
 
 // Tests std::exponential_distribution<drake::symbolic::Expression>.
@@ -2669,13 +2663,10 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
                 exponential_distribution<Expression>(2.0));
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // operator<<
   ostringstream oss;
   oss << symbolic_distribution;
   EXPECT_EQ(oss.str(), "5");
-#pragma GCC diagnostic pop
 }
 
 // This function checks if the following commute diagram works for given a

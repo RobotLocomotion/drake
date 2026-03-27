@@ -770,10 +770,7 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   SpatialInertia<double> M(mass, com, G);
 
   std::stringstream stream;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   stream << M;
-#pragma GCC diagnostic pop
   std::string expected_string =
       "\n"
       " mass = 2.5\n"

@@ -29,8 +29,6 @@ PYBIND11_MODULE(cc_module, m) {
   // Example: Deprecating a constructor bound with ParamInit. Typical when
   // deprecating a C++ struct with no explicit constructor.
   {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     using Class = ExampleCppStruct;
     constexpr auto& cls_doc = doc.ExampleCppStruct;
     py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc_deprecated);
@@ -38,7 +36,6 @@ PYBIND11_MODULE(cc_module, m) {
         .def(DeprecatedParamInit<Class>(cls_doc.doc_deprecated))
         .def_readwrite("i", &Class::i)
         .def_readwrite("j", &Class::j);
-#pragma GCC diagnostic pop
   }
 
   {
@@ -52,24 +49,18 @@ PYBIND11_MODULE(cc_module, m) {
     // Example: Deprecation of constructor previously bound with `py::init<>`.
     // Can be used to deprecate a class (if all constructor overloads are
     // deprecated) or only deprecate an overloaded constructor.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def(py_init_deprecated<Class, int>(
                 cls_doc.ctor.doc_deprecated_deprecated_1args_x),
         py::arg("x"), cls_doc.ctor.doc_deprecated_deprecated_1args_x);
-#pragma GCC diagnostic pop
 
     // Example: A C++ constructor overload has been deprecated, and was
     // originally bound using custom factory constructors. We must reflect this
     // in the bindings.
     // See also:
     // https://pybind11.readthedocs.io/en/stable/advanced/classes.html#custom-constructors
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def(py_init_deprecated(cls_doc.ctor.doc_deprecated_deprecated_1args_y,
                 [](double arg) { return Class(arg); }),
         py::arg("y"), cls_doc.ctor.doc_deprecated_deprecated_1args_y);
-#pragma GCC diagnostic pop
 
     cls  // BR
         .def("overload", py::overload_cast<>(&Class::overload),
@@ -79,22 +70,16 @@ PYBIND11_MODULE(cc_module, m) {
     // been bound directly (or possibly as an overload method). The overload
     // may have preceded the deprecation, or it may be introduced by
     // introducing a replacement method to the old.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def("overload",
         WrapDeprecated(cls_doc.overload.doc_deprecated,
             py::overload_cast<int>(&Class::overload)),
         py::arg("x"), cls_doc.overload.doc_deprecated);
-#pragma GCC diagnostic pop
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def("ParallelWork",
         WrapDeprecated(
             cls_doc.ParallelWork.doc_deprecated, &Class::ParallelWork),
         py::call_guard<py::gil_scoped_release>(),
         cls_doc.ParallelWork.doc_deprecated);
-#pragma GCC diagnostic pop
 
     // Example: A C++ function with an argument name that has been renamed.
     // In C++, we simply change the function signature name with no ill effect
@@ -123,14 +108,11 @@ PYBIND11_MODULE(cc_module, m) {
     // The motivation here is that the method access emits a deprecation
     // *immediately*, which means that if a user uses the method as a callback,
     // then this should quickly emit a deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def("DeprecatedMethod", py::overload_cast<>(&Class::DeprecatedMethod),
         cls_doc.DeprecatedMethod.doc_deprecated);
     cls.def("DeprecatedMethod",
         py::overload_cast<int>(&Class::DeprecatedMethod),
         cls_doc.DeprecatedMethod.doc_deprecated);
-#pragma GCC diagnostic pop
     DeprecateAttribute(
         cls, "DeprecatedMethod", cls_doc.DeprecatedMethod.doc_deprecated);
   }

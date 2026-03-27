@@ -167,8 +167,6 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, FrameATest) {
                               discrete_state->get_vector(0).get_value()));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(DeprecatedTest, BasicTest) {
   auto robot = MakeIiwa();
   auto robot_context = robot->CreateDefaultContext();
@@ -241,7 +239,6 @@ GTEST_TEST(DeprecatedTest, BasicTest) {
   // kStuck does *not* imply that the positions will not advance.
   EXPECT_FALSE(CompareMatrices(discrete_state->get_value(0), last_q, 1e-12));
 }
-#pragma GCC diagnostic pop
 
 GTEST_TEST(DifferentialInverseKinematicsIntegratorTest, ParametersTest) {
   auto robot = MakeIiwa();

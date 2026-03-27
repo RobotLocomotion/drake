@@ -81,10 +81,7 @@ class SapDriverTest {
 namespace {
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-#pragma GCC diagnostic push
 
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 

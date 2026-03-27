@@ -326,11 +326,8 @@ std::string ParamInfoToString(
 }
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactApproximationTamsi =
     DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
 
 // Helper to make all parameter permutations for DiscretePlantTest.
 auto MakeAllPermutations() {

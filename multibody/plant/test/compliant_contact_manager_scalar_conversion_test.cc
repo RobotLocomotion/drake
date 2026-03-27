@@ -19,12 +19,9 @@ using drake::systems::Simulator;
 using Eigen::VectorXd;
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
 constexpr auto kDiscreteContactApproximationTamsi =
     DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
 
 template <typename T>
 class CompliantContactManagerScalarConversionTest : public ::testing::Test {};

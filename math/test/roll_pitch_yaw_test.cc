@@ -533,8 +533,6 @@ GTEST_TEST(RollPitchYaw, SymbolicTest) {
 }
 
 // TODO(2026-07-01): delete test StreamInsertionOperator
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Test the stream insertion operator to write into a stream.
 GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   // Test stream insertion for RollPitchYaw<double>.
@@ -568,7 +566,6 @@ GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   rpy_expected_string = "rpy = <symbolic> <symbolic> <symbolic>";
   EXPECT_EQ(rpy_expected_string, streamD.str());
 }
-#pragma GCC diagnostic pop
 
 // Test the fmt formatter.
 GTEST_TEST(RollPitchYaw, ToStringFmtFormatter) {

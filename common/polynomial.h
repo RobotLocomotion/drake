@@ -504,10 +504,7 @@ operator<<(std::ostream& os,
   for (int i = 0; i < poly_mat.rows(); i++) {
     os << "[ ";
     for (int j = 0; j < poly_mat.cols(); j++) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       os << poly_mat(i, j);
-#pragma GCC diagnostic pop
       if (j < (poly_mat.cols() - 1)) os << " , ";
     }
     os << " ]" << std::endl;

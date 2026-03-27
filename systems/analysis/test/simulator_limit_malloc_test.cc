@@ -160,12 +160,9 @@ GTEST_TEST(
 
   // Create a Simulator and use it to advance time until t=3.
   Simulator<double> simulator(*diagram);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // delete with publish_every_time_step 2026-06-01
   // Actually cause forced-publish events to be issued.
   simulator.set_publish_every_time_step(true);
-#pragma GCC diagnostic pop
   // Trigger first (and only allowable) heap allocation.
   simulator.Initialize();
   {

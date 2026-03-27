@@ -2974,10 +2974,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       std::make_pair(model_index_begin, model_index_end);
 
   // There either must be exactly one model, or exactly one world.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const uint64_t model_count = root.Model() != nullptr ? 1 : 0;
-#pragma GCC diagnostic pop
   const uint64_t world_count = root.WorldCount();
   if ((model_count + world_count) != 1) {
     std::string message = fmt::format(

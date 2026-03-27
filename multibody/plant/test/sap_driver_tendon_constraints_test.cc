@@ -362,8 +362,6 @@ class SimplePlant : public ::testing::Test {
 };
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SimplePlant, FailOnTAMSI) {
   MakePlant();
   plant_->set_discrete_contact_approximation(
@@ -374,7 +372,6 @@ TEST_F(SimplePlant, FailOnTAMSI) {
                                   {}, {}, {}),
       ".*TAMSI does not support tendon constraints.*");
 }
-#pragma GCC diagnostic pop
 
 TEST_F(SimplePlant, FailOnContinuous) {
   MakePlant(0.0);  // Continuous plant.

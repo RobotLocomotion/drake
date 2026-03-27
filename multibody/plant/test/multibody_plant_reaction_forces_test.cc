@@ -74,12 +74,9 @@ class MultibodyPlantTester {
 namespace {
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
 constexpr auto kDiscreteContactApproximationTamsi =
     DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
 
 struct LadderTestConfig {
   // This is a gtest test suffix; no underscores or spaces.

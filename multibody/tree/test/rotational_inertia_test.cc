@@ -889,10 +889,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 GTEST_TEST(RotationalInertia, ShiftOperator) {
   std::stringstream stream;
   RotationalInertia<double> I(1, 2.718, 3.14);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   stream << I;
-#pragma GCC diagnostic pop
   std::string expected_string =
       "[    1      0      0]\n"
       "[    0  2.718      0]\n"

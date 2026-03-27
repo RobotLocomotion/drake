@@ -44,12 +44,9 @@ struct ContactTestConfig {
   // testing of cases using the hydroelastic contact model, whether point
   // contact is used or not.
   ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Remove on 2026-09-01 per TAMSI deprecation.
   // Option that allows to exercise the TAMSI and SAP solver code paths
   DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
-#pragma GCC diagnostic pop
 };
 
 // This provides the suffix for each test parameter: the test config
@@ -80,9 +77,7 @@ class RigidBodyOnCompliantGround
     DiagramBuilder<double> builder;
     auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep_);
     plant_ = &items.plant;
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // Remove on 2026-09-01 per TAMSI deprecation.
     // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
     // arbitrarily choose two model approximations to accomplish this.
     switch (config.contact_solver) {
@@ -95,7 +90,6 @@ class RigidBodyOnCompliantGround
             DiscreteContactApproximation::kSap);
         break;
     }
-#pragma GCC diagnostic pop
 
     // We change the default gravity magnitude so that numbers are simpler to
     // work with.

@@ -82,11 +82,8 @@ constexpr const char* EnumToChars(ContactModel enum_value) {
 // as well as in the list of kDiscreteContactApproximations below.
 constexpr const char* EnumToChars(DiscreteContactApproximation enum_value) {
   switch (enum_value) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     case DiscreteContactApproximation::kTamsi:
       return "tamsi";
-#pragma GCC diagnostic pop
     case DiscreteContactApproximation::kSap:
       return "sap";
     case DiscreteContactApproximation::kSimilar:
@@ -127,8 +124,6 @@ constexpr std::array<NamedEnum<ContactModel>, 3> kContactModels{{
     {ContactModel::kHydroelasticWithFallback},
 }};
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr std::array<NamedEnum<DiscreteContactApproximation>, 4>
     kDiscreteContactApproximations{{
         {DiscreteContactApproximation::kTamsi},
@@ -136,7 +131,6 @@ constexpr std::array<NamedEnum<DiscreteContactApproximation>, 4>
         {DiscreteContactApproximation::kSimilar},
         {DiscreteContactApproximation::kLagged},
     }};
-#pragma GCC diagnostic pop
 
 constexpr std::array<NamedEnum<ContactRep>, 2> kContactReps{{
     {ContactRep::kTriangle},

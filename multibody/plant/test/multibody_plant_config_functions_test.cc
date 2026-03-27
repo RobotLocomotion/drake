@@ -154,12 +154,9 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, DiscreteContactApproximation) {
           std::pair("similar", DiscreteContactApproximation::kSimilar),
           std::pair("lagged", DiscreteContactApproximation::kLagged),
       };
-// Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Remove on 2026-09-01 per TAMSI deprecation.
   known_values.push_back(
       std::pair("tamsi", DiscreteContactApproximation::kTamsi));
-#pragma GCC diagnostic pop
   for (const auto& [name, value] : known_values) {
     EXPECT_EQ(GetDiscreteContactApproximationFromString(name), value);
     EXPECT_EQ(GetStringFromDiscreteContactApproximation(value), name);
