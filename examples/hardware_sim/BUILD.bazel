@@ -149,7 +149,7 @@ drake_py_unittest(
         ":demo_py",
     ],
     env = {
-        "_DRAKE_DEPRECATION_IS_ERROR": "1",
+        "DRAKE_DEPRECATION_RUNTIME_SEVERITY": "error",
     },
     shard_count = 4,
     deps = [

@@ -61,8 +61,9 @@ class TestDeprecationExample(unittest.TestCase):
 
     def test_cc_wrap_deprecated_for_parallelism(self):
         obj = example.ExampleCppClass()
-        with mut.catch_drake_warnings(expected_count=1):
+        with mut.catch_drake_warnings(expected_count=1) as w:
             obj.ParallelWork(Parallelism.Max())
+            self.assertIn("Do not use ParallelWork", str(w[0].message))
 
     def test_cc_wrap_deprecated_for_old_kwarg(self):
         obj = example.ExampleCppClass()

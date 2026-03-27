@@ -10,6 +10,16 @@ can do something like:
 
 If you would like to disable all Drake-related warnings, you may use the
 `"ignore"` action for `warnings.simplefilter`.
+
+The severity of deprecation warnings can also be controlled via the
+``DRAKE_DEPRECATION_RUNTIME_SEVERITY`` environment variable, which is read
+when this module is imported (i.e., during ``import pydrake``):
+
+- ``DRAKE_DEPRECATION_RUNTIME_SEVERITY=error`` — treat deprecation warnings as
+  errors (raises ``DrakeDeprecationWarning`` instead of logging a warning).
+- ``DRAKE_DEPRECATION_RUNTIME_SEVERITY=ignore`` — silently discard deprecation
+  warnings.
+- unset — show each deprecation warning once.
 """
 
 import os
@@ -315,13 +325,29 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
         var_dict[symbol] = old
 
 
-if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
-    # This is used for testing Jupyter notebooks in `jupyter_bazel`.
-    # Note that the same literal string name for the environment variable is
-    # used for both C++ code and Python code, so keep the two in sync.
-    warnings.simplefilter("error", DrakeDeprecationWarning)
-else:
-    warnings.simplefilter("once", DrakeDeprecationWarning)
+def _get_deprecation_severity():
+    """Returns the warnings.simplefilter action for DrakeDeprecationWarning."""
+    # This is used for controlling the severity of deprecation messages during
+    # runtime. Note that the same literal string name for the environment
+    # variable is used for both C++ code and Python code, so keep the two in
+    # sync.
+    severity = os.environ.get("DRAKE_DEPRECATION_RUNTIME_SEVERITY")
+    if severity is None:
+        return "once"
+
+    if severity not in ("error", "ignore"):
+        warnings.warn(
+            "DRAKE_DEPRECATION_RUNTIME_SEVERITY is set to an unrecognized"
+            f" value {severity!r}. Deprecation messages will be emitted"
+            " as warnings.",
+            stacklevel=2,
+        )
+        return "once"
+
+    return severity
+
+
+warnings.simplefilter(_get_deprecation_severity(), DrakeDeprecationWarning)
 _installed_numpy_warning_filters = False
 
 # Used to enforce presence of YYYY-MM-DD timestamp for deprecation.
