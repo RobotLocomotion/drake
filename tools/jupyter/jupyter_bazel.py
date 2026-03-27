@@ -76,7 +76,7 @@ def _jupyter_bazel_notebook_main(notebook_respath, argv):
         # Ensure that Drake deprecations are seen as errors.
         # TODO(eric.cousineau): Rather than use environment variables, try
         # injecting code into the kernel.
-        os.environ["_DRAKE_DEPRECATION_IS_ERROR"] = "1"
+        os.environ["DRAKE_DEPRECATION_RUNTIME_SEVERITY"] = "error"
         # TODO(eric.cousineau): See if there is a way to redirect this to
         # stdout, rather than having the notebook capture the output.
         ep = _ExecutePreprocessorNoWidgets(timeout=600, kernel_name="python3")

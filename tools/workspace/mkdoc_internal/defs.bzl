@@ -68,6 +68,10 @@ def _generate_pybind_documentation_header_impl(ctx):
     # TODO(jamiesnape): Remove this line when #14034 is resolved.
     args.add("-DDRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER")
     args.add("-DDRAKE_SPATIAL_ALGEBRA_HEADER")
+
+    # Treat deprecated API usage as an error so that inline code in Drake's
+    # headers cannot accidentally call deprecated functions.
+    args.add("-Werror=deprecated-declarations")
     args.add_all(header_info.compile_flags, uniquify = True)
     outputs = [ctx.outputs.out]
     args.add("-output=" + ctx.outputs.out.path)
