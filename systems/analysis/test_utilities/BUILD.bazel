@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":explicit_error_controlled_integrator_test",
         ":generic_integrator_test",
         ":implicit_integrator_test",
+        ":integrator_test_factory",
         ":linear_scalar_system",
         ":logistic_system",
         ":my_spring_mass_system",
@@ -101,6 +102,16 @@ drake_cc_library(
         ":stationary_system",
         ":stiff_double_mass_spring_system",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_library(
+    name = "integrator_test_factory",
+    testonly = 1,
+    hdrs = ["integrator_test_factory.h"],
+    deps = [
+        "//systems/analysis:integrator_base",
+        "//systems/framework",
     ],
 )
 

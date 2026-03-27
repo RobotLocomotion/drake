@@ -58,6 +58,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "cenic_integrator_generic_integrator_test",
+    deps = [
+        ":cenic_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_cenic_integrator_test",
     deps = [
         ":cenic_integrator",
