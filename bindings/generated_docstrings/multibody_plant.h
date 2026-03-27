@@ -7340,7 +7340,9 @@ Raises:
         struct /* get_body_poses_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the output port of all body poses in the world frame. You can
+R"""(Reports all body poses in the world frame as an AbstractValue
+"abstract-valued" output port. The value is a
+``std∷vector<math∷RigidTransform<T>>`` of size num_bodies(). You can
 obtain the pose ``X_WB`` of a body B in the world frame W with:
 
 
@@ -7371,9 +7373,11 @@ Raises:
         struct /* get_body_spatial_accelerations_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the output port of all body spatial accelerations in the world
-frame. You can obtain the spatial acceleration ``A_WB`` of a body B
-(for point Bo, the body's origin) in the world frame W with:
+R"""(Reports all body spatial accelerations in the world frame as a
+AbstractValue "abstract-valued" output port. The value is a
+``std∷vector<SpatialAcceleration<T>>`` of size num_bodies(). You can
+obtain the spatial acceleration ``A_WB`` of a body B (for point Bo,
+the body's origin) in the world frame W with:
 
 
 .. raw:: html
@@ -7409,9 +7413,11 @@ Raises:
         struct /* get_body_spatial_velocities_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the output port of all body spatial velocities in the world
-frame. You can obtain the spatial velocity ``V_WB`` of a body B in the
-world frame W with:
+R"""(Reports all body spatial velocities in the world frame as a
+AbstractValue "abstract-valued" output port. The value is a
+``std∷vector<SpatialVelocity<T>>`` of size num_bodies(). You can
+obtain the spatial velocity ``V_WB`` of a body B in the world frame W
+with:
 
 
 .. raw:: html
@@ -7473,7 +7479,8 @@ the smallest of the two time scales ``tc`` and ``tn``.)""";
         struct /* get_contact_results_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns a constant reference to the port that outputs ContactResults.
+R"""(Returns an AbstractValue "abstract-valued" output port whose value is
+ContactResults.
 
 In a discrete-time plant, the use_sampled_output_ports setting affects
 the output of this port. See output_port_sampling "Output port
@@ -7617,8 +7624,9 @@ Raises:
         struct /* get_generalized_acceleration_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
-R"""(Returns a constant reference to the output port for generalized
-accelerations v̇ of the model.
+R"""(Reports the generalized accelerations v̇ of the model as a
+drake∷systems∷BasicVector<T> "vector-valued" output port of size
+num_velocities().
 
 In a discrete-time plant, the use_sampled_output_ports setting affects
 the output of this port. See output_port_sampling "Output port
@@ -7632,8 +7640,9 @@ Raises:
     RuntimeError if called before Finalize().)""";
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
-R"""(Returns a constant reference to the output port for the generalized
-accelerations v̇ᵢ ⊆ v̇ for model instance i.
+R"""(Reports the generalized accelerations v̇ for the given
+``model_instance`` as a drake∷systems∷BasicVector<T> "vector-valued"
+output port of size num_velocities().
 
 In a discrete-time plant, the use_sampled_output_ports setting affects
 the output of this port. See output_port_sampling "Output port
@@ -7653,8 +7662,10 @@ Raises:
         struct /* get_generalized_contact_forces_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns a constant reference to the output port of generalized contact
-forces for a specific model instance.
+R"""(Reports the generalized contact forces for the given
+``model_instance`` as a drake∷systems∷BasicVector "vector-valued"
+output port of size num_actuated_dofs(ModelInstanceIndex) const
+"num_actuated_dofs(model_instance)".
 
 In a discrete-time plant, the use_sampled_output_ports setting affects
 the output of this port. See output_port_sampling "Output port
@@ -7735,10 +7746,10 @@ Raises:
         struct /* get_net_actuation_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
-R"""(Returns a constant reference to the output port that reports actuation
-values applied through joint actuators. This output port is a vector
-valued port. The actuation value for a particular actuator can be
-found at offset JointActuator∷input_start() in this vector. Models
+R"""(Reports the actuation values applied by joint actuators as a
+drake∷systems∷BasicVector "vector-valued" output port of size
+num_actuated_dofs(). The actuation value for a particular actuator can
+be found at offset JointActuator∷input_start() in this vector. Models
 that include PD controllers will include their contribution in this
 port, refer to mbp_actuation "Actuation" for further details.
 
@@ -7759,12 +7770,14 @@ Raises:
     RuntimeError if called before Finalize().)""";
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
-R"""(Returns a constant reference to the output port that reports actuation
-values applied through joint actuators, for a specific model instance.
-Models that include PD controllers will include their contribution in
-this port, refer to mbp_actuation "Actuation" for further details.
-This is a vector valued port with entries ordered by monotonically
-increasing JointActuatorIndex within ``model_instance``.
+R"""(Reports the actuation values applied by joint actuators for the given
+``model_instance`` as a drake∷systems∷BasicVector "vector-valued"
+output port of size num_actuated_dofs(ModelInstanceIndex) const
+"num_actuated_dofs(model_instance)". Models that include PD
+controllers will include their contribution in this port, refer to
+mbp_actuation "Actuation" for further details. This is a vector valued
+port with entries ordered by monotonically increasing
+JointActuatorIndex within ``model_instance``.
 
 Every model instance in ``this`` plant model has a net actuation
 output port, even if zero sized (for model instance with no
@@ -7790,17 +7803,19 @@ Raises:
         struct /* get_reaction_forces_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc =
-R"""(Returns the port for joint reaction forces. A Joint models the
-kinematical relationship which characterizes the possible relative
-motion between two bodies. In Drake, a joint connects a frame ``Jp``
-on *parent* body P with a frame ``Jc`` on a *child* body C. This usage
-of the terms *parent* and *child* is just a convention and implies
-nothing about the inboard-outboard relationship between the bodies.
-Since a Joint imposes a kinematical relationship which characterizes
-the possible relative motion between frames Jp and Jc, reaction forces
-on each body are established. That is, we could cut the model at the
-joint and replace it with equivalent forces equal to these reaction
-forces in order to attain the same motions of the mechanical system.
+R"""(Reports joint reaction forces as an AbstractValue "abstract-valued"
+output port. The value is a ``std∷vector<SpatialForce<T>>`` of size
+num_joints(). A Joint models the kinematical relationship which
+characterizes the possible relative motion between two bodies. In
+Drake, a joint connects a frame ``Jp`` on *parent* body P with a frame
+``Jc`` on a *child* body C. This usage of the terms *parent* and
+*child* is just a convention and implies nothing about the
+inboard-outboard relationship between the bodies. Since a Joint
+imposes a kinematical relationship which characterizes the possible
+relative motion between frames Jp and Jc, reaction forces on each body
+are established. That is, we could cut the model at the joint and
+replace it with equivalent forces equal to these reaction forces in
+order to attain the same motions of the mechanical system.
 
 This output port allows to evaluate the reaction force ``F_CJc_Jc`` on
 the *child* body C, at ``Jc``, and expressed in Jc for all joints in
@@ -7851,8 +7866,9 @@ after that. Post-finalize calls will always return the same value.)""";
         struct /* get_state_output_port */ {
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_0args =
-R"""(Returns a constant reference to the output port for the multibody
-state x = [q, v] of the model.
+R"""(Reports the multibody state x = [q, v] of the model as a
+drake∷systems∷BasicVector<T> "vector-valued" output port of size
+num_multibody_states().
 
 Precondition:
     Finalize() was already called on ``this`` plant.
@@ -7861,8 +7877,9 @@ Raises:
     RuntimeError if called before Finalize().)""";
           // Source: drake/multibody/plant/multibody_plant.h
           const char* doc_1args =
-R"""(Returns a constant reference to the output port for the state xᵢ = [qᵢ
-vᵢ] of model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.)
+R"""(Reports the multibody state xᵢ = [qᵢ vᵢ] for the given
+``model_instance i`` as a drake∷systems∷BasicVector<T> "vector-valued"
+output port of size num_multibody_states(). Here qᵢ ⊆ q and vᵢ ⊆ v.
 
 Precondition:
     Finalize() was already called on ``this`` plant.
