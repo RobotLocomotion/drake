@@ -314,11 +314,23 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
         old.__module__ = old_name
         var_dict[symbol] = old
 
+# These are used for controlling the severity of
+# deprecation messages during runtime.
+# Note that the same literal string name for the environment variable is
+# used for both C++ code and Python code, so keep the two in sync.
+deprecation_is_error = os.environ.get("DRAKE_ENV_DEPRECATION_IS_ERROR") == "1"
+ignore_deprecation = os.environ.get("DRAKE_ENV_IGNORE_DEPRECATED") == "1"
 
-if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
-    # This is used for testing Jupyter notebooks in `jupyter_bazel`.
-    # Note that the same literal string name for the environment variable is
-    # used for both C++ code and Python code, so keep the two in sync.
+if deprecation_is_error and ignore_deprecation:
+    msg = (
+        "DRAKE_ENV_DEPRECATION_IS_ERROR and "
+        'DRAKE_ENV_IGNORE_DEPRECATED cannot both be set to "1".'
+    )
+    raise RuntimeError(msg)
+
+if ignore_deprecation:
+    warnings.simplefilter("ignore", DrakeDeprecationWarning)
+elif deprecation_is_error:
     warnings.simplefilter("error", DrakeDeprecationWarning)
 else:
     warnings.simplefilter("once", DrakeDeprecationWarning)

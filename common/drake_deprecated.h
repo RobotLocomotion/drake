@@ -9,8 +9,10 @@
 /** @file
 Provides a portable macro for use in generating compile-time warnings for
 use of code that is permitted but discouraged. */
-
-#ifdef DRAKE_DOXYGEN_CXX
+#if defined(DRAKE_COMPILE_IGNORE_DEPRECATED) && \
+    defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
+# error Conflicting deprecation warnings flags
+#elif defined(DRAKE_DOXYGEN_CXX) || defined(DRAKE_COMPILE_IGNORE_DEPRECATED)
 /** Use `DRAKE_DEPRECATED("removal_date", "message")` to discourage use of
 certain APIs. It can be used on classes, typedefs, functions, arguments,
 enumerations, and template specializations. It must not be used on non-static
@@ -62,8 +64,20 @@ Sample uses: @code
 */
 #define DRAKE_DEPRECATED(removal_date, message)
 
-#else  // DRAKE_DOXYGEN_CXX
+#elif defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
+#if defined(__clang__)
+#define DRAKE_DEPRECATED(removal_date, message)                       \
+  [[clang::unavailable("\nDRAKE DEPRECATED: " message                 \
+                       "\nThe deprecated code will be removed from"   \
+                       " Drake on or after " removal_date ".")]]
+#else
+#define DRAKE_DEPRECATED(removal_date, message)                     \
+  [[gnu::unavailable("\nDRAKE DEPRECATED: " message                 \
+                     "\nThe deprecated code will be removed from"   \
+                     " Drake on or after " removal_date ".")]]
+#endif
 
+#else
 #define DRAKE_DEPRECATED(removal_date, message)                   \
   [[deprecated("\nDRAKE DEPRECATED: " message                     \
                "\nThe deprecated code will be removed from Drake" \

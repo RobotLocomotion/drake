@@ -125,6 +125,15 @@ drake_cc_library(
         # Remove with deprecation on 2026-09-01.
         "ssize.h",
     ],
+    defines = select({
+        ":flag_compile_ignore_deprecated_true": [
+            "DRAKE_COMPILE_IGNORE_DEPRECATED",
+        ],
+        ":flag_compile_deprecation_is_error_true": [
+            "DRAKE_COMPILE_DEPRECATION_IS_ERROR",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         ":fmt",
         "@eigen",
@@ -202,6 +211,20 @@ config_setting(
     name = "flag_use_eigen_legacy_autodiff_true",
     flag_values = {
         "//tools/flags:use_eigen_legacy_autodiff": "True",
+    },
+)
+
+config_setting(
+    name = "flag_compile_ignore_deprecated_true",
+    flag_values = {
+        "//tools/flags:compile_ignore_deprecated": "True",
+    },
+)
+
+config_setting(
+    name = "flag_compile_deprecation_is_error_true",
+    flag_values = {
+        "//tools/flags:compile_deprecation_is_error": "True",
     },
 )
 
@@ -949,12 +972,30 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "drake_deprecated_no_spdlog_test",
+    # Remove spurious warnings from the default build output.
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":essential",
+        "//common/test_utilities:expect_throws_message",
+    ],
+    defines = [
+        "TEXT_LOGGING_TEST_SPDLOG=0",
+    ],
+)
+
+# 
+drake_cc_googletest(
     name = "drake_deprecated_test",
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
         "//common/test_utilities:expect_throws_message",
+        ":text_logging_spdlog",
+    ],
+    defines = [
+        "TEXT_LOGGING_TEST_SPDLOG=1",
     ],
 )
 

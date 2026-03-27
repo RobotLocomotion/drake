@@ -6,16 +6,20 @@ See `deprecation_utility_test.py` for a unittest on higher-level API. See
 well as an explanation why that test is separate.
 """
 
+import os
+import importlib
 import sys
 from types import ModuleType
 import unittest
 import warnings
 
-from pydrake.common.deprecation import (
-    DrakeDeprecationWarning,
-    _forward_callables_as_deprecated,
-)
+import pydrake.common.deprecation as dep
 
+def _get_full_msg(partial_message):
+    return (
+        f"{partial_message} The deprecated code will be removed "
+        f"from Drake on or after 2038-01-19."
+    )
 
 class TestDeprecation(unittest.TestCase):
     """Tests module shim functionality."""
@@ -84,12 +88,9 @@ class TestDeprecation(unittest.TestCase):
         self.assertIsInstance(temp["sub_module"], str)
 
     def _check_warning(self, item, message_expected, check_full=True):
-        self.assertEqual(item.category, DrakeDeprecationWarning)
+        self.assertEqual(item.category, dep.DrakeDeprecationWarning)
         if check_full:
-            full_message_expected = (
-                f"{message_expected} The deprecated code will be removed "
-                f"from Drake on or after 2038-01-19."
-            )
+            full_message_expected = _get_full_msg(message_expected)
             self.assertEqual(full_message_expected, str(item.message))
         else:
             self.assertIn(message_expected, str(item.message))
@@ -113,7 +114,7 @@ class TestDeprecation(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             # Recreate warning environment.
             warnings.simplefilter("ignore", DeprecationWarning)
-            warnings.simplefilter("once", DrakeDeprecationWarning)
+            warnings.simplefilter("once", dep.DrakeDeprecationWarning)
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
@@ -173,7 +174,7 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", DeprecationWarning)
             else:
                 # See above notes for why we have to set this.
-                warnings.simplefilter("default", DrakeDeprecationWarning)
+                warnings.simplefilter("default", dep.DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
                 mut.ExampleClass.deprecated_method
@@ -182,7 +183,7 @@ class TestDeprecation(unittest.TestCase):
                 mut.ExampleClass.deprecated_prop
             # Manually set this back to `once`.
             warnings.simplefilter("ignore", DeprecationWarning)
-            warnings.simplefilter("once", DrakeDeprecationWarning)
+            warnings.simplefilter("once", dep.DrakeDeprecationWarning)
 
     def test_deprecated_callable(self):
         """
@@ -195,9 +196,9 @@ class TestDeprecation(unittest.TestCase):
 
         # Spoof module name.
         var_dict = dict(__name__="fake_module")
-        _forward_callables_as_deprecated(var_dict, m_new, date="2038-01-19")
+        dep._forward_callables_as_deprecated(var_dict, m_new, date="2038-01-19")
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("once", DrakeDeprecationWarning)
+            warnings.simplefilter("once", dep.DrakeDeprecationWarning)
             obj = var_dict["ExampleCppClass"]()
             self.assertIsInstance(obj, m_new.ExampleCppClass)
             message_expected = (
@@ -206,3 +207,66 @@ class TestDeprecation(unittest.TestCase):
             )
             self.assertEqual(len(w), 1)
             self._check_warning(w[0], message_expected)
+
+class TestDeprecationEnv(unittest.TestCase):
+    DEPRECATION_IS_ERROR_KEY = "DRAKE_ENV_DEPRECATION_IS_ERROR"
+    IGNORE_DEPRECATION_KEY = "DRAKE_ENV_IGNORE_DEPRECATED"
+
+    def tearDown(self):
+        os.environ.pop(self.DEPRECATION_IS_ERROR_KEY, None)
+        os.environ.pop(self.IGNORE_DEPRECATION_KEY, None)
+
+    def test_invalid_deprecation_env(self):
+        os.environ["DRAKE_ENV_DEPRECATION_IS_ERROR"] = "1"
+        os.environ["DRAKE_ENV_IGNORE_DEPRECATED"] = "1"
+
+        message_expected = (
+            "DRAKE_ENV_DEPRECATION_IS_ERROR and "
+            'DRAKE_ENV_IGNORE_DEPRECATED cannot both be set to "1".'
+        )
+        with self.assertRaises(RuntimeError) as cm:
+            importlib.reload(dep)
+
+        exc_msg = str(cm.exception)
+        self.assertEqual(exc_msg, message_expected)
+        
+
+    def test_ignore_deprecation_warnings(self):
+        os.environ[self.IGNORE_DEPRECATION_KEY] = "1"
+        importlib.reload(dep)
+        import deprecation_example as mut
+
+        obj = mut.ExampleClass()
+
+        with warnings.catch_warnings(record=True) as w:
+            obj.deprecated_method()
+            obj.deprecated_prop
+            mut.deprecated_func(50)
+
+            self.assertEqual(len(w), 0, "\n".join(map(str, w)))
+
+    def test_deprecation_as_errors(self):
+        os.environ[self.DEPRECATION_IS_ERROR_KEY] = "1"
+        importlib.reload(dep)
+        import deprecation_example as mut
+
+        obj = mut.ExampleClass()
+
+        actions = [
+            lambda: obj.deprecated_method(),
+            lambda: obj.deprecated_prop,
+            lambda: mut.deprecated_func(50)
+        ]
+        msgs = [
+            mut.ExampleClass.message_method,
+            mut.ExampleClass.message_prop,
+            mut.message_func
+        ]
+
+        for action, msg in zip(actions, msgs):
+            with self.assertRaises(dep.DrakeDeprecationWarning) as exc:
+                action()
+
+            full_msg = _get_full_msg(msg)
+            exc_msg = str(exc.exception)
+            self.assertEqual(exc_msg, full_msg)
