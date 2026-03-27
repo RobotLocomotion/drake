@@ -335,6 +335,16 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
         self.assertIsInstance(trajectory.time_scaling(), PiecewisePolynomial)
 
+        assert_pickle(
+            self, trajectory, lambda t: t.path().getPolynomialMatrix(0), T=T
+        )
+        assert_pickle(
+            self,
+            trajectory,
+            lambda t: t.time_scaling().getPolynomialMatrix(0),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
