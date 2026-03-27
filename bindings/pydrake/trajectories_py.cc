@@ -668,7 +668,30 @@ struct Impl {
           .def("setPolynomialMatrixBlock", &Class::setPolynomialMatrixBlock,
               py::arg("replacement"), py::arg("segment_index"),
               py::arg("row_start") = 0, py::arg("col_start") = 0,
-              cls_doc.setPolynomialMatrixBlock.doc);
+              cls_doc.setPolynomialMatrixBlock.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                std::vector<typename Class::PolynomialMatrix>
+                    pickled_polynomials_matrix;
+                std::vector<T> pickled_breaks;
+                pickled_polynomials_matrix.reserve(
+                    self.get_number_of_segments());
+                pickled_breaks.reserve(self.get_number_of_segments() + 1);
+                pickled_breaks.push_back(self.start_time(0));
+                for (int i = 0; i < self.get_number_of_segments(); ++i) {
+                  pickled_polynomials_matrix.push_back(
+                      self.getPolynomialMatrix(i));
+                  pickled_breaks.push_back(self.end_time(i));
+                }
+                return std::make_pair(
+                    pickled_polynomials_matrix, pickled_breaks);
+              },
+              [](std::pair<std::vector<typename Class::PolynomialMatrix>,
+                  std::vector<T>>
+                      args) {
+                return Class(/* polynomials_matrix = */ std::get<0>(args),
+                    /* breaks = */ std::get<1>(args));
+              }));
       DefCopyAndDeepCopy(&cls);
       if constexpr (std::is_same_v<T, double>) {
         BindPiecewisePolynomialSerialize(&cls);
