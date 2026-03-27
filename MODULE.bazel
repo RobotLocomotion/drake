@@ -115,14 +115,14 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 [
     pip.parse(
-        hub_name = "drake_mypy",
+        hub_name = "drake_uv",
         python_version = python_version,
-        requirements_lock = "//setup:python/mypy/requirements.txt",
+        requirements_lock = "//setup:python/uv/requirements.txt",
     )
     for python_version in PYTHON_VERSIONS
 ]
 
-use_repo(pip, "drake_mypy")
+use_repo(pip, "drake_uv")
 
 # Load dependencies which are "public", i.e., made available to downstream
 # projects.
@@ -322,6 +322,10 @@ use_repo(
     #
     "gymnasium_py_internal",
     "stable_baselines3_internal",
+    #
+    # Python libraries used when building wheels.
+    #
+    "cxxfilt_internal",
     #
     # Python libraries used at test-time or by maintainers.
     #
