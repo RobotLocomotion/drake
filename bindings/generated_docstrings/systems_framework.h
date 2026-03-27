@@ -6811,6 +6811,13 @@ Precondition:
 Precondition:
     ``update`` must not be null.
 
+Raises:
+    RuntimeError if either ``period_sec`` or ``offset_sec`` are
+    non-finite.
+
+Raises:
+    RuntimeError if ``period_sec`` <= 0.0.
+
 See also:
     DeclarePeriodicPublishEvent()
 
@@ -6855,8 +6862,15 @@ stored internally so you do not need to keep the object around after
 this call.
 
 Precondition:
-    `event`'s associated trigger type must be TriggerType∷kUnknown or
-    already set to TriggerType∷kPeriodic.)""";
+    ``event`'s associated trigger type must be TriggerType∷kUnknown or
+    already set to TriggerType∷kPeriodic.
+
+Raises:
+    RuntimeError if either `period_sec`` or ``offset_sec`` are
+    non-finite.
+
+Raises:
+    RuntimeError if ``period_sec`` <= 0.0.)""";
         } DeclarePeriodicEvent;
         // Symbol: drake::systems::LeafSystem::DeclarePeriodicPublishEvent
         struct /* DeclarePeriodicPublishEvent */ {
@@ -6890,6 +6904,13 @@ Precondition:
 
 Precondition:
     ``publish`` must not be null.
+
+Raises:
+    RuntimeError if either ``period_sec`` or ``offset_sec`` are
+    non-finite.
+
+Raises:
+    RuntimeError if ``period_sec`` <= 0.0.
 
 See also:
     DeclarePeriodicDiscreteUpdateEvent()
@@ -6932,6 +6953,13 @@ Precondition:
 
 Precondition:
     ``update`` must not be null.
+
+Raises:
+    RuntimeError if either ``period_sec`` or ``offset_sec`` are
+    non-finite.
+
+Raises:
+    RuntimeError if ``period_sec`` <= 0.0.
 
 See also:
     DeclarePeriodicPublishEvent()
