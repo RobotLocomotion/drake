@@ -948,12 +948,14 @@ drake_cc_googletest(
     ],
 )
 
+#
 drake_cc_googletest(
     name = "drake_deprecated_test",
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
+        ":text_logging_spdlog",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -1152,6 +1154,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "fmt_ostream_test",
+    # fmt_streamed uses [[deprecated(...)]] directly (not DRAKE_DEPRECATED) to
+    # avoid pulling drake_deprecated.h into fmt.h's isolated compilation units.
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
     ],
@@ -1266,6 +1271,9 @@ drake_cc_googletest(
 # because that is what Drake's WORKSPACE provides for the @spdlog external.
 drake_cc_googletest(
     name = "text_logging_test",
+    # kHaveSpdlog uses [[deprecated(...)]] directly (not DRAKE_DEPRECATED) to
+    # avoid pulling drake_deprecated.h into fmt.h's isolated compilation units.
+    copts = ["-Wno-deprecated-declarations"],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=1",
     ],
@@ -1302,6 +1310,9 @@ drake_cc_googletest(
         "text_logging_impl_none.cc",
         "text_logging_level.h",
     ],
+    # kHaveSpdlog uses [[deprecated(...)]] directly (not DRAKE_DEPRECATED) to
+    # avoid pulling drake_deprecated.h into this isolated compilation unit.
+    copts = ["-Wno-deprecated-declarations"],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
     ],

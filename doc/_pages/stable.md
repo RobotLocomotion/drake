@@ -33,6 +33,11 @@ frequently, you still might benefit from rolling forward a few minor versions
 at a time, in order to obtain the built-in C++ and Python deprecation
 suggestions to guide you.
 
+The severity of deprecation warnings can be controlled via
+`DRAKE_DEPRECATION_IS_ERROR` and `DRAKE_DEPRECATION_IS_SILENT`; see the
+[Deprecation Severity Controls](https://drake.mit.edu/doxygen_cxx/group__deprecation__severity.html)
+documentation for details.
+
 In general, we do not plan to backport fixes into prior stable releases.
 
 # Stable API
