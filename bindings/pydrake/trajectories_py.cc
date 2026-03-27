@@ -689,7 +689,8 @@ struct Impl {
               [](std::pair<std::vector<typename Class::PolynomialMatrix>,
                   std::vector<T>>
                       args) {
-                return Class(std::get<0>(args), std::get<1>(args));
+                return Class(/* polynomials_matrix = */ std::get<0>(args),
+                    /* breaks = */ std::get<1>(args));
               }));
       DefCopyAndDeepCopy(&cls);
       if constexpr (std::is_same_v<T, double>) {
