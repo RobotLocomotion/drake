@@ -270,6 +270,18 @@ class CounterexampleConstraint : public solvers::Constraint {
                binding_with_constraint_to_be_falsified,
            int index, bool falsify_lower_bound);
 
+  // To find a counterexample for a constraints,
+  //  g(x) ≤ ub,
+  // we need to ask the solver to find
+  //  g(x) + kSolverConstraintTolerance > ub,
+  // which we implement as
+  //  g(x) + kSolverConstraintTolerance ≥ ub + eps.
+  // The variable is static so that it is initialized by the time it is accessed
+  // in the initializer list of the constructor.
+  // TODO(russt): We need a more robust way to get this from the solver. This
+  // value works for SNOPT and is reasonable for most solvers.
+  static constexpr double kSolverConstraintTolerance{1e-6};
+
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
@@ -289,18 +301,6 @@ class CounterexampleConstraint : public solvers::Constraint {
   const solvers::Binding<solvers::Constraint>* binding_{};
   int index_{0};
   bool falsify_lower_bound_{true};
-
-  // To find a counterexample for a constraints,
-  //  g(x) ≤ ub,
-  // we need to ask the solver to find
-  //  g(x) + kSolverConstraintTolerance > ub,
-  // which we implement as
-  //  g(x) + kSolverConstraintTolerance ≥ ub + eps.
-  // The variable is static so that it is initialized by the time it is accessed
-  // in the initializer list of the constructor.
-  // TODO(russt): We need a more robust way to get this from the solver. This
-  // value works for SNOPT and is reasonable for most solvers.
-  static constexpr double kSolverConstraintTolerance{1e-6};
 };
 
 // Defines a MathematicalProgram to solve the problem

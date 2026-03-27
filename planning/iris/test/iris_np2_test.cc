@@ -131,6 +131,14 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       ".*num_particles_to_walk_towards.*");
   options.ray_sampler_options.num_particles_to_walk_towards = 1;
 
+  options.ray_sampler_options.num_particles_to_walk_towards = 1e4;
+  options.sampled_iris_options.num_particles = 1e2;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*num_particles_to_walk_towards.*num_particles.*");
+  options.ray_sampler_options.num_particles_to_walk_towards = 1;
+  options.sampled_iris_options.num_particles = 1e3;
+
   options.sampling_strategy = "another sampling strategy";
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
