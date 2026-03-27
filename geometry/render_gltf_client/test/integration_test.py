@@ -172,7 +172,15 @@ class TestIntegration(unittest.TestCase):
             for k, v in entry.items():
                 # Replace the index with the actual referenced data structure.
                 if k in TestIntegration._REPLACED.keys():
-                    entry[k] = gltf[TestIntegration._REPLACED[k]][v]
+                    try:
+                        entry[k] = gltf[TestIntegration._REPLACED[k]][v]
+                    except TypeError:
+                        # If 'v' cannot be used to index into the array, it
+                        # means that we've already replaced it. This is the
+                        # case where a single accessor is referenced multiple
+                        # times; the first time changed the accessor, later
+                        # visits won't need to traverse downwards.
+                        continue
                 TestIntegration._traverse_and_mutate(gltf, entry[k])
         elif entry_type is list:
             # If the list contains only numeric numbers, round floating values

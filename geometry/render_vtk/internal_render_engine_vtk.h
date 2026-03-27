@@ -17,6 +17,7 @@
 #include <vtkRenderer.h>             // vtkRenderingCore
 #include <vtkShaderProgram.h>        // vtkRenderingOpenGL2
 #include <vtkSmartPointer.h>         // vtkCommonCore
+#include <vtkTexture.h>              // vtkRenderingCore
 #include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
@@ -364,6 +365,14 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // This eliminates redundant re-parsing and re-rendering when the same mesh
   // is registered multiple times.
   std::unordered_map<std::string, CachedMesh> mesh_cache_;
+
+  // Cache mapping texture keys to loaded vtkTexture objects. The key is a
+  // canonical file-path string (for on-disk images) or the SHA-256 hex digest
+  // (for in-memory images), suffixed with "|r" when texture-repeat is needed
+  // or "|n" otherwise. Caching avoids redundant file I/O and duplicate GPU
+  // texture uploads when the same image is referenced by multiple geometry
+  // registrations.
+  std::unordered_map<std::string, vtkSmartPointer<vtkTexture>> texture_cache_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.
