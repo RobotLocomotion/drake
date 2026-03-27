@@ -954,6 +954,7 @@ drake_cc_googletest(
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
+        ":text_logging_spdlog",
         "//common/test_utilities:expect_throws_message",
     ],
 )

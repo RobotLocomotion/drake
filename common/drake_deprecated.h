@@ -20,6 +20,11 @@ When code refers to the deprecated item, a compile time warning will be issued
 displaying the given message, preceded by "DRAKE DEPRECATED: ". The Doxygen API
 reference will show that the API is deprecated, along with the message.
 
+Compile-time deprecation warnings can be silenced via the
+`DRAKE_DEPRECATION_IS_SILENT` preprocessor define, or promoted to errors by
+building with `-Werror=deprecated-declarations`. See @ref deprecation_severity
+for details.
+
 This is typically used for constructs that have been replaced by something
 better and it is good practice to suggest the appropriate replacement in the
 deprecation message. Deprecation warnings are conventionally used to convey to
@@ -62,14 +67,16 @@ Sample uses: @code
 */
 #define DRAKE_DEPRECATED(removal_date, message)
 
-#else  // DRAKE_DOXYGEN_CXX
+#elif defined(DRAKE_DEPRECATION_IS_SILENT)
+#define DRAKE_DEPRECATED(removal_date, message)
 
+#else
 #define DRAKE_DEPRECATED(removal_date, message)                   \
   [[deprecated("\nDRAKE DEPRECATED: " message                     \
                "\nThe deprecated code will be removed from Drake" \
                " on or after " removal_date ".")]]
 
-#endif  // DRAKE_DOXYGEN_CXX
+#endif
 
 namespace drake {
 namespace internal {
@@ -81,13 +88,17 @@ encounters some code, but does not repeat the warning on subsequent encounters
 within the same process.
 
 For example:
-<pre>
+@code{.cc}
 void OldCalc(double data) {
   static const drake::internal::WarnDeprecated warn_once(
       "2038-01-19", "The method OldCalc() has been renamed to NewCalc().");
   return NewCalc(data);
 }
-</pre> */
+@endcode
+
+The runtime severity of the warning can be controlled via the
+`DRAKE_DEPRECATION_RUNTIME_SEVERITY` environment variable; see
+@ref deprecation_severity for details. */
 class [[maybe_unused]] WarnDeprecated {
  public:
   /* The removal_date must be in the form YYYY-MM-DD. */
@@ -95,4 +106,49 @@ class [[maybe_unused]] WarnDeprecated {
 };
 
 }  // namespace internal
+
+/** @defgroup deprecation_severity Deprecation Severity Controls
+@ingroup technical_notes
+@{
+
+Drake provides mechanisms to control the severity of deprecated API usage at
+both compile time and at runtime.
+
+<h3>Compile time</h3>
+
+To promote compile-time deprecation warnings to errors, build with
+`-Werror=deprecated-declarations`. To silence them, define
+the preprocessor symbol `DRAKE_DEPRECATION_IS_SILENT`.
+
+Bazel (add to `.bazelrc`):
+@code{.sh}
+build --copt=-Werror=deprecated-declarations      # promote to error
+# or:
+build --copt=-DDRAKE_DEPRECATION_IS_SILENT        # silence
+@endcode
+
+CMake:
+@code{.cmake}
+add_compile_options(-Werror=deprecated-declarations)   # promote to error
+# or:
+add_compile_definitions(DRAKE_DEPRECATION_IS_SILENT)   # silence
+@endcode
+
+<h3>Runtime</h3>
+
+Runtime deprecation warnings can be controlled via the
+`DRAKE_DEPRECATION_RUNTIME_SEVERITY` environment variable:
+
+- `"error"` — deprecation warnings are thrown as exceptions instead of logged.
+- `"ignore"` — deprecation warnings are silently discarded.
+- unset — deprecation warnings are logged normally.
+
+Setting the variable to an unrecognized value causes a one-time warning and
+falls back to the default behavior.
+
+This setting governs all Python deprecation warnings, and a small percentage
+of C++ deprecation warnings that cannot be expressed at compile-time.
+
+@} */
+
 }  // namespace drake
