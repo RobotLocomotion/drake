@@ -10,6 +10,15 @@ can do something like:
 
 If you would like to disable all Drake-related warnings, you may use the
 `"ignore"` action for `warnings.simplefilter`.
+
+The severity of deprecation warnings can also be controlled via environment
+variables at process startup:
+
+- ``DRAKE_DEPRECATION_IS_ERROR=1`` — treat deprecation warnings as errors
+  (raises ``RuntimeError`` instead of logging a warning).
+- ``DRAKE_DEPRECATION_IS_SILENT=1`` — silently discard deprecation warnings.
+
+The two variables are mutually exclusive; setting both is an error.
 """
 
 import os
@@ -315,10 +324,23 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
         var_dict[symbol] = old
 
 
-if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
-    # This is used for testing Jupyter notebooks in `jupyter_bazel`.
-    # Note that the same literal string name for the environment variable is
-    # used for both C++ code and Python code, so keep the two in sync.
+# These are used for controlling the severity of
+# deprecation messages during runtime.
+# Note that the same literal string name for the environment variable is
+# used for both C++ code and Python code, so keep the two in sync.
+_deprecation_is_error = os.environ.get("DRAKE_DEPRECATION_IS_ERROR") == "1"
+_ignore_deprecation = os.environ.get("DRAKE_DEPRECATION_IS_SILENT") == "1"
+
+if _deprecation_is_error and _ignore_deprecation:
+    msg = (
+        "DRAKE_DEPRECATION_IS_ERROR and "
+        'DRAKE_DEPRECATION_IS_SILENT cannot both be set to "1".'
+    )
+    raise RuntimeError(msg)
+
+if _ignore_deprecation:
+    warnings.simplefilter("ignore", DrakeDeprecationWarning)
+elif _deprecation_is_error:
     warnings.simplefilter("error", DrakeDeprecationWarning)
 else:
     warnings.simplefilter("once", DrakeDeprecationWarning)
