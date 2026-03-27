@@ -744,7 +744,7 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
-option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." ON)
+option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." OFF)
 
 if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
   # TODO(jwnimmer-tri) On 2026-02-01, add a deprecation warning to this mode.

@@ -379,11 +379,10 @@ bool_flag(
 
 # When True, Drake uses <unsupported/Eigen/AutoDiff> for its autodiff support.
 # When False, Drake uses a custom re-implementation. Using "True" is deprecated
-# and will be removed from Drake on or after 2026-07-01. The default will change
-# to "False" on or after 2026-04-01.
+# and will be removed from Drake on or after 2026-07-01.
 bool_flag(
     name = "use_eigen_legacy_autodiff",
-    build_setting_default = True,
+    build_setting_default = False,
 )
 
 # -----------------------------------------------------------------------------
