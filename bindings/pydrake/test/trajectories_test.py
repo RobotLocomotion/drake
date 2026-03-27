@@ -850,9 +850,38 @@ class TestTrajectories(unittest.TestCase):
         dut.Append(zoh)
         self.assertEqual(dut.rows(), 2)
         self.assertEqual(dut.cols(), 1)
+        self.assertEqual(dut.get_number_of_children(), 2)
+        self.assertIsInstance(
+            dut.child_trajectory(child_index=0), Trajectory_[T]
+        )
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+        assert_pickle(self, dut, lambda traj: traj.rowwise(), T=T)
+        assert_pickle(
+            self, dut, lambda traj: traj.get_number_of_children(), T=T
+        )
+        assert_pickle(
+            self,
+            dut,
+            lambda traj: np.array(
+                [
+                    [
+                        traj.child_trajectory(
+                            child_index=i
+                        ).getPolynomialMatrix(j)
+                        for j in range(
+                            traj.child_trajectory(
+                                child_index=i
+                            ).get_number_of_segments()
+                        )
+                    ]
+                    for i in range(traj.get_number_of_children())
+                ]
+            ),
+            T=T,
+        )
 
     @numpy_compare.check_all_types
     def test_wrapped_trajectory(self, T):

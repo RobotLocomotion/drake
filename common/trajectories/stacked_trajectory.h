@@ -47,6 +47,18 @@ class StackedTrajectory final : public Trajectory<T> {
   @throws std::exception if the matrix dimension is incompatible. */
   void Append(const Trajectory<T>& traj);
 
+  bool rowwise() const { return rowwise_; }
+
+  /** Returns the number of child trajectories that have been stacked. */
+  int get_number_of_children() const { return ssize(children_); }
+
+  /** Returns a reference to the `child_index` trajectory. */
+  const Trajectory<T>& child_trajectory(int child_index) const {
+    DRAKE_THROW_UNLESS(child_index >= 0);
+    DRAKE_THROW_UNLESS(child_index < this->get_number_of_children());
+    return *children_[child_index];
+  }
+
  private:
   void CheckInvariants() const;
 
