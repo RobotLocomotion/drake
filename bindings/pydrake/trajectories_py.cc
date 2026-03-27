@@ -358,7 +358,19 @@ struct Impl {
           .def("GetExpression", &Class::GetExpression,
               py::arg("time") = symbolic::Variable("t"),
               cls_doc.GetExpression.doc)
-          .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc);
+          .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                return std::make_tuple(ExtractDoubleOrThrow(self.start_time()),
+                    ExtractDoubleOrThrow(self.end_time()),
+                    self.control_points());
+              },
+              [](std::tuple<double, double, MatrixX<T>> args) {
+                return Class(
+                    /* start_time = */ std::get<0>(args),
+                    /* end_time = */ std::get<1>(args),
+                    /* control_points = */ std::get<2>(args));
+              }));
       if constexpr (std::is_same_v<T, double>) {  // #19712
         cls.def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
             py::arg("derivative_order") = 1,
