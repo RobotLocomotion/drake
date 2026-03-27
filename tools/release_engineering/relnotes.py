@@ -362,11 +362,12 @@ def _create(args, notes_dir, notes_filename, gh, drake):
     if notes_filename.exists():
         raise RuntimeError(f"{notes_filename} already exists")
 
-    # Update the version numbers in from_binary.md.
-    from_binary_path = notes_dir / "../_pages/from_binary.md"
-    old_text = from_binary_path.read_text(encoding="utf-8")
-    new_text = old_text.replace(args.prior_version[1:], args.version[1:])
-    from_binary_path.write_text(new_text, encoding="utf-8")
+    # Update the version numbers in other documentation.
+    for basename in ("apt.md", "from_binary.md"):
+        full_path = notes_dir / "../_pages" / basename
+        old_text = full_path.read_text(encoding="utf-8")
+        new_text = old_text.replace(args.prior_version[1:], args.version[1:])
+        full_path.write_text(new_text, encoding="utf-8")
 
     # Find the commit sha for the prior_version release.
     prior_sha = next(drake.commits(sha=args.prior_version)).sha
