@@ -22,7 +22,7 @@ drake_cc_package_library(
         ":linear_scalar_system",
         ":logistic_system",
         ":my_spring_mass_system",
-        ":pleides_system",
+        ":pleiades_system",
         ":quadratic_scalar_system",
         ":quartic_scalar_system",
         ":quintic_scalar_system",
@@ -132,9 +132,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "pleides_system",
+    name = "pleiades_system",
     testonly = 1,
-    hdrs = ["pleides_system.h"],
+    hdrs = ["pleiades_system.h"],
     deps = [
         "//systems/framework:leaf_system",
     ],
