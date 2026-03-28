@@ -25,10 +25,10 @@ using Vector2d = Vector2<double>;
 /// F.Mazzia and C.Magherini. Test Set for Initial Value Problem Solvers,
 /// release 2.4. Department of Mathematics, University of Bari and INdAM,
 /// Research Unit of Bari, February 2008. http://www.dm.uniba.it/~testset.
-class PleidesSystem : public LeafSystem<double> {
+class PleiadesSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PleidesSystem);
-  PleidesSystem() {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PleiadesSystem);
+  PleiadesSystem() {
     const int nq = 14;  // Number of generalized positions.
     const int nv = 14;  // Number of generalized velocities.
     const int nz = 0;   // No additional state variables.

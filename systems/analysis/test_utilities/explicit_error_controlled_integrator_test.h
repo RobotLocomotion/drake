@@ -9,7 +9,7 @@
 
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
-#include "drake/systems/analysis/test_utilities/pleides_system.h"
+#include "drake/systems/analysis/test_utilities/pleiades_system.h"
 
 namespace drake {
 namespace systems {
@@ -519,26 +519,26 @@ REGISTER_TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest,
 
 // T is the integrator type (e.g., RungeKutta3Integrator<double>).
 template <class T>
-struct PleidesTest : public ::testing::Test {
+struct PleiadesTest : public ::testing::Test {
  public:
-  PleidesTest() {
-    // Create the Pleides system.
-    pleides = std::make_unique<analysis::test::PleidesSystem>();
-    context = pleides->CreateDefaultContext();
+  PleiadesTest() {
+    // Create the Pleiades system.
+    pleiades = std::make_unique<analysis::test::PleiadesSystem>();
+    context = pleiades->CreateDefaultContext();
 
     // Create the integrator.
-    integrator = std::make_unique<T>(*pleides, context.get());
+    integrator = std::make_unique<T>(*pleiades, context.get());
   }
 
-  std::unique_ptr<analysis::test::PleidesSystem> pleides;
+  std::unique_ptr<analysis::test::PleiadesSystem> pleiades;
   std::unique_ptr<Context<double>> context;
   std::unique_ptr<IntegratorBase<double>> integrator;
 };
 
-TYPED_TEST_SUITE_P(PleidesTest);
+TYPED_TEST_SUITE_P(PleiadesTest);
 
-// Verifies that the Pleides system can be integrated accurately.
-TYPED_TEST_P(PleidesTest, Pleides) {
+// Verifies that the Pleiades system can be integrated accurately.
+TYPED_TEST_P(PleiadesTest, Pleiades) {
   // Set integrator to use variable-step (not fixed-step) with a tight accuracy
   // requirement for each variable step. Due to step size cutting, a variable
   // step can be substantially smaller than the initial step size. By default,
@@ -560,7 +560,7 @@ TYPED_TEST_P(PleidesTest, Pleides) {
   this->integrator->Initialize();
 
   // Simulate to the designated time.
-  const double t_final = this->pleides->get_end_time();
+  const double t_final = this->pleiades->get_end_time();
   this->integrator->IntegrateWithMultipleStepsToTime(t_final);
 
   // Check the result.
@@ -568,12 +568,12 @@ TYPED_TEST_P(PleidesTest, Pleides) {
                                 .get_generalized_position()
                                 .CopyToVector();
   const VectorX<double> q_des =
-      analysis::test::PleidesSystem::GetSolution(this->context->get_time());
+      analysis::test::PleiadesSystem::GetSolution(this->context->get_time());
   for (int i = 0; i < q.size(); ++i)
     EXPECT_NEAR(q[i], q_des[i], kTolerance) << i;
 }
 
-REGISTER_TYPED_TEST_SUITE_P(PleidesTest, Pleides);
+REGISTER_TYPED_TEST_SUITE_P(PleiadesTest, Pleiades);
 
 }  // namespace analysis_test
 }  // namespace systems
