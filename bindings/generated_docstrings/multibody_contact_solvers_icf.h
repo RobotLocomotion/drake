@@ -29,6 +29,8 @@
 // #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 // #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
 // #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
+// #include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
+// #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
 // Symbol: pydrake_doc_multibody_contact_solvers_icf
 constexpr struct /* pydrake_doc_multibody_contact_solvers_icf */ {
