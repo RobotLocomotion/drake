@@ -884,7 +884,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ia_over_a.get_products(), p / a);
 }
 
-// TODO(2026-06-01): delete test ShiftOperator.
+// TODO(2026-07-01): delete test ShiftOperator.
 // Test the shift operator to write into a stream.
 GTEST_TEST(RotationalInertia, ShiftOperator) {
   std::stringstream stream;

@@ -402,7 +402,7 @@ GTEST_TEST(PolynomialTest, EigenMatrixPolynomialToStringFmtFormatter) {
   EXPECT_EQ(fmt::to_string(fmt_eigen(poly_mat)), "x1 y1\nz1 w1");
 }
 
-// TODO(2026-06-01): delete test
+// TODO(2026-07-01): delete test
 // DeprecatedEigenMatrixPolynomialOutStreemOperator on removal date.
 GTEST_TEST(PolynomialTest, DeprecatedEigenMatrixPolynomialOutputOperator) {
   Eigen::Matrix<Polynomiald, 2, 2> poly_mat;

@@ -410,7 +410,7 @@ std::string to_string(const RotationalInertia<T>& I) {
   return result;
 }
 
-// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+// TODO(2026-07-01): delete `operator<<` instantiation and the `#pragma`s.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off

@@ -13,7 +13,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
 
-// Remove with deprecation 2026-05-01.
+// Remove with deprecation 2026-07-01.
 #include <ostream>
 
 // Some of our Eigen template specializations live in polynomial.h, so we
@@ -150,7 +150,7 @@ class Monomial {
 };
 
 DRAKE_DEPRECATED(
-    "2026-05-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& out, const Monomial& m);

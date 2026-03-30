@@ -225,7 +225,7 @@ TEST_F(SymbolicChebyshevBasisElementTest, ToStringFmtFormatter) {
             "T1(x)T2(y)");
 }
 
-// Remove StringOutput test with deprecation 2026-06-01.
+// Remove StringOutput test with deprecation 2026-07-01.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {

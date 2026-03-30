@@ -11,7 +11,7 @@ namespace solvers {
 namespace test {
 namespace {
 
-// TODO(2026-06-01): Delete test `StreamInsertionOperator`.
+// TODO(2026-07-01): Delete test `StreamInsertionOperator`.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(ProgramAttributeTest, StreamInsertionOperator) {

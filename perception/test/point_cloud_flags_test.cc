@@ -1,8 +1,9 @@
 #include "drake/perception/point_cloud_flags.h"
 
-// TODO(2026-06-01): Remove sstream header when `Formatting` is removed.
-#include <sstream>
 #include <stdexcept>
+
+// TODO(2026-07-01): Remove sstream header when `Formatting` is removed.
+#include <sstream>
 
 #include <gtest/gtest.h>
 
@@ -15,7 +16,7 @@ namespace pcf = pc_flags;
 
 namespace {
 
-// TODO(2026-06-01): Delete test `Formatting`.
+// TODO(2026-07-01): Delete test `Formatting`.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(PointCloudFlagsTest, Formatting) {
