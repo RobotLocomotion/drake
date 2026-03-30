@@ -8,7 +8,7 @@ libglx0
 libgomp1
 liblapack3
 libopengl0
-libpython3.13
+libpython3.14
 libspdlog-dev
 libx11-6
 ocl-icd-libopencl1
