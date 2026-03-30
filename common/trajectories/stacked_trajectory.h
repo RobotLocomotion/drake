@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ranges>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -46,6 +47,13 @@ class StackedTrajectory final : public Trajectory<T> {
   Refer to the class overview documentation for details.
   @throws std::exception if the matrix dimension is incompatible. */
   void Append(const Trajectory<T>& traj);
+
+  /** Returns a view of the current children. Calling any non-const method on
+  this trajectory will invalidate the view. */
+  view_of<const Trajectory<T>*> auto Children() const {
+    return children_ |
+           std::views::transform(&copyable_unique_ptr<Trajectory<T>>::get);
+  }
 
  private:
   void CheckInvariants() const;

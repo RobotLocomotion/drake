@@ -2213,6 +2213,13 @@ documentation for details.
 Raises:
     RuntimeError if the matrix dimension is incompatible.)""";
         } Append;
+        // Symbol: drake::trajectories::StackedTrajectory::Children
+        struct /* Children */ {
+          // Source: drake/common/trajectories/stacked_trajectory.h
+          const char* doc =
+R"""(Returns a view of the current children. Calling any non-const method
+on this trajectory will invalidate the view.)""";
+        } Children;
         // Symbol: drake::trajectories::StackedTrajectory::StackedTrajectory<T>
         struct /* ctor */ {
           // Source: drake/common/trajectories/stacked_trajectory.h

@@ -39,6 +39,7 @@ GTEST_TEST(StackedTrajectoryTest, Empty) {
   EXPECT_TRUE(dut.has_derivative());
   EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(0), MatrixXd::Zero(0, 0)));
   EXPECT_TRUE(dut.MakeDerivative() != nullptr);
+  EXPECT_EQ(dut.Children().size(), 0);
 }
 
 GTEST_TEST(StackedTrajectoryTest, CopyCtor) {
@@ -136,6 +137,14 @@ GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteColumnVectors) {
   EXPECT_TRUE(CompareMatrices(dut.value(t0), Vector4d(1, 2, 3, 4)));
   EXPECT_TRUE(CompareMatrices(dut.value(tf), Vector4d(11, 12, 13, 14)));
   EXPECT_FALSE(dut.has_derivative());
+  int counter = 0;
+  for (const Trajectory<double>* child : dut.Children()) {
+    ASSERT_NE(child, nullptr);
+    EXPECT_EQ(child->rows(), 2);
+    EXPECT_EQ(child->cols(), 1);
+    ++counter;
+  }
+  EXPECT_EQ(counter, 2);
 }
 
 GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteRowVectors) {
@@ -153,6 +162,14 @@ GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteRowVectors) {
   EXPECT_TRUE(CompareMatrices(dut.value(t0), RowVector4d(1, 2, 3, 4)));
   EXPECT_TRUE(CompareMatrices(dut.value(tf), RowVector4d(11, 12, 13, 14)));
   EXPECT_FALSE(dut.has_derivative());
+  int counter = 0;
+  for (const Trajectory<double>* child : dut.Children()) {
+    ASSERT_NE(child, nullptr);
+    EXPECT_EQ(child->rows(), 1);
+    EXPECT_EQ(child->cols(), 2);
+    ++counter;
+  }
+  EXPECT_EQ(counter, 2);
 }
 
 GTEST_TEST(StackedTrajectoryTest, Clone) {

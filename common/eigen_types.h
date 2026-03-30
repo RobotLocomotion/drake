@@ -436,4 +436,11 @@ class EigenPtr {
   bool is_valid() const { return m_.has_value(); }
 };
 
+/// Concept that constrains the range R to be a std::ranges::view where the
+/// range's value type is exactly T. This enables documenting the return type
+/// of range-returning functions, without promising a concrete type of range.
+template <typename R, typename T>
+concept view_of =
+    std::ranges::view<R> && std::same_as<std::ranges::range_value_t<R>, T>;
+
 }  // namespace drake
