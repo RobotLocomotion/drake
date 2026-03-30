@@ -352,7 +352,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("X_AP"), py::arg("body_B"), py::arg("X_BQ"),
             py_rvp::reference_internal, cls_doc.AddWeldConstraint.doc)
         .def("RemoveConstraint", &Class::RemoveConstraint, py::arg("id"),
-            cls_doc.RemoveConstraint.doc);
+            cls_doc.RemoveConstraint.doc)
+        .def("SetBaseBodyJointType", &Class::SetBaseBodyJointType,
+            py::arg("joint_type"), py::arg("model_instance") = std::nullopt)
+        .def("GetBaseBodyJointType", &Class::GetBaseBodyJointType,
+            py::arg("model_instance") = std::nullopt);
     // Mathy bits
     cls  // BR
         .def(
@@ -1769,6 +1773,17 @@ PYBIND11_MODULE(plant, m) {
         .value("kSap", Class::kSap, cls_doc.kSap.doc)
         .value("kSimilar", Class::kSimilar, cls_doc.kSimilar.doc)
         .value("kLagged", Class::kLagged, cls_doc.kLagged.doc);
+  }
+
+  {
+    using Class = BaseBodyJointType;
+    constexpr auto& cls_doc = doc.BaseBodyJointType;
+    py::enum_<Class> cls(m, "BaseBodyJointType", cls_doc.doc);
+    cls.value("kQuaternionFloatingJoint", Class::kQuaternionFloatingJoint,
+           cls_doc.kQuaternionFloatingJoint.doc)
+        .value("kRpyFloatingJoint", Class::kRpyFloatingJoint,
+            cls_doc.kRpyFloatingJoint.doc)
+        .value("kWeldJoint", Class::kWeldJoint, cls_doc.kWeldJoint.doc);
   }
 
   {
