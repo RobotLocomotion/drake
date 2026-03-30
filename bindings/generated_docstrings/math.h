@@ -33,7 +33,6 @@
 // #include "drake/math/gradient_util.h"
 // #include "drake/math/gray_code.h"
 // #include "drake/math/hopf_coordinate.h"
-// #include "drake/math/jacobian.h"
 // #include "drake/math/knot_vector_type.h"
 // #include "drake/math/linear_solve.h"
 // #include "drake/math/matrix_util.h"
@@ -4988,42 +4987,6 @@ Returns:
         // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } getSubMatrixGradient;
-      // Symbol: drake::math::hessian
-      struct /* hessian */ {
-        // Source: drake/math/jacobian.h
-        const char* doc_deprecated =
-R"""(Computes a matrix of AutoDiffScalars from which the value, Jacobian,
-and Hessian of a function
-
-.. math:: f:\mathbb{R}^{n\times m}\rightarrow\mathbb{R}^{p\times q}
-
-(f: R^n*m -> R^p*q) can be extracted.
-
-The output is a matrix of nested AutoDiffScalars, being the result of
-calling ∷jacobian on a function that returns the output of ∷jacobian,
-called on ``f``.
-
-``MaxChunkSizeOuter`` and ``MaxChunkSizeInner`` can be used to control
-chunk sizes (see ∷jacobian).
-
-See ∷jacobian for requirements on the function ``f`` and the argument
-``x``.
-
-Parameter ``f``:
-    function
-
-Parameter ``x``:
-    function argument value at which Hessian will be evaluated
-
-Returns:
-    AutoDiffScalar matrix corresponding to the Hessian of f evaluated
-    at x / (Deprecated.)
-
-Deprecated:
-    Removed with no replacement; copy the code into your project if
-    you still need it This will be removed from Drake on or after
-    2026-04-01.)""";
-      } hessian;
       // Symbol: drake::math::intRange
       struct /* intRange */ {
         // Source: drake/math/gradient_util.h
@@ -5048,65 +5011,6 @@ Returns:
     ``True`` if quat.w() is nonnegative (in canonical form), else
     ``False``.)""";
       } is_quaternion_in_canonical_form;
-      // Symbol: drake::math::jacobian
-      struct /* jacobian */ {
-        // Source: drake/math/jacobian.h
-        const char* doc_deprecated =
-R"""(Computes a matrix of AutoDiffScalars from which both the value and the
-Jacobian of a function
-
-.. math:: f:\mathbb{R}^{n\times m}\rightarrow\mathbb{R}^{p\times q}
-
-(f: R^n*m -> R^p*q) can be extracted.
-
-The derivative vector for each AutoDiffScalar in the output contains
-the derivatives with respect to all components of the argument
-:math:`x`.
-
-The return type of this function is a matrix with the 'best' possible
-AutoDiffScalar scalar type, in the following sense: - If the number of
-derivatives can be determined at compile time, the AutoDiffScalar
-derivative vector will have that fixed size. - If the maximum number
-of derivatives can be determined at compile time, the AutoDiffScalar
-derivative vector will have that maximum fixed size. - If neither the
-number, nor the maximum number of derivatives can be determined at
-compile time, the output AutoDiffScalar derivative vector will be
-dynamically sized.
-
-``f`` should have a templated call operator that maps an Eigen matrix
-argument to another Eigen matrix. The scalar type of the output of
-:math:`f` need not match the scalar type of the input (useful in
-recursive calls to the function to determine higher order
-derivatives). The easiest way to create an ``f`` is using a C++14
-generic lambda.
-
-The algorithm computes the Jacobian in chunks of up to
-``MaxChunkSize`` derivatives at a time. This has three purposes: - It
-makes it so that derivative vectors can be allocated on the stack,
-eliminating dynamic allocations and improving performance if the
-maximum number of derivatives cannot be determined at compile time. -
-It gives control over, and limits the number of required
-instantiations of the call operator of f and all the functions it
-calls. - Excessively large derivative vectors can result in CPU
-capacity cache misses; even if the number of derivatives is fixed at
-compile time, it may be better to break up into chunks if that means
-that capacity cache misses can be prevented.
-
-Parameter ``f``:
-    function
-
-Parameter ``x``:
-    function argument value at which Jacobian will be evaluated
-
-Returns:
-    AutoDiffScalar matrix corresponding to the Jacobian of f evaluated
-    at x. / (Deprecated.)
-
-Deprecated:
-    Removed with no replacement; copy the code into your project if
-    you still need it This will be removed from Drake on or after
-    2026-04-01.)""";
-      } jacobian;
       // Symbol: drake::math::matGradMult
       struct /* matGradMult */ {
         // Source: drake/math/gradient_util.h
