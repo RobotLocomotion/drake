@@ -23,7 +23,7 @@ typedef ::testing::Types<RungeKutta5Integrator<double>> Types;
 // NOLINTNEXTLINE(whitespace/line_length)
 INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest,
                                Types);
-INSTANTIATE_TYPED_TEST_SUITE_P(My, PleidesTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, PleiadesTest, Types);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, GenericIntegratorTest, Types);
 
 // Tests accuracy for integrating the quintic system (with the state at time t
