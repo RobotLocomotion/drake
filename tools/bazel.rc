@@ -84,8 +84,8 @@ build:debug --test_timeout=120,600,1800,7200
 
 ### A configuration that enables all optional dependencies. ###
 build:everything --test_tag_filters=-no_everything
-# We'll also use it to test our custom AutoDiff until 2026-04-01 when this flag
-# gets flipped.
+# We'll also use it to test legacy AutoDiff until 2026-07-01 when this flag
+# gets removed.
 build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False
 
 ### A configuration that enables Gurobi. ###

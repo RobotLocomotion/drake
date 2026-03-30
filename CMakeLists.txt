@@ -744,10 +744,12 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
-option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." ON)
+option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." OFF)
 
 if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
-  # TODO(jwnimmer-tri) On 2026-02-01, add a deprecation warning to this mode.
+  message(WARNING "Setting DRAKE_USE_EIGEN_LEGACY_AUTODIFF=ON is deprecated "
+    "and will be removed from Drake on or after 2026-07-01."
+  )
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
