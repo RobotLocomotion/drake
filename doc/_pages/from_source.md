@@ -28,10 +28,10 @@ officially supports when building from source:
      CMakeLists.txt. -->
 <!-- The minimum Python version(s) should match those listed in both the root
      CMakeLists.txt and setup/python/pyproject.toml. -->
-<!-- The minimum CMake version across all platforms should match that listed
-     in the root CMakeLists.txt. The maximum version should match the policy
-     version listed in tools/install/libdrake/drake-config.cmake.in (and all
-     corresponding tests). -->
+<!-- The maximum CMake version across all platforms should match the upper
+     bound ("policy version") listed in both the root CMakeLists.txt and
+     tools/install/libdrake/drake-config.cmake.in (along with the related
+     libdrake tests). -->
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|
