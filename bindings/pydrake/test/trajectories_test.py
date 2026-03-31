@@ -355,6 +355,32 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
         self.assertIsInstance(trajectory.time_scaling(), PiecewisePolynomial)
 
+        assert_pickle(
+            self,
+            trajectory,
+            lambda traj: dict(
+                path_breaks=traj.path().get_segment_times(),
+                path_polynomials=np.array(
+                    [
+                        traj.path().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.path().get_number_of_segments()
+                        )
+                    ]
+                ),
+                time_breaks=traj.time_scaling().get_segment_times(),
+                time_polynomials=np.array(
+                    [
+                        traj.time_scaling().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.time_scaling().get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
@@ -405,6 +431,23 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(pp).rows(), 1)
         self.assertEqual(copy.deepcopy(pp).rows(), 1)
+
+        assert_pickle(
+            self,
+            pp,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                polynomial_matrices=np.array(
+                    [
+                        traj.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
 
     def test_piecewise_polynomial_serialize_zoh(self):
         PiecewisePolynomial = PiecewisePolynomial_[float]
