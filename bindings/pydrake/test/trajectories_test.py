@@ -355,6 +355,32 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
         self.assertIsInstance(trajectory.time_scaling(), PiecewisePolynomial)
 
+        assert_pickle(
+            self,
+            trajectory,
+            lambda traj: dict(
+                path_breaks=traj.path().get_segment_times(),
+                path_polynomials=np.array(
+                    [
+                        traj.path().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.path().get_number_of_segments()
+                        )
+                    ]
+                ),
+                time_breaks=traj.time_scaling().get_segment_times(),
+                time_polynomials=np.array(
+                    [
+                        traj.time_scaling().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.time_scaling().get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
@@ -406,6 +432,32 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.copy(pp).rows(), 1)
         self.assertEqual(copy.deepcopy(pp).rows(), 1)
 
+    @numpy_compare.check_all_types
+    def test_piecewise_polynomial_pickle(self, T):
+        Polynomial = Polynomial_[T]
+        PiecewisePolynomial = PiecewisePolynomial_[T]
+
+        p1 = Polynomial(1)
+        p2 = Polynomial(2)
+        pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
+
+        assert_pickle(
+            self,
+            pp,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                polynomial_matrices=np.array(
+                    [
+                        traj.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
     def test_piecewise_polynomial_serialize_zoh(self):
         PiecewisePolynomial = PiecewisePolynomial_[float]
         breaks = [0, 0.5, 1]
@@ -437,8 +489,6 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(readback.rows(), 2)
         self.assertEqual(readback.cols(), 3)
         self.assertTrue(readback.isApprox(expected, tol=0))
-
-        assert_pickle(self, dut, yaml_dump_typed, T=float)
 
     def test_piecewise_polynomial_serialize_cubic(self):
         PiecewisePolynomial = PiecewisePolynomial_[float]
