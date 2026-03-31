@@ -13,5 +13,6 @@ def clang_cindex_python3_internal_repository(
         patch_cmds = ["mkdir clang && mv *.py clang"],
         patches = [
             ":patches/clang-15.patch",
+            ":patches/cursor-kinds.patch",
         ],
     )
