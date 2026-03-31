@@ -755,6 +755,29 @@ class TestTrajectories(unittest.TestCase):
             traj.segment(segment_index=1), PiecewisePolynomial
         )
 
+        assert_pickle(
+            self,
+            traj,
+            lambda t: dict(
+                outer_breaks=traj.get_segment_times(),
+                inner_breaks_1=traj.segment(0).get_segment_times(),
+                polynomial_matrices_1=[
+                    traj.segment(0).getPolynomialMatrix(segment_index)
+                    for segment_index in range(
+                        traj.segment(0).get_number_of_segments()
+                    )
+                ],
+                inner_breaks_2=traj.segment(1).get_segment_times(),
+                polynomial_matrices_2=[
+                    traj.segment(1).getPolynomialMatrix(segment_index)
+                    for segment_index in range(
+                        traj.segment(1).get_number_of_segments()
+                    )
+                ],
+            ),
+            T=T,
+        )
+
         traj = CompositeTrajectory.AlignAndConcatenate(segments=[pp1, pp2])
         self.assertIsInstance(traj, CompositeTrajectory)
 

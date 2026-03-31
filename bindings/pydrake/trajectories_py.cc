@@ -762,7 +762,25 @@ struct Impl {
                 }
                 return CompositeTrajectory<T>::AlignAndConcatenate(segments);
               },
-              py::arg("segments"), cls_doc.AlignAndConcatenate.doc);
+              py::arg("segments"), cls_doc.AlignAndConcatenate.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                py::list segments_pickle;
+                for (int i = 0; i < self.get_number_of_segments(); ++i) {
+                  segments_pickle.append(self.segment(i).Clone());
+                }
+                return segments_pickle;
+              },
+              [](py::list segments_pickle) {
+                std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+                segments.reserve(segments_pickle.size());
+                for (py::handle segment_pickle : segments_pickle) {
+                  const Trajectory<T>& segment =
+                      segment_pickle.cast<const Trajectory<T>&>();
+                  segments.emplace_back(segment.Clone());
+                }
+                return std::make_unique<Class>(std::move(segments));
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
