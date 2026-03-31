@@ -907,7 +907,17 @@ struct Impl {
           .def("get_position_trajectory", &Class::get_position_trajectory,
               cls_doc.get_position_trajectory.doc)
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
-              cls_doc.get_orientation_trajectory.doc);
+              cls_doc.get_orientation_trajectory.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                return std::make_pair(self.get_position_trajectory(),
+                    self.get_orientation_trajectory());
+              },
+              [](std::pair<PiecewisePolynomial<T>, PiecewiseQuaternionSlerp<T>>
+                      args) {
+                return Class(/* position_trajectory = */ std::get<0>(args),
+                    /* orientation_trajectory = */ std::get<1>(args));
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 

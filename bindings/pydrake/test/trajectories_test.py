@@ -927,6 +927,33 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
         self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)
 
+        # We do not have to test the inner breaks match, because this is a
+        # required invariant of the Class.
+        assert_pickle(
+            self,
+            ppose,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                position_polynomials=np.array(
+                    [
+                        traj.get_position_trajectory().getPolynomialMatrix(
+                            segment_index
+                        )
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+                quaternions=np.array(
+                    [
+                        q.wxyz()
+                        for q in traj.get_orientation_trajectory().get_quaternion_samples()  # noqa: E501
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_stacked_trajectory(self, T):
         breaks = [0, 1, 2]
