@@ -258,6 +258,18 @@ class TestTrajectories(unittest.TestCase):
         copy.copy(dut1)
         copy.deepcopy(dut1)
 
+        for dut in [dut1, dut2]:
+            assert_pickle(
+                self,
+                dut,
+                lambda traj: dict(
+                    times=traj.get_times(),
+                    values=np.array([traj.value(t) for t in traj.get_times()]),
+                    time_comparison_tolerance=traj.time_comparison_tolerance(),
+                ),
+                T=T,
+            )
+
     def test_exponential_plus_piecewise_polynomial(self):
         K = np.array([1.23])
         A = np.array([3.45])
