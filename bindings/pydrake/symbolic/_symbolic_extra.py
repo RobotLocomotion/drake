@@ -6,7 +6,9 @@
 import functools
 import operator
 import sys
+import threading
 import typing
+import uuid
 
 
 def logical_and(*formulas):
@@ -26,6 +28,62 @@ def _reduce_add(*args):
 def _reduce_mul(*args):
     return functools.reduce(operator.mul, args)
 
+
+class _Pickler:
+    """Private implementation singleton for (un)pickling symbolic.Variable."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.reset()
+
+    def reset(self):
+        """To pickle symbolic.Variable, pydrake needs to maintain an in-memory
+        lookup table of all variables ever pickled or unpicked in the current
+        process. The table preserves the invariant that variable equality is
+        tied to object identity.
+
+        With a heavy pickling, the table might grow to consume too much memory.
+        This function clears the table, releasing the memory. Variables that are
+        pickled or unpickled on different sides of the call to reset_pickler()
+        may not compare as equal, so this should only be called upon reaching an
+        "epoch" of symbolic.Variable scope or lifetime, e.g., resetting an
+        experiment.
+        """
+        self._guid_to_var = dict()
+        self._var_to_guid = dict()
+
+    def _pickle_variable(self, var: Variable) -> tuple:
+        guid = self._var_to_guid.get(var.get_id())
+        if guid is None:
+            with self._lock:
+                guid = self._var_to_guid.get(var.get_id())
+                if guid is None:
+                    guid = uuid.uuid4()
+                    self._var_to_guid[var.get_id()] = guid
+                    self._guid_to_var[guid] = var
+        return (
+            guid,
+            var.get_name(),
+            var.get_type(),
+        )
+
+    def _unpickle_variable(self, var_pickled: tuple) -> Variable:
+        guid, var_name, var_type = var_pickled
+        var = self._guid_to_var.get(guid)
+        if var is None:
+            with self._lock:
+                var = self._guid_to_var.get(guid)
+                if var is None:
+                    var = Variable(name=var_name, type=var_type)
+                    self._var_to_guid[var] = guid
+                    self._guid_to_var[guid] = var
+        return var
+
+
+_PICKLER = _Pickler()
+reset_pickler = _PICKLER.reset
+_pickle_variable = _PICKLER._pickle_variable
+_unpickle_variable = _PICKLER._unpickle_variable
 
 # Drake's SymPy support is loaded lazily (on demand), so that Drake does not
 # directly depend on SymPy. The implementation lives in `_symbolic_sympy.py`.
