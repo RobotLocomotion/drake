@@ -20,18 +20,18 @@ _COPTS = [
 cc_library(
     name = "compat",
     hdrs = ["src/compat.hxx"],
+    copts = _COPTS,
     includes = ["src"],
     isystem = True,
-    copts = _COPTS,
     linkstatic = True,
 )
 
 cc_library(
     name = "contrib",
     hdrs = ["src/ssids/contrib.h"],
+    copts = _COPTS,
     includes = ["src"],
     isystem = True,
-    copts = _COPTS,
     linkstatic = True,
     deps = [
         ":spral_ssids_contrib",
@@ -40,16 +40,22 @@ cc_library(
 
 cc_library(
     name = "cpu_kernels",
-    srcs = glob(["src/ssids/cpu/**/*.cxx"], allow_empty = False) + [
+    srcs = glob(
+        ["src/ssids/cpu/**/*.cxx"],
+        allow_empty = False,
+    ) + [
         # SPRAL has modules where C calls Fortran calls C. The only way we can
         # denote that to a single-pass linker is by listing the object code as
         # a source file.
         "src/ssids/contrib_free.f90.pic.o",
     ],
-    hdrs = glob(["src/ssids/cpu/**/*.hxx"], allow_empty = False),
+    hdrs = glob(
+        ["src/ssids/cpu/**/*.hxx"],
+        allow_empty = False,
+    ),
+    copts = _COPTS + ["-fvisibility=hidden"],
     includes = ["src"],
     isystem = True,
-    copts = _COPTS + ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":contrib",
@@ -67,9 +73,9 @@ cc_library(
     hdrs = [
         "src/hw_topology/guess_topology.hxx",
     ],
+    copts = _COPTS,
     includes = ["src"],
     isystem = True,
-    copts = _COPTS,
     linkstatic = True,
     deps = [
         ":compat",
@@ -80,21 +86,21 @@ cc_library(
     name = "omp",
     srcs = ["src/omp.cxx"],
     hdrs = ["src/omp.hxx"],
+    copts = _COPTS,
     includes = ["src"],
     isystem = True,
-    copts = _COPTS,
     linkstatic = True,
 )
 
 cc_library(
     name = "profile",
     hdrs = ["src/ssids/profile.hxx"],
+    copts = _COPTS,
     # Note that there is a profile.cxx upstream, but we don't compile it here.
     # The patches/no_fortran_profiling.patch removes the Fortran callers, so
     # we can omit it (so that it doesn't leak global symbols into our library).
     includes = ["src"],
     isystem = True,
-    copts = _COPTS,
     deps = [
         ":guess_topology",
         ":omp",
@@ -105,14 +111,14 @@ cc_library(
 # file, refer to the upstream Makefile.am at "# Fortran 90 dependencies".
 
 fortran_module(
-    src = "src/blas_iface.f90",
     name = "spral_blas_iface",
+    src = "src/blas_iface.f90",
     deps = ["@blas"],
 )
 
 fortran_module(
-    src = "src/core_analyse.f90",
     name = "spral_core_analyse",
+    src = "src/core_analyse.f90",
 )
 
 fortran_module(
@@ -351,15 +357,15 @@ fortran_module(
 cc_library(
     name = "spral",
     hdrs = ["include/spral_ssids.h"],
+    copts = _COPTS,
     includes = ["include"],
     isystem = True,
-    copts = _COPTS,
     linkstatic = True,
+    visibility = ["//visibility:public"],
     deps = [
         # TODO(jwnimer-tri) Prune away the transitive hdrs here.
         ":spral_ssids_ciface",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(

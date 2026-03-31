@@ -95,20 +95,20 @@ _HDRS = _MOST_PUBLIC_HDRS + [
 
 cc_library_vendored(
     name = "gz_utils",
-    hdrs = _HDRS,
-    hdrs_vendored = [
-        x.replace("include/gz/", "drake_hdr/gz/")
-        for x in _HDRS
-    ],
     srcs = _SRCS,
     srcs_vendored = [
         x.replace("src/", "drake_src/")
         for x in _SRCS
     ],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/gz/", "drake_hdr/gz/")
+        for x in _HDRS
+    ],
     copts = ["-w"],
-    linkstatic = True,
     includes = ["drake_hdr"],
     isystem = True,
+    linkstatic = True,
     visibility = ["//visibility:public"],
 )
 

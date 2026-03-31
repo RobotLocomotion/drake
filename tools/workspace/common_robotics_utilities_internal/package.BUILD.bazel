@@ -51,16 +51,16 @@ cc_library(
         "include/common_robotics_utilities/voxel_grid_common.hpp",
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
+    copts = COPTS,
     includes = ["include"],
     isystem = True,
-    copts = COPTS,
+    linkopts = [
+        "-pthread",
+    ],
     linkstatic = True,
     deps = [
         "@eigen",
         "@zlib",
-    ],
-    linkopts = [
-        "-pthread",
     ],
 )
 
@@ -108,18 +108,18 @@ cc_test(
 # N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "parallelism_test",
+    timeout = "moderate",
     srcs = ["test/parallelism_test.cpp"],
     copts = COPTS,
     env = {"OMP_NUM_THREADS": "2"},
+    flaky = True,
+    shard_count = 4,
     tags = [
         "cpu:2",
         "no_kcov",
         # Some of these tests take too long under valgrind for CI.
         "no_memcheck",
     ],
-    flaky = True,
-    shard_count = 4,
-    timeout = "moderate",
     deps = [
         ":common_robotics_utilities",
         "@googletest//:gtest",

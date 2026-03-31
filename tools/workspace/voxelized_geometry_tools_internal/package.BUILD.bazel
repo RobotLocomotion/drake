@@ -45,14 +45,14 @@ cc_library(
     ],
     includes = ["include"],
     isystem = True,
+    linkopts = [
+        "-pthread",
+    ],
     linkstatic = True,
     deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@eigen",
         "@zlib",
-    ],
-    linkopts = [
-        "-pthread",
     ],
 )
 
@@ -115,9 +115,9 @@ cc_library(
     isystem = True,
     linkstatic = True,
     deps = [
-        ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
         ":opencl_voxelization_helpers",
+        ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@eigen",
         "@zlib",
@@ -134,10 +134,10 @@ cc_test(
         "no_kcov",
     ],
     deps = [
-        ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
         ":opencl_voxelization_helpers",
         ":pointcloud_voxelization",
+        ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@googletest//:gtest",
     ],
@@ -191,10 +191,10 @@ cc_test(
     srcs = ["test/voxel_raycasting_test.cpp"],
     tags = ["no_kcov"],
     deps = [
-        ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
         ":opencl_voxelization_helpers",
         ":pointcloud_voxelization",
+        ":voxelized_geometry_tools",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@googletest//:gtest",
     ],

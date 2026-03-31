@@ -18,16 +18,24 @@ cc_library(
     srcs = glob([
         "src/*.c",
     ]) + [
-        "linsys/csparse.h",
-        "linsys/csparse.c",
-        "linsys/scs_matrix.h",
-        "linsys/scs_matrix.c",
         "linsys/cpu/direct/private.c",
         "linsys/cpu/direct/private.h",
+        "linsys/csparse.c",
+        "linsys/csparse.h",
+        "linsys/scs_matrix.c",
+        "linsys/scs_matrix.h",
     ],
     hdrs = glob([
         "include/*.h",
     ]),
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+        "-Werror=incompatible-pointer-types",
+        # We don't allow Drake externals to use OpenMP until we wire up "max
+        # parallelism" governance to a drake::Parallellism public API option.
+        "-fno-openmp",
+    ],
     defines = [
         "USE_LAPACK=1",
         # Keep the default primitive size of `double` and `int`.  Don't define
@@ -39,19 +47,11 @@ cc_library(
         "linsys",
     ],
     isystem = True,
-    copts = [
-        "-fvisibility=hidden",
-        "-w",
-        "-Werror=incompatible-pointer-types",
-        # We don't allow Drake externals to use OpenMP until we wire up "max
-        # parallelism" governance to a drake::Parallellism public API option.
-        "-fno-openmp",
-    ],
-    linkstatic = 1,
     linkopts = select({
         ":linux": ["-lrt"],
         "//conditions:default": [],
     }),
+    linkstatic = 1,
     deps = [
         "@blas",
         "@lapack",

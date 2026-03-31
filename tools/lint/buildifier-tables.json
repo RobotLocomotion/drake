@@ -25,6 +25,29 @@
     "install_files.files": true
   },
   "NamePriority": {
+    "cc_library_vendored.srcs_vendored": -90,
+    "generate_vendor_patch.srcs_vendored": -90,
+    "cc_library_vendored.hdrs_vendored": -87,
+
+    "check_lists_consistency.files": -9,
+    "check_lists_consistency.glob_include": -8,
+    "check_lists_consistency.glob_exclude": -7,
+
+    "coin_cc_library.config_h": -95,
+    "coin_cc_library.config_h_public": -94,
+    "coin_cc_library.config_h_private": -93,
+    "coin_cc_library.autoconf_defines": -92,
+    "coin_cc_library.autoconf_undefines": -91,
+    "coin_cc_library.config_private_defines": -91,
+    "coin_cc_library.hdrs_public": -87,
+    "coin_cc_library.includes_public": -87,
+    "coin_cc_library.hdrs_private": -86,
+    "coin_cc_library.includes_private": -86,
+    "coin_cc_library.vendor_tool_args": -2,
+    "coin_cc_library.output_vendoring_patch": -1,
+
+    "cmake_configure_file.strict": -1,
+
     "drake_cc_library.implementation_deps": 5,
     "drake_cc_library_linux_only.implementation_deps": 5,
     "drake_cc_optional_library.implementation_deps": 5,
