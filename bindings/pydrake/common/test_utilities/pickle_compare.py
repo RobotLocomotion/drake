@@ -17,6 +17,7 @@ def _assert_equal(test, a, b):
     if isinstance(a, np.ndarray):
         numpy_compare.assert_equal(a, b)
     elif isinstance(a, dict):
+        test.assertEqual(a.keys(), b.keys())
         for key in a:
             _assert_equal(test, a[key], b[key])
     else:
