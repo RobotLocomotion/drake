@@ -2,6 +2,7 @@
 
 import copy
 import itertools
+import pickle
 import unittest
 import warnings
 
@@ -15,6 +16,7 @@ from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 import pydrake.math as drake_math
 import pydrake.symbolic as sym
 
@@ -200,6 +202,14 @@ class TestSymbolicVariable(unittest.TestCase):
         value = str(np.array([x, y]))
         self.assertIn("Variable('x', Continuous)", value)
         self.assertIn("Variable('y', Continuous)", value)
+
+    def test_pickle(self):
+        # Saving and re-loading a variable comes back with the same id.
+        assert_pickle(self, x, lambda v: v.get_id())
+        assert_pickle(self, boolean, lambda v: v.get_id())
+
+        # Saving a copy is the same as saving the original.
+        self.assertEqual(pickle.dumps(x), pickle.dumps(copy.copy(x)))
 
 
 class TestMakeMatrixVariable(unittest.TestCase):
