@@ -142,6 +142,14 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::self != double());
   internal::BindMathOperators<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
+  var_cls.def(py::pickle(
+      [m](const Variable& self) -> py::object {
+        return m.attr("_pickle_variable")(self);
+      },
+      [m](py::object var_pickled) -> Variable {
+        return m.attr("_unpickle_variable")(var_pickled)
+            .template cast<Variable>();
+      }));
 
   // Bind the free function TaylorExpand.
   m.def(
