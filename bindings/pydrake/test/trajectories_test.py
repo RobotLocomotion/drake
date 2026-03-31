@@ -858,6 +858,11 @@ class TestTrajectories(unittest.TestCase):
         dut.Append(zoh)
         self.assertEqual(dut.rows(), 2)
         self.assertEqual(dut.cols(), 1)
+        children = dut.children()
+        self.assertEqual(len(children), 2)
+        self.assertEqual(
+            children[0].getPolynomialMatrix(0), zoh.getPolynomialMatrix(0)
+        )
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)

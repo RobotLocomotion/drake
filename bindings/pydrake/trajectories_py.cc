@@ -871,7 +871,15 @@ struct Impl {
           .def("Append",
               py::overload_cast<const Trajectory<T>&>(&Class::Append),
               /* N.B. We choose to omit any py::arg name here. */
-              cls_doc.Append.doc);
+              cls_doc.Append.doc)
+          .def(
+              "children",
+              [](const Class& self) {
+                auto range = self.children();
+                return std::vector<const Trajectory<T>*>(
+                    range.begin(), range.end());
+              },
+              py_rvp::reference_internal, cls_doc.children.doc);
       DefCopyAndDeepCopy(&cls);
     }
 

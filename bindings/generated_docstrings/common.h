@@ -54,6 +54,7 @@
 // #include "drake/common/pointer_cast.h"
 // #include "drake/common/polynomial.h"
 // #include "drake/common/random.h"
+// #include "drake/common/ranges.h"
 // #include "drake/common/reset_after_move.h"
 // #include "drake/common/reset_on_copy.h"
 // #include "drake/common/scope_exit.h"
