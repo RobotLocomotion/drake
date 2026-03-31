@@ -292,11 +292,14 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
       vtkSmartPointer<vtkPolyDataAlgorithm> vtk_source;
     };
     std::vector<Part> parts;
+    // The number of registered Drake geometries in _this_ engine that reference
+    // this cache entry. When this count reaches zero the entry is evicted.
+    int use_count{0};
   };
 
   // Instantiates the parts of a CachedMesh. Materials and scale factors are
   // resolved on a per-instance basis.
-  void ImplementCachedMesh(const CachedMesh& cached,
+  void ImplementCachedMesh(const std::string& cache_key,
                            const Eigen::Vector3d& scale,
                            const RegistrationData& data);
 
@@ -405,6 +408,12 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // varying per-texture parameters (OpenGl requires different texture objects
   // for different parameter combinations).
   string_unordered_map<CachedTexture> texture_cache_;
+
+  // Maps each geometry that was registered through the mesh cache to its
+  // cache key. Used by DoRemoveGeometry() to decrement use_count and evict
+  // entries whose count reaches zero. Geometries not using the cache
+  // (primitives, glTF, deformables) are never inserted here.
+  std::unordered_map<GeometryId, std::string> geometry_mesh_keys_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.
