@@ -251,12 +251,13 @@ class TestTrajectories(unittest.TestCase):
         copy.deepcopy(dut1)
 
         for dut in [dut1, dut2]:
-            assert_pickle(self, dut, lambda traj: traj.get_times(), T=T)
             assert_pickle(
                 self,
                 dut,
-                lambda traj: np.array(
-                    [traj.value(t) for t in traj.get_times()]
+                lambda traj: dict(
+                    times=traj.get_times(),
+                    values=np.array([traj.value(t) for t in traj.get_times()]),
+                    time_comparison_tolerance=traj.time_comparison_tolerance(),
                 ),
                 T=T,
             )

@@ -16,6 +16,9 @@ _PYBIND11_METACLASS = type(Expression)
 def _assert_equal(test, a, b):
     if isinstance(a, np.ndarray):
         numpy_compare.assert_equal(a, b)
+    elif isinstance(a, dict):
+        for key in a:
+            _assert_equal(test, a[key], b[key])
     else:
         test.assertEqual(a, b)
 

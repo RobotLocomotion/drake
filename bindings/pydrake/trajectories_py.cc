@@ -736,8 +736,10 @@ struct Impl {
               },
               [](std::tuple<std::vector<T>, std::vector<MatrixX<T>>, double>
                       args) {
-                return Class(
-                    std::get<0>(args), std::get<1>(args), std::get<2>(args));
+                const std::vector<T>& times = std::get<0>(args);
+                const std::vector<MatrixX<T>>& values = std::get<1>(args);
+                const double time_comparison_tolerance = std::get<2>(args);
+                return Class(times, values, time_comparison_tolerance);
               }));
       DefCopyAndDeepCopy(&cls);
     }
