@@ -779,8 +779,13 @@ class TestTrajectories(unittest.TestCase):
         R = RotationMatrix()
 
         # Test quaternion constructor.
-        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
+        quaternions = [q, q, q]
+        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=quaternions)
         self.assertEqual(pq.get_number_of_segments(), 2)
+        for i in range(len(quaternions)):
+            numpy_compare.assert_equal(
+                quaternions[i].wxyz(), pq.get_quaternion_samples()[i].wxyz()
+            )
         numpy_compare.assert_float_equal(
             pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
         )
@@ -855,6 +860,18 @@ class TestTrajectories(unittest.TestCase):
             np.array([np.cos(np.pi / 4), 0, 0, np.sin(np.pi / 4)]),
             atol=1e-15,
             rtol=0,
+        )
+
+        assert_pickle(
+            self,
+            pq,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                quaternions=np.array(
+                    [q.wxyz() for q in traj.get_quaternion_samples()]
+                ),
+            ),
+            T=T,
         )
 
     @numpy_compare.check_all_types
