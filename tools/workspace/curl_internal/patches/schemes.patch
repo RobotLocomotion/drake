@@ -1,6 +1,6 @@
 [curl_internal] Disable all schemes except http
 
-This avoid linker errors for undefined schemes.
+This avoids linker errors for undefined schemes.
 
 Reasoning for not upstreaming this patch: Drake-specific build flavor.
 
