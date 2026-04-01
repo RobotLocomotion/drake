@@ -14,8 +14,8 @@ cc_library_vendored(
     srcs = ["tiny_gltf.cc"],
     srcs_vendored = ["drake_vendor/tiny_gltf.cc"],
     hdrs = [
-        "tinygltf_json.h",
         "tiny_gltf.h",
+        "tinygltf_json.h",
     ],
     hdrs_vendored = [
         "drake_vendor/tinygltf_json.h",
