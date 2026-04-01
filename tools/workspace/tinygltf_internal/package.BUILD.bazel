@@ -13,8 +13,14 @@ cc_library_vendored(
     name = "tinygltf",
     srcs = ["tiny_gltf.cc"],
     srcs_vendored = ["drake_vendor/tiny_gltf.cc"],
-    hdrs = ["tiny_gltf.h"],
-    hdrs_vendored = ["drake_vendor/tiny_gltf.h"],
+    hdrs = [
+        "tinygltf_json.h",
+        "tiny_gltf.h",
+    ],
+    hdrs_vendored = [
+        "drake_vendor/tinygltf_json.h",
+        "drake_vendor/tiny_gltf.h",
+    ],
     defines = [
         # Don't bother reading external images during glTF parsing; we'll
         # handle while processing the resulting RenderMaterial.
@@ -23,13 +29,14 @@ cc_library_vendored(
         # the bytes in Drake.
         "TINYGLTF_NO_STB_IMAGE",
         "TINYGLTF_NO_STB_IMAGE_WRITE",
+        # tinygltf has its own optimizied json parser.
+        "TINYGLTF_USE_CUSTOM_JSON",
+        "TINYGLTF_JSON_USE_SIMD",
+        "TINYGLTF_JSON_USE_EXCEPTIONS",
     ],
     includes = ["drake_vendor"],
     isystem = True,
     linkstatic = 1,
-    deps = [
-        "@nlohmann_internal//:nlohmann",
-    ],
 )
 
 install(
