@@ -19,26 +19,25 @@ using std::string;
 namespace drake {
 namespace symbolic {
 
-namespace {
-/* Produces a unique ID for a variable. */
-size_t get_next_id(const Variable::Type type) {
-  static_assert(std::is_same_v<Variable::Id, size_t>);
-  // Note that id 0 is reserved for anonymous variable which is created by the
-  // default constructor, Variable(). As a result, we have an invariant
-  // "get_next_id() > 0".
-  static never_destroyed<atomic<size_t>> next_id(1);
-  const size_t counter = next_id.access()++;
-  // We'll assume that size_t is at least 8 bytes wide, so that we can pack the
-  // counter into the lower 7 bytes of `id_` and the `Type` into the upper byte.
-  static_assert(sizeof(size_t) >= 8);
-  return counter | (static_cast<size_t>(type) << (7 * 8));
+Variable::Id Variable::Id::Create(Type type) {
+  // Each variable created gets a serial number counting up from 1.
+  // (Zero is reserved for the default-constructed Id.)
+  static atomic<uint64_t> counter(0);
+  const uint64_t serial_number = ++counter;
+
+  // The Variable::Type is stored in the high byte of the value.
+  Id result;
+  result.value_ = (static_cast<uint64_t>(type) << 56) + serial_number;
+  return result;
 }
-}  // namespace
+
+std::string Variable::Id::to_string() const {
+  return fmt::format("{:#018x}", value_);
+}
 
 Variable::Variable(string name, const Type type)
-    : id_{get_next_id(type)},
-      name_{make_shared<const string>(std::move(name))} {
-  DRAKE_ASSERT(id_ > 0);
+    : id_{Id::Create(type)}, name_{make_shared<const string>(std::move(name))} {
+  DRAKE_ASSERT(get_id().value() > 0);
 }
 
 string Variable::get_name() const {

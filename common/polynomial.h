@@ -413,6 +413,13 @@ class Polynomial {
    */
   static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
 
+  /** When FromExpression converts a symbolic::Variable to a Polynomial::Term,
+   * it uses this mapping function to project the symbolic::Variable::Id to a
+   * Polynomial::VarType. Note that the projection is lossy because an Id is
+   * 64 bits but a VarType is only 32 bits.
+   */
+  static VarType VariableIdToVarType(const drake::symbolic::Variable::Id& id);
+
   std::string to_string() const;
 
   //@{
