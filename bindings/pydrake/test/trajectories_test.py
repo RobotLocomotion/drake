@@ -802,8 +802,13 @@ class TestTrajectories(unittest.TestCase):
         R = RotationMatrix()
 
         # Test quaternion constructor.
-        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
+        quaternions = [q, q, q]
+        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=quaternions)
         self.assertEqual(pq.get_number_of_segments(), 2)
+        for i in range(len(quaternions)):
+            numpy_compare.assert_equal(
+                quaternions[i].wxyz(), pq.get_quaternion_samples()[i].wxyz()
+            )
         numpy_compare.assert_float_equal(
             pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
         )
@@ -880,6 +885,18 @@ class TestTrajectories(unittest.TestCase):
             rtol=0,
         )
 
+        assert_pickle(
+            self,
+            pq,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                quaternions=np.array(
+                    [q.wxyz() for q in traj.get_quaternion_samples()]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_piecewise_pose(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
@@ -932,6 +949,33 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
         self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)
+
+        # We do not have to test the inner breaks match, because this is a
+        # required invariant of the Class.
+        assert_pickle(
+            self,
+            ppose,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                position_polynomials=np.array(
+                    [
+                        traj.get_position_trajectory().getPolynomialMatrix(
+                            segment_index
+                        )
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+                quaternions=np.array(
+                    [
+                        q.wxyz()
+                        for q in traj.get_orientation_trajectory().get_quaternion_samples()  # noqa: E501
+                    ]
+                ),
+            ),
+            T=T,
+        )
 
     @numpy_compare.check_all_types
     def test_stacked_trajectory(self, T):

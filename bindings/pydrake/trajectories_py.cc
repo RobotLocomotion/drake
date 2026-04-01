@@ -881,7 +881,18 @@ struct Impl {
           .def("angular_velocity", &Class::angular_velocity, py::arg("time"),
               cls_doc.angular_velocity.doc)
           .def("angular_acceleration", &Class::angular_acceleration,
-              py::arg("time"), cls_doc.angular_acceleration.doc);
+              py::arg("time"), cls_doc.angular_acceleration.doc)
+          .def("get_quaternion_samples", &Class::get_quaternion_samples,
+              cls_doc.get_quaternion_samples.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                return std::make_pair(
+                    self.get_segment_times(), self.get_quaternion_samples());
+              },
+              [](std::pair<std::vector<T>, std::vector<Quaternion<T>>> args) {
+                return Class(/* breaks = */ std::get<0>(args),
+                    /* quaternions = */ std::get<1>(args));
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -914,7 +925,17 @@ struct Impl {
           .def("get_position_trajectory", &Class::get_position_trajectory,
               cls_doc.get_position_trajectory.doc)
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
-              cls_doc.get_orientation_trajectory.doc);
+              cls_doc.get_orientation_trajectory.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                return std::make_pair(self.get_position_trajectory(),
+                    self.get_orientation_trajectory());
+              },
+              [](std::pair<PiecewisePolynomial<T>, PiecewiseQuaternionSlerp<T>>
+                      args) {
+                return Class(/* position_trajectory = */ std::get<0>(args),
+                    /* orientation_trajectory = */ std::get<1>(args));
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
