@@ -18,8 +18,8 @@ cc_library_vendored(
         "tinygltf_json.h",
     ],
     hdrs_vendored = [
-        "drake_vendor/tinygltf_json.h",
         "drake_vendor/tiny_gltf.h",
+        "drake_vendor/tinygltf_json.h",
     ],
     defines = [
         # Don't bother reading external images during glTF parsing; we'll
