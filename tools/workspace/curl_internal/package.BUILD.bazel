@@ -247,25 +247,25 @@ cmake_configure_file(
     name = "configure_file",
     src = "lib/curl_config-cmake.h.in",
     out = "lib/curl_config.h",
+    strict = True,
     defines = CMAKE_DEFINES,
     undefines = CMAKE_UNDEFINES,
-    strict = True,
 )
 
 # Compile the library.
 cc_library(
     name = "libcurl",
-    hdrs = _HDRS + [":lib/curl_config.h"],
     srcs = _SRCS,
+    hdrs = _HDRS + [":lib/curl_config.h"],
+    copts = _COPTS,
     includes = _INCLUDES,
     isystem = True,
-    copts = _COPTS,
     linkopts = _LINKOPTS,
     linkstatic = 1,
+    visibility = ["//visibility:public"],
     deps = [
         "@zlib",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # Install the license notice.

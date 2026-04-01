@@ -113,21 +113,21 @@ OSQPLIB_SOURCES = [
 
 cc_library(
     name = "osqp",
-    hdrs = OSQP_HEADERS_PUBLIC,
     srcs = OSQP_HEADERS_PRIVATE + OSQPLIB_SOURCES,
-    includes = [
-        "include/private",
-        "include/public",
-        "algebra/builtin",
-        "algebra/_common",
-        "algebra/_common/lin_sys/qdldl",
-    ],
-    isystem = True,
+    hdrs = OSQP_HEADERS_PUBLIC,
     copts = [
         "-fvisibility=hidden",
         "-w",
         "-Werror=incompatible-pointer-types",
     ],
+    includes = [
+        "algebra/_common",
+        "algebra/_common/lin_sys/qdldl",
+        "algebra/builtin",
+        "include/private",
+        "include/public",
+    ],
+    isystem = True,
     linkstatic = 1,
     deps = [
         "@qdldl_internal//:qdldl",

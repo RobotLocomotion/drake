@@ -9,20 +9,20 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "usockets",
-    hdrs = ["src/libusockets.h"],
     srcs = glob([
         "src/*.c",
         "src/eventing/*.c",
         "src/crypto/*.c",
         "src/**/*.h",
     ]),
-    includes = ["src"],
-    isystem = True,
+    hdrs = ["src/libusockets.h"],
     copts = [
         "-DLIBUS_NO_SSL",
         "-fvisibility=hidden",
         "-w",
     ],
+    includes = ["src"],
+    isystem = True,
     linkstatic = 1,
 )
 

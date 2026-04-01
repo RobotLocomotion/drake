@@ -22,15 +22,15 @@ copy_file(
 
 cc_library(
     name = "poisson_disk_sampling",
-    hdrs = ["include/thinks/tph_poisson.h"],
     srcs = [":implementation"],
-    strip_include_prefix = "include/thinks",
-    isystem = True,
-    linkstatic = 1,
+    hdrs = ["include/thinks/tph_poisson.h"],
     copts = [
         "-fvisibility=hidden",
         "-DTPH_POISSON_IMPLEMENTATION",
     ],
+    isystem = True,
+    linkstatic = 1,
+    strip_include_prefix = "include/thinks",
 )
 
 install(

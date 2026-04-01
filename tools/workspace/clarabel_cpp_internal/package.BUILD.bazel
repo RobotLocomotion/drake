@@ -17,7 +17,10 @@ exports_files([
     "rust_wrapper/Cargo.toml",
 ])
 
-_HDRS = glob(["include/**"], allow_empty = False)
+_HDRS = glob(
+    ["include/**"],
+    allow_empty = False,
+)
 
 cc_library_vendored(
     name = "hdrs",
@@ -36,11 +39,14 @@ cc_library_vendored(
 
 rust_static_library(
     name = "clarabel_cpp_rust_wrapper",
-    edition = "2021",
-    srcs = glob(["rust_wrapper/src/**/*.rs"], allow_empty = False),
+    srcs = glob(
+        ["rust_wrapper/src/**/*.rs"],
+        allow_empty = False,
+    ),
     crate_features = ["sdp"],
-    deps = all_crate_deps(),
+    edition = "2021",
     proc_macro_deps = all_crate_deps(proc_macro = True),
+    deps = all_crate_deps(),
 )
 
 cc_wrap_static_archive_hidden(
@@ -52,14 +58,14 @@ cc_wrap_static_archive_hidden(
 cc_library(
     name = "clarabel_cpp",
     linkstatic = True,
+    visibility = ["//visibility:public"],
     deps = [
-        ":hdrs",
         ":clarabel_cpp_rust_wrapper_hidden",
+        ":hdrs",
         "@blas",
         "@eigen",
         "@lapack",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(

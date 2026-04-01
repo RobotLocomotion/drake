@@ -6,19 +6,25 @@ load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 licenses(["notice"])  # MIT
 
 # The upstream headers that we'll use.
-_HDRS = glob([
-    "include/yaml-cpp/*.h",
-    "include/yaml-cpp/node/*.h",
-    "include/yaml-cpp/node/detail/*.h",
-], allow_empty = False)
+_HDRS = glob(
+    [
+        "include/yaml-cpp/*.h",
+        "include/yaml-cpp/node/*.h",
+        "include/yaml-cpp/node/detail/*.h",
+    ],
+    allow_empty = False,
+)
 
 # The upstream sources that we'll use.
 _SRCS = [
     "src/contrib/dragonbox.h",
-] + glob([
-    "src/*.cpp",
-    "src/*.h",
-], allow_empty = False)
+] + glob(
+    [
+        "src/*.cpp",
+        "src/*.h",
+    ],
+    allow_empty = False,
+)
 
 cc_library_vendored(
     name = "yaml_cpp",
