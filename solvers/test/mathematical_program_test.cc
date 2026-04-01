@@ -3591,6 +3591,9 @@ GTEST_TEST(TestMathematicalProgram, AddL1NormCostInEpigraphForm_Rectangular) {
   EXPECT_FALSE(linear_constraint.evaluator()->CheckSatisfied(vars, kTol));
 }
 
+using MapPolynomialVarTypeToSymbolicVariable =
+    map<Polynomial<double>::VarType, Variable>;
+
 // Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a monomial into an isomorphic one up to a given map (Variable::Id
@@ -3604,18 +3607,24 @@ GTEST_TEST(TestMathematicalProgram, AddL1NormCostInEpigraphForm_Rectangular) {
 // the image of var_id_to_var, its ID, id(v) should not be in the domain of
 // var_id_to_var. For example, {x.get_id() -> y, y.get_id() -> z} is not
 // allowed.
-symbolic::Monomial transform(const symbolic::Monomial& monomial,
-                             const map<Variable::Id, Variable>& var_id_to_var) {
+symbolic::Monomial transform(
+    const symbolic::Monomial& monomial,
+    const MapPolynomialVarTypeToSymbolicVariable& var_id_to_var) {
   // var_id_to_var should be chain-free.
-  for (const pair<const Variable::Id, Variable>& p : var_id_to_var) {
+  for (const pair<const Polynomial<double>::VarType, Variable>& p :
+       var_id_to_var) {
     const Variable& var{p.second};
-    DRAKE_DEMAND(var_id_to_var.find(var.get_id()) == var_id_to_var.end());
+    const Polynomial<double>::VarType term_id =
+        Polynomial<double>::VariableIdToVarType(var.get_id());
+    DRAKE_DEMAND(var_id_to_var.find(term_id) == var_id_to_var.end());
   }
   map<Variable, int> new_powers;
   for (const pair<Variable, int> p : monomial.get_powers()) {
     const Variable& var_in_monomial{p.first};
+    const Polynomial<double>::VarType var_in_monomial_term_id =
+        Polynomial<double>::VariableIdToVarType(var_in_monomial.get_id());
     const int exponent{p.second};
-    const auto it = var_id_to_var.find(var_in_monomial.get_id());
+    const auto it = var_id_to_var.find(var_in_monomial_term_id);
 
     // There should be a mapping for the ID in var_id_to_var.
     DRAKE_DEMAND(it != var_id_to_var.end());
@@ -3640,7 +3649,7 @@ symbolic::Monomial transform(const symbolic::Monomial& monomial,
 // @pre `var_id_to_var` should be chain-free.
 symbolic::Polynomial transform(
     const symbolic::Polynomial& poly,
-    const map<Variable::Id, Variable>& var_id_to_var) {
+    const MapPolynomialVarTypeToSymbolicVariable& var_id_to_var) {
   symbolic::Polynomial::MapType new_map;
   for (const pair<const symbolic::Monomial, symbolic::Expression>& p :
        poly.monomial_to_coefficient_map()) {
@@ -3657,9 +3666,9 @@ symbolic::Polynomial transform(
 // @pre `var_id_to_var` is 1-1.
 // @pre The domain of `var_id_to_var` includes all variables in `m`.
 // @pre `var_id_to_var` should be chain-free.
-bool ArePolynomialIsomorphic(const symbolic::Polynomial& p1,
-                             const symbolic::Polynomial& p2,
-                             const map<Variable::Id, Variable>& var_id_to_var) {
+bool ArePolynomialIsomorphic(
+    const symbolic::Polynomial& p1, const symbolic::Polynomial& p2,
+    const MapPolynomialVarTypeToSymbolicVariable& var_id_to_var) {
   return transform(p1, var_id_to_var).EqualTo(p2);
 }
 
@@ -3674,7 +3683,7 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   // var_id_to_var : Variable::Id → Variable. It keeps the relation between a
   // variable in a Polynomial<double> and symbolic::Monomial.
   symbolic::Polynomial poly_expected;
-  map<Variable::Id, Variable> var_id_to_var;
+  MapPolynomialVarTypeToSymbolicVariable var_id_to_var;
   for (const Polynomial<double>::Monomial& m : polynomial.GetMonomials()) {
     map<Variable, int> map_var_to_power;
     for (const Polynomial<double>::Term& term : m.terms) {
