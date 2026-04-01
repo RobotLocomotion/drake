@@ -13,5 +13,8 @@ def curl_internal_repository(
         commit = "curl-8_19_0",
         sha256 = "3342390f774bda7523464a13c535312962a27b026e7a05ec8dab027a8480327e",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/schemes.patch",
+        ],
         mirrors = mirrors,
     )
