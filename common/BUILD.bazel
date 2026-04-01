@@ -118,6 +118,7 @@ drake_cc_library(
         "drake_throw.h",
         "eigen_types.h",
         "never_destroyed.h",
+        "ranges.h",
         "text_logging.h",
         "text_logging_impl_spdlog.h",
         "text_logging_level.h",
