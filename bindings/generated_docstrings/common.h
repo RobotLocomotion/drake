@@ -1740,6 +1740,15 @@ not reflect any sort of mathematical total order.)""";
         // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } VarType;
+      // Symbol: drake::Polynomial::VariableIdToVarType
+      struct /* VariableIdToVarType */ {
+        // Source: drake/common/polynomial.h
+        const char* doc =
+R"""(When FromExpression converts a symbolic∷Variable to a Polynomial∷Term,
+it uses this mapping function to project the Id to a Term. Note that
+the projection is lossy because Id uses 128 bits but Term only uses 32
+bits.)""";
+      } VariableIdToVarType;
       // Symbol: drake::Polynomial::VariableNameToId
       struct /* VariableNameToId */ {
         // Source: drake/common/polynomial.h

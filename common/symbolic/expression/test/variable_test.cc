@@ -192,12 +192,13 @@ TEST_F(VariableTest, VariableTypeFmtFormatter) {
 
 TEST_F(VariableTest, VariableIdFmtFormatter) {
   // The dummy ID is all-zero.
-  EXPECT_EQ(fmt::to_string(Variable::Id()), "0x0000000000000000");
+  EXPECT_EQ(fmt::to_string(Variable::Id()),
+            "0x00000000000000000000000000000000");
 
-  // A normal ID is a 64-bit (8-byte) hexidecimal number starting with "0x...".
+  // A normal ID is a 128-bit hexidecimal number starting with "0x...".
   const std::string x_str = fmt::to_string(x_.get_id());
   EXPECT_EQ(x_str.substr(0, 2), "0x");
-  EXPECT_EQ(x_str.length(), 2 + 8 * 2);
+  EXPECT_EQ(x_str.length(), 2 + 128 / 4);
 }
 
 // This test checks whether Variable is compatible with std::unordered_set.

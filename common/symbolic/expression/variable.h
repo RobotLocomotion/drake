@@ -67,14 +67,15 @@ class Variable {
     // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     friend void hash_append(HashAlgorithm& hasher, const Id& item) noexcept {
       using drake::hash_append;
-      hash_append(hasher, item.value());
+      // To maintain consistent hash iteration order across repeated runs of a
+      // program, we must only hash the non-random part of our state. The low
+      // 32 bits of lo_ don't contain any randomness. (We could also hash our
+      // get_type(), but it doesn't add a meaninful amount of entropy.)
+      hash_append(hasher, static_cast<uint32_t>(item.lo_));
     }
 
     /** Returns string representation of Id. */
     std::string to_string() const;
-
-    /** (Internal use only) Returns this Id as a bare integer. */
-    uint64_t value() const { return value_; }
 
    private:
     friend class Variable;
@@ -83,14 +84,22 @@ class Variable {
     static Id Create(Type type);
 
     Type get_type() const {
-      // We store the Type enum in the upper byte of value_.
-      return static_cast<Type>(value_ >> 56);
+      // We store the Type enum in the upper byte of hi_.
+      return static_cast<Type>(hi_ >> 56);
     }
 
-    bool is_default() const { return value_ == 0; }
+    bool is_default() const { return lo_ == 0 && hi_ == 0; }
 
-    // The upper 8 bits of value_ are the Variable::Type.
-    uint64_t value_{};
+    // The upper 8 bits of hi_ are the Variable::Type. The remaining bits are a
+    // per-process random nonce.
+    uint64_t hi_{};
+
+    // The value in low_ is the sum of a per-process random nonce and a process-
+    // wide counter incremented for every new variable. The nonce is zero in its
+    // lower 32 bits, which means the lower 32 bits of lo_ are purely based on
+    // the counter, which means using it for hash_append provides stability
+    // across repeated runs of the same program.
+    uint64_t lo_{};
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable);
@@ -116,7 +125,7 @@ class Variable {
 
   /** Checks if this is the variable created by the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id().is_default(); }
-  [[nodiscard]] Id get_id() const { return id_; }
+  [[nodiscard]] const Id& get_id() const { return id_; }
   [[nodiscard]] Type get_type() const { return get_id().get_type(); }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
