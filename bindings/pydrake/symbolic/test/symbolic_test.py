@@ -22,6 +22,7 @@ import pydrake.symbolic as sym
 # overloads from `pydrake.math`.
 
 # Define global variables to make the tests less verbose.
+dummy = sym.Variable()
 x = sym.Variable("x")
 y = sym.Variable("y")
 z = sym.Variable("z")
@@ -38,7 +39,12 @@ boolean = sym.Variable(name="boolean", type=sym.Variable.Type.BOOLEAN)
 
 class TestSymbolicVariable(unittest.TestCase):
     def test_is_dummy(self):
+        self.assertTrue(dummy.is_dummy())
         self.assertFalse(a.is_dummy())
+
+    def test_id(self):
+        self.assertEqual(dummy.get_id(), 0)
+        self.assertNotEqual(a.get_id(), 0)
 
     def test_get_name(self):
         self.assertEqual(a.get_name(), "a")
