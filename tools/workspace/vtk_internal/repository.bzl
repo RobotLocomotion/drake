@@ -181,8 +181,8 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        commit = "75e132bef404533d6e409d0678934be246bed84e",
-        sha256 = "4539fe013d68d4d4514a1ec4155bd4f2dbc169dd8c0f65cd3cd20d92832195ad",  # noqa
+        commit = "2b1867611fc3f6136bfb8ddf7264acd6d9e0e2ad",
+        sha256 = "a7dcff667fc7b53121bbe1ac7539afb42583eb85368c52f7c91f234fa71445aa",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
