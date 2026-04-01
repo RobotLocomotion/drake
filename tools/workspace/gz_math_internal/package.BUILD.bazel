@@ -121,6 +121,7 @@ _MOST_HDRS = [
     "include/gz/math/detail/InterpolationPoint.hh",
     "include/gz/math/detail/Sphere.hh",
     "include/gz/math/detail/WellOrderedVector.hh",
+    "include/gz/math/detail/WetVolume.hh",
     "include/gz/math/graph/Edge.hh",
     "include/gz/math/graph/Graph.hh",
     "include/gz/math/graph/GraphAlgorithms.hh",
