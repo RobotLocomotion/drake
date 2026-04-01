@@ -3,7 +3,10 @@ reader. However, even if no material reader has been provided, usages of
 "usemtl" will bark at the lack of material. In the case where we're clearly not
 reading materials, we shouldn't bother processing the usemtl directives either.
 
-This should be upstreamed into tinyobjloader.
+We made an effort to upstream a previous version:
+tinyobjloader/tinyobjloader#383
+For various reasons, it didn't take. If we are willing to try again, we can
+promote this to upstream again and resubmit.
 
 --- tiny_obj_loader.h
 +++ tiny_obj_loader.h
