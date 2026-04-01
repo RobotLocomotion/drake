@@ -37,8 +37,8 @@ exports_files(
 # to improve the error messages in case of a mis-configured build.
 cc_library(
     name = "_on_macos_you_must_not_have_forcepic_in_your_bazelrc_file_see_drake_issue_20217",  # noqa
-    linkstatic = True,
     features = ["-supports_pic"],
+    linkstatic = True,
     tags = ["manual"],
 )
 
@@ -69,11 +69,11 @@ cc_binary(
     srcs = [
         "Rendering/OpenGL2/vtkProbeOpenGLVersion.cxx",
     ],
+    linkstatic = True,
     deps = [
         ":vtkRenderingOpenGL2",
         "@drake//tools/workspace/vtk_internal:vtk_opengl_init",
     ],
-    linkstatic = True,
 )
 
 # Install any license notices.

@@ -58,10 +58,10 @@ _HDRS_GLOB = glob(
     include = [
         "include/**/*.h",
     ],
+    allow_empty = False,
     exclude = [
         "**/octree/**",
     ],
-    allow_empty = False,
 )
 
 # To minimize the build footprint, only build the fraction of FCL that is
@@ -70,6 +70,7 @@ _SRCS = glob(
     include = [
         "src/**/*.cpp",
     ],
+    allow_empty = False,
     exclude = [
         # We use none of this code.
         "**/*conservative_advancement*.cpp",
@@ -84,7 +85,6 @@ _SRCS = glob(
         "src/math/*.cpp",
         "src/math/detail/*.cpp",
     ],
-    allow_empty = False,
 ) + [
     "src/broadphase/broadphase_collision_manager.cpp",
     "src/broadphase/broadphase_dynamic_AABB_tree.cpp",

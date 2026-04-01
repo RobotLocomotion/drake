@@ -9,10 +9,14 @@ package(default_visibility = ["//visibility:private"])
 
 cc_library(
     name = "metis",
-    srcs = glob(["libmetis/*.c"], allow_empty = False),
-    hdrs = glob(["libmetis/*.h"], allow_empty = False) + ["include/metis.h"],
-    includes = ["include"],
-    isystem = True,
+    srcs = glob(
+        ["libmetis/*.c"],
+        allow_empty = False,
+    ),
+    hdrs = glob(
+        ["libmetis/*.h"],
+        allow_empty = False,
+    ) + ["include/metis.h"],
     copts = [
         # We don't allow Drake externals to use OpenMP until we wire up "max
         # parallelism" governance to a drake::Parallellism public API option.
@@ -20,11 +24,13 @@ cc_library(
         "-fvisibility=hidden",
         "-w",
     ],
+    includes = ["include"],
+    isystem = True,
     linkstatic = True,
+    visibility = ["//visibility:public"],
     deps = [
         "@gklib_internal//:gklib",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # Install the license file.

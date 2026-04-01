@@ -65,12 +65,12 @@ cc_library(
     includes = ["includes"],
     isystem = True,
     linkstatic = 1,
+    visibility = ["//visibility:public"],
     deps = [
         "@blas",
         "@drake//solvers:csdp_solver_error_handling",
         "@lapack",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # We do not install the header file (its a private dependency), but we still

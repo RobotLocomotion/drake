@@ -251,11 +251,11 @@ cc_library(
         "-w",
     ],
     includes = ["lib"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
     deps = [
         "@zlib",
     ],
-    linkstatic = 1,
-    visibility = ["//visibility:public"],
 )
 
 # Install the license file.

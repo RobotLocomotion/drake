@@ -10,9 +10,9 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "stduuid",
     hdrs = ["include/uuid.h"],
-    strip_include_prefix = "include",
     isystem = True,
     linkstatic = 1,
+    strip_include_prefix = "include",
 )
 
 # Install the license file.

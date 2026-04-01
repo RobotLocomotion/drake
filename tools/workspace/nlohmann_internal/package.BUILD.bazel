@@ -13,8 +13,6 @@ cc_library(
         "single_include/nlohmann/json.hpp",
         "single_include/nlohmann/json_fwd.hpp",
     ],
-    strip_include_prefix = "single_include",
-    isystem = True,
     defines = [
         # The nlohmann/json code has logic that tries to infer whether or not
         # the compiler toolchain supports the spaceship operator (<=>).
@@ -25,7 +23,9 @@ cc_library(
         # spaceship support so we can just force it to be off; problem solved.
         "JSON_HAS_THREE_WAY_COMPARISON=0",
     ],
+    isystem = True,
     linkstatic = 1,
+    strip_include_prefix = "single_include",
 )
 
 # Install the license file.

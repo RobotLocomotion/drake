@@ -20,19 +20,19 @@ cc_library(
         "include",
         "include/oneapi",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@mosek//:tbb",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(
     name = "install",
     docs = ["LICENSE.txt"],
+    visibility = ["//visibility:public"],
     deps = [
         "@mosek//:install_tbb_libraries",
     ],
-    visibility = ["//visibility:public"],
 )
 
 exports_files(["drake_repository_metadata.json"])

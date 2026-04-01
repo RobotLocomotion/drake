@@ -9,8 +9,8 @@ package(default_visibility = ["//visibility:private"])
 
 cc_library(
     name = "tinyxml2",
-    hdrs = ["tinyxml2.h"],
     srcs = ["tinyxml2.cpp"],
+    hdrs = ["tinyxml2.h"],
     includes = ["."],
     isystem = True,
     linkstatic = 1,
