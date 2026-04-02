@@ -5,6 +5,8 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
+#include <random>
 #include <string>
 #include <utility>
 
@@ -20,28 +22,53 @@ namespace drake {
 namespace symbolic {
 
 Variable::Id Variable::Id::Create(Type type) {
+  static std::once_flag flag;
+  static uint64_t hi_tare_ = 0;
+  static uint64_t lo_tare_ = 0;
+  std::call_once(flag, []() {
+    std::random_device device;
+    std::mt19937_64 generator(device());
+
+    // Draw a random 56-bit number. (We leave the upper 8 bits as zero, to be
+    // used for the Variable::Type.)
+    using distribution = std::uniform_int_distribution<uint64_t>;
+    distribution rand56(0, (uint64_t{1} << (64 - 8)) - 1);
+    hi_tare_ = rand56(generator);
+    DRAKE_ASSERT((hi_tare_ >> (64 - 8)) == 0);
+
+    // Draw a random 32-bit number, in the upper half of the 64 bits. (We leave
+    // the lower 32 bits as zero, to be used for a consistent hash code based on
+    // the serial number.)
+    distribution rand32(0, (uint64_t{1} << 32) - 1);
+    lo_tare_ = rand32(generator) << 32;
+    DRAKE_ASSERT((lo_tare_ << 32) == 0);
+  });
+
   // Each variable created gets a serial number counting up from 1.
   // (Zero is reserved for the default-constructed Id.)
   static atomic<uint64_t> counter(0);
   const uint64_t serial_number = ++counter;
 
   Id result;
-  // We store the Type enum in the upper byte (8 bits) of value_ (64 bits).
+  // We store the Type enum in the upper byte (8 bits) of hi_ (64 bits).
   static_assert(sizeof(Type) == 1);
-  result.value_ = (static_cast<uint64_t>(type) << (64 - 8)) + serial_number;
+  result.hi_ = hi_tare_ + (static_cast<uint64_t>(type) << (64 - 8));
+  // When the serial number exceeds 32 bits, it will leak into the "random" part
+  // of lo_ (the upper 32 bits), but that is not a problem. We still guarantee
+  // that lo_ is unique across all variables created by this program.
+  result.lo_ = lo_tare_ + serial_number;
   return result;
 }
 
 std::string Variable::Id::to_string() const {
-  // Our string repsentation is 18 characters: "0x" followed by 16 hex digits to
-  // cover all 64 bits (padded with leading zeros as necessary).
-  return fmt::format("{:#018x}", value_);
+  // Our string repsentation is 18+16 characters: "0x" followed by 16+16 hex
+  // digits to cover all 128 bits (padded with leading zeros as necessary).
+  return fmt::format("{:#018x}{:016x}", hi_, lo_);
 }
 
 Variable::Variable(string name, const Type type)
-    : id_{Id::Create(type)}, name_{make_shared<const string>(std::move(name))} {
-  DRAKE_ASSERT(get_id().value() > 0);
-}
+    : id_{Id::Create(type)},
+      name_{make_shared<const string>(std::move(name))} {}
 
 string Variable::get_name() const {
   return name_ != nullptr ? *name_ : string{"𝑥"};
