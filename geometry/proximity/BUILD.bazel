@@ -1292,7 +1292,9 @@ drake_cc_googletest(
     name = "distance_to_point_callback_test",
     deps = [
         ":distance_to_point_callback",
+        ":fcl_utilities",
         "//common/test_utilities",
+        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math",
     ],
@@ -1311,6 +1313,7 @@ drake_cc_googletest(
     name = "distance_to_shape_callback_test",
     deps = [
         ":distance_to_shape_callback",
+        ":fcl_utilities",
         ":proximity_utilities",
         "//common/test_utilities",
         "//geometry:shape_specification",
@@ -1336,6 +1339,20 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "fcl_utilities",
+    testonly = 1,
+    srcs = ["test/fcl_utilities.cc"],
+    hdrs = ["test/fcl_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":proximity_utilities",
+        "//geometry:geometry_ids",
+        "//geometry:shape_specification",
+        "@fcl_internal//:fcl",
     ],
 )
 
