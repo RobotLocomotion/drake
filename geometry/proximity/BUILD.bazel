@@ -1293,6 +1293,7 @@ drake_cc_googletest(
     deps = [
         ":distance_to_point_callback",
         "//common/test_utilities",
+        "//geometry:shape_specification",
         "//geometry:utilities",
         "//math",
     ],
