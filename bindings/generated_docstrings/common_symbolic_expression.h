@@ -1496,11 +1496,6 @@ R"""(Constructs a "dummy" id, not associated with any variable.)""";
             const char* doc =
 R"""(Returns a string representation of this Id.)""";
           } to_string;
-          // Symbol: drake::symbolic::Variable::Id::value
-          struct /* value */ {
-            // Source: drake/common/symbolic/expression/variable.h
-            const char* doc = R"""()""";
-          } value;
         } Id;
         // Symbol: drake::symbolic::Variable::Type
         struct /* Type */ {
