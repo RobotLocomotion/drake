@@ -181,6 +181,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   void DoInitialize() final;
 
+  /* @warning For `h` == 0, CENIC DoStep() executes a special case that does no
+     integration or state updates, but does reset the error estimate to all 0,
+     and always succeeds.
+
+    See IntegratorBase::DoStep() for full implementation requirements. */
   bool DoStep(const T& h) final;
 
   /* Solves the ICF problem to compute x_{t+h}.
