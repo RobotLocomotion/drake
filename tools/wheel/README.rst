@@ -44,14 +44,18 @@ overridden by ``--output-dir``), unless ``--no-extract`` was specified.
 Cleanup
 -------
 
-To reclaim disk space used by (Ubuntu) wheel builds, run the following
+To reclaim disk space used by Ubuntu wheel builds, run the following
 commands::
 
   docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)
   docker builder prune -f
 
 The macOS wheel builds clean up after themselves by default. The
-``--keep-build`` (``-k``) option may be used to suppress this behavior.
+``--keep-build`` (``-k``) option may be used to suppress this behavior. To
+clean up the remaining artifacts which are not automatically cleaned up on
+macOS, i.e., the Bazel disk and repository caches, run::
+
+  rm -rf ${HOME}/.cache/drake-wheel-build/bazel
 
 Optional Arguments
 ------------------
@@ -95,13 +99,16 @@ debugging purposes and should not be needed in ordinary use.
     build step will be left, allowing for post-mortem examination. Don't forget
     to manually delete the container later.
 
-``-k``, ``--keep-containers`` (macOS only)
+``-k``, ``--keep-build`` (macOS only)
     Do not delete the various build trees and artifacts, which can be found in
     various subdirectories under ``${HOME}/.drake-wheel-build`` in a unique,
     per-build subdirectory.
 
 Implementation Details
 ----------------------
+
+Ubuntu
+^^^^^^
 
 On Ubuntu, wheels are built using Docker, in a number of stages. Rather than
 encoding everything about the build in the ``Dockerfile``, build instructions
@@ -119,6 +126,13 @@ sources are injected into the image, resulting in the ``clean`` stage. This
 stage is probably the most useful for debugging failing Drake builds. Finally,
 Drake's build is executed, followed by the wheel packaging.
 
+Note that the Drake build step uses a cache mount for the ``/var/cache/bazel``
+directory, which is used for the Bazel disk and repository caches. This speeds
+up iterations for both local development and CI (e.g., where the Drake build
+artifacts are re-used between wheels built for each Python version). In some
+cases, it may be necessary to clear this cache before building a wheel; see
+`Cleanup`_, above.
+
 When ``--tag-stages`` is not used, the completed build is assigned a temporary
 tag, which is used (unless ``--no-extract`` was specified) to extract the
 built wheel from the image, and is then untagged.
@@ -129,21 +143,36 @@ after which the wheel is added to the image and installed, followed by the
 execution of a script which performs some basic tests to ensure that the wheel
 was successfully installed.
 
+macOS
+^^^^^
+
 On macOS, wheels must be built on the host system. The following directories
 are used:
 
 - ``/tmp/drake-wheel-build``:
-  Symlink to the per-build unique build root
+    Symlink to the per-build unique build root.
 
 - ``/tmp/drake-wheel-test``:
-  Symlink to the per-build unique build root
+    Symlink to the per-build unique build root.
 
-- ``${HOME}/.drake-wheel-build
-  Contains the per-build unique build and test roots
+- ``${HOME}/.drake-wheel-build``:
+    Contains the per-build unique build and test roots.
 
-Starting from a provisioned wheel building environment (installed via
-``setup/install_prereqs --developer``), the builder invokes
-``macos/build-wheel.sh``, optionally (and if the build succeeded) followed by
-``macos/provision-test-python.sh``, ``test/install-wheel.sh``, and
-``test/test-wheel.sh``, in that order. These scripts approximately replicate
-what would happen in Docker, and heavily reuse the same lower level scripts.
+- ``${HOME}/.cache/drake-wheel-build/bazel``
+    Contains Bazel's disk and repository caches.
+
+The builder proceeds as follows, assuming a provisioned wheel building
+environment (installed via ``setup/install_prereqs --developer``):
+
+* ``macos/build-wheel.sh`` is invoked to build and install Drake, then build
+  the wheel from the installed artifacts.
+* (Optional) Tests are invoked via ``macos/provision-test-python.sh``,
+  ``test/install-wheel.sh``, and ``test/test-wheel.sh``, in that order.
+
+These scripts approximately replicate what would happen in Docker, and heavily
+reuse the same lower level scripts.
+
+Note that use of the Bazel cache speeds up iterations for both local
+development and CI (e.g., the Drake build artifacts are re-used between wheels
+built for each Python version). In some cases, it may be necessary to clear
+this cache before building a wheel; see `Cleanup`_, above.
