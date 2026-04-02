@@ -5,6 +5,7 @@
 #endif
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -36,8 +37,6 @@ namespace symbolic {
  */
 class Variable {
  public:
-  typedef size_t Id;
-
   /** Supported types of symbolic variables. */
   enum class Type : uint8_t {
     CONTINUOUS,       ///< A CONTINUOUS variable takes a `double` value.
@@ -50,6 +49,50 @@ class Variable {
                       ///< mean-zero, unit-variance normal.
     RANDOM_EXPONENTIAL,  ///< A random variable whose value will be drawn from
                          ///< exponential distribution with λ=1.
+  };
+
+  /** Identifier for a symbolic variable. */
+  class Id {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Id);
+
+    /** Constructs a "dummy" id, not associated with any variable. */
+    Id() = default;
+
+    /** Default comparison operators. */
+    auto operator<=>(const Id&) const = default;
+
+    /** Implements the @ref hash_append concept. */
+    template <class HashAlgorithm>
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    friend void hash_append(HashAlgorithm& hasher, const Id& item) noexcept {
+      using drake::hash_append;
+      hash_append(hasher, item.value());
+    }
+
+    /** Returns a string representation of this Id. */
+    std::string to_string() const;
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+    /* (Internal use only) Returns this Id as a bare integer. */
+    uint64_t value() const { return value_; }
+#endif
+
+   private:
+    friend class Variable;
+    friend class VariableIdPythonAttorney;
+
+    static Id Create(Type type);
+
+    Type get_type() const {
+      // We store the Type enum in the upper byte of value_.
+      return static_cast<Type>(value_ >> 56);
+    }
+
+    bool is_default() const { return value_ == 0; }
+
+    // We store the Type enum in the upper byte of value_.
+    uint64_t value_{};
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable);
@@ -74,13 +117,9 @@ class Variable {
   ~Variable() = default;
 
   /** Checks if this is the variable created by the default constructor. */
-  [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
+  [[nodiscard]] bool is_dummy() const { return get_id().is_default(); }
   [[nodiscard]] Id get_id() const { return id_; }
-  [[nodiscard]] Type get_type() const {
-    // We store the 1-byte Type enum in the upper byte of id_.
-    // See get_next_id() in the cc file for more details.
-    return static_cast<Type>(Id{id_} >> (7 * 8));
-  }
+  [[nodiscard]] Type get_type() const { return get_id().get_type(); }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
 
@@ -100,7 +139,7 @@ class Variable {
   friend void hash_append(HashAlgorithm& hasher,
                           const Variable& item) noexcept {
     using drake::hash_append;
-    hash_append(hasher, Id{item.id_});
+    hash_append(hasher, item.get_id());
     // We do not send the name_ to the hasher, because the id_ is already unique
     // across all instances, so two Variable instances with matching id_ will
     // always have identical names.
@@ -332,6 +371,10 @@ Eigen::Matrix<Variable, rows, 1> MakeVectorIntegerVariable(
 
 namespace std {
 
+/* Provides std::hash<drake::symbolic::Variable::Id>. */
+template <>
+struct hash<drake::symbolic::Variable::Id> : public drake::DefaultHash {};
+
 /* Provides std::hash<drake::symbolic::Variable>. */
 template <>
 struct hash<drake::symbolic::Variable> : public drake::DefaultHash {};
@@ -385,6 +428,7 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 }  // namespace symbolic
 }  // namespace drake
 
+DRAKE_FORMATTER_AS(, drake::symbolic, Variable::Id, x, x.to_string())
 DRAKE_FORMATTER_AS(, drake::symbolic, Variable, x, x.to_string())
 DRAKE_FORMATTER_AS(, drake::symbolic, Variable::Type, x,
                    drake::symbolic::to_string(x))

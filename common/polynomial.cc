@@ -690,6 +690,12 @@ void Polynomial<T>::MakeMonomialsUnique(void) {
   }
 }
 
+template <typename T>
+Polynomial<T>::VarType Polynomial<T>::VariableIdToVarType(
+    const symbolic::Variable::Id& id) {
+  return static_cast<Polynomial<T>::VarType>(id.value());
+}
+
 namespace {
 
 using symbolic::Expression;
@@ -744,8 +750,8 @@ class FromExpressionVisitor {
   }
 
   static Polynomial<T> VisitVariable(const Expression& e) {
-    return Polynomial<T>{1.0, static_cast<Polynomial<double>::VarType>(
-                                  get_variable(e).get_id())};
+    return Polynomial<T>{
+        1.0, Polynomial<T>::VariableIdToVarType(get_variable(e).get_id())};
   }
 
   static Polynomial<T> VisitConstant(const Expression& e) {
