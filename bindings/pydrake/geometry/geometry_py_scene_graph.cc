@@ -137,6 +137,8 @@ void DefineSceneGraphInspector(py::module m, T) {
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
+        .def("GetParentFrame", &Class::GetParentFrame, py::arg("frame_id"),
+            cls_doc.GetParentFrame.doc)
         .def("GetFrameGroup", &Class::GetFrameGroup, py::arg("frame_id"),
             cls_doc.GetFrameGroup.doc)
         .def("NumGeometriesForFrame", &Class::NumGeometriesForFrame,
