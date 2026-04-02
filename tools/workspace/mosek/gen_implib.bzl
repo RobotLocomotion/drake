@@ -32,5 +32,5 @@ gen_implib = rule(
         "dlopen_callback": attr.string(mandatory = True),
         "outs": attr.output_list(mandatory = True),
     },
-    toolchains = ["@rules_python//python/cc:toolchain_type"]
+    toolchains = ["@rules_python//python/cc:toolchain_type"],
 )
