@@ -26,9 +26,12 @@ namespace symbolic {
 class VariableIdPythonAttorney {
  public:
   VariableIdPythonAttorney() = delete;
-  static Variable::Id construct(uint64_t value) {
+  static uint64_t hi(const Variable::Id& id) { return id.hi_; }
+  static uint64_t lo(const Variable::Id& id) { return id.lo_; }
+  static Variable::Id construct(uint64_t hi, uint64_t lo) {
     Variable::Id result;
-    result.value_ = value;
+    result.hi_ = hi;
+    result.lo_ = lo;
     return result;
   }
 };
@@ -49,22 +52,26 @@ struct type_caster<drake::symbolic::Variable::Id> {
       return false;
     }
 
-    pybind11::int_ integer;
+    pybind11::int_ concat;
     try {
-      integer = pybind11::cast<pybind11::int_>(src);
+      concat = pybind11::cast<pybind11::int_>(src);
     } catch (...) {
       return false;
     }
 
-    value = Attorney::construct(integer.cast<uint64_t>());
+    pybind11::object hi = concat >> pybind11::int_(64);
+    pybind11::object lo = concat & pybind11::int_(~uint64_t{});
+    value = Attorney::construct(hi.cast<uint64_t>(), lo.cast<uint64_t>());
 
     return true;
   }
 
   static handle cast(drake::symbolic::Variable::Id src,
       return_value_policy /* policy */, handle /* parent */) {
-    pybind11::int_ value{src.value()};
-    return value.release();
+    const pybind11::int_ hi{Attorney::hi(src)};
+    const pybind11::int_ lo{Attorney::lo(src)};
+    pybind11::object concat = (hi << pybind11::int_(64)) + lo;
+    return concat.release();
   }
 };
 }  // namespace detail

@@ -5,6 +5,8 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
+#include <random>
 #include <string>
 #include <utility>
 
@@ -20,6 +22,26 @@ namespace drake {
 namespace symbolic {
 
 Variable::Id Variable::Id::Create(Type type) {
+  static std::once_flag flag;
+  static uint64_t hi_tare_ = 0;
+  static uint64_t lo_tare_ = 0;
+  std::call_once(flag, []() {
+    std::random_device device;
+    std::mt19937_64 generator(device());
+
+    // Draw a random 56-bit number. (We leave the upper 8 bits as zero, to be
+    // used for the Variable::Type.)
+    using distribution = std::uniform_int_distribution<uint64_t>;
+    distribution rand56(0, (uint64_t{1} << 56) - 1);
+    hi_tare_ = rand56(generator);
+
+    // Draw a random 32-bit number, in the upper half of the 64 bits. (We leave
+    // the lower 32 bits as zero, to be used for a consistent hash code based on
+    // the serial number.)
+    distribution rand32(uint64_t{1} << 32, ~uint64_t{0});
+    lo_tare_ = rand32(generator);
+  });
+
   // Each variable created gets a serial number counting up from 1.
   // (Zero is reserved for the default-constructed Id.)
   static atomic<uint64_t> counter(0);
@@ -27,18 +49,18 @@ Variable::Id Variable::Id::Create(Type type) {
 
   // We store the Type enum in the upper byte of value_.
   Id result;
-  result.value_ = (static_cast<uint64_t>(type) << 56) + serial_number;
+  result.hi_ = hi_tare_ + (static_cast<uint64_t>(type) << 56);
+  result.lo_ = lo_tare_ + serial_number;
   return result;
 }
 
 std::string Variable::Id::to_string() const {
-  return fmt::format("{:#018x}", value_);
+  return fmt::format("{:#018x}{:016x}", hi_, lo_);
 }
 
 Variable::Variable(string name, const Type type)
-    : id_{Id::Create(type)}, name_{make_shared<const string>(std::move(name))} {
-  DRAKE_ASSERT(get_id().value() > 0);
-}
+    : id_{Id::Create(type)},
+      name_{make_shared<const string>(std::move(name))} {}
 
 string Variable::get_name() const {
   return name_ != nullptr ? *name_ : string{"𝑥"};
