@@ -323,10 +323,6 @@ use_repo(
     "gymnasium_py_internal",
     "stable_baselines3_internal",
     #
-    # Python libraries used when building wheels.
-    #
-    "cxxfilt_internal",
-    #
     # Python libraries used at test-time or by maintainers.
     #
     "cpplint_internal",

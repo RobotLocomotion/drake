@@ -19,7 +19,6 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         uv_requirement("lief"),
-        "@cxxfilt_internal//:cxxfilt",
     ],
 )
 
