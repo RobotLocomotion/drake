@@ -20,3 +20,55 @@ DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::RationalFunction)
 DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
     drake::symbolic::Variable)
+
+namespace drake {
+namespace symbolic {
+/* Internal use only. */
+class VariableIdPythonAttorney {
+ public:
+  VariableIdPythonAttorney() = delete;
+  static Variable::Id Construct(uint64_t value) {
+    Variable::Id result;
+    result.value_ = value;
+    return result;
+  }
+};
+}  // namespace symbolic
+}  // namespace drake
+
+namespace pybind11 {
+namespace detail {
+template <>
+struct type_caster<drake::symbolic::Variable::Id> {
+ public:
+  using Attorney = drake::symbolic::VariableIdPythonAttorney;
+
+  PYBIND11_TYPE_CASTER(drake::symbolic::Variable::Id, _("int"));
+
+  bool load(handle src, bool /* convert */) {
+    if (!src) {
+      return false;
+    }
+
+    pybind11::int_ integer;
+    try {
+      integer = pybind11::cast<pybind11::int_>(src);
+    } catch (...) {
+      return false;
+    }
+
+    // N.B. "value" is a magic variable declared pybind11 where we're supposed
+    // to put the loaded result.
+    value = Attorney::Construct(integer.cast<uint64_t>());
+
+    return true;
+  }
+
+  static handle cast(drake::symbolic::Variable::Id src,
+      return_value_policy /* policy */, handle /* parent */) {
+    pybind11::int_ value{src.value()};
+    return value.release();
+  }
+};
+}  // namespace detail
+}  // namespace pybind11

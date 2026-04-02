@@ -406,12 +406,20 @@ class Polynomial {
       const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
-   * Note that the ID of a variable is preserved in this translation.
+   * The mapping from symbolic::Variable::Id to Polynomial::VarType is governed
+   * by VariableIdToVarType().
    *
    * @throws std::exception if `e` is not polynomial-convertible.
    * @pre e.is_polynomial() is true.
    */
   static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
+
+  /** When FromExpression converts a symbolic::Variable to a Polynomial::Term,
+   * it uses this mapping function to project the symbolic::Variable::Id to a
+   * Polynomial::VarType. Note that the mapping is non-injective (i.e.,
+   * degenerate) because an Id is 64 bits but a VarType is only 32 bits.
+   */
+  static VarType VariableIdToVarType(const drake::symbolic::Variable::Id& id);
 
   std::string to_string() const;
 
