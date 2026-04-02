@@ -115,12 +115,12 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
 
     const int num_polys = 6;
     const int num_points = 24;
-    newPoints->Allocate(num_points);
+    newPoints->Reserve(num_points);
     newNormals->SetNumberOfComponents(3);
-    newNormals->Allocate(num_points);
+    newNormals->ReserveValues(num_points);
     newNormals->SetName("Normals");
     newTCoords->SetNumberOfComponents(2);
-    newTCoords->Allocate(num_points);
+    newTCoords->ReserveValues(num_points);
     newTCoords->SetName("TCoords");
     // This estimate is exact because every polygon is a quad.
     newPolys->AllocateEstimate(num_polys, 4);
@@ -277,12 +277,12 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
 
     const int num_points = mesh_.positions.rows();
     const int num_tris = mesh_.indices.rows();
-    newPoints->Allocate(num_points);
+    newPoints->Reserve(num_points);
     newNormals->SetNumberOfComponents(3);
-    newNormals->Allocate(num_points);
+    newNormals->ReserveValues(num_points);
     newNormals->SetName("Normals");
     newTCoords->SetNumberOfComponents(2);
-    newTCoords->Allocate(num_points);
+    newTCoords->ReserveValues(num_points);
     newTCoords->SetName("TCoords");
     // This estimate is exact because every polygon is a triangle.
     newPolys->AllocateEstimate(num_tris, 3);
