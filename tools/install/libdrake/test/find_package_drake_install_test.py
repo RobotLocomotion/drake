@@ -36,7 +36,9 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
             # Check that the imported drake::drake is a shared library.
             get_target_property(drake_type drake::drake TYPE)
             if(NOT drake_type STREQUAL "SHARED_LIBRARY")
-                message(FATAL_ERROR "drake::drake is ${{drake_type}}, but expected SHARED_LIBRARY.")
+                message(FATAL_ERROR "drake::drake is ${{drake_type}}, "
+                  "but expected SHARED_LIBRARY."
+                )
             endif()
         """
 
@@ -47,10 +49,9 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
 
         cmake_binary_dir = install_test_helper.create_temporary_dir("build")
 
-        subprocess.check_call(["cmake", cmake_source_dir],
-                              cwd=cmake_binary_dir)
+        subprocess.check_call(["cmake", cmake_source_dir], cwd=cmake_binary_dir)
         subprocess.check_call("make", cwd=cmake_binary_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

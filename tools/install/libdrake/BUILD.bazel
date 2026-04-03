@@ -195,6 +195,25 @@ install_cmake_config(
     versioned = False,
 )
 
+cmake_configure_file(
+    name = "site_packages_metadata_expand",
+    src = "site-packages-METADATA.in",
+    out = "METADATA",
+    atonly = True,
+    cmakelists = [
+        ":stamp_version.cmake",
+    ],
+)
+
+# Publish a dist-info/METADATA file to report our version number to non-wheel
+# builds. Wheel builds have their own mechanism to handle this, and end up
+# discarding (ignoring) this file entirely.
+install(
+    name = "install_site_packages_metadata",
+    data = [":METADATA"],
+    data_dest = "lib/python@PYTHON_VERSION@/site-packages/drake.dist-info",
+)
+
 # Verify that extra include paths are not leaking into our interface deps.
 cc_check_allowed_headers(
     name = "allowed_headers_lint",
@@ -298,8 +317,9 @@ install(
     install_tests = [
         "test/drake_python_dir_install_test.py",
         "test/find_package_drake_install_test.py",
-        "test/snopt_visibility_install_test.py",
+        "test/metadata_install_test.py",
         "test/rpath_install_test.py",
+        "test/snopt_visibility_install_test.py",
     ],
     hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
@@ -308,6 +328,7 @@ install(
     deps = [
         ":install_cmake_config",
         ":install_libdrake",
+        ":install_site_packages_metadata",
     ],
 )
 
@@ -436,5 +457,9 @@ add_lint_tests(
     python_lint_extra_srcs = [
         "build_components_refresh.py",
         "test/drake_python_dir_install_test.py",
+        "test/find_package_drake_install_test.py",
+        "test/metadata_install_test.py",
+        "test/rpath_install_test.py",
+        "test/snopt_visibility_install_test.py",
     ],
 )
