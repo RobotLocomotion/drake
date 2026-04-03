@@ -16,7 +16,6 @@ def has_prefix(path, prefixes):
 
 
 class RpathTest(unittest.TestCase):
-
     def test_rpaths(self):
         """Confirms that libdrake.so does not link to any non-system libraries
         that are not correctly RPATH'd.
@@ -24,9 +23,8 @@ class RpathTest(unittest.TestCase):
 
         # The shared library to be tested.
         libdrake = os.path.join(
-            install_test_helper.get_install_dir(),
-            "lib/libdrake.so"
-            )
+            install_test_helper.get_install_dir(), "lib/libdrake.so"
+        )
         self.assertTrue(os.path.exists(libdrake))
 
         libs_checked = 0
@@ -44,8 +42,10 @@ class RpathTest(unittest.TestCase):
             ]
             for lib in otool.linked_libraries(libdrake):
                 libs_checked += 1
-                self.assertTrue(has_prefix(lib.path, allowed_prefixes),
-                                msg=f"{lib.path} has a disallowed prefix")
+                self.assertTrue(
+                    has_prefix(lib.path, allowed_prefixes),
+                    msg=f"{lib.path} has a disallowed prefix",
+                )
         else:
             allowed_prefixes = [
                 "/lib/",
@@ -54,8 +54,7 @@ class RpathTest(unittest.TestCase):
                 "/usr/lib64/",
                 os.path.dirname(libdrake),
             ]
-            output = subprocess.check_output(
-                ['ldd', libdrake], encoding="utf8")
+            output = subprocess.check_output(["ldd", libdrake], encoding="utf8")
 
             for line in output.splitlines():
                 # Output is e.g.:
@@ -66,18 +65,19 @@ class RpathTest(unittest.TestCase):
                 # We ignore anything that isn't a resolved library. Since we're
                 # checking the start of the string, we don't need to separate
                 # the resolved path from the offset address.
-                m = re.match('.* => (.*)$', line.strip())
+                m = re.match(".* => (.*)$", line.strip())
                 if m is not None:
                     (resolved,) = m.groups()
                     libs_checked += 1
 
-                    self.assertNotEqual(resolved, "not found",
-                                        msg=line.strip())
-                    self.assertTrue(has_prefix(resolved, allowed_prefixes),
-                                    msg=f"{resolved} has a disallowed prefix")
+                    self.assertNotEqual(resolved, "not found", msg=line.strip())
+                    self.assertTrue(
+                        has_prefix(resolved, allowed_prefixes),
+                        msg=f"{resolved} has a disallowed prefix",
+                    )
 
         self.assertGreater(libs_checked, 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
