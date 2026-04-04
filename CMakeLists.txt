@@ -1,12 +1,9 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-# The minimum required CMake version should be the minimum of the versions
-# listed in doc/_pages/from_source.md and the version used by the wheel build.
-# When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
-# should be changed accordingly so that downstream users are synced with
-# Drake itself.
-cmake_minimum_required(VERSION 3.26)
+# The policy version should match the maximum version on all platforms as
+# listed in doc/_pages/from_source.md.
+cmake_minimum_required(VERSION 3.20...4.3)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
