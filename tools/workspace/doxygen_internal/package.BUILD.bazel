@@ -1,3 +1,6 @@
 # -*- bazel -*-
 
-exports_files(["doxygen", "drake_repository_metadata.json"])
+exports_files([
+    "doxygen",
+    "drake_repository_metadata.json",
+])

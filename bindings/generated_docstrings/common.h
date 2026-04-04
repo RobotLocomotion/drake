@@ -54,6 +54,7 @@
 // #include "drake/common/pointer_cast.h"
 // #include "drake/common/polynomial.h"
 // #include "drake/common/random.h"
+// #include "drake/common/ranges.h"
 // #include "drake/common/reset_after_move.h"
 // #include "drake/common/reset_on_copy.h"
 // #include "drake/common/scope_exit.h"
@@ -1474,7 +1475,8 @@ Precondition:
         // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Constructs a Polynomial representing the symbolic expression ``e``.
-Note that the ID of a variable is preserved in this translation.
+The mapping from symbolic∷Variable∷Id to Polynomial∷VarType is
+governed by VariableIdToVarType().
 
 Raises:
     RuntimeError if ``e`` is not polynomial-convertible.
@@ -1740,6 +1742,15 @@ not reflect any sort of mathematical total order.)""";
         // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } VarType;
+      // Symbol: drake::Polynomial::VariableIdToVarType
+      struct /* VariableIdToVarType */ {
+        // Source: drake/common/polynomial.h
+        const char* doc =
+R"""(When FromExpression converts a symbolic∷Variable to a Polynomial∷Term,
+it uses this mapping function to project the symbolic∷Variable∷Id to a
+Polynomial∷VarType. Note that the mapping is non-injective (i.e.,
+degenerate) because an Id is 64 bits but a VarType is only 32 bits.)""";
+      } VariableIdToVarType;
       // Symbol: drake::Polynomial::VariableNameToId
       struct /* VariableNameToId */ {
         // Source: drake/common/polynomial.h

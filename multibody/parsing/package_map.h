@@ -249,7 +249,7 @@ class PackageMap final {
 };
 
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map);

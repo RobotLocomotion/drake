@@ -35,7 +35,7 @@ std::string to_string(const RigidTransform<T>& X) {
   return fmt::format("{} xyz = {} {} {}", rpy, p.x(), p.y(), p.z());
 }
 
-// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+// TODO(2026-07-01): delete `operator<<` instantiation and the `#pragma`s.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off

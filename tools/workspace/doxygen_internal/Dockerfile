@@ -17,7 +17,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     git \
     graphviz \
     libc6-dev \
-    lsb-release \
     ninja-build \
     python3 \
     wget \
@@ -46,4 +45,4 @@ RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOX
   && cp -f "doxygen-${DOXYGEN_VERSION}/LICENSE" /opt/doxygen/bin \
   && rm -rf doxygen-*
 RUN cd /opt/doxygen/bin \
-  && tar -czf "doxygen-$(./doxygen --version)-$(lsb_release --codename --short)-$(uname --processor).tar.gz" doxygen LICENSE
+  && tar -czf "doxygen-$(./doxygen --version)-$(. /etc/os-release && echo ${VERSION_CODENAME})-$(uname --processor).tar.gz" doxygen LICENSE

@@ -10,7 +10,10 @@ package(
 
 py_library(
     name = "xmlrunner_py",
-    srcs = glob(["xmlrunner/**"], allow_empty = False),
+    srcs = glob(
+        ["xmlrunner/**"],
+        allow_empty = False,
+    ),
     imports = ["."],
 )
 

@@ -187,7 +187,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
 std::string to_string(const MonomialBasisElement& m);
 
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m);

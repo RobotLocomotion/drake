@@ -69,6 +69,7 @@ cmake_configure_files(
         "HAVE_SYS_TYPES_H=1",
         "HAVE_UNISTD_H=1",
     ],
+    strict = True,
     undefines = [
         # Drake only supports 64-bit, little-endian hardware.
         "WORDS_BIGENDIAN",
@@ -120,7 +121,6 @@ cmake_configure_files(
         # Ignore stray @VAR@ in comments.
         "VAR",
     ],
-    strict = True,
 )
 
 _PUBLIC_HDRS = [
@@ -152,19 +152,19 @@ _SRCS = glob(
 
 cc_library(
     name = "libtiff",
-    hdrs = _PUBLIC_HDRS,
     srcs = _SRCS + _PRIVATE_HDRS,
-    includes = ["libtiff"],
-    isystem = True,
+    hdrs = _PUBLIC_HDRS,
     copts = [
         "-fvisibility=hidden",
         "-w",
     ],
+    includes = ["libtiff"],
+    isystem = True,
     linkstatic = True,
+    visibility = ["//visibility:public"],
     deps = [
         "@zlib",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(

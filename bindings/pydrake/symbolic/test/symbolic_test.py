@@ -22,6 +22,7 @@ import pydrake.symbolic as sym
 # overloads from `pydrake.math`.
 
 # Define global variables to make the tests less verbose.
+dummy = sym.Variable()
 x = sym.Variable("x")
 y = sym.Variable("y")
 z = sym.Variable("z")
@@ -38,7 +39,12 @@ boolean = sym.Variable(name="boolean", type=sym.Variable.Type.BOOLEAN)
 
 class TestSymbolicVariable(unittest.TestCase):
     def test_is_dummy(self):
+        self.assertTrue(dummy.is_dummy())
         self.assertFalse(a.is_dummy())
+
+    def test_id(self):
+        self.assertEqual(dummy.get_id(), 0)
+        self.assertNotEqual(a.get_id(), 0)
 
     def test_get_name(self):
         self.assertEqual(a.get_name(), "a")
@@ -775,28 +781,16 @@ class TestSymbolicExpression(unittest.TestCase):
         e_xv = np.array([e_x, e_x])
         e_yv = np.array([e_y, e_y])
         # N.B. In some versions of NumPy, `!=` for dtype=object implies ID
-        # comparison (e.g. `is`). Depending on the verison of numpy, we might
-        # see either a DeprecationWarning from numpy or the __nonzero__ error
-        # from our code. Once we're at numpy >= 1.25 as our minimum version
-        # (approximately 2026-05-01) we can probably simplify these checks.
+        # comparison (e.g. `is`).
         # - All false.
-        with self.assertRaisesRegex(
-            (DeprecationWarning, RuntimeError),
-            "(elementwise comparison|__nonzero__)",
-        ):
+        with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
             (e_xv == e_yv)
         # - True + False.
-        with self.assertRaisesRegex(
-            (DeprecationWarning, RuntimeError),
-            "(elementwise comparison|__nonzero__)",
-        ):
+        with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
             e_xyv = np.array([e_x, e_y])
             (e_xv == e_xyv)
         # - All true.
-        with self.assertRaisesRegex(
-            (DeprecationWarning, RuntimeError),
-            "(elementwise comparison|__nonzero__)",
-        ):
+        with self.assertRaisesRegex(RuntimeError, "__nonzero__"):
             (e_xv == e_xv)
 
     def test_functions_with_float(self):

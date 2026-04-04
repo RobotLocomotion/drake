@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-// TODO(2026-06-01): Remove ostream header when `operator<<` is removed.
+// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
 #include <ostream>
 
 #include "drake/common/drake_assert.h"
@@ -170,7 +170,7 @@ std::string to_string(const Fields& fields);
 
 /// Provides human-readable output.
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, const Fields& rhs);

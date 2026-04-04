@@ -402,7 +402,7 @@ GTEST_TEST(PolynomialTest, EigenMatrixPolynomialToStringFmtFormatter) {
   EXPECT_EQ(fmt::to_string(fmt_eigen(poly_mat)), "x1 y1\nz1 w1");
 }
 
-// TODO(2026-06-01): delete test
+// TODO(2026-07-01): delete test
 // DeprecatedEigenMatrixPolynomialOutStreemOperator on removal date.
 GTEST_TEST(PolynomialTest, DeprecatedEigenMatrixPolynomialOutputOperator) {
   Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
@@ -531,7 +531,9 @@ GTEST_TEST(PolynomialTest, FromExpression) {
   const Variable z{"z"};
   Environment env{{x, 1.0}, {y, 2.0}, {z, 3.0}};
   const map<Polynomiald::VarType, double> eval_point{
-      {x.get_id(), env[x]}, {y.get_id(), env[y]}, {z.get_id(), env[z]}};
+      {Polynomiald::VariableIdToVarType(x.get_id()), env[x]},
+      {Polynomiald::VariableIdToVarType(y.get_id()), env[y]},
+      {Polynomiald::VariableIdToVarType(z.get_id()), env[z]}};
 
   const Expression e0{42.0};
   const Expression e1{pow(x, 2)};

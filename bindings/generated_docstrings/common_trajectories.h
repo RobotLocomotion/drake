@@ -2222,23 +2222,13 @@ R"""(Creates an empty trajectory.
 Parameter ``rowwise``:
     governs the stacking order)""";
         } ctor;
-        // Symbol: drake::trajectories::StackedTrajectory::child_trajectory
-        struct /* child_trajectory */ {
+        // Symbol: drake::trajectories::StackedTrajectory::children
+        struct /* children */ {
           // Source: drake/common/trajectories/stacked_trajectory.h
           const char* doc =
-R"""(Returns a reference to the ``child_index`` trajectory.)""";
-        } child_trajectory;
-        // Symbol: drake::trajectories::StackedTrajectory::get_number_of_children
-        struct /* get_number_of_children */ {
-          // Source: drake/common/trajectories/stacked_trajectory.h
-          const char* doc =
-R"""(Returns the number of child trajectories that have been stacked.)""";
-        } get_number_of_children;
-        // Symbol: drake::trajectories::StackedTrajectory::rowwise
-        struct /* rowwise */ {
-          // Source: drake/common/trajectories/stacked_trajectory.h
-          const char* doc = R"""()""";
-        } rowwise;
+R"""(Returns a view of the current children. Calling any non-const method
+on this trajectory will invalidate the view.)""";
+        } children;
       } StackedTrajectory;
       // Symbol: drake::trajectories::Trajectory
       struct /* Trajectory */ {

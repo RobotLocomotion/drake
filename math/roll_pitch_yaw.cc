@@ -470,7 +470,7 @@ std::string to_string(const RollPitchYaw<T>& rpy) {
   return fmt::format("rpy = {} {} {}", repr(roll), repr(pitch), repr(yaw));
 }
 
-// TODO(2026-06-01): delete `operator<<` instantiation and the `#pragma`s.
+// TODO(2026-07-01): delete `operator<<` instantiation and the `#pragma`s.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // clang-format off

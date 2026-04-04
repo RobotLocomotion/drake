@@ -532,7 +532,7 @@ GTEST_TEST(RollPitchYaw, SymbolicTest) {
               testing::MatchesRegex(".*inf.*(and.*inf.*){5}"));
 }
 
-// TODO(2026-06-01): delete test StreamInsertionOperator
+// TODO(2026-07-01): delete test StreamInsertionOperator
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Test the stream insertion operator to write into a stream.

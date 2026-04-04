@@ -13,7 +13,7 @@
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
 
-// Remove with deprecation 2026-06-01.
+// Remove with deprecation 2026-07-01.
 #include <ostream>
 
 namespace drake {
@@ -122,7 +122,7 @@ class ChebyshevPolynomial {
 std::string to_string(const ChebyshevPolynomial& p);
 
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p);

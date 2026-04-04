@@ -68,6 +68,7 @@ _SRCS = [
     "lib/curlx/inet_pton.c",
     "lib/curlx/nonblock.c",
     "lib/curlx/strcopy.c",
+    "lib/curlx/strdup.c",
     "lib/curlx/strerr.c",
     "lib/curlx/strparse.c",
     "lib/curlx/timediff.c",
@@ -127,7 +128,6 @@ _SRCS = [
     "lib/socks.c",
     "lib/splay.c",
     "lib/strcase.c",
-    "lib/strdup.c",
     "lib/strequal.c",
     "lib/strerror.c",
     "lib/transfer.c",
@@ -197,8 +197,10 @@ check_lists_consistency(
         "lib/curl_sha512_256.c",
         "lib/curl_sspi.c",
         "lib/curl_threads.c",
+        "lib/curlx/basename.c",
         "lib/curlx/inet_ntop.c",
         "lib/curlx/multibyte.c",
+        "lib/curlx/snprintf.c",
         "lib/curlx/version_win32.c",
         "lib/curlx/winapi.c",
         "lib/dict.c",
@@ -247,25 +249,25 @@ cmake_configure_file(
     name = "configure_file",
     src = "lib/curl_config-cmake.h.in",
     out = "lib/curl_config.h",
+    strict = True,
     defines = CMAKE_DEFINES,
     undefines = CMAKE_UNDEFINES,
-    strict = True,
 )
 
 # Compile the library.
 cc_library(
     name = "libcurl",
-    hdrs = _HDRS + [":lib/curl_config.h"],
     srcs = _SRCS,
+    hdrs = _HDRS + [":lib/curl_config.h"],
+    copts = _COPTS,
     includes = _INCLUDES,
     isystem = True,
-    copts = _COPTS,
     linkopts = _LINKOPTS,
     linkstatic = 1,
+    visibility = ["//visibility:public"],
     deps = [
         "@zlib",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # Install the license notice.

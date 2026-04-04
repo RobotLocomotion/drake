@@ -1,9 +1,10 @@
 #pragma once
 
-// TODO(2026-06-01): Remove ostream header when `operator<<` is removed.
-#include <ostream>
 #include <string>
 #include <unordered_set>
+
+// TODO(2026-07-01): Remove ostream header when `operator<<` is removed.
+#include <ostream>
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
@@ -57,7 +58,7 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
 std::string to_string(const ProgramAttribute&);
 
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
@@ -65,7 +66,7 @@ std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
 std::string to_string(const ProgramAttributes&);
 
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
@@ -110,7 +111,7 @@ enum class ProgramType {
 std::string to_string(const ProgramType&);
 
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream&, const ProgramType&);

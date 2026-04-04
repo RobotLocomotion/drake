@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <ranges>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/ranges.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/common/trajectories/trajectory.h"
 
@@ -47,16 +49,11 @@ class StackedTrajectory final : public Trajectory<T> {
   @throws std::exception if the matrix dimension is incompatible. */
   void Append(const Trajectory<T>& traj);
 
-  bool rowwise() const { return rowwise_; }
-
-  /** Returns the number of child trajectories that have been stacked. */
-  int get_number_of_children() const { return ssize(children_); }
-
-  /** Returns a reference to the `child_index` trajectory. */
-  const Trajectory<T>& child_trajectory(int child_index) const {
-    DRAKE_THROW_UNLESS(child_index >= 0);
-    DRAKE_THROW_UNLESS(child_index < this->get_number_of_children());
-    return *children_[child_index];
+  /** Returns a view of the current children. Calling any non-const method on
+  this trajectory will invalidate the view. */
+  drake::range_view_of<const Trajectory<T>*> auto children() const {
+    return children_ |
+           std::views::transform(&copyable_unique_ptr<Trajectory<T>>::get);
   }
 
  private:

@@ -406,12 +406,20 @@ class Polynomial {
       const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
-   * Note that the ID of a variable is preserved in this translation.
+   * The mapping from symbolic::Variable::Id to Polynomial::VarType is governed
+   * by VariableIdToVarType().
    *
    * @throws std::exception if `e` is not polynomial-convertible.
    * @pre e.is_polynomial() is true.
    */
   static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
+
+  /** When FromExpression converts a symbolic::Variable to a Polynomial::Term,
+   * it uses this mapping function to project the symbolic::Variable::Id to a
+   * Polynomial::VarType. Note that the mapping is non-injective (i.e.,
+   * degenerate) because an Id is 64 bits but a VarType is only 32 bits.
+   */
+  static VarType VariableIdToVarType(const drake::symbolic::Variable::Id& id);
 
   std::string to_string() const;
 
@@ -464,7 +472,7 @@ Polynomial<T> pow(const Polynomial<T>& base,
 
 template <typename T>
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream&
@@ -474,7 +482,7 @@ operator<<(std::ostream& os, const typename Polynomial<T>::Monomial& m) {
 
 template <typename T>
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
     "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream&
@@ -484,7 +492,7 @@ operator<<(std::ostream& os, const Polynomial<T>& poly) {
 
 template <typename T, int Rows, int Cols>
 DRAKE_DEPRECATED(
-    "2026-06-01",
+    "2026-07-01",
     "Wrap Eigen objects M with fmt_eigen() to format Eigen data into fmt "
     "strings e.g., fmt::to_string(fmt_eigen(M)), "
     "fmt::format(\"M = {}\", fmt_eigen(M)). You'll need to "

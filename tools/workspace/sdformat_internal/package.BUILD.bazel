@@ -29,6 +29,7 @@ cmake_configure_file(
     name = "config",
     src = "include/sdf/config.hh.in",
     out = "include/sdf/config.hh",
+    strict = True,
     cmakelists = ["CMakeLists.txt"],
     defines = [
         "PROJECT_NAME=SDFormat",
@@ -44,7 +45,6 @@ cmake_configure_file(
         # some or all of our console.patch file.
         "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
     ],
-    strict = True,
     visibility = ["//visibility:private"],
 )
 
@@ -262,10 +262,13 @@ cc_library_vendored(
         x.replace("include/sdf/", "drake_hdr/sdf/")
         for x in _HDRS
     ],
+    copts = ["-w"],
+    defines = [
+        "SDFORMAT_STATIC_DEFINE",
+        "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
+    ],
     includes = ["drake_hdr"],
     isystem = True,
-    copts = ["-w"],
-    defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
@@ -300,10 +303,10 @@ check_lists_consistency(
 
 install(
     name = "install",
-    visibility = ["//visibility:public"],
     docs = [
         "LICENSE",
     ],
+    visibility = ["//visibility:public"],
 )
 
 exports_files(["drake_repository_metadata.json"])

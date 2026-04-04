@@ -22,24 +22,28 @@ cc_library(
 # The upstream headers that we'll use.
 _HDRS = [
     "include/msgpack.hpp",
-] + glob([
-    "include/msgpack/**/*.h",
-    "include/msgpack/**/*.hpp",
-], exclude = _HDRS_NO_VENDOR, allow_empty = False)
+] + glob(
+    [
+        "include/msgpack/**/*.h",
+        "include/msgpack/**/*.hpp",
+    ],
+    allow_empty = False,
+    exclude = _HDRS_NO_VENDOR,
+)
 
 cc_library_vendored(
     name = "msgpack",
     hdrs = _HDRS,
-    defines = ["MSGPACK_NO_BOOST"],
     hdrs_vendored = [
         x.replace("include/", "drake_hdr/")
         for x in _HDRS
     ],
+    defines = ["MSGPACK_NO_BOOST"],
     includes = ["drake_hdr"],
     isystem = True,
     linkstatic = 1,
-    deps = [":hdrs_no_vendor"],
     visibility = ["//visibility:public"],
+    deps = [":hdrs_no_vendor"],
 )
 
 install(

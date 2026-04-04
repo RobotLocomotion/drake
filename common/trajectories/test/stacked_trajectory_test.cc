@@ -39,7 +39,7 @@ GTEST_TEST(StackedTrajectoryTest, Empty) {
   EXPECT_TRUE(dut.has_derivative());
   EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(0), MatrixXd::Zero(0, 0)));
   EXPECT_TRUE(dut.MakeDerivative() != nullptr);
-  EXPECT_EQ(dut.get_number_of_children(), 0);
+  EXPECT_EQ(dut.children().size(), 0);
 }
 
 GTEST_TEST(StackedTrajectoryTest, CopyCtor) {
@@ -138,12 +138,14 @@ GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteColumnVectors) {
   EXPECT_TRUE(CompareMatrices(dut.value(t0), Vector4d(1, 2, 3, 4)));
   EXPECT_TRUE(CompareMatrices(dut.value(tf), Vector4d(11, 12, 13, 14)));
   EXPECT_FALSE(dut.has_derivative());
-
-  EXPECT_EQ(dut.get_number_of_children(), 2);
-  EXPECT_TRUE(
-      CompareMatrices(dut.child_trajectory(0).value(t0), Vector2d(1, 2)));
-  EXPECT_TRUE(
-      CompareMatrices(dut.child_trajectory(1).value(t0), Vector2d(3, 4)));
+  int counter = 0;
+  for (const Trajectory<double>* child : dut.children()) {
+    ASSERT_NE(child, nullptr);
+    EXPECT_EQ(child->rows(), 2);
+    EXPECT_EQ(child->cols(), 1);
+    ++counter;
+  }
+  EXPECT_EQ(counter, 2);
 }
 
 GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteRowVectors) {
@@ -162,14 +164,14 @@ GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteRowVectors) {
   EXPECT_TRUE(CompareMatrices(dut.value(t0), RowVector4d(1, 2, 3, 4)));
   EXPECT_TRUE(CompareMatrices(dut.value(tf), RowVector4d(11, 12, 13, 14)));
   EXPECT_FALSE(dut.has_derivative());
-
-  EXPECT_EQ(dut.get_number_of_children(), 2);
-  EXPECT_TRUE(
-      CompareMatrices(dut.child_trajectory(0).value(t0), RowVector2d(1, 2)));
-  EXPECT_TRUE(
-      CompareMatrices(dut.child_trajectory(1).value(t0), RowVector2d(3, 4)));
-  EXPECT_THROW(dut.child_trajectory(-1), std::exception);
-  EXPECT_THROW(dut.child_trajectory(2), std::exception);
+  int counter = 0;
+  for (const Trajectory<double>* child : dut.children()) {
+    ASSERT_NE(child, nullptr);
+    EXPECT_EQ(child->rows(), 1);
+    EXPECT_EQ(child->cols(), 2);
+    ++counter;
+  }
+  EXPECT_EQ(counter, 2);
 }
 
 GTEST_TEST(StackedTrajectoryTest, Clone) {

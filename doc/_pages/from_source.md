@@ -34,10 +34,10 @@ officially supports when building from source:
      corresponding tests). -->
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
-|------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
+|------------------------------------|--------------|------------|-------|-------|------------------------------|
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
-| macOS Sequoia (15)                 | arm64        | 3.14       | 9.0   | 4.2   | Apple LLVM 17 (Xcode 26.3)   |
-| macOS Tahoe (26)                   | arm64        | 3.14       | 9.0   | 4.2   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Sequoia (15)                 | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Tahoe (26)                   | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -198,7 +198,7 @@ Adjusting closed-source (commercial) software dependencies:
 
 * `WITH_GUROBI` (default `OFF`).
   When `ON`, enables the `GurobiSolver` in the build.
-  * When enabled, you must download and install Gurobi 12.0 yourself prior to
+  * When enabled, you must download and install Gurobi 13.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
     download Gurobi. If Gurobi is not installed to its standard location, you
     must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
@@ -225,11 +225,10 @@ Adjusting closed-source (commercial) software dependencies:
 
 Adjusting features:
 
-* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `ON`).
+* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `OFF`).
   When `ON`, Drake uses `<unsupported/Eigen/AutoDiff>` for its autodiff support.
   When `OFF`, Drake uses a custom re-implementation. Using `ON` is deprecated
-  and will be removed from Drake on or after 2026-07-01. The default will change
-  to `OFF` on or after 2026-04-01.
+  and will be removed from Drake on or after 2026-07-01.
 
 Adjusting installation methods (advanced):
 
