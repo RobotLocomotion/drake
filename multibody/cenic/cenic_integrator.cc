@@ -296,6 +296,10 @@ template <typename T>
 bool CenicIntegrator<T>::DoStep(const T& h) {
   DRAKE_DEMAND(builder_ != nullptr);
 
+  if (h == T(0)) {
+    return true;
+  }
+
   // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
