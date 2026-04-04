@@ -487,8 +487,8 @@ for more information. */
 #if defined(DRAKE_DOXYGEN_CXX)
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-              MatrixR::ColsAtCompileTime>
-operator*(const MatrixL& lhs, const MatrixR& rhs);
+              MatrixR::ColsAtCompileTime> operator*(const MatrixL& lhs,
+                                                    const MatrixR& rhs);
 #else
 // clang-format off
 template <typename MatrixL, typename MatrixR>
@@ -532,8 +532,8 @@ for more information. */
 #if defined(DRAKE_DOXYGEN_CXX)
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-              MatrixR::ColsAtCompileTime>
-operator*(const MatrixL& lhs, const MatrixR& rhs);
+              MatrixR::ColsAtCompileTime> operator*(const MatrixL& lhs,
+                                                    const MatrixR& rhs);
 #else
 // clang-format off
 template <typename MatrixL, typename MatrixR>

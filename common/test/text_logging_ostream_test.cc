@@ -30,8 +30,7 @@ namespace {
 
 class Streamable {
   [[maybe_unused]]  // If we don't have spdlog, this function is dead code.
-  friend std::ostream&
-  operator<<(std::ostream& os, const Streamable& c) {
+  friend std::ostream& operator<<(std::ostream& os, const Streamable& c) {
     return os << "OK";
   }
 };
