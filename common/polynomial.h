@@ -417,7 +417,7 @@ class Polynomial {
   /** When FromExpression converts a symbolic::Variable to a Polynomial::Term,
    * it uses this mapping function to project the symbolic::Variable::Id to a
    * Polynomial::VarType. Note that the mapping is non-injective (i.e.,
-   * degenerate) because an Id is 64 bits but a VarType is only 32 bits.
+   * degenerate) because an Id is 128 bits but a VarType is only 32 bits.
    */
   static VarType VariableIdToVarType(const drake::symbolic::Variable::Id& id);
 
