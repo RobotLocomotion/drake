@@ -2,6 +2,7 @@
 
 import copy
 import itertools
+import pickle
 import unittest
 import warnings
 
@@ -15,6 +16,7 @@ from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 import pydrake.math as drake_math
 import pydrake.symbolic as sym
 
@@ -206,6 +208,18 @@ class TestSymbolicVariable(unittest.TestCase):
         value = str(np.array([x, y]))
         self.assertIn("Variable('x', Continuous)", value)
         self.assertIn("Variable('y', Continuous)", value)
+
+    def test_pickle(self):
+        def fully_describe(v: sym.Variable):
+            return f"{v.get_name()!r} {v.get_type()!r} {v.get_id()!r}"
+
+        # Saving and re-loading a variable comes back exactly the same.
+        assert_pickle(self, x, fully_describe)
+        assert_pickle(self, boolean, fully_describe)
+
+        # Saving a copy is the same as saving the original.
+        original = pickle.dumps(x)
+        self.assertEqual(pickle.dumps(copy.copy(x)), original)
 
 
 class TestMakeMatrixVariable(unittest.TestCase):
@@ -2031,9 +2045,7 @@ class TestExtractVariablesFromExpression(unittest.TestCase):
 
 
 class TestDecomposeAffineExpression(unittest.TestCase):
-    def test(self):
-        x = sym.Variable("x")
-        y = sym.Variable("y")
+    def test_basic(self):
         e = 2 * x + 3 * y + 4
         variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
         coeffs, constant_term = sym.DecomposeAffineExpression(
@@ -2043,6 +2055,22 @@ class TestDecomposeAffineExpression(unittest.TestCase):
         self.assertEqual(coeffs.shape, (2,))
         self.assertEqual(coeffs[map_var_to_index[x.get_id()]], 2)
         self.assertEqual(coeffs[map_var_to_index[y.get_id()]], 3)
+
+    def test_invalid_variable_id(self):
+        # For reference, first check a valid call with just a single variable.
+        e = sym.Expression(x)
+        _, var_to_index = sym.ExtractVariablesFromExpression(e)
+        self.assertEqual(len(var_to_index), 1)
+        (variable_id,) = var_to_index.keys()
+        sym.DecomposeAffineExpression(e, {variable_id: 0})
+
+        # Now corrupt the variable ID to check that it's detected during type-
+        # casting. The ID's `type` is stored in bits 64..71 of the 128-bit
+        # value, and must be a valid enum in the range [0..7]; adding 8 makes it
+        # invalid.
+        variable_id += 8 << 64
+        with self.assertRaisesRegex(ValueError, "Ill-formed Variable::Id"):
+            sym.DecomposeAffineExpression(e, {variable_id: 0})
 
 
 class TestDecomposeAffineExpressions(unittest.TestCase):
