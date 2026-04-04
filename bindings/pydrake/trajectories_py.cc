@@ -950,6 +950,7 @@ struct Impl {
               py::overload_cast<const Trajectory<T>&>(&Class::Append),
               /* N.B. We choose to omit any py::arg name here. */
               cls_doc.Append.doc)
+          .def("rowwise", &Class::rowwise, cls_doc.rowwise.doc)
           .def(
               "children",
               [](const Class& self) {
@@ -958,7 +959,21 @@ struct Impl {
                 return std::vector<const Trajectory<T>*>(
                     range.begin(), range.end());
               },
-              py_rvp::reference_internal, cls_doc.children.doc);
+              py_rvp::reference_internal, cls_doc.children.doc)
+          .def(py::pickle(
+              [](const Class& self) {
+                auto range = self.children();
+                std::vector<const Trajectory<T>*> children_pickle(
+                    range.begin(), range.end());
+                return std::make_pair(self.rowwise(), children_pickle);
+              },
+              [](std::pair<bool, std::vector<const Trajectory<T>*>> args) {
+                Class stacked_trajectory(/* rowwise = */ std::get<0>(args));
+                for (const auto* trajectory_pickle : std::get<1>(args)) {
+                  stacked_trajectory.Append(*trajectory_pickle);
+                }
+                return stacked_trajectory;
+              }));
       DefCopyAndDeepCopy(&cls);
     }
 
