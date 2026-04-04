@@ -40,6 +40,7 @@ GTEST_TEST(StackedTrajectoryTest, Empty) {
   EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(0), MatrixXd::Zero(0, 0)));
   EXPECT_TRUE(dut.MakeDerivative() != nullptr);
   EXPECT_EQ(dut.children().size(), 0);
+  EXPECT_TRUE(dut.rowwise());
 }
 
 GTEST_TEST(StackedTrajectoryTest, CopyCtor) {
