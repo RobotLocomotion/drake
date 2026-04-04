@@ -211,7 +211,7 @@ bool CheckTerminationConditions(int iteration_num, double delta_volume,
 bool RaySamplerProcess(const SceneGraphCollisionChecker& checker,
                        const VectorXd& ellipsoid_center,
                        const HPolyhedron& current_polytope,
-                       const IrisNp2Options& options, int constraints_tol,
+                       const IrisNp2Options& options, double constraints_tol,
                        VectorXd* particle) {
   DRAKE_THROW_UNLESS(particle != nullptr);
 
