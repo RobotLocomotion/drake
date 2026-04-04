@@ -1,18 +1,25 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:py.bzl", "py_binary")
+load("@drake_uv//:requirements.bzl", uv_requirement = "requirement")
 
 py_binary(
     name = "gen",
     srcs = ["implib-gen.py"],
     data = glob(
-        ["arch/**"],
+        [
+            "arch/**",
+            "implib/**",
+        ],
         allow_empty = False,
     ),
     main = "implib-gen.py",
     python_version = "PY3",
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
+    deps = [
+        uv_requirement("lief"),
+    ],
 )
 
 exports_files(["drake_repository_metadata.json"])

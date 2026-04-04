@@ -37,7 +37,6 @@ wheel = [
     "auditwheel; sys_platform == 'linux'",
     "build",
     "delocate; sys_platform == 'darwin'",
-    "wheel; sys_platform == 'darwin'",
 ]
 
 [tool.pdm]

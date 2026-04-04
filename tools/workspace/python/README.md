@@ -12,7 +12,7 @@ version on macOS), the following files need attention:
 - `drake/setup/mac/source_distribution/Brewfile-developer`,
 - `drake/setup/mac/source_distribution/install_prereqs_user_environment.sh` near
   `gen/python_version.txt`,
-- `drake/setup/python/mypy/BUILD.bazel` near `--python-version`,
+- `drake/setup/python/uv/BUILD.bazel` near `--python-version`,
 - `drake/setup/python/pyproject.toml` near `requires-python`,
 - `drake/tools/wheel/image/setup.py` near `python_requires`,
 - `drake/tools/wheel/wheel_builder/linux.py` near `targets`,
