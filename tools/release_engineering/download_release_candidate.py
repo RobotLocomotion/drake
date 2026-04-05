@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import zipfile
 
 
 class UserError(RuntimeError):
@@ -46,11 +47,11 @@ def _run(argv, check=True, shell=False, **kwargs):
 
 
 def _get_commit_from_version(*, filename):
-    # TODO(jwnimmer-tri) Add git sha into whl files for cross-checking as well.
     is_tar_file = filename.endswith(".tar.gz")
     is_deb_file = filename.endswith(".deb")
-    assert is_tar_file or is_deb_file, (
-        f"{filename} did not end in .tar.gz or .deb"
+    is_whl_file = filename.endswith(".whl")
+    assert is_tar_file or is_deb_file or is_whl_file, (
+        f"{filename} did not end in .tar.gz, .deb, or .whl"
     )
 
     print(f"Extract version information from: {filename}...")
@@ -59,10 +60,8 @@ def _get_commit_from_version(*, filename):
             version_member = tar.getmember("drake/share/doc/drake/VERSION.TXT")
             with tar.extractfile(version_member) as f:
                 assert f is not None, filename
-                text = f.read().decode("utf8")
-        _, commit = text.split()
-    else:
-        assert is_deb_file
+                version_txt_contents = f.read().decode("utf8")
+    elif is_deb_file:
         with tempfile.TemporaryDirectory(prefix="drake-release-tmp-") as td:
             # Extract the .deb to a temporary directory to inspect VERSION.TXT.
             _run(["dpkg-deb", "-x", filename, td])
@@ -76,9 +75,15 @@ def _get_commit_from_version(*, filename):
                 / "VERSION.TXT"
             )
             with open(version_txt_path) as f:
-                text = f.read()
-            _, commit = text.split()
+                version_txt_contents = f.read()
+    else:
+        assert is_whl_file
+        with zipfile.ZipFile(filename, "r") as whl:
+            version_txt_contents = whl.read(
+                "pydrake/doc/drake/VERSION.TXT"
+            ).decode("utf-8")
 
+    _, commit = version_txt_contents.split()
     assert len(commit) == 40, repr(commit)
     return commit
 
@@ -160,15 +165,11 @@ def _download_binaries(*, version):
 
 def _get_consistent_git_commit_sha(*, filenames):
     """Returns the common git sha within the given list of filenames."""
-    # TODO(jwnimmer-tri) Add git sha into whl files for cross-checking.
-    non_wheel_filenames = [x for x in filenames if not x.endswith(".whl")]
     # Verify that each archive uses the same version.
-    commit_list = [
-        _get_commit_from_version(filename=x) for x in non_wheel_filenames
-    ]
+    commit_list = [_get_commit_from_version(filename=x) for x in filenames]
     result = commit_list[0]
     version_errors = []
-    for one_filename, commit in zip(non_wheel_filenames, commit_list):
+    for one_filename, commit in zip(filenames, commit_list):
         if commit != result:
             version_errors.append(
                 f"For '{one_filename}': Commit '{commit}' is not "
