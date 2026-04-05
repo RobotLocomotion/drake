@@ -39,4 +39,14 @@ drake_py_binary(
     deps = ["//tools/install:otool"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "image/setup.py",
+        "test/tests/libs-test.py",
+        "test/tests/meshcat-test.py",
+        "test/tests/mosek-test.py",
+        "test/tests/pyi-install-test.py",
+        "test/tests/sanity-test.py",
+        "test/tests/size-test.py",
+    ],
+)
