@@ -1001,8 +1001,8 @@ class TestTrajectories(unittest.TestCase):
             data = dict()
             data["rowwise"] = traj.rowwise()
             for i, child in enumerate(traj.children()):
-                data["child%d_breaks" % i] = child.get_segment_times()
-                data["child%d_polynomials" % i] = np.array(
+                data[f"child{i}_breaks"] = child.get_segment_times()
+                data[f"child{i}_polynomials"] = np.array(
                     [
                         child.getPolynomialMatrix(segment_index)
                         for segment_index in range(
