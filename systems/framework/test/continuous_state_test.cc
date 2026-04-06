@@ -240,18 +240,16 @@ TEST_F(ContinuousStateTest, Clone) {
 TEST_F(ContinuousStateTest, StringStream) {
   std::stringstream s;
   s << "hello " << continuous_state_->get_vector() << " world";
-  const std::string expected =
-      fmt::format("hello {} world",
-                  fmt_eigen(continuous_state_->CopyToVector().transpose()));
+  const std::string expected = fmt::format(
+      "hello {} world", fmt_eigen(continuous_state_->CopyToVector()));
   EXPECT_EQ(s.str(), expected);
 }
 #pragma GCC diagnostic pop
 
 // Tests string representation of a ContinuousState vector.
 TEST_F(ContinuousStateTest, ToStringFmtFormatter) {
-  const std::string expected =
-      fmt::format("hello {} world",
-                  fmt_eigen(continuous_state_->CopyToVector().transpose()));
+  const std::string expected = fmt::format(
+      "hello {} world", fmt_eigen(continuous_state_->CopyToVector()));
   EXPECT_EQ(fmt::format("hello {} world", continuous_state_->get_vector()),
             expected);
 }

@@ -61,7 +61,7 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
                "  with mass: {}\n"
                "  and com: {}\n",
                G_BBo_B, dut.get_unit_inertia(), tolerance, dut.get_mass(),
-               fmt_eigen(dut.get_com().transpose()));
+               fmt_eigen(dut.get_com()));
   }
   return ::testing::AssertionSuccess();
 }

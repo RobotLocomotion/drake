@@ -570,7 +570,7 @@ std::string to_string(const SpatialInertia<T>& M) {
   } else {
     // Print symbolic results.
     result.append(fmt::format(" mass = {}\n Center of mass = {}\n", mass,
-                              fmt_eigen(p_PBcm.transpose())));
+                              fmt_eigen(p_PBcm)));
   }
 
   // Get G_BP (unit inertia about point P) and use it to calculate I_BP

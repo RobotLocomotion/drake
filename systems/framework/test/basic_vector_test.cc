@@ -248,7 +248,7 @@ TYPED_TEST(TypedBasicVectorTest, StringStream) {
   std::stringstream s;
   s << "hello " << vec << " world";
   const std::string expected =
-      fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
+      fmt::format("hello {} world", fmt_eigen(vec.value()));
   EXPECT_EQ(s.str(), expected);
 }
 #pragma GCC diagnostic pop
@@ -259,7 +259,7 @@ TYPED_TEST(TypedBasicVectorTest, ToStringFmtFormatter) {
   BasicVector<T> vec(3);
   vec.get_mutable_value() << 1.0, 2.2, 3.3;
   const std::string expected =
-      fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
+      fmt::format("hello {} world", fmt_eigen(vec.value()));
   EXPECT_EQ(fmt::format("hello {} world", vec), expected);
 }
 
@@ -284,8 +284,8 @@ TYPED_TEST(TypedBasicVectorTest, ZeroLengthVectorToStringFmtFormatter) {
   using T = TypeParam;
   BasicVector<T> vec(0);
   const std::string expected =
-      fmt::format("foo [{}] bar", fmt_eigen(vec.value().transpose()));
-  EXPECT_EQ(fmt::format("foo [{}] bar", vec), expected);
+      fmt::format("foo {} bar", fmt_eigen(vec.value()));
+  EXPECT_EQ(fmt::format("foo {} bar", vec), expected);
 }
 
 // Tests the default set of bounds (empty).
