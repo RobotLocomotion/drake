@@ -161,7 +161,7 @@ color of the previous build.
 Note that CDash pages may take a minute to populate.
 
 In addition, check the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
-to confirm that the latest commit has a green circle, not a red x.
+to confirm that the latest commit has a green check mark, not a red x.
 
 ## Monitor the Cache Server
 
@@ -263,9 +263,8 @@ with the author, and proceed as specified in that message.
 Occasionally there will be flaky tests or timeouts in the Mac nightly builds.
 While it is tempting to restart these builds to clear the errors, Mac resources
 are limited and restarting the long-running nightly builds may tie up resources
-needed for continuous builds. In addition, too many simultaneous Mac builds
-will increase the chances of timeouts and other flakes. Build cops should use
-their best judgement, keeping in mind the following guidelines:
+needed for continuous builds. Build cops should use their best judgement,
+keeping in mind the following guidelines:
 
 * If the nightly job is mirrored by a continuous job, don't re-run.
 * If the test passed last build, don't re-run.
@@ -293,7 +292,7 @@ any code change. For example, download errors from GitHub, `apt`, etc. are
 somewhat common.
 
 Infrastructure flakes will be red in Jenkins. If you believe you are looking at
-an infrastructure flake, run the build manually at HEAD. If it passes, you are
+an infrastructure flake, run the build manually at `HEAD`. If it passes, you are
 definitely looking at an infrastructure flake, and no further action is
 required. If you believe the rate of a particular infrastructure flake has
 increased, alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`.
