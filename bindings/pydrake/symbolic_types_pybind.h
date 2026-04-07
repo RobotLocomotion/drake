@@ -27,9 +27,18 @@ namespace symbolic {
 class VariableIdPythonAttorney {
  public:
   VariableIdPythonAttorney() = delete;
-  static Variable::Id Construct(uint64_t value) {
+  static uint64_t hi(const Variable::Id& id) { return id.hi_; }
+  static uint64_t lo(const Variable::Id& id) { return id.lo_; }
+  static Variable::Id Construct(uint64_t hi, uint64_t lo) {
+    // We need to maintain Id's invariant that the low byte of hi_ is the
+    // Variable::Type, by rejecting out-of-bounds types.
+    const uint8_t var_type = static_cast<uint8_t>(hi);
+    if (var_type > static_cast<uint8_t>(Variable::Type::RANDOM_EXPONENTIAL)) {
+      throw std::domain_error("Ill-formed Variable::Id");
+    }
     Variable::Id result;
-    result.value_ = value;
+    result.hi_ = hi;
+    result.lo_ = lo;
     return result;
   }
 };
@@ -50,24 +59,30 @@ struct type_caster<drake::symbolic::Variable::Id> {
       return false;
     }
 
-    pybind11::int_ integer;
+    pybind11::int_ concat;
     try {
-      integer = pybind11::cast<pybind11::int_>(src);
+      concat = pybind11::cast<pybind11::int_>(src);
     } catch (...) {
       return false;
     }
 
+    const pybind11::object hi_py = concat >> pybind11::int_(64);
+    const pybind11::object lo_py = concat & pybind11::int_(~uint64_t{});
+    const uint64_t hi = hi_py.cast<uint64_t>();
+    const uint64_t lo = lo_py.cast<uint64_t>();
     // N.B. "value" is a magic variable declared by pybind11 where we're
     // supposed to put the loaded result.
-    value = Attorney::Construct(integer.cast<uint64_t>());
+    value = Attorney::Construct(hi, lo);
 
     return true;
   }
 
   static handle cast(drake::symbolic::Variable::Id src,
       return_value_policy /* policy */, handle /* parent */) {
-    pybind11::int_ value{src.value()};
-    return value.release();
+    const pybind11::int_ hi_py{Attorney::hi(src)};
+    const pybind11::int_ lo_py{Attorney::lo(src)};
+    pybind11::object concat = (hi_py << pybind11::int_(64)) + lo_py;
+    return concat.release();
   }
 };
 }  // namespace detail

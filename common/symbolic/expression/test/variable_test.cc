@@ -54,6 +54,26 @@ class VariableTest : public ::testing::Test {
   }
 };
 
+TEST_F(VariableTest, IdComparison) {
+  const Variable::Id x = x_.get_id();
+  const Variable::Id y = y_.get_id();
+  const Variable::Id z = z_.get_id();
+
+  // ID equality and inequality.
+  EXPECT_EQ(x, x);
+  EXPECT_NE(x, y);
+
+  // IDs compare in the order they were created.
+  EXPECT_LT(x, y);
+  EXPECT_LT(y, z);
+  EXPECT_GT(z, y);
+  EXPECT_GT(y, x);
+
+  // The dummy is bottom.
+  EXPECT_LT(Variable::Id(), x);
+  EXPECT_GT(x, Variable::Id());
+}
+
 // Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
 // constructor both create the same value.
 TEST_F(VariableTest, DefaultConstructors) {
@@ -117,6 +137,7 @@ TEST_F(VariableTest, Move) {
   // The moved-from object matches a default-constructed Variable.
   const Variable expected;
   EXPECT_EQ(x.get_id(), expected.get_id());
+  EXPECT_TRUE(x.is_dummy());
   EXPECT_EQ(get_std_hash(x), get_std_hash(expected));
   EXPECT_EQ(x.get_name(), expected.get_name());
 }
@@ -192,12 +213,13 @@ TEST_F(VariableTest, VariableTypeFmtFormatter) {
 
 TEST_F(VariableTest, VariableIdFmtFormatter) {
   // The dummy ID is all-zero.
-  EXPECT_EQ(fmt::to_string(Variable::Id()), "0x0000000000000000");
+  EXPECT_EQ(fmt::to_string(Variable::Id()),
+            "0x00000000000000000000000000000000");
 
-  // A normal ID is a 64-bit hexidecimal number starting with "0x...".
+  // A normal ID is a 128-bit hexadecimal number starting with "0x...".
   const std::string x_str = fmt::to_string(x_.get_id());
   EXPECT_EQ(x_str.substr(0, 2), "0x");
-  EXPECT_EQ(x_str.length(), 2 + 64 / 4);
+  EXPECT_EQ(x_str.length(), 2 + 128 / 4);
 }
 
 // This test checks whether Variable is compatible with std::unordered_set.
