@@ -72,7 +72,20 @@ list. Never store it as a local variable, member field, etc.
 Drake's code is compiled using -DEIGEN_NO_IO, which enforces that nothing within
 Drake is allowed to use Eigen's `operator<<`. Downstream code that calls into
 Drake is not required to use that option; it is only enforced by Drake's build
-system, not by Drake's headers. */
+system, not by Drake's headers.
+
+### Format string syntax
+
+The format string syntax for fmt_eigen is based on the syntax for the underlying
+scalar type, preceded by a colon.
+
+Example:
+
+```
+Eigen::RowVector3d x{M_PI, M_SQRT2, M_E};
+fmt::format("{::.2f}", fmt_eigen(x));
+// "3.14 1.41 2.72"
+``` */
 template <typename Derived>
 internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
     const Eigen::MatrixBase<Derived>& matrix) {
@@ -85,8 +98,22 @@ internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
 // Formatter specialization for drake::fmt_eigen.
 namespace fmt {
 template <typename Scalar>
-struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
-    : formatter<std::string_view> {
+struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
+  constexpr auto parse(fmt::format_parse_context& ctx)
+      -> decltype(ctx.begin()) {
+    auto iter = ctx.begin();
+    auto end = ctx.end();
+    if (iter == end || *iter == '}') {
+      return iter;
+    }
+    if (*iter == ':') {
+      ++iter;
+      ctx.advance_to(iter);
+      return formatter<Scalar>::parse(ctx);
+    }
+    throw fmt::format_error("Malformed fmt_eigen format specification");
+  }
+
   template <typename FormatContext>
   auto format(const drake::internal::fmt_eigen_ref<Scalar>& ref,
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
@@ -95,7 +122,6 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
     // Format every matrix element in turn. We'll format them back-to-back into
     // the same buffer (while keeping track of where each one started), and then
     // in a second pass we'll slice up the buffer into string_views.
-    formatter<Scalar> element_formatter;
     std::vector<char> element_buffer;            // Slab for formatted elements.
     std::vector<size_t> element_starts;          // Indices into element_buffer.
     element_buffer.reserve(matrix.size() * 20);  // An estimate (not precise).
@@ -106,7 +132,8 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
         using OutputIt = std::back_insert_iterator<std::vector<char>>;
         using OutputContext = fmt::basic_format_context<OutputIt, char>;
         OutputContext element_ctx{OutputIt(element_buffer), {}};
-        element_formatter.format(matrix(row, col), element_ctx);
+        // Use our base class Scalar formatter so its format_spec will be used.
+        formatter<Scalar>::format(matrix(row, col), element_ctx);
       }
     }
     element_starts.push_back(element_buffer.size());
@@ -121,7 +148,7 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
     const std::string content =
         drake::internal::FormatMatrix(matrix.rows(), matrix.cols(), elements);
     // Copy the content into the output buffer.
-    return formatter<std::string_view>::format(content, ctx);
+    return formatter<std::string_view>{}.format(content, ctx);
   }
 };
 }  // namespace fmt

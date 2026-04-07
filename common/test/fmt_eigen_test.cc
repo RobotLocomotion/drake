@@ -40,32 +40,48 @@ GTEST_TEST(FmtEigenTest, Precision) {
   const std::string_view baseline{"0.12345678901234566"};
   ASSERT_EQ(fmt::to_string(scalar), baseline);
 
+  // Default format.
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)), "0.12");
 }
 
 GTEST_TEST(FmtEigenTest, RowVector3d) {
   const Eigen::RowVector3d value{1.1, 2.2, 3.3};
 
+  // Default format.
   const std::string_view baseline{"1.1 2.2 3.3"};
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)), "1.10 2.20 3.30");
 }
 
 GTEST_TEST(FmtEigenTest, Vector3d) {
   const Eigen::Vector3d value{1.1, 2.2, 3.3};
 
+  // Default format.
   std::string_view baseline{"1.1\n2.2\n3.3"};
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)), "1.10\n2.20\n3.30");
 }
 
 GTEST_TEST(FmtEigenTest, EmptyMatrix) {
   const Eigen::MatrixXd value;
 
+  // Default format.
   const std::string_view baseline;
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // Scalar format string modifiers are accepeted, but no-ops.
+  EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)), baseline);
 }
 
 GTEST_TEST(FmtEigenTest, Matrix3d) {
@@ -76,12 +92,19 @@ GTEST_TEST(FmtEigenTest, Matrix3d) {
            3.1, 3.2, 3.3;
   // clang-format on
 
+  // Default format.
   const std::string_view baseline{
       "1.1 1.2 1.3\n"
       "2.1 2.2 2.3\n"
       "3.1 3.2 3.3"};
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)),
+            "1.10 1.20 1.30\n"
+            "2.10 2.20 2.30\n"
+            "3.10 3.20 3.30");
 }
 
 GTEST_TEST(FmtEigenTest, Matrix3dNeedsPadding) {
@@ -92,12 +115,19 @@ GTEST_TEST(FmtEigenTest, Matrix3dNeedsPadding) {
            3.1, 3.2, 3.3;
   // clang-format on
 
+  // Default format.
   const std::string_view baseline{
       "10.1  1.2  1.3\n"
       " 2.1  2.2  2.3\n"
       " 3.1  3.2  3.3"};
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)),
+            "10.10  1.20  1.30\n"
+            " 2.10  2.20  2.30\n"
+            " 3.10  3.20  3.30");
 }
 
 GTEST_TEST(FmtEigenTest, Matrix3i) {
@@ -108,12 +138,25 @@ GTEST_TEST(FmtEigenTest, Matrix3i) {
            31, 32, 33;
   // clang-format on
 
+  // Default format.
   const std::string_view baseline{
       "11 12 13\n"
       "21 22 23\n"
       "31 32 33"};
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("value =\n"
+                        "{0}\n"
+                        "value as hex =\n"
+                        "{0::x}",
+                        fmt_eigen(value)),
+            "value =\n" + std::string{baseline} + "\n" +
+                "value as hex =\n"
+                " b  c  d\n"
+                "15 16 17\n"
+                "1f 20 21");
 }
 
 GTEST_TEST(FmtEigenTest, MatrixString) {
@@ -123,11 +166,17 @@ GTEST_TEST(FmtEigenTest, MatrixString) {
            "goodbye", "cruel", "world";
   // clang-format on
 
+  // Default format.
   const std::string_view baseline{
       "  hello   world       !\n"
       "goodbye   cruel   world"};
   EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
   EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::?}", fmt_eigen(value)),
+            "  \"hello\"   \"world\"       \"!\"\n"
+            "\"goodbye\"   \"cruel\"   \"world\"");
 }
 
 GTEST_TEST(FmtEigenTest, AllocationsNominal) {
