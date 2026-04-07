@@ -1,35 +1,32 @@
-// TODO(jwnimmer-tri) Write our own formatting logic instead of using Eigen IO,
-// and add customization flags for how to display the matrix data.
-#undef EIGEN_NO_IO
 #include "drake/common/fmt_eigen.h"
 
-#include <limits>
-#include <sstream>
+#include <algorithm>
+
+#include <fmt/ranges.h>
 
 namespace drake {
 namespace internal {
 
-template <typename T>
-using FormatterEigenRef =
-    Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>;
+std::string FormatMatrix(const Eigen::Index rows, const Eigen::Index cols,
+                         const std::span<std::string_view> elements) {
+  if (rows <= 0 || cols <= 0) {
+    return std::string{};
+  }
 
-template <typename Scalar>
-std::string FormatEigenMatrix(const FormatterEigenRef<Scalar>& matrix)
-  requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
-           std::is_same_v<Scalar, std::string>
-{  // NOLINT(whitespace/braces)
-  std::stringstream stream;
-  // We'll print our matrix data using as much precision as we can, so that
-  // console log output and/or error messages paint the full picture. Sadly,
-  // the ostream family of floating-point formatters doesn't know how to do
-  // "shortest round-trip precision". If we set the precision to max_digits,
-  // then simple numbers like "1.1" print as "1.1000000000000001"; instead,
-  // we'll use max_digits - 1 to avoid that problem, with the risk of losing
-  // the last ulps in the printout in case we needed that last digit. This
-  // will all be fixed once we stop using Eigen IO.
-  stream.precision(std::numeric_limits<double>::max_digits10 - 1);
-  stream << matrix;
-  return stream.str();
+  const size_t max_element_size =
+      std::ranges::max(elements, {}, &std::string_view::size).size();
+  std::string result;
+  result.reserve(rows * cols * (max_element_size + 1));
+  for (Eigen::Index row = 0; row < rows; ++row) {
+    if (row > 0) {
+      result.push_back('\n');
+    }
+    const std::span<std::string_view> row_elements =
+        elements.subspan(row * cols, cols);
+    fmt::format_to(std::back_inserter(result), "{0:>{1}}",
+                   fmt::join(row_elements, " "), max_element_size);
+  }
+  return result;
 }
 
 template <typename Scalar>
@@ -40,12 +37,6 @@ std::string StringifyErrorDetailValue(const fmt_eigen_ref<Scalar>& value)
 }
 
 // Explicitly instantiate for the allowed scalar types in our header.
-template std::string FormatEigenMatrix<double>(
-    const FormatterEigenRef<double>& matrix);
-template std::string FormatEigenMatrix<float>(
-    const FormatterEigenRef<float>& matrix);
-template std::string FormatEigenMatrix<std::string>(
-    const FormatterEigenRef<std::string>& matrix);
 template std::string StringifyErrorDetailValue<double>(
     const fmt_eigen_ref<double>& value);
 template std::string StringifyErrorDetailValue<float>(
