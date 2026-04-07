@@ -1478,7 +1478,17 @@ Note:
         // Symbol: drake::symbolic::Variable::Id
         struct /* Id */ {
           // Source: drake/common/symbolic/expression/variable.h
-          const char* doc = R"""(Identifier for a symbolic variable.)""";
+          const char* doc =
+R"""(Identifier for a symbolic variable. Variable equality is defined by
+whether their Ids are equal (i.e., ignoring Variable names). Ids are
+akin to `UUIDs
+<https://en.wikipedia.org/wiki/Universally_unique_identifier>`_
+because Ids contain a large number of random bits so are unique not
+only within a single process, but also across multiple runs of
+programs over time. On the other hand, we also guarantee that all Ids
+created within a single process have consistent behavior in their
+comparison (``operator<``) and hashing operators, so that any single
+program is still run-to-run consistent.)""";
           // Symbol: drake::symbolic::Variable::Id::Id
           struct /* ctor */ {
             // Source: drake/common/symbolic/expression/variable.h
@@ -1496,11 +1506,6 @@ R"""(Constructs a "dummy" id, not associated with any variable.)""";
             const char* doc =
 R"""(Returns a string representation of this Id.)""";
           } to_string;
-          // Symbol: drake::symbolic::Variable::Id::value
-          struct /* value */ {
-            // Source: drake/common/symbolic/expression/variable.h
-            const char* doc = R"""()""";
-          } value;
         } Id;
         // Symbol: drake::symbolic::Variable::Type
         struct /* Type */ {

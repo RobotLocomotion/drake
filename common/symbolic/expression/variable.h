@@ -51,7 +51,14 @@ class Variable {
                          ///< exponential distribution with λ=1.
   };
 
-  /** Identifier for a symbolic variable. */
+  /** Identifier for a symbolic variable. Variable equality is defined by
+  whether their Ids are equal (i.e., ignoring Variable names). Ids are akin to
+  [UUIDs](https://en.wikipedia.org/wiki/Universally_unique_identifier) because
+  Ids contain a large number of random bits so are unique not only within a
+  single process, but also across multiple runs of programs over time. On the
+  other hand, we also guarantee that all Ids created within a single process
+  have consistent behavior in their comparison (`operator<`) and hashing
+  operators, so that any single program is still run-to-run consistent. */
   class Id {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Id);
@@ -67,16 +74,15 @@ class Variable {
     // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     friend void hash_append(HashAlgorithm& hasher, const Id& item) noexcept {
       using drake::hash_append;
-      hash_append(hasher, item.value());
+      // To maintain consistent hash iteration order across repeated runs of a
+      // program, we must only hash the non-random part of our state. The low
+      // 32 bits of lo_ don't contain any randomness. (We could also hash our
+      // get_type(), but it doesn't add a meaningful amount of entropy.)
+      hash_append(hasher, static_cast<uint32_t>(item.lo_));
     }
 
     /** Returns a string representation of this Id. */
     std::string to_string() const;
-
-#if !defined(DRAKE_DOXYGEN_CXX)
-    /* (Internal use only) Returns this Id as a bare integer. */
-    uint64_t value() const { return value_; }
-#endif
 
    private:
     friend class Variable;
@@ -85,14 +91,60 @@ class Variable {
     static Id Create(Type type);
 
     Type get_type() const {
-      // We store the Type enum in the upper byte (8 bits) of value_ (64 bits).
-      return static_cast<Type>(value_ >> (64 - 8));
+      // We store the Type enum in the lower byte of hi_.
+      return static_cast<Type>(static_cast<uint8_t>(hi_));
     }
 
-    bool is_default() const { return value_ == 0; }
+    bool is_default() const { return lo_ == 0 && hi_ == 0; }
 
-    // We store the Type enum in the upper byte of value_.
-    uint64_t value_{};
+    // Id represents three pieces of information:
+    // - type: the Variable::Type;
+    // - serial number: a counter incremented for each new Variable created
+    //     within this process; the first Variable created is serial number 1,
+    //     the second Variable is serial number 2, etc.;
+    // - nonce: a random value that's initialized once per process the first
+    //     time it's needed; all variables created within the process are based
+    //     on the same nonce; this helps distinguish variables created by one
+    //     process from those created by another process when saving them to
+    //     disk.
+    //
+    // For efficiency, we pack these three pieces into two member fields:
+    // - the 8-bit type is stored in the low byte of hi_;
+    // - the 64-bit serial number is stored in lo_, summed with the nonce in the
+    //   upper 4 bytes; to recover the serial number we would need to subtract
+    //   the nonce from lo_, but in practice we never need the serial number by
+    //   itself;
+    // - the 88-bit nonce is stored as:
+    //   - 56 bits in the upper 7 bytes of hi_ and
+    //   - 32 bits added to the upper 4 bytes of lo_.
+    //
+    // Why 88 bits for the nonce? Like a UUID, we need enough bits to avoid
+    // birthday collisions. Using only 56 or 64 bits ends up with too high a
+    // chance of collision. Using 88 bits is a balance between having enough
+    // entropy while still allowing for consistency of our sort ordering and
+    // hash code.
+    //
+    // Why not pack both the type and serial number into single 64-bit word,
+    // leaving the other 64-bit word exclusively for nonce data? That would
+    // put at risk the `type` changing if the serial number got too large.
+    //
+    // Note that if the serial number's value exceeds 32 bits, it will end up
+    // affecting bits of lo_ where the nonce is stored. This is not a problem;
+    // in effect it's just a slightly difference random nonce. Ids are still
+    // distinct from each other in all ways that matter.
+    //
+    // Note that the lower 4 bytes of `lo_` store the serial number mod 2^32,
+    // which can therefore provide a run-to-run stable hash key when an Id is
+    // used in unordered containers, without being affected by the random nonce.
+    // This is important for reproducibility.
+    //
+    // Because nearly all variables have same type (`CONTINUOUS`) and the nonce
+    // is invariant within one process, hi_ will typically contain exactly the
+    // same value across all Variables in this process, and therefore it's
+    // important to declare lo_ first and hi_ second so that the entropy-bearing
+    // member field (lo_) is the first one to be compared by operator<=>.
+    uint64_t lo_{};
+    uint64_t hi_{};
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable);
@@ -118,7 +170,7 @@ class Variable {
 
   /** Checks if this is the variable created by the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id().is_default(); }
-  [[nodiscard]] Id get_id() const { return id_; }
+  [[nodiscard]] const Id& get_id() const { return id_; }
   [[nodiscard]] Type get_type() const { return get_id().get_type(); }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
