@@ -3004,7 +3004,29 @@ Note:
     enforces that nothing within Drake is allowed to use Eigen's
     ``operator<<``. Downstream code that calls into Drake is not
     required to use that option; it is only enforced by Drake's build
-    system, not by Drake's headers.)""";
+    system, not by Drake's headers.
+
+**** Format string syntax
+
+The format string syntax for fmt_eigen is based on the syntax for the
+underlying scalar type, preceded by a colon.
+
+Example:
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    Eigen∷RowVector3d x{M_PI, M_SQRT2, M_E};
+    fmt∷format("{∷.2f}", fmt_eigen(x));
+    // "3.14 1.41 2.72"
+
+.. raw:: html
+
+    </details>)""";
     } fmt_eigen;
     // Symbol: drake::fmt_floating_point
     struct /* fmt_floating_point */ {
