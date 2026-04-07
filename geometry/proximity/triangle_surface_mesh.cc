@@ -6,6 +6,36 @@ namespace drake {
 namespace geometry {
 
 template <typename T>
+TriangleSurfaceMesh<T> TriangleSurfaceMesh<T>::CreateScaledMesh(
+    const Vector3<double>& scale) const {
+  TriangleSurfaceMesh<T> scaled_mesh;
+
+  // The scaled mesh vertex positions are simply the element-wise product of the
+  // source vertex positions with the scale factors.
+  scaled_mesh.vertices_M_.reserve(vertices_M_.size());
+  for (const auto& v : vertices_M_) {
+    scaled_mesh.vertices_M_.push_back(v.cwiseProduct(scale));
+  }
+
+  // The triangle connectivity is identical to the source mesh. However, if the
+  // scale has an *odd* number of negative elements, this will "mirror" the
+  // mesh. The mesh has a convention of face vertex ordering that needs to be
+  // maintained. If the scaled mesh has been mirrored, we need to reverse the
+  // face vertex ordering to maintain that convention.
+  scaled_mesh.triangles_ = triangles_;
+  const int num_negative = (scale.array() < 0).count();
+  if (num_negative % 2 != 0) {
+    scaled_mesh.ReverseFaceWinding();
+  }
+
+  // Finally, we recompute all the other quantities from updated vertex and
+  // triangle information.
+  scaled_mesh.ComputePositionDependentQuantities();
+
+  return scaled_mesh;
+}
+
+template <typename T>
 void TriangleSurfaceMesh<T>::ReverseFaceWinding() {
   for (auto& f : triangles_) {
     f.ReverseWinding();

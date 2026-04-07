@@ -45,17 +45,19 @@ using math::RigidTransformd;
 // Used for testing instantiation of TriangleSurfaceMesh and inspecting its
 // components.
 template <typename T>
-std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
+std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh(
+    const Vector3<double>& scale = Vector3<double>::Ones()) {
   // The surface mesh will consist of four vertices and two co-planar faces and
   // will be constructed such that area and geometric centroid are
-  // straightforward to check.
+  // straightforward to check. The vertex positions can be scaled by the given
+  // scale factor.
 
   // Create the vertices.
   std::vector<Vector3<T>> vertices;
-  vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5));
+  vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5).cwiseProduct(scale));
 
   // Create the two triangles. Note that TriangleSurfaceMesh does not specify
   // (or use) a particular winding.
@@ -71,6 +73,32 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
 std::unique_ptr<TriangleSurfaceMesh<double>> GenerateEmptyMesh() {
   std::vector<Vector3d> vertices;
   std::vector<SurfaceTriangle> faces;
+  return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
+                                                       std::move(vertices));
+}
+
+// Generates a non-planar two-triangle mesh scaled by the given factor. The
+// mesh is used by the CreateScaledMesh* tests; a non-planar mesh is needed so
+// that scale affects normals in all three directions.
+//
+//             y                        z
+//             |                        |
+//             0                       0, 2
+//            ╱|╲                       ╱╲
+//         3 ╱ | ╲ 1  -- x             ╱  ╲
+//           ╲ | ╱                  3 ╱    ╲1  -- x
+//            ╲|╱
+//             2
+std::unique_ptr<TriangleSurfaceMesh<double>> GenerateNonPlanarTwoTriangleMesh(
+    const Vector3<double>& scale = Vector3<double>::Ones()) {
+  std::vector<Vector3<double>> vertices;
+  vertices.emplace_back(Vector3<double>(1, 2, 0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<double>(2, 1, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<double>(1, 0, 0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<double>(0, 1, -0.5).cwiseProduct(scale));
+  std::vector<SurfaceTriangle> faces;
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
   return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
                                                        std::move(vertices));
 }
@@ -94,10 +122,12 @@ std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
 
 // Test instantiation of TriangleSurfaceMesh of a surface M and inspecting its
 // components. By default, the vertex positions are expressed in M's frame.
+// They can be scaled in M's frame by the given scale factor.
 // The optional parameter X_WM will change the vertex positions to W's frame.
 template <typename T>
 std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
-    const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity()) {
+    const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity(),
+    const Vector3<T>& scale = Vector3<T>::Ones()) {
   // A simple surface mesh comprises of two co-planar triangles with vertices on
   // the coordinate axes and the origin like this:
   //   y
@@ -124,7 +154,8 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
   std::vector<Vector3<T>> vertices_W;
-  for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
+  for (int v = 0; v < 4; ++v)
+    vertices_W.emplace_back(X_WM * vertex_data_M[v].cwiseProduct(scale));
   auto surface_mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(
       std::move(faces), std::move(vertices_W));
 
@@ -512,6 +543,126 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
   const Vector3d& p_MSc_ref = ref_mesh->centroid();
   const Vector3d p_FSc_ref = X_FM * p_MSc_ref;
   EXPECT_TRUE(CompareMatrices(p_FSc_test, p_FSc_ref));
+}
+
+GTEST_TEST(SurfaceMeshTest, CreateScaledMesh) {
+  // GenerateTwoTriangleMesh() generates a planar mesh; so the normals are
+  // aligned with Mz. We want a mesh that *isn't* planar so we can see the
+  // effect of scale in all directions -- see GenerateNonPlanarTwoTriangleMesh.
+  const auto unit_mesh = GenerateNonPlanarTwoTriangleMesh();
+  const Vector3d scale(2, 3, 4);
+  const auto ref_mesh = GenerateNonPlanarTwoTriangleMesh(scale);
+  // Confirm test code properly employs the scale; the scaled mesh has more
+  // total area than the unit mesh.
+  DRAKE_DEMAND(ref_mesh->total_area() > unit_mesh->total_area());
+
+  const TriangleSurfaceMesh<double> scaled = unit_mesh->CreateScaledMesh(scale);
+
+  ASSERT_TRUE(ref_mesh->Equal(scaled));
+
+  // Note: *Mesh::Equal() only tests vertices and faces. Not derived quantities.
+  // Because we've already shown that vertex positions are bitwise equal, we
+  // can likewise assert all derived quantities must likewise be bitwise equal.
+  EXPECT_EQ(scaled.total_area(), ref_mesh->total_area());
+  for (int t = 0; t < scaled.num_triangles(); ++t) {
+    EXPECT_EQ(scaled.area(t), ref_mesh->area(t));
+    EXPECT_TRUE(
+        CompareMatrices(scaled.face_normal(t), ref_mesh->face_normal(t)));
+  }
+}
+
+// Checks that CreateScaledMesh handles reflections (negative scale factors).
+// A reflection is any scale with an odd number of negative components. The
+// stored face normals must remain outward-facing (consistent with the
+// right-hand rule applied to the stored vertex winding).
+//
+// Note: in this test we don't use the same ref_mesh-based approach used in
+// CreateScaledMesh() because that function doesn't accommodate negative scales.
+// Instead, we validate the meshes by hand.
+GTEST_TEST(SurfaceMeshTest, CreateScaledMeshNegativeScale) {
+  const auto unit_mesh = GenerateNonPlanarTwoTriangleMesh();
+
+  // Confirm that the scaled mesh, dut, has the expected values relative to
+  // a mesh created at the same scale. Again, because the scale only affects the
+  // vertex positions and all other quantities are derived from it, we can
+  // expect bitwise equality in the numerical quantities.
+  auto assert_expected_mesh = [](const TriangleSurfaceMesh<double>& dut,
+                                 const Vector3d& scale) {
+    // Use ref_mesh to validate vertices.
+    const auto ref_mesh = GenerateNonPlanarTwoTriangleMesh(scale);
+    // Vertices have been scaled the same.
+    for (int v = 0; v < dut.num_vertices(); ++v) {
+      EXPECT_TRUE(CompareMatrices(dut.vertex(v), ref_mesh->vertex(v)));
+    }
+    // Areas (total and per-face) should match.
+    EXPECT_EQ(dut.total_area(), ref_mesh->total_area());
+    for (int t = 0; t < dut.num_triangles(); ++t) {
+      EXPECT_EQ(dut.area(t), ref_mesh->area(t));
+    }
+    // Normals and faces should be consistent: the face winding should imply
+    // a normal direction consistent with the stored face normal.
+    for (int t = 0; t < dut.num_triangles(); ++t) {
+      const SurfaceTriangle& tri = dut.element(t);
+      const Vector3d& p0 = dut.vertex(tri.vertex(0));
+      const Vector3d& p1 = dut.vertex(tri.vertex(1));
+      const Vector3d& p2 = dut.vertex(tri.vertex(2));
+      const Vector3d cross = (p1 - p0).cross(p2 - p0);
+      EXPECT_GT(cross.dot(dut.face_normal(t)), 0);
+    }
+  };
+
+  // Single negative component: one reflection => orientation-reversing.
+  {
+    const Vector3d scale(-2, 3, 4);
+    SCOPED_TRACE(fmt::format("Scale: {}", fmt_eigen(scale)));
+    assert_expected_mesh(unit_mesh->CreateScaledMesh(scale), scale);
+  }
+
+  // Two negative components: double reflection => orientation-preserving.
+  // No winding reversal should occur.
+  {
+    const Vector3d scale(-2, -3, 4);
+    SCOPED_TRACE(fmt::format("Scale: {}", fmt_eigen(scale)));
+    const TriangleSurfaceMesh<double> scaled =
+        unit_mesh->CreateScaledMesh(scale);
+    assert_expected_mesh(scaled, scale);
+
+    // Confirm the expectation that winding didn't change.
+    const auto ref_mesh = GenerateNonPlanarTwoTriangleMesh(scale);
+    EXPECT_TRUE(ref_mesh->Equal(scaled));
+  }
+
+  // Three negative components: triple reflection => orientation-reversing.
+  {
+    const Vector3d scale(-2, -3, -4);
+    SCOPED_TRACE(fmt::format("Scale: {}", fmt_eigen(scale)));
+    assert_expected_mesh(unit_mesh->CreateScaledMesh(scale), scale);
+  }
+}
+
+// Checks that CreateScaledMesh handles zero scale factors (mesh flattening).
+// A zero scale along one axis collapses the mesh to a plane; triangles that
+// survive as non-degenerate should have correct areas and normals.
+GTEST_TEST(SurfaceMeshTest, CreateScaledMeshZeroScale) {
+  const auto unit_mesh = GenerateNonPlanarTwoTriangleMesh();
+
+  // Scale with one zero component: flattens the mesh to the xz-plane.
+  // No negative components, so this is orientation-preserving; we can compare
+  // directly against a reference mesh built at the same scale.
+  const Vector3d scale(2, 0, 4);
+  const auto ref_mesh = GenerateNonPlanarTwoTriangleMesh(scale);
+  const TriangleSurfaceMesh<double> scaled = unit_mesh->CreateScaledMesh(scale);
+
+  EXPECT_TRUE(ref_mesh->Equal(scaled));
+  EXPECT_NEAR(scaled.total_area(), ref_mesh->total_area(), 1e-14);
+  for (int t = 0; t < scaled.num_triangles(); ++t) {
+    EXPECT_NEAR(scaled.area(t), ref_mesh->area(t), 1e-14);
+    // Non-degenerate triangles should have normals aligned with the reference.
+    if (ref_mesh->area(t) > 0) {
+      EXPECT_NEAR(scaled.face_normal(t).dot(ref_mesh->face_normal(t)), 1, 1e-14)
+          << "Triangle " << t << " face normal mismatch.";
+    }
+  }
 }
 
 // Checks the equality calculations.
