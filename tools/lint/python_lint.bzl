@@ -81,6 +81,15 @@ def python_lint(
             # The select() syntax returns an object we (apparently) can't
             # inspect.  TODO(jwnimmer-tri) Figure out how to lint these files.
             pass
+
+        # For an `install(...)` rule, install_tests are also python code.
+        install_tests = rule.get("install_tests", ())
+        files.extend([
+            x
+            for x in install_tests
+            if x.endswith(".py") and x not in (exclude or [])
+        ])
+
     files = depset(files).to_list()
 
     # Our `drake_py_unittest` adds this to `srcs` for all tests. We don't want
