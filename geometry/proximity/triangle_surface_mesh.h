@@ -200,6 +200,74 @@ class TriangleSurfaceMesh {
     p_MSc_ = X_NM * p_MSc_;
   }
 
+  /** (Internal use only) Given a scale factor, creates a new mesh with scaled
+   vertices.
+
+   Negative scale factors are permitted and correspond to reflections. An odd
+   number of negative components reflects the mesh, reversing the winding order
+   of every triangle so that outward-facing normals remain outward-facing. Zero
+   scale factors are permitted and flatten the mesh along that axis; triangles
+   that collapse to zero area will have zero face normals.
+
+   @param scale  The finite scale factors for the mesh along the Mx, My, and
+                 Mz directions. */
+  TriangleSurfaceMesh<T> CreateScaledMesh(const Vector3<double>& scale) const {
+    TriangleSurfaceMesh<T> scaled_mesh;
+
+    // The mesh topology remains unchanged; the scale factor is simply an
+    // element-wise application of scale to each vertex.
+    scaled_mesh.vertices_M_.reserve(vertices_M_.size());
+    for (const auto& v : vertices_M_) {
+      scaled_mesh.vertices_M_.push_back(v.cwiseProduct(scale));
+    }
+    scaled_mesh.p_MSc_ = p_MSc_.cwiseProduct(scale);
+    scaled_mesh.triangles_ = triangles_;
+
+    // Computing area is a bit trickier. The triangle area was originally
+    // computed using the classic ||(b-a)x(c-a)||/2 formula for a triangle with
+    // vertices a, b, c. If we know the cross product P = (b-a)x(c-a), then we
+    // can describe the area of the scaled triangle As as:
+    //
+    //   As = √((sy·sz·Px)² + (sx·sz·Py)² + (sx·sy·Pz)²) / 2
+    //
+    // P = 2 * area * face_normal.
+    //
+    // The element-wise product scale_cross ⊙ P points in the direction of the
+    // scaled face normal (consistent with the scaled vertex winding). This is
+    // correct for both orientation-preserving (det(S) > 0) and
+    // orientation-reversing (det(S) < 0) scales, unlike the inverse-transpose
+    // formulation which flips sign under reflection. Triangles collapsed to
+    // zero area by a zero scale component yield scaled_P == 0, so their face
+    // normal is correctly zero.
+    const Vector3<double> scale_cross(
+        scale.y() * scale.z(), scale.x() * scale.z(), scale.x() * scale.y());
+    scaled_mesh.area_.reserve(triangles_.size());
+    scaled_mesh.face_normals_.reserve(triangles_.size());
+    scaled_mesh.total_area_ = 0;
+    for (size_t i = 0; i < triangles_.size(); ++i) {
+      const Vector3<T> P = (2 * area_[i] * face_normals_[i]);
+      const Vector3<T> scaled_P = scale_cross.cwiseProduct(P);
+      scaled_mesh.area_.push_back(0.5 * scaled_P.norm());
+      scaled_mesh.total_area_ += scaled_mesh.area_.back();
+      scaled_mesh.face_normals_.push_back(scaled_P.normalized());
+    }
+
+    // A reflection (odd number of negative scale components) reverses the
+    // perceived winding order of every triangle. Re-reverse it so that the
+    // stored winding is consistent with the outward-facing face normals.
+    // We count negative components explicitly rather than testing the sign of
+    // the product sx*sy*sz, which would be zero whenever any component is zero
+    // regardless of the signs of the remaining components.
+    const int num_negative = (scale.x() < 0 ? 1 : 0) +
+                             (scale.y() < 0 ? 1 : 0) +
+                             (scale.z() < 0 ? 1 : 0);
+    if (num_negative % 2 != 0) {
+      scaled_mesh.ReverseFaceWinding();
+    }
+
+    return scaled_mesh;
+  }
+
   /** (Internal use only) Reverses the ordering of all the triangles' indices
    -- see SurfaceTriangle::ReverseWinding().
    */
@@ -395,6 +463,8 @@ class TriangleSurfaceMesh {
   void SetAllPositions(const Eigen::Ref<const VectorX<T>>& p_MVs);
 
  private:
+  TriangleSurfaceMesh() {}
+
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
   void ComputePositionDependentQuantities();

@@ -2,9 +2,11 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -45,17 +47,19 @@ using math::RigidTransformd;
 // Used for testing instantiation of TriangleSurfaceMesh and inspecting its
 // components.
 template <typename T>
-std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
+TriangleSurfaceMesh<T> GenerateTwoTriangleMesh(
+    const Vector3<double>& scale = Vector3<double>::Ones()) {
   // The surface mesh will consist of four vertices and two co-planar faces and
   // will be constructed such that area and geometric centroid are
-  // straightforward to check.
+  // straightforward to check. The vertex positions can be scaled by the given
+  // scale factor.
 
   // Create the vertices.
   std::vector<Vector3<T>> vertices;
-  vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5));
+  vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5).cwiseProduct(scale));
 
   // Create the two triangles. Note that TriangleSurfaceMesh does not specify
   // (or use) a particular winding.
@@ -63,20 +67,43 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
-  return std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
-                                                  std::move(vertices));
+  return TriangleSurfaceMesh<T>(std::move(faces), std::move(vertices));
 }
 
 // Generates an empty mesh.
-std::unique_ptr<TriangleSurfaceMesh<double>> GenerateEmptyMesh() {
+TriangleSurfaceMesh<double> GenerateEmptyMesh() {
   std::vector<Vector3d> vertices;
   std::vector<SurfaceTriangle> faces;
-  return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
-                                                       std::move(vertices));
+  return TriangleSurfaceMesh<double>(std::move(faces), std::move(vertices));
+}
+
+// Generates a non-planar two-triangle mesh scaled by the given factor. The
+// mesh is used by the CreateScaledMesh* tests; a non-planar mesh is needed so
+// that scale affects normals in all three directions.
+//
+//             y                        z
+//             |                        |
+//             0                       0, 2
+//            ╱|╲                       ╱╲
+//         3 ╱ | ╲ 1  -- x             ╱  ╲
+//           ╲ | ╱                  3 ╱    ╲1  -- x
+//            ╲|╱
+//             2
+TriangleSurfaceMesh<double> GenerateNonPlanarTwoTriangleMesh(
+    const Vector3<double>& scale = Vector3<double>::Ones()) {
+  std::vector<Vector3<double>> vertices;
+  vertices.emplace_back(Vector3<double>(1, 2, 0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<double>(2, 1, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<double>(1, 0, -0.5).cwiseProduct(scale));
+  vertices.emplace_back(Vector3<double>(0, 1, 0.5).cwiseProduct(scale));
+  std::vector<SurfaceTriangle> faces;
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
+  return TriangleSurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
 // Generates a zero-area mesh.
-std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
+TriangleSurfaceMesh<double> GenerateZeroAreaMesh() {
   // The surface mesh will consist of four vertices and two faces.
 
   // Create the vertices.
@@ -88,16 +115,17 @@ std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
-  return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
-                                                       std::move(vertices));
+  return TriangleSurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
 // Test instantiation of TriangleSurfaceMesh of a surface M and inspecting its
 // components. By default, the vertex positions are expressed in M's frame.
+// They can be scaled in M's frame by the given scale factor.
 // The optional parameter X_WM will change the vertex positions to W's frame.
 template <typename T>
-std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
-    const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity()) {
+TriangleSurfaceMesh<T> TestSurfaceMesh(
+    const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity(),
+    const Vector3<T>& scale = Vector3<T>::Ones()) {
   // A simple surface mesh comprises of two co-planar triangles with vertices on
   // the coordinate axes and the origin like this:
   //   y
@@ -124,18 +152,19 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
   std::vector<Vector3<T>> vertices_W;
-  for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
-  auto surface_mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(
-      std::move(faces), std::move(vertices_W));
-
-  EXPECT_EQ(2, surface_mesh_W->num_triangles());
-  EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
-    EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W->vertex(v));
+    vertices_W.emplace_back(X_WM * vertex_data_M[v].cwiseProduct(scale));
+  TriangleSurfaceMesh<T> surface_mesh_W(std::move(faces),
+                                        std::move(vertices_W));
+
+  EXPECT_EQ(2, surface_mesh_W.num_triangles());
+  EXPECT_EQ(4, surface_mesh_W.num_vertices());
+  for (int v = 0; v < 4; ++v)
+    EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W.vertex(v));
   for (int f = 0; f < 2; ++f) {
-    EXPECT_EQ(surface_mesh_W->element(f).num_vertices(), 3);
+    EXPECT_EQ(surface_mesh_W.element(f).num_vertices(), 3);
     for (int v = 0; v < 3; ++v)
-      EXPECT_EQ(face_data[f][v], surface_mesh_W->element(f).vertex(v));
+      EXPECT_EQ(face_data[f][v], surface_mesh_W.element(f).vertex(v));
   }
   return surface_mesh_W;
 }
@@ -144,12 +173,12 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
 // scalar type.
 GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshDouble) {
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  EXPECT_EQ(surface_mesh->num_triangles(), 2);
+  EXPECT_EQ(surface_mesh.num_triangles(), 2);
 }
 
 GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
   auto surface_mesh = TestSurfaceMesh<double>();
-  EXPECT_EQ(surface_mesh->num_triangles(), 2);
+  EXPECT_EQ(surface_mesh.num_triangles(), 2);
 }
 
 // Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose
@@ -157,19 +186,19 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
 // differentiation.
 GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
   auto surface_mesh = GenerateTwoTriangleMesh<AutoDiffXd>();
-  EXPECT_EQ(surface_mesh->num_triangles(), 2);
+  EXPECT_EQ(surface_mesh.num_triangles(), 2);
 }
 
 // Checks the area calculations.
 GTEST_TEST(SurfaceMeshTest, TestArea) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  EXPECT_NEAR(surface_mesh->area(0), 0.5, tol);
-  EXPECT_NEAR(surface_mesh->area(1), 1.0, tol);
-  EXPECT_NEAR(surface_mesh->total_area(), 1.5, tol);
+  EXPECT_NEAR(surface_mesh.area(0), 0.5, tol);
+  EXPECT_NEAR(surface_mesh.area(1), 1.0, tol);
+  EXPECT_NEAR(surface_mesh.total_area(), 1.5, tol);
 
   // Verify that the zero area mesh gives zero area.
-  EXPECT_NEAR(GenerateZeroAreaMesh()->total_area(), 0.0, tol);
+  EXPECT_NEAR(GenerateZeroAreaMesh().total_area(), 0.0, tol);
 }
 
 // Checks the face normal calculations.
@@ -184,42 +213,42 @@ GTEST_TEST(SurfaceMeshTest, TestFaceNormal) {
   const Vector3<double> expect_normal =
       X_WM.rotation() * Vector3<double>::UnitZ();
   EXPECT_TRUE(
-      CompareMatrices(expect_normal, surface_mesh->face_normal(0), tol));
+      CompareMatrices(expect_normal, surface_mesh.face_normal(0), tol));
   EXPECT_TRUE(
-      CompareMatrices(expect_normal, surface_mesh->face_normal(1), tol));
+      CompareMatrices(expect_normal, surface_mesh.face_normal(1), tol));
 
   // Verify that the zero-area mesh has zero-vector face normal.
   const auto zero_mesh = GenerateZeroAreaMesh();
   const Vector3<double> zero_normal = Vector3<double>::Zero();
-  EXPECT_EQ(zero_normal, zero_mesh->face_normal(0));
-  EXPECT_EQ(zero_normal, zero_mesh->face_normal(1));
+  EXPECT_EQ(zero_normal, zero_mesh.face_normal(0));
+  EXPECT_EQ(zero_normal, zero_mesh.face_normal(1));
 }
 
 // Checks the centroid calculations.
 GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  const Vector3<double> centroid = surface_mesh->centroid();
+  const Vector3<double> centroid = surface_mesh.centroid();
   EXPECT_TRUE(
       CompareMatrices(centroid, Vector3d(1.0 / 6, -1.0 / 6, -0.5), tol));
-  EXPECT_TRUE(CompareMatrices(surface_mesh->element_centroid(0),
+  EXPECT_TRUE(CompareMatrices(surface_mesh.element_centroid(0),
                               Vector3d(-0.5 / 3, 0.5 / 3, -0.5), tol));
-  EXPECT_TRUE(CompareMatrices(surface_mesh->element_centroid(1),
+  EXPECT_TRUE(CompareMatrices(surface_mesh.element_centroid(1),
                               Vector3d(1.0 / 3, -1.0 / 3, -0.5), tol));
 
   // The documentation for the centroid method specifies particular behavior
   // when the total area is zero. Test that.
-  EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, tol);
+  EXPECT_NEAR(GenerateZeroAreaMesh().centroid().norm(), 0.0, tol);
 }
 
 GTEST_TEST(SurfaceMeshTest, TestDegenerateGradients) {
   auto zero_area_mesh = GenerateZeroAreaMesh();
   std::array<double, 3> dummy_values{1, 2, 3};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      zero_area_mesh->CalcGradientVectorOfLinearField(dummy_values, 0),
+      zero_area_mesh.CalcGradientVectorOfLinearField(dummy_values, 0),
       ".*not calculate gradient.*");
   EXPECT_FALSE(
-      zero_area_mesh->MaybeCalcGradientVectorOfLinearField(dummy_values, 0)
+      zero_area_mesh.MaybeCalcGradientVectorOfLinearField(dummy_values, 0)
           .has_value());
 }
 
@@ -242,28 +271,28 @@ void TestCalcBarycentric() {
   // At v1.
   {
     const Vector3<T> p_M(15., 0., 0.);
-    auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
+    auto barycentric = surface_mesh_W.CalcBarycentric(X_WM * p_M, f0);
     const Barycentric expect_barycentric(0., 1., 0.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Twice closer to v0 than v1.
   {
     const Vector3<T> p_M(5., 0., 0);
-    auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
+    auto barycentric = surface_mesh_W.CalcBarycentric(X_WM * p_M, f0);
     const Barycentric expect_barycentric(2. / 3., 1. / 3., 0.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Generic position in the triangle.
   {
     const Vector3<T> p_M(10., 3., 0);
-    auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
+    auto barycentric = surface_mesh_W.CalcBarycentric(X_WM * p_M, f0);
     const Barycentric expect_barycentric(1. / 3, 7. / 15., 1. / 5.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Outside but still on the plane of the triangle.
   {
     const Vector3<T> p_M(30., 7.5, 0.);
-    auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
+    auto barycentric = surface_mesh_W.CalcBarycentric(X_WM * p_M, f0);
     const Barycentric expect_barycentric(-1., 1.5, 0.5);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
@@ -271,14 +300,14 @@ void TestCalcBarycentric() {
   {
     const Vector3<T> above_midpoint(10., 3., 27.);
     auto barycentric =
-        surface_mesh_W->CalcBarycentric(X_WM * above_midpoint, f0);
+        surface_mesh_W.CalcBarycentric(X_WM * above_midpoint, f0);
     const Barycentric expect_barycentric(1. / 3, 7. / 15., 1. / 5.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Out of the plane of the triangle and projected outside the triangle.
   {
     const Vector3<T> p_M(30., 7.5, 27.);
-    auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
+    auto barycentric = surface_mesh_W.CalcBarycentric(X_WM * p_M, f0);
     const Barycentric expect_barycentric(-1., 1.5, 0.5);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
@@ -364,8 +393,8 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
 }
 
 GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
-  std::unique_ptr<TriangleSurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
-  const TriangleSurfaceMeshTester<double> tester(*mesh);
+  const TriangleSurfaceMesh<double> mesh = GenerateZeroAreaMesh();
+  const TriangleSurfaceMeshTester<double> tester(mesh);
   EXPECT_THROW(tester.CalcGradBarycentric(0, 0), std::exception);
 }
 
@@ -431,8 +460,8 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradientVectorOfLinearFieldAutoDiffXd) {
 }
 
 GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
-  auto ref_mesh = TestSurfaceMesh<double>();
-  auto test_mesh = std::make_unique<TriangleSurfaceMesh<double>>(*ref_mesh);
+  const auto ref_mesh = TestSurfaceMesh<double>();
+  auto test_mesh = ref_mesh;
 
   // Simply confirms the two faces have the same indices in the same order.
   auto faces_match = [](const SurfaceTriangle& ref_face,
@@ -444,10 +473,10 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   };
 
   for (int i : {0, 1}) {
-    EXPECT_TRUE(faces_match(ref_mesh->element(i), test_mesh->element(i)));
+    EXPECT_TRUE(faces_match(ref_mesh.element(i), test_mesh.element(i)));
   }
 
-  test_mesh->ReverseFaceWinding();
+  test_mesh.ReverseFaceWinding();
 
   // Confirms that the two faces have the same indices but in reverse order.
   auto winding_reversed = [](const SurfaceTriangle& ref_face,
@@ -476,52 +505,204 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   };
 
   for (int i : {0, 1}) {
-    EXPECT_TRUE(winding_reversed(ref_mesh->element(i), test_mesh->element(i)));
+    EXPECT_TRUE(winding_reversed(ref_mesh.element(i), test_mesh.element(i)));
   }
 
   for (int i : {0, 1}) {
-    EXPECT_EQ(ref_mesh->face_normal(i), -test_mesh->face_normal(i));
+    EXPECT_EQ(ref_mesh.face_normal(i), -test_mesh.face_normal(i));
   }
 }
 
 GTEST_TEST(SurfaceMeshTest, TransformVertices) {
-  auto ref_mesh = TestSurfaceMesh<double>();
-  auto test_mesh = std::make_unique<TriangleSurfaceMesh<double>>(*ref_mesh);
+  const auto ref_mesh = TestSurfaceMesh<double>();
+  auto test_mesh = ref_mesh;
 
   // Assume that the copy constructor works properly.
 
   RigidTransformd X_FM{AngleAxisd{M_PI / 4, Vector3d(1, 2, 3).normalized()},
                        Vector3d{1, 2, 3}};
-  test_mesh->TransformVertices(X_FM);
+  test_mesh.TransformVertices(X_FM);
 
-  for (int v = 0; v < test_mesh->num_vertices(); ++v) {
-    const Vector3d& p_FV_test = test_mesh->vertex(v);
-    const Vector3d& p_MV_ref = ref_mesh->vertex(v);
+  for (int v = 0; v < test_mesh.num_vertices(); ++v) {
+    const Vector3d& p_FV_test = test_mesh.vertex(v);
+    const Vector3d& p_MV_ref = ref_mesh.vertex(v);
     const Vector3d p_FV_ref = X_FM * p_MV_ref;
     EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
   }
 
-  for (int f = 0; f < test_mesh->num_triangles(); ++f) {
-    const Vector3d& nhat_F_test = test_mesh->face_normal(f);
-    const Vector3d& nhat_M_ref = ref_mesh->face_normal(f);
+  for (int f = 0; f < test_mesh.num_triangles(); ++f) {
+    const Vector3d& nhat_F_test = test_mesh.face_normal(f);
+    const Vector3d& nhat_M_ref = ref_mesh.face_normal(f);
     const Vector3d nhat_F_ref = X_FM.rotation() * nhat_M_ref;
     EXPECT_TRUE(CompareMatrices(nhat_F_test, nhat_F_ref));
   }
 
-  const Vector3d& p_FSc_test = test_mesh->centroid();
-  const Vector3d& p_MSc_ref = ref_mesh->centroid();
+  const Vector3d& p_FSc_test = test_mesh.centroid();
+  const Vector3d& p_MSc_ref = ref_mesh.centroid();
   const Vector3d p_FSc_ref = X_FM * p_MSc_ref;
   EXPECT_TRUE(CompareMatrices(p_FSc_test, p_FSc_ref));
+}
+
+GTEST_TEST(SurfaceMeshTest, CreateScaledMesh) {
+  // GenerateTwoTriangleMesh() generates a planar mesh; so the normals are
+  // aligned with Mz. We want a mesh that *isn't* planar so we can see the
+  // effect of scale in all directions -- see GenerateNonPlanarTwoTriangleMesh.
+  const TriangleSurfaceMesh<double> unit_mesh =
+      GenerateNonPlanarTwoTriangleMesh();
+  const Vector3d scale(2, 3, 4);
+  const TriangleSurfaceMesh<double> ref_mesh =
+      GenerateNonPlanarTwoTriangleMesh(scale);
+  // The unit mesh and reference mesh better report different area.
+  EXPECT_NE(ref_mesh.total_area(), unit_mesh.total_area());
+
+  const TriangleSurfaceMesh<double> scaled = unit_mesh.CreateScaledMesh(scale);
+
+  EXPECT_TRUE(ref_mesh.Equal(scaled));
+  // Note: *Mesh::Equal() only tests vertices and faces. Not derived quantities.
+  EXPECT_NEAR(scaled.total_area(), ref_mesh.total_area(), 1e-18);
+  for (int t = 0; t < scaled.num_triangles(); ++t) {
+    EXPECT_NEAR(scaled.area(t), ref_mesh.area(t), 1e-18);
+    EXPECT_NEAR(scaled.face_normal(t).dot(ref_mesh.face_normal(t)), 1, 1e-14)
+        << "Scaled face normal: "
+        << fmt::to_string(fmt_eigen(scaled.face_normal(t).transpose()))
+        << "\nReference face normal: "
+        << fmt::to_string(fmt_eigen(ref_mesh.face_normal(t).transpose()));
+  }
+}
+
+// Checks that CreateScaledMesh handles reflections (negative scale factors).
+// A reflection is any scale with an odd number of negative components. The
+// stored face normals must remain outward-facing (consistent with the
+// right-hand rule applied to the stored vertex winding).
+GTEST_TEST(SurfaceMeshTest, CreateScaledMeshNegativeScale) {
+  const TriangleSurfaceMesh<double> unit_mesh =
+      GenerateNonPlanarTwoTriangleMesh();
+
+  // For each triangle, verify that the stored face normal agrees with the
+  // right-hand rule applied to the stored vertex winding. This is the
+  // fundamental consistency invariant we must preserve under reflection.
+  auto verify_normal_winding_consistency =
+      [](const TriangleSurfaceMesh<double>& mesh) {
+        for (int t = 0; t < mesh.num_triangles(); ++t) {
+          const SurfaceTriangle& tri = mesh.element(t);
+          const Vector3d& p0 = mesh.vertex(tri.vertex(0));
+          const Vector3d& p1 = mesh.vertex(tri.vertex(1));
+          const Vector3d& p2 = mesh.vertex(tri.vertex(2));
+          const Vector3d cross = (p1 - p0).cross(p2 - p0);
+          EXPECT_GT(cross.dot(mesh.face_normal(t)), 0)
+              << "Triangle " << t << ": face normal is inconsistent with"
+              << " winding after scaling.";
+        }
+      };
+
+  // Area magnitudes are invariant to sign changes in the scale components
+  // because |scale_cross ⊙ P|² depends only on scale_cross² element-wise.
+  // Use the positive-scale mesh as the area reference for all cases below.
+  const TriangleSurfaceMesh<double> area_ref =
+      GenerateNonPlanarTwoTriangleMesh({2, 3, 4});
+
+  // Single negative component: one reflection => orientation-reversing.
+  {
+    const Vector3d scale(-2, 3, 4);
+    const TriangleSurfaceMesh<double> scaled =
+        unit_mesh.CreateScaledMesh(scale);
+
+    // Vertices must be the element-wise product of the unit vertices and scale.
+    for (int v = 0; v < scaled.num_vertices(); ++v) {
+      EXPECT_TRUE(CompareMatrices(
+          scaled.vertex(v), unit_mesh.vertex(v).cwiseProduct(scale), 1e-15))
+          << "Vertex " << v << " position mismatch for scale "
+          << fmt::to_string(fmt_eigen(scale.transpose()));
+    }
+    // Areas are unchanged by sign flips.
+    EXPECT_NEAR(scaled.total_area(), area_ref.total_area(), 1e-14);
+    for (int t = 0; t < scaled.num_triangles(); ++t) {
+      EXPECT_NEAR(scaled.area(t), area_ref.area(t), 1e-14)
+          << "Triangle " << t << " area mismatch for scale "
+          << fmt::to_string(fmt_eigen(scale.transpose()));
+    }
+    verify_normal_winding_consistency(scaled);
+  }
+
+  // Two negative components: double reflection => orientation-preserving.
+  // No winding reversal should occur.
+  {
+    const Vector3d scale(-2, -3, 4);
+    const TriangleSurfaceMesh<double> scaled =
+        unit_mesh.CreateScaledMesh(scale);
+
+    for (int v = 0; v < scaled.num_vertices(); ++v) {
+      EXPECT_TRUE(CompareMatrices(
+          scaled.vertex(v), unit_mesh.vertex(v).cwiseProduct(scale), 1e-15))
+          << "Vertex " << v << " position mismatch for scale "
+          << fmt::to_string(fmt_eigen(scale.transpose()));
+    }
+    EXPECT_NEAR(scaled.total_area(), area_ref.total_area(), 1e-14);
+    for (int t = 0; t < scaled.num_triangles(); ++t) {
+      EXPECT_NEAR(scaled.area(t), area_ref.area(t), 1e-14)
+          << "Triangle " << t << " area mismatch for scale "
+          << fmt::to_string(fmt_eigen(scale.transpose()));
+    }
+    verify_normal_winding_consistency(scaled);
+  }
+
+  // Three negative components: triple reflection => orientation-reversing.
+  {
+    const Vector3d scale(-2, -3, -4);
+    const TriangleSurfaceMesh<double> scaled =
+        unit_mesh.CreateScaledMesh(scale);
+
+    for (int v = 0; v < scaled.num_vertices(); ++v) {
+      EXPECT_TRUE(CompareMatrices(
+          scaled.vertex(v), unit_mesh.vertex(v).cwiseProduct(scale), 1e-15))
+          << "Vertex " << v << " position mismatch for scale "
+          << fmt::to_string(fmt_eigen(scale.transpose()));
+    }
+    EXPECT_NEAR(scaled.total_area(), area_ref.total_area(), 1e-14);
+    for (int t = 0; t < scaled.num_triangles(); ++t) {
+      EXPECT_NEAR(scaled.area(t), area_ref.area(t), 1e-14)
+          << "Triangle " << t << " area mismatch for scale "
+          << fmt::to_string(fmt_eigen(scale.transpose()));
+    }
+    verify_normal_winding_consistency(scaled);
+  }
+}
+
+// Checks that CreateScaledMesh handles zero scale factors (mesh flattening).
+// A zero scale along one axis collapses the mesh to a plane; triangles that
+// survive as non-degenerate should have correct areas and normals.
+GTEST_TEST(SurfaceMeshTest, CreateScaledMeshZeroScale) {
+  const TriangleSurfaceMesh<double> unit_mesh =
+      GenerateNonPlanarTwoTriangleMesh();
+
+  // Scale with one zero component: flattens the mesh to the xz-plane.
+  // No negative components, so this is orientation-preserving; we can compare
+  // directly against a reference mesh built at the same scale.
+  const Vector3d scale(2, 0, 4);
+  const TriangleSurfaceMesh<double> ref_mesh =
+      GenerateNonPlanarTwoTriangleMesh(scale);
+  const TriangleSurfaceMesh<double> scaled = unit_mesh.CreateScaledMesh(scale);
+
+  EXPECT_TRUE(ref_mesh.Equal(scaled));
+  EXPECT_NEAR(scaled.total_area(), ref_mesh.total_area(), 1e-14);
+  for (int t = 0; t < scaled.num_triangles(); ++t) {
+    EXPECT_NEAR(scaled.area(t), ref_mesh.area(t), 1e-14);
+    // Non-degenerate triangles should have normals aligned with the reference.
+    if (ref_mesh.area(t) > 0) {
+      EXPECT_NEAR(scaled.face_normal(t).dot(ref_mesh.face_normal(t)), 1, 1e-14)
+          << "Triangle " << t << " face normal mismatch.";
+    }
+  }
 }
 
 // Checks the equality calculations.
 GTEST_TEST(SurfaceMeshTest, TestEqual) {
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
-  TriangleSurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
-  EXPECT_TRUE(triangle_mesh->Equal(*triangle_mesh));
-  EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
-  EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
+  const TriangleSurfaceMesh<double> triangle_mesh_copy = triangle_mesh;
+  EXPECT_TRUE(triangle_mesh.Equal(triangle_mesh));
+  EXPECT_TRUE(triangle_mesh.Equal(triangle_mesh_copy));
+  EXPECT_FALSE(zero_area_mesh.Equal(triangle_mesh));
 }
 
 // Checks that constructing an empty mesh throws.
@@ -531,7 +712,7 @@ GTEST_TEST(SurfaceMeshTest, TestEmptyMeshElements) {
 
 GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {
   auto mesh = TestSurfaceMesh<double>();
-  const auto [center, size] = mesh->CalcBoundingBox();
+  const auto [center, size] = mesh.CalcBoundingBox();
   EXPECT_EQ(center, Vector3d(7.5, 7.5, 0));
   EXPECT_EQ(size, Vector3d(15, 15, 0));
 }
@@ -574,7 +755,7 @@ class ScalarMixingTest : public ::testing::Test {
     b_expected_ad_ = math::InitializeAutoDiff(b_expected_d_);
   }
 
-  std::unique_ptr<TriangleSurfaceMesh<double>> mesh_d_;
+  std::optional<TriangleSurfaceMesh<double>> mesh_d_;
   std::unique_ptr<TriangleSurfaceMesh<AutoDiffXd>> mesh_ad_;
 
   int e0_{0};
