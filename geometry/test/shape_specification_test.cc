@@ -319,8 +319,8 @@ GTEST_TEST(VisitTest, ReturnTypeConversion) {
                        MatrixCompareType::absolute)) {
     const std::string message = fmt::format(
         "pose =\n{}\nExpected z-axis {} does not match pose's z-axis {}",
-        fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_z.transpose()),
-        fmt_eigen(z_axis.transpose()));
+        fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_z),
+        fmt_eigen(z_axis));
     return ::testing::AssertionFailure() << message;
   }
 
@@ -330,9 +330,8 @@ GTEST_TEST(VisitTest, ReturnTypeConversion) {
     const std::string message = fmt::format(
         "pose =\n{}\nExpected translation {} does not match pose's "
         "translation {}",
-        fmt_eigen(pose.GetAsMatrix34()),
-        fmt_eigen(expected_translation.transpose()),
-        fmt_eigen(pose.translation().transpose()));
+        fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_translation),
+        fmt_eigen(pose.translation()));
     return ::testing::AssertionFailure() << message;
   }
 
@@ -343,7 +342,7 @@ GTEST_TEST(VisitTest, ReturnTypeConversion) {
       const std::string message =
           fmt::format("pose =\n{}\ndoes not have unit length {}-axis {}",
                       fmt_eigen(pose.GetAsMatrix34()), axis_labels[i],
-                      fmt_eigen(pose.rotation().col(i).transpose()));
+                      fmt_eigen(pose.rotation().col(i)));
       return ::testing::AssertionFailure() << message;
     }
   }
@@ -362,8 +361,8 @@ GTEST_TEST(VisitTest, ReturnTypeConversion) {
   }
   const std::string message = fmt::format(
       "pose =\n{}\nhas expected z-axis = {}\nand expected translation = {}",
-      fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_z.transpose()),
-      fmt_eigen(expected_translation.transpose()));
+      fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_z),
+      fmt_eigen(expected_translation));
   return ::testing::AssertionSuccess() << message;
 }
 
@@ -580,7 +579,7 @@ GTEST_TEST(ShapeTest, ConvexConstructor) {
                             [&convex](const Vector3<double>& s3) {
                               DRAKE_EXPECT_THROWS_MESSAGE(
                                   convex.scale(),
-                                  ".*uniform scaling.*\\[2 3 4\\].*");
+                                  ".*uniform scaling.*\\[2, 3, 4\\]ᵀ.*");
                               EXPECT_TRUE(CompareMatrices(convex.scale3(), s3));
                             }},
                  scale);
@@ -642,7 +641,7 @@ GTEST_TEST(ShapeTest, MeshConstructor) {
                             [&mesh](const Vector3<double>& s3) {
                               DRAKE_EXPECT_THROWS_MESSAGE(
                                   mesh.scale(),
-                                  ".*uniform scaling.*\\[2 3 4\\].*");
+                                  ".*uniform scaling.*\\[2, 3, 4\\]ᵀ.*");
                               EXPECT_TRUE(CompareMatrices(mesh.scale3(), s3));
                             }},
                  scale);
@@ -897,7 +896,7 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   // the source (we don't have to worry about *how* InMemoryMesh is written as
   // a string). We do need to make sure they have the [2, 3, 4] scale factor
   // as hard-coded here.
-  static constexpr const char* mem_fmt = "{}(mesh_data={}, scale=[2 3 4])";
+  static constexpr const char* mem_fmt = "{}(mesh_data={}, scale=[2, 3, 4]ᵀ)";
 
   const Box box(1.5, 2.5, 3.5);
   const Capsule capsule(1.25, 2.5);
@@ -926,14 +925,14 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(box.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(capsule.to_string(), "Capsule(radius=1.25, length=2.5)");
   EXPECT_EQ(convex.to_string(),
-            "Convex(filename='/some/file', scale=[1.5 1.5 1.5])");
+            "Convex(filename='/some/file', scale=[1.5, 1.5, 1.5]ᵀ)");
   EXPECT_EQ(mem_convex.to_string(),
             fmt::format(mem_fmt, "Convex", in_memory.to_string()));
   EXPECT_EQ(cylinder.to_string(), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(ellipsoid.to_string(), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(half_space.to_string(), "HalfSpace()");
   EXPECT_EQ(mesh.to_string(),
-            "Mesh(filename='/some/file', scale=[1.5 1.5 1.5])");
+            "Mesh(filename='/some/file', scale=[1.5, 1.5, 1.5]ᵀ)");
   EXPECT_EQ(mem_mesh.to_string(),
             fmt::format(mem_fmt, "Mesh", in_memory.to_string()));
   EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
@@ -942,13 +941,13 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(fmt::to_string(box), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(fmt::to_string(capsule), "Capsule(radius=1.25, length=2.5)");
   EXPECT_EQ(fmt::to_string(convex),
-            "Convex(filename='/some/file', scale=[1.5 1.5 1.5])");
+            "Convex(filename='/some/file', scale=[1.5, 1.5, 1.5]ᵀ)");
   EXPECT_EQ(fmt::to_string(mem_convex), mem_convex.to_string());
   EXPECT_EQ(fmt::to_string(cylinder), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(fmt::to_string(ellipsoid), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(fmt::to_string(half_space), "HalfSpace()");
   EXPECT_EQ(fmt::to_string(mesh),
-            "Mesh(filename='/some/file', scale=[1.5 1.5 1.5])");
+            "Mesh(filename='/some/file', scale=[1.5, 1.5, 1.5]ᵀ)");
   EXPECT_EQ(fmt::to_string(mem_mesh), mem_mesh.to_string());
   EXPECT_EQ(fmt::to_string(cone), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(fmt::to_string(sphere), "Sphere(radius=1.25)");

@@ -30,7 +30,7 @@ namespace internal {
 
 std::ostream& operator<<(std::ostream& out, const UrdfMaterial& m) {
   if (m.rgba.has_value()) {
-    fmt::print(out, "RGBA: {}", fmt_eigen(m.rgba->transpose()));
+    fmt::print(out, "RGBA: {}", fmt_eigen(*m.rgba));
   } else {
     out << "RGBA: None";
   }

@@ -74,9 +74,8 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
   /* VTK boilerplate to support printing the source.  */
   void PrintSelf(std::ostream& os, vtkIndent indent) override {
     this->Superclass::PrintSelf(os, indent);
-    os << indent << fmt::format("Size: {}\n", fmt_eigen(size_.transpose()));
-    os << indent
-       << fmt::format("UV Scale: {}\n", fmt_eigen(uv_scale_.transpose()));
+    os << indent << fmt::format("Size: {}\n", fmt_eigen(size_));
+    os << indent << fmt::format("UV Scale: {}\n", fmt_eigen(uv_scale_));
   }
 
   /* Set the size of the box along each of its principal axes.
