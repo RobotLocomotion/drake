@@ -1,0 +1,53 @@
+[Eigen] Cherry-pick commit 36ca36d0def87e3cf10fb0b3d75c6be87b3d3698
+
+Guard redundant constexpr static member redeclarations for C++17+
+
+Co-authored-by: Pavel Guzenfeld <67074795+PavelGuzenfeld@users.noreply.github.com>
+---
+ Eigen/src/Core/arch/Default/BFloat16.h | 3 +++
+ Eigen/src/Core/arch/Default/Half.h     | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/Eigen/src/Core/arch/Default/BFloat16.h b/Eigen/src/Core/arch/Default/BFloat16.h
+index 8f1f09208b..78d2a95928 100644
+--- a/Eigen/src/Core/arch/Default/BFloat16.h
++++ b/Eigen/src/Core/arch/Default/BFloat16.h
+@@ -210,6 +210,8 @@ struct numeric_limits_bfloat16_impl {
+   static EIGEN_CONSTEXPR Eigen::bfloat16 denorm_min() { return Eigen::bfloat16_impl::raw_uint16_to_bfloat16(0x0001); }
+ };
+
++// Redundant out-of-class definitions are required pre-C++17 but deprecated since.
++#if EIGEN_COMP_CXXVER < 17
+ template <typename T>
+ EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::is_specialized;
+ template <typename T>
+@@ -259,6 +261,7 @@ template <typename T>
+ EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::traps;
+ template <typename T>
+ EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::tinyness_before;
++#endif
+ }  // end namespace bfloat16_impl
+ }  // end namespace Eigen
+
+diff --git a/Eigen/src/Core/arch/Default/Half.h b/Eigen/src/Core/arch/Default/Half.h
+index 671a9dcc11..56aeb3fa83 100644
+--- a/Eigen/src/Core/arch/Default/Half.h
++++ b/Eigen/src/Core/arch/Default/Half.h
+@@ -301,6 +301,8 @@ struct numeric_limits_half_impl {
+   static _EIGEN_MAYBE_CONSTEXPR Eigen::half denorm_min() { return Eigen::half_impl::raw_uint16_to_half(0x0001); }
+ };
+
++// Redundant out-of-class definitions are required pre-C++17 but deprecated since.
++#if EIGEN_COMP_CXXVER < 17
+ template <typename T>
+ constexpr const bool numeric_limits_half_impl<T>::is_specialized;
+ template <typename T>
+@@ -350,6 +352,7 @@ template <typename T>
+ constexpr const bool numeric_limits_half_impl<T>::traps;
+ template <typename T>
+ constexpr const bool numeric_limits_half_impl<T>::tinyness_before;
++#endif
+ }  // end namespace half_impl
+ }  // end namespace Eigen
+
+--

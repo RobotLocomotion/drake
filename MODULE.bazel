@@ -54,6 +54,14 @@ bazel_dep(name = "eigen", version = "5.0.1.bcr.1", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "12.1.0", repo_name = "module_fmt")
 bazel_dep(name = "spdlog", version = "1.17.0", repo_name = "module_spdlog")  # noqa
 
+single_version_override(
+    module_name = "eigen",
+    patch_strip = 1,
+    patches = [
+        "//tools/workspace:eigen/patches/upstream/mr-2299-constexpr-static.patch",  # noqa
+    ],
+)
+
 # Add C++ module dependencies that are NOT used by Drake's public API, but are
 # used by Drake's implementation. Builds have the option to opt-out of these
 # dependencies by providing a replacement:

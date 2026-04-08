@@ -31,3 +31,10 @@ python_repository(
 )
 
 register_toolchains("@python//:all")
+
+# This patch is only applied when CMake is configured with WITH_USER_EIGEN=OFF.
+single_version_override(
+    module_name = "eigen",
+    patch_strip = 1,
+    patches = ["//:mr-2299-constexpr-static.patch"],
+)
