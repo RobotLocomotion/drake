@@ -72,7 +72,7 @@ GCC_FLAGS = CXX_FLAGS + [
     # This falsely dings code inside libstdc++.
     "-Wno-stringop-overflow",
     # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
-    # Eigen uses 16-byte alignment, which these flags doesn't account for.
+    # Eigen uses 16-byte alignment, which these flags don't account for.
     "-Wno-array-bounds",
     "-Wno-stringop-overread",
 ]
