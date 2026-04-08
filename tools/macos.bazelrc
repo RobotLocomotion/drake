@@ -12,9 +12,6 @@ build:tsan_everything --copt=-Wno-macro-redefined
 build:ubsan --copt=-Wno-macro-redefined
 build:ubsan_everything --copt=-Wno-macro-redefined
 
-# https://github.com/bazelbuild/bazel/issues/14294
-build --notrim_test_configuration
-
 # https://github.com/RobotLocomotion/drake/issues/22204
 build --copt=-fno-assume-unique-vtables
 

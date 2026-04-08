@@ -23,9 +23,6 @@ common @BAZEL_REPO_ENV@
 # confusion for the CMake use case.
 build --symlink_prefix=/
 
-# Fix macOS per https://github.com/bazelbuild/bazel/issues/14294.
-build --notrim_test_configuration
-
 # Disable ccache due to incompatibility with Bazel.
 build --action_env=CCACHE_DISABLE=1
 
