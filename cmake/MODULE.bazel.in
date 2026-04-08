@@ -31,3 +31,9 @@ python_repository(
 )
 
 register_toolchains("@python//:all")
+
+single_version_override(
+    module_name = "eigen",
+    patch_strip = 1,
+    patches = ["//:mr-2299-constexpr-static.patch"],
+)
