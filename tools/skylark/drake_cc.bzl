@@ -46,6 +46,8 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
     "-Werror=unqualified-std-cast-call",
+    # https://github.com/RobotLocomotion/drake/issues/22204
+    "-fno-assume-unique-vtables",
 ]
 
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
