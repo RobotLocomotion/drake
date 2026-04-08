@@ -26,21 +26,6 @@ string_flag(
     ],
 )
 
-# In our developer builds and CMake installs, we use the following flag as
-# an optional hint for configuring compiler warnings. It's not strictly
-# necessary to set, but doing so will tweak the compiler flags and reduce
-# warning spam during the build.
-#
-# This is intended for internal use only, not for users to configure.
-#
-# TODO(jwnimmer-tri) Ideally, rules_cc would provide some toolchain attribute
-# that we could query for the version of the compiler, but that doesn't seem to
-# exist yet.
-int_flag(
-    name = "compiler_major",
-    build_setting_default = 0,
-)
-
 config_setting(
     name = "apple",
     constraint_values = ["@platforms//os:osx"],
@@ -140,44 +125,6 @@ selects.config_setting_group(
         ":mold_linker_allowed",
     ],
 )
-
-COMPILER_MAJOR_VERSIONS = [
-    "13",
-    "14",
-    "15",
-]
-
-[
-    config_setting(
-        name = "compiler_major_{}".format(x),
-        flag_values = {":compiler_major": x},
-    )
-    for x in COMPILER_MAJOR_VERSIONS
-]
-
-[
-    selects.config_setting_group(
-        name = "gcc_{}_with_warnings".format(x),
-        match_all = [
-            "@rules_cc//cc/compiler:gcc",
-            ":compiler_major_{}".format(x),
-            ":error_severity_warning",
-        ],
-    )
-    for x in COMPILER_MAJOR_VERSIONS
-]
-
-[
-    selects.config_setting_group(
-        name = "gcc_{}_with_errors".format(x),
-        match_all = [
-            "@rules_cc//cc/compiler:gcc",
-            ":compiler_major_{}".format(x),
-            ":error_severity_error",
-        ],
-    )
-    for x in COMPILER_MAJOR_VERSIONS
-]
 
 # *****************************************************************************
 # The following sh_binary (and its prerequisite genrule) are used by drake-ci's
