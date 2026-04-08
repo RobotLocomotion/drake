@@ -20,6 +20,12 @@ struct fmt_eigen_ref {
       matrix;
 };
 
+/* Parsed format string specifiers for fmt_eigen. */
+struct FmtEigenSpecs {
+  bool string{false};  // Enabled via "s" or "?s".
+  bool debug{false};   // Enabled via "?s".
+};
+
 /* Returns the string formatting of the given matrix elements (i.e., padded by
 whitespace and/or newlines into a tabular layout). The elements are provided
 in row-major order.
@@ -80,11 +86,21 @@ The format string specification syntax for fmt_eigen is based on fmtlib's
 [range format](https://fmt.dev/dev/syntax/#range-format-specifications)
 specification, recognizable by the distinctive double colon. However, in our
 current implementation of fmt_eigen we do not support the `"n"` option (to
-remove brackets) nor the `"s"` nor `"?s"` options (to merge a character range
-into a string).
+remove brackets).
 
-The so-called "range underlying spec" format string depends on the particular
-scalar type captured in the fmt_eigen instance.
+```txt
+eigen_format_spec ::= ["s" | "?s" | [":" range_underlying_spec]]
+```
+
+- "s" is only available when the `Scalar` is `char`; the Matrix contents are
+  formatted as a string, with the characters taken in row-major order.
+
+- "?s" is only available when the `Scalar` is `char`; the Matrix contents are
+  formatted as a debug string (i.e., escaped), with the characters taken in
+  row-major order.
+
+The "range_underlying_spec" format string depends on the particular Scalar type
+captured in the fmt_eigen instance.
 
 Examples:
 
@@ -108,6 +124,9 @@ Refer to https://fmt.dev/ for syntax details, but in short:
   the argument the name `"x"` using `fmt::arg` and then use that name in the
   format string.
 
+- The eigen_fmt_spec appears between the first and second colon. This is where
+  the "s" or "?s" options may appear, though not shown in these examples.
+
 - The floating-point format spec appears after the second colon. This syntax is
   part of fmt, not specific to Drake. As seen in the examples, it can be used to
   change the precision or use scientific notation, etc. */
@@ -124,10 +143,35 @@ internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
 namespace fmt {
 template <typename Scalar>
 struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
+ private:
+  drake::internal::FmtEigenSpecs fmt_eigen_specs;
+
+ public:
   constexpr auto parse(fmt::format_parse_context& ctx)
       -> decltype(ctx.begin()) {
     auto iter = ctx.begin();
     auto end = ctx.end();
+    // The options "s" and "?s" are only valid when Scalar is char, and are
+    // mutually exclusive.
+    if (iter != end && *iter == 's') {
+      if constexpr (std::is_same_v<Scalar, char>) {
+        ++iter;
+        fmt_eigen_specs.string = true;
+      }
+      return iter;
+    } else if (iter != end && *iter == '?') {
+      ++iter;
+      if (iter != end && *iter == 's') {
+        if constexpr (std::is_same_v<Scalar, char>) {
+          ++iter;
+          fmt_eigen_specs.string = true;
+          fmt_eigen_specs.debug = true;
+        }
+      } else {
+        throw fmt::format_error("Malformed fmt_eigen format specification");
+      }
+      return iter;
+    }
     if (iter == end || *iter == '}') {
       return iter;
     }
@@ -144,6 +188,29 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
               FormatContext& ctx) const -> decltype(ctx.out()) {
     const auto& matrix = ref.matrix;
+    // Special handling for strings.
+    if constexpr (std::is_same_v<Scalar, char>) {
+      if (fmt_eigen_specs.string) {
+        std::string elements;
+        elements.reserve(matrix.size() + 2);
+        if (!fmt_eigen_specs.debug) {
+          elements.push_back('"');
+        }
+        for (Eigen::Index row = 0; row < matrix.rows(); ++row) {
+          for (Eigen::Index col = 0; col < matrix.cols(); ++col) {
+            elements.push_back(matrix(row, col));
+          }
+        }
+        if (!fmt_eigen_specs.debug) {
+          elements.push_back('"');
+        }
+        formatter<std::string_view> string_formatter;
+        if (fmt_eigen_specs.debug) {
+          string_formatter.set_debug_format();
+        }
+        return string_formatter.format(elements, ctx);
+      }
+    }
     // Format every matrix element in turn. We'll format them back-to-back into
     // the same buffer (while keeping track of where each one started), and then
     // in a second pass we'll slice up the buffer into string_views.

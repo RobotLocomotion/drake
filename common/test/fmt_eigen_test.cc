@@ -3,6 +3,7 @@
 #include <string>
 
 #include <Eigen/Core>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/limit_malloc.h"
@@ -79,6 +80,28 @@ GTEST_TEST(FmtEigenTest, Vector3d) {
 
   // With Scalar format string modifiers.
   EXPECT_EQ(fmt::format("{::.2f}", fmt_eigen(value)), "1.10\n2.20\n3.30");
+}
+
+GTEST_TEST(FmtEigenTest, RowVectorChar) {
+  Eigen::RowVectorX<char> value(6);
+  value << 'H', 'e', 'l', 'l', 'o', '\n';
+
+  // Default format.
+  const std::string_view baseline{"H e l l o \n"};
+  EXPECT_EQ(fmt::to_string(fmt_eigen(value)), baseline);
+  EXPECT_EQ(fmt::format("{}", fmt_eigen(value)), baseline);
+
+  // With Scalar format string modifiers.
+  EXPECT_EQ(fmt::format("{::d}", fmt_eigen(value)), " 72 101 108 108 111  10");
+
+  // With matrix format string modifiers.
+  //
+  // The expected values here match how fmt 12.1 formats a `span<char>` range
+  // with the same format specifiers. It's weird that the `{:s}` output quotes
+  // when applied to a `span<char>` but not when applied to a `string`, but
+  // that's how fmt works.
+  EXPECT_EQ(fmt::format("{:s}", fmt_eigen(value)), "\"Hello\n\"");
+  EXPECT_EQ(fmt::format("{:?s}", fmt_eigen(value)), "\"Hello\\n\"");
 }
 
 GTEST_TEST(FmtEigenTest, EmptyMatrix) {
