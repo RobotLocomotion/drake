@@ -3004,7 +3004,55 @@ Note:
     enforces that nothing within Drake is allowed to use Eigen's
     ``operator<<``. Downstream code that calls into Drake is not
     required to use that option; it is only enforced by Drake's build
-    system, not by Drake's headers.)""";
+    system, not by Drake's headers.
+
+**** Format string syntax
+
+The format string syntax for fmt_eigen is based on the syntax for the
+underlying scalar type, preceded by a colon.
+
+Examples:
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    Eigen∷RowVector3d x{M_PI, M_SQRT2, M_E};
+    fmt∷format("{}", fmt_eigen(x));
+    // " 3.141592653589793 1.4142135623730951  2.718281828459045"
+    
+    fmt∷format("{∷.2f}", fmt_eigen(x));
+    // "3.14 1.41 2.72"
+    
+    fmt∷format("{x∷e}", fmt∷arg("x", fmt_eigen(x)));
+    // "3.141593e+00 1.414214e+00 2.718282e+00"
+
+.. raw:: html
+
+    </details>
+
+Refer to https://fmt.dev/ for syntax details, but in short:
+
+- The ``arg_id`` appears before the first colon, and specifies which argument
+should be formatted. This syntax is part of fmt, not specific to Drake.
+In the above examples we mostly leave it blank, but in the last one we give
+the argument the name ``"x"`` using ``fmt∷arg`` and then use that name in the
+format string.
+
+- The floating-point format spec appears after the second colon. This syntax is
+part of fmt, not specific to Drake. As seen in the examples, it can be used to
+change the precision or use scientific notation, etc.
+
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++)""";
     } fmt_eigen;
     // Symbol: drake::fmt_floating_point
     struct /* fmt_floating_point */ {
