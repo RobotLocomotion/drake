@@ -72,7 +72,45 @@ list. Never store it as a local variable, member field, etc.
 Drake's code is compiled using -DEIGEN_NO_IO, which enforces that nothing within
 Drake is allowed to use Eigen's `operator<<`. Downstream code that calls into
 Drake is not required to use that option; it is only enforced by Drake's build
-system, not by Drake's headers. */
+system, not by Drake's headers.
+
+### Format string syntax
+
+The format string specification syntax for fmt_eigen is based on fmtlib's
+[range format](https://fmt.dev/dev/syntax/#range-format-specifications)
+specification, recognizable by the distinctive double colon. However, in our
+current implementation of fmt_eigen we do not support the `"n"` option (to
+remove brackets) nor the `"s"` nor `"?s"` options (to merge a character range
+into a string).
+
+The so-called "range underlying spec" format string depends on the particular
+scalar type captured in the fmt_eigen instance.
+
+Examples:
+
+```
+Eigen::RowVector3d x{M_PI, M_SQRT2, M_E};
+fmt::format("{}", fmt_eigen(x));
+// " 3.141592653589793 1.4142135623730951  2.718281828459045"
+
+fmt::format("{::.2f}", fmt_eigen(x));
+// "3.14 1.41 2.72"
+
+fmt::format("{x::e}", fmt::arg("x", fmt_eigen(x)));
+// "3.141593e+00 1.414214e+00 2.718282e+00"
+```
+
+Refer to https://fmt.dev/ for syntax details, but in short:
+
+- The `arg_id` appears before the first colon, and specifies which argument
+  should be formatted. This syntax is part of fmt, not specific to Drake.
+  In the above examples we mostly leave it blank, but in the last one we give
+  the argument the name `"x"` using `fmt::arg` and then use that name in the
+  format string.
+
+- The floating-point format spec appears after the second colon. This syntax is
+  part of fmt, not specific to Drake. As seen in the examples, it can be used to
+  change the precision or use scientific notation, etc. */
 template <typename Derived>
 internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
     const Eigen::MatrixBase<Derived>& matrix) {
@@ -85,8 +123,22 @@ internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
 // Formatter specialization for drake::fmt_eigen.
 namespace fmt {
 template <typename Scalar>
-struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
-    : formatter<std::string_view> {
+struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
+  constexpr auto parse(fmt::format_parse_context& ctx)
+      -> decltype(ctx.begin()) {
+    auto iter = ctx.begin();
+    auto end = ctx.end();
+    if (iter == end || *iter == '}') {
+      return iter;
+    }
+    if (*iter == ':') {
+      ++iter;
+      ctx.advance_to(iter);
+      return formatter<Scalar>::parse(ctx);
+    }
+    throw fmt::format_error("Malformed fmt_eigen format specification");
+  }
+
   template <typename FormatContext>
   auto format(const drake::internal::fmt_eigen_ref<Scalar>& ref,
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
@@ -95,7 +147,6 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
     // Format every matrix element in turn. We'll format them back-to-back into
     // the same buffer (while keeping track of where each one started), and then
     // in a second pass we'll slice up the buffer into string_views.
-    formatter<Scalar> element_formatter;
     std::vector<char> element_buffer;            // Slab for formatted elements.
     std::vector<size_t> element_starts;          // Indices into element_buffer.
     element_buffer.reserve(matrix.size() * 20);  // An estimate (not precise).
@@ -106,7 +157,8 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
         using OutputIt = std::back_insert_iterator<std::vector<char>>;
         using OutputContext = fmt::basic_format_context<OutputIt, char>;
         OutputContext element_ctx{OutputIt(element_buffer), {}};
-        element_formatter.format(matrix(row, col), element_ctx);
+        // Use our base class Scalar formatter so its format_spec will be used.
+        formatter<Scalar>::format(matrix(row, col), element_ctx);
       }
     }
     element_starts.push_back(element_buffer.size());
@@ -121,7 +173,7 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
     const std::string content =
         drake::internal::FormatMatrix(matrix.rows(), matrix.cols(), elements);
     // Copy the content into the output buffer.
-    return formatter<std::string_view>::format(content, ctx);
+    return formatter<std::string_view>{}.format(content, ctx);
   }
 };
 }  // namespace fmt
