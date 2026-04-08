@@ -13,6 +13,7 @@
 
 #include <common_robotics_utilities/parallelism.hpp>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/iris.h"

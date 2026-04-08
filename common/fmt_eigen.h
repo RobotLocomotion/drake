@@ -10,14 +10,24 @@
 #include "drake/common/fmt.h"
 
 namespace drake {
+
+#ifndef DRAKE_DOXYGEN_CXX
+// In our definition of fmt_eigen_ref below, we must use *exactly* this alias
+// due to a Clang >= 16 bug (see drake#22061). Ideally, we would obtain the
+// alias via `#include "drake/common/eigen_types.h"` where it's canonically
+// defined, but we can't include that file due to a build dependency cycle,
+// so we'll repeat the alias here.
+template <typename Scalar>
+using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+#endif
+
 namespace internal {
 
 /* A tag type to be used in fmt::format("{}", fmt_eigen(...)) calls.
 Below we'll add a fmt::formatter<> specialization for this tag. */
 template <typename Scalar>
 struct fmt_eigen_ref {
-  Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>>
-      matrix;
+  Eigen::Ref<const MatrixX<Scalar>> matrix;
 };
 
 /* Returns the string formatting of the given matrix elements (i.e., padded by

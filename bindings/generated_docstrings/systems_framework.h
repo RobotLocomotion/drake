@@ -12400,6 +12400,13 @@ R"""(Returns the number of elements in the vector.
 Implementations should ensure this operation is O(1) and allocates no
 memory.)""";
         } size;
+        // Symbol: drake::systems::VectorBase::to_string
+        struct /* to_string */ {
+          // Source: drake/systems/framework/vector_base.h
+          const char* doc =
+R"""(Returns the string representation of a VectorBase<T> as a row vector
+RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.)""";
+        } to_string;
       } VectorBase;
       // Symbol: drake::systems::VectorSystem
       struct /* VectorSystem */ {
