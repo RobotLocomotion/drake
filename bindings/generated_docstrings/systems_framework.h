@@ -12935,7 +12935,8 @@ derivatives) might be discarded.)""";
         // Source: drake/systems/framework/vector_base.h
         const char* doc =
 R"""(Returns the string representation of a VectorBase<T> as a row vector
-RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.)""";
+RowVectorX<T> e.g., "[1, 2, 3]". This is useful for debugging
+purposes.)""";
       } to_string;
     } systems;
   } drake;

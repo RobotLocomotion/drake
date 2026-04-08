@@ -48,8 +48,8 @@ void MoveIkDemoBase::HandleStatus(const Eigen::Ref<const Eigen::VectorXd>& q) {
         plant_.EvalBodyPoseInWorld(*context_, plant_.GetBodyByName(ik_link_));
     const math::RollPitchYaw<double> rpy(current_link_pose.rotation());
     drake::log()->info("{} at: {} {}", ik_link_,
-                       fmt_eigen(current_link_pose.translation().transpose()),
-                       fmt_eigen(rpy.vector().transpose()));
+                       fmt_eigen(current_link_pose.translation()),
+                       fmt_eigen(rpy.vector()));
   }
 }
 

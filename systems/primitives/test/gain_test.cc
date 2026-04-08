@@ -89,7 +89,7 @@ GTEST_TEST(GainTest, GainAccessorTest) {
   const auto gain_system = make_unique<Gain<double>>(gain_values);
   DRAKE_EXPECT_THROWS_MESSAGE(
       gain_system->get_gain(),
-      ".*vector \\[1 2 3 4\\] cannot be represented as a scalar value.*");
+      ".*vector \\[1, 2, 3, 4\\]ᵀ cannot be represented as a scalar value.*");
 }
 
 GTEST_TEST(GainTest, ToAutoDiff) {
