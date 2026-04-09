@@ -221,7 +221,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
                                  VectorX<T>* q) const;
 
   /* Locations of plant and non-plant continuous state. Note that the contained
-  `plant` pointer is guaranteed to be non-null by the CenicInegrator
+  `plant` pointer is guaranteed to be non-null by the CenicIntegrator
   constructor .*/
   const internal::CenicDiagramStructure<T> structure_;
 

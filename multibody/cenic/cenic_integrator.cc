@@ -80,7 +80,7 @@ class DiagramScanner : public SystemVisitor<T> {
   void VisitSystem(const System<T>& system) override {
     DRAKE_LOGGER_TRACE("depth {} visit system", ssize(current_path_));
     // Our styleguide eschews using run-time type information (RTTI) for control
-    // flow. However, since CenicInegrator is strongly coupled to a specific
+    // flow. However, since CenicIntegrator is strongly coupled to a specific
     // class (MultibodyPlant) without any design intention to operate on any
     // other class, using the cast to find the plant needle in the diagram
     // haystack if the best choice among the available options.
