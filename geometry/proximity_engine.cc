@@ -88,43 +88,26 @@ class MapStringToConvexHullCache
 
 // Helper function that creates a copy of the given collision object.
 // The underlying FCL collision geometry is shared with the clone rather than
-// deep-copied; FCL geometry objects are ostensibly immutable after
-// construction; the shared geometry object should not change during cloning.
-// However, in practice, there is a hidden mutation in this operation:
-// FCL's CollisionObject constructor calls computeLocalAABB() which writes to
-// the shared geometry's aabb_local fields, possibly changing the values. This
-// transient change introduces a race condition for any code that reads the
-// geometry's local AABB values. The provided mutex provides protection.
+// deep-copied
 unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
-    const CollisionObjectd& object_source, std::mutex* mutex) {
+    const CollisionObjectd& object_source) {
   shared_ptr<fcl::CollisionGeometryd> shared_geom =
       std::const_pointer_cast<fcl::CollisionGeometryd>(
           object_source.collisionGeometry());
 
-  // If a geometry was declared with a non-zero margin value, it has the effect
-  // of inflating the fcl geometry's _local_ bounding box. However, the
-  // CollisionObject's constructor inexplicably calls the geometry's
-  // updateLocalAABB() (which erases the margin inflation). Therefore, to share
-  // the geometry *and* preserve the effects of margin inflation we:
-  //  a) read the geometry's local AABB values,
-  //  b) create the collision objects (maybe temporarily resetting the AABB),
-  //  c) write the results back.
-  // All under the protection of the provided mutex.
-  std::lock_guard<std::mutex> lock(*mutex);
+  // This Drake-specific constructor allows us to share the geometry without
+  // dangerously writing to the geometry and erasing Drake's margin-based
+  // modifications to the geometry's local AABB.
+  auto object_copy = make_unique<CollisionObjectd>(
+      shared_geom, object_source.getTransform(), /* local_aabb_valid= */ true);
 
-  const Vector3d local_aabb_min = shared_geom->aabb_local.min_;
-  const Vector3d local_aabb_max = shared_geom->aabb_local.max_;
-  const double aabb_radius = shared_geom->aabb_radius;
-
-  auto object_copy = make_unique<CollisionObjectd>(shared_geom);
-
-  shared_geom->aabb_local.min_ = local_aabb_min;
-  shared_geom->aabb_local.max_ = local_aabb_max;
-  shared_geom->aabb_radius = aabb_radius;
-
+  // In fcl::CollisionObject, user data is a void*. That may look like we're
+  // sharing data across clones with lifetime issues. We're not. The user data
+  // we store in the CollisionObject is all encoded into a pointer-sized integer
+  // type, so the "pointer" is really just a bit pattern. Copying the pointer
+  // copies the user data. If user data were ever to change so the user data
+  // was an actual pointer to that data, we'd need to reconsider this.
   object_copy->setUserData(object_source.getUserData());
-  object_copy->setTransform(object_source.getTransform());
-  object_copy->computeAABB();
 
   return object_copy;
 }
@@ -138,13 +121,12 @@ void CopyFclObjectsOrThrow(
     const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
         source_objects,
     unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* target_objects,
-    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>* copy_map,
-    std::mutex* mutex) {
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>* copy_map) {
   DRAKE_ASSERT(target_objects->size() == 0);
   for (const auto& source_id_object_pair : source_objects) {
     const GeometryId source_id = source_id_object_pair.first;
     const CollisionObjectd& source_object = *source_id_object_pair.second;
-    (*target_objects)[source_id] = CopyFclObjectOrThrow(source_object, mutex);
+    (*target_objects)[source_id] = CopyFclObjectOrThrow(source_object);
     copy_map->insert({&source_object, (*target_objects)[source_id].get()});
   }
 }
@@ -265,7 +247,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   Impl() = default;
 
   Impl(const Impl& other) : ShapeReifier(other) {
-    aabb_local_mutex_ = other.aabb_local_mutex_;
     hydroelastic_geometries_ = other.hydroelastic_geometries_;
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
@@ -280,9 +261,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(other.anchored_objects_, &anchored_objects_,
-                          &object_map, aabb_local_mutex_.get());
+                          &object_map);
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
-                          &object_map, aabb_local_mutex_.get());
+                          &object_map);
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
@@ -307,11 +288,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(anchored_objects_, &engine->anchored_objects_,
-                          &object_map, aabb_local_mutex_.get());
+                          &object_map);
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
-                          &object_map, aabb_local_mutex_.get());
+                          &object_map);
 
-    engine->aabb_local_mutex_ = this->aabb_local_mutex_;
     engine->collision_filter_ = this->collision_filter_;
 
     // Build new AABB trees from the input AABB trees.
@@ -528,13 +508,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // efficiently get double-valued poses out of arbitrary T-valued poses.
       const RigidTransform<double>& X_WG_d = convert_to_double(X_WG);
       dynamic_objects_[id]->setTransform(X_WG_d.GetAsIsometry3());
-      {
-        // computeAABB() reads the shared geometry's aabb_local fields, which
-        // can be transiently mutated by CopyFclObjectOrThrow() on another
-        // thread. Acquire the shared mutex to exclude that window.
-        std::lock_guard<std::mutex> lock(*aabb_local_mutex_);
-        dynamic_objects_[id]->computeAABB();
-      }
+      dynamic_objects_[id]->computeAABB();
       geometries_for_deformable_contact_.UpdateRigidWorldPose(id, X_WG_d);
     }
     dynamic_tree_.update();
@@ -1113,11 +1087,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         const_cast<fcl::CollisionGeometryd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(g != nullptr);
 
-    // All writes to g->aabb_local (and the final computeAABB() read of it) are
-    // guarded by aabb_local_mutex_, which is also held by
-    // CopyFclObjectOrThrow() and UpdateWorldPoses() whenever they touch the
-    // shared geometry's aabb_local fields.
-    std::lock_guard<std::mutex> lock(*aabb_local_mutex_);
     std::string_view shape_name = shape.type_name();
     if (margin == 0) {
       // No inflation needed; reset to the tight-fitting local AABB.
@@ -1162,13 +1131,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     shape.Reify(this, &data);
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
-    {
-      // computeAABB() reads the shared geometry's aabb_local fields, which
-      // can be transiently mutated by CopyFclObjectOrThrow() on another
-      // thread. Acquire the shared mutex to exclude that window.
-      std::lock_guard<std::mutex> lock(*aabb_local_mutex_);
-      data.fcl_object->computeAABB();
-    }
+    data.fcl_object->computeAABB();
     EncodedData encoding(id, is_dynamic);
     encoding.write_to(data.fcl_object.get());
 
@@ -1388,15 +1351,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The mechanism for dictating collision filtering.
   CollisionFilter collision_filter_;
-
-  // Guards all accesses to FCL collision geometry's aabb_local fields, which
-  // are shared across all CollisionObjects that point to the same geometry.
-  // (See CopyFclObjectOrThrow() for details on the hidden mutation.)
-  // Stored as a shared_ptr so that every clone of a given ProximityEngine
-  // shares the same mutex instance: clones share the same underlying FCL
-  // geometry objects, so any two engines derived from the same original must
-  // use the same mutex.
-  std::shared_ptr<std::mutex> aabb_local_mutex_{std::make_shared<std::mutex>()};
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
