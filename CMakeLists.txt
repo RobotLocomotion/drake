@@ -623,6 +623,9 @@ define_bool_option("WITH_OSQP" "OSQP")
 define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_GUROBI ON)
+endif()
 if(WITH_GUROBI)
   find_package(Gurobi 13.0 EXACT MODULE REQUIRED)
 
@@ -635,6 +638,9 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_MOSEK ON)
+endif()
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
@@ -692,6 +698,9 @@ endif()
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_ROBOTLOCOMOTION_SNOPT ON)
+endif()
 
 set(WITH_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
