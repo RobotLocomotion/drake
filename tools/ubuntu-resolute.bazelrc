@@ -1,8 +1,8 @@
 # Options for explicitly using Clang.
 # Keep this in sync with doc/_pages/from_source.md.
-common:clang --repo_env=CC=clang-20
-common:clang --repo_env=CXX=clang++-20
-build:clang --action_env=CC=clang-20
-build:clang --action_env=CXX=clang++-20
-build:clang --host_action_env=CC=clang-20
-build:clang --host_action_env=CXX=clang++-20
+common:clang --repo_env=CC=clang-21
+common:clang --repo_env=CXX=clang++-21
+build:clang --action_env=CC=clang-21
+build:clang --action_env=CXX=clang++-21
+build:clang --host_action_env=CC=clang-21
+build:clang --host_action_env=CXX=clang++-21
