@@ -299,11 +299,14 @@ drake_cc_library(
         "calc_signed_distance_to_surface_mesh.cc",
         "distance_to_point_callback.cc",
         "mesh_distance_boundary.cc",
+        "mesh_sdf_cache.cc",
     ],
     hdrs = [
         "calc_signed_distance_to_surface_mesh.h",
         "distance_to_point_callback.h",
+        "memoizer_cache.h",
         "mesh_distance_boundary.h",
+        "mesh_sdf_cache.h",
     ],
     internal = True,
     visibility = [
@@ -320,9 +323,15 @@ drake_cc_library(
         "//common:drake_export",
         "//common:essential",
         "//geometry:geometry_ids",
+        "//geometry:shape_specification",
         "//geometry/query_results:signed_distance_to_point",
         "//math:geometric_transform",
         "@fcl_internal//:fcl",
+    ],
+    implementation_deps = [
+        ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
+        ":vtk_to_volume_mesh",
     ],
 )
 
@@ -1301,6 +1310,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mesh_sdf_cache_test",
+    deps = [
+        ":distance_to_point_callback",
+        ":obj_to_surface_mesh",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_googletest(
     name = "distance_to_point_characterize_test",
     deps = [
         ":characterization_utilities",
@@ -1600,6 +1619,13 @@ drake_cc_googletest(
         ":make_sphere_mesh",
         "//common:sorted_pair",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "memoizer_cache_test",
+    deps = [
+        ":distance_to_point_callback",
     ],
 )
 
