@@ -90,9 +90,11 @@ class MapStringToConvexHullCache
 // The underlying FCL collision geometry is shared with the clone rather than
 // deep-copied; FCL geometry objects are ostensibly immutable after
 // construction; the shared geometry object should not change during cloning.
-// However, in practice, there is an hidden mutation in this operation.
-// The mutex reference passed in provides protection against the transient
-// effects of that mutation.
+// However, in practice, there is a hidden mutation in this operation:
+// FCL's CollisionObject constructor calls computeLocalAABB() which writes to
+// the shared geometry's aabb_local fields, possibly changing the values. This
+// transient change introduces a race condition for any code that reads the
+// geometry's local AABB values. The provided mutex provides protection.
 unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
     const CollisionObjectd& object_source, std::mutex* mutex) {
   shared_ptr<fcl::CollisionGeometryd> shared_geom =
@@ -263,7 +265,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   Impl() = default;
 
   Impl(const Impl& other) : ShapeReifier(other) {
-    copy_mutex_ = other.copy_mutex_;
+    aabb_local_mutex_ = other.aabb_local_mutex_;
     hydroelastic_geometries_ = other.hydroelastic_geometries_;
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
@@ -278,9 +280,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(other.anchored_objects_, &anchored_objects_,
-                          &object_map, copy_mutex_.get());
+                          &object_map, aabb_local_mutex_.get());
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
-                          &object_map, copy_mutex_.get());
+                          &object_map, aabb_local_mutex_.get());
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
@@ -305,11 +307,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(anchored_objects_, &engine->anchored_objects_,
-                          &object_map, copy_mutex_.get());
+                          &object_map, aabb_local_mutex_.get());
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
-                          &object_map, copy_mutex_.get());
+                          &object_map, aabb_local_mutex_.get());
 
-    engine->copy_mutex_ = this->copy_mutex_;
+    engine->aabb_local_mutex_ = this->aabb_local_mutex_;
     engine->collision_filter_ = this->collision_filter_;
 
     // Build new AABB trees from the input AABB trees.
@@ -526,7 +528,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // efficiently get double-valued poses out of arbitrary T-valued poses.
       const RigidTransform<double>& X_WG_d = convert_to_double(X_WG);
       dynamic_objects_[id]->setTransform(X_WG_d.GetAsIsometry3());
-      dynamic_objects_[id]->computeAABB();
+      {
+        // computeAABB() reads the shared geometry's aabb_local fields, which
+        // can be transiently mutated by CopyFclObjectOrThrow() on another
+        // thread. Acquire the shared mutex to exclude that window.
+        std::lock_guard<std::mutex> lock(*aabb_local_mutex_);
+        dynamic_objects_[id]->computeAABB();
+      }
       geometries_for_deformable_contact_.UpdateRigidWorldPose(id, X_WG_d);
     }
     dynamic_tree_.update();
@@ -1100,14 +1108,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(object != nullptr);
 
     // To edit the assigned collision geometry, we have to cheat and temporarily
-    // ignore the const-ness. Note: this assumes that the collision object
-    // hasn't been added to a BVH yet; as long as this is part of the
-    // reification process, that will remain true. The collision object only
-    // gets added when reification is complete.
+    // ignore the const-ness.
     auto* g =
         const_cast<fcl::CollisionGeometryd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(g != nullptr);
 
+    // All writes to g->aabb_local (and the final computeAABB() read of it) are
+    // guarded by aabb_local_mutex_, which is also held by CopyFclObjectOrThrow()
+    // and UpdateWorldPoses() whenever they touch the shared geometry's aabb_local
+    // fields.
+    std::lock_guard<std::mutex> lock(*aabb_local_mutex_);
     std::string_view shape_name = shape.type_name();
     if (margin == 0) {
       // No inflation needed; reset to the tight-fitting local AABB.
@@ -1152,7 +1162,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     shape.Reify(this, &data);
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
-    data.fcl_object->computeAABB();
+    {
+      // computeAABB() reads the shared geometry's aabb_local fields, which
+      // can be transiently mutated by CopyFclObjectOrThrow() on another
+      // thread. Acquire the shared mutex to exclude that window.
+      std::lock_guard<std::mutex> lock(*aabb_local_mutex_);
+      data.fcl_object->computeAABB();
+    }
     EncodedData encoding(id, is_dynamic);
     encoding.write_to(data.fcl_object.get());
 
@@ -1373,13 +1389,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // The mechanism for dictating collision filtering.
   CollisionFilter collision_filter_;
 
-  // Forces serialization of CopyFclObjectOrThrow(). (See that function for
-  // details.)
+  // Guards all accesses to FCL collision geometry's aabb_local fields, which
+  // are shared across all CollisionObjects that point to the same geometry.
+  // (See CopyFclObjectOrThrow() for details on the hidden mutation.)
   // Stored as a shared_ptr so that every clone of a given ProximityEngine
   // shares the same mutex instance: clones share the same underlying FCL
-  // geometry objects, so concurrent copies of any two engines derived from the
-  // same original must be serialized by the same mutex.
-  std::shared_ptr<std::mutex> copy_mutex_{std::make_shared<std::mutex>()};
+  // geometry objects, so any two engines derived from the same original must
+  // use the same mutex.
+  std::shared_ptr<std::mutex> aabb_local_mutex_{std::make_shared<std::mutex>()};
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
