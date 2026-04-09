@@ -196,7 +196,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 * MOSEK™ 11.1
 * SNOPT 7.4
 
-## Gurobi 13.0
+## Gurobi
 
 ### Install on Ubuntu
 
