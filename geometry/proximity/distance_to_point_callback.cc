@@ -541,8 +541,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         break;
       // Both drake::geometry::Mesh and Convex use fcl::GEOM_CONVEX.
       case fcl::GEOM_CONVEX:
-        if (data.mesh_boundaries.contains(geometry_id)) {
-          distance = distance_to_point(data.mesh_boundaries.at(geometry_id));
+        if (data.mesh_sdf_cache.contains(geometry_id)) {
+          distance =
+              distance_to_point(data.mesh_sdf_cache.GetOrCompute(geometry_id));
         } else {
           // Unsupported mesh types. Returning false tells fcl to continue
           // to other objects.
