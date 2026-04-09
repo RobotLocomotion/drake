@@ -6,11 +6,5 @@ build:clang --action_env=CC=clang-20
 build:clang --action_env=CXX=clang++-20
 build:clang --host_action_env=CC=clang-20
 build:clang --host_action_env=CXX=clang++-20
-# https://github.com/RobotLocomotion/drake/issues/22204
-# TODO(jwnimmer-tri) Ideally, our drake_cc.bzl logic for compiler-specific flags
-# should take over this option so we can ensure it's being used even in CMake
-# installs of Drake from source (if and only if Clang >= 17 is being used).
-build:clang --copt=-fno-assume-unique-vtables
-build:clang --host_copt=-fno-assume-unique-vtables
 
 build --define=UBUNTU_VERSION=26.04
