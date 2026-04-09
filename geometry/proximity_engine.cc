@@ -86,32 +86,6 @@ struct ConvexHullCacheEntry {
 class MapStringToConvexHullCache
     : public string_unordered_map<ConvexHullCacheEntry> {};
 
-// Helper function that creates a copy of the given collision object.
-// The underlying FCL collision geometry is shared with the clone rather than
-// deep-copied
-unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
-    const CollisionObjectd& object_source) {
-  shared_ptr<fcl::CollisionGeometryd> shared_geom =
-      std::const_pointer_cast<fcl::CollisionGeometryd>(
-          object_source.collisionGeometry());
-
-  // This Drake-specific constructor allows us to share the geometry without
-  // dangerously writing to the geometry and erasing Drake's margin-based
-  // modifications to the geometry's local AABB.
-  auto object_copy = make_unique<CollisionObjectd>(
-      shared_geom, object_source.getTransform(), /* local_aabb_valid= */ true);
-
-  // In fcl::CollisionObject, user data is a void*. That may look like we're
-  // sharing data across clones with lifetime issues. We're not. The user data
-  // we store in the CollisionObject is all encoded into a pointer-sized integer
-  // type, so the "pointer" is really just a bit pattern. Copying the pointer
-  // copies the user data. If user data were ever to change so the user data
-  // was an actual pointer to that data, we'd need to reconsider this.
-  object_copy->setUserData(object_source.getUserData());
-
-  return object_copy;
-}
-
 // Helper function that creates a deep copy of a vector of collision objects.
 // Assumes the input vector has already been cleared. The `copy_map` parameter
 // serves as a mapping from each source object to its corresponding copy. Used
@@ -126,7 +100,8 @@ void CopyFclObjectsOrThrow(
   for (const auto& source_id_object_pair : source_objects) {
     const GeometryId source_id = source_id_object_pair.first;
     const CollisionObjectd& source_object = *source_id_object_pair.second;
-    (*target_objects)[source_id] = CopyFclObjectOrThrow(source_object);
+    (*target_objects)[source_id] =
+        make_unique<fcl::CollisionObjectd>(source_object);
     copy_map->insert({&source_object, (*target_objects)[source_id].get()});
   }
 }
