@@ -27,12 +27,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_calculator.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
-#include "drake/geometry/proximity/make_mesh_from_vtk.h"
-#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
-#include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
-#include "drake/geometry/proximity/volume_to_surface_mesh.h"
-#include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 #include "drake/geometry/read_obj.h"
 #include "drake/geometry/utilities.h"
 
@@ -225,7 +220,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_ = other.hydroelastic_geometries_;
     geometries_for_deformable_contact_ =
         other.geometries_for_deformable_contact_;
-    mesh_sdf_data_ = other.mesh_sdf_data_;
+    mesh_sdf_cache_ = other.mesh_sdf_cache_;
     convex_hull_cache_ = other.convex_hull_cache_;
     geometry_to_hull_key_ = other.geometry_to_hull_key_;
     dynamic_tree_.clear();
@@ -276,7 +271,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     engine->hydroelastic_geometries_ = this->hydroelastic_geometries_;
     engine->geometries_for_deformable_contact_ =
         this->geometries_for_deformable_contact_;
-    engine->mesh_sdf_data_ = this->mesh_sdf_data_;
+    engine->mesh_sdf_cache_ = this->mesh_sdf_cache_;
     engine->convex_hull_cache_ = this->convex_hull_cache_;
     engine->geometry_to_hull_key_ = this->geometry_to_hull_key_;
     engine->distance_tolerance_ = this->distance_tolerance_;
@@ -423,7 +418,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
     hydroelastic_geometries_.RemoveGeometry(id);
     geometries_for_deformable_contact_.RemoveGeometry(id);
-    mesh_sdf_data_.erase(id);
+    mesh_sdf_cache_.Remove(id);
 
     // Evict the convex hull cache entry for this geometry if it is the last
     // user. The CollisionObjectd was already destroyed above (by the inner
@@ -554,7 +549,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ImplementGeometry(const Convex& convex, void* user_data) override {
     ImplementFromConvexHull(convex, user_data);
     // Set up data for ComputeSignedDistanceToPoint() from convex meshes.
-    ImplementMeshSdfData(convex, user_data);
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    mesh_sdf_cache_.Register(data.id, convex);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
@@ -588,7 +584,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // We currently represent Mesh shapes with their convex hulls in FCL.
     ImplementFromConvexHull(mesh, user_data);
     // Set up data for ComputeSignedDistanceToPoint() from non-convex meshes.
-    ImplementMeshSdfData(mesh, user_data);
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    mesh_sdf_cache_.Register(data.id, mesh);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {
@@ -669,6 +666,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const double threshold) const {
+    mesh_sdf_cache_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
@@ -681,7 +679,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistanceToPoint<T>> distances;
 
     point_distance::CallbackData<T> data{
-        &query_point, threshold, p_WQ, &X_WGs, &mesh_sdf_data_, &distances};
+        &query_point, threshold, p_WQ, &X_WGs, &mesh_sdf_cache_, &distances};
 
     // Perform query of point vs dynamic objects.
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
@@ -698,6 +696,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const std::unordered_set<GeometryId>& geometries) const {
+    mesh_sdf_cache_.ComputeAll();
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
@@ -714,7 +713,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     double kInf = std::numeric_limits<double>::infinity();
     std::vector<SignedDistanceToPoint<T>> distances;
     point_distance::CallbackData<T> data{
-        &query_point, kInf, p_WQ, &X_WGs, &mesh_sdf_data_, &distances};
+        &query_point, kInf, p_WQ, &X_WGs, &mesh_sdf_cache_, &distances};
     for (const GeometryId& id : ids) {
       CollisionObjectd* geometry = FindCollisionObject(id, "signed distance");
       DRAKE_DEMAND(geometry != nullptr);
@@ -936,11 +935,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   const TriangleSurfaceMesh<double>* mesh_distance_boundary(
       GeometryId g_id) const {
-    const auto iter = mesh_sdf_data_.find(g_id);
-    if (iter == mesh_sdf_data_.end()) {
-      return nullptr;
-    }
-    return &iter->second.tri_mesh();
+    if (!mesh_sdf_cache_.contains(g_id)) return nullptr;
+    mesh_sdf_cache_.ComputeAll();
+    return &mesh_sdf_cache_.GetBoundary(g_id).tri_mesh();
   }
 
   const Aabb& GetDeformableAabbInWorld(GeometryId id) const {
@@ -1221,40 +1218,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessGeometriesForDeformableContact(mesh, user_data);
   }
 
-  // TODO(DamrongGuoy): If setting up mesh_sdf_data_ turns out to be too
-  //  expensive during initialization, defer its computation to the time when
-  //  users call ComputeSignedDistanceToPoint(). The deferred computation
-  //  will need to be thread-safe.
-
-  // Populate the proximity representation of Mesh for
-  // ComputeSignedDistanceToPoint. It could be .vtk tetrahedral mesh or
-  // .obj triangle mesh.
-  void ImplementMeshSdfData(const Mesh& mesh, void* user_data) {
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    if (mesh.extension() == ".vtk") {
-      // Assume the .vtk file is a tetrahedral mesh.  If that's not true,
-      // we'll get an error.
-      VolumeMesh<double> volume_mesh = MakeVolumeMeshFromVtk<double>(mesh);
-      mesh_sdf_data_.emplace(data.id, MeshDistanceBoundary(volume_mesh));
-    } else if (mesh.extension() == ".obj") {
-      mesh_sdf_data_.emplace(data.id,
-                             MeshDistanceBoundary(ReadObjToTriangleSurfaceMesh(
-                                 mesh.source(), mesh.scale3())));
-    }
-    // Meshes are unsupported if we cannot compute a MeshDistanceBoundary.
-    // point_distance::Callback() skips every Mesh that doesn't have an entry
-    // in mesh_sdf_data_.
-  }
-
-  // Populate the proximity representation of Convex for
-  // ComputeSignedDistanceToPoint.
-  void ImplementMeshSdfData(const Convex& convex, void* user_data) {
-    const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    mesh_sdf_data_.emplace(
-        data.id, MeshDistanceBoundary(MakeTriangleFromPolygonMesh(hull)));
-  }
-
   /* @throws a std::exception with an appropriate error message for the various
      result codes that indicate failure.
      @pre ContactSurfaceFailed(result) == true */
@@ -1342,8 +1305,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // `dynamic_objects_` and `dynamic_tree_`.
   deformable::Geometries geometries_for_deformable_contact_;
 
-  // Data for ComputeSignedDistanceToPoint from meshes (Mesh and Convex).
-  std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_sdf_data_{};
+  // Deferred, shared cache of per-geometry data for
+  // point_distance::Callback on meshes (Mesh and Convex).
+  MeshSdfCache mesh_sdf_cache_{};
 
   // Two-level cache used by ImplementFromConvexHull().
   //   Level 1: mesh-source cache key  →  ConvexHullCacheEntry
