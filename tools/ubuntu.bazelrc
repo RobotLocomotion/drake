@@ -13,13 +13,6 @@ build --action_env=PATH=/usr/bin:/bin
 build --action_env=PYTHONNOUSERSITE=1
 build --test_env=PYTHONNOUSERSITE=1
 
-# Enable OpenMP (when requested via --config=omp or --config=everything).
-build:omp --copt=-DEIGEN_DONT_PARALLELIZE
-build:omp --copt=-fopenmp
-build:omp --linkopt=-fopenmp
-build:packaging --config=omp
-build:everything --config=omp
-
 # Options for explicitly using GCC.
 common:gcc --repo_env=CC=gcc
 common:gcc --repo_env=CXX=g++
