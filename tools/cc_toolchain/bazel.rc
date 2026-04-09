@@ -1,3 +1,6 @@
+# This file is only used when Drake is the main Bazel module (i.e., only by
+# Drake Developers; not by CMake builds, downstream builds, etc.).
+
 # Disable ccache due to incompatibility with Bazel.
 build --action_env=CCACHE_DISABLE=1
 
@@ -17,3 +20,7 @@ build --@drake//tools/cc_toolchain:error_severity=error
 # module. Other conditions will be checked as well; see
 # //tools/cc_toolchain:use_mold_linker for more details.
 build --@drake//tools/cc_toolchain:allow_mold_linker=true
+
+# Developer builds on Linux should have OpenMP enabled by default, to match the
+# end-user default in drake/CMakeLists.txt.
+build:linux --config=openmp
