@@ -1,0 +1,77 @@
+Drake shares CollisionGeometry instances between copies of a ProximityEngine
+instance. However, CollisionObject's are unique (as they care the state
+dependent poses). FCL's CollisionObject built-in constructors all perform a
+write operation on the shared collision geometry -- they recompute the
+geometry's local AABB. For FCL this is generally harmless; if the geometry
+hasn't changed, the update produces the same values.
+
+Drake, however, plays games with the geometry's local AABB. Based on the margin
+value, we'll possibly inflate the geometry's local AABB to include the inflated
+volume (note: we *don't* inflate the actual geometry). In those cases, the
+margin-based AABB inflation will not survive a recomputation of the local AABB.
+This, historically, has required reading the AABB, creating the collision
+object, and then restoring the inflated AABB again (with an additional call to
+update the object's AABB). This is not thread safe.
+
+So, we've added a new constructor to avoid the redundant recomputation of the
+local geometry's AABB. By treating the geometry truly as const during the
+cloning process, one thread can read the geometry's local AABB value while
+another thread is cloning safely.
+
+We could certainly upstream this, but it probably doesn't make much sense to
+do so as this only benefits off-label usage like Drake (post-hoc manipulation
+of the geometry's local AABB).
+
+--- include/fcl/narrowphase/collision_object-inl.h
++++ include/fcl/narrowphase/collision_object-inl.h
+@@ -85,6 +85,23 @@ CollisionObject<S>::CollisionObject(
+   computeAABB();
+ }
+ 
++//==============================================================================
++template <typename S>
++CollisionObject<S>::CollisionObject(
++    const std::shared_ptr<CollisionGeometry<S>>& cgeom_,
++    const Transform3<S>& tf, bool local_aabb_valid)
++  : cgeom(cgeom_), cgeom_const(cgeom_), t(tf)
++{
++  if (cgeom)
++  {
++    if (!local_aabb_valid)
++    {
++      cgeom->computeLocalAABB();
++    }
++    computeAABB();
++  }
++}
++
+ //==============================================================================
+ template <typename S>
+ CollisionObject<S>::~CollisionObject()
+
+--- include/fcl/narrowphase/collision_object.h
++++ include/fcl/narrowphase/collision_object.h
+@@ -60,6 +60,23 @@ public:
+                   const Matrix3<S>& R,
+                   const Vector3<S>& T);
+ 
++  /// @brief Constructs a collision object from a collision geometry whose
++  /// local AABB is optionally declared to be already computed. If *declared*
++  /// pre-computed, the constructor will not modify the geometry's local AABB.
++  ///
++  /// If the declaration is incorrect, the collision object's AABB may also be
++  /// incorrect.
++  ///
++  /// @param cgeom              The geometry.
++  /// @param tf                 The transform of the collision object.
++  /// @param local_aabb_valid   If `true`, cgeom will not be modified,
++  ///                           otherwise, the local AABB fields of cgeom will
++  ///                           be written to (whether or not it produces a
++  ///                           change).
++  CollisionObject(const std::shared_ptr<CollisionGeometry<S>>& cgeom,
++                  const Transform3<S>& tf,
++                  bool local_aabb_valid);
++
+   ~CollisionObject();
+ 
+   /// @brief get the type of the object
