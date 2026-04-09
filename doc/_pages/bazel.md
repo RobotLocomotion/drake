@@ -304,6 +304,7 @@ The Drake Bazel build system has integration support for some optional
 development tools:
 
 * kcov -- test coverage analysis
+* docker -- debug CI failures using a virtual machine
 
 ## kcov
 
@@ -364,4 +365,33 @@ ERROR: No test targets were found, yet testing was requested
 To force execution with kcov, add an empty `test_tag_filters` option:
 ```
 bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
+```
+
+## docker
+
+Drake supports multiple Ubuntu versions. Developers who need to debug
+a CI failure on an Ubuntu verison other than their desktop version can
+use Docker:
+
+Install docker:
+
+```
+$ sudo apt install docker.io
+$ sudo usermod -aG docker $USER
+$ newgrp docker
+```
+
+Boot a virtual machine, clone Drake, install prereqs, and develop as usual:
+
+```
+$ docker run -it ubuntu:26.04
+# apt update
+# apt install git
+# su - ubuntu
+$ git clone --depth=1 https://github.com/RobotLocomotion/drake.git
+$ exit
+# /home/ubuntu/drake/setup/install_prereqs --developer
+# su - ubuntu
+$ cd drake
+$ bazel test //common:fmt_test
 ```
