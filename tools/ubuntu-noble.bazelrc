@@ -6,5 +6,3 @@ build:clang --action_env=CC=clang-20
 build:clang --action_env=CXX=clang++-20
 build:clang --host_action_env=CC=clang-20
 build:clang --host_action_env=CXX=clang++-20
-
-build --define=UBUNTU_VERSION=24.04

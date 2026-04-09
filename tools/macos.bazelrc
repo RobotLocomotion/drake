@@ -3,16 +3,8 @@
 # N.B. Ensure this is consistent with `execute.bzl`.
 build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
-# Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
-# sanitizers.
-build:asan --copt=-Wno-macro-redefined
-build:asan_everything --copt=-Wno-macro-redefined
-build:tsan --copt=-Wno-macro-redefined
-build:tsan_everything --copt=-Wno-macro-redefined
-build:ubsan --copt=-Wno-macro-redefined
-build:ubsan_everything --copt=-Wno-macro-redefined
-
 # Options for explicitly using Clang.
+# TODO(#24359) Delete this entirely.
 common:clang --repo_env=CC=clang
 common:clang --repo_env=CXX=clang++
 build:clang --action_env=CC=clang
