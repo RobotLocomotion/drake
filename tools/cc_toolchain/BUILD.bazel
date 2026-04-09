@@ -126,6 +126,18 @@ selects.config_setting_group(
     ],
 )
 
+# (Internal use only.) This captures whether --config=openmp was specified.
+bool_flag(
+    name = "with_openmp",
+    build_setting_default = False,
+)
+
+# (Internal use only.) This selects whether --config=openmp was specified.
+config_setting(
+    name = "with_openmp_true",
+    flag_values = {":with_openmp": "True"},
+)
+
 # *****************************************************************************
 # The following sh_binary (and its prerequisite genrule) are used by drake-ci's
 # CMake setup logic to sniff out Drake's selected compiler. They are not used

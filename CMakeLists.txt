@@ -684,9 +684,14 @@ if((NOT BUILD_SHARED_LIBS AND DRAKE_INSTALL_PYTHON) OR
   )
 endif()
 
-option(WITH_OPENMP "Build with support for OpenMP" OFF)
+if(APPLE)
+  set(DEFAULT_WITH_OPENMP OFF)
+else()
+  set(DEFAULT_WITH_OPENMP ON)
+endif()
+option(WITH_OPENMP "Build with support for OpenMP" ${DEFAULT_WITH_OPENMP})
 if(WITH_OPENMP)
-  string(APPEND BAZEL_CONFIG " --config=omp")
+  string(APPEND BAZEL_CONFIG " --config=openmp")
 endif()
 
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL

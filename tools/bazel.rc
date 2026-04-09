@@ -1,3 +1,6 @@
+# Enable platform-specific config groups (e.g., "build:linux", "build:macos").
+common --enable_platform_specific_config
+
 # When compiling Drake as the main module (i.e., not as a Bazel dependency of
 # something else) we will default to using pkg-config to locate our C++
 # library dependencies.
@@ -76,6 +79,12 @@ build --test_env=LCM_DEFAULT_URL=memq://
 
 # Prevent matplotlib from showing windows (#11029).
 build --test_env=MPLBACKEND=Template
+
+# Compiler flags that will enable OpenMP (when requested).
+build:openmp --@drake//tools/cc_toolchain:with_openmp=True
+build:openmp --copt=-DEIGEN_DONT_PARALLELIZE
+build:openmp --copt=-fopenmp
+build:openmp --linkopt=-fopenmp
 
 ### A wrapper configuration for debug builds. ###
 build:debug --compilation_mode=dbg

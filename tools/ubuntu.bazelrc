@@ -13,12 +13,10 @@ build --action_env=PATH=/usr/bin:/bin
 build --action_env=PYTHONNOUSERSITE=1
 build --test_env=PYTHONNOUSERSITE=1
 
-# Enable OpenMP (when requested via --config=omp or --config=everything).
-build:omp --copt=-DEIGEN_DONT_PARALLELIZE
-build:omp --copt=-fopenmp
-build:omp --linkopt=-fopenmp
-build:packaging --config=omp
-build:everything --config=omp
+# (Re-)enable OpenMP in Ubuntu packaging builds. OpenMP is on by default in our
+# drake/CMakeLists.txt but drake-ci is defectively forcing it off again; this is
+# a hack to make sure it's still on until drake-ci gets fixed.
+build:packaging --config=openmp
 
 # Options for explicitly using GCC.
 common:gcc --repo_env=CC=gcc
