@@ -19,15 +19,17 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
-|------------------------------------|--------------|------------|---------------------|-----------------|
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | Pip, Binary, APT    | March 2028      |
-|                                    | x86_64 ⁽⁴⁾   | 3.13-3.14  | Pip                 | March 2028      |
-| macOS Sequoia (15)                 | arm64        | 3.13       | Pip                 | October 2026    |
-|                                    | arm64        | 3.14       | Pip, Binary         | October 2026    |
-| macOS Tahoe (26)                   | arm64        | 3.13       | Pip                 | October 2026    |
-|                                    | arm64        | 3.14       | Pip, Binary         | October 2027    |
-| Amazon Linux 2023                  | x86_64       | 3.12-3.14  | Pip                 | March 2028      |
+| Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
+|-------------------------------------|--------------|------------|---------------------|-----------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | Pip, Binary, APT    | March 2028      |
+|                                     | x86_64 ⁽⁴⁾   | 3.13-3.14  | Pip                 | March 2028      |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.12-3.14  | Pip                 | March 2030      |
+|                                     | x86_64       | 3.14       | Binary ⁽⁵⁾, APT ⁽⁵⁾ | March 2030      |
+| macOS Sequoia (15)                  | arm64        | 3.13       | Pip                 | October 2026    |
+|                                     | arm64        | 3.14       | Pip, Binary         | October 2026    |
+| macOS Tahoe (26)                    | arm64        | 3.13       | Pip                 | October 2026    |
+|                                     | arm64        | 3.14       | Pip, Binary         | October 2027    |
+| Amazon Linux 2023                   | x86_64       | 3.12-3.14  | Pip                 | March 2028      |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -57,15 +59,19 @@ for stable releases. Follow
 If you encounter installation issues with the experimental nightly binaries,
 please post to the issue.
 
+⁽⁵⁾ For Binary and APT packages, Ubuntu 26.04 (Resolute) currently only supports
+nightly builds, not stable releases.
+
 The following table shows the configurations that *must* be used when
 compiling your own C++ code against Drake's C++ code using one of
 Drake's pre-compiled binaries:
 
-| Operating System                   | C/C++ Compiler             | Std   |
-|------------------------------------|----------------------------|-------|
-| Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                     | C++23 |
-| macOS Sequoia (15)                 | Apple LLVM 17 (Xcode 26.3) | C++23 |
-| macOS Tahoe (26)                   | Apple LLVM 21 (Xcode 26.4) | C++23 |
+| Operating System                    | C/C++ Compiler             | Std   |
+|-------------------------------------|----------------------------|-------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | GCC 13                     | C++23 |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | GCC 15                     | C++23 |
+| macOS Sequoia (15)                  | Apple LLVM 17 (Xcode 26.3) | C++23 |
+| macOS Tahoe (26)                    | Apple LLVM 21 (Xcode 26.4) | C++23 |
 
 Any other configuration not listed here will lead to undefined behavior
 (as a violation of the C++ One-Definition Rule).

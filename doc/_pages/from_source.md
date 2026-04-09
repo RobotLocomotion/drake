@@ -33,11 +33,12 @@ officially supports when building from source:
      tools/install/libdrake/drake-config.cmake.in (along with the related
      libdrake tests). -->
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
-|------------------------------------|--------------|------------|-------|-------|------------------------------|
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
-| macOS Sequoia (15)                 | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
-| macOS Tahoe (26)                   | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
+| Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
+|-------------------------------------|--------------|------------|-------|-------|------------------------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.14       | 9.0   | 4.2   | GCC 15 (default) or Clang 21 |
+| macOS Sequoia (15)                  | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Tahoe (26)                    | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -265,7 +266,7 @@ cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 ```
 
-*macOS:*
+*Ubuntu 26.04 (Resolute) or macOS:*
 
 ```bash
 cd drake-build
