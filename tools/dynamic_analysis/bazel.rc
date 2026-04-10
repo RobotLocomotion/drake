@@ -6,7 +6,6 @@
 
 ### Kcov coverage build. ###
 build:kcov --config=_kcov
-build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
 
 ### Kcov everything build. ###
 build:kcov_everything --config=_kcov
@@ -15,7 +14,6 @@ build:kcov_everything --config=_kcov
 build:kcov_everything --@drake//tools/flags:with_gurobi=True
 build:kcov_everything --@drake//tools/flags:with_mosek=True
 build:kcov_everything --@drake//tools/flags:with_snopt=True
-build:kcov_everything --test_tag_filters=-lint,-no_kcov
 
 ### Kcov and Kcov everything common flags. ###
 ### NOT intended for developer use. ###
@@ -39,17 +37,14 @@ build:_kcov --zip_undeclared_test_outputs=true
 # period, and is vulnerable to cloud filesystem slow-downs. Timeouts are 20x
 # default values.
 build:_kcov --test_timeout=1200,6000,18000,72000
+build:_kcov --test_tag_filters=-lint,-no_kcov
 
 ### ASan build. Clang only. ###
 build:asan --config=_asan
-# LSan is run with ASan by default
-build:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
 
 ### ASan everything build. Clang only. ###
 build:asan_everything --config=_asan
 build:asan_everything --config=_sanitizer_everything_common
-# LSan is run with ASan by default
-build:asan_everything --test_tag_filters=-gurobi,-mosek,-no_asan,-no_lsan
 
 ### ASan and ASan everything common flags. ###
 ### NOT intended for developer use. ###
@@ -65,15 +60,15 @@ build:_asan --linkopt=-fsanitize-address-use-after-scope
 build:_asan --test_timeout=150,750,2250,9000  # 2.5x
 # See https://sourceware.org/bugzilla/show_bug.cgi?id=25975
 build:_asan --output_filter="^(?!.*ld\.gold: warning: Cannot export local symbol '__asan_extra_spill_area)'.*$"
+# LSan is run with ASan by default
+build:_asan --test_tag_filters=-no_asan,-no_lsan
 
 ### LSan build. Clang only. ###
 build:lsan --config=_lsan
-build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
 
 ### LSan everything build. Clang only. ###
 build:lsan_everything --config=_lsan
 build:lsan_everything --config=_sanitizer_everything_common
-build:lsan_everything --test_tag_filters=-gurobi,-mosek,-no_lsan
 
 ### LSan and LSan everything common flags. ###
 ### NOT intended for developer use. ###
@@ -92,15 +87,14 @@ build:_lsan --linkopt=-fsanitize=leak
 # amount at the end. Increase to 1.2 to be safe.
 # See https://clang.llvm.org/docs/LeakSanitizer.html
 build:_lsan --test_timeout=72,360,1080,4320
+build:_lsan --test_tag_filters=-no_lsan
 
 ### TSan build. ###
 build:tsan --config=_tsan
-build:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
 
 ### TSan everything build. ###
 build:tsan_everything --config=_tsan
 build:tsan_everything --config=_sanitizer_everything_common
-build:tsan_everything --test_tag_filters=-gurobi,-mosek,-no_tsan
 
 ### TSan and TSan everything common flags. ###
 ### NOT intended for developer use. ###
@@ -111,15 +105,14 @@ build:_tsan --run_under=//tools/dynamic_analysis:tsan
 # timeouts to 5x.
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
 build:_tsan --test_timeout=300,1500,4500,18000
+build:_tsan --test_tag_filters=-no_tsan
 
 ### UBSan build. ###
 build:ubsan --config=_ubsan
-build:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
 
 ### UBSan everything build. ###
 build:ubsan_everything --config=_ubsan
 build:ubsan_everything --config=_sanitizer_everything_common
-build:ubsan_everything --test_tag_filters=-mosek,-gurobi,-no_ubsan
 
 ### UBSan and UBSan everything common flags. ###
 ### NOT intended for developer use. ###
@@ -136,15 +129,14 @@ build:_ubsan --linkopt=-Wl,--gc-sections  # Claw back some disk space for CI.
 # Typical slowdown introduced by UBSan is 1.2x. Increase timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
 build:_ubsan --test_timeout=120,600,1800,7200
+build:_ubsan --test_tag_filters=-no_ubsan
 
 ### Memcheck build. ###
 build:memcheck --config=_memcheck
-build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_valgrind_tools
 
 ### Memcheck everything build. ###
 build:memcheck_everything --config=_memcheck
 build:memcheck_everything --config=_sanitizer_everything_common
-build:memcheck_everything --test_tag_filters=-mosek,-gurobi,-no_memcheck,-no_valgrind_tools
 
 ### Memcheck and Memcheck everything common flags. ###
 ### NOT intended for developer use. ###
@@ -156,6 +148,7 @@ build:_memcheck --copt=-DDRAKE_ENABLE_ASSERTS  # ... but keep Drake's asserts.
 # Slowdown factor can range from 5-100. Increase timeouts to 25x.
 # See http://valgrind.org/info/about.html
 build:_memcheck --test_timeout=1500,7500,22500,90000
+build:_memcheck --test_tag_filters=-lint,-no_memcheck,-no_valgrind_tools
 # N.B. Use `-O2` despite https://docs.nersc.gov/tools/debug/valgrind/ since
 # otherwise CI builds would take an unreasonably long amount of time.
 build:_memcheck --copt=-O2

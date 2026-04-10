@@ -7,6 +7,9 @@ selects.config_setting_group(
         ":enabled_via_flag",
         ":enabled_via_define",
     ],
+    visibility = [
+        "//solvers:__pkg__",
+    ],
 )
 
 config_setting(
