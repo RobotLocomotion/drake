@@ -159,6 +159,9 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
   DRAKE_THROW_UNLESS(options.ray_sampler_options.ray_search_num_steps >= 1);
   DRAKE_THROW_UNLESS(
       options.ray_sampler_options.num_particles_to_walk_towards >= 1);
+  DRAKE_THROW_UNLESS(
+      options.ray_sampler_options.num_particles_to_walk_towards <=
+      options.sampled_iris_options.num_particles);
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -727,8 +730,14 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       int num_prog_successes = 0;
       constexpr double kSolverFailRateWarning = 0.1;
 
-      // TODO(cohnt): Comment on why there's two possible sets of particles to
-      // work on.
+      // If we use kRaySampler with
+      // ray_sampler_options.only_walk_toward_collisions == false, then we
+      // process the first
+      // ray_sampler_options.num_particles_to_walk_towards particles. Otherwise,
+      // we process all particles that are in-collision (or violate a
+      // user-defined constraint). If we use kGreedySampler or kRaySampler with
+      // ray_sampler_options.only_walk_toward_collisions == true, then we only
+      // process particles in collision.
       bool process_collisions_only =
           sampling_strategy == IrisNp2SamplingStrategy::kGreedySampler ||
           options.ray_sampler_options.only_walk_toward_collisions;
@@ -741,6 +750,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
       for (int particle_index = 0;
            particle_index < num_particles_to_walk_toward; ++particle_index) {
+        // We use DRAKE_ASSERT here, since CheckInitialConditions should already
+        // ensure particle_index < ssize(particles_to_work_on).
+        DRAKE_ASSERT(particle_index < ssize(particles_to_work_on));
         auto& particle = particles_to_work_on[particle_index];
         if (num_hyperplanes_added >=
             options.sampled_iris_options.max_separating_planes_per_iteration) {
