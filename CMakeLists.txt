@@ -461,15 +461,12 @@ macro(override_repository NAME)
       " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
 endmacro()
 
-if(APPLE AND DRAKE_CI_ENABLE_PACKAGING)
+option(WITH_USER_EIGEN "Use user-provided Eigen3" ON)
+if(DRAKE_CI_ENABLE_PACKAGING AND APPLE)
   # When building a macOS *.tar.gz binary release, never use Homebrew for C++
   # dependencies, because it offers absolutely no version stability.
-  set(DEFAULT_WITH_USER_LIBS OFF)
-else()
-  set(DEFAULT_WITH_USER_LIBS ON)
+  set(WITH_USER_EIGEN OFF)
 endif()
-
-option(WITH_USER_EIGEN "Use user-provided Eigen3" ${DEFAULT_WITH_USER_LIBS})
 
 if(WITH_USER_EIGEN)
   find_package(Eigen3 CONFIG REQUIRED)
@@ -477,7 +474,12 @@ if(WITH_USER_EIGEN)
   override_module(eigen)
 endif()
 
-option(WITH_USER_FMT "Use user-provided fmt" ${DEFAULT_WITH_USER_LIBS})
+option(WITH_USER_FMT "Use user-provided fmt" ON)
+if(DRAKE_CI_ENABLE_PACKAGING AND APPLE)
+  # When building a macOS *.tar.gz binary release, never use Homebrew for C++
+  # dependencies, because it offers absolutely no version stability.
+  set(WITH_USER_FMT OFF)
+endif()
 
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
@@ -486,7 +488,12 @@ if(WITH_USER_FMT)
   override_module(fmt)
 endif()
 
-option(WITH_USER_SPDLOG "Use user-provided spdlog" ${DEFAULT_WITH_USER_LIBS})
+option(WITH_USER_SPDLOG "Use user-provided spdlog" ON)
+if(DRAKE_CI_ENABLE_PACKAGING AND APPLE)
+  # When building a macOS *.tar.gz binary release, never use Homebrew for C++
+  # dependencies, because it offers absolutely no version stability.
+  set(WITH_USER_SPDLOG OFF)
+endif()
 
 if(WITH_USER_SPDLOG)
   if(NOT WITH_USER_FMT)
@@ -638,7 +645,7 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
-if(DRAKE_CI_ENABLE_EVERYTHING)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
   set(WITH_MOSEK ON)
 endif()
 if(WITH_MOSEK)
@@ -703,7 +710,7 @@ endif()
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
-if(DRAKE_CI_ENABLE_EVERYTHING)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
   set(WITH_ROBOTLOCOMOTION_SNOPT ON)
 endif()
 
@@ -765,10 +772,6 @@ if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
-endif()
-
-if(DRAKE_CI_ENABLE_PACKAGING)
-  string(APPEND BAZEL_CONFIG " --config=packaging")
 endif()
 
 if(BUILD_TYPE_LOWER STREQUAL debug)

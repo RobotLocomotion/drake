@@ -109,9 +109,6 @@ build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False
 # -- If Gurobi is optional, set gurobi_required=False.
 build:gurobi --@drake//tools/flags:with_gurobi=True
 build:everything --@drake//tools/flags:with_gurobi=True
-# N.B. The build:packaging configuration does NOT use Gurobi (yet).
-# See https://github.com/RobotLocomotion/drake/issues/10804.
-build:packaging --test_tag_filters=-gurobi
 
 ### A configuration that enables MOSEK™. ###
 # -- To use this config, the MOSEKLM_LICENSE_FILE environment variable must be
@@ -121,7 +118,6 @@ build:packaging --test_tag_filters=-gurobi
 # -- "mosek_test_tags()" from //tools/skylark:test_tags.bzl.
 # -- If MOSEK™ is optional, set mosek_required=False.
 build:mosek --@drake//tools/flags:with_mosek=True
-build:packaging --@drake//tools/flags:with_mosek=True
 build:everything --@drake//tools/flags:with_mosek=True
 
 ### A configuration that enables SNOPT. ###
@@ -132,5 +128,4 @@ build:everything --@drake//tools/flags:with_mosek=True
 # -- To run tests that require SNOPT, also specify a set of test_tag_filters
 # -- that does not exclude the "snopt" tag.
 build:snopt --@drake//tools/flags:with_snopt=True
-build:packaging --@drake//tools/flags:with_snopt=True
 build:everything --@drake//tools/flags:with_snopt=True
