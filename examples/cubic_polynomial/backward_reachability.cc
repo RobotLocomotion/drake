@@ -15,7 +15,6 @@
 #include "drake/common/proto/call_python.h"
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/framework/vector_system.h"
 
@@ -184,8 +183,7 @@ void ComputeBackwardReachableSet() {
        << prog.positive_semidefinite_constraints().size() << endl;
 
   const solvers::MathematicalProgramResult result = Solve(prog);
-  DRAKE_DEMAND(result.get_solver_id() == solvers::MosekSolver::id());
-  DRAKE_DEMAND(result.is_success());
+  DRAKE_THROW_UNLESS(result.is_success());
 
   // Print the solution (if one is found).
   cout << " Solution found with optimal cost: " << result.get_optimal_cost()

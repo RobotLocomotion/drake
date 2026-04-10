@@ -2,4 +2,3 @@
 
 # We don't support Gurobi on arm64.
 build:everything --@drake//tools/flags:with_gurobi=False
-build:everything --test_tag_filters=-no_everything,-gurobi

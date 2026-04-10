@@ -1,33 +1,3 @@
-# These macros are intended to be used when declaring tests that either may-use
-# or must-use dependencies that have constraints (commercial licenses, or
-# peculiar behavior). For commercial dependnecies, these labels both account
-# for any license-related needs and provide a marker so that //tools/bazel.rc
-# can selectively enable tests based on the developer's chosen configuration.
-
-def gurobi_test_tags(gurobi_required = True):
-    """Returns the test tags necessary for properly running Gurobi tests.
-
-    By default, sets gurobi_required=True, which will require that the supplied
-    tag filters include "gurobi".
-    """
-    result = []
-
-    if gurobi_required:
-        result.append("gurobi")
-
-    return result
-
-def mosek_test_tags(mosek_required = True):
-    """Returns the test tags necessary for properly running MOSEK™ tests.
-
-    By default, sets mosek_required=True, which will require that the supplied
-    tag filters include "mosek".
-    """
-    if mosek_required:
-        return ["mosek"]
-    else:
-        return []
-
 def vtk_test_tags():
     """Returns test tags necessary for rendering tests. (This is called "vtk"
     tags, but is relevant even for rendering tests that don't use VTK.)
