@@ -194,6 +194,10 @@ Adjusting open-source dependencies:
 * `WITH_RENDER_VTK` (default `ON`). When `ON`, enables the `RenderEngineVtk` in
   the build. See `geometry::kHasRenderEngineVtk` to retrieve this setting at
   runtime.
+* `WITH_OPENMP` (default `ON` on Linux; `OFF` on macOS). When `ON`, enables
+  OpenMP-based parallelization. See documentation of
+  [Environment Variables](/doxygen_cxx/group__environment__variables.html)
+  for how to control the level of parallelism at runtime.
 
 Adjusting closed-source (commercial) software dependencies:
 

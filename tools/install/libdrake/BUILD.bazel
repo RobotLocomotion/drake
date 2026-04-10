@@ -100,6 +100,18 @@ generate_file(
 )
 
 generate_file(
+    name = "with_openmp.cmake",
+    content = select({
+        "//tools/cc_toolchain:with_openmp_true": (
+            "set(WITH_OPENMP ON)"
+        ),
+        "//conditions:default": (
+            "set(WITH_OPENMP OFF)"
+        ),
+    }),
+)
+
+generate_file(
     name = "with_user_eigen.cmake",
     content = select({
         "//tools/workspace/eigen:is_external": (
@@ -184,6 +196,7 @@ cmake_configure_file(
         ":python_version.cmake",
         ":stamp_version.cmake",
         ":with_lcm_runtime.cmake",
+        ":with_openmp.cmake",
         ":with_user_eigen.cmake",
         ":with_user_fmt.cmake",
         ":with_user_spdlog.cmake",

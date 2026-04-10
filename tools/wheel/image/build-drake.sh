@@ -38,7 +38,6 @@ WITH_MOSEK=ON
 # C/CXX/Fortran compilers.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
 cmake ../drake-src \
-    -DWITH_OPENMP=ON \
     -DWITH_MOSEK="${WITH_MOSEK}" \
     -DWITH_SNOPT=ON \
     -DSNOPT_PATH="${SNOPT_PATH}" \
