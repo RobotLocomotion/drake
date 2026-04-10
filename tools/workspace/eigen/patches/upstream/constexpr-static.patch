@@ -1,12 +1,12 @@
-[Eigen] Cherry-pick commit 36ca36d0def87e3cf10fb0b3d75c6be87b3d3698
+[Eigen] Cherry-pick two commits for C++17 deprecation warnings
 
-Guard redundant constexpr static member redeclarations for C++17+
+https://gitlab.com/libeigen/eigen/-/merge_requests/2299
+36ca36d0def87e3cf10fb0b3d75c6be87b3d3698
+
+https://gitlab.com/libeigen/eigen/-/merge_requests/2416
+ec28a251337eaedd3453e20b6bdbd0a46df46e74
 
 Co-authored-by: Pavel Guzenfeld <67074795+PavelGuzenfeld@users.noreply.github.com>
----
- Eigen/src/Core/arch/Default/BFloat16.h | 3 +++
- Eigen/src/Core/arch/Default/Half.h     | 3 +++
- 2 files changed, 6 insertions(+)
 
 diff --git a/Eigen/src/Core/arch/Default/BFloat16.h b/Eigen/src/Core/arch/Default/BFloat16.h
 index 8f1f09208b..78d2a95928 100644
@@ -51,3 +51,22 @@ index 671a9dcc11..56aeb3fa83 100644
  }  // end namespace Eigen
 
 --
+
+diff --git a/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h b/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h
+index 97f214201..cd61f65bf 100644
+--- a/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h
++++ b/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h
+@@ -274,9 +274,12 @@ struct simpl_chol_helper {
+   }
+ };
+ 
+-// Symbol is ODR-used, so we need a definition.
++// Required pre-C++17 for ODR; redundant and deprecated since (C++17 makes
++// constexpr static data members implicitly inline).
++#if EIGEN_COMP_CXXVER < 17
+ template <typename Scalar, typename StorageIndex>
+ constexpr StorageIndex simpl_chol_helper<Scalar, StorageIndex>::kEmpty;
++#endif
+ 
+ }  // namespace internal
+ 
