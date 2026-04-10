@@ -9,14 +9,8 @@ def gurobi_test_tags(gurobi_required = True):
 
     By default, sets gurobi_required=True, which will require that the supplied
     tag filters include "gurobi".
-
-    Gurobi checks a license file outside the workspace so tests that use Gurobi
-    must have the tag "no-sandbox".
     """
-    result = [
-        # TODO(david-german-tri): Find a better fix for the license file.
-        "no-sandbox",
-    ]
+    result = []
 
     if gurobi_required:
         result.append("gurobi")
@@ -28,17 +22,11 @@ def mosek_test_tags(mosek_required = True):
 
     By default, sets mosek_required=True, which will require that the supplied
     tag filters include "mosek".
-
-    MOSEK™ checks a license file outside the workspace, so tests that use
-    MOSEK™ must have the tag "no-sandbox".
     """
-    nominal_tags = [
-        "no-sandbox",
-    ]
     if mosek_required:
-        return nominal_tags + ["mosek"]
+        return ["mosek"]
     else:
-        return nominal_tags
+        return []
 
 def vtk_test_tags():
     """Returns test tags necessary for rendering tests. (This is called "vtk"
