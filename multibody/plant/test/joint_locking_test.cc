@@ -17,6 +17,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -27,6 +28,7 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using systems::Context;
 using systems::Simulator;
+using systems::SimulatorConfig;
 
 namespace multibody {
 
@@ -48,9 +50,15 @@ class MultibodyPlantTester {
 
 namespace {
 
+const bool kIsDiscrete = false;  // XXX make me a test param.
 const double kTimestep = 0.01;
 const double kElbowPosition = 0.3;
 const double kArmLength = 0.1;
+const SimulatorConfig cenic_config{"cenic", 0.1, 1e-3, true, 0.0, 0.0, false};
+
+constexpr double plant_timestep() {
+  return kIsDiscrete ? kTimestep : 0.0;
+};
 
 // Remove on 2026-09-01 per TAMSI deprecation.
 #pragma GCC diagnostic push
@@ -66,7 +74,7 @@ constexpr auto kDiscreteContactApproximationTamsi =
 class JointLockingTest : public ::testing::TestWithParam<int> {
  public:
   void SetUp() {
-    plant_ = std::make_unique<MultibodyPlant<double>>(kTimestep);
+    plant_ = std::make_unique<MultibodyPlant<double>>(plant_timestep());
 
     // Each permutation of adding trees (children of world body) to the plant.
     switch (GetParam()) {
@@ -351,18 +359,20 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
   std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
       bool weld_elbow, DiscreteContactSolver solver) {
     std::unique_ptr<MultibodyPlant<double>> plant;
-    plant = std::make_unique<MultibodyPlant<double>>(kTimestep);
-    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-    // arbitrarily choose two model approximations to accomplish this.
-    switch (solver) {
-      case kDiscreteContactSolverTamsi:
-        plant->set_discrete_contact_approximation(
-            kDiscreteContactApproximationTamsi);
-        break;
-      case DiscreteContactSolver::kSap:
-        plant->set_discrete_contact_approximation(
-            DiscreteContactApproximation::kSap);
-        break;
+    plant = std::make_unique<MultibodyPlant<double>>(plant_timestep());
+    if (plant->is_discrete()) {
+      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+      // arbitrarily choose two model approximations to accomplish this.
+      switch (solver) {
+        case kDiscreteContactSolverTamsi:
+          plant->set_discrete_contact_approximation(
+              kDiscreteContactApproximationTamsi);
+          break;
+        case DiscreteContactSolver::kSap:
+          plant->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kSap);
+          break;
+      }
     }
 
     const RigidBody<double>& body1 =
@@ -425,8 +435,10 @@ TEST_P(TrajectoryTest, CompareWeldAndLocked) {
 
   auto simulator_welded = std::make_unique<Simulator<double>>(
       *plant_welded_, std::move(context_welded));
+  ApplySimulatorConfig(cenic_config, simulator_welded.get());
   auto simulator_locked = std::make_unique<Simulator<double>>(
       *plant_locked_, std::move(context_locked));
+  ApplySimulatorConfig(cenic_config, simulator_locked.get());
   simulator_welded->Initialize();
   simulator_locked->Initialize();
 
