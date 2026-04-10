@@ -196,6 +196,12 @@ The Drake Bazel build currently supports the following proprietary solvers:
 * MOSEK™ 11.1
 * SNOPT 7.4
 
+Important note: Running Gurobi or Mosek requires a license, which will often
+have a maximum number of programs allowed to use the solver at once. To avoid
+hitting the concurrency limit when running `bazel test //some/package/...` or
+`bazel test //...`, use the flag `--local_test_jobs=N` set to the number of
+license seats you want to use.
+
 ## Gurobi
 
 ### Install on Ubuntu
