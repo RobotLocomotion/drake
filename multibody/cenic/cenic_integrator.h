@@ -169,11 +169,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
     step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
     Note that these states include continuous state for the entire diagram. */
     /* x_{t+h}. */
-    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full;
+    std::unique_ptr<systems::ContinuousState<T>> x_next_full;
     /* x_{t+h/2}. */
-    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_1;
+    std::unique_ptr<systems::ContinuousState<T>> x_next_half_1;
     /* x_{t+h/2+h/2}. */
-    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_2;
+    std::unique_ptr<systems::ContinuousState<T>> x_next_half_2;
   };
 
   /* Data for PrintSimulatorStatistics(). */
@@ -207,7 +207,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
                      plant and any external systems. */
   void ComputeNextContinuousState(
       const contact_solvers::icf::internal::IcfModel<T>& model,
-      const VectorX<T>& v_guess, systems::DiagramContinuousState<T>* x_next);
+      const VectorX<T>& v_guess, systems::ContinuousState<T>* x_next);
 
   /* Advances the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   to handle quaternion DoFs properly.

@@ -38,13 +38,15 @@ class DiagramScanner : public SystemVisitor<T> {
   static CenicDiagramStructure<T> ScanAndValidateDiagram(
       const System<T>& system) {
     const auto* const diagram = dynamic_cast<const Diagram<T>*>(&system);
-    if (diagram == nullptr) {
+    const auto* maybe_plant = dynamic_cast<const MultibodyPlant<T>*>(&system);
+    if (diagram == nullptr && maybe_plant == nullptr) {
       throw std::logic_error(
-          fmt::format("CenicIntegrator must be given a Diagram, not a {}.",
+          fmt::format("CenicIntegrator must be given a Diagram or a "
+                      "MultibodyPlant, not a {}.",
                       NiceTypeName::Get(system)));
     }
     DiagramScanner<T> visitor;
-    diagram->Accept(&visitor);
+    system.Accept(&visitor);
     DRAKE_DEMAND(visitor.current_path_.empty());
     if (visitor.structure_.plant == nullptr) {
       if (visitor.rejected_plant_ != nullptr) {
@@ -164,9 +166,9 @@ ContinuousState<T>& GetMutableSubstateByPath(ContinuousState<T>& state,
 }
 
 template <typename T>
-const System<T>& GetSubsystemByPath(const Diagram<T>& diagram,
+const System<T>& GetSubsystemByPath(const System<T>& system,
                                     const SubsystemPath& path) {
-  const System<T>* cursor = &diagram;
+  const System<T>* cursor = &system;
   for (const SubsystemIndex& k : path) {
     cursor = &(static_cast<const Diagram<T>*>(cursor)->get_system(k));
   }
@@ -218,12 +220,9 @@ void CenicIntegrator<T>::Scratch::Resize(const MultibodyPlant<T>& plant,
   external_feedback_storage.Resize(nv);
 
   // Allocate intermediate states for error control.
-  x_next_full = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
-      diagram.AllocateTimeDerivatives());
-  x_next_half_1 = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
-      diagram.AllocateTimeDerivatives());
-  x_next_half_2 = dynamic_pointer_cast_or_throw<DiagramContinuousState<T>>(
-      diagram.AllocateTimeDerivatives());
+  x_next_full = diagram.AllocateTimeDerivatives();
+  x_next_half_1 = diagram.AllocateTimeDerivatives();
+  x_next_half_2 = diagram.AllocateTimeDerivatives();
 }
 
 template <typename T>
@@ -361,7 +360,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
   // error control is enabled or not.
   VectorX<T>& v_guess = scratch_.v_guess;
   v_guess = plant().GetVelocities(plant_context);
-  systems::DiagramContinuousState<T>& x_next_full = *scratch_.x_next_full;
+  systems::ContinuousState<T>& x_next_full = *scratch_.x_next_full;
   ComputeNextContinuousState(model_at_x0_, v_guess, &x_next_full);
 
   if (this->get_fixed_step_mode()) {
@@ -385,7 +384,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
                    .get_generalized_velocity()
                    .CopyToVector();
     v_guess /= 2.0;
-    systems::DiagramContinuousState<T>& x_next_half_1 = *scratch_.x_next_half_1;
+    systems::ContinuousState<T>& x_next_half_1 = *scratch_.x_next_half_1;
     ComputeNextContinuousState(model_at_x0_, v_guess, &x_next_half_1);
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
@@ -403,7 +402,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     v_guess = GetSubstateByPath(*scratch_.x_next_full, structure_.plant_path)
                   .get_generalized_velocity()
                   .CopyToVector();
-    systems::DiagramContinuousState<T>& x_next_half_2 = *scratch_.x_next_half_2;
+    systems::ContinuousState<T>& x_next_half_2 = *scratch_.x_next_half_2;
     ComputeNextContinuousState(model_at_xh_, v_guess, &x_next_half_2);
 
     // Set the state to the result of the second half-step (since this is more
@@ -424,7 +423,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
 template <typename T>
 void CenicIntegrator<T>::ComputeNextContinuousState(
     const IcfModel<T>& model, const VectorX<T>& v_guess,
-    DiagramContinuousState<T>* x_next) {
+    ContinuousState<T>* x_next) {
   DRAKE_ASSERT(x_next != nullptr);
   DRAKE_ASSERT(v_guess.size() == model.num_velocities());
   DRAKE_ASSERT(model.num_velocities() == plant().num_velocities());
@@ -480,11 +479,11 @@ void CenicIntegrator<T>::ComputeNextContinuousState(
   // While we could use a more advanced integration scheme here, the non-plant
   // dynamics are usually pretty simple (e.g., the integral term from a PID
   // controller), so forward euler is sufficient.
-  const auto& diagram = static_cast<const Diagram<T>&>(this->get_system());
+  const auto& root_system = this->get_system();
   for (const auto& path : structure_.non_plant_xc_paths) {
-    // #created_for_root_diagram: See `diagram` derivation from
+    // #created_for_root_diagram: See `root_system` derivation from
     // `this->get_system()` just above the for loop.
-    const System<T>& subsystem = GetSubsystemByPath(diagram, path);
+    const System<T>& subsystem = GetSubsystemByPath(root_system, path);
     const Context<T>& subcontext = subsystem.GetMyContextFromRoot(context);
 
     // TODO(vincekurtz): eliminate these heap allocations.
