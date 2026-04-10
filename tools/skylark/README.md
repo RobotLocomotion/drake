@@ -62,3 +62,15 @@ work correctly in the presence of sub-processes.
 (Aside: Besides the two named environment variables, the function also sets
 several other environment variables using alternative spellings of the same
 concept; the overall effect should be the same.)
+
+**opt_in_condition**
+
+Can either be None (the default), or the name of a `config_setting`.
+
+Allows a test to be skipped during `bazel test //...` based on a specific
+condition.
+
+By default (or when None), the test is included in `bazel test //...`.
+
+When non-None, the test is omitted from `bazel test //...` unless the named
+condition is True.
