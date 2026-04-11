@@ -134,7 +134,6 @@ rigid-compliant, compliant-compliant, and rigid-compliant respectively. The
 hydroelastic contact model can work with non-convex shapes accurately without
 resorting to their convex hulls. Launch meldis before running this example.
 See the README.md file for more information.)""");
-  FLAGS_simulator_publish_every_time_step = true;
   FLAGS_simulator_target_realtime_rate = 0.1;
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::ball_plate::do_main();

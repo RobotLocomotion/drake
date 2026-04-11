@@ -4,6 +4,8 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <ranges>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -250,18 +252,16 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
     // time algorithm (in the number of faces of the meshes) but we expect the
     // number of faces that this algorithm is run on to be small.
     const int face_count = test_mesh_W.num_elements();
-    vector<int> unmatched_from_expected(face_count);
-    std::iota(unmatched_from_expected.begin(), unmatched_from_expected.end(),
-              0);
+    const auto face_range = std::views::iota(0, face_count);
+    std::set<int> unmatched_from_expected(face_range.begin(), face_range.end());
     for (int i = 0; i < face_count; ++i) {
       bool found_match = false;
       for (int j : unmatched_from_expected) {
         if (AreFacesEquivalent(i, test_mesh_W, j, expected_mesh_W)) {
           found_match = true;
-          // Modifying the vector during range iteration is ok, because this
+          // Modifying the set during range iteration is ok, because this
           // modifications triggers dropping out of the iteration.
-          unmatched_from_expected[j] = unmatched_from_expected.back();
-          unmatched_from_expected.pop_back();
+          unmatched_from_expected.erase(j);
           break;
         }
       }

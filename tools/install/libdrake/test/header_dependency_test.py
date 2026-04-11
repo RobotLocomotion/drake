@@ -70,5 +70,5 @@ class HeaderDependencyTest(unittest.TestCase):
                 if not self._is_valid_line(line):
                     self.fail(
                         "This #include statement is not allowed\n"
-                        "ERROR: {}:{}: {}".format(filename, i + 1, line)
+                        f"ERROR: {filename}:{i + 1}: {line}"
                     )

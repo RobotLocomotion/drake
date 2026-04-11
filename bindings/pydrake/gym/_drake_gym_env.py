@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 import warnings
 
 import gymnasium as gym
@@ -31,14 +31,14 @@ class DrakeGymEnv(gym.Env):
 
     def __init__(
         self,
-        simulator: Union[Simulator, Callable[[RandomGenerator], Simulator]],
+        simulator: Simulator | Callable[[RandomGenerator], Simulator],
         time_step: float,
         action_space: gym.spaces.Space,
         observation_space: gym.spaces.Space,
-        reward: Union[Callable[[System, Context], float], OutputPortIndex, str],
-        action_port_id: Union[InputPort, InputPortIndex, str] = None,
-        observation_port_id: Union[OutputPortIndex, str] = None,
-        render_rgb_port_id: Union[OutputPortIndex, str] = None,
+        reward: Callable[[System, Context], float] | OutputPortIndex | str,
+        action_port_id: InputPort | InputPortIndex | str = None,
+        observation_port_id: OutputPortIndex | str = None,
+        render_rgb_port_id: OutputPortIndex | str = None,
         render_mode: str = "human",
         reset_handler: Callable[[Simulator, Context], None] = None,
         info_handler: Callable[[Simulator], dict] = None,
@@ -280,9 +280,7 @@ class DrakeGymEnv(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def reset(
-        self, *, seed: Optional[int] = None, options: Optional[dict] = None
-    ):
+    def reset(self, *, seed: int | None = None, options: dict | None = None):
         """
         If a callable "simulator factory" was passed to the constructor, then a
         new simulator is created.  Otherwise this method simply resets the

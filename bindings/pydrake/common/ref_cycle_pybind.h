@@ -60,6 +60,13 @@ void ref_cycle_impl(size_t peer0, size_t peer1,
 void make_arbitrary_ref_cycle(
     py::handle p0, py::handle p1, const std::string& location_hint);
 
+/* This function constructs a one-way reference from handle p0 to p1. It may be
+ needed in special cases where the ordinary call-policy annotations won't work.
+ The `location_hint` will appear in any exception messages; it should help
+ developers locate where and why this function was called. */
+void make_arbitrary_ref_link(
+    py::handle p0, py::handle p1, const std::string& location_hint);
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

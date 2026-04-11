@@ -69,13 +69,11 @@ genrule(
 
 cc_library(
     name = "libpng",
-    hdrs = _PUBLIC_HDRS,
     srcs = _SRCS + _PRIVATE_HDRS + select({
         ":build_intel": _SRCS_INTEL,
         "//conditions:default": [],
     }),
-    includes = ["."],
-    isystem = True,
+    hdrs = _PUBLIC_HDRS,
     copts = [
         "-fvisibility=hidden",
         "-w",
@@ -97,12 +95,14 @@ cc_library(
             "-DPNG_INTEL_SSE_IMPLEMENTATION=0",
         ],
     }),
+    includes = ["."],
+    isystem = True,
     linkopts = ["-lm"],
     linkstatic = True,
+    visibility = ["//visibility:public"],
     deps = [
         "@zlib",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(

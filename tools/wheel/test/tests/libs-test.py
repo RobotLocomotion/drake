@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from pathlib import Path
 import sys
@@ -7,25 +7,30 @@ from zipfile import ZipFile
 # Everything here must have its license installed as part of the wheel build.
 # This list must be kept in sync with the calls to copy_ubuntu_license in
 # drake/tools/wheel/image/build-wheel.sh.
-_ALLOWED_LIBS = frozenset({
-    "libgfortran",
-    "libgomp",
-    "libquadmath",
-})
+_ALLOWED_LIBS = frozenset(
+    {
+        "libgfortran",
+        "libgomp",
+        "libquadmath",
+    }
+)
 
 # TODO(jwnimmer-tri) Install the license texts for these (or stop using the
 # library entirely).
-_EXTRA_LIBS_MACOS = frozenset({
-    "libgcc_s",
-    "libglib",
-    "libintl",
-    "libpcre2",
-})
+_EXTRA_LIBS_MACOS = frozenset(
+    {
+        "libgcc_s",
+        "libglib",
+        "libintl",
+        "libpcre2",
+    }
+)
 
 if sys.platform == "darwin":
     _ALLOWED_LIBS_ALL = frozenset(_ALLOWED_LIBS | _EXTRA_LIBS_MACOS)
 else:
     _ALLOWED_LIBS_ALL = _ALLOWED_LIBS
+
 
 def get_all_files_in_wheel(wheel_path: Path):
     """Returns and iterator over all (relative) paths the wheel."""
@@ -47,10 +52,14 @@ def is_good_file(path):
         return False
 
     # Only allow expected shared libraries to be shipped.
-    if any([str(path).startswith("drake.libs/"),
-            str(path).startswith("drake/.dylibs/")]):
+    if any(
+        [
+            str(path).startswith("drake.libs/"),
+            str(path).startswith("drake/.dylibs/"),
+        ]
+    ):
         stem = path.name.split(".")[0]  # Remove filename extension(s).
-        stem = stem.split("-")[0]       # Remove anything after the '-'.
+        stem = stem.split("-")[0]  # Remove anything after the '-'.
         return stem in _ALLOWED_LIBS_ALL
 
     # Branch on the top-level directory name.

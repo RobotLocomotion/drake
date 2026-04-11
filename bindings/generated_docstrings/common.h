@@ -14,7 +14,6 @@
 
 // #include "drake/common/autodiff.h"
 // #include "drake/common/autodiff_config.h"
-// #include "drake/common/bit_cast.h"
 // #include "drake/common/cond.h"
 // #include "drake/common/constants.h"
 // #include "drake/common/copyable_unique_ptr.h"
@@ -55,6 +54,7 @@
 // #include "drake/common/pointer_cast.h"
 // #include "drake/common/polynomial.h"
 // #include "drake/common/random.h"
+// #include "drake/common/ranges.h"
 // #include "drake/common/reset_after_move.h"
 // #include "drake/common/reset_on_copy.h"
 // #include "drake/common/scope_exit.h"
@@ -69,6 +69,8 @@
 // #include "drake/common/string_unordered_set.h"
 // #include "drake/common/temp_directory.h"
 // #include "drake/common/text_logging.h"
+// #include "drake/common/text_logging_impl_spdlog.h"
+// #include "drake/common/text_logging_level.h"
 // #include "drake/common/text_logging_spdlog.h"
 // #include "drake/common/timer.h"
 // #include "drake/common/type_safe_index.h"
@@ -150,8 +152,8 @@ destroyed.
 
 Template parameter ``T``:
     The originally declared type of this AbstractValue, e.g., from
-    AbstractValue::Make<T>() or Value<T>::Value(). If T does not
-    match, a RuntimeError will be thrown with a helpful error message.)""";
+    AbstractValue∷Make<T>() or Value<T>∷Value(). If T does not match,
+    a RuntimeError will be thrown with a helpful error message.)""";
       } get_mutable_value;
       // Symbol: drake::AbstractValue::get_value
       struct /* get_value */ {
@@ -163,8 +165,8 @@ destroyed.
 
 Template parameter ``T``:
     The originally declared type of this AbstractValue, e.g., from
-    AbstractValue::Make<T>() or Value<T>::Value(). If T does not
-    match, a RuntimeError will be thrown with a helpful error message.)""";
+    AbstractValue∷Make<T>() or Value<T>∷Value(). If T does not match,
+    a RuntimeError will be thrown with a helpful error message.)""";
       } get_value;
       // Symbol: drake::AbstractValue::maybe_get_mutable_value
       struct /* maybe_get_mutable_value */ {
@@ -175,8 +177,8 @@ the originally declared type of this AbstractValue.
 
 Template parameter ``T``:
     The originally declared type of this AbstractValue, e.g., from
-    AbstractValue::Make<T>() or Value<T>::Value(). If T does not
-    match, returns nullptr.)""";
+    AbstractValue∷Make<T>() or Value<T>∷Value(). If T does not match,
+    returns nullptr.)""";
       } maybe_get_mutable_value;
       // Symbol: drake::AbstractValue::maybe_get_value
       struct /* maybe_get_value */ {
@@ -187,8 +189,8 @@ originally declared type of this AbstractValue.
 
 Template parameter ``T``:
     The originally declared type of this AbstractValue, e.g., from
-    AbstractValue::Make<T>() or Value<T>::Value(). If T does not
-    match, returns nullptr.)""";
+    AbstractValue∷Make<T>() or Value<T>∷Value(). If T does not match,
+    returns nullptr.)""";
       } maybe_get_value;
       // Symbol: drake::AbstractValue::set_value
       struct /* set_value */ {
@@ -198,8 +200,8 @@ R"""(Sets the value wrapped in this AbstractValue.
 
 Template parameter ``T``:
     The originally declared type of this AbstractValue, e.g., from
-    AbstractValue::Make<T>() or Value<T>::Value(). If T does not
-    match, a RuntimeError will be thrown with a helpful error message.)""";
+    AbstractValue∷Make<T>() or Value<T>∷Value(). If T does not match,
+    a RuntimeError will be thrown with a helpful error message.)""";
       } set_value;
       // Symbol: drake::AbstractValue::static_type_info
       struct /* static_type_info */ {
@@ -252,7 +254,7 @@ compiler might have problem to deduce the scalar type automatically.)""";
     struct /* DefaultHash */ {
       // Source: drake/common/hash.h
       const char* doc =
-R"""(The default hashing functor, akin to std::hash.)""";
+R"""(The default hashing functor, akin to std∷hash.)""";
     } DefaultHash;
     // Symbol: drake::DefaultHasher
     struct /* DefaultHasher */ {
@@ -260,14 +262,14 @@ R"""(The default hashing functor, akin to std::hash.)""";
       const char* doc =
 R"""(The default HashAlgorithm concept implementation across Drake. This is
 guaranteed to have a result_type of size_t to be compatible with
-std::hash.)""";
+std∷hash.)""";
     } DefaultHasher;
     // Symbol: drake::DelegatingHasher
     struct /* DelegatingHasher */ {
       // Source: drake/common/hash.h
       const char* doc =
-R"""(An adapter that forwards the HashAlgorithm::operator(data, length)
-function concept into a runtime-provided std::function of the same
+R"""(An adapter that forwards the HashAlgorithm∷operator(data, length)
+function concept into a runtime-provided std∷function of the same
 signature. This is useful for passing a concrete HashAlgorithm
 implementation through into non-templated code, such as with an Impl
 or Cell pattern.)""";
@@ -281,7 +283,7 @@ R"""(Create a delegating hasher that calls the given ``func``.)""";
       struct /* Func */ {
         // Source: drake/common/hash.h
         const char* doc =
-R"""(A std::function whose signature matches HashAlgorithm::operator().)""";
+R"""(A std∷function whose signature matches HashAlgorithm∷operator().)""";
       } Func;
       // Symbol: drake::DelegatingHasher::operator()
       struct /* operator_call */ {
@@ -294,12 +296,12 @@ R"""(Append [data, data + length) bytes into the wrapped algorithm.)""";
     struct /* EigenMapView */ {
       // Source: drake/common/eigen_types.h
       const char* doc =
-R"""(Given a random access container (like std::vector, std::array, or C
-array), returns an Eigen::Map view into that container. Because this
+R"""(Given a random access container (like std∷vector, std∷array, or C
+array), returns an Eigen∷Map view into that container. Because this
 effectively forms a reference to borrowed memory, you must be be
 careful using the return value as anything other than a temporary. The
-Map return value currently uses Eigen::Dynamic size at compile time
-even when the container is fixed-size (e.g., std::array); if that ever
+Map return value currently uses Eigen∷Dynamic size at compile time
+even when the container is fixed-size (e.g., std∷array); if that ever
 turns into a performance bottleneck in practice, it would be plausible
 to interrogate the size and return a fixed-size Map, instead.)""";
     } EigenMapView;
@@ -309,8 +311,8 @@ to interrogate the size and return a fixed-size Map, instead.)""";
       const char* doc =
 R"""(This wrapper class provides a way to write non-template functions
 taking raw pointers to Eigen objects as parameters while limiting the
-number of copies, similar to ``Eigen::Ref``. Internally, it keeps an
-instance of ``Eigen::Ref<T>`` and provides access to it via
+number of copies, similar to ``Eigen∷Ref``. Internally, it keeps an
+instance of ``Eigen∷Ref<T>`` and provides access to it via
 ``operator*`` and ``operator->``. As with ordinary pointers, these
 operators do not perform nullptr checks in Release builds. User-facing
 APIs should check for nullptr explicitly.
@@ -318,9 +320,8 @@ APIs should check for nullptr explicitly.
 The primary motivation of this class is to follow <a
 href="https://google.github.io/styleguide/cppguide.html#Reference_Arguments">GSG's
 "output arguments should be pointers" convention</a> while taking
-advantage of using ``Eigen::Ref``. It can also be used to pass
-optional Eigen objects since EigenPtr, unlike ``Eigen::Ref``, can be
-null.
+advantage of using ``Eigen∷Ref``. It can also be used to pass optional
+Eigen objects since EigenPtr, unlike ``Eigen∷Ref``, can be null.
 
 Some examples:
 
@@ -331,9 +332,9 @@ Some examples:
 
 .. code-block:: c++
 
-    // This function is taking an Eigen::Ref of a matrix and modifies it in
+    // This function is taking an Eigen∷Ref of a matrix and modifies it in
     // the body. This violates GSG's pointer convention for output parameters.
-    void foo(Eigen::Ref<Eigen::MatrixXd> M) {
+    void foo(Eigen∷Ref<Eigen∷MatrixXd> M) {
        M(0, 0) = 0;
     }
     // At Call-site, we have:
@@ -341,7 +342,7 @@ Some examples:
     foo(M.block(0, 0, 2, 2));
     
     // We can rewrite the above function into the following using EigenPtr.
-    void foo(EigenPtr<Eigen::MatrixXd> M) {
+    void foo(EigenPtr<Eigen∷MatrixXd> M) {
        DRAKE_THROW_UNLESS(M != nullptr);  // If you want a Release-build check.
        (*M)(0, 0) = 0;
     }
@@ -360,7 +361,7 @@ Some examples:
 Notice that methods taking an EigenPtr can mutate the entries of a
 matrix as in method ``foo()`` in the example code above, but cannot
 change its size. This is because ``operator*`` and ``operator->``
-return an ``Eigen::Ref<T>`` object and only plain matrices/arrays can
+return an ``Eigen∷Ref<T>`` object and only plain matrices/arrays can
 be resized and not expressions. This **is** the desired behavior,
 since resizing the block of a matrix or even a more general expression
 should not be allowed. If you do want to be able to resize a mutable
@@ -373,7 +374,7 @@ matrix argument, then you must pass it as a ``Matrix<T>*``, like so:
 
 .. code-block:: c++
 
-    void bar(Eigen::MatrixXd* M) {
+    void bar(Eigen∷MatrixXd* M) {
       DRAKE_THROW_UNLESS(M != nullptr);
       // In this case this method only works with 4x3 matrices.
       if (M->rows() != 4 && M->cols() != 3) {
@@ -438,7 +439,7 @@ R"""(Precondition:
 R"""(Returns ``scalar`` as a double. Never throws.)""";
       // Source: drake/common/extract_double.h
       const char* doc_1args_constEigenMatrixBase =
-R"""(Returns ``matrix`` as an Eigen::Matrix<double, ...> with the same size
+R"""(Returns ``matrix`` as an Eigen∷Matrix<double, ...> with the same size
 allocation as ``matrix``. Calls ExtractDoubleOrThrow on each element
 of the matrix, and therefore throws if any one of the extractions
 fail.)""";
@@ -480,22 +481,21 @@ unavailable, then returns an error result.)""";
       // Source: drake/common/find_resource.h
       const char* doc =
 R"""((Advanced) Convenient wrapper for querying FindResource(resource_path)
-followed by FindResourceResult::get_absolute_path_or_throw().
+followed by FindResourceResult∷get_absolute_path_or_throw().
 
 The primary purpose of this function is for Drake's software internals
 to locate Drake resources (e.g., config files) within Drake's build
 system. In most cases, end users should not need to use it.
 
 Do NOT use this function to feed into a
-drake::multibody::parsing::Parser. Instead, use
-parser.AddModelsFromUrl() in coordination with the parser's
-PackageMap.)""";
+drake∷multibody∷parsing∷Parser. Instead, use parser.AddModelsFromUrl()
+in coordination with the parser's PackageMap.)""";
     } FindResourceOrThrow;
     // Symbol: drake::FindResourceResult
     struct /* FindResourceResult */ {
       // Source: drake/common/find_resource.h
       const char* doc =
-R"""(Models the outcome of drake::FindResource. After a call to
+R"""(Models the outcome of drake∷FindResource. After a call to
 FindResource, typical calling code would use
 get_absolute_path_or_throw(). Alternatively, get_absolute_path() will
 return an ``optional<string>``, which can be manually checked to
@@ -696,7 +696,7 @@ identifier type has the following properties:
 
 - The identifier's default constructor produces *invalid* identifiers.
 - Valid identifiers must be constructed via the copy constructor or through
-Identifier::get_new_id().
+Identifier∷get_new_id().
 - The identifier is immutable.
 - The identifier can only be tested for equality/inequality with other
 identifiers of the *same* type.
@@ -717,7 +717,7 @@ write an invalid identifier to a stream will throw an exception.
 
 Functions that query for identifiers should not return invalid
 identifiers. We prefer the practice of returning
-std::optional<Identifier> instead.
+std∷optional<Identifier> instead.
 
 It is the designed intent of this class, that ids derived from this
 class can be passed and returned by value. (Drake's typical calling
@@ -757,10 +757,10 @@ failure. For example:
     using BId = Identifier<class BTag>;
     AId a1;                              // Compiler error; there is no
     //   default constructor.
-    AId a2 = AId::get_new_id();          // Ok.
+    AId a2 = AId∷get_new_id();          // Ok.
     AId a3(a2);                          // Ok.
-    AId a4 = AId::get_new_id();          // Ok.
-    BId b = BId::get_new_id();           // Ok.
+    AId a4 = AId∷get_new_id();          // Ok.
+    BId b = BId∷get_new_id();           // Ok.
     if ( a2 == 1 ) { ... }               // Compiler error.
     if ( a2 == a4 ) { ... }              // Ok, evaluates to false.
     if ( a2 == a3 ) { ... }              // Ok, evaluates to true.
@@ -785,7 +785,7 @@ limited number of operations *on* the index that produce other instances
 of the index (e.g., increment, in-place addition, etc.) They can be
 compared with ``int`` and other indices of the same type. This behavior
 arises from the intention of having them serve as an *index* in an
-ordered set (e.g., ``std::vector``).
+ordered set (e.g., ``std∷vector``).
 - The Identifier is the most restricted. They exist solely to serve as a
 unique identifier. They are immutable when created. Very few operations
 exist on them (comparison for *equality* with other identifiers of the same
@@ -862,7 +862,7 @@ Debug builds.)""";
         const char* doc =
 R"""(Compare two identifiers in order to define a total ordering among
 identifiers. This makes identifiers compatible with data structures
-which require total ordering (e.g., std::set).)""";
+which require total ordering (e.g., std∷set).)""";
       } operator_lt;
     } Identifier;
     // Symbol: drake::IsApproxEqualAbsTolWithPermutedColumns
@@ -982,7 +982,7 @@ removed.)""";
 R"""(Creates an instance of MemoryFile from the file located at the given
 ``path``. The filename_hint() will be the stringified path. Making a
 MemoryFile computes the hash of its contents. If all you want is the
-contents, use drake::ReadFile() or drake::ReadFileOrThrow() instead.
+contents, use drake∷ReadFile() or drake∷ReadFileOrThrow() instead.
 
 Raises:
     RuntimeError if the file at ``path`` cannot be read.)""";
@@ -1161,16 +1161,16 @@ Usage:
 .. code-block:: c++
 
     // For types:
-    using std::pair; using std::string;
+    using std∷pair; using std∷string;
     using MyVectorType = pair<int,string>;
-    std::cout << "Type MyVectorType was: "
-    << drake::NiceTypeName::Get<MyVectorType>() << std::endl;
-    // Output: std::pair<int,std::string>
+    std∷cout << "Type MyVectorType was: "
+    << drake∷NiceTypeName∷Get<MyVectorType>() << std∷endl;
+    // Output: std∷pair<int,std∷string>
     
     // For expressions:
-    std::unique_ptr<AbstractThing> thing;  // Assume actual type is ConcreteThing.
-    std::cout << "Actual type of 'thing' was: "
-    << drake::NiceTypeName::Get(*thing) << std::endl;
+    std∷unique_ptr<AbstractThing> thing;  // Assume actual type is ConcreteThing.
+    std∷cout << "Actual type of 'thing' was: "
+    << drake∷NiceTypeName∷Get(*thing) << std∷endl;
     // Output: ConcreteThing
 
 .. raw:: html
@@ -1180,9 +1180,9 @@ Usage:
 We demangle and attempt to canonicalize the compiler-generated type
 names as reported by ``typeid(T).name()`` so that the same string is
 returned by all supported compilers and platforms. The output of
-NiceTypeName::Get<T>() is useful in error and log messages and
-testing. It also provides a persistent, platform-independent
-identifier for types; ``std::type_info`` cannot provide that.
+NiceTypeName∷Get<T>() is useful in error and log messages and testing.
+It also provides a persistent, platform-independent identifier for
+types; ``std∷type_info`` cannot provide that.
 
 Warning:
     Don't expect usable names for types that are defined in an
@@ -1200,7 +1200,7 @@ R"""(Given a compiler-dependent demangled type name string as returned by
 Demangle(), attempts to form a canonicalized representation that will
 be the same for any compiler. Unnecessary spaces and superfluous
 keywords like "class" and "struct" are removed. The
-NiceTypeName::Get<T>() method uses this function to produce a
+NiceTypeName∷Get<T>() method uses this function to produce a
 human-friendly type name that is the same on any platform.)""";
       } Canonicalize;
       // Symbol: drake::NiceTypeName::Demangle
@@ -1253,13 +1253,13 @@ destructors that may be invoked during program tear-down.)""";
         const char* doc =
 R"""(Given a canonical type name that may include leading namespaces,
 attempts to remove those namespaces. For example,
-``drake::systems::MyThing<internal::type>`` becomes
-``MyThing<internal::type>``. If the last segment ends in ``::``, the
+``drake∷systems∷MyThing<internal∷type>`` becomes
+``MyThing<internal∷type>``. If the last segment ends in ``∷``, the
 original string is returned unprocessed. Note that this is just string
 processing -- a segment that looks like a namespace textually will be
 treated as one, even if it is really a class. So
-``drake::MyClass::Impl`` will be reduced to ``Impl`` while
-``drake::MyClass<T>::Impl`` is reduced to ``MyClass<T>::Impl``.)""";
+``drake∷MyClass∷Impl`` will be reduced to ``Impl`` while
+``drake∷MyClass<T>∷Impl`` is reduced to ``MyClass<T>∷Impl``.)""";
       } RemoveNamespaces;
     } NiceTypeName;
     // Symbol: drake::Parallelism
@@ -1276,12 +1276,12 @@ number. For convenience, conversion from ``bool`` is provided so that
 
 Drake's API uses this class to allow users to control the degree of
 parallelism, regardless of how the parallelization is implemented
-(e.g., ``std::async``, OpenMP, TBB, etc).
+(e.g., ``std∷async``, OpenMP, TBB, etc).
 
 Configuring the process-wide maximum parallelism
 ================================================
 
-The number of threads denoted by Parallelism::Max() is configurable
+The number of threads denoted by Parallelism∷Max() is configurable
 with environment variables, but will be invariant within a single
 process. The first time it's accessed, the configured value will be
 latched into a global variable indefinitely. To ensure your
@@ -1290,9 +1290,9 @@ govern the max parallelism should be made prior to importing or
 calling any Drake code.
 
 The following recipe determines the value that
-Parallelism::Max().num_threads() will report:
+Parallelism∷Max().num_threads() will report:
 
-1. The default is the hardware limit from ``std::thread::hardware_concurrency()``;
+1. The default is the hardware limit from ``std∷thread∷hardware_concurrency()``;
 this will be used when none of the special cases below are in effect.
 
 2. If the environment variable ``DRAKE_NUM_THREADS`` is set to a positive integer
@@ -1430,8 +1430,8 @@ Raises:
     RuntimeError if the Polynomial contains variables for which values
     were not provided.
 
-The provided values may be of any type which is std::is_arithmetic
-(supporting the std::pow, *, and + operations) and need not be
+The provided values may be of any type which is std∷is_arithmetic
+(supporting the std∷pow, *, and + operations) and need not be
 CoefficientsType or RealScalar))""";
       } EvaluateMultivariate;
       // Symbol: drake::Polynomial::EvaluatePartial
@@ -1475,7 +1475,8 @@ Precondition:
         // Source: drake/common/polynomial.h
         const char* doc =
 R"""(Constructs a Polynomial representing the symbolic expression ``e``.
-Note that the ID of a variable is preserved in this translation.
+The mapping from symbolic∷Variable∷Id to Polynomial∷VarType is
+governed by VariableIdToVarType().
 
 Raises:
     RuntimeError if ``e`` is not polynomial-convertible.
@@ -1601,7 +1602,7 @@ R"""(Factors this by other; returns 0 iff other does not divide this.)""";
         struct /* operator_lt */ {
           // Source: drake/common/polynomial.h
           const char* doc =
-R"""(A comparison to allow std::lexicographical_compare on this class; does
+R"""(A comparison to allow std∷lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
         } operator_lt;
         // Symbol: drake::Polynomial::Monomial::terms
@@ -1609,6 +1610,11 @@ not reflect any sort of mathematical total order.)""";
           // Source: drake/common/polynomial.h
           const char* doc = R"""()""";
         } terms;
+        // Symbol: drake::Polynomial::Monomial::to_string
+        struct /* to_string */ {
+          // Source: drake/common/polynomial.h
+          const char* doc = R"""()""";
+        } to_string;
       } Monomial;
       // Symbol: drake::Polynomial::Polynomial<T>
       struct /* ctor */ {
@@ -1621,8 +1627,10 @@ R"""(Construct a Polynomial of a single constant. e.g. "5".)""";
         const char* doc_2args_coeff_terms =
 R"""(Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".)""";
         // Source: drake/common/polynomial.h
-        const char* doc_2args_start_finish =
-R"""(Construct a Polynomial from a sequence of Monomials.)""";
+        const char* doc_3args_start_finish_canonicalize =
+R"""(Construct a Polynomial from a sequence of Monomials. If
+``canonicalize`` is true, monomials with coefficient zero will be
+dropped, and monomials with common powers will be combined.)""";
         // Source: drake/common/polynomial.h
         const char* doc_1args_conststdenableift =
 R"""(Constructs a polynomial consisting of a single Monomial of the
@@ -1631,11 +1639,11 @@ variable named ``varname1``.
 Note:
     : This constructor is only provided for T = double. For the other
     cases, a user should use the constructor with two arguments below
-    (taking std::string and unsigned int). If we provided this
-    constructor for T = AutoDiffXd and T = symbolic::Expression, there
+    (taking std∷string and unsigned int). If we provided this
+    constructor for T = AutoDiffXd and T = symbolic∷Expression, there
     would be compiler errors for ``Polynomial<T>(0)`` as the following
     candidates are ambiguous: - Polynomial(const T& scalar) -
-    Polynomial(const std::string& varname, const unsigned int num = 1))""";
+    Polynomial(const std∷string& varname, const unsigned int num = 1))""";
         // Source: drake/common/polynomial.h
         const char* doc_2args_varname_num =
 R"""(Construct a polynomial consisting of a single Monomial of the variable
@@ -1654,7 +1662,7 @@ are always added, even if a coefficient is zero.)""";
         // Source: drake/common/polynomial.h
         const char* doc =
 R"""(This should be 'unsigned int' but MSVC considers a call to
-std::pow(..., unsigned int) ambiguous because it won't cast unsigned
+std∷pow(..., unsigned int) ambiguous because it won't cast unsigned
 int to int.)""";
       } PowerType;
       // Symbol: drake::Polynomial::Product
@@ -1715,7 +1723,7 @@ R"""(An individual variable raised to an integer power; e.g. x**2.)""";
         struct /* operator_lt */ {
           // Source: drake/common/polynomial.h
           const char* doc =
-R"""(A comparison to allow std::lexicographical_compare on this class; does
+R"""(A comparison to allow std∷lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
         } operator_lt;
         // Symbol: drake::Polynomial::Term::power
@@ -1734,6 +1742,15 @@ not reflect any sort of mathematical total order.)""";
         // Source: drake/common/polynomial.h
         const char* doc = R"""()""";
       } VarType;
+      // Symbol: drake::Polynomial::VariableIdToVarType
+      struct /* VariableIdToVarType */ {
+        // Source: drake/common/polynomial.h
+        const char* doc =
+R"""(When FromExpression converts a symbolic∷Variable to a Polynomial∷Term,
+it uses this mapping function to project the symbolic∷Variable∷Id to a
+Polynomial∷VarType. Note that the mapping is non-injective (i.e.,
+degenerate) because an Id is 128 bits but a VarType is only 32 bits.)""";
+      } VariableIdToVarType;
       // Symbol: drake::Polynomial::VariableNameToId
       struct /* VariableNameToId */ {
         // Source: drake/common/polynomial.h
@@ -1789,9 +1806,14 @@ R"""(Returns true if this is a univariate polynomial)""";
       struct /* operator_lt */ {
         // Source: drake/common/polynomial.h
         const char* doc =
-R"""(A comparison to allow std::lexicographical_compare on this class; does
+R"""(A comparison to allow std∷lexicographical_compare on this class; does
 not reflect any sort of mathematical total order.)""";
       } operator_lt;
+      // Symbol: drake::Polynomial::to_string
+      struct /* to_string */ {
+        // Source: drake/common/polynomial.h
+        const char* doc = R"""()""";
+      } to_string;
     } Polynomial;
     // Symbol: drake::Polynomiald
     struct /* Polynomiald */ {
@@ -1917,9 +1939,9 @@ Example:
 .. code-block:: c++
 
     void some_function() {
-      void* foo = ::malloc(10);
+      void* foo = ∷malloc(10);
       ScopeExit guard([foo]() {
-        ::free(foo);
+        ∷free(foo);
       });
     
       // ...
@@ -1975,7 +1997,7 @@ Precondition:
         // Source: drake/common/sha256.h
         const char* doc =
 R"""(Parses the 64-character ASCII hex representation of a SHA-256
-checksum. Returns std::nullopt if the argument is an invalid checksum.)""";
+checksum. Returns std∷nullopt if the argument is an invalid checksum.)""";
       } Parse;
       // Symbol: drake::Sha256::Sha256
       struct /* ctor */ {
@@ -2005,12 +2027,12 @@ R"""(Returns the 64-character ASCII hex representation of this checksum.)""";
     struct /* SortedPair */ {
       // Source: drake/common/sorted_pair.h
       const char* doc =
-R"""(This class is similar to the std::pair class. However, this class uses
-a pair of homogeneous types (std::pair can use heterogeneous types)
-and sorts the first and second values such that the first value is
-less than or equal to the second one). Note that the sort is a stable
-one. Thus the SortedPair class is able to be used to generate keys
-(e.g., for std::map, etc.) from pairs of objects.
+R"""(This class is similar to the std∷pair class. However, this class uses
+a pair of homogeneous types (std∷pair can use heterogeneous types) and
+sorts the first and second values such that the first value is less
+than or equal to the second one). Note that the sort is a stable one.
+Thus the SortedPair class is able to be used to generate keys (e.g.,
+for std∷map, etc.) from pairs of objects.
 
 The availability of construction and assignment operations (i.e.,
 default constructor, copy constructor, copy assignment, move
@@ -2018,7 +2040,7 @@ constructor, move assignment) is the same as whatever T provides . All
 comparison operations (including equality, etc.) are always available.
 
 To format this class for logging, include ``<fmt/ranges.h>`` (exactly
-the same as for ``std::pair``).
+the same as for ``std∷pair``).
 
 Template parameter ``T``:
     A template type that provides ``operator<``.)""";
@@ -2060,7 +2082,7 @@ R"""(Gets the second (according to ``operator<``) of the objects.)""";
       // Source: drake/common/timer.h
       const char* doc =
 R"""(Implementation of timing utility that uses monotonic
-std::chrono::steady_clock.)""";
+std∷chrono∷steady_clock.)""";
       // Symbol: drake::SteadyTimer::Start
       struct /* Start */ {
         // Source: drake/common/timer.h
@@ -2197,7 +2219,7 @@ increment, decrement, etc. an invalid index will throw an exception.
 
 A function that returns TypeSafeIndex values which need to communicate
 failure should *not* use an invalid index. It should return an
-``std::optional<Index>`` instead.
+``std∷optional<Index>`` instead.
 
 It is the designed intent of this class, that indices derived from
 this class can be passed and returned by value. (Drake's typical
@@ -2306,7 +2328,7 @@ used:
 
 At the time of this writing when using the latest Eigen 3.4 preview
 branch, a TypeSafeIndex cannot be directly used to index into an
-Eigen::Matrix; the developer must explicitly introduce the ``int``
+Eigen∷Matrix; the developer must explicitly introduce the ``int``
 conversion:
 
 
@@ -2328,7 +2350,7 @@ conversion:
 TODO(#15354) We hope to fix this irregularity in the future.
 
 See also:
-    drake::geometry::Identifier
+    drake∷geometry∷Identifier
 
 Template parameter ``Tag``:
     The name of the tag associated with a class type. The class need
@@ -2483,11 +2505,11 @@ Example:
 .. code-block:: c++
 
     void print_string(const AbstractValue& arg) {
-      const std::string& message = arg.get_value<std::string>();
-      std::cerr << message;
+      const std∷string& message = arg.get_value<std∷string>();
+      std∷cerr << message;
     }
     void meow() {
-      const Value<std::string> value("meow");
+      const Value<std∷string> value("meow");
       print_string(value);
     }
 
@@ -2568,8 +2590,8 @@ R"""(A column vector of polynomials; used in several optimization classes.)""";
       // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks truth for all elements in matrix ``m``. This is identical to
-``Eigen::DenseBase::all()``, except this function allows for lazy
-evaluation, so works even when scalar_predicate<>::is_bool does not
+``Eigen∷DenseBase∷all()``, except this function allows for lazy
+evaluation, so works even when scalar_predicate<>∷is_bool does not
 hold. An empty matrix returns true.)""";
     } all;
     // Symbol: drake::all_of
@@ -2584,8 +2606,8 @@ matrix ``m``. An empty matrix returns true.)""";
       // Source: drake/common/drake_bool.h
       const char* doc =
 R"""(Checks truth for at least one element in matrix ``m``. This is
-identical to ``Eigen::DenseBase::any()``, except this function allows
-for lazy evaluation, so works even when scalar_predicate<>::is_bool
+identical to ``Eigen∷DenseBase∷any()``, except this function allows
+for lazy evaluation, so works even when scalar_predicate<>∷is_bool
 does not hold. An empty matrix returns false.)""";
     } any;
     // Symbol: drake::any_of
@@ -2640,9 +2662,9 @@ Note:
     This functions assumes that ``ScalarType`` provides ``operator``<
     and the type of ``f_cond`` is the type of the return type of
     ``operator<(ScalarType, ScalarType)``. For example,
-    ``symbolic::Expression`` can be used as a ``ScalarType`` because
-    it provides ``symbolic::Formula operator<(symbolic::Expression,
-    symbolic::Expression)``.)""";
+    ``symbolic``∷Expression can be used as a ``ScalarType`` because it
+    provides ``symbolic∷Formula operator<(symbolic∷Expression,
+    symbolic∷Expression)``.)""";
     } cond;
     // Symbol: drake::copyable_unique_ptr
     struct /* copyable_unique_ptr */ {
@@ -2650,9 +2672,9 @@ Note:
       const char* doc =
 R"""(A smart pointer with deep copy semantics.
 
-This is *similar* to ``std::unique_ptr`` in that it does not permit
+This is *similar* to ``std∷unique_ptr`` in that it does not permit
 shared ownership of the contained object. However, unlike
-``std::unique_ptr``, copyable_unique_ptr supports copy and assignment
+``std∷unique_ptr``, copyable_unique_ptr supports copy and assignment
 operations, by insisting that the contained object be "copyable". To
 be copyable, the class must have either an accessible copy
 constructor, or it must have an accessible clone method with signature
@@ -2664,7 +2686,7 @@ constructor, or it must have an accessible clone method with signature
 
 .. code-block:: c++
 
-    std::unique_ptr<Foo> Clone() const;
+    std∷unique_ptr<Foo> Clone() const;
 
 .. raw:: html
 
@@ -2676,7 +2698,7 @@ either that the copy constructor or clone method is public, or
 declaration.
 
 Generally, the API is modeled as closely as possible on the C++
-standard ``std::unique_ptr`` API and copyable_unique_ptr is
+standard ``std∷unique_ptr`` API and copyable_unique_ptr is
 interoperable with ``unique_ptr<T>`` wherever that makes sense.
 However, there are some differences:
 
@@ -2810,7 +2832,7 @@ other operations.)""";
         const char* doc =
 R"""(Return a const pointer to the contained object if any, or ``nullptr``.
 Note that this is different than ``%get()`` for the standard smart
-pointers like ``std::unique_ptr`` which return a writable pointer. Use
+pointers like ``std∷unique_ptr`` which return a writable pointer. Use
 get_mutable() here for that purpose.)""";
       } get;
       // Symbol: drake::copyable_unique_ptr::get_mutable
@@ -2831,13 +2853,13 @@ Warning:
         // Source: drake/common/copyable_unique_ptr.h
         const char* doc_0args_const =
 R"""(Return a const reference to the contained object. Note that this is
-different from ``std::unique_ptr::operator*()`` which would return a
+different from ``std∷unique_ptr∷operator*()`` which would return a
 non-const reference (if ``T`` is non-const), even if the container
 itself is const. For a const copyable_unique_ptr will always return a
 const reference to its contained value.
 
 Warning:
-    Currently copyable_unique_ptr is a std::unique_ptr. As such, a
+    Currently copyable_unique_ptr is a std∷unique_ptr. As such, a
     const copyable_unique_ptr<Foo> can be upcast to a const
     unique_ptr<Foo> and the parent's behavior will provide a mutable
     reference. This is strongly discouraged and will break as the
@@ -2875,8 +2897,8 @@ R"""(Provides a "dummy" value for a ScalarType -- a value that is unlikely
 to be mistaken for a purposefully-computed value, useful for
 initializing a value before the true result is available.
 
-Defaults to using std::numeric_limits::quiet_NaN when available; it is
-a compile-time error to call the unspecialized dummy_value::get() when
+Defaults to using std∷numeric_limits∷quiet_NaN when available; it is a
+compile-time error to call the unspecialized dummy_value∷get() when
 quiet_NaN is unavailable.
 
 See autodiff_overloads.h to use this with Eigen's AutoDiffScalar.)""";
@@ -2890,18 +2912,18 @@ See autodiff_overloads.h to use this with Eigen's AutoDiffScalar.)""";
     struct /* dynamic_pointer_cast */ {
       // Source: drake/common/pointer_cast.h
       const char* doc =
-R"""(Casts the object owned by the std::unique_ptr ``other`` from type
-``U`` to ``T``; if the cast fails, returns nullptr. Casting is
-performed using ``dynamic_cast`` on the managed value (i.e., the
-result of ``other.get()``). On success, ``other`'s managed value is
-transferred to the result and `other`` is empty; on failure, ``other``
-will retain its original managed value and the result is empty. As
-with ``dynamic_cast``, casting nullptr to anything always succeeds, so
-a nullptr result could indicate either that the argument was nullptr
-or that the cast failed.
+R"""(Casts the object owned by the std∷unique_ptr ``other`` from type ``U``
+to ``T``; if the cast fails, returns nullptr. Casting is performed
+using ``dynamic_cast`` on the managed value (i.e., the result of
+``other.get()``). On success, ``other`'s managed value is transferred
+to the result and `other`` is empty; on failure, ``other`` will retain
+its original managed value and the result is empty. As with
+``dynamic_cast``, casting nullptr to anything always succeeds, so a
+nullptr result could indicate either that the argument was nullptr or
+that the cast failed.
 
-This method is analogous to the built-in std::dynamic_pointer_cast
-that operates on a std::shared_ptr.
+This method is analogous to the built-in std∷dynamic_pointer_cast that
+operates on a std∷shared_ptr.
 
 Note that this function only supports default deleters.)""";
     } dynamic_pointer_cast;
@@ -2909,8 +2931,8 @@ Note that this function only supports default deleters.)""";
     struct /* dynamic_pointer_cast_or_throw */ {
       // Source: drake/common/pointer_cast.h
       const char* doc_1args_stduniqueptr =
-R"""(Casts the object owned by the std::unique_ptr ``other`` from type
-``U`` to ``T``; if ``other`` is nullptr or the cast fails, throws a
+R"""(Casts the object owned by the std∷unique_ptr ``other`` from type ``U``
+to ``T``; if ``other`` is nullptr or the cast fails, throws a
 RuntimeError. Casting is performed using ``dynamic_cast`` on the
 managed value (i.e., the result of ``other.get()``). On success,
 ``other`'s managed value is transferred to the result and `other`` is
@@ -2935,7 +2957,7 @@ Raises:
     struct /* fmt_debug_string */ {
       // Source: drake/common/fmt.h
       const char* doc =
-R"""(Returns ``fmt::("{:?}", x)``, i.e, using fmt's "debug string format";
+R"""(Returns ``fmt∷("{:?}", x)``, i.e, using fmt's "debug string format";
 see https://fmt.dev docs for the '?' presentation type for details. We
 provide this wrapper because not all of our supported platforms have a
 new-enough fmt to rely on it. On platforms with older fmt, we use a
@@ -2946,7 +2968,7 @@ correctly.)""";
     struct /* fmt_eigen */ {
       // Source: drake/common/fmt_eigen.h
       const char* doc =
-R"""(When passing an Eigen::Matrix to fmt, use this wrapper function to
+R"""(When passing an Eigen∷Matrix to fmt, use this wrapper function to
 instruct fmt to use Drake's custom formatter for Eigen types.
 
 Within Drake, when formatting an Eigen matrix into a string you must
@@ -2963,7 +2985,7 @@ For example:
 .. code-block:: c++
 
     if (!CheckValid(M)) {
-    throw RuntimeError(fmt::format("Invalid M = {}", fmt_eigen(M)));
+    throw RuntimeError(fmt∷format("Invalid M = {}", fmt_eigen(M)));
     }
 
 .. raw:: html
@@ -2982,13 +3004,61 @@ Note:
     enforces that nothing within Drake is allowed to use Eigen's
     ``operator<<``. Downstream code that calls into Drake is not
     required to use that option; it is only enforced by Drake's build
-    system, not by Drake's headers.)""";
+    system, not by Drake's headers.
+
+**** Format string syntax
+
+The format string specification syntax for fmt_eigen is based on
+fmtlib's [range
+format](https://fmt.dev/dev/syntax/#range-format-specifications)
+specification, recognizable by the distinctive double colon. However,
+in our current implementation of fmt_eigen we do not support the
+``"n"`` option (to remove brackets) nor the ``"s"`` nor ``"?s"``
+options (to merge a character range into a string).
+
+The so-called "range underlying spec" format string depends on the
+particular scalar type captured in the fmt_eigen instance.
+
+Examples:
+
+
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
+
+    Eigen∷RowVector3d x{M_PI, M_SQRT2, M_E};
+    fmt∷format("{}", fmt_eigen(x));
+    // " 3.141592653589793 1.4142135623730951  2.718281828459045"
+    
+    fmt∷format("{∷.2f}", fmt_eigen(x));
+    // "3.14 1.41 2.72"
+    
+    fmt∷format("{x∷e}", fmt∷arg("x", fmt_eigen(x)));
+    // "3.141593e+00 1.414214e+00 2.718282e+00"
+
+.. raw:: html
+
+    </details>
+
+Refer to https://fmt.dev/ for syntax details, but in short:
+
+- The ``arg_id`` appears before the first colon, and specifies which argument
+should be formatted. This syntax is part of fmt, not specific to Drake.
+In the above examples we mostly leave it blank, but in the last one we give
+the argument the name ``"x"`` using ``fmt∷arg`` and then use that name in the
+format string.
+
+- The floating-point format spec appears after the second colon. This syntax is
+part of fmt, not specific to Drake. As seen in the examples, it can be used to
+change the precision or use scientific notation, etc.)""";
     } fmt_eigen;
     // Symbol: drake::fmt_floating_point
     struct /* fmt_floating_point */ {
       // Source: drake/common/fmt.h
       const char* doc =
-R"""(Returns ``fmt::to_string(x)`` but always with at least one digit after
+R"""(Returns ``fmt∷to_string(x)`` but always with at least one digit after
 the decimal point. Different versions of fmt disagree on whether to
 omit the trailing ".0" when formatting integer-valued floating-point
 numbers.
@@ -2999,24 +3069,12 @@ Template parameter ``T``:
     // Symbol: drake::fmt_runtime
     struct /* fmt_runtime */ {
       // Source: drake/common/fmt.h
-      const char* doc =
-R"""(When using fmt >= 8, this is an alias for <a
-href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
-When using fmt < 8, this is a no-op.)""";
+      const char* doc = R"""()""";
     } fmt_runtime;
     // Symbol: drake::fmt_streamed
     struct /* fmt_streamed */ {
       // Source: drake/common/fmt_ostream.h
-      const char* doc =
-R"""(When using fmt >= 9, this is an alias for <a
-href="https://fmt.dev/latest/api.html#ostream-api">fmt::streamed</a>.
-When using fmt < 9, this uses a polyfill instead.
-
-Within Drake, the nominal use for ``fmt::streamed`` is when formatting
-third-party types that provide ``operator<<`` support but not
-``fmt::formatter<T>`` support. Once we stop using
-``FMT_DEPRECATED_OSTREAM=1``, compilation errors will help you
-understand where you are required to use this wrapper.)""";
+      const char* doc = R"""()""";
     } fmt_streamed;
     // Symbol: drake::hash_append
     struct /* hash_append */ {
@@ -3099,7 +3157,8 @@ certain absolute elementwise ``tolerance``. Special values
     struct /* log */ {
       // Source: drake/common/text_logging.h
       const char* doc =
-R"""(Retrieve an instance of a logger to use for logging; for example:
+R"""(Retrieve Drake's singleton instance of the ``class logger``; for
+example:
 
 
 .. raw:: html
@@ -3108,7 +3167,7 @@ R"""(Retrieve an instance of a logger to use for logging; for example:
 
 .. code-block:: c++
 
-    drake::log()->info("potato!")
+    drake∷log()->info("potato!")
 
 .. raw:: html
 
@@ -3139,7 +3198,7 @@ For example:
 
     double* SanityCheck(double* data) {
     if (!data) {
-    static const logging::Warn log_once("Bad data!");
+    static const logging∷Warn log_once("Bad data!");
     return alternative_data();
     }
     return data;
@@ -3149,53 +3208,198 @@ For example:
 
     </details>)""";
         // Symbol: drake::logging::Warn::Warn
-        struct /* Warn */ {
+        struct /* ctor */ {
           // Source: drake/common/text_logging.h
           const char* doc = R"""()""";
-        } Warn;
+        } ctor;
       } Warn;
       // Symbol: drake::logging::get_dist_sink
       struct /* get_dist_sink */ {
         // Source: drake/common/text_logging_spdlog.h
         const char* doc =
-R"""((Advanced) Retrieves the default sink for all Drake logs. When spdlog
-is enabled, the return value can be cast to
-spdlog::sinks::dist_sink_mt and thus allows consumers of Drake to
-redirect Drake's text logs to locations other than the default of
-stderr. When spdlog is disabled, the return value is an empty class.)""";
+R"""((Advanced) Retrieves the default sink for all Drake logs. This allows
+consumers of Drake to redirect Drake's text logs to locations other
+than the default of stderr.)""";
       } get_dist_sink;
+      // Symbol: drake::logging::level
+      struct /* level */ {
+      } level;
+      // Symbol: drake::logging::level_enum
+      struct /* level_enum */ {
+        // Source: drake/common/text_logging_level.h
+        const char* doc =
+R"""(The severity level associated with a log message. Specfic values are
+named like drake∷logging∷level∷info, etc.)""";
+        // Symbol: drake::logging::level_enum::critical
+        struct /* critical */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } critical;
+        // Symbol: drake::logging::level_enum::debug
+        struct /* debug */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } debug;
+        // Symbol: drake::logging::level_enum::err
+        struct /* err */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } err;
+        // Symbol: drake::logging::level_enum::info
+        struct /* info */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } info;
+        // Symbol: drake::logging::level_enum::off
+        struct /* off */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } off;
+        // Symbol: drake::logging::level_enum::trace
+        struct /* trace */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } trace;
+        // Symbol: drake::logging::level_enum::warn
+        struct /* warn */ {
+          // Source: drake/common/text_logging_level.h
+          const char* doc = R"""()""";
+        } warn;
+      } level_enum;
       // Symbol: drake::logging::logger
       struct /* logger */ {
         // Source: drake/common/text_logging.h
         const char* doc =
-R"""(The drake::logging::logger class provides text logging methods. See
-the text_logging.h documentation for a short tutorial.)""";
+R"""(The singleton class returned by Drake's drake∷log() function, offering
+functions to emit log messages. Refer to the file overview for
+details.)""";
+        // Symbol: drake::logging::logger::critical
+        struct /* critical */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``critical`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``critival`` severity.)""";
+        } critical;
+        // Symbol: drake::logging::logger::debug
+        struct /* debug */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``debug`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``debug`` severity.)""";
+        } debug;
+        // Symbol: drake::logging::logger::error
+        struct /* error */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``error`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``error`` severity.)""";
+        } error;
+        // Symbol: drake::logging::logger::info
+        struct /* info */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``info`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``info`` severity.)""";
+        } info;
+        // Symbol: drake::logging::logger::level
+        struct /* level */ {
+          // Source: drake/common/text_logging.h
+          const char* doc = R"""(Returns the current log level.)""";
+        } level;
+        // Symbol: drake::logging::logger::log
+        struct /* log */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_3args =
+R"""(Logs a formatted message at the given ``severity``.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a string at the given ``severity``.)""";
+        } log;
+        // Symbol: drake::logging::logger::logger
+        struct /* ctor */ {
+          // Source: drake/common/text_logging.h
+          const char* doc = R"""()""";
+        } ctor;
+        // Symbol: drake::logging::logger::set_level
+        struct /* set_level */ {
+          // Source: drake/common/text_logging.h
+          const char* doc = R"""(Sets the currently log level.)""";
+        } set_level;
+        // Symbol: drake::logging::logger::set_pattern
+        struct /* set_pattern */ {
+          // Source: drake/common/text_logging.h
+          const char* doc =
+R"""(Invokes ``spdlog∷logger∷set_pattern(pattern)``. This has no effect
+unless spdlog is enabled.
+
+Parameter ``pattern``:
+    Formatting for message. For more information, see:
+    https://github.com/gabime/spdlog/wiki/3.-Custom-formatting)""";
+        } set_pattern;
+        // Symbol: drake::logging::logger::should_log
+        struct /* should_log */ {
+          // Source: drake/common/text_logging.h
+          const char* doc =
+R"""(Returns true iff the current level() threshold meets the given
+``severity``.)""";
+        } should_log;
+        // Symbol: drake::logging::logger::trace
+        struct /* trace */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``trace`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``trace`` severity.)""";
+        } trace;
+        // Symbol: drake::logging::logger::warn
+        struct /* warn */ {
+          // Source: drake/common/text_logging.h
+          const char* doc_2args =
+R"""(Logs a formatted message at ``warn`` severity.)""";
+          // Source: drake/common/text_logging.h
+          const char* doc_1args = R"""(Logs a string at ``warn`` severity.)""";
+        } warn;
       } logger;
       // Symbol: drake::logging::set_log_level
       struct /* set_log_level */ {
         // Source: drake/common/text_logging.h
         const char* doc =
-R"""(Sets the log threshold used by Drake's C++ code.
+R"""(Sets the log threshold used by Drake's C++ code. This has no effect
+unless spdlog is enabled.
 
 Parameter ``level``:
-    Must be a string from spdlog enumerations: ``trace``, `debug`,
+    Must be a string from level enumeration: ``trace``, `debug`,
     ``info``, `warn`, ``err``, `critical`, ``off``, or ``unchanged``
     (not an enum, but useful for command-line).
 
 Returns:
-    The string value of the previous log level. If SPDLOG is disabled,
-    then this returns an empty string.)""";
+    The string value of the previous log level.)""";
       } set_log_level;
       // Symbol: drake::logging::set_log_pattern
       struct /* set_log_pattern */ {
         // Source: drake/common/text_logging.h
         const char* doc =
-R"""(Invokes ``drake::log()->set_pattern(pattern)``.
+R"""(Invokes ``drake∷log()->set_pattern(pattern)``. This has no effect
+unless spdlog is enabled.
 
 Parameter ``pattern``:
     Formatting for message. For more information, see:
     https://github.com/gabime/spdlog/wiki/3.-Custom-formatting)""";
       } set_log_pattern;
+      // Symbol: drake::logging::sink
+      struct /* sink */ {
+        // Source: drake/common/text_logging_spdlog.h
+        const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use spdlog∷sinks∷sink instead. This will be removed from Drake on
+    or after 2026-06-01.)""";
+      } sink;
     } logging;
     // Symbol: drake::never_destroyed
     struct /* never_destroyed */ {
@@ -3258,6 +3462,11 @@ R"""(Determines whether ``x > y`` using ``operator<``.)""";
       const char* doc =
 R"""(Determines whether ``x >= y`` using ``operator<``.)""";
     } operator_ge;
+    // Symbol: drake::ostream_formatter
+    struct /* ostream_formatter */ {
+      // Source: drake/common/fmt_ostream.h
+      const char* doc = R"""()""";
+    } ostream_formatter;
     // Symbol: drake::pow
     struct /* pow */ {
       // Source: drake/common/polynomial.h
@@ -3300,7 +3509,7 @@ Example:
       Foo() = default;
     
      private:
-      std::vector<int> items_;
+      std∷vector<int> items_;
       reset_after_move<int> sum_;
     };
 
@@ -3368,15 +3577,14 @@ object. Move assignment and construction preserve contents in the
 destination as usual, but reset the source to its value-initialized
 value.
 
-Only types T that satisfy ``std::is_scalar<T>`` are currently
+Only types T that satisfy ``std∷is_scalar<T>`` are currently
 permitted: integral and floating point types, enums, and pointers.
 Value initialization means the initialization performed when a
 variable is constructed with an empty initializer ``{}``. For the
 restricted set of types we support, that just means that numeric types
 are set to zero and pointer types are set to nullptr. Also, all the
-methods here are noexcept due to the ``std::is_scalar<T>``
-restriction. See
-http://en.cppreference.com/w/cpp/language/value_initialization.
+methods here are noexcept due to the ``std∷is_scalar<T>`` restriction.
+See http://en.cppreference.com/w/cpp/language/value_initialization.
 
 Background:
 
@@ -3410,7 +3618,7 @@ Example:
       Foo() = default;
     
      private:
-      std::vector<int> items_;
+      std∷vector<int> items_;
       reset_on_copy<int> use_count_;
     };
 
@@ -3434,7 +3642,7 @@ Note:
     enumeration values.
 
 Template parameter ``T``:
-    must satisfy ``std::is_scalar<T>``.
+    must satisfy ``std∷is_scalar<T>``.
 
 See also:
     reset_after_move)""";
@@ -3467,7 +3675,7 @@ R"""(Constructs a reset_on_copy with a value-initialized wrapped value.)""";
 R"""(A traits struct that describes the return type of predicates over a
 scalar type (named ``T``). For example, a predicate that evaluates
 ``double`s will return a `bool``, but a predicate that evaluates
-symbolic::Expression will return a symbolic::Formula. By default, the
+symbolic∷Expression will return a symbolic∷Formula. By default, the
 return type is inferred from the type's comparison operator, but
 scalar types are permitted to specialize this template for their
 needs.)""";
@@ -3481,11 +3689,11 @@ needs.)""";
     struct /* static_pointer_cast */ {
       // Source: drake/common/pointer_cast.h
       const char* doc =
-R"""(Casts the object owned by the std::unique_ptr ``other`` from type
-``U`` to ``T``; no runtime type checking is performed.
+R"""(Casts the object owned by the std∷unique_ptr ``other`` from type ``U``
+to ``T``; no runtime type checking is performed.
 
-This method is analogous to the built-in std::static_pointer_cast that
-operates on a std::shared_ptr.
+This method is analogous to the built-in std∷static_pointer_cast that
+operates on a std∷shared_ptr.
 
 Note that this function only supports default deleters.)""";
     } static_pointer_cast;
@@ -3493,41 +3701,40 @@ Note that this function only supports default deleters.)""";
     struct /* string_multiset */ {
       // Source: drake/common/string_set.h
       const char* doc =
-R"""(Like ``std::multiset<std::string>``, but with better defaults than the
-plain ``std::multiset<std::string>`` spelling. We need
-``std::less<void>`` as the comparison function so that
-``std::string_view`` and ``const char*`` can be used as lookup keys
-without copying them to a ``std::string``.)""";
+R"""(Like ``std∷multiset<std∷string>``, but with better defaults than the
+plain ``std∷multiset<std∷string>`` spelling. We need
+``std∷less<void>`` as the comparison function so that
+``std∷string_view`` and ``const char*`` can be used as lookup keys
+without copying them to a ``std∷string``.)""";
     } string_multiset;
     // Symbol: drake::string_set
     struct /* string_set */ {
       // Source: drake/common/string_set.h
       const char* doc =
-R"""(Like ``std::set<std::string>``, but with better defaults than the
-plain ``std::set<std::string>`` spelling. We need ``std::less<void>``
-as the comparison function so that ``std::string_view`` and ``const
-char*`` can be used as lookup keys without copying them to a
-``std::string``.)""";
+R"""(Like ``std∷set<std∷string>``, but with better defaults than the plain
+``std∷set<std∷string>`` spelling. We need ``std∷less<void>`` as the
+comparison function so that ``std∷string_view`` and ``const char*``
+can be used as lookup keys without copying them to a ``std∷string``.)""";
     } string_set;
     // Symbol: drake::string_unordered_multiset
     struct /* string_unordered_multiset */ {
       // Source: drake/common/string_unordered_set.h
       const char* doc =
-R"""(Like ``std::unordered_multiset<std::string>``, but with better
-defaults than the plain ``std::unordered_multiset<std::string>``
-spelling. We need the custom hash and comparison functions so that
-``std::string_view`` and ``const char*`` can be used as lookup keys
-without copying them to a ``std::string``.)""";
+R"""(Like ``std∷unordered_multiset<std∷string>``, but with better defaults
+than the plain ``std∷unordered_multiset<std∷string>`` spelling. We
+need the custom hash and comparison functions so that
+``std∷string_view`` and ``const char*`` can be used as lookup keys
+without copying them to a ``std∷string``.)""";
     } string_unordered_multiset;
     // Symbol: drake::string_unordered_set
     struct /* string_unordered_set */ {
       // Source: drake/common/string_unordered_set.h
       const char* doc =
-R"""(Like ``std::unordered_set<std::string>``, but with better defaults
-than the plain ``std::unordered_set<std::string>`` spelling. We need
-the custom hash and comparison functions so that ``std::string_view``
-and ``const char*`` can be used as lookup keys without copying them to
-a ``std::string``.)""";
+R"""(Like ``std∷unordered_set<std∷string>``, but with better defaults than
+the plain ``std∷unordered_set<std∷string>`` spelling. We need the
+custom hash and comparison functions so that ``std∷string_view`` and
+``const char*`` can be used as lookup keys without copying them to a
+``std∷string``.)""";
     } string_unordered_set;
     // Symbol: drake::temp_directory
     struct /* temp_directory */ {
@@ -3556,18 +3763,23 @@ Raises:
     // Symbol: drake::to_string
     struct /* to_string */ {
       // Source: drake/common/file_source.h
-      const char* doc_1args_source = R"""(Returns a string representation.)""";
+      const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use fmt∷to_string instead, with ``#include <fmt/std.h>``. This
+    will be removed from Drake on or after 2026-07-01.)""";
       // Source: drake/common/identifier.h
-      const char* doc_1args_constdrakeIdentifier =
+      const char* doc =
 R"""(Enables use of identifiers with to_string. It requires ADL to work.
 So, it should be invoked as: ``to_string(id);`` and should be preceded
-by ``using std::to_string``.)""";
+by ``using std∷to_string``.)""";
     } to_string;
     // Symbol: drake::uhash
     struct /* uhash */ {
       // Source: drake/common/hash.h
       const char* doc =
-R"""(A hashing functor, somewhat like ``std::hash``. Given an item of type
+R"""(A hashing functor, somewhat like ``std∷hash``. Given an item of type
 ``T``, applies hash_append to it, directing the bytes to append into
 the given ``HashAlgorithm``, and then finally returning the
 algorithm's result.)""";

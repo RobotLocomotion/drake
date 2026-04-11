@@ -43,6 +43,8 @@ def _check_header_disallowed_includes(filename):
     The disallowed include paths are:
     - drake/common/overloaded.h
     - drake/common/text_logging.h
+    - drake/common/text_logging_impl_spdlog.h
+    - drake/common/text_logging_spdlog.h
 
     In the unusual case where the header file is really more like an `*.inc`
     file and is not actually subject to inline regulations, you may add the
@@ -50,7 +52,9 @@ def _check_header_disallowed_includes(filename):
     forbidden_re = re.compile(
         # This expression approximates section 6.10.2 except 6.10.2.4 of
         # https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
-        r'\s*#\s*include\s*[<"]drake/common/(overloaded|text_logging).h\s*[>"]'
+        r'\s*#\s*include\s*[<"]drake/common/'
+        r"(overloaded|text_logging|text_logging_(impl_)*spdlog)"
+        r'\.h\s*[>"]'
     )
     if filename.endswith(".h"):
         with open(filename, mode="r", encoding="utf-8") as file:
@@ -59,7 +63,7 @@ def _check_header_disallowed_includes(filename):
                 if matched is not None:
                     if "// drakelint: ignore" in line:
                         continue
-                    (basename,) = matched.groups()
+                    (basename, _) = matched.groups()
                     print(
                         "ERROR:  Header files must not include "
                         f"drake/common/{basename}.h"

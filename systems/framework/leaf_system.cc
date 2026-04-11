@@ -1079,6 +1079,15 @@ void LeafSystem<T>::MaybeDeclareVectorBaseInequalityConstraint(
       kind + " of type " + NiceTypeName::Get(model_vector));
 }
 
+template <typename T>
+void LeafSystem<T>::ThrowNonPositiveEventPeriod(
+    double period_sec, const std::type_info& event_type) const {
+  throw std::logic_error(fmt::format(
+      "A periodic event of type '{}' was declared with a non-positive period "
+      "{}. Consider using a per-step event instead.",
+      NiceTypeName::Get(event_type), period_sec));
+}
+
 }  // namespace systems
 }  // namespace drake
 

@@ -38,10 +38,5 @@ std::string Rgba::to_string() const {
                      this->a());
 }
 
-std::ostream& operator<<(std::ostream& out, const Rgba& c) {
-  out << fmt::to_string(c);
-  return out;
-}
-
 }  // namespace geometry
 }  // namespace drake

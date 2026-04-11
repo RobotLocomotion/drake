@@ -1,6 +1,5 @@
 """Common helpers for source-tree linter utilities."""
 
-import os
 from pathlib import Path
 
 from python import runfiles
@@ -21,10 +20,7 @@ def find_all_sources():
     # Walk the tree (ignoring symlinks), and collect a list of all workspace-
     # relative filenames, but excluding a few specific items.
     relpaths = []
-    for abs_dirpath, dirs, files in os.walk(str(workspace_root)):
-        # TODO(jwnimmer-tri) Once we drop Jammy use Path.walk (vs os.walk),
-        # and remove this extra conversion.
-        abs_dirpath = Path(abs_dirpath)
+    for abs_dirpath, dirs, files in workspace_root.walk():
         # Take all files within the currently-walked directory.
         rel_dirpath = abs_dirpath.relative_to(workspace_root)
         for one_filename in files:

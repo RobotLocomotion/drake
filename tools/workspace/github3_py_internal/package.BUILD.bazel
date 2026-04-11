@@ -10,9 +10,12 @@ package(
 
 py_library(
     name = "github3_py",
-    srcs = glob([
-        "src/github3/**",
-    ], allow_empty = False),
+    srcs = glob(
+        [
+            "src/github3/**",
+        ],
+        allow_empty = False,
+    ),
     imports = [
         "src",
     ],

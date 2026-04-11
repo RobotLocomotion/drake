@@ -140,6 +140,11 @@ class RenderEngine {
    @param X_WG           The pose of the geometry relative to the world frame W.
    @param needs_updates  If true, the geometry's pose will be updated via
                          UpdatePoses().
+   @param name           An optional name that can be associated with the
+                         visual. Derived classes are not obliged to make use of
+                         the name (and may even simply ignore it). Typically,
+                         this would be the name of the geometry in the model.
+                         It is *not* load bearing and need not be unique.
    @returns True if the %RenderEngine implementation accepted the shape for
             registration.
    @throws std::exception if the shape is an unsupported type, the
@@ -151,7 +156,7 @@ class RenderEngine {
   bool RegisterVisual(GeometryId id, const Shape& shape,
                       const PerceptionProperties& properties,
                       const math::RigidTransformd& X_WG,
-                      bool needs_updates = true);
+                      bool needs_updates = true, std::string_view name = {});
 
   // TODO(xuchenhan-tri): Bring RenderMesh out of internal namespace, when doing
   // that, the invariants for a RenderMesh to be valid should be verified.
@@ -323,6 +328,25 @@ class RenderEngine {
   virtual bool DoRegisterVisual(GeometryId id, const Shape& shape,
                                 const PerceptionProperties& properties,
                                 const math::RigidTransformd& X_WG) = 0;
+
+  /** A variant of the DoRegisterVisual(). This includes an optional name for
+   the geometry. If a derived class cannot meaningfully make use of the name, it
+   need not implement this method. The default implementation is to invoke the
+   previous overload by stripping out the name.
+
+   *This* is the method that RegisterVisual() will always call. If a derived
+   engine can make use of a name, it has two options:
+
+     - Implement all registration acts in this overload (and use a no-op
+       implementation for the previous overload), or
+     - implement DoRegisterVisual() to do the work, delegate to that method for
+       the work, and then handle the name in this method as a result of a
+       successful registration.
+   */
+  virtual bool DoRegisterNamedVisual(GeometryId id, const Shape& shape,
+                                     const PerceptionProperties& properties,
+                                     const math::RigidTransformd& X_WG,
+                                     std::string_view name);
 
   /** The NVI-function for RegisterDeformableVisual(). This function defaults to
    returning false. If the derived class chooses to register this particular

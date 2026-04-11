@@ -25,9 +25,9 @@ GTEST_TEST(DrakeThrowTest, BasicTest) {
 GTEST_TEST(DrakeThrowTest, ThrowWithValues) {
   // Create a collection of lvalues.
   const double a = 1.5;
-  const double b = 2.5;
+  const int b = 2;
   const double c = 3.5;
-  const double d = 4.5;
+  const std::size_t d = 4;
   // Ensure it works with up to four values with a true-valued condition.
   DRAKE_EXPECT_NO_THROW(DRAKE_THROW_UNLESS(true, a));
   DRAKE_EXPECT_NO_THROW(DRAKE_THROW_UNLESS(true, a, b));
@@ -56,10 +56,9 @@ GTEST_TEST(DrakeThrowTest, ThrowWithValues) {
   };
 
   DRAKE_EXPECT_THROWS_MESSAGE(do_throw(1), ".*a = 1.5.");
-  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(2), ".*a = 1.5, b = 2.5.");
-  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(3), ".*a = 1.5, b = 2.5, c = 3.5.");
-  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(4),
-                              ".*a = 1.5, b = 2.5, c = 3.5, d = 4.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(2), ".*a = 1.5, b = 2.");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(3), ".*a = 1.5, b = 2, c = 3.5.");
+  DRAKE_EXPECT_THROWS_MESSAGE(do_throw(4), ".*a = 1.5, b = 2, c = 3.5, d = 4.");
 }
 
 // Confirms that the overload defined in fmt_eigen.h plays properly with the

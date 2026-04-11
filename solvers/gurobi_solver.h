@@ -17,20 +17,20 @@ namespace solvers {
 /// details.
 struct GurobiSolverDetails {
   /// The gurobi optimization time. Please refer to
-  /// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#attrruntime
+  /// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/attributes/model.html#attrruntime
   double optimizer_time{};
 
   /// The error message returned from Gurobi call. Please refer to
-  /// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/errors.html
+  /// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/errors.html
   int error_code{};
 
   /// The status code when the optimize call has returned. Please refer to
-  /// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html
+  /// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/statuscodes.html
   int optimization_status{};
 
   /// The best known bound on the optimal objective. This is used in mixed
   /// integer optimization. Please refer to
-  /// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#objbound
+  /// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/attributes/model.html#objbound
   double objective_bound{NAN};
 };
 
@@ -47,17 +47,17 @@ struct GurobiSolverDetails {
 /// value, then the solver is enabled; otherwise, the solver is not enabled.
 ///
 /// Gurobi solver supports options/parameters listed in
-/// https://docs.gurobi.com/projects/optimizer/en/12.0/concepts/parameters.html.
+/// https://docs.gurobi.com/projects/optimizer/en/13.0/concepts/parameters.html.
 /// On top of these options, we provide the following additional options
 /// 1. "GRBwrite", set to a file name so that Gurobi solver will write the
 ///    optimization model to this file, check
-///    https://www.docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Write
+///    https://www.docs.gurobi.com/projects/optimizer/en/13.0/reference/python/model.html#Write
 ///    for more details, such as all supported file extensions. Set this option
 ///    to "" if you don't want to write to file. Default is not to write to a
 ///    file.
 /// 2. "GRBcomputeIIS", set to 1 to compute an Irreducible Inconsistent
 ///    Subsystem (IIS) when the problem is infeasible. Refer to
-///    https://docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Model.computeIIS
+///    https://docs.gurobi.com/projects/optimizer/en/13.0/reference/python/model.html#Model.computeIIS
 ///    for more details. Often this method is called together with
 ///    setting GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
 ///    "ilp". Default is not to compute IIS.
@@ -107,7 +107,7 @@ class GurobiSolver final : public SolverBase {
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds an intermediate solution node, which may not be feasible.
   /// See Gurobi reference manual for more detail on callbacks:
-  /// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+  /// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/callbacks.html
   /// The user may supply a partial solution in the VectorXd and
   /// VectorXDecisionVariable arguments that will be passed to Gurobi
   /// as a candidate feasible solution.
@@ -140,7 +140,7 @@ class GurobiSolver final : public SolverBase {
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds a feasible solution.
   /// See Gurobi reference manual for more detail on callbacks:
-  /// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+  /// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/callbacks.html
   /// See gurobi_solver_test.cc for an example of using std::bind
   /// to create a callback of this signature, while allowing
   /// additional data to be passed through.

@@ -17,6 +17,7 @@ cmake_configure_file(
     name = "configure_file_types",
     src = "configure/qdldl_types.h.in",
     out = "include/qdldl_types.h",
+    strict = True,
     # https://github.com/osqp/qdldl/blob/v0.1.6/README.md#custom-types-for-integer-floats-and-booleans
     defines = [
         "QDLDL_BOOL_TYPE=unsigned char",
@@ -31,7 +32,6 @@ cmake_configure_file(
         # Match this to QDLDL_INT_TYPE above.
         "QDLDL_INT_TYPE_MAX=INT_MAX",
     ],
-    strict = True,
     visibility = ["//visibility:private"],
 )
 
@@ -39,24 +39,24 @@ cmake_configure_file(
     name = "configure_file_version",
     src = "configure/qdldl_version.h.in",
     out = "include/qdldl_version.h",
+    strict = True,
     defines = [
         "QDLDL_VERSION_MAJOR=0",
         "QDLDL_VERSION_MINOR=0",
         "QDLDL_VERSION_PATCH=0",
     ],
-    strict = True,
     visibility = ["//visibility:private"],
 )
 
 cc_library(
     name = "qdldl",
+    srcs = [
+        "src/qdldl.c",
+    ],
     hdrs = [
         "include/qdldl.h",
         ":include/qdldl_types.h",
         ":include/qdldl_version.h",
-    ],
-    srcs = [
-        "src/qdldl.c",
     ],
     copts = [
         "-fvisibility=hidden",

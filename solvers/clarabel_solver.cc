@@ -12,7 +12,6 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/name_value.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/aggregate_costs_constraints.h"

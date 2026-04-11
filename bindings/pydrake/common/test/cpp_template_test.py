@@ -56,7 +56,7 @@ class TestCppTemplate(unittest.TestCase):
     def test_base(self):
         template = m.TemplateBase("BaseTpl")
         self.assertEqual(
-            str(template), "<TemplateBase {}.BaseTpl>".format(_TEST_MODULE)
+            str(template), f"<TemplateBase {_TEST_MODULE}.BaseTpl>"
         )
 
         self.assertEqual(template.get_module_name(), _TEST_MODULE)
@@ -149,19 +149,17 @@ class TestCppTemplate(unittest.TestCase):
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
         self.assertEqual(
-            str(template), "<TemplateClass {}.ClassTpl>".format(_TEST_MODULE)
+            str(template), f"<TemplateClass {_TEST_MODULE}.ClassTpl>"
         )
 
         template.add_instantiation(int, DummyA)
         template.add_instantiation(float, DummyB)
 
         self.assertEqual(template[int], DummyA)
-        self.assertEqual(
-            str(DummyA), "<class '{}.ClassTpl𝓣int𝓤'>".format(_TEST_MODULE)
-        )
+        self.assertEqual(str(DummyA), f"<class '{_TEST_MODULE}.ClassTpl𝓣int𝓤'>")
         self.assertEqual(template[float], DummyB)
         self.assertEqual(
-            str(DummyB), "<class '{}.ClassTpl𝓣float𝓤'>".format(_TEST_MODULE)
+            str(DummyB), f"<class '{_TEST_MODULE}.ClassTpl𝓣float𝓤'>"
         )
 
         assert_pickle(self, template[int]())
@@ -230,7 +228,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertIn("<function func𝓣int𝓤 ", str(template[int]))
         self.assertEqual(template[float](), 2)
         self.assertEqual(
-            str(template), "<TemplateFunction {}.func>".format(_TEST_MODULE)
+            str(template), f"<TemplateFunction {_TEST_MODULE}.func>"
         )
 
         assert_pickle(self, template[int])

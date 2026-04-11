@@ -6,19 +6,18 @@
 # required to support the logic in this file, as used by a Drake installation.
 # This version may (likely) be older than the version officially required to
 # build Drake, which can be found at https://drake.mit.edu/from_source.html.
-if(CMAKE_VERSION VERSION_LESS 3.9.0)
-  message(FATAL_ERROR "CMake >= 3.9 required")
+if(CMAKE_VERSION VERSION_LESS 3.20.0)
+  message(FATAL_ERROR "CMake >= 3.20 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.9...4.2)
+cmake_policy(VERSION 3.20...4.3)
 set(CMAKE_IMPORT_FILE_VERSION 1)
 
 include(CMakeFindDependencyMacro)
 
-get_filename_component(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}" PATH)
-get_filename_component(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}" PATH)
-get_filename_component(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}" PATH)
+cmake_path(SET ${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX NORMALIZE
+  "${CMAKE_CURRENT_LIST_DIR}/../../../"
+)
 
 if(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX STREQUAL "/")
   set(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX)
@@ -26,12 +25,16 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}")
 set(_drake_interface_libraries "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_marker.so")
-set(_drake_interface_compile_definitions HAVE_SPDLOG)
+set(_drake_interface_compile_definitions HAVE_SPDLOG)  # Remove with deprecation 2026-07-01.
 if(@WITH_USER_EIGEN@)
   find_dependency(Eigen3 CONFIG)
   list(APPEND _drake_interface_libraries Eigen3::Eigen)
 else()
   list(APPEND _drake_interface_compile_definitions @BAZEL_EIGEN_DEFINES@)
+endif()
+if(@WITH_OPENMP@)
+  # For ODR, we must match the --config=openmp preprocessor definition here.
+  list(APPEND _drake_interface_compile_definitions EIGEN_DONT_PARALLELIZE)
 endif()
 if (@WITH_USER_FMT@)
   find_dependency(fmt CONFIG)
@@ -45,7 +48,7 @@ if (@WITH_USER_SPDLOG@)
 else()
   list(APPEND _drake_interface_compile_definitions @BAZEL_SPDLOG_DEFINES@)
 endif()
-set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp drake::drake-marker)
+set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp)
 if(@DRAKE_INSTALL_JAVA@)
   list(APPEND _expectedTargets drake::drake-lcmtypes-java)
 endif()
@@ -90,7 +93,7 @@ set_target_properties(drake::drake PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/${_drake_library_name}"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "${_drake_interface_libraries}"
-  INTERFACE_COMPILE_FEATURES "cxx_std_20"
+  INTERFACE_COMPILE_FEATURES "cxx_std_23"
   INTERFACE_COMPILE_DEFINITIONS "${_drake_interface_compile_definitions}"
 )
 if(@LIBDRAKE_WAS_LINKED_SHARED@)
@@ -111,13 +114,6 @@ if(@DRAKE_INSTALL_JAVA@)
     JAR_FILE "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/share/java/lcmtypes_drake.jar"
   )
 endif()
-
-add_library(drake::drake-marker SHARED IMPORTED)
-set_target_properties(drake::drake-marker PROPERTIES
-  IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_marker.so"
-  IMPORTED_SONAME "${_apple_soname_prologue}libdrake_marker.so"
-  DEPRECATION "The drake::drake-marker target is intended for internal use only by Drake and will be removed on or after 2026-01-01."
-)
 
 unset(_drake_library_type)
 unset(_drake_library_name)

@@ -97,7 +97,7 @@
          "type": "SCALAR"
       },
       {
-         "bufferView": 11,
+         "bufferView": 10,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 2601,
@@ -114,7 +114,7 @@
          "type": "VEC3"
       },
       {
-         "bufferView": 12,
+         "bufferView": 11,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 2601,
@@ -122,46 +122,46 @@
          "type": "VEC2"
       },
       {
-         "bufferView": 13,
+         "bufferView": 12,
          "byteOffset": 0,
          "componentType": 5125,
          "count": 15000,
          "type": "SCALAR"
       },
       {
+         "bufferView": 13,
+         "byteOffset": 0,
+         "componentType": 5126,
+         "count": 200,
+         "max": [
+            0.049901336431503296,
+            0.05000000074505806,
+            0.05000000074505806
+         ],
+         "min": [
+            -0.049901336431503296,
+            -0.05000000074505806,
+            -0.05000000074505806
+         ],
+         "type": "VEC3"
+      },
+      {
          "bufferView": 14,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 200,
-         "max": [
-            0.049901336431503296,
-            0.05000000074505806,
-            0.05000000074505806
-         ],
-         "min": [
-            -0.049901336431503296,
-            -0.05000000074505806,
-            -0.05000000074505806
-         ],
-         "type": "VEC3"
+         "normalized": false,
+         "type": "VEC2"
       },
       {
          "bufferView": 15,
          "byteOffset": 0,
-         "componentType": 5126,
-         "count": 200,
-         "normalized": false,
-         "type": "VEC2"
-      },
-      {
-         "bufferView": 16,
-         "byteOffset": 0,
          "componentType": 5125,
          "count": 588,
          "type": "SCALAR"
       },
       {
-         "bufferView": 18,
+         "bufferView": 16,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 200,
@@ -178,7 +178,7 @@
          "type": "VEC3"
       },
       {
-         "bufferView": 19,
+         "bufferView": 17,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 200,
@@ -186,14 +186,14 @@
          "type": "VEC2"
       },
       {
-         "bufferView": 20,
+         "bufferView": 18,
          "byteOffset": 0,
          "componentType": 5125,
          "count": 588,
          "type": "SCALAR"
       },
       {
-         "bufferView": 21,
+         "bufferView": 19,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 4902,
@@ -210,7 +210,7 @@
          "type": "VEC3"
       },
       {
-         "bufferView": 22,
+         "bufferView": 20,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 4902,
@@ -218,7 +218,39 @@
          "type": "VEC2"
       },
       {
+         "bufferView": 21,
+         "byteOffset": 0,
+         "componentType": 5125,
+         "count": 28800,
+         "type": "SCALAR"
+      },
+      {
+         "bufferView": 22,
+         "byteOffset": 0,
+         "componentType": 5126,
+         "count": 4902,
+         "max": [
+            0.049901336431503296,
+            0.05000000074505806,
+            0.10000000149011612
+         ],
+         "min": [
+            -0.049901336431503296,
+            -0.05000000074505806,
+            -0.10000000149011612
+         ],
+         "type": "VEC3"
+      },
+      {
          "bufferView": 23,
+         "byteOffset": 0,
+         "componentType": 5126,
+         "count": 4902,
+         "normalized": false,
+         "type": "VEC2"
+      },
+      {
+         "bufferView": 24,
          "byteOffset": 0,
          "componentType": 5125,
          "count": 28800,
@@ -228,16 +260,16 @@
          "bufferView": 25,
          "byteOffset": 0,
          "componentType": 5126,
-         "count": 4902,
+         "count": 24,
          "max": [
-            0.049901336431503296,
-            0.05000000074505806,
-            0.10000000149011612
+            0.05,
+            0.0375,
+            0.025
          ],
          "min": [
-            -0.049901336431503296,
-            -0.05000000074505806,
-            -0.10000000149011612
+            -0.05,
+            -0.0375,
+            -0.025
          ],
          "type": "VEC3"
       },
@@ -245,7 +277,7 @@
          "bufferView": 26,
          "byteOffset": 0,
          "componentType": 5126,
-         "count": 4902,
+         "count": 24,
          "normalized": false,
          "type": "VEC2"
       },
@@ -253,7 +285,7 @@
          "bufferView": 27,
          "byteOffset": 0,
          "componentType": 5125,
-         "count": 28800,
+         "count": 36,
          "type": "SCALAR"
       },
       {
@@ -289,39 +321,7 @@
          "type": "SCALAR"
       },
       {
-         "bufferView": 32,
-         "byteOffset": 0,
-         "componentType": 5126,
-         "count": 24,
-         "max": [
-            0.05,
-            0.0375,
-            0.025
-         ],
-         "min": [
-            -0.05,
-            -0.0375,
-            -0.025
-         ],
-         "type": "VEC3"
-      },
-      {
-         "bufferView": 33,
-         "byteOffset": 0,
-         "componentType": 5126,
-         "count": 24,
-         "normalized": false,
-         "type": "VEC2"
-      },
-      {
-         "bufferView": 34,
-         "byteOffset": 0,
-         "componentType": 5125,
-         "count": 36,
-         "type": "SCALAR"
-      },
-      {
-         "bufferView": 35,
+         "bufferView": 31,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 8423,
@@ -338,7 +338,7 @@
          "type": "VEC3"
       },
       {
-         "bufferView": 36,
+         "bufferView": 32,
          "byteOffset": 0,
          "componentType": 5126,
          "count": 8423,
@@ -346,7 +346,7 @@
          "type": "VEC2"
       },
       {
-         "bufferView": 37,
+         "bufferView": 33,
          "byteOffset": 0,
          "componentType": 5125,
          "count": 49152,
@@ -420,109 +420,109 @@
       },
       {
          "buffer": 10,
-         "byteLength": 1123,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 11,
          "byteLength": 31212,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 12,
+         "buffer": 11,
          "byteLength": 20808,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 13,
+         "buffer": 12,
          "byteLength": 60000,
          "byteOffset": 0,
          "target": 34963
       },
       {
-         "buffer": 14,
+         "buffer": 13,
          "byteLength": 2400,
+         "byteOffset": 0,
+         "target": 34962
+      },
+      {
+         "buffer": 14,
+         "byteLength": 1600,
          "byteOffset": 0,
          "target": 34962
       },
       {
          "buffer": 15,
-         "byteLength": 1600,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 16,
          "byteLength": 2352,
          "byteOffset": 0,
          "target": 34963
       },
       {
-         "buffer": 17,
-         "byteLength": 1123,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 18,
+         "buffer": 16,
          "byteLength": 2400,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 19,
+         "buffer": 17,
          "byteLength": 1600,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 20,
+         "buffer": 18,
          "byteLength": 2352,
          "byteOffset": 0,
          "target": 34963
       },
       {
-         "buffer": 21,
+         "buffer": 19,
          "byteLength": 58824,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 22,
+         "buffer": 20,
          "byteLength": 39216,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 23,
+         "buffer": 21,
          "byteLength": 115200,
          "byteOffset": 0,
          "target": 34963
       },
       {
-         "buffer": 24,
-         "byteLength": 1123,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 25,
+         "buffer": 22,
          "byteLength": 58824,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 26,
+         "buffer": 23,
          "byteLength": 39216,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 27,
+         "buffer": 24,
          "byteLength": 115200,
+         "byteOffset": 0,
+         "target": 34963
+      },
+      {
+         "buffer": 25,
+         "byteLength": 288,
+         "byteOffset": 0,
+         "target": 34962
+      },
+      {
+         "buffer": 26,
+         "byteLength": 192,
+         "byteOffset": 0,
+         "target": 34962
+      },
+      {
+         "buffer": 27,
+         "byteLength": 144,
          "byteOffset": 0,
          "target": 34963
       },
@@ -546,48 +546,24 @@
       },
       {
          "buffer": 31,
-         "byteLength": 1123,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 32,
-         "byteLength": 288,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 33,
-         "byteLength": 192,
-         "byteOffset": 0,
-         "target": 34962
-      },
-      {
-         "buffer": 34,
-         "byteLength": 144,
-         "byteOffset": 0,
-         "target": 34963
-      },
-      {
-         "buffer": 35,
          "byteLength": 101076,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 36,
+         "buffer": 32,
          "byteLength": 67384,
          "byteOffset": 0,
          "target": 34962
       },
       {
-         "buffer": 37,
+         "buffer": 33,
          "byteLength": 196608,
          "byteOffset": 0,
          "target": 34963
       },
       {
-         "buffer": 38,
+         "buffer": 34,
          "byteLength": 9081569,
          "byteOffset": 0,
          "target": 34962
@@ -610,23 +586,7 @@
          "mimeType": "image/png"
       },
       {
-         "bufferView": 10,
-         "mimeType": "image/png"
-      },
-      {
-         "bufferView": 17,
-         "mimeType": "image/png"
-      },
-      {
-         "bufferView": 24,
-         "mimeType": "image/png"
-      },
-      {
-         "bufferView": 31,
-         "mimeType": "image/png"
-      },
-      {
-         "bufferView": 38,
+         "bufferView": 34,
          "mimeType": "image/png"
       }
    ],
@@ -747,14 +707,10 @@
          "pbrMetallicRoughness": {
             "baseColorFactor": [
                1.0,
-               1.0,
-               1.0,
+               0.25,
+               0.25,
                1.0
             ],
-            "baseColorTexture": {
-               "index": 4,
-               "texCoord": 0
-            },
             "metallicFactor": 0.0,
             "roughnessFactor": 1.0
          }
@@ -763,10 +719,14 @@
          "pbrMetallicRoughness": {
             "baseColorFactor": [
                1.0,
-               0.25,
-               0.25,
+               1.0,
+               1.0,
                1.0
             ],
+            "baseColorTexture": {
+               "index": 4,
+               "texCoord": 0
+            },
             "metallicFactor": 0.0,
             "roughnessFactor": 1.0
          }
@@ -790,7 +750,7 @@
    ],
    "meshes": [
       {
-         "name": "mesh0",
+         "name": "example_scene::textured_sphere_visual",
          "primitives": [
             {
                "attributes": {
@@ -804,7 +764,7 @@
          ]
       },
       {
-         "name": "mesh1",
+         "name": "example_scene::rgba_sphere_visual",
          "primitives": [
             {
                "attributes": {
@@ -818,7 +778,7 @@
          ]
       },
       {
-         "name": "mesh2",
+         "name": "example_scene::textured_ellipsoid_visual",
          "primitives": [
             {
                "attributes": {
@@ -832,7 +792,7 @@
          ]
       },
       {
-         "name": "mesh3",
+         "name": "example_scene::rgba_ellipsoid_visual",
          "primitives": [
             {
                "attributes": {
@@ -846,7 +806,7 @@
          ]
       },
       {
-         "name": "mesh4",
+         "name": "example_scene::textured_cylinder_visual",
          "primitives": [
             {
                "attributes": {
@@ -860,7 +820,7 @@
          ]
       },
       {
-         "name": "mesh5",
+         "name": "example_scene::rgba_cylinder_visual",
          "primitives": [
             {
                "attributes": {
@@ -874,7 +834,7 @@
          ]
       },
       {
-         "name": "mesh6",
+         "name": "example_scene::textured_capsule_visual",
          "primitives": [
             {
                "attributes": {
@@ -888,7 +848,7 @@
          ]
       },
       {
-         "name": "mesh7",
+         "name": "example_scene::rgba_capsule_visual",
          "primitives": [
             {
                "attributes": {
@@ -902,7 +862,7 @@
          ]
       },
       {
-         "name": "mesh8",
+         "name": "example_scene::rgba_box_visual",
          "primitives": [
             {
                "attributes": {
@@ -916,7 +876,7 @@
          ]
       },
       {
-         "name": "mesh9",
+         "name": "example_scene::textured_box_visual",
          "primitives": [
             {
                "attributes": {
@@ -930,7 +890,7 @@
          ]
       },
       {
-         "name": "mesh10",
+         "name": "example_scene::mustard_bottle::base_link_mustard",
          "primitives": [
             {
                "attributes": {
@@ -965,7 +925,7 @@
             1.0
          ],
          "mesh": 0,
-         "name": "mesh0"
+         "name": "example_scene::textured_sphere_visual"
       },
       {
          "matrix": [
@@ -987,7 +947,7 @@
             1.0
          ],
          "mesh": 1,
-         "name": "mesh1"
+         "name": "example_scene::rgba_sphere_visual"
       },
       {
          "matrix": [
@@ -1009,7 +969,7 @@
             1.0
          ],
          "mesh": 2,
-         "name": "mesh2"
+         "name": "example_scene::textured_ellipsoid_visual"
       },
       {
          "matrix": [
@@ -1031,7 +991,7 @@
             1.0
          ],
          "mesh": 3,
-         "name": "mesh3"
+         "name": "example_scene::rgba_ellipsoid_visual"
       },
       {
          "matrix": [
@@ -1053,7 +1013,7 @@
             1.0
          ],
          "mesh": 4,
-         "name": "mesh4"
+         "name": "example_scene::textured_cylinder_visual"
       },
       {
          "matrix": [
@@ -1075,7 +1035,7 @@
             1.0
          ],
          "mesh": 5,
-         "name": "mesh5"
+         "name": "example_scene::rgba_cylinder_visual"
       },
       {
          "matrix": [
@@ -1097,7 +1057,7 @@
             1.0
          ],
          "mesh": 6,
-         "name": "mesh6"
+         "name": "example_scene::textured_capsule_visual"
       },
       {
          "matrix": [
@@ -1119,29 +1079,7 @@
             1.0
          ],
          "mesh": 7,
-         "name": "mesh7"
-      },
-      {
-         "matrix": [
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.4,
-            0.25,
-            0.0,
-            1.0
-         ],
-         "mesh": 8,
-         "name": "mesh8"
+         "name": "example_scene::rgba_capsule_visual"
       },
       {
          "matrix": [
@@ -1162,8 +1100,30 @@
             0.0,
             1.0
          ],
+         "mesh": 8,
+         "name": "example_scene::rgba_box_visual"
+      },
+      {
+         "matrix": [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.4,
+            0.25,
+            0.0,
+            1.0
+         ],
          "mesh": 9,
-         "name": "mesh9"
+         "name": "example_scene::textured_box_visual"
       },
       {
          "matrix": [
@@ -1185,7 +1145,7 @@
             1.0
          ],
          "mesh": 10,
-         "name": "mesh10"
+         "name": "example_scene::mustard_bottle::base_link_mustard"
       },
       {
          "camera": 0,
@@ -1281,23 +1241,23 @@
       },
       {
          "sampler": 1,
-         "source": 1
+         "source": 0
       },
       {
          "sampler": 2,
-         "source": 2
+         "source": 0
       },
       {
          "sampler": 3,
-         "source": 3
+         "source": 0
       },
       {
          "sampler": 4,
-         "source": 4
+         "source": 0
       },
       {
          "sampler": 5,
-         "source": 5
+         "source": 1
       }
    ]
 }

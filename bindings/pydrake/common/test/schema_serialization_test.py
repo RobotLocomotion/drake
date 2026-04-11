@@ -3,7 +3,6 @@ import pydrake.common.schema as mut  # ruff: isort: skip
 import dataclasses as dc
 import math
 from textwrap import dedent
-import typing
 import unittest
 
 import numpy as np
@@ -15,17 +14,17 @@ from pydrake.math import RollPitchYaw
 
 @dc.dataclass
 class StochasticSingular:
-    deterministic: typing.Optional[mut.Deterministic] = None
-    gaussian: typing.Optional[mut.Gaussian] = None
-    uniform: typing.Optional[mut.Uniform] = None
-    discrete: typing.Optional[mut.UniformDiscrete] = None
+    deterministic: mut.Deterministic | None = None
+    gaussian: mut.Gaussian | None = None
+    uniform: mut.Uniform | None = None
+    discrete: mut.UniformDiscrete | None = None
 
 
 @dc.dataclass
 class StochasticVectors:
-    deterministic: typing.Optional[mut.DeterministicVectorX] = None
-    gaussian: typing.Optional[mut.GaussianVectorX] = None
-    uniform: typing.Optional[mut.UniformVectorX] = None
+    deterministic: mut.DeterministicVectorX | None = None
+    gaussian: mut.GaussianVectorX | None = None
+    uniform: mut.UniformVectorX | None = None
 
 
 class BaseTest(unittest.TestCase):

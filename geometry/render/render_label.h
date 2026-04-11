@@ -5,13 +5,9 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/systems/sensors/pixel_types.h"
-
-// Remove with deprecation 2026-03-01.
-#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -81,12 +77,12 @@ class RenderLabel {
       systems::sensors::PixelType::kLabel16I>::ChannelType;
 
   /** Constructs a label with the reserved `unspecified` value.  */
-  RenderLabel() = default;
+  constexpr RenderLabel() = default;
 
   /** Constructs a label with the given `value`.
    @throws std::exception if a) is negative, or b) the `value` is one of the
                              reserved values.  */
-  explicit RenderLabel(int value) : RenderLabel(value, true) {}
+  explicit constexpr RenderLabel(int value) : RenderLabel(value, true) {}
 
   /** Compares this label with the `other` label. Reports true if they have the
    same value.  */
@@ -155,7 +151,7 @@ class RenderLabel {
 
   // Private constructor precludes general construction except by the approved
   // factories (see above).
-  RenderLabel(int value, bool needs_testing)
+  constexpr RenderLabel(int value, bool needs_testing)
       : value_(static_cast<ValueType>(value)) {
     if (value < 0 || (needs_testing && value > kMaxUnreserved)) {
       throw std::logic_error(
@@ -170,14 +166,6 @@ class RenderLabel {
   // the maximum value.
   ValueType value_{kMaxValue};
 };
-
-DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
-std::ostream& operator<<(std::ostream& out, const RenderLabel& label);
-
-DRAKE_DEPRECATED("2026-03-01", "Use label.to_string(), instead")
-inline std::string to_string(const RenderLabel& label) {
-  return label.to_string();
-}
 
 }  // namespace render
 }  // namespace geometry

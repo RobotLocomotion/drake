@@ -10,12 +10,14 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <fmt/format.h>
 #include <unsupported/Eigen/Polynomials>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 #include "drake/common/symbolic/expression.h"
 
 namespace drake {
@@ -101,6 +103,7 @@ class Polynomial {
 
     /// Factors this by other; returns 0 iff other does not divide this.
     Monomial Factor(const Monomial& divisor) const;
+    std::string to_string() const;
   };
 
   /// Construct the vacuous polynomial, "0".
@@ -115,9 +118,12 @@ class Polynomial {
   /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
   Polynomial(const T coeff, const std::vector<Term>& terms);
 
-  /// Construct a Polynomial from a sequence of Monomials.
+  /// Construct a Polynomial from a sequence of Monomials. If `canonicalize` is
+  /// true, monomials with coefficient zero will be dropped, and monomials with
+  /// common powers will be combined.
   Polynomial(typename std::vector<Monomial>::const_iterator start,
-             typename std::vector<Monomial>::const_iterator finish);
+             typename std::vector<Monomial>::const_iterator finish,
+             bool canonicalize = true);
 
   /// Constructs a polynomial consisting of a single Monomial of the variable
   /// named `varname1`.
@@ -400,56 +406,22 @@ class Polynomial {
       const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
-   * Note that the ID of a variable is preserved in this translation.
+   * The mapping from symbolic::Variable::Id to Polynomial::VarType is governed
+   * by VariableIdToVarType().
    *
    * @throws std::exception if `e` is not polynomial-convertible.
    * @pre e.is_polynomial() is true.
    */
   static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
 
-  // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
-  friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
-    //    if (m.coefficient == 0) return os;
+  /** When FromExpression converts a symbolic::Variable to a Polynomial::Term,
+   * it uses this mapping function to project the symbolic::Variable::Id to a
+   * Polynomial::VarType. Note that the mapping is non-injective (i.e.,
+   * degenerate) because an Id is 128 bits but a VarType is only 32 bits.
+   */
+  static VarType VariableIdToVarType(const drake::symbolic::Variable::Id& id);
 
-    bool print_star = false;
-    if (m.coefficient == -1) {
-      os << "-";
-    } else if (m.coefficient != 1 || m.terms.empty()) {
-      os << '(' << m.coefficient << ")";
-      print_star = true;
-    }
-
-    for (typename std::vector<Term>::const_iterator iter = m.terms.begin();
-         iter != m.terms.end(); iter++) {
-      if (print_star) {
-        os << '*';
-      } else {
-        print_star = true;
-      }
-      os << IdToVariableName(iter->var);
-      if (iter->power != 1) {
-        os << "^" << iter->power;
-      }
-    }
-    return os;
-  }
-
-  // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
-  friend std::ostream& operator<<(std::ostream& os, const Polynomial& poly) {
-    if (poly.monomials_.empty()) {
-      os << "0";
-      return os;
-    }
-
-    for (typename std::vector<Monomial>::const_iterator iter =
-             poly.monomials_.begin();
-         iter != poly.monomials_.end(); iter++) {
-      os << *iter;
-      if (iter + 1 != poly.monomials_.end() && (iter + 1)->coefficient != -1)
-        os << '+';
-    }
-    return os;
-  }
+  std::string to_string() const;
 
   //@{
   /** Variable name/ID conversion facility. */
@@ -498,16 +470,44 @@ Polynomial<T> pow(const Polynomial<T>& base,
   }
 }
 
-// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization,
-// most likely just fmt_eigen without anything extra.
+template <typename T>
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os, const typename Polynomial<T>::Monomial& m) {
+  return os << fmt::to_string(m);
+}
+
+template <typename T>
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os, const Polynomial<T>& poly) {
+  return os << fmt::to_string(poly);
+}
+
 template <typename T, int Rows, int Cols>
-std::ostream& operator<<(
-    std::ostream& os,
-    const Eigen::Matrix<Polynomial<T>, Rows, Cols>& poly_mat) {
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Wrap Eigen objects M with fmt_eigen() to format Eigen data into fmt "
+    "strings e.g., fmt::to_string(fmt_eigen(M)), "
+    "fmt::format(\"M = {}\", fmt_eigen(M)). You'll need to "
+    "#include \"drake/common/fmt_eigen.h\" to access that function. "
+    "Refer to GitHub issue #17742 for more information.")
+std::ostream&
+operator<<(std::ostream& os,
+           const Eigen::Matrix<Polynomial<T>, Rows, Cols>& poly_mat) {
   for (int i = 0; i < poly_mat.rows(); i++) {
     os << "[ ";
     for (int j = 0; j < poly_mat.cols(); j++) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       os << poly_mat(i, j);
+#pragma GCC diagnostic pop
       if (j < (poly_mat.cols() - 1)) os << " , ";
     }
     os << " ]" << std::endl;
@@ -521,14 +521,8 @@ typedef Polynomial<double> Polynomiald;
 typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename T>
-struct formatter<drake::Polynomial<T>> : drake::ostream_formatter {};
-template <>
-struct formatter<drake::Polynomial<double>::Monomial>
-    : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename T, drake, Polynomial<T>, x, x.to_string())
+DRAKE_FORMATTER_AS(, drake, Polynomial<double>::Monomial, x, x.to_string())
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::Polynomial);

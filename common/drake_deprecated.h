@@ -12,9 +12,11 @@ use of code that is permitted but discouraged. */
 
 #ifdef DRAKE_DOXYGEN_CXX
 /** Use `DRAKE_DEPRECATED("removal_date", "message")` to discourage use of
-certain APIs.  It can be used on classes, typedefs, variables, non-static data
-members, functions, arguments, enumerations, and template specializations. When
-code refers to the deprecated item, a compile time warning will be issued
+certain APIs. It can be used on classes, typedefs, functions, arguments,
+enumerations, and template specializations. It must not be used on non-static
+data members of structs or classes. Instead, add a comment on the preceding line
+noting that the data member is deprecated and stating its planned removal date.
+When code refers to the deprecated item, a compile time warning will be issued
 displaying the given message, preceded by "DRAKE DEPRECATED: ". The Doxygen API
 reference will show that the API is deprecated, along with the message.
 

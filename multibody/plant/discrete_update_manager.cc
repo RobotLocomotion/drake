@@ -273,17 +273,17 @@ DiscreteUpdateManager<T>::EvalJointLocking(
 }
 
 template <typename T>
-VectorX<T> DiscreteUpdateManager<T>::AssembleActuationInput(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::AssembleActuationInput(
-      plant(), context);
+const VectorX<T>& DiscreteUpdateManager<T>::EvalActuationInput(
+    const systems::Context<T>& context, bool apply_effort_limit) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalActuationInput(
+      plant(), context, apply_effort_limit);
 }
 
 template <typename T>
-DesiredStateInput<T> DiscreteUpdateManager<T>::AssembleDesiredStateInput(
+const DesiredStateInput<T>& DiscreteUpdateManager<T>::EvalDesiredStateInput(
     const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::AssembleDesiredStateInput(plant(), context);
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalDesiredStateInput(
+      plant(), context);
 }
 
 template <typename T>
@@ -341,7 +341,8 @@ void DiscreteUpdateManager<T>::CalcJointActuationForces(
   actuation_w_pd->setZero();
   actuation_wo_pd->setZero();
   if (plant().num_actuators() > 0) {
-    const VectorX<T> u = AssembleActuationInput(context);
+    const VectorX<T>& u =
+        EvalActuationInput(context, /* apply_effort_limit = */ true);
     for (JointActuatorIndex actuator_index :
          plant().GetJointActuatorIndices()) {
       const JointActuator<T>& actuator =

@@ -254,6 +254,88 @@ void AddLimitConstraints(IcfModel<T>* model) {
   }
 }
 
+/* Adds some dummy contact constraints to the model. */
+template <typename T>
+void AddPatchConstraints(IcfModel<T>* model) {
+  // Add contact patches.
+  const T dissipation = 50.0;
+  const T stiffness = 1.0e6;
+  const T friction = 0.5;
+
+  PatchConstraintsPool<T>& patches = model->patch_constraints_pool();
+  // Resize to hold three patches with one contact pair each.
+  const std::vector<int> num_pairs_per_patch = {1, 1, 1};
+  patches.Resize(num_pairs_per_patch);
+
+  // First patch is between two non-anchored bodies, with body A floating.
+  {
+    const Vector3<T> p_AB_W(0.1, 0.0, 0.0);
+    patches.SetPatch(0 /* patch index */, 2 /* body A */, 1 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(1.0, 0.0, 0.0);
+    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
+    const T fn0 = 1.5;
+    patches.SetPair(0 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Second patch is between two non-anchored bodies, with body B floating.
+  {
+    const Vector3<T> p_AB_W(-0.1, 0.0, 0.0);
+    patches.SetPatch(2 /* patch index */, 1 /* body A */, 2 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(-1.0, 0.0, 0.0);
+    const Vector3<T> p_BC_W = -0.5 * p_AB_W;
+    const T fn0 = 1.5;
+    patches.SetPair(2 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+
+  // Third patch is between an anchored body (the world) and a dynamic body.
+  {
+    const Vector3<T> p_AB_W(0.0, 0.05, 0.0);
+    patches.SetPatch(1 /* patch index */, 0 /* World */, 3 /* body B */,
+                     dissipation, friction, friction, p_AB_W);
+
+    const Vector3<T> nhat_AB_W(0.0, 1.0, 0.0);
+    const Vector3<T> p_BC_W(0.0, -0.05, 0.0);
+    const T fn0 = 1.5;
+    patches.SetPair(1 /* patch index */, 0 /* pair index */, p_BC_W, nhat_AB_W,
+                    fn0, stiffness);
+  }
+}
+
+/* Adds weld constraints to the given model. Two weld constraints are added:
+one between the world (body 0) and body 1, and one between body 2 and body 3
+(cross-clique in the multi-clique case). */
+template <typename T>
+void AddWeldConstraints(IcfModel<T>* model) {
+  DRAKE_DEMAND(model != nullptr);
+
+  WeldConstraintsPool<T>& welds = model->weld_constraints_pool();
+  welds.Resize(2);
+
+  // Weld 0: world (body 0, anchored) to body 1.
+  {
+    const Vector3<T> p_AP_W(0.1, 0.0, 0.0);
+    const Vector3<T> p_BQ_W(0.0, 0.0, 0.0);
+    const Vector3<T> p_PoQo_W(0.05, 0.0, 0.0);
+    const Vector3<T> a_PQ_W(0.0, 0.0, 0.01);
+    welds.Set(0, /*bodyA=*/0, /*bodyB=*/1, p_AP_W, p_BQ_W, p_PoQo_W, a_PQ_W);
+  }
+
+  // Weld 1: body 2 to body 3 (cross-clique in multi-clique case).
+  {
+    const Vector3<T> p_AP_W(0.1, 0.2, 0.3);
+    const Vector3<T> p_BQ_W(0.0, 0.1, 0.0);
+    const Vector3<T> p_PoQo_W(0.02, -0.01, 0.03);
+    const Vector3<T> a_PQ_W(0.005, -0.003, 0.001);
+    welds.Set(1, /*bodyA=*/2, /*bodyB=*/3, p_AP_W, p_BQ_W, p_PoQo_W, a_PQ_W);
+  }
+}
+
 /* Checks that a default constructed model is empty. */
 GTEST_TEST(IcfModel, EmptyModel) {
   IcfModel<double> model;
@@ -373,6 +455,58 @@ GTEST_TEST(IcfModel, LimitMallocOnLimitConstrainedCalcData) {
   }
 }
 
+/* Checks that model.CalcData does not incur any heap allocations for a model
+with contact constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnPatchConstrainedCalcData) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddPatchConstraints(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 3);
+  EXPECT_EQ(model.patch_constraints_pool().num_constraints(), 3);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.patch_constraints_data().num_constraints(), 3);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
+
+  // Computing data should not cause any new allocations.
+  {
+    drake::test::LimitMalloc guard;
+    model.CalcData(v, &data);
+  }
+}
+
+/* Checks that model.CalcData does not incur any heap allocations on a problem
+with weld constraints. */
+GTEST_TEST(IcfModel, LimitMallocOnWeldConstrainedCalcData) {
+  IcfModel<double> model;
+  MakeUnconstrainedModel(&model);
+  AddWeldConstraints(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 2);
+  EXPECT_EQ(model.num_weld_constraints(), 2);
+
+  IcfData<double> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.weld_constraints_data().num_constraints(), 2);
+
+  const int nv = model.num_velocities();
+  const VectorXd v = VectorXd::LinSpaced(nv, -10.0, 10.0);
+
+  // Computing data should not cause any new allocations.
+  {
+    drake::test::LimitMalloc guard;
+    model.CalcData(v, &data);
+  }
+}
+
 /* Iterates over each body to check sizes and such. */
 GTEST_TEST(IcfModel, PerBodyElements) {
   IcfModel<double> model;
@@ -449,15 +583,17 @@ GTEST_TEST(IcfModel, CalcGradients) {
   AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  AddWeldConstraints(&model);
   model.SetSparsityPattern();
   const int nv = model.num_velocities();
 
   IcfData<AutoDiffXd> data;
   model.ResizeData(&data);
   EXPECT_EQ(data.num_velocities(), nv);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 10);
 
-  VectorXd v_values = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorXd v_values = VectorXd::LinSpaced(nv, -10.0, 10.0);
   VectorX<AutoDiffXd> v(nv);
   math::InitializeAutoDiff(v_values, &v);
 
@@ -477,6 +613,8 @@ GTEST_TEST(IcfModel, CalcDenseHessian) {
   AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  AddWeldConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 1);
   EXPECT_EQ(model.num_velocities(), 18);
@@ -520,6 +658,8 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   AddCouplerConstraint(&model_single);
   AddGainConstraints(&model_single);
   AddLimitConstraints(&model_single);
+  AddPatchConstraints(&model_single);
+  AddWeldConstraints(&model_single);
   model_single.SetSparsityPattern();
   EXPECT_EQ(model_single.num_cliques(), 1);
   EXPECT_EQ(model_single.num_velocities(), 18);
@@ -529,6 +669,8 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
   AddCouplerConstraint(&model_multiple);
   AddGainConstraints(&model_multiple);
   AddLimitConstraints(&model_multiple);
+  AddPatchConstraints(&model_multiple);
+  AddWeldConstraints(&model_multiple);
   model_multiple.SetSparsityPattern();
   EXPECT_EQ(model_multiple.num_cliques(), 3);
   EXPECT_EQ(model_multiple.num_velocities(), 18);
@@ -563,10 +705,13 @@ GTEST_TEST(IcfModel, SingleVsMultipleCliques) {
             std::vector<int>({6, 6, 6}));
 
   // Cost, gradient, and Hessian should be the same regardless of sparsity.
-  EXPECT_NEAR(data_single.cost(), data_multiple.cost(), kEpsilon);
+  // We use 100 * kEpsilon because cross-clique weld constraints accumulate
+  // slightly different round-off when the same problem is decomposed into one
+  // vs. three cliques.
+  EXPECT_NEAR(data_single.cost(), data_multiple.cost(), 100 * kEpsilon);
   EXPECT_TRUE(CompareMatrices(data_single.gradient(), data_multiple.gradient(),
-                              kEpsilon, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(H_single, H_multiple, kEpsilon,
+                              100 * kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(H_single, H_multiple, 100 * kEpsilon,
                               MatrixCompareType::relative));
 }
 
@@ -577,10 +722,12 @@ GTEST_TEST(IcfModel, CalcCostAlongLine) {
   AddCouplerConstraint(&model);
   AddGainConstraints(&model);
   AddLimitConstraints(&model);
+  AddPatchConstraints(&model);
+  AddWeldConstraints(&model);
   model.SetSparsityPattern();
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), 18);
-  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_constraints(), 10);
 
   // Allocate data, and additional scratch.
   IcfData<AutoDiffXd> data, scratch;
@@ -639,11 +786,13 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   AddCouplerConstraint(&model_original);
   AddGainConstraints(&model_original);
   AddLimitConstraints(&model_original);
+  AddPatchConstraints(&model_original);
+  AddWeldConstraints(&model_original);
   model_original.SetSparsityPattern();
   EXPECT_EQ(model_original.num_cliques(), 3);
   EXPECT_EQ(model_original.num_velocities(), 18);
   EXPECT_EQ(model_original.time_step(), 0.02);
-  EXPECT_EQ(model_original.num_constraints(), 5);
+  EXPECT_EQ(model_original.num_constraints(), 10);
 
   const double new_time_step = 0.003;
 
@@ -653,11 +802,13 @@ GTEST_TEST(IcfModel, UpdateTimeStep) {
   AddCouplerConstraint(&model_new);
   AddGainConstraints(&model_new);
   AddLimitConstraints(&model_new);
+  AddPatchConstraints(&model_new);
+  AddWeldConstraints(&model_new);
   model_new.SetSparsityPattern();
   EXPECT_EQ(model_new.num_cliques(), 3);
   EXPECT_EQ(model_new.num_velocities(), 18);
   EXPECT_EQ(model_new.time_step(), new_time_step);
-  EXPECT_EQ(model_new.num_constraints(), 5);
+  EXPECT_EQ(model_new.num_constraints(), 10);
 
   // Now update the time step of the original model.
   EXPECT_NE(model_original.time_step(), new_time_step);
@@ -974,6 +1125,101 @@ GTEST_TEST(IcfModel, LimitConstraint) {
   MatrixXd gradient_derivatives = math::ExtractGradient(data.gradient());
   EXPECT_TRUE(CompareMatrices(hessian_value, gradient_derivatives,
                               10 * kEpsilon, MatrixCompareType::relative));
+}
+
+/* Verifies that weld constraints produce correct data. */
+GTEST_TEST(IcfModel, WeldConstraint) {
+  IcfModel<AutoDiffXd> model;
+  MakeUnconstrainedModel(&model);
+  model.SetSparsityPattern();
+  EXPECT_EQ(model.num_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), 18);
+  EXPECT_EQ(model.num_constraints(), 0);
+
+  IcfData<AutoDiffXd> data;
+  model.ResizeData(&data);
+  EXPECT_EQ(data.num_velocities(), model.num_velocities());
+  EXPECT_EQ(data.weld_constraints_data().num_constraints(), 0);
+
+  // At this point there should be no weld constraints.
+  EXPECT_EQ(model.num_weld_constraints(), 0);
+  EXPECT_EQ(model.num_constraints(), 0);
+
+  // Add weld constraints.
+  AddWeldConstraints(&model);
+  EXPECT_EQ(model.num_weld_constraints(), 2);
+  EXPECT_EQ(model.num_constraints(), 2);
+
+  // Re-set sparsity since weld constraints introduce cross-clique coupling.
+  model.SetSparsityPattern();
+
+  // Resize data to include weld constraints data.
+  model.ResizeData(&data);
+  EXPECT_EQ(data.weld_constraints_data().num_constraints(), 2);
+
+  const int nv = model.num_velocities();
+  VectorXd v_value = VectorXd::LinSpaced(nv, -10, 10.0);
+  VectorX<AutoDiffXd> v(nv);
+  math::InitializeAutoDiff(v_value, &v);
+  model.CalcData(v, &data);
+
+  const WeldConstraintsDataPool<AutoDiffXd>& weld_data =
+      data.weld_constraints_data();
+  EXPECT_EQ(weld_data.num_constraints(), 2);
+
+  // The weld constraints should add positive cost (non-zero constraint error).
+  EXPECT_GT(weld_data.cost().value(), 0.0);
+
+  // Impulses should be finite and non-zero.
+  for (int k = 0; k < 2; ++k) {
+    const Vector6<AutoDiffXd>& gamma = weld_data.gamma(k);
+    EXPECT_TRUE(math::ExtractValue(gamma).allFinite());
+    EXPECT_GT(math::ExtractValue(gamma).norm(), 0.0);
+  }
+
+  // The total cost should include the weld contribution.
+  EXPECT_GT(data.cost().value(), data.momentum_cost().value());
+
+  // Verify accumulated total cost and gradients via AutoDiff.
+  const VectorXd total_cost_derivatives = data.cost().derivatives();
+  const VectorXd total_gradient_value = math::ExtractValue(data.gradient());
+  EXPECT_TRUE(CompareMatrices(total_gradient_value, total_cost_derivatives,
+                              2 * kEpsilon, MatrixCompareType::relative));
+
+  // Verify contributions to Hessian.
+  auto weld_hessian = model.MakeHessian(data);
+  MatrixXd weld_hessian_value =
+      math::ExtractValue(weld_hessian->MakeDenseMatrix());
+  MatrixXd weld_gradient_derivatives = math::ExtractGradient(data.gradient());
+  EXPECT_TRUE(CompareMatrices(weld_hessian_value, weld_gradient_derivatives,
+                              10 * kEpsilon, MatrixCompareType::relative));
+
+  // The cross-clique weld (body 2, clique 1 to body 3, clique 2) should
+  // produce non-zero off-diagonal blocks in the Hessian.
+  const double off_diag_norm = weld_hessian_value.block<6, 6>(6, 12).norm();
+  EXPECT_GT(off_diag_norm, 0.0);
+
+  // Check CalcCostAlongLine for weld constraints.
+  const VectorX<AutoDiffXd> w = VectorX<AutoDiffXd>::LinSpaced(
+      nv, 0.1, -0.2);  // Arbitrary search direction.
+  IcfSearchDirectionData<AutoDiffXd> search_data;
+
+  // Set data with constant value of v.
+  VectorX<AutoDiffXd> v_constant =
+      VectorX<AutoDiffXd>::LinSpaced(nv, -10, 10.0);
+  model.CalcData(v_constant, &data);
+  model.CalcSearchDirectionData(data, w, &search_data);
+
+  const AutoDiffXd alpha = {
+      0.35 /* arbitrary value */,
+      VectorXd::Ones(1) /* This is the independent variable */};
+  AutoDiffXd dcost, d2cost;
+  const AutoDiffXd cost =
+      model.CalcCostAlongLine(alpha, data, search_data, &dcost, &d2cost);
+
+  const double scale = std::abs(dcost.value());
+  EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
+  EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
 }
 
 }  // namespace

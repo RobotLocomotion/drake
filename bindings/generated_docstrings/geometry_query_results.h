@@ -107,15 +107,15 @@ the mesh by more than a factor of three over the polygonal mesh. The
 polygonal representation produces fewer faces, but high order
 integration over polygons is problematic. We recommend choosing the
 cheapest representation that nevertheless supports your required
-fidelity (see QueryObject::ComputeContactSurfaces()).
+fidelity (see QueryObject∷ComputeContactSurfaces()).
 
 The representation of any ContactSurface instance can be reported by
 calling representation(). If it returns
-HydroelasticContactRepresentation::kTriangle, then the mesh and
+HydroelasticContactRepresentation∷kTriangle, then the mesh and
 pressure field can be accessed via tri_mesh_W() and tri_e_MN(),
 respectively. If it returns
-HydroelasticContactRepresentation::kPolygon, then use poly_mesh_W()
-and poly_e_MN().
+HydroelasticContactRepresentation∷kPolygon, then use poly_mesh_W() and
+poly_e_MN().
 
 Regardless of representation (polygon or triangle), the normal for
 each mesh face is guaranteed to point "out of" N and "into" M. They
@@ -237,7 +237,7 @@ R"""(Returns:
 R"""(Simply reports if this contact surface's mesh representation is
 triangle. Equivalent to:
 
-representation() == HydroelasticContactRepresentation::kTriangle
+representation() == HydroelasticContactRepresentation∷kTriangle
 
 and offered as convenient sugar.)""";
         } is_triangle;

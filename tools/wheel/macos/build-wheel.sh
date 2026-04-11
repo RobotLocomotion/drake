@@ -40,30 +40,32 @@ readonly build_root="/tmp/drake-wheel-build/drake-build"
 mkdir -p "$build_root"
 cd "$build_root"
 
-# Add wheel-specific bazel options.
+# Add wheel-specific settings that are not available via CMake options.
 # N.B. When you change anything here, also fix wheel/image/build-drake.sh.
 cat > "$build_root/drake.bazelrc" << EOF
 build --disk_cache=$HOME/.cache/drake-wheel-build/bazel/disk_cache
 build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
-build --repo_env=SNOPT_PATH=${SNOPT_PATH}
-build --config=packaging
 # See tools/wheel/wheel_builder/macos.py for more on this env variable.
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 EOF
 
-# See tools/wheel/image/build-drake.sh for details on the lack of MOSEK support
-# for Python 3.14.
+# MOSEK's published wheels declare an upper bound on their supported Python
+# version, which is currently Python < 3.15. When that changes to a larger
+# version number, we should bump this up to match, and also grep tools/wheel
+# for other mentions of MOSEK version bounds and fix those as well.
+WITH_MOSEK=ON
 PYTHON_MINOR=$($python_executable -c "import sys; print(sys.version_info.minor)")
-if [[ ${PYTHON_MINOR} -ge 14 ]]; then
-    cat >> "$build_root/drake.bazelrc" << EOF
-build --@drake//tools/flags:with_mosek=False
-EOF
+if [[ ${PYTHON_MINOR} -ge 15 ]]; then
+  WITH_MOSEK=OFF
 fi
 
 # Install Drake.
 # N.B. When you change anything here, also fix wheel/image/build-drake.sh.
 cmake "$git_root" \
+    -DWITH_MOSEK="${WITH_MOSEK}" \
+    -DWITH_SNOPT=ON \
+    -DSNOPT_PATH="${SNOPT_PATH}" \
     -DWITH_USER_EIGEN=OFF \
     -DWITH_USER_FMT=OFF \
     -DWITH_USER_SPDLOG=OFF \

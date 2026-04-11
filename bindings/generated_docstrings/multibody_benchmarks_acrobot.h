@@ -428,7 +428,7 @@ Parameter ``default_parameters``:
     details.
 
 Parameter ``finalize``:
-    If ``True``, MultibodyPlant::Finalize() gets called on the new
+    If ``True``, MultibodyPlant∷Finalize() gets called on the new
     plant.
 
 Parameter ``scene_graph``:

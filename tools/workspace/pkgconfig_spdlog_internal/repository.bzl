@@ -13,7 +13,8 @@ pkgconfig_spdlog_internal_repository = repository_rule(
         "modname": attr.string(default = "spdlog"),
         # Offered for backwards compatibility, but ignored.
         "mirrors": attr.string_list_dict(),
-        # TODO(jwnimmer-tri) Remove this line when we drop WORKSPACE support.
+        # DRAKE DEPRECATED: The preprocessor definition HAVE_SPDLOG is
+        # deprecated and will be removed from Drake on or after 2026-07-01.
         "extra_defines": attr.string_list(default = ["HAVE_SPDLOG"]),
     },
     local = True,

@@ -5,18 +5,22 @@
 #endif
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
-#include <ostream>
 #include <string>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
+
+// Remove with deprecation 2026-07-01.
+#include <ostream>
 
 namespace drake {
 namespace symbolic {
@@ -33,8 +37,6 @@ namespace symbolic {
  */
 class Variable {
  public:
-  typedef size_t Id;
-
   /** Supported types of symbolic variables. */
   enum class Type : uint8_t {
     CONTINUOUS,       ///< A CONTINUOUS variable takes a `double` value.
@@ -47,6 +49,102 @@ class Variable {
                       ///< mean-zero, unit-variance normal.
     RANDOM_EXPONENTIAL,  ///< A random variable whose value will be drawn from
                          ///< exponential distribution with λ=1.
+  };
+
+  /** Identifier for a symbolic variable. Variable equality is defined by
+  whether their Ids are equal (i.e., ignoring Variable names). Ids are akin to
+  [UUIDs](https://en.wikipedia.org/wiki/Universally_unique_identifier) because
+  Ids contain a large number of random bits so are unique not only within a
+  single process, but also across multiple runs of programs over time. On the
+  other hand, we also guarantee that all Ids created within a single process
+  have consistent behavior in their comparison (`operator<`) and hashing
+  operators, so that any single program is still run-to-run consistent. */
+  class Id {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Id);
+
+    /** Constructs a "dummy" id, not associated with any variable. */
+    Id() = default;
+
+    /** Default comparison operators. */
+    auto operator<=>(const Id&) const = default;
+
+    /** Implements the @ref hash_append concept. */
+    template <class HashAlgorithm>
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    friend void hash_append(HashAlgorithm& hasher, const Id& item) noexcept {
+      using drake::hash_append;
+      // To maintain consistent hash iteration order across repeated runs of a
+      // program, we must only hash the non-random part of our state. The low
+      // 32 bits of lo_ don't contain any randomness. (We could also hash our
+      // get_type(), but it doesn't add a meaningful amount of entropy.)
+      hash_append(hasher, static_cast<uint32_t>(item.lo_));
+    }
+
+    /** Returns a string representation of this Id. */
+    std::string to_string() const;
+
+   private:
+    friend class Variable;
+    friend class VariableIdPythonAttorney;
+
+    static Id Create(Type type);
+
+    Type get_type() const {
+      // We store the Type enum in the lower byte of hi_.
+      return static_cast<Type>(static_cast<uint8_t>(hi_));
+    }
+
+    bool is_default() const { return lo_ == 0 && hi_ == 0; }
+
+    // Id represents three pieces of information:
+    // - type: the Variable::Type;
+    // - serial number: a counter incremented for each new Variable created
+    //     within this process; the first Variable created is serial number 1,
+    //     the second Variable is serial number 2, etc.;
+    // - nonce: a random value that's initialized once per process the first
+    //     time it's needed; all variables created within the process are based
+    //     on the same nonce; this helps distinguish variables created by one
+    //     process from those created by another process when saving them to
+    //     disk.
+    //
+    // For efficiency, we pack these three pieces into two member fields:
+    // - the 8-bit type is stored in the low byte of hi_;
+    // - the 64-bit serial number is stored in lo_, summed with the nonce in the
+    //   upper 4 bytes; to recover the serial number we would need to subtract
+    //   the nonce from lo_, but in practice we never need the serial number by
+    //   itself;
+    // - the 88-bit nonce is stored as:
+    //   - 56 bits in the upper 7 bytes of hi_ and
+    //   - 32 bits added to the upper 4 bytes of lo_.
+    //
+    // Why 88 bits for the nonce? Like a UUID, we need enough bits to avoid
+    // birthday collisions. Using only 56 or 64 bits ends up with too high a
+    // chance of collision. Using 88 bits is a balance between having enough
+    // entropy while still allowing for consistency of our sort ordering and
+    // hash code.
+    //
+    // Why not pack both the type and serial number into single 64-bit word,
+    // leaving the other 64-bit word exclusively for nonce data? That would
+    // put at risk the `type` changing if the serial number got too large.
+    //
+    // Note that if the serial number's value exceeds 32 bits, it will end up
+    // affecting bits of lo_ where the nonce is stored. This is not a problem;
+    // in effect it's just a slightly difference random nonce. Ids are still
+    // distinct from each other in all ways that matter.
+    //
+    // Note that the lower 4 bytes of `lo_` store the serial number mod 2^32,
+    // which can therefore provide a run-to-run stable hash key when an Id is
+    // used in unordered containers, without being affected by the random nonce.
+    // This is important for reproducibility.
+    //
+    // Because nearly all variables have same type (`CONTINUOUS`) and the nonce
+    // is invariant within one process, hi_ will typically contain exactly the
+    // same value across all Variables in this process, and therefore it's
+    // important to declare lo_ first and hi_ second so that the entropy-bearing
+    // member field (lo_) is the first one to be compared by operator<=>.
+    uint64_t lo_{};
+    uint64_t hi_{};
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable);
@@ -71,13 +169,9 @@ class Variable {
   ~Variable() = default;
 
   /** Checks if this is the variable created by the default constructor. */
-  [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
-  [[nodiscard]] Id get_id() const { return id_; }
-  [[nodiscard]] Type get_type() const {
-    // We store the 1-byte Type enum in the upper byte of id_.
-    // See get_next_id() in the cc file for more details.
-    return static_cast<Type>(Id{id_} >> (7 * 8));
-  }
+  [[nodiscard]] bool is_dummy() const { return get_id().is_default(); }
+  [[nodiscard]] const Id& get_id() const { return id_; }
+  [[nodiscard]] Type get_type() const { return get_id().get_type(); }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
 
@@ -97,15 +191,15 @@ class Variable {
   friend void hash_append(HashAlgorithm& hasher,
                           const Variable& item) noexcept {
     using drake::hash_append;
-    hash_append(hasher, Id{item.id_});
+    hash_append(hasher, item.get_id());
     // We do not send the name_ to the hasher, because the id_ is already unique
     // across all instances, so two Variable instances with matching id_ will
     // always have identical names.
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const Variable& var);
-
  private:
+  friend class VariablePythonAttorney;
+
   // Unique identifier for this Variable. The high-order byte stores the Type.
   // See get_next_id() in the cc file for more details.
   reset_after_move<Id> id_;
@@ -117,7 +211,19 @@ class Variable {
   std::shared_ptr<const std::string> name_;  // Name of variable.
 };
 
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
+std::ostream& operator<<(std::ostream& os, const Variable& var);
+
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
+
+std::string_view to_string(const Variable::Type& type);
 
 /// Creates a dynamically-sized Eigen matrix of symbolic variables.
 /// @param rows The number of rows in the new matrix.
@@ -319,6 +425,10 @@ Eigen::Matrix<Variable, rows, 1> MakeVectorIntegerVariable(
 
 namespace std {
 
+/* Provides std::hash<drake::symbolic::Variable::Id>. */
+template <>
+struct hash<drake::symbolic::Variable::Id> : public drake::DefaultHash {};
+
 /* Provides std::hash<drake::symbolic::Variable>. */
 template <>
 struct hash<drake::symbolic::Variable> : public drake::DefaultHash {};
@@ -372,10 +482,7 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 }  // namespace symbolic
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::symbolic::Variable> : drake::ostream_formatter {};
-template <>
-struct formatter<drake::symbolic::Variable::Type> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::symbolic, Variable::Id, x, x.to_string())
+DRAKE_FORMATTER_AS(, drake::symbolic, Variable, x, x.to_string())
+DRAKE_FORMATTER_AS(, drake::symbolic, Variable::Type, x,
+                   drake::symbolic::to_string(x))

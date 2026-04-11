@@ -5,7 +5,7 @@
 #include <typeinfo>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -578,8 +578,5 @@ template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <typename Tag>
-struct formatter<drake::TypeSafeIndex<Tag>> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(typename Tag, drake, TypeSafeIndex<Tag>, x,
+                   std::to_string(int{x}))

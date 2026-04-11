@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "drake/common/reset_on_copy.h"
-#include "drake/common/ssize.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/cache.h"

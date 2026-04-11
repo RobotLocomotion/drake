@@ -25,7 +25,7 @@ namespace internal {
 // constraints stored in the gurobi model.
 // @return error as an integer. The full set of error values are
 // described here :
-// https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/errors.html
+// https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/errors.html
 // This function assumes `vars` doesn't contain duplicate variables.
 int AddLinearConstraintNoDuplication(
     const MathematicalProgram& prog, GRBmodel* model,

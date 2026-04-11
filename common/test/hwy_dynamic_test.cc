@@ -1,16 +1,13 @@
+#include "drake/common/hwy_dynamic.h"
+
 #include <string>
 #include <utility>
 
+#include "hwy/tests/hwy_gtest.h"
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include "hwy/tests/hwy_gtest.h"
-#pragma GCC diagnostic pop
-
-#include "drake/common/hwy_dynamic.h"
 #include "drake/common/test/hwy_dynamic_test_array_mul.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 

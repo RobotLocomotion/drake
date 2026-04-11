@@ -57,6 +57,7 @@ _SRCS_CPP = [
 
 cc_library(
     name = "qhull_r",
+    srcs = _SRCS_C,
     hdrs = _HDRS_C,
     copts = [
         "-fvisibility=hidden",
@@ -64,7 +65,6 @@ cc_library(
     ],
     includes = ["src"],
     isystem = True,
-    srcs = _SRCS_C,
     linkstatic = 1,
 )
 
@@ -80,13 +80,13 @@ _SRCS_CPP_VENDORED = [
 
 cc_library_vendored(
     name = "qhull",
-    hdrs = _HDRS_CPP,
-    hdrs_vendored = _HDRS_CPP_VENDORED,
-    includes = ["drake_hdr"],
-    isystem = True,
     srcs = _SRCS_CPP,
     srcs_vendored = _SRCS_CPP_VENDORED,
+    hdrs = _HDRS_CPP,
+    hdrs_vendored = _HDRS_CPP_VENDORED,
     copts = ["-w"],
+    includes = ["drake_hdr"],
+    isystem = True,
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [":qhull_r"],
@@ -115,10 +115,10 @@ install(
         ":drake_qhull.patch",
         "@drake//tools/workspace/qhull_internal:patches",
     ],
+    doc_strip_prefix = ["patches"],
     allowed_externals = [
         "@drake//tools/workspace/qhull_internal:patches",
     ],
-    doc_strip_prefix = ["patches"],
     visibility = ["//visibility:public"],
 )
 

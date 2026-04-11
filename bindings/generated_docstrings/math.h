@@ -33,7 +33,6 @@
 // #include "drake/math/gradient_util.h"
 // #include "drake/math/gray_code.h"
 // #include "drake/math/hopf_coordinate.h"
-// #include "drake/math/jacobian.h"
 // #include "drake/math/knot_vector_type.h"
 // #include "drake/math/linear_solve.h"
 // #include "drake/math/matrix_util.h"
@@ -61,7 +60,7 @@ constexpr struct /* pydrake_doc_math */ {
         const char* doc =
 R"""(Determines if a and b are equal. a equals to b if they have the same
 value and gradients. TODO(hongkai.dai) implement and use
-std::equal_to<> for comparing Eigen vector of AutoDiffXd.)""";
+std∷equal_to<> for comparing Eigen vector of AutoDiffXd.)""";
       } AreAutoDiffVecXdEqual;
       // Symbol: drake::math::AreQuaternionsEqualForOrientation
       struct /* AreQuaternionsEqualForOrientation */ {
@@ -154,10 +153,10 @@ Space and Time Reinforcement Learning", NIPS 1998)""";
         struct /* Coordinates */ {
           // Source: drake/math/barycentric.h
           const char* doc =
-R"""(The mesh is represented by a std::set (to ensure uniqueness and
-provide logarithmic lookups) of coordinates in each input dimension.
-Note: The values are type double, not T (We do not plan to take
-gradients, etc w/ respect to them).)""";
+R"""(The mesh is represented by a std∷set (to ensure uniqueness and provide
+logarithmic lookups) of coordinates in each input dimension. Note: The
+values are type double, not T (We do not plan to take gradients, etc
+w/ respect to them).)""";
         } Coordinates;
         // Symbol: drake::math::BarycentricMesh::Eval
         struct /* Eval */ {
@@ -213,8 +212,8 @@ Parameter ``weights``:
           const char* doc_3args =
 R"""(Performs Eval, but with the possibility of the values on the mesh
 having a different scalar type than the values defining the mesh
-(symbolic::Expression containing decision variables for an
-optimization problem is an important example)
+(symbolic∷Expression containing decision variables for an optimization
+problem is an important example)
 
 Template parameter ``ValueT``:
     defines the scalar type of the mesh_values and the output.
@@ -246,7 +245,7 @@ this barycentric interpolation.
 .. code-block:: c++
 
     MatrixXd mesh_values = bary.MeshValuesFrom(
-        [](const auto& x) { return Vector1d(std::sin(x[0])); });
+        [](const auto& x) { return Vector1d(std∷sin(x[0])); });
 
 .. raw:: html
 
@@ -622,7 +621,7 @@ R"""(Compute the gradient of a function f(x) through numerical difference.
 Parameter ``calc_func``:
     calc_func(x, &y) computes the value of f(x), and stores the value
     in y. ``calc_func`` is responsible for properly resizing the
-    output ``y`` when it consists of an Eigen vector of Eigen::Dynamic
+    output ``y`` when it consists of an Eigen vector of Eigen∷Dynamic
     size.
 
 Parameter ``x``:
@@ -640,11 +639,11 @@ Template parameter ``DerivedY``:
 Template parameter ``DerivedCalcX``:
     The type of x in the calc_func. Must be an Eigen column vector. It
     is possible to have DerivedCalcX being different from DerivedX,
-    for example, ``calc_func`` could be solvers::EvaluatorBase(const
-    Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd*), but ``x``
-    could be of type Eigen::VectorXd. TODO(hongkai.dai): understand
-    why the default template DerivedCalcX = DerivedX doesn't compile
-    when I instantiate ComputeNumericalGradient<DerivedX,
+    for example, ``calc_func`` could be solvers∷EvaluatorBase(const
+    Eigen∷Ref<const Eigen∷VectorXd>&, Eigen∷VectorXd*), but ``x``
+    could be of type Eigen∷VectorXd. TODO(hongkai.dai): understand why
+    the default template DerivedCalcX = DerivedX doesn't compile when
+    I instantiate ComputeNumericalGradient<DerivedX,
     DerivedY>(calc_func, x);
 
 Returns ``gradient``:
@@ -661,21 +660,21 @@ Examples:
 .. code-block:: c++
 
     {cc}
-    // Create a std::function from a lambda expression.
-    std::function<void (const Eigen::Vector2d&, Vector3d*)> foo = [](const
-    Eigen::Vector2d& x, Vector3d*y) { (*y)(0) = x(0); (*y)(1) = x(0) * x(1);
-    (*y)(2) = x(0) * std::sin(x(1));};
-    Eigen::Vector3d x_eval(1, 2, 3);
+    // Create a std∷function from a lambda expression.
+    std∷function<void (const Eigen∷Vector2d&, Vector3d*)> foo = [](const
+    Eigen∷Vector2d& x, Vector3d*y) { (*y)(0) = x(0); (*y)(1) = x(0) * x(1);
+    (*y)(2) = x(0) * std∷sin(x(1));};
+    Eigen∷Vector3d x_eval(1, 2, 3);
     auto J = ComputeNumericalGradient(foo, x_eval);
     // Note that if we pass in a lambda to ComputeNumericalGradient, then
     // ComputeNumericalGradient has to instantiate the template types explicitly,
-    // as in this example. The issue of template deduction with std::function is
+    // as in this example. The issue of template deduction with std∷function is
     // explained in
     //
     https://stackoverflow.com/questions/48529410/template-arguments-deduction-failed-passing-func-pointer-to-stdfunction
-    auto bar = [](const Eigen::Vector2d& x, Eigen::Vector2d* y) {*y = x; };
-    auto J2 = ComputeNumericalGradient<Eigen::Vector2d,
-    Eigen::Vector2d, Eigen::Vector2d>(bar, Eigen::Vector2d(2, 3));
+    auto bar = [](const Eigen∷Vector2d& x, Eigen∷Vector2d* y) {*y = x; };
+    auto J2 = ComputeNumericalGradient<Eigen∷Vector2d,
+    Eigen∷Vector2d, Eigen∷Vector2d>(bar, Eigen∷Vector2d(2, 3));
 
 .. raw:: html
 
@@ -972,7 +971,7 @@ is almost 0, and returns the original gradient, x/|x|, otherwise.)""";
         // Source: drake/math/autodiff.h
         const char* doc =
 R"""(``B = DiscardGradient(A)`` enables casting from a matrix of
-AutoDiffScalars to AutoDiffScalar::Scalar type, explicitly throwing
+AutoDiffScalars to AutoDiffScalar∷Scalar type, explicitly throwing
 away any gradient information. For a matrix of type, e.g.
 ``MatrixX<AutoDiffXd> A``, the comparable operation ``B =
 A.cast<double>()`` should (and does) fail to compile. Use
@@ -994,7 +993,7 @@ See also:
         // Source: drake/math/autodiff_gradient.h
         const char* doc =
 R"""(``B = DiscardZeroGradient(A, precision)`` enables casting from a
-matrix of AutoDiffScalars to AutoDiffScalar::Scalar type, but first
+matrix of AutoDiffScalars to AutoDiffScalar∷Scalar type, but first
 checking that the gradient matrix is empty or zero. For a matrix of
 type, e.g. ``MatrixX<AutoDiffXd> A``, the comparable operation ``B =
 A.cast<double>()`` should (and does) fail to compile. Use
@@ -1124,9 +1123,9 @@ Raises:
       struct /* EigenToStdVector */ {
         // Source: drake/math/matrix_util.h
         const char* doc =
-R"""(Converts a MatrixX<T> into a std::vector<MatrixX<T>>, taking each
+R"""(Converts a MatrixX<T> into a std∷vector<MatrixX<T>>, taking each
 column of the m-by-n matrix ``mat`` into an m-by-1 element of the
-returned std::vector.)""";
+returned std∷vector.)""";
       } EigenToStdVector;
       // Symbol: drake::math::ExtractGradient
       struct /* ExtractGradient */ {
@@ -1146,7 +1145,7 @@ Parameter ``num_derivatives``:
     derivatives, the sizes must match.
 
 Returns ``gradient_matrix``:
-    An Eigen::Matrix with number of rows equal to the total size (rows
+    An Eigen∷Matrix with number of rows equal to the total size (rows
     x cols) of the input matrix and number of columns equal to the
     number of derivatives. Each output row corresponds to one entry of
     the input matrix, using the input matrix storage order. For
@@ -1189,7 +1188,7 @@ Parameter ``auto_diff_matrix``:
     entries.
 
 Returns ``value``:
-    An Eigen::Matrix of the same dimensions as the input matrix, but
+    An Eigen∷Matrix of the same dimensions as the input matrix, but
     containing only the value portion of each entry, without the
     derivatives.
 
@@ -1204,12 +1203,12 @@ Note:
     could be an AutoDiffScalar or an ordinary double, in which case it
     returns the original matrix at no cost. DiscardZeroGradient() is
     similar but requires that the discarded gradient was zero.
-    drake::ExtractDoubleOrThrow() has many specializations, including
+    drake∷ExtractDoubleOrThrow() has many specializations, including
     one for ``Matrix<AutoDiffScalar>`` that behaves identically to
     ExtractValue().
 
 See also:
-    DiscardGradient(), drake::ExtractDoubleOrThrow())""";
+    DiscardGradient(), drake∷ExtractDoubleOrThrow())""";
       } ExtractValue;
       // Symbol: drake::math::GeneratePythonCsc
       struct /* GeneratePythonCsc */ {
@@ -1245,9 +1244,9 @@ Raises:
         // Source: drake/math/linear_solve.h
         const char* doc =
 R"""(Get the linear solver for a matrix A. If A has scalar type of double
-or symbolic::Expressions, then the returned linear solver will have
-the same scalar type. If A has scalar type of Eigen::AutoDiffScalar,
-then the returned linear solver will have scalar type of double. See
+or symbolic∷Expressions, then the returned linear solver will have the
+same scalar type. If A has scalar type of Eigen∷AutoDiffScalar, then
+the returned linear solver will have scalar type of double. See
 get_linear_solver for more details.)""";
       } GetLinearSolver;
       // Symbol: drake::math::GetSubMatrixGradientArray
@@ -1300,7 +1299,7 @@ Returns:
       struct /* GrayCodesMatrix */ {
         // Source: drake/math/gray_code.h
         const char* doc =
-R"""(GrayCodesMatrix::type returns an Eigen matrix of integers. The size of
+R"""(GrayCodesMatrix∷type returns an Eigen matrix of integers. The size of
 this matrix is determined by the number of digits in the Gray code.)""";
         // Symbol: drake::math::GrayCodesMatrix::type
         struct /* type */ {
@@ -1512,8 +1511,8 @@ Returns:
       struct /* IsSymmetric */ {
         // Source: drake/math/matrix_util.h
         const char* doc_1args =
-R"""(Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i,
-j), matrix(j, i)) is true for all i, j, then the matrix is symmetric.)""";
+R"""(Determines if a matrix is symmetric. If std∷equal_to<>()(matrix(i, j),
+matrix(j, i)) is true for all i, j, then the matrix is symmetric.)""";
         // Source: drake/math/matrix_util.h
         const char* doc_2args =
 R"""(Determines if a matrix is symmetric based on whether the difference
@@ -1552,14 +1551,14 @@ b ＼ A | double | ADS | Expr | |--------|--------|-----|----- | |
 double | double | ADS | NA | | ADS | ADS | ADS | NA | | Expr | NA | NA
 | Expr |
 
-where ADS stands for Eigen::AutoDiffScalar, and Expr stands for
-symbolic::Expression.
+where ADS stands for Eigen∷AutoDiffScalar, and Expr stands for
+symbolic∷Expression.
 
 Using LinearSolver class is as fast as using Eigen's linear solver
 directly when neither A nor b contains AutoDiffScalar. When either A
 or b contains AutoDiffScalar, using LinearSolver is much faster than
 using Eigen's autodiffable linear solver (for example
-Eigen::LDLT<Eigen::Matrix<Eigen::AutoDiffScalar, 3, 3>>).
+Eigen∷LDLT<Eigen∷Matrix<Eigen∷AutoDiffScalar, 3, 3>>).
 
 Here is the example code
 
@@ -1571,22 +1570,22 @@ Here is the example code
 .. code-block:: c++
 
     {cc}
-    Eigen::Matrix<AutoDiffXd, 2, 2> A;
+    Eigen∷Matrix<AutoDiffXd, 2, 2> A;
     A(0, 0).value() = 1;
-    A(0, 0).derivatives() = Eigen::Vector3d(1, 2, 3);
+    A(0, 0).derivatives() = Eigen∷Vector3d(1, 2, 3);
     A(0, 1).value() = 2;
-    A(0, 1).derivatives() = Eigen::Vector3d(2, 3, 4);
+    A(0, 1).derivatives() = Eigen∷Vector3d(2, 3, 4);
     A(1, 0).value() = 2;
-    A(1, 0).derivatives() = Eigen::Vector3d(3, 4, 5);
+    A(1, 0).derivatives() = Eigen∷Vector3d(3, 4, 5);
     A(1, 1).value() = 5;
-    A(1, 1).derivatives() = Eigen::Vector3d(4, 5, 6);
-    LinearSolver<Eigen::LLT, Eigen::Matrix<AutoDiffXd, 2, 2>> solver(A);
-    Eigen::Matrix<AutoDiffXd, 2, 1> b;
+    A(1, 1).derivatives() = Eigen∷Vector3d(4, 5, 6);
+    LinearSolver<Eigen∷LLT, Eigen∷Matrix<AutoDiffXd, 2, 2>> solver(A);
+    Eigen∷Matrix<AutoDiffXd, 2, 1> b;
     b(0).value() = 2;
-    b(0).derivatives() = Eigen::Vector3d(1, 2, 3);
+    b(0).derivatives() = Eigen∷Vector3d(1, 2, 3);
     b(1).value() = 3;
-    b(1).derivatives() = Eigen::Vector3d(4, 5, 6);
-    Eigen::Matrix<AutoDiffXd, 2, 1> x = solver.Solve(b);
+    b(1).derivatives() = Eigen∷Vector3d(4, 5, 6);
+    Eigen∷Matrix<AutoDiffXd, 2, 1> x = solver.Solve(b);
 
 .. raw:: html
 
@@ -1618,8 +1617,8 @@ table | A | double | ADS | Expr |
 |--------------|--------|--------|----- | |linear_solver | double |
 double | Expr |
 
-where ADS stands for Eigen::AutoDiffScalar, Expr stands for
-symbolic::Expression.
+where ADS stands for Eigen∷AutoDiffScalar, Expr stands for
+symbolic∷Expression.
 
 Note that when A contains autodiffscalar, we only use the double
 version of Eigen linear solver. By using implicit-function theorem
@@ -2028,22 +2027,22 @@ Note:
     Instead, this class contains a 3x3 rotation matrix class and a 3x1
     position vector. To convert this to a 3x4 matrix, use
     GetAsMatrix34(). To convert this to a 4x4 matrix, use
-    GetAsMatrix4(). To convert this to an Eigen::Isometry, use
+    GetAsMatrix4(). To convert this to an Eigen∷Isometry, use
     GetAsIsometry().
 
 Note:
     An isometry is sometimes regarded as synonymous with rigid
     transform. The RigidTransform class has important advantages over
-    Eigen::Isometry. - RigidTransform is built on an underlying
+    Eigen∷Isometry. - RigidTransform is built on an underlying
     rigorous 3x3 RotationMatrix class that has significant
     functionality for 3D orientation. - In Debug builds,
     RigidTransform requires a valid 3x3 rotation matrix and a valid
-    (non-NAN) position vector. Eigen::Isometry does not. -
-    RigidTransform catches bugs that are undetected by
-    Eigen::Isometry. - RigidTransform has additional functionality and
-    ease-of-use, resulting in shorter, easier to write, and easier to
-    read code. - The name Isometry is unfamiliar to many roboticists
-    and dynamicists and for them Isometry.linear() is (for example) a
+    (non-NAN) position vector. Eigen∷Isometry does not. -
+    RigidTransform catches bugs that are undetected by Eigen∷Isometry.
+    - RigidTransform has additional functionality and ease-of-use,
+    resulting in shorter, easier to write, and easier to read code. -
+    The name Isometry is unfamiliar to many roboticists and
+    dynamicists and for them Isometry.linear() is (for example) a
     counter-intuitive method name to return a rotation matrix.
 
 Note:
@@ -2250,11 +2249,11 @@ Parameter ``translation_tolerance``:
     a non-negative number. One way to choose ``translation_tolerance``
     is to multiply a characteristic length (e.g., the magnitude of a
     characteristic position vector) by an epsilon (e.g.,
-    RotationMatrix::get_internal_tolerance_for_orthonormality()).
+    RotationMatrix∷get_internal_tolerance_for_orthonormality()).
 
 Returns:
     ``True`` if the RotationMatrix portion of ``this`` satisfies
-    RotationMatrix::IsNearlyIdentity() and if the position vector
+    RotationMatrix∷IsNearlyIdentity() and if the position vector
     portion of ``this`` is equal to zero vector within
     ``translation_tolerance``.
 
@@ -2466,7 +2465,7 @@ Parameter ``rpy``:
     ``[y, p, r]``.
 
 See also:
-    RotationMatrix::RotationMatrix(const RollPitchYaw<T>&)
+    RotationMatrix∷RotationMatrix(const RollPitchYaw<T>&)
 
 Parameter ``p``:
     position vector from frame A's origin to frame B's origin,
@@ -2490,13 +2489,13 @@ Raises:
     from ``quaternion`` is invalid.
 
 See also:
-    RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&))""";
+    RotationMatrix∷RotationMatrix(const Eigen∷Quaternion<T>&))""";
           // Source: drake/math/rigid_transform.h
           const char* doc_2args_theta_lambda_p =
 R"""(Constructs a RigidTransform from an AngleAxis and a position vector.
 
 Parameter ``theta_lambda``:
-    an Eigen::AngleAxis whose associated axis (vector direction herein
+    an Eigen∷AngleAxis whose associated axis (vector direction herein
     called ``lambda``) is non-zero and finite, but which may or may
     not have unit length [i.e., ``lambda.norm()`` does not have to be
     1].
@@ -2511,7 +2510,7 @@ Raises:
     from ``theta_lambda`` is invalid.
 
 See also:
-    RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&))""";
+    RotationMatrix∷RotationMatrix(const Eigen∷AngleAxis<T>&))""";
           // Source: drake/math/rigid_transform.h
           const char* doc_1args_R =
 R"""(Constructs a RigidTransform with a given RotationMatrix and a zero
@@ -2562,7 +2561,7 @@ Raises:
 Note:
     No attempt is made to orthogonalize the 3x3 rotation matrix part
     of ``pose``. As needed, use
-    RotationMatrix::ProjectToRotationMatrix().)""";
+    RotationMatrix∷ProjectToRotationMatrix().)""";
           // Source: drake/math/rigid_transform.h
           const char* doc_1args_constEigenMatrixBase =
 R"""(Constructs a RigidTransform from an appropriate Eigen **expression**.
@@ -2579,7 +2578,7 @@ Raises:
 Note:
     No attempt is made to orthogonalize the 3x3 rotation matrix part
     of ``pose``. As needed, use
-    RotationMatrix::ProjectToRotationMatrix().
+    RotationMatrix∷ProjectToRotationMatrix().
 
 Note:
     This constructor prevents ambiguity that would otherwise exist for
@@ -2597,11 +2596,11 @@ Note:
     const RigidTransform<double> X1(3 * position);
     ----------------------------------------------
     const RotationMatrix<double> R(RollPitchYaw<double>(1, 2, 3));
-    Eigen::Matrix<double, 3, 4> pose34;
+    Eigen∷Matrix<double, 3, 4> pose34;
     pose34 << R.matrix(), position;
     const RigidTransform<double> X2(1.0 * pose34);
     ----------------------------------------------
-    Eigen::Matrix<double, 4, 4> pose4;
+    Eigen∷Matrix<double, 4, 4> pose4;
     pose4 << R.matrix(), position,
              0, 0, 0, 1;
     const RigidTransform<double> X3(pose4 * pose4);
@@ -2629,7 +2628,7 @@ Raises:
 Note:
     No attempt is made to orthogonalize the 3x3 rotation matrix part
     of ``pose``. As needed, use
-    RotationMatrix::ProjectToRotationMatrix().)""";
+    RotationMatrix∷ProjectToRotationMatrix().)""";
         } SetFromIsometry3;
         // Symbol: drake::math::RigidTransform::SetIdentity
         struct /* SetIdentity */ {
@@ -2730,7 +2729,7 @@ RigidTransform templatized on scalar type T. For example,
 
 .. code-block:: c++
 
-    RigidTransform<double> source = RigidTransform<double>::Identity();
+    RigidTransform<double> source = RigidTransform<double>∷Identity();
     RigidTransform<AutoDiffXd> foo = source.cast<AutoDiffXd>();
 
 .. raw:: html
@@ -2741,7 +2740,7 @@ Template parameter ``U``:
     Scalar type on which the returned RigidTransform is templated.
 
 Note:
-    ``RigidTransform<From>::cast<To>()`` creates a new
+    ``RigidTransform<From>∷cast<To>()`` creates a new
     ``RigidTransform<To>`` from a ``RigidTransform<From>`` but only if
     type ``To`` is constructible from type ``From``. This cast method
     works in accordance with Eigen's cast method for Eigen's objects
@@ -2848,10 +2847,10 @@ Note:
 
     const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
     const RigidTransform<double> X_AB(rpy, Vector3d(1, 2, 3));
-    Eigen::Matrix<double, 3, 2> p_BoQ_B;
+    Eigen∷Matrix<double, 3, 2> p_BoQ_B;
     p_BoQ_B.col(0) = Vector3d(4, 5, 6);
     p_BoQ_B.col(1) = Vector3d(9, 8, 7);
-    const Eigen::Matrix<double, 3, 2> p_AoQ_A = X_AB * p_BoQ_B;
+    const Eigen∷Matrix<double, 3, 2> p_AoQ_A = X_AB * p_BoQ_B;
 
 .. raw:: html
 
@@ -2911,7 +2910,7 @@ Parameter ``rpy``:
     "roll-pitch-yaw" angles.
 
 See also:
-    RotationMatrix::RotationMatrix(const RollPitchYaw<T>&) which
+    RotationMatrix∷RotationMatrix(const RollPitchYaw<T>&) which
     describes the parameter, preconditions, etc.)""";
           // Source: drake/math/rigid_transform.h
           const char* doc_1args_quaternion =
@@ -2921,7 +2920,7 @@ Parameter ``quaternion``:
     a quaternion which may or may not have unit length.
 
 See also:
-    RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&) which
+    RotationMatrix∷RotationMatrix(const Eigen∷Quaternion<T>&) which
     describes the parameter, preconditions, exception conditions, etc.)""";
           // Source: drake/math/rigid_transform.h
           const char* doc_1args_theta_lambda =
@@ -2931,7 +2930,7 @@ Parameter ``theta_lambda``:
     an angle ``theta`` (in radians) and vector ``lambda``.
 
 See also:
-    RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&) which
+    RotationMatrix∷RotationMatrix(const Eigen∷AngleAxis<T>&) which
     describes the parameter, preconditions, exception conditions, etc.)""";
         } set_rotation;
         // Symbol: drake::math::RigidTransform::set_translation
@@ -3618,8 +3617,8 @@ Note:
     invalid. When assertions are disabled, many of these validity
     checks are skipped (which helps improve speed). These validity
     tests are only performed for scalar types for which
-    drake::scalar_predicate<T>::is_bool is ``True``. For instance,
-    validity checks are not performed when T is symbolic::Expression.
+    drake∷scalar_predicate<T>∷is_bool is ``True``. For instance,
+    validity checks are not performed when T is symbolic∷Expression.
 
 Authors:
     Paul Mitiguy (2018) Original author.
@@ -3783,7 +3782,7 @@ RigidTransform.
 
 Parameter ``tolerance``:
     non-negative number that is generally the default value, namely
-    RotationMatrix::get_internal_tolerance_for_orthonormality().
+    RotationMatrix∷get_internal_tolerance_for_orthonormality().
 
 See also:
     IsExactlyIdentity().)""";
@@ -4029,8 +4028,7 @@ Parameter ``theta``:
     radian measure of rotation angle about Ax.
 
 Note:
-    Orientation is same as Eigen::AngleAxis<T>(theta,
-    Vector3d::UnitX().
+    Orientation is same as Eigen∷AngleAxis<T>(theta, Vector3d∷UnitX().
 
 Note:
     ``R_AB`` relates two frames A and B having unit vectors Ax, Ay, Az
@@ -4065,8 +4063,7 @@ Parameter ``theta``:
     radian measure of rotation angle about Ay.
 
 Note:
-    Orientation is same as Eigen::AngleAxis<T>(theta,
-    Vector3d::UnitY().
+    Orientation is same as Eigen∷AngleAxis<T>(theta, Vector3d∷UnitY().
 
 Note:
     ``R_AB`` relates two frames A and B having unit vectors Ax, Ay, Az
@@ -4101,8 +4098,7 @@ Parameter ``theta``:
     radian measure of rotation angle about Az.
 
 Note:
-    Orientation is same as Eigen::AngleAxis<T>(theta,
-    Vector3d::UnitZ().
+    Orientation is same as Eigen∷AngleAxis<T>(theta, Vector3d∷UnitZ().
 
 Note:
     ``R_AB`` relates two frames A and B having unit vectors Ax, Ay, Az
@@ -4242,7 +4238,7 @@ Raises:
     RuntimeError in debug builds if R fails IsValid(R).)""";
           // Source: drake/math/rotation_matrix.h
           const char* doc_1args_quaternion =
-R"""(Constructs a RotationMatrix from an Eigen::Quaternion.
+R"""(Constructs a RotationMatrix from an Eigen∷Quaternion.
 
 Parameter ``quaternion``:
     a non-zero, finite quaternion which may or may not have unit
@@ -4260,10 +4256,10 @@ Note:
     with normalization.)""";
           // Source: drake/math/rotation_matrix.h
           const char* doc_1args_theta_lambda =
-R"""(Constructs a RotationMatrix from an Eigen::AngleAxis.
+R"""(Constructs a RotationMatrix from an Eigen∷AngleAxis.
 
 Parameter ``theta_lambda``:
-    an Eigen::AngleAxis whose associated axis (vector direction herein
+    an Eigen∷AngleAxis whose associated axis (vector direction herein
     called ``lambda``) is non-zero and finite, but which may or may
     not have unit length [i.e., ``lambda.norm()`` does not have to be
     1].
@@ -4487,7 +4483,7 @@ RotationMatrix templatized on scalar type T. For example,
 
 .. code-block:: c++
 
-    RotationMatrix<double> source = RotationMatrix<double>::Identity();
+    RotationMatrix<double> source = RotationMatrix<double>∷Identity();
     RotationMatrix<AutoDiffXd> foo = source.cast<AutoDiffXd>();
 
 .. raw:: html
@@ -4498,7 +4494,7 @@ Template parameter ``U``:
     Scalar type on which the returned RotationMatrix is templated.
 
 Note:
-    ``RotationMatrix<From>::cast<To>()`` creates a new
+    ``RotationMatrix<From>∷cast<To>()`` creates a new
     ``RotationMatrix<To>`` from a ``RotationMatrix<From>`` but only if
     type ``To`` is constructible from type ``From``. This cast method
     works in accordance with Eigen's cast method for Eigen's Matrix3
@@ -4614,10 +4610,10 @@ Returns ``v_A``:
 
     const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
     const RotationMatrix<double> R_AB(rpy);
-    Eigen::Matrix<double, 3, 2> v_B;
+    Eigen∷Matrix<double, 3, 2> v_B;
     v_B.col(0) = Vector3d(4, 5, 6);
     v_B.col(1) = Vector3d(9, 8, 7);
-    const Eigen::Matrix<double, 3, 2> v_A = R_AB * v_B;
+    const Eigen∷Matrix<double, 3, 2> v_A = R_AB * v_B;
 
 .. raw:: html
 
@@ -4792,7 +4788,7 @@ Raises:
       struct /* SolveLinearSystem */ {
         // Source: drake/math/linear_solve.h
         const char* doc_was_unable_to_choose_unambiguous_names =
-R"""(Specialized when A and b are both double or symbolic::Expression
+R"""(Specialized when A and b are both double or symbolic∷Expression
 matrices. See linear_solve_given_solver for more details. Note that
 ``A`` is unused, as we already compute its factorization in
 ``linear_solver``. But we keep it here for consistency with the
@@ -4845,7 +4841,7 @@ Returns:
       struct /* StdVectorToEigen */ {
         // Source: drake/math/matrix_util.h
         const char* doc =
-R"""(Converts a std::vector<MatrixX<T>> into a MatrixX<T>, composing each
+R"""(Converts a std∷vector<MatrixX<T>> into a MatrixX<T>, composing each
 element of ``vec`` into a column of the returned matrix.
 
 Precondition:
@@ -4991,42 +4987,6 @@ Returns:
         // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } getSubMatrixGradient;
-      // Symbol: drake::math::hessian
-      struct /* hessian */ {
-        // Source: drake/math/jacobian.h
-        const char* doc_deprecated =
-R"""(Computes a matrix of AutoDiffScalars from which the value, Jacobian,
-and Hessian of a function
-
-.. math:: f:\mathbb{R}^{n\times m}\rightarrow\mathbb{R}^{p\times q}
-
-(f: R^n*m -> R^p*q) can be extracted.
-
-The output is a matrix of nested AutoDiffScalars, being the result of
-calling ::jacobian on a function that returns the output of
-::jacobian, called on ``f``.
-
-``MaxChunkSizeOuter`` and ``MaxChunkSizeInner`` can be used to control
-chunk sizes (see ::jacobian).
-
-See ::jacobian for requirements on the function ``f`` and the argument
-``x``.
-
-Parameter ``f``:
-    function
-
-Parameter ``x``:
-    function argument value at which Hessian will be evaluated
-
-Returns:
-    AutoDiffScalar matrix corresponding to the Hessian of f evaluated
-    at x / (Deprecated.)
-
-Deprecated:
-    Removed with no replacement; copy the code into your project if
-    you still need it This will be removed from Drake on or after
-    2026-04-01.)""";
-      } hessian;
       // Symbol: drake::math::intRange
       struct /* intRange */ {
         // Source: drake/math/gradient_util.h
@@ -5051,65 +5011,6 @@ Returns:
     ``True`` if quat.w() is nonnegative (in canonical form), else
     ``False``.)""";
       } is_quaternion_in_canonical_form;
-      // Symbol: drake::math::jacobian
-      struct /* jacobian */ {
-        // Source: drake/math/jacobian.h
-        const char* doc_deprecated =
-R"""(Computes a matrix of AutoDiffScalars from which both the value and the
-Jacobian of a function
-
-.. math:: f:\mathbb{R}^{n\times m}\rightarrow\mathbb{R}^{p\times q}
-
-(f: R^n*m -> R^p*q) can be extracted.
-
-The derivative vector for each AutoDiffScalar in the output contains
-the derivatives with respect to all components of the argument
-:math:`x`.
-
-The return type of this function is a matrix with the 'best' possible
-AutoDiffScalar scalar type, in the following sense: - If the number of
-derivatives can be determined at compile time, the AutoDiffScalar
-derivative vector will have that fixed size. - If the maximum number
-of derivatives can be determined at compile time, the AutoDiffScalar
-derivative vector will have that maximum fixed size. - If neither the
-number, nor the maximum number of derivatives can be determined at
-compile time, the output AutoDiffScalar derivative vector will be
-dynamically sized.
-
-``f`` should have a templated call operator that maps an Eigen matrix
-argument to another Eigen matrix. The scalar type of the output of
-:math:`f` need not match the scalar type of the input (useful in
-recursive calls to the function to determine higher order
-derivatives). The easiest way to create an ``f`` is using a C++14
-generic lambda.
-
-The algorithm computes the Jacobian in chunks of up to
-``MaxChunkSize`` derivatives at a time. This has three purposes: - It
-makes it so that derivative vectors can be allocated on the stack,
-eliminating dynamic allocations and improving performance if the
-maximum number of derivatives cannot be determined at compile time. -
-It gives control over, and limits the number of required
-instantiations of the call operator of f and all the functions it
-calls. - Excessively large derivative vectors can result in CPU
-capacity cache misses; even if the number of derivatives is fixed at
-compile time, it may be better to break up into chunks if that means
-that capacity cache misses can be prevented.
-
-Parameter ``f``:
-    function
-
-Parameter ``x``:
-    function argument value at which Jacobian will be evaluated
-
-Returns:
-    AutoDiffScalar matrix corresponding to the Jacobian of f evaluated
-    at x. / (Deprecated.)
-
-Deprecated:
-    Removed with no replacement; copy the code into your project if
-    you still need it This will be removed from Drake on or after
-    2026-04-01.)""";
-      } jacobian;
       // Symbol: drake::math::matGradMult
       struct /* matGradMult */ {
         // Source: drake/math/gradient_util.h
@@ -5150,6 +5051,13 @@ Deprecated:
         // Source: drake/math/gradient_util.h
         const char* doc = R"""()""";
       } setSubMatrixGradient;
+      // Symbol: drake::math::to_string
+      struct /* to_string */ {
+        // Source: drake/math/roll_pitch_yaw.h
+        const char* doc =
+R"""(Represents a RollPitchYaw object as a string. Especially useful for
+debugging.)""";
+      } to_string;
       // Symbol: drake::math::transposeGrad
       struct /* transposeGrad */ {
         // Source: drake/math/gradient_util.h

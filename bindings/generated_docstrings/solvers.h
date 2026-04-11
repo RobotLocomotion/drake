@@ -1119,7 +1119,7 @@ Returns:
 
 Note:
     This Eval function differs from
-    AugmentedLagrangianNonsmooth::Eval() function as ``s`` is an input
+    AugmentedLagrangianNonsmooth∷Eval() function as ``s`` is an input
     argument.)""";
         } Eval;
         // Symbol: drake::solvers::AugmentedLagrangianSmooth::include_x_bounds
@@ -1337,7 +1337,7 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
         const char* doc =
 R"""(The Clarabel solver details after calling the Solve() function. The
 user can call
-MathematicalProgramResult::get_solver_details<ClarabelSolver>() to
+MathematicalProgramResult∷get_solver_details<ClarabelSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::ClarabelSolverDetails::iterations
         struct /* iterations */ {
@@ -1370,7 +1370,7 @@ Note:
     The authors can adjust the problem scaling option by setting
     "scaling" as mentioned in
     https://github.com/coin-or/Clp/blob/43129ba1a7fd66ce70fe0761fcd696951917ed2e/src/ClpModel.hpp#L705-L706
-    For example prog.SetSolverOption(ClpSolver::id(), "scaling", 0);
+    For example prog.SetSolverOption(ClpSolver∷id(), "scaling", 0);
     will do "no scaling". The default is 1.)""";
         // Symbol: drake::solvers::ClpSolver::ClpSolver
         struct /* ctor */ {
@@ -1413,7 +1413,7 @@ Note:
         // Source: drake/solvers/clp_solver.h
         const char* doc =
 R"""(The CLP solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<ClpSolver>() to
+call MathematicalProgramResult∷get_solver_details<ClpSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::ClpSolverDetails::clp_version
         struct /* clp_version */ {
@@ -1424,7 +1424,7 @@ obtain the details.)""";
         struct /* status */ {
           // Source: drake/solvers/clp_solver.h
           const char* doc =
-R"""(Refer to ClpModel::status() function for the meaning of the status
+R"""(Refer to ClpModel∷status() function for the meaning of the status
 code. - -1: unknown error. - 0: optimal. - 1: primal infeasible - 2:
 dual infeasible - 3: stopped on iterations or time. - 4: stopped due
 to errors - 5: stopped by event handler)""";
@@ -1438,7 +1438,7 @@ R"""(Some options can be applied to not one solver, but many solvers (for
 example, many solvers support printing out the progress in each
 iteration). CommonSolverOption contain the names of these supported
 options. The user can use these options as "key" in
-SolverOption::SetOption(). If the solver doesn't support the option,
+SolverOption∷SetOption(). If the solver doesn't support the option,
 the option is ignored.)""";
         // Symbol: drake::solvers::CommonSolverOption::kMaxThreads
         struct /* kMaxThreads */ {
@@ -1447,7 +1447,7 @@ the option is ignored.)""";
 R"""(Some solvers are multi-threaded. The user can request the maximum
 number of threads used by the solver with this ``int`` option. When
 not set, the value defaults to Parallelism.Max().num_threads(), which
-can be controlled via the drake::Parallelism "DRAKE_NUM_THREADS"
+can be controlled via the drake∷Parallelism "DRAKE_NUM_THREADS"
 environment variable.
 
 Precondition:
@@ -1471,7 +1471,7 @@ Note:
           // Source: drake/solvers/common_solver_option.h
           const char* doc =
 R"""(Many solvers support printing the progress of each iteration to a
-file. The user can call SolverOptions::SetOption(kPrintFileName,
+file. The user can call SolverOptions∷SetOption(kPrintFileName,
 "filename.log") to enable this. To disable, set the option to the
 empty string ``""``, which indicates that no file should be written.)""";
         } kPrintFileName;
@@ -1480,7 +1480,7 @@ empty string ``""``, which indicates that no file should be written.)""";
           // Source: drake/solvers/common_solver_option.h
           const char* doc =
 R"""(Many solvers support printing the progress of each iteration to the
-console. The user can call ``SolverOptions::SetOption(kPrintToConsole,
+console. The user can call ``SolverOptions∷SetOption(kPrintToConsole,
 1)`` to enable this, or use ``0`` to turn off printing to the console.)""";
         } kPrintToConsole;
         // Symbol: drake::solvers::CommonSolverOption::kStandaloneReproductionFileName
@@ -1491,7 +1491,7 @@ R"""(Some solvers support writing a standalone (e.g., it does not depend on
 Drake) minimal reproduction of the problem to a file. This is
 especially useful for sending bug reports upstream to the developers
 of the solver. The user can call
-``SolverOptions::SetOption(kStandaloneReproductionFileName,
+``SolverOptions∷SetOption(kStandaloneReproductionFileName,
 "filename.txt")`` to enable this. To disable, set the option to the
 empty string ``""``, which indicates that no file should be written.)""";
         } kStandaloneReproductionFileName;
@@ -1549,7 +1549,7 @@ Parameter ``num_constraints``:
 
 Parameter ``num_vars``:
     The number of rows in the input. If the input dimension is
-    unknown, then set ``num_vars`` to Eigen::Dynamic.
+    unknown, then set ``num_vars`` to Eigen∷Dynamic.
 
 Parameter ``lb``:
     Lower bound, which must be a ``num_constraints`` x 1 vector, lb
@@ -1571,7 +1571,7 @@ Parameter ``num_constraints``:
 
 Parameter ``num_vars``:
     The number of rows in the input. If the input dimension is
-    unknown, then set ``num_vars`` to Eigen::Dynamic.
+    unknown, then set ``num_vars`` to Eigen∷Dynamic.
 
 See also:
     Eval(...))""";
@@ -1589,7 +1589,7 @@ R"""(Updates the lower bound.
 
 Note:
     if the users want to expose this method in a sub-class, do using
-    Constraint::UpdateLowerBound, as in LinearConstraint.)""";
+    Constraint∷UpdateLowerBound, as in LinearConstraint.)""";
         } UpdateLowerBound;
         // Symbol: drake::solvers::Constraint::UpdateUpperBound
         struct /* UpdateUpperBound */ {
@@ -1599,7 +1599,7 @@ R"""(Updates the upper bound.
 
 Note:
     if the users want to expose this method in a sub-class, do using
-    Constraint::UpdateUpperBound, as in LinearConstraint.)""";
+    Constraint∷UpdateUpperBound, as in LinearConstraint.)""";
         } UpdateUpperBound;
         // Symbol: drake::solvers::Constraint::lower_bound
         struct /* lower_bound */ {
@@ -1626,7 +1626,7 @@ Parameter ``new_ub``:
 
 Note:
     If the users want to expose this method in a sub-class, do using
-    Constraint::set_bounds, as in LinearConstraint.)""";
+    Constraint∷set_bounds, as in LinearConstraint.)""";
         } set_bounds;
         // Symbol: drake::solvers::Constraint::upper_bound
         struct /* upper_bound */ {
@@ -1824,11 +1824,11 @@ Precondition:
         // Source: drake/solvers/csdp_solver.h
         const char* doc =
 R"""(Wrap CSDP solver such that it can solve a
-drake::solvers::MathematicalProgram.
+drake∷solvers∷MathematicalProgram.
 
 Note:
     CSDP doesn't accept free variables, while
-    drake::solvers::MathematicalProgram does. In order to convert
+    drake∷solvers∷MathematicalProgram does. In order to convert
     MathematicalProgram into CSDP format, we provide several
     approaches to remove free variables. You can set the approach
     through
@@ -1842,11 +1842,11 @@ Note:
 
     {cc}
     SolverOptions solver_options;
-    solver_options.SetOption(CsdpSolver::id(),
-       "drake::RemoveFreeVariableMethod",
-       static_cast<int>(RemoveFreeVariableMethod::kNullspace));
+    solver_options.SetOption(CsdpSolver∷id(),
+       "drake∷RemoveFreeVariableMethod",
+       static_cast<int>(RemoveFreeVariableMethod∷kNullspace));
     CsdpSolver solver;
-    auto result = solver.Solve(prog, std::nullopt, solver_options);
+    auto result = solver.Solve(prog, std∷nullopt, solver_options);
 
 .. raw:: html
 
@@ -1889,7 +1889,7 @@ For more details, check out RemoveFreeVariableMethod.)""";
         // Source: drake/solvers/csdp_solver.h
         const char* doc =
 R"""(The CSDP solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<CsdpSolver>() to
+call MathematicalProgramResult∷get_solver_details<CsdpSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::CsdpSolverDetails::Z_val
         struct /* Z_val */ {
@@ -2017,7 +2017,7 @@ The user can set the following options:
 
 - FeasibilityTolOptionName(). The feasible solution (both primal and dual
   variables) should satisfy their constraints, with error no larger than
-  this value. The default is Eigen::dummy_precision().)""";
+  this value. The default is Eigen∷dummy_precision().)""";
         // Symbol: drake::solvers::EqualityConstrainedQPSolver::EqualityConstrainedQPSolver
         struct /* ctor */ {
           // Source: drake/solvers/equality_constrained_qp_solver.h
@@ -2069,7 +2069,7 @@ R"""(Formats this evaluator into the given stream using ``vars`` for the
 bound decision variable names.
 
 The size of ``vars`` must match the ``num_vars()`` declared by this
-evaluator. (If ``num_vars()`` is ``Eigen::Dynamic``, then ``vars`` may
+evaluator. (If ``num_vars()`` is ``Eigen∷Dynamic``, then ``vars`` may
 be any size.))""";
           // Source: drake/solvers/evaluator_base.h
           const char* doc_1args =
@@ -2133,7 +2133,7 @@ Parameter ``num_outputs``:
 
 Parameter ``num_vars``:
     The number of rows in the input. If the input dimension is not
-    known, then set ``num_vars`` to Eigen::Dynamic.
+    known, then set ``num_vars`` to Eigen∷Dynamic.
 
 Parameter ``description``:
     A human-friendly description.
@@ -2344,10 +2344,10 @@ on Humanoid Robots, 2014.)""";
         // Source: drake/solvers/constraint.h
         const char* doc =
 R"""(Impose a generic (potentially nonlinear) constraint represented as a
-vector of symbolic Expression. Expression::Evaluate is called on every
+vector of symbolic Expression. Expression∷Evaluate is called on every
 constraint evaluation.
 
-Uses symbolic::Jacobian to provide the gradients to the AutoDiff
+Uses symbolic∷Jacobian to provide the gradients to the AutoDiff
 method.)""";
         // Symbol: drake::solvers::ExpressionConstraint::DoDisplay
         struct /* DoDisplay */ {
@@ -2392,10 +2392,10 @@ R"""(Returns:
         // Source: drake/solvers/cost.h
         const char* doc =
 R"""(Impose a generic (potentially nonlinear) cost represented as a
-symbolic Expression. Expression::Evaluate is called on every
-constraint evaluation.
+symbolic Expression. Expression∷Evaluate is called on every constraint
+evaluation.
 
-Uses symbolic::Jacobian to provide the gradients to the AutoDiff
+Uses symbolic∷Jacobian to provide the gradients to the AutoDiff
 method.)""";
         // Symbol: drake::solvers::ExpressionCost::DoDisplay
         struct /* DoDisplay */ {
@@ -2454,7 +2454,7 @@ Template parameter ``FF``:
     Perfect-forwarding type of ``F`` (e.g., ``const F&``, `F&&`).
 
 Parameter ``f``:
-    The callable object. If rvalue, this value will be std::move'd.
+    The callable object. If rvalue, this value will be std∷move'd.
     Otherwise, it will be copied.
 
 Parameter ``args``:
@@ -2491,7 +2491,7 @@ Parameter ``method``:
     bounds), then we need to remove these free variables to write the
     program in the SDPA format. Please refer to
     RemoveFreeVariableMethod for details on how to remove the free
-    variables. $*Default:* is RemoveFreeVariableMethod::kNullspace.
+    variables. $*Default:* is RemoveFreeVariableMethod∷kNullspace.
 
 Returns ``is_success``:
     . Returns true if we can generate the SDPA file. The failure could
@@ -2516,7 +2516,7 @@ Note:
     solver is not included in the returned results. For example
     EqualityConstrainedQPSolver doesn't accept programs with
     inequality linear constraints, so it doesn't show up in the return
-    of GetAvailableSolvers(ProgramType::kQP).)""";
+    of GetAvailableSolvers(ProgramType∷kQP).)""";
       } GetAvailableSolvers;
       // Symbol: drake::solvers::GetKnownSolvers
       struct /* GetKnownSolvers */ {
@@ -2577,43 +2577,43 @@ R"""(An implementation of SolverInterface for the commercially-licensed
 Gurobi solver (https://www.gurobi.com/).
 
 The default build of Drake is not configured to use Gurobi, so
-therefore SolverInterface::available() will return false. You must
+therefore SolverInterface∷available() will return false. You must
 compile Drake from source in order to link against Gurobi. For
 details, refer to the documentation at
 https://drake.mit.edu/bazel.html#proprietary-solvers.
 
 The GRB_LICENSE_FILE environment variable controls whether or not
-SolverInterface::enabled() returns true. If it is set to any non-empty
+SolverInterface∷enabled() returns true. If it is set to any non-empty
 value, then the solver is enabled; otherwise, the solver is not
 enabled.
 
 Gurobi solver supports options/parameters listed in
-https://docs.gurobi.com/projects/optimizer/en/12.0/concepts/parameters.html.
+https://docs.gurobi.com/projects/optimizer/en/13.0/concepts/parameters.html.
 On top of these options, we provide the following additional options
 1. "GRBwrite", set to a file name so that Gurobi solver will write the
 optimization model to this file, check
-https://www.docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Write
+https://www.docs.gurobi.com/projects/optimizer/en/13.0/reference/python/model.html#Write
 for more details, such as all supported file extensions. Set this
 option to "" if you don't want to write to file. Default is not to
 write to a file. 2. "GRBcomputeIIS", set to 1 to compute an
 Irreducible Inconsistent Subsystem (IIS) when the problem is
 infeasible. Refer to
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/python/model.html#Model.computeIIS
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/python/model.html#Model.computeIIS
 for more details. Often this method is called together with setting
 GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
 "ilp". Default is not to compute IIS.
 
 GurobiSolver supports parallelization during Solve(). If both the
-"Threads" integer solver option and CommonSolverOption::kMaxThreads
+"Threads" integer solver option and CommonSolverOption∷kMaxThreads
 have been set by the user, then the value in "Threads" will be used as
 the number of threads.
 
 If neither the "Threads" integer solver option nor
-CommonSolverOption::kMaxThreads has been set by the user, then
+CommonSolverOption∷kMaxThreads has been set by the user, then
 GurobiSolver uses the environment variable GUROBI_NUM_THREADS (if set)
 as a default value for "Threads".
 
-If none of "Threads", CommonSolverOption::kMaxThreads, or
+If none of "Threads", CommonSolverOption∷kMaxThreads, or
 GUROBI_NUM_THREADS are set, then Drake's default maximum parallelism
 will be used.)""";
         // Symbol: drake::solvers::GurobiSolver::AcquireLicense
@@ -2684,16 +2684,16 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 an intermediate solution node, which may not be feasible. See Gurobi
 reference manual for more detail on callbacks:
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/callbacks.html
 The user may supply a partial solution in the VectorXd and
 VectorXDecisionVariable arguments that will be passed to Gurobi as a
 candidate feasible solution. See gurobi_solver_test.cc for an example
-of using std::bind to create a callback of this signature, while
+of using std∷bind to create a callback of this signature, while
 allowing additional data to be passed through.
 
 Parameter ``MathematicalProgram``:
     & The optimization wrapper, whose current variable values
-    (accessible via MathematicalProgram::GetSolution) will be set to
+    (accessible via MathematicalProgram∷GetSolution) will be set to
     the intermediate solution values.
 
 Parameter ``SolveStatusInfo``:
@@ -2714,14 +2714,14 @@ Parameter ``VectorXDecisionVariable*``:
 R"""(Users can supply a callback to be called when the Gurobi solver finds
 a feasible solution. See Gurobi reference manual for more detail on
 callbacks:
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/callbacks.html
-See gurobi_solver_test.cc for an example of using std::bind to create
-a callback of this signature, while allowing additional data to be
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/callbacks.html
+See gurobi_solver_test.cc for an example of using std∷bind to create a
+callback of this signature, while allowing additional data to be
 passed through.
 
 Parameter ``MathematicalProgram``:
     & The optimization wrapper, whose current variable values
-    (accessible via MathematicalProgram::GetSolution) will be set to
+    (accessible via MathematicalProgram∷GetSolution) will be set to
     the intermediate solution values.
 
 Parameter ``SolveStatusInfo``:
@@ -2807,14 +2807,14 @@ set to a non-empty value.)""";
         // Source: drake/solvers/gurobi_solver.h
         const char* doc =
 R"""(The Gurobi solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<GurobiSolver>() to
+call MathematicalProgramResult∷get_solver_details<GurobiSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::GurobiSolverDetails::error_code
         struct /* error_code */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The error message returned from Gurobi call. Please refer to
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/errors.html)""";
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/errors.html)""";
         } error_code;
         // Symbol: drake::solvers::GurobiSolverDetails::objective_bound
         struct /* objective_bound */ {
@@ -2822,21 +2822,21 @@ https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/errors
           const char* doc =
 R"""(The best known bound on the optimal objective. This is used in mixed
 integer optimization. Please refer to
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#objbound)""";
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/attributes/model.html#objbound)""";
         } objective_bound;
         // Symbol: drake::solvers::GurobiSolverDetails::optimization_status
         struct /* optimization_status */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The status code when the optimize call has returned. Please refer to
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/numericcodes/statuscodes.html)""";
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/numericcodes/statuscodes.html)""";
         } optimization_status;
         // Symbol: drake::solvers::GurobiSolverDetails::optimizer_time
         struct /* optimizer_time */ {
           // Source: drake/solvers/gurobi_solver.h
           const char* doc =
 R"""(The gurobi optimization time. Please refer to
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/attributes/model.html#attrruntime)""";
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/attributes/model.html#attrruntime)""";
         } optimizer_time;
       } GurobiSolverDetails;
       // Symbol: drake::solvers::IndeterminatesRefList
@@ -2910,7 +2910,7 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
         // Source: drake/solvers/ipopt_solver.h
         const char* doc =
 R"""(The Ipopt solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<IpoptSolver>() to
+call MathematicalProgramResult∷get_solver_details<IpoptSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::IpoptSolverDetails::ConvertStatusToString
         struct /* ConvertStatusToString */ {
@@ -2938,7 +2938,7 @@ R"""(The final value for the constraint multiplier.)""";
 R"""(The final status of the solver. Please refer to section 6 in
 Introduction to Ipopt: A tutorial for downloading, installing, and
 using Ipopt. You could also find the meaning of the status as
-Ipopt::SolverReturn defined in IpAlgTypes.hpp)""";
+Ipopt∷SolverReturn defined in IpAlgTypes.hpp)""";
         } status;
         // Symbol: drake::solvers::IpoptSolverDetails::z_L
         struct /* z_L */ {
@@ -3512,7 +3512,7 @@ Parameter ``symmetry_tolerance``:
     symmetric.
 
 See also:
-    math::IsSymmetric().)""";
+    math∷IsSymmetric().)""";
         } ctor;
         // Symbol: drake::solvers::LinearMatrixInequalityConstraint::WarnOnSmallMatrixSize
         struct /* WarnOnSmallMatrixSize */ {
@@ -3781,7 +3781,7 @@ As an example, consider the following program. min x₂ᵀ * Q * x₂
 subject to x₁ + x₂ ≤ 1 x₂ + x₃ ≤ 2 x₁ + x₃ ≤ 3
 
 And suppose we call MakeSemidefiniteRelaxation(prog,
-std::vector<Variables>{{x₁, x₂}, {x₂,x₃}}).
+std∷vector<Variables>{{x₁, x₂}, {x₂,x₃}}).
 
 The resulting relaxation would have two semidefinite variables,
 namely: [U₁, U₂, x₁] [W₁, W₂, x₂] [U₂, U₃, x₂], [W₂, W₃, x₃] [x₁ᵀ,
@@ -3835,7 +3835,7 @@ Raises:
         const char* doc =
 R"""(MathematicalProgram stores the decision variables, the constraints and
 costs of an optimization problem. The user can solve the problem by
-calling solvers::Solve() function, and obtain the results of the
+calling solvers∷Solve() function, and obtain the results of the
 optimization.)""";
         // Symbol: drake::solvers::MathematicalProgram::Add2NormSquaredCost
         struct /* Add2NormSquaredCost */ {
@@ -3879,7 +3879,7 @@ R"""(Adds the same scalar lower and upper bound to every variable in
 ``vars``.
 
 Template parameter ``Derived``:
-    An Eigen::Matrix with Variable as the scalar type. The matrix has
+    An Eigen∷Matrix with Variable as the scalar type. The matrix has
     unknown number of columns at compile time, or has more than one
     column.
 
@@ -3956,11 +3956,11 @@ terms. For example, ``x <= ∞`` is allowed. However, ``x - ∞ <= 0`` is
 not allowed because ``x ↦ ∞`` introduces ``nan`` in the evaluation.)""";
           // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_constEigenDenseBase =
-R"""(Adds a constraint represented by an Eigen::Matrix<symbolic::Formula>
-or Eigen::Array<symbolic::Formula> to the program. A common use-case
-of this function is to add a constraint with the element-wise
-comparison between two Eigen matrices, using ``A.array() <=
-B.array()``. See the following example.
+R"""(Adds a constraint represented by an Eigen∷Matrix<symbolic∷Formula> or
+Eigen∷Array<symbolic∷Formula> to the program. A common use-case of
+this function is to add a constraint with the element-wise comparison
+between two Eigen matrices, using ``A.array() <= B.array()``. See the
+following example.
 
 
 .. raw:: html
@@ -3970,8 +3970,8 @@ B.array()``. See the following example.
 .. code-block:: c++
 
     MathematicalProgram prog;
-      Eigen::Matrix<double, 2, 2> A = ...;
-      Eigen::Vector2d b = ...;
+      Eigen∷Matrix<double, 2, 2> A = ...;
+      Eigen∷Vector2d b = ...;
       auto x = prog.NewContinuousVariables(2, "x");
       prog.AddConstraint((A * x).array() <= b.array());
 
@@ -3985,14 +3985,13 @@ A formula in ``formulas`` can be of the following forms:
 2. e1 >= e2
 3. e1 == e2
 
-It throws an exception if AddConstraint(const symbolic::Formula& f)
+It throws an exception if AddConstraint(const symbolic∷Formula& f)
 throws an exception for f ∈ ``formulas``.
 
-@overload Binding<Constraint> AddConstraint(const symbolic::Formula&
-f)
+@overload Binding<Constraint> AddConstraint(const symbolic∷Formula& f)
 
 Template parameter ``Derived``:
-    Eigen::Matrix or Eigen::Array with Formula as the Scalar.)""";
+    Eigen∷Matrix or Eigen∷Array with Formula as the Scalar.)""";
           // Source: drake/solvers/mathematical_program.h
           const char* doc_2args_con_vars =
 R"""(Adds a generic constraint to the program. This should only be used if
@@ -4170,7 +4169,7 @@ we don't take the square of the L2 norm))""";
           const char* doc_expression =
 R"""(Adds an L2 norm cost |Ax+b|₂ from a symbolic expression which can be
 decomposed into sqrt((Ax+b)'(Ax+b)). See
-symbolic::DecomposeL2NormExpression for details on the tolerance
+symbolic∷DecomposeL2NormExpression for details on the tolerance
 parameters.
 
 Raises:
@@ -4278,7 +4277,7 @@ be infinite but only if there are no other terms. For example, ``x <=
           // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_formulas =
 R"""(Add a linear constraint represented by an
-Eigen::Array<symbolic::Formula> to the program. A common use-case of
+Eigen∷Array<symbolic∷Formula> to the program. A common use-case of
 this function is to add a linear constraint with the element-wise
 comparison between two Eigen matrices, using ``A.array() <=
 B.array()``. See the following example.
@@ -4291,9 +4290,9 @@ B.array()``. See the following example.
 .. code-block:: c++
 
     MathematicalProgram prog;
-      Eigen::Matrix<double, 2, 2> A;
+      Eigen∷Matrix<double, 2, 2> A;
       auto x = prog.NewContinuousVariables(2, "x");
-      Eigen::Vector2d b;
+      Eigen∷Vector2d b;
       ... // set up A and b
       prog.AddLinearConstraint((A * x).array() <= b.array());
 
@@ -4305,7 +4304,7 @@ A formula in ``formulas`` can be of the following forms:
 
 1. e1 <= e2 2. e1 >= e2 3. e1 == e2
 
-It throws an exception if AddLinearConstraint(const symbolic::Formula&
+It throws an exception if AddLinearConstraint(const symbolic∷Formula&
 f) throws an exception for f ∈ ``formulas``.
 
 Template parameter ``Derived``:
@@ -4370,7 +4369,7 @@ It throws an exception if
           // Source: drake/solvers/mathematical_program.h
           const char* doc_1args_formulas =
 R"""(Adds a linear equality constraint represented by an
-Eigen::Array<symbolic::Formula> to the program. A common use-case of
+Eigen∷Array<symbolic∷Formula> to the program. A common use-case of
 this function is to add a linear constraint with the element-wise
 comparison between two Eigen matrices, using ``A.array() ==
 B.array()``. See the following example.
@@ -4383,9 +4382,9 @@ B.array()``. See the following example.
 .. code-block:: c++
 
     MathematicalProgram prog;
-      Eigen::Matrix<double, 2, 2> A;
+      Eigen∷Matrix<double, 2, 2> A;
       auto x = prog.NewContinuousVariables(2, "x");
-      Eigen::Vector2d b;
+      Eigen∷Vector2d b;
       ... // set up A and b
       prog.AddLinearConstraint((A * x).array() == b.array());
 
@@ -4393,7 +4392,7 @@ B.array()``. See the following example.
 
     </details>
 
-It throws an exception if AddLinearConstraint(const symbolic::Formula&
+It throws an exception if AddLinearConstraint(const symbolic∷Formula&
 f) throws an exception for f ∈ ``formulas``.
 
 Template parameter ``Derived``:
@@ -4442,10 +4441,10 @@ the elements of x, you could use
 .. code-block:: c++
 
     auto x = prog.NewContinuousVariables(6,"myvar");
-      Eigen::Matrix2d Aeq;
+      Eigen∷Matrix2d Aeq;
       Aeq << -1, 2,
               1, 1;
-      Eigen::Vector2d beq(1, 3);
+      Eigen∷Vector2d beq(1, 3);
       // Imposes constraint
       // -x(0) + 2x(1) = 1
       //  x(0) +  x(1) = 3
@@ -4516,8 +4515,8 @@ Parameter ``lower``:
 Returns:
     (constraint, t, Z) constraint is ∑ᵢt(i) >= lower, we also return
     the newly created slack variables t and the lower triangular
-    matrix Z. Note that Z is not a matrix of symbolic::Variable but
-    symbolic::Expression, because the upper-diagonal entries of Z are
+    matrix Z. Note that Z is not a matrix of symbolic∷Variable but
+    symbolic∷Expression, because the upper-diagonal entries of Z are
     not variable, but expression 0.
 
 Precondition:
@@ -4533,10 +4532,10 @@ sqrt((Cx+d)'(Cx+d)).
 
 Parameter ``eval_type``:
     The evaluation type when evaluating the lorentz cone constraint in
-    generic optimization. Refer to LorentzConeConstraint::EvalType for
+    generic optimization. Refer to LorentzConeConstraint∷EvalType for
     more details.
 
-See symbolic::DecomposeL2NormExpression for details on the tolerance
+See symbolic∷DecomposeL2NormExpression for details on the tolerance
 parameters, ``psd_tol`` and ``coefficient_tol``. Consider using the
 overload which takes a vector of expressions to avoid the numerical
 decomposition.
@@ -4549,7 +4548,7 @@ R"""(Adds Lorentz cone constraint referencing potentially a subset of the
 decision variables.
 
 Parameter ``v``:
-    An Eigen::Vector of symbolic::Expression. Constraining that
+    An Eigen∷Vector of symbolic∷Expression. Constraining that
 
 .. math:: v_0 \ge \sqrt{v_1^2 + ... + v_{n-1}^2}
 
@@ -4568,7 +4567,7 @@ call
 .. code-block:: c++
 
     {cc}
-    Vector4<symbolic::Expression> v(x+1, y+1, x, 2.);
+    Vector4<symbolic∷Expression> v(x+1, y+1, x, 2.);
     prog.AddLorentzConeConstraint(v);
 
 .. raw:: html
@@ -4577,7 +4576,7 @@ call
 
 Parameter ``eval_type``:
     The evaluation type when evaluating the lorentz cone constraint in
-    generic optimization. Refer to LorentzConeConstraint::EvalType for
+    generic optimization. Refer to LorentzConeConstraint∷EvalType for
     more details.)""";
           // Source: drake/solvers/mathematical_program.h
           const char* doc_4args_linear_expression_quadratic_expression_tol_eval_type =
@@ -4600,7 +4599,7 @@ See also:
 
 Parameter ``eval_type``:
     The evaluation type when evaluating the lorentz cone constraint in
-    generic optimization. Refer to LorentzConeConstraint::EvalType for
+    generic optimization. Refer to LorentzConeConstraint∷EvalType for
     more details.
 
 Returns ``binding``:
@@ -4689,7 +4688,7 @@ Parameter ``vars``:
 
 Parameter ``eval_type``:
     The evaluation type when evaluating the lorentz cone constraint in
-    generic optimization. Refer to LorentzConeConstraint::EvalType for
+    generic optimization. Refer to LorentzConeConstraint∷EvalType for
     more details.
 
 Returns:
@@ -4708,12 +4707,12 @@ call
 .. code-block:: c++
 
     {cc}
-    Eigen::Matrix<double, 4, 2> A;
-    Eigen::Vector4d b;
+    Eigen∷Matrix<double, 4, 2> A;
+    Eigen∷Vector4d b;
     A << 1, 0, 0, 1, 1, 0, 0, 0;
     b << 1, 1, 0, 2;
     // A * [x;y] + b = [x+1; y+1; x; 2]
-    prog.AddLorentzConeConstraint(A, b, Vector2<symbolic::Variable>(x, y));
+    prog.AddLorentzConeConstraint(A, b, Vector2<symbolic∷Variable>(x, y));
 
 .. raw:: html
 
@@ -4765,7 +4764,7 @@ Parameter ``X``:
 Returns:
     (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
     slack variables t and the lower triangular matrix Z. Note that Z
-    is not a matrix of symbolic::Variable but symbolic::Expression,
+    is not a matrix of symbolic∷Variable but symbolic∷Expression,
     because the upper-diagonal entries of Z are not variable, but
     expression 0.
 
@@ -4891,7 +4890,7 @@ The user could call
 .. code-block:: c++
 
     {cc}
-    Matrix3<symbolic::Expression> e
+    Matrix3<symbolic∷Expression> e
     e << x+1, 2*x+3, x+y,
          2*x+3,   2,   0,
          x+y,     0,   x;
@@ -4961,7 +4960,7 @@ Lorentz cone. When solving the optimization problem using conic
 solvers (like Mosek, Gurobi, SCS, etc), it is numerically preferable
 to impose the convex quadratic constraint as rotated Lorentz cone
 constraint. See
-https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
 
 Raises:
     exception if this quadratic constraint is not convex (Q is not
@@ -4992,7 +4991,7 @@ R"""(Adds quadratic constraint lb ≤ .5 xᵀQx + bᵀx ≤ ub Notice that if yo
 quadratic constraint is convex, and you intend to solve the problem
 with a convex solver (like Mosek), then it is better to reformulate it
 with a second order cone constraint. See
-https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
 for an explanation.
 
 Parameter ``vars``:
@@ -5001,11 +5000,11 @@ Parameter ``vars``:
 Parameter ``hessian_type``:
     Whether the Hessian is positive semidefinite, negative
     semidefinite or indefinite. Drake will check the type if
-    hessian_type=std::nullopt. Specifying the hessian type will speed
+    hessian_type=std∷nullopt. Specifying the hessian type will speed
     this method up.
 
 Precondition:
-    hessian_type should be correct if it is not std::nullopt, as we
+    hessian_type should be correct if it is not std∷nullopt, as we
     will blindly trust it in the downstream code.)""";
           // Source: drake/solvers/mathematical_program.h
           const char* doc_4args =
@@ -5014,7 +5013,7 @@ a quadratic expression. Notice that if your quadratic constraint is
 convex, and you intend to solve the problem with a convex solver (like
 Mosek), then it is better to reformulate it with a second order cone
 constraint. See
-https://docs.mosek.com/11.0/capi/prob-def-quadratic.html#a-recommendation
+https://docs.mosek.com/11.1/capi/prob-def-quadratic.html#a-recommendation
 for an explanation.)""";
         } AddQuadraticConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticCost
@@ -5174,7 +5173,7 @@ could call
 .. code-block:: c++
 
     {cc}
-    Eigen::Matrix<symbolic::Expression, 5, 1> v;
+    Eigen∷Matrix<symbolic∷Expression, 5, 1> v;
     v << x+1, x+y, x, z+1, 2;
     prog.AddRotatedLorentzConeConstraint(v);
 
@@ -5373,13 +5372,13 @@ optimization.
 Note:
     Just like other costs/constraints, not all solvers support
     callbacks. Adding a callback here will force
-    MathematicalProgram::Solve to select a solver that support
+    MathematicalProgram∷Solve to select a solver that support
     callbacks. For instance, adding a visualization callback to a
     quadratic programming problem may result in using a nonlinear
     programming solver as the default solver.
 
 Parameter ``callback``:
-    a std::function that accepts an Eigen::Vector of doubles
+    a std∷function that accepts an Eigen∷Vector of doubles
     representing the bound decision variables.
 
 Parameter ``vars``:
@@ -5670,7 +5669,7 @@ MP.indeterminates() = {x} MP.decision_variables() = {a, b}
 - ``MP.MakePolynomial(e)`` create a polynomial, ``(a + b)x + c``.  Here only
   ``x`` is an indeterminate of this polynomial.
 
-- In contrast, ``symbolic::Polynomial(e)`` returns ``ax + bx + c`` where all
+- In contrast, ``symbolic∷Polynomial(e)`` returns ``ax + bx + c`` where all
   variables ``{a, b, x}`` are indeterminates. Note that this is problematic
   as its indeterminates, ``{a, b, x}`` and the MathematicalProgram's decision
   variables, ``{a, b}`` overlap.
@@ -5759,7 +5758,7 @@ are viewed as a column vector, with size ``rows`` x 1.
 
 See also:
     NewBinaryVariables(int rows, int cols, const
-    std::vector<std::string>& names);)""";
+    std∷vector<std∷string>& names);)""";
         } NewBinaryVariables;
         // Symbol: drake::solvers::MathematicalProgram::NewContinuousVariables
         struct /* NewContinuousVariables */ {
@@ -5822,11 +5821,11 @@ Template parameter ``Cols``:
 
 Parameter ``rows``:
     The number of rows in the new variables. When Rows is not
-    Eigen::Dynamic, rows is ignored.
+    Eigen∷Dynamic, rows is ignored.
 
 Parameter ``cols``:
     The number of columns in the new variables. When Cols is not
-    Eigen::Dynamic, cols is ignored.
+    Eigen∷Dynamic, cols is ignored.
 
 Parameter ``name``:
     All variables will share the same name, but different index.
@@ -5971,7 +5970,7 @@ R"""(Adds indeterminates to this MathematicalProgram, with default name
 
 See also:
     NewIndeterminates(int rows, int cols, const
-    std::vector<std::string>& names);)""";
+    std∷vector<std∷string>& names);)""";
           // Source: drake/solvers/mathematical_program.h
           const char* doc_3args =
 R"""(Adds indeterminates to this MathematicalProgram, with default name
@@ -5980,7 +5979,7 @@ R"""(Adds indeterminates to this MathematicalProgram, with default name
 
 See also:
     NewIndeterminates(int rows, int cols, const
-    std::vector<std::string>& names);)""";
+    std∷vector<std∷string>& names);)""";
         } NewIndeterminates;
         // Symbol: drake::solvers::MathematicalProgram::NewOddDegreeFreePolynomial
         struct /* NewOddDegreeFreePolynomial */ {
@@ -6430,7 +6429,7 @@ This can be particularly useful e.g. in a Jupyter (python) notebook:
 
 Note that by default, we do not require variables to have unique
 names. Providing useful variable names and calling
-Evaluator::set_description() to describe the costs and constraints can
+Evaluator∷set_description() to describe the costs and constraints can
 dramatically improve the readability of the output. See the tutorial
 ``debug_mathematical_program.ipynb`` for more information.)""";
         } ToLatex;
@@ -6605,7 +6604,7 @@ variables, costs, and constraints.
 
 Note that by default, we do not require variables to have unique
 names. Providing useful variable names and calling
-Evaluator::set_description() to describe the costs and constraints can
+Evaluator∷set_description() to describe the costs and constraints can
 dramatically improve the readability of the output. See the tutorial
 ``debug_mathematical_program.ipynb`` for more information.)""";
         } to_string;
@@ -6619,8 +6618,8 @@ dramatically improve the readability of the output. See the tutorial
       struct /* MathematicalProgramResult */ {
         // Source: drake/solvers/mathematical_program_result.h
         const char* doc =
-R"""(The result returned by MathematicalProgram::Solve(). It stores the
-solvers::SolutionResult (whether the program is solved to optimality,
+R"""(The result returned by MathematicalProgram∷Solve(). It stores the
+solvers∷SolutionResult (whether the program is solved to optimality,
 detected infeasibility, etc), the optimal value for the decision
 variables, the optimal cost, and solver specific details.)""";
         // Symbol: drake::solvers::MathematicalProgramResult::AddSuboptimalSolution
@@ -6704,12 +6703,12 @@ solution.
        GurobiSolver solver;
        // Explicitly tell the solver to compute the dual solution for Lorentz
        // cone or rotated Lorentz cone constraint, check
-       // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html#qcpdual
+       // https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html#qcpdual
        // for more information.
        SolverOptions options;
-       options.SetOption(GurobiSolver::id(), "QCPDual", 1);
+       options.SetOption(GurobiSolver∷id(), "QCPDual", 1);
        MathematicalProgramResult result = solver.Solve(prog, {}, options);
-       Eigen::VectorXd dual_solution = result.GetDualSolution(constraint);
+       Eigen∷VectorXd dual_solution = result.GetDualSolution(constraint);
 
 .. raw:: html
 
@@ -6721,13 +6720,13 @@ the shadow price for the constraint z₂² + ... +zₙ² ≤ z₀z₁ for rotate
 Lorentz cone constraint, where z is the slack variable representing z
 = A*x+b and z in the Lorentz cone/rotated Lorentz cone. 2. For
 nonlinear solvers like IPOPT, the dual solution for Lorentz cone
-constraint (with EvalType::kConvex) is the shadow price for z₀ -
+constraint (with EvalType∷kConvex) is the shadow price for z₀ -
 sqrt(z₁² + ... +zₙ²) ≥ 0, where z = Ax+b. 3. For other convex conic
 solver such as SCS, MOSEK™, CSDP, etc, the dual solution to the
 (rotated) Lorentz cone constraint doesn't have the "shadow price"
 interpretation, but should lie in the dual cone, and satisfy the KKT
 condition. For more information, refer to
-https://docs.mosek.com/11.0/capi/prob-def-conic.html#duality-for-conic-optimization
+https://docs.mosek.com/11.1/capi/prob-def-conic.html#duality-for-conic-optimization
 as an explanation.
 
 The interpretation for the dual variable to conic constraint x ∈ K can
@@ -6748,7 +6747,7 @@ the dual is
 max b'*y s.t A'(y) - C = Z Z is psd.
 
 We return the lower triangular part of Z. You can call
-drake::math::ToSymmetricMatrixFromLowerTriangularColumns to get the
+drake∷math∷ToSymmetricMatrixFromLowerTriangularColumns to get the
 matrix Z.)""";
         } GetDualSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::GetInfeasibleConstraintNames
@@ -6845,7 +6844,7 @@ Parameter ``p``:
     this result is obtained.
 
 Returns:
-    the symbolic::Polynomial as the result of the substitution.)""";
+    the symbolic∷Polynomial as the result of the substitution.)""";
         } GetSolution;
         // Symbol: drake::solvers::MathematicalProgramResult::GetSuboptimalSolution
         struct /* GetSuboptimalSolution */ {
@@ -7037,7 +7036,7 @@ R"""(Sets the dual solution associated with a given constraint.)""";
         // Source: drake/solvers/indeterminate.h
         const char* doc =
 R"""(MatrixXIndeterminate is used as an alias for
-Eigen::Matrix<symbolic::Variable, Eigen::Dynamic, Eigen::Dynamic>.
+Eigen∷Matrix<symbolic∷Variable, Eigen∷Dynamic, Eigen∷Dynamic>.
 
 See also:
     MatrixIndeterminate<int, int>)""";
@@ -7069,9 +7068,9 @@ where vᵢ is the i-th value returned by the user-provided function,
 ``lb`` is the minimum allowable value. v_influence is the "influence
 value" (the value below which an element influences the constraint or,
 conversely, the value above which an element is ignored), φ is a
-solvers::MinimumValuePenaltyFunction, and SmoothOverMax(v) is a
-smooth, over approximation of max(v) (i.e. SmoothOverMax(v) >= max(v),
-for all v). We require that lb < v_influence. The input scaling (vᵢ -
+solvers∷MinimumValuePenaltyFunction, and SmoothOverMax(v) is a smooth,
+over approximation of max(v) (i.e. SmoothOverMax(v) >= max(v), for all
+v). We require that lb < v_influence. The input scaling (vᵢ -
 v_influence)/(v_influence - lb) ensures that at the boundary of the
 feasible set (when vᵢ == lb), we evaluate the penalty function at -1,
 where it is required to have a non-zero gradient. The user-provided
@@ -7198,7 +7197,7 @@ where vᵢ is the i-th value returned by the user-provided function,
 upper bound of ``v``). v_influence is the "influence value" (the value
 below which an element influences the constraint or, conversely, the
 value above which an element is ignored), φ is a
-solvers::MinimumValuePenaltyFunction. SmoothUnderMax(x) is a smooth,
+solvers∷MinimumValuePenaltyFunction. SmoothUnderMax(x) is a smooth,
 under approximation of max(v) (i.e. SmoothUnderMax(v) <= max(v) for
 all v). We require that ub < v_influence. The input scaling (vᵢ -
 v_influence)/(v_influence - ub) ensures that at the boundary of the
@@ -7514,7 +7513,7 @@ provide options such as "depth first" or "min lower bound".
 
 Parameter ``node_selection_method``:
     The option to pick a node. If the option is
-    NodeSelectionMethod::kUserDefined, then the user should also
+    NodeSelectionMethod∷kUserDefined, then the user should also
     provide the method to pick a node through
     SetUserDefinedNodeSelectionFunction.)""";
         } SetNodeSelectionMethod;
@@ -7543,7 +7542,7 @@ function is called after the optimization is solved in each node.)""";
           const char* doc =
 R"""(Set the user-defined method to pick the branching node. This method is
 used if the user calls
-SetNodeSelectionMethod(NodeSelectionMethod::kUserDefined).
+SetNodeSelectionMethod(NodeSelectionMethod∷kUserDefined).
 
 For example, if the user has defined a function LeftMostNode that
 would return the left-most unfathomed node in the tree, then the user
@@ -7566,7 +7565,7 @@ could do
     
     MixedIntegerBranchAndBound bnb(...);
     bnb.SetNodeSelectionMethod(
-        MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
+        MixedIntegerBranchAndBound∷NodeSelectionMethod∷kUserDefined);
     // Use a lambda function as the NodeSelectionFun
     bnb->SetUserDefinedNodeSelectionFunction([](
         const MixedIntegerBranchAndBound& branch_and_bound) {
@@ -7594,7 +7593,7 @@ Raises:
           const char* doc =
 R"""(Set the user-defined method to pick the branching variable. This
 method is used if the user calls
-SetVariableSelectionMethod(VariableSelectionMethod::kUserDefined).
+SetVariableSelectionMethod(VariableSelectionMethod∷kUserDefined).
 
 For example, if the user has defined a function FirstVariable, that
 would return the first un-fixed binary variable in this branch as
@@ -7627,7 +7626,7 @@ select the branching variable as
 
     MixedIntegerBranchAndBound bnb(...);
     bnb.SetVariableSelectionMethod(
-        MixedIntegerBranchAndBound:VariableSelectionMethod::kUserDefined);
+        MixedIntegerBranchAndBound:VariableSelectionMethod∷kUserDefined);
     // Set VariableSelectFun by using a function pointer.
     bnb.SetUserDefinedVariableSelectionFunction(FirstVariable);
 
@@ -7645,7 +7644,7 @@ ambivalent".
 
 Parameter ``variable_selection_method``:
     The option to pick a variable. If the option is
-    VariableSelectionMethod::kUserDefined, then the user should also
+    VariableSelectionMethod∷kUserDefined, then the user should also
     provide the method to pick a variable through
     SetUserDefinedVariableSelectionFunction(...).)""";
         } SetVariableSelectionMethod;
@@ -7657,12 +7656,12 @@ R"""(Solve the mixed-integer problem (MIP) through a branch and bound
 process.
 
 Returns ``solution_result``:
-    If solution_result=SolutionResult::kSolutionFound, then the best
+    If solution_result=SolutionResult∷kSolutionFound, then the best
     solutions are stored inside solutions(). The user can access the
     value of each variable(s) through GetSolution(...). If
-    solution_result=SolutionResult::kInfeasibleConstraints, then the
+    solution_result=SolutionResult∷kInfeasibleConstraints, then the
     mixed-integer problem is primal infeasible. If
-    solution_result=SolutionResult::kUnbounded, then the mixed-integer
+    solution_result=SolutionResult∷kUnbounded, then the mixed-integer
     problem is primal unbounded.)""";
         } Solve;
         // Symbol: drake::solvers::MixedIntegerBranchAndBound::VariableSelectFun
@@ -8033,7 +8032,7 @@ and the unit sphere surface.)""";
 R"""(Constructor
 
 Parameter ``approach``:
-    Refer to MixedIntegerRotationConstraintGenerator::Approach for the
+    Refer to MixedIntegerRotationConstraintGenerator∷Approach for the
     details.
 
 Parameter ``num_intervals_per_half_axis``:
@@ -8487,31 +8486,6 @@ R"""(Resets the number of pivoting operations made by the last LCP solver
 to zero.)""";
         } reset_num_pivots;
       } MobyLcpSolver;
-      // Symbol: drake::solvers::MobyLcpSolverId
-      struct /* MobyLcpSolverId */ {
-        // Source: drake/solvers/moby_lcp_solver.h
-        const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use MobyLcpSolver::id() directly. This will be removed from Drake
-    on or after 2026-03-01.)""";
-        // Symbol: drake::solvers::MobyLcpSolverId::MobyLcpSolverId
-        struct /* ctor */ {
-          // Source: drake/solvers/moby_lcp_solver.h
-          const char* doc = R"""()""";
-        } ctor;
-        // Symbol: drake::solvers::MobyLcpSolverId::id
-        struct /* id */ {
-          // Source: drake/solvers/moby_lcp_solver.h
-          const char* doc_deprecated =
-R"""((Deprecated.)
-
-Deprecated:
-    Use MobyLcpSolver::id() directly. This will be removed from Drake
-    on or after 2026-03-01.)""";
-        } id;
-      } MobyLcpSolverId;
       // Symbol: drake::solvers::MosekSolver
       struct /* MosekSolver */ {
         // Source: drake/solvers/mosek_solver.h
@@ -8524,9 +8498,9 @@ must set the location of your license file as described in the
 documentation at https://drake.mit.edu/bazel.html#mosek.
 
 The MOSEKLM_LICENSE_FILE environment variable controls whether or not
-SolverInterface::enabled() returns true. Iff it is set to any
-non-empty value, then the solver is enabled; otherwise, the solver is
-not enabled.
+SolverInterface∷enabled() returns true. Iff it is set to any non-empty
+value, then the solver is enabled; otherwise, the solver is not
+enabled.
 
 Note:
     MOSEK™ only cares about the initial guess of integer variables.
@@ -8538,20 +8512,20 @@ Note:
     subsequent iterations.) If the specified integer solution is
     infeasible or incomplete, MOSEK™ will simply ignore it. For more
     details, check
-    https://docs.mosek.com/11.0/capi/tutorial-mio-shared.html?highlight=initial
+    https://docs.mosek.com/11.1/capi/tutorial-mio-shared.html?highlight=initial
 
 MOSEK™ supports many solver parameters. You can refer to the full list
 of parameters in
-https://docs.mosek.com/11.0/capi/param-groups.html#doc-param-groups.
+https://docs.mosek.com/11.1/capi/param-groups.html#doc-param-groups.
 On top of these parameters, we also provide the following additional
 parameters
 
 - "writedata"
    set to a file name so that MOSEK™ solver will write the
    optimization model to this file. check
-   https://docs.mosek.com/11.0/capi/solver-io.html#saving-a-problem-to-a-file
+   https://docs.mosek.com/11.1/capi/solver-io.html#saving-a-problem-to-a-file
    for more details. The supported file extensions are listed in
-   https://docs.mosek.com/11.0/capi/supported-file-formats.html#doc-shared-file-formats.
+   https://docs.mosek.com/11.1/capi/supported-file-formats.html#doc-shared-file-formats.
    Set this parameter to "" if you don't want to write to a file. Default is
    not to write to a file.)""";
         // Symbol: drake::solvers::MosekSolver::AcquireLicense
@@ -8619,7 +8593,7 @@ been set to a non-empty value.)""";
         // Source: drake/solvers/mosek_solver.h
         const char* doc =
 R"""(The MOSEK™ solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<MosekSolver>() to
+call MathematicalProgramResult∷get_solver_details<MosekSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::MosekSolverDetails::optimizer_time
         struct /* optimizer_time */ {
@@ -8627,14 +8601,14 @@ obtain the details.)""";
           const char* doc =
 R"""(The MOSEK™ optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME
 in
-https://docs.mosek.com/11.0/capi/constants.html?highlight=msk_dinf_optimizer_time)""";
+https://docs.mosek.com/11.1/capi/constants.html?highlight=msk_dinf_optimizer_time)""";
         } optimizer_time;
         // Symbol: drake::solvers::MosekSolverDetails::rescode
         struct /* rescode */ {
           // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The response code returned from MOSEK™ solver. Check
-https://docs.mosek.com/11.0/capi/response-codes.html for the meaning
+https://docs.mosek.com/11.1/capi/response-codes.html for the meaning
 on the response code.)""";
         } rescode;
         // Symbol: drake::solvers::MosekSolverDetails::solution_status
@@ -8642,8 +8616,8 @@ on the response code.)""";
           // Source: drake/solvers/mosek_solver.h
           const char* doc =
 R"""(The solution status after solving the problem. Check
-https://docs.mosek.com/11.0/capi/accessing-solution.html and
-https://docs.mosek.com/11.0/capi/constants.html#mosek.solsta for the
+https://docs.mosek.com/11.1/capi/accessing-solution.html and
+https://docs.mosek.com/11.1/capi/constants.html#mosek.solsta for the
 meaning on the solution status.)""";
         } solution_status;
       } MosekSolverDetails;
@@ -8749,7 +8723,7 @@ R"""(The key name for double-valued x relative tolerance.)""";
         // Source: drake/solvers/nlopt_solver.h
         const char* doc =
 R"""(The NLopt solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<NloptSolver>() to
+call MathematicalProgramResult∷get_solver_details<NloptSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::NloptSolverDetails::status
         struct /* status */ {
@@ -8777,7 +8751,7 @@ Generally the interval should be an integer multiple of
 ``check_termination``, so if you choose to override either option you
 should probably override both at once.
 
-At the end of OsqpSolver::Solve() function, we always return the value
+At the end of OsqpSolver∷Solve() function, we always return the value
 of the primal and dual variables inside the OSQP solver, regardless of
 the solver status (whether it is optimal, infeasible, unbounded, etc),
 except when the problem has an invalid input. Users should always
@@ -8825,7 +8799,7 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
         // Source: drake/solvers/osqp_solver.h
         const char* doc =
 R"""(The OSQP solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<OsqpSolver>() to
+call MathematicalProgramResult∷get_solver_details<OsqpSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::OsqpSolverDetails::dual_res
         struct /* dual_res */ {
@@ -8989,8 +8963,8 @@ R"""(A constraint on the values of multivariate polynomials.
 where each P[i] is a multivariate polynomial in x, y...
 
 The Polynomial class uses a different variable naming scheme; thus the
-caller must provide a list of Polynomial::VarType variables that
-correspond to the members of the MathematicalProgram::Binding (the
+caller must provide a list of Polynomial∷VarType variables that
+correspond to the members of the MathematicalProgram∷Binding (the
 individual scalar elements of the given VariableList).)""";
         // Symbol: drake::solvers::PolynomialConstraint::PolynomialConstraint
         struct /* ctor */ {
@@ -9029,7 +9003,7 @@ R"""(Implements a cost of the form P(x, y...) where P is a multivariate
 polynomial in x, y, ...
 
 The Polynomial class uses a different variable naming scheme; thus the
-caller must provide a list of Polynomial::VarType variables that
+caller must provide a list of Polynomial∷VarType variables that
 correspond to the members of the Binding<> (the individual scalar
 elements of the given VariableList).)""";
         // Symbol: drake::solvers::PolynomialCost::PolynomialCost
@@ -9063,7 +9037,7 @@ R"""(Implements an evaluator of the form P(x, y...) where P is a
 multivariate polynomial in x, y, ...
 
 The Polynomial class uses a different variable naming scheme; thus the
-caller must provide a list of Polynomial::VarType variables that
+caller must provide a list of Polynomial∷VarType variables that
 correspond to the members of the Binding<> (the individual scalar
 elements of the given VariableList).)""";
         // Symbol: drake::solvers::PolynomialEvaluator::PolynomialEvaluator
@@ -9130,9 +9104,9 @@ R"""(Impose the constraint that a symmetric matrix with size ``rows`` x
 ``rows`` is positive semidefinite.
 
 See also:
-    MathematicalProgram::AddPositiveSemidefiniteConstraint() for how
-    to use this constraint on some decision variables. We currently
-    use this constraint as a place holder in MathematicalProgram, to
+    MathematicalProgram∷AddPositiveSemidefiniteConstraint() for how to
+    use this constraint on some decision variables. We currently use
+    this constraint as a place holder in MathematicalProgram, to
     indicate the positive semidefiniteness of some decision variables.
 
 Parameter ``rows``:
@@ -9160,7 +9134,7 @@ Example:
     auto S = prog.NewSymmetricContinuousVariables<3>("S");
     
     // Impose a positive semidefinite constraint on S.
-    std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
+    std∷shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
         prog.AddPositiveSemidefiniteConstraint(S);
     
     /////////////////////////////////////////////////////////////
@@ -9171,7 +9145,7 @@ Example:
     prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
     
     // Minimize S(0, 0) + S(1, 1) + S(2, 2).
-    prog.AddLinearCost(Eigen::RowVector3d(1, 1, 1), {S.diagonal()});
+    prog.AddLinearCost(Eigen∷RowVector3d(1, 1, 1), {S.diagonal()});
     
     /////////////////////////////////////////////////////////////
     
@@ -9186,11 +9160,11 @@ Example:
     Vector6d S_stacked;
     S_stacked << S_value.col(0), S_value.col(1), S_value.col(2);
     
-    Eigen::VectorXd S_eigen_values;
+    Eigen∷VectorXd S_eigen_values;
     psd_constraint->Eval(S_stacked, S_eigen_values);
     
-    std::cout<<"S solution is: " << S << std::endl;
-    std::cout<<"The eigen value of S is " << S_eigen_values << std::endl;
+    std∷cout<<"S solution is: " << S << std∷endl;
+    std∷cout<<"The eigen value of S is " << S_eigen_values << std∷endl;
 
 .. raw:: html
 
@@ -9415,9 +9389,9 @@ solver interface to be used to solve the projection problem.
 The solver terminates if - the projection step fails to find a
 feasible solution, - the 2-norm distance between subsequent iterates
 is less than the user-specified tolerance (see
-ProjectedGradientDescentSolver::ConvergenceTolOptionName
+ProjectedGradientDescentSolver∷ConvergenceTolOptionName
 "ConvergenceTolOptionName"), or - a maximum number of iterations have
-been run (see ProjectedGradientDescentSolver::MaxIterationsOptionName
+been run (see ProjectedGradientDescentSolver∷MaxIterationsOptionName
 "MaxIterationsOptionName").
 
 Warning:
@@ -9586,10 +9560,10 @@ Parameter ``ub``:
 
 Parameter ``hessian_type``:
     (optional) Indicates the type of Hessian matrix Q0. If
-    hessian_type is not std::nullopt, then the user guarantees the
-    type of Q0. If hessian_type=std::nullopt, then QuadraticConstraint
-    will check the type of Q0. To speed up the constructor, set
-    hessian_type != std::nullopt if you can. If this type is set
+    hessian_type is not std∷nullopt, then the user guarantees the type
+    of Q0. If hessian_type=std∷nullopt, then QuadraticConstraint will
+    check the type of Q0. To speed up the constructor, set
+    hessian_type != std∷nullopt if you can. If this type is set
     incorrectly, then the downstream code (for example the solver)
     will malfunction.
 
@@ -9612,10 +9586,10 @@ Parameter ``new_b``:
 
 Parameter ``hessian_type``:
     (optional) Indicates the type of Hessian matrix Q0. If
-    hessian_type is not std::nullopt, then the user guarantees the
-    type of Q0. If hessian_type=std::nullopt, then QuadraticConstraint
-    will check the type of Q0. To speed up the constructor, set
-    hessian_type != std::nullopt if you can.)""";
+    hessian_type is not std∷nullopt, then the user guarantees the type
+    of Q0. If hessian_type=std∷nullopt, then QuadraticConstraint will
+    check the type of Q0. To speed up the constructor, set
+    hessian_type != std∷nullopt if you can.)""";
         } UpdateCoefficients;
         // Symbol: drake::solvers::QuadraticConstraint::b
         struct /* b */ {
@@ -9672,9 +9646,9 @@ Parameter ``is_hessian_psd``:
     (optional) Indicates if the Hessian matrix Q is positive
     semidefinite (psd) or not. If set to true, then the user
     guarantees that Q is psd; if set to false, then the user
-    guarantees that Q is not psd. If set to std::nullopt, then the
+    guarantees that Q is not psd. If set to std∷nullopt, then the
     constructor will check if Q is psd or not. The default is
-    std::nullopt. To speed up the constructor, set is_hessian_psd to
+    std∷nullopt. To speed up the constructor, set is_hessian_psd to
     either true or false.)""";
         } ctor;
         // Symbol: drake::solvers::QuadraticCost::UpdateCoefficients
@@ -9697,9 +9671,9 @@ Parameter ``is_hessian_psd``:
     (optional) Indicates if the Hessian matrix Q is positive
     semidefinite (psd) or not. If set to true, then the user
     guarantees that Q is psd; if set to false, then the user
-    guarantees that Q is not psd. If set to std::nullopt, then this
+    guarantees that Q is not psd. If set to std∷nullopt, then this
     function will check if Q is psd or not. The default is
-    std::nullopt. To speed up the computation, set is_hessian_psd to
+    std∷nullopt. To speed up the computation, set is_hessian_psd to
     either true or false.)""";
         } UpdateCoefficients;
         // Symbol: drake::solvers::QuadraticCost::UpdateHessianEntry
@@ -9981,7 +9955,7 @@ R"""(Type of details stored in MathematicalProgramResult.)""";
         // Source: drake/solvers/scs_solver.h
         const char* doc =
 R"""(The SCS solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<ScsSolver>() to
+call MathematicalProgramResult∷get_solver_details<ScsSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::ScsSolverDetails::dual_objective
         struct /* dual_objective */ {
@@ -10125,18 +10099,18 @@ R"""(An implementation of SolverInterface for the commercially-licensed
 SNOPT solver (https://ccom.ucsd.edu/~optimizers/solvers/snopt/).
 
 Builds of Drake from source do not compile SNOPT by default, so
-therefore SolverInterface::available() will return false. You must
+therefore SolverInterface∷available() will return false. You must
 opt-in to build SNOPT per the documentation at
 https://drake.mit.edu/bazel.html#snopt.
 
 `Drake's pre-compiled binary releases
 <https://drake.mit.edu/installation.html>`_ do incorporate SNOPT, so
-therefore SolverInterface::available() will return true. Thanks to
+therefore SolverInterface∷available() will return true. Thanks to
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 There is no license configuration required to use SNOPT, but you may
 set the environtment variable ``DRAKE_SNOPT_SOLVER_ENABLED`` to "0" to
-force-disable SNOPT, in which case SolverInterface::enabled() will
+force-disable SNOPT, in which case SolverInterface∷enabled() will
 return false.)""";
         // Symbol: drake::solvers::SnoptSolver::Details
         struct /* Details */ {
@@ -10184,7 +10158,7 @@ is unset or set to anything other than "0".)""";
         // Source: drake/solvers/snopt_solver.h
         const char* doc =
 R"""(The SNOPT solver details after calling Solve() function. The user can
-call MathematicalProgramResult::get_solver_details<SnoptSolver>() to
+call MathematicalProgramResult∷get_solver_details<SnoptSolver>() to
 obtain the details.)""";
         // Symbol: drake::solvers::SnoptSolverDetails::F
         struct /* F */ {
@@ -10271,7 +10245,7 @@ overwritten by the solver during Solve().)""";
           // Source: drake/solvers/solution_result.h
           const char* doc =
 R"""(Solver-specific error. (Try
-MathematicalProgramResult::get_solver_details() or enabling verbose
+MathematicalProgramResult∷get_solver_details() or enabling verbose
 solver output.))""";
         } kSolverSpecificError;
         // Symbol: drake::solvers::SolutionResult::kUnbounded
@@ -10419,8 +10393,8 @@ this function is marked as internal use only.)""";
         struct /* Solve */ {
           // Source: drake/solvers/solver_base.h
           const char* doc =
-R"""(Like SolverInterface::Solve(), but the result is a return value
-instead of an output argument.)""";
+R"""(Like SolverInterface∷Solve(), but the result is a return value instead
+of an output argument.)""";
         } Solve;
         // Symbol: drake::solvers::SolverBase::SolverBase
         struct /* ctor */ {
@@ -10595,12 +10569,12 @@ can specify "algorithm" using a string of the algorithm name. The
 complete set of algorithms is listed in "nlopt_algorithm_to_string()"
 function in github.com/stevengj/nlopt/blob/master/src/api/general.c.
 If you would like to use certain algorithm, for example
-NLOPT_LD_SLSQP, call ``SetOption(NloptSolver::id(),
-NloptSolver::AlgorithmName(), "LD_SLSQP");``
+NLOPT_LD_SLSQP, call ``SetOption(NloptSolver∷id(),
+NloptSolver∷AlgorithmName(), "LD_SLSQP");``
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference
 Manual
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html
 
 "SCS" -- Parameter name and values as specified in the struct
 SCS_SETTINGS in SCS header file
@@ -10609,7 +10583,7 @@ SCS code on github master might be more up-to-date than the version
 used in Drake.
 
 "MOSEK™" -- Parameter name and values as specified in Mosek Reference
-https://docs.mosek.com/11.0/capi/parameters.html
+https://docs.mosek.com/11.1/capi/parameters.html
 
 "OSQP" -- Parameter name and values as specified in OSQP Reference
 https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
@@ -10635,7 +10609,7 @@ one from ``other`` and keep the one from ``this``.)""";
           const char* doc =
 R"""(The values stored in SolverOptions can be double, int, or string. In
 the future, we might re-order or add more allowed types without any
-deprecation period, so be sure to use std::visit or std::get<T> to
+deprecation period, so be sure to use std∷visit or std∷get<T> to
 retrieve the variant's value in a future-proof way.)""";
         } OptionValue;
         // Symbol: drake::solvers::SolverOptions::Serialize
@@ -10893,7 +10867,7 @@ R"""(Non-template class for UnrevisedLemkeSolver<T> constants.)""";
           // Source: drake/solvers/unrevised_lemke_solver.h
           const char* doc =
 R"""(Returns:
-    same as SolverInterface::solver_id())""";
+    same as SolverInterface∷solver_id())""";
         } id;
       } UnrevisedLemkeSolverId;
       // Symbol: drake::solvers::VariableRefList
@@ -10911,7 +10885,7 @@ R"""(Returns:
         // Source: drake/solvers/indeterminate.h
         const char* doc =
 R"""(VectorXIndeterminate is used as an alias for
-Eigen::Matrix<symbolic::Variable, Eigen::Dynamic, 1>.
+Eigen∷Matrix<symbolic∷Variable, Eigen∷Dynamic, 1>.
 
 See also:
     MatrixIndeterminate<int, int>)""";
@@ -10948,9 +10922,12 @@ it).)""";
       // Symbol: drake::solvers::to_string
       struct /* to_string */ {
         // Source: drake/solvers/common_solver_option.h
-        const char* doc =
+        const char* doc_1args_CommonSolverOption =
 R"""(Returns the short, unadorned name of the option, e.g.,
 ``kPrintFileName``.)""";
+        // Source: drake/solvers/evaluator_base.h
+        const char* doc_1args_e =
+R"""(Returns the string representation of the evaluator.)""";
       } to_string;
     } solvers;
   } drake;

@@ -16,8 +16,13 @@ DEFINE_double(simulator_target_realtime_rate,
               "[Simulator flag] Desired rate relative to real time.  See "
               "documentation for Simulator::set_target_realtime_rate() for "
               "details.");
+
+// delete with publish_every_time_step 2026-06-01
 DEFINE_bool(simulator_publish_every_time_step,
             drake::systems::SimulatorConfig{}.publish_every_time_step,
+            "DEPRECATED: removal date: 2026-06-01. "
+            "See https://drake.mit.edu/troubleshooting.html#force-publishing "
+            "for details on how to migrate to system events."
             "[Simulator flag] Sets whether the simulation should trigger a "
             "forced-Publish event at the end of every trajectory-advancing "
             "step. This also includes the very first publish at t = 0 (see "
@@ -37,6 +42,7 @@ DEFINE_string(simulator_integration_scheme,
               "[Integrator flag] Integration scheme to be used. Available "
               "options are: "
               "'bogacki_shampine3', "
+              "'cenic', "
               "'explicit_euler', "
               "'implicit_euler', "
               "'radau1', "
@@ -97,14 +103,14 @@ template <typename T>
 std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
     const System<T>& system, std::unique_ptr<Context<T>> context) {
   auto simulator = std::make_unique<Simulator<T>>(system, std::move(context));
+  const SimulatorConfig config{
+      FLAGS_simulator_integration_scheme, FLAGS_simulator_max_time_step,
+      FLAGS_simulator_accuracy, FLAGS_simulator_use_error_control,
+      FLAGS_simulator_start_time, FLAGS_simulator_target_realtime_rate,
+      // delete FLAGS_simulator_publish_every_time_step with
+      // publish_every_time_step feature on 2026-06-01
+      FLAGS_simulator_publish_every_time_step};
 
-  const SimulatorConfig config{FLAGS_simulator_integration_scheme,
-                               FLAGS_simulator_max_time_step,
-                               FLAGS_simulator_accuracy,
-                               FLAGS_simulator_use_error_control,
-                               FLAGS_simulator_start_time,
-                               FLAGS_simulator_target_realtime_rate,
-                               FLAGS_simulator_publish_every_time_step};
   ApplySimulatorConfig(config, simulator.get());
 
   return simulator;

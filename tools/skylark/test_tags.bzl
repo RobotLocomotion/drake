@@ -4,28 +4,13 @@
 # for any license-related needs and provide a marker so that //tools/bazel.rc
 # can selectively enable tests based on the developer's chosen configuration.
 
-load("@gurobi//:defs.bzl", "DRAKE_GUROBI_LICENSE_UNLIMITED")
-
 def gurobi_test_tags(gurobi_required = True):
     """Returns the test tags necessary for properly running Gurobi tests.
 
     By default, sets gurobi_required=True, which will require that the supplied
     tag filters include "gurobi".
-
-    Gurobi checks a license file outside the workspace so tests that use Gurobi
-    must have the tag "no-sandbox".
-
-    Unless DRAKE_GUROBI_LICENSE_UNLIMITED=1 is set in the shell environment
-    (e.g., in CI), we also require the tag "exclusive" to rate-limit
-    license servers with a small number of licenses.
     """
-    result = [
-        # TODO(david-german-tri): Find a better fix for the license file.
-        "no-sandbox",
-    ]
-
-    if not DRAKE_GUROBI_LICENSE_UNLIMITED:
-        result.append("exclusive")
+    result = []
 
     if gurobi_required:
         result.append("gurobi")
@@ -37,27 +22,17 @@ def mosek_test_tags(mosek_required = True):
 
     By default, sets mosek_required=True, which will require that the supplied
     tag filters include "mosek".
-
-    MOSEK™ checks a license file outside the workspace, so tests that use
-    MOSEK™ must have the tag "no-sandbox".
     """
-    nominal_tags = [
-        "no-sandbox",
-    ]
     if mosek_required:
-        return nominal_tags + ["mosek"]
+        return ["mosek"]
     else:
-        return nominal_tags
+        return []
 
 def vtk_test_tags():
     """Returns test tags necessary for rendering tests. (This is called "vtk"
     tags, but is relevant even for rendering tests that don't use VTK.)
     """
     return [
-        # Defects related to platform-specific rendering-related libraries
-        # when run under DRD or Helgrind.
-        "no_drd",
-        "no_helgrind",
         # Disable under LeakSanitizer and Valgrind Memcheck due to
         # driver-related leaks. For more information, see #7520.
         "no_lsan",

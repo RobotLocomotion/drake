@@ -19,20 +19,20 @@ namespace {
 std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
                           const std::string& name,
                           const VectorX<symbolic::Variable>& vars) {
-  os << name;
+  std::string result{name};
   // Append the expression.
   VectorX<symbolic::Expression> e;
   cost.Eval(vars, &e);
   DRAKE_DEMAND(e.size() == 1);
-  os << " " << e[0];
+  result.append(fmt::format(" {}", e[0]));
 
   // Append the description (when provided).
   const std::string& description = cost.get_description();
   if (!description.empty()) {
-    os << " described as '" << description << "'";
+    result.append(fmt::format(" described as '{}'", description));
   }
 
-  return os;
+  return os << result;
 }
 
 std::string ToLatexCost(const Cost& cost,

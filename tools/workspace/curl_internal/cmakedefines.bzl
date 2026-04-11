@@ -1,4 +1,4 @@
-# The upstream lib/curl_config.h.cmake has a bajillion settings that it
+# The upstream lib/curl_config-cmake.h.in has a bajillion settings that it
 # measures from the host platform. In order to have a reproducible build,
 # we set them manually for Drake rather than measuring them.
 
@@ -23,7 +23,6 @@ CPP_DEFINES = [
 # Keep this list alpha-sorted.
 _APPLE_CMAKE_DEFINES = [
     "HAVE_FSETXATTR_6",
-    "HAVE_SETMODE",
     "HAVE_SYS_FILIO_H",
     "HAVE_SYS_SOCKIO_H",
 ]
@@ -36,7 +35,6 @@ _LINUX_CMAKE_DEFINES = [
     "HAVE_FSETXATTR_5",
     "HAVE_GETHOSTBYNAME_R",
     "HAVE_GETHOSTBYNAME_R_6",
-    "HAVE_MSG_NOSIGNAL",
     "HAVE_SYS_EVENTFD_H",
     "HAVE_TERMIOS_H",
 ]
@@ -121,7 +119,7 @@ CMAKE_DEFINES = [
     "HAVE_LIBGEN_H",
     "HAVE_LIBZ",
     "HAVE_LOCALE_H",
-    "HAVE_LONGLONG",
+    "HAVE_LOCALTIME_R",
     "HAVE_NETDB_H",
     "HAVE_NETINET_IN_H",
     "HAVE_NETINET_TCP_H",
@@ -150,9 +148,7 @@ CMAKE_DEFINES = [
     "HAVE_SOCKETPAIR",
     "HAVE_STDATOMIC_H",
     "HAVE_STDBOOL_H",
-    "HAVE_STDINT_H",
     "HAVE_STRCASECMP",
-    "HAVE_STRDUP",
     "HAVE_STRERROR_R",
     "HAVE_STRINGS_H",
     "HAVE_STRUCT_SOCKADDR_STORAGE",
@@ -177,7 +173,6 @@ CMAKE_DEFINES = [
     "SIZEOF_CURL_SOCKET_T_CODE=",
     "SIZEOF_INT_CODE=",
     "SIZEOF_LONG_CODE=",
-    "SIZEOF_LONG_LONG_CODE=",
     "SIZEOF_OFF_T_CODE=",
     "SIZEOF_CURL_OFF_T_CODE=",
     "SIZEOF_SIZE_T_CODE=",
@@ -191,8 +186,10 @@ CMAKE_DEFINES = [
 # These are the settings we want to disable for Drake on all platforms.
 # Keep this list alpha-sorted.
 CMAKE_UNDEFINES = [
+    "CURL_BORINGSSL_VERSION",
     "CURL_CA_BUNDLE",
     "CURL_CA_FALLBACK",
+    "CURL_CA_NATIVE",
     "CURL_CA_PATH",
     "CURL_CA_SEARCH_SAFE",
     "CURL_DEFAULT_SSL_BACKEND",
@@ -204,6 +201,7 @@ CMAKE_UNDEFINES = [
     "CURL_DISABLE_VERBOSE_STRINGS",
     "CURL_EXTERN_SYMBOL",
     "CURL_KRB5_VERSION",
+    "CURL_PATCHSTAMP",
     "CURL_WITH_MULTI_SSL",
     "HAVE_ACCEPT4",
     "HAVE_ARC4RANDOM",
@@ -262,13 +260,13 @@ CMAKE_UNDEFINES = [
     "HAVE_WOLFSSL_GET_PEER_CERTIFICATE",
     "HAVE_WOLFSSL_USEALPN",
     "HAVE_ZSTD",
-    "HAVE__SETMODE",
     "NEED_REENTRANT",
     "OPENSSL_QUIC_API2",
     "USE_AMISSL",
     "USE_APPLE_IDN",
     "USE_APPLE_SECTRUST",
     "USE_ARES",
+    "USE_BACKTRACE",
     "USE_ECH",
     "USE_GNUTLS",
     "USE_GSASL",
@@ -284,7 +282,6 @@ CMAKE_UNDEFINES = [
     "USE_NGTCP2",
     "USE_OPENLDAP",
     "USE_OPENSSL",
-    "USE_OPENSSL_QUIC",
     "USE_QUICHE",
     "USE_RUSTLS",
     "USE_SCHANNEL",
@@ -296,7 +293,6 @@ CMAKE_UNDEFINES = [
     "USE_WATT32",
     "USE_WIN32_CRYPTO",
     "USE_WIN32_IDN",
-    "USE_WIN32_LARGE_FILES",
     "USE_WIN32_LDAP",
     "USE_WINDOWS_SSPI",
     "USE_WOLFSSL",

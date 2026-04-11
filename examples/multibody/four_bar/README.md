@@ -1,7 +1,7 @@
 # Four-Bar Linkage Example
 This planar four-bar linkage demonstrates how to use a bushing to
 approximate a closed kinematic chain. It loads an SDF model from the
-file "four_bar.sdf" into MultiBodyPlant. It handles the closed kinematic
+file "four_bar.sdf" into MultibodyPlant. It handles the closed kinematic
 chain by replacing one of the four-bar's revolute (pin) joints with a
 bushing ([drake::multibody::LinearBushingRollPitchYaw](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html))
 whose force stiffness and damping values were approximated as discussed below.

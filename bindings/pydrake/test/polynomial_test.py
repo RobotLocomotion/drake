@@ -4,6 +4,7 @@ import numpy as np
 
 from pydrake.common import ToleranceType
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.polynomial import Polynomial_
 from pydrake.symbolic import Expression
 
@@ -16,6 +17,20 @@ class TestPolynomial(unittest.TestCase):
         Polynomial()
         Polynomial(5)
         Polynomial(coefficients=[1, 2, 3])
+
+    @numpy_compare.check_all_types
+    def test_pickle(self, T):
+        Polynomial = Polynomial_[T]
+
+        polynomials = [
+            Polynomial(),
+            Polynomial(0),
+            Polynomial(5),
+            Polynomial(coefficients=[1, 2, 3]),
+        ]
+
+        for polynomial in polynomials:
+            assert_pickle(self, polynomial, lambda p: p, T=T)
 
     @numpy_compare.check_all_types
     def test_analysis_methods(self, T):

@@ -23,6 +23,41 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
+/* The SapHolonomicConstraint class is abstract, so we need to declare a
+concrete subclass in order to test it. */
+template <typename T>
+class TestSapHolonomicConstraint final : public SapHolonomicConstraint<T> {
+ public:
+  using SapHolonomicConstraint<T>::SapHolonomicConstraint;
+
+ private:
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {
+    throw std::runtime_error("DoAccumulateGeneralizedImpulses stubbed");
+  }
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final {
+    throw std::runtime_error("DoAccumulateSpatialImpulses stubbed");
+  }
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<SapHolonomicConstraint<T>>(
+        new TestSapHolonomicConstraint<T>(*this));
+  }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
+    const typename SapHolonomicConstraint<T>::Parameters& p =
+        this->parameters();
+    SapHolonomicConstraint<double>::Parameters p_to_double(
+        math::DiscardGradient(p.impulse_lower_limits()),
+        math::DiscardGradient(p.impulse_upper_limits()),
+        math::DiscardGradient(p.stiffnesses()),
+        math::DiscardGradient(p.relaxation_times()), p.beta());
+    return std::make_unique<TestSapHolonomicConstraint<double>>(
+        math::DiscardGradient(this->constraint_function()),
+        this->jacobian().ToDouble(), math::DiscardGradient(this->bias()),
+        std::move(p_to_double));
+  }
+};
+
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 
 void ExpectEqual(const SapHolonomicConstraint<double>& c1,
@@ -38,7 +73,7 @@ class SapHolonomicConstraintTests : public ::testing::Test {
   void SetUp() override {
     SapHolonomicConstraint<double>::Parameters parameters =
         MakeArbitraryParameters();
-    dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+    dut_ = std::make_unique<TestSapHolonomicConstraint<double>>(
         g_, SapConstraintJacobian<double>{clique1_, J_}, b_,
         std::move(parameters));
   }
@@ -81,7 +116,7 @@ class SapHolonomicConstraintTests : public ::testing::Test {
     SapHolonomicConstraint<AutoDiffXd>::Parameters p_ad(
         p.impulse_lower_limits(), p.impulse_upper_limits(), p.stiffnesses(),
         p.relaxation_times(), p.beta());
-    return std::make_unique<SapHolonomicConstraint<AutoDiffXd>>(
+    return std::make_unique<TestSapHolonomicConstraint<AutoDiffXd>>(
         c.constraint_function(),
         SapConstraintJacobian<AutoDiffXd>{
             c.first_clique(), c.first_clique_jacobian().MakeDenseMatrix()},
@@ -126,7 +161,7 @@ TEST_F(SapHolonomicConstraintTests, TwoCliquesConstruction) {
   const VectorXd g = g_;
   const MatrixXd J1 = J_;
   const MatrixXd J2 = 1.5 * J_;
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+  dut_ = std::make_unique<TestSapHolonomicConstraint<double>>(
       g, SapConstraintJacobian<double>{clique1, J1, clique2, J2}, p);
 
   EXPECT_EQ(dut_->num_cliques(), 2);
@@ -241,7 +276,7 @@ TEST_F(SapHolonomicConstraintTests, CalcDiagonalRegularization) {
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParameters(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+  dut_ = std::make_unique<TestSapHolonomicConstraint<double>>(
       g_, SapConstraintJacobian<double>{clique1_, J_}, parameters);
 
   const double time_step = 0.01;
@@ -277,7 +312,7 @@ TEST_F(SapHolonomicConstraintTests,
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParametersWithInfiniteStiffness(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+  dut_ = std::make_unique<TestSapHolonomicConstraint<double>>(
       g_, SapConstraintJacobian<double>{clique1_, J_}, parameters);
 
   const double time_step = 0.01;
@@ -314,7 +349,7 @@ TEST_F(SapHolonomicConstraintTests, CalcBiasTerm) {
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParameters(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+  dut_ = std::make_unique<TestSapHolonomicConstraint<double>>(
       g_, SapConstraintJacobian<double>{clique1_, J_}, b_, parameters);
 
   const double time_step = 0.01;
@@ -349,11 +384,11 @@ TEST_F(SapHolonomicConstraintTests, Clone) {
   ExpectEqual(*dut_, *clone);
 
   // Test ToDouble.
-  SapHolonomicConstraint<AutoDiffXd> c_ad(
+  TestSapHolonomicConstraint<AutoDiffXd> c_ad(
       g_, SapConstraintJacobian<AutoDiffXd>(clique1_, J_), b_,
       MakeArbitraryParameters<AutoDiffXd>());
   auto clone_from_ad =
-      dynamic_pointer_cast<SapHolonomicConstraint<double>>(c_ad.ToDouble());
+      dynamic_pointer_cast<TestSapHolonomicConstraint<double>>(c_ad.ToDouble());
   ASSERT_NE(clone_from_ad, nullptr);
   ExpectEqual(*dut_, *clone_from_ad);
 }

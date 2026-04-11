@@ -34,11 +34,6 @@ std::string to_string(const Role& role) {
   return "unknown";
 }
 
-std::ostream& operator<<(std::ostream& out, const Role& role) {
-  out << fmt::to_string(role);
-  return out;
-}
-
 IllustrationProperties MakePhongIllustrationProperties(
     const Vector4<double>& diffuse) {
   IllustrationProperties props;

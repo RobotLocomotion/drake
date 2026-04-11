@@ -142,14 +142,14 @@ renderer.
 
 Warning:
     On macOS, we've observed that RenderEngineVtk sometimes does not
-    obey render::ColorRenderCamera::show_window when it's set to
+    obey render∷ColorRenderCamera∷show_window when it's set to
     ``True``. Refer to issue `#20144
     <https://github.com/RobotLocomotion/drake/issues/20144>`_ for
     further discussion.
 
 Note:
-    On Ubuntu, render::ColorRenderCamera::show_window only shows a
-    window when RenderEngineVtkParams::backend is set to "GLX"; the
+    On Ubuntu, render∷ColorRenderCamera∷show_window only shows a
+    window when RenderEngineVtkParams∷backend is set to "GLX"; the
     default backend value of "EGL" cannot show a window.
 
 Geometry perception properties
@@ -163,9 +163,9 @@ when registering visual geometry, categorized by rendered image type.
 | Group name | Property Name | Required | Property Type | Property
 Description | | :--------: | :-----------: | :------: |
 :-------------: | :------------------- | | phong | diffuse | no¹ |
-Eigen::Vector4d | The rgba value of the object surface. | | phong |
-diffuse_map | no² | std::string | The path to a texture to apply to
-the geometry.³⁴ |
+Eigen∷Vector4d | The rgba value of the object surface. | | phong |
+diffuse_map | no² | std∷string | The path to a texture to apply to the
+geometry.³⁴ |
 
 ¹ If no diffuse value is given, a default rgba value will be applied.
 The default color is a bright orange. This default value can be
@@ -203,11 +203,11 @@ Description | | :--------: | :-----------: | :-----------: |
 RenderLabel | The label to render into the image. |
 
 ⁵ When the label property is not set, RenderEngineVtk uses a default
-render label of RenderLabel::kDontCare.
+render label of RenderLabel∷kDontCare.
 
 **Geometries accepted by RenderEngineVtk**
 
-As documented in RenderEngine::RegisterVisual(), a RenderEngine
+As documented in RenderEngine∷RegisterVisual(), a RenderEngine
 implementation can use the properties found in the
 PerceptionProperties to determine whether it *accepts* a shape
 provided for registration. RenderEngineVtk makes use of defaults to
@@ -263,8 +263,8 @@ instead, with a warning.
 
 Note: RenderEngineVtk's API allows callers to request an interactive
 display of the current rendering (such as when
-systems::sensors::CameraConfig::show_rgb is set to ``True``). Whether
-or not the debug window is displayed depends on the final backend
+systems∷sensors∷CameraConfig∷show_rgb is set to ``True``). Whether or
+not the debug window is displayed depends on the final backend
 configuration of the RenderEngineVtk instance (after resolving default
 values as documented above). *Currently*, the EGL background does not
 support this display.)""";

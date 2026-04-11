@@ -6,27 +6,23 @@
 #include <string>
 #include <vector>
 
-// clang-format off to disable clang-format-includes
-// N.B. text-logging.h must be included before spdlog headers
-// to avoid "SPDLOG_ACTIVE_LEVEL" redefined warning (#13771).
-#include "drake/common/text_logging.h"
-// clang-format on
+#ifdef DRAKE_SPDLOG_ENABLED
 
-#ifdef HAVE_SPDLOG
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
-#endif
+#include <spdlog/spdlog.h>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
+#include "drake/common/text_logging_impl_spdlog.h"
 
 namespace drake {
 namespace pydrake {
 namespace internal {
-
-#ifdef HAVE_SPDLOG
 namespace {
+
 class pylogging_sink final
     // We use null_mutex below because we'll use the GIL as our *only* mutex.
     // This is critically important to avoid deadlocks by lock order inversion.
@@ -112,10 +108,30 @@ class pylogging_sink final
         return 50;
       case Enum::off:
         break;
-#if SPDLOG_VERSION >= 10600
       case Enum::n_levels:
         break;
-#endif
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  // https://docs.python.org/3/library/logging.html#logging-levels
+  static int to_py_level(drake::logging::level_enum level) {
+    using Enum = drake::logging::level_enum;
+    switch (level) {
+      case Enum::trace:
+        return 5;
+      case Enum::debug:
+        return 10;
+      case Enum::info:
+        return 20;
+      case Enum::warn:
+        return 30;
+      case Enum::err:
+        return 40;
+      case Enum::critical:
+        return 50;
+      case Enum::off:
+        break;
     }
     DRAKE_UNREACHABLE();
   }
@@ -151,7 +167,7 @@ void MaybeRedirectPythonLogging() {
   // configuration we observe here differs in any way, then we'll assume that
   // a user has configured it to their taste already and we won't change it.
   std::vector<std::shared_ptr<spdlog::sinks::sink> >& root_sinks =
-      drake::log()->sinks();
+      drake::internal::get_spdlog_logger_singleton()->sinks();
   if (root_sinks.size() != 1) {
     drake::log()->debug(
         "Will not redirect C++ logging to Python (num root sinks != 1)");
@@ -182,7 +198,7 @@ void MaybeRedirectPythonLogging() {
   // Add the python sink. Note that we must add it to the root logger (not the
   // dist_sink) because the dist_sink takes a mutex on every log, which suffers
   // from lock priority order inversion once the GIL gets involved.
-  drake::log()->sinks().push_back(std::make_shared<pylogging_sink>());
+  root_sinks.push_back(std::make_shared<pylogging_sink>());
 
   // Remove the stderr sink.
   dist_sink->set_sinks({});
@@ -203,7 +219,7 @@ void UseNativeCppLogging() {
   // After MaybeRedirectPythonLogging has happened, we expect two sinks. In case
   // it was opted-out of using the environment variable, we expect one sink.
   std::vector<std::shared_ptr<spdlog::sinks::sink> >& root_sinks =
-      drake::log()->sinks();
+      drake::internal::get_spdlog_logger_singleton()->sinks();
   if (!(root_sinks.size() == 2 || root_sinks.size() == 1)) {
     throw std::runtime_error(error_message);
   }
@@ -244,11 +260,22 @@ void UseNativeCppLogging() {
 
   drake::log()->trace("Successfully routed C++ logs back to stderr directly");
 }
-#else
-void MaybeRedirectPythonLogging() {}
-void UseNativeCppLogging() {}
-#endif
 
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
+
+#else  // DRAKE_SPDLOG_ENABLED
+
+namespace drake {
+namespace pydrake {
+namespace internal {
+
+void MaybeRedirectPythonLogging() {}
+void UseNativeCppLogging() {}
+
+}  // namespace internal
+}  // namespace pydrake
+}  // namespace drake
+
+#endif  // DRAKE_SPDLOG_ENABLED

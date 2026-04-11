@@ -145,7 +145,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
   integrator.set_maximum_step_size(1e-3);  // Reasonable for this problem.
   integrator.set_target_accuracy(target_accuracy);
-  simulator.set_publish_every_time_step(true);
+
   simulator.Initialize();
 
   // Prior to simulating, dynamics output ports should be filled with zeros.

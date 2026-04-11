@@ -587,16 +587,17 @@ drake_cc_googletest(
 
 drake_cc_optional_googletest(
     name = "rgbd_sensor_async_gl_test",
-    # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
-    # We'd prefer this to be enabled on all //tools/skylark:linux platforms.
-    opt_in_condition = "//tools:ubuntu_jammy",
+    opt_in_condition = "//tools/skylark:linux",
     timeout = "moderate",
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "@drake_models//:manipulation_station",
     ],
     display = True,
-    tags = vtk_test_tags(),
+    tags = vtk_test_tags() + [
+        # TODO(#21420) This test is currently broken on at least Ubuntu 24.04.
+        "manual",
+    ],
     deps = [
         ":image_writer",
         ":rgbd_sensor",

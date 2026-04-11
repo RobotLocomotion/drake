@@ -670,7 +670,7 @@ If you need to debug further while using Bazel, it is suggested to use
 ```
     # Terminal 1 - Host process.
     cd drake
-    bazel run -c dbg \
+    bazel run --config=debug \
         --run_under='gdbserver localhost:9999' \
         //bindings/pydrake/systems:py/lifetime_test -- \
         --trace=user

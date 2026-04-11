@@ -209,6 +209,8 @@ PYBIND11_MODULE(analysis, m) {
               cls_doc.get_largest_step_size_taken.doc)
           .def("get_num_steps_taken", &Class::get_num_steps_taken,
               cls_doc.get_num_steps_taken.doc)
+          .def("GetStatisticsSummary", &Class::GetStatisticsSummary,
+              cls_doc.GetStatisticsSummary.doc)
           // N.B. While `context` is not directly owned by this system, we
           // would still like our accessors to keep it alive (e.g. a user calls
           // `simulator.get_integrator().get_context()`.
@@ -289,21 +291,25 @@ PYBIND11_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
-        .def(py::init([](const System<T>& system, Context<T>* context) {
-          // Expand the default-context request here, so that it gets a
-          // python-compatible lifetime.
-          if (context == nullptr) {
+        .def(py::init([](const System<T>& system, py::object py_context) {
+          // Handle the two cases for context ownership explicitly:
+          // 1. If py_context is None, create a new context and take ownership.
+          // 2. If py_context is provided, use the existing Python wrapper
+          //    directly (it already owns the C++ object).
+          if (py_context.is_none()) {
             std::unique_ptr<Context<T>> context_ptr =
                 system.CreateDefaultContext();
-            // Python ownership will be created below by
-            // make_shared_ptr_from_py_object.
-            context = context_ptr.release();
+            // Use take_ownership because we just created this context and need
+            // Python to own it. The unique_ptr is released, leaving the raw
+            // pointer with no owner until take_ownership establishes Python
+            // ownership.
+            py_context =
+                py::cast(context_ptr.release(), py_rvp::take_ownership);
           }
-          auto py_context = py::cast(context);
           return Simulator<T>::MakeWithSharedContext(
               system, make_shared_ptr_from_py_object<Context<T>>(py_context));
         }),
-            py::arg("system"), py::arg("context") = nullptr,
+            py::arg("system"), py::arg("context") = py::none(),
             // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
             []() {
@@ -391,12 +397,6 @@ Parameter ``interruptible``:
                   make_shared_ptr_from_py_object<Context<T>>(py_context));
             },
             py::arg("context"), doc.Simulator.reset_context.doc)
-        .def("set_publish_every_time_step",
-            &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
-            doc.Simulator.set_publish_every_time_step.doc)
-        .def("set_publish_at_initialization",
-            &Simulator<T>::set_publish_at_initialization, py::arg("publish"),
-            doc.Simulator.set_publish_at_initialization.doc)
         .def("set_target_realtime_rate",
             &Simulator<T>::set_target_realtime_rate, py::arg("realtime_rate"),
             doc.Simulator.set_target_realtime_rate.doc)
@@ -420,7 +420,23 @@ Parameter ``interruptible``:
             doc.Simulator.get_num_unrestricted_updates.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // delete with publish_every_time_step 2026-06-01
+    cls.def("set_publish_every_time_step",
+           WrapDeprecated(
+               doc.Simulator.set_publish_every_time_step.doc_deprecated,
+               &Simulator<T>::set_publish_every_time_step),
+           py::arg("publish"),
+           doc.Simulator.set_publish_every_time_step.doc_deprecated)
+        .def("set_publish_at_initialization",
+            WrapDeprecated(
+                doc.Simulator.set_publish_at_initialization.doc_deprecated,
+                &Simulator<T>::set_publish_at_initialization),
+            py::arg("publish"),
+            doc.Simulator.set_publish_at_initialization.doc_deprecated);
+    // delete till here
+#pragma GCC diagnostic pop
     m  // BR
         .def("ApplySimulatorConfig",
             py::overload_cast<const SimulatorConfig&,

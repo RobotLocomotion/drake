@@ -91,7 +91,9 @@ Variables Environment::domain() const {
 
 string Environment::to_string() const {
   ostringstream oss;
-  oss << *this;
+  for (const auto& [var, value] : *this) {
+    oss << fmt::format("{} -> {}\n", var, value);
+  }
   return oss.str();
 }
 
@@ -102,19 +104,16 @@ Environment::mapped_type& Environment::operator[](const key_type& key) {
 const Environment::mapped_type& Environment::operator[](
     const key_type& key) const {
   if (!map_.contains(key)) {
-    ostringstream oss;
-    oss << "Environment::operator[] was called on a const Environment "
-        << "with a missing key \"" << key << "\".";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("Environment::operator[] was called on a const Environment "
+                    "with a missing key \"{}\".",
+                    key));
   }
   return map_.at(key);
 }
 
 ostream& operator<<(ostream& os, const Environment& env) {
-  for (const auto& p : env) {
-    os << p.first << " -> " << p.second << endl;
-  }
-  return os;
+  return os << env.to_string();
 }
 
 Environment PopulateRandomVariables(Environment env, const Variables& variables,

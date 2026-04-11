@@ -10,7 +10,7 @@ from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.yaml import yaml_load_typed
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.symbolic import Expression, Variable
@@ -142,8 +142,16 @@ class TestTrajectories(unittest.TestCase):
         for expr in curve_expression:
             self.assertTrue(isinstance(expr, Expression))
 
+        assert_pickle(
+            self, curve, lambda traj: np.array(traj.control_points()), T=T
+        )
+
         curve.ElevateOrder()
         self.assertEqual(curve.order(), 2)
+
+        assert_pickle(
+            self, curve, lambda traj: np.array(traj.control_points()), T=T
+        )
 
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
@@ -250,6 +258,18 @@ class TestTrajectories(unittest.TestCase):
         copy.copy(dut1)
         copy.deepcopy(dut1)
 
+        for dut in [dut1, dut2]:
+            assert_pickle(
+                self,
+                dut,
+                lambda traj: dict(
+                    times=traj.get_times(),
+                    values=np.array([traj.value(t) for t in traj.get_times()]),
+                    time_comparison_tolerance=traj.time_comparison_tolerance(),
+                ),
+                T=T,
+            )
+
     def test_exponential_plus_piecewise_polynomial(self):
         K = np.array([1.23])
         A = np.array([3.45])
@@ -335,6 +355,32 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
         self.assertIsInstance(trajectory.time_scaling(), PiecewisePolynomial)
 
+        assert_pickle(
+            self,
+            trajectory,
+            lambda traj: dict(
+                path_breaks=traj.path().get_segment_times(),
+                path_polynomials=np.array(
+                    [
+                        traj.path().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.path().get_number_of_segments()
+                        )
+                    ]
+                ),
+                time_breaks=traj.time_scaling().get_segment_times(),
+                time_polynomials=np.array(
+                    [
+                        traj.time_scaling().getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.time_scaling().get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
@@ -386,7 +432,33 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.copy(pp).rows(), 1)
         self.assertEqual(copy.deepcopy(pp).rows(), 1)
 
-    def test_piecewise_polynomial_serialize(self):
+    @numpy_compare.check_all_types
+    def test_piecewise_polynomial_pickle(self, T):
+        Polynomial = Polynomial_[T]
+        PiecewisePolynomial = PiecewisePolynomial_[T]
+
+        p1 = Polynomial(1)
+        p2 = Polynomial(2)
+        pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
+
+        assert_pickle(
+            self,
+            pp,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                polynomial_matrices=np.array(
+                    [
+                        traj.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
+    def test_piecewise_polynomial_serialize_zoh(self):
         PiecewisePolynomial = PiecewisePolynomial_[float]
         breaks = [0, 0.5, 1]
         sample0 = np.array([[1, 1, 2], [2, 0, 3]])
@@ -411,13 +483,36 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(dut.cols(), 3)
         self.assertTrue(dut.isApprox(expected, tol=0))
 
+        yaml = yaml_dump_typed(dut)
+        readback = yaml_load_typed(schema=PiecewisePolynomial, data=yaml)
+        self.assertEqual(readback.get_number_of_segments(), 2)
+        self.assertEqual(readback.rows(), 2)
+        self.assertEqual(readback.cols(), 3)
+        self.assertTrue(readback.isApprox(expected, tol=0))
+
+    def test_piecewise_polynomial_serialize_cubic(self):
+        PiecewisePolynomial = PiecewisePolynomial_[float]
+        dut = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=[0.0, 1.0, 2.0],
+            samples=np.diag([4.0, 5.0, 6.0]),
+            sample_dot_at_start=[0.0, 0.0, 0.0],
+            sample_dot_at_end=[0.0, 0.0, 0.0],
+        )
+        yaml = yaml_dump_typed(dut)
+        readback = yaml_load_typed(schema=PiecewisePolynomial, data=yaml)
+        self.assertTrue(readback.isApprox(dut, tol=0))
+
+        assert_pickle(self, dut, yaml_dump_typed, T=float)
+
     def test_piecewise_polynomial_serialize_empty(self):
-        data = dedent("""
+        data = dedent("""\
         breaks: []
         polynomials: []
         """)
         dut = yaml_load_typed(schema=PiecewisePolynomial_[float], data=data)
         self.assertEqual(dut.get_number_of_segments(), 0)
+        yaml = yaml_dump_typed(dut)
+        self.assertEqual(yaml, data)
 
     @numpy_compare.check_all_types
     def test_zero_order_hold_vector(self, T):
@@ -660,6 +755,29 @@ class TestTrajectories(unittest.TestCase):
             traj.segment(segment_index=1), PiecewisePolynomial
         )
 
+        assert_pickle(
+            self,
+            traj,
+            lambda t: dict(
+                outer_breaks=traj.get_segment_times(),
+                inner_breaks_1=traj.segment(0).get_segment_times(),
+                polynomial_matrices_1=[
+                    traj.segment(0).getPolynomialMatrix(segment_index)
+                    for segment_index in range(
+                        traj.segment(0).get_number_of_segments()
+                    )
+                ],
+                inner_breaks_2=traj.segment(1).get_segment_times(),
+                polynomial_matrices_2=[
+                    traj.segment(1).getPolynomialMatrix(segment_index)
+                    for segment_index in range(
+                        traj.segment(1).get_number_of_segments()
+                    )
+                ],
+            ),
+            T=T,
+        )
+
         traj = CompositeTrajectory.AlignAndConcatenate(segments=[pp1, pp2])
         self.assertIsInstance(traj, CompositeTrajectory)
 
@@ -684,8 +802,13 @@ class TestTrajectories(unittest.TestCase):
         R = RotationMatrix()
 
         # Test quaternion constructor.
-        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
+        quaternions = [q, q, q]
+        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=quaternions)
         self.assertEqual(pq.get_number_of_segments(), 2)
+        for i in range(len(quaternions)):
+            numpy_compare.assert_equal(
+                quaternions[i].wxyz(), pq.get_quaternion_samples()[i].wxyz()
+            )
         numpy_compare.assert_float_equal(
             pq.value(0.5), [[1.0], [0.0], [0.0], [0.0]]
         )
@@ -762,6 +885,18 @@ class TestTrajectories(unittest.TestCase):
             rtol=0,
         )
 
+        assert_pickle(
+            self,
+            pq,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                quaternions=np.array(
+                    [q.wxyz() for q in traj.get_quaternion_samples()]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_piecewise_pose(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
@@ -815,19 +950,69 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
         self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)
 
+        # We do not have to test the inner breaks match, because this is a
+        # required invariant of the Class.
+        assert_pickle(
+            self,
+            ppose,
+            lambda traj: dict(
+                breaks=traj.get_segment_times(),
+                position_polynomials=np.array(
+                    [
+                        traj.get_position_trajectory().getPolynomialMatrix(
+                            segment_index
+                        )
+                        for segment_index in range(
+                            traj.get_number_of_segments()
+                        )
+                    ]
+                ),
+                quaternions=np.array(
+                    [
+                        q.wxyz()
+                        for q in traj.get_orientation_trajectory().get_quaternion_samples()  # noqa: E501
+                    ]
+                ),
+            ),
+            T=T,
+        )
+
     @numpy_compare.check_all_types
     def test_stacked_trajectory(self, T):
         breaks = [0, 1, 2]
         samples = [[[0]], [[1]], [[2]]]
         zoh = PiecewisePolynomial_[T].ZeroOrderHold(breaks, samples)
         dut = StackedTrajectory_[T](rowwise=True)
+        self.assertTrue(dut.rowwise())
         dut.Append(zoh)
         dut.Append(zoh)
         self.assertEqual(dut.rows(), 2)
         self.assertEqual(dut.cols(), 1)
+        children = dut.children()
+        self.assertEqual(len(children), 2)
+        self.assertEqual(
+            children[0].getPolynomialMatrix(0), zoh.getPolynomialMatrix(0)
+        )
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+        def get_data_as_dict(traj):
+            data = dict()
+            data["rowwise"] = traj.rowwise()
+            for i, child in enumerate(traj.children()):
+                data[f"child{i}_breaks"] = child.get_segment_times()
+                data[f"child{i}_polynomials"] = np.array(
+                    [
+                        child.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            child.get_number_of_segments()
+                        )
+                    ]
+                )
+            return data
+
+        assert_pickle(self, dut, get_data_as_dict, T=T)
 
     @numpy_compare.check_all_types
     def test_wrapped_trajectory(self, T):

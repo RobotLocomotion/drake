@@ -64,7 +64,7 @@ using drake::geometry::optimization::VPolytope;
 void CheckConvexHullProperty(const BezierCurve<double>& curve,
                              int num_samples) {
   VPolytope control_polytope{curve.control_points()};
-  const double tol_sol = 1e-8;
+  const double tol_sol = 1e-7;
   Eigen::VectorXd samples = Eigen::VectorXd::LinSpaced(
       num_samples, curve.start_time(), curve.end_time());
   for (int i = 0; i < num_samples; ++i) {

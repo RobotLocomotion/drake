@@ -9,6 +9,9 @@ If you need to use these, you can use an old release of Drake.
 
 # Ubuntu packages
 
+* Ubuntu 22.04 (Jammy)
+  * The last version with support for Ubuntu 22.04 was
+    [v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1).
 * Ubuntu 20.04 (Focal)
   * The last version with support for Ubuntu 20.04 was
     [v1.26.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.26.0).
@@ -18,6 +21,10 @@ If you need to use these, you can use an old release of Drake.
 * Ubuntu 16.04 (Xenial)
   * The last version with support for Ubuntu 16.04 was
     [v0.11.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0).
+
+The drake APT site `https://drake-apt.csail.mit.edu` supports up to Ubuntu 24.04
+but not any newer versions. Note that ``*.deb`` packages remain supported and
+are available as release attachments.
 
 # macOS packages
 
@@ -62,13 +69,15 @@ If you need to use these, you can use an old release of Drake.
   * On macOS x86_64, the last version with support for Python 3.12 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.11 (Wheel)
-  * On Linux, Drake still supports Python 3.11 wheels.
+  * On Linux, the last version with support for Python 3.11 wheels was
+    [v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1).
   * On macOS arm64, the last version with support for Python 3.11 wheels was
     [v1.40.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.40.0).
   * On macOS x86_64, the last version with support for Python 3.11 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.10 (Wheel)
-  * On Linux, Drake still supports Python 3.10 wheels.
+  * On Linux, the last version with support for Python 3.10 wheels was
+    [v1.51.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.51.1).
   * On macOS, the last version with support for Python 3.10 wheels was
     [v1.12.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.12.0).
 * Python 3.9 (Wheel)

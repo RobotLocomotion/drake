@@ -54,7 +54,7 @@ void LimitConstraintsPool<T>::Set(int index, int clique, int dof, const T& q0,
                                   const T& ql, const T& qu) {
   DRAKE_ASSERT(0 <= index && index < num_constraints());
   DRAKE_ASSERT(0 <= dof && dof < model().clique_size(clique));
-  DRAKE_ASSERT(ql <= q0 && q0 <= qu);
+  DRAKE_ASSERT(ql <= qu);
 
   clique_[index] = clique;
   ql_[index](dof) = ql;

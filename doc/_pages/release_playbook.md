@@ -67,7 +67,6 @@ the main body of the document:
 * File geometry/optimization changes under the "Mathematical Program" heading,
   not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
-* Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
 * PRs may appear in multiple sections, depending on the tags they have. For
   example, a PR that includes a fix and new deprecation will appear in both the
   fix and newly-deprecated sections. Generally, PRs will be included once in
@@ -87,8 +86,8 @@ the main body of the document:
     discouraged
 
 * Use exactly the same wording for the boilerplate items:
-  * Every dependency upgrade line should be "Upgrade libfoobar to latest
-    release 1.2.3" or "Upgrade funrepo to latest commit".
+  * Every dependency upgrade line should be "Upgrade dependency libfoobar to
+    1.2.3" or "Upgrade dependency funrepo to latest commit".
   * Dependencies should be referred to by their ``workspace`` name.
   * Only one dependency change per line. Even if both meshcat and meshcat-python
     were upgraded in the same pull request, they each should get their own
@@ -103,32 +102,19 @@ the main body of the document:
 
 ## Cutting the release
 
-1. Find a plausible nightly build to use:
-   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
-   2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
+1. Find the git sha of the most recent nightly build:
+   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
-      ignore).
-   3. Open the latest builds from the following builds:
-      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
-      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sequoia-clang-cmake-nightly-packaging/>
-   4. Check the logs for those packaging builds and find the URLs they posted
-      to (open the latest build, go to "View as plain text", and search for
-      ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
-      with today's date (they kick off after midnight).  All of the builds
-      should have the same date. If not, wait until the following night.
-   5. Use the
-      ``tools/release_engineering/download_release_candidate`` tool with the
-      ``--find-git-sha`` option to download and verify that all the nightlies
-      are built from the same commit.  (Its usage instructions are atop its
-      source code:
-      [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
+      ignore); if something is running, wait until it finishes.
+   2. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean.
+      If not, then wait until tomorrow to try again.
+   3. Open <https://github.com/RobotLocomotion/drake/commits/nightly-release/>;
+      the top (newest) commit will be the git sha for this release.
 2. Launch the staging builds for that git commit sha:
    1. Open the following Jenkins jobs (e.g., each in its own
       new window, so you can copy-and-paste sha1 and version easily):
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
-      - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
    2. In the upper right, click "sign in" (unless you're already signed in). This
@@ -157,7 +143,7 @@ the main body of the document:
 6. Merge the release notes PR.
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-noble-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
-      * If you don't have "Build now" click "Log in" first in upper right.
+      * If you don't have "Build now" click "Sign in" first in upper right.
 7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
    a new release".  Note that this page has neither history nor undo.  Be
    slow and careful!
@@ -171,13 +157,14 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **36** release files from
+      them." and then choose for upload the **27** release files from
       ``/tmp/drake-release/v1.N.0/...``:
-      - 9: 3 `.tar.gz` + 6 checksums
-      - 6: 2 `.deb` + 4 checksums
-      - 15: 5 linux `.whl` + 10 checksums
+      - 6: 2 binary `.tar.gz` + 4 checksums
+      - 3: 1 source `.tar.gz` + 2 checksums
+      - 3: 1 `.deb` + 2 checksums
+      - 9: 3 linux `.whl` + 6 checksums
       - 6: 2 macOS arm `.whl` + 4 checksums
-      * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
+      * Note that with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
         the box.
@@ -205,9 +192,6 @@ instructions to obtain a username and password.
 Most likely, you will want to use an api token to authenticate yourself to the
 ``twine`` uploader. See <https://pypi.org/help/#apitoken> and <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account>
 for advice on managing api tokens.
-
-For Jammy, ``apt install twine`` is too old. Instead, you must run it from a
-venv (detail below).
 
 1. Run ``twine`` to upload the wheel release, as follows:
 
@@ -255,31 +239,12 @@ the email address associated with your github account.
       ```
       %%bash
       set -euo pipefail
-      # We need to upgrade libc and libstdc++ to Drake's minimum versions, because the
-      # base of Deepnote's Docker image is ANCIENT (Debian 11 Bullseye from 2021 OMG).
-      # This should be exciting ...
-      cat > /etc/apt/sources.list.d/bookworm.sources <<'EOF'
-      Types: deb
-      URIs: http://deb.debian.org/debian/
-      Suites: bookworm
-      Components: main
-      Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-      EOF
-      cat > /etc/apt/preferences.d/bookworm.pref <<'EOF'
-      Package: *
-      Pin: release n=bookworm
-      Pin-Priority: 1
-      EOF
       apt-get -q update
-      apt-get autoremove -y
-      apt-get -q install -t bookworm -y --no-install-recommends libc6 libc6-dev libstdc++6 libstdc++-10-dev
 
       # Rendering needs EGL.
-      # The bullseye version is satisfactory.
       apt-get install -y --no-install-recommends libegl1 libgl1-mesa-dri
 
       # We'll also need nginx installed (for websocket proxying).
-      # The bullseye version is satisfactory.
       apt-get -q install -y --no-install-recommends nginx-light
       rm -f /etc/nginx/sites-enabled/default
       cat > /etc/nginx/sites-available/deepnote-meshcat-proxy <<'EOF'
@@ -314,8 +279,7 @@ the email address associated with your github account.
       ```
    2. If the current content differs from the above content, ask for help on
       slack in the ``#releases`` channel.
-5. Copy the updated tutorials from the pinned Dockerfile release
-   (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
+5. Copy the updated tutorials from the wheel release into the Deepnote project
    storage (``~/work/...``):
    1. Open [zzz_for_maintainers.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/zzz_for_maintainers-fd55235184ab44289133abc40e94a5e0).
    2. Run each cell one by one, checking for errors as you go.

@@ -138,7 +138,7 @@ std::string FileStorage::GetCasUrl(const MemoryFile& asset) {
   // ever change the URL semantics in the future (e.g., if we find a bug where
   // we were serving incomplete files) we will need to change the URL version
   // salt so that clients will re-fetch the files.
-  return fmt::format("cas-v1-{}", asset.sha256().to_string());
+  return fmt::format("cas-v1/{}", asset.sha256().to_string());
 }
 
 }  // namespace internal

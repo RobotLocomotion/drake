@@ -15,11 +15,14 @@ generate_file(
 
 py_binary(
     name = "xacro_bin",
-    main = "ros_xacro_main.py",
-    srcs = ["ros_xacro_main.py"] + glob([
-        "xacro/**/*.py",
-    ], allow_empty = False),
+    srcs = ["ros_xacro_main.py"] + glob(
+        [
+            "xacro/**/*.py",
+        ],
+        allow_empty = False,
+    ),
     imports = ["."],
+    main = "ros_xacro_main.py",
     python_version = "PY3",
     srcs_version = "PY3",
 )

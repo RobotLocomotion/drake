@@ -816,7 +816,8 @@ void ComputeBoxSphereIntersectionAndHalfSpace(
 
 }  // namespace
 
-std::string to_string(MixedIntegerRotationConstraintGenerator::Approach type) {
+std::string to_string(
+    const MixedIntegerRotationConstraintGenerator::Approach& type) {
   switch (type) {
     case MixedIntegerRotationConstraintGenerator::Approach::
         kBoxSphereIntersection: {
@@ -838,8 +839,7 @@ std::string to_string(MixedIntegerRotationConstraintGenerator::Approach type) {
 std::ostream& operator<<(
     std::ostream& os,
     const MixedIntegerRotationConstraintGenerator::Approach& type) {
-  os << to_string(type);
-  return os;
+  return os << fmt::to_string(type);
 }
 
 MixedIntegerRotationConstraintGenerator::

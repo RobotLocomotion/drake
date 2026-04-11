@@ -61,8 +61,8 @@ DEFINE_bool(is_inclined_plane_half_space, true,
 DEFINE_string(
     bodyB_type, "sphere",
     "Valid body types are 'sphere', 'block', or 'block_with_4Spheres'");
-DEFINE_string(contact_approximation, "tamsi",
-              "Discrete contact approximation. Options are: 'tamsi', "
+DEFINE_string(contact_approximation, "lagged",
+              "Discrete contact approximation. Options are: "
               "'sap', 'similar', 'lagged'");
 
 using drake::multibody::MultibodyPlant;
@@ -178,7 +178,6 @@ int do_main() {
   // step integrator. This value is not used if time_step > 0 (fixed-time step).
   integrator.set_target_accuracy(FLAGS_integration_accuracy);
 
-  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);

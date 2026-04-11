@@ -259,6 +259,8 @@ class LeafSystem : public System<T> {
 
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `publish` must not be null.
+  @throws std::exception if either `period_sec` or `offset_sec` are non-finite.
+  @throws std::exception if `period_sec` <= 0.0.
 
   @see DeclarePeriodicDiscreteUpdateEvent()
   @see DeclarePeriodicUnrestrictedUpdateEvent()
@@ -324,6 +326,8 @@ class LeafSystem : public System<T> {
 
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `update` must not be null.
+  @throws std::exception if either `period_sec` or `offset_sec` are non-finite.
+  @throws std::exception if `period_sec` <= 0.0.
 
   @see DeclarePeriodicPublishEvent()
   @see DeclarePeriodicUnrestrictedUpdateEvent()
@@ -390,6 +394,8 @@ class LeafSystem : public System<T> {
 
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `update` must not be null.
+  @throws std::exception if either `period_sec` or `offset_sec` are non-finite.
+  @throws std::exception if `period_sec` <= 0.0.
 
   @see DeclarePeriodicPublishEvent()
   @see DeclarePeriodicDiscreteUpdateEvent()
@@ -463,10 +469,17 @@ class LeafSystem : public System<T> {
   internally so you do not need to keep the object around after this call.
 
   @pre `event`'s associated trigger type must be TriggerType::kUnknown or
-  already set to TriggerType::kPeriodic. */
+  already set to TriggerType::kPeriodic.
+  @throws std::exception if either `period_sec` or `offset_sec` are non-finite.
+  @throws std::exception if `period_sec` <= 0.0. */
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
                             const EventType& event) {
+    DRAKE_THROW_UNLESS(std::isfinite(period_sec));
+    DRAKE_THROW_UNLESS(std::isfinite(offset_sec));
+    if (period_sec <= 0.0) {
+      ThrowNonPositiveEventPeriod(period_sec, typeid(event));
+    }
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
                  event.get_trigger_type() == TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
@@ -527,6 +540,8 @@ class LeafSystem : public System<T> {
   where `MySystem` is a class derived from `LeafSystem<T>` and the method
   name is arbitrary.
 
+  <!-- Delete this warning when publish_every_time_step is deleted on
+  2026-06-01. -->
   @warning These per-step publish events are independent of the Simulator's
   optional "publish every time step" and "publish at initialization"
   features. Generally if you are declaring per-step publish events yourself
@@ -678,7 +693,8 @@ class LeafSystem : public System<T> {
   _update_ events occur during initialization. On the other hand, any
   _publish_ events, including initialization-triggered, per-step,
   and time-triggered publish events that trigger at the initial time, are
-  dispatched together during initialization.
+  dispatched together during initialization. Initialization-triggered publish
+  events will precede per-step and time-triggered publish events.
 
   Template arguments to these methods are inferred from the argument lists
   and need not be specified explicitly. */
@@ -846,6 +862,8 @@ class LeafSystem : public System<T> {
   @note It's rare that an event needs to be triggered by force. Please
   consider per-step and periodic triggered events first.
 
+  <!-- Delete this warning when publish_every_time_step is deleted on
+  2026-06-01. -->
   @warning Simulator handles forced publish events at initialization
   and on a per-step basis when its "publish at initialization" and
   "publish every time step" options are set (not recommended).
@@ -1861,6 +1879,9 @@ class LeafSystem : public System<T> {
       const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
           get_vector_from_context);
+
+  [[noreturn]] void ThrowNonPositiveEventPeriod(
+      double period_sec, const std::type_info& event_type) const;
 
   // Periodic Update or Publish events declared by this system.
   LeafCompositeEventCollection<T> periodic_events_;

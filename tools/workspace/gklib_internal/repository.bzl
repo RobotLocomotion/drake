@@ -6,8 +6,8 @@ def gklib_internal_repository(
     github_archive(
         name = name,
         repository = "KarypisLab/GKlib",
-        commit = "6e7951358fd896e2abed7887196b6871aac9f2f8",
-        sha256 = "42c52e58408ad06dc23c2a052eea529b269287ea8a6f3f6cdc47f18d50b2a177",  # noqa
+        commit = "e2856c2f595b153ca1ce9258c5301dbabc4f39f5",
+        sha256 = "ece01338c55412f085910968832289fb08e6761f6ce7b94755477077ce449155",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

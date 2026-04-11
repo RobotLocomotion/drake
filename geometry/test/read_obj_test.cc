@@ -280,10 +280,10 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
         ReadObj(source, scale, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
     EXPECT_EQ(verts, nullptr);
-    EXPECT_THAT(TakeError(), testing::HasSubstr("zero value for vertex"));
+    EXPECT_THAT(TakeError(), testing::HasSubstr("bad indices"));
     DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, scale, /* triangulate= */ false,
                                         /* vertices_only= */ true),
-                                "[^]*zero value for vertex[^]*");
+                                "[^]*bad indices[^]*");
   }
 
   // tinyobj warnings broadcast as diagnostic warnings. Without providing a

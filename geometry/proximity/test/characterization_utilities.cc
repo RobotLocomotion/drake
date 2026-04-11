@@ -21,37 +21,28 @@ using Eigen::Vector3d;
 using math::RigidTransform;
 using std::vector;
 
-std::ostream& operator<<(std::ostream& out, GeometryType s) {
+std::string_view to_string(GeometryType s) {
   switch (s) {
     case kBox:
-      out << "Box";
-      break;
+      return "Box";
     case kCapsule:
-      out << "Capsule";
-      break;
+      return "Capsule";
     case kConvex:
-      out << "Convex";
-      break;
+      return "Convex";
     case kCylinder:
-      out << "Cylinder";
-      break;
+      return "Cylinder";
     case kEllipsoid:
-      out << "Ellipsoid";
-      break;
+      return "Ellipsoid";
     case kHalfSpace:
-      out << "HalfSpace";
-      break;
+      return "HalfSpace";
     case kMesh:
-      out << "Mesh";
-      break;
+      return "Mesh";
     case kPoint:
-      out << "Point";
-      break;
+      return "Point";
     case kSphere:
-      out << "Sphere";
-      break;
+      return "Sphere";
   }
-  return out;
+  DRAKE_UNREACHABLE();
 }
 
 QueryInstance::QueryInstance(GeometryType shape1_in, GeometryType shape2_in,
@@ -583,15 +574,20 @@ void CharacterizeResultTest<T>::RunCharacterization(
      bound but gives a modicum of breathing room. */
     constexpr double cutoff = 4 * std::numeric_limits<double>::epsilon();
     if (query.error > cutoff) {
-      EXPECT_GT(*worst_error, query.error / 4)
-          << "Expected error is too big!"
+      // We don't want the documented query error to be overly loose. If the
+      // observed error is more than an order of magnitude smaller than the
+      // documented error, that's a sign that the documented error could be
+      // tightened. We need it to be this loose to account for cross-platform
+      // floating point variations.
+      EXPECT_GT(*worst_error, query.error / 12)
+          << "Expected error is too small!"
           << "\n  " << worst_config->description
           << "\n    Expected error: " << query.error
           << "\n    Observed error: " << (*worst_error)
           << "\n    For distance: " << worst_config->signed_distance;
     }
     EXPECT_LE(*worst_error, query.error)
-        << "Expected error is too small!"
+        << "Expected error is too big!"
         << "\n  " << worst_config->description
         << "\n    Expected error: " << query.error
         << "\n    Observed error: " << (*worst_error)

@@ -51,6 +51,10 @@ def process_comment(comment):
     # TODO (betsymcphail): Not tested
     s = remove_html_comments(s)
 
+    # MyPy parsing has a particular dislike of double colons.
+    # Replace all of them with a different unicode character.
+    s = s.replace("::", "∷")
+
     # Markdown to reStructuredText (but don't process literal blocks).
     in_code_segment = False
     rst_fragments = []
@@ -200,29 +204,29 @@ def replace_html_tags(s):
 
 
 def replace_exceptions(s):
-    s = s.replace("std::bad_alloc", "MemoryError")
-    s = s.replace("std::bad_any_cast", "RuntimeError")
-    s = s.replace("std::bad_array_new_length", "MemoryError")
-    s = s.replace("std::bad_cast", "RuntimeError")
-    s = s.replace("std::bad_exception", "RuntimeError")
-    s = s.replace("std::bad_function_call", "RuntimeError")
-    s = s.replace("std::bad_optional_access", "RuntimeError")
-    s = s.replace("std::bad_typeid", "RuntimeError")
-    s = s.replace("std::bad_variant_access", "RuntimeError")
-    s = s.replace("std::bad_weak_ptr", "RuntimeError")
-    s = s.replace("std::domain_error", "ValueError")
-    s = s.replace("std::exception", "RuntimeError")
-    s = s.replace("std::future_error", "RuntimeError")
-    s = s.replace("std::invalid_argument", "ValueError")
-    s = s.replace("std::length_error", "ValueError")
-    s = s.replace("std::logic_error", "RuntimeError")
-    s = s.replace("std::out_of_range", "ValueError")
-    s = s.replace("std::overflow_error", "RuntimeError")
-    s = s.replace("std::range_error", "ValueError")
-    s = s.replace("std::regex_error", "RuntimeError")
-    s = s.replace("std::runtime_error", "RuntimeError")
-    s = s.replace("std::system_error", "RuntimeError")
-    s = s.replace("std::underflow_error", "RuntimeError")
+    s = s.replace("std∷bad_alloc", "MemoryError")
+    s = s.replace("std∷bad_any_cast", "RuntimeError")
+    s = s.replace("std∷bad_array_new_length", "MemoryError")
+    s = s.replace("std∷bad_cast", "RuntimeError")
+    s = s.replace("std∷bad_exception", "RuntimeError")
+    s = s.replace("std∷bad_function_call", "RuntimeError")
+    s = s.replace("std∷bad_optional_access", "RuntimeError")
+    s = s.replace("std∷bad_typeid", "RuntimeError")
+    s = s.replace("std∷bad_variant_access", "RuntimeError")
+    s = s.replace("std∷bad_weak_ptr", "RuntimeError")
+    s = s.replace("std∷domain_error", "ValueError")
+    s = s.replace("std∷exception", "RuntimeError")
+    s = s.replace("std∷future_error", "RuntimeError")
+    s = s.replace("std∷invalid_argument", "ValueError")
+    s = s.replace("std∷length_error", "ValueError")
+    s = s.replace("std∷logic_error", "RuntimeError")
+    s = s.replace("std∷out_of_range", "ValueError")
+    s = s.replace("std∷overflow_error", "RuntimeError")
+    s = s.replace("std∷range_error", "ValueError")
+    s = s.replace("std∷regex_error", "RuntimeError")
+    s = s.replace("std∷runtime_error", "RuntimeError")
+    s = s.replace("std∷system_error", "RuntimeError")
+    s = s.replace("std∷underflow_error", "RuntimeError")
     return s
 
 

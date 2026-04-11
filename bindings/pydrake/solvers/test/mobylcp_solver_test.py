@@ -30,8 +30,3 @@ class TestMobyLcpSolver(unittest.TestCase):
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         np.testing.assert_allclose(result.GetSolution(x), x_expected)
-
-    def test_mobylcp_solver_deprecated(self):
-        from pydrake.solvers import MobyLCPSolver
-
-        MobyLCPSolver()

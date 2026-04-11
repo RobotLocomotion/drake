@@ -3,11 +3,8 @@
 // This is the magic juju that compiles our impl functions for multiple CPUs.
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "geometry/proximity/boxes_overlap.cc"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include "hwy/foreach_target.h"
 #include "hwy/highway.h"
-#pragma GCC diagnostic pop
 
 #include "drake/common/hwy_dynamic_impl.h"
 

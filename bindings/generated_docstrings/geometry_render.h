@@ -305,7 +305,7 @@ Precondition:
 R"""(Specifies the frame to which the camera is fixed, ``"world"`` or
 ``"camera"``.
 
-Remember, as documented by systems::sensors::CameraInfo "CameraInfo",
+Remember, as documented by systems∷sensors∷CameraInfo "CameraInfo",
 the camera frame has +Cz pointing *into* the image, +Cx pointing to
 the right, and +Cy pointing to the bottom of the image.)""";
           } frame;
@@ -415,7 +415,7 @@ frustum.)""";
             // Source: drake/geometry/render/render_camera.h
             const char* doc =
 R"""(The camera's intrinsic properties (e.g., focal length, sensor size,
-etc.) See systems::sensors::CameraInfo for details.)""";
+etc.) See systems∷sensors∷CameraInfo for details.)""";
           } intrinsics;
           // Symbol: drake::geometry::render::RenderCameraCore::renderer_name
           struct /* renderer_name */ {
@@ -428,7 +428,7 @@ R"""(The name of the render engine this camera should be used with.)""";
             // Source: drake/geometry/render/render_camera.h
             const char* doc =
 R"""(The pose of the sensor frame (S) in the camera's body frame (B). This
-is the "imager" referred to in systems::sensors::CameraInfo's
+is the "imager" referred to in systems∷sensors∷CameraInfo's
 documentation.)""";
           } sensor_pose_in_camera_body;
         } RenderCameraCore;
@@ -467,19 +467,18 @@ should contain no more than one RenderLabel instance, and that should
 be the ``(label, id)`` property. RenderEngine provides the notion of a
 *default render label* that will be applied where no ``(label, id)``
 RenderLabel property is found. This default value can be one of two
-values: RenderLabel::kDontCare or RenderLabel::kUnspecified. The
-choice of default RenderLabel can be made at construction and it
-affects registration behavior when the ``(label, id)`` property is
-absent:
+values: RenderLabel∷kDontCare or RenderLabel∷kUnspecified. The choice
+of default RenderLabel can be made at construction and it affects
+registration behavior when the ``(label, id)`` property is absent:
 
-- RenderLabel::kUnspecified: throws an exception.
-- RenderLabel::kDontCare: the geometry will be included in label images as
+- RenderLabel∷kUnspecified: throws an exception.
+- RenderLabel∷kDontCare: the geometry will be included in label images as
 the generic, non-distinguishing label.
 
-Choosing RenderLabel::kUnspecified is best in a system that wants
+Choosing RenderLabel∷kUnspecified is best in a system that wants
 explicit feedback and strict enforcement on a policy of strict label
 enforcement -- everything should receive a meaningful label. The
-choice of RenderLabel::kDontCare is best for a less strict system in
+choice of RenderLabel∷kDontCare is best for a less strict system in
 which only some subset of geometry need be explicitly specified.
 
 Derived classes configure their *de facto* default RenderLabel value,
@@ -498,8 +497,8 @@ the configured default value and the documented reserved_render_label
 R"""(Clones the render engine.
 
 Template parameter ``Result``:
-    must be either ``std::unique_ptr<RenderEngine>`` or
-    ``std::shared_ptr<RenderEngine>``. In C++, it defaults to
+    must be either ``std∷unique_ptr<RenderEngine>`` or
+    ``std∷shared_ptr<RenderEngine>``. In C++, it defaults to
     unique_ptr; in Python, it's hard-coded to shared_ptr.
 
 Raises:
@@ -548,6 +547,25 @@ Warning:
     or be removed at any time, without any deprecation notice ahead of
     time.)""";
           } DoRegisterDeformableVisual;
+          // Symbol: drake::geometry::render::RenderEngine::DoRegisterNamedVisual
+          struct /* DoRegisterNamedVisual */ {
+            // Source: drake/geometry/render/render_engine.h
+            const char* doc =
+R"""(A variant of the DoRegisterVisual(). This includes an optional name
+for the geometry. If a derived class cannot meaningfully make use of
+the name, it need not implement this method. The default
+implementation is to invoke the previous overload by stripping out the
+name.
+
+This* is the method that RegisterVisual() will always call. If a
+derived engine can make use of a name, it has two options:
+
+- Implement all registration acts in this overload (and use a no-op
+implementation for the previous overload), or
+- implement DoRegisterVisual() to do the work, delegate to that method for
+the work, and then handle the name in this method as a result of a
+successful registration.)""";
+          } DoRegisterNamedVisual;
           // Symbol: drake::geometry::render::RenderEngine::DoRegisterVisual
           struct /* DoRegisterVisual */ {
             // Source: drake/geometry/render/render_engine.h
@@ -736,15 +754,22 @@ Parameter ``X_WG``:
 Parameter ``needs_updates``:
     If true, the geometry's pose will be updated via UpdatePoses().
 
+Parameter ``name``:
+    An optional name that can be associated with the visual. Derived
+    classes are not obliged to make use of the name (and may even
+    simply ignore it). Typically, this would be the name of the
+    geometry in the model. It is *not* load bearing and need not be
+    unique.
+
 Returns:
     True if the RenderEngine implementation accepted the shape for
     registration.
 
 Raises:
     RuntimeError if the shape is an unsupported type, the shape's
-    RenderLabel value is RenderLabel::kUnspecified or
-    RenderLabel::kEmpty, or a geometry has already been registered
-    with the given ``id``.)""";
+    RenderLabel value is RenderLabel∷kUnspecified or
+    RenderLabel∷kEmpty, or a geometry has already been registered with
+    the given ``id``.)""";
           } RegisterVisual;
           // Symbol: drake::geometry::render::RenderEngine::RemoveGeometry
           struct /* RemoveGeometry */ {
@@ -804,7 +829,7 @@ Raises:
 R"""(Constructs a RenderEngine with the given default render label. The
 default render label is applied to geometries that have not otherwise
 specified a (label, id) property. The value *must* be either
-RenderLabel::kUnspecified or RenderLabel::kDontCare. (See
+RenderLabel∷kUnspecified or RenderLabel∷kDontCare. (See
 render_engine_default_label "this section" for more details.)
 
 Raises:
@@ -935,7 +960,7 @@ with ``this`` engine.)""";
           const char* doc =
 R"""(Class representing object "labels" for rendering.
 
-In a "label image" (see RenderEngine::RenderLabelImage() for details)
+In a "label image" (see RenderEngine∷RenderLabelImage() for details)
 each pixel value indicates the classification of the object that
 rendered into that pixel. The RenderLabel class provides that value
 and one label is associated with each rendered geometry.
@@ -952,19 +977,19 @@ meaning in the context of the rendering ecosystem and are globally
 available to all applications. They are:
 
 - ``empty``: a pixel with the ``empty`` RenderLabel value indicates that *no*
-geometry rendered to that pixel. Implemented as RenderLabel::kEmpty.
+geometry rendered to that pixel. Implemented as RenderLabel∷kEmpty.
 - ``do not render``: any geometry assigned the ``do not render`` tag will *not* be
 rendered into a label image. This is a clear declaration that a geometry
 should be omitted. Useful for marking, e.g., glass windows so that the
 visible geometry behind the glass is what is included in the label image.
-Implemented as RenderLabel::kDoNotRender.
+Implemented as RenderLabel∷kDoNotRender.
 - ``don't care``: the ``don't care`` label is intended as a convenient dumping
 ground. This would be for geometry that *should* render into the label image,
 but whose class is irrelevant (e.g., the walls of a room a robot is working
 in or the background terrain in driving simulation). Implemented as
-RenderLabel::kDontCare.
+RenderLabel∷kDontCare.
 - ``unspecified``: a default-constructed RenderLabel has an ``unspecified`` value.
-Implemented as RenderLabel::kUnspecified.
+Implemented as RenderLabel∷kUnspecified.
 
 Generally, there is no good reason to assign ``empty`` or
 ``unspecified`` labels to a geometry. A RenderEngine implementation is
@@ -1030,7 +1055,7 @@ have different values.)""";
             const char* doc =
 R"""(Allows the labels to be compared to imply a total ordering --
 facilitates use in data structures which require ordering (e.g.,
-std::set). The ordering has no particular meaning for applications.)""";
+std∷set). The ordering has no particular meaning for applications.)""";
           } operator_lt;
           // Symbol: drake::geometry::render::RenderLabel::to_string
           struct /* to_string */ {
@@ -1069,13 +1094,6 @@ Raises:
           const char* doc_1args_t = R"""(Returns the LightType as a string.)""";
           // Source: drake/geometry/render/light_parameter.h
           const char* doc_1args_f = R"""(Returns the LightFrame as a string.)""";
-          // Source: drake/geometry/render/render_label.h
-          const char* doc_deprecated_deprecated_1args_label =
-R"""((Deprecated.)
-
-Deprecated:
-    Use label.to_string(), instead This will be removed from Drake on
-    or after 2026-03-01.)""";
         } to_string;
       } render;
     } geometry;

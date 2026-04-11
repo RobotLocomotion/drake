@@ -20,17 +20,18 @@ _HDRS = glob(
         "Clp/src/*.h",
         "Clp/src/*.hpp",
     ],
+    allow_empty = False,
     exclude = [
         "**/config*",
         "**/*Config.h",
     ],
-    allow_empty = False,
 )
 
 _SRCS = glob(
     [
         "Clp/src/*.cpp",
     ],
+    allow_empty = False,
     exclude = [
         # We only want libClp, not libClpSolver nor the main program.
         "**/MyEventHandler*",
@@ -51,7 +52,6 @@ _SRCS = glob(
         # We treat COIN_HAS_WSMP as OFF.
         "**/ClpCholeskyWssmp*",
     ],
-    allow_empty = False,
 )
 
 _AUTOCONF_DEFINES = [
@@ -138,17 +138,17 @@ coin_cc_library(
     autoconf_defines = _AUTOCONF_DEFINES,
     autoconf_undefines = _AUTOCONF_UNDEFINES,
     config_private_defines = _CONFIG_PRIVATE_DEFINES,
+    srcs = _SRCS,
     hdrs_public = _HDRS,
     includes_public = _INCLUDES,
     hdrs_private = _HDRS,
     includes_private = _INCLUDES,
-    srcs = _SRCS,
     vendor_tool_args = ["--no-inline-namespace"],
     output_vendoring_patch = "drake_clp.patch",
+    visibility = ["//visibility:public"],
     deps = [
         "@coinutils_internal//:coinutils",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(
@@ -159,10 +159,10 @@ install(
         ":drake_clp.patch",
         "@drake//tools/workspace/clp_internal:patches",
     ],
+    doc_strip_prefix = ["patches"],
     allowed_externals = [
         "@drake//tools/workspace/clp_internal:patches",
     ],
-    doc_strip_prefix = ["patches"],
     visibility = ["//visibility:public"],
 )
 

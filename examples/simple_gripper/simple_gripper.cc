@@ -105,16 +105,13 @@ DEFINE_double(frequency, 2.0,
               "carried out by the gripper. [Hz].");
 
 DEFINE_string(contact_approximation, "sap",
-              "Discrete contact approximation. Options are: 'tamsi', 'sap', "
+              "Discrete contact approximation. Options are: 'sap', "
               "'similar', 'lagged'");
 
-DEFINE_double(
-    coupler_gear_ratio, -1.0,
-    "When using SAP, the left finger's position qₗ is constrained to qₗ = "
-    "ρ⋅qᵣ, where qᵣ is the right finger's position and ρ is this "
-    "coupler_gear_ration parameter (dimensionless). If TAMSI used, "
-    "then the right finger is locked, only the left finger moves and this "
-    "parameter is ignored.");
+DEFINE_double(coupler_gear_ratio, -1.0,
+              "The left finger's position qₗ is constrained to qₗ = "
+              "ρ⋅qᵣ, where qᵣ is the right finger's position and ρ is this "
+              "coupler_gear_ration parameter (dimensionless).");
 
 // The pad was measured as a torus with the following major and minor radii.
 const double kPadMajorRadius = 14e-3;  // 14 mm.
@@ -124,7 +121,7 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // rigid body for a finger. The collision geometries, consisting of a set of
 // small spheres, approximates a torus attached to the finger.
 //
-// @param[in] plant the MultiBodyPlant in which to add the pads.
+// @param[in] plant the MultibodyPlant in which to add the pads.
 // @param[in] pad_offset the ring offset along the x-axis in the finger
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
@@ -230,12 +227,8 @@ int do_main() {
   const PrismaticJoint<double>& right_slider =
       plant.GetJointByName<PrismaticJoint>("right_slider");
 
-  // TAMSI does not support general constraints. If using TAMSI, we simplify the
-  // model to have the right finger locked.
-  if (FLAGS_contact_approximation != "tamsi") {
-    plant.AddCouplerConstraint(left_slider, right_slider,
-                               FLAGS_coupler_gear_ratio);
-  }
+  plant.AddCouplerConstraint(left_slider, right_slider,
+                             FLAGS_coupler_gear_ratio);
 
   // Now the model is complete.
   plant.Finalize();
@@ -288,13 +281,10 @@ int do_main() {
   const double f0 = mass * a0;           // Force amplitude, Newton.
   fmt::print("Acceleration amplitude = {:8.4f} m/s²\n", a0);
 
-  // The actuation force that must be applied in order to attain a given grip
-  // force depends on how the gripper is modeled.
-  // When we model the gripper as having the right finger locked and only the
-  // actuated left finger moves, it is clear that the actuation force directly
-  // balances the grip force (as done when usint the TAMSI solver).
+  // Consider the actuation force that must be applied in order to attain a
+  // given grip force.
   // When we model the gripper with two moving fingers coupled to move together
-  // with a constraint, the relationship is not as obvious. We can think of the
+  // with a constraint, the relationship is not obvious. We can think of the
   // constrained mechanism as a system of pulleys and therefore we'd need to
   // consider a free-body diagram to find the relationship between forces. A
   // much simpler approach however is to consider virtual displacements. When
@@ -310,9 +300,7 @@ int do_main() {
   // twice as much force as the grip force. This makes sense if we consider a
   // system of pulleys for this mechanism.
   const double grip_actuation_force =
-      FLAGS_contact_approximation == "tamsi"
-          ? FLAGS_grip_force
-          : (1.0 - FLAGS_coupler_gear_ratio) * FLAGS_grip_force;
+      (1.0 - FLAGS_coupler_gear_ratio) * FLAGS_grip_force;
 
   // Notice we are using the same Sine source to:
   //   1. Generate a harmonic forcing of the gripper with amplitude f0 and
@@ -361,14 +349,6 @@ int do_main() {
   // around this initial position.
   translate_joint.set_translation(&plant_context, 0.0);
   translate_joint.set_translation_rate(&plant_context, v0);
-
-  if (FLAGS_contact_approximation == "tamsi") {
-    drake::log()->warn(
-        "contact_approximation = 'tamsi'. Since TAMSI does not support coupler "
-        "constraints to model the coupling of the fingers, this simple example "
-        "locks the right finger and only the left finger is allowed to move.");
-    right_slider.Lock(&plant_context);
-  }
 
   // Set up simulator.
   auto simulator =

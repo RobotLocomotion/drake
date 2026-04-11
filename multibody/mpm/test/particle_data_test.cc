@@ -275,8 +275,9 @@ GTEST_TEST(ParticleDataDerivativeTest, FirstDerivative) {
       F_double, &particle_data_double.mutable_deformation_gradient_data(),
       &tau_volume_double);
   const Matrix3d tau_volume = tau_volume_double[0];
+  const Eigen::VectorXd energy_derivatives = energy.derivatives();
   const Matrix3d P =
-      Eigen::Map<const Matrix3d>(energy.derivatives().data(), 3, 3);
+      Eigen::Map<const Matrix3d>(energy_derivatives.data(), 3, 3);
   const Matrix3d tau_volume_expected =
       P * particle_data_double.F()[0].transpose();
   EXPECT_TRUE(CompareMatrices(tau_volume, tau_volume_expected, 1e-14,

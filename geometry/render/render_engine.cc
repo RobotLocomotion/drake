@@ -7,7 +7,6 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/scope_exit.h"
-#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -62,9 +61,10 @@ bool RenderEngine::RegisterVisual(GeometryId id,
                                   const drake::geometry::Shape& shape,
                                   const PerceptionProperties& properties,
                                   const RigidTransformd& X_WG,
-                                  bool needs_updates) {
+                                  bool needs_updates, std::string_view name) {
   // TODO(SeanCurtis-TRI): Test that the id hasn't already been used.
-  const bool accepted = DoRegisterVisual(id, shape, properties, X_WG);
+  const bool accepted =
+      DoRegisterNamedVisual(id, shape, properties, X_WG, name);
   if (accepted) {
     if (needs_updates) {
       update_ids_.insert(id);
@@ -73,6 +73,13 @@ bool RenderEngine::RegisterVisual(GeometryId id,
     }
   }
   return accepted;
+}
+
+bool RenderEngine::DoRegisterNamedVisual(GeometryId id, const Shape& shape,
+                                         const PerceptionProperties& properties,
+                                         const math::RigidTransformd& X_WG,
+                                         std::string_view /* name */) {
+  return DoRegisterVisual(id, shape, properties, X_WG);
 }
 
 bool RenderEngine::RegisterDeformableVisual(

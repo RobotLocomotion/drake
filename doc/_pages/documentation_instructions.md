@@ -16,7 +16,7 @@ The website infrastructure uses a combination of
 # Prerequisites
 
 Documentation generation and preview as described in this document are
-supported on Ubuntu 22.04 (Jammy) and 24.04 (Noble).
+supported on Ubuntu 24.04 (Noble).
 
 Before getting started, install Drake's prerequisites with the additional
 ``--with-doc-only`` command line option, i.e.:

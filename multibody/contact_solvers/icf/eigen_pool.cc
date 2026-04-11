@@ -32,6 +32,9 @@ template <typename EigenType>
 void EigenPoolFixedSizeStorage<EigenType>::SetZero() {
   constexpr int num_scalars_per_matrix = EigenType::SizeAtCompileTime;
   static_assert(sizeof(EigenType) == sizeof(Scalar) * num_scalars_per_matrix);
+  if (data_.empty()) {
+    return;
+  }
   Scalar* const first_scalar = data_.data()->data();
   const int num_scalars = ssize(data_) * num_scalars_per_matrix;
   Eigen::Map<VectorX<Scalar>>(first_scalar, num_scalars).setZero();

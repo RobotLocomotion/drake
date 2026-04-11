@@ -15,9 +15,6 @@ void DefineSolversMobyLCP(py::module m) {
       m, "MobyLcpSolver", doc.MobyLcpSolver.doc)
       .def(py::init<>(), doc.MobyLcpSolver.ctor.doc)
       .def_static("id", &MobyLcpSolver::id, doc.MobyLcpSolver.id.doc);
-
-  // Deprecated 2026-03-01.
-  m.attr("MobyLCPSolver") = m.attr("MobyLcpSolver");
 }
 }  // namespace internal
 }  // namespace pydrake

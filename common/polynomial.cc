@@ -76,13 +76,16 @@ Polynomial<T>::Polynomial(const T coefficient, const vector<Term>& terms) {
 template <typename T>
 Polynomial<T>::Polynomial(
     typename vector<typename Polynomial<T>::Monomial>::const_iterator start,
-    typename vector<typename Polynomial<T>::Monomial>::const_iterator finish) {
+    typename vector<typename Polynomial<T>::Monomial>::const_iterator finish,
+    bool canonicalize) {
   is_univariate_ = true;
   for (typename vector<typename Polynomial<T>::Monomial>::const_iterator iter =
            start;
        iter != finish; iter++)
     monomials_.push_back(*iter);
-  MakeMonomialsUnique();
+  if (canonicalize) {
+    MakeMonomialsUnique();
+  }
 }
 
 template <typename T>
@@ -687,6 +690,19 @@ void Polynomial<T>::MakeMonomialsUnique(void) {
   }
 }
 
+template <typename T>
+Polynomial<T>::VarType Polynomial<T>::VariableIdToVarType(
+    const symbolic::Variable::Id& id) {
+  // To convert an Id to a VarType, we want to extract the non-random portion of
+  // the Id. That is exactly the data it feeds into its hash_append function.
+  uint32_t hashed_data{};
+  auto hasher = [&hashed_data](const uint32_t* data, size_t /* size = 4 */) {
+    hashed_data = *data;
+  };
+  hash_append(hasher, id);
+  return static_cast<Polynomial<T>::VarType>(hashed_data);
+}
+
 namespace {
 
 using symbolic::Expression;
@@ -741,8 +757,8 @@ class FromExpressionVisitor {
   }
 
   static Polynomial<T> VisitVariable(const Expression& e) {
-    return Polynomial<T>{1.0, static_cast<Polynomial<double>::VarType>(
-                                  get_variable(e).get_id())};
+    return Polynomial<T>{
+        1.0, Polynomial<T>::VariableIdToVarType(get_variable(e).get_id())};
   }
 
   static Polynomial<T> VisitConstant(const Expression& e) {
@@ -848,6 +864,43 @@ class FromExpressionVisitor {
 template <typename T>
 Polynomial<T> Polynomial<T>::FromExpression(const Expression& e) {
   return FromExpressionVisitor<T>{}.Visit(e);
+}
+
+template <typename T>
+std::string Polynomial<T>::Monomial::to_string() const {
+  std::string result;
+  bool print_star = false;
+  if (coefficient != 1 || terms.empty()) {
+    result.append(fmt::format("({})", coefficient));
+    print_star = true;
+  }
+  for (const Term& term : terms) {
+    if (print_star) {
+      result.append("*");
+    } else {
+      print_star = true;
+    }
+    result.append(IdToVariableName(term.var));
+    if (term.power != 1) {
+      result.append(fmt::format("^{}", term.power));
+    }
+  }
+  return result;
+}
+
+template <typename T>
+std::string Polynomial<T>::to_string() const {
+  if (monomials_.empty()) {
+    return "0";
+  }
+  std::string result;
+  typename std::vector<Monomial>::const_iterator iter = monomials_.begin();
+  result.append((*iter).to_string());
+  for (++iter; iter != monomials_.end(); ++iter) {
+    result.append("+");
+    result.append((*iter).to_string());
+  }
+  return result;
 }
 
 // template class Polynomial<std::complex<double>>;

@@ -60,8 +60,8 @@ constraints.
 
 Parameter ``system``:
     A dynamical system to be used in the dynamic constraints. This
-    system must support System::ToAutoDiffXd. Note that this is
-    aliased for the lifetime of this object.
+    system must support System∷ToAutoDiffXd. Note that this is aliased
+    for the lifetime of this object.
 
 Parameter ``context``:
     Required to describe any parameters of the system. The values of
@@ -191,8 +191,8 @@ time step as an argument.
 
 Parameter ``system``:
     A dynamical system to be used in the dynamic constraints. This
-    system must support System::ToAutoDiffXd. Note that this is
-    aliased for the lifetime of this object.
+    system must support System∷ToAutoDiffXd. Note that this is aliased
+    for the lifetime of this object.
 
 Parameter ``context``:
     Required to describe any parameters of the system. The values of
@@ -223,8 +223,8 @@ the dynamics constraints use explicit forward Euler integration.
 
 Parameter ``system``:
     A dynamical system to be used in the dynamic constraints. This
-    system must support System::ToAutoDiffXd. Note that this is
-    aliased for the lifetime of this object.
+    system must support System∷ToAutoDiffXd. Note that this is aliased
+    for the lifetime of this object.
 
 Parameter ``context``:
     Required to describe any parameters of the system. The values of
@@ -313,11 +313,11 @@ specify the joint indices that don't have limits, and ensure all sets
 satisfy the "convexity radius" property -- their width along a
 dimension corresponding to a continuous revolute joint must be less
 than π. This can be enforced when constructing the convex sets, or
-after the fact with ``geometry::optimization::PartitionConvexSet``.
-The ``GcsTrajectoryOptimization`` methods ``AddRegions`` and
-``AddEdges`` will handle all of the intersection checks behind the
-scenes, including applying the appropriate logic to connect sets that
-"wrap around" 2π.)""";
+after the fact with ``geometry∷optimization∷PartitionConvexSet``. The
+``GcsTrajectoryOptimization`` methods ``AddRegions`` and ``AddEdges``
+will handle all of the intersection checks behind the scenes,
+including applying the appropriate logic to connect sets that "wrap
+around" 2π.)""";
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::AddContinuityConstraints
           struct /* AddContinuityConstraints */ {
             // Source: drake/planning/trajectory_optimization/gcs_trajectory_optimization.h
@@ -327,7 +327,7 @@ graph, the `continuity_order`th time derivative at the end of the
 first segment equals that of the start of the second segment.
 
 This adds a nonlinear constraint to the restriction and MIP
-GraphOfConvexSets::Transcription, while adding a convex surrogate to
+GraphOfConvexSets∷Transcription, while adding a convex surrogate to
 the relaxation. For more details, see nonconvex_graph_of_convex_sets
 "Guiding Non-convex Optimization with the GraphOfConvexSets".
 
@@ -399,11 +399,11 @@ Parameter ``subspace``:
     will be added, and the subspace is added as a constraint on the
     connecting control points. Subspaces of type point or HPolyhedron
     are supported since other sets require constraints that are not
-    yet supported by the GraphOfConvexSets::Edge constraint, e.g., set
+    yet supported by the GraphOfConvexSets∷Edge constraint, e.g., set
     containment of a Hyperellipsoid is formulated via LorentzCone
     constraints. Workaround: Create a subgraph of zero order with the
     subspace as the region and connect it between the two subgraphs.
-    This works because GraphOfConvexSet::Vertex supports arbitrary
+    This works because GraphOfConvexSet∷Vertex supports arbitrary
     instances of ConvexSets.
 
 Parameter ``edges_between_regions``:
@@ -442,7 +442,7 @@ R"""(Adds a nonlinear derivative constraints to the entire graph ``lb`` ≤
 dᴺq(t) / dtᴺ ≤ ``ub``.
 
 This adds a nonlinear constraint to the restriction and MIP
-GraphOfConvexSets::Transcription, while adding a convex surrogate to
+GraphOfConvexSets∷Transcription, while adding a convex surrogate to
 the relaxation. For more details, see nonconvex_graph_of_convex_sets
 "Guiding Non-convex Optimization with the GraphOfConvexSets".
 
@@ -725,7 +725,7 @@ derivative at the end of the first segment equals that of the start of
 the second segment.
 
 This adds a nonlinear constraint to the restriction and MIP
-GraphOfConvexSets::Transcription, while adding a convex surrogate to
+GraphOfConvexSets∷Transcription, while adding a convex surrogate to
 the relaxation. For more details, see nonconvex_graph_of_convex_sets
 "Guiding Non-convex Optimization with the GraphOfConvexSets".
 
@@ -797,7 +797,7 @@ Raises:
     edge_constituent_vertex_control_points are used.
 
 Constraints which do not support the perspective operation cannot be
-used with Transcription::kMIP or Transcription::kRelaxation. Consider
+used with Transcription∷kMIP or Transcription∷kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
@@ -829,7 +829,7 @@ Raises:
     edge_constituent_vertex_control_points are used.
 
 Costs which do not support the perspective operation cannot be used
-with Transcription::kMIP or Transcription::kRelaxation. Consider
+with Transcription∷kMIP or Transcription∷kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
@@ -850,7 +850,7 @@ R"""(Adds a nonlinear derivative constraints to the control point
 connecting the subgraphs ``lb`` ≤ dᴺq(t) / dtᴺ ≤ ``ub``.
 
 This adds a nonlinear constraint to the restriction and MIP
-GraphOfConvexSets::Transcription, while adding a convex surrogate to
+GraphOfConvexSets∷Transcription, while adding a convex surrogate to
 the relaxation. For more details, see nonconvex_graph_of_convex_sets
 "Guiding Non-convex Optimization with the GraphOfConvexSets".
 
@@ -1073,10 +1073,10 @@ R"""(Solves a trajectory optimization problem through specific vertices.
 
 This method allows for targeted optimization by considering only
 selected active vertices, reducing the problem's complexity. See
-geometry::optimization::GraphOfConvexSets::SolveConvexRestriction().
-This API prefers a sequence of vertices over edges, as a user may know
+geometry∷optimization∷GraphOfConvexSets∷SolveConvexRestriction(). This
+API prefers a sequence of vertices over edges, as a user may know
 which regions the solution should pass through.
-GcsTrajectoryOptimization::AddRegions() automatically manages edge
+GcsTrajectoryOptimization∷AddRegions() automatically manages edge
 creation and intersection checks, which makes passing a sequence of
 edges less convenient.
 
@@ -1110,7 +1110,7 @@ R"""(Formulates and solves the mixed-integer convex formulation of the
 shortest path problem on the whole graph.
 
 See also:
-    ``geometry::optimization::GraphOfConvexSets::SolveShortestPath()``
+    ``geometry∷optimization∷GraphOfConvexSets∷SolveShortestPath()``
     for further details.
 
 Parameter ``source``:
@@ -1137,7 +1137,7 @@ Parameter ``options``:
     true`.
 
 See also:
-    ``geometry::optimization::GraphOfConvexSetsOptions`` for further
+    ``geometry∷optimization∷GraphOfConvexSetsOptions`` for further
     details.)""";
           } SolvePath;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::Subgraph
@@ -1160,7 +1160,7 @@ subgraph, the `continuity_order`th time derivative at the end of the
 first segment equals that of the start of the second segment.
 
 This adds a nonlinear constraint to the restriction and MIP
-GraphOfConvexSets::Transcription, while adding a convex surrogate to
+GraphOfConvexSets∷Transcription, while adding a convex surrogate to
 the relaxation. For more details, see nonconvex_graph_of_convex_sets
 "Guiding Non-convex Optimization with the GraphOfConvexSets".
 
@@ -1233,7 +1233,7 @@ Raises:
     edge_constituent_vertex_control_points are used.
 
 Constraints which do not support the perspective operation cannot be
-used with Transcription::kMIP or Transcription::kRelaxation. Consider
+used with Transcription∷kMIP or Transcription∷kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
@@ -1265,7 +1265,7 @@ Raises:
     edge_constituent_vertex_control_points are used.
 
 Costs which do not support the perspective operation cannot be used
-with Transcription::kMIP or Transcription::kRelaxation. Consider
+with Transcription∷kMIP or Transcription∷kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
@@ -1286,7 +1286,7 @@ R"""(Adds a nonlinear derivative constraints to the subgraph ``lb`` ≤
 dᴺq(t) / dtᴺ ≤ ``ub``.
 
 This adds a nonlinear constraint to the restriction and MIP
-GraphOfConvexSets::Transcription, while adding a convex surrogate to
+GraphOfConvexSets∷Transcription, while adding a convex surrogate to
 the relaxation. For more details, see nonconvex_graph_of_convex_sets
 "Guiding Non-convex Optimization with the GraphOfConvexSets".
 
@@ -1452,7 +1452,7 @@ Raises:
     and vertex_control_points are used.
 
 Constraints which do not support the perspective operation cannot be
-used with Transcription::kMIP or Transcription::kRelaxation. Consider
+used with Transcription∷kMIP or Transcription∷kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
@@ -1481,7 +1481,7 @@ Raises:
     and vertex_control_points are used.
 
 Costs which do not support the perspective operation cannot be used
-with Transcription::kMIP or Transcription::kRelaxation. Consider
+with Transcription∷kMIP or Transcription∷kRelaxation. Consider
 providing an appropriate "convex surrogate" that is supported within
 GraphOfConvexSets, or exclusively using the SolveConvexRestriction
 method.)""";
@@ -1622,7 +1622,7 @@ Parameter ``starting_rounds``:
     position of ``trajectory`` will be unchanged.
 
 Returns:
-    an unwrapped (continous in Euclidean space) CompositeTrajectory.
+    an unwrapped (continuous in Euclidean space) CompositeTrajectory.
 
 Raises:
     RuntimeError if
@@ -1642,7 +1642,7 @@ Raises:
 Raises:
     RuntimeError if all the segments are not of type BezierCurve.
     Other types are not supported yet. Note that currently the output
-    of GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory
+    of GcsTrajectoryOptimization∷SolvePath() is a CompositeTrajectory
     of BezierCurves.)""";
           } UnwrapToContinuousTrajectory;
           // Symbol: drake::planning::trajectory_optimization::GcsTrajectoryOptimization::continuous_revolute_joints
@@ -1688,7 +1688,7 @@ generalized positions of a MultibodyPlant by adding multibody costs
 and constraints; in this case take note that the velocities in this
 optimization are q̇(t), not v(t).
 
-Use solvers::Solve to solve the problem. A typical use case could look
+Use solvers∷Solve to solve the problem. A typical use case could look
 like:
 
 
@@ -1701,7 +1701,7 @@ like:
     KinematicTrajectoryOptimization trajopt(2, 10);
     // add costs and constraints
     trajopt.SetInitialGuess(...);
-    auto result = solvers::Solve(trajopt.prog());
+    auto result = solvers∷Solve(trajopt.prog());
     auto traj = trajopt.ReconstructTrajectory(result);
 
 .. raw:: html
@@ -1847,8 +1847,8 @@ Returns:
 R"""(Adds a cost on an upper bound of the length of the path, ∫₀ᵀ |q̇(t)|₂
 dt, or equivalently ∫₀¹ |ṙ(s)|₂ ds, by summing the distance between
 the path control points. If ``use_conic_constraint = false``, then
-costs are added via MathematicalProgram::AddL2NormCost; otherwise they
-are added via MathematicalProgram::AddL2NormCostUsingConicConstraint.
+costs are added via MathematicalProgram∷AddL2NormCost; otherwise they
+are added via MathematicalProgram∷AddL2NormCostUsingConicConstraint.
 
 Returns:
     A vector of bindings with the ith element adding a cost to the ith
@@ -2151,7 +2151,7 @@ the break points.
 Note:
     Just like other costs/constraints, not all solvers support
     callbacks. Adding a callback here will force
-    MathematicalProgram::Solve to select a solver that support
+    MathematicalProgram∷Solve to select a solver that support
     callbacks. For instance, adding a visualization callback to a
     quadratic programming problem may result in using a nonlinear
     programming solver as the default solver.)""";
@@ -2236,7 +2236,7 @@ Returns:
 
 Note:
     Derived classes will need to type using
-    MultipleShooting::AddFinalCost; to "unhide" this method.)""";
+    MultipleShooting∷AddFinalCost; to "unhide" this method.)""";
           } AddFinalCost;
           // Symbol: drake::planning::trajectory_optimization::MultipleShooting::AddInputTrajectoryCallback
           struct /* AddInputTrajectoryCallback */ {
@@ -2252,7 +2252,7 @@ trajectory at the break points in each column.
 Note:
     Just like other costs/constraints, not all solvers support
     callbacks. Adding a callback here will force
-    MathematicalProgram::Solve to select a solver that support
+    MathematicalProgram∷Solve to select a solver that support
     callbacks. For instance, adding a visualization callback to a
     quadratic programming problem may result in using a nonlinear
     programming solver as the default solver.)""";
@@ -2289,7 +2289,7 @@ trajectory at the break points in each column.
 Note:
     Just like other costs/constraints, not all solvers support
     callbacks. Adding a callback here will force
-    MathematicalProgram::Solve to select a solver that support
+    MathematicalProgram∷Solve to select a solver that support
     callbacks. For instance, adding a visualization callback to a
     quadratic programming problem may result in using a nonlinear
     programming solver as the default solver.)""";

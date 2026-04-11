@@ -518,7 +518,7 @@ GTEST_TEST(SapDriverTest, ConstraintActiveStatus) {
   }
 }
 
-TEST_F(MultibodyPlantRemodeling, AddPdControllerConstraints) {
+TEST_F(MultibodyPlantRemodelingDiscrete, AddPdControllerConstraints) {
   BuildModel();
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   // Set up actuators with pd controllers.

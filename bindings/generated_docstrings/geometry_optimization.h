@@ -266,7 +266,7 @@ For several subclasses of ConvexSet, there is a closed-form
 computation (or more efficient numerical computation) that is
 preferred. - AffineBall: Can be computed via a rank-revealing
 decomposition; ``tol`` is used as the numerical tolerance for the rank
-of the matrix. Pass ``std::nullopt`` for ``tol`` to use Eigen's
+of the matrix. Pass ``std∷nullopt`` for ``tol`` to use Eigen's
 automatic tolerance computation. - AffineSubspace: Equivalent to the
 copy-constructor; ``tol`` is ignored. - CartesianProduct: Can compute
 the affine hull of each factor individually; ``tol`` is propagated to
@@ -279,7 +279,7 @@ closed-form; ``tol`` is ignored. This also encompasses sets which are
 obviously a singleton point, as determined via MaybeGetPoint. -
 VPolytope: Can be computed via a singular value decomposition; ``tol``
 is used as the numerical tolerance for the rank of the matrix. Pass
-``std::nullopt`` for ``tol`` to use Eigen's automatic tolerance
+``std∷nullopt`` for ``tol`` to use Eigen's automatic tolerance
 computation.)""";
           } ctor;
           // Symbol: drake::geometry::optimization::AffineSubspace::ContainedIn
@@ -423,7 +423,7 @@ Parameter ``X_AB_multilinear``:
     The pose of the collision geometry body (B) in the expressed frame
     A, written as a multilinear polynomial. This quantity is generated
     from
-    RationalForwardKinematics::CalcBodyPoseAsMultilinearPolynomial.
+    RationalForwardKinematics∷CalcBodyPoseAsMultilinearPolynomial.
 
 Parameter ``rational_forward_kin``:
     This object is constructed with the MultibodyPlant containing this
@@ -516,7 +516,7 @@ other collision geometry is on the "negative" side of the separating
 plane, namely {x|aᵀx+b ≤ −δ}.
 
 Template parameter ``T``:
-    The type of decision_variables. T= symbolic::Variable or double.)""";
+    The type of decision_variables. T= symbolic∷Variable or double.)""";
           // Symbol: drake::geometry::optimization::CSpaceSeparatingPlane::CSpaceSeparatingPlane<T>
           struct /* ctor */ {
             // Source: drake/geometry/optimization/cspace_separating_plane.h
@@ -580,9 +580,9 @@ lexicographic order.
 
 Template parameter ``D``:
     , S, V The valid combination of D, S, V are 1.
-    D=symbolic::Variable, S=symbolic::Variable,
-    V=symbolic::Polynomial. 2. D=double, S=symbolic::Variable,
-    V=symbolic::Polynomial 3. D=double, S=double, V=double)""";
+    D=symbolic∷Variable, S=symbolic∷Variable, V=symbolic∷Polynomial.
+    2. D=double, S=symbolic∷Variable, V=symbolic∷Polynomial 3.
+    D=double, S=double, V=double)""";
         } CalcPlane;
         // Symbol: drake::geometry::optimization::CartesianProduct
         struct /* CartesianProduct */ {
@@ -632,8 +632,8 @@ Raises:
             const char* doc_3args_query_object_geometry_id_reference_frame =
 R"""(Constructs a CartesianProduct from a SceneGraph geometry and pose in
 the ``reference_frame`` frame, obtained via the QueryObject. If
-``reference_frame`` frame is std::nullopt, then it will be expressed
-in the world frame.
+``reference_frame`` frame is std∷nullopt, then it will be expressed in
+the world frame.
 
 Although any geometry that can be used as a ConvexSet could also be a
 (trivial) CartesianProduct, we restrict this constructor to handling
@@ -1157,7 +1157,7 @@ R"""(Non-virtual interface implementation for Clone().)""";
             // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for DoIsBoundedShortcut().
-Trivially returns std::nullopt. This allows a derived class to
+Trivially returns std∷nullopt. This allows a derived class to
 implement its own boundedness checks, to potentially avoid the more
 expensive base class checks.
 
@@ -1169,7 +1169,7 @@ Precondition:
             // Source: drake/geometry/optimization/convex_set.h
             const char* doc =
 R"""(Non-virtual interface implementation for
-DoIsBoundedShortcutParallel(). Trivially returns std::nullopt. This
+DoIsBoundedShortcutParallel(). Trivially returns std∷nullopt. This
 allows a derived class to implement its own boundedness checks that
 leverage parallelization, to potentially avoid the more expensive base
 class checks.
@@ -1231,8 +1231,8 @@ solving a convex program.
 Returns:
     Returns true if and only if x is known to be in the set. Returns
     false if and only if x is known to not be in the set. Returns
-    std::nullopt if a shortcut implementation is not provided (i.e.
-    the method has not elected to decide whether the point x is in the
+    std∷nullopt if a shortcut implementation is not provided (i.e. the
+    method has not elected to decide whether the point x is in the
     set).
 
 For example, membership in a VPolytope cannot be verified without
@@ -2430,7 +2430,7 @@ R"""(All the separating planes between each pair of geometries.)""";
           struct /* with_cross_y */ {
             // Source: drake/geometry/optimization/cspace_free_polytope_base.h
             const char* doc =
-R"""(Check Options::with_cross_y for more details.)""";
+R"""(Check Options∷with_cross_y for more details.)""";
           } with_cross_y;
           // Symbol: drake::geometry::optimization::CspaceFreePolytopeBase::y_slack
           struct /* y_slack */ {
@@ -2445,12 +2445,11 @@ Check Options class for more details.)""";
           // Source: drake/geometry/optimization/c_iris_collision_geometry.h
           const char* doc =
 R"""(Computes the signed distance from ``collision_geometry`` to the half
-space ℋ, where ℋ = {x | aᵀx+b >= 0} if
-plane_side=PlaneSide::kPositive, and ℋ = {x | aᵀx+b <= 0} if
-plane_side=PlaneSide::kNegative. The half space is measured and
-expressed in the expressed_body's body frame. This works for both
-``collision_geometry`` separated from the half space, and ``collision
-geometry`` in penetration with the halfspace.
+space ℋ, where ℋ = {x | aᵀx+b >= 0} if plane_side=PlaneSide∷kPositive,
+and ℋ = {x | aᵀx+b <= 0} if plane_side=PlaneSide∷kNegative. The half
+space is measured and expressed in the expressed_body's body frame.
+This works for both ``collision_geometry`` separated from the half
+space, and ``collision geometry`` in penetration with the halfspace.
 
 Note:
     ``a`` does not need to be a unit length vector (but should be
@@ -2595,9 +2594,9 @@ Behind the scenes, we construct efficient mixed-integer convex
 transcriptions of the graph problem using MathematicalProgram.
 However, we provide the option to solve an often tight convex
 relaxation of the problem with
-GraphOfConvexSetsOptions::convex_relaxation and employ a cheap
-rounding stage which solves the convex restriction along potential
-paths to find a feasible solution to the original problem.
+GraphOfConvexSetsOptions∷convex_relaxation and employ a cheap rounding
+stage which solves the convex restriction along potential paths to
+find a feasible solution to the original problem.
 
 Design note: This class avoids providing any direct access to the
 MathematicalProgram that it constructs nor to the decision variables /
@@ -2754,7 +2753,7 @@ Raises:
             struct /* AddCost */ {
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_expression =
-R"""(Adds a cost to this edge, described by a symbolic::Expression ``e``
+R"""(Adds a cost to this edge, described by a symbolic∷Expression ``e``
 containing *only* elements of xu() and xv() as variables. For
 technical reasons relating to being able to "turn-off" the cost on
 inactive edges, all costs are eventually implemented with a slack
@@ -2890,11 +2889,11 @@ Raises:
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_1args =
 R"""(Returns the sum of the costs associated with this edge in ``result``,
-or std::nullopt if no solution for this edge is available.)""";
+or std∷nullopt if no solution for this edge is available.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_2args =
 R"""(Returns the cost associated with the ``cost`` binding on this edge in
-``result``, or std::nullopt if no solution for this edge is available.
+``result``, or std∷nullopt if no solution for this edge is available.
 
 Raises:
     RuntimeError if cost is not associated with this edge.)""";
@@ -2904,11 +2903,11 @@ Raises:
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the vector value of the slack variables associated with ϕxᵤ in
-``result``, or std::nullopt if no solution for this edge is available.
-This can obtain a different value than the Vertex::GetSolution(), e.g.
+``result``, or std∷nullopt if no solution for this edge is available.
+This can obtain a different value than the Vertex∷GetSolution(), e.g.
 from ``edge->xu().GetSolution(result)``. First, a deactivated edge
 (defined by Phi ~= 0) will return the zero vector here, while
-Vertex::GetSolution() will return std::nullopt (rather than divide by
+Vertex∷GetSolution() will return std∷nullopt (rather than divide by
 zero to recover Xu). Second, in the case of a loose convex relaxation,
 the vertex version will return the averaged* value of the edge slacks
 for all non-zero-flow edges.)""";
@@ -2918,7 +2917,7 @@ for all non-zero-flow edges.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the vector value of the slack variables associated with ϕxᵥ in
-``result``, or std::nullopt if no solution for this edge is available.
+``result``, or std∷nullopt if no solution for this edge is available.
 See GetSolutionPhiXu() for more details.)""";
             } GetSolutionPhiXv;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Edge::NewSlackVariables
@@ -2978,8 +2977,8 @@ connects to.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the continuous decision variables associated with vertex
-``u``. This can be used for constructing symbolic::Expression costs
-and constraints.
+``u``. This can be used for constructing symbolic∷Expression costs and
+constraints.
 
 See also GetSolutionPhiXu(); using ``result.GetSolution(xu())`` may
 not be what you want.)""";
@@ -2989,8 +2988,8 @@ not be what you want.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns the continuous decision variables associated with vertex
-``v``. This can be used for constructing symbolic::Expression costs
-and constraints.
+``v``. This can be used for constructing symbolic∷Expression costs and
+constraints.
 
 See also GetSolutionPhiXv(); using ``result.GetSolution(xv())`` may
 not be what you want.)""";
@@ -3267,7 +3266,7 @@ R"""(The restrction of the GCS problem where the path is fixed.)""";
             // Source: drake/geometry/optimization/graph_of_convex_sets.h
             const char* doc =
 R"""(Each vertex in the graph has a corresponding ConvexSet, and a
-std::string name.)""";
+std∷string name.)""";
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::AddConstraint
             struct /* AddConstraint */ {
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
@@ -3313,7 +3312,7 @@ Raises:
             struct /* AddCost */ {
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_expression =
-R"""(Adds a cost to this vertex, described by a symbolic::Expression ``e``
+R"""(Adds a cost to this vertex, described by a symbolic∷Expression ``e``
 containing *only* elements of x() as variables. For technical reasons
 relating to being able to "turn-off" the cost on inactive vertices,
 all costs are eventually implemented with a slack variable and a
@@ -3425,8 +3424,8 @@ Raises:
             struct /* GetSolution */ {
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
-R"""(Returns the solution of x() in ``result``, or std::nullopt if no
-solution for this vertex is available. std::nullopt can happen if the
+R"""(Returns the solution of x() in ``result``, or std∷nullopt if no
+solution for this vertex is available. std∷nullopt can happen if the
 vertex is deactivated (e.g. not in the shorest path) in the solution.)""";
             } GetSolution;
             // Symbol: drake::geometry::optimization::GraphOfConvexSets::Vertex::GetSolutionCost
@@ -3434,12 +3433,12 @@ vertex is deactivated (e.g. not in the shorest path) in the solution.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_1args =
 R"""(Returns the sum of the costs associated with this vertex in
-``result``, or std::nullopt if no solution for this vertex is
+``result``, or std∷nullopt if no solution for this vertex is
 available.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc_2args =
 R"""(Returns the cost associated with the ``cost`` binding on this vertex
-in ``result``, or std::nullopt if no solution for this vertex is
+in ``result``, or std∷nullopt if no solution for this vertex is
 available.
 
 Raises:
@@ -3488,7 +3487,7 @@ R"""(Returns a const reference to the underlying ConvexSet.)""";
               // Source: drake/geometry/optimization/graph_of_convex_sets.h
               const char* doc =
 R"""(Returns a decision variable corresponding to an element of the
-ConvexSet, which can be used for constructing symbolic::Expression
+ConvexSet, which can be used for constructing symbolic∷Expression
 costs and constraints.)""";
             } x;
           } Vertex;
@@ -3572,7 +3571,7 @@ threads used in all places in the algorithm.
 Note:
     Some solvers will choose their own level of parallelization,
     independent of this setting. To limit the number of threads, add
-    solvers::CommonSolverOption::kMaxThreads to the solver_options.)""";
+    solvers∷CommonSolverOption∷kMaxThreads to the solver_options.)""";
           } parallelism;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::preprocessing
           struct /* preprocessing */ {
@@ -3596,7 +3595,7 @@ setting has been set to true. If not set, the interface at .solver
 will be used, if provided, otherwise the best solver for the given
 problem is selected. Note that if the solver cannot handle the type of
 optimization problem generated, then calling the
-solvers::SolverInterface::Solve() method will throw.)""";
+solvers∷SolverInterface∷Solve() method will throw.)""";
           } preprocessing_solver;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::preprocessing_solver_options
           struct /* preprocessing_solver_options */ {
@@ -3618,7 +3617,7 @@ during the rounding stage of SolveShortestPath() given the relaxation.
 If not set, the interface at .solver will be used, if provided,
 otherwise the best solver for the given problem is selected. Note that
 if the solver cannot handle the type of optimization problem
-generated, then calling the solvers::SolverInterface::Solve() method
+generated, then calling the solvers∷SolverInterface∷Solve() method
 will throw.)""";
           } restriction_solver;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::restriction_solver_options
@@ -3649,7 +3648,7 @@ path optimization problem and the convex restriction if no
 restriction_solver is provided. If not set, the best solver for the
 given problem is selected. Note that if the solver cannot handle the
 type of optimization problem generated, the calling
-solvers::SolverInterface::Solve() method will throw.)""";
+solvers∷SolverInterface∷Solve() method will throw.)""";
           } solver;
           // Symbol: drake::geometry::optimization::GraphOfConvexSetsOptions::solver_options
           struct /* solver_options */ {
@@ -3785,8 +3784,8 @@ Precondition:
             const char* doc_3args_query_object_geometry_id_reference_frame =
 R"""(Constructs a new HPolyhedron from a SceneGraph geometry and pose in
 the ``reference_frame`` frame, obtained via the QueryObject. If
-``reference_frame`` frame is std::nullopt, then it will be expressed
-in the world frame.
+``reference_frame`` frame is std∷nullopt, then it will be expressed in
+the world frame.
 
 Raises:
     RuntimeError the geometry is not a convex polytope.)""";
@@ -4025,11 +4024,14 @@ Parameter ``keep_whole_intersection``:
     transformation step if ``do_affine_transformation`` is true.
 
 Parameter ``intersection_padding``:
-    is a distance by which each hyperplane is translated back outward
-    after satisfing intersection constraints, subject to not
-    surpassing the original hyperplane position. In the case where
-    ``keep_whole_intersection`` is false, using a non-zero value for
-    this parameter prevents intersections from being single points.
+    limits how much the intersection between the inbody and each
+    polytope in ``intersection_polytopes`` can be reduced. For each
+    polytope in ``intersecting_polytopes``, there is a ball fully
+    contained in the inbody, of radius ``intersection_padding``, whose
+    center is contained in the intersecting polytope. In the case
+    where ``keep_whole_intersection`` is false, using a non-zero value
+    for this parameter prevents intersections from being single
+    points.
 
 Parameter ``random_seed``:
     is a seed for a random number generator used to shuffle the
@@ -4112,7 +4114,7 @@ unbounded sets. The affine scaling of the unit ball representation is
 available via the AffineBall class.
 
 Note: the name Hyperellipsoid was taken here to avoid conflicting with
-geometry::Ellipsoid and to distinguish that this class supports N
+geometry∷Ellipsoid and to distinguish that this class supports N
 dimensions.
 
 A hyperellipsoid can never be empty -- it always contains its center.
@@ -4137,8 +4139,8 @@ Precondition:
             const char* doc_3args =
 R"""(Constructs a Hyperellipsoid from a SceneGraph geometry and pose in the
 ``reference_frame`` frame, obtained via the QueryObject. If
-``reference_frame`` frame is std::nullopt, then it will be expressed
-in the world frame.
+``reference_frame`` frame is std∷nullopt, then it will be expressed in
+the world frame.
 
 Raises:
     RuntimeError if geometry_id does not represent a shape that can be
@@ -4211,7 +4213,7 @@ Parameter ``rank_tol``:
     common solver tolerances. This is used to detect if the data lies
     on a lower-dimensional affine space than the ambient dimension of
     the ellipsoid. If this is the case, then use
-    AffineBall::MinimumVolumeCircumscribedEllipsoid instead.
+    AffineBall∷MinimumVolumeCircumscribedEllipsoid instead.
 
 Raises:
     RuntimeError if the MathematicalProgram fails to solve. If this
@@ -4296,7 +4298,7 @@ R"""(Helper to convert this hyperrectangle to an HPolyhedron.)""";
             // Source: drake/geometry/optimization/hyperrectangle.h
             const char* doc =
 R"""(Returns the minimum axis-aligned bounding box of a convex set, for
-sets with finite volume. (std::nullopt otherwise).)""";
+sets with finite volume. (std∷nullopt otherwise).)""";
           } MaybeCalcAxisAlignedBoundingBox;
           // Symbol: drake::geometry::optimization::Hyperrectangle::MaybeGetIntersection
           struct /* MaybeGetIntersection */ {
@@ -4304,7 +4306,7 @@ sets with finite volume. (std::nullopt otherwise).)""";
             const char* doc =
 R"""(Constructs the intersection of two Hyperrectangle by taking the
 pointwise maximum of the lower bounds and the pointwise minimums of
-the upper bounds. Returns std::nullopt if the intersection is empty.
+the upper bounds. Returns std∷nullopt if the intersection is empty.
 
 Precondition:
     this and other need to have the same ambient dimension.)""";
@@ -4507,7 +4509,7 @@ Parameter ``sample``:
 Parameter ``domain``:
     describes the total region of interest; computed IRIS regions will
     be inside this domain. It must be bounded, and is typically a
-    simple bounding box (e.g. from HPolyhedron::MakeBox).
+    simple bounding box (e.g. from HPolyhedron∷MakeBox).
 
 The ``obstacles``, ``sample``, and the ``domain`` must describe
 elements in the same ambient dimension (but that dimension can be any
@@ -4541,13 +4543,13 @@ This method constructs a single Iris region in the configuration space
 of ``plant``.
 
 See also:
-    planning::IrisInConfigurationSpaceFromCliqueCover for a method to
+    planning∷IrisInConfigurationSpaceFromCliqueCover for a method to
     automatically cover the configuration space with multiple Iris
     regions.
 
 Parameter ``plant``:
     describes the kinematics of configuration space. It must be
-    connected to a SceneGraph in a systems::Diagram.
+    connected to a SceneGraph in a systems∷Diagram.
 
 Parameter ``context``:
     is a context of the ``plant``. The context must have the positions
@@ -4641,9 +4643,9 @@ currently only happens in IrisNp and when the configuration space is
           struct /* mixing_steps */ {
             // Source: drake/geometry/optimization/iris.h
             const char* doc =
-R"""(The ``mixing_steps`` parameters is passed to
-HPolyhedron::UniformSample to control the total number of hit-and-run
-steps taken for each new random sample.)""";
+R"""(The ``mixing_steps`` parameters is passed to HPolyhedron∷UniformSample
+to control the total number of hit-and-run steps taken for each new
+random sample.)""";
           } mixing_steps;
           // Symbol: drake::geometry::optimization::IrisOptions::num_additional_constraint_infeasible_samples
           struct /* num_additional_constraint_infeasible_samples */ {
@@ -4686,8 +4688,8 @@ IRIS will silently ignore any costs in
 it contains any unsupported constraints.
 
 For example, one could create an InverseKinematics problem with rich
-kinematic constraints, and then pass ``InverseKinematics::prog()``
-into this option.)""";
+kinematic constraints, and then pass ``InverseKinematics∷prog()`` into
+this option.)""";
           } prog_with_additional_constraints;
           // Symbol: drake::geometry::optimization::IrisOptions::random_seed
           struct /* random_seed */ {
@@ -4826,7 +4828,7 @@ can be serialized in both C++ and Python.)""";
 R"""(Helper function that allows the ConvexSets to be initialized from
 arguments containing ConvexSet references, or unique_ptr<ConvexSet>
 instances, or any object that can be assigned to
-ConvexSets::value_type.)""";
+ConvexSets∷value_type.)""";
         } MakeConvexSets;
         // Symbol: drake::geometry::optimization::MakeIrisObstacles
         struct /* MakeIrisObstacles */ {
@@ -4870,8 +4872,8 @@ R"""(Constructs the sum from a pair of convex sets.)""";
             const char* doc_3args =
 R"""(Constructs a MinkowskiSum from a SceneGraph geometry and pose in the
 ``reference_frame`` frame, obtained via the QueryObject. If
-``reference_frame`` frame is std::nullopt, then it will be expressed
-in the world frame.
+``reference_frame`` frame is std∷nullopt, then it will be expressed in
+the world frame.
 
 Although in principle a MinkowskiSum can represent any ConvexSet as
 the sum of a single set, here we only support Capsule geometry, which
@@ -5021,8 +5023,8 @@ R"""(Constructs a default (zero-dimensional, nonempty) set.)""";
             const char* doc_4args =
 R"""(Constructs a Point from a SceneGraph geometry and pose in the
 ``reference_frame`` frame, obtained via the QueryObject. If
-``reference_frame`` frame is std::nullopt, then it will be expressed
-in the world frame.
+``reference_frame`` frame is std∷nullopt, then it will be expressed in
+the world frame.
 
 Raises:
     RuntimeError if geometry_id does not correspond to a Sphere or if
@@ -5194,8 +5196,7 @@ Raises:
           struct /* supported_attributes */ {
             // Source: drake/geometry/optimization/spectrahedron.h
             const char* doc =
-R"""(Returns the list of solvers::ProgramAttributes supported by this
-class.)""";
+R"""(Returns the list of solvers∷ProgramAttributes supported by this class.)""";
           } supported_attributes;
         } Spectrahedron;
         // Symbol: drake::geometry::optimization::ToPlaneDegree
@@ -5262,7 +5263,7 @@ length 2.)""";
           struct /* ToShapeConvex */ {
             // Source: drake/geometry/optimization/vpolytope.h
             const char* doc =
-R"""(Creates a geometry::Convex shape using the vertices of this VPolytope.
+R"""(Creates a geometry∷Convex shape using the vertices of this VPolytope.
 The convex_label is passed as the 'label' of the Convex object.
 
 Precondition:

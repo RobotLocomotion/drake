@@ -14,6 +14,21 @@ namespace multibody {
  * within a bounding box measured and expressed in frame A. Namely
  * p_AQ_lower <= p_AQ <= p_AQ_upper.
  *
+ * Note that p_BQ may or may not be a decision variable.
+ * Common use cases include:
+ * 1. We want a specified point Q on the frame B to be within a bounding box. In
+ * this case, p_BQ is specified and not a decision variable.
+ * 2. We want some point Q on the frame B to be within a bounding box, but we
+ * don't know the exact position of Q on the frame B. For example, we want some
+ * point on the robot palm to touch a table, but we don't care which point on
+ * the robot palm. In this case, p_BQ is a decision variable, and we need an
+ * additional constraint to say "Q is on the surface of the robot palm".
+ *
+ * When p_BQ is a decision variable (i.e., it is _not_ specified in the ctor),
+ * the constraint is evaluated on the vector x = [q, p_BQ].
+ * When p_BQ is not a decision variable (i.e. it _is_ specified non-`nullopt`in
+ * the ctor), the constraint is evaluated on the vector x = q.
+ *
  * @ingroup solver_evaluators
  */
 class PositionConstraint : public solvers::Constraint {
@@ -31,7 +46,8 @@ class PositionConstraint : public solvers::Constraint {
    *   expressed in frame A.
    * @param frameB The frame to which point Q is rigidly attached.
    * @param p_BQ The position of the point Q, rigidly attached to frame B,
-   *   measured and expressed in frame B.
+   *   measured and expressed in frame B. If set to nullopt, then p_BQ is also a
+   * decision variable.
    * @param plant_context The Context that has been allocated for this
    *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
@@ -46,7 +62,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                      const Frame<double>& frameB,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                     std::optional<Eigen::Vector3d> p_BQ,
                      systems::Context<double>* plant_context);
 
   /**
@@ -60,7 +76,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                      const Frame<AutoDiffXd>& frameB,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                     std::optional<Eigen::Vector3d> p_BQ,
                      systems::Context<AutoDiffXd>* plant_context);
 
   /**
@@ -78,7 +94,8 @@ class PositionConstraint : public solvers::Constraint {
    *   expressed in frame A.
    * @param frameB The frame to which point Q is rigidly attached.
    * @param p_BQ The position of the point Q, rigidly attached to frame B,
-   *   measured and expressed in frame B.
+   *   measured and expressed in frame B. If set to nullopt, then p_BQ is also a
+   * decision variable.
    * @param plant_context The Context that has been allocated for this
    *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
@@ -94,7 +111,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                      const Frame<double>& frameB,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                     std::optional<Eigen::Vector3d> p_BQ,
                      systems::Context<double>* plant_context);
 
   /**
@@ -109,7 +126,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                      const Frame<AutoDiffXd>& frameB,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                     std::optional<Eigen::Vector3d> p_BQ,
                      systems::Context<AutoDiffXd>* plant_context);
 
   ~PositionConstraint() override;
@@ -131,13 +148,25 @@ class PositionConstraint : public solvers::Constraint {
         "PositionConstraint::DoEval() does not work for symbolic variables.");
   }
 
+  // Base constructor; all others delegate to it. Note: the dummy integer
+  // parameter on the end is used to disambiguate between this constructor
+  // and *some* of the public constructors.
+  template <typename T>
+  PositionConstraint(const MultibodyPlant<T>* plant, const Frame<T>& frameAbar,
+                     const std::optional<math::RigidTransformd>& X_AbarA,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                     const Frame<T>& frameB,
+                     const std::optional<Eigen::Vector3d>& p_BQ,
+                     systems::Context<T>* plant_context, int);
+
   bool use_autodiff() const { return plant_autodiff_; }
 
   const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameAbar_index_;
   math::RigidTransformd X_AAbar_;
   const FrameIndex frameB_index_;
-  const Eigen::Vector3d p_BQ_;
+  const std::optional<Eigen::Vector3d> p_BQ_;
   systems::Context<double>* const context_double_;
 
   const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;

@@ -11,10 +11,6 @@ def _read_resource(resource_path: Path):
 
 
 def main():
-    if sys.version_info[:2] == (3, 10):
-        # The libclang on jammy gives different docstring output.
-        print("WARNING: skipping test on Ubuntu 22.04 Jammy")
-        return 0
     filenames = sys.argv[1:]
     assert len(filenames) > 0
     expected_dir = Path("drake/bindings/generated_docstrings/gen")

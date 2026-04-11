@@ -20,10 +20,9 @@ DEFINE_double(
     mbp_discrete_update_period, 0.01,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model. When using TAMSI, a smaller "
-    "time step of 1.0e-3 is recommended.");
+    "Set to zero for a continuous plant model.");
 DEFINE_string(contact_approximation, "sap",
-              "Discrete contact approximation. Options are: 'tamsi', 'sap', "
+              "Discrete contact approximation. Options are: 'sap', "
               "'similar', 'lagged'");
 
 namespace drake {

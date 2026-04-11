@@ -60,6 +60,13 @@ class PyRenderEngine : public RenderEngine {
         bool, Base, DoRegisterVisual, id, shape, properties, X_WG);
   }
 
+  bool DoRegisterNamedVisual(GeometryId id, Shape const& shape,
+      PerceptionProperties const& properties, RigidTransformd const& X_WG,
+      std::string_view name) override {
+    PYBIND11_OVERLOAD(
+        bool, Base, DoRegisterNamedVisual, id, shape, properties, X_WG, name);
+  }
+
   void DoUpdateVisualPose(GeometryId id, RigidTransformd const& X_WG) override {
     PYBIND11_OVERLOAD_PURE(void, Base, DoUpdateVisualPose, id, X_WG);
   }
@@ -295,11 +302,11 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.Clone.doc)
         .def("RegisterVisual",
             static_cast<bool (Class::*)(GeometryId, Shape const&,
-                PerceptionProperties const&, RigidTransformd const&, bool)>(
-                &Class::RegisterVisual),
+                PerceptionProperties const&, RigidTransformd const&, bool,
+                std::string_view)>(&Class::RegisterVisual),
             py::arg("id"), py::arg("shape"), py::arg("properties"),
             py::arg("X_WG"), py::arg("needs_updates") = true,
-            cls_doc.RegisterVisual.doc)
+            py::arg("name") = "", cls_doc.RegisterVisual.doc)
         .def("RemoveGeometry",
             static_cast<bool (Class::*)(GeometryId)>(&Class::RemoveGeometry),
             py::arg("id"), cls_doc.RemoveGeometry.doc)

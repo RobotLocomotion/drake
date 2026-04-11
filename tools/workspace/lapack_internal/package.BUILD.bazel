@@ -95,13 +95,13 @@ LAPACK_ALL_SRCS = depset(
 # The next two need special attention since they are actual Fortran modules.
 
 fortran_module(
-    src = "SRC/la_constants.f90",
     name = "la_constants",
+    src = "SRC/la_constants.f90",
 )
 
 fortran_module(
-    src = "SRC/la_xisnan.F90",
     name = "la_xisnan",
+    src = "SRC/la_xisnan.F90",
     uses = ["la_constants"],
 )
 
@@ -123,11 +123,11 @@ fortran_library(
         x[3:] if x.startswith("../") else "SRC/" + x
         for x in LAPACK_MOST_SRCS
     ],
-    linkstatic = True,
     _input_mods = [
         "la_constants.mod",
         "la_xisnan.mod",
     ],
+    linkstatic = True,
     deps = [
         ":la_constants",
         ":la_xisnan",

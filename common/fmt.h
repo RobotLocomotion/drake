@@ -9,27 +9,17 @@
 // This file contains the essentials of fmt support in Drake, mainly
 // compatibility code to inter-operate with different versions of fmt.
 
+// N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
+// file should be kept in sync.
+
 namespace drake {
 
-#if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
-/** When using fmt >= 8, this is an alias for
-<a
-href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
-When using fmt < 8, this is a no-op. */
+[[deprecated(
+    "\nDRAKE DEPRECATED: Use fmt::runtime instead.\n"
+    "The deprecated code will be removed from Drake on or after 2026-07-01.")]]
 inline auto fmt_runtime(std::string_view s) {
   return fmt::runtime(s);
 }
-/** When using fmt >= 8, this is defined to be `const` to indicate that the
-`fmt::formatter<T>::format(...)` function should be object-const.
-When using fmt < 8, the function signature was incorrect (lacking the const),
-so this macro will be empty. */
-#define DRAKE_FMT8_CONST const
-#else  // FMT_VERSION
-inline auto fmt_runtime(std::string_view s) {
-  return s;
-}
-#define DRAKE_FMT8_CONST
-#endif  // FMT_VERSION
 
 /** Returns `fmt::to_string(x)` but always with at least one digit after the
 decimal point. Different versions of fmt disagree on whether to omit the
@@ -38,21 +28,6 @@ trailing ".0" when formatting integer-valued floating-point numbers.
 template <typename T>
 std::string fmt_floating_point(T x)
   requires(std::is_same_v<T, float> || std::is_same_v<T, double>);
-
-template <typename T>
-[[deprecated(
-    "\nDRAKE DEPRECATED: The fmt_floating_point function now only allows "
-    "'float' and 'double' as template arguments; other types are deprecated.\n"
-    "The deprecated code will be removed from Drake on or after 2026-02-01.")]]
-std::string fmt_floating_point(T x)
-  requires(!(std::is_same_v<T, float> || std::is_same_v<T, double>))
-{
-  std::string result = fmt::format("{:#}", x);
-  if (result.back() == '.') {
-    result.push_back('0');
-  }
-  return result;
-}
 
 /** Returns `fmt::("{:?}", x)`, i.e, using fmt's "debug string format"; see
 https://fmt.dev docs for the '?' presentation type for details. We provide this
@@ -166,9 +141,7 @@ Drake drops support for earlier version of fmt. */
   template <TEMPLATE_ARGS>                                                     \
   struct Converter<NAMESPACE::TYPE> {                                          \
     using InputType = NAMESPACE::TYPE;                                         \
-    static auto call(const InputType& ARG) {                                   \
-      return EXPR;                                                             \
-    }                                                                          \
+    static auto call(const InputType& ARG) { return EXPR; }                    \
   };                                                                           \
                                                                                \
   /* Provides the fmt::formatter<TYPE> implementation. */                      \
@@ -179,7 +152,7 @@ Drake drops support for earlier version of fmt. */
     /* Shadow our base class member function template of the same name. */     \
     template <typename FormatContext>                                          \
     auto format(const typename MyTraits::InputType& x,                         \
-                FormatContext& ctx) DRAKE_FMT8_CONST {                         \
+                FormatContext& ctx) const {                                    \
       /* Call the base class member function after laundering the object   */  \
       /* through the user's provided format_as function. Older versions of */  \
       /* fmt have const-correctness bugs, which we can fix with some good  */  \
@@ -188,6 +161,8 @@ Drake drops support for earlier version of fmt. */
       const Base* const self = this;                                           \
       return const_cast<Base*>(self)->format(MyTraits::Functor::call(x), ctx); \
     }                                                                          \
+    /* Disable re-quoting the return value of the EXPR (e.g., in std::map). */ \
+    void set_debug_format() = delete;                                          \
   };                                                                           \
   } /* namespace drake::internal::formatter_as */                              \
                                                                                \
@@ -197,3 +172,7 @@ Drake drops support for earlier version of fmt. */
   struct formatter<NAMESPACE::TYPE>                                            \
       : drake::internal::formatter_as::Formatter<NAMESPACE::TYPE> {};          \
   } /* namespace fmt */
+
+// DRAKE DEPRECATED: This macro is deprecated and will be removed from Drake on
+// or after 2026-07-01.
+#define DRAKE_FMT8_CONST const

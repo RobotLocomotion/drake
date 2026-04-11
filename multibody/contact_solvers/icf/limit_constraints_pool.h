@@ -90,7 +90,9 @@ class LimitConstraintsPool {
   Calling this function several times with the same `index` overwrites the
   previous constraint for that index.
 
-  @pre ql <= q0 <= qu. */
+  @pre ql <= qu.
+  @note ICF regularizes limit constraints (i.e. they are slightly compliant),
+  and therefore values of q0 outside [ql, qu] are allowed. */
   void Set(int index, int clique, int dof, const T& q0, const T& ql,
            const T& qu);
 
@@ -120,6 +122,13 @@ class LimitConstraintsPool {
   void CalcCostAlongLine(const LimitConstraintsDataPool<T>& limit_data,
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
+
+  /* Testing only access. */
+  const std::vector<int>& clique() const { return clique_; }
+  const std::vector<int>& constraint_size() const { return constraint_size_; }
+  const EigenPool<VectorX<T>>& ql() const { return ql_; }
+  const EigenPool<VectorX<T>>& qu() const { return qu_; }
+  const EigenPool<VectorX<T>>& q0() const { return q0_; }
 
  private:
   /* Computes cost, gradient, and Hessian contribution for a single limit

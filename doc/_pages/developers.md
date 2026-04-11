@@ -210,28 +210,10 @@ Choose the "Squash and merge option" unless otherwise instructed (see
 # User Assistance
 
 The user-facing instructions for requesting assistance are located in
-[Getting Help](/getting_help.html). The two main options for requesting assistance are either
-posting a GitHub issue or a StackOverflow question.
+[Getting Help](/getting_help.html). The options for requesting assistance
+are posting a GitHub issue or a GitHub discussion.
 
-## Handling User GitHub Issues
-
-See [GitHub Issue Management](/issues.html).
-
-If a GitHub issue should instead be a StackOverflow question (e.g. it is of a
-tutorial nature that does not require code or documentation modification),
-please request that the user repost the question on StackOverflow, post the
-new link on the GitHub issue, and close the issue.
-
-## Handling User StackOverflow Questions
-
-Please subscribe to the ``drake`` tag by following these instructions:
-
-* [How to get notifications for drake-tagged Stackoverflow questions](/stackoverflow_notifications.html)
-
-Please also monitor for [unanswered StackOverflow posts](https://stackoverflow.com/unanswered/tagged/drake?tab=noanswers)
-once per day. If there are unanswered questions that you are unsure of the
-answer, consider posting on the Slack ``#onramp`` channel to see if someone
-can look into the question.
+See also [GitHub Issue Management](/issues.html).
 
 # Local Development Notes
 

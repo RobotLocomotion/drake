@@ -3,9 +3,9 @@
 me=$(python3 -c 'import os; print(os.path.realpath("'"$0"'"))')
 WORKSPACE=$(dirname $(dirname $(dirname "${me}")))
 
-# There must be ${WORKSPACE}/WORKSPACE.
-if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
-  echo "File not found: ${WORKSPACE}/WORKSPACE"
+# There must be ${WORKSPACE}/MODULE.bazel.
+if [ ! -f "${WORKSPACE}/MODULE.bazel" ]; then
+  echo "File not found: ${WORKSPACE}/MODULE.bazel"
   exit 1
 fi
 

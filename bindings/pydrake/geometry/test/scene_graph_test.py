@@ -269,6 +269,10 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(
             inspector.GetName(frame_id=global_frame), "anchored_frame1"
         )
+        self.assertEqual(
+            inspector.GetParentFrame(frame_id=global_frame),
+            SceneGraph.world_frame_id(),
+        )
         self.assertEqual(inspector.GetFrameGroup(frame_id=global_frame), 0)
         self.assertEqual(
             inspector.NumGeometriesForFrame(frame_id=global_frame), 2
@@ -700,7 +704,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         obj = GeometryConfigurationVector()
         geometry_id = mut.GeometryId.get_new_id()
 
-        obj.set_value(id=geometry_id, value=np.ones((10)))
+        obj.set_value(id=geometry_id, value=np.ones(10))
         self.assertEqual(obj.size(), 1)
         obj_value = obj.value(id=geometry_id)
         self.assertIsInstance(obj_value, np.ndarray)

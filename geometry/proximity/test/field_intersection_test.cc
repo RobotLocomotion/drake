@@ -92,8 +92,8 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneIdenticalFrames) {
       CalcEquilibriumPlane(0, field0_M_, 0, field1_N_, X_MN, &plane_M);
 
   ASSERT_TRUE(success);
-  EXPECT_TRUE(CompareMatrices(plane_M.normal(), expected_plane_M.normal(),
-                              tolerance()));
+  EXPECT_TRUE(CompareMatrices(plane_M.unit_normal(),
+                              expected_plane_M.unit_normal(), tolerance()));
   // The choice of this query point is arbitrary.
   const Vector3d p_MQ(0.1, 0.2, 0.3);
   const double expected_height = expected_plane_M.CalcHeight<double>(p_MQ);
@@ -133,8 +133,8 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneComplexTransform) {
   bool success = CalcEquilibriumPlane(0, field0_F, 0, field1_G, X_FG, &plane_F);
 
   ASSERT_TRUE(success);
-  EXPECT_TRUE(CompareMatrices(plane_F.normal(), expected_plane_F.normal(),
-                              tolerance()));
+  EXPECT_TRUE(CompareMatrices(plane_F.unit_normal(),
+                              expected_plane_F.unit_normal(), tolerance()));
   // The choice of this query point is arbitrary.
   const Vector3d p_FQ(0.1, 0.2, 0.3);
   const double expected_height = expected_plane_F.CalcHeight<double>(p_FQ);
@@ -159,7 +159,7 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
 
     ASSERT_FALSE(success);
     // Verify that the plane has not changed from its initial value.
-    EXPECT_EQ(plane_M.normal(), init_plane_M.normal());
+    EXPECT_EQ(plane_M.unit_normal(), init_plane_M.unit_normal());
     // The choice of this query point is arbitrary.
     const Vector3d p_FQ(0.1, 0.2, 0.3);
     const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);
@@ -182,7 +182,7 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
 
     ASSERT_FALSE(success);
     // Verify that the plane has not changed from its initial value.
-    EXPECT_EQ(plane_M.normal(), init_plane_M.normal());
+    EXPECT_EQ(plane_M.unit_normal(), init_plane_M.unit_normal());
     // The choice of this query point is arbitrary.
     const Vector3d p_FQ(0.1, 0.2, 0.3);
     const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);

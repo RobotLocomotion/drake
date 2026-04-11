@@ -68,10 +68,6 @@ void CheckWebsocketCommand(const Meshcat& meshcat,
   std::vector<std::string> argv;
   argv.push_back(
       FindResourceOrThrow("drake/geometry/meshcat_websocket_client"));
-  // Even when this unit test is itself running under valgrind, we don't want to
-  // instrument the helper process. Our valgrind configuration recognizes this
-  // argument and skips instrumentation of the child process.
-  argv.push_back("--disable-drake-valgrind-tracing");
   argv.push_back(fmt::format("--ws_url={}", meshcat.ws_url()));
   if (send_json) {
     DRAKE_DEMAND(!send_json->empty());
@@ -1533,6 +1529,12 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   // delimiting text of the connection block.
   EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
   EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
+}
+
+GTEST_TEST(MeshcatTest, StaticZip) {
+  Meshcat meshcat;
+  const std::string zip = meshcat.StaticZip();
+  EXPECT_EQ(zip.substr(0, 4), "PK\x03\x04");
 }
 
 // Check that MeshcatParams.show_stats_plot sends a show_realtime_rate message.

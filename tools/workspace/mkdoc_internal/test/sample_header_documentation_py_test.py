@@ -26,8 +26,8 @@ class TestDocumentation(unittest.TestCase):
         expected_file = join(d, "sample_header_documentation.expected.h")
         actual_file = join(d, "sample_header_documentation.h")
         # Ensure there is no difference between files.
-        print("a: {}".format(expected_file))
-        print("b: {}".format(actual_file))
+        print(f"a: {expected_file}")
+        print(f"b: {actual_file}")
         expected = _read(expected_file)
         actual = _read(actual_file).replace(
             "GENERATED FILE DO NOT EDIT",

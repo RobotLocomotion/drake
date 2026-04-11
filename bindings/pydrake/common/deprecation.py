@@ -47,7 +47,7 @@ class ModuleShim:
             "Please define `__all__` for this module."
         )
         assert isinstance(orig_module, ModuleType), (
-            "{} must be a module".format(orig_module)
+            f"{orig_module} must be a module"
         )
         # https://stackoverflow.com/a/16237698/7829525
         object.__setattr__(self, "_orig_module", orig_module)

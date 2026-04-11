@@ -19,6 +19,7 @@ import csv
 import email.utils
 import os
 from pathlib import Path
+import platform
 import shutil
 import subprocess
 import tarfile
@@ -49,6 +50,15 @@ def _run(args):
     deb_copyright = _rlocation("debian/copyright")
     deb_changelog_in = _rlocation("debian/changelog.in")
 
+    # Discern the architecture we're running on.
+    arch = platform.machine().lower()
+    if arch in {"amd64", "x86_64"}:
+        arch = "amd64"
+    elif arch in {"arm64", "aarch64"}:
+        arch = "arm64"
+    else:
+        raise RuntimeError(f"Unsupported architecture {arch!r}.")
+
     # Discern the version badging to use, get the dependencies for drake.
     codename = _get_os_release()["VERSION_CODENAME"]
     assert codename in args.tgz, (
@@ -75,7 +85,7 @@ def _run(args):
     # comma (otherwise debian/rules will crash).
     depends = packages_txt.rstrip().replace("\n", ",\n         ")
     with open(deb_control_in, encoding="utf-8") as f:
-        deb_control_contents = f.read().format(depends=depends)
+        deb_control_contents = f.read().format(arch=arch, depends=depends)
 
     # Compute the new changelog.
     with open(deb_changelog_in, encoding="utf-8") as f:
@@ -118,7 +128,7 @@ def _run(args):
     # 20220512.  As such, we list the directories under our alien folder and
     # assert that its length is one.  Note that regardless of the name of the
     # folder produced, the final `.deb` file will have the correct name format
-    # drake-dev_{version}-1_amd64.deb.
+    # drake-dev_{version}-1_{arch}.deb.
     directories = [d for d in Path(cwd).iterdir() if d.is_dir()]
     assert len(directories) == 1, "Unable to discover alien output directory."
     package_dir = str(directories[0])
@@ -140,7 +150,7 @@ def _run(args):
         ["fakeroot", "debian/rules", "binary"], cwd=package_dir
     )
     shutil.move(
-        f"{cwd}/drake-dev_{drake_version}-1_amd64.deb", f"{args.output_dir}/"
+        f"{cwd}/drake-dev_{drake_version}-1_{arch}.deb", f"{args.output_dir}/"
     )
 
 

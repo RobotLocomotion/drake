@@ -10,9 +10,12 @@ package(
 
 py_library(
     name = "mpmath_py",
-    srcs = glob([
-        "mpmath/**/*.py",
-    ], allow_empty = False),
+    srcs = glob(
+        [
+            "mpmath/**/*.py",
+        ],
+        allow_empty = False,
+    ),
     imports = ["."],
 )
 

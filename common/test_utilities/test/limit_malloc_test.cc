@@ -246,6 +246,17 @@ GTEST_TEST(LimitReallocDeathTest, ChangingSizeTest) {
   free(dummy);
 }
 
+GTEST_TEST(LimitMallocTest, IsSupportedConiguration) {
+  LimitMalloc guard({.max_num_allocations = -1});
+  CallMalloc();
+  if (LimitMalloc::IsSupportedConfiguration()) {
+    EXPECT_EQ(guard.num_allocations(), 1);
+  } else {
+    // When LimitMalloc isn't supported, it won't count.
+    EXPECT_EQ(guard.num_allocations(), 0);
+  }
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace drake

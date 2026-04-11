@@ -11,10 +11,10 @@ cc_library(
     name = "config",
     srcs = ["SuiteSparse_config/SuiteSparse_config.c"],
     hdrs = ["SuiteSparse_config/SuiteSparse_config.h"],
-    strip_include_prefix = "SuiteSparse_config",
-    isystem = True,
     copts = ["-fvisibility=hidden"],
+    isystem = True,
     linkstatic = True,
+    strip_include_prefix = "SuiteSparse_config",
     visibility = ["//visibility:public"],
 )
 
@@ -22,12 +22,12 @@ cc_library(
 cc_library(
     name = "amd_hdrs",
     hdrs = [
-        "AMD/Include/amd_internal.h",
         "AMD/Include/amd.h",
+        "AMD/Include/amd_internal.h",
     ],
-    strip_include_prefix = "AMD/Include",
     isystem = True,
     linkstatic = True,
+    strip_include_prefix = "AMD/Include",
     deps = [
         ":config",
     ],
@@ -36,8 +36,8 @@ cc_library(
 # The libamd sources are compiled twice, once as 32-bit and once as 64-bit.
 _AMD_SRCS = glob(
     ["AMD/Source/amd_*.c"],
-    exclude = ["AMD/Source/amd_l*.c"],
     allow_empty = False,
+    exclude = ["AMD/Source/amd_l*.c"],
 )
 
 cc_library(
@@ -45,8 +45,8 @@ cc_library(
     srcs = _AMD_SRCS,
     copts = ["-fvisibility=hidden"],
     linkstatic = True,
-    deps = [":amd_hdrs"],
     visibility = ["//visibility:public"],
+    deps = [":amd_hdrs"],
 )
 
 # N.B. Most of SuiteSparse is GPL/LGPL licensed. Do NOT add any of those

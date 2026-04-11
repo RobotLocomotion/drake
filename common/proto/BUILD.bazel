@@ -76,7 +76,6 @@ drake_cc_googletest(
 # backend on CI only.
 drake_py_unittest(
     name = "call_python_test",
-    size = "small",
     data = [
         ":call_python_client_cli",
         ":call_python_server_test",

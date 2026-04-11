@@ -24,30 +24,29 @@ officially supports when building from source:
 
 <!-- The operating system requirements should match those listed in the root
      CMakeLists.txt. -->
-<!-- The minimum compiler versions should match those listed in both the root
-     CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
+<!-- The minimum compiler versions should match those listed in the root
+     CMakeLists.txt. -->
 <!-- The minimum Python version(s) should match those listed in both the root
      CMakeLists.txt and setup/python/pyproject.toml. -->
-<!-- The minimum CMake version across all platforms should match that listed
-     in the root CMakeLists.txt, and the version range should match that
-     listed in tools/install/libdrake/drake-config.cmake.in (and all
-     corresponding tests). -->
+<!-- The maximum CMake version across all platforms should match the upper
+     bound ("policy version") listed in both the root CMakeLists.txt and
+     tools/install/libdrake/drake-config.cmake.in (along with the related
+     libdrake tests). -->
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java       |
-|------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.4   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.4   | 3.28  | GCC 13 (default) or Clang 19 | OpenJDK 21 |
-| macOS Sequoia (15)                 | arm64        | 3.14       | 8.4   | 4.2   | Apple LLVM 17 (Xcode 26.1)   | OpenJDK 23 |
-| macOS Tahoe (26)                   | arm64        | 3.14       | 8.4   | 4.2   | Apple LLVM 17 (Xcode 26.1)   | OpenJDK 23 |
+| Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
+|-------------------------------------|--------------|------------|-------|-------|------------------------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.14       | 9.0   | 4.2   | GCC 15 (default) or Clang 21 |
+| macOS Sequoia (15)                  | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Tahoe (26)                    | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
 
 Unofficially, Drake is also likely to be compatible with newer versions of
-Ubuntu or macOS than what are listed, or with Ubuntu running on arm64, or
-with other versions of Python or Java. However, these are not supported
-so if it doesn't work for you then please file a pull request with the fix,
-not a bug report.
+Ubuntu or macOS than what are listed, or with other versions of Python or Java.
+However, these are not supported so if it doesn't work for you then please file
+a pull request with the fix, not a bug report.
 
 All else being equal, we would recommend developers use Ubuntu 24.04 (Noble).
 
@@ -57,7 +56,11 @@ maybe require extra setup. See the
 
 ⁽²⁾ CPython is the only Python implementation supported.
 
-⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
+⁽³⁾ Drake requires a compiler running in C++23 (or greater) mode.
+
+⁽⁴⁾ On an experimental basis, Drake also supports aarch64 on Ubuntu 24.04
+(Noble). Follow [#13514](https://github.com/RobotLocomotion/drake/issues/13514)
+for updates.
 
 # Building with CMake
 
@@ -102,7 +105,7 @@ can be specified by the user to be parsed by Drake's CMake and passed to the
 Bazel build.
 
 * [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
-* [`CMAKE_(C|CXX)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_(C|CXX|Fortran)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
 * [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
 
 Building and installing Drake also requires a working installation of Python.
@@ -161,8 +164,6 @@ Adjusting open-source dependencies:
   * This option is only available if pkg-config is at least version 1.0.
 * `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to
   locate a user-provided `ZLIB::ZLIB` library instead of building from source.
-  * Caveat: on macOS, for now this hardcodes `-lz`
-    instead of calling `find_package`.
 * `WITH_CLARABEL` (default `ON`). When `ON`, enables the `ClarabelSolver`
   in the build. See `ClarabelSolver::available()` to retrieve this setting at
   runtime.
@@ -193,12 +194,16 @@ Adjusting open-source dependencies:
 * `WITH_RENDER_VTK` (default `ON`). When `ON`, enables the `RenderEngineVtk` in
   the build. See `geometry::kHasRenderEngineVtk` to retrieve this setting at
   runtime.
+* `WITH_OPENMP` (default `ON` on Linux; `OFF` on macOS). When `ON`, enables
+  OpenMP-based parallelization. See documentation of
+  [Environment Variables](/doxygen_cxx/group__environment__variables.html)
+  for how to control the level of parallelism at runtime.
 
 Adjusting closed-source (commercial) software dependencies:
 
 * `WITH_GUROBI` (default `OFF`).
   When `ON`, enables the `GurobiSolver` in the build.
-  * When enabled, you must download and install Gurobi 12.0 yourself prior to
+  * When enabled, you must download and install Gurobi 13.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
     download Gurobi. If Gurobi is not installed to its standard location, you
     must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
@@ -225,11 +230,10 @@ Adjusting closed-source (commercial) software dependencies:
 
 Adjusting features:
 
-* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `ON`).
+* `DRAKE_USE_EIGEN_LEGACY_AUTODIFF` (default `OFF`).
   When `ON`, Drake uses `<unsupported/Eigen/AutoDiff>` for its autodiff support.
   When `OFF`, Drake uses a custom re-implementation. Using `ON` is deprecated
-  and will be removed from Drake on or after 2026-07-01. The default will change
-  to `OFF` on or after 2026-04-01.
+  and will be removed from Drake on or after 2026-07-01.
 
 Adjusting installation methods (advanced):
 
@@ -259,13 +263,6 @@ prior tree (within the `install` sub-directory) before running `make`.
 To run the installed copy of `pydrake`, you will also need to have your
 ``PYTHONPATH`` configured correctly.
 
-*Ubuntu 22.04 (Jammy):*
-
-```bash
-cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.10/site-packages:${PYTHONPATH}
-```
-
 *Ubuntu 24.04 (Noble):*
 
 ```bash
@@ -273,7 +270,7 @@ cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 ```
 
-*macOS:*
+*Ubuntu 26.04 (Resolute) or macOS:*
 
 ```bash
 cd drake-build

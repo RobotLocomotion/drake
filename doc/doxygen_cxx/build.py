@@ -265,7 +265,7 @@ def _build(*, out_dir, temp_dir, modules, quick):
     for i in files_to_remove:
         try:
             os.remove(i)
-        except IOError:
+        except OSError:
             pass
 
     # The nominal pages to offer for preview.

@@ -71,7 +71,7 @@ class TestDownloader(unittest.TestCase):
 
         # Wrap a call to main.
         try:
-            mut._main([json_filename, error_filename, "UNUSED_ARGUMENT"])
+            mut._main([json_filename, error_filename])
             returncode = 0
         except SystemExit as e:
             returncode = e.code

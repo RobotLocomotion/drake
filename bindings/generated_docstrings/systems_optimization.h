@@ -27,8 +27,8 @@ constexpr struct /* pydrake_doc_systems_optimization */ {
         const char* doc =
 R"""(This class is a factory class to generate SystemConstraintWrapper.
 Namely this class helps to convert a SystemConstraint to a
-solvers::Constraint. Internally this class will convert a
-System<double> to System<AutoDiffXd> (and System<symbolic::Expression>
+solvers∷Constraint. Internally this class will convert a
+System<double> to System<AutoDiffXd> (and System<symbolic∷Expression>
 if possible), and store these systems (of different scalar types)
 inside this class. Using this class with a system that cannot be
 converted to System<AutoDiffXd> will cause a runtime error.)""";
@@ -36,19 +36,19 @@ converted to System<AutoDiffXd> will cause a runtime error.)""";
         struct /* Create */ {
           // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
-R"""(This method creates a solvers::Constraint from a SystemConstraint. The
+R"""(This method creates a solvers∷Constraint from a SystemConstraint. The
 newly created constraint represents lower <=
 system_constraint.Calc(UpdateContextFromDecisionVariablesGeneric(x))
 <= upper, where lower and upper are obtained from
-SystemConstraint::lower_bound() and SystemConstraint::upper_bound().
+SystemConstraint∷lower_bound() and SystemConstraint∷upper_bound().
 
 Parameter ``index``:
     The index of the constraint stored inside ``system`` in the class
     constructor.
 
 Parameter ``context``:
-    SystemConstraint::Calc function requires a context as the input.
-    On the other hand, the generated constraint might be imposed on a
+    SystemConstraint∷Calc function requires a context as the input. On
+    the other hand, the generated constraint might be imposed on a
     partial subset of variables (state, time, input and parameters)
     inside the context. Hence we use
     ``UpdateContextFromDecisionVariablesGeneric`` to select the
@@ -81,7 +81,7 @@ Returns ``constraints``:
     above forms, then constraints.value()[i] is the i'th row of the
     SystemConstraint evaluation result; if the SystemConstraint cannot
     be parsed in the above forms (either due to the System is not
-    instantiated with symbolic::Expression, or the constraint is not
+    instantiated with symbolic∷Expression, or the constraint is not
     linear), then constraints.has_value() = false.)""";
         } MaybeCreateConstraintSymbolically;
         // Symbol: drake::systems::SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically
@@ -110,7 +110,7 @@ Note:
 Returns ``constraint``:
     A generic nonlinear constraint parsed from SystemConstraint. If
     the SystemConstraint cannot be parsed to the generic constraint
-    using ``context`` instantiated with symbolic::Expression, then
+    using ``context`` instantiated with symbolic∷Expression, then
     constraint.has_value() = false.
 
 Raises:
@@ -133,7 +133,7 @@ R"""(Getters for the system instantiated with AutoDiffXd.)""";
           // Source: drake/systems/optimization/system_constraint_adapter.h
           const char* doc =
 R"""(Returns the symbolic system. Throws a runtime error if the system
-cannot be instantiated with symbolic::Expression.)""";
+cannot be instantiated with symbolic∷Expression.)""";
         } system_symbolic;
       } SystemConstraintAdapter;
       // Symbol: drake::systems::SystemConstraintWrapper
@@ -141,7 +141,7 @@ cannot be instantiated with symbolic::Expression.)""";
         // Source: drake/systems/optimization/system_constraint_wrapper.h
         const char* doc =
 R"""(This wrapper class wraps a SystemConstraint object to the format of
-solvers::Constraint. The constraint is lower <=
+solvers∷Constraint. The constraint is lower <=
 SystemConstraint.Calc(UpdateContextFromDecisionVaraibles(x)) <= upper
 where lower/upper are the lower and upper bounds of the
 SystemConstraint object. When the lower and upper are equal, this
@@ -151,13 +151,13 @@ represents an equality constraint.)""";
           // Source: drake/systems/optimization/system_constraint_wrapper.h
           const char* doc =
 R"""(Wraps a single SystemConstraint of the given system into a
-solvers::Constraint. Note that this constraint doesn't require the
-System to support symbolic expressions. The wrapped
-solvers::Constraint is a generic nonlinear constraint.
+solvers∷Constraint. Note that this constraint doesn't require the
+System to support symbolic expressions. The wrapped solvers∷Constraint
+is a generic nonlinear constraint.
 
 Parameter ``system_double``:
     The System whose SystemConstraint is converted to
-    solvers::Constraint.
+    solvers∷Constraint.
 
 Parameter ``system_autodiff``:
     This system should be converted from system_double by converting
@@ -171,13 +171,13 @@ Parameter ``index``:
 
 Parameter ``context``:
     The value stored in this context will be used in
-    SystemConstraintWrapper::Eval. If ``updater_double`` (and
+    SystemConstraintWrapper∷Eval. If ``updater_double`` (and
     ``updater_autodiff)`` doesn't update everything in the context
     (such as state, input, params, etc), then the un-updated part in
     the context will keep its value to those stored in ``context``.
 
 Parameter ``updater_double``:
-    Maps x in SystemConstraintWrapper::Eval(x, &y) to a context. The
+    Maps x in SystemConstraintWrapper∷Eval(x, &y) to a context. The
     context is then used in SystemConstraint.Calc(context).
 
 Parameter ``updater_autodiff``:

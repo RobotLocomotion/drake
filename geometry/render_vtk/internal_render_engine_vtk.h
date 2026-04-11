@@ -3,6 +3,7 @@
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,12 +18,14 @@
 #include <vtkRenderer.h>             // vtkRenderingCore
 #include <vtkShaderProgram.h>        // vtkRenderingOpenGL2
 #include <vtkSmartPointer.h>         // vtkCommonCore
+#include <vtkTexture.h>              // vtkRenderingCore
 #include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
@@ -167,12 +170,20 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
     const math::RigidTransformd& X_WG;
     const GeometryId id;
     bool accepted{true};
+    std::string name;
   };
 
-  // @see RenderEngine::DoRegisterVisual().
+  // @see RenderEngine::DoRegisterVisual(). This throws; RenderEngineVtk wants
+  // to capture names; DoRegisterNamedVisual() is the true implementation.
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
                         const PerceptionProperties& properties,
-                        const math::RigidTransformd& X_WG) override;
+                        const math::RigidTransformd& X_WG) final;
+
+  // @see RenderEngine::DoRegisterNamedVisual().
+  bool DoRegisterNamedVisual(GeometryId id, const Shape& shape,
+                             const PerceptionProperties& properties,
+                             const math::RigidTransformd& X_WG,
+                             std::string_view name) override;
 
   // @see RenderEngine::DoRegisterDeformableVisual().
   bool DoRegisterDeformableVisual(
@@ -263,15 +274,51 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // @pre actor is not null.
   static void SetDepthShader(vtkActor* actor);
 
+  // Stores cached mesh data to avoid redundant re-parsing and re-instantiation
+  // of geometry when the same mesh is registered multiple times.
+  //
+  // Each `Part` holds the VTK geometry source (a vtkPolyDataAlgorithm) and
+  // the resolved material for one OBJ sub-mesh. Multiple geometry
+  // registrations that reference the same OBJ file share these sources,
+  // so VTK only allocates and uploads the vertex data once.
+  struct CachedMesh {
+    struct Part {
+      // The material from the OBJ/MTL file (RenderMaterial::from_mesh_file ==
+      // true), or nullopt when the file defined no material. When nullopt, the
+      // per-instance material is resolved at registration time via
+      // DefineMaterial() so that phong/diffuse perception properties and the
+      // engine default_diffuse are both honoured correctly for each instance.
+      std::optional<geometry::internal::RenderMaterial> material;
+      vtkSmartPointer<vtkPolyDataAlgorithm> vtk_source;
+    };
+    std::vector<Part> parts;
+    // The number of registered Drake geometries in _this_ engine that reference
+    // this cache entry. When this count reaches zero the entry is evicted.
+    int use_count{0};
+  };
+
+  // Instantiates the parts of a CachedMesh. Materials and scale factors are
+  // resolved on a per-instance basis.
+  void ImplementCachedMesh(const std::string& cache_key,
+                           const Eigen::Vector3d& scale,
+                           const RegistrationData& data);
+
   // A geometry is modeled with one or more "parts". A part maps to the actor
   // representing it in VTK and an optional transform mapping the actor's frame
   // A to the Drake geometry frame G. This mapping can include scaling terms.
   // If T_GA = I, then `T_GA` is set to nullptr. Otherwise, posing the actor
   // using geometry's world pose X_WG should set the transform to
   // T_WA = X_WG * T_GA.
+  //
+  // For the color-pipeline parts that carry a texture, `texture_key` records
+  // the key into `texture_cache_` so that DoRemoveGeometry can perform
+  // correct reference-count-based eviction.
   struct Part {
     vtkSmartPointer<vtkActor> actor;
     vtkSmartPointer<vtkMatrix4x4> T_GA;
+    // Non-null only for color-pipeline parts whose texture came from
+    // texture_cache_.
+    std::optional<std::string> texture_key;
   };
 
   // Some geometries are represented by multiple parts (such as when importing
@@ -315,22 +362,6 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
-  // By design, all of the geometry is shared across clones of the render
-  // engine. This is predicated upon the idea that the geometry is *not*
-  // deformable and does *not* depend on the system's pose information.
-  // (If there is deformable geometry, it will have to be handled differently.)
-  // Having "shared geometry" means having shared vtkPolyDataAlgorithm and
-  // vtkOpenGLShaderProperty instances. The shader callback gets registered to
-  // the *mapper* instances, so they all, implicitly, share the same callback.
-  // Making this member static facilitates that but it does preclude the
-  // possibility of simultaneous renderings with different uniform parameters.
-  // Currently, this doesn't happen because drake isn't particularly thread safe
-  // (or executed in such a context). However, this renderer will need some
-  // formal thread safe mechanism so that it doesn't rely on that in the future.
-  // TODO(SeanCurtis-TRI): This is not threadsafe; investigate mechanisms to
-  // prevent undesirable behaviors if used in multi-threaded application.
-  static vtkNew<ShaderCallback> uniform_setting_callback_;
-
   // Obnoxious bright orange.
   Rgba default_diffuse_{0.9, 0.45, 0.1, 1.0};
 
@@ -340,6 +371,49 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // The collection of per-geometry actors -- one actor per pipeline (color,
   // depth, and label) -- keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, PropArray> props_;
+
+  // Cache mapping mesh source keys to parsed/rendered mesh data. The key is
+  // computed from MeshSource::GetCacheKey() to uniquely identify a mesh source.
+  // This eliminates redundant re-parsing and re-rendering when the same mesh
+  // is registered multiple times.
+  string_unordered_map<CachedMesh> mesh_cache_;
+
+  // The texture cache entry. We track the instantiated VTK texture along with
+  // our own reference count.
+  struct CachedTexture {
+    // The loaded texture object, shared across all geometry registrations that
+    // reference the same image data and texture parameters. Erasing this
+    // vtkSmartPointer removes our contribution to the texture's VTK reference
+    // count, but does not guarantee immediate destruction because VTK holds
+    // additional internal references (e.g. through actor bookkeeping). The
+    // texture will be destroyed only once all VTK-internal references are also
+    // released. The cache therefore ensures we never hold a texture alive
+    // longer than necessary, without making any stronger claim about timing.
+    vtkSmartPointer<vtkTexture> texture;
+
+    // Number of color-pipeline Part instances *in this engine instance* that
+    // currently hold a texture_key pointing at this entry. We cannot rely on
+    // the usage counter on the vtkSmartPointer because VTK internals will
+    // typically hold additional references. So, we count Drake's usages and
+    // delete the cache entry when Drake's usage count reaches zero.
+    int use_count{};
+  };
+
+  // Cache mapping texture keys to loaded vtkTexture objects. The key is based
+  // on a hash of the image data (whether the image was specified as a path or a
+  // MemoryFile). While it requires us to read the bytes from disk with every
+  // reference, a cached image will still avoid decoding the image and maximize
+  // reuse on the GPU.
+  // The full image key contains the hash plus various suffixes to capture
+  // varying per-texture parameters (OpenGl requires different texture objects
+  // for different parameter combinations).
+  string_unordered_map<CachedTexture> texture_cache_;
+
+  // Maps each geometry that was registered through the mesh cache to its
+  // cache key. Used by DoRemoveGeometry() to decrement use_count and evict
+  // entries whose count reaches zero. Geometries not using the cache
+  // (primitives, glTF, deformables) are never inserted here.
+  std::unordered_map<GeometryId, std::string> geometry_mesh_keys_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.

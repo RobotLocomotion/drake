@@ -27,14 +27,17 @@ if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
   exit 1
 fi
 
+. /etc/os-release
+
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
-codename=$(lsb_release -sc)
+arch=$(/usr/bin/arch)
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
 import %workspace%/tools/ubuntu.bazelrc
-import %workspace%/tools/ubuntu-${codename}.bazelrc
+import %workspace%/tools/ubuntu-arch-${arch}.bazelrc
+import %workspace%/tools/ubuntu-${VERSION_CODENAME}.bazelrc
 EOF
 
 # Prefetch the bazelisk download of bazel.
@@ -42,3 +45,6 @@ EOF
 if [[ "${prefetch_bazel}" -eq 1 ]]; then
   (cd "${workspace_dir}" && bazel version)
 fi
+
+# Our MODULE.bazel uses this file to determine the default python version.
+/usr/bin/python3 -c "from sys import version_info as v; print('{}.{}'.format(v.major, v.minor))" > "${workspace_dir}/gen/python_version.txt"

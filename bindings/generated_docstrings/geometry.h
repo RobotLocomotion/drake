@@ -29,6 +29,7 @@
 // #include "drake/geometry/internal_frame.h"
 // #include "drake/geometry/internal_geometry.h"
 // #include "drake/geometry/kinematics_vector.h"
+// #include "drake/geometry/lazy_shared.h"
 // #include "drake/geometry/make_mesh_for_deformable.h"
 // #include "drake/geometry/mesh_deformation_interpolator.h"
 // #include "drake/geometry/mesh_source.h"
@@ -320,7 +321,7 @@ so a number of statements can be chained together, i.e.,
 It's worth noting, that the statements are evaluated in *invocation*
 order such that a later statement can partially or completely undo the
 effect of an earlier statement. The full declaration is evaluated by
-CollisionFilterManager::Apply().)""";
+CollisionFilterManager∷Apply().)""";
         // Symbol: drake::geometry::CollisionFilterDeclaration::AllowBetween
         struct /* AllowBetween */ {
           // Source: drake/geometry/collision_filter_declaration.h
@@ -753,7 +754,7 @@ and including the dot. If ``this`` is constructed from a file path,
 the extension is extracted from the path. I.e., /foo/bar/mesh.obj and
 /foo/bar/mesh.OBJ would both report the ".obj" extension. The
 "extension" portion of the filename is defined as in
-std::filesystem::path::extension().
+std∷filesystem∷path∷extension().
 
 If ``this`` is constructed using in-memory file contents, it is the
 extension of the MemoryFile passed to the constructor.)""";
@@ -850,9 +851,9 @@ These properties affect hydroelastic contact only. For more detail,
 including limits of the numeric parameters,
 
 See also:
-    geometry::AddRigidHydroelasticProperties,
-    geometry::AddCompliantHydroelasticProperties,
-    geometry::AddCompliantHydroelasticPropertiesForHalfSpace.
+    geometry∷AddRigidHydroelasticProperties,
+    geometry∷AddCompliantHydroelasticProperties,
+    geometry∷AddCompliantHydroelasticPropertiesForHalfSpace.
 
 For more context,
 
@@ -862,10 +863,9 @@ See also:
     be used. - "rigid": the default hydroelastic compliance type will
     be rigid; note that rigid-rigid contact is not supported by the
     hydroelastic contact model, but is supported by point contact
-    (multibody::ContactModel::kPoint or
-    multibody::ContactModel::kHydroelasticWithFallback). -
-    "compliant": the default hydroelastic compliance type will be
-    compliant.)""";
+    (multibody∷ContactModel∷kPoint or
+    multibody∷ContactModel∷kHydroelasticWithFallback). - "compliant":
+    the default hydroelastic compliance type will be compliant.)""";
         } compliance_type;
         // Symbol: drake::geometry::DefaultProximityProperties::dynamic_friction
         struct /* dynamic_friction */ {
@@ -877,7 +877,7 @@ These properties affect contact in general. For more detail, including
 limits of the numeric parameters,
 
 See also:
-    geometry::AddContactMaterial, multibody::CoulombFriction,
+    geometry∷AddContactMaterial, multibody∷CoulombFriction,
     mbp_contact_modeling, mbp_dissipation_model. To be valid, either
     both friction values must be populated, or neither. Friction
     quantities are unitless.)""";
@@ -887,12 +887,12 @@ See also:
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy dissipation from contact, for contact approximations
-other than* multibody::DiscreteContactApproximation::kSap. Units are
+other than* multibody∷DiscreteContactApproximation∷kSap. Units are
 seconds per meter.
 
 If a non-deformable geometry is missing a value for dissipation,
 MultibodyPlant will generate a default value (based on
-multibody::MultibodyPlantConfig::penetration_allowance). However, this
+multibody∷MultibodyPlantConfig∷penetration_allowance). However, this
 behavior will be going away. Therefore, we recommend guaranteeing that
 every geometry has a dissipation value either by assigning the
 property directly to the geometry or by providing a non-null value
@@ -955,7 +955,7 @@ R"""(A measure of material stiffness, in units of Newtons per meter.
 
 If a non-deformable geometry is missing a value for stiffness,
 MultibodyPlant will generate a default value (based on
-multibody::MultibodyPlantConfig::penetration_allowance). However, this
+multibody∷MultibodyPlantConfig∷penetration_allowance). However, this
 behavior will be going away. Therefore, we recommend guaranteeing that
 every geometry has a stiffness value either by assigning the property
 directly to the geometry or by providing a non-null value here.
@@ -969,7 +969,7 @@ parameters specific to your model.)""";
           // Source: drake/geometry/scene_graph_config.h
           const char* doc =
 R"""(Controls energy damping from contact, *only for*
-multibody::DiscreteContactApproximation::kSap. Units are seconds.)""";
+multibody∷DiscreteContactApproximation∷kSap. Units are seconds.)""";
         } relaxation_time;
         // Symbol: drake::geometry::DefaultProximityProperties::resolution_hint
         struct /* resolution_hint */ {
@@ -1106,9 +1106,9 @@ that interfere with that will likely produce undesirable results.
 E.g.,
 
 - Evaluating a single instance of DrakeVisualizer across several threads,
-such that the data in the per-thread systems::Context varies.
+such that the data in the per-thread systems∷Context varies.
 - Evaluating multiple instances of DrakeVisualizer in a single thread that
-share the same lcm::DrakeLcmInterface.
+share the same lcm∷DrakeLcmInterface.
 
 **Mesh support**
 
@@ -1122,7 +1122,7 @@ that particular file format is supported.
 DrakeVisualizer is templated on ``T`` and can be used in a ``double``-
 or AutoDiffXd-valued Diagram. However, the diagram can only be
 converted from one scalar type to another if the DrakeVisualizer
-*owns* its lcm::DrakeLcmInterface instance. Attempts to scalar convert
+*owns* its lcm∷DrakeLcmInterface instance. Attempts to scalar convert
 the system otherwise will throw an exception.)""";
         // Symbol: drake::geometry::DrakeVisualizer::AddToBuilder
         struct /* AddToBuilder */ {
@@ -1130,14 +1130,14 @@ the system otherwise will throw an exception.)""";
           const char* doc_4args_builder_scene_graph_lcm_params =
 R"""(Connects the newly added DrakeVisualizer to the given SceneGraph's
 QueryObject-valued output port. The DrakeVisualizer's name (see
-systems::SystemBase::set_name) will be set to a sensible default
-value, unless the default name was already in use by another system.)""";
+systems∷SystemBase∷set_name) will be set to a sensible default value,
+unless the default name was already in use by another system.)""";
           // Source: drake/geometry/drake_visualizer.h
           const char* doc_4args_builder_query_object_port_lcm_params =
 R"""(Connects the newly added DrakeVisualizer to the given
 QueryObject-valued output port. The DrakeVisualizer's name (see
-systems::SystemBase::set_name) will be set to a sensible default
-value, unless the default name was already in use by another system.)""";
+systems∷SystemBase∷set_name) will be set to a sensible default value,
+unless the default name was already in use by another system.)""";
         } AddToBuilder;
         // Symbol: drake::geometry::DrakeVisualizer::DispatchLoadMessage
         struct /* DispatchLoadMessage */ {
@@ -1170,7 +1170,7 @@ Raises:
     RuntimeError if ``params.publish_period <= 0``.
 
 Raises:
-    RuntimeError if ``params.role == Role::kUnassigned``.)""";
+    RuntimeError if ``params.role == Role∷kUnassigned``.)""";
           // Source: drake/geometry/drake_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
@@ -1178,7 +1178,7 @@ should only be used to convert *from* double *to* other scalar types.
 
 Raises:
     RuntimeError if ``other`` does not *own* its
-    lcm::DrakeLcmInterface.)""";
+    lcm∷DrakeLcmInterface.)""";
         } ctor;
         // Symbol: drake::geometry::DrakeVisualizer::query_object_input_port
         struct /* query_object_input_port */ {
@@ -1233,7 +1233,7 @@ quite helpful in assessing contact behavior to visualize these
 discrete meshes (in place of the idealized primitives).
 
 To visualize these representations it is necessary to request
-visualization of geometries with the Role::kProximity role (see the
+visualization of geometries with the Role∷kProximity role (see the
 role field). It is further necessary to explicitly request the
 hydroelastic meshes where available (setting show_hydroelastic to
 ``True``).
@@ -1339,9 +1339,9 @@ R"""(Type used to identify geometry frames in SceneGraph.)""";
         const char* doc =
 R"""(This simple class carries the definition of a frame used in the
 SceneGraph. To register moving frames with SceneGraph (see
-SceneGraph::RegisterFrame()), a geometry source (see
-SceneGraph::RegisterSource()) instantiates a frame and passes
-ownership over to SceneGraph.
+SceneGraph∷RegisterFrame()), a geometry source (see
+SceneGraph∷RegisterSource()) instantiates a frame and passes ownership
+over to SceneGraph.
 
 A frame is defined by two pieces of information:
 
@@ -1702,12 +1702,12 @@ properties of various types.
 
 .. code-block:: c++
 
-    const std::string group_name("my_group");
+    const std∷string group_name("my_group");
     ProximityProperties properties;
     // This first invocation implicitly creates the group "my_group".
     properties.AddProperty(group_name, "count", 7);     // int type
     properties.AddProperty(group_name, "length", 7.);   // double type
-    properties.AddProperty(group_name, "name", "7");    // std::string type
+    properties.AddProperty(group_name, "name", "7");    // std∷string type
 
 .. raw:: html
 
@@ -1729,9 +1729,9 @@ group, including the default group.
 .. code-block:: c++
 
     ProximityProperties properties;
-    properties.AddProperty(ProximityProperties::default_group_name(), "count", 7);
-    properties.AddProperty(ProximityProperties::default_group_name(), "width", 7.);
-    properties.AddProperty(ProximityProperties::default_group_name(), "name", "7");
+    properties.AddProperty(ProximityProperties∷default_group_name(), "count", 7);
+    properties.AddProperty(ProximityProperties∷default_group_name(), "width", 7.);
+    properties.AddProperty(ProximityProperties∷default_group_name(), "name", "7");
 
 .. raw:: html
 
@@ -1761,11 +1761,11 @@ with their corresponding values in the default struct.
     struct MyData {
     int i{};
     double d{};
-    std::string s;
+    std∷string s;
     };
     
     ProximityProperties properties;
-    const std::string group_name("my_group");
+    const std∷string group_name("my_group");
     MyData data{7, 7., "7"};
     properties.AddProperty(group_name, "data1", data);
     // These alternate forms are also acceptable (but not in succession, as the
@@ -1895,7 +1895,7 @@ work with AbstractValue.
 
     const IllustrationProperties& properties = FunctionThatReturnsProperties();
     for (const auto& pair : properties.GetGroupProperties("MyGroup") {
-    const std::string& name = pair.first;
+    const std∷string& name = pair.first;
     if (name == "rgba") {
     // Throws an exception if the named parameter is of the wrong type.
     const Rgba& rgba =
@@ -1991,7 +1991,7 @@ Template parameter ``ValueType``:
     The expected type of the desired property.
 
 Returns:
-    const ValueType& of stored value. If ValueType is Eigen::Vector4d,
+    const ValueType& of stored value. If ValueType is Eigen∷Vector4d,
     the return type will be a copy translated from Rgba.)""";
         } GetProperty;
         // Symbol: drake::geometry::GeometryProperties::GetPropertyAbstract
@@ -2168,14 +2168,14 @@ R"""(Converts the GeometryProperties to a string representation.)""";
         const char* doc =
 R"""(The GeometrySet, as its name implies, is a convenience class for
 defining a set of geometries. What makes it unique from a simple
-``std::set<GeometryId>`` instance is that membership doesn't require
+``std∷set<GeometryId>`` instance is that membership doesn't require
 explicit GeometryId enumeration; GeometryId values can be added to the
 set by adding the ``FrameId`` for the frame to which the geometries
 are rigidly affixed.
 
 This class does no validation; it is a simple collection. Ultimately,
 it serves as the operand of various geometry operations (e.g.,
-CollisionFilterDeclaration and CollisionFilterManager::Apply(). If the
+CollisionFilterDeclaration and CollisionFilterManager∷Apply(). If the
 *operation* has a particular prerequisite on the members of a
 GeometrySet, it is the operation's responsibility to enforce that
 requirement.
@@ -2217,7 +2217,7 @@ Note:
         struct /* AddRenderer */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::AddRenderer().)""";
+R"""(Implementation of SceneGraph∷AddRenderer().)""";
         } AddRenderer;
         // Symbol: drake::geometry::GeometryState::ApplyProximityDefaults
         struct /* ApplyProximityDefaults */ {
@@ -2241,99 +2241,99 @@ Precondition:
         struct /* AssignRole */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_was_unable_to_choose_unambiguous_names =
-R"""(Implementation of SceneGraph::AssignRole(SourceId, GeometryId,
-ProximityProperties) "SceneGraph::AssignRole()".)""";
+R"""(Implementation of SceneGraph∷AssignRole(SourceId, GeometryId,
+ProximityProperties) "SceneGraph∷AssignRole()".)""";
         } AssignRole;
         // Symbol: drake::geometry::GeometryState::BelongsToSource
         struct /* BelongsToSource */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_2args_frame_id_source_id =
-R"""(Implementation of SceneGraphInspector::BelongsToSource(FrameId,
+R"""(Implementation of SceneGraphInspector∷BelongsToSource(FrameId,
 SourceId) const.)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_2args_geometry_id_source_id =
-R"""(Implementation of SceneGraphInspector::BelongsToSource(GeometryId,
+R"""(Implementation of SceneGraphInspector∷BelongsToSource(GeometryId,
 SourceId) const.)""";
         } BelongsToSource;
         // Symbol: drake::geometry::GeometryState::ChangeShape
         struct /* ChangeShape */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::ChangeShape().)""";
+R"""(Implementation of SceneGraph∷ChangeShape().)""";
         } ChangeShape;
         // Symbol: drake::geometry::GeometryState::CollisionFiltered
         struct /* CollisionFiltered */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::CollisionFiltered().)""";
+R"""(Implementation of SceneGraphInspector∷CollisionFiltered().)""";
         } CollisionFiltered;
         // Symbol: drake::geometry::GeometryState::ComputeAabbInWorld
         struct /* ComputeAabbInWorld */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeAabbInWorld(GeometryId).)""";
+R"""(Implementation of QueryObject∷ComputeAabbInWorld(GeometryId).)""";
         } ComputeAabbInWorld;
         // Symbol: drake::geometry::GeometryState::ComputeContactSurfaces
         struct /* ComputeContactSurfaces */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeContactSurfaces().)""";
+R"""(Implementation of QueryObject∷ComputeContactSurfaces().)""";
         } ComputeContactSurfaces;
         // Symbol: drake::geometry::GeometryState::ComputeContactSurfacesWithFallback
         struct /* ComputeContactSurfacesWithFallback */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeContactSurfacesWithFallback().)""";
+R"""(Implementation of QueryObject∷ComputeContactSurfacesWithFallback().)""";
         } ComputeContactSurfacesWithFallback;
         // Symbol: drake::geometry::GeometryState::ComputeDeformableContact
         struct /* ComputeDeformableContact */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeDeformableContact().)""";
+R"""(Implementation of QueryObject∷ComputeDeformableContact().)""";
         } ComputeDeformableContact;
         // Symbol: drake::geometry::GeometryState::ComputeObbInWorld
         struct /* ComputeObbInWorld */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeObbInWorld(GeometryId).)""";
+R"""(Implementation of QueryObject∷ComputeObbInWorld(GeometryId).)""";
         } ComputeObbInWorld;
         // Symbol: drake::geometry::GeometryState::ComputePointPairPenetration
         struct /* ComputePointPairPenetration */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputePointPairPenetration().)""";
+R"""(Implementation of QueryObject∷ComputePointPairPenetration().)""";
         } ComputePointPairPenetration;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistanceGeometryToPoint
         struct /* ComputeSignedDistanceGeometryToPoint */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeSignedDistanceGeometryToPoint().)""";
+R"""(Implementation of QueryObject∷ComputeSignedDistanceGeometryToPoint().)""";
         } ComputeSignedDistanceGeometryToPoint;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistancePairClosestPoints
         struct /* ComputeSignedDistancePairClosestPoints */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
-QueryObject::ComputeSignedDistancePairClosestPoints().)""";
+QueryObject∷ComputeSignedDistancePairClosestPoints().)""";
         } ComputeSignedDistancePairClosestPoints;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistancePairwiseClosestPoints
         struct /* ComputeSignedDistancePairwiseClosestPoints */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
-QueryObject::ComputeSignedDistancePairwiseClosestPoints().)""";
+QueryObject∷ComputeSignedDistancePairwiseClosestPoints().)""";
         } ComputeSignedDistancePairwiseClosestPoints;
         // Symbol: drake::geometry::GeometryState::ComputeSignedDistanceToPoint
         struct /* ComputeSignedDistanceToPoint */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::ComputeSignedDistanceToPoint().)""";
+R"""(Implementation of QueryObject∷ComputeSignedDistanceToPoint().)""";
         } ComputeSignedDistanceToPoint;
         // Symbol: drake::geometry::GeometryState::FindCollisionCandidates
         struct /* FindCollisionCandidates */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::FindCollisionCandidates().)""";
+R"""(Implementation of QueryObject∷FindCollisionCandidates().)""";
         } FindCollisionCandidates;
         // Symbol: drake::geometry::GeometryState::FrameIdRange
         struct /* FrameIdRange */ {
@@ -2346,7 +2346,7 @@ is used in range-based for loops to iterate through registered frames.)""";
         struct /* FramesForSource */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::FramesForSource().)""";
+R"""(Implementation of SceneGraphInspector∷FramesForSource().)""";
         } FramesForSource;
         // Symbol: drake::geometry::GeometryState::GeometryState<T>
         struct /* ctor */ {
@@ -2357,13 +2357,13 @@ R"""(Implementation of SceneGraphInspector::FramesForSource().)""";
         struct /* GetAllDeformableGeometryIds */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetAllDeformableGeometryIds().)""";
+R"""(Implementation of SceneGraphInspector∷GetAllDeformableGeometryIds().)""";
         } GetAllDeformableGeometryIds;
         // Symbol: drake::geometry::GeometryState::GetAllGeometryIds
         struct /* GetAllGeometryIds */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetAllGeometryIds().)""";
+R"""(Implementation of SceneGraphInspector∷GetAllGeometryIds().)""";
         } GetAllGeometryIds;
         // Symbol: drake::geometry::GeometryState::GetAllSourceIds
         struct /* GetAllSourceIds */ {
@@ -2377,146 +2377,146 @@ SceneGraph-internal source.)""";
         struct /* GetCollisionCandidates */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetCollisionCandidates().)""";
+R"""(Implementation of SceneGraphInspector∷GetCollisionCandidates().)""";
         } GetCollisionCandidates;
         // Symbol: drake::geometry::GeometryState::GetConvexHull
         struct /* GetConvexHull */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetConvexHull().)""";
+R"""(Implementation of SceneGraphInspector∷GetConvexHull().)""";
         } GetConvexHull;
         // Symbol: drake::geometry::GeometryState::GetDrivenMeshConfigurationsInWorld
         struct /* GetDrivenMeshConfigurationsInWorld */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::GetDrivenMeshConfigurationsInWorld().)""";
+R"""(Implementation of QueryObject∷GetDrivenMeshConfigurationsInWorld().)""";
         } GetDrivenMeshConfigurationsInWorld;
         // Symbol: drake::geometry::GeometryState::GetDrivenRenderMeshes
         struct /* GetDrivenRenderMeshes */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetDrivenRenderMeshes().)""";
+R"""(Implementation of SceneGraphInspector∷GetDrivenRenderMeshes().)""";
         } GetDrivenRenderMeshes;
         // Symbol: drake::geometry::GeometryState::GetFrameGroup
         struct /* GetFrameGroup */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetFrameGroup().)""";
+R"""(Implementation of SceneGraphInspector∷GetFrameGroup().)""";
         } GetFrameGroup;
         // Symbol: drake::geometry::GeometryState::GetFrameId
         struct /* GetFrameId */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetFrameId().)""";
+R"""(Implementation of SceneGraphInspector∷GetFrameId().)""";
         } GetFrameId;
         // Symbol: drake::geometry::GeometryState::GetGeometries
         struct /* GetGeometries */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetGeometries.)""";
+R"""(Implementation of SceneGraphInspector∷GetGeometries.)""";
         } GetGeometries;
         // Symbol: drake::geometry::GeometryState::GetGeometryIdByName
         struct /* GetGeometryIdByName */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetGeometryIdByName().)""";
+R"""(Implementation of SceneGraphInspector∷GetGeometryIdByName().)""";
         } GetGeometryIdByName;
         // Symbol: drake::geometry::GeometryState::GetGeometryIds
         struct /* GetGeometryIds */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetGeometryIds().)""";
+R"""(Implementation of SceneGraphInspector∷GetGeometryIds().)""";
         } GetGeometryIds;
         // Symbol: drake::geometry::GeometryState::GetIllustrationProperties
         struct /* GetIllustrationProperties */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetIllustrationProperties().)""";
+R"""(Implementation of SceneGraphInspector∷GetIllustrationProperties().)""";
         } GetIllustrationProperties;
         // Symbol: drake::geometry::GeometryState::GetName
         struct /* GetName */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_1args_id =
-R"""(Implementation of SceneGraphInspector::GetName().)""";
+R"""(Implementation of SceneGraphInspector∷GetName().)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_1args_frame_id =
-R"""(Implementation of SceneGraphInspector::GetName(FrameId) const.)""";
+R"""(Implementation of SceneGraphInspector∷GetName(FrameId) const.)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_1args_geometry_id =
-R"""(Implementation of SceneGraphInspector::GetName(GeometryId) const.)""";
+R"""(Implementation of SceneGraphInspector∷GetName(GeometryId) const.)""";
         } GetName;
         // Symbol: drake::geometry::GeometryState::GetObbInGeometryFrame
         struct /* GetObbInGeometryFrame */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetObbInGeometryFrame().)""";
+R"""(Implementation of SceneGraphInspector∷GetObbInGeometryFrame().)""";
         } GetObbInGeometryFrame;
         // Symbol: drake::geometry::GeometryState::GetOwningSourceName
         struct /* GetOwningSourceName */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_was_unable_to_choose_unambiguous_names =
-R"""(Implementation of SceneGraphInspector::GetOwningSourceName(FrameId)
+R"""(Implementation of SceneGraphInspector∷GetOwningSourceName(FrameId)
 const.)""";
         } GetOwningSourceName;
         // Symbol: drake::geometry::GeometryState::GetParentFrame
         struct /* GetParentFrame */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetParentFrame(FrameId) const.)""";
+R"""(Implementation of SceneGraphInspector∷GetParentFrame(FrameId) const.)""";
         } GetParentFrame;
         // Symbol: drake::geometry::GeometryState::GetPerceptionProperties
         struct /* GetPerceptionProperties */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetPerceptionProperties().)""";
+R"""(Implementation of SceneGraphInspector∷GetPerceptionProperties().)""";
         } GetPerceptionProperties;
         // Symbol: drake::geometry::GeometryState::GetPoseInFrame
         struct /* GetPoseInFrame */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::X_FG().)""";
+R"""(Implementation of SceneGraphInspector∷X_FG().)""";
         } GetPoseInFrame;
         // Symbol: drake::geometry::GeometryState::GetProximityProperties
         struct /* GetProximityProperties */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetProximityProperties().)""";
+R"""(Implementation of SceneGraphInspector∷GetProximityProperties().)""";
         } GetProximityProperties;
         // Symbol: drake::geometry::GeometryState::GetReferenceMesh
         struct /* GetReferenceMesh */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetReferenceMesh().)""";
+R"""(Implementation of SceneGraphInspector∷GetReferenceMesh().)""";
         } GetReferenceMesh;
         // Symbol: drake::geometry::GeometryState::GetRenderEngineByName
         struct /* GetRenderEngineByName */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::GetRenderEngineByName.)""";
+R"""(Implementation of QueryObject∷GetRenderEngineByName.)""";
         } GetRenderEngineByName;
         // Symbol: drake::geometry::GeometryState::GetShape
         struct /* GetShape */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Support for SceneGraphInspector::Reify().)""";
+R"""(Support for SceneGraphInspector∷Reify().)""";
         } GetShape;
         // Symbol: drake::geometry::GeometryState::HasCollisions
         struct /* HasCollisions */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::HasCollisions().)""";
+R"""(Implementation of QueryObject∷HasCollisions().)""";
         } HasCollisions;
         // Symbol: drake::geometry::GeometryState::HasRenderer
         struct /* HasRenderer */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::HasRenderer().)""";
+R"""(Implementation of SceneGraph∷HasRenderer().)""";
         } HasRenderer;
         // Symbol: drake::geometry::GeometryState::IsDeformableGeometry
         struct /* IsDeformableGeometry */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::IsDeformableGeometry().)""";
+R"""(Implementation of SceneGraphInspector∷IsDeformableGeometry().)""";
         } IsDeformableGeometry;
         // Symbol: drake::geometry::GeometryState::IsValidGeometryName
         struct /* IsValidGeometryName */ {
@@ -2550,7 +2550,7 @@ Raises:
         struct /* NumAnchoredGeometries */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::NumAnchoredGeometries().)""";
+R"""(Implementation of SceneGraphInspector∷NumAnchoredGeometries().)""";
         } NumAnchoredGeometries;
         // Symbol: drake::geometry::GeometryState::NumDeformableGeometries
         struct /* NumDeformableGeometries */ {
@@ -2564,13 +2564,13 @@ deformable geometries are dynamic and *not* anchored.)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc =
 R"""(Implementation of
-SceneGraphInspector::NumDeformableGeometriesWithRole().)""";
+SceneGraphInspector∷NumDeformableGeometriesWithRole().)""";
         } NumDeformableGeometriesWithRole;
         // Symbol: drake::geometry::GeometryState::NumDynamicGeometries
         struct /* NumDynamicGeometries */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::NumDynamicGeometries().)""";
+R"""(Implementation of SceneGraphInspector∷NumDynamicGeometries().)""";
         } NumDynamicGeometries;
         // Symbol: drake::geometry::GeometryState::NumDynamicNonDeformableGeometries
         struct /* NumDynamicNonDeformableGeometries */ {
@@ -2583,26 +2583,25 @@ geometries.)""";
         struct /* NumFramesForSource */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::NumFramesForSource().)""";
+R"""(Implementation of SceneGraphInspector∷NumFramesForSource().)""";
         } NumFramesForSource;
         // Symbol: drake::geometry::GeometryState::NumGeometriesForFrame
         struct /* NumGeometriesForFrame */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::NumGeometriesForFrame().)""";
+R"""(Implementation of SceneGraphInspector∷NumGeometriesForFrame().)""";
         } NumGeometriesForFrame;
         // Symbol: drake::geometry::GeometryState::NumGeometriesForFrameWithRole
         struct /* NumGeometriesForFrameWithRole */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of
-SceneGraphInspector::NumGeometriesForFrameWithRole().)""";
+R"""(Implementation of SceneGraphInspector∷NumGeometriesForFrameWithRole().)""";
         } NumGeometriesForFrameWithRole;
         // Symbol: drake::geometry::GeometryState::NumGeometriesWithRole
         struct /* NumGeometriesWithRole */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_1args =
-R"""(Implementation of SceneGraphInspector::NumGeometriesWithRole().)""";
+R"""(Implementation of SceneGraphInspector∷NumGeometriesWithRole().)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_2args =
 R"""(Reports the number of child geometries for this frame that have the
@@ -2616,45 +2615,45 @@ Raises:
         struct /* RegisterAnchoredGeometry */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RegisterAnchoredGeometry().)""";
+R"""(Implementation of SceneGraph∷RegisterAnchoredGeometry().)""";
         } RegisterAnchoredGeometry;
         // Symbol: drake::geometry::GeometryState::RegisterDeformableGeometry
         struct /* RegisterDeformableGeometry */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RegisterDeformableGeometry())""";
+R"""(Implementation of SceneGraph∷RegisterDeformableGeometry())""";
         } RegisterDeformableGeometry;
         // Symbol: drake::geometry::GeometryState::RegisterFrame
         struct /* RegisterFrame */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_2args =
-R"""(Implementation of SceneGraph::RegisterFrame().)""";
+R"""(Implementation of SceneGraph∷RegisterFrame().)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_3args =
-R"""(Implementation of SceneGraph::RegisterFrame(SourceId,FrameId,const
-GeometryFrame&) "SceneGraph::RegisterFrame()" with parent FrameId.)""";
+R"""(Implementation of SceneGraph∷RegisterFrame(SourceId,FrameId,const
+GeometryFrame&) "SceneGraph∷RegisterFrame()" with parent FrameId.)""";
         } RegisterFrame;
         // Symbol: drake::geometry::GeometryState::RegisterGeometry
         struct /* RegisterGeometry */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RegisterGeometry(SourceId,FrameId,
-std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()"
-with parent FrameId.)""";
+R"""(Implementation of SceneGraph∷RegisterGeometry(SourceId,FrameId,
+std∷unique_ptr<GeometryInstance>) "SceneGraph∷RegisterGeometry()" with
+parent FrameId.)""";
         } RegisterGeometry;
         // Symbol: drake::geometry::GeometryState::RegisterNewSource
         struct /* RegisterNewSource */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RegisterSource(). The default logic is
-to define name as "Source_##" where the number is the value of the
+R"""(Implementation of SceneGraph∷RegisterSource(). The default logic is to
+define name as "Source_##" where the number is the value of the
 returned SourceId.)""";
         } RegisterNewSource;
         // Symbol: drake::geometry::GeometryState::RegisteredRendererNames
         struct /* RegisteredRendererNames */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RegisteredRendererNames().)""";
+R"""(Implementation of SceneGraph∷RegisteredRendererNames().)""";
         } RegisteredRendererNames;
         // Symbol: drake::geometry::GeometryState::RemoveFromRenderer
         struct /* RemoveFromRenderer */ {
@@ -2691,42 +2690,42 @@ Raises:
         struct /* RemoveGeometry */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RemoveGeometry().)""";
+R"""(Implementation of SceneGraph∷RemoveGeometry().)""";
         } RemoveGeometry;
         // Symbol: drake::geometry::GeometryState::RemoveRenderer
         struct /* RemoveRenderer */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RemoveRenderer().)""";
+R"""(Implementation of SceneGraph∷RemoveRenderer().)""";
         } RemoveRenderer;
         // Symbol: drake::geometry::GeometryState::RemoveRole
         struct /* RemoveRole */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_3args_source_id_frame_id_role =
-R"""(Implementation of SceneGraph::RemoveRole(SourceId, FrameId, Role)
-"SceneGraph::RemoveRole()".)""";
+R"""(Implementation of SceneGraph∷RemoveRole(SourceId, FrameId, Role)
+"SceneGraph∷RemoveRole()".)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_3args_source_id_geometry_id_role =
-R"""(Implementation of SceneGraph::RemoveRole(SourceId, GeometryId, Role)
-"SceneGraph::RemoveRole()".)""";
+R"""(Implementation of SceneGraph∷RemoveRole(SourceId, GeometryId, Role)
+"SceneGraph∷RemoveRole()".)""";
         } RemoveRole;
         // Symbol: drake::geometry::GeometryState::RenameFrame
         struct /* RenameFrame */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RenameFrame().)""";
+R"""(Implementation of SceneGraph∷RenameFrame().)""";
         } RenameFrame;
         // Symbol: drake::geometry::GeometryState::RenameGeometry
         struct /* RenameGeometry */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RenameGeometry().)""";
+R"""(Implementation of SceneGraph∷RenameGeometry().)""";
         } RenameGeometry;
         // Symbol: drake::geometry::GeometryState::RenderColorImage
         struct /* RenderColorImage */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::RenderColorImage().
+R"""(Implementation of QueryObject∷RenderColorImage().
 
 Precondition:
     All poses have already been updated.)""";
@@ -2735,7 +2734,7 @@ Precondition:
         struct /* RenderDepthImage */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::RenderDepthImage().
+R"""(Implementation of QueryObject∷RenderDepthImage().
 
 Precondition:
     All poses have already been updated.)""";
@@ -2744,7 +2743,7 @@ Precondition:
         struct /* RenderLabelImage */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::RenderLabelImage().
+R"""(Implementation of QueryObject∷RenderLabelImage().
 
 Precondition:
     All poses have already been updated.)""";
@@ -2753,13 +2752,13 @@ Precondition:
         struct /* RendererCount */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::RendererCount().)""";
+R"""(Implementation of SceneGraph∷RendererCount().)""";
         } RendererCount;
         // Symbol: drake::geometry::GeometryState::SourceIsRegistered
         struct /* SourceIsRegistered */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::SourceIsRegistered().)""";
+R"""(Implementation of SceneGraphInspector∷SourceIsRegistered().)""";
         } SourceIsRegistered;
         // Symbol: drake::geometry::GeometryState::ToAutoDiffXd
         struct /* ToAutoDiffXd */ {
@@ -2774,64 +2773,64 @@ cloning the instance.)""";
         struct /* collision_filter_manager */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraph::collision_filter_manager().)""";
+R"""(Implementation of SceneGraph∷collision_filter_manager().)""";
         } collision_filter_manager;
         // Symbol: drake::geometry::GeometryState::geometry_version
         struct /* geometry_version */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetGeometryVersion().)""";
+R"""(Implementation of SceneGraphInspector∷GetGeometryVersion().)""";
         } geometry_version;
         // Symbol: drake::geometry::GeometryState::get_configurations_in_world
         struct /* get_configurations_in_world */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::GetConfigurationsInWorld().)""";
+R"""(Implementation of QueryObject∷GetConfigurationsInWorld().)""";
         } get_configurations_in_world;
         // Symbol: drake::geometry::GeometryState::get_frame_ids
         struct /* get_frame_ids */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::GetAllFrameIds().)""";
+R"""(Implementation of SceneGraphInspector∷GetAllFrameIds().)""";
         } get_frame_ids;
         // Symbol: drake::geometry::GeometryState::get_num_frames
         struct /* get_num_frames */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::num_frames().)""";
+R"""(Implementation of SceneGraphInspector∷num_frames().)""";
         } get_num_frames;
         // Symbol: drake::geometry::GeometryState::get_num_geometries
         struct /* get_num_geometries */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::num_geometries().)""";
+R"""(Implementation of SceneGraphInspector∷num_geometries().)""";
         } get_num_geometries;
         // Symbol: drake::geometry::GeometryState::get_num_sources
         struct /* get_num_sources */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::num_sources().)""";
+R"""(Implementation of SceneGraphInspector∷num_sources().)""";
         } get_num_sources;
         // Symbol: drake::geometry::GeometryState::get_pose_in_parent
         struct /* get_pose_in_parent */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of QueryObject::GetPoseInParent().)""";
+R"""(Implementation of QueryObject∷GetPoseInParent().)""";
         } get_pose_in_parent;
         // Symbol: drake::geometry::GeometryState::get_pose_in_world
         struct /* get_pose_in_world */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc_1args_frame_id =
-R"""(Implementation of QueryObject::GetPoseInWorld(FrameId).)""";
+R"""(Implementation of QueryObject∷GetPoseInWorld(FrameId).)""";
           // Source: drake/geometry/geometry_state.h
           const char* doc_1args_geometry_id =
-R"""(Implementation of QueryObject::GetPoseInWorld(GeometryId).)""";
+R"""(Implementation of QueryObject∷GetPoseInWorld(GeometryId).)""";
         } get_pose_in_world;
         // Symbol: drake::geometry::GeometryState::maybe_get_hydroelastic_mesh
         struct /* maybe_get_hydroelastic_mesh */ {
           // Source: drake/geometry/geometry_state.h
           const char* doc =
-R"""(Implementation of SceneGraphInspector::maybe_get_hydroelastic_mesh().)""";
+R"""(Implementation of SceneGraphInspector∷maybe_get_hydroelastic_mesh().)""";
         } maybe_get_hydroelastic_mesh;
       } GeometryState;
       // Symbol: drake::geometry::GeometryVersion
@@ -2864,7 +2863,7 @@ role of the geometries may have changed. For example:
     // Get the version under test from SceneGraphInspector.
     const GeometryVersion& test_version = scene_graph_inspector.geometry_version();
     // Determine if two versions have the same proximity data.
-    bool same_proximity = old_version.IsSameAs(test_version, Role::kProximity);
+    bool same_proximity = old_version.IsSameAs(test_version, Role∷kProximity);
 
 .. raw:: html
 
@@ -2934,7 +2933,7 @@ Raises:
 R"""(The set of properties for geometry used in an "illustration" role.
 
 Examples of functionality that depends on the illustration role: -
-drake_visualizer_role_consumer "drake::geometry::DrakeVisualizer")""";
+drake_visualizer_role_consumer "drake∷geometry∷DrakeVisualizer")""";
         // Symbol: drake::geometry::IllustrationProperties::IllustrationProperties
         struct /* ctor */ {
           // Source: drake/geometry/geometry_roles.h
@@ -3001,21 +3000,21 @@ be used instead.
     MySystem() {
     ...
     this->DeclareAbstractOutputPort(
-    &AllocInConstructorSystem::CalcFramePoseOutput);
+    &AllocInConstructorSystem∷CalcFramePoseOutput);
     ...
     }
     
     private:
     void CalcFramePoseOutput(const Context<T>& context,
-    geometry::FramePoseVector<T>* poses) const {
+    geometry∷FramePoseVector<T>* poses) const {
     poses->clear();
     for (int i = 0; i < static_cast<int>(frame_ids_.size()); ++i) {
     poses->set_value(frame_ids_[i], poses_[i]);
     }
     }
     
-    std::vector<FrameId> frame_ids_;
-    std::vector<RigidTransform<T>> poses_;
+    std∷vector<FrameId> frame_ids_;
+    std∷vector<RigidTransform<T>> poses_;
     };
 
 .. raw:: html
@@ -3034,7 +3033,7 @@ alternative way to write a Calc method, using an initializer_list:
 .. code-block:: c++
 
     void CalcFramePoseOutput(const Context<T>& context,
-    geometry::FramePoseVector<T>* poses) const {
+    geometry∷FramePoseVector<T>* poses) const {
     const RigidTransform<T>& pose = ...;
     poses = {{frame_id_, pose}};
     }
@@ -3289,7 +3288,7 @@ R"""(Returns the extension of the mesh type -- all lower case and including
 the dot. If ``this`` is constructed from a file path, the extension is
 extracted from the path. I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ
 would both report the ".obj" extension. The "extension" portion of the
-filename is defined as in std::filesystem::path::extension().
+filename is defined as in std∷filesystem∷path∷extension().
 
 If ``this`` is constructed using in-memory file contents, it is the
 extension of the MemoryFile passed to the constructor.)""";
@@ -3324,6 +3323,27 @@ R"""(Provides a general abstraction to the definition of a mesh. A mesh
 definition can come from disk or memory. APIs that support both can
 take as specification an instance of MeshSource to communicate that
 ability.)""";
+        // Symbol: drake::geometry::MeshSource::GetCacheKey
+        struct /* GetCacheKey */ {
+          // Source: drake/geometry/mesh_source.h
+          const char* doc =
+R"""(Returns a unique cache key for this mesh source.
+
+The key uniquely identifies the mesh data. For on-disk meshes, it uses
+the canonicalized file path. For in-memory meshes, it uses the SHA256
+hash of the mesh file contents.
+
+Parameter ``is_convex``:
+    Whether the mesh is being used as a convex shape. This affects the
+    key because convex shapes undergo additional processing (convex
+    hull computation).
+
+Returns:
+    A string suitable for use as a cache key.
+
+Raises:
+    RuntimeError if the mesh source path cannot be canonicalized.)""";
+        } GetCacheKey;
         // Symbol: drake::geometry::MeshSource::MeshSource
         struct /* ctor */ {
           // Source: drake/geometry/mesh_source.h
@@ -3352,7 +3372,7 @@ R"""(Returns the extension of the mesh type -- all lower case and including
 the dot. If is_path() is ``True``, the extension is extracted from the
 path. I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both report
 the ".obj" extension. The "extension" portion of the filename is
-defined as in std::filesystem::path::extension().
+defined as in std∷filesystem∷path∷extension().
 
 If is_in_memory() is ``True``, it is the extension reported by the
 MemoryFile.)""";
@@ -3787,7 +3807,7 @@ position actually *changes*. As such, the returned camera pose will
 reflect the pose of the camera from that most-recently manipulated
 browser.
 
-std::nullopt is returned if:
+std∷nullopt is returned if:
 
 - No meshcat session has transmitted its camera pose.
 - The meshcat session that last transmitted its pose is no longer
@@ -3980,8 +4000,8 @@ Typically, X and Y are obtained via, e.g.
 .. code-block:: c++
 
     constexpr int nx = 15, ny = 11;
-    X = RowVector<double, nx>::LinSpaced(0, 1).replicate<ny, 1>();
-    Y = Vector<double, ny>::LinSpaced(0, 1).replicate<1, nx>();
+    X = RowVector<double, nx>∷LinSpaced(0, 1).replicate<ny, 1>();
+    Y = Vector<double, ny>∷LinSpaced(0, 1).replicate<1, nx>();
 
 .. raw:: html
 
@@ -4222,7 +4242,7 @@ Parameter ``path``:
     meshcat_path "Meshcat paths" for the semantics.
 
 Parameter ``point_cloud``:
-    a perception::PointCloud; if ``point_cloud.has_rgbs()`` is true,
+    a perception∷PointCloud; if ``point_cloud.has_rgbs()`` is true,
     then meshcat will render the colored points.
 
 Parameter ``point_size``:
@@ -4382,7 +4402,7 @@ Parameter ``rate``:
 R"""(Updates Meshcat's knowledge of simulation time. Changes to simulation
 time *may* trigger a realtime rate message to the meshcat visualizer
 client based on the configured value in
-MeshcatParams::realtime_rate_period value.
+MeshcatParams∷realtime_rate_period value.
 
 Invoking this method *may* dispatch a message to clients. The
 following rules apply to invocations and messages:
@@ -4392,12 +4412,12 @@ defines the the starting point from which all calculations are performed
 (for both wall clock time as well as simulation time). As no interval can
 be measured from a single invocation, no rate can be computed. Therefore,
 the first invocation will *never* broadcast the message.
-- Wall clock time must advance at least MeshcatParams::realtime_rate_period
+- Wall clock time must advance at least MeshcatParams∷realtime_rate_period
 seconds for a message to be sent.
 - Meshcat promises to broadcast one message per elapsed period -- starting
 from initialization -- regardless of the frequency at which
 SetSimulationTime() actually gets invoked. If the elapsed time between
-invocations exceeds MeshcatParams::realtime_rate_period, multiple
+invocations exceeds MeshcatParams∷realtime_rate_period, multiple
 messages will be broadcast; one for each complete period.
 - This implies that each column of pixels in the realtime rate chart in
 the client visualizer represents a fixed amount of wall clock time.
@@ -4421,7 +4441,7 @@ Parameter ``sim_time``:
     The *absolute* sim time being visualized.
 
 See also:
-    drake::systems::Simulator::set_target_realtime_rate())""";
+    drake∷systems∷Simulator∷set_target_realtime_rate())""";
         } SetSimulationTime;
         // Symbol: drake::geometry::Meshcat::SetSliderValue
         struct /* SetSliderValue */ {
@@ -4596,6 +4616,24 @@ You can also use your browser to download this file, by typing
 "/download" on the end of the URL (i.e., accessing ``web_url() +
 "/download"``).)""";
         } StaticHtml;
+        // Symbol: drake::geometry::Meshcat::StaticZip
+        struct /* StaticZip */ {
+          // Source: drake/geometry/meshcat.h
+          const char* doc =
+R"""(Like StaticHtml(), returns a standalone snapshot of the visualizer and
+its contents; the return value is a ZIP file containing a thin
+``meshcat.html`` page and the assets (meshes, textures, etc.) as
+separate files.
+
+When you are uploading the unzipped files to a website, this will
+typically be a more efficient representation as compared to
+StaticHtml(). However, it cannot be opened directly by a browser from
+disk. A simple web server like ``python -m http.server`` is required.
+
+You can also use your browser to download this file, by typing
+"/download.zip" on the end of the URL (i.e., accessing ``web_url() +
+"/download.zip"``).)""";
+        } StaticZip;
         // Symbol: drake::geometry::Meshcat::StopRecording
         struct /* StopRecording */ {
           // Source: drake/geometry/meshcat.h
@@ -4647,7 +4685,7 @@ web_url().)""";
         // Source: drake/geometry/meshcat_animation.h
         const char* doc =
 R"""(An interface for recording/playback animations in Meshcat. Use
-Meshcat::SetAnimation to publish a MeshcatAnimation to the visualizer.
+Meshcat∷SetAnimation to publish a MeshcatAnimation to the visualizer.
 
 Currently, an animation consists of (only) transforms and properties
 that are set at a particular integer frame number. Although we do not
@@ -4697,7 +4735,7 @@ R"""(Sets a single named property of the object at the given ``path`` at
 the specified ``frame`` in the animation.
 
 See also:
-    Meshcat::SetProperty.
+    Meshcat∷SetProperty.
 
 Parameter ``frame``:
     a non-negative integer indicating the frame at which this
@@ -4722,7 +4760,7 @@ R"""(Sets a single named property of the object at the given ``path`` at
 the specified ``frame`` in the animation.
 
 See also:
-    Meshcat::SetProperty.
+    Meshcat∷SetProperty.
 
 Parameter ``frame``:
     a non-negative integer indicating the frame at which this
@@ -4747,7 +4785,7 @@ R"""(Sets a single named property of the object at the given ``path`` at
 the specified ``frame`` in the animation.
 
 See also:
-    Meshcat::SetProperty.
+    Meshcat∷SetProperty.
 
 Parameter ``frame``:
     a non-negative integer indicating the frame at which this
@@ -4775,7 +4813,7 @@ R"""(Set the RigidTransform at ``frame`` in the animation for a given
 ``path`` in the the scene tree.
 
 See also:
-    Meshcat::SetTransform.
+    Meshcat∷SetTransform.
 
 Parameter ``frame``:
     a non-negative integer indicating the frame at which this
@@ -4807,7 +4845,7 @@ Raises:
           // Source: drake/geometry/meshcat_animation.h
           const char* doc =
 R"""(Uses the frame rate to convert from time to the frame number, using
-std::floor.
+std∷floor.
 
 Precondition:
     ``time`` ≥ start_time().)""";
@@ -4832,7 +4870,7 @@ primarily for testing.)""";
           const char* doc =
 R"""(Returns the value information for a particular path/property at a
 particular frame if a value of type T has been set, otherwise returns
-std::nullopt. This method is intended primarily for testing.
+std∷nullopt. This method is intended primarily for testing.
 
 Template parameter ``T``:
     One of ``bool``, `double`, or ``vector<double>``)""";
@@ -4957,7 +4995,7 @@ R"""(The set of parameters for configuring Meshcat.)""";
           // Source: drake/geometry/meshcat_params.h
           const char* doc =
 R"""(A helper struct for the ``initial_properties`` params. The members
-follow the same semantics as calls to Meshcat::SetProperty(path,
+follow the same semantics as calls to Meshcat∷SetProperty(path,
 property, value).)""";
           // Symbol: drake::geometry::MeshcatParams::PropertyTuple::Serialize
           struct /* Serialize */ {
@@ -5040,7 +5078,7 @@ realtime rate can become visually noisy. Too long, and acute changes
 in performance may be masked. It must be strictly *positive*.
 
 Meshcat promises to broadcast messages to clients at this fixed
-period. See Meshcat::SetSimulationTime() for details.)""";
+period. See Meshcat∷SetSimulationTime() for details.)""";
         } realtime_rate_period;
         // Symbol: drake::geometry::MeshcatParams::show_stats_plot
         struct /* show_stats_plot */ {
@@ -5058,7 +5096,7 @@ R"""(The ``web_url_pattern`` may be used to change the web_url() (and
 therefore the ws_url()) reported by Meshcat. This may be useful in
 case Meshcat sits behind a firewall or proxy.
 
-The pattern follows the `std::format
+The pattern follows the `std∷format
 <https://en.cppreference.com/w/cpp/utility/format>`_ specification
 language, except that ``arg-id`` substitutions are performed using
 named arguments instead of positional indices.
@@ -5084,8 +5122,8 @@ for "all interfaces".)""";
       struct /* MeshcatPointCloudVisualizer */ {
         // Source: drake/geometry/meshcat_point_cloud_visualizer.h
         const char* doc =
-R"""(MeshcatPointCloudVisualizer is a systems::LeafSystem that publishes a
-perception::PointCloud from its input port to Meshcat.
+R"""(MeshcatPointCloudVisualizer is a systems∷LeafSystem that publishes a
+perception∷PointCloud from its input port to Meshcat.
 
 .. pydrake_system::
 
@@ -5103,7 +5141,7 @@ transform.)""";
         struct /* Delete */ {
           // Source: drake/geometry/meshcat_point_cloud_visualizer.h
           const char* doc =
-R"""(Calls Meshcat::Delete(path), where ``path`` is the value passed in the
+R"""(Calls Meshcat∷Delete(path), where ``path`` is the value passed in the
 constructor.)""";
         } Delete;
         // Symbol: drake::geometry::MeshcatPointCloudVisualizer::MeshcatPointCloudVisualizer<T>
@@ -5203,37 +5241,37 @@ publish to the same Meshcat instance.)""";
           const char* doc_4args_builder_scene_graph_meshcat_params =
 R"""(Adds a MeshcatVisualizer and connects it to the given SceneGraph's
 QueryObject-valued output port. See
-MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
+MeshcatVisualizer∷MeshcatVisualizer(MeshcatVisualizer*,
 MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
-(see systems::SystemBase::set_name) will be set to a sensible default
+(see systems∷SystemBase∷set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc_4args_builder_query_object_port_meshcat_params =
 R"""(Adds a MeshcatVisualizer and connects it to the given
 QueryObject-valued output port. See
-MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
+MeshcatVisualizer∷MeshcatVisualizer(MeshcatVisualizer*,
 MeshcatVisualizerParams) for details. The MeshcatVisualizer's name
-(see systems::SystemBase::set_name) will be set to a sensible default
+(see systems∷SystemBase∷set_name) will be set to a sensible default
 value, unless the default name was already in use by another system.)""";
         } AddToBuilder;
         // Symbol: drake::geometry::MeshcatVisualizer::Delete
         struct /* Delete */ {
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
-R"""(Calls Meshcat::Delete(std::string path), with the path set to
-MeshcatVisualizerParams::prefix. Since this visualizer will only ever
+R"""(Calls Meshcat∷Delete(std∷string path), with the path set to
+MeshcatVisualizerParams∷prefix. Since this visualizer will only ever
 add geometry under this prefix, this will remove all
 geometry/transforms added by the visualizer, or by a previous instance
 of this visualizer using the same prefix. Use
-MeshcatVisualizer::delete_on_initialization_event to determine whether
+MeshcatVisualizer∷delete_on_initialization_event to determine whether
 this should be called on initialization.)""";
         } Delete;
         // Symbol: drake::geometry::MeshcatVisualizer::DeleteRecording
         struct /* DeleteRecording */ {
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
-R"""(Convenience function that calls Meshcat::DeleteRecording on the
-underlying Meshcat object; refer to Meshcat::DeleteRecording for full
+R"""(Convenience function that calls Meshcat∷DeleteRecording on the
+underlying Meshcat object; refer to Meshcat∷DeleteRecording for full
 documentation.)""";
         } DeleteRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::MeshcatVisualizer<T>
@@ -5253,7 +5291,7 @@ Raises:
     RuntimeError if ``params.publish_period <= 0``.
 
 Raises:
-    RuntimeError if ``params.role == Role::kUnassigned``.)""";
+    RuntimeError if ``params.role == Role∷kUnassigned``.)""";
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc_copyconvert =
 R"""(Scalar-converting copy constructor. See system_scalar_conversion. It
@@ -5263,33 +5301,33 @@ should only be used to convert *from* double *to* other scalar types.)""";
         struct /* PublishRecording */ {
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
-R"""(Convenience function that calls Meshcat::PublishRecording on the
-underlying Meshcat object; refer to Meshcat::PublishRecording for full
+R"""(Convenience function that calls Meshcat∷PublishRecording on the
+underlying Meshcat object; refer to Meshcat∷PublishRecording for full
 documentation.)""";
         } PublishRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::StartRecording
         struct /* StartRecording */ {
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
-R"""(Convenience function that calls Meshcat::StartRecording on the
+R"""(Convenience function that calls Meshcat∷StartRecording on the
 underlying Meshcat object, with ``frames_per_second = 1 /
-publish_period``; refer to Meshcat::StartRecording for full
+publish_period``; refer to Meshcat∷StartRecording for full
 documentation.)""";
         } StartRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::StopRecording
         struct /* StopRecording */ {
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
-R"""(Convenience function that calls Meshcat::StopRecording on the
-underlying Meshcat object; refer to Meshcat::StopRecording for full
+R"""(Convenience function that calls Meshcat∷StopRecording on the
+underlying Meshcat object; refer to Meshcat∷StopRecording for full
 documentation.)""";
         } StopRecording;
         // Symbol: drake::geometry::MeshcatVisualizer::get_mutable_recording
         struct /* get_mutable_recording */ {
           // Source: drake/geometry/meshcat_visualizer.h
           const char* doc =
-R"""(Convenience function that calls Meshcat::get_mutable_recording on the
-underlying Meshcat object; refer to Meshcat::get_mutable_recording for
+R"""(Convenience function that calls Meshcat∷get_mutable_recording on the
+underlying Meshcat object; refer to Meshcat∷get_mutable_recording for
 full documentation.)""";
         } get_mutable_recording;
         // Symbol: drake::geometry::MeshcatVisualizer::query_object_input_port
@@ -5323,7 +5361,7 @@ R"""(The color to apply to any geometry that hasn't defined one.)""";
         struct /* delete_on_initialization_event */ {
           // Source: drake/geometry/meshcat_visualizer_params.h
           const char* doc =
-R"""(Determines whether to send a Meshcat::Delete(prefix) message on an
+R"""(Determines whether to send a Meshcat∷Delete(prefix) message on an
 initialization event to remove any visualizations e.g. from a previous
 simulation. See declare_initialization_events "Declare initialization
 events" for more information.)""";
@@ -5389,7 +5427,7 @@ quite helpful in assessing contact behavior to visualize these
 discrete meshes (in place of the idealized primitives).
 
 To visualize these representations it is necessary to request
-visualization of geometries with the Role::kProximity role (see the
+visualization of geometries with the Role∷kProximity role (see the
 role field). It is further necessary to explicitly request the
 hydroelastic meshes where available (setting show_hydroelastic to
 ``True``).
@@ -5437,7 +5475,7 @@ R"""(A convenient alias for the MeshcatVisualizer class when using the
 R"""(The set of properties for geometry used in a "perception" role.
 
 Examples of functionality that depends on the perception role: -
-render::RenderEngineVtk)""";
+render∷RenderEngineVtk)""";
         // Symbol: drake::geometry::PerceptionProperties::PerceptionProperties
         struct /* ctor */ {
           // Source: drake/geometry/geometry_roles.h
@@ -5553,7 +5591,7 @@ and scalars. At that point, the table will simply disappear.)""";
           // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the axis-aligned bounding box of the geometry indicated by
-``geometry_id`` in the world frame. Returns std::nullopt if the
+``geometry_id`` in the world frame. Returns std∷nullopt if the
 geometry is not supported for this query. Currently, only deformable
 geometries are supported.
 
@@ -5709,13 +5747,13 @@ Warning:
           // Source: drake/geometry/query_object.h
           const char* doc =
 R"""(Reports the oriented bounding box of the geometry indicated by
-``geometry_id`` in the world frame. Returns std::nullopt if the
+``geometry_id`` in the world frame. Returns std∷nullopt if the
 geometry is an HalfSpace (and doesn't have a bounding box).
 
 Note:
     If geometry_id refers to a deformable geometry, the OBB is
     computed using the deformed mesh in the world frame. See
-    SceneGraphInspector::GetObbInGeometryFrame() for computing the OBB
+    SceneGraphInspector∷GetObbInGeometryFrame() for computing the OBB
     of the reference mesh in its canonical frame.
 
 Raises:
@@ -5778,7 +5816,7 @@ throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵃ | ░░�
 ░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere | 2e-15
 | 3e-15 | throwsᵈ | 2e-15 | throwsᵈ | 2e-15 | ᵇ | 5e-15 | ***Table
 2***: Worst observed error (in m) for 2mm penetration between
-geometries approximately 20cm in size for ``T`` = drake::AutoDiffXd
+geometries approximately 20cm in size for ``T`` = drake∷AutoDiffXd
 "AutoDiffXd".
 
 | | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
@@ -5794,7 +5832,7 @@ throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵃ | ░░�
 ░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere |
 throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | throwsᵉ | ᵇ |
 throwsᵉ | ***Table 3***: Support for ``T`` =
-drake::symbolic::Expression.
+drake∷symbolic∷Expression.
 
 - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
 they don't intersect, or they have infinite penetration.
@@ -5804,9 +5842,9 @@ results for Mesh are assumed to be the same as for Convex.
 configurations, the solution may be correct to machine precision. The
 values reported here are confirmed, observed worst case answers.
 - ᵈ These results are simply not supported for
-``T`` = drake::AutoDiffXd "AutoDiffXd" at this time.
+``T`` = drake∷AutoDiffXd "AutoDiffXd" at this time.
 - ᵉ These results are simply not supported for
-``T`` = drake::symbolic::Expression at this time.
+``T`` = drake∷symbolic∷Expression at this time.
 
 Returns:
     A vector populated with all detected penetrations characterized as
@@ -5986,7 +6024,7 @@ throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | ░░�
 2e-15 | throwsᵇ | throwsᵇ | throwsᵇ | throwsᵇ | 2e-15 | ᶜ | 5e-15 |
 ***Table 5***: Worst observed error (in m) for 2mm
 penetration/separation between geometries approximately 20cm in size
-for ``T`` = drake::AutoDiffXd "AutoDiffXd".
+for ``T`` = drake∷AutoDiffXd "AutoDiffXd".
 
 | | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace | Mesh |
 Sphere | | --------: | :-----: | :------: | :-----: | :-------: |
@@ -6001,16 +6039,16 @@ throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | throwsᵃ | ░░�
 ░░░░░ | | Mesh | ᶜ | ᶜ | ᶜ | ᶜ | ᶜ | throwsᵃ | ᶜ | ░░░░░ | | Sphere |
 throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | ᶜ |
 throwsᵈ | ***Table 6***: Support for ``T`` =
-drake::symbolic::Expression.
+drake∷symbolic∷Expression.
 
 - ᵃ We don't currently support queries between HalfSpace and any other shape
 (except for Sphere).
 - ᵇ These results are simply not supported for
-``T`` = drake::AutoDiffXd "AutoDiffXd" at this time.
+``T`` = drake∷AutoDiffXd "AutoDiffXd" at this time.
 - ᶜ Meshes are represented by the *convex* hull of the mesh, therefore the
 results for Mesh are the same as for Convex.
 - ᵈ These results are simply not supported for
-``T`` = drake::symbolic::Expression at this time.
+``T`` = drake∷symbolic∷Expression at this time.
 
 **Characterizing the returned gradients**
 
@@ -6102,7 +6140,7 @@ as a zero-radius sphere.
 | Scalar | Box | Capsule | Convex | Cylinder | Ellipsoid | HalfSpace |
 Mesh | Sphere | | :--------: | :-----: | :------: | :-----: |
 :-------: | :--------: | :--------: | :-----: | :-----: | | double |
-2e-15 | 4e-15 | 5e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 5e-15ᶜ | 4e-15 | |
+2e-15 | 4e-15 | 6e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 6e-15ᶜ | 4e-15 | |
 AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 3e-15 | |
 Expression | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ***Table 8***: Worst
 observed error (in m) for 2mm penetration/separation between geometry
@@ -6288,7 +6326,7 @@ Note:
     current vertex positions of the deformable geometry in the world
     frame. On the other hand, it *is* meaningful to query the *fixed*
     pose of the *reference* geometry in its parent frame (see
-    SceneGraphInspector::GetPoseInFrame()).
+    SceneGraphInspector∷GetPoseInFrame()).
 
 Raises:
     RuntimeError if the geometry ``geometry_id`` is not valid or if it
@@ -6443,8 +6481,8 @@ such that the first three values are red, green, and blue,
 respectively. If no fourth value is provided, alpha is defined a 1.0.
 
 When another struct has an Rgba-valued member (e.g.,
-systems::sensors::CameraConfig::background), remember to include the
-full mapping. For example, imagine the struct:
+systems∷sensors∷CameraConfig∷background), remember to include the full
+mapping. For example, imagine the struct:
 
 
 .. raw:: html
@@ -6718,7 +6756,7 @@ is called *registering* geometry. Depending on what exactly has been
 registered, a producer may also have to *update kinematics*. Producers
 themselves must be registered with SceneGraph as producers (a.k.a.
 *geometry sources*). They do this by acquiring a SourceId (via
-SceneGraph::RegisterSource()). The SourceId serves as a unique handle
+SceneGraph∷RegisterSource()). The SourceId serves as a unique handle
 through which the producer's identity is validated.
 
 *Registering Geometry*
@@ -6748,7 +6786,7 @@ positions of the mesh vertices of the deformable geometry in the
 registered-in frame. The work flow is as follows: 1. A LeafSystem
 registers itself as a geometry source, acquiring a SourceId
 (RegisterSource()). 2. The source registers a frame
-(GeometrySource::RegisterFrame()). - A frame always has a "parent"
+(GeometrySource∷RegisterFrame()). - A frame always has a "parent"
 frame. It can implicitly be the world frame, *or* another frame
 registered by the source. 3. Register one or more non-deformable
 geometries to a frame (RegisterGeometry()), and/or one or more
@@ -6762,7 +6800,7 @@ It will be affixed to *that* geometry's frame.
 Anchored geometry is *independent* of the context (i.e., it doesn't
 move). Anchored geometries are always affixed to the immobile world
 frame. As such, registering a frame is *not* required for registering
-anchored geometry (see GeometrySource::RegisterAnchoredGeometry()).
+anchored geometry (see GeometrySource∷RegisterAnchoredGeometry()).
 However, the source still "owns" the anchored geometry.
 
 *Updating Kinematics*
@@ -6839,7 +6877,7 @@ In C++:
     // geometry.
     scene_graph.AssignRole(source_id, geometry_id, PerceptionProperties());
     // Modifies the illustration version.
-    scene_graph.RemoveRole(source_id, geometry_id, Role::kIllustration);
+    scene_graph.RemoveRole(source_id, geometry_id, Role∷kIllustration);
     // Modifies proximity version and perception version if the geometry is
     // registered with any renderer.
     scene_graph.RemoveGeometry(source_id, geometry_id);
@@ -6872,14 +6910,14 @@ In Python:
 Each copy of geometry data maintains its own set of versions.
 SceneGraph's model has its own version, and that version is the same
 as the version in the Context provided by
-SceneGraph::CreateDefaultContext(). Modifications to the geometry data
+SceneGraph∷CreateDefaultContext(). Modifications to the geometry data
 contained in a Context modifies *that* data's version, but the
 original model data's version is unmodified, reflecting the unchanged
 model data.
 
 The geometry data's version is accessed via a SceneGraphInspector
 instance. model_inspector() will give access to SceneGraph's model
-version. And QueryObject::inspector() will give access to the geometry
+version. And QueryObject∷inspector() will give access to the geometry
 data stored in a Context.
 
 Current versions can be compared against previously examined versions.
@@ -6900,9 +6938,9 @@ The system should *clearly* document this fact.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
 R"""(Adds a new render engine to this SceneGraph. The render engine's name
-should be referenced in the render::ColorRenderCamera
-"ColorRenderCamera" or render::DepthRenderCamera "DepthRenderCamera"
-provided in the render queries (see QueryObject::RenderColorImage() as
+should be referenced in the render∷ColorRenderCamera
+"ColorRenderCamera" or render∷DepthRenderCamera "DepthRenderCamera"
+provided in the render queries (see QueryObject∷RenderColorImage() as
 an example).
 
 There is no restriction on when a renderer is added relative to
@@ -6943,7 +6981,7 @@ Raises:
     RuntimeError if the name is not unique.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_3args =
-R"""(systems::Context-modifying variant of AddRenderer(). Rather than
+R"""(systems∷Context-modifying variant of AddRenderer(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } AddRenderer;
@@ -6956,7 +6994,7 @@ R"""(Assigns the proximity role to the geometry indicated by
 scene_graph_versioning).)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_proximity_context =
-R"""(systems::Context-modifying variant of
+R"""(systems∷Context-modifying variant of
 AssignRole(SourceId,GeometryId,ProximityProperties) "AssignRole()" for
 proximity properties. Rather than modifying SceneGraph's model, it
 modifies the copy of the model stored in the provided context.)""";
@@ -6966,17 +7004,17 @@ R"""(Assigns the perception role to the geometry indicated by
 ``geometry_id``.
 
 By default, a geometry with a perception role will be reified by all
-render::RenderEngine instances. This behavior can be changed.
-Renderers can be explicitly whitelisted via the ('renderer',
-'accepting') perception property. Its type is std::set<std::string>
-and it contains the names of all the renderers that *may* reify it. If
-no property is defined (or an empty set is given), then the default
-behavior of all renderers attempting to reify it will be restored.
-Modifies the perception version if the geometry is added to any
-renderer (see scene_graph_versioning).)""";
+render∷RenderEngine instances. This behavior can be changed. Renderers
+can be explicitly whitelisted via the ('renderer', 'accepting')
+perception property. Its type is std∷set<std∷string> and it contains
+the names of all the renderers that *may* reify it. If no property is
+defined (or an empty set is given), then the default behavior of all
+renderers attempting to reify it will be restored. Modifies the
+perception version if the geometry is added to any renderer (see
+scene_graph_versioning).)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_perception_context =
-R"""(systems::Context-modifying variant of
+R"""(systems∷Context-modifying variant of
 AssignRole(SourceId,GeometryId,PerceptionProperties) "AssignRole()"
 for perception properties. Rather than modifying SceneGraph's model,
 it modifies the copy of the model stored in the provided context.)""";
@@ -6988,7 +7026,7 @@ scene_graph_versioning).
 
 Warning:
     When changing illustration properties (``assign =
-    RoleAssign::kReplace``), there is no guarantee that these changes
+    RoleAssign∷kReplace``), there is no guarantee that these changes
     will affect the visualization. The visualizer needs to be able to
     "initialize" itself after changes to properties that will affect
     how a geometry appears. If changing a geometry's illustration
@@ -6996,14 +7034,14 @@ Warning:
     retrigger its initialization action.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_illustration_context =
-R"""(systems::Context-modifying variant of
+R"""(systems∷Context-modifying variant of
 AssignRole(SourceId,GeometryId,IllustrationProperties) "AssignRole()"
 for illustration properties. Rather than modifying SceneGraph's model,
 it modifies the copy of the model stored in the provided context.
 
 Warning:
     When changing illustration properties (``assign =
-    RoleAssign::kReplace``), there is no guarantee that these changes
+    RoleAssign∷kReplace``), there is no guarantee that these changes
     will affect the visualization. The visualizer needs to be able to
     "initialize" itself after changes to properties that will affect
     how a geometry appears. If changing a geometry's illustration
@@ -7046,7 +7084,7 @@ Raises:
     belong to the indicated source, or d) the geometry is deformable.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_context =
-R"""(systems::Context-modifying variant of ChangeShape(). Rather than
+R"""(systems∷Context-modifying variant of ChangeShape(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } ChangeShape;
@@ -7064,7 +7102,7 @@ If no registered engine has the given ``name``, the returned string is
 empty.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
-R"""(systems::Context-query variant of GetRendererParameterYaml(). Rather
+R"""(systems∷Context-query variant of GetRendererParameterYaml(). Rather
 than querying SceneGraph's model, it queries the copy of the model
 stored in the provided context.)""";
         } GetRendererParameterYaml;
@@ -7077,11 +7115,11 @@ R"""(Reports the type name for the RenderEngine registered with the given
 
 Returns:
     the name of the RenderEngine's most derived type (as produced by
-    NiceTypeName::Get()). An empty string if there is no RenderEngine
+    NiceTypeName∷Get()). An empty string if there is no RenderEngine
     registered with the given ``name``.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
-R"""(systems::Context-query variant of GetRendererTypeName(). Rather than
+R"""(systems∷Context-query variant of GetRendererTypeName(). Rather than
 querying SceneGraph's model, it queries the copy of the model stored
 in the provided context.)""";
         } GetRendererTypeName;
@@ -7093,7 +7131,7 @@ R"""(Reports true if this SceneGraph has a renderer registered with the
 given name.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
-R"""(systems::Context-query variant of HasRenderer(). Rather than querying
+R"""(systems∷Context-query variant of HasRenderer(). Rather than querying
 SceneGraph's model, it queries the copy of the model stored in the
 provided context.)""";
         } HasRenderer;
@@ -7178,7 +7216,7 @@ Raises:
     doesn't satisfy the requirements outlined in GeometryInstance.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_5args =
-R"""(systems::Context-modifying variant of RegisterDeformableGeometry().
+R"""(systems∷Context-modifying variant of RegisterDeformableGeometry().
 Rather than modifying SceneGraph's model, it modifies the copy of the
 model stored in the provided context.
 
@@ -7278,7 +7316,7 @@ Raises:
     GeometryInstance.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_4args =
-R"""(systems::Context-modifying variant of RegisterGeometry(). Rather than
+R"""(systems∷Context-modifying variant of RegisterGeometry(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } RegisterGeometry;
@@ -7317,7 +7355,7 @@ Raises:
 R"""(Reports the names of all registered renderers.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
-R"""(systems::Context-query variant of RegisteredRendererNames(). Rather
+R"""(systems∷Context-query variant of RegisteredRendererNames(). Rather
 than querying SceneGraph's model, it queries the copy of the model
 stored in the provided context.)""";
         } RegisteredRendererNames;
@@ -7348,7 +7386,7 @@ Raises:
     not belong to the indicated source.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_3args =
-R"""(systems::Context-modifying variant of RemoveGeometry(). Rather than
+R"""(systems∷Context-modifying variant of RemoveGeometry(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } RemoveGeometry;
@@ -7366,7 +7404,7 @@ Raises:
     specified name.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_2args =
-R"""(systems::Context-modifying variant of RemoveRenderer(). Rather than
+R"""(systems∷Context-modifying variant of RemoveRenderer(). Rather than
 modifying SceneGraph's model, it modifies the copy of the model stored
 in the provided context.)""";
         } RemoveRenderer;
@@ -7391,10 +7429,9 @@ Raises:
     allocated.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_frame_context =
-R"""(systems::Context-modifying variant of
-RemoveRole(SourceId,FrameId,Role) "RemoveRole()" for frames. Rather
-than modifying SceneGraph's model, it modifies the copy of the model
-stored in the provided context.)""";
+R"""(systems∷Context-modifying variant of RemoveRole(SourceId,FrameId,Role)
+"RemoveRole()" for frames. Rather than modifying SceneGraph's model,
+it modifies the copy of the model stored in the provided context.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_geometry_direct =
 R"""(Removes the indicated ``role`` from the geometry indicated by
@@ -7413,7 +7450,7 @@ Raises:
     context has already been allocated.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_geometry_context =
-R"""(systems::Context-modifying variant of
+R"""(systems∷Context-modifying variant of
 RemoveRole(SourceId,GeometryId,Role) "RemoveRole()" for individual
 geometries. Rather than modifying SceneGraph's model, it modifies the
 copy of the model stored in the provided context.)""";
@@ -7467,9 +7504,9 @@ Raises:
 R"""(Reports the number of renderers registered to this SceneGraph.)""";
           // Source: drake/geometry/scene_graph.h
           const char* doc_1args =
-R"""(systems::Context-query variant of RendererCount(). Rather than
-querying SceneGraph's model, it queries the copy of the model stored
-in the provided context.)""";
+R"""(systems∷Context-query variant of RendererCount(). Rather than querying
+SceneGraph's model, it queries the copy of the model stored in the
+provided context.)""";
         } RendererCount;
         // Symbol: drake::geometry::SceneGraph::SceneGraph<T>
         struct /* ctor */ {
@@ -7750,13 +7787,13 @@ SceneGraph-internal source.)""";
           const char* doc =
 R"""(Returns all pairs of geometries that are candidates for collision (in
 no particular order). See CollisionFilterDeclaration and
-CollisionFilterManager::Apply() for information on why a particular
+CollisionFilterManager∷Apply() for information on why a particular
 pair may *not* be a candidate.
 
 For candidate pair (A, B), the candidate is always guaranteed to be
 reported in a fixed order (i.e., always (A, B) and *never* (B, A)).
 This is the same ordering as would be returned by, e.g.,
-QueryObject::ComputePointPairPenetration().)""";
+QueryObject∷ComputePointPairPenetration().)""";
         } GetCollisionCandidates;
         // Symbol: drake::geometry::SceneGraphInspector::GetConvexHull
         struct /* GetConvexHull */ {
@@ -7766,7 +7803,7 @@ R"""(Returns the convex hull (a polytope) associated with the given
 ``geometry_id``, if it exists. Basic primitive shapes don't have
 convex hulls (including, arbitrarily, Box). But Mesh and Convex shapes
 do. Alternatively, if you already have a Mesh or Convex you can call
-Mesh::GetConvexHull() or Convex::GetConvexHull(), respectively.)""";
+Mesh∷GetConvexHull() or Convex∷GetConvexHull(), respectively.)""";
         } GetConvexHull;
         // Symbol: drake::geometry::SceneGraphInspector::GetDrivenRenderMeshes
         struct /* GetDrivenRenderMeshes */ {
@@ -7950,11 +7987,11 @@ Parameter ``geometry_id``:
 Note:
     If geometry_id refers to a deformable geometry, the OBB is
     computed using the reference mesh. See
-    QueryObject::ComputeObbInWorld() for computing the OBB of the
+    QueryObject∷ComputeObbInWorld() for computing the OBB of the
     deformed mesh in the world frame.
 
 Returns:
-    The oriented bounding box (or ``std::nullopt`` if the geometry is
+    The oriented bounding box (or ``std∷nullopt`` if the geometry is
     an HalfSpace and doesn't have a bounding box).
 
 Raises:
@@ -8218,7 +8255,7 @@ The result can be tested as follows:
     // These two methods are equivalent, although testing index is more
     // brittle.
     const bool no_mesh1 = maybe_mesh.index() == 0;
-    const bool no_mesh2 = std::holds_alternative<std::monostate>(maybe_mesh);
+    const bool no_mesh2 = std∷holds_alternative<std∷monostate>(maybe_mesh);
 
 .. raw:: html
 
@@ -8377,7 +8414,7 @@ method that accepts the Shape base class as an argument; it should
 
 The expected workflow is for a class that needs to turn shape
 specifications into concrete geometry instances to implement the
-ShapeReifier interface *and* invoke the Shape::Reify() method. For
+ShapeReifier interface *and* invoke the Shape∷Reify() method. For
 example, a simple reifier that requires no user data would look like:
 
 
@@ -8431,7 +8468,7 @@ Or a complex reifier that requires user data would look like:
 Implementing a particular shape may require more data than is strictly
 encapsulated in the Shape. The Implement* interface supports passing
 user data through a type-erased ``void*``. Because a single class
-invoked Shape::Reify() it is in a position to provide exactly the data
+invoked Shape∷Reify() it is in a position to provide exactly the data
 the shape implementations require.)""";
         // Symbol: drake::geometry::ShapeReifier::DefaultImplementGeometry
         struct /* DefaultImplementGeometry */ {

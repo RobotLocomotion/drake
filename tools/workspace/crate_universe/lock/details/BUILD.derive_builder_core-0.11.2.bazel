@@ -85,6 +85,7 @@ rust_library(
         "@rules_rust//rust/platform:aarch64-unknown-nto-qnx710": [],
         "@rules_rust//rust/platform:aarch64-unknown-uefi": [],
         "@rules_rust//rust/platform:arm-unknown-linux-gnueabi": [],
+        "@rules_rust//rust/platform:arm-unknown-linux-musleabi": [],
         "@rules_rust//rust/platform:armv7-linux-androideabi": [],
         "@rules_rust//rust/platform:armv7-unknown-linux-gnueabi": [],
         "@rules_rust//rust/platform:i686-apple-darwin": [],
@@ -119,8 +120,8 @@ rust_library(
     version = "0.11.2",
     deps = [
         "@crate__darling-0.14.4//:darling",
-        "@crate__proc-macro2-1.0.101//:proc_macro2",
-        "@crate__quote-1.0.41//:quote",
+        "@crate__proc-macro2-1.0.106//:proc_macro2",
+        "@crate__quote-1.0.45//:quote",
         "@crate__syn-1.0.109//:syn",
     ],
 )

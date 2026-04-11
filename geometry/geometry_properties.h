@@ -11,14 +11,10 @@
 #include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 #include "drake/geometry/rgba.h"
-
-// Remove with deprecation 2026-03-01.
-#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -500,9 +496,6 @@ class GeometryProperties {
     return Rgba(value(0), value(1), value(2), value(3));
   }
 };
-
-DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
-std::ostream& operator<<(std::ostream& out, const GeometryProperties& props);
 
 }  // namespace geometry
 }  // namespace drake

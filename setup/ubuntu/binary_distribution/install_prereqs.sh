@@ -62,12 +62,12 @@ EOF
   binary_distribution_called_update=1
 fi
 
-apt-get install ${maybe_yes} --no-install-recommends lsb-release
+. /etc/os-release
 
-codename=$(lsb_release -sc)
-
-if ! [[ "${codename}" =~ (jammy|noble) ]]; then
-  echo 'ERROR: This script requires Ubuntu 22.04 (Jammy) or 24.04 (Noble)' >&2
+if [[ "${VERSION_CODENAME}" =~ (resolute) ]]; then
+  echo 'WARNING: This script is unsupported on Ubuntu 26.04 (Resolute)' >&2
+elif ! [[ "${VERSION_CODENAME}" =~ (noble) ]]; then
+  echo 'ERROR: This script requires Ubuntu 24.04 (Noble)' >&2
   exit 2
 fi
 
@@ -78,5 +78,5 @@ pkg-config
 EOF
 )
 
-packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}

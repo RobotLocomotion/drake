@@ -10,14 +10,21 @@ package(
 
 py_library(
     name = "sympy_py",
-    srcs = glob([
-        "sympy/**/*.py",
-    ], allow_empty = False),
-    data = glob([
-        "sympy/**",
-    ], exclude = [
-        "sympy/**/*.py",
-    ], allow_empty = False),
+    srcs = glob(
+        [
+            "sympy/**/*.py",
+        ],
+        allow_empty = False,
+    ),
+    data = glob(
+        [
+            "sympy/**",
+        ],
+        allow_empty = False,
+        exclude = [
+            "sympy/**/*.py",
+        ],
+    ),
     imports = ["."],
 )
 

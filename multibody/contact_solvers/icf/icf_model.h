@@ -15,6 +15,8 @@
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
 namespace drake {
 namespace multibody {
@@ -142,7 +144,8 @@ class IcfModel {
   /* Returns the total number of constraints of any type in the problem. */
   int num_constraints() const {
     return num_coupler_constraints() + num_gain_constraints() +
-           num_limit_constraints();
+           num_limit_constraints() + num_patch_constraints() +
+           num_weld_constraints();
   }
 
   /* Provides mutable access to the pool of all coupler constraints. */
@@ -161,6 +164,16 @@ class IcfModel {
     return limit_constraints_pool_;
   }
 
+  /* Provides mutable access to the pool of all patch (contact) constraints. */
+  PatchConstraintsPool<T>& patch_constraints_pool() {
+    return patch_constraints_pool_;
+  }
+
+  /* Provides mutable access to the pool of all weld constraints. */
+  WeldConstraintsPool<T>& weld_constraints_pool() {
+    return weld_constraints_pool_;
+  }
+
   int num_coupler_constraints() const {
     return coupler_constraints_pool_.num_constraints();
   }
@@ -171,6 +184,14 @@ class IcfModel {
 
   int num_limit_constraints() const {
     return limit_constraints_pool_.num_constraints();
+  }
+
+  int num_patch_constraints() const {
+    return patch_constraints_pool_.num_patches();
+  }
+
+  int num_weld_constraints() const {
+    return weld_constraints_pool_.num_constraints();
   }
 
   /* Returns the time step δt. */
@@ -391,6 +412,8 @@ class IcfModel {
   CouplerConstraintsPool<T> coupler_constraints_pool_;
   GainConstraintsPool<T> gain_constraints_pool_;
   LimitConstraintsPool<T> limit_constraints_pool_;
+  PatchConstraintsPool<T> patch_constraints_pool_;
+  WeldConstraintsPool<T> weld_constraints_pool_;
 };
 
 }  // namespace internal

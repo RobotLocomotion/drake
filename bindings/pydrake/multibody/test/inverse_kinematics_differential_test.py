@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import pydrake.multibody.inverse_kinematics as mut  # ruff: isort: skip
 
 import copy

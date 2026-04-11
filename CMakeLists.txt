@@ -1,13 +1,15 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-# The minimum required CMake version should match the minimum listed in
-# doc/_pages/from_source.md, which is also the minimum installed by
-# setup/install_prereqs across all platforms.
-# When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
-# should be changed accordingly so that downstream users are synced with
-# Drake itself.
-cmake_minimum_required(VERSION 3.22)
+# The upper bound here (which sets the "policy version") should match the
+# highest version tested in Drake CI, which is documented in
+# doc/_pages/from_source.md. On the other hand, the minimum version is not
+# necessarily governed by our CI test matrix or OS support matrix, rather by
+# what is strictly required by the CMake features used here. This logic is
+# similar to what governs our minimum Bazel version (see MODULE.bazel).
+# When changing this, tools/install/libdrake/drake-config.cmake.in and its
+# corresponding tests should also be updated.
+cmake_minimum_required(VERSION 3.20...4.3)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
@@ -57,41 +59,36 @@ if(APPLE)
   endif()
 
   list(APPEND BAZELRC_IMPORTS "tools/macos.bazelrc")
+else()
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
 
   execute_process(
     COMMAND "/usr/bin/arch"
     OUTPUT_STRIP_TRAILING_WHITESPACE
-    OUTPUT_VARIABLE MACOS_ARCH)
-  if(MACOS_ARCH STREQUAL "")
-    message(FATAL_ERROR "Could NOT query macOS arch")
+    OUTPUT_VARIABLE UBUNTU_ARCH)
+  if(UBUNTU_ARCH STREQUAL "")
+    message(FATAL_ERROR "Could NOT query linux arch")
   endif()
-  list(APPEND BAZELRC_IMPORTS "tools/macos-arch-${MACOS_ARCH}.bazelrc")
-else()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
+  list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
 
-  find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
-  mark_as_advanced(LSB_RELEASE_EXECUTABLE)
-  if(NOT LSB_RELEASE_EXECUTABLE)
-    message(WARNING "Could NOT find the lsb_release executable")
+  execute_process(
+    COMMAND "bash" "-c" ". /etc/os-release && echo \${VERSION_CODENAME}"
+    RESULT_VARIABLE OS_RELEASE_RESULT
+    OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(NOT OS_RELEASE_RESULT EQUAL 0)
+    message(WARNING "Could NOT read the /etc/os-release VERSION_CODENAME.")
   else()
-    execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --codename --short
-      RESULT_VARIABLE LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE
-      OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if(NOT LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
-      message(WARNING "Could NOT run the lsb_release executable")
+    set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
+    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
+      message(WARNING "Could not find config file ${MAYBE_RC}. "
+        "This may indicate that you're using an OS or OS version that "
+        "is not officially supported, so the build configuration cannot be "
+        "fine-tuned. See https://drake.mit.edu/from_source.html for details "
+        "on officially supported platforms when building from source.")
     else()
-      set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
-      if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-        message(WARNING "Could not find config file ${MAYBE_RC}. "
-          "This may indicate that you're using an OS or OS version that "
-          "is not officially supported, so the build configuration cannot be "
-          "fine-tuned. See https://drake.mit.edu/from_source.html for details "
-          "on officially supported platforms when building from source.")
-      else()
-        list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
-      endif()
+      list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
     endif()
   endif()
 endif()
@@ -104,11 +101,11 @@ if(NOT Bazel_FOUND)
   message(STATUS "Using Bazelisk as Bazel_EXECUTABLE to fetch Bazel on demand")
 endif()
 
-get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
-get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
+file(REAL_PATH "${CMAKE_C_COMPILER}" C_COMPILER_REALPATH)
+cmake_path(GET C_COMPILER_REALPATH FILENAME C_COMPILER_NAME)
 
-get_filename_component(CXX_COMPILER_REALPATH "${CMAKE_CXX_COMPILER}" REALPATH)
-get_filename_component(CXX_COMPILER_NAME "${CXX_COMPILER_REALPATH}" NAME)
+file(REAL_PATH "${CMAKE_CXX_COMPILER}" CXX_COMPILER_REALPATH)
+cmake_path(GET CXX_COMPILER_REALPATH FILENAME CXX_COMPILER_NAME)
 
 if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
   message(FATAL_ERROR
@@ -116,19 +113,11 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
   )
 endif()
 
-# Get the full C++ compiler major version for our cmake/bazel.rc.in.
-string(REGEX MATCH "^([0-9]+)"
-  DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR
-  "${CMAKE_CXX_COMPILER_VERSION}")
-if(NOT DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR)
-  set(DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR "0")
-endif()
-
-# The minimum compiler versions should match those listed in both
-# doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 16)
-set(MINIMUM_CLANG_VERSION 15)
-set(MINIMUM_GNU_VERSION 11)
+# The minimum compiler versions should match those listed in
+# doc/_pages/from_source.md.
+set(MINIMUM_APPLE_CLANG_VERSION 17)
+set(MINIMUM_CLANG_VERSION 20)
+set(MINIMUM_GNU_VERSION 13)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
@@ -217,19 +206,17 @@ endif()
 # standard nor CMAKE_CXX_FLAGS to Bazel, but we should.
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
-# The supported Python major/minor versions should match those listed in
-# doc/_pages/from_source.md and setup/python/pyproject.toml.
+# The supported Python major/minor versions.
+# When changing any of these, see drake/tools/workspace/python/README.md.
 if(APPLE)
-  # The macOS python version should match what's listed in both the
-  # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
   set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
+  if(UNIX_DISTRIBUTION_CODENAME STREQUAL resolute)
+    set(SUPPORTED_PYTHON_VERSION 3.14)
+  else()  # UNIX_DISTRIBUTION_CODENAME := noble
     set(SUPPORTED_PYTHON_VERSION 3.12)
-  else()  # UNIX_DISTRIBUTION_CODENAME := jammy
-    set(SUPPORTED_PYTHON_VERSION 3.10)
   endif()
 endif()
 
@@ -288,34 +275,34 @@ if(NOT PYTHON_VERSION_MAJOR_MINOR VERSION_EQUAL SUPPORTED_PYTHON_VERSION)
   )
 endif()
 
+# We need to run Bazel in a dedicated temporary directory. The particular
+# name `drake_build_cwd` isn't important, it just needs to be unique. Note,
+# however, that the macOS wheel builds also need to know this path, so if it
+# ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
+set(DRAKE_BAZEL_BUILD_DIR "${CMAKE_BINARY_DIR}/drake_build_cwd")
+file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}")
+
 set(BAZEL_REPO_ENV)
 
+# Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
+# `single_version_override`.
+file(CREATE_LINK
+  "${PROJECT_SOURCE_DIR}/tools/workspace/eigen/patches/upstream/constexpr-static.patch"
+  "${DRAKE_BAZEL_BUILD_DIR}/eigen-constexpr-static.patch"
+  SYMBOLIC
+)
+
 if(NOT APPLE)
+  # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
+  # interfere with here.
   string(APPEND BAZEL_REPO_ENV
     " --repo_env=CC=${CMAKE_C_COMPILER}"
     " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
-  # Pass a Bazel flag which enforces the underlying compiler so that
-  # compiler- and version-specific logic (e.g., warnings) is enforced in the
-  # build, since rules_cc's support for compiler identification is not as
-  # robust as using CMake's CMAKE_<LANG>_COMPILER_ID.
-  if(CMAKE_C_COMPILER_ID STREQUAL Clang)
-    string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/cc_toolchain:compiler=clang"
-    )
-  elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
-    string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/cc_toolchain:compiler=gcc"
-    )
-  endif()
 endif()
 
-get_filename_component(PROJECT_BINARY_DIR_REALPATH
-  "${PROJECT_BINARY_DIR}" REALPATH
-)
-get_filename_component(PROJECT_SOURCE_DIR_REALPATH
-  "${PROJECT_SOURCE_DIR}" REALPATH
-)
+file(REAL_PATH "${PROJECT_BINARY_DIR}" PROJECT_BINARY_DIR_REALPATH)
+file(REAL_PATH "${PROJECT_SOURCE_DIR}" PROJECT_SOURCE_DIR_REALPATH)
 
 # Check whether the PROJECT_BINARY_DIR is a subdirectory of the
 # PROJECT_SOURCE_DIR.
@@ -326,9 +313,10 @@ string(FIND "${PROJECT_BINARY_DIR_REALPATH}/" "${PROJECT_SOURCE_DIR_REALPATH}/"
 if(STRING_FIND_RESULT_VARIABLE EQUAL 0)
   # The --output_base cannot be within the WORKSPACE (a subdirectory of
   # PROJECT_SOURCE_DIR), so fallback to the using the same parent directory
-  # that Bazel uses by default for its --output_base.
+  # that Bazel uses by default for its --output_base. See
+  # https://bazel.build/remote/output-directories#layout for more details.
   if(APPLE)
-    set(BAZEL_OUTPUT_BASE "/var/tmp")
+    set(BAZEL_OUTPUT_BASE "$ENV{HOME}/Library/Caches/bazel")
   else()
     set(BAZEL_OUTPUT_BASE "$ENV{HOME}/.cache/bazel")
   endif()
@@ -385,8 +373,22 @@ function(symlink_external_repository_libs NAME TARGET)
   )
 
   function(_create_links lib_dir location)
-    get_filename_component(basename "${location}" NAME)
-    file(CREATE_LINK "${location}" "${lib_dir}/${basename}" SYMBOLIC)
+    cmake_path(GET location FILENAME basename)
+    cmake_path(GET basename EXTENSION ext)
+    if (ext STREQUAL ".tbd")
+      # rules_cc doesn't allow the .tbd linker script extension on macOS (in
+      # neither cc_library's `srcs` nor cc_import's `shared_library`
+      # arguments), so we must trick the rule by providing a symlink with the
+      # .dylib extension here. We could alternatively consider using the
+      # `additional_linker_inputs` argument, but that introduces a lot more
+      # logic for compatibility with Linux, or when the found library on macOS
+      # doesn't use a .tbd linker script.
+      cmake_path(GET basename STEM stem)
+      file(CREATE_LINK "${location}" "${lib_dir}/${stem}.dylib" SYMBOLIC)
+      return()
+    else()
+      file(CREATE_LINK "${location}" "${lib_dir}/${basename}" SYMBOLIC)
+    endif()
     # Link the SONAME spelling in case of shared libraries.
     # If the basename does not match this pattern, this part is all a no-op.
     if(ARG_USE_SO_MINOR_VERSION)
@@ -435,6 +437,11 @@ macro(override_module NAME)
     "${PROJECT_SOURCE_DIR}/cmake/external/workspace/conversion.bzl"
     "${local_path}/conversion.bzl"
     SYMBOLIC)
+  file(CREATE_LINK
+    "${PROJECT_SOURCE_DIR}/tools/skylark/cc.bzl"
+    "${local_path}/cc.bzl"
+    SYMBOLIC
+  )
   string(APPEND BAZEL_REPO_ENV
       " --override_module=${NAME}=${local_path}")
   string(APPEND BAZEL_REPO_ENV
@@ -572,26 +579,11 @@ endif()
 
 option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
 
-if(APPLE)
-  # TODO(jwnimmer-tri) Unfortunately we can't use find_package() here because
-  # symlink_external_repository_libs() is not compatible with the `zlib.tbd`
-  # linker script that CMake finds on macOS. We should work on fixing that
-  # routine, and then remove this APPLE-specific logic. When doing so, don't
-  # forget to fix our doc/_pages/from_source.md documentation at the same time.
-  if(WITH_USER_ZLIB)
-    string(APPEND BAZEL_REPO_ENV
-        " --@drake//tools/flags:zlib_repo=hardcoded")
-  else()
-    string(APPEND BAZEL_REPO_ENV
-        " --@drake//tools/flags:zlib_repo=source")
-  endif()
-else()
-  if(WITH_USER_ZLIB)
-    find_package(ZLIB REQUIRED)
-    symlink_external_repository_includes(zlib ZLIB::ZLIB)
-    symlink_external_repository_libs(zlib ZLIB::ZLIB)
-    override_module(zlib)
-  endif()
+if(WITH_USER_ZLIB)
+  find_package(ZLIB REQUIRED)
+  symlink_external_repository_includes(zlib ZLIB::ZLIB)
+  symlink_external_repository_libs(zlib ZLIB::ZLIB)
+  override_module(zlib)
 endif()
 
 set(BAZEL_CONFIG)
@@ -631,18 +623,24 @@ define_bool_option("WITH_OSQP" "OSQP")
 define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_GUROBI ON)
+endif()
 if(WITH_GUROBI)
-  find_package(Gurobi 12.0 EXACT MODULE REQUIRED)
+  find_package(Gurobi 13.0 EXACT MODULE REQUIRED)
 
   string(APPEND BAZEL_CONFIG " --config=gurobi")
 
   if(NOT APPLE)
-    get_filename_component(GUROBI_HOME "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    cmake_path(GET Gurobi_INCLUDE_DIRS PARENT_PATH GUROBI_HOME)
     string(APPEND BAZEL_REPO_ENV " --repo_env=GUROBI_HOME=${GUROBI_HOME}")
   endif()
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_MOSEK ON)
+endif()
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
@@ -692,14 +690,22 @@ if((NOT BUILD_SHARED_LIBS AND DRAKE_INSTALL_PYTHON) OR
   )
 endif()
 
-option(WITH_OPENMP "Build with support for OpenMP" OFF)
+if(APPLE)
+  set(DEFAULT_WITH_OPENMP OFF)
+else()
+  set(DEFAULT_WITH_OPENMP ON)
+endif()
+option(WITH_OPENMP "Build with support for OpenMP" ${DEFAULT_WITH_OPENMP})
 if(WITH_OPENMP)
-  string(APPEND BAZEL_CONFIG " --config=omp")
+  string(APPEND BAZEL_CONFIG " --config=openmp")
 endif()
 
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_ROBOTLOCOMOTION_SNOPT ON)
+endif()
 
 set(WITH_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
@@ -711,12 +717,12 @@ if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
   )
 endif()
 
-if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
+if(WITH_IPOPT OR WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   enable_language(Fortran)
 
   if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
-      message(FATAL_ERROR
+      message(WARNING
         "Compilation with gfortran ${CMAKE_Fortran_COMPILER_VERSION} is NOT "
         "supported"
       )
@@ -728,8 +734,12 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
     )
   endif()
 
-  string(APPEND BAZEL_CONFIG " --config=snopt")
+  string(APPEND BAZEL_REPO_ENV
+    " --repo_env=FC=${CMAKE_Fortran_COMPILER}")
+endif()
 
+if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
+  string(APPEND BAZEL_CONFIG " --config=snopt")
   if(WITH_ROBOTLOCOMOTION_SNOPT)
     string(APPEND BAZEL_REPO_ENV " --repo_env=SNOPT_PATH=git")
   else()
@@ -746,10 +756,12 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
-option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." ON)
+option(DRAKE_USE_EIGEN_LEGACY_AUTODIFF "Use <unsupported/Eigen/AutoDiff> for autodiff support." OFF)
 
 if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
-  # TODO(jwnimmer-tri) On 2026-02-01, add a deprecation warning to this mode.
+  message(WARNING "Setting DRAKE_USE_EIGEN_LEGACY_AUTODIFF=ON is deprecated "
+    "and will be removed from Drake on or after 2026-07-01."
+  )
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
@@ -824,15 +836,11 @@ foreach(import IN LISTS BAZELRC_IMPORTS)
   string(APPEND BAZELRC_IMPORT "import ${PROJECT_SOURCE_DIR}/${import}\n")
 endforeach()
 
-# We need to run Bazel in a dedicated temporary directory. The particular
-# name `drake_build_cwd` isn't important, it just needs to be unique. Note,
-# however, that the macOS wheel builds also need to know this path, so if it
-# ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
-configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
-configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
-configure_file(cmake/BUILD.bazel.in drake_build_cwd/BUILD.bazel @ONLY)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" drake_build_cwd/.bazelversion SYMBOLIC)
+configure_file(cmake/bazel.rc.in "${DRAKE_BAZEL_BUILD_DIR}/.bazelrc" @ONLY)
+configure_file(cmake/MODULE.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/MODULE.bazel" @ONLY)
+configure_file(cmake/BUILD.bazel.in "${DRAKE_BAZEL_BUILD_DIR}/BUILD.bazel" @ONLY)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" "${DRAKE_BAZEL_BUILD_DIR}/.bazeliskrc" SYMBOLIC)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazelversion" "${DRAKE_BAZEL_BUILD_DIR}/.bazelversion" SYMBOLIC)
 
 find_package(Git)
 
@@ -860,7 +868,7 @@ add_custom_target(drake_version ALL
 
 add_custom_target(drake_install ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
+  WORKING_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}"
   USES_TERMINAL
 )
 add_dependencies(drake_install drake_version)
@@ -870,7 +878,7 @@ install(CODE
     COMMAND
       \"${Bazel_EXECUTABLE}\" run ${BAZEL_INSTALL_TARGET}
       -- ${BAZEL_INSTALL_ARGS}
-    WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd\"
+    WORKING_DIRECTORY \"${DRAKE_BAZEL_BUILD_DIR}\"
   )"
   ALL_COMPONENTS
 )

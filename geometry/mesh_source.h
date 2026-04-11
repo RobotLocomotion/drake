@@ -49,6 +49,20 @@ class MeshSource final {
    _never_ be returned. */
   std::string description() const;
 
+  /** Returns a unique cache key for this mesh source.
+
+   The key uniquely identifies the mesh data. For on-disk meshes, it uses the
+   canonicalized file path. For in-memory meshes, it uses the SHA256 hash of
+   the mesh file contents.
+
+   @param is_convex  Whether the mesh is being used as a convex shape. This
+                     affects the key because convex shapes undergo additional
+                     processing (convex hull computation).
+   @returns A string suitable for use as a cache key.
+   @throws std::runtime_error if the mesh source path cannot be canonicalized.
+   */
+  std::string GetCacheKey(bool is_convex) const;
+
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If is_path() is `true`, the extension is extracted from the path.
    I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both report the ".obj"

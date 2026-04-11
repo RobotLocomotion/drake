@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
-#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -14,11 +13,13 @@
 #include <utility>
 #include <vector>
 
+// Remove with deprecation 2026-07-01.
+#include <ostream>
+
 #include <fmt/format.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
@@ -68,7 +69,24 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
 
 string MathematicalProgram::to_string() const {
   std::ostringstream os;
-  os << *this;
+  if (num_vars() > 0) {
+    os << fmt::format("Decision variables: {}\n\n",
+                      fmt_eigen(decision_variables().transpose()));
+  } else {
+    os << "No decision variables.\n";
+  }
+
+  if (num_indeterminates() > 0) {
+    os << fmt::format("Indeterminates: {}\n\n",
+                      fmt_eigen(indeterminates().transpose()));
+  }
+
+  for (const auto& b : GetAllCosts()) {
+    os << fmt::to_string(b) << "\n";
+  }
+  for (const auto& b : GetAllConstraints()) {
+    os << fmt::to_string(b);
+  }
   return os.str();
 }
 
@@ -884,9 +902,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Expression " << e << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format("Expression {} is non-linear.", e));
   }
 }
 
@@ -918,9 +934,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Formula " << f << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format("Formula {} is non-linear.", f));
   }
 }
 
@@ -1744,11 +1758,10 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
-    ostringstream oss;
-    oss << var
-        << " is not a decision variable in the mathematical program, "
-           "when calling FindDecisionVariableIndex.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(fmt::format(
+        "{} is not a decision variable in the mathematical program, "
+        "when calling FindDecisionVariableIndex.\n",
+        var));
   }
   return it->second;
 }
@@ -1765,11 +1778,10 @@ std::vector<int> MathematicalProgram::FindDecisionVariableIndices(
 size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   auto it = indeterminates_index_.find(var.get_id());
   if (it == indeterminates_index_.end()) {
-    ostringstream oss;
-    oss << var
-        << " is not an indeterminate in the mathematical program, "
-           "when calling GetSolution.\n";
-    throw runtime_error(oss.str());
+    throw runtime_error(
+        fmt::format("{} is not an indeterminate in the mathematical program, "
+                    "when calling GetSolution.\n",
+                    var));
   }
   return it->second;
 }
@@ -2352,25 +2364,7 @@ bool MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
-  if (prog.num_vars() > 0) {
-    os << fmt::format("Decision variables: {}\n\n",
-                      fmt_eigen(prog.decision_variables().transpose()));
-  } else {
-    os << "No decision variables.\n";
-  }
-
-  if (prog.num_indeterminates() > 0) {
-    os << fmt::format("Indeterminates: {}\n\n",
-                      fmt_eigen(prog.indeterminates().transpose()));
-  }
-
-  for (const auto& b : prog.GetAllCosts()) {
-    os << b << "\n";
-  }
-  for (const auto& b : prog.GetAllConstraints()) {
-    os << b;
-  }
-  return os;
+  return os << prog.to_string();
 }
 
 }  // namespace solvers

@@ -35,15 +35,16 @@ constexpr bool kCanCollide = true;
   const bool result1 = filter.CanCollideWith(id_A, id_B);
   const bool result2 = filter.CanCollideWith(id_B, id_A);
   if (result1 != result2) {
-    return ::testing::AssertionFailure()
-           << "The collision filter state for " << id_A << " and " << id_B
-           << " changed based on ordering";
+    return ::testing::AssertionFailure() << fmt::format(
+               "The collision filter state for {} and {} changed based on "
+               "ordering",
+               id_A, id_B);
   }
   if (result1 != expect_collidable) {
-    return ::testing::AssertionFailure()
-           << "For pair (" << id_A << ", " << id_B
-           << "), our expectation for can-collide was " << expect_collidable
-           << ", but the filter reported " << result1;
+    return ::testing::AssertionFailure() << fmt::format(
+               "For pair ({}, {}), our expectation for can-collide was {}, but "
+               "the filter reported {}",
+               id_A, id_B, expect_collidable, result1);
   }
   return ::testing::AssertionSuccess();
 }
@@ -274,7 +275,7 @@ TEST_F(CollisionFilterTest, TransientDeclarations) {
           Decl().ExcludeWithin(GeometrySet({pair.first, pair.second})),
           this->get_extract_ids_functor(), !invariant);
     }
-    if (temp_filter != f) return ::testing::AssertionFailure();
+    if (!temp_filter.IsEquivalent(f)) return ::testing::AssertionFailure();
     return ::testing::AssertionSuccess();
   };
 
@@ -349,7 +350,7 @@ TEST_F(CollisionFilterTest, TransientDeclarations) {
   /* Prop. D.2: Removing last declaration returns to previous state:
     P(D, E), (B, C), (B, E), (C, D) */
   EXPECT_TRUE(filter.RemoveDeclaration(id2));
-  ASSERT_TRUE(filter == filter_as_of_id1);
+  ASSERT_TRUE(filter.IsEquivalent(filter_as_of_id1));
 
   /* Re-apply the declaration (add_2_clear_2) to become:
     P(D, E), (A, B), (A, C), (C, D) */
@@ -416,10 +417,8 @@ TEST_F(CollisionFilterTest, TransientDeclarations) {
   ASSERT_TRUE(is_expected(filter, expected_filter_pairs));
 }
 
-/* In this test, we're confirming the logic of operator== and operator!=. As
- such, we explicitly call those operators so we don't rely on gtest's
- implementation details. */
-TEST_F(CollisionFilterTest, Equality) {
+/* In this test, we're confirming the logic of IsEquivalent(). */
+TEST_F(CollisionFilterTest, Equivalency) {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
   const GeometryId id_C = GeometryId::get_new_id();
@@ -428,60 +427,51 @@ TEST_F(CollisionFilterTest, Equality) {
   CollisionFilter filters2;
 
   /* Filters with no registered geometries are equal. */
-  EXPECT_EQ(filters1, filters2);
+  EXPECT_TRUE(filters1.IsEquivalent(filters2));
 
   /* Filters with different registered geometries are unequal. */
   /* Disjoint sets of geometries. */
   filters1.AddGeometry(id_A);
   filters2.AddGeometry(id_B);
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
   /* Sets have non-zero intersection, but are still not equal. */
   filters1.AddGeometry(id_C);
   filters2.AddGeometry(id_C);
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
   /* Sets have equal, non-empty sets of registered geometry and *no* filters. */
   filters1.AddGeometry(id_B);
   filters2.AddGeometry(id_A);
-  EXPECT_TRUE(filters1 == filters2);
-  EXPECT_FALSE(filters1 != filters2);
+  EXPECT_TRUE(filters1.IsEquivalent(filters2));
 
   /* Various forms of matched/mismatched filters. The correctness of this test
    depends on the order; do not re-order these operations. */
   filters1.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_B})),
       this->get_extract_ids_functor());
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
   filters2.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_B})),
       this->get_extract_ids_functor());
-  EXPECT_TRUE(filters1 == filters2);
-  EXPECT_FALSE(filters1 != filters2);
+  EXPECT_TRUE(filters1.IsEquivalent(filters2));
   filters1.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_C})),
       this->get_extract_ids_functor());
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
   filters2.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_B, id_C})),
       this->get_extract_ids_functor());
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
   filters1.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_B, id_C})),
       this->get_extract_ids_functor());
   filters2.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id_A, id_C})),
       this->get_extract_ids_functor());
-  EXPECT_TRUE(filters1 == filters2);
-  EXPECT_FALSE(filters1 != filters2);
+  EXPECT_TRUE(filters1.IsEquivalent(filters2));
   filters1.Apply(
       CollisionFilterDeclaration().AllowWithin(GeometrySet({id_A, id_C})),
       this->get_extract_ids_functor());
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
 
   /* Neither set has filters between (A, *). The first simply doesn't have A,
    the second has A, but no filters. They should *not* be considered equal. */
@@ -489,8 +479,7 @@ TEST_F(CollisionFilterTest, Equality) {
   filters2.Apply(CollisionFilterDeclaration().AllowBetween(
                      GeometrySet(id_A), GeometrySet({id_B, id_C})),
                  this->get_extract_ids_functor());
-  EXPECT_FALSE(filters1 == filters2);
-  EXPECT_TRUE(filters1 != filters2);
+  EXPECT_FALSE(filters1.IsEquivalent(filters2));
 }
 
 }  // namespace internal

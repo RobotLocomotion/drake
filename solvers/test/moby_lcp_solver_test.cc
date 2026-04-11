@@ -303,16 +303,6 @@ GTEST_TEST(testMobyLCP, testFailure) {
   // not to fail.
 }
 
-// Deprecated 2026-03-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(testMobyLCP, testDeprecated) {
-  MobyLCPSolver<double> dut;
-  EXPECT_TRUE(dut.enabled());
-  EXPECT_EQ(MobyLcpSolverId::id(), MobyLcpSolver::id());
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

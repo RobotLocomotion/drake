@@ -52,10 +52,8 @@ sim_time_step = 0.01
 gym_time_step = 0.05
 controller_time_step = 0.01
 gym_time_limit = 5
-drake_contact_models = ["point", "hydroelastic_with_fallback"]
-contact_model = drake_contact_models[0]
-drake_contact_approximations = ["sap", "tamsi", "similar", "lagged"]
-contact_approximation = drake_contact_approximations[0]
+contact_model = "point"
+discrete_contact_approximation = "lagged"
 
 
 def AddAgent(plant=None, builder=None):
@@ -80,7 +78,7 @@ def make_sim(
     multibody_plant_config = MultibodyPlantConfig(
         time_step=sim_time_step,
         contact_model=contact_model,
-        discrete_contact_approximation=contact_approximation,
+        discrete_contact_approximation=discrete_contact_approximation,
     )
 
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)

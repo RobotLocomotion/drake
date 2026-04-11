@@ -64,9 +64,9 @@ cc_library(
     includes = ["include"],
     isystem = True,
     deps = [
-        "@eigen",
         "@drake//tools/workspace/python:cc_headers",
         "@drake//tools/workspace/python:cc_libs",
+        "@eigen",
     ],
 )
 

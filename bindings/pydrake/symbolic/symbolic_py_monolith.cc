@@ -1,4 +1,5 @@
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -21,6 +22,18 @@
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 
 namespace drake {
+namespace symbolic {
+class VariablePythonAttorney {
+ public:
+  VariablePythonAttorney() = delete;
+  static Variable Construct(Variable::Id id, std::string name) {
+    Variable result;
+    result.id_ = id;
+    result.name_ = std::make_shared<const std::string>(std::move(name));
+    return result;
+  }
+};
+}  // namespace symbolic
 namespace pydrake {
 namespace internal {
 
@@ -58,7 +71,8 @@ void DefineSymbolicMonolith(py::module m) {
       .value("RANDOM_EXPONENTIAL", Variable::Type::RANDOM_EXPONENTIAL,
           var_doc.Type.RANDOM_EXPONENTIAL.doc);
 
-  var_cls
+  var_cls  // BR
+      .def(py::init<>(), var_doc.ctor.doc_0args)
       .def(py::init<const string&, Variable::Type>(), py::arg("name"),
           py::arg("type") = Variable::Type::CONTINUOUS, var_doc.ctor.doc_2args)
       .def("is_dummy", &Variable::is_dummy, var_doc.is_dummy.doc)
@@ -142,6 +156,16 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::self != double());
   internal::BindMathOperators<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
+  var_cls.def(py::pickle(
+      [m](const Variable& self) -> std::pair<Variable::Id, std::string> {
+        return std::pair<Variable::Id, std::string>(
+            self.get_id(), self.get_name());
+      },
+      [m](std::pair<Variable::Id, std::string> args) -> Variable {
+        return symbolic::VariablePythonAttorney::Construct(
+            /* id = */ std::get<0>(args),
+            /* name = */ std::move(std::get<1>(args)));
+      }));
 
   // Bind the free function TaylorExpand.
   m.def(
@@ -637,8 +661,8 @@ void DefineSymbolicMonolith(py::module m) {
       .def("__hash__",
           [](const Formula& self) { return std::hash<Formula>{}(self); })
       // `True` and `False` are reserved keywords as of Python3.
-      .def_static("True_", &Formula::True, doc_expr.FormulaTrue.doc)
-      .def_static("False_", &Formula::False, doc_expr.FormulaFalse.doc)
+      .def_static("True_", &Formula::True, doc_expr.Formula.True.doc)
+      .def_static("False_", &Formula::False, doc_expr.Formula.False.doc)
       .def("__nonzero__", [](const Formula&) {
         throw std::runtime_error(
             "You should not call `__bool__` / `__nonzero__` on `Formula`. "

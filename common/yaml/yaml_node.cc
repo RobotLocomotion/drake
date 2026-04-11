@@ -309,40 +309,41 @@ void Node::Remove(std::string_view key) {
       data_);
 }
 
-std::ostream& operator<<(std::ostream& os, const Node& node) {
+std::string to_string(const Node& node) {
+  std::string result;
   if (!node.GetTag().empty()) {
-    os << "!<" << node.GetTag() << "> ";
+    result.append(fmt::format("!<{}> ", node.GetTag()));
   }
   node.Visit(overloaded{
       [&](const Node::ScalarData& data) {
-        os << '"' << data.scalar << '"';
+        result.append(fmt::format("\"{}\"", data.scalar));
       },
       [&](const Node::SequenceData& data) {
-        os << "[";
+        result.append("[");
         bool first = true;
         for (const auto& child : data.sequence) {
           if (!first) {
-            os << ", ";
+            result.append(", ");
           }
           first = false;
-          os << child;
+          result.append(fmt::format("{}", child));
         }
-        os << "]";
+        result.append("]");
       },
       [&](const Node::MappingData& data) {
-        os << "{";
+        result.append("{");
         bool first = true;
         for (const auto& [key, child] : data.mapping) {
           if (!first) {
-            os << ", ";
+            result.append(", ");
           }
           first = false;
-          os << '"' << key << '"' << ": " << child;
+          result.append(fmt::format("\"{}\": {}", key, child));
         }
-        os << "}";
+        result.append("}");
       },
   });
-  return os;
+  return result;
 }
 
 }  // namespace internal

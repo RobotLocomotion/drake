@@ -47,10 +47,8 @@ double GetVariableValue(
  * variables.
  */
 template <typename Derived>
-typename std::enable_if_t<
-    std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-    MatrixLikewise<double, Derived>>
-GetVariableValue(
+  requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+MatrixLikewise<double, Derived> GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
     const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
         variable_index,
@@ -187,10 +185,9 @@ class MathematicalProgramResult final {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  [[nodiscard]] typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      MatrixLikewise<double, Derived>>
-  GetSolution(const Eigen::MatrixBase<Derived>& var) const {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+  [[nodiscard]] MatrixLikewise<double, Derived> GetSolution(
+      const Eigen::MatrixBase<Derived>& var) const {
     return GetVariableValue(var, decision_variable_index_, x_val_);
   }
 
@@ -240,10 +237,9 @@ class MathematicalProgramResult final {
    * doc_was_unable_to_choose_unambiguous_name. }
    */
   template <typename Derived>
-  [[nodiscard]] typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
-      MatrixLikewise<symbolic::Expression, Derived>>
-  GetSolution(const Eigen::MatrixBase<Derived>& m) const {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Expression>)
+  [[nodiscard]] MatrixLikewise<symbolic::Expression, Derived> GetSolution(
+      const Eigen::MatrixBase<Derived>& m) const {
     MatrixLikewise<symbolic::Expression, Derived> value(m.rows(), m.cols());
     for (int i = 0; i < m.rows(); ++i) {
       for (int j = 0; j < m.cols(); ++j) {
@@ -296,7 +292,7 @@ class MathematicalProgramResult final {
    *    GurobiSolver solver;
    *    // Explicitly tell the solver to compute the dual solution for Lorentz
    *    // cone or rotated Lorentz cone constraint, check
-   *    // https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html#qcpdual
+   *    // https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html#qcpdual
    *    // for more information.
    *    SolverOptions options;
    *    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
@@ -315,7 +311,7 @@ class MathematicalProgramResult final {
    *    solution to the (rotated) Lorentz cone constraint doesn't have the
    *    "shadow price" interpretation, but should lie in the dual cone, and
    *    satisfy the KKT condition. For more information, refer to
-   *    https://docs.mosek.com/11.0/capi/prob-def-conic.html#duality-for-conic-optimization
+   *    https://docs.mosek.com/11.1/capi/prob-def-conic.html#duality-for-conic-optimization
    *    as an explanation.
    *
    * The interpretation for the dual variable to conic constraint x ∈ K can be
@@ -416,11 +412,9 @@ class MathematicalProgramResult final {
    * problem.
    */
   template <typename Derived>
-  [[nodiscard]] typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
-      MatrixLikewise<double, Derived>>
-  GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
-                        int solution_number) const {
+    requires(std::is_same_v<typename Derived::Scalar, symbolic::Variable>)
+  [[nodiscard]] MatrixLikewise<double, Derived> GetSuboptimalSolution(
+      const Eigen::MatrixBase<Derived>& var, int solution_number) const {
     return GetVariableValue(var, decision_variable_index_,
                             suboptimal_x_val_[solution_number]);
   }

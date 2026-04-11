@@ -216,10 +216,11 @@ TEST_F(DrakeLcmTest, SubscribeAllTest2) {
   EXPECT_EQ(total, 1);
 }
 
-// Tests DrakeLcm's round-trip ability using DrakeLcmInterface's sugar,
-// without any native LCM APIs.
+// Tests DrakeLcm's round-trip ability using DrakeLcmInterface's sugar, without
+// any native LCM APIs. Uses a unicode character in the channel name to verify
+// UTF-8 compatibility.
 TEST_F(DrakeLcmTest, AcceptanceTest) {
-  const std::string channel_name = "DrakeLcmTest.AcceptanceTest";
+  const std::string channel_name = "DrakeLcmTest☃AcceptanceTest";
   Subscriber<lcmt_drake_signal> subscriber(dut_.get(), channel_name);
   LoopUntilDone(&subscriber.message(), 20 /* retries */, [&]() {
     Publish(dut_.get(), channel_name, message_);

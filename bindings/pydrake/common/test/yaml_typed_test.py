@@ -64,7 +64,7 @@ class BytesStruct:
 
 @dc.dataclass
 class PathStruct:
-    value: Path = "/path/to/nowhere"
+    value: Path = Path("/path/to/nowhere")
     __eq__ = _dataclass_eq
 
 
@@ -74,20 +74,20 @@ class AllScalarsStruct:
     some_bytes: bytes = b"\x00\x01\x02"
     some_float: float = nan
     some_int: int = 11
-    some_path: Path = "/path/to/nowhere"
+    some_path: Path = Path("/path/to/nowhere")
     some_str: str = "nominal_string"
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class ListStruct:
-    value: typing.List[float] = dc.field(default_factory=lambda: list((nan,)))
+    value: list[float] = dc.field(default_factory=lambda: list((nan,)))
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class MapStruct:
-    value: typing.Dict[str, float] = dc.field(
+    value: dict[str, float] = dc.field(
         default_factory=lambda: dict(nominal_float=nan)
     )
     __eq__ = _dataclass_eq
@@ -120,14 +120,14 @@ class OptionalStructNoDefault:
 @dc.dataclass
 class LegacyOptionalStruct:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
-    value: typing.Optional[float] = nan
+    value: float | None = nan
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class LegacyOptionalStructNoDefault:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
-    value: typing.Optional[float] = None
+    value: float | None = None
     __eq__ = _dataclass_eq
 
 
@@ -158,28 +158,49 @@ class RejectGetattrNumpyStruct:
 
 @dc.dataclass
 class VariantStruct:
-    value: typing.Union[str, float, FloatStruct, NumpyStruct] = nan
+    value: str | float | FloatStruct | NumpyStruct = nan
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class NullableVariantStruct:
-    value: typing.Union[None, FloatStruct, StringStruct] = None
+    value: None | FloatStruct | StringStruct = None
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class PrimitiveVariantStruct:
-    value: typing.Union[typing.List[float], bool, int, float, str, bytes] = nan
+    value: list[float] | bool | int | float | str | bytes = nan
     __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class ListVariantStruct:
-    value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
-        dc.field(default_factory=lambda: list([nan]))
+    value: list[str | float | FloatStruct | NumpyStruct] = dc.field(
+        default_factory=lambda: list([nan])
     )
     __eq__ = _dataclass_eq
+
+
+@dc.dataclass
+class PromotionBasicStruct:
+    # This struct matches PromotionVariantStruct without the variant options.
+    float_type: float = nan
+    np_type: np.ndarray = dc.field(default_factory=lambda: np.array([nan]))
+    path_type: Path = dc.field(default_factory=lambda: Path("/path/to/nowhere"))
+    truthy_type: bool = False
+
+
+@dc.dataclass
+class PromotionVariantStruct:
+    float_type: float | FloatStruct = nan
+    np_type: np.ndarray | FloatStruct = dc.field(
+        default_factory=lambda: np.array([nan])
+    )
+    path_type: Path | FloatStruct = dc.field(
+        default_factory=lambda: Path("/path/to/nowhere")
+    )
+    truthy_type: bool | FloatStruct = False
 
 
 @dc.dataclass
@@ -803,6 +824,52 @@ class TestYamlTypedRead(unittest.TestCase, metaclass=ValueParameterizedTest):
         self.assertEqual(type(x.value[3]), NumpyStruct)
 
     @run_with_multiple_values(_all_typed_read_options())
+    def test_read_variant_type_promotion(self, *, options):
+        data = dedent("""
+        float_type: 1
+        np_type: [1]
+        path_type: /path/to/somewhere
+        truthy_type: true
+        """)
+        # Check that loading the above document into non-Union values promotes
+        # them appropriately.
+        basic = yaml_load_typed(
+            schema=PromotionBasicStruct, data=data, **options
+        )
+        # Check that loading the same document into Union values promotes them
+        # exactly the same way.
+        union1 = yaml_load_typed(
+            schema=PromotionVariantStruct, data=data, **options
+        )
+        # Check the same thing but with the struct defaults initialized to the
+        # second type in the Union instead of the first.
+        union2 = yaml_load_typed(
+            schema=PromotionVariantStruct,
+            data=data,
+            defaults=PromotionVariantStruct(
+                float_type=FloatStruct(),
+                np_type=FloatStruct(),
+                path_type=FloatStruct(),
+                truthy_type=FloatStruct(),
+            ),
+            **options,
+        )
+        for x, remark in [
+            (basic, "basic"),
+            (union1, "union1"),
+            (union2, "union2"),
+        ]:
+            with self.subTest(remark=remark):
+                self.assertEqual(x.float_type, 1.0)
+                self.assertIsInstance(x.float_type, float)
+                self.assertEqual(x.np_type, np.array([1.0]))
+                self.assertIsInstance(x.np_type, np.ndarray)
+                self.assertEqual(x.path_type, Path("/path/to/somewhere"))
+                self.assertIsInstance(x.path_type, Path)
+                self.assertEqual(x.truthy_type, True)
+                self.assertIsInstance(x.truthy_type, bool)
+
+    @run_with_multiple_values(_all_typed_read_options())
     def test_read_np_vector(self, *, options):
         data = "value: [1.0, 2.0, 3.0]"
         expected = [1.0, 2.0, 3.0]
@@ -987,9 +1054,7 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         # N.B. This test covers python-specific error handling, so does not
         # have any corrresponding cases in the C++ unit tests.
         with self.assertRaisesRegex(Exception, "should have been a dict"):
-            yaml_load_typed(
-                schema=typing.List[float], data="[1.0]", defaults=[]
-            )
+            yaml_load_typed(schema=list[float], data="[1.0]", defaults=[])
 
 
 class TestYamlTypedWrite(unittest.TestCase):
@@ -1163,7 +1228,7 @@ class TestYamlTypedWrite(unittest.TestCase):
     def test_write_bad_map_key(self):
         @dc.dataclass
         class BadMapStruct:
-            value: typing.Dict[int, float]
+            value: dict[int, float]
 
         with self.assertRaisesRegex(Exception, "keys must be string"):
             yaml_dump_typed(BadMapStruct({1: 2}))
@@ -1190,7 +1255,7 @@ class TestYamlTypedWrite(unittest.TestCase):
                 """),
             ),
         ]
-        schema = typing.Dict[str, float]
+        schema = dict[str, float]
         for value, expected_doc in cases:
             actual_doc = yaml_dump_typed(value, schema=schema)
             self.assertEqual(actual_doc, expected_doc)
@@ -1681,7 +1746,7 @@ class TestYamlTypedWriteAcceptance(unittest.TestCase):
         # N.B. This test covers python-specific error handling, so does not
         # have any corrresponding cases in the C++ unit tests.
         with self.assertRaisesRegex(Exception, "should have been a dict"):
-            yaml_dump_typed([1.0], schema=typing.List[float])
+            yaml_dump_typed([1.0], schema=list[float])
 
 
 class TestYamlTypedReadPybind11(unittest.TestCase):

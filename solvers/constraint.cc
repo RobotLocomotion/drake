@@ -47,24 +47,25 @@ std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
                                 const std::string& name,
                                 const VectorX<symbolic::Variable>& vars,
                                 bool equality) {
-  os << name;
+  std::string result{name};
   VectorX<symbolic::Expression> e(constraint.num_constraints());
   constraint.Eval(vars, &e);
   // Append the description (when provided).
   const std::string& description = constraint.get_description();
   if (!description.empty()) {
-    os << " described as '" << description << "'";
+    result.append(fmt::format(" described as '{}'", description));
   }
-  os << "\n";
+  result.append("\n");
   for (int i = 0; i < constraint.num_constraints(); ++i) {
     if (equality) {
-      os << e(i) << " == " << constraint.upper_bound()(i) << "\n";
+      result.append(
+          fmt::format("{} == {}\n", e(i), constraint.upper_bound()(i)));
     } else {
-      os << constraint.lower_bound()(i) << " <= " << e(i)
-         << " <= " << constraint.upper_bound()(i) << "\n";
+      result.append(fmt::format("{} <= {} <= {}\n", constraint.lower_bound()(i),
+                                e(i), constraint.upper_bound()(i)));
     }
   }
-  return os;
+  return os << result;
 }
 
 std::string ToLatexLowerBound(const Constraint& constraint, int precision) {

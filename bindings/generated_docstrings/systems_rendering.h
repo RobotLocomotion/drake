@@ -27,8 +27,8 @@ constexpr struct /* pydrake_doc_systems_rendering */ {
           // Source: drake/systems/rendering/multibody_position_to_geometry_pose.h
           const char* doc =
 R"""(A direct-feedthrough system that converts a vector of joint positions
-directly to a geometry::FramePoseVector<T> to behave like a
-MultibodyPlant::get_geometry_pose_output_port().
+directly to a geometry∷FramePoseVector<T> to behave like a
+MultibodyPlant∷get_geometry_pose_output_port().
 
 .. pydrake_system::
 

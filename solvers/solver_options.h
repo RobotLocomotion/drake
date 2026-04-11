@@ -37,7 +37,7 @@ use certain algorithm, for example NLOPT_LD_SLSQP, call
 `SetOption(NloptSolver::id(), NloptSolver::AlgorithmName(), "LD_SLSQP");`
 
 "GUROBI" -- Parameter name and values as specified in Gurobi Reference Manual
-https://docs.gurobi.com/projects/optimizer/en/12.0/reference/parameters.html
+https://docs.gurobi.com/projects/optimizer/en/13.0/reference/parameters.html
 
 "SCS" -- Parameter name and values as specified in the struct SCS_SETTINGS in
 SCS header file https://github.com/cvxgrp/scs/blob/master/include/scs.h Note
@@ -45,7 +45,7 @@ that the SCS code on github master might be more up-to-date than the version
 used in Drake.
 
 "MOSEK™" -- Parameter name and values as specified in Mosek Reference
-https://docs.mosek.com/11.0/capi/parameters.html
+https://docs.mosek.com/11.1/capi/parameters.html
 
 "OSQP" -- Parameter name and values as specified in OSQP Reference
 https://osqp.org/docs/interfaces/solver_settings.html#solver-settings

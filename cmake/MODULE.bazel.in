@@ -1,12 +1,19 @@
 module(name = "drake_cmake")
 
-bazel_dep(name = "apple_support", version = "1.24.5")
-bazel_dep(name = "rules_python", version = "1.7.0")
+bazel_dep(name = "apple_support", version = "2.5.2")
+bazel_dep(name = "rules_python", version = "1.9.0")
 
 bazel_dep(name = "drake")
 local_path_override(
     module_name = "drake",
     path = "@PROJECT_SOURCE_DIR@",
+)
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+
+python.toolchain(
+    python_version = "@PYTHON_VERSION_MAJOR_MINOR@",
+    is_default = True,
 )
 
 python_repository = use_repo_rule(
@@ -24,3 +31,10 @@ python_repository(
 )
 
 register_toolchains("@python//:all")
+
+# This patch is only applied when CMake is configured with WITH_USER_EIGEN=OFF.
+single_version_override(
+    module_name = "eigen",
+    patch_strip = 1,
+    patches = ["//:eigen-constexpr-static.patch"],
+)

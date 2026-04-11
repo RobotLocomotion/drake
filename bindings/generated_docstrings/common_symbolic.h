@@ -357,7 +357,7 @@ Please consider the following example:
 
 .. code-block:: c++
 
-    Eigen::Matrix<symbolic::Expression, 2, 2, Eigen::ColMajor> M;
+    Eigen∷Matrix<symbolic∷Expression, 2, 2, Eigen∷ColMajor> M;
     M(0, 0) = 1.0;
     M(1, 0) = 3 + x + y;
     M(0, 1) = 4 * y;
@@ -435,7 +435,7 @@ sparse matrix.
 
 .. code-block:: c++
 
-    Eigen::SparseMatrix<Expression, Eigen::ColMajor> m(3, 6);
+    Eigen∷SparseMatrix<Expression, Eigen∷ColMajor> m(3, 6);
     m.insert(0, 0) = x;
     m.insert(0, 4) = z;
     m.insert(1, 2) = y;
@@ -504,7 +504,7 @@ following code:
 
 In the following example, we show how to use the generated function to
 evaluate the symbolic matrix and construct a sparse matrix of double
-using ``Eigen::Map``.
+using ``Eigen∷Map``.
 
 
 .. raw:: html
@@ -515,20 +515,20 @@ using ``Eigen::Map``.
 
     // set up param, outer_indices, inner_indices, and values.
     f_meta_t meta = f_meta();
-    const Eigen::Vector3d param{1 /* x */, 2 /* y */, 3 /* z */};
-    std::vector<int> outer_indices(meta.m.cols + 1);
-    std::vector<int> inner_indices(meta.m.non_zeros);
-    std::vector<double> values(meta.m.non_zeros);
+    const Eigen∷Vector3d param{1 /* x */, 2 /* y */, 3 /* z */};
+    std∷vector<int> outer_indices(meta.m.cols + 1);
+    std∷vector<int> inner_indices(meta.m.non_zeros);
+    std∷vector<double> values(meta.m.non_zeros);
     
     // call f to fill outer_indices, inner_indices, and values.
     f(param.data(), outer_indices.data(), inner_indices.data(), values.data());
     
-    // use Eigen::Map to turn (outer_indices, inner_indices, values) into a
+    // use Eigen∷Map to turn (outer_indices, inner_indices, values) into a
     // sparse matrix.
-    Eigen::Map<Eigen::SparseMatrix<double, Eigen::ColMajor>> map_sp(
+    Eigen∷Map<Eigen∷SparseMatrix<double, Eigen∷ColMajor>> map_sp(
         meta.m.rows, meta.m.cols, meta.m.non_zeros, outer_indices.data(),
         inner_indices.data(), values.data());
-    const Eigen::SparseMatrix<double> m_double{map_sp.eval()};
+    const Eigen∷SparseMatrix<double> m_double{map_sp.eval()};
 
 .. raw:: html
 
@@ -567,7 +567,7 @@ R"""(Returns all polynomial basis elements up to a given degree under the
 graded reverse lexicographic order.
 
 Template parameter ``rows``:
-    Number of rows or Eigen::Dynamic.
+    Number of rows or Eigen∷Dynamic.
 
 Template parameter ``BasisElement``:
     A derived class of PolynomialBasisElement.
@@ -723,7 +723,7 @@ Note:
     the number of lumped parameters, but more simplification could be
     implemented relatively easily. Optimal simplification, however,
     involves the complexity of comparing two arbitrary Expressions
-    (see Expression::EqualTo for more details).
+    (see Expression∷EqualTo for more details).
 
 Raises:
     RuntimeError if ``f`` is not decomposable in this way (cells
@@ -1041,15 +1041,15 @@ degree of the polynomial. Here is an example.
 .. code-block:: c++
 
     // p is a quadratic polynomial with x being the only indeterminate.
-    symbolic::GenericPolynomial<MonomialBasisElement> p(a * x * x + b * x + c,
+    symbolic∷GenericPolynomial<MonomialBasisElement> p(a * x * x + b * x + c,
     {x});
     // p.basis_element_to_coefficient_map() contains {1: c, x: b, x*x:a}.
-    std::cout << p.TotalDegree(); // prints 2.
+    std∷cout << p.TotalDegree(); // prints 2.
     // Now set (a, b, c) to the indeterminates. p becomes a linear
     // polynomial of a, b, c.
     p.SetIndeterminates({a, b, c});
     // p.basis_element_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
-    std::cout << p.TotalDegree(); // prints 1.
+    std∷cout << p.TotalDegree(); // prints 1.
 
 .. raw:: html
 
@@ -1326,6 +1326,12 @@ R"""(Returns this monomial raised to ``p``.
 Raises:
     RuntimeError if ``p`` is negative.)""";
         } pow_in_place;
+        // Symbol: drake::symbolic::Monomial::to_string
+        struct /* to_string */ {
+          // Source: drake/common/symbolic/monomial.h
+          const char* doc =
+R"""(Returns the string representation of this monomial.)""";
+        } to_string;
         // Symbol: drake::symbolic::Monomial::total_degree
         struct /* total_degree */ {
           // Source: drake/common/symbolic/monomial.h
@@ -1596,7 +1602,7 @@ monomial with coefficient b, and p + b stores the
 monomial-to-coefficient mapping as {(x² -> a), (y -> 1), (1 -> b)},
 with (p + b).decision_variables() being {a, b}. If you want to append
 the variable ``v`` to the indeterminates of the p⊕v, then explicitly
-convert it to a monomial as p ⊕ symbolic::Monomial(v).)""";
+convert it to a monomial as p ⊕ symbolic∷Monomial(v).)""";
         // Symbol: drake::symbolic::Polynomial::AddProduct
         struct /* AddProduct */ {
           // Source: drake/common/symbolic/polynomial.h
@@ -1794,7 +1800,7 @@ R"""(Constructs a polynomial from a map, Monomial → Expression.)""";
 R"""(Constructs a polynomial from a monomial ``m``. Note that all variables
 in ``m`` are considered as indeterminates. Note that this implicit
 conversion is desirable to have a dot product of two
-Eigen::Vector<Monomial>s return a Polynomial.)""";
+Eigen∷Vector<Monomial>s return a Polynomial.)""";
           // Source: drake/common/symbolic/polynomial.h
           const char* doc_1args_v =
 R"""(Constructs a polynomial from a varaible ``v``. Note that v is
@@ -1862,14 +1868,14 @@ also potentially the degree of the polynomial. Here is an example.
 .. code-block:: c++
 
     // p is a quadratic polynomial with x being the indeterminates.
-    symbolic::Polynomial p(a * x * x + b * x + c, {x});
+    symbolic∷Polynomial p(a * x * x + b * x + c, {x});
     // p.monomial_to_coefficient_map() contains {1: c, x: b, x*x:a}.
-    std::cout << p.TotalDegree(); // prints 2.
+    std∷cout << p.TotalDegree(); // prints 2.
     // Now set (a, b, c) to the indeterminates. p becomes a linear
     // polynomial of a, b, c.
     p.SetIndeterminates({a, b, c});
     // p.monomial_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
-    std::cout << p.TotalDegree(); // prints 1.
+    std∷cout << p.TotalDegree(); // prints 1.
 
 .. raw:: html
 
@@ -2023,12 +2029,12 @@ as a mapping {x₀ -> 2, x₁ -> 1}.
 Each of the derived class, ``Derived``, should implement the following
 functions
 
-- std::map<Derived, double> operator*(const Derived& A, const Derived&B)
-- std::map<Derived, double> Derived::Differentiate(const Variable& var)
+- std∷map<Derived, double> operator*(const Derived& A, const Derived&B)
+- std∷map<Derived, double> Derived∷Differentiate(const Variable& var)
 const;
-- std::map<Derived, double> Derived::Integrate(const Variable& var) const;
-- bool Derived::operator<(const Derived& other) const;
-- std::pair<double, Derived> EvaluatePartial(const Environment& e) const;
+- std∷map<Derived, double> Derived∷Integrate(const Variable& var) const;
+- bool Derived∷operator<(const Derived& other) const;
+- std∷pair<double, Derived> EvaluatePartial(const Environment& e) const;
 - void MergeBasisElementInPlace(const Derived& other)
 
 The function lexicographical_compare can be used when implementing
@@ -2167,8 +2173,8 @@ h(x) is a polynomial) to a polynomial constraint p(x) - q(x) * h(x) =
 0, or convert the inequality constraint f(x) >= h(x) as p(x) - q(x) *
 h(x) >= 0 if we know q(x) > 0.
 
-This class represents a special subset of the symbolic::Expression.
-While a symbolic::Expression can represent a rational function,
+This class represents a special subset of the symbolic∷Expression.
+While a symbolic∷Expression can represent a rational function,
 extracting the numerator and denominator, generally, is quite
 difficult; for instance, from p1(x) / q1(x) + p2(x) / q2(x) + ... +
 pn(x) / qn(x). This class's explicit structure facilitates this
@@ -2527,11 +2533,11 @@ Returns:
 
 .. code-block:: c++
 
-    std::vector<SinCos> sin_cos;
-    sin_cos.emplace_back(symbolic::Variable("s0"), symbolic::Variable("c0"));
-    sin_cos.emplace_back(symbolic::Variable("s1"), symbolic::Variable("c1"));
-    Vector2<symbolic::Variable> t(symbolic::Variable("t0"),
-                                  symbolic::Variable("t1"));
+    std∷vector<SinCos> sin_cos;
+    sin_cos.emplace_back(symbolic∷Variable("s0"), symbolic∷Variable("c0"));
+    sin_cos.emplace_back(symbolic∷Variable("s1"), symbolic∷Variable("c1"));
+    Vector2<symbolic∷Variable> t(symbolic∷Variable("t0"),
+                                  symbolic∷Variable("t1"));
     const auto e_rational =
     SubstituteStereographicProjection(t(0) * sin_cos[0].s*sin_cos[1].c + 1,
                                       sin_cos, t);
@@ -2628,6 +2634,11 @@ Parameter ``n``:
 Precondition:
     n>=0.)""";
       } pow;
+      // Symbol: drake::symbolic::to_string
+      struct /* to_string */ {
+        // Source: drake/common/symbolic/chebyshev_basis_element.h
+        const char* doc = R"""()""";
+      } to_string;
     } symbolic;
   } drake;
 } pydrake_doc_common_symbolic;

@@ -1,4 +1,4 @@
-#include "manipulation/franka_panda/panda_command_sender.h"
+#include "drake/manipulation/franka_panda/panda_command_sender.h"
 
 #include <memory>
 #include <vector>

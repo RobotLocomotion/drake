@@ -34,7 +34,7 @@ R"""(Handles lcmt_panda_command message from a LcmSubscriberSystem.
 
 Note that this system does not actually subscribe to an LCM channel.
 To receive the message, the input of this system should be connected
-to a LcmSubscriberSystem::Make<drake::lcmt_panda_command>().
+to a LcmSubscriberSystem∷Make<drake∷lcmt_panda_command>().
 
 It has one required input port, "lcmt_panda_command". It has several
 output ports, each one of size num_joints.
@@ -128,7 +128,7 @@ R"""(Creates and outputs lcmt_panda_command messages.
 
 Note that this system does not actually send the message an LCM
 channel. To send the message, the output of this system should be
-connected to a LcmPublisherSystem::Make<lcmt_panda_command>().
+connected to a LcmPublisherSystem∷Make<lcmt_panda_command>().
 
 This system has vector-valued input ports, each one of size
 num_joints.
@@ -181,7 +181,7 @@ R"""(Parameter ``control_mode``:
           const char* doc =
 R"""(Type alias for Panda control mode bitfields. Control modes can be
 bitwise OR'd together to enable multiple control modes simultaneously.
-Values match lcmt_panda_status::CONTROL_MODE_* constants.)""";
+Values match lcmt_panda_status∷CONTROL_MODE_* constants.)""";
         } PandaControlMode;
         // Symbol: drake::manipulation::franka_panda::PandaControlModes
         struct /* PandaControlModes */ {
@@ -256,7 +256,7 @@ R"""(Creates and outputs lcmt_panda_status messages.
 
 Note that this system does not actually send the message an LCM
 channel. To send the message, the output of this system should be
-connected to a LcmPublisherSystem::Make<lcmt_panda_status>().
+connected to a LcmPublisherSystem∷Make<lcmt_panda_status>().
 
 This system has many vector-valued input ports, each of which has
 exactly num_joints elements.

@@ -23,7 +23,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt.h"
 
 // clang-format off
 namespace Eigen {
@@ -555,7 +555,4 @@ inline const AutoDiffScalar<VectorXd> max(const AutoDiffScalar<VectorXd>& a,
 }  // namespace Eigen
 // clang-format on
 
-namespace fmt {
-template <>
-struct formatter<drake::AutoDiffXd> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, Eigen, AutoDiffScalar<Eigen::VectorXd>, x, x.value())

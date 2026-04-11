@@ -17,16 +17,19 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     git \
     graphviz \
     libc6-dev \
-    lsb-release \
     ninja-build \
     python3 \
     wget \
   && rm -rf /var/lib/apt/lists/*
-ARG DOXYGEN_VERSION=1.14.0
-ARG DOXYGEN_SHA256=d4536d11ab13037327d8d026b75f5a86b7ccb2093e2f546235faf61fd86e6b5d
+ARG DOXYGEN_VERSION=1.15.0
+ARG DOXYGEN_SHA256=a8cafe605867ad475aaf288a3852783076e1df83aabf16488bbfa958062e7440
+COPY ./patches/ ./patches
 RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
   && echo "${DOXYGEN_SHA256}  doxygen-${DOXYGEN_VERSION}.src.tar.gz" | sha256sum --check - \
   && tar -xzf "doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
+  && git -C "doxygen-${DOXYGEN_VERSION}" apply \
+    # List patches to be applied.
+    ../patches/upstream/class_namespace_sorting.patch \
   && mkdir -p doxygen-build /opt/doxygen \
   && cd doxygen-build \
   && cmake \
@@ -42,4 +45,4 @@ RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOX
   && cp -f "doxygen-${DOXYGEN_VERSION}/LICENSE" /opt/doxygen/bin \
   && rm -rf doxygen-*
 RUN cd /opt/doxygen/bin \
-  && tar -czf "doxygen-$(./doxygen --version)-$(lsb_release --codename --short)-$(uname --processor).tar.gz" doxygen LICENSE
+  && tar -czf "doxygen-$(./doxygen --version)-$(. /etc/os-release && echo ${VERSION_CODENAME})-$(uname --processor).tar.gz" doxygen LICENSE

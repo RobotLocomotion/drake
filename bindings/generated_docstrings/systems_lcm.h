@@ -40,7 +40,7 @@ constexpr struct /* pydrake_doc_systems_lcm */ {
 R"""(Given LCM bus names and (nullable) parameters, adds an
 LcmInterfaceSystem within the given diagram builder for each bus, and
 returns an LcmBuses object that provides access to the
-drake::lcm::DrakeLcmInterface objects that were created.
+drake∷lcm∷DrakeLcmInterface objects that were created.
 
 Because the interfaces live within the builder (and so eventually, the
 diagram), the diagram will pump the interfaces when it's used with a
@@ -51,10 +51,10 @@ object merely aliases into the builder (and then eventually, the
 diagram).
 
 As a special case, the user can opt-out of LCM either by passing
-``nullopt`` as the drake::lcm::DrakeLcmParams, or by setting the URL
-within the DrakeLcmParams to LcmBuses::kLcmUrlMemqNull. In that case,
-only a drake::lcm::DrakeLcmInterface object will be created (not a
-full LcmInterfaceSystem), and the LCM messages will *not* be pumped.
+``nullopt`` as the drake∷lcm∷DrakeLcmParams, or by setting the URL
+within the DrakeLcmParams to LcmBuses∷kLcmUrlMemqNull. In that case,
+only a drake∷lcm∷DrakeLcmInterface object will be created (not a full
+LcmInterfaceSystem), and the LCM messages will *not* be pumped.
 
 Parameter ``lcm_buses``:
     A map of {bus_name: params} for LCM transceivers, to be used by
@@ -169,7 +169,7 @@ simulation, not just `LcmSubscriberSystem`s.
     DiagramBuilder<double> builder;
     auto lcm = builder.AddSystem<LcmInterfaceSystem>();
     auto subscriber = builder.AddSystem(
-        LcmSubscriberSystem::Make<lcmt_drake_signal>("channel", lcm));
+        LcmSubscriberSystem∷Make<lcmt_drake_signal>("channel", lcm));
 
 .. raw:: html
 
@@ -223,8 +223,8 @@ MUST NOT start the receive thread on this object.)""";
         struct /* LcmLogPlaybackSystem */ {
           // Source: drake/systems/lcm/lcm_log_playback_system.h
           const char* doc =
-R"""(Advances the cursor of a drake::lcm::DrakeLcmLog based on the
-timestamps seen the Context that is used to simulate this System.
+R"""(Advances the cursor of a drake∷lcm∷DrakeLcmLog based on the timestamps
+seen the Context that is used to simulate this System.
 
 This is useful when a simulated Diagram contains
 LcmSubscriberSystem(s) whose outputs should be determined by logged
@@ -252,7 +252,7 @@ Parameter ``log``:
 R"""(Publishes an LCM message containing information from its input port.
 Optionally sends a one-time initialization message. Publishing can be
 set up to happen on a per-step or periodic basis. Publishing "by
-force", through ``LcmPublisherSystem::Publish(const Context&)``, is
+force", through ``LcmPublisherSystem∷Publish(const Context&)``, is
 also enabled.
 
 Note:
@@ -260,7 +260,7 @@ Note:
     there should normally be just one of these typically-heavyweight
     objects per program. However, if you're sure there isn't any other
     need for an LCM interface in your program, you can let
-    LcmPublisherSystem allocate and maintain a drake::lcm::DrakeLcm
+    LcmPublisherSystem allocate and maintain a drake∷lcm∷DrakeLcm
     object internally.
 
 .. pydrake_system::
@@ -310,14 +310,14 @@ Parameter ``serializer``:
 
 Parameter ``lcm``:
     A pointer to the LCM subsystem to use, which must remain valid for
-    the lifetime of this object. If null, a drake::lcm::DrakeLcm
-    object is allocated and maintained internally, but see the note in
-    the class comments.
+    the lifetime of this object. If null, a drake∷lcm∷DrakeLcm object
+    is allocated and maintained internally, but see the note in the
+    class comments.
 
 Parameter ``publish_period``:
     Period that messages will be published (optional). If the publish
     period is zero, LcmPublisherSystem will use per-step publishing
-    instead; see LeafSystem::DeclarePerStepPublishEvent().
+    instead; see LeafSystem∷DeclarePerStepPublishEvent().
 
 Parameter ``publish_offset``:
     Offset that messages will be published (optional), in seconds.
@@ -346,9 +346,9 @@ Parameter ``serializer``:
 
 Parameter ``lcm``:
     A pointer to the LCM subsystem to use, which must remain valid for
-    the lifetime of this object. If null, a drake::lcm::DrakeLcm
-    object is allocated and maintained internally, but see the note in
-    the class comments.
+    the lifetime of this object. If null, a drake∷lcm∷DrakeLcm object
+    is allocated and maintained internally, but see the note in the
+    class comments.
 
 Parameter ``publish_triggers``:
     Set of triggers that determine when messages will be published.
@@ -402,14 +402,14 @@ Parameter ``channel``:
 
 Parameter ``lcm``:
     A pointer to the LCM subsystem to use, which must remain valid for
-    the lifetime of this object. If null, a drake::lcm::DrakeLcm
-    object is allocated and maintained internally, but see the note in
-    the class comments.
+    the lifetime of this object. If null, a drake∷lcm∷DrakeLcm object
+    is allocated and maintained internally, but see the note in the
+    class comments.
 
 Parameter ``publish_period``:
     Period that messages will be published (optional). If the publish
     period is zero, LcmPublisherSystem will use per-step publishing
-    instead; see LeafSystem::DeclarePerStepPublishEvent().
+    instead; see LeafSystem∷DeclarePerStepPublishEvent().
 
 Parameter ``publish_offset``:
     Offset that messages will be published (optional), in seconds.
@@ -434,9 +434,9 @@ Parameter ``channel``:
 
 Parameter ``lcm``:
     A pointer to the LCM subsystem to use, which must remain valid for
-    the lifetime of this object. If null, a drake::lcm::DrakeLcm
-    object is allocated and maintained internally, but see the note in
-    the class comments.
+    the lifetime of this object. If null, a drake∷lcm∷DrakeLcm object
+    is allocated and maintained internally, but see the note in the
+    class comments.
 
 Parameter ``publish_triggers``:
     Set of triggers that determine when messages will be published.
@@ -494,7 +494,7 @@ R"""(Returns the publish_period provided at construction time.)""";
             const char* doc =
 R"""(Returns a mutable reference to the LCM object in use by this
 publisher. This may have been supplied in the constructor or may be an
-internally-maintained object of type drake::lcm::DrakeLcm.)""";
+internally-maintained object of type drake∷lcm∷DrakeLcm.)""";
           } lcm;
           // Symbol: drake::systems::lcm::LcmPublisherSystem::make_name
           struct /* make_name */ {
@@ -574,9 +574,9 @@ by the Simulator, all these operations are taken care of by the
 Simulator. On the other hand, the user needs to manually replicate
 this process without the Simulator.
 
-If LCM service in use is a drake::lcm::DrakeLcmLog (not live
-operation), then see drake::systems::lcm::LcmLogPlaybackSystem for a
-helper to advance the log cursor in concert with the simulation.
+If LCM service in use is a drake∷lcm∷DrakeLcmLog (not live operation),
+then see drake∷systems∷lcm∷LcmLogPlaybackSystem for a helper to
+advance the log cursor in concert with the simulation.
 
 .. pydrake_system::
 
@@ -618,7 +618,7 @@ Parameter ``lcm``:
 
 Parameter ``wait_for_message_on_initialization_timeout``:
     Configures the behavior of initialization events (see
-    System::ExecuteInitializationEvents() and Simulator::Initialize())
+    System∷ExecuteInitializationEvents() and Simulator∷Initialize())
     by specifying the number of seconds (wall-clock elapsed time) to
     wait for a new message. If this timeout is <= 0, initialization
     will copy any already-received messages into the Context but will
@@ -648,7 +648,7 @@ Parameter ``lcm``:
 
 Parameter ``wait_for_message_on_initialization_timeout``:
     Configures the behavior of initialization events (see
-    System::ExecuteInitializationEvents() and Simulator::Initialize())
+    System∷ExecuteInitializationEvents() and Simulator∷Initialize())
     by specifying the number of seconds (wall-clock elapsed time) to
     wait for a new message. If this timeout is <= 0, initialization
     will copy any already-received messages into the Context but will
@@ -698,7 +698,7 @@ R"""(Returns the default name for a system that subscribes to ``channel``.)""";
           // Source: drake/systems/lcm/serializer.h
           const char* doc =
 R"""(Serializer is specific to a single LcmMessage type, and translates
-between LCM message bytes and drake::Value<LcmMessage> objects.
+between LCM message bytes and drake∷Value<LcmMessage> objects.
 
 Template parameter ``LcmMessage``:
     message type to serialize, e.g., lcmt_drake_signal.)""";
@@ -728,7 +728,7 @@ Template parameter ``LcmMessage``:
           // Source: drake/systems/lcm/serializer.h
           const char* doc =
 R"""(SerializerInterface translates between LCM message bytes and
-drake::AbstractValue objects that contain LCM messages, e.g., a
+drake∷AbstractValue objects that contain LCM messages, e.g., a
 Value<lcmt_drake_signal>. All ``const`` methods are threadsafe. See
 Serializer for a message-specific concrete subclass.)""";
           // Symbol: drake::systems::lcm::SerializerInterface::CreateDefaultValue
@@ -742,13 +742,13 @@ The result can be used as the output object filled in by Deserialize.)""";
           struct /* Deserialize */ {
             // Source: drake/systems/lcm/serializer.h
             const char* doc =
-R"""(Translates LCM message bytes into a drake::AbstractValue object.)""";
+R"""(Translates LCM message bytes into a drake∷AbstractValue object.)""";
           } Deserialize;
           // Symbol: drake::systems::lcm::SerializerInterface::Serialize
           struct /* Serialize */ {
             // Source: drake/systems/lcm/serializer.h
             const char* doc =
-R"""(Translates a drake::AbstractValue object into LCM message bytes.)""";
+R"""(Translates a drake∷AbstractValue object into LCM message bytes.)""";
           } Serialize;
           // Symbol: drake::systems::lcm::SerializerInterface::SerializerInterface
           struct /* ctor */ {

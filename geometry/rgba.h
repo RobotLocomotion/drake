@@ -6,13 +6,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/name_value.h"
-
-// Remove with deprecation 2026-03-01.
-#include <ostream>
 
 namespace drake {
 namespace geometry {
@@ -169,9 +165,6 @@ class Rgba {
       // As documented above, default-constructed Rgba is opaque white.
       Eigen::Vector4d::Ones();
 };
-
-DRAKE_DEPRECATED("2026-03-01", "Use fmt::to_string(), instead")
-std::ostream& operator<<(std::ostream& out, const Rgba& rgba);
 
 }  // namespace geometry
 }  // namespace drake

@@ -15,9 +15,6 @@
 #include "drake/common/unused.h"
 #include "drake/geometry/rgba.h"
 
-// Remove with deprecation 2026-03-01.
-#include <sstream>
-
 namespace drake {
 namespace geometry {
 namespace {
@@ -545,12 +542,6 @@ GTEST_TEST(GeometryProperties, ToString) {
   const GeometryProperties& dut = subclass;
   EXPECT_EQ(dut.to_string(), "[__default__]");
   EXPECT_EQ(fmt::to_string(dut), "[__default__]");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  std::stringstream out;
-  out << dut;
-  EXPECT_EQ(out.str(), "[__default__]");
-#pragma GCC diagnostic pop
 }
 
 }  // namespace

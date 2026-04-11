@@ -9,46 +9,14 @@ import sys
 import umsgpack
 import websockets
 
-# BEGIN ugly hack
-#
-# https://bugs.launchpad.net/ubuntu/+source/python-websockets/+bug/1969902
-#
-# Python 3.10 (Jammy) removed the `loop` parameter from various asyncio APIs.
-# Unfortunately, Jammy shipped with python3-websokets 9.1, which is still
-# passing a `loop` parameter, resulting in asyncio expressing its displeasure
-# by means of exceptions. Trying to patch websokets directly is not reasonable.
-# Instead, patch the asyncio functions to remove the `loop` parameter.
-#
-# TODO(mwoehlke-kitware): Remove this when Jammy's python3-websockets has been
-# updated to 10.0 or later.
-_asyncio_lock_ctor = asyncio.Lock.__init__
-_asyncio_wait_for = asyncio.wait_for
-_asyncio_sleep = asyncio.sleep
-
-
-def _patch_asyncio(orig):
-    def _patched(*args, **kwargs):
-        if "loop" in kwargs and kwargs["loop"] is None:
-            kwargs.pop("loop")
-        return orig(*args, **kwargs)
-
-    return _patched
-
-
-asyncio.Lock.__init__ = _patch_asyncio(_asyncio_lock_ctor)
-asyncio.wait_for = _patch_asyncio(_asyncio_wait_for)
-asyncio.sleep = _patch_asyncio(_asyncio_sleep)
-
-# END ugly hack
-
 # https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
 #
-# Jammy shipped with python3-u-msgpack 2.3.0, which tries to use
-# `collections.Hashable`, which was removed in Python 3.10. Work around this by
-# monkey-patching `Hashable` into `umsgpack.collections`.
+# python3-u-msgpack 2.3.0 tries to use `collections.Hashable`, which was removed
+# in Python 3.10. Work around this by monkey-patching `Hashable` into it.
 #
-# TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
-# updated to 2.5.2 or later.
+# TODO(mwoehlke-kitware): Remove this when our minimum supported msgpack
+# is updated to 2.5.2 or later, which is currently blocked on Noble still
+# shipping 2.3.0.
 if not hasattr(umsgpack, "Hashable"):
     import collections
 
@@ -65,7 +33,7 @@ def print_recursive_comparison(d1, d2, level="root"):
         if d1.keys() != d2.keys():
             s1 = set(d1.keys())
             s2 = set(d2.keys())
-            print("{:<20} + {} - {}".format(level, s1 - s2, s2 - s1))
+            print(f"{level:<20} + {s1 - s2} - {s2 - s1}")
             common_keys = s1 & s2
         else:
             common_keys = set(d1.keys())
@@ -112,11 +80,6 @@ async def socket_operations_async(args):
 def main():
     parser = argparse.ArgumentParser(
         description="Test utility for Meshcat websockets"
-    )
-    parser.add_argument(
-        "--disable-drake-valgrind-tracing",
-        action="count",
-        help="ignored by this program; see valgrind.sh for details",
     )
     parser.add_argument(
         "--ws_url", type=str, required=True, help="websocket URL"

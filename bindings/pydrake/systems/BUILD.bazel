@@ -433,6 +433,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
     ],
@@ -447,6 +448,49 @@ drake_py_unittest(
     deps = [
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "controllers_test",
+    data = [
+        "@drake_models//:iiwa_description",
+    ],
+    deps = [
+        ":controllers_py",
+        ":test_util_py",
+        "//bindings/pydrake/examples",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/multibody:tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "custom_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        ":test_util_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "estimators_test",
+    deps = [
+        ":estimators_py",
+        ":primitives_py",
+        "//bindings/pydrake/examples",
+    ],
+)
+
+drake_py_unittest(
+    name = "event_gc_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
     ],
 )
 
@@ -471,45 +515,11 @@ drake_jupyter_py_binary(
 )
 
 drake_py_unittest(
-    name = "custom_test",
+    name = "monte_carlo_test",
     deps = [
         ":analysis_py",
-        ":framework_py",
         ":primitives_py",
-        ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "value_test",
-    deps = [
-        ":framework_py",
-        "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "controllers_test",
-    data = [
-        "@drake_models//:iiwa_description",
-    ],
-    deps = [
-        ":controllers_py",
-        ":test_util_py",
-        "//bindings/pydrake/examples",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
-        "//bindings/pydrake/multibody:tree_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "estimators_test",
-    deps = [
-        ":estimators_py",
-        ":primitives_py",
-        "//bindings/pydrake/examples",
     ],
 )
 
@@ -610,10 +620,9 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "monte_carlo_test",
+    name = "value_test",
     deps = [
-        ":analysis_py",
-        ":primitives_py",
+        ":framework_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

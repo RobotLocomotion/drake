@@ -24,6 +24,10 @@ GTEST_TEST(EigenPoolTest, EigenFixedSize) {
   EigenPool<Matrix3d> pool;
   EXPECT_EQ(pool.size(), 0);
 
+  // Zeroing should be a no-op.
+  pool.SetZero();
+  EXPECT_EQ(pool.size(), 0);
+
   // Reserve some memory by resizing, then clearing.
   pool.Resize(10, 3, 3);
   pool.Clear();

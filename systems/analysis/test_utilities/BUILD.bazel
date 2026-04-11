@@ -19,10 +19,11 @@ drake_cc_package_library(
         ":explicit_error_controlled_integrator_test",
         ":generic_integrator_test",
         ":implicit_integrator_test",
+        ":integrator_test_factory",
         ":linear_scalar_system",
         ":logistic_system",
         ":my_spring_mass_system",
-        ":pleides_system",
+        ":pleiades_system",
         ":quadratic_scalar_system",
         ":quartic_scalar_system",
         ":quintic_scalar_system",
@@ -105,6 +106,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "integrator_test_factory",
+    testonly = 1,
+    hdrs = ["integrator_test_factory.h"],
+    deps = [
+        "//systems/analysis:integrator_base",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "linear_scalar_system",
     testonly = 1,
     hdrs = ["linear_scalar_system.h"],
@@ -132,9 +143,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "pleides_system",
+    name = "pleiades_system",
     testonly = 1,
-    hdrs = ["pleides_system.h"],
+    hdrs = ["pleiades_system.h"],
     deps = [
         "//systems/framework:leaf_system",
     ],

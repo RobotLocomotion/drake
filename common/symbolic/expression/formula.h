@@ -6,16 +6,19 @@
 
 #include <functional>
 #include <memory>
-#include <ostream>
 #include <set>
 #include <string>
 #include <utility>
+
+// Remove with deprecation 2026-07-01.
+#include <ostream>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
@@ -219,7 +222,6 @@ class Formula {
     item.HashAppend(&delegating_hasher);
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const Formula& f);
   friend void swap(Formula& a, Formula& b) { std::swap(a.ptr_, b.ptr_); }
 
   friend bool is_false(const Formula& f);
@@ -429,6 +431,10 @@ positive_semidefinite(const Eigen::TriangularView<Derived, Eigen::Upper>& u) {
   return positive_semidefinite(u, Eigen::Upper);
 }
 
+DRAKE_DEPRECATED(
+    "2026-07-01",
+    "Use fmt functions instead (e.g., fmt::format(), fmt::to_string(), "
+    "fmt::print()). Refer to GitHub issue #17742 for more information.")
 std::ostream& operator<<(std::ostream& os, const Formula& f);
 
 /** Checks if @p f is structurally equal to False formula. */
@@ -539,13 +545,10 @@ struct RelationalOpTraits {
   static constexpr int Cols = Eigen::internal::min_size_prefer_fixed(
       DerivedA::ColsAtCompileTime, DerivedB::ColsAtCompileTime);
 #else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
   static constexpr int Rows = EIGEN_SIZE_MIN_PREFER_FIXED(
       (DerivedA::RowsAtCompileTime), (DerivedB::RowsAtCompileTime));
   static constexpr int Cols = EIGEN_SIZE_MIN_PREFER_FIXED(
       (DerivedA::ColsAtCompileTime), (DerivedB::ColsAtCompileTime));
-#pragma GCC diagnostic pop
 #endif  // EIGEN_VERSION_AT_LEAST
   using ReturnType = Eigen::Array<Formula, Rows, Cols>;
 };

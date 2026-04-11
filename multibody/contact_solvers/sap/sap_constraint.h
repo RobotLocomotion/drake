@@ -320,28 +320,11 @@ class SapConstraint {
   virtual void DoCalcCostHessian(const AbstractValue& data,
                                  MatrixX<T>* G) const = 0;
   virtual void DoAccumulateGeneralizedImpulses(
-      int, const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>>) const {
-    // TODO(amcastro-tri): Temporarily, the default implementation throws until
-    // the full resolution of #19435. Once all constraints report forces, this
-    // function will be pure virtual.
-    throw std::logic_error(
-        "Constraints must implement this function. See #19435. ");
-  }
+      int, const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>>) const = 0;
   virtual void DoAccumulateSpatialImpulses(int,
                                            const Eigen::Ref<const VectorX<T>>&,
-                                           SpatialForce<T>*) const {
-    // TODO(amcastro-tri): Temporarily, the default implementation throws until
-    // the full resolution of #19435. Once all constraints report forces, this
-    // function will be pure virtual.
-    throw std::logic_error(
-        "Constraints must implement this function. See #19435. ");
-  }
-  /* Clone() implementation. Derived classes must override to provide
-   polymorphic deep-copy into a new instance. */
+                                           SpatialForce<T>*) const = 0;
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
-
-  /* ToDouble() implementation. Derived classes must override to provide
-   polymorphic scalar conversion. */
   virtual std::unique_ptr<SapConstraint<double>> DoToDouble() const = 0;
   // @}
 

@@ -1,4 +1,3 @@
-import typing
 import unittest
 import weakref
 
@@ -528,9 +527,7 @@ class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
         )
 
         # Now set the new penalty function
-        def penalty(
-            x: float, compute_grad: bool
-        ) -> typing.Tuple[float, typing.Optional[float]]:
+        def penalty(x: float, compute_grad: bool) -> tuple[float, float | None]:
             if x < 0:
                 if compute_grad:
                     return x**2, 2 * x
@@ -589,9 +586,7 @@ class TestMinimumValueUpperBoundConstraint(unittest.TestCase):
         )
 
         # Now set the new penalty function
-        def penalty(
-            x: float, compute_grad: bool
-        ) -> typing.Tuple[float, typing.Optional[float]]:
+        def penalty(x: float, compute_grad: bool) -> tuple[float, float | None]:
             if x < 0:
                 if compute_grad:
                     return x**2, 2 * x

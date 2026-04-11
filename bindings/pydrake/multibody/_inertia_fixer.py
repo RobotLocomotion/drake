@@ -16,9 +16,9 @@ and the `<inertial>` tag includes the pose of C relative to B, X_BC.
 from __future__ import annotations
 
 import abc
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
 import xml.parsers.expat as expat
 
 import numpy as np
@@ -91,7 +91,7 @@ def gfmt(x: float) -> str:
     return f"{x:.5g}"
 
 
-class FormatDriver(object, metaclass=abc.ABCMeta):
+class FormatDriver(metaclass=abc.ABCMeta):
     """This interface encapsulates the differences between URDF and SDFormat
     processing, for purposes of the implementation of XmlInertiaMapper.
     """

@@ -27,7 +27,6 @@ drake_cc_package_library(
         ":geometric_transform",
         ":gradient",
         ":gray_code",
-        ":jacobian",
         ":linear_solve",
         ":matrix_util",
         ":quadratic_form",
@@ -278,16 +277,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "jacobian",
-    srcs = ["jacobian.cc"],
-    hdrs = ["jacobian.h"],
-    deps = [
-        "//common:autodiff",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "quadratic_form",
     srcs = ["quadratic_form.cc"],
     hdrs = ["quadratic_form.h"],
@@ -447,16 +436,6 @@ drake_cc_googletest(
     name = "fourth_order_tensor_test",
     deps = [
         ":fourth_order_tensor",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "jacobian_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":gradient",
-        ":jacobian",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

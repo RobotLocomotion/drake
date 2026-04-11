@@ -58,7 +58,10 @@ class TestConstraint final : public SapConstraint<double> {
   double DoCalcCost(const AbstractValue&) const final { return 0.0; }
   void DoCalcImpulse(const AbstractValue&, EigenPtr<VectorXd>) const final {}
   void DoCalcCostHessian(const AbstractValue&, MatrixX<double>*) const final {}
-
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorXd>&,
+                                       EigenPtr<VectorXd>) const final {}
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorXd>&,
+                                   SpatialForce<double>*) const final {}
   std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
   }

@@ -26,33 +26,6 @@ string_flag(
     ],
 )
 
-# In our developer builds and CMake installs, we use the following two flags
-# as optional hints for configuring compiler warnings. It's not strictly
-# necessary to set these, but doing so will tweak the compiler flags and
-# reduce warning spam during the build.
-#
-# These are intended for internal use only, not for users to configure.
-#
-# TODO(jwnimmer-tri) Ideally, rules_cc would provide,
-# * for 'compiler', a check for the real underlying compiler by invoking it
-#   (akin to CMake) instead of just parsing the filename; and
-# * for 'compiler_major', some toolchain attribute that we could query.
-# Neither of these seem to exist yet.
-string_flag(
-    name = "compiler",
-    build_setting_default = "",
-    values = [
-        "",
-        "gcc",
-        "clang",
-    ],
-)
-
-int_flag(
-    name = "compiler_major",
-    build_setting_default = 0,
-)
-
 config_setting(
     name = "apple",
     constraint_values = ["@platforms//os:osx"],
@@ -73,37 +46,11 @@ config_setting(
     flag_values = {":error_severity": "error"},
 )
 
-config_setting(
-    name = "compiler_clang",
-    flag_values = {":compiler": "clang"},
-)
-
-config_setting(
-    name = "compiler_gcc",
-    flag_values = {":compiler": "gcc"},
-)
-
-selects.config_setting_group(
-    name = "clang",
-    match_any = [
-        "@rules_cc//cc/compiler:clang",
-        ":compiler_clang",
-    ],
-)
-
-selects.config_setting_group(
-    name = "gcc",
-    match_any = [
-        "@rules_cc//cc/compiler:gcc",
-        ":compiler_gcc",
-    ],
-)
-
 selects.config_setting_group(
     name = "apple_clang_with_warnings",
     match_all = [
         ":apple",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_warning",
     ],
 )
@@ -112,7 +59,7 @@ selects.config_setting_group(
     name = "apple_clang_with_errors",
     match_all = [
         ":apple",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_error",
     ],
 )
@@ -120,7 +67,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_with_warnings",
     match_all = [
-        ":gcc",
+        "@rules_cc//cc/compiler:gcc",
         ":error_severity_warning",
     ],
 )
@@ -128,7 +75,7 @@ selects.config_setting_group(
 selects.config_setting_group(
     name = "gcc_with_errors",
     match_all = [
-        ":gcc",
+        "@rules_cc//cc/compiler:gcc",
         ":error_severity_error",
     ],
 )
@@ -137,7 +84,7 @@ selects.config_setting_group(
     name = "linux_clang_with_warnings",
     match_all = [
         ":linux",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_warning",
     ],
 )
@@ -146,7 +93,7 @@ selects.config_setting_group(
     name = "linux_clang_with_errors",
     match_all = [
         ":linux",
-        ":clang",
+        "@rules_cc//cc/compiler:clang",
         ":error_severity_error",
     ],
 )
@@ -174,36 +121,21 @@ config_setting(
 selects.config_setting_group(
     name = "use_mold_linker",
     match_all = [
-        # TODO(rpoyner-tri): consider removing the "noble" requirement when
-        # Drake's support of "jammy" ends. Jammy is excluded because its
-        # version of the mold linker is too old.
-        "//tools:ubuntu_noble",
         ":debug",
         ":mold_linker_allowed",
     ],
 )
 
+# (Internal use only.) This captures whether --config=openmp was specified.
+bool_flag(
+    name = "with_openmp",
+    build_setting_default = False,
+)
+
+# (Internal use only.) This selects whether --config=openmp was specified.
 config_setting(
-    name = "compiler_major_13",
-    flag_values = {":compiler_major": "13"},
-)
-
-selects.config_setting_group(
-    name = "gcc_13_with_warnings",
-    match_all = [
-        ":gcc",
-        ":compiler_major_13",
-        ":error_severity_warning",
-    ],
-)
-
-selects.config_setting_group(
-    name = "gcc_13_with_errors",
-    match_all = [
-        ":gcc",
-        ":compiler_major_13",
-        ":error_severity_error",
-    ],
+    name = "with_openmp_true",
+    flag_values = {":with_openmp": "True"},
 )
 
 # *****************************************************************************

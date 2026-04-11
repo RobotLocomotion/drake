@@ -700,6 +700,14 @@ GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, Test) {
   dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
       2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 3), -0.5);
   EXPECT_EQ(dut->A().rows(), 3);
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, TestException) {
+  const Eigen::MatrixXd Q_non_psd = Eigen::Vector2d(1, -2).asDiagonal();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(
+          Q_non_psd, Eigen::Vector2d(1, 3), -2),
+      ".* is not positive semidefinite.*");
 
   // Hessian is almost positive semidefinite with one eigenvalue slightly
   // negative.
@@ -714,14 +722,13 @@ GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, Test) {
       ".* is not positive semidefinite.*");
   CheckParseQuadraticAsRotatedLorentzConeConstraint(
       Q_almost_psd, Eigen::Vector2d(2, 3), -0.5, 1E-10);
-}
 
-GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, TestException) {
-  const Eigen::MatrixXd Q = Eigen::Vector2d(1, -2).asDiagonal();
+  // Hessian is zero.
+  Eigen::MatrixXd Q_zero = Eigen::Matrix2d::Zero();
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ParseQuadraticAsRotatedLorentzConeConstraint(
-          Q, Eigen::Vector2d(1, 3), -2),
-      ".* is not positive semidefinite.*");
+          Q_zero, Eigen::Vector2d(1, 3), -2),
+      ".* is numerically zero.* linear.*");
 }
 }  // namespace
 }  // namespace solvers

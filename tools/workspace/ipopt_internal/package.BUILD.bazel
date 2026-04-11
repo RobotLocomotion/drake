@@ -242,13 +242,17 @@ _INCLUDES_PRIVATE = depset([paths.dirname(x) for x in _SRCS]).to_list()
 
 # All of the headers that live in the same directories as the sources (except
 # for the config headers which we need to handle separately, below).
-_HDRS_PRIVATE = glob([
-    x + "/*.h*"
-    for x in _INCLUDES_PRIVATE
-], exclude = [
-    "src/Common/config*",
-    "src/Common/IpoptConfig.h",
-], allow_empty = False)
+_HDRS_PRIVATE = glob(
+    [
+        x + "/*.h*"
+        for x in _INCLUDES_PRIVATE
+    ],
+    allow_empty = False,
+    exclude = [
+        "src/Common/config*",
+        "src/Common/IpoptConfig.h",
+    ],
+)
 
 _AUTOCONF_DEFINES = [
     "IPOPT_VERSION=\"drake_vendor\"",
@@ -351,19 +355,19 @@ coin_cc_library(
     autoconf_defines = _AUTOCONF_DEFINES,
     autoconf_undefines = _AUTOCONF_UNDEFINES,
     config_private_defines = _CONFIG_PRIVATE_DEFINES,
+    srcs = _SRCS,
     hdrs_public = _HDRS_PUBLIC,
     includes_public = _INCLUDES_PUBLIC,
     hdrs_private = _HDRS_PRIVATE,
     includes_private = _INCLUDES_PRIVATE,
-    srcs = _SRCS,
     vendor_tool_args = ["--no-inline-namespace"],
     output_vendoring_patch = "drake_ipopt.patch",
+    visibility = ["//visibility:public"],
     deps = [
         "@blas",
         "@lapack",
         "@spral_internal//:spral",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(

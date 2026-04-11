@@ -8,7 +8,7 @@
 #
 # Example:
 #
-#  $ bazel build -c dbg //common/test_utilities:limit_malloc_manual_test
+#  $ bazel build --config=debug //common/test_utilities:limit_malloc_manual_test
 #  $ tools/dynamic_analysis/dump_limit_malloc_stacks \
 #      bazel-bin/common/test_utilities/limit_malloc_manual_test \
 #      |& tee stacks.out

@@ -3,11 +3,7 @@
 #include <string>
 #include <tuple>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include "hwy/tests/hwy_gtest.h"
-#pragma GCC diagnostic pop
-
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 

@@ -261,8 +261,8 @@ is to be filtered, y is the filtered signal and k is the index of
 latest element in the signal time-series.
 
 Note that this class is meant to serve as a standalone simple utility
-and a filter of this form in a more ``drake::systems`` flavour can be
-generated from a ``systems::AffineSystem`` since this is a LTI filter.
+and a filter of this form in a more ``drake∷systems`` flavour can be
+generated from a ``systems∷AffineSystem`` since this is a LTI filter.
 
 Template parameter ``T``:
     The element type. Instantiated templates for the following kinds

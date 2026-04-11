@@ -26,5 +26,5 @@ test $ACTUAL_SHA == $EXPECTED_SHA
 tar --strip-components=1 -xf $ARCHIVE
 rm $ARCHIVE
 
-./configure --prefix=$PREFIX
+./configure --prefix=$PREFIX CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc
 make -j install

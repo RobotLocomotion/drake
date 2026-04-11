@@ -50,11 +50,11 @@ constexpr struct /* pydrake_doc_multibody_inverse_kinematics */ {
         // Source: drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h
         const char* doc =
 R"""(For all kinematic constraints associated with ``plant`` adds a
-corresponding solver::Constraint to ``prog``, using decision variables
+corresponding solver∷Constraint to ``prog``, using decision variables
 ``q`` to represent the generalized positions of the plant.
 
 Adds joint limits constraints, unit quaternion constraints, and
-constraints for any locked joints (via Joint::Lock()). Note that you
+constraints for any locked joints (via Joint∷Lock()). Note that you
 must pass a valid ``plant_context`` to use joint locking.
 
 Adds constraints for coupler, distance, ball, and weld constraints.
@@ -91,7 +91,7 @@ quaternion variables will be bounded to be within [-1, 1].
 
 Additionally, if the initial guess for the quaternion variables has
 not been set (it is nan), then this method calls
-MathematicalProgram::SetInitialGuess() with [1, 0, 0, 0], to help the
+MathematicalProgram∷SetInitialGuess() with [1, 0, 0, 0], to help the
 solver avoid singularities.
 
 Parameter ``plant``:
@@ -259,7 +259,7 @@ Parameter ``plant``:
 
 Parameter ``model_instances``:
     The CoM of these model instances are computed. If model_instances
-    = std::nullopt, then we compute the CoM of all model instances
+    = std∷nullopt, then we compute the CoM of all model instances
     (except the world).
 
 Parameter ``expressed_frame``:
@@ -286,7 +286,7 @@ version (using MultibodyPlant<double> and Context<double>. Except the
 gradient of the constraint is computed from autodiff.
 
 Precondition:
-    if model_instances is not std::nullopt, then all indices in
+    if model_instances is not std∷nullopt, then all indices in
     ``model_instances`` refer to valid model instances in ``plant``.)""";
         } ctor;
       } ComInPolyhedronConstraint;
@@ -313,7 +313,7 @@ Parameter ``plant``:
 
 Parameter ``model_instances``:
     We compute the model with these model instances in ``plant``. If
-    model_instances=std::nullopt, then we compute the CoM position of
+    model_instances=std∷nullopt, then we compute the CoM position of
     all model instances except the world.
 
 Parameter ``expressed_frame``:
@@ -457,8 +457,8 @@ loop control.
 
 Precondition:
     The initial position must be set using the
-    ``set_initial_position(systems::Context<double>* context, const
-    Eigen::Ref<const Eigen::VectorXd>& value)`` so that the open loop
+    ``set_initial_position(systems∷Context<double>* context, const
+    Eigen∷Ref<const Eigen∷VectorXd>& value)`` so that the open loop
     controller can start from the correct robot state.
 
 .. pydrake_system::
@@ -872,7 +872,7 @@ Raises:
           // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
           const char* doc =
 R"""(Sets the threshold for α below which the status returned is
-DifferentialInverseKinematicsStatus::kStuck. α is the scaling of the
+DifferentialInverseKinematicsStatus∷kStuck. α is the scaling of the
 commanded spatial velocity, so when α is small, it means that the
 actual spatial velocity magnitude will be small proportional to the
 commanded.
@@ -984,16 +984,16 @@ Port ``position`` accepts the current generalized position (for the
 full ``plant``, not just the active dofs).
 
 Port ``desired_cartesian_velocities`` accepts desired cartesian
-velocities, typed as systems::BusValue where key is the name of the
+velocities, typed as systems∷BusValue where key is the name of the
 frame to track and the value is the SpatialVelocity<double> w.r.t the
 task frame. Frame names should be provided as fully-scoped names
-(``model_instance::frame``).
+(``model_instance∷frame``).
 
 Port ``desired_cartesian_poses`` accepts desired cartesian poses,
-typed as systems::BusValue where key is the name of the frame to track
-and the value is the math::RigidTransformd spatial pose w.r.t the task
+typed as systems∷BusValue where key is the name of the frame to track
+and the value is the math∷RigidTransformd spatial pose w.r.t the task
 frame. Frame names should be provided as fully-scoped names
-(``model_instance::frame``).
+(``model_instance∷frame``).
 
 Port ``nominal_posture`` accepts a generalized position to be used to
 handle nullspace resolution; this has the dimension of the full
@@ -1331,7 +1331,7 @@ Parameter ``recipe``:
 Parameter ``task_frame``:
     Specifies the task frame name (i.e., "T") that cartesian goal
     poses are expressed in. Frame names should be provided as
-    fully-scoped names (``model_instance::frame``). This must be a
+    fully-scoped names (``model_instance∷frame``). This must be a
     frame in ``collision_checker.plant()``.
 
 Parameter ``collision_checker``:
@@ -1457,7 +1457,7 @@ axis masks, enabling per-axis tracking.
 Notes: - When combined with a primary cost, the primary cost should be
 weighed far more heavily to keep this secondary cost from interfering.
 A factor of 100X or so is advisable. (See
-LeastSqauresCost::cartesian_qp_weight for tuning the gain on the
+LeastSqauresCost∷cartesian_qp_weight for tuning the gain on the
 primary objective.) - For this cost to behave as expected, it is
 critical that the null space of ``S ⋅ Jv_TGs`` be a subspace of the
 null space used by the primary cost. The simplest way is to make sure
@@ -1759,7 +1759,7 @@ the program being solved.)""";
           struct /* AddToProgram */ {
             // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
             const char* doc =
-R"""(Calls DifferentialInverseKinematicsSystem::Ingredient::AddToProgram on
+R"""(Calls DifferentialInverseKinematicsSystem∷Ingredient∷AddToProgram on
 all of the ingredients in this recipe.)""";
           } AddToProgram;
           // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::Recipe::Recipe
@@ -1802,14 +1802,14 @@ R"""(Gets the collision checker used by the controller.)""";
           // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the input port for the desired cartesian poses (of type
-systems::BusValue containing math::RigidTransformd).)""";
+systems∷BusValue containing math∷RigidTransformd).)""";
         } get_input_port_desired_cartesian_poses;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_input_port_desired_cartesian_velocities
         struct /* get_input_port_desired_cartesian_velocities */ {
           // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
           const char* doc =
 R"""(Returns the input port for the desired cartesian velocities (of type
-systems::BusValue containing SpatialVelocity).)""";
+systems∷BusValue containing SpatialVelocity).)""";
         } get_input_port_desired_cartesian_velocities;
         // Symbol: drake::multibody::DifferentialInverseKinematicsSystem::get_input_port_nominal_posture
         struct /* get_input_port_nominal_posture */ {
@@ -1929,7 +1929,7 @@ constraint on the solution (6 constraints specifying an end-effector
 spatial velocity is typical, but not required), - K is the
 joint_centering_gain, - the "additional linear velocity constraints"
 are added via
-DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint().
+DifferentialInverseKinematicsParameters∷AddLinearVelocityConstraint().
 
 Intuitively, this finds a v_next such that J*v_next is in the same
 direction as V, and the difference between |V| and |J * v_next| is
@@ -1968,15 +1968,14 @@ Parameter ``parameters``:
 
 Parameter ``N``:
     (optional) matrix which maps q̇ = N(q)⋅v. See
-    MultibodyPlant::MakeVelocityToQDotMap(). By default, it is taken
-    to be the identity matrix. If dim(q) != dim(v) and any joint
-    position limits are set in ``parameters``, then you *must* provide
-    N.
+    MultibodyPlant∷MakeVelocityToQDotMap(). By default, it is taken to
+    be the identity matrix. If dim(q) != dim(v) and any joint position
+    limits are set in ``parameters``, then you *must* provide N.
 
 Parameter ``Nplus``:
     (optional) matrix which maps q̇ = N⁺(q)⋅v. See
-    MultibodyPlant::MakeQDotToVelocityMap(). By default, it is taken
-    to be the identity matrix. If dim(q) != dim(v) and J is not full
+    MultibodyPlant∷MakeQDotToVelocityMap(). By default, it is taken to
+    be the identity matrix. If dim(q) != dim(v) and J is not full
     column rank, then you *must* provide Nplus.
 
 Returns:
@@ -2676,8 +2675,8 @@ the postures of the robot satisfying certain constraints. The decision
 variables include the generalized position of the robot.
 
 To perform IK on a subset of the plant, use the constructor overload
-that takes a ``plant_context`` and use ``Joint::Lock`` on the joints
-in that Context that should be fixed during IK.)""";
+that takes a ``plant_context`` and use ``Joint∷Lock`` on the joints in
+that Context that should be fixed during IK.)""";
         // Symbol: drake::multibody::InverseKinematics::AddAngleBetweenVectorsConstraint
         struct /* AddAngleBetweenVectorsConstraint */ {
           // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
@@ -3135,7 +3134,7 @@ Note:
     permit collision related constraint (such as calling
     AddMinimumDistanceConstraint). To enable collision related
     constraint, call InverseKinematics(const MultibodyPlant<double>&
-    plant, systems::Context<double>* plant_context);)""";
+    plant, systems∷Context<double>* plant_context);)""";
           // Source: drake/multibody/inverse_kinematics/inverse_kinematics.h
           const char* doc_3args =
 R"""(Constructs an inverse kinematics problem for a MultibodyPlant. If the
@@ -3164,7 +3163,7 @@ Parameter ``plant_context``:
 .. code-block:: c++
 
     // 1. Add a diagram containing the MultibodyPlant and SceneGraph
-    systems::DiagramBuilder<double> builder;
+    systems∷DiagramBuilder<double> builder;
     auto items = AddMultibodyPlantSceneGraph(&builder, 0.0);
     // 2. Add collision geometries to the plant
     Parser(&builder).AddModels("model.sdf");
@@ -3230,7 +3229,7 @@ of the robot.)""";
         const char* doc =
 R"""(Constrain min(d) >= lb, namely the signed distance between all
 candidate pairs of geometries (according to the logic of
-SceneGraphInspector::GetCollisionCandidates()) to be no smaller than a
+SceneGraphInspector∷GetCollisionCandidates()) to be no smaller than a
 specified minimum distance lb. This constraint should be bound to
 decision variables corresponding to the configuration vector, q, of
 the associated MultibodyPlant.
@@ -3243,12 +3242,12 @@ SmoothOverMax( φ((dᵢ(q) - d_influence)/(d_influence - lb)) / φ(-1) ) ≤
 where dᵢ(q) is the signed distance of the i-th pair, lb is the minimum
 allowable distance, d_influence is the "influence distance" (the
 distance below which a pair of geometries influences the constraint),
-φ is a solvers::MinimumValuePenaltyFunction. SmoothOverMax(d) is
-smooth over approximation of max(d). We require that lb < d_influence.
-The input scaling (dᵢ(q) - d_influence)/(d_influence - lb) ensures
-that at the boundary of the feasible set (when dᵢ(q) == lb), we
-evaluate the penalty function at -1, where it is required to have a
-non-zero gradient.)""";
+φ is a solvers∷MinimumValuePenaltyFunction. SmoothOverMax(d) is smooth
+over approximation of max(d). We require that lb < d_influence. The
+input scaling (dᵢ(q) - d_influence)/(d_influence - lb) ensures that at
+the boundary of the feasible set (when dᵢ(q) == lb), we evaluate the
+penalty function at -1, where it is required to have a non-zero
+gradient.)""";
         // Symbol: drake::multibody::MinimumDistanceLowerBoundConstraint::MinimumDistanceLowerBoundConstraint
         struct /* ctor */ {
           // Source: drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h
@@ -3353,7 +3352,7 @@ R"""(Getter for the lower bound of the minimum distance.)""";
         const char* doc =
 R"""(Constrain min(d) <= ub, namely at least one signed distance between a
 candidate pairs of geometries (according to the logic of
-SceneGraphInspector::GetCollisionCandidates()) to be no larger than a
+SceneGraphInspector∷GetCollisionCandidates()) to be no larger than a
 specified ub. This constraint should be bound to decision variables
 corresponding to the configuration vector, q, of the associated
 MultibodyPlant.
@@ -3366,7 +3365,7 @@ SmoothUnderMax( φ((dᵢ(q) - d_influence)/(d_influence - ub)) / φ(-1) )
 where dᵢ(q) is the signed distance of the i-th pair, ub is the upper
 bound of the minimum distance, d_influence is the "influence distance"
 (the distance below which a pair of geometries influences the
-constraint), φ is a solvers::MinimumValuePenaltyFunction.
+constraint), φ is a solvers∷MinimumValuePenaltyFunction.
 SmoothUnderMax(d) is smooth under approximation of max(d). We require
 that ub < d_influence. The input scaling (dᵢ(q) -
 d_influence)/(d_influence - ub) ensures that at the boundary of the
@@ -3761,7 +3760,23 @@ gradient of the constraint is computed from autodiff.)""";
         const char* doc =
 R"""(Constrains the position of a point Q, rigidly attached to a frame B,
 to be within a bounding box measured and expressed in frame A. Namely
-p_AQ_lower <= p_AQ <= p_AQ_upper.)""";
+p_AQ_lower <= p_AQ <= p_AQ_upper.
+
+Note that p_BQ may or may not be a decision variable. Common use cases
+include: 1. We want a specified point Q on the frame B to be within a
+bounding box. In this case, p_BQ is specified and not a decision
+variable. 2. We want some point Q on the frame B to be within a
+bounding box, but we don't know the exact position of Q on the frame
+B. For example, we want some point on the robot palm to touch a table,
+but we don't care which point on the robot palm. In this case, p_BQ is
+a decision variable, and we need an additional constraint to say "Q is
+on the surface of the robot palm".
+
+When p_BQ is a decision variable (i.e., it is *not* specified in the
+ctor), the constraint is evaluated on the vector x = [q, p_BQ]. When
+p_BQ is not a decision variable (i.e. it *is* specified
+non-`nullopt`in the ctor), the constraint is evaluated on the vector x
+= q.)""";
         // Symbol: drake::multibody::PositionConstraint::PositionConstraint
         struct /* ctor */ {
           // Source: drake/multibody/inverse_kinematics/position_constraint.h
@@ -3788,7 +3803,8 @@ Parameter ``frameB``:
 
 Parameter ``p_BQ``:
     The position of the point Q, rigidly attached to frame B, measured
-    and expressed in frame B.
+    and expressed in frame B. If set to nullopt, then p_BQ is also a
+    decision variable.
 
 Parameter ``plant_context``:
     The Context that has been allocated for this ``plant``. We will
@@ -3843,7 +3859,8 @@ Parameter ``frameB``:
 
 Parameter ``p_BQ``:
     The position of the point Q, rigidly attached to frame B, measured
-    and expressed in frame B.
+    and expressed in frame B. If set to nullopt, then p_BQ is also a
+    decision variable.
 
 Parameter ``plant_context``:
     The Context that has been allocated for this ``plant``. We will
@@ -3921,7 +3938,7 @@ gradient of the cost is computed from autodiff.)""";
         // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics_system.h
         const char* doc =
 R"""((Advanced) Filters clearance data for defining a collision constraint,
-as used by DifferentialInverseKinematicsSystem::CollisionConstraint.
+as used by DifferentialInverseKinematicsSystem∷CollisionConstraint.
 This provides a mechanism for ignoring certain clearance rows (i.e.,
 collision hazards) in case they are known to be not relevant to the
 active dofs under control here. (For example, this might be the case
@@ -3953,7 +3970,7 @@ R"""(Constrains the quaternion to have a unit length.
 
 Note:
     : It is highly recommended that in addition to adding this
-    constraint, you also call MathematicalProgram::SetInitialGuess(),
+    constraint, you also call MathematicalProgram∷SetInitialGuess(),
     e.g.
 
 
@@ -3965,7 +3982,7 @@ Note:
 
     // Set a non-zero initial guess to help avoid singularities.
     prog_->SetInitialGuess(q_.segment<4>(quaternion_start),
-    Eigen::Vector4d{1, 0, 0, 0});
+    Eigen∷Vector4d{1, 0, 0, 0});
 
 .. raw:: html
 
@@ -3976,6 +3993,11 @@ Note:
           const char* doc = R"""()""";
         } ctor;
       } UnitQuaternionConstraint;
+      // Symbol: drake::multibody::to_string
+      struct /* to_string */ {
+        // Source: drake/multibody/inverse_kinematics/differential_inverse_kinematics.h
+        const char* doc = R"""()""";
+      } to_string;
     } multibody;
   } drake;
 } pydrake_doc_multibody_inverse_kinematics;

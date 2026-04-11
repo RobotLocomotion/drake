@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/ssize.h"
 
 namespace drake {
 namespace multibody {

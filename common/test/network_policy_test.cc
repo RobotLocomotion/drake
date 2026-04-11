@@ -40,6 +40,10 @@ GTEST_TEST(NetworkPolicyTest, YesMatch) {
 
   ASSERT_EQ(::setenv(kAllow, "bar:foo:baz", 1), 0);
   EXPECT_TRUE(IsNetworkingAllowed("foo"));
+
+  // Note the implied empty token between the double `::`.
+  ASSERT_EQ(::setenv(kAllow, "foo::bar", 1), 0);
+  EXPECT_TRUE(IsNetworkingAllowed("foo"));
 }
 
 GTEST_TEST(NetworkPolicyTest, NoMatch) {
@@ -50,6 +54,10 @@ GTEST_TEST(NetworkPolicyTest, NoMatch) {
   EXPECT_FALSE(IsNetworkingAllowed("foo"));
 
   ASSERT_EQ(::setenv(kAllow, ":bar:baz:", 1), 0);
+  EXPECT_FALSE(IsNetworkingAllowed("foo"));
+
+  // Note the implied empty token between the double `::`.
+  ASSERT_EQ(::setenv(kAllow, "bar::baz", 1), 0);
   EXPECT_FALSE(IsNetworkingAllowed("foo"));
 }
 

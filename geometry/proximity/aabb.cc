@@ -49,6 +49,56 @@ bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
   return internal::BoxesOverlap(aabb_G.half_width(), obb_H.half_width(), X_AO);
 }
 
+bool Aabb::HasOverlap(const Aabb& bv_H, const Plane<double>& plane_P,
+                      const math::RigidTransformd& X_PH) {
+  const Vector3d& p_HBo = bv_H.center();
+  return plane_P.BoxOverlaps(bv_H.half_width(), X_PH * p_HBo, X_PH.rotation());
+}
+
+bool Aabb::HasOverlap(const Aabb& bv_H, const HalfSpace&,
+                      const math::RigidTransformd& X_CH) {
+  /*
+                        By  ╱╲       Bx
+                          ╲╱  ╲    ╱
+                          ╱╲   ╲  ╱
+                         ╱  ╲   ╲╱
+                         ╲   ╲  ╱╲   bv
+                          ╲   ╲╱  ╲
+                           ╲   Bo  ╲
+                            ╲       ╲
+                             ╲      ╱
+                              ╲    ╱
+                               ╲  ╱        Cz
+                                ╲╱         ^
+                                L          ┃  Cx
+              ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┺━━━>┄┄┄┄┄┄┄┄┄┄┄┄┄
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  Half space
+              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+    In the picture above, L is the point of the box that is "lowest" (in the
+    opposite direction of the normal). We can project the vector from v_BoL onto
+    the half space normal Cz to get the _minimum distance_ between the box
+    center and the half space boundary for the box to be outside the half space.
+
+    So, |v_BoL·Cz| is the clearance distance. The signed distance of the box
+    center to the half space boundary is p_CB·Cz. The box doesn't overlap the
+    half space iff p_CB·Cz > |v_BoL·Cz|.
+
+    Given we're dotting everything with Cz, we only need the z-components of
+    the quantities in question.
+   */
+
+  const RotationMatrixd& R_CH = X_CH.rotation();
+  const Vector3d& p_HB = bv_H.center();
+  const Vector3d& p_HB_C = R_CH * p_HB;
+  const Vector3d p_CB_C = X_CH.translation() + p_HB_C;
+  // Just taking the bottom row of R_CH operates on just the z-components.
+  const double clearance =
+      R_CH.row(2).cwiseAbs().dot(bv_H.half_width().transpose());
+
+  return p_CB_C(2) <= clearance;
+}
+
 template <typename MeshType>
 Aabb AabbMaker<MeshType>::Compute() const {
   auto itr = vertices_.begin();

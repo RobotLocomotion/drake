@@ -16,6 +16,15 @@ drake_py_binary(
     ],
 )
 
+# Mirror release artifacts to the drake-packages S3 bucket.
+drake_py_binary(
+    name = "mirror_to_s3",
+    srcs = ["mirror_to_s3.py"],
+    deps = [
+        "@github3_py_internal//:github3_py",
+    ],
+)
+
 # N.B. Since this downloads files, this is not put under test.
 drake_py_binary(
     name = "download_release_candidate",

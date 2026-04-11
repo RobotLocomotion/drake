@@ -2,6 +2,10 @@
 
 #include <gtest/gtest.h>
 
+// Remove this entire file on 2026-07-01 per deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 // Sample code that shows how to shim Drake code that defines an operator<< to
 // interface with fmt >= 9 semantics. The ostream_formatter is intended to be a
 // porting shim for #17742 and will probably be deleted eventually, once all
@@ -56,3 +60,5 @@ GTEST_TEST(FmtOstreamTest, ThirdPartyOstreamShim) {
 
 }  // namespace
 }  // namespace drake
+
+#pragma GCC diagnostic pop

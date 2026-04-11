@@ -354,9 +354,9 @@ tuning in simulation with a kuka picking up small objects.)""";
           // Source: drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h
           const char* doc =
 R"""(This class implements a controller for a Schunk WSG gripper as a
-``systems::Diagram``. The composition of this diagram is determined by
+``systems∷Diagram``. The composition of this diagram is determined by
 the control mode specified for the controller, which can be either
-ControlMode::kPosition or ControlMode::kForce. In both cases, the
+ControlMode∷kPosition or ControlMode∷kForce. In both cases, the
 overall layout of the diagram is:
 
 
@@ -403,7 +403,7 @@ The blocks with double outlines (══) differ between the two control
 modes:
 
 - Generate Desired Control State
-  - ControlMode::kPosition
+  - ControlMode∷kPosition
 
 
 
@@ -428,7 +428,7 @@ modes:
 
     </details>
 
-- ControlMode::kForce
+- ControlMode∷kForce
 
 
 .. raw:: html
@@ -451,7 +451,7 @@ modes:
 
     </details>
 
-- Handle Feed-Forward Force - ControlMode::kPosition
+- Handle Feed-Forward Force - ControlMode∷kPosition
 
 
 .. raw:: html
@@ -473,7 +473,7 @@ modes:
 
     </details>
 
-- ControlMode::kForce
+- ControlMode∷kForce
 
 
 .. raw:: html
@@ -497,8 +497,8 @@ modes:
 The remaining blocks differ only in their numerical parameters.
 
 Note that the "feed forward force" input is ignored for
-ControlMode::kPosition and the "desired grip state" input is ignored
-for ControlMode::kPosition.
+ControlMode∷kPosition and the "desired grip state" input is ignored
+for ControlMode∷kPosition.
 
 .. pydrake_system::
 
@@ -528,7 +528,7 @@ R"""(Returns the desired grip state input port.
 
 Precondition:
     ``this`` was constructed with ``control_mode`` set to
-    ``ControlMode::kPosition``.)""";
+    ``ControlMode∷kPosition``.)""";
           } get_input_port_desired_state;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_input_port_estimated_state
           struct /* get_input_port_estimated_state */ {
@@ -543,7 +543,7 @@ R"""(Returns the feed-forward force input port.
 
 Precondition:
     ``this`` was constructed with ``control_mode`` set to
-    ``ControlMode::kForce``.)""";
+    ``ControlMode∷kForce``.)""";
           } get_input_port_feed_forward_force;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPlainController::get_input_port_max_force
           struct /* get_input_port_max_force */ {
@@ -591,7 +591,7 @@ the update rate of the wsg firmware. The gain parameters are set based
 limited tuning in simulation with a kuka picking up small objects.
 
 See also:
-    SchunkWsgPdController::SchunkWsgPdController())""";
+    SchunkWsgPdController∷SchunkWsgPdController())""";
           } ctor;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgPositionController::get_desired_position_input_port
           struct /* get_desired_position_input_port */ {
@@ -783,7 +783,7 @@ R"""(Specializes BasicVector with specific getters and setters.)""";
             // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
 R"""(See
-SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames().)""";
+SchunkWsgTrajectoryGeneratorStateVectorIndices∷GetCoordinateNames().)""";
           } GetCoordinateNames;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::IsValid
           struct /* IsValid */ {
@@ -823,8 +823,8 @@ One common use of Serialize is the //common/yaml tools.)""";
           struct /* SetToNamedVariables */ {
             // Source: drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h
             const char* doc =
-R"""(Create a symbolic::Variable for each element with the known variable
-name. This is only available for T == symbolic::Expression.)""";
+R"""(Create a symbolic∷Variable for each element with the known variable
+name. This is only available for T == symbolic∷Expression.)""";
           } SetToNamedVariables;
           // Symbol: drake::manipulation::schunk_wsg::SchunkWsgTrajectoryGeneratorStateVector::last_position
           struct /* last_position */ {
@@ -910,8 +910,8 @@ SchunkWsgTrajectoryGeneratorStateVector.)""";
 R"""(Returns a vector containing the names of each coordinate within this
 class. The indices within the returned vector matches that of this
 class. In other words,
-``SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames()[i]``
-is the name for ``BasicVector::GetAtIndex(i)``.)""";
+``SchunkWsgTrajectoryGeneratorStateVectorIndices∷GetCoordinateNames()[i]``
+is the name for ``BasicVector∷GetAtIndex(i)``.)""";
           } GetCoordinateNames;
         } SchunkWsgTrajectoryGeneratorStateVectorIndices;
       } schunk_wsg;

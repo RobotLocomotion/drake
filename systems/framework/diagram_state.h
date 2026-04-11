@@ -19,7 +19,7 @@ class DiagramState : public State<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramState);
 
   /// Constructs a DiagramState consisting of @p size substates.
-  explicit DiagramState<T>(int size);
+  explicit DiagramState(int size);
 
   /// Sets the substate at @p index to @p substate, or aborts if @p index is
   /// out of bounds. Does not take ownership of @p substate, which must live

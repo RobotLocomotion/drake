@@ -63,8 +63,6 @@ int DoMain() {
   auto simulator = std::make_unique<systems::Simulator<double>>(
       *diagram, std::move(context));
 
-  simulator->set_publish_at_initialization(true);
-  simulator->set_publish_every_time_step(false);
   simulator->set_target_realtime_rate(1.0);
   simulator->Initialize();
   simulator->AdvanceTo(FLAGS_duration);

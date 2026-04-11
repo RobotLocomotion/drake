@@ -1,6 +1,6 @@
 # -*- bazel -*-
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load(":cc.bzl", "cc_library")
 load(":conversion.bzl", "split_cmake_list")
 
 _DEFINES = split_cmake_list(
@@ -19,5 +19,6 @@ cc_library(
     ],
     defines = _DEFINES,
     includes = ["include"],
+    isystem = True,
     visibility = ["//visibility:public"],
 )

@@ -4,7 +4,6 @@
 #include <variant>
 #include <vector>
 
-#include "drake/common/ssize.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 

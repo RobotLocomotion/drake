@@ -85,12 +85,12 @@ class PointCloudConcatenation(LeafSystem):
 
         for id in self._id_list:
             self._point_cloud_ports[id] = self.DeclareAbstractInputPort(
-                "point_cloud_CiSi_{}".format(id),
+                f"point_cloud_CiSi_{id}",
                 Value(PointCloud(fields=output_fields)),
             )
 
             self._transform_ports[id] = self.DeclareAbstractInputPort(
-                "X_FCi_{}".format(id), Value(RigidTransform.Identity())
+                f"X_FCi_{id}", Value(RigidTransform.Identity())
             )
 
         self.DeclareAbstractOutputPort(

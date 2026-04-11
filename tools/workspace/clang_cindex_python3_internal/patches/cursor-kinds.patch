@@ -1,0 +1,14 @@
+[clang_cindex] Add more cursor kinds
+
+Reasoning for not upstreaming this patch: upstream is dead.
+
+--- cindex.py
++++ cindex.py
+@@ -1369,6 +1369,7 @@
+ CursorKind.STATIC_ASSERT = CursorKind(602)
+ # A friend declaration
+ CursorKind.FRIEND_DECL = CursorKind(603)
++CursorKind.CONCEPT_DECL = CursorKind(604)
+ 
+ # A code completion overload candidate.
+ CursorKind.OVERLOAD_CANDIDATE = CursorKind(700)

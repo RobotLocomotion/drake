@@ -330,13 +330,13 @@ Template parameter ``Scalar``:
     templated.
 
 Note:
-    ``ArticulatedBodyInertia<From>::cast<To>()`` creates a new
+    ``ArticulatedBodyInertia<From>∷cast<To>()`` creates a new
     ``ArticulatedBodyInertia<To>`` from an
     ``ArticulatedBodyInertia<From>`` but only if type ``To`` is
     constructible from type ``From``. As an example of this,
-    ``ArticulatedBodyInertia<double>::cast<AutoDiffXd>()`` is valid
+    ``ArticulatedBodyInertia<double>∷cast<AutoDiffXd>()`` is valid
     since ``AutoDiffXd a(1.0)`` is valid. However,
-    ``ArticulatedBodyInertia<AutoDiffXd>::cast<double>()`` is not.)""";
+    ``ArticulatedBodyInertia<AutoDiffXd>∷cast<double>()`` is not.)""";
         } cast;
         // Symbol: drake::multibody::ArticulatedBodyInertia::operator*
         struct /* operator_mul */ {
@@ -433,7 +433,7 @@ Raises:
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
 into ``forces`` a dissipative torque according to the viscous law ``τ
 = -d⋅ω``, with d the damping coefficient (see default_damping()).)""";
@@ -442,7 +442,7 @@ into ``forces`` a dissipative torque according to the viscous law ``τ
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce().
 Adding forces per-dof makes no physical sense. Therefore, this method
 throws an exception if invoked.)""";
         } DoAddInOneForce;
@@ -526,7 +526,7 @@ Returns ``w_FM``:
           // Source: drake/multibody/tree/ball_rpy_joint.h
           const char* doc =
 R"""(Gets the default angles for ``this`` joint. Wrapper for the more
-general ``Joint::default_positions()``.
+general ``Joint∷default_positions()``.
 
 Returns:
     The default angles of ``this`` stored in ``default_positions_``)""";
@@ -609,19 +609,19 @@ frame B. The two frames are coincident and aligned (i.e., X_SB = I).
 
 Most shapes are defined such that their center of mass is coincident
 with So (and, therefore, Bo). These are the shapes that have symmetry
-across So along each of the axes Sx, Sy, Sz (e.g., geometry::Box,
-geometry::Sphere, etc.) For meshes, it depends on how the mesh is
-defined. For more discussion on the nuances of geometry::Mesh and
-geometry::Convex calculations CalcSpatialInertia(const
-geometry::TriangleSurfaceMesh<double>&,double) "see below".
+across So along each of the axes Sx, Sy, Sz (e.g., geometry∷Box,
+geometry∷Sphere, etc.) For meshes, it depends on how the mesh is
+defined. For more discussion on the nuances of geometry∷Mesh and
+geometry∷Convex calculations CalcSpatialInertia(const
+geometry∷TriangleSurfaceMesh<double>&,double) "see below".
 
 Returns ``M_BBo_B``:
     The spatial inertia of the hypothetical body implied by the given
     ``shape``.
 
 Raises:
-    RuntimeError if ``shape`` is an instance of geometry::HalfSpace or
-    geometry::MeshcatCone.)""";
+    RuntimeError if ``shape`` is an instance of geometry∷HalfSpace or
+    geometry∷MeshcatCone.)""";
         // Source: drake/multibody/tree/geometry_spatial_inertia.h
         const char* doc_mesh =
 R"""(Computes the SpatialInertia of a body made up of a homogeneous
@@ -648,7 +648,7 @@ but be meaningless because it does not accurately represent the mesh.
 Raises:
     RuntimeError if the resulting spatial inertia is obviously
     physically invalid. See
-    multibody::SpatialInertia::IsPhysicallyValid().)""";
+    multibody∷SpatialInertia∷IsPhysicallyValid().)""";
       } CalcSpatialInertia;
       // Symbol: drake::multibody::CurvilinearJoint
       struct /* CurvilinearJoint */ {
@@ -666,7 +666,7 @@ length s (in meters) along the path. The generalized velocity v = q̇
 corresponds to the magnitude of the tangential velocity. We denote
 with F a frame on a "parent" body and with M a frame on a "child"
 body. For a given trajectory, this joint prescribes X_FM(q) =
-PiecewiseConstantCurvatureTrajectory::CalcPose(q).
+PiecewiseConstantCurvatureTrajectory∷CalcPose(q).
 
 Frame M is defined according to the convention documented in
 PiecewiseConstantCurvatureTrajectory. That is, axis Mx is the tangent
@@ -682,7 +682,7 @@ By default, the joint position limits are the endpoints for aperiodic
 paths, and (-∞, ∞) for periodic paths.
 
 See also:
-    trajectories::PiecewiseConstantCurvatureTrajectory)""";
+    trajectories∷PiecewiseConstantCurvatureTrajectory)""";
         // Symbol: drake::multibody::CurvilinearJoint::AddInForce
         struct /* AddInForce */ {
           // Source: drake/multibody/tree/curvilinear_joint.h
@@ -776,8 +776,8 @@ Raises:
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
-Arguments already checked to be valid by Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
+Arguments already checked to be valid by Joint∷AddInDamping().
 
 Adds a dissipative force according to the viscous law ``f = -d⋅v``,
 where d is the damping coefficient (see default_damping()) and v the
@@ -793,8 +793,8 @@ Parameter ``forces``:
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/curvilinear_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
-Arguments already checked to be valid by Joint::AddInForce().
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce().
+Arguments already checked to be valid by Joint∷AddInForce().
 
 Parameter ``joint_dof``:
     The joint degree of freedom index, on which the force is added,
@@ -1008,7 +1008,7 @@ gravity) - Enabling/disabling of dynamics at runtime
 
 This class is not meant to be created by end users and it must be
 created exclusively by DeformableModel through
-DeformableModel::RegisterDeformableBody.)""";
+DeformableModel∷RegisterDeformableBody.)""";
         // Symbol: drake::multibody::DeformableBody::AddFixedConstraint
         struct /* AddFixedConstraint */ {
           // Source: drake/multibody/tree/deformable_body.h
@@ -1969,7 +1969,7 @@ Parameter ``forces``:
     output ``this`` force element adds its contribution into
     ``forces``. This method will abort if the ``forces`` pointer is
     null or if the forces object is not compatible with ``this``
-    MultibodyTree, see MultibodyForces::CheckInvariants().
+    MultibodyTree, see MultibodyForces∷CheckInvariants().
 
 Precondition:
     The position kinematics ``pc`` must have been previously updated
@@ -2220,7 +2220,7 @@ world frame W as a function of the state of the model stored in
 ``context``.
 
 Note:
-    RigidBody::EvalPoseInWorld() provides a more efficient way to
+    RigidBody∷EvalPoseInWorld() provides a more efficient way to
     obtain the pose for a body frame.)""";
         } CalcPoseInWorld;
         // Symbol: drake::multibody::Frame::CalcRelativeSpatialAcceleration
@@ -2533,7 +2533,7 @@ Returns:
     point Fo, measured and expressed in the world frame W).
 
 Note:
-    RigidBody::EvalSpatialAccelerationInWorld() provides a more
+    RigidBody∷EvalSpatialAccelerationInWorld() provides a more
     efficient way to obtain a body frame's spatial acceleration
     measured in the world frame.
 
@@ -2593,7 +2593,7 @@ Returns:
     and expressed in the world frame W).
 
 Note:
-    RigidBody::EvalSpatialVelocityInWorld() provides a more efficient
+    RigidBody∷EvalSpatialVelocityInWorld() provides a more efficient
     way to obtain a body frame's spatial velocity measured in the
     world frame.
 
@@ -2607,12 +2607,12 @@ See also:
           const char* doc =
 R"""((Advanced) NVI to DoCloneToScalar() templated on the scalar type of
 the new clone to be created. This method is mostly intended to be
-called by MultibodyTree::CloneToScalar(). Most users should not call
+called by MultibodyTree∷CloneToScalar(). Most users should not call
 this clone method directly but rather clone the entire parent
 MultibodyTree if needed.
 
 See also:
-    MultibodyTree::CloneToScalar())""";
+    MultibodyTree∷CloneToScalar())""";
         } CloneToScalar;
         // Symbol: drake::multibody::Frame::DoCalcOffsetPoseInBody
         struct /* DoCalcOffsetPoseInBody */ {
@@ -2774,7 +2774,7 @@ R"""((Internal use only) Given an already up-to-date frame body pose cache,
 extract X_BF for this Frame from it.
 
 Note:
-    Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+    Be sure you have called MultibodyTreeSystem∷EvalFrameBodyPoses()
     since the last parameter change; we can't check here.
 
 Returns ``X_BF``:
@@ -2788,7 +2788,7 @@ R"""((Internal use only) Given an already up-to-date frame body pose cache,
 extract X_FB (=X_BF⁻¹) for this Frame from it.
 
 Note:
-    Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+    Be sure you have called MultibodyTreeSystem∷EvalFrameBodyPoses()
     since the last parameter change; we can't check here.
 
 Returns ``X_FB``:
@@ -2815,7 +2815,7 @@ returns whether X_BF (and thus X_FB) is exactly identity. This is
 precomputed in the cache so is very fast to check.
 
 Note:
-    Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+    Be sure you have called MultibodyTreeSystem∷EvalFrameBodyPoses()
     since the last parameter change; we can't check here.
 
 See also:
@@ -2963,7 +2963,7 @@ Consider the following example to build a simple pendulum system:
         {},                     /* frame F IS the world frame W 
         pendulum,               /* child body, the pendulum 
         X_BM,                   /* pose of frame M in the body frame B 
-        Vector3d::UnitZ());     /* revolute axis in this case
+        Vector3d∷UnitZ());     /* revolute axis in this case
 
 .. raw:: html
 
@@ -2972,7 +2972,7 @@ Consider the following example to build a simple pendulum system:
 Warning:
     Do not ever attempt to instantiate and manipulate Joint objects on
     the stack; it will fail. Add joints to your plant using the
-    provided API MultibodyPlant::AddJoint() as in the example above.
+    provided API MultibodyPlant∷AddJoint() as in the example above.
 
 Note:
     To developers: this is the base class for all concrete Joint
@@ -3135,7 +3135,7 @@ already uses (quaternion, translation) as generalized coordinates
         struct /* DoShallowClone */ {
           // Source: drake/multibody/tree/joint.h
           const char* doc =
-R"""(NVI for ShallowClone(). The public Joint::ShallowClone in this base
+R"""(NVI for ShallowClone(). The public Joint∷ShallowClone in this base
 class is responsible for copying the mutable Joint data (damping, all
 limits, default positions, etc.) into the return value. The subclass
 only needs to handle subclass-specific details.)""";
@@ -3395,7 +3395,9 @@ details on the rest of the arguments for this constructor.)""";
           // Source: drake/multibody/tree/joint.h
           const char* doc =
 R"""(Lock the joint. Its generalized velocities will be 0 until it is
-unlocked.)""";
+unlocked. If actuated, its PD controllers will be ignored and thus
+will have no effect on the reported actuation output nor reaction
+forces.)""";
         } Lock;
         // Symbol: drake::multibody::Joint::MakeUniqueOffsetFrameName
         struct /* MakeUniqueOffsetFrameName */ {
@@ -3618,7 +3620,9 @@ Precondition:
         // Symbol: drake::multibody::Joint::Unlock
         struct /* Unlock */ {
           // Source: drake/multibody/tree/joint.h
-          const char* doc = R"""(Unlock the joint.)""";
+          const char* doc =
+R"""(Unlock the joint. If actuated, its PD controllers (if any) will no
+longer be ignored.)""";
         } Unlock;
         // Symbol: drake::multibody::Joint::acceleration_lower_limits
         struct /* acceleration_lower_limits */ {
@@ -3844,7 +3848,7 @@ R"""(Returns the number of generalized velocities describing this joint.)""";
 R"""(Returns this element's unique ordinal. The joint's ordinal is a unique
 index into contiguous containers that have an entry for each Joint,
 such as the vector valued reaction forces (see
-MultibodyPlant::get_reaction_forces_output_port()). The ordinal value
+MultibodyPlant∷get_reaction_forces_output_port()). The ordinal value
 will be updated (if needed) when joints are removed from the parent
 plant so that the set of ordinal values is a bijection with [0,
 num_joints()). Ordinals are assigned in the order that joints are
@@ -4075,7 +4079,7 @@ Parameter ``forces``:
           const char* doc =
 R"""(Creates an actuator for ``joint`` with the given ``name``. The name
 must be unique within the given multibody model. This is enforced by
-MultibodyPlant::AddJointActuator().
+MultibodyPlant∷AddJointActuator().
 
 Parameter ``name``:
     A string with a name identifying ``this`` actuator.
@@ -4288,9 +4292,9 @@ The gains must be finite and non-negative. Setting both gains to zero
 will remove the controller (has_controller() will return false).
 
 For simulation, feedforward actuation can be provided through
-MultibodyPlant::get_actuation_input_port(). Desired configuration and
+MultibodyPlant∷get_actuation_input_port(). Desired configuration and
 velocity are specified through
-MultibodyPlant::get_desired_state_input_port().
+MultibodyPlant∷get_desired_state_input_port().
 
 PD control is currently only supported for a discrete time plant.
 Attempting to use non-zero gains on a continuous time plant will
@@ -4311,6 +4315,12 @@ reflected_inertia.)""";
 R"""(Sets the default value for this actuator's rotor inertia. See
 reflected_inertia.)""";
         } set_default_rotor_inertia;
+        // Symbol: drake::multibody::JointActuator::set_effort_limit
+        struct /* set_effort_limit */ {
+          // Source: drake/multibody/tree/joint_actuator.h
+          const char* doc =
+R"""(Sets the actuator effort limit. (To clear the limit, set it to +∞.))""";
+        } set_effort_limit;
       } JointActuator;
       // Symbol: drake::multibody::JointActuatorIndex
       struct /* JointActuatorIndex */ {
@@ -4736,7 +4746,7 @@ Template parameter ``T``:
     The underlying scalar type. Must be a valid Eigen scalar.
 
 See also:
-    math::RollPitchYaw for definitions of roll, pitch, yaw ``[q₀ q₁
+    math∷RollPitchYaw for definitions of roll, pitch, yaw ``[q₀ q₁
     q₂]``.
 
 Note:
@@ -4763,7 +4773,7 @@ Raises:
     RuntimeError if pitch angle is near gimbal-lock. For more info,
 
 See also:
-    RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().)""";
+    RollPitchYaw∷DoesCosPitchAngleViolateGimbalLockTolerance().)""";
         } CalcBushingSpatialForceOnFrameA;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::CalcBushingSpatialForceOnFrameC
         struct /* CalcBushingSpatialForceOnFrameC */ {
@@ -4784,7 +4794,7 @@ Raises:
     RuntimeError if pitch angle is near gimbal-lock. For more info,
 
 See also:
-    RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().)""";
+    RollPitchYaw∷DoesCosPitchAngleViolateGimbalLockTolerance().)""";
         } CalcBushingSpatialForceOnFrameC;
         // Symbol: drake::multibody::LinearBushingRollPitchYaw::GetForceDampingConstants
         struct /* GetForceDampingConstants */ {
@@ -4858,7 +4868,7 @@ Note:
     about Ao.
 
 Note:
-    math::RollPitchYaw describes the roll pitch yaw angles q₀, q₁, q₂.
+    math∷RollPitchYaw describes the roll pitch yaw angles q₀, q₁, q₂.
     The position from Ao to Co is p_AoCo_B = x 𝐁𝐱 + y 𝐁𝐲 + z 𝐁𝐳 = [x y
     z]ʙ.
 
@@ -5156,7 +5166,7 @@ mobilizers - all mobilizers.)""";
           const char* doc =
 R"""(To be used by MultibodyElement-derived objects when declaring
 parameters in their implementation of DoDeclareParameters(). For an
-example, see Joint::DoDeclareParameters().)""";
+example, see Joint∷DoDeclareParameters().)""";
         } DeclareAbstractParameter;
         // Symbol: drake::multibody::MultibodyElement::DeclareCacheEntries
         struct /* DeclareCacheEntries */ {
@@ -5164,7 +5174,7 @@ example, see Joint::DoDeclareParameters().)""";
           const char* doc =
 R"""((Advanced) Declares all cache entries needed by this element. This
 method is called by MultibodyTree on ``this`` element during
-MultibodyTree::Finalize(). It subsequently calls
+MultibodyTree∷Finalize(). It subsequently calls
 DoDeclareCacheEntries(). Custom elements that need to declare cache
 entries must override DoDeclareCacheEntries().)""";
         } DeclareCacheEntries;
@@ -5174,7 +5184,7 @@ entries must override DoDeclareCacheEntries().)""";
           const char* doc =
 R"""(To be used by MultibodyElement-derived objects when declaring cache
 entries in their implementation of DoDeclareCacheEntries(). For an
-example, see DeformableBody::DoDeclareCacheEntries().)""";
+example, see DeformableBody∷DoDeclareCacheEntries().)""";
         } DeclareCacheEntry;
         // Symbol: drake::multibody::MultibodyElement::DeclareDiscreteState
         struct /* DeclareDiscreteState */ {
@@ -5193,7 +5203,7 @@ Precondition:
           const char* doc_2args =
 R"""(To be used by MultibodyElement-derived objects when declaring discrete
 states in their implementation of DoDeclareDiscreteStates(). For an
-example, see DeformableBody::DoDeclareDiscreteStates().)""";
+example, see DeformableBody∷DoDeclareDiscreteStates().)""";
         } DeclareDiscreteState;
         // Symbol: drake::multibody::MultibodyElement::DeclareNumericParameter
         struct /* DeclareNumericParameter */ {
@@ -5201,14 +5211,14 @@ example, see DeformableBody::DoDeclareDiscreteStates().)""";
           const char* doc =
 R"""(To be used by MultibodyElement-derived objects when declaring
 parameters in their implementation of DoDeclareParameters(). For an
-example, see RigidBody::DoDeclareParameters().)""";
+example, see RigidBody∷DoDeclareParameters().)""";
         } DeclareNumericParameter;
         // Symbol: drake::multibody::MultibodyElement::DeclareParameters
         struct /* DeclareParameters */ {
           // Source: drake/multibody/tree/multibody_element.h
           const char* doc =
 R"""(Declares MultibodyTreeSystem Parameters at
-MultibodyTreeSystem::Finalize() time. NVI to the virtual method
+MultibodyTreeSystem∷Finalize() time. NVI to the virtual method
 DoDeclareParameters().
 
 Parameter ``tree_system``:
@@ -5301,7 +5311,7 @@ R"""(Both the model instance and element index are specified.)""";
           const char* doc =
 R"""(Sets default values of parameters belonging to each MultibodyElement
 in ``parameters`` at a call to
-MultibodyTreeSystem::SetDefaultParameters().
+MultibodyTreeSystem∷SetDefaultParameters().
 
 Parameter ``parameters``:
     A mutable collections of parameters in a context.
@@ -5316,7 +5326,7 @@ Precondition:
 R"""((Internal use only) Gives MultibodyElement-derived objects the
 opportunity to set data members that depend on topology and coordinate
 assignments having been finalized. This is invoked at the end of
-MultibodyTree::Finalize(). NVI to pure virtual method DoSetTopology().)""";
+MultibodyTree∷Finalize(). NVI to pure virtual method DoSetTopology().)""";
         } SetTopology;
         // Symbol: drake::multibody::MultibodyElement::get_parent_tree
         struct /* get_parent_tree */ {
@@ -5382,7 +5392,7 @@ that is added during Finalize() should set this flag to ``True``.)""";
         const char* doc =
 R"""(A class to hold a set of forces applied to a MultibodyTree system.
 Forces can include generalized forces as well as body spatial forces.
-MultibodyPlant::CalcGeneralizedForces() can be used to compute the
+MultibodyPlant∷CalcGeneralizedForces() can be used to compute the
 *total* generalized force, combining generalized_forces() and
 body_forces().)""";
         // Symbol: drake::multibody::MultibodyForces::AddInForces
@@ -5411,7 +5421,7 @@ Returns:
 R"""(Constructs a force object to store a set of forces to be applied to
 the multibody model for ``plant``. Forces are initialized to zero,
 meaning no forces are applied. ``plant`` must have been already
-finalized with MultibodyPlant::Finalize() or this constructor will
+finalized with MultibodyPlant∷Finalize() or this constructor will
 abort.)""";
           // Source: drake/multibody/tree/multibody_forces.h
           const char* doc_1args_model = R"""((Advanced) Tree overload.)""";
@@ -5479,7 +5489,7 @@ at construction from the given model MultibodyTree object.)""";
         // Source: drake/multibody/tree/joint_actuator.h
         const char* doc =
 R"""(PD controller gains. This enables the modeling of a simple low level
-PD controllers, see JointActuator::set_controller_gains().)""";
+PD controllers, see JointActuator∷set_controller_gains().)""";
         // Symbol: drake::multibody::PdControllerGains::d
         struct /* d */ {
           // Source: drake/multibody/tree/joint_actuator.h
@@ -5782,7 +5792,7 @@ along the joint's axis.)""";
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
 into ``forces`` a dissipative force according to the viscous law ``f =
 -d⋅v``, with d the damping coefficient (see default_damping()).)""";
@@ -5792,7 +5802,7 @@ into ``forces`` a dissipative force according to the viscous law ``f =
           // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Joint<T> virtual override called through public NVI,
-Joint::AddInForce(). Therefore arguments were already checked to be
+Joint∷AddInForce(). Therefore arguments were already checked to be
 valid. For a PrismaticJoint, we must always have ``joint_dof = 0``
 since there is only a single degree of freedom (num_velocities() ==
 1). ``joint_tau`` is the linear force applied along the joint's axis,
@@ -5899,7 +5909,7 @@ R"""(Returns ``this`` joint's default damping constant in N⋅s/m.)""";
           // Source: drake/multibody/tree/prismatic_joint.h
           const char* doc =
 R"""(Gets the default translation. Wrapper for the more general
-``Joint::default_positions()``.
+``Joint∷default_positions()``.
 
 Returns:
     The default translation of ``this`` stored in
@@ -6142,7 +6152,7 @@ frame F, ordered ``(w_FM, v_FM)``.)""";
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
 into the translational component of ``forces`` for ``this`` joint a
 dissipative force according to the viscous law ``f = -d⋅v``, with d
@@ -6155,7 +6165,7 @@ with d the damping coefficient (see default_angular_damping()).)""";
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/quaternion_floating_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce().
 Adding forces per-dof makes no physical sense. Therefore, this method
 throws an exception if invoked.)""";
         } DoAddInOneForce;
@@ -6517,7 +6527,7 @@ Note:
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
 into ``forces`` a dissipative torque according to the viscous law ``τ
 = -d⋅ω``, with d the damping coefficient (see default_damping()).)""";
@@ -6526,7 +6536,7 @@ into ``forces`` a dissipative torque according to the viscous law ``τ
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce().
 Therefore arguments were already checked to be valid. For a
 RevoluteJoint, we must always have ``joint_dof = 0`` since there is
 only a single degree of freedom (num_velocities() == 1). ``joint_tau``
@@ -6695,7 +6705,7 @@ Returns:
           // Source: drake/multibody/tree/revolute_joint.h
           const char* doc =
 R"""(Gets the default rotation angle. Wrapper for the more general
-``Joint::default_positions()``.
+``Joint∷default_positions()``.
 
 Returns:
     The default angle of ``this`` stored in ``default_positions_``)""";
@@ -7091,12 +7101,12 @@ Precondition:
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
 R"""((Advanced) This method is mostly intended to be called by
-MultibodyTree::CloneToScalar(). Most users should not call this clone
+MultibodyTree∷CloneToScalar(). Most users should not call this clone
 method directly but rather clone the entire parent MultibodyTree if
 needed.
 
 See also:
-    MultibodyTree::CloneToScalar())""";
+    MultibodyTree∷CloneToScalar())""";
         } CloneToScalar;
         // Symbol: drake::multibody::RigidBody::EvalPoseInWorld
         struct /* EvalPoseInWorld */ {
@@ -7393,7 +7403,7 @@ See also:
     is_floating_base_body(), has_quaternion_dofs()
 
 See also:
-    MultibodyPlant::Finalize())""";
+    MultibodyPlant∷Finalize())""";
         } floating_position_suffix;
         // Symbol: drake::multibody::RigidBody::floating_positions_start
         struct /* floating_positions_start */ {
@@ -7418,7 +7428,7 @@ See also:
     is_floating_base_body(), has_quaternion_dofs()
 
 See also:
-    MultibodyPlant::Finalize())""";
+    MultibodyPlant∷Finalize())""";
         } floating_positions_start;
         // Symbol: drake::multibody::RigidBody::floating_velocities_start_in_v
         struct /* floating_velocities_start_in_v */ {
@@ -7437,7 +7447,7 @@ Precondition:
     this is a floating base body
 
 See also:
-    is_floating_base_body(), MultibodyPlant::Finalize())""";
+    is_floating_base_body(), MultibodyPlant∷Finalize())""";
         } floating_velocities_start_in_v;
         // Symbol: drake::multibody::RigidBody::floating_velocity_suffix
         struct /* floating_velocity_suffix */ {
@@ -7454,7 +7464,7 @@ Precondition:
     this is a floating base body
 
 See also:
-    is_floating_base_body(), MultibodyPlant::Finalize())""";
+    is_floating_base_body(), MultibodyPlant∷Finalize())""";
         } floating_velocity_suffix;
         // Symbol: drake::multibody::RigidBody::get_angular_acceleration_in_world
         struct /* get_angular_acceleration_in_world */ {
@@ -7602,7 +7612,7 @@ Raises:
     RuntimeError if called pre-finalize
 
 See also:
-    is_floating_base_body(), MultibodyPlant::Finalize())""";
+    is_floating_base_body(), MultibodyPlant∷Finalize())""";
         } has_quaternion_dofs;
         // Symbol: drake::multibody::RigidBody::index
         struct /* index */ {
@@ -7637,7 +7647,7 @@ Raises:
     RuntimeError if called pre-finalize,
 
 See also:
-    MultibodyPlant::Finalize())""";
+    MultibodyPlant∷Finalize())""";
         } is_floating_base_body;
         // Symbol: drake::multibody::RigidBody::is_locked
         struct /* is_locked */ {
@@ -7645,7 +7655,7 @@ See also:
           const char* doc =
 R"""(Determines whether this RigidBody is currently locked to its inboard
 (parent) RigidBody. This is not limited to floating base bodies but
-generally Joint::is_locked() is preferable otherwise.
+generally Joint∷is_locked() is preferable otherwise.
 
 Returns:
     true if the body is locked, false otherwise.)""";
@@ -7703,7 +7713,7 @@ A RigidBodyFrame and RigidBody are tightly coupled concepts; neither
 makes sense without the other. Therefore, a RigidBodyFrame instance is
 constructed in conjunction with its RigidBody and cannot be
 constructed anywhere else. However, you can still access the frame
-associated with a body, see RigidBody::body_frame(). This access is
+associated with a body, see RigidBody∷body_frame(). This access is
 more than a convenience; you can use the RigidBodyFrame to define
 other frames on the body and to attach other multibody elements to it.)""";
         // Symbol: drake::multibody::RigidBodyFrame::DoCalcOffsetPoseInBody
@@ -8015,9 +8025,9 @@ Note:
     rotational inertia operations in debug releases only. This
     provides speed in a release build while facilitating debugging in
     debug builds. In addition, these validity tests are only performed
-    for scalar types for which drake::scalar_predicate<T>::is_bool is
+    for scalar types for which drake∷scalar_predicate<T>∷is_bool is
     ``True``. For instance, validity checks are not performed when T
-    is symbolic::Expression.
+    is symbolic∷Expression.
 
 Note:
     The methods of this class satisfy the "basic exception guarantee":
@@ -8570,7 +8580,7 @@ Template parameter ``Scalar``:
     templated.
 
 Note:
-    ``RotationalInertia<From>::cast<To>()`` creates a new
+    ``RotationalInertia<From>∷cast<To>()`` creates a new
     ``RotationalInertia<To>`` from a ``RotationalInertia<From>`` but
     only if type ``To`` is constructible from type ``From``. This cast
     method works in accordance with Eigen's cast method for Eigen's
@@ -8790,7 +8800,7 @@ Warning:
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
 into the translational component of ``forces`` for ``this`` joint a
 dissipative force according to the viscous law ``f = -d⋅v``, with d
@@ -8803,7 +8813,7 @@ with d the damping coefficient (see default_angular_damping()).)""";
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/rpy_floating_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce().
 Adding forces per-dof for this joint is not supported. Therefore, this
 method throws an exception if invoked.)""";
         } DoAddInOneForce;
@@ -9163,33 +9173,32 @@ R"""(Returns the name of this joint type: "rpy_floating")""";
       struct /* ScopedName */ {
         // Source: drake/multibody/tree/scoped_name.h
         const char* doc =
-R"""(A delimited string name for a multibody element, e.g.,
-"robot1::torso".
+R"""(A delimited string name for a multibody element, e.g., "robot1∷torso".
 
 The name is composed of two semantically separate pieces -- the
 ``element`` name is the local name for the element (e.g., a joint,
 body, frame, etc.) and the ``namespace`` name is the location of that
-element within the tree. For "robot1::torso" the namespace name is
+element within the tree. For "robot1∷torso" the namespace name is
 "robot1" and the element name is "torso".
 
 The namespace name typically refers to the model instance name that
 contains the element. Some temporary scoped names do not use a
 namespace (e.g., temporary values created during input file parsing),
 in which case the namespace name can be empty. The namespace name will
-never start or end with "::".
+never start or end with "∷".
 
 The element name is never empty, unless the ScopedName was
 default-constructed or moved-from. The element name will never contain
-the delimiter string "::".
+the delimiter string "∷".
 
 When there is no namespace, the scoped name does not contain a leading
-"::", e.g., for the element name "box" without any namespace, the
-scoped name is "box" not "::box".
+"∷", e.g., for the element name "box" without any namespace, the
+scoped name is "box" not "∷box".
 
-The namespace name may contain the "::" delimiter in the middle of the
-name (possibly multiple times), e.g., for
-"robot1::left::arm::end_frame" the namespace name is
-"robot1::left::arm" and the element is name "end_frame".
+The namespace name may contain the "∷" delimiter in the middle of the
+name (possibly multiple times), e.g., for "robot1∷left∷arm∷end_frame"
+the namespace name is "robot1∷left∷arm" and the element is name
+"end_frame".
 
 This class does not treat a single colon (":") specially. Those can
 appear in either namespace names or element names.)""";
@@ -9197,10 +9206,10 @@ appear in either namespace names or element names.)""";
         struct /* Join */ {
           // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
-R"""(Creates a ScopedName for the given ``name1::name2``. Unlike the
-constructor or ScopedName::Make(), this function allows "::" in either
-name. Any leading or trailing "::" on the names are removed before
-joining. After joining, the final word after all "::"s is the element
+R"""(Creates a ScopedName for the given ``name1∷name2``. Unlike the
+constructor or ScopedName∷Make(), this function allows "∷" in either
+name. Any leading or trailing "∷" on the names are removed before
+joining. After joining, the final word after all "∷"s is the element
 name, and everything prior is the namespace name.)""";
         } Join;
         // Symbol: drake::multibody::ScopedName::Make
@@ -9209,18 +9218,17 @@ name, and everything prior is the namespace name.)""";
           const char* doc =
 R"""(Creates a ScopedName for the given ``namespace_name`` and
 ``element_name``. Returns nullopt if ``namespace_name`` starts or ends
-with "::", or if ``element_name`` contains "::" or is empty.
+with "∷", or if ``element_name`` contains "∷" or is empty.
 
 See also:
-    ScopedName::Join() for automatic coalescing of "::" tokens.)""";
+    ScopedName∷Join() for automatic coalescing of "∷" tokens.)""";
         } Make;
         // Symbol: drake::multibody::ScopedName::Parse
         struct /* Parse */ {
           // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
-R"""(Parses the given ``scoped_name`` string. Any leading or trailing "::"s
-on the name are removed (even multiple copies like "::::" are
-removed).)""";
+R"""(Parses the given ``scoped_name`` string. Any leading or trailing "∷"s
+on the name are removed (even multiple copies like "∷∷" are removed).)""";
         } Parse;
         // Symbol: drake::multibody::ScopedName::ScopedName
         struct /* ctor */ {
@@ -9232,17 +9240,17 @@ R"""(Creates a ScopedName for the given ``namespace_name`` and
 ``element_name``.
 
 Raises:
-    RuntimeError if ``namespace_name`` starts or ends with "::".
+    RuntimeError if ``namespace_name`` starts or ends with "∷".
 
 Raises:
-    RuntimeError if ``element_name`` contains "::" or is empty.
+    RuntimeError if ``element_name`` contains "∷" or is empty.
 
 See also:
-    ScopedName::Make() to use a null return value instead of
+    ScopedName∷Make() to use a null return value instead of
     exceptions.
 
 See also:
-    ScopedName::Join() for automatic cleanup of "::" tokens.)""";
+    ScopedName∷Join() for automatic cleanup of "∷" tokens.)""";
         } ctor;
         // Symbol: drake::multibody::ScopedName::get_element
         struct /* get_element */ {
@@ -9257,7 +9265,7 @@ moved-from.)""";
         struct /* get_full */ {
           // Source: drake/multibody/tree/scoped_name.h
           const char* doc =
-R"""(Returns the full ScopedName as a string, e.g., "robot1::torso". It is
+R"""(Returns the full ScopedName as a string, e.g., "robot1∷torso". It is
 never empty unless this ScopedName was default-constructed or
 moved-from.)""";
         } get_full;
@@ -9277,7 +9285,7 @@ R"""(Replaces the element name of this object, leaving the namespace name
 unchanged.
 
 Raises:
-    RuntimeError if ``element_name`` contains "::" or is empty.)""";
+    RuntimeError if ``element_name`` contains "∷" or is empty.)""";
         } set_element;
         // Symbol: drake::multibody::ScopedName::set_namespace
         struct /* set_namespace */ {
@@ -9287,7 +9295,7 @@ R"""(Replaces the namespace name of this object, leaving the element name
 unchanged. The namespace name is allowed to be empty.
 
 Raises:
-    RuntimeError if ``namespace_name`` starts or ends with "::".)""";
+    RuntimeError if ``namespace_name`` starts or ends with "∷".)""";
         } set_namespace;
         // Symbol: drake::multibody::ScopedName::to_string
         struct /* to_string */ {
@@ -9701,9 +9709,9 @@ Note:
     rotational inertia operations in debug releases only. This
     provides speed in a release build while facilitating debugging in
     debug builds. In addition, these validity tests are only performed
-    for scalar types for which drake::scalar_predicate<T>::is_bool is
+    for scalar types for which drake∷scalar_predicate<T>∷is_bool is
     ``True``. For instance, validity checks are not performed when T
-    is symbolic::Expression.
+    is symbolic∷Expression.
 
 Note:
     The methods of this class satisfy the "basic exception guarantee":
@@ -9718,16 +9726,16 @@ See also:
 
 See also:
     To create a spatial inertia of a mesh, see
-    CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>&
+    CalcSpatialInertia(const geometry∷TriangleSurfaceMesh<double>&
     mesh, double density).
 
 See also:
-    To create spatial inertia from most of geometry::Shape, see
-    CalcSpatialInertia(const geometry::Shape& shape, double density).
+    To create spatial inertia from most of geometry∷Shape, see
+    CalcSpatialInertia(const geometry∷Shape& shape, double density).
 
 See also:
     To create spatial inertia for a set of bodies, see
-    MultibodyPlant::CalcSpatialInertia().
+    MultibodyPlant∷CalcSpatialInertia().
 
 - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
                algorithms. Springer Science & Business Media.)""";
@@ -9929,12 +9937,12 @@ spatial inertia. The checks performed include:
   - ``Iyy + Izz >= Ixx``
 
 These are the tests performed by
-RotationalInertia::CouldBePhysicallyValid() which become a sufficient
+RotationalInertia∷CouldBePhysicallyValid() which become a sufficient
 condition when performed on a rotational inertia about a body's center
 of mass.
 
 See also:
-    RotationalInertia::CouldBePhysicallyValid().)""";
+    RotationalInertia∷CouldBePhysicallyValid().)""";
         } IsPhysicallyValid;
         // Symbol: drake::multibody::SpatialInertia::IsZero
         struct /* IsZero */ {
@@ -10562,7 +10570,7 @@ Raises:
     Vector3<double> p_WoB2_W(1, 1, 0);
     Vector3<double> p_WoB3_W(1, 0, 1);
     SpatialInertia<double> M_BWo_W =
-        SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+        SpatialInertia<double>∷SolidTetrahedronAboutPointWithDensity(
             density, p_WoB0_W, p_WoB1_W, p_WoB2_W, p_WoB3_W);
 
 .. raw:: html
@@ -10735,7 +10743,7 @@ Template parameter ``Scalar``:
     templated.
 
 Note:
-    ``SpatialInertia<From>::cast<To>()`` creates a new
+    ``SpatialInertia<From>∷cast<To>()`` creates a new
     ``SpatialInertia<To>`` from a ``SpatialInertia<From>`` but only if
     type ``To`` is constructible from type ``From``. This cast method
     works in accordance with Eigen's cast method for Eigen's objects
@@ -11599,13 +11607,13 @@ detection of uninitialized values.)""";
 R"""(Creates a unit inertia with moments of inertia ``Ixx``, `Iyy`,
 ``Izz``, and with each product of inertia set to zero. In debug
 builds, throws RuntimeError if unit inertia constructed from these
-arguments violates RotationalInertia::CouldBePhysicallyValid().)""";
+arguments violates RotationalInertia∷CouldBePhysicallyValid().)""";
           // Source: drake/multibody/tree/unit_inertia.h
           const char* doc_6args =
 R"""(Creates a unit inertia with moments of inertia ``Ixx``, `Iyy`,
 ``Izz``, and with products of inertia ``Ixy``, `Ixz`, ``Iyz``. In
 debug builds, throws RuntimeError if unit inertia constructed from
-these arguments violates RotationalInertia::CouldBePhysicallyValid().)""";
+these arguments violates RotationalInertia∷CouldBePhysicallyValid().)""";
           // Source: drake/multibody/tree/unit_inertia.h
           const char* doc_1args =
 R"""(Constructs a UnitInertia from a RotationalInertia. This constructor
@@ -11628,12 +11636,12 @@ Template parameter ``Scalar``:
     The scalar type on which the new unit inertia will be templated.
 
 Note:
-    ``UnitInertia<From>::cast<To>()`` creates a new
-    ``UnitInertia<To>`` from a ``UnitInertia<From>`` but only if type
-    ``To`` is constructible from type ``From``. As an example of this,
-    ``UnitInertia<double>::cast<AutoDiffXd>()`` is valid since
+    ``UnitInertia<From>∷cast<To>()`` creates a new ``UnitInertia<To>``
+    from a ``UnitInertia<From>`` but only if type ``To`` is
+    constructible from type ``From``. As an example of this,
+    ``UnitInertia<double>∷cast<AutoDiffXd>()`` is valid since
     ``AutoDiffXd a(1.0)`` is valid. However,
-    ``UnitInertia<AutoDiffXd>::cast<double>()`` is not.)""";
+    ``UnitInertia<AutoDiffXd>∷cast<double>()`` is not.)""";
         } cast;
         // Symbol: drake::multibody::UnitInertia::operator*=
         struct /* operator_imul */ {
@@ -11701,7 +11709,7 @@ the direction of their respective axes.)""";
         struct /* DoAddInDamping */ {
           // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInDamping().
+R"""(Joint<T> override called through public NVI, Joint∷AddInDamping().
 Therefore arguments were already checked to be valid. This method adds
 into ``forces`` a dissipative torque according to the viscous law ``τ
 = -d⋅ω``, with d the damping coefficient (see default_damping()).)""";
@@ -11710,7 +11718,7 @@ into ``forces`` a dissipative torque according to the viscous law ``τ
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce().
 Therefore arguments were already checked to be valid. For a
 UniversalJoint, we must always have ``joint_dof < 2`` since there are
 two degrees of freedom (num_velocities() == 2). ``joint_tau`` is the
@@ -11791,7 +11799,7 @@ Returns:
           // Source: drake/multibody/tree/universal_joint.h
           const char* doc =
 R"""(Gets the default angles for ``this`` joint. Wrapper for the more
-general ``Joint::default_positions()``.
+general ``Joint∷default_positions()``.
 
 Returns:
     The default angles of ``this`` stored in ``default_positions_``)""";
@@ -11864,10 +11872,10 @@ them together.)""";
         struct /* DoAddInOneForce */ {
           // Source: drake/multibody/tree/weld_joint.h
           const char* doc =
-R"""(Joint<T> override called through public NVI, Joint::AddInForce().
-Since frame F and M are welded together, it is physically not possible
-to apply forces between them. Therefore this method throws an
-exception if invoked.)""";
+R"""(Joint<T> override called through public NVI, Joint∷AddInForce(). Since
+frame F and M are welded together, it is physically not possible to
+apply forces between them. Therefore this method throws an exception
+if invoked.)""";
         } DoAddInOneForce;
         // Symbol: drake::multibody::WeldJoint::WeldJoint<T>
         struct /* ctor */ {
@@ -11895,6 +11903,15 @@ if they were "welded" together.)""";
 R"""(Returns the model instance which contains all tree elements with no
 explicit model instance specified.)""";
       } default_model_instance;
+      // Symbol: drake::multibody::to_string
+      struct /* to_string */ {
+        // Source: drake/multibody/tree/rotational_inertia.h
+        const char* doc_1args_constRotationalInertia =
+R"""(Returns the string representation of a RotationalInertia object.)""";
+        // Source: drake/multibody/tree/spatial_inertia.h
+        const char* doc_1args_constSpatialInertia =
+R"""(Returns the string representation of a SpatialInertia object.)""";
+      } to_string;
       // Symbol: drake::multibody::world_frame_index
       struct /* world_frame_index */ {
         // Source: drake/multibody/tree/multibody_tree_indexes.h

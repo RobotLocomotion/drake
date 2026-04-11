@@ -95,9 +95,9 @@ wget
 EOF
 )
 
-codename=$(lsb_release -sc)
+. /etc/os-release
 
-packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
@@ -113,7 +113,7 @@ else
 fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-doc-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
@@ -122,37 +122,21 @@ if [[ "${with_bazel}" -eq 1 ]]; then
 fi
 
 if [[ "${with_clang}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-clang.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-clang.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-test-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
-  if [[ "${codename}" == "noble" ]]; then
+  if [[ "${VERSION_CODENAME}" == "noble" ]]; then
     "${BASH_SOURCE%/*}/install_kcov.sh"
   fi
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-maintainer-only.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
-fi
-
-# On Jammy, Drake doesn't install anything related to GCC 12, but if the user
-# has chosen to install some GCC 12 libraries but has failed to install all of
-# them correctly as a group, Drake's documentation header file parser will fail
-# with a libclang-related complaint. Therefore, we'll help the user clean up
-# their mess, to avoid apparent Drake build errors.
-if [[ "${codename}" == "jammy" ]]; then
-  status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-12-dev 2>/dev/null || true)
-  if [[ "${status}" == "ii " ]]; then
-    status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-12-dev 2>/dev/null || true)
-    status_fortran=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgfortran-12-dev 2>/dev/null || true)
-    if [[ "${status_stdcxx}" != "ii " || "${status_fortran}" != "ii " ]]; then
-      apt-get install ${maybe_yes} --no-install-recommends libgcc-12-dev libstdc++-12-dev libgfortran-12-dev
-    fi
-  fi
 fi
 
 # On Noble, Drake doesn't install anything related to GCC 14, but if the user
@@ -160,7 +144,7 @@ fi
 # them correctly as a group, Drake's documentation header file parser will fail
 # with a libclang-related complaint. Therefore, we'll help the user clean up
 # their mess, to avoid apparent Drake build errors.
-if [[ "${codename}" == "noble" ]]; then
+if [[ "${VERSION_CODENAME}" == "noble" ]]; then
   status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-14-dev 2>/dev/null || true)
   if [[ "${status}" == "ii " ]]; then
     status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-14-dev 2>/dev/null || true)

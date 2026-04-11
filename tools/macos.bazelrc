@@ -1,21 +1,10 @@
-# Common options for macOS, no matter the arch (x86 or arm).
+# Common options for macOS.
 
-# Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
-# sanitizers.
-build:asan --copt=-Wno-macro-redefined
-build:asan_everything --copt=-Wno-macro-redefined
-build:tsan --copt=-Wno-macro-redefined
-build:tsan_everything --copt=-Wno-macro-redefined
-build:ubsan --copt=-Wno-macro-redefined
-build:ubsan_everything --copt=-Wno-macro-redefined
-
-# https://github.com/bazelbuild/bazel/issues/14294
-build --notrim_test_configuration
-
-# https://github.com/RobotLocomotion/drake/issues/22204
-build --copt=-fno-assume-unique-vtables
+# N.B. Ensure this is consistent with `execute.bzl`.
+build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
 # Options for explicitly using Clang.
+# TODO(#24359) Delete this entirely.
 common:clang --repo_env=CC=clang
 common:clang --repo_env=CXX=clang++
 build:clang --action_env=CC=clang

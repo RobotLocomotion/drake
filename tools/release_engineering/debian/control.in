@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Drake Development Team <drake-users@mit.edu>
 
 Package: drake-dev
-Architecture: amd64
+Architecture: {arch}
 Depends: {depends}
 Description: Model-based design/verification for robotics
  .

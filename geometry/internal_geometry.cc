@@ -74,24 +74,9 @@ const GeometryProperties* InternalGeometry::properties(Role role) const {
 }
 
 const std::optional<Obb>& InternalGeometry::GetObb() const {
-  // TODO(jwnimmer-tri) Once we drop support for Jammy (i.e., once we can use
-  // GCC >= 12 as our minimum), then we should respell these atomics to use the
-  // C++20 syntax and remove the warning suppressions here and below. (We need
-  // the warning suppression because newer Clang complains.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  std::shared_ptr<std::optional<Obb>> check = std::atomic_load(&obb_);
-#pragma GCC diagnostic pop
-  if (check == nullptr) {
-    // Note: This approach means that multiple threads *may* redundantly compute
-    // the OBB; but only the first one will set the OBB.
-    auto new_obb = std::make_shared<std::optional<Obb>>(CalcObb(*shape_spec_));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    std::atomic_compare_exchange_strong(&obb_, &check, new_obb);
-#pragma GCC diagnostic pop
-  }
-  return *obb_;
+  return obb_.GetOrMake([this]() {
+    return std::make_shared<std::optional<Obb>>(CalcObb(*shape_spec_));
+  });
 }
 
 }  // namespace internal

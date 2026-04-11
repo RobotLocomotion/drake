@@ -2,7 +2,8 @@ load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
 
 def _gfortran_impl(repo_ctx):
     # Find the compiler.
-    compiler = which(repo_ctx, "gfortran")
+    fc_env = repo_ctx.os.environ.get("FC") or "gfortran"
+    compiler = which(repo_ctx, fc_env)
     if not compiler:
         fail("Could not find gfortran")
     compiler = str(compiler)
@@ -42,6 +43,9 @@ gfortran_internal_repository = repository_rule(
         Locate gfortran and alias it to `:compiler`; locate libgfortran
         and alias it to `:runtime`.
     """,
+    environ = [
+        "FC",
+    ],
     local = True,
     configure = True,
     implementation = _gfortran_impl,

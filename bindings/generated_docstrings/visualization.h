@@ -75,10 +75,10 @@ Precondition:
     as in ``plant.Finalize()``.
 
 See also:
-    drake::visualization::ApplyVisualizationConfig()
+    drake∷visualization∷ApplyVisualizationConfig()
 
 See also:
-    drake::multibody::AddMultibodyPlant())""";
+    drake∷multibody∷AddMultibodyPlant())""";
       } AddDefaultVisualization;
       // Symbol: drake::visualization::ApplyVisualizationConfig
       struct /* ApplyVisualizationConfig */ {
@@ -127,7 +127,7 @@ Parameter ``lcm_buses``:
     (Optional) The available LCM buses to use for visualization
     message publication. When not provided, uses the ``lcm`` interface
     if provided, or else the ``config.lcm_bus`` must be set to
-    "default" in which case an appropriate drake::lcm::DrakeLcm object
+    "default" in which case an appropriate drake∷lcm∷DrakeLcm object
     is constructed and used internally.
 
 Parameter ``plant``:
@@ -179,13 +179,13 @@ Precondition:
     ``plant.Finalize()``.
 
 See also:
-    drake::visualization::AddDefaultVisualization()
+    drake∷visualization∷AddDefaultVisualization()
 
 See also:
-    drake::multibody::AddMultibodyPlant()
+    drake∷multibody∷AddMultibodyPlant()
 
 See also:
-    drake::systems::lcm::ApplyLcmBusConfig())""";
+    drake∷systems∷lcm∷ApplyLcmBusConfig())""";
       } ApplyVisualizationConfig;
       // Symbol: drake::visualization::ColorizeDepthImage
       struct /* ColorizeDepthImage */ {
@@ -407,7 +407,7 @@ Beware that the output port of this system always provides the
 sliders' current values, even if evaluated by multiple different
 downstream input ports during a single computation. If you need to
 have a synchronized view of the slider data, place a
-systems::ZeroOrderHold system between the sliders and downstream
+systems∷ZeroOrderHold system between the sliders and downstream
 calculations.)""";
         // Symbol: drake::visualization::MeshcatPoseSliders::Delete
         struct /* Delete */ {
@@ -453,12 +453,12 @@ Parameter ``step``:
 Parameter ``decrement_keycodes``:
     (Optional) A vector of length 6 with keycodes to assign to
     decrement the value of each slider (roll, pitch, yaw, x, y, z).
-    See Meshcat::AddSlider for more details.
+    See Meshcat∷AddSlider for more details.
 
 Parameter ``increment_keycodes``:
     (Optional) A vector of length 6 with keycodes to assign to
     increment the value of each slider (roll, pitch, yaw, x, y, z).
-    See Meshcat::AddSlider for more details.
+    See Meshcat∷AddSlider for more details.
 
 Parameter ``prefix``:
     (Optional) By default, the sliders will be named "roll, pitch,
@@ -497,13 +497,13 @@ The default keycodes provide the following keyboard mapping:
         struct /* Run */ {
           // Source: drake/visualization/meshcat_pose_sliders.h
           const char* doc =
-R"""(Publishes the given systems::System (typically, a Diagram including
+R"""(Publishes the given systems∷System (typically, a Diagram including
 visualizers, to cause it to be visualized) whenever our sliders'
 values change. Blocks until the user clicks a "Stop" button in the
 MeshCat control panel, or if the timeout limit is reached.
 
 Parameter ``context``:
-    The systems::Context for the systems::Diagram.
+    The systems∷Context for the systems∷Diagram.
 
 Parameter ``timeout``:
     (Optional) In the absence of a button click, the duration (in
@@ -513,7 +513,7 @@ Parameter ``timeout``:
 
 Parameter ``stop_button_keycode``:
     a keycode that will be assigned to the "Stop" button. Setting this
-    to the empty string means no keycode. See Meshcat::AddButton for
+    to the empty string means no keycode. See Meshcat∷AddButton for
     details. $*Default:* "Escape".
 
 Returns:
@@ -565,7 +565,7 @@ The vector must be of size three (rgb) or four (rgba).)""";
         struct /* delete_on_initialization_event */ {
           // Source: drake/visualization/visualization_config.h
           const char* doc =
-R"""(Determines whether to send a Meshcat::Delete() messages to the Meshcat
+R"""(Determines whether to send a Meshcat∷Delete() messages to the Meshcat
 object (if any) on an initialization event to remove any
 visualizations, e.g., from a previous simulation.)""";
         } delete_on_initialization_event;
@@ -598,7 +598,7 @@ the slider should be used to change it.)""";
 R"""(Which LCM URL to use.
 
 See also:
-    drake::systems::lcm::LcmBuses)""";
+    drake∷systems∷lcm∷LcmBuses)""";
         } lcm_bus;
         // Symbol: drake::visualization::VisualizationConfig::publish_contacts
         struct /* publish_contacts */ {

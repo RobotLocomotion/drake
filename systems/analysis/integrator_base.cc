@@ -11,6 +11,44 @@ template <class T>
 IntegratorBase<T>::~IntegratorBase() = default;
 
 template <class T>
+std::vector<NamedStatistic> IntegratorBase<T>::GetStatisticsSummary() const {
+  std::vector<NamedStatistic> result;
+
+  // Add our local statistics.
+  result.emplace_back("integrator_num_steps_taken", get_num_steps_taken());
+  if (!get_fixed_step_mode()) {
+    result.emplace_back(
+        "integrator_actual_initial_step_size_taken",
+        ExtractDoubleOrThrow(get_actual_initial_step_size_taken()));
+    result.emplace_back("integrator_largest_step_size_taken",
+                        ExtractDoubleOrThrow(get_largest_step_size_taken()));
+    result.emplace_back(
+        "integrator_smallest_adapted_step_size_taken",
+        ExtractDoubleOrThrow(get_smallest_adapted_step_size_taken()));
+    result.emplace_back("integrator_num_step_shrinkages_from_error_control",
+                        get_num_step_shrinkages_from_error_control());
+  }
+  result.emplace_back("integrator_num_derivative_evaluations",
+                      get_num_derivative_evaluations());
+
+  // Add subclass statistics afterward.
+  auto subclass_data = DoGetStatisticsSummary();
+  result.insert(result.end(), std::make_move_iterator(subclass_data.begin()),
+                std::make_move_iterator(subclass_data.end()));
+  subclass_data.clear();
+
+  return result;
+}
+
+template <class T>
+void IntegratorBase<T>::DoResetStatistics() {}
+
+template <class T>
+std::vector<NamedStatistic> IntegratorBase<T>::DoGetStatisticsSummary() const {
+  return {};
+}
+
+template <class T>
 bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
   using std::isnan;
   using std::min;

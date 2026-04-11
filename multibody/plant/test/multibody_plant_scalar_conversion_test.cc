@@ -28,6 +28,7 @@ using multibody::test::RobotModelConfig;
 using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::SubsystemIndex;
 using systems::System;
 
 namespace multibody {
@@ -146,8 +147,8 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, PortIndexOrdering) {
 
   std::unique_ptr<Diagram<U>> diagram_u =
       System<double>::ToScalarType<U>(*diagram);
-  const auto& plant_u =
-      dynamic_cast<const MultibodyPlant<U>&>(*diagram_u->GetSystems().at(0));
+  const auto& plant_u = dynamic_cast<const MultibodyPlant<U>&>(
+      diagram_u->get_system(SubsystemIndex{0}));
 
   CompareMultibodyPlantPortIndices(plant, plant_u);
 }
@@ -324,11 +325,18 @@ std::string ParamInfoToString(
   return s.str();
 }
 
+// Remove on 2026-09-01 per TAMSI deprecation.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kDiscreteContactApproximationTamsi =
+    DiscreteContactApproximation::kTamsi;
+#pragma GCC diagnostic push
+
 // Helper to make all parameter permutations for DiscretePlantTest.
 auto MakeAllPermutations() {
   return ::testing::Combine(
       ::testing::Values(DiscreteContactApproximation::kSimilar,
-                        DiscreteContactApproximation::kTamsi),
+                        kDiscreteContactApproximationTamsi),
       ::testing::Values(ContactModel::kPoint,
                         ContactModel::kHydroelasticWithFallback),
       ::testing::Values(RobotModelConfig::ContactConfig::kNoGeometry,

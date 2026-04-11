@@ -3,7 +3,6 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/ssize.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
 namespace drake {

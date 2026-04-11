@@ -348,14 +348,16 @@ class Joint : public MultibodyElement<T> {
     DoAddInDamping(context, forces);
   }
 
-  /// Lock the joint. Its generalized velocities will be 0 until it is
-  /// unlocked.
+  /// Lock the joint. Its generalized velocities will be 0 until it is unlocked.
+  /// If actuated, its PD controllers will be ignored and thus will have no
+  /// effect on the reported actuation output nor reaction forces.
   void Lock(systems::Context<T>* context) const {
     DRAKE_DEMAND(has_mobilizer());
     mobilizer_->Lock(context);
   }
 
-  /// Unlock the joint.
+  /// Unlock the joint.  If actuated, its PD controllers (if any) will no longer
+  /// be ignored.
   void Unlock(systems::Context<T>* context) const {
     DRAKE_DEMAND(has_mobilizer());
     mobilizer_->Unlock(context);

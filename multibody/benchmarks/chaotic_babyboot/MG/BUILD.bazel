@@ -21,7 +21,6 @@ drake_cc_library(
         "MG_chaotic_babyboot_auto_generated.h",
     ],
     copts = [
-        "-Wno-old-style-cast",
         "-Wno-unused-parameter",
     ],
     deps = [

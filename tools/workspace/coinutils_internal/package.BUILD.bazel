@@ -17,11 +17,11 @@ _HDRS = glob(
         "CoinUtils/src/*.hpp",
         "CoinUtils/src/*.h",
     ],
+    allow_empty = False,
     exclude = [
         "**/config*",
         "**/*Config.h",
     ],
-    allow_empty = False,
 )
 
 _SRCS = glob(
@@ -126,18 +126,18 @@ coin_cc_library(
     autoconf_defines = _AUTOCONF_DEFINES,
     autoconf_undefines = _AUTOCONF_UNDEFINES,
     config_private_defines = _CONFIG_PRIVATE_DEFINES,
+    srcs = _SRCS,
     hdrs_public = _HDRS,
     includes_public = _INCLUDES,
     hdrs_private = _HDRS,
     includes_private = _INCLUDES,
-    srcs = _SRCS,
     vendor_tool_args = ["--no-inline-namespace"],
     output_vendoring_patch = "drake_coinutils.patch",
+    visibility = ["//visibility:public"],
     deps = [
         "@blas",
         "@lapack",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install(

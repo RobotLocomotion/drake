@@ -13,16 +13,13 @@ namespace drake {
 namespace planning {
 
 namespace internal {
-/** Sampling strategies for the IRIS algorithm. */
+/* Sampling strategies for the IRIS algorithm. */
 enum class IrisNp2SamplingStrategy {
   kGreedySampler,
   kRaySampler,
 };
 
-/** Writes the IrisNp2SamplingStrategy as a string. */
-std::ostream& operator<<(std::ostream& out, const IrisNp2SamplingStrategy& t);
-
-/** Instantiates a IrisNp2SamplingStrategy from its string representation.
+/* Instantiates a IrisNp2SamplingStrategy from its string representation.
  @param spec  Must be 'greedy' or 'ray'.
  @throws if `spec` is an unrecognized string. */
 IrisNp2SamplingStrategy iris_np2_sampling_strategy_from_string(

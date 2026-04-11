@@ -8,9 +8,9 @@ licenses(["notice"])  # MIT
 py_library(
     name = "stable_baselines3",
     srcs = glob(["**/*.py"]),
-    deps = ["@gymnasium_py_internal//:gymnasium_py"],
     data = glob(["**/version.txt"]),
     visibility = ["//visibility:public"],
+    deps = ["@gymnasium_py_internal//:gymnasium_py"],
 )
 
 exports_files(["drake_repository_metadata.json"])

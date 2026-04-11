@@ -198,7 +198,7 @@ Parameter ``plant``:
 
 Parameter ``model_instances``:
     We compute the model with these model instances in ``plant``. If
-    model_instances=std::nullopt, then we compute the momentum of all
+    model_instances=std∷nullopt, then we compute the momentum of all
     model instances except the world.)""";
         } ctor;
         // Symbol: drake::multibody::CentroidalMomentumConstraint::ComposeVariable
@@ -277,7 +277,7 @@ Parameter ``num_lambda``:
 Parameter ``geometry_id_pair``:
     The pair of geometries for which the contact wrench is computed.
     Notice that the order of the geometries in the pair should match
-    with that in SceneGraphInspector::GetCollisionCandidates().)""";
+    with that in SceneGraphInspector∷GetCollisionCandidates().)""";
         } ctor;
         // Symbol: drake::multibody::ContactWrenchEvaluator::context
         struct /* context */ {
@@ -340,7 +340,7 @@ Parameter ``context``:
 Parameter ``geometry_id_pair``:
     The pair of geometries for which the contact wrench is computed.
     Notice that the order of the geometries in the pair should match
-    with that in SceneGraphInspector::GetCollisionCandidates().)""";
+    with that in SceneGraphInspector∷GetCollisionCandidates().)""";
         } ctor;
       } ContactWrenchFromForceInWorldFrameEvaluator;
       // Symbol: drake::multibody::GeometryPairContactWrenchEvaluatorBinding

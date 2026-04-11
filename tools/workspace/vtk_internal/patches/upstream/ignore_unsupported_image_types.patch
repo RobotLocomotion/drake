@@ -1,0 +1,24 @@
+As indicated below, VTK merge request 13053 removed the functionality where
+unknown image types were simply ignored during load (with errors being
+thrown only if they got used). This restores the branch and logic.
+
+--- IO/Geometry/vtkGLTFDocumentLoader.cxx
++++ IO/Geometry/vtkGLTFDocumentLoader.cxx
+@@ -907,8 +908,15 @@ bool vtkGLTFDocumentLoader::LoadImageData()
+ 
+       if (!reader)
+       {
+-        vtkErrorMacro("No supported reader found for image " << image.Name);
+-        return false;
++        // Note: this was the default functionality for unrecognized image
++        // formats prior to Merge request 13053.
++        // It is perfectly valid to declare other extension-supported image types
++        // so long as they are never required by the scene. Therefore, the possible
++        // error is deferred until later.
++        image.ImageData = nullptr;
++        // This patch is messing with the progress event; we won't get progress
++        // updates for every unrecognized image type, but that's ok.
++        continue;
+       }
+     }
+ 

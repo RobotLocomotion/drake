@@ -10,7 +10,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/overloaded.h"
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"

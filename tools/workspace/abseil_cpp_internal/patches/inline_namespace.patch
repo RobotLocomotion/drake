@@ -8,12 +8,12 @@ designed for end-user customization, and that's basically all we're doing here.
 
 --- absl/base/options.h
 +++ absl/base/options.h
-@@ -205,8 +205,8 @@
+@@ -123,8 +123,8 @@
  // be changed to a new, unique identifier name.  In particular "head" is not
  // allowed.
  
  #define ABSL_OPTION_USE_INLINE_NAMESPACE 1
--#define ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20250814
+-#define ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20260107
 +#define ABSL_OPTION_INLINE_NAMESPACE_NAME drake_vendor
  
  // ABSL_OPTION_HARDENED
@@ -21,7 +21,7 @@ designed for end-user customization, and that's basically all we're doing here.
 
 --- absl/debugging/symbolize_elf.inc
 +++ absl/debugging/symbolize_elf.inc
-@@ -1766,12 +1766,14 @@ bool Symbolize(const void *pc, char *out, int out_size) {
+@@ -1745,12 +1745,14 @@ bool Symbolize(const void *pc, char *out, int out_size) {
  ABSL_NAMESPACE_END
  }  // namespace absl
  

@@ -1,3 +1,4 @@
+load("@drake_mypy//:requirements.bzl", mypy_requirement = "requirement")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//bindings/pydrake:stubgen.bzl", "generate_python_stubs")
 load("//tools/install:install.bzl", "install")
@@ -339,6 +340,7 @@ drake_py_unittest(
     deps = [
         ":polynomial_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 
@@ -386,8 +388,8 @@ drake_py_binary(
     srcs = ["stubgen.py"],
     deps = [
         ":all_py",
-        "@mypy_internal//:mypy",
         "@stable_baselines3_internal//:stable_baselines3",
+        mypy_requirement("mypy"),
     ],
 )
 
@@ -410,6 +412,8 @@ PYI_FILES = [
     "pydrake/multibody/benchmarks/__init__.pyi",
     "pydrake/multibody/benchmarks/acrobot.pyi",
     "pydrake/multibody/benchmarks/all.pyi",
+    "pydrake/multibody/cenic.pyi",
+    "pydrake/multibody/contact_solvers.pyi",
     "pydrake/multibody/fem.pyi",
     "pydrake/multibody/inverse_kinematics.pyi",
     "pydrake/multibody/math.pyi",
@@ -467,16 +471,16 @@ drake_py_unittest(
         ":pydrake_typed",
     ],
     deps = [
-        "@mypy_internal//:mypy",
         "@rules_python//python/runfiles",
+        mypy_requirement("mypy"),
     ],
 )
 
 install(
     name = "install",
     install_tests = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
+        "test/all_install_test.py",
+        "test/common_install_test.py",
     ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
@@ -497,9 +501,4 @@ install(
     ],
 )
 
-add_lint_tests_pydrake(
-    python_lint_extra_srcs = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
-    ],
-)
+add_lint_tests_pydrake()

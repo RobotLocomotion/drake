@@ -149,23 +149,17 @@ Value& GetMutableValueOrThrow(const Key& key,
 // Specializations for missing key based on key types.
 template <>
 std::string get_missing_id_message<SourceId>(const SourceId& key) {
-  std::stringstream ss;
-  ss << "Referenced geometry source " << key << " is not registered.";
-  return ss.str();
+  return fmt::format("Referenced geometry source {} is not registered.", key);
 }
 
 template <>
 std::string get_missing_id_message<FrameId>(const FrameId& key) {
-  std::stringstream ss;
-  ss << "Referenced frame " << key << " has not been registered.";
-  return ss.str();
+  return fmt::format("Referenced frame {} has not been registered.", key);
 }
 
 template <>
 std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
-  std::stringstream ss;
-  ss << "Referenced geometry " << key << " has not been registered.";
-  return ss.str();
+  return fmt::format("Referenced geometry {} has not been registered.", key);
 }
 
 //-----------------------------------------------------------------------------
@@ -1610,7 +1604,8 @@ void GeometryState<T>::AddRenderer(
         } else {
           accepted |= render_engine->RegisterVisual(
               id, geometry.shape(), *properties,
-              RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
+              RigidTransformd(geometry.X_FG()), geometry.is_dynamic(),
+              geometry.name());
         }
       }
     }
@@ -2154,7 +2149,7 @@ bool GeometryState<T>::AddRigidToCompatibleRenderersUnchecked(
   for (auto& engine : *candidate_renderers) {
     added_to_renderer =
         engine->RegisterVisual(geometry.id(), geometry.shape(), properties,
-                               X_WG, geometry.is_dynamic()) ||
+                               X_WG, geometry.is_dynamic(), geometry.name()) ||
         added_to_renderer;
   }
   return added_to_renderer;

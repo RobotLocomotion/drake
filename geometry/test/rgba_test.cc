@@ -8,9 +8,6 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 
-// Remove with deprecation 2026-03-01.
-#include <sstream>
-
 namespace drake {
 namespace geometry {
 namespace {
@@ -114,12 +111,6 @@ GTEST_TEST(RgbaTest, ToString) {
   const Rgba a(0.25, 0.5, 0.75, 0.875);
   EXPECT_EQ(a.to_string(), "(0.25, 0.5, 0.75, 0.875)");
   EXPECT_EQ(fmt::to_string(a), "(0.25, 0.5, 0.75, 0.875)");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  std::stringstream out;
-  out << a;
-  EXPECT_EQ(out.str(), "(0.25, 0.5, 0.75, 0.875)");
-#pragma GCC diagnostic pop
 }
 
 /** Confirm that this can be serialized appropriately. */

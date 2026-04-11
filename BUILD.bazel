@@ -99,7 +99,10 @@ _INSTALL_TEST_COMMANDS = "install_test_commands"
 # the default repository is named "_main" not "drake").
 install(
     name = "install_files",
-    data = ["package.xml"],
+    data = [
+        ".drake-find_resource-sentinel",
+        "package.xml",
+    ],
     data_dest = "share/drake",
     docs = ["LICENSE.TXT"],
     doc_dest = "share/doc/drake",

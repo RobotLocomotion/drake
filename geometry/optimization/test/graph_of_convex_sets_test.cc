@@ -2493,7 +2493,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
 class PreprocessShortestPathTest : public ::testing::Test {
  protected:
   PreprocessShortestPathTest() {
-    v_.reserve(7);
+    v_.resize(7);
     for (int i = 0; i < 7; ++i) {
       v_[i] = g_.AddVertex(Point(Vector1d{1.0}));
     }

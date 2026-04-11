@@ -13,7 +13,7 @@ bazel_wrapper = SourceFileLoader(
 
 class ExecDetail(Exception):
     def __init__(self, name, args):
-        super(ExecDetail, self).__init__()
+        super().__init__()
         self.name = name
         self.args = args
 
@@ -106,9 +106,9 @@ class TestBazelWrapper(unittest.TestCase):
     def test_no_rewriting(self):
         # When the user disables stderr rewriting, the wrapper bails out but
         # still replaces the include paths.
-        old_magic = "--aspects=@intellij_aspect//:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
+        old_magic = "--aspects=//.clwb_aspects:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
         new_magic = (
-            "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"  # noqa
+            "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"
         )
         argv = ["bazel", old_magic, "--nodrake_error_rewriting", "dummy_arg"]
         with self.assertRaises(ExecDetail) as detail:

@@ -14,12 +14,12 @@ cc_library(
     hdrs = glob(["src/*.h"]),
     includes = ["src"],
     isystem = True,
+    linkopts = ["-pthread"],
+    linkstatic = 1,
     deps = [
         "@usockets_internal//:usockets",
         "@zlib",
     ],
-    linkopts = ["-pthread"],
-    linkstatic = 1,
 )
 
 # Install the license file.

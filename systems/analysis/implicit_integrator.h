@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <Eigen/LU>
 
@@ -411,6 +412,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const = 0;
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void DoResetStatistics() override;
+  std::vector<NamedStatistic> DoGetStatisticsSummary() const override;
   void DoReset() final;
 
   // Compute the partial derivative of the ordinary differential equations with

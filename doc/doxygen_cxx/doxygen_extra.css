@@ -78,6 +78,10 @@ div.groupText {
   font-family: 'DejaVu Sans Mono', monospace;
 }
 
+td.paramname {
+  white-space: normal;
+}
+
 .icon {
   font-family: 'DejaVu Sans', sans-serif;
 }

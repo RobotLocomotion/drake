@@ -490,6 +490,13 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
   EXPECT_TRUE(!leaf_info_->HasEvents());
 }
 
+// Tests that malformed periods are rejected at declaration time.
+TEST_F(LeafSystemTest, BadPeriods) {
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.AddPeriodicUpdate(-1),
+                              ".*DiscreteUpdateEvent.*-1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.AddPublish(0), ".*PublishEvent.*0.*");
+}
+
 // Tests that multiple periodic updates with the same periodic attribute are
 // identified as unique.
 TEST_F(LeafSystemTest, MultipleUniquePeriods) {

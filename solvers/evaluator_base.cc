@@ -34,24 +34,24 @@ std::ostream& EvaluatorBase::Display(std::ostream& os) const {
 
 std::ostream& EvaluatorBase::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
-  // Display the evaluator's most derived type name.
-  os << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this));
+  // Append evaluator's most derived type name.
+  std::string result{NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this))};
 
   // Append the description (when provided).
   const std::string& description = get_description();
   if (!description.empty()) {
-    os << " described as '" << description << "'";
+    result.append(fmt::format(" described as '{}'", description));
   }
 
   // Append the bound decision variables (when provided).
   const int vars_rows = vars.rows();
-  os << " with " << vars_rows << " decision variables";
+  result.append(fmt::format(" with {} decision variables", vars_rows));
   for (int i = 0; i < vars_rows; ++i) {
-    os << " " << vars(i).get_name();
+    result.append(fmt::format(" {}", vars(i)));
   }
-  os << "\n";
+  result.append("\n");
 
-  return os;
+  return os << result;
 }
 
 std::string EvaluatorBase::ToLatex(const VectorX<symbolic::Variable>& vars,
@@ -119,8 +119,14 @@ void EvaluatorBase::SetGradientSparsityPattern(
   gradient_sparsity_pattern_.emplace(gradient_sparsity_pattern);
 }
 
+std::string to_string(const EvaluatorBase& e) {
+  std::ostringstream ss;
+  e.Display(ss);
+  return ss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e) {
-  return e.Display(os);
+  return os << fmt::to_string(e);
 }
 
 void PolynomialEvaluator::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
