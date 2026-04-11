@@ -733,6 +733,7 @@ def drake_cc_binary(
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = 0,
+        test_rule_opt_in_condition = None,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -794,6 +795,7 @@ def drake_cc_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            opt_in_condition = test_rule_opt_in_condition,
             linkstatic = linkstatic,
             args = test_rule_args,
             tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
@@ -813,6 +815,7 @@ def drake_cc_test(
         allow_network = None,
         display = False,
         num_threads = None,
+        opt_in_condition = None,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -828,6 +831,9 @@ def drake_cc_test(
         See drake/tools/skylark/README.md for details.
 
     @param num_threads (optional, default is 1)
+        See drake/tools/skylark/README.md for details.
+
+    @param opt_in_condition (optional, default is None)
         See drake/tools/skylark/README.md for details.
     """
     if size == None:
@@ -848,6 +854,10 @@ def drake_cc_test(
         linkopts = new_linkopts,
         **kwargs
     )
+    target_compatible_with = select({
+        opt_in_condition: [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }) if opt_in_condition != None else None
     cc_test(
         name = name,
         size = size,
@@ -861,6 +871,7 @@ def drake_cc_test(
             # in disk use), to conserve space in CI; see #18545 for details.
             "-no_deduplicate",
         ],
+        target_compatible_with = target_compatible_with,
         **kwargs
     )
 
