@@ -111,6 +111,9 @@ build:_tsan --run_under=//tools/dynamic_analysis:tsan
 # timeouts to 5x.
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
 build:_tsan --test_timeout=300,1500,4500,18000
+# Configuring TSan to interop with OpenMP is difficult, so we'll turn it off.
+build:_tsan --copt=-fno-openmp
+build:_tsan --linkopt=-fno-openmp
 
 ### UBSan build. ###
 build:ubsan --config=_ubsan

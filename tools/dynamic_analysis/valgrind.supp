@@ -169,3 +169,11 @@
    fun:start_thread
    fun:clone
 }
+
+{
+   OpenMP
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   obj:/usr/lib/llvm-*/lib/libomp.so.5
+}
