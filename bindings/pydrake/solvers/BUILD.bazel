@@ -19,11 +19,6 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load(
-    "//tools/skylark:test_tags.bzl",
-    "gurobi_test_tags",
-    "mosek_test_tags",
-)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -140,7 +135,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "gurobi_solver_test",
-    tags = gurobi_test_tags(),
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":solvers",
     ],
@@ -168,7 +163,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mosek_solver_test",
-    tags = mosek_test_tags(),
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     deps = [
         ":solvers",
     ],
@@ -219,7 +214,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "snopt_solver_test",
-    tags = ["snopt"],
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
@@ -236,7 +231,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mathematicalprogram_test",
-    tags = gurobi_test_tags(gurobi_required = False),
     deps = [
         ":solvers",
         "//bindings/pydrake:forwarddiff_py",

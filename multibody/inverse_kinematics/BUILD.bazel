@@ -6,7 +6,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -212,7 +211,7 @@ drake_cc_googletest(
     data = [
         "@drake_models//:iiwa_description",
     ],
-    tags = ["snopt"],
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     deps = [
         ":constraint_relaxing_ik",
     ],
@@ -472,12 +471,7 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     timeout = "moderate",
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        # Excluding because an assertion fails in LLVM code. Issue #6179.
-        "no_tsan",
-    ],
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -489,12 +483,7 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
     timeout = "moderate",
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        # Excluding because an assertion fails in LLVM code. Issue #6179.
-        "no_tsan",
-    ],
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -508,12 +497,7 @@ drake_cc_googletest(
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        "no_asan",
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        "no_tsan",
-    ],
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -525,12 +509,7 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
     timeout = "moderate",
     num_threads = 4,
-    tags = gurobi_test_tags() + [
-        # Takes too long to run with Valgrind.
-        "no_memcheck",
-        # Excluding because an assertion fails in LLVM code. Issue #6179.
-        "no_tsan",
-    ],
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics_test_util",
         "//solvers:gurobi_solver",
