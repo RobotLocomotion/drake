@@ -638,7 +638,7 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
-if(DRAKE_CI_ENABLE_EVERYTHING)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
   set(WITH_MOSEK ON)
 endif()
 if(WITH_MOSEK)
@@ -703,7 +703,7 @@ endif()
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
-if(DRAKE_CI_ENABLE_EVERYTHING)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
   set(WITH_ROBOTLOCOMOTION_SNOPT ON)
 endif()
 
@@ -765,10 +765,6 @@ if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
-endif()
-
-if(DRAKE_CI_ENABLE_PACKAGING)
-  string(APPEND BAZEL_CONFIG " --config=packaging")
 endif()
 
 if(BUILD_TYPE_LOWER STREQUAL debug)
