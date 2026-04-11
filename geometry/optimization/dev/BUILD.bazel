@@ -51,6 +51,10 @@ drake_cc_library(
 drake_cc_googletest(
     name = "cspace_free_path_test",
     timeout = "long",
+    tags = [
+        # Prohibitively slow in CI (30+ minutes).
+        "no_valgrind",
+    ],
     deps = [
         ":c_iris_path_test_utilities",
         "//common/test_utilities:symbolic_test_util",

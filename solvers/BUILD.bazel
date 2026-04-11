@@ -1845,6 +1845,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_limit_test",
     timeout = "long",
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
     num_threads = 4,
     tags = gurobi_test_tags() + [
         # Times out with Valgrind
