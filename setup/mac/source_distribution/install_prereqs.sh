@@ -14,9 +14,6 @@ while [ "${1:-}" != "" ]; do
     --developer)
       with_developer=1
       ;;
-    --without-test-only)
-      # Ignored for backwards compatibility.
-      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 5

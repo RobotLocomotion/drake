@@ -41,8 +41,6 @@ if command -v conda &>/dev/null; then
   echo 'NOTE: Drake is not tested regularly with Anaconda, so you may experience compatibility hiccups; when asking for help, be sure to mention that Conda is involved.' >&2
 fi
 
-binary_distribution_called_update=0
-
 if [[ "${with_update}" -eq 1 ]]; then
   apt-get update || (sleep 30; apt-get update) || (cat <<EOF && false)
 ****************************************************************************
@@ -56,10 +54,6 @@ Do not try to set up Drake until that command succeeds.
 This is not a bug in Drake.  Do not contact the Drake team for help.
 ****************************************************************************
 EOF
-
-  # Do NOT call apt-get update again when installing prerequisites for source
-  # distributions.
-  binary_distribution_called_update=1
 fi
 
 . /etc/os-release

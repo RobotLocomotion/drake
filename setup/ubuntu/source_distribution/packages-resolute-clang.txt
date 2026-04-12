@@ -1,4 +1,0 @@
-clang-20
-libclang-rt-20-dev
-libomp-20-dev
-llvm-20
