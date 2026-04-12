@@ -25,9 +25,9 @@ template <typename T>
 double Gain<T>::get_gain() const {
   if (!k_.isConstant(k_[0])) {
     throw std::runtime_error(fmt::format(
-        "The gain vector [{}] cannot be represented as a scalar value. "
+        "The gain vector {} cannot be represented as a scalar value. "
         "Please use drake::systems::Gain::get_gain_vector() instead.",
-        fmt_eigen(k_.transpose())));
+        fmt_eigen(k_)));
   }
   return k_[0];
 }

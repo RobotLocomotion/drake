@@ -8,24 +8,53 @@ namespace drake {
 namespace internal {
 
 std::string FormatMatrix(const Eigen::Index rows, const Eigen::Index cols,
-                         const std::span<std::string_view> elements) {
+                         const std::span<std::string_view> elements,
+                         const FmtEigenSpecs& fmt_eigen_specs) {
+  const bool brackets = fmt_eigen_specs.brackets;
+  const bool commas = fmt_eigen_specs.commas;
+
+  // Special case empty matrices.
   if (rows <= 0 || cols <= 0) {
-    return std::string{};
+    return brackets ? "[]" : "";
   }
 
+  // When printing brackets, we need to special case 1-d vectors so that they
+  // only have one pair of brackets (not two). For compactness, column vectors
+  // are formated as a row vector with a transpose symbol.
+  if (brackets && (rows <= 1 || cols <= 1)) {
+    return fmt::format("[{}]{}", fmt::join(elements, ", "),
+                       (rows > 1) ? "ᵀ" : "");
+  }
+
+  // No more special cases needed, we can use the base case logic now.
+  // The matrix is either 2-d, or 1-d in plain format.
+  std::string result;
+  auto add_if_brackets = [brackets, &result](char ch) {
+    if (brackets) {
+      result.push_back(ch);
+    }
+  };
   const size_t max_element_size =
       std::ranges::max(elements, {}, &std::string_view::size).size();
-  std::string result;
-  result.reserve(rows * cols * (max_element_size + 1));
+  result.reserve(rows * cols * (max_element_size + 5));
+  add_if_brackets('[');
   for (Eigen::Index row = 0; row < rows; ++row) {
     if (row > 0) {
+      if (commas) {
+        result.push_back(',');
+      }
       result.push_back('\n');
+      add_if_brackets(' ');
     }
+    add_if_brackets('[');
     const std::span<std::string_view> row_elements =
         elements.subspan(row * cols, cols);
     fmt::format_to(std::back_inserter(result), "{0:>{1}}",
-                   fmt::join(row_elements, " "), max_element_size);
+                   fmt::join(row_elements, commas ? ", " : " "),
+                   max_element_size);
+    add_if_brackets(']');
   }
+  add_if_brackets(']');
   return result;
 }
 

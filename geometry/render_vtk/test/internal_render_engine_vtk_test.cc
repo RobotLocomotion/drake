@@ -2686,7 +2686,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
   // image.
   const Vector4<int> ref_box_edges = FindBoxEdges(ref_depth);
   ASSERT_TRUE((ref_box_edges.array() > -1).all())
-      << fmt::to_string(fmt_eigen(ref_box_edges.transpose()));
+      << fmt::to_string(fmt_eigen(ref_box_edges));
   const int ref_box_width = ref_box_edges(2) - ref_box_edges(0);
   const int ref_box_height = ref_box_edges(1) - ref_box_edges(3);
   ASSERT_EQ(ref_box_width, ref_box_height);
@@ -2752,7 +2752,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
 
     const Vector4<int> test_edges = FindBoxEdges(depth);
     ASSERT_TRUE((test_edges.array() > -1).all())
-        << fmt::to_string(fmt_eigen(test_edges.transpose()));
+        << fmt::to_string(fmt_eigen(test_edges));
     const int test_box_width = test_edges(2) - test_edges(0);
     const int test_box_height = test_edges(1) - test_edges(3);
 
@@ -2764,18 +2764,18 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
 
     // Confirm that its center is translated.
     EXPECT_NEAR((test_edges(0) + test_edges(2)) / 2.0, w2 / 2.0 + offset_x, 1.0)
-        << fmt::to_string(fmt_eigen(test_edges.transpose()));
+        << fmt::to_string(fmt_eigen(test_edges));
     EXPECT_NEAR((test_edges(1) + test_edges(3)) / 2.0, h2 / 2.0 + offset_y, 1.0)
-        << fmt::to_string(fmt_eigen(test_edges.transpose()));
+        << fmt::to_string(fmt_eigen(test_edges));
 
     {
       // Also confirm it matches for color and label.
       const Vector4<int> color_edges = FindBoxEdges(color);
       ASSERT_EQ(color_edges, test_edges)
-          << fmt::to_string(fmt_eigen(color_edges.transpose()));
+          << fmt::to_string(fmt_eigen(color_edges));
       const Vector4<int> label_edges = FindBoxEdges(label);
       ASSERT_EQ(label_edges, test_edges)
-          << fmt::to_string(fmt_eigen(label_edges.transpose()));
+          << fmt::to_string(fmt_eigen(label_edges));
     }
   }
 

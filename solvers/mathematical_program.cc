@@ -71,14 +71,13 @@ string MathematicalProgram::to_string() const {
   std::ostringstream os;
   if (num_vars() > 0) {
     os << fmt::format("Decision variables: {}\n\n",
-                      fmt_eigen(decision_variables().transpose()));
+                      fmt_eigen(decision_variables()));
   } else {
     os << "No decision variables.\n";
   }
 
   if (num_indeterminates() > 0) {
-    os << fmt::format("Indeterminates: {}\n\n",
-                      fmt_eigen(indeterminates().transpose()));
+    os << fmt::format("Indeterminates: {}\n\n", fmt_eigen(indeterminates()));
   }
 
   for (const auto& b : GetAllCosts()) {
