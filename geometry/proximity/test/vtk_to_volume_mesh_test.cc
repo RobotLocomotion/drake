@@ -83,7 +83,7 @@ GTEST_TEST(VtkToVolumeMeshTest, InverseScaleWinding) {
     for (double sy : {-1.0, 1.0}) {
       for (double sz : {-1.0, 1.0}) {
         const Eigen::Vector3d scale(sx, sy, sz);
-        SCOPED_TRACE(fmt::format("Scale [{}]", fmt_eigen(scale.transpose())));
+        SCOPED_TRACE(fmt::format("Scale {}", fmt_eigen(scale)));
         const VolumeMesh<double> mesh =
             internal::ReadVtkToVolumeMesh(vtk_file, scale);
         ASSERT_EQ(mesh.num_elements(), 12);

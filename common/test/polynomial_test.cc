@@ -399,7 +399,9 @@ GTEST_TEST(PolynomialTest, EigenMatrixPolynomialToStringFmtFormatter) {
   Eigen::Matrix<Polynomiald, 2, 2> poly_mat;
   poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
       Polynomiald("w");
-  EXPECT_EQ(fmt::to_string(fmt_eigen(poly_mat)), "x1 y1\nz1 w1");
+  EXPECT_EQ(fmt::to_string(fmt_eigen(poly_mat)),
+            "[[x1, y1],\n"
+            " [z1, w1]]");
 }
 
 // TODO(2026-07-01): delete test

@@ -367,11 +367,10 @@ TEST_F(PartialsTest, AddScaledEquivalenceToEigen) {
         "  a = values[{}] = {}\n"
         "  b = values[{}] = {}\n"
         "  s = {}\n",
-        value.index, fmt_eigen(value.twin.transpose()),
-        value.lhs_index.value_or(-1),
-        fmt_eigen(values.at(value.lhs_index.value_or(0)).twin.transpose()),
+        value.index, fmt_eigen(value.twin), value.lhs_index.value_or(-1),
+        fmt_eigen(values.at(value.lhs_index.value_or(0)).twin),
         value.rhs_index.value_or(-1),
-        fmt_eigen(values.at(value.rhs_index.value_or(0)).twin.transpose()),
+        fmt_eigen(values.at(value.rhs_index.value_or(0)).twin),
         value.rhs_scale.value_or(std::numeric_limits<double>::quiet_NaN()));
     VectorXd actual = value.partials.make_const_xpr();
     if (actual.size() == 0) {

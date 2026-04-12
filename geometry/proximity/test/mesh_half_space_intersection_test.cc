@@ -347,8 +347,7 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
             "  Found: {}\n"
             "  tolerance: {}\n"
             "  error: {}",
-            f, fmt_eigen(p_WX.transpose()), p_X_expected, p_X_test,
-            kPressureEps, error);
+            f, fmt_eigen(p_WX), p_X_expected, p_X_test, kPressureEps, error);
         return ::testing::AssertionFailure() << message;
       }
     }

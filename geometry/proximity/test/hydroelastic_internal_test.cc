@@ -750,7 +750,7 @@ void TestRigidMeshCube(const Mesh& mesh) {
   for (int v = 0; v < surface_mesh.num_vertices(); ++v) {
     const double dist = surface_mesh.vertex(v).norm();
     ASSERT_NEAR(dist, expected_dist, tolerance)
-        << "for scale: " << fmt::to_string(fmt_eigen(mesh.scale3().transpose()))
+        << "for scale: " << fmt::to_string(fmt_eigen(mesh.scale3()))
         << " at vertex " << v;
   }
 }
