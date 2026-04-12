@@ -63,7 +63,7 @@ template <typename T>
 double Sine<T>::amplitude() const {
   if (!is_const_amplitude_) {
     throw std::logic_error(fmt::format(
-        "The amplitude vector, [{}], cannot be represented as a scalar value. "
+        "The amplitude vector, {}, cannot be represented as a scalar value. "
         "Please use drake::systems::Sine::amplitude_vector() instead.",
         fmt_eigen(amplitude_)));
   }
@@ -74,7 +74,7 @@ template <typename T>
 double Sine<T>::frequency() const {
   if (!is_const_frequency_) {
     throw std::logic_error(fmt::format(
-        "The frequency vector, [{}], cannot be represented as a scalar value. "
+        "The frequency vector, {}, cannot be represented as a scalar value. "
         "Please use drake::systems::Sine::frequency_vector() instead.",
         fmt_eigen(frequency_)));
   }
@@ -85,7 +85,7 @@ template <typename T>
 double Sine<T>::phase() const {
   if (!is_const_phase_) {
     throw std::logic_error(fmt::format(
-        "The phase vector, [{}], cannot be represented as a scalar value. "
+        "The phase vector, {}, cannot be represented as a scalar value. "
         "Please use drake::systems::Sine::phase_vector() instead.",
         fmt_eigen(phase_)));
   }

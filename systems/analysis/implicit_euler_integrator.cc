@@ -134,7 +134,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
 
   // Start from the guess.
   *xtplus = xtplus_guess;
-  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(xtplus->transpose()));
+  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(*xtplus));
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;

@@ -125,7 +125,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
                            const DifferentialInverseKinematicsResult& result) {
     ASSERT_TRUE(result.joint_velocities != std::nullopt);
     drake::log()->info("result.joint_velocities = {}",
-                       fmt_eigen(result.joint_velocities->transpose()));
+                       fmt_eigen(*result.joint_velocities));
 
     const VectorXd q = plant_->GetPositions(*context_);
     auto temp_context = plant_->CreateDefaultContext();
@@ -134,9 +134,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
     const multibody::SpatialVelocity<double> V_AB_actual =
         frame_B.CalcSpatialVelocity(*temp_context, frame_A, frame_A);
-    drake::log()->info("V_AB_actual = {}",
-                       fmt_eigen(V_AB_actual.get_coeffs().transpose()));
-    drake::log()->info("V_AB = {}", fmt_eigen(V_AB.get_coeffs().transpose()));
+    drake::log()->info("V_AB_actual = {}", fmt_eigen(V_AB_actual.get_coeffs()));
+    drake::log()->info("V_AB = {}", fmt_eigen(V_AB.get_coeffs()));
     EXPECT_TRUE(CompareMatrices(V_AB_actual.get_coeffs().normalized(),
                                 V_AB.get_coeffs().normalized(), 1e-6));
 
