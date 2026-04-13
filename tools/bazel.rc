@@ -41,6 +41,18 @@ build --java_runtime_version=remotejdk_11
 build --cxxopt=-std=c++23
 build --host_cxxopt=-std=c++23
 
+# Configure ${PATH} for actions.
+# N.B. Ensure this is consistent with `execute.bzl`.
+build:linux --action_env=PATH=/usr/bin:/bin
+build:macos --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Disable python imports from ~/.local (pip -U) during build and test.
+# https://github.com/bazelbuild/bazel/issues/4939
+# https://github.com/RobotLocomotion/drake/issues/8475
+# TODO(jwnimmer-tri) Try to enable this on macOS as well.
+build:linux --action_env=PYTHONNOUSERSITE=1
+build:linux --test_env=PYTHONNOUSERSITE=1
+
 # Suppress warnings from module externals.
 build --per_file_copt=external/libx11./.*@-w
 build --per_file_copt=external/libxcb./.*@-w
@@ -90,6 +102,28 @@ build:openmp --linkopt=-fopenmp
 build:debug --compilation_mode=dbg
 # Provide a performance cushion for debug builds, 2x the default timeouts.
 build:debug --test_timeout=120,600,1800,7200
+# Enable split debug symbols (Linux only).
+build:linux --fission=dbg
+build:linux --features=per_object_debug_info
+
+# Options for explicitly using GCC.
+# TODO(#24359) Delete this entirely.
+common:gcc --repo_env=CC=gcc
+common:gcc --repo_env=CXX=g++
+build:gcc --action_env=CC=gcc
+build:gcc --action_env=CXX=g++
+build:gcc --host_action_env=CC=gcc
+build:gcc --host_action_env=CXX=g++
+
+# Options for explicitly using Clang.
+# Note that the drake/gen/environment.bazelrc file might override this.
+# TODO(#24359) Delete this entirely.
+common:clang --repo_env=CC=clang
+common:clang --repo_env=CXX=clang++
+build:clang --action_env=CC=clang
+build:clang --action_env=CXX=clang++
+build:clang --host_action_env=CC=clang
+build:clang --host_action_env=CXX=clang++
 
 ### A configuration that enables all optional dependencies. ###
 build:everything --test_tag_filters=-no_everything

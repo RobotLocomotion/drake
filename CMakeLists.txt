@@ -39,7 +39,6 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
 endif()
 
 set(BAZELRC_IMPORTS "tools/bazel.rc")
-set(UNIX_DISTRIBUTION_CODENAME)
 
 # The minimum Darwin version and codename should correspond to the minimum
 # supported macOS version listed in doc/_pages/installation.md and
@@ -57,11 +56,7 @@ if(APPLE)
       "${MINIMUM_MACOS_CODENAME}) or newer."
     )
   endif()
-
-  list(APPEND BAZELRC_IMPORTS "tools/macos.bazelrc")
 else()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
-
   execute_process(
     COMMAND "/usr/bin/arch"
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -70,27 +65,6 @@ else()
     message(FATAL_ERROR "Could NOT query linux arch")
   endif()
   list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
-
-  execute_process(
-    COMMAND "bash" "-c" ". /etc/os-release && echo \${VERSION_CODENAME}"
-    RESULT_VARIABLE OS_RELEASE_RESULT
-    OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  if(NOT OS_RELEASE_RESULT EQUAL 0)
-    message(WARNING "Could NOT read the /etc/os-release VERSION_CODENAME.")
-  else()
-    set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
-    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-      message(WARNING "Could not find config file ${MAYBE_RC}. "
-        "This may indicate that you're using an OS or OS version that "
-        "is not officially supported, so the build configuration cannot be "
-        "fine-tuned. See https://drake.mit.edu/from_source.html for details "
-        "on officially supported platforms when building from source.")
-    else()
-      list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
-    endif()
-  endif()
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
@@ -213,10 +187,17 @@ set(CMAKE_CXX_STANDARD 23)
 if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.14)
 else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL resolute)
-    set(SUPPORTED_PYTHON_VERSION 3.14)
-  else()  # UNIX_DISTRIBUTION_CODENAME := noble
-    set(SUPPORTED_PYTHON_VERSION 3.12)
+  set(SUPPORTED_PYTHON_VERSION 3.14)
+  execute_process(
+    COMMAND "bash" "-c" ". /etc/os-release && echo \${VERSION_CODENAME}"
+    RESULT_VARIABLE OS_RELEASE_RESULT
+    OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(OS_RELEASE_RESULT EQUAL 0)
+    if(UNIX_DISTRIBUTION_CODENAME STREQUAL noble)
+      set(SUPPORTED_PYTHON_VERSION 3.12)
+    endif()
   endif()
 endif()
 
@@ -269,7 +250,7 @@ set(PYTHON_VERSION_MAJOR_MINOR
 if(NOT PYTHON_VERSION_MAJOR_MINOR VERSION_EQUAL SUPPORTED_PYTHON_VERSION)
   message(WARNING
     "The found Python version ${PYTHON_VERSION_MAJOR_MINOR} differs from "
-    "Drake's preferred version ${SUPPORTED_PYTHON_VERSION} on this platform. "
+    "Drake's preferred version ${SUPPORTED_PYTHON_VERSION}. "
     "You may experience compatibility problems that are outside the scope of "
     "Drake's continuous integration test suites."
   )
