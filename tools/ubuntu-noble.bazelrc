@@ -1,8 +1,0 @@
-# TODO(jwnimmer-tri) Delete this unused file from git. It only remains here as a
-# tombstone so that developers don't need to immediately re-run install_prereqs.
-common:clang --repo_env=CC=clang-20
-common:clang --repo_env=CXX=clang++-20
-build:clang --action_env=CC=clang-20
-build:clang --action_env=CXX=clang++-20
-build:clang --host_action_env=CC=clang-20
-build:clang --host_action_env=CXX=clang++-20

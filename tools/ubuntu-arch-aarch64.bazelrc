@@ -1,4 +1,0 @@
-# Options for Ubuntu when running on arm64 as reported by `arch`.
-
-# We don't support Gurobi on arm64.
-build:everything --@drake//tools/flags:with_gurobi=False

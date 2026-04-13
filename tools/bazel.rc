@@ -121,6 +121,7 @@ build:clang --host_action_env=CXX=clang++
 
 ### A configuration that enables all optional dependencies. ###
 build:everything --@drake//tools/flags:with_gurobi=True
+build:everything --@drake//tools/workspace/gurobi:force_disable_when_not_supported=True
 build:everything --@drake//tools/flags:with_mosek=True
 build:everything --@drake//tools/flags:with_snopt=True
 # We'll also use it to test legacy AutoDiff until 2026-07-01 when this flag

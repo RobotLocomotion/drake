@@ -1,11 +1,52 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Internal use only. When set to True, Gurobi will be diabled even when
+# --@drake//tools/flags:with_gurobi=True is set.
+bool_flag(
+    name = "force_disable_when_not_supported",
+    build_setting_default = False,
+)
+
+# Internal use only.
+config_setting(
+    name = "force_disable_when_not_supported_false",
+    flag_values = {":force_disable_when_not_supported": "False"},
+)
+
+# Internal use only. This a funny way of spelling
+#
+#   force_disable := (force_disable_when_not_supported
+#                     AND (NOT (osx OR x86_64)))
+#
+# because we actually need its negation ("NOT force_disable").
 selects.config_setting_group(
-    name = "enabled",
+    name = "dont_force_disable",
+    match_any = [
+        ":force_disable_when_not_supported_false",
+        # Drake CI installs Gurobi on all of our macOS images, but for Linux
+        # images only install on x86_64 (not aarch64). Thus, if we are either
+        # macOS or x86_64, we know we have access to Gurobi.
+        "@platforms//os:osx",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+# Internal use only.
+selects.config_setting_group(
+    name = "enabled_via_flag_or_define",
     match_any = [
         ":enabled_via_flag",
         ":enabled_via_define",
+    ],
+)
+
+selects.config_setting_group(
+    name = "enabled",
+    match_all = [
+        ":enabled_via_flag_or_define",
+        ":dont_force_disable",
     ],
     visibility = [
         "//solvers:__pkg__",

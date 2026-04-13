@@ -56,15 +56,6 @@ if(APPLE)
       "${MINIMUM_MACOS_CODENAME}) or newer."
     )
   endif()
-else()
-  execute_process(
-    COMMAND "/usr/bin/arch"
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    OUTPUT_VARIABLE UBUNTU_ARCH)
-  if(UBUNTU_ARCH STREQUAL "")
-    message(FATAL_ERROR "Could NOT query linux arch")
-  endif()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
 endif()
 
 # This version number should match bazel_compatibility in MODULE.bazel.
