@@ -14,7 +14,6 @@
 #include <vector>
 
 #include <fcl/fcl.h>
-#include <fmt/ostream.h>
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
@@ -1736,44 +1735,95 @@ GTEST_TEST(SignedDistanceToPointBroadphaseTest, MultipleThreshold) {
 
 // Penetration tests -- testing data flow; not testing the value of the query.
 
-// A scene with no geometry reports no penetrations.
-GTEST_TEST(ProximityEngineTests, PenetrationOnEmptyScene) {
+/* ComputePointPairPenetration() tests
+  ProximityEngine's has the following responsibilities:
+  1. Report results for colliding dynamic-dynamic geometry pairs.
+  2. Report *no* results for colliding anchored-anchored geometry pairs.
+  3. Report results for colliding anchored-dynamic geometry pairs.
+  4. Respect collision filter.
+  5. Results are always ordered.
+  6. It should also allow Callback exceptions to propagate through; we won't
+     test this directly -- Drake standard practices and the clear absence of a
+     catch block is sufficient evidence
+
+  This is *not* a test on the math. Testing each of the responsibilities above
+  will be expressed in terms of recognizing whether there is or isn't a reported
+  contact. */
+GTEST_TEST(ProximityEngineTests, ComputePointPairPenetration) {
   ProximityEngine<double> engine;
 
-  auto results = engine.ComputePointPairPenetration({});
-  EXPECT_EQ(results.size(), 0);
-}
+  // Empty engines happily produce no results.
+  EXPECT_TRUE(engine.ComputePointPairPenetration({}).empty());
 
-// A scene with a single anchored geometry reports no penetrations.
-GTEST_TEST(ProximityEngineTests, PenetrationSingleAnchored) {
-  ProximityEngine<double> engine;
+  const Sphere sphere{0.5};
+  // Two spheres with centers 0.9 apart collide (2 * 0.5 = 1.0 > 0.9).
+  const double d = 0.9;
 
-  Sphere sphere{0.5};
-  RigidTransformd pose = RigidTransformd::Identity();
-  const GeometryId id = GeometryId::get_new_id();
-  engine.AddAnchoredGeometry(sphere, pose, id);
-  auto results = engine.ComputePointPairPenetration({{id, pose}});
-  EXPECT_EQ(results.size(), 0);
-}
+  unordered_map<GeometryId, RigidTransformd> X_WGs;
+  auto add_dynamic = [&](const Vector3d& p_WG) -> GeometryId {
+    const GeometryId id = GeometryId::get_new_id();
+    X_WGs[id] = RigidTransformd(p_WG);
+    engine.AddDynamicGeometry(sphere, {}, id);
+    return id;
+  };
+  auto add_anchored = [&](const Vector3d& p_WG) -> GeometryId {
+    const GeometryId id = GeometryId::get_new_id();
+    const RigidTransformd X_WG(p_WG);
+    X_WGs[id] = X_WG;
+    engine.AddAnchoredGeometry(sphere, X_WG, id);
+    return id;
+  };
 
-// Tests that anchored geometry aren't collided against each other -- even if
-// they actually *are* in penetration.
-GTEST_TEST(ProximityEngineTests, PenetrationMultipleAnchored) {
-  ProximityEngine<double> engine;
+  // Each cluster is placed far apart to prevent cross-cluster collisions.
 
-  const double radius = 0.5;
-  Sphere sphere{radius};
-  const GeometryId id1 = GeometryId::get_new_id();
-  std::unordered_map<GeometryId, RigidTransformd> X_WGs;
-  X_WGs.emplace(id1, RigidTransformd::Identity());
-  const GeometryId id2 = GeometryId::get_new_id();
-  RigidTransformd pose = RigidTransformd::Identity();
-  engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
-  pose.set_translation({1.8 * radius, 0, 0});
-  X_WGs.emplace(id2, pose);
-  engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
-  auto results = engine.ComputePointPairPenetration(X_WGs);
-  EXPECT_EQ(results.size(), 0);
+  // Responsibility 1: colliding dynamic-dynamic pair IS reported.
+  const GeometryId id_A = add_dynamic({0, 0, 0});
+  const GeometryId id_B = add_dynamic({d, 0, 0});
+
+  // Responsibility 2: colliding anchored-anchored pair is NOT reported.
+  add_anchored({0, 100, 0});
+  add_anchored({d, 100, 0});
+
+  // Responsibility 3: colliding dynamic-anchored pair IS reported.
+  const GeometryId id_C = add_dynamic({0, 200, 0});
+  const GeometryId id_D = add_anchored({d, 200, 0});
+
+  // Responsibility 4: filtered dynamic-dynamic pair is NOT reported.
+  const GeometryId id_G = add_dynamic({0, 300, 0});
+  const GeometryId id_H = add_dynamic({d, 300, 0});
+  engine.collision_filter().Apply(
+      CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_G, id_H}),
+      [id_G, id_H](const GeometrySet&, CollisionFilterScope) {
+        return std::unordered_set<GeometryId>{id_G, id_H};
+      },
+      false /* is_invariant */);
+
+  engine.UpdateWorldPoses(X_WGs);
+  const std::vector<PenetrationAsPointPair<double>> results =
+      engine.ComputePointPairPenetration(X_WGs);
+
+  // Helper to extract the sorted id pairs from a result.
+  auto ids_of = [](const PenetrationAsPointPair<double>& p) {
+    return std::make_pair(p.id_A, p.id_B);
+  };
+  // The engine guarantees id_A < id_B within each pair.
+  const auto pair_AB =
+      std::make_pair(std::min(id_A, id_B), std::max(id_A, id_B));
+  const auto pair_CD =
+      std::make_pair(std::min(id_C, id_D), std::max(id_C, id_D));
+
+  // Responsibilities 1 and 3 each contribute one pair; 2 and 4 contribute none.
+  ASSERT_EQ(results.size(), 2);
+  EXPECT_EQ(ids_of(results[0]), pair_AB);
+  EXPECT_EQ(ids_of(results[1]), pair_CD);
+
+  // Responsibility 5: results are stable (ordered) across repeated calls.
+  engine.UpdateWorldPoses(X_WGs);
+  const std::vector<PenetrationAsPointPair<double>> results2 =
+      engine.ComputePointPairPenetration(X_WGs);
+  ASSERT_EQ(results2.size(), 2);
+  EXPECT_EQ(ids_of(results2[0]), ids_of(results[0]));
+  EXPECT_EQ(ids_of(results2[1]), ids_of(results[1]));
 }
 
 // Utility test for evaluating the following "ResultOrdering" test. It produces
@@ -1823,34 +1873,6 @@ unordered_map<GeometryId, RigidTransformd> MakeCollidingRing(double radius,
     poses[GeometryId::get_new_id()] = RigidTransformd(p_WSo);
   }
   return poses;
-}
-
-// Confirms that the ComputePointPairPenetration() computation returns the
-// same results twice in a row. This test is explicitly required because it is
-// known that updating the pose in the FCL tree can lead to erratic ordering.
-GTEST_TEST(ProximityEngineTests, PenetrationAsPointPairResultOrdering) {
-  ProximityEngine<double> engine;
-
-  const double r = 0.5;
-  // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
-  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, 4);
-
-  const Sphere sphere{r};
-  for (const auto& pair : poses) {
-    engine.AddDynamicGeometry(sphere, {}, pair.first);
-  }
-  engine.UpdateWorldPoses(poses);
-  const auto results1 = engine.ComputePointPairPenetration(poses);
-  ASSERT_EQ(results1.size(), poses.size());
-
-  engine.UpdateWorldPoses(poses);
-  const auto results2 = engine.ComputePointPairPenetration(poses);
-  ASSERT_EQ(results1.size(), poses.size());
-
-  for (size_t i = 0; i < poses.size(); ++i) {
-    EXPECT_EQ(results1[i].id_A, results2[i].id_A);
-    EXPECT_EQ(results1[i].id_B, results2[i].id_B);
-  }
 }
 
 // Confirms that the FindCollisionCandidates() computation returns the
@@ -2024,429 +2046,36 @@ TEST_F(ProximityEngineHydroWithFallback,
   }
 }
 
-// These tests validate collisions/distance between spheres. This does *not*
-// test against other geometry types because we assume FCL works. This merely
-// confirms that the ProximityEngine functions provide the correct mapping.
-
-// Common class for evaluating a simple penetration case between two spheres.
-// This tests that collisions that are expected are reported between
-//   1. dynamic-anchored
-//   2. dynamic-dynamic
-// It uses spheres to confirm that the collision results are as expected.
-// These are the only sphere-sphere tests because the assumption is that if you
-// can get *any* sphere-sphere collision test right, you can get all of them
-// right.
-// NOTE: FCL does not document the case where two spheres have coincident
-// centers; therefore it is not tested here.
-class SimplePenetrationTest : public ::testing::Test {
- protected:
-  // Moves the dynamic sphere to either a penetrating or non-penetrating
-  // position. The sphere is indicated by its `id` which belongs to the given
-  // `source_id`. If `is_colliding` is true, the sphere is placed in a colliding
-  // configuration.
-  //
-  // Non-colliding state
-  //       y           x = free_x_
-  //        │          │
-  //       *│*         o o
-  //    *   │   *   o       o
-  //   *    │    * o         o
-  // ──*────┼────*─o─────────o───────── x
-  //   *    │    * o         o
-  //    *   │   *   o       o
-  //       *│*         o o
-  //
-  // Colliding state
-  //       y       x = colliding_x_
-  //        │      │
-  //       *│*    o o
-  //    *   │  o*      o
-  //   *    │ o  *      o
-  // ──*────┼─o──*──────o────────────── x
-  //   *    │ o  *      o
-  //    *   │  o*      o
-  //       *│*    o o
-
-  // Updates a pose in X_WGs_ to be colliding or non-colliding. Then updates the
-  // position of all dynamic geometries.
-  void MoveDynamicSphere(GeometryId id, bool is_colliding,
-                         ProximityEngine<double>* engine = nullptr) {
-    engine = engine == nullptr ? &engine_ : engine;
-
-    DRAKE_DEMAND(engine->num_geometries() == static_cast<int>(X_WGs_.size()));
-
-    const double x_pos = is_colliding ? colliding_x_ : free_x_;
-    X_WGs_[id].set_translation({x_pos, 0, 0});
-
-    engine->UpdateWorldPoses(X_WGs_);
-  }
-
-  // Poses have been defined as doubles; get them in the required scalar type.
-  template <typename T>
-  unordered_map<GeometryId, RigidTransform<T>> GetTypedPoses() const {
-    unordered_map<GeometryId, RigidTransform<T>> typed_X_WG;
-    for (const auto& id_pose_pair : X_WGs_) {
-      const GeometryId id = id_pose_pair.first;
-      const RigidTransformd& X_WG = id_pose_pair.second;
-      typed_X_WG[id] = X_WG.cast<T>();
-    }
-    return typed_X_WG;
-  }
-
-  // Compute penetration and confirm that a single penetration with the expected
-  // properties was found. Provide the geometry ids of the sphere located at
-  // the origin and the sphere positioned to be in collision.
-  template <typename T>
-  void ExpectPenetration(GeometryId origin_sphere, GeometryId colliding_sphere,
-                         ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<T>> penetration_results =
-        engine->ComputePointPairPenetration(GetTypedPoses<T>());
-    ASSERT_EQ(penetration_results.size(), 1);
-    const PenetrationAsPointPair<T>& penetration = penetration_results[0];
-
-    std::vector<SignedDistancePair<T>> distance_results =
-        engine->ComputeSignedDistancePairwiseClosestPoints(GetTypedPoses<T>(),
-                                                           kInf);
-    ASSERT_EQ(distance_results.size(), 1);
-    const SignedDistancePair<T>& distance = distance_results[0];
-
-    // There are no guarantees as to the ordering of which element is A and
-    // which is B. This test enforces an order for validation.
-
-    // First confirm membership
-    EXPECT_TRUE((penetration.id_A == origin_sphere &&
-                 penetration.id_B == colliding_sphere) ||
-                (penetration.id_A == colliding_sphere &&
-                 penetration.id_B == origin_sphere));
-
-    EXPECT_TRUE(
-        (distance.id_A == origin_sphere && distance.id_B == colliding_sphere) ||
-        (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
-
-    // Assume A => origin_sphere and b => colliding_sphere
-    // NOTE: In this current version, penetration is only reported in double.
-    PenetrationAsPointPair<double> expected;
-    // This implicitly tests the *ordering* of the two reported ids. It must
-    // always be in *this* order.
-    bool origin_is_A = origin_sphere < colliding_sphere;
-    expected.id_A = origin_is_A ? origin_sphere : colliding_sphere;
-    expected.id_B = origin_is_A ? colliding_sphere : origin_sphere;
-    expected.depth = 2 * radius_ - colliding_x_;
-    // Contact point on the origin_sphere.
-    Vector3<double> p_WCo{radius_, 0, 0};
-    // Contact point on the colliding_sphere.
-    Vector3<double> p_WCc{colliding_x_ - radius_, 0, 0};
-    expected.p_WCa = origin_is_A ? p_WCo : p_WCc;
-    expected.p_WCb = origin_is_A ? p_WCc : p_WCo;
-    Vector3<double> norm_into_B = Vector3<double>::UnitX();
-    expected.nhat_BA_W = origin_is_A ? -norm_into_B : norm_into_B;
-
-    EXPECT_EQ(penetration.id_A, expected.id_A);
-    EXPECT_EQ(penetration.id_B, expected.id_B);
-    EXPECT_EQ(penetration.depth, expected.depth);
-    EXPECT_TRUE(CompareMatrices(penetration.p_WCa, expected.p_WCa, 1e-13,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(penetration.p_WCb, expected.p_WCb, 1e-13,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W, expected.nhat_BA_W,
-                                1e-13, MatrixCompareType::absolute));
-
-    // Should return the penetration depth here.
-    SignedDistancePair<T> expected_distance;
-    expected_distance.distance = -expected.depth;
-    expected_distance.id_A = origin_sphere;
-    expected_distance.id_B = colliding_sphere;
-    expected_distance.p_ACa = Eigen::Vector3d(radius_, 0, 0);
-    expected_distance.p_BCb = Eigen::Vector3d(-radius_, 0, 0);
-    if (expected_distance.id_B < expected_distance.id_A) {
-      std::swap(expected_distance.id_A, expected_distance.id_B);
-      std::swap(expected_distance.p_ACa, expected_distance.p_BCb);
-    }
-    EXPECT_LT(distance.id_A, distance.id_B);
-    CompareSignedDistancePair(distance, expected_distance,
-                              std::numeric_limits<double>::epsilon());
-  }
-
-  // The two spheres collides, but are ignored due to the setting in the
-  // collision filter.
-  template <typename T>
-  void ExpectIgnoredPenetration(GeometryId origin_sphere,
-                                GeometryId colliding_sphere,
-                                ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<T>> penetration_results =
-        engine->ComputePointPairPenetration(GetTypedPoses<T>());
-    EXPECT_EQ(penetration_results.size(), 0);
-
-    std::vector<SignedDistancePair<T>> distance_results =
-        engine->ComputeSignedDistancePairwiseClosestPoints(GetTypedPoses<T>(),
-                                                           kInf);
-    ASSERT_EQ(distance_results.size(), 0);
-  }
-
-  // Compute penetration and confirm that none were found.
-  template <typename T>
-  void ExpectNoPenetration(GeometryId origin_sphere,
-                           GeometryId colliding_sphere,
-                           ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> penetration_results =
-        engine->ComputePointPairPenetration(GetTypedPoses<T>());
-    EXPECT_EQ(penetration_results.size(), 0);
-
-    std::vector<SignedDistancePair<double>> distance_results =
-        engine->ComputeSignedDistancePairwiseClosestPoints(X_WGs_, kInf);
-    ASSERT_EQ(distance_results.size(), 1);
-    SignedDistancePair<double> distance = distance_results[0];
-
-    // There are no guarantees as to the ordering of which element is A and
-    // which is B. This test enforces an order for validation.
-    EXPECT_TRUE(
-        (distance.id_A == origin_sphere && distance.id_B == colliding_sphere) ||
-        (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
-
-    bool origin_is_A = origin_sphere < colliding_sphere;
-    SignedDistancePair<double> expected_distance;
-    expected_distance.id_A = origin_is_A ? origin_sphere : colliding_sphere;
-    expected_distance.id_B = origin_is_A ? colliding_sphere : origin_sphere;
-    expected_distance.distance = free_x_ - 2 * radius_;
-    // Contact point on the origin_sphere.
-    Vector3<double> p_OCo{radius_, 0, 0};
-    // Contact point on the colliding_sphere.
-    Vector3<double> p_CCc{-radius_, 0, 0};
-    expected_distance.p_ACa = origin_is_A ? p_OCo : p_CCc;
-    expected_distance.p_BCb = origin_is_A ? p_CCc : p_OCo;
-
-    CompareSignedDistancePair(distance, expected_distance,
-                              std::numeric_limits<double>::epsilon());
-  }
-
-  ProximityEngine<double> engine_;
-  unordered_map<GeometryId, RigidTransformd> X_WGs_;
-  const double radius_{0.5};
-  const Sphere sphere_{radius_};
-  const double free_x_{2.5 * radius_};
-  const double colliding_x_{1.5 * radius_};
-};
-
-// Tests collision between dynamic and anchored sphere. One case colliding, one
-// case *not* colliding.
-TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
-  // Set up anchored geometry.
-  RigidTransformd pose = RigidTransformd::Identity();
-  const GeometryId anchored_id = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, anchored_id);
-
-  // Set up dynamic geometry.
-  const GeometryId dynamic_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic_id);
-  EXPECT_EQ(engine_.num_geometries(), 2);
-
-  X_WGs_[anchored_id] = pose;
-  X_WGs_[dynamic_id] = RigidTransformd::Identity();
-
-  // Non-colliding case.
-  MoveDynamicSphere(dynamic_id, false /* not colliding */);
-  ExpectNoPenetration(anchored_id, dynamic_id, &engine_);
-
-  // Colliding case.
-  MoveDynamicSphere(dynamic_id, true /* colliding */);
-  ExpectPenetration(anchored_id, dynamic_id, &engine_);
-
-  // Test colliding case on copy.
-  ProximityEngine<double> copy_engine(engine_);
-  ExpectPenetration(anchored_id, dynamic_id, &copy_engine);
-
-  // Test scalar-converted engines.
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToScalarType<AutoDiffXd>();
-  ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
-  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
-      engine_.ToScalarType<Expression>();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ExpectPenetration(anchored_id, dynamic_id, sym_engine.get()),
-      ".*are not supported for scalar type drake::symbolic::Expression.*");
-}
-
-// Performs the same collision test between two dynamic spheres which belong to
-// the same source.
-TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
-  const GeometryId origin_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, origin_id);
-
-  GeometryId collide_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, collide_id);
-  EXPECT_EQ(engine_.num_geometries(), 2);
-
-  X_WGs_[origin_id] = RigidTransformd::Identity();
-  X_WGs_[collide_id] = RigidTransformd::Identity();
-
-  // Non-colliding case.
-  MoveDynamicSphere(collide_id, false /* not colliding */);
-  ExpectNoPenetration(origin_id, collide_id, &engine_);
-
-  // Colliding case.
-  MoveDynamicSphere(collide_id, true /* colliding */);
-  ExpectPenetration(origin_id, collide_id, &engine_);
-
-  // Test colliding case on copy.
-  ProximityEngine<double> copy_engine(engine_);
-  ExpectPenetration(origin_id, collide_id, &copy_engine);
-
-  // Test scalar-converted engines.
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToScalarType<AutoDiffXd>();
-  ExpectPenetration(origin_id, collide_id, ad_engine.get());
-  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
-      engine_.ToScalarType<Expression>();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ExpectPenetration(origin_id, collide_id, sym_engine.get()),
-      ".*are not supported for scalar type drake::symbolic::Expression.*");
-}
-
-// Tests if collisions exist between dynamic and anchored sphere. One case
-// colliding, one case *not* colliding.
-TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
-  // Set up anchored geometry.
-  const RigidTransformd pose = RigidTransformd::Identity();
-  const GeometryId anchored_id = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, anchored_id);
-
-  // Set up dynamic geometry.
-  const GeometryId dynamic_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic_id);
-  EXPECT_EQ(engine_.num_geometries(), 2);
-
-  X_WGs_[anchored_id] = pose;
-  X_WGs_[dynamic_id] = RigidTransformd::Identity();
-
-  // Non-colliding case.
-  MoveDynamicSphere(dynamic_id, false /* not colliding */);
-  EXPECT_FALSE(engine_.HasCollisions());
-
-  // Colliding case.
-  MoveDynamicSphere(dynamic_id, true /* colliding */);
-  EXPECT_TRUE(engine_.HasCollisions());
-
-  // Test colliding case on copy.
-  ProximityEngine<double> copy_engine(engine_);
-  EXPECT_TRUE(copy_engine.HasCollisions());
-
-  // Test scalar-converted engines.
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToScalarType<AutoDiffXd>();
-  EXPECT_TRUE(ad_engine->HasCollisions());
-  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
-      engine_.ToScalarType<Expression>();
-  EXPECT_TRUE(sym_engine->HasCollisions());
-}
-
-// Performs the same collision test between two dynamic spheres which belong to
-// the same source.
-TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
-  const GeometryId origin_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, origin_id);
-
-  GeometryId collide_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, collide_id);
-  EXPECT_EQ(engine_.num_geometries(), 2);
-
-  X_WGs_[origin_id] = RigidTransformd::Identity();
-  X_WGs_[collide_id] = RigidTransformd::Identity();
-
-  // Non-colliding case.
-  MoveDynamicSphere(collide_id, false /* not colliding */);
-  EXPECT_FALSE(engine_.HasCollisions());
-
-  // Colliding case.
-  MoveDynamicSphere(collide_id, true /* colliding */);
-  EXPECT_TRUE(engine_.HasCollisions());
-
-  // Test colliding case on copy.
-  ProximityEngine<double> copy_engine(engine_);
-  EXPECT_TRUE(copy_engine.HasCollisions());
-
-  // Test scalar-converted engines.
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToScalarType<AutoDiffXd>();
-  EXPECT_TRUE(ad_engine->HasCollisions());
-  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
-      engine_.ToScalarType<Expression>();
-  EXPECT_TRUE(sym_engine->HasCollisions());
-}
-
 // There was a bug (23406). If anchored geometries existed but they were not
 // in collision with dynamic geometries, collisions between dynamics geometries
 // would be ignored and the HasCollisions() query would return a lie. This is
 // a test against that bug coming back.
-TEST_F(SimplePenetrationTest, HasCollisionsAnchoredInterference) {
+GTEST_TEST(ProximityEngineTests, HasCollisionsAnchoredInterference) {
+  ProximityEngine<double> engine;
+  const Sphere sphere{0.5};
+  unordered_map<GeometryId, RigidTransformd> X_WGs_;
+
   const GeometryId dynamic_id_1 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic_id_1);
+  engine.AddDynamicGeometry(sphere, {}, dynamic_id_1);
 
   const GeometryId dynamic_id_2 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic_id_2);
-  EXPECT_EQ(engine_.num_geometries(), 2);
+  engine.AddDynamicGeometry(sphere, {}, dynamic_id_2);
+  EXPECT_EQ(engine.num_geometries(), 2);
 
   X_WGs_[dynamic_id_1] = RigidTransformd::Identity();
   X_WGs_[dynamic_id_2] = RigidTransformd::Identity();
 
-  EXPECT_TRUE(engine_.HasCollisions());
+  EXPECT_TRUE(engine.HasCollisions());
 
   // The anchored geometry must be non-colliding, but close enough that its
   // bounding box overlaps.
   const Vector3d p_WA =
-      Vector3d(1, 1, 0).normalized() * (sphere_.radius() * 2.1);
+      Vector3d(1, 1, 0).normalized() * (sphere.radius() * 2.1);
   const GeometryId anchored_id = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, RigidTransformd(p_WA), anchored_id);
-  EXPECT_EQ(engine_.num_geometries(), 3);
+  engine.AddAnchoredGeometry(sphere, RigidTransformd(p_WA), anchored_id);
+  EXPECT_EQ(engine.num_geometries(), 3);
   // We still have collisions (original code would report false).
-  EXPECT_TRUE(engine_.HasCollisions());
-}
-
-// Performs the same collision test where the geometries have been filtered.
-TEST_F(SimplePenetrationTest, WithCollisionFilters) {
-  GeometryId origin_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, origin_id);
-
-  GeometryId collide_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, collide_id);
-  ASSERT_EQ(engine_.num_geometries(), 2);
-
-  X_WGs_[origin_id] = RigidTransformd::Identity();
-  X_WGs_[collide_id] = RigidTransformd::Identity();
-
-  ASSERT_TRUE(engine_.collision_filter().CanCollideWith(origin_id, collide_id));
-
-  // I know the GeometrySet only has id_A and id_B, so I'll construct the
-  // extracted set by hand.
-  auto extract_ids = [origin_id, collide_id](const GeometrySet&,
-                                             CollisionFilterScope) {
-    return std::unordered_set<GeometryId>{origin_id, collide_id};
-  };
-  engine_.collision_filter().Apply(CollisionFilterDeclaration().ExcludeWithin(
-                                       GeometrySet{origin_id, collide_id}),
-                                   extract_ids, false /* is_invariant */);
-
-  EXPECT_FALSE(
-      engine_.collision_filter().CanCollideWith(origin_id, collide_id));
-
-  // Non-colliding case.
-  MoveDynamicSphere(collide_id, false /* not colliding */);
-  ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
-
-  // Colliding case.
-  MoveDynamicSphere(collide_id, true /* colliding */);
-  ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
-
-  // Test colliding case on copy.
-  ProximityEngine<double> copy_engine(engine_);
-  ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
-
-  // Test scalar-converted engines.
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToScalarType<AutoDiffXd>();
-  ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
-  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
-      engine_.ToScalarType<Expression>();
-  ExpectIgnoredPenetration(origin_id, collide_id, sym_engine.get());
+  EXPECT_TRUE(engine.HasCollisions());
 }
 
 // Confirms that non-positive thresholds produce the right value. Creates three
@@ -2500,129 +2129,6 @@ GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
   EXPECT_EQ(results_barely_out.size(), 0u);
 }
 
-// Given a sphere S and box B. The box's height and depth are large (much larger
-// than the diameter of the sphere), but the box's *width* is *less* than the
-// sphere diameter. The sphere will contact it such that it's penetration is
-// along the "width" axis.
-//
-// The sphere will start in a non-colliding state and subsequently move in the
-// width direction. As long as the sphere's center is on the same side of the
-// box's "origin", the contact normal direction should remain unchanged. But as
-// soon as it crosses the origin, the contact normal should flip directions.
-//
-// Non-colliding state - no collision reported.
-//       y
-//      ┇ │ ┇       ←  movement of sphere
-//      ┃ │ ┃       o o
-//      ┃ │ ┃    o       o
-//      ┃ │ ┃   o         o
-// ─────╂─┼─╂───o────c────o───────── x
-//      ┃ │ ┃   o         o
-//      ┃ │ ┃    o       o
-//      ┃ │ ┃       o o            `c' marks the sphere center
-//      ┇ │ ┇
-//
-// Sphere's center is just to the right of the box's origin.
-// From the first contact up to this point, the contact normal should point to
-// the left (into the box). The direction is based on how PenetrationAsPointPair
-// defines the normal direction -- from geometry B into geometry A. Based on
-// how the geometries are defined, this means from the sphere, into the box.
-//       y
-//      ┇ │ ┇       ←  movement of sphere
-//      ┃ o o
-//     o┃ │ ┃  o
-//    o ┃ │ ┃   o
-// ───o─╂─┼c╂───o─────────────── x
-//    o ┃ │ ┃   o
-//     o┃ │ ┃  o
-//      ┃ o o
-//      ┇ │ ┇
-//
-// Discontinuous colliding state - crossed the origin; contact normal flips to
-// the right.
-//       y
-//        ┇ │ ┇       ←  movement of sphere
-//        o o ┃
-//     o  ┃ │ ┃o
-//    o   ┃ │ ┃ o
-// ───o───╂c┼─╂─o─────────────── x
-//    o   ┃ │ ┃ o
-//     o  ┃ │ ┃o
-//        o o ┃
-//        ┇ │ ┇
-//
-// Note: this test is in direct response to a very *particular* observed bug
-// in simulation which pointed to errors in FCL. This is provided as a
-// regression test once FCL is patched. The original failure condition has been
-// reproduced with this simplified version of the original problem. Note:
-// passing this test does not guarantee general correctness of box-sphere
-// collision; only that this particular bug is gone.
-
-// Supporting structure for the query.
-struct SpherePunchData {
-  const std::string description;
-  const Vector3d sphere_pose;
-  const int contact_count;
-  // This is the contact normal pointing *into* the box.
-  const Vector3d contact_normal;
-  const double depth;
-};
-
-GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
-  ProximityEngine<double> engine;
-  const double radius = 0.5;
-  const double w = radius;  // Box width smaller than diameter.
-  const double half_w = w / 2;
-  const double h = 10 * radius;  // Box height much larger than sphere.
-  const double d = 10 * radius;  // Box depth much larger than sphere.
-  const double eps = std::numeric_limits<double>::epsilon();
-  const GeometryId box_id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Box{w, h, d}, {}, box_id);
-  const GeometryId sphere_id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Sphere{radius}, {}, sphere_id);
-
-  unordered_map<GeometryId, RigidTransformd> poses{
-      {box_id, RigidTransformd::Identity()},
-      {sphere_id, RigidTransformd::Identity()}};
-  // clang-format off
-  std::vector<SpherePunchData> test_data{
-      // In non-penetration, contact_normal and depth values don't matter; they
-      // are not tested.
-      {"non-penetration",
-       {radius + half_w + 0.1, 0.0, 0.0}, 0, {0.0, 0.0, 0.0}, -1.0},
-      {"shallow penetration -- sphere center outside of box",
-       {radius + 0.75 * half_w, 0.0, 0.0}, 1, {-1.0, 0.0, 0.0}, 0.25 * half_w},
-      {"deep penetration -- sphere contacts opposite side of the box",
-       {radius - half_w, 0.0, 0.0}, 1, {-1.0, 0.0, 0.0}, w},
-      {"sphere's origin is just to the right of the box center",
-       {eps, 0.0, 0.0}, 1, {-1.0, 0.0, 0.0}, radius + half_w - eps},
-      {"sphere's center has crossed the box's origin - flipped normal",
-       {-eps, 0.0, 0.0}, 1, {1.0, 0.0, 0.0}, radius + half_w - eps}};
-  // clang-format on
-  for (const auto& test : test_data) {
-    poses[sphere_id].set_translation(test.sphere_pose);
-    engine.UpdateWorldPoses(poses);
-    std::vector<PenetrationAsPointPair<double>> results =
-        engine.ComputePointPairPenetration(poses);
-
-    ASSERT_EQ(static_cast<int>(results.size()), test.contact_count)
-        << "Failed for the " << test.description << " case";
-    if (test.contact_count == 1) {
-      const PenetrationAsPointPair<double>& penetration = results[0];
-      // Normal direction is predicated on the sphere being geometry B.
-      ASSERT_EQ(penetration.id_A, box_id);
-      ASSERT_EQ(penetration.id_B, sphere_id);
-      EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W, test.contact_normal,
-                                  eps, MatrixCompareType::absolute))
-          << "Failed for the " << test.description << " case";
-      // For this simple, axis-aligned test (where all the values are nicely
-      // powers of 2), I should expect perfect answers.
-      EXPECT_EQ(penetration.depth - test.depth, 0)
-          << "Failed for the " << test.description << " case";
-    }
-  }
-}
-
 // TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
 //  testing in proximity engine. They should only test the following:
 //  Successful evaluation between two dynamic shapes and between a dynamic
@@ -2640,7 +2146,11 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
 // anchored geometry has the identity transformation. This test confirms that
 // this configuration occurs; the dynamic sphere and anchored sphere are
 // configured away from the origin in collision. Without proper broadphase
-// initialization for the anchored geometry, no collision is reported.
+// initialization for the anchored geometry, no collision is reported. We
+// also confirm that it gets initialized properly when cloned.
+//
+// This test uses HasCollisions() to exercise the broadphase, but it is not
+// a test on HasCollisions() logic (that is tested elsewhere).
 GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
   ProximityEngine<double> engine;
   GeometryId id_D = GeometryId::get_new_id();
@@ -2655,15 +2165,13 @@ GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
   std::unordered_map<GeometryId, math::RigidTransform<double>> X_WGs{
       {id_A, X_WA}, {id_D, X_WD}};
   engine.UpdateWorldPoses(X_WGs);
-  auto pairs = engine.ComputePointPairPenetration(X_WGs);
 
-  EXPECT_EQ(pairs.size(), 1);
+  EXPECT_TRUE(engine.HasCollisions());
 
   // Confirm that it survives copying.
   ProximityEngine<double> engine_copy(engine);
   engine_copy.UpdateWorldPoses({{id_D, X_WD}});
-  auto pairs_copy = engine_copy.ComputePointPairPenetration(X_WGs);
-  EXPECT_EQ(pairs_copy.size(), 1);
+  EXPECT_TRUE(engine_copy.HasCollisions());
 }
 
 // Basic smoke test for the autodiffibility of the signed distance computation.
@@ -2839,25 +2347,6 @@ GTEST_TEST(ProximityEngineTests,
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::AutoDiffXd.*");
-}
-
-// Tests that an unsupported geometry causes the engine to throw.
-GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
-  ProximityEngine<Expression> engine;
-
-  // Add two geometries that can't be queried.
-  const GeometryId id1 = GeometryId::get_new_id();
-  const GeometryId id2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Box(1, 2, 3), {}, id1);
-  engine.AddDynamicGeometry(Box(2, 4, 6), {}, id2);
-
-  const unordered_map<GeometryId, RigidTransform<Expression>> X_WGs{
-      {id1, RigidTransform<Expression>::Identity()},
-      {id2, RigidTransform<Expression>::Identity()}};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputePointPairPenetration(X_WGs),
-      "Penetration queries between shapes 'Box' and 'Box' are not supported "
-      "for scalar type drake::symbolic::Expression.*");
 }
 
 // Test fixture for deformable contact.
