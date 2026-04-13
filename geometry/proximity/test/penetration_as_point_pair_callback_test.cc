@@ -11,9 +11,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/test/fcl_utilities.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -25,6 +27,7 @@ namespace internal {
 namespace penetration_as_point_pair {
 namespace {
 
+using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
 using fcl::Sphered;
@@ -33,6 +36,7 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_shared;
+using std::unordered_map;
 using std::vector;
 using symbolic::Expression;
 
@@ -530,6 +534,453 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
                               hs2_id);
   UnsupportedGeometry<AutoDiffXd>(this->halfspace_, halfspace2,
                                   this->id_halfspace_, hs2_id);
+}
+
+// This is a one-off test. Exposed in issue #10577. A point penetration pair
+// was returned for a zero-depth contact. This reproduces the geometry that
+// manifested the error. The reproduction isn't *exact*; it's been reduced to
+// a simpler configuration. Specifically, the important characteristics are:
+//   - both box and cylinder are ill aspected (one dimension is several orders
+//     of magnitude smaller than the other two),
+//   - the cylinder is placed away from the center of the box face,
+//   - the box is rotated 90 degrees around it's z-axis -- note swapping box
+//     dimensions with an identity rotation did *not* produce equivalent
+//     results, and
+//   - FCL uses GJK/EPA to solve box-cylinder collision (this is beyond control
+//     of this test).
+//
+// Libccd upgraded how it handles degenerate simplices. The upshot of that is
+// FCL would still return the same penetration depth, but instead of returning
+// a gibberish normal, it returns a zero vector. We want to make sure we don't
+// report zero-penetration as penetration, even in these numerically,
+// ill-conditioned scenarios. So, we address it up to a tolerance.
+TEST_F(PenetrationAsPointPairCallbackTest, Issue10577Regression_Osculation) {
+  GeometryId id_A = GeometryId::get_new_id();
+  GeometryId id_B = GeometryId::get_new_id();
+
+  // Original translations were p_WA = (-0.145, -0.63, 0.2425) and
+  // p_WB = (0, -0.6, 0.251), respectively.
+  RigidTransformd X_WA(Eigen::AngleAxisd{M_PI_2, Vector3d::UnitZ()},
+                       Vector3d{-0.25, 0, 0});
+  RigidTransformd X_WB(Vector3d{0, 0, 0.0085});
+  std::unique_ptr<CollisionObjectd> box =
+      MakeFclObject(Box(0.49, 0.63, 0.015), id_A, /* is_dynamic= */ true, X_WA);
+  std::unique_ptr<CollisionObjectd> cylinder =
+      MakeFclObject(Cylinder(0.08, 0.002), id_B, /* is_dynamic= */ true, X_WB);
+  const unordered_map<GeometryId, RigidTransformd> X_WG{{id_A, X_WA},
+                                                        {id_B, X_WB}};
+
+  vector<PenetrationAsPointPair<double>> pairs;
+  CallbackData<double> callback_data(&collision_filter_, &X_WG, &pairs);
+  Callback<double>(box.get(), cylinder.get(), &callback_data);
+  EXPECT_EQ(pairs.size(), 0);
+}
+
+// Robust Box-Primitive tests. Tests collision of the box with other primitives
+// in a uniform framework. These tests parallel tests located in fcl.
+//
+// All of the tests below here are using the callback to exercise the black box.
+// They exist because of FCL; FCL's unit tests were sporadic at best and these
+// tests revealed errors/properties of FCL that weren't otherwise apparent.
+// Ultimately, these tests don't belong here. But they can be re-used when we
+// replace FCL with Drake's own implementations.
+//
+// This performs a very specific test. It collides a rotated box with a
+// surface that is tangent to the z = 0 plane. The box is a cube with unit size.
+// The goal is to transform the box such that:
+//   1. the corner of the box C, located at p_BoC_B = (-0.5, -0.5, -0.5),
+//      transformed by the box's pose X_WB, ends up at the position
+//      p_WC = (0, 0, -kDepth), i.e., p_WC = X_WB * p_BoC_B, and
+//   2. all other corners are transformed to lie above the z = 0 plane.
+//
+// In this configuration, the corner C becomes the unique point of deepest
+// penetration in the interior of the half space.
+//
+// It is approximately *this* picture
+//        ┆  ╱╲
+//        ┆ ╱  ╲
+//        ┆╱    ╲
+//       ╱┆╲    ╱
+//      ╱ ┆ ╲  ╱
+//     ╱  ┆  ╲╱
+//     ╲  ┆  ╱
+//      ╲ ┆ ╱
+//  _____╲┆╱_____    ╱____ With small penetration depth of d
+//  ░░░░░░┆░░░░░░    ╲
+//  ░░░░░░┆░░░░░░
+//  ░░░Tangent░░░
+//  ░░░░shape░░░░
+//  ░░interior░░░
+//  ░░░░░░┆░░░░░░
+//
+// We can use this against various *convex* shapes to determine uniformity of
+// behavior. As long as the convex tangent shape *touches* the z = 0 plane at
+// (0, 0, 0), and the shape is *large* compared to the penetration depth, then
+// we should get a fixed, known contact. Specifically, if we assume the tangent
+// shape is A and the box is B, then
+//   - the normal is (0, 0, -1) from box into the plane,
+//   - the penetration depth is the specified depth used to configure the
+//     position of the box, and
+//   - the contact position is (0, 0, -depth / 2).
+//
+// Every convex shape type can be used as the tangent shape as follows:
+//   - plane: simply define the z = 0 plane.
+//   - box: define a box whose top face lies on the z = 0 and encloses the
+//     origin.
+//   - sphere: place the sphere at (0, 0 -radius).
+//   - cylinder: There are two valid configurations (radius & length >> depth).
+//     - Place a "standing" cylinder at (0, 0, -length/2).
+//     - Rotate the cylinder so that its length axis is parallel with the z = 0
+//       plane and then displace downward (0, 0, -radius). Described as "prone".
+//   - capsule: There are two valid configurations (radius & length >> depth).
+//     - Place a "standing" capsule at (0, 0, -length/2 - radius).
+//     - Rotate the capsule so that its length axis is parallel with the z = 0
+//       plane and then displace downward (0, 0, -radius). Described as "prone".
+//
+// Note: there are an infinite number of orientations that satisfy the
+// configuration described above. They should *all* provide the same collision
+// results. We provide two representative orientations to illustrate issues
+// with the underlying functionality -- the *quality* of the answer depends on
+// the orientation of the box. When the problem listed in Drake issue 7656 is
+// resolved, all tests should resolve to the same answer with the same tight
+// precision.
+// TODO(SeanCurtis-TRI): Add other shapes as they become available.
+class BoxPenetrationTest : public ::testing::Test {
+ protected:
+  void SetUp() {
+    // Confirm all of the constants are consistent (in case someone tweaks them
+    // later). In this case, tangent geometry must be much larger than the
+    // depth.
+    EXPECT_GT(kRadius, kDepth * 100);
+    EXPECT_GT(kLength, kDepth * 100);
+
+    // Confirm that the poses of the box satisfy the conditions described above.
+    for (auto func : {X_WB_1, X_WB_2}) {
+      const math::RigidTransformd X_WB = func(p_BoC_B_, p_WC_);
+      // Confirm that p_BoC_B transforms to p_WC.
+      const Vector3d p_WC_test = X_WB * p_BoC_B_;
+      EXPECT_TRUE(CompareMatrices(p_WC_test, p_WC_, 1e-15,
+                                  MatrixCompareType::absolute));
+
+      // Confirm that *all* other points map to values where z > 0.
+      for (double x : {-0.5, 0.5}) {
+        for (double y : {-0.5, 0.5}) {
+          for (double z : {-0.5, 0.5}) {
+            const Vector3d p_BoC_B{x, y, z};
+            if (p_BoC_B.isApprox(p_BoC_B_)) continue;
+            const Vector3d p_WC = X_WB * p_BoC_B;
+            EXPECT_GT(p_WC(2), 0);
+          }
+        }
+      }
+    }
+
+    // Configure the expected penetration characterization.
+    expected_penetration_.p_WCa << 0, 0, 0;       // Tangent plane
+    expected_penetration_.p_WCb = p_WC_;          // Cube
+    expected_penetration_.nhat_BA_W << 0, 0, -1;  // From cube into plane
+    expected_penetration_.depth = kDepth;
+    // NOTE: The ids are set by the individual calling tests.
+  }
+
+  enum TangentShape {
+    TangentPlane,
+    TangentSphere,
+    TangentBox,
+    TangentStandingCylinder,
+    TangentProneCylinder,
+    TangentConvex,
+    TangentStandingCapsule,
+    TangentProneCapsule
+  };
+
+  // The test that produces *bad* results based on the box orientation. Not
+  // called "bad" because when FCL is fixed, they'll both be good.
+  void TestCollision1(TangentShape shape_type, double tolerance) {
+    TestCollision(shape_type, tolerance, X_WB_1(p_BoC_B_, p_WC_));
+  }
+
+  // The test that produces *good* results based on the box orientation. Not
+  // called "good" because when FCL is fixed, they'll both be good.
+  void TestCollision2(TangentShape shape_type, double tolerance) {
+    TestCollision(shape_type, tolerance, X_WB_2(p_BoC_B_, p_WC_));
+  }
+
+ private:
+  // Perform the collision test against the indicated shape and confirm the
+  // results to the given tolerance.
+  void TestCollision(TangentShape shape_type, double tolerance,
+                     const math::RigidTransformd& X_WB) {
+    const GeometryId tangent_id = GeometryId::get_new_id();
+    const RigidTransformd X_WA = shape_pose(shape_type);
+    std::unique_ptr<CollisionObjectd> tangent_object = MakeFclObject(
+        shape(shape_type), tangent_id, /* is_dynamic= */ true, X_WA);
+
+    const GeometryId box_id = GeometryId::get_new_id();
+    std::unique_ptr<CollisionObjectd> box_object =
+        MakeFclObject(box_, box_id, /* is_dynamic= */ true, X_WB);
+
+    // Note: we need a CollisionFilter for the callback data, but we don't need
+    // to populate it, because we're not actually filtering anything.
+    CollisionFilter collision_filter;
+    const unordered_map<GeometryId, RigidTransformd> X_WGs{{tangent_id, X_WA},
+                                                           {box_id, X_WB}};
+    vector<PenetrationAsPointPair<double>> results;
+    CallbackData<double> callback_data(&collision_filter, &X_WGs, &results);
+    Callback<double>(tangent_object.get(), box_object.get(), &callback_data);
+
+    ASSERT_EQ(results.size(), 1u)
+        << "Against tangent " << shape_name(shape_type);
+
+    const PenetrationAsPointPair<double>& contact = results[0];
+    Vector3d normal;
+    Vector3d p_Ac;
+    Vector3d p_Bc;
+    if (contact.id_A == tangent_id && contact.id_B == box_id) {
+      // The documented encoding of expected_penetration_.
+      normal = expected_penetration_.nhat_BA_W;
+      p_Ac = expected_penetration_.p_WCa;
+      p_Bc = expected_penetration_.p_WCb;
+    } else if (contact.id_A == box_id && contact.id_B == tangent_id) {
+      // The reversed encoding of expected_penetration_.
+      normal = -expected_penetration_.nhat_BA_W;
+      p_Ac = expected_penetration_.p_WCb;
+      p_Bc = expected_penetration_.p_WCa;
+    } else {
+      GTEST_FAIL() << fmt::format(
+          "Wrong geometry ids reported in contact for tangent {}. Expected {} "
+          "and {}. Got {} and {}",
+          shape_name(shape_type), tangent_id, box_id, contact.id_A,
+          contact.id_B);
+    }
+    EXPECT_TRUE(CompareMatrices(contact.nhat_BA_W, normal, tolerance))
+        << "Against tangent " << shape_name(shape_type);
+    EXPECT_TRUE(CompareMatrices(contact.p_WCa, p_Ac, tolerance))
+        << "Against tangent " << shape_name(shape_type);
+    EXPECT_TRUE(CompareMatrices(contact.p_WCb, p_Bc, tolerance))
+        << "Against tangent " << shape_name(shape_type);
+    EXPECT_NEAR(contact.depth, expected_penetration_.depth, tolerance)
+        << "Against tangent " << shape_name(shape_type);
+  }
+
+  // The expected collision result -- assumes that A is the tangent object and
+  // B is the colliding box.
+  PenetrationAsPointPair<double> expected_penetration_;
+
+  // Produces the X_WB that produces high-quality answers.
+  static math::RigidTransformd X_WB_2(const Vector3d& p_BoC_B,
+                                      const Vector3d& p_WC) {
+    // Compute the pose of the colliding box.
+    // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
+    //    the most -z extent. With only rotation, p_BoC_B != p_WC.
+    const math::RotationMatrixd R_WB(
+        AngleAxisd(std::atan(M_SQRT2), Vector3d(M_SQRT1_2, -M_SQRT1_2, 0)));
+
+    // b. Translate it so that the rotated corner p_BoC_W lies at
+    //    (0, 0, -d).
+    const Vector3d p_BoC_W = R_WB * p_BoC_B;
+    const Vector3d p_WB = p_WC - p_BoC_W;
+    return math::RigidTransformd(R_WB, p_WB);
+  }
+
+  // Produces the X_WB that produces low-quality answers.
+  static math::RigidTransformd X_WB_1(const Vector3d& p_BoC_B,
+                                      const Vector3d& p_WC) {
+    // Compute the pose of the colliding box.
+    // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
+    //    the most -z extent. With only rotation, p_BoC_B != p_WC.
+    const math::RotationMatrixd R_WB(AngleAxisd(-M_PI_4, Vector3d::UnitY()) *
+                                     AngleAxisd(M_PI_4, Vector3d::UnitX()));
+
+    // b. Translate it so that the rotated corner p_BoC_W lies at
+    //    (0, 0, -d).
+    const Vector3d p_BoC_W = R_WB * p_BoC_B;
+    const Vector3d p_WB = p_WC - p_BoC_W;
+    return math::RigidTransformd(R_WB, p_WB);
+  }
+
+  // Map enumeration to string for error messages.
+  static const char* shape_name(TangentShape shape) {
+    switch (shape) {
+      case TangentPlane:
+        return "plane";
+      case TangentSphere:
+        return "sphere";
+      case TangentBox:
+        return "box";
+      case TangentStandingCylinder:
+        return "standing cylinder";
+      case TangentProneCylinder:
+        return "prone cylinder";
+      case TangentConvex:
+        return "convex";
+      case TangentStandingCapsule:
+        return "standing capsule";
+      case TangentProneCapsule:
+        return "prone capsule";
+    }
+    return "undefined shape";
+  }
+
+  // Map enumeration to the configured shapes.
+  const Shape& shape(TangentShape shape) {
+    switch (shape) {
+      case TangentPlane:
+        return tangent_plane_;
+      case TangentSphere:
+        return tangent_sphere_;
+      case TangentBox:
+        return tangent_box_;
+      case TangentStandingCylinder:
+      case TangentProneCylinder:
+        return tangent_cylinder_;
+      case TangentConvex:
+        return tangent_convex_;
+      case TangentStandingCapsule:
+      case TangentProneCapsule:
+        return tangent_capsule_;
+    }
+    // GCC considers this function ill-formed - no apparent return value. This
+    // exception alleviates its concern.
+    throw std::logic_error(
+        "Trying to acquire shape for unknown shape enumerated value: " +
+        std::to_string(shape));
+  }
+
+  // Map enumeration to tangent pose.
+  RigidTransformd shape_pose(TangentShape shape) {
+    RigidTransformd pose = RigidTransformd::Identity();
+    switch (shape) {
+      case TangentPlane:
+        break;  // leave it at the identity
+      case TangentSphere:
+        pose.set_translation({0, 0, -kRadius});
+        break;
+      case TangentBox:
+      // The tangent convex is a cube of the same size as the tangent box.
+      // That is why we give them the same pose.
+      case TangentConvex:
+      case TangentStandingCylinder:
+        pose.set_translation({0, 0, -kLength / 2});
+        break;
+      case TangentStandingCapsule:
+        pose.set_translation({0, 0, -kLength / 2 - kRadius});
+        break;
+      case TangentProneCylinder:
+      case TangentProneCapsule:
+        pose = RigidTransformd(AngleAxisd{M_PI_2, Vector3d::UnitX()},
+                               Vector3d{0, 0, -kRadius});
+        break;
+    }
+    return pose;
+  }
+
+  // Test constants. Geometric measures must be much larger than depth. The test
+  // enforces a ratio of at least 100. Using these in a GTEST precludes the
+  // possibility of being constexpr initialized; GTEST takes references.
+  static const double kDepth;
+  static const double kRadius;
+  static const double kLength;
+
+  // The various geometries used in the collision test.
+  const Box box_{1, 1, 1};
+  const Sphere tangent_sphere_{kRadius};
+  const Box tangent_box_{kLength, kLength, kLength};
+  const HalfSpace tangent_plane_;  // Default construct the z = 0 plane.
+  const Cylinder tangent_cylinder_{kRadius, kLength};
+  // We scale the convex shape by 5.0 to match the tangent_box_ of size 10.0.
+  // The file "quad_cube.obj" contains the cube of size 2.0.
+  const Convex tangent_convex_{
+      drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"), 5.0};
+  const Capsule tangent_capsule_{kRadius, kLength};
+
+  const Vector3d p_WC_{0, 0, -kDepth};
+  const Vector3d p_BoC_B_{-0.5, -0.5, -0.5};
+};
+
+// See documentation. All geometry constants must be >= kDepth * 100.
+const double BoxPenetrationTest::kDepth = 1e-3;
+const double BoxPenetrationTest::kRadius = 1;
+const double BoxPenetrationTest::kLength = 10;
+
+TEST_F(BoxPenetrationTest, TangentPlane1) {
+  TestCollision1(TangentPlane, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentPlane2) {
+  TestCollision2(TangentPlane, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentBox1) {
+  TestCollision1(TangentBox, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentBox2) {
+  TestCollision2(TangentBox, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentSphere1) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. Largely due to normal
+  // calculation. See related Drake issue 7656.
+  TestCollision1(TangentSphere, 1e-1);
+}
+
+TEST_F(BoxPenetrationTest, TangentSphere2) {
+  TestCollision2(TangentSphere, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentStandingCylinder1) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. See related Drake issue 7656.
+  TestCollision1(TangentStandingCylinder, 1e-3);
+}
+
+TEST_F(BoxPenetrationTest, TangentStandingCylinder2) {
+  TestCollision2(TangentStandingCylinder, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentProneCylinder1) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. Largely due to normal
+  // calculation. See related Drake issue 7656.
+  TestCollision1(TangentProneCylinder, 1e-1);
+}
+
+TEST_F(BoxPenetrationTest, TangentProneCylinder2) {
+  // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
+  // collision result from being more precise. In this case, the largest error
+  // is in the position of the contact points. See related Drake issue 7656.
+  TestCollision2(TangentProneCylinder, 1e-4);
+}
+
+TEST_F(BoxPenetrationTest, TangentConvex1) {
+  // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
+  TestCollision1(TangentConvex, 1e-3);
+}
+
+TEST_F(BoxPenetrationTest, TangentConvex2) {
+  // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
+  TestCollision2(TangentConvex, 1e-3);
+}
+
+TEST_F(BoxPenetrationTest, TangentStandingCapsule1) {
+  // TODO(tehbelinda): We should check why we cannot use a smaller tolerance.
+  TestCollision1(TangentStandingCapsule, 1e-1);
+}
+
+TEST_F(BoxPenetrationTest, TangentStandingCapsule2) {
+  TestCollision2(TangentStandingCapsule, 1e-12);
+}
+
+TEST_F(BoxPenetrationTest, TangentProneCapsule1) {
+  // TODO(tehbelinda): We should check why we cannot use a smaller tolerance.
+  TestCollision1(TangentProneCapsule, 1e-1);
+}
+
+TEST_F(BoxPenetrationTest, TangentProneCapsule2) {
+  // TODO(tehbelinda): We should check why we cannot use a smaller tolerance.
+  TestCollision2(TangentProneCapsule, 1e-4);
 }
 
 }  // namespace
