@@ -15,7 +15,8 @@ def drake_cc_googlebench_binary(
         test_timeout = None,
         test_args = None,
         test_display = False,
-        test_tags = None):
+        test_tags = None,
+        test_opt_in_condition = None):
     """Declares a testonly binary that uses google benchmark.  Automatically
     adds appropriate deps and ensures it either has an automated smoke test
     (via 'add_test_rule = True'), or else explicitly opts-out ('= False').
@@ -58,6 +59,7 @@ def drake_cc_googlebench_binary(
                 "--benchmark_dry_run",
             ] + (test_args or []),
             tags = (test_tags or []) + ["nolint", "no_kcov"],
+            opt_in_condition = test_opt_in_condition,
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):

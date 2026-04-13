@@ -5,7 +5,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -106,6 +105,8 @@ drake_cc_googletest(
     ],
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 4,
+    # IPOPT is exceptionally slow with IRIS so only test with snopt.
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     shard_count = 4,
     # Most of these tests take an exceptionally long time under
     # instrumentation, resulting in timeouts, and so are excluded.
@@ -113,8 +114,6 @@ drake_cc_googletest(
     tags = [
         "no_asan",
         "no_memcheck",
-        # IPOPT is exceptionally slow with IRIS so only test with snopt.
-        "snopt",
     ],
     deps = [
         ":iris_from_clique_cover",
