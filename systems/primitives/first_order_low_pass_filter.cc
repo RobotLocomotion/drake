@@ -37,7 +37,7 @@ template <typename T>
 double FirstOrderLowPassFilter<T>::get_time_constant() const {
   if (!time_constants_.isConstant(time_constants_[0])) {
     throw std::domain_error(fmt::format(
-        "The time constants vector, [{}], cannot be represented as a scalar "
+        "The time constants vector, {}, cannot be represented as a scalar "
         "value. Please use FirstOrderLowPassFilter::get_time_constants_vector()"
         " instead.",
         fmt_eigen(time_constants_)));
