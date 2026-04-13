@@ -33,7 +33,7 @@ workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
 arch=$(/usr/bin/arch)
 clang_major=$(sed -n 's/^clang-\([0-9]\+\)$/\1/p' \
-  "${workspace_dir}/setup/ubuntu/source_distribution/packages-${VERSION_CODENAME}-clang.txt")
+  "${workspace_dir}/setup/ubuntu/source_distribution/packages-${VERSION_CODENAME}-developer.txt")
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
