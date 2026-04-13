@@ -1,3 +1,8 @@
+# -*- bazelrc -*-
+
+# This is a portion of Drake's .bazelrc defaults. This filed is used both for
+# Bazel builds and also CMake builds (and thus also Packaging, Wheel, etc.).
+
 # Enable platform-specific config groups (e.g., "build:linux", "build:macos").
 common --enable_platform_specific_config
 
@@ -45,6 +50,9 @@ build --host_cxxopt=-std=c++23
 # N.B. Ensure this is consistent with `execute.bzl`.
 build:linux --action_env=PATH=/usr/bin:/bin
 build:macos --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Disable ccache due to incompatibility with Bazel.
+build --action_env=CCACHE_DISABLE=1
 
 # Disable python imports from ~/.local (pip -U) during build and test.
 # https://github.com/bazelbuild/bazel/issues/4939
