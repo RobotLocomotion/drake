@@ -46,8 +46,7 @@ void MaybeWarnForRedundantMaterial(const GeometryProperties& props,
   if (props.HasProperty("phong", "diffuse")) {
     ignored_props.push_back(fmt::format(
         "('phong', 'diffuse') = {}",
-        fmt_eigen(
-            props.GetProperty<Rgba>("phong", "diffuse").rgba().transpose())));
+        fmt_eigen(props.GetProperty<Rgba>("phong", "diffuse").rgba())));
   }
   if (props.HasProperty("phong", "diffuse_map")) {
     ignored_props.push_back(

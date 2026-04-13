@@ -152,7 +152,7 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "returned a point with the wrong dimension (its size was "
         "{}) when called on {}.",
         checker.plant().num_positions(), computed_ambient_dimension,
-        fmt_eigen(starting_ellipsoid.center().transpose())));
+        fmt_eigen(starting_ellipsoid.center())));
   }
 
   // Check ray search parameters.
@@ -387,7 +387,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       throw std::runtime_error(fmt::format(
           "Starting ellipsoid center {} is in collision; geometry {} is in "
           "collision with geometry {}",
-          fmt_eigen(E.center().transpose()), inspector.GetName(geomA),
+          fmt_eigen(E.center()), inspector.GetName(geomA),
           inspector.GetName(geomB)));
     }
     sorted_pairs.emplace_back(geomA, geomB, distance);
@@ -407,7 +407,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     throw std::runtime_error(fmt::format(
         "Starting ellipsoid center {} violates a constraint in "
         "options.sampled_iris_options.prog_with_additional_constraints.",
-        fmt_eigen(E.center().transpose())));
+        fmt_eigen(E.center())));
   }
   geometry::optimization::VPolytope containment_points_vpolytope =
       internal::ParseAndCheckContainmentPoints(

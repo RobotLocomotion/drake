@@ -252,7 +252,7 @@ GTEST_TEST(ReadObjTest, InverseScaleWinding) {
         const Eigen::Vector3d n_G = p_AB_G.cross(p_AC_G);
         // The vector OA should point in basically the same direction as the
         // normal.
-        SCOPED_TRACE(fmt::format("Scale [{}]", fmt_eigen(scale.transpose())));
+        SCOPED_TRACE(fmt::format("Scale {}", fmt_eigen(scale)));
         EXPECT_GT(n_G.dot(p_GoA_G), 0);
       }
     }
