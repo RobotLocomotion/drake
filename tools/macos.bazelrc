@@ -1,13 +1,2 @@
-# Common options for macOS.
-
-# N.B. Ensure this is consistent with `execute.bzl`.
-build --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
-
-# Options for explicitly using Clang.
-# TODO(#24359) Delete this entirely.
-common:clang --repo_env=CC=clang
-common:clang --repo_env=CXX=clang++
-build:clang --action_env=CC=clang
-build:clang --action_env=CXX=clang++
-build:clang --host_action_env=CC=clang
-build:clang --host_action_env=CXX=clang++
+# TODO(jwnimmer-tri) Delete this unused file from git. It only remains here as a
+# tombstone so that developers don't need to immediately re-run install_prereqs.
