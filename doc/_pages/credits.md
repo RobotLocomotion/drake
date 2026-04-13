@@ -78,6 +78,10 @@ all of their maintainers, whose work is essential to Drake's success:
 * Developer tools:
   * [abseil](https://abseil.io)
   * [bazel](https://bazel.build)
+  * [buildifier](https://github.com/bazelbuild/buildtools)
+  * [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
+  * [cmake](https://cmake.org/)
+  * [cpplint](https://github.com/cpplint/cpplint)
   * [eigen](https://eigen.tuxfamily.org/)
   * [fmt](https://fmt.dev/)
   * [gbench](https://github.com/google/benchmark)
@@ -87,8 +91,11 @@ all of their maintainers, whose work is essential to Drake's success:
   * [implib.so](https://github.com/yugr/Implib.so)
   * [numpy](https://numpy.org/)
   * [onetbb](https://github.com/oneapi-src/oneTBB)
+  * [patchelf](https://github.com/nixos/patchelf)
   * [pybind11](https://pybind11.readthedocs.io/)
+  * [ruff](https://github.com/astral-sh/ruff)
   * [spdlog](https://github.com/gabime/spdlog)
+  * [uv](https://github.com/astral-sh/uv)
 
 * Documentation:
   * [doxygen](https://doxygen.nl/)
@@ -104,6 +111,7 @@ all of their maintainers, whose work is essential to Drake's success:
   * [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)
   * [libpng](https://github.com/glennrp/libpng)
   * [libtiff](https://github.com/libsdl-org/libtiff)
+  * [libzip](https://libzip.org/)
   * [nlohmann/json](https://github.com/nlohmann/json)
   * [pyyaml](https://pyyaml.org/)
   * [tinygltf](https://github.com/syoyo/tinygltf)
@@ -112,6 +120,7 @@ all of their maintainers, whose work is essential to Drake's success:
   * [tinyxml2](https://github.com/leethomason/tinyxml2)
   * [xacro](https://github.com/ros/xacro)
   * [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+  * [zlib](https://zlib.net/)
 
 * Geometry:
   * [common_robotics_utilities](https://github.com/ToyotaResearchInstitute/common_robotics_utilities)

@@ -690,6 +690,19 @@ void Polynomial<T>::MakeMonomialsUnique(void) {
   }
 }
 
+template <typename T>
+Polynomial<T>::VarType Polynomial<T>::VariableIdToVarType(
+    const symbolic::Variable::Id& id) {
+  // To convert an Id to a VarType, we want to extract the non-random portion of
+  // the Id. That is exactly the data it feeds into its hash_append function.
+  uint32_t hashed_data{};
+  auto hasher = [&hashed_data](const uint32_t* data, size_t /* size = 4 */) {
+    hashed_data = *data;
+  };
+  hash_append(hasher, id);
+  return static_cast<Polynomial<T>::VarType>(hashed_data);
+}
+
 namespace {
 
 using symbolic::Expression;
@@ -744,8 +757,8 @@ class FromExpressionVisitor {
   }
 
   static Polynomial<T> VisitVariable(const Expression& e) {
-    return Polynomial<T>{1.0, static_cast<Polynomial<double>::VarType>(
-                                  get_variable(e).get_id())};
+    return Polynomial<T>{
+        1.0, Polynomial<T>::VariableIdToVarType(get_variable(e).get_id())};
   }
 
   static Polynomial<T> VisitConstant(const Expression& e) {

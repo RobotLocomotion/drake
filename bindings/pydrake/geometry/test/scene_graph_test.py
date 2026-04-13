@@ -269,6 +269,10 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(
             inspector.GetName(frame_id=global_frame), "anchored_frame1"
         )
+        self.assertEqual(
+            inspector.GetParentFrame(frame_id=global_frame),
+            SceneGraph.world_frame_id(),
+        )
         self.assertEqual(inspector.GetFrameGroup(frame_id=global_frame), 0)
         self.assertEqual(
             inspector.NumGeometriesForFrame(frame_id=global_frame), 2

@@ -130,6 +130,11 @@ class RenderEngineVtkTester {
     }
     return nullptr;
   }
+
+  // Returns the number of entries in the geometry-to-cache-key map.
+  static int GetGeometryMeshKeysSize(const RenderEngineVtk& renderer) {
+    return static_cast<int>(renderer.geometry_mesh_keys_.size());
+  }
 };
 
 namespace {
@@ -1070,7 +1075,7 @@ TEST_F(RenderEngineVtkTest, GltfAssetFormats) {
   Init(X_WC_, true);
 
   std::array<ImageRgba8U, kCount> images;
-  for (int i = 0; i < ssize(filenames); ++i) {
+  for (int i = 0; i < std::ssize(filenames); ++i) {
     // Add the i'th cube to the scene.
     const GeometryId id = GeometryId::get_new_id();
     renderer_->RegisterVisual(id, Mesh(filenames[i]), PerceptionProperties{},
@@ -3534,6 +3539,48 @@ TEST_F(RenderEngineVtkTest, DifferentObjsDontShare) {
   EXPECT_NE(src_a, src_b);
 }
 
+// When multiple geometries share one cache entry, the entry survives until the
+// *last* geometry is removed.
+TEST_F(RenderEngineVtkTest, MeshCacheNotEvictedUntilLastRemove) {
+  const RenderEngineVtkParams params{.backend = FLAGS_backend};
+  RenderEngineVtk engine(params);
+
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj");
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  const GeometryId id1 = GeometryId::get_new_id();
+  const GeometryId id2 = GeometryId::get_new_id();
+  const GeometryId id3 = GeometryId::get_new_id();
+
+  Mesh mesh(obj_path);
+  Convex convex(obj_path);
+
+  // Run it once through Mesh and once for Convex, to show both are handled the
+  // same.
+  for (const Shape* shape_ptr : std::vector<Shape*>{&mesh, &convex}) {
+    SCOPED_TRACE(shape_ptr->type_name());
+    engine.RegisterVisual(id1, *shape_ptr, props, RigidTransformd::Identity());
+    engine.RegisterVisual(id2, *shape_ptr, props, RigidTransformd::Identity());
+    engine.RegisterVisual(id3, *shape_ptr, props, RigidTransformd::Identity());
+    ASSERT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
+    ASSERT_EQ(RenderEngineVtkTester::GetGeometryMeshKeysSize(engine), 3);
+
+    engine.RemoveGeometry(id1);
+    EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
+    EXPECT_EQ(RenderEngineVtkTester::GetGeometryMeshKeysSize(engine), 2);
+
+    engine.RemoveGeometry(id2);
+    EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
+    EXPECT_EQ(RenderEngineVtkTester::GetGeometryMeshKeysSize(engine), 1);
+
+    engine.RemoveGeometry(id3);
+    EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 0);
+    EXPECT_EQ(RenderEngineVtkTester::GetGeometryMeshKeysSize(engine), 0);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Texture-cache source-sharing tests
 //
@@ -3673,51 +3720,78 @@ TEST_F(RenderEngineVtkTest, TextureCacheEviction) {
   EXPECT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 0);
 }
 
-// Confirms that cloned engines' caches are not harmed by eviction from another
-// engine.
-TEST_F(RenderEngineVtkTest, TextureCacheEvictionAcrossClones) {
+// Confirms that cloned engines' texture and mesh caches are not harmed by
+// eviction from another engine. Uses rendering as proof that the underlying VTK
+// objects remain valid in the clone after the source engine evicts them.
+TEST_F(RenderEngineVtkTest, CacheEvictionAcrossClones) {
   const RenderEngineVtkParams params{.backend = FLAGS_backend};
   RenderEngineVtk engine(params);
 
   const std::string png_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
-  PerceptionProperties props;
-  props.AddProperty("label", "id", RenderLabel::kDontCare);
-  props.AddProperty("phong", "diffuse_map", png_path);
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box_no_mtl.obj");
 
-  const GeometryId id = GeometryId::get_new_id();
-  engine.RegisterVisual(id, Sphere(0.5), props, RigidTransformd::Identity());
+  PerceptionProperties tex_props;
+  tex_props.AddProperty("label", "id", RenderLabel::kDontCare);
+  tex_props.AddProperty("phong", "diffuse_map", png_path);
+
+  PerceptionProperties mesh_props;
+  mesh_props.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  // The textured sphere will exercise the texture cache.
+  const GeometryId sphere_id = GeometryId::get_new_id();
+  engine.RegisterVisual(sphere_id, Sphere(0.5), tex_props,
+                        RigidTransformd::Identity());
+  // The untextured box will exercise the mesh cache.
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  engine.RegisterVisual(mesh_id, Mesh(obj_path), mesh_props,
+                        RigidTransformd::Identity());
   ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 1);
+  ASSERT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
 
   std::unique_ptr<RenderEngine> clone_base = engine.Clone();
   auto* clone_ptr = dynamic_cast<RenderEngineVtk*>(clone_base.get());
   ASSERT_NE(clone_ptr, nullptr);
   ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(*clone_ptr), 1);
+  ASSERT_EQ(RenderEngineVtkTester::GetMeshCacheSize(*clone_ptr), 1);
 
-  // Now render a reference image from each engine.
+  // Now render a reference image from each engine; they must match perfectly.
   const ColorRenderCamera color_camera(depth_camera_.core(), FLAGS_show_window);
 
-  // Originally, the images should match.
-  ImageRgba8U source_image_ref(color_);
-  engine.RenderColorImage(color_camera, &source_image_ref);
-  ImageRgba8U clone_image_ref(color_);
-  clone_ptr->RenderColorImage(color_camera, &clone_image_ref);
-  ASSERT_TRUE(ImagesAreSimilar(source_image_ref, clone_image_ref, 1e-5, 1.0));
+  ImageRgba8U source_ref(color_);
+  engine.RenderColorImage(color_camera, &source_ref);
+  ImageRgba8U clone_ref(color_);
+  clone_ptr->RenderColorImage(color_camera, &clone_ref);
+  ASSERT_TRUE(ImagesAreSimilar(source_ref, clone_ref, 1e-5, 1.0));
 
-  // Removing the geometry (and texture) from the original engine.
-  engine.RemoveGeometry(id);
+  // Remove geometries from the source engine one at a time, rendering the
+  // source after each removal. This proves each object was individually visible
+  // so a failure in either cached VTK object would be detectable.
+
+  // Remove the textured sphere (texture cache eviction).
+  engine.RemoveGeometry(sphere_id);
   ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(engine), 0);
+  ASSERT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
+  ImageRgba8U source_no_sphere(color_);
+  engine.RenderColorImage(color_camera, &source_no_sphere);
+  // Even with low conformity, the images won't match.
+  ASSERT_FALSE(ImagesAreSimilar(source_ref, source_no_sphere, 1e-5, 0.5));
 
-  // Rendering each image; the source engine has a different image, the cloned
-  // is unchanged.
-  ImageRgba8U source_image_dut(color_);
-  engine.RenderColorImage(color_camera, &source_image_dut);
-  ImageRgba8U clone_image_dut(color_);
-  clone_ptr->RenderColorImage(color_camera, &clone_image_dut);
+  // Remove the OBJ mesh (mesh cache eviction).
+  engine.RemoveGeometry(mesh_id);
+  ASSERT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 0);
+  ImageRgba8U source_no_mesh(color_);
+  engine.RenderColorImage(color_camera, &source_no_mesh);
+  ASSERT_FALSE(ImagesAreSimilar(source_no_sphere, source_no_mesh, 1e-5, 0.5));
+  ASSERT_FALSE(ImagesAreSimilar(source_ref, source_no_mesh, 1e-5, 0.5));
 
-  ASSERT_FALSE(
-      ImagesAreSimilar(source_image_ref, source_image_dut, 1e-5, 0.75));
-  ASSERT_TRUE(ImagesAreSimilar(source_image_ref, clone_image_dut, 1e-5, 1.0));
+  // The clone's caches are intact and its render matches the original.
+  ASSERT_EQ(RenderEngineVtkTester::GetTextureCacheSize(*clone_ptr), 1);
+  ASSERT_EQ(RenderEngineVtkTester::GetMeshCacheSize(*clone_ptr), 1);
+  ImageRgba8U clone_dut(color_);
+  clone_ptr->RenderColorImage(color_camera, &clone_dut);
+  ASSERT_TRUE(ImagesAreSimilar(clone_ref, clone_dut, 1e-5, 1.0));
 }
 
 }  // namespace

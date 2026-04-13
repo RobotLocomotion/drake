@@ -574,8 +574,8 @@ class DifferentialInverseKinematicsSystem::JointCenteringCost final
 where:
 - p_TGi is the translation component of the i'th goal point w.r.t the task
   frame. */
-class DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint
-    final : public Ingredient {
+class DifferentialInverseKinematicsSystem::
+    CartesianPositionLimitConstraint final : public Ingredient {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CartesianPositionLimitConstraint);
 
@@ -613,8 +613,8 @@ class DifferentialInverseKinematicsSystem::CartesianPositionLimitConstraint
 
 /** Constrains the spatial velocities of the goal frames:
 `∀i, ∀j ∈ [0, 5]: abs(Jv_TGi * v_next)[j] ≤ V_next_TG_limit[j]`. */
-class DifferentialInverseKinematicsSystem::CartesianVelocityLimitConstraint
-    final : public Ingredient {
+class DifferentialInverseKinematicsSystem::
+    CartesianVelocityLimitConstraint final : public Ingredient {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CartesianVelocityLimitConstraint);
 

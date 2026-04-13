@@ -544,7 +544,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         if _smells_like_a_git_commit(new_commit):
             message = f"Update dependency {workspace_name} to latest commit"
         else:
-            release = new_commit.lstrip("v")
+            release = new_commit.lstrip("releases/").lstrip("v")
             message = f"Update dependency {workspace_name} to {release}"
     else:
         # This is a scripted upgrade of multiple packages, so we'll omit

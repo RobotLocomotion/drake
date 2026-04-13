@@ -49,6 +49,9 @@ class StackedTrajectory final : public Trajectory<T> {
   @throws std::exception if the matrix dimension is incompatible. */
   void Append(const Trajectory<T>& traj);
 
+  /** Returns true iff the stacking order is rowwise. */
+  bool rowwise() const { return rowwise_; }
+
   /** Returns a view of the current children. Calling any non-const method on
   this trajectory will invalidate the view. */
   drake::range_view_of<const Trajectory<T>*> auto children() const {

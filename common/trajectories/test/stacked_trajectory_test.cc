@@ -40,6 +40,7 @@ GTEST_TEST(StackedTrajectoryTest, Empty) {
   EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(0), MatrixXd::Zero(0, 0)));
   EXPECT_TRUE(dut.MakeDerivative() != nullptr);
   EXPECT_EQ(dut.children().size(), 0);
+  EXPECT_TRUE(dut.rowwise());
 }
 
 GTEST_TEST(StackedTrajectoryTest, CopyCtor) {
@@ -127,6 +128,7 @@ GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteColumnVectors) {
   const double tf = 0.8;
 
   StackedTrajectory<double> dut;
+  EXPECT_TRUE(dut.rowwise());
   dut.Append(MakeDiscrete(t0, Vector2d(1, 2), tf, Vector2d(11, 12)));
   dut.Append(MakeDiscrete(t0, Vector2d(3, 4), tf, Vector2d(13, 14)));
   EXPECT_EQ(dut.rows(), 4);
@@ -152,6 +154,7 @@ GTEST_TEST(StackedTrajectoryTest, StackTwoDiscreteRowVectors) {
   const double tf = 0.8;
 
   StackedTrajectory<double> dut(/* rowwise = */ false);
+  EXPECT_FALSE(dut.rowwise());
   dut.Append(MakeDiscrete(t0, RowVector2d(1, 2), tf, RowVector2d(11, 12)));
   dut.Append(MakeDiscrete(t0, RowVector2d(3, 4), tf, RowVector2d(13, 14)));
   EXPECT_EQ(dut.rows(), 1);

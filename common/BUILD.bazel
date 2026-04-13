@@ -1146,6 +1146,7 @@ drake_cc_googletest(
     name = "fmt_eigen_test",
     deps = [
         ":essential",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 

@@ -58,7 +58,8 @@ void DefineSymbolicMonolith(py::module m) {
       .value("RANDOM_EXPONENTIAL", Variable::Type::RANDOM_EXPONENTIAL,
           var_doc.Type.RANDOM_EXPONENTIAL.doc);
 
-  var_cls
+  var_cls  // BR
+      .def(py::init<>(), var_doc.ctor.doc_0args)
       .def(py::init<const string&, Variable::Type>(), py::arg("name"),
           py::arg("type") = Variable::Type::CONTINUOUS, var_doc.ctor.doc_2args)
       .def("is_dummy", &Variable::is_dummy, var_doc.is_dummy.doc)

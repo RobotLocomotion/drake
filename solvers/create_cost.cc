@@ -79,19 +79,21 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
         "polynomial expression.\n",
         e));
   }
-  const symbolic::Variables& vars = e.GetVariables();
+  const symbolic::Variables& symbolic_vars = e.GetVariables();
   const Polynomiald polynomial = Polynomiald::FromExpression(e);
-  vector<Polynomiald::VarType> polynomial_vars(vars.size());
-  VectorXDecisionVariable var_vec(vars.size());
+  vector<Polynomiald::VarType> polynomial_vars(symbolic_vars.size());
+  VectorXDecisionVariable symbolic_vars_vec(symbolic_vars.size());
   int polynomial_var_count = 0;
-  for (const auto& var : vars) {
-    polynomial_vars[polynomial_var_count] = var.get_id();
-    var_vec[polynomial_var_count] = var;
+  for (const auto& symbolic_var : symbolic_vars) {
+    const Polynomiald::VarType polynomial_var =
+        Polynomiald::VariableIdToVarType(symbolic_var.get_id());
+    polynomial_vars[polynomial_var_count] = polynomial_var;
+    symbolic_vars_vec[polynomial_var_count] = symbolic_var;
     ++polynomial_var_count;
   }
   return CreateBinding(make_shared<PolynomialCost>(
                            Vector1<Polynomiald>(polynomial), polynomial_vars),
-                       var_vec);
+                       symbolic_vars_vec);
 }
 
 Binding<L2NormCost> ParseL2NormCost(const symbolic::Expression& e,

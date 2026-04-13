@@ -300,7 +300,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   this->integrator->Reset();
   this->integrator->set_maximum_step_size(0.1);
   this->integrator->set_requested_minimum_step_size(1e-6);
-  this->integrator->set_target_accuracy(1e-3);
+  this->integrator->set_target_accuracy(1e-5);
 
   // Re-initialize the integrator.
   this->integrator->Initialize();
@@ -317,9 +317,13 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
     this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
   } while (this->context->get_time() < t_final);
 
+  // Get the final position.
+  const double x_final_ec =
+      this->context->get_continuous_state().get_vector().GetAtIndex(0);
+
   // Check the solution.
   EXPECT_NEAR(c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
-              x_final, 1e-5);
+              x_final_ec, 1e-5);
 
   // Verify that integrator statistics are valid.
   EXPECT_GE(this->integrator->get_previous_integration_step_size(), 0.0);

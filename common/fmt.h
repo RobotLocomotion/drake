@@ -141,9 +141,7 @@ Drake drops support for earlier version of fmt. */
   template <TEMPLATE_ARGS>                                                     \
   struct Converter<NAMESPACE::TYPE> {                                          \
     using InputType = NAMESPACE::TYPE;                                         \
-    static auto call(const InputType& ARG) {                                   \
-      return EXPR;                                                             \
-    }                                                                          \
+    static auto call(const InputType& ARG) { return EXPR; }                    \
   };                                                                           \
                                                                                \
   /* Provides the fmt::formatter<TYPE> implementation. */                      \

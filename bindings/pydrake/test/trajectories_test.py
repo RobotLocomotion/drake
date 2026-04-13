@@ -983,6 +983,7 @@ class TestTrajectories(unittest.TestCase):
         samples = [[[0]], [[1]], [[2]]]
         zoh = PiecewisePolynomial_[T].ZeroOrderHold(breaks, samples)
         dut = StackedTrajectory_[T](rowwise=True)
+        self.assertTrue(dut.rowwise())
         dut.Append(zoh)
         dut.Append(zoh)
         self.assertEqual(dut.rows(), 2)
@@ -995,6 +996,23 @@ class TestTrajectories(unittest.TestCase):
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+        def get_data_as_dict(traj):
+            data = dict()
+            data["rowwise"] = traj.rowwise()
+            for i, child in enumerate(traj.children()):
+                data[f"child{i}_breaks"] = child.get_segment_times()
+                data[f"child{i}_polynomials"] = np.array(
+                    [
+                        child.getPolynomialMatrix(segment_index)
+                        for segment_index in range(
+                            child.get_number_of_segments()
+                        )
+                    ]
+                )
+            return data
+
+        assert_pickle(self, dut, get_data_as_dict, T=T)
 
     @numpy_compare.check_all_types
     def test_wrapped_trajectory(self, T):

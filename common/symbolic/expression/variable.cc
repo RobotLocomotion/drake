@@ -5,6 +5,8 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
+#include <random>
 #include <string>
 #include <utility>
 
@@ -19,27 +21,56 @@ using std::string;
 namespace drake {
 namespace symbolic {
 
-namespace {
-/* Produces a unique ID for a variable. */
-size_t get_next_id(const Variable::Type type) {
-  static_assert(std::is_same_v<Variable::Id, size_t>);
-  // Note that id 0 is reserved for anonymous variable which is created by the
-  // default constructor, Variable(). As a result, we have an invariant
-  // "get_next_id() > 0".
-  static never_destroyed<atomic<size_t>> next_id(1);
-  const size_t counter = next_id.access()++;
-  // We'll assume that size_t is at least 8 bytes wide, so that we can pack the
-  // counter into the lower 7 bytes of `id_` and the `Type` into the upper byte.
-  static_assert(sizeof(size_t) >= 8);
-  return counter | (static_cast<size_t>(type) << (7 * 8));
+Variable::Id Variable::Id::Create(Type type) {
+  static std::once_flag flag;
+  static uint64_t global_hi_tare = 0;
+  static uint64_t global_lo_tare = 0;
+  std::call_once(flag, []() {
+    // We need to draw actual physical entropy from a random_device, so that
+    // variable IDs differ from one run of a process to the next.
+    std::random_device device;
+    std::mt19937_64 generator(device());
+
+    // Draw a random 56-bit number, in the upper bits of a 64-bit word. (We
+    // leave the lower 8 bits as zero, to be used for the Variable::Type.)
+    using distribution = std::uniform_int_distribution<uint64_t>;
+    distribution rand56(0, (uint64_t{1} << 56) - 1);
+    global_hi_tare = rand56(generator) << 8;
+    DRAKE_ASSERT((global_hi_tare << 56) == 0);
+
+    // Draw a random 32-bit number, in the upper bits of a 64-bit word. (We
+    // leave the lower 32 bits as zero, to be used for a consistent hash code
+    // based on the serial number.)
+    distribution rand32(0, (uint64_t{1} << 32) - 1);
+    global_lo_tare = rand32(generator) << 32;
+    DRAKE_ASSERT((global_lo_tare << 32) == 0);
+  });
+
+  // Each variable created gets a serial number counting up from 1.
+  // (Zero is reserved for the default-constructed Id.)
+  static atomic<uint64_t> counter(0);
+  const uint64_t serial_number = ++counter;
+
+  Id result;
+  // We store the Type enum in the lower byte of hi_.
+  static_assert(sizeof(Type) == 1);
+  result.hi_ = global_hi_tare + static_cast<uint64_t>(type);
+  // Once the serial number reaches 2^32, it will leak into the "random" part
+  // of lo_ (the upper 32 bits), but that is not a problem. We still guarantee
+  // that lo_ is unique across all variables created by this program.
+  result.lo_ = global_lo_tare + serial_number;
+  return result;
 }
-}  // namespace
+
+std::string Variable::Id::to_string() const {
+  // Our string representation is 18+16 characters: "0x" followed by 16+16 hex
+  // digits to cover all 128 bits (padded with leading zeros as necessary).
+  return fmt::format("{:#018x}{:016x}", hi_, lo_);
+}
 
 Variable::Variable(string name, const Type type)
-    : id_{get_next_id(type)},
-      name_{make_shared<const string>(std::move(name))} {
-  DRAKE_ASSERT(id_ > 0);
-}
+    : id_{Id::Create(type)},
+      name_{make_shared<const string>(std::move(name))} {}
 
 string Variable::get_name() const {
   return name_ != nullptr ? *name_ : string{"𝑥"};

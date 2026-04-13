@@ -288,7 +288,7 @@ void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
     mesh_cache_[cache_key] = std::move(cached);
   }
 
-  ImplementCachedMesh(mesh_cache_.at(cache_key), convex.scale3(), data);
+  ImplementCachedMesh(cache_key, convex.scale3(), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
@@ -461,6 +461,18 @@ bool RenderEngineVtk::DoRemoveGeometry(GeometryId id) {
       }
     }
     props_.erase(iter);
+    if (auto key_iter = geometry_mesh_keys_.find(id);
+        key_iter != geometry_mesh_keys_.end()) {
+      const std::string& key = key_iter->second;
+      auto cache_iter = mesh_cache_.find(key);
+      // If we had a key for this geometry, it must be in the cache.
+      DRAKE_DEMAND(cache_iter != mesh_cache_.end());
+      CachedMesh& cached = cache_iter->second;
+      if (--cached.use_count == 0) {
+        mesh_cache_.erase(key);
+      }
+      geometry_mesh_keys_.erase(key_iter);
+    }
     return true;
   }
 
@@ -648,6 +660,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   // counted, so this clone shares the same vtkPolyDataAlgorithm sources as
   // the original without duplicating any vertex data.
   mesh_cache_ = other.mesh_cache_;
+  geometry_mesh_keys_ = other.geometry_mesh_keys_;
 
   // Cloning the cache is subtle. The cache _data_ is a vtkTexture. That data is
   // shared across cloned RenderEngineVtk instances. It has an internal VTK
@@ -753,7 +766,7 @@ bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
     mesh_cache_[cache_key] = std::move(cached);
   }
 
-  ImplementCachedMesh(mesh_cache_.at(cache_key), mesh.scale3(), data);
+  ImplementCachedMesh(cache_key, mesh.scale3(), data);
   return true;
 }
 
@@ -1435,10 +1448,13 @@ void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
   UpdateWindow(camera.core(), false, p, "");
 }
 
-void RenderEngineVtk::ImplementCachedMesh(const CachedMesh& cached,
+void RenderEngineVtk::ImplementCachedMesh(const std::string& cache_key,
                                           const Vector3d& scale,
                                           const RegistrationData& data) {
   const bool unit_scale = (scale.array() == 1).all();
+  const CachedMesh& cached = mesh_cache_.at(cache_key);
+  geometry_mesh_keys_[data.id] = cache_key;
+  ++mesh_cache_.at(cache_key).use_count;
   for (const CachedMesh::Part& part : cached.parts) {
     // File-defined materials (OBJ/MTL) always win. When none was present
     // (nullopt -- either no MTL, or a convex hull), resolve per-instance via

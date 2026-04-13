@@ -531,7 +531,9 @@ GTEST_TEST(PolynomialTest, FromExpression) {
   const Variable z{"z"};
   Environment env{{x, 1.0}, {y, 2.0}, {z, 3.0}};
   const map<Polynomiald::VarType, double> eval_point{
-      {x.get_id(), env[x]}, {y.get_id(), env[y]}, {z.get_id(), env[z]}};
+      {Polynomiald::VariableIdToVarType(x.get_id()), env[x]},
+      {Polynomiald::VariableIdToVarType(y.get_id()), env[y]},
+      {Polynomiald::VariableIdToVarType(z.get_id()), env[z]}};
 
   const Expression e0{42.0};
   const Expression e1{pow(x, 2)};
