@@ -211,8 +211,8 @@ class SignedDistancePairTestData {
                "}}",
                obj.expected_result_.id_A, obj.expected_result_.id_B,
                obj.expected_result_.distance,
-               fmt_eigen(obj.expected_result_.p_ACa.transpose()),
-               fmt_eigen(obj.expected_result_.p_BCb.transpose()));
+               fmt_eigen(obj.expected_result_.p_ACa),
+               fmt_eigen(obj.expected_result_.p_BCb));
     return os;
   }
 

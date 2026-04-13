@@ -120,7 +120,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         "returned a point with the wrong dimension (its size was "
         "{}) when called on {}.",
         ambient_dimension, computed_ambient_dimension,
-        fmt_eigen(starting_ellipsoid_center.transpose())));
+        fmt_eigen(starting_ellipsoid_center)));
   }
 
   bool starting_ellipsoid_center_valid =
@@ -133,7 +133,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         "Starting ellipsoid center {} is in collision, or violates "
         "a constraint in "
         "options.sampled_iris_options.prog_with_additional_constraints.",
-        fmt_eigen(starting_ellipsoid_center.transpose())));
+        fmt_eigen(starting_ellipsoid_center)));
   }
 
   int current_num_faces = domain.A().rows();
@@ -572,7 +572,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           "of the region be in collision, or decreasing "
           "options.sampled_iris_options.delta (which was {}) to require a "
           "higher confidence in how much of the region is in collision.",
-          fmt_eigen(current_ellipsoid_center.transpose()),
+          fmt_eigen(current_ellipsoid_center),
           options.sampled_iris_options.epsilon,
           options.sampled_iris_options.delta));
       break;

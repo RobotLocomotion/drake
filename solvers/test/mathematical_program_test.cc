@@ -126,7 +126,7 @@ void CheckAddedVariable(const MathematicalProgram& prog, const T& var, int rows,
   EXPECT_EQ(var.rows(), rows);
   EXPECT_EQ(var.cols(), cols);
   // Checks the name of the newly added variables.
-  EXPECT_EQ(fmt::to_string(fmt_eigen(var)), var_name);
+  EXPECT_EQ(fmt::format("{:#}", fmt_eigen(var)), var_name);
   // Checks num_vars() function.
   const int num_new_vars =
       is_symmetric ? var.rows() * (var.rows() + 1) / 2 : var.size();
@@ -164,7 +164,8 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
                               const Eigen::MatrixBase<Derived>& indeterminates,
                               const string& indeterminates_name) {
   // Checks the name of the newly added indeterminates.
-  EXPECT_EQ(fmt::to_string(fmt_eigen(indeterminates)), indeterminates_name);
+  EXPECT_EQ(fmt::format("{:#}", fmt_eigen(indeterminates)),
+            indeterminates_name);
   // Checks num_indeterminates() function.
   const int num_new_indeterminates = indeterminates.size();
   EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);

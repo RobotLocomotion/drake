@@ -22,9 +22,9 @@ Plane<T>::Plane(const Vector3<T>& normal, const Vector3<T>& point_on_plane,
     // error.
     if (magnitude < 1e-10) {
       throw std::runtime_error(fmt::format(
-          "Cannot instantiate plane from normal n_F = [{}]; its magnitude is "
+          "Cannot instantiate plane from normal n_F = {}; its magnitude is "
           "too small: {}",
-          fmt_eigen(n_F.transpose()), magnitude));
+          fmt_eigen(n_F), magnitude));
     }
     nhat_F_ = n_F / magnitude;
   } else {
@@ -76,8 +76,8 @@ void Plane<T>::ThrowIfInsufficientlyNormal(const Vector3<T>& n) {
   if (delta > 1e-13) {
     throw std::runtime_error(fmt::format(
         "Plane constructed with a normal vector that was declared normalized;"
-        " the vector is not unit length. Vector [{}] with length {}",
-        fmt_eigen(n.transpose()), T{n.norm()}));
+        " the vector is not unit length. Vector {} with length {}",
+        fmt_eigen(n), T{n.norm()}));
   }
 }
 

@@ -3011,13 +3011,29 @@ Note:
 The format string specification syntax for fmt_eigen is based on
 fmtlib's [range
 format](https://fmt.dev/dev/syntax/#range-format-specifications)
-specification, recognizable by the distinctive double colon. However,
-in our current implementation of fmt_eigen we do not support the
-``"n"`` option (to remove brackets) nor the ``"s"`` nor ``"?s"``
-options (to merge a character range into a string).
+specification, recognizable by the distinctive double colon. We offer
+one additional option ``"#"`` that uses the "alternate form", which in
+this case means without any extra characters except whitespace (i.e.,
+no brackets, no commas, no transpose).
 
-The so-called "range underlying spec" format string depends on the
-particular scalar type captured in the fmt_eigen instance.
+
+.. code-block:: txt
+
+    eigen_format_spec ∷= ["s" | "?s" | [["n" | "#"][":" range_underlying_spec]]]
+
+- "s" is only available when the ``Scalar`` is ``char``; the Matrix contents are
+formatted as a quoted string, with the characters taken in row-major order.
+
+- "?s" is only available when the ``Scalar`` is ``char``; the Matrix contents are
+formatted as a debug string (i.e., quoted and escaped), with the characters
+taken in row-major order.
+
+- "n" turns off brackets (but leaves commas enabled);
+
+- "#" turns off both brackets and commas, similar to Eigen's default IOFormat.
+
+The "range_underlying_spec" format string depends on the particular
+Scalar type captured in the fmt_eigen instance.
 
 Examples:
 
@@ -3028,15 +3044,24 @@ Examples:
 
 .. code-block:: c++
 
-    Eigen∷RowVector3d x{M_PI, M_SQRT2, M_E};
+    Eigen∷Vector3d x{M_PI, M_SQRT2, M_E};
     fmt∷format("{}", fmt_eigen(x));
-    // " 3.141592653589793 1.4142135623730951  2.718281828459045"
+    // [3.141592653589793, 1.4142135623730951, 2.718281828459045]ᵀ
+    // (By default, a column-vector is printed as a transposed row-vector.)
     
     fmt∷format("{∷.2f}", fmt_eigen(x));
-    // "3.14 1.41 2.72"
+    // "[3.14, 1.41, 2.72]ᵀ"
+    
+    fmt∷format("{:n:.2f}", fmt_eigen(x.transpose()));
+    // "3.14, 1.41, 2.72"
+    // (We can use transpose() to avoid the column-vector newlines.)
+    
+    fmt∷format("{:#:.3f}", fmt_eigen(x));
+    // "3.142\n1.414\n2.718"
+    // (Eigen's default IOFormat uses newlines for a column-vector.)
     
     fmt∷format("{x∷e}", fmt∷arg("x", fmt_eigen(x)));
-    // "3.141593e+00 1.414214e+00 2.718282e+00"
+    // "[3.141593e+00, 1.414214e+00, 2.718282e+00]ᵀ"
 
 .. raw:: html
 
@@ -3050,9 +3075,17 @@ In the above examples we mostly leave it blank, but in the last one we give
 the argument the name ``"x"`` using ``fmt∷arg`` and then use that name in the
 format string.
 
+- The fmt_eigen format spec appears between the first and second colon. When
+empty, the normal presentation is used (with brackets and commas). When
+``'#'`` (like in the final two examples), the brackets and commas are omitted.
+
 - The floating-point format spec appears after the second colon. This syntax is
 part of fmt, not specific to Drake. As seen in the examples, it can be used to
-change the precision or use scientific notation, etc.)""";
+change the precision or use scientific notation, etc.
+
+Remark:
+    To format a 2-d Eigen∷Matrix as a 1-d Eigen∷Vector, use
+    ``fmt_eigen(M.reshaped(1, M.size()))``.)""";
     } fmt_eigen;
     // Symbol: drake::fmt_floating_point
     struct /* fmt_floating_point */ {

@@ -316,8 +316,8 @@ TEST_F(VariableOverloadingTest, OperatorOverloadingEigenDivideVariable) {
 
 TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutputFmt) {
   EXPECT_EQ(fmt::to_string(fmt_eigen(expr_mat_)),
-            "(x + z) (x + w)\n"
-            "(y + z) (y + w)");
+            "[[(x + z), (x + w)],\n"
+            " [(y + z), (y + w)]]");
 }
 }  // namespace
 }  // namespace symbolic
