@@ -1349,9 +1349,11 @@ drake_cc_library(
     hdrs = ["test/fcl_utilities.h"],
     visibility = ["//visibility:private"],
     deps = [
+        ":polygon_surface_mesh",
         ":proximity_utilities",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
+        "//math:geometric_transform",
         "@fcl_internal//:fcl",
     ],
 )
@@ -1734,8 +1736,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "penetration_as_point_pair_callback_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
     deps = [
+        ":fcl_utilities",
         ":penetration_as_point_pair_callback",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",

@@ -11,9 +11,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/test/fcl_utilities.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -25,6 +27,7 @@ namespace internal {
 namespace penetration_as_point_pair {
 namespace {
 
+using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
 using fcl::Sphered;
@@ -33,6 +36,7 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_shared;
+using std::unordered_map;
 using std::vector;
 using symbolic::Expression;
 
@@ -534,7 +538,7 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
 
 // This is a one-off test. Exposed in issue #10577. A point penetration pair
 // was returned for a zero-depth contact. This reproduces the geometry that
-// manifested the error. The reproduction isn't *exact*; it's been simplified to
+// manifested the error. The reproduction isn't *exact*; it's been reduced to
 // a simpler configuration. Specifically, the important characteristics are:
 //   - both box and cylinder are ill aspected (one dimension is several orders
 //     of magnitude smaller than the other two),
@@ -550,23 +554,25 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
 // a gibberish normal, it returns a zero vector. We want to make sure we don't
 // report zero-penetration as penetration, even in these numerically,
 // ill-conditioned scenarios. So, we address it up to a tolerance.
-GTEST_TEST(ProximityEngineTests, Issue10577Regression_Osculation) {
-  ProximityEngine<double> engine;
+TEST_F(PenetrationAsPointPairCallbackTest, Issue10577Regression_Osculation) {
   GeometryId id_A = GeometryId::get_new_id();
   GeometryId id_B = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Box(0.49, 0.63, 0.015), {}, id_A);
-  engine.AddDynamicGeometry(Cylinder(0.08, 0.002), {}, id_B);
 
-  // Original translation was p_WA = (-0.145, -0.63, 0.2425) and
+  // Original translations were p_WA = (-0.145, -0.63, 0.2425) and
   // p_WB = (0, -0.6, 0.251), respectively.
   RigidTransformd X_WA(Eigen::AngleAxisd{M_PI_2, Vector3d::UnitZ()},
                        Vector3d{-0.25, 0, 0});
   RigidTransformd X_WB(Vector3d{0, 0, 0.0085});
+  std::unique_ptr<CollisionObjectd> box =
+      MakeFclObject(Box(0.49, 0.63, 0.015), id_A, /* is_dynamic= */ true, X_WA);
+  std::unique_ptr<CollisionObjectd> cylinder =
+      MakeFclObject(Cylinder(0.08, 0.002), id_B, /* is_dynamic= */ true, X_WB);
   const unordered_map<GeometryId, RigidTransformd> X_WG{{id_A, X_WA},
                                                         {id_B, X_WB}};
-  engine.UpdateWorldPoses(X_WG);
-  std::vector<GeometryId> geometry_map{id_A, id_B};
-  auto pairs = engine.ComputePointPairPenetration(X_WG);
+
+  vector<PenetrationAsPointPair<double>> pairs;
+  CallbackData<double> callback_data(&collision_filter_, &X_WG, &pairs);
+  Callback<double>(box.get(), cylinder.get(), &callback_data);
   EXPECT_EQ(pairs.size(), 0);
 }
 
@@ -706,20 +712,22 @@ class BoxPenetrationTest : public ::testing::Test {
   void TestCollision(TangentShape shape_type, double tolerance,
                      const math::RigidTransformd& X_WB) {
     const GeometryId tangent_id = GeometryId::get_new_id();
-    engine_.AddDynamicGeometry(shape(shape_type), {}, tangent_id);
+    const RigidTransformd X_WA = shape_pose(shape_type);
+    std::unique_ptr<CollisionObjectd> tangent_object = MakeFclObject(
+        shape(shape_type), tangent_id, /* is_dynamic= */ true, X_WA);
 
     const GeometryId box_id = GeometryId::get_new_id();
-    engine_.AddDynamicGeometry(box_, {}, box_id);
+    std::unique_ptr<CollisionObjectd> box_object =
+        MakeFclObject(box_, box_id, /* is_dynamic= */ true, X_WB);
 
-    // Confirm that there are no other geometries interfering.
-    ASSERT_EQ(engine_.num_dynamic(), 2);
-
-    // Update the poses of the geometry.
-    unordered_map<GeometryId, RigidTransformd> poses{
-        {tangent_id, shape_pose(shape_type)}, {box_id, X_WB}};
-    engine_.UpdateWorldPoses(poses);
-    std::vector<PenetrationAsPointPair<double>> results =
-        engine_.ComputePointPairPenetration(poses);
+    // Note: we need a CollisionFilter for the callback data, but we don't need
+    // to populate it, because we're not actually filtering anything.
+    CollisionFilter collision_filter;
+    const unordered_map<GeometryId, RigidTransformd> X_WGs{{tangent_id, X_WA},
+                                                           {box_id, X_WB}};
+    vector<PenetrationAsPointPair<double>> results;
+    CallbackData<double> callback_data(&collision_filter, &X_WGs, &results);
+    Callback<double>(tangent_object.get(), box_object.get(), &callback_data);
 
     ASSERT_EQ(results.size(), 1u)
         << "Against tangent " << shape_name(shape_type);
@@ -873,8 +881,6 @@ class BoxPenetrationTest : public ::testing::Test {
   static const double kDepth;
   static const double kRadius;
   static const double kLength;
-
-  ProximityEngine<double> engine_;
 
   // The various geometries used in the collision test.
   const Box box_{1, 1, 1};
