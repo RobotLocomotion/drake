@@ -479,8 +479,8 @@ drake_py_unittest(
 install(
     name = "install",
     install_tests = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
+        "test/all_install_test.py",
+        "test/common_install_test.py",
     ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
@@ -501,9 +501,4 @@ install(
     ],
 )
 
-add_lint_tests_pydrake(
-    python_lint_extra_srcs = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
-    ],
-)
+add_lint_tests_pydrake()

@@ -14,7 +14,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt.h"
-#include "drake/common/fmt_eigen.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 
@@ -214,6 +213,10 @@ class VectorBase {
     upper->resize(0);
   }
 
+  /// Returns the string representation of a VectorBase<T> as a row vector
+  /// RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.
+  std::string to_string() const;
+
  protected:
   VectorBase() {}
 
@@ -276,7 +279,7 @@ class VectorBase {
 /// RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.
 template <typename T>
 std::string to_string(const VectorBase<T>& vec) {
-  return fmt::to_string(fmt_eigen(vec.CopyToVector().transpose()));
+  return vec.to_string();
 }
 
 /// Allows a VectorBase<T> to be streamed into a string as though it were a

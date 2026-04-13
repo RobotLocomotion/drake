@@ -106,7 +106,7 @@ PY_LIBRARIES = [
 install(
     name = "install",
     install_tests = [
-        ":test/visualization_install_tests.py",
+        "test/visualization_install_tests.py",
     ],
     targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
@@ -249,6 +249,5 @@ add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         "run_installed_meldis.py",
         "run_installed_model_visualizer.py",
-        "test/visualization_install_tests.py",
     ],
 )

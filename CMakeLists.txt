@@ -1,12 +1,15 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-# The minimum required CMake version should be the minimum of the versions
-# listed in doc/_pages/from_source.md and the version used by the wheel build.
-# When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
-# should be changed accordingly so that downstream users are synced with
-# Drake itself.
-cmake_minimum_required(VERSION 3.26)
+# The upper bound here (which sets the "policy version") should match the
+# highest version tested in Drake CI, which is documented in
+# doc/_pages/from_source.md. On the other hand, the minimum version is not
+# necessarily governed by our CI test matrix or OS support matrix, rather by
+# what is strictly required by the CMake features used here. This logic is
+# similar to what governs our minimum Bazel version (see MODULE.bazel).
+# When changing this, tools/install/libdrake/drake-config.cmake.in and its
+# corresponding tests should also be updated.
+cmake_minimum_required(VERSION 3.20...4.3)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
@@ -108,14 +111,6 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
   message(FATAL_ERROR
     "Compilation with ccache is NOT supported due to incompatibility with Bazel"
   )
-endif()
-
-# Get the full C++ compiler major version for our cmake/bazel.rc.in.
-string(REGEX MATCH "^([0-9]+)"
-  DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR
-  "${CMAKE_CXX_COMPILER_VERSION}")
-if(NOT DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR)
-  set(DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR "0")
 endif()
 
 # The minimum compiler versions should match those listed in
@@ -288,6 +283,14 @@ set(DRAKE_BAZEL_BUILD_DIR "${CMAKE_BINARY_DIR}/drake_build_cwd")
 file(MAKE_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}")
 
 set(BAZEL_REPO_ENV)
+
+# Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
+# `single_version_override`.
+file(CREATE_LINK
+  "${PROJECT_SOURCE_DIR}/tools/workspace/eigen/patches/upstream/constexpr-static.patch"
+  "${DRAKE_BAZEL_BUILD_DIR}/eigen-constexpr-static.patch"
+  SYMBOLIC
+)
 
 if(NOT APPLE)
   # N.B. Bazel does its own compiler-chasing with Xcode, which we shouldn't
@@ -620,6 +623,9 @@ define_bool_option("WITH_OSQP" "OSQP")
 define_bool_option("WITH_SCS" "SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
+if(DRAKE_CI_ENABLE_EVERYTHING)
+  set(WITH_GUROBI ON)
+endif()
 if(WITH_GUROBI)
   find_package(Gurobi 13.0 EXACT MODULE REQUIRED)
 
@@ -632,6 +638,9 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
+  set(WITH_MOSEK ON)
+endif()
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
@@ -681,14 +690,22 @@ if((NOT BUILD_SHARED_LIBS AND DRAKE_INSTALL_PYTHON) OR
   )
 endif()
 
-option(WITH_OPENMP "Build with support for OpenMP" OFF)
+if(APPLE)
+  set(DEFAULT_WITH_OPENMP OFF)
+else()
+  set(DEFAULT_WITH_OPENMP ON)
+endif()
+option(WITH_OPENMP "Build with support for OpenMP" ${DEFAULT_WITH_OPENMP})
 if(WITH_OPENMP)
-  string(APPEND BAZEL_CONFIG " --config=omp")
+  string(APPEND BAZEL_CONFIG " --config=openmp")
 endif()
 
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
+  set(WITH_ROBOTLOCOMOTION_SNOPT ON)
+endif()
 
 set(WITH_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
@@ -748,10 +765,6 @@ if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
-endif()
-
-if(DRAKE_CI_ENABLE_PACKAGING)
-  string(APPEND BAZEL_CONFIG " --config=packaging")
 endif()
 
 if(BUILD_TYPE_LOWER STREQUAL debug)

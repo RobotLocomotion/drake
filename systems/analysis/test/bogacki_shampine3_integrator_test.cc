@@ -13,6 +13,7 @@
 #include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/generic_integrator_test.h"
+#include "drake/systems/analysis/test_utilities/integrator_test_factory.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 
@@ -20,8 +21,8 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-typedef ::testing::Types<BogackiShampine3Integrator<double>> Types;
-// NOLINTNEXTLINE(whitespace/line_length)
+using Types =
+    ::testing::Types<IntegratorTestFactory<BogackiShampine3Integrator<double>>>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest,
                                Types);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, PleiadesTest, Types);

@@ -46,6 +46,8 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
     "-Werror=unqualified-std-cast-call",
+    # https://github.com/RobotLocomotion/drake/issues/22204
+    "-fno-assume-unique-vtables",
 ]
 
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
@@ -58,10 +60,23 @@ GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
     "-Werror=logical-op",
     "-Werror=non-virtual-dtor",
+    "-Werror=pessimizing-move",
     "-Werror=return-local-addr",
+    "-Werror=uninitialized",
     "-Werror=unused-but-set-parameter",
     # This was turned on via -Wextra, but is too strict to have as an error.
     "-Wno-missing-field-initializers",
+    # This falsely dings code that returns const references, e.g., our
+    # MbP style for "add element" or "find by name" member functions.
+    "-Wno-dangling-reference",
+    # This falsely dings code inside Eigen.
+    "-Wno-maybe-uninitialized",
+    # This falsely dings code inside libstdc++.
+    "-Wno-stringop-overflow",
+    # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
+    # Eigen uses 16-byte alignment, which these flags don't account for.
+    "-Wno-array-bounds",
+    "-Wno-stringop-overread",
 ]
 
 # The CC_TEST_FLAGS will be enabled for all cc_test rules in the project.
@@ -75,36 +90,6 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-missing-declarations",
     "-Wno-unused-parameter",
 ]
-
-# The GCC_13_OR_NEWER_FLAGS will be enabled for all C++ rules in the project
-# when building with gcc 13 through the newest version in the official support
-# matrix. See GCC_VERSION_SPECIFIC_FLAGS below for details.
-GCC_13_OR_NEWER_FLAGS = [
-    "-Werror=pessimizing-move",
-    "-Werror=uninitialized",
-    # This falsely dings code that returns const references, e.g., our
-    # MbP style for "add element" or "find by name" member functions.
-    "-Wno-dangling-reference",
-    # This falsely dings code inside Eigen.
-    "-Wno-maybe-uninitialized",
-    # This falsely dings code inside libstdc++.
-    "-Wno-stringop-overflow",
-    # These two falsely ding initializing an Eigen::Vector1d or Matrix1d.
-    # Eigen uses 16-byte alignment, which these flags doesn't account for.
-    "-Wno-array-bounds",
-    "-Wno-stringop-overread",
-]
-
-# The GCC_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
-# project when building with gcc of the specified major version, but only if
-# the --@drake//tools/cc_toolchain:compiler_major=NN flag has been set on the
-# command line or in an rcfile. (It typically will be except when Drake is used
-# as a Bazel external.)
-GCC_VERSION_SPECIFIC_FLAGS = {
-    13: GCC_13_OR_NEWER_FLAGS,
-    14: GCC_13_OR_NEWER_FLAGS,
-    15: GCC_13_OR_NEWER_FLAGS,
-}
 
 def _defang(flags):
     """Given a list of copts, demote all -Werror into just plain -W."""
@@ -122,15 +107,7 @@ BASE_COPTS = select({
     "//tools/cc_toolchain:linux_clang_with_errors": CLANG_FLAGS,
     "//tools/cc_toolchain:linux_clang_with_warnings": _defang(CLANG_FLAGS),
     "//conditions:default": _defang(CXX_FLAGS),
-}) + select(dict([
-    ("//tools/cc_toolchain:gcc_{}_with_errors".format(major_ver), flags)
-    for major_ver, flags in GCC_VERSION_SPECIFIC_FLAGS.items()
-] + [
-    ("//tools/cc_toolchain:gcc_{}_with_warnings".format(major_ver), _defang(flags))  # noqa
-    for major_ver, flags in GCC_VERSION_SPECIFIC_FLAGS.items()
-] + [
-    ("//conditions:default", []),
-]))
+})
 
 def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     """Returns the concatenation of Drake's platform-specific BASE_COPTS,

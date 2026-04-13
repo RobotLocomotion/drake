@@ -522,6 +522,17 @@ TEST_P(DoublePendulum, JointLimits) {
   const VectorXd q = plant_->GetPositions(*plant_context_);
   EXPECT_NEAR(q(0), 0.2, 1e-5);
   EXPECT_NEAR(q(1), 0.4, 1e-5);
+
+  // Generic integrator behavior: accept 0-duration step with no change to time
+  // or continuous state, and with error estimate updated to all 0.
+  integrator_->IntegrateWithMultipleStepsToTime(
+      simulator_->get_context().get_time());
+  EXPECT_EQ(simulator_->get_context().get_time(), 1.0);
+  const VectorXd q_after = plant_->GetPositions(*plant_context_);
+  EXPECT_EQ(q_after(0), q(0));
+  EXPECT_EQ(q_after(1), q(1));
+  VectorXd error_estimate(integrator_->get_error_estimate()->CopyToVector());
+  EXPECT_EQ(error_estimate.norm(), 0);
 }
 
 /* Checks that effort limits are enforced by the integrator. */

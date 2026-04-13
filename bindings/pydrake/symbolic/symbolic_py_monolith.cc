@@ -1,4 +1,5 @@
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -21,6 +22,18 @@
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 
 namespace drake {
+namespace symbolic {
+class VariablePythonAttorney {
+ public:
+  VariablePythonAttorney() = delete;
+  static Variable Construct(Variable::Id id, std::string name) {
+    Variable result;
+    result.id_ = id;
+    result.name_ = std::make_shared<const std::string>(std::move(name));
+    return result;
+  }
+};
+}  // namespace symbolic
 namespace pydrake {
 namespace internal {
 
@@ -143,6 +156,16 @@ void DefineSymbolicMonolith(py::module m) {
       .def(py::self != double());
   internal::BindMathOperators<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
+  var_cls.def(py::pickle(
+      [m](const Variable& self) -> std::pair<Variable::Id, std::string> {
+        return std::pair<Variable::Id, std::string>(
+            self.get_id(), self.get_name());
+      },
+      [m](std::pair<Variable::Id, std::string> args) -> Variable {
+        return symbolic::VariablePythonAttorney::Construct(
+            /* id = */ std::get<0>(args),
+            /* name = */ std::move(std::get<1>(args)));
+      }));
 
   // Bind the free function TaylorExpand.
   m.def(

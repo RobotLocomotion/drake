@@ -198,6 +198,8 @@ class Variable {
   }
 
  private:
+  friend class VariablePythonAttorney;
+
   // Unique identifier for this Variable. The high-order byte stores the Type.
   // See get_next_id() in the cc file for more details.
   reset_after_move<Id> id_;

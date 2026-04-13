@@ -196,7 +196,13 @@ The Drake Bazel build currently supports the following proprietary solvers:
 * MOSEK™ 11.1
 * SNOPT 7.4
 
-## Gurobi 13.0
+Important note: Running Gurobi or MOSEK™ requires a license, which will often
+have a maximum number of programs allowed to use the solver at once. To avoid
+hitting the concurrency limit when running `bazel test //some/package/...` or
+`bazel test //...`, use the flag `--local_test_jobs=N` set to the number of
+license seats you want to use.
+
+## Gurobi
 
 ### Install on Ubuntu
 
@@ -281,29 +287,13 @@ SNOPT support has some known problems on certain programs (see drake issue
 
 # Other optional dependencies
 
-## OpenMP
-
-Drake is
-[in the process](https://github.com/RobotLocomotion/drake/issues/14858)
-of adding support for multiprocessing using
-[OpenMP](https://en.wikipedia.org/wiki/OpenMP).
-At the moment, that support is experimental and is not recommended for Drake's
-users.
-
-For Drake Developers who wish to enable OpenMP, use this config switch:
-
-```
-bazel test --config omp //...
-```
-
-This switch is enabled in CI under the "Ubuntu Everything" build flavor.
-
 # Optional Tools
 
 The Drake Bazel build system has integration support for some optional
 development tools:
 
 * kcov -- test coverage analysis
+* docker -- debug CI failures using a virtual machine
 
 ## kcov
 
@@ -365,3 +355,35 @@ To force execution with kcov, add an empty `test_tag_filters` option:
 ```
 bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
 ```
+
+## docker
+
+Drake supports multiple Ubuntu versions. Developers who need to debug
+a CI failure on an Ubuntu version other than their desktop version can
+use Docker:
+
+Install docker:
+
+```
+$ sudo apt install docker.io
+$ sudo usermod -aG docker $USER
+$ newgrp docker
+```
+
+Boot a virtual machine, clone Drake, install prereqs, and develop as usual:
+
+```
+$ docker run --rm -it ubuntu:26.04
+# apt update
+# apt install -y git sudo
+# echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# su - ubuntu
+$ git clone --depth=1 https://github.com/RobotLocomotion/drake.git
+$ cd drake
+$ git fetch origin pull/NNNNN/head && git checkout FETCH_HEAD
+$ setup/install_prereqs -y --developer
+$ bazel test //common:fmt_test
+```
+
+When you exit the virtual machine it will be deleted, so be sure to
+capture what you need before exiting.

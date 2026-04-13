@@ -80,7 +80,7 @@ class DiagramScanner : public SystemVisitor<T> {
   void VisitSystem(const System<T>& system) override {
     DRAKE_LOGGER_TRACE("depth {} visit system", ssize(current_path_));
     // Our styleguide eschews using run-time type information (RTTI) for control
-    // flow. However, since CenicInegrator is strongly coupled to a specific
+    // flow. However, since CenicIntegrator is strongly coupled to a specific
     // class (MultibodyPlant) without any design intention to operate on any
     // other class, using the cast to find the plant needle in the diagram
     // haystack if the best choice among the available options.
@@ -296,6 +296,12 @@ template <typename T>
 bool CenicIntegrator<T>::DoStep(const T& h) {
   DRAKE_DEMAND(builder_ != nullptr);
 
+  if (h == T(0)) {
+    ContinuousState<T>& err = *this->get_mutable_error_estimate();
+    err.get_mutable_vector().SetZero();
+    return true;
+  }
+
   // TODO(vincekurtz): consider delaying this to encourage cache hits
   Context<T>& context = *this->get_mutable_context();
   ContinuousState<T>& x_next = context.get_mutable_continuous_state();
@@ -364,6 +370,7 @@ bool CenicIntegrator<T>::DoStep(const T& h) {
     // N.B. this is slightly faster than x_next.SetFrom(x_next_full), because
     // it saves an intermediate Eigen representation.
     x_next.get_mutable_vector().SetFrom(x_next_full.get_vector());
+    context.SetTimeAndNoteContinuousStateChange(t0 + h);
   } else {
     // We're using error control, and will compare with two half-sized steps.
 

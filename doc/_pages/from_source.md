@@ -28,16 +28,17 @@ officially supports when building from source:
      CMakeLists.txt. -->
 <!-- The minimum Python version(s) should match those listed in both the root
      CMakeLists.txt and setup/python/pyproject.toml. -->
-<!-- The minimum CMake version across all platforms should match that listed
-     in the root CMakeLists.txt. The maximum version should match the policy
-     version listed in tools/install/libdrake/drake-config.cmake.in (and all
-     corresponding tests). -->
+<!-- The maximum CMake version across all platforms should match the upper
+     bound ("policy version") listed in both the root CMakeLists.txt and
+     tools/install/libdrake/drake-config.cmake.in (along with the related
+     libdrake tests). -->
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
-|------------------------------------|--------------|------------|-------|-------|------------------------------|
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
-| macOS Sequoia (15)                 | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
-| macOS Tahoe (26)                   | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
+| Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
+|-------------------------------------|--------------|------------|-------|-------|------------------------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.14       | 9.0   | 4.2   | GCC 15 (default) or Clang 21 |
+| macOS Sequoia (15)                  | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Tahoe (26)                    | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -193,6 +194,10 @@ Adjusting open-source dependencies:
 * `WITH_RENDER_VTK` (default `ON`). When `ON`, enables the `RenderEngineVtk` in
   the build. See `geometry::kHasRenderEngineVtk` to retrieve this setting at
   runtime.
+* `WITH_OPENMP` (default `ON` on Linux; `OFF` on macOS). When `ON`, enables
+  OpenMP-based parallelization. See documentation of
+  [Environment Variables](/doxygen_cxx/group__environment__variables.html)
+  for how to control the level of parallelism at runtime.
 
 Adjusting closed-source (commercial) software dependencies:
 
@@ -265,7 +270,7 @@ cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 ```
 
-*macOS:*
+*Ubuntu 26.04 (Resolute) or macOS:*
 
 ```bash
 cd drake-build

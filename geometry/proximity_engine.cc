@@ -86,47 +86,6 @@ struct ConvexHullCacheEntry {
 class MapStringToConvexHullCache
     : public string_unordered_map<ConvexHullCacheEntry> {};
 
-// Helper function that creates a copy of the given collision object.
-// The underlying FCL collision geometry is shared with the source rather than
-// deep-copied; FCL geometry objects are treated as immutable after
-// construction.
-unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
-    const CollisionObjectd& object_source) {
-  const auto& shape_source = *object_source.collisionGeometry();
-
-  // Store the geometry rather than copying it. However, we have to stash away
-  // the local AABB configuration. See below for why.
-  const Vector3d local_aabb_min = shape_source.aabb_local.min_;
-  const Vector3d local_aabb_max = shape_source.aabb_local.max_;
-  const double aabb_radius = shape_source.aabb_radius;
-
-  shared_ptr<fcl::CollisionGeometryd> shared_geom =
-      std::const_pointer_cast<fcl::CollisionGeometryd>(
-          object_source.collisionGeometry());
-
-  auto object_copy = make_unique<CollisionObjectd>(shared_geom);
-
-  // The source's local AABB may have been inflated if the underlying object
-  // is associated with a compliant hydroelastic shape with a non-zero margin;
-  // therefore the AABB that fits the shape may not be what we want. We can't
-  // tell simply by looking at the FCL object if this is the case, so, we'll
-  // simply copy the source's local _original_ AABB verbatim to preserve the
-  // effect.
-  //
-  // Note: this has to be done *after* the collision object is created because
-  // CollisionObjectd's constructor calls computeLocalAABB() on the geometry,
-  // which would otherwise reset any inflation.
-  shared_geom->aabb_local.min_ = local_aabb_min;
-  shared_geom->aabb_local.max_ = local_aabb_max;
-  shared_geom->aabb_radius = aabb_radius;
-
-  object_copy->setUserData(object_source.getUserData());
-  object_copy->setTransform(object_source.getTransform());
-  object_copy->computeAABB();
-
-  return object_copy;
-}
-
 // Helper function that creates a deep copy of a vector of collision objects.
 // Assumes the input vector has already been cleared. The `copy_map` parameter
 // serves as a mapping from each source object to its corresponding copy. Used
@@ -141,7 +100,8 @@ void CopyFclObjectsOrThrow(
   for (const auto& source_id_object_pair : source_objects) {
     const GeometryId source_id = source_id_object_pair.first;
     const CollisionObjectd& source_object = *source_id_object_pair.second;
-    (*target_objects)[source_id] = CopyFclObjectOrThrow(source_object);
+    (*target_objects)[source_id] =
+        make_unique<fcl::CollisionObjectd>(source_object);
     copy_map->insert({&source_object, (*target_objects)[source_id].get()});
   }
 }
@@ -1097,10 +1057,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(object != nullptr);
 
     // To edit the assigned collision geometry, we have to cheat and temporarily
-    // ignore the const-ness. Note: this assumes that the collision object
-    // hasn't been added to a BVH yet; as long as this is part of the
-    // reification process, that will remain true. The collision object only
-    // gets added when reification is complete.
+    // ignore the const-ness.
     auto* g =
         const_cast<fcl::CollisionGeometryd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(g != nullptr);

@@ -80,6 +80,17 @@ system diagram with a `MultibodyPlant` subsystem.
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
 
+Implementation notes:
+
+@warning CENIC's error control implementation is not sensitive to continuous
+         state of systems other than the plant(). See issue #23921.
+
+@warning When asked to perform 0-sized integration steps, CENIC executes a
+         special case that does no integration or state updates, but does reset
+         the error estimate to all 0, and always succeeds. This is in contrast
+         to other integrator implementations in Drake. See DoStep() in the
+         implementation.
+
 References:
 
   [Castro et al., 2023] Castro A., Han X., and Masterjohn J., 2023. Irrotational
@@ -181,6 +192,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   void DoInitialize() final;
 
+  /* @warning For `h` == 0, CENIC DoStep() executes a special case that does no
+     integration or state updates, but does reset the error estimate to all 0,
+     and always succeeds.
+
+    See IntegratorBase::DoStep() for full implementation requirements. */
   bool DoStep(const T& h) final;
 
   /* Solves the ICF problem to compute x_{t+h}.
@@ -205,7 +221,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
                                  VectorX<T>* q) const;
 
   /* Locations of plant and non-plant continuous state. Note that the contained
-  `plant` pointer is guaranteed to be non-null by the CenicInegrator
+  `plant` pointer is guaranteed to be non-null by the CenicIntegrator
   constructor .*/
   const internal::CenicDiagramStructure<T> structure_;
 
