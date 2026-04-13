@@ -3,10 +3,14 @@
 
 # ruff: noqa: F821 (undefined-name). This file is only a fragment.
 
+from collections.abc import Callable
 import functools
 import operator
+import pickle
 import sys
 import typing
+
+from numpy import empty
 
 
 def logical_and(*formulas):
@@ -27,25 +31,74 @@ def _reduce_mul(*args):
     return functools.reduce(operator.mul, args)
 
 
-def _deconstruct_variable(var: Variable) -> list:
-    return [var.get_id(), var.get_name(), var.get_type()]
+_IFTHENELSE_EXPR_ARG_NUM = 3
+_NAN_EXPR_ARG_NUM = 0
+_CONST_EXPR_ARG_NUM = 1
+_PSD_FORMULA_ARG_NUM = 1
+_FORALL_FORMULA_ARG_NUM = 2
+_ISNAN_FORMULA_ARG_NUM = 1
+_UNINTERPRETED_FUNCTION_ARG_NUM = 2
+_BINARY_OPS_ARG_NUM = 2
+_UNARY_OPS_ARG_NUM = 1
+_EXPR_BINARY_OPS: dict[ExpressionKind, Callable] = {
+    ExpressionKind.Pow: pow,
+    ExpressionKind.Atan2: atan2,
+    ExpressionKind.Div: operator.truediv,
+    ExpressionKind.Max: max,
+    ExpressionKind.Min: min,
+}
+_EXPR_UNARY_OPS: dict[ExpressionKind, Callable] = {
+    ExpressionKind.Abs: abs,
+    ExpressionKind.Acos: acos,
+    ExpressionKind.Asin: asin,
+    ExpressionKind.Atan: atan,
+    ExpressionKind.Ceil: ceil,
+    ExpressionKind.Cos: cos,
+    ExpressionKind.Cosh: cosh,
+    ExpressionKind.Exp: exp,
+    ExpressionKind.Floor: floor,
+    ExpressionKind.Log: log,
+    ExpressionKind.Sin: sin,
+    ExpressionKind.Sinh: sinh,
+    ExpressionKind.Sqrt: sqrt,
+    ExpressionKind.Tan: tan,
+    ExpressionKind.Tanh: tanh,
+}
+_EXPR_ADD_MUL_OPS: dict[ExpressionKind, Callable] = {
+    ExpressionKind.Add: _reduce_add,
+    ExpressionKind.Mul: _reduce_mul,
+}
+
+_FORMULA_BINARY_OPS: dict[FormulaKind, Callable] = {
+    FormulaKind.Eq: operator.eq,
+    FormulaKind.Neq: operator.ne,
+    FormulaKind.Gt: operator.gt,
+    FormulaKind.Geq: operator.ge,
+    FormulaKind.Lt: operator.lt,
+    FormulaKind.Leq: operator.le,
+}
+_FORMULA_LOGICAL_OPS: dict[FormulaKind, Callable] = {
+    FormulaKind.And: logical_and,
+    FormulaKind.Or: logical_or,
+    FormulaKind.Not: logical_not,
+}
 
 
-var_map_t = dict[int, Variable]
+def _check_args_len(expected_len: int, args_len: int) -> None:
+    if args_len != expected_len:
+        raise ValueError(f"Expected {expected_len} arguments, got {args_len}")
 
 
-def _reconstruct_variable(
-    var_id: int, var_name: str, var_type: int, var_map: var_map_t
-) -> Variable:
-    if var_id not in var_map:
-        var_map[var_id] = Variable(var_name, var_type)
-    return var_map[var_id]
+def _deconstruct_variable(var: Variable) -> bytes:
+    return pickle.dumps(var)
 
 
-def _deconstruct_formula(f: Formula) -> tuple:
-    result = list()
+def _reconstruct_variable(pickled_var: bytes) -> Variable:
+    return pickle.loads(pickled_var)
+
+
+def _deconstruct_formula(f: Formula) -> tuple[FormulaKind, list]:
     args = list()
-    result.append(f.get_kind())
     match f.get_kind():
         case FormulaKind.Var:
             args = _deconstruct_variable(list(f.GetFreeVariables())[0])
@@ -67,7 +120,10 @@ def _deconstruct_formula(f: Formula) -> tuple:
             _, forall_args = f.Unapply()
             vars: Variables = forall_args[0]
             formula: Formula = forall_args[1]
-            assert isinstance(vars, Variables) and isinstance(formula, Formula)
+            if not isinstance(vars, Variables):
+                raise TypeError(f"Expected Variables, got {type(vars)}")
+            if not isinstance(formula, Formula):
+                raise TypeError(f"Expected Formula, got {type(formula)}")
             args.append([_deconstruct_variable(var) for var in vars])
             args.append(_deconstruct_formula(formula))
         case FormulaKind.PositiveSemidefinite:
@@ -78,79 +134,49 @@ def _deconstruct_formula(f: Formula) -> tuple:
                 for row in matrix
             ]
             args.append(deconstructed_rows)
-    result.append(args)
-    return tuple(result)
+    return f.get_kind(), args
 
 
-def _reconstruct_formula(
-    formula_kind: FormulaKind, args: list, var_map: var_map_t
-) -> Formula:
+def _reconstruct_formula(formula_kind: FormulaKind, args: list) -> Formula:
     match formula_kind:
         case FormulaKind.Var:
-            assert len(args) == 3
-            return Formula(_reconstruct_variable(*args, var_map=var_map))
+            return Formula(_reconstruct_variable(args))
         case FormulaKind.Isnan:
-            assert len(args) == 1
-            return isnan(
-                _recur_reconstruct_expression(*args[0], var_map=var_map)
-            )
+            _check_args_len(_ISNAN_FORMULA_ARG_NUM, len(args))
+            return isnan(_reconstruct_expression(*args[0]))
         case FormulaKind.Forall:
-            assert len(args) == 2
+            _check_args_len(_FORALL_FORMULA_ARG_NUM, len(args))
             pickled_vars = args[0]
             vars = Variables()
             for pickled_var in pickled_vars:
-                vars.insert(
-                    _reconstruct_variable(*pickled_var, var_map=var_map)
-                )
+                vars.insert(_reconstruct_variable(pickled_var))
             pickled_f = args[1]
-            formula: Formula = _reconstruct_formula(*pickled_f, var_map=var_map)
+            formula: Formula = _reconstruct_formula(*pickled_f)
             return forall(vars, formula)
         case FormulaKind.PositiveSemidefinite:
-            assert len(args) == 1
+            _check_args_len(_PSD_FORMULA_ARG_NUM, len(args))
             deconstructed_m = args[0]
             rows = len(deconstructed_m)
             cols = len(deconstructed_m[0]) if rows > 0 else 0
-            from numpy import empty
-
             m = empty((rows, cols), dtype=object)
             for i in range(rows):
                 for j in range(cols):
-                    m[i][j] = _recur_reconstruct_expression(
-                        *deconstructed_m[i][j], var_map=var_map
-                    )
+                    m[i][j] = _reconstruct_expression(*deconstructed_m[i][j])
             return positive_semidefinite(m)
 
-    logical_ops = {
-        FormulaKind.And: logical_and,
-        FormulaKind.Or: logical_or,
-        FormulaKind.Not: logical_not,
-    }
-    if formula_kind in logical_ops:
-        formulas = [
-            _reconstruct_formula(*pickled_f, var_map=var_map)
-            for pickled_f in args
-        ]
-        return logical_ops[formula_kind](*formulas)
-    binary_ops = {
-        FormulaKind.Eq: operator.eq,
-        FormulaKind.Neq: operator.ne,
-        FormulaKind.Gt: operator.gt,
-        FormulaKind.Geq: operator.ge,
-        FormulaKind.Lt: operator.lt,
-        FormulaKind.Leq: operator.le,
-    }
-    if formula_kind in binary_ops:
-        assert len(args) == 2
-        expr1, expr2 = [
-            _recur_reconstruct_expression(*arg, var_map=var_map) for arg in args
-        ]
-        return binary_ops[formula_kind](expr1, expr2)
+    if formula_kind in _FORMULA_LOGICAL_OPS:
+        formulas = [_reconstruct_formula(*pickled_f) for pickled_f in args]
+        return _FORMULA_LOGICAL_OPS[formula_kind](*formulas)
+
+    if formula_kind in _FORMULA_BINARY_OPS:
+        _check_args_len(_BINARY_OPS_ARG_NUM, len(args))
+        expr1, expr2 = [_reconstruct_expression(*arg) for arg in args]
+        return _FORMULA_BINARY_OPS[formula_kind](expr1, expr2)
+    raise ValueError(f"Unhandled FormulaKind: {formula_kind}")
 
 
-def _deconstruct_expression(e: Expression) -> tuple:
-    result = list()
+def _deconstruct_expression(e: Expression) -> tuple[ExpressionKind, list]:
     args = list()
-    result.append(e.get_kind())
     match e.get_kind():
         case ExpressionKind.Constant:
             args.append(e.Evaluate())
@@ -160,7 +186,8 @@ def _deconstruct_expression(e: Expression) -> tuple:
             pass
         case ExpressionKind.Add | ExpressionKind.Mul:
             _, exprs = e.Unapply()
-            # exprs[0] is a number not an expression
+            if not isinstance(exprs[0], float):
+                raise TypeError(f"Expected float, got {type(exprs[0])}")
             args = [exprs[0]] + [
                 _deconstruct_expression(expr) for expr in exprs[1:]
             ]
@@ -200,98 +227,55 @@ def _deconstruct_expression(e: Expression) -> tuple:
             args = [func_name] + [
                 [_deconstruct_expression(expr) for expr in func_args]
             ]
-    result.append(args)
-    return tuple(result)
-
-
-def _recur_reconstruct_expression(
-    expr_kind: ExpressionKind, args: list, var_map: var_map_t
-) -> Expression:
-    match expr_kind:
-        case ExpressionKind.Constant:
-            assert len(args) == 1
-            return Expression(*args)
-        case ExpressionKind.Var:
-            assert len(args) == 3
-            return Expression(_reconstruct_variable(*args, var_map=var_map))
-        case ExpressionKind.NaN:
-            assert len(args) == 0
-            return Expression(float("nan"))
-        case ExpressionKind.IfThenElse:
-            assert len(args) == 3
-            formula = _reconstruct_formula(*args[0], var_map=var_map)
-            expr_then, expr_else = [
-                _recur_reconstruct_expression(*arg, var_map=var_map)
-                for arg in args[1:]
-            ]
-            return if_then_else(formula, expr_then, expr_else)
-        case ExpressionKind.UninterpretedFunction:
-            assert len(args) == 2
-            return uninterpreted_function(
-                name=args[0],
-                arguments=[
-                    _recur_reconstruct_expression(*arg, var_map=var_map)
-                    for arg in args[1]
-                ],
-            )
-
-    unary_ops = {
-        ExpressionKind.Abs: abs,
-        ExpressionKind.Acos: acos,
-        ExpressionKind.Asin: asin,
-        ExpressionKind.Atan: atan,
-        ExpressionKind.Ceil: ceil,
-        ExpressionKind.Cos: cos,
-        ExpressionKind.Cosh: cosh,
-        ExpressionKind.Exp: exp,
-        ExpressionKind.Floor: floor,
-        ExpressionKind.Log: log,
-        ExpressionKind.Sin: sin,
-        ExpressionKind.Sinh: sinh,
-        ExpressionKind.Sqrt: sqrt,
-        ExpressionKind.Tan: tan,
-        ExpressionKind.Tanh: tanh,
-    }
-    if expr_kind in unary_ops:
-        assert len(args) == 1
-        expr = _recur_reconstruct_expression(*args[0], var_map=var_map)
-        return unary_ops[expr_kind](expr)
-
-    binary_ops = {
-        ExpressionKind.Pow: pow,
-        ExpressionKind.Atan2: atan2,
-        ExpressionKind.Div: operator.truediv,
-        ExpressionKind.Max: max,
-        ExpressionKind.Min: min,
-    }
-    if expr_kind in binary_ops:
-        assert len(args) == 2
-        expr1, expr2 = [
-            _recur_reconstruct_expression(*arg, var_map=var_map) for arg in args
-        ]
-        return binary_ops[expr_kind](expr1, expr2)
-
-    add_mul_ops = {
-        ExpressionKind.Add: _reduce_add,
-        ExpressionKind.Mul: _reduce_mul,
-    }
-    if expr_kind in add_mul_ops:
-        assert isinstance(args[0], float)
-        exprs = [args[0]] + [
-            _recur_reconstruct_expression(*arg, var_map=var_map)
-            for arg in args[1:]
-        ]
-        return add_mul_ops[expr_kind](*exprs)
+    return e.get_kind(), args
 
 
 def _reconstruct_expression(
-    expr_kind: ExpressionKind, args: list
+    expr_kind: ExpressionKind,
+    args: list,
 ) -> Expression:
-    var_map: var_map_t = dict()
-    return _recur_reconstruct_expression(expr_kind, args, var_map)
+    match expr_kind:
+        case ExpressionKind.Constant:
+            _check_args_len(_CONST_EXPR_ARG_NUM, len(args))
+            return Expression(*args)
+        case ExpressionKind.Var:
+            return Expression(_reconstruct_variable(args))
+        case ExpressionKind.NaN:
+            _check_args_len(_NAN_EXPR_ARG_NUM, len(args))
+            return Expression(float("nan"))
+        case ExpressionKind.IfThenElse:
+            _check_args_len(_IFTHENELSE_EXPR_ARG_NUM, len(args))
+            formula = _reconstruct_formula(*args[0])
+            expr_then, expr_else = [
+                _reconstruct_expression(*arg) for arg in args[1:]
+            ]
+            return if_then_else(formula, expr_then, expr_else)
+        case ExpressionKind.UninterpretedFunction:
+            _check_args_len(_UNINTERPRETED_FUNCTION_ARG_NUM, len(args))
+            return uninterpreted_function(
+                name=args[0],
+                arguments=[_reconstruct_expression(*arg) for arg in args[1]],
+            )
+
+    if expr_kind in _EXPR_UNARY_OPS:
+        _check_args_len(_UNARY_OPS_ARG_NUM, len(args))
+        expr = _reconstruct_expression(*args[0])
+        return _EXPR_UNARY_OPS[expr_kind](expr)
+
+    if expr_kind in _EXPR_BINARY_OPS:
+        _check_args_len(_BINARY_OPS_ARG_NUM, len(args))
+        expr1, expr2 = [_reconstruct_expression(*arg) for arg in args]
+        return _EXPR_BINARY_OPS[expr_kind](expr1, expr2)
+
+    if expr_kind in _EXPR_ADD_MUL_OPS:
+        if not isinstance(args[0], float):
+            raise TypeError(f"Expected float, got {type(args[0])}")
+        exprs = [args[0]] + [_reconstruct_expression(*arg) for arg in args[1:]]
+        return _EXPR_ADD_MUL_OPS[expr_kind](*exprs)
+    raise ValueError(f"Unhandled ExpressionKind: {expr_kind}")
 
 
-def _reduce_expression(self):
+def _reduce_expression(self) -> tuple[Callable, tuple]:
     return (_reconstruct_expression, _deconstruct_expression(self))
 
 

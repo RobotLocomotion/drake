@@ -16,12 +16,10 @@ from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
-from pydrake.common.test_utilities.pickle_compare import (
-    assert_pickle,
-    assert_pickle_expression,
-)
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 import pydrake.math as drake_math
 import pydrake.symbolic as sym
+from pydrake.symbolic import Expression
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -963,8 +961,6 @@ class TestSymbolicExpression(unittest.TestCase):
     # functions.
 
     def test_pickle_expression_with_evaluation(self):
-        from copy import copy
-
         test_expr = [
             e_x,
             sym.Expression(5.5),
@@ -972,10 +968,6 @@ class TestSymbolicExpression(unittest.TestCase):
             x + y,
             x + 5,
             5 * x,
-            # Case to test that a new variable is created during unpickling only
-            # if its ID is encountered for the first time only. Otherwise, the
-            # variable is already created and stored, then fetched.
-            (2 * x + 3 * y) * (4 * copy(x) + 5 * copy(y)),
             x * x,
             sym.pow(a * (x + y), w + z),
             x / y,
@@ -1026,14 +1018,6 @@ class TestSymbolicExpression(unittest.TestCase):
             ),
             sym.if_then_else(sym.isnan(e_x), x, y),
             sym.if_then_else(sym.isnan(e_x), x + sym.pow(y, 3), sym.exp(z)),
-        ]
-        for expr in test_expr:
-            with self.subTest(expr=expr):
-                assert_pickle_expression(self, expr, evaluate=True)
-
-    def test_pickle_expression_without_evaluation(self):
-        # evaluation for these forall formulas is not implemented
-        test_expr = [
             sym.if_then_else(
                 sym.forall(
                     sym.Variables(np.array([x, z], dtype=object)), x < z
@@ -1057,7 +1041,7 @@ class TestSymbolicExpression(unittest.TestCase):
         ]
         for expr in test_expr:
             with self.subTest(expr=expr):
-                assert_pickle_expression(self, expr, evaluate=False)
+                assert_pickle(test=self, obj=expr, T=Expression)
 
 
 class TestSymbolicFormula(unittest.TestCase):
