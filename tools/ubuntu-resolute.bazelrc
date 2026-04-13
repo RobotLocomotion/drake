@@ -1,5 +1,5 @@
-# Options for explicitly using Clang.
-# Keep this in sync with doc/_pages/from_source.md.
+# TODO(jwnimmer-tri) Delete this unused file from git. It only remains here as a
+# tombstone so that developers don't need to immediately re-run install_prereqs.
 common:clang --repo_env=CC=clang-21
 common:clang --repo_env=CXX=clang++-21
 build:clang --action_env=CC=clang-21

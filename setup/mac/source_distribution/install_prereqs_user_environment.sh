@@ -18,7 +18,6 @@ bazelrc="${workspace_dir}/gen/environment.bazelrc"
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
-import %workspace%/tools/macos.bazelrc
 EOF
 
 # Prefetch the bazelisk download of bazel.
