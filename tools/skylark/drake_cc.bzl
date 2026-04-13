@@ -8,6 +8,7 @@ load(
 )
 load(
     "//tools/skylark:kwargs.bzl",
+    "amend",
     "incorporate_allow_network",
     "incorporate_display",
     "incorporate_num_threads",
@@ -733,6 +734,7 @@ def drake_cc_binary(
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = 0,
+        test_rule_opt_in_condition = None,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -794,6 +796,7 @@ def drake_cc_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            opt_in_condition = test_rule_opt_in_condition,
             linkstatic = linkstatic,
             args = test_rule_args,
             tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
@@ -813,6 +816,7 @@ def drake_cc_test(
         allow_network = None,
         display = False,
         num_threads = None,
+        opt_in_condition = None,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -828,6 +832,9 @@ def drake_cc_test(
         See drake/tools/skylark/README.md for details.
 
     @param num_threads (optional, default is 1)
+        See drake/tools/skylark/README.md for details.
+
+    @param opt_in_condition (optional, default is None)
         See drake/tools/skylark/README.md for details.
     """
     if size == None:
@@ -848,7 +855,7 @@ def drake_cc_test(
         linkopts = new_linkopts,
         **kwargs
     )
-    cc_test(
+    cc_test_kwargs = dict(
         name = name,
         size = size,
         srcs = new_srcs,
@@ -863,6 +870,30 @@ def drake_cc_test(
         ],
         **kwargs
     )
+    if opt_in_condition == None:
+        cc_test(**cc_test_kwargs)
+    else:
+        # The test should always be compiled, but only conditionally run. We'll
+        # accomplish that by declaring it both as a test and a binary, but with
+        # mutually exclusive conditions for each.
+        cc_test(
+            target_compatible_with = select({
+                opt_in_condition: [],
+                "//conditions:default": ["@platforms//:incompatible"],
+            }),
+            **cc_test_kwargs
+        )
+        cc_binary_kwargs = amend(cc_test_kwargs, "tags", append = ["nolint"])
+        cc_binary_kwargs["name"] = "_{}_build".format(name)
+        for arg in ["env_inherit", "shard_count", "size", "timeout"]:
+            cc_binary_kwargs.pop(arg, None)
+        cc_binary(
+            target_compatible_with = select({
+                opt_in_condition: ["@platforms//:incompatible"],
+                "//conditions:default": [],
+            }),
+            **cc_binary_kwargs
+        )
 
 def drake_cc_googletest(
         name,

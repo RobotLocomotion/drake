@@ -54,12 +54,6 @@ build --incompatible_default_to_explicit_init_py
 build --test_output=errors
 build --test_summary=terse
 
-# By default, disable execution of tests that require proprietary software.
-# Individual targets that use proprietary software are responsible for ensuring
-# they can also build without it, typically by using a select statement.
-# config_setting rules for proprietary software are provided in //tools.
-build --test_tag_filters=-gurobi,-mosek,-snopt
-
 # Location of the Gurobi license key file, typically named "gurobi.lic".
 # Setting this --test_env for all configurations is deliberate to improve
 # remote caching performance.
@@ -92,40 +86,9 @@ build:debug --compilation_mode=dbg
 build:debug --test_timeout=120,600,1800,7200
 
 ### A configuration that enables all optional dependencies. ###
-build:everything --test_tag_filters=-no_everything
+build:everything --@drake//tools/flags:with_gurobi=True
+build:everything --@drake//tools/flags:with_mosek=True
+build:everything --@drake//tools/flags:with_snopt=True
 # We'll also use it to test legacy AutoDiff until 2026-07-01 when this flag
 # gets removed.
 build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False
-
-### A configuration that enables Gurobi. ###
-# -- To use this config, the GRB_LICENSE_FILE environment variable must be set
-# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_HOME
-# -- environment variable must be set to the linux64 directory of the extracted
-# -- archive downloaded from gurobi.com when the installation was not at the
-# -- default location of /opt/gurobi1002/linux64.
-#
-# -- To run tests where Gurobi is used, ensure that you include
-# -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.
-# -- If Gurobi is optional, set gurobi_required=False.
-build:gurobi --@drake//tools/flags:with_gurobi=True
-build:everything --@drake//tools/flags:with_gurobi=True
-
-### A configuration that enables MOSEK™. ###
-# -- To use this config, the MOSEKLM_LICENSE_FILE environment variable must be
-# -- set to the location of the MOSEK license file.
-#
-# -- To run tests where MOSEK™ is used, ensure that you include
-# -- "mosek_test_tags()" from //tools/skylark:test_tags.bzl.
-# -- If MOSEK™ is optional, set mosek_required=False.
-build:mosek --@drake//tools/flags:with_mosek=True
-build:everything --@drake//tools/flags:with_mosek=True
-
-### A configuration that enables SNOPT. ###
-# -- To use this config, you must have access to the private repository
-# -- RobotLocomotion/snopt on GitHub, and your local git must be configured
-# -- with SSH keys as documented at https://drake.mit.edu/from_source.html.
-#
-# -- To run tests that require SNOPT, also specify a set of test_tag_filters
-# -- that does not exclude the "snopt" tag.
-build:snopt --@drake//tools/flags:with_snopt=True
-build:everything --@drake//tools/flags:with_snopt=True

@@ -5,10 +5,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load(
-    "//tools/skylark:test_tags.bzl",
-    "mosek_test_tags",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -348,17 +344,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_box_with_mosek_test",
     timeout = "long",
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     # Some of these test cases take a very long time to run. Run each test case
     # in its own process (in parallel) to improve test latency.
     shard_count = 12,
-    tags = mosek_test_tags() + [
+    tags = [
         # This test launches 2 threads to test both serial and parallel code
         # paths in CspaceFreePolytope.
         "cpu:2",
-        # The memcheck build was disabled by accident:
-        #  https://github.com/RobotLocomotion/drake/pull/18621
-        # TODO(hongkai-dai) Figure out whether we can re-enable this.
-        "no_memcheck",
     ],
     use_default_main = False,
     deps = [
@@ -394,22 +387,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
     timeout = "long",
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     # Some of these test cases take a very long time to run. Run each test case
     # in its own process (in parallel) to improve test latency.
     shard_count = 12,
-    tags = mosek_test_tags() + [
+    tags = [
         # This test launches 2 threads to test both serial and parallel code
         # paths in CspaceFreePolytope.
         "cpu:2",
-        # This test experiences random segfaults in the "LSan Everything" build
-        # when both Mosek and Gurobi are used at the same time. Since we can't
-        # debug closed-source software, we have no choice but to ignore those
-        # errors.
-        "no_lsan",
-        # The memcheck build was disabled by accident:
-        #  https://github.com/RobotLocomotion/drake/pull/18621
-        # TODO(hongkai-dai) Figure out whether we can re-enable this.
-        "no_memcheck",
     ],
     use_default_main = False,
     deps = [

@@ -314,8 +314,8 @@ drake_cc_binary(
     srcs = ["test/run_swing_up_traj_optimization.cc"],
     # TODO(ggould) Temporarily turned off due to mac test failures, see #10276.
     add_test_rule = 0,
-    tags = ["snopt"],
     test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_opt_in_condition = "//tools/workspace/snopt:enabled",
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
