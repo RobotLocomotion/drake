@@ -162,6 +162,10 @@ def drake_cc_optional_googletest(
     This rule enables linting of all of the mentioned source files, even if
     the compiler will not build them in the current configuration. We want all
     files to be lint-free, even when the feature is disabled.
+
+    If you simply want to skip running the test under certain contidions, but
+    still always build it, simply pass opt_in_condition to drake_cc_googletest
+    or drake_cc_test. (Don't use drake_cc_optional_googletest.)
     """
     srcs = ["test/{}.cc".format(name)]
     if use_default_main:
@@ -186,6 +190,7 @@ def drake_cc_optional_googletest(
             opt_in_condition: deps,
             "//conditions:default": opt_out_deps,
         }),
+        opt_in_condition = opt_in_condition,
         display = display,
         use_default_main = use_default_main,
     )
