@@ -197,7 +197,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // the corresponding xt+).
   Z_.setZero(state_dim * num_stages);
   *xtplus = xt0;
-  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(xtplus->transpose()));
+  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(*xtplus));
 
   // Set the iteration matrix construction method.
   auto construct_iteration_matrix =
@@ -242,7 +242,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Solve (I − hA⊗J) ΔZᵏ = h (A⊗I) F(Zᵏ) - Zᵏ for ΔZᵏ, where:
     // A_tp_eye ≡ (A⊗I) and (I − hA⊗J) is the iteration matrix.
     DRAKE_LOGGER_DEBUG("residual: {}",
-                       fmt_eigen((A_tp_eye_ * (h * F_of_Z) - Z_).transpose()));
+                       fmt_eigen(A_tp_eye_ * (h * F_of_Z) - Z_));
     VectorX<T> dZ =
         iteration_matrix_radau_.Solve(A_tp_eye_ * (h * F_of_Z) - Z_);
 
@@ -265,7 +265,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     }
 
     dx_state_->SetFromVector(dx);
-    DRAKE_LOGGER_DEBUG("dx: {}", fmt_eigen(dx.transpose()));
+    DRAKE_LOGGER_DEBUG("dx: {}", fmt_eigen(dx));
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
@@ -376,7 +376,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   // O(h) accurate, depending on the number of stages) to the true solution and
   // hence should be an excellent starting point.
   *xtplus = radau_xtplus;
-  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(xtplus->transpose()));
+  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(*xtplus));
 
   DRAKE_LOGGER_DEBUG(
       "StepImplicitTrapezoidDetail() entered for t={}, "
@@ -421,7 +421,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     // iteration matrix.
     // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dx = iteration_matrix_implicit_trapezoid_.Solve(-goutput);
-    DRAKE_LOGGER_DEBUG("dx: {}", fmt_eigen(dx.transpose()));
+    DRAKE_LOGGER_DEBUG("dx: {}", fmt_eigen(dx));
 
     // Get the infinity norm of the weighted update vector.
     dx_state_->get_mutable_vector().SetFromVector(dx);
@@ -549,7 +549,7 @@ void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
   err_est_vec_ = err_est_vec_.cwiseAbs();
 
   // Compute and set the error estimate.
-  DRAKE_LOGGER_DEBUG("Error estimate: {}", fmt_eigen(err_est_vec_.transpose()));
+  DRAKE_LOGGER_DEBUG("Error estimate: {}", fmt_eigen(err_est_vec_));
   this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(
       err_est_vec_);
 }

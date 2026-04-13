@@ -84,9 +84,8 @@ UrdfMaterial AddMaterialToMaterialMap(
     if (error) {
       auto mat_descrip = [](const UrdfMaterial& mat) {
         std::string rgb_string =
-            mat.rgba.has_value()
-                ? fmt::format("RGBA: {}", fmt_eigen(mat.rgba->transpose()))
-                : "RGBA: None";
+            mat.rgba.has_value() ? fmt::format("RGBA: {}", fmt_eigen(*mat.rgba))
+                                 : "RGBA: None";
         std::string map_string =
             mat.diffuse_map.has_value()
                 ? fmt::format("Diffuse map: {}", *(mat.diffuse_map))

@@ -30,12 +30,21 @@ struct fmt_eigen_ref {
   Eigen::Ref<const MatrixX<Scalar>> matrix;
 };
 
+/* Parsed format string specifiers for fmt_eigen. */
+struct FmtEigenSpecs {
+  bool brackets{true};  // Disabled via "n" or "#".
+  bool commas{true};    // Disabled via "#".
+  bool string{false};   // Enabled via "s" or "?s".
+  bool debug{false};    // Enabled via "?s".
+};
+
 /* Returns the string formatting of the given matrix elements (i.e., padded by
-whitespace and/or newlines into a tabular layout). The elements are provided
-in row-major order.
+whitespace and/or newlines into a tabular layout with brackets, commas, etc.).
+The elements are provided in row-major order.
 @pre rows * cols == ssize(elements) */
 std::string FormatMatrix(Eigen::Index rows, Eigen::Index cols,
-                         std::span<std::string_view> elements);
+                         std::span<std::string_view> elements,
+                         const FmtEigenSpecs& fmt_eigen_specs);
 
 /* Type trait for supporting the use of fmt_eigen(x) in DRAKE_THROW_UNLESS. This
 is the set of scalar types that are supported (have been explicitly instantiated
@@ -88,26 +97,50 @@ system, not by Drake's headers.
 
 The format string specification syntax for fmt_eigen is based on fmtlib's
 [range format](https://fmt.dev/dev/syntax/#range-format-specifications)
-specification, recognizable by the distinctive double colon. However, in our
-current implementation of fmt_eigen we do not support the `"n"` option (to
-remove brackets) nor the `"s"` nor `"?s"` options (to merge a character range
-into a string).
+specification, recognizable by the distinctive double colon. We offer one
+additional option `"#"` that uses the "alternate form", which in this case means
+without any extra characters except whitespace (i.e., no brackets, no commas, no
+transpose).
 
-The so-called "range underlying spec" format string depends on the particular
-scalar type captured in the fmt_eigen instance.
+```txt
+eigen_format_spec ::= ["s" | "?s" | [["n" | "#"][":" range_underlying_spec]]]
+```
+
+- "s" is only available when the `Scalar` is `char`; the Matrix contents are
+  formatted as a quoted string, with the characters taken in row-major order.
+
+- "?s" is only available when the `Scalar` is `char`; the Matrix contents are
+  formatted as a debug string (i.e., quoted and escaped), with the characters
+  taken in row-major order.
+
+- "n" turns off brackets (but leaves commas enabled);
+
+- "#" turns off both brackets and commas, similar to Eigen's default IOFormat.
+
+The "range_underlying_spec" format string depends on the particular Scalar type
+captured in the fmt_eigen instance.
 
 Examples:
 
 ```
-Eigen::RowVector3d x{M_PI, M_SQRT2, M_E};
+Eigen::Vector3d x{M_PI, M_SQRT2, M_E};
 fmt::format("{}", fmt_eigen(x));
-// " 3.141592653589793 1.4142135623730951  2.718281828459045"
+// [3.141592653589793, 1.4142135623730951, 2.718281828459045]ᵀ
+// (By default, a column-vector is printed as a transposed row-vector.)
 
 fmt::format("{::.2f}", fmt_eigen(x));
-// "3.14 1.41 2.72"
+// "[3.14, 1.41, 2.72]ᵀ"
+
+fmt::format("{:n:.2f}", fmt_eigen(x.transpose()));
+// "3.14, 1.41, 2.72"
+// (We can use transpose() to avoid the column-vector newlines.)
+
+fmt::format("{:#:.3f}", fmt_eigen(x));
+// "3.142\n1.414\n2.718"
+// (Eigen's default IOFormat uses newlines for a column-vector.)
 
 fmt::format("{x::e}", fmt::arg("x", fmt_eigen(x)));
-// "3.141593e+00 1.414214e+00 2.718282e+00"
+// "[3.141593e+00, 1.414214e+00, 2.718282e+00]ᵀ"
 ```
 
 Refer to https://fmt.dev/ for syntax details, but in short:
@@ -118,9 +151,16 @@ Refer to https://fmt.dev/ for syntax details, but in short:
   the argument the name `"x"` using `fmt::arg` and then use that name in the
   format string.
 
+- The fmt_eigen format spec appears between the first and second colon. When
+  empty, the normal presentation is used (with brackets and commas). When
+  `'#'` (like in the final two examples), the brackets and commas are omitted.
+
 - The floating-point format spec appears after the second colon. This syntax is
   part of fmt, not specific to Drake. As seen in the examples, it can be used to
-  change the precision or use scientific notation, etc. */
+  change the precision or use scientific notation, etc.
+
+@remark To format a 2-d Eigen::Matrix as a 1-d Eigen::Vector, use
+`fmt_eigen(M.reshaped(1, M.size()))`. */
 template <typename Derived>
 internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
     const Eigen::MatrixBase<Derived>& matrix) {
@@ -138,6 +178,34 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
       -> decltype(ctx.begin()) {
     auto iter = ctx.begin();
     auto end = ctx.end();
+    // The options "n", "#", "s", "?s" are mutually exclusive.
+    // The options "s" and "?"s are only valid when Scalar is char.
+    if (iter != end && *iter == 'n') {
+      ++iter;
+      fmt_eigen_specs.brackets = false;
+    } else if (iter != end && *iter == '#') {
+      ++iter;
+      fmt_eigen_specs.brackets = false;
+      fmt_eigen_specs.commas = false;
+    } else if (iter != end && *iter == 's') {
+      if constexpr (std::is_same_v<Scalar, char>) {
+        ++iter;
+        fmt_eigen_specs.string = true;
+      }
+      return iter;
+    } else if (iter != end && *iter == '?') {
+      ++iter;
+      if (iter != end && *iter == 's') {
+        if constexpr (std::is_same_v<Scalar, char>) {
+          ++iter;
+          fmt_eigen_specs.string = true;
+          fmt_eigen_specs.debug = true;
+        }
+      } else {
+        throw fmt::format_error("Malformed fmt_eigen format specification");
+      }
+      return iter;
+    }
     if (iter == end || *iter == '}') {
       return iter;
     }
@@ -154,6 +222,30 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
               FormatContext& ctx) const -> decltype(ctx.out()) {
     const auto& matrix = ref.matrix;
+    // Special handling for strings.
+    if constexpr (std::is_same_v<Scalar, char>) {
+      if (fmt_eigen_specs.string) {
+        const bool add_quotes = !fmt_eigen_specs.debug;
+        std::string elements;
+        elements.reserve(matrix.size() + (add_quotes ? 2 : 0));
+        if (add_quotes) {
+          elements.push_back('"');
+        }
+        for (Eigen::Index row = 0; row < matrix.rows(); ++row) {
+          for (Eigen::Index col = 0; col < matrix.cols(); ++col) {
+            elements.push_back(matrix(row, col));
+          }
+        }
+        if (add_quotes) {
+          elements.push_back('"');
+        }
+        formatter<std::string_view> string_formatter;
+        if (fmt_eigen_specs.debug) {
+          string_formatter.set_debug_format();
+        }
+        return string_formatter.format(elements, ctx);
+      }
+    }
     // Format every matrix element in turn. We'll format them back-to-back into
     // the same buffer (while keeping track of where each one started), and then
     // in a second pass we'll slice up the buffer into string_views.
@@ -179,12 +271,15 @@ struct formatter<drake::internal::fmt_eigen_ref<Scalar>> : formatter<Scalar> {
       const size_t end = element_starts[i + 1];
       elements.push_back(std::string_view{&element_buffer[begin], end - begin});
     }
-    // Combine the element strings with whitespace.
-    const std::string content =
-        drake::internal::FormatMatrix(matrix.rows(), matrix.cols(), elements);
+    // Decorate the element strings with brackets, commas, whitespace, etc.
+    const std::string content = drake::internal::FormatMatrix(
+        matrix.rows(), matrix.cols(), elements, fmt_eigen_specs);
     // Copy the content into the output buffer.
     return formatter<std::string_view>{}.format(content, ctx);
   }
+
+ private:
+  drake::internal::FmtEigenSpecs fmt_eigen_specs;
 };
 }  // namespace fmt
 #endif
