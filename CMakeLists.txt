@@ -38,7 +38,7 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
   )
 endif()
 
-set(BAZELRC_IMPORTS "tools/bazel.rc")
+set(BAZELRC_IMPORTS "tools/bazel-build.rc")
 
 # The minimum Darwin version and codename should correspond to the minimum
 # supported macOS version listed in doc/_pages/installation.md and
