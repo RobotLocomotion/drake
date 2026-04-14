@@ -22,7 +22,7 @@ while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
       with_doc_only=1
-      with_mainatiner_only=1
+      with_maintainer_only=1
       with_bazel=1
       with_clang=1
       with_test_only=1
