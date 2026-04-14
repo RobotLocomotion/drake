@@ -71,12 +71,5 @@ elif ! [[ "${VERSION_CODENAME}" =~ (noble) ]]; then
   exit 2
 fi
 
-apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
-build-essential
-cmake
-pkg-config
-EOF
-)
-
 packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
