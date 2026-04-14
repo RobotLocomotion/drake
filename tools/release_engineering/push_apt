@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# This shell script is used to sync the drake-apt repository with artifacts
+# from the most recent release. It is used by a small subset of Drake
+# maintainers (and depends on maintainer-only packages) and relies on manual
+# testing.
+
+set -euo pipefail
+
+die () {
+  echo >&2 "$@"
+  exit 1
+}
+
+readonly usage="Usage: $0 {{ source version x.y.z }}"
+[[ "$#" -ge 1 ]] || die "${usage}"
+
+readonly source_version=$1
+
+shift 1;
+
+# Drake's apt site is deprecated, so this list should not be updated any
+# further beyond what is currently being maintained for compatibility only.
+readonly platforms=( noble )
+
+# Sanity check that the release for the source version exists and has been
+# published.
+readonly drake_gh_api="https://api.github.com/repos/RobotLocomotion/drake"
+readonly release_api_url="${drake_gh_api}/releases/tags/v${source_version}"
+if ! curl --fail --head --location --output /dev/null \
+    "${release_api_url}"; then
+  die "GitHub release v${source_version} does NOT exist."
+fi
+
+readonly gpg_key="$(
+  curl --fail https://drake-apt.csail.mit.edu/drake.asc | \
+  gpg --with-colons --show-keys --fingerprint | \
+  grep -m1 -E '^fpr:' | cut -c 4- | tr -d :)"
+
+if ! [[ "${gpg_key}" =~ ^[a-fA-F0-9]{40}$ ]]; then
+  die "gpg_key value expected to be a length 40 hexadecimal string."
+fi
+
+if ! gpg --list-secret-keys "${gpg_key}" &>/dev/null; then
+  die "GPG secret key ${gpg_key} does NOT exist."
+fi
+
+if [ ! -s "${HOME}/.aptly.conf" ]; then
+  die "aptly is NOT configured."
+fi
+
+# Sanity check (though not an exhaustive verification) that the list of
+# platforms is present in the `.aptly.conf` file. This is especially relevant
+# when a new distribution is added. See README.md for details.
+for platform in "${platforms[@]}"; do
+  if [ ! grep -q "${platform}" "${HOME}/.aptly.conf" ]; then
+    die "~/.aptly.conf is missing configuration for distribution ${platform}."
+  fi
+done
+
+readonly temp_dir="$(mktemp -u)"
+
+mkdir -p "${temp_dir}"
+pushd "${temp_dir}"
+
+set -x
+
+# Download the current version of the aptly database from S3.
+aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
+
+for platform in "${platforms[@]}"; do
+  mkdir -p "${platform}"
+  pushd "${platform}"
+
+  repo="drake-${platform}"
+  snapshot="${repo}-${source_version}"
+
+  # Create the repository if it doesn't already exist.
+  if ! aptly repo show "${repo}" &>/dev/null; then
+    aptly repo create -distribution="${platform}" "${repo}"
+  fi
+
+  # Drake's apt site is deprecated, so even though Drake is set to release
+  # arm64 .deb packages soon, this should not be updated.
+  remote_filename="drake-dev_${source_version}-1_amd64-${platform}.deb"
+  local_filename="drake-dev_${source_version}-1_amd64.deb"
+
+  curl --fail --location -o "${local_filename}" \
+    "https://drake-packages.csail.mit.edu/drake/release/${remote_filename}"
+
+  # Add the Debian package to the aptly database.
+  aptly repo add "${repo}" "${local_filename}"
+  aptly snapshot create "${snapshot}" from repo "${repo}"
+
+  # Create a folder in S3 for the destination if it doesn't exist already.
+  if ! aws s3api head-object --bucket drake-apt \
+      --key "${platform}/" &>/dev/null; then
+    aws s3api put-object --bucket drake-apt --key "${platform}/" \
+      --content-length 0
+  fi
+
+  # Publish the new apt repository to S3.
+  if aptly publish list -raw | awk '{print $2}' | grep -qx "${platform}"; then
+    # If it already exists, 'switch'.
+    aptly publish switch -gpg-key="${gpg_key: -8}" "${platform}" \
+      "s3:drake-apt.csail.mit.edu/${platform}:" "${snapshot}"
+  else
+    # Otherwise, 'snapshot'.
+    aptly publish snapshot -gpg-key="${gpg_key: -8}" \
+      -distribution="${platform}" \
+      "${snapshot}" \
+      "s3:drake-apt.csail.mit.edu/${platform}:"
+  fi
+
+  # Invalidate the cached apt repository.
+  aws cloudfront create-invalidation --distribution-id E2RAGJYS5GNIOS \
+    --paths "/${platform}/dists/${platform}/*"
+
+  popd
+done
+
+# Upload the new version of the aptly database to S3.
+aws s3 sync --delete --exclude .DS_Store "${HOME}/.aptly" \
+  s3://drake-infrastructure/aptly/.aptly
+
+set +x
+
+popd
+
+# Remove the downloaded files on success.
+rm -rf "${temp_dir}"
