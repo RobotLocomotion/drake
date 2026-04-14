@@ -143,4 +143,5 @@ build:_sanitizer_common --@drake//tools/flags:with_mosek=False
 build:asan_everything --config=everything --config=asan
 build:lsan_everything --config=everything --config=lsan
 build:memcheck_everything --config=everything --config=memcheck
+build:tsan_everything --config=everything --config=tsan
 build:ubsan_everything --config=everything --config=ubsan
