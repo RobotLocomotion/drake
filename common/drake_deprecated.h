@@ -9,10 +9,7 @@
 /** @file
 Provides a portable macro for use in generating compile-time warnings for
 use of code that is permitted but discouraged. */
-#if defined(DRAKE_COMPILE_IGNORE_DEPRECATED) && \
-    defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
-# error Conflicting deprecation warnings flags
-#elif defined(DRAKE_DOXYGEN_CXX) || defined(DRAKE_COMPILE_IGNORE_DEPRECATED)
+#if defined(DRAKE_BUILDING_DRAKE) || defined(DRAKE_DOXYGEN_CXX)
 /** Use `DRAKE_DEPRECATED("removal_date", "message")` to discourage use of
 certain APIs. It can be used on classes, typedefs, functions, arguments,
 enumerations, and template specializations. It must not be used on non-static
@@ -64,6 +61,12 @@ Sample uses: @code
 */
 #define DRAKE_DEPRECATED(removal_date, message)
 
+#elif defined(DRAKE_COMPILE_IGNORE_DEPRECATED) && \
+    defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
+# error Conflicting deprecation warnings flags
+#elif defined(DRAKE_COMPILE_IGNORE_DEPRECATED)
+#define DRAKE_DEPRECATED(removal_date, message)
+
 #elif defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
 #if defined(__clang__)
 #define DRAKE_DEPRECATED(removal_date, message)                       \
@@ -83,7 +86,7 @@ Sample uses: @code
                "\nThe deprecated code will be removed from Drake" \
                " on or after " removal_date ".")]]
 
-#endif  // DRAKE_DOXYGEN_CXX
+#endif  // DRAKE_BUILDING_DRAKE
 
 namespace drake {
 namespace internal {
