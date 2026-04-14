@@ -1396,93 +1396,6 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
 // Signed distance tests -- testing data flow; not testing the value of the
 // query.
 
-// A scene with no geometry reports no witness pairs.
-GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsOnEmptyScene) {
-  ProximityEngine<double> engine;
-  const unordered_map<GeometryId, RigidTransformd> X_WGs;
-
-  const auto results =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  EXPECT_EQ(results.size(), 0);
-}
-
-// A scene with a single anchored geometry reports no distance.
-GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsSingleAnchored) {
-  ProximityEngine<double> engine;
-
-  Sphere sphere{0.5};
-  const GeometryId id = GeometryId::get_new_id();
-  const unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id, RigidTransformd::Identity()}};
-  engine.AddAnchoredGeometry(sphere, X_WGs.at(id), id);
-
-  const auto results =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  EXPECT_EQ(results.size(), 0);
-}
-
-// Tests that anchored geometry don't report closest distance with each other.
-GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
-  ProximityEngine<double> engine;
-  unordered_map<GeometryId, RigidTransformd> X_WGs;
-
-  const double radius = 0.5;
-  Sphere sphere{radius};
-  const GeometryId id_A = GeometryId::get_new_id();
-  X_WGs[id_A] = RigidTransformd::Identity();
-  engine.AddAnchoredGeometry(sphere, X_WGs.at(id_A), id_A);
-
-  const GeometryId id_B = GeometryId::get_new_id();
-  X_WGs[id_B] = RigidTransformd{Translation3d{1.8 * radius, 0, 0}};
-  engine.AddAnchoredGeometry(sphere, X_WGs.at(id_B), id_B);
-
-  const auto results =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  EXPECT_EQ(results.size(), 0);
-}
-
-// Tests that the maximum distance value is respected. Confirms that two shapes
-// are included/excluded based on a distance just inside and outside that
-// maximum distance, respectively.
-GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMaxDistance) {
-  ProximityEngine<double> engine;
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id_A, RigidTransformd::Identity()}, {id_B, RigidTransformd::Identity()}};
-
-  const double radius = 0.5;
-  Sphere sphere{radius};
-  engine.AddDynamicGeometry(sphere, {}, id_A);
-  engine.AddDynamicGeometry(sphere, {}, id_B);
-
-  const double kMaxDistance = 1;
-  const double kEps = 2 * std::numeric_limits<double>::epsilon();
-  const double kCenterDistance = kMaxDistance + radius + radius;
-
-  // Case: Just inside the maximum distance.
-  {
-    const Vector3d p_WB =
-        Vector3d(2, 3, 4).normalized() * (kCenterDistance - kEps);
-    X_WGs[id_B].set_translation(p_WB);
-    engine.UpdateWorldPoses(X_WGs);
-    const auto results =
-        engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kMaxDistance);
-    EXPECT_EQ(results.size(), 1);
-  }
-
-  // Case: Just outside the maximum distance.
-  {
-    const Vector3d p_WB =
-        Vector3d(2, 3, 4).normalized() * (kCenterDistance + kEps);
-    X_WGs[id_B].set_translation(p_WB);
-    engine.UpdateWorldPoses(X_WGs);
-    const auto results =
-        engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kMaxDistance);
-    EXPECT_EQ(results.size(), 0);
-  }
-}
-
 // Tests the computation of signed distance for a single geometry pair. Confirms
 // successful case as well as failure case.
 GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
@@ -1791,6 +1704,117 @@ class ProximityEngineQueryTest : public ::testing::Test {
   ProximityEngine<double> engine_;
   unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
 };
+
+/* ComputeSignedDistancePairwiseClosestPoints() responsibilities:
+  1. Report no results for an empty engine.
+  2. The max_distance parameter makes a difference (i.e., it is passed to the
+     callback).
+  3. Do not report anchored-anchored pairs.
+  4. Report dynamic-dynamic pairs.
+  5. Report dynamic-anchored pairs.
+  6. Results are always ordered.
+  7. Respect collision filter (filtered pairs are not reported).
+  8. AutoDiff derivatives pass through successfully.
+  9. It should also allow Callback exceptions to propagate through; we won't
+     test this directly -- Drake standard practices and the clear absence of a
+     catch block is sufficient evidence.
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+  We set up the spheres as follows:
+
+            ├ max_d ┤
+       ···             ***             ***
+     ·     ·         *     *         *     *
+    ·   A1  · ← s → *   D3  * ← s → *   D4  *
+    ·       ·       *       *       *       *
+     ·     ·         *     *         *     *
+       ···             ***             ***
+        ↑        - max_d = s + δ; two spheres separated by distance s are close
+        s          enough (w.r.t. max_d) to be part of the results.
+        ↓        - Anchored geometries A1 and A2 are separated by s.
+       ···       - Dynamic geometry D3 is separated by A1 by s, but is too far
+     ·     ·       from A2 to fall under the max_d threshold.
+    ·   A2  ·    - Dynamic geometry D4 is s units away from D3.
+    ·       ·
+     ·     ·
+       ···
+  */
+TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
+  const Sphere sphere{0.5};
+  // The separation s (between sphere surfaces).
+  const double separation = 0.1;
+  // Center-to-center distance for a pair separated by `separation`.
+  const double d = 2 * sphere.radius() + separation;
+  // max_distance large enough to include intra-cluster pairs (sep = 0.1) but
+  // small enough to exclude cross-cluster pairs (clusters are 100 units apart).
+  const double kMaxDist = separation + 0.1;
+
+  auto eval_dut = [this, kMaxDist]() {
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.ComputeSignedDistancePairwiseClosestPoints(X_WGs_, kMaxDist);
+  };
+
+  // Extract the geometry ids of the results as pairs (leaves behind the
+  // numerical results).
+  using IdPairs = vector<std::pair<GeometryId, GeometryId>>;
+  auto result_ids = [](const vector<SignedDistancePair<double>>& results) {
+    IdPairs ids;
+    for (const auto& result : results) {
+      ids.push_back(std::make_pair(result.id_A, result.id_B));
+    }
+    return ids;
+  };
+
+  // (1) - empty engine reports no distances.
+  ASSERT_TRUE(eval_dut().empty());
+
+  // We'll test (2)-(5) all at the same time.
+  //  (2) - max_distance prevents pairs (A2, D3), and (A*, D4).
+  //  (3) - No (A1, A2) pair.
+  //  (4) - Pair (D3, D4) included.
+  //  (5) - Pair (A1, D3) included.
+  const GeometryId anchored1 = AddAnchored(sphere, {0, 0, 0});
+  // We don't need anchored2's id; it never gets reported.
+  AddAnchored(sphere, {0, -d, 0});
+  const GeometryId dynamic3 = AddDynamic(sphere, {d, 0, 0});
+  const GeometryId dynamic4 = AddDynamic(sphere, {2 * d, 0, 0});
+
+  // We know that geometry ids are ordered by their creation order, so we can
+  // anticipate the sorted result order as well.
+  const IdPairs expected{{anchored1, dynamic3}, {dynamic3, dynamic4}};
+  ASSERT_EQ(result_ids(eval_dut()), expected);
+
+  // (6) - Multiple calls produce identically ordered results (as indicated by
+  // id pairs).
+  ASSERT_EQ(result_ids(eval_dut()), expected);
+
+  // (7) - Collision filter respected.
+  ExcludeCollisionsWithin({anchored1, dynamic3});
+  ASSERT_EQ(result_ids(eval_dut()), IdPairs({{dynamic3, dynamic4}}));
+
+  // (8) - AutoDiff derivatives pass through successfully.
+  const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  // Seed dynamic3's translation with derivatives.
+  X_WGs_ad[dynamic3] = RigidTransform<AutoDiffXd>{
+      math::InitializeAutoDiff(X_WGs_.at(dynamic3).translation())};
+
+  ad_engine->UpdateWorldPoses(X_WGs_ad);
+  const auto ad_results =
+      ad_engine->ComputeSignedDistancePairwiseClosestPoints(X_WGs_ad, kMaxDist);
+  // Just the one, unfiltered collision remains.
+  ASSERT_EQ(ad_results.size(), 1);
+  // Confirm derivatives survived -- not empty and not all zero.
+  const auto& result = ad_results[0];
+  const auto& derivs = result.distance.derivatives();
+  ASSERT_EQ(derivs.size(), 3);
+  EXPECT_FALSE(derivs.isZero());
+}
 
 /* ComputePointPairPenetration() responsibilities:
   1. Report results for colliding dynamic-dynamic geometry pairs.
@@ -2180,57 +2204,6 @@ GTEST_TEST(ProximityEngineTests, HasCollisionsAnchoredInterference) {
   EXPECT_TRUE(engine.HasCollisions());
 }
 
-// Confirms that non-positive thresholds produce the right value. Creates three
-// spheres: A, B, & C. A is separated from B & C and B & C are penetrating.
-// We confirm that query tolerance of 0, returns B & C and that a tolerance
-// of penetration depth + epsilon returns B & C, and depth - epsilon omits
-// everything.
-GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
-  ProximityEngine<double> engine;
-  const GeometryId id1 = GeometryId::get_new_id();
-  const GeometryId id2 = GeometryId::get_new_id();
-  const GeometryId id3 = GeometryId::get_new_id();
-  const double kRadius = 0.5;
-  const unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id1, RigidTransformd{Translation3d{0, 2 * kRadius, 0}}},
-      {id2, RigidTransformd{Translation3d{-kRadius * 0.9, 0, 0}}},
-      {id3, RigidTransformd{Translation3d{kRadius * 0.9, 0, 0}}}};
-
-  Sphere sphere{kRadius};
-  engine.AddDynamicGeometry(sphere, {}, id1);
-  engine.AddDynamicGeometry(sphere, {}, id2);
-  engine.AddDynamicGeometry(sphere, {}, id3);
-  engine.UpdateWorldPoses(X_WGs);
-  std::vector<SignedDistancePair<double>> results_all =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  ASSERT_EQ(results_all.size(), 3u);
-  // Make sure the result is sorted
-  auto parameters_in_order = [](const SignedDistancePair<double>& p1,
-                                const SignedDistancePair<double>& p2) {
-    if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-    return p1.id_B < p2.id_B;
-  };
-  EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
-  EXPECT_TRUE(parameters_in_order(results_all[1], results_all[2]));
-
-  std::vector<SignedDistancePair<double>> results_zero =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, 0);
-  EXPECT_EQ(results_zero.size(), 1u);
-
-  const double penetration = -kRadius * 0.2;
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  std::vector<SignedDistancePair<double>> results_barely_in =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        penetration + kEps);
-  EXPECT_EQ(results_barely_in.size(), 1u);
-
-  std::vector<SignedDistancePair<double>> results_barely_out =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        penetration - kEps);
-  EXPECT_EQ(results_barely_out.size(), 0u);
-}
-
 // TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
 //  testing in proximity engine. They should only test the following:
 //  Successful evaluation between two dynamic shapes and between a dynamic
@@ -2385,70 +2358,6 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffDynamic) {
     const Vector3d grad_W = math::ExtractValue(distance_data.grad_W);
     EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
   }
-}
-
-GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  const double radius = 0.7;
-
-  // Two spheres with radius 0.7 whose centers are 7 m apart. The literal
-  // values just keep it from being trivial zero-able.
-  const double expected_distance = 7 - radius - radius;
-  const Vector3d p_SQ{2, 3, 6};
-  const Vector3d p_WS{0.5, 1.25, -2};
-  const Vector3d p_WQ{p_SQ + p_WS};
-  Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
-
-  // Add a pair of dynamic spheres. We'll differentiate w.r.t. the pose of the
-  // first sphere.
-  const GeometryId id1 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Sphere(radius), {}, id1);
-  const RigidTransform<AutoDiffXd> X_WS1_ad(p_WQ_ad);
-
-  const GeometryId id2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Sphere(radius), {}, id2);
-  const auto X_WS2_ad = RigidTransformd(p_WS).cast<AutoDiffXd>();
-
-  const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id1, X_WS1_ad}, {id2, X_WS2_ad}};
-  engine.UpdateWorldPoses(X_WGs);
-
-  std::vector<SignedDistancePair<AutoDiffXd>> results =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  ASSERT_EQ(results.size(), 1);
-
-  const SignedDistancePair<AutoDiffXd>& distance_data = results[0];
-  // The autodiff seems to lose a couple of bits relative to the known
-  // answer.
-  EXPECT_NEAR(distance_data.distance.value(), expected_distance, 4 * kEps);
-  // The hand-computed `grad_W` value should match the autodiff-computed
-  // gradient.
-  const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-  const Vector3d grad_w = math::ExtractValue(distance_data.nhat_BA_W);
-  EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_w, kEps));
-}
-
-// Tests that an unsupported geometry causes the engine to throw.
-GTEST_TEST(ProximityEngineTests,
-           ComputePairwiseSignedDistanceAutoDiffUnsupported) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  // Add two geometries that can't be queried.
-  const GeometryId id1 = GeometryId::get_new_id();
-  const GeometryId id2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Box(1, 2, 3), {}, id1);
-  engine.AddDynamicGeometry(Box(2, 4, 6), {}, id2);
-
-  const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id1, RigidTransform<AutoDiffXd>::Identity()},
-      {id2, RigidTransform<AutoDiffXd>::Identity()}};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::AutoDiffXd.*");
 }
 
 // Test fixture for deformable contact.
