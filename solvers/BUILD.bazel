@@ -48,6 +48,14 @@ selects.config_setting_group(
     ],
 )
 
+selects.config_setting_group(
+    name = "gurobi_and_mosek_enabled",
+    match_all = [
+        "//tools/workspace/gurobi:enabled",
+        "//tools/workspace/mosek:enabled",
+    ],
+)
+
 drake_cc_package_library(
     name = "solvers",
     visibility = ["//visibility:public"],
@@ -1761,7 +1769,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_corner_test",
     timeout = "long",
-    opt_in_condition = ":gurobi_or_mosek_enabled",
+    opt_in_condition = ":gurobi_and_mosek_enabled",
     # This test is quite long, so split it into 4 processes for better latency.
     shard_count = 4,
     use_default_main = False,
