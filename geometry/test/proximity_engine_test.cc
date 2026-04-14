@@ -1825,7 +1825,7 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
   6. AutoDiff derivatives pass through successfully.
   7. It should also allow Callback exceptions to propagate through; we won't
      test this directly -- Drake standard practices and the clear absence of a
-     catch block is sufficient evidence
+     catch block is sufficient evidence.
 
   Note: the sequence of this test is important -- state accumulates and each
   assertion is reliant on the successful execution of the previous assertion. */
@@ -1978,6 +1978,106 @@ TEST_F(ProximityEngineQueryTest, FindCollisionCandidates) {
   // ordering consistency despite that instability.
   const vector<SortedPair<GeometryId>> results2 = eval_dut();
   EXPECT_EQ(results, results2);
+}
+
+/* HasCollisions() responsibilities:
+
+  1. Report false for an empty engine.
+  2. Report false when only anchored-anchored geometry pairs collide.
+  3. Report true for colliding dynamic-dynamic geometry pairs.
+  4. Respect collision filter (filtered pair does not count as a collision).
+  5. Report true for colliding anchored-dynamic geometry pairs.
+  6. Non-colliding anchored geometry with bounding-box overlap does not suppress
+     dynamic-dynamic collision reporting.
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+  We'll set up a number spheres. The letter indicates whether it is anchored or
+  dynamic. The index indicates the order in which the sphere is added.
+      ···      ***
+    ·     ·  *     *
+  ·        *·        *
+  ·   D3  ▫▫▫  D4    *   -- Dynamic spheres D3 and D4 intersect each other
+    ·   ▫ ·  *▫    *        but not anchored geometries
+      ▫··      *▫*
+      ▫   D5₂   ▫        -- D5₂ intersects with D3 & D4, but *not* A1 and A2.
+        ▫     ▫             But D5₂'s BV will overlap with A1's and A2's BVs.
+      ··· ▫▫▫  ***
+    ·     ·  *     *
+  ·        *·        *   -- Anchored spheres A1 and A2 intersect each other.
+  ·   A1   *·  A2    *
+    · ▴▴▴ ·  *     *
+    ▴ ··· ▴    ***
+  ▴         ▴
+  ▴   D5₁   ▴            -- D5₁ intersects with A1.
+    ▴     ▴
+      ▴▴▴
+
+  D5 has two different poses: D5₁ and D5₂. */
+TEST_F(ProximityEngineQueryTest, HasCollisions) {
+  auto eval_dut = [this]() {
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.HasCollisions();
+  };
+
+  const Sphere sphere{0.5};
+  // Distance less than two radii implies collision.
+  const double d = 2 * sphere.radius() - 0.1;
+
+  // (1) - empty engine reports no collisions.
+  ASSERT_FALSE(eval_dut());
+
+  // (2) - anchored-anchored collisions are not reported.
+  const GeometryId anchored1 = AddAnchored(sphere);
+  // We don't need to know A2's id, so we'll leave it anonymous.
+  AddAnchored(sphere, Vector3d{d, 0, 0});
+  ASSERT_FALSE(eval_dut());
+
+  // (3) - dynamic-dynamic are reported -- note: these are separated from the
+  // anchored geometries above -- not even their AABBs overlap.
+  const GeometryId dynamic3 = AddDynamic(sphere, Vector3d(0, 1.5 * d, 0));
+  const GeometryId dynamic4 = AddDynamic(sphere, Vector3d(d, 1.5 * d, 0));
+
+  ASSERT_TRUE(eval_dut());
+
+  // (4) - Filtering the dynamic pair, removes the only collision.
+  ExcludeCollisionsWithin({dynamic3, dynamic4});
+  ASSERT_FALSE(eval_dut());
+
+  // (5) - dynamic-anchored are reported.
+  // Place D5 in pose D5₁.
+  const GeometryId dynamic5 = AddDynamic(sphere, Vector3d(0, -d, 0));
+  ASSERT_TRUE(eval_dut());
+
+  // (6) - Weird special case. There was a legacy bug (reported in issue #23406)
+  // where collisions between dynamic geometries were erased if there were
+  // no anchored-dynamic collisions, but there were overlapping bounding volumes
+  // between anchored and dynamic geometries. So, we move D5 to position D5₂
+  X_WGs_[dynamic5] = RigidTransformd(Vector3d(d / 2, d, 0));
+
+  // First confirm that D5₂ satisfies both requirements:
+  //   1. It doesn't collide with the anchored geometry.
+  //      - temporarily filter collisions between dynamic geometries and confirm
+  //        no collisions reported.
+  //   2. Its AABB overlaps with those of the anchored geometry.
+  //      Confirm that, even with the dynamic filter in place, we are still
+  //      getting collision candidates (including D5 but not D3 or D4).
+  //      We'll assume FindCollisionCandidates() has tests proving it a reliable
+  //      witness.
+  std::optional<FilterId> filter_id = ExcludeCollisionsWithin(
+      {dynamic3, dynamic4, dynamic5}, /* is_temporary= */ true);
+  DRAKE_DEMAND(filter_id.has_value());
+  ASSERT_FALSE(eval_dut());
+  const vector<SortedPair<GeometryId>> candidates =
+      engine_.FindCollisionCandidates();
+  ASSERT_GT(candidates.size(), 0);
+  ASSERT_THAT(candidates,
+              ::testing::Contains(SortedPair<GeometryId>(dynamic5, anchored1)));
+
+  // Remove the filter and confirm we get collisions.
+  engine_.collision_filter().RemoveDeclaration(*filter_id);
+  ASSERT_TRUE(eval_dut());
 }
 
 // Utility test for evaluating the following "ResultOrdering" test. It produces
@@ -2170,38 +2270,6 @@ TEST_F(ProximityEngineHydroWithFallback,
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
     EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
-}
-
-// There was a bug (23406). If anchored geometries existed but they were not
-// in collision with dynamic geometries, collisions between dynamics geometries
-// would be ignored and the HasCollisions() query would return a lie. This is
-// a test against that bug coming back.
-GTEST_TEST(ProximityEngineTests, HasCollisionsAnchoredInterference) {
-  ProximityEngine<double> engine;
-  const Sphere sphere{0.5};
-  unordered_map<GeometryId, RigidTransformd> X_WGs_;
-
-  const GeometryId dynamic_id_1 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(sphere, {}, dynamic_id_1);
-
-  const GeometryId dynamic_id_2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(sphere, {}, dynamic_id_2);
-  EXPECT_EQ(engine.num_geometries(), 2);
-
-  X_WGs_[dynamic_id_1] = RigidTransformd::Identity();
-  X_WGs_[dynamic_id_2] = RigidTransformd::Identity();
-
-  EXPECT_TRUE(engine.HasCollisions());
-
-  // The anchored geometry must be non-colliding, but close enough that its
-  // bounding box overlaps.
-  const Vector3d p_WA =
-      Vector3d(1, 1, 0).normalized() * (sphere.radius() * 2.1);
-  const GeometryId anchored_id = GeometryId::get_new_id();
-  engine.AddAnchoredGeometry(sphere, RigidTransformd(p_WA), anchored_id);
-  EXPECT_EQ(engine.num_geometries(), 3);
-  // We still have collisions (original code would report false).
-  EXPECT_TRUE(engine.HasCollisions());
 }
 
 // TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
