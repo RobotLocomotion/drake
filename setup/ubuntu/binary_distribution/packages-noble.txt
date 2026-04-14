@@ -1,3 +1,4 @@
+ca-certificates
 jupyter-notebook
 libblas-dev
 libegl1

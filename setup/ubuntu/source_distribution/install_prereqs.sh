@@ -90,7 +90,6 @@ if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 
 fi
 
 apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
-ca-certificates
 wget
 EOF
 )
