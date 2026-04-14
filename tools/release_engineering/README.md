@@ -9,5 +9,5 @@ These tools require additional dependencies from the Ubuntu host. Before using
 any of these tools, you must first install the prereqs:
 
 ```
-$ sudo ./setup/ubuntu/install_prereqs.sh --with-maintainer-only
+$ setup/install_prereqs --developer
 ```

@@ -119,7 +119,7 @@ def _build(*, out_dir, temp_dir, modules):
     if not os.path.isfile(sphinx_build):
         print(
             "Please re-run 'setup/install_prereqs' with the "
-            "'--with-doc-only' flag"
+            "'--developer' flag"
         )
         sys.exit(1)
 

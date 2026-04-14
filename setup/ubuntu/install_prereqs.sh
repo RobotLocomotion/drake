@@ -35,6 +35,10 @@ while [ "${1:-}" != "" ]; do
       source_distribution_args+=(--developer)
       prefetch_bazel=1
       ;;
+    --no-developer)
+      source_distribution_args+=(--no-developer)
+      prefetch_bazel=0
+      ;;
     # Install prerequisites that are only needed to build documentation,
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --with-doc-only)
