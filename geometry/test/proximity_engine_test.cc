@@ -1391,77 +1391,6 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   EXPECT_EQ(move_construct.num_dynamic(), 0);
 }
 
-// Signed distance tests -- testing data flow; not testing the value of the
-// query.
-
-// Tests the computation of signed distance for a single geometry pair. Confirms
-// successful case as well as failure case.
-GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
-  ProximityEngine<double> engine;
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  const GeometryId bad_id = GeometryId::get_new_id();
-  unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id_A, RigidTransformd::Identity()}, {id_B, RigidTransformd::Identity()}};
-
-  const double radius = 0.5;
-  Sphere sphere{radius};
-  engine.AddDynamicGeometry(sphere, {}, id_A);
-  engine.AddDynamicGeometry(sphere, {}, id_B);
-
-  const double kDistance = 1;
-  const double kCenterDistance = kDistance + radius + radius;
-  // Displace B the desired distance in an arbitrary direction.
-  const Vector3d p_WB = Vector3d(2, 3, 4).normalized() * kCenterDistance;
-  X_WGs[id_B].set_translation(p_WB);
-  engine.UpdateWorldPoses(X_WGs);
-
-  // Case: good case produces the correct value.
-  {
-    const SignedDistancePair<double> result =
-        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs);
-    EXPECT_EQ(result.id_A, id_A);
-    EXPECT_EQ(result.id_B, id_B);
-    EXPECT_NEAR(result.distance, kDistance,
-                std::numeric_limits<double>::epsilon());
-    // We're not testing *all* the fields. The callback is setting the fields,
-    // we assume if ids and distance are correct, the previously tested callback
-    // code does it all correctly.
-  }
-
-  // Case: the first id is invalid.
-  {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
-        fmt::format("The geometry given by id {} does not reference .+ used in "
-                    "a signed distance query",
-                    bad_id));
-  }
-
-  // Case: the second id is invalid.
-  {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
-        fmt::format("The geometry given by id {} does not reference .+ used in "
-                    "a signed distance query",
-                    bad_id));
-  }
-
-  // Case: the distance is evaluated even though the pair is filtered.
-  {
-    // I know the GeometrySet only has id_A and id_B, so I'll construct the
-    // extracted set by hand.
-    auto extract_ids = [id_A, id_B](const GeometrySet&, CollisionFilterScope) {
-      return std::unordered_set<GeometryId>{id_A, id_B};
-    };
-    engine.collision_filter().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
-        extract_ids, false /* is_invariant */);
-    EXPECT_NO_THROW(
-        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs));
-  }
-}
-
 // ProximityEngine::ComputeSignedDistanceGeometryToPoint() does no math. It is
 // simply responsible for acquiring the indicated geometry (if possible,
 // throwing if not), bundling it up with the query point, forwarding it to the
@@ -1674,6 +1603,71 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
   // Confirm derivatives survived -- not empty and not all zero.
   const auto& result = ad_results[0];
   const auto& derivs = result.distance.derivatives();
+  ASSERT_EQ(derivs.size(), 3);
+  EXPECT_FALSE(derivs.isZero());
+}
+
+/* ComputeSignedDistancePairClosestPoints() responsibilities:
+  1. Given two valid ids, return a result with the correct ids.
+  2. Throw if id_A does not reference a known geometry.
+  3. Throw if id_B does not reference a known geometry.
+  4. Evaluate the pair even if it is collision-filtered (filter is ignored).
+  5. AutoDiff derivatives pass through successfully.
+
+  Unlike the pairwise query, this API takes explicit geometry ids and bypasses
+  the broadphase entirely.
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion. */
+TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairClosestPoints) {
+  const Sphere sphere{0.5};
+  // Place the spheres apart (not colliding) so the distance query is valid.
+  const double d = 2 * sphere.radius() + 0.1;
+  const GeometryId id_A = AddDynamic(sphere);
+  const GeometryId id_B = AddDynamic(sphere, {d, 0, 0});
+  const GeometryId bad_id = GeometryId::get_new_id();
+  engine_.UpdateWorldPoses(X_WGs_);
+
+  // (1) - Valid ids return a result with the correct geometry ids.
+  {
+    const SignedDistancePair<double> result =
+        engine_.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs_);
+    EXPECT_EQ(result.id_A, id_A);
+    EXPECT_EQ(result.id_B, id_B);
+  }
+
+  // (2) - Invalid id_A throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine_.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs_),
+      fmt::format("The geometry given by id {} does not reference .+ used in "
+                  "a signed distance query",
+                  bad_id));
+
+  // (3) - Invalid id_B throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine_.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs_),
+      fmt::format("The geometry given by id {} does not reference .+ used in "
+                  "a signed distance query",
+                  bad_id));
+
+  // (4) - Collision filter is ignored; the pair is evaluated regardless.
+  ExcludeCollisionsWithin({id_A, id_B});
+  EXPECT_NO_THROW(
+      engine_.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs_));
+
+  // (5) - AutoDiff derivatives pass through successfully.
+  const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  X_WGs_ad[id_A] = RigidTransform<AutoDiffXd>{
+      math::InitializeAutoDiff(X_WGs_.at(id_A).translation())};
+  ad_engine->UpdateWorldPoses(X_WGs_ad);
+
+  const SignedDistancePair<AutoDiffXd> result =
+      ad_engine->ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs_ad);
+  const VectorX<double>& derivs = result.distance.derivatives();
   ASSERT_EQ(derivs.size(), 3);
   EXPECT_FALSE(derivs.isZero());
 }
