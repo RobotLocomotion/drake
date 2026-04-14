@@ -319,7 +319,7 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
     six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_NO_THROW(Tester::CallLltFactorization(body_node, six_by_six))
         << fmt::format("For expected bad eigenvalues: {}",
-                       fmt_eigen(K_eigen_values.transpose()));
+                       fmt_eigen(K_eigen_values));
   }
 
   // N.B. There are more ways the matrix could cause a throw. This approach
@@ -343,7 +343,7 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
     EXPECT_THROW(Tester::CallLltFactorization(body_node, six_by_six),
                  std::exception)
         << fmt::format("For expected bad eigenvalues: {}",
-                       fmt_eigen(K_eigen_values.transpose()));
+                       fmt_eigen(K_eigen_values));
   }
 }
 

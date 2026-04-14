@@ -228,14 +228,9 @@ and file names above should be adjusted accordingly.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
 4. Download and install ``gurobi13.0.1_macos2_universal.pkg``.
 
-To confirm that your setup was successful, run the tests that require Gurobi:
+To confirm that your setup was successful, run a test that requires Gurobi:
 
-  ```bazel test --config gurobi --test_tag_filters=gurobi //...```
-
-The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with Gurobi regularly, you may wish
-to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
+  ```bazel test --@drake//tools/flags:with_gurobi=True //solver:gurobi_solver_test```
 
 ## MOSEK
 
@@ -244,14 +239,9 @@ installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
 
-To confirm that your setup was successful, run the tests that require MOSEK™:
+To confirm that your setup was successful, run a test that requires MOSEK™:
 
-  ```bazel test --config mosek --test_tag_filters=mosek //...```
-
-The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with MOSEK™ regularly, you may wish
-to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
+  ```bazel test --@drake//tools/flags:with_mosek=True //solvers:mosek_solver_test```
 
 ## SNOPT
 
@@ -273,14 +263,9 @@ Using the RobotLocomotion git repository
 
 Test the build (for either mechanism)
 
-To confirm that your setup was successful, run the tests that require SNOPT:
+To confirm that your setup was successful, run a test that requires SNOPT:
 
-  ```bazel test --config snopt --test_tag_filters=snopt //...```
-
-The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with SNOPT regularly, you may wish
-to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
+  ```bazel test --@drake//tools/flags:with_snopt=True //solvers:snopt_solver_test```
 
 SNOPT support has some known problems on certain programs (see drake issue
 [#10422](https://github.com/RobotLocomotion/drake/issues/10422) for a summary).
@@ -338,7 +323,7 @@ tools/dynamic_analysis/kcov_tool clean
 
 ### Drake bazel rules and kcov
 
-Some Drake-specific bazel rules (e.g. `drake_cc_google_test`) use various
+Some Drake-specific bazel rules (e.g. `drake_cc_googletest`) use various
 heuristics to skip certain tests in `kcov` builds. This may hinder developers
 trying to use `kcov` locally on specific tests. For example:
 

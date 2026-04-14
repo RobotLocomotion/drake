@@ -84,7 +84,7 @@ class SymbolicMixingScalarTypesTest : public ::testing::Test {
 
   template <typename Scalar>
   string to_string(const Eigen::MatrixBase<Scalar>& m) {
-    return fmt::to_string(fmt_eigen(m));
+    return fmt::format("{:#}", fmt_eigen(m));
   }
 };
 

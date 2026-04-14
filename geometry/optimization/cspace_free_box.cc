@@ -117,8 +117,7 @@ void CspaceFreeBox::ComputeSBox(
     throw std::runtime_error(
         fmt::format("CspaceFreeBox: q_box_lower={} has some entries larger "
                     "than q_box_upper={}.",
-                    fmt_eigen(q_box_lower.transpose()),
-                    fmt_eigen(q_box_upper.transpose())));
+                    fmt_eigen(q_box_lower), fmt_eigen(q_box_upper)));
   }
   const auto& plant = this->rational_forward_kin().plant();
   const Eigen::VectorXd q_position_lower = plant.GetPositionLowerLimits();
@@ -127,15 +126,13 @@ void CspaceFreeBox::ComputeSBox(
     throw std::runtime_error(fmt::format(
         "CspaceFreeBox: q_box_lower={} has some entries larger the the robot "
         "position upper limit={}.",
-        fmt_eigen(q_box_lower.transpose()),
-        fmt_eigen(q_position_upper.transpose())));
+        fmt_eigen(q_box_lower), fmt_eigen(q_position_upper)));
   }
   if ((q_box_upper.array() < q_position_lower.array()).any()) {
     throw std::runtime_error(fmt::format(
         "CspaceFreeBox: q_box_upper={} has some entries smaller than the robot "
         "position lower limit={}.",
-        fmt_eigen(q_box_upper.transpose()),
-        fmt_eigen(q_position_lower.transpose())));
+        fmt_eigen(q_box_upper), fmt_eigen(q_position_lower)));
   }
   const Eigen::VectorXd q_lower =
       q_box_lower.array().max(q_position_lower.array()).matrix();

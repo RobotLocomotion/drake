@@ -39,7 +39,7 @@ GTEST_TEST(UnitVectorTest, ThrowIfNotUnitVector) {
   // Verify an exception is thrown for an invalid unit vector.
   Vector3<double> not_unit_vector(1.0, 2.0, 3.0);
   std::string expected_message =
-      "SomeFunctionName\\(\\): The unit_vector argument 1 2 3 is"
+      "SomeFunctionName\\(\\): The unit_vector argument \\[1, 2, 3\\]ᵀ is"
       " not a unit vector.\n"
       "\\|unit_vector\\| = 3.74165738677\\d+\n"
       "\\|\\|unit_vector\\| - 1\\| = 2.74165738677\\d+ is greater than .*.";
@@ -50,7 +50,7 @@ GTEST_TEST(UnitVectorTest, ThrowIfNotUnitVector) {
   // Verify an exception is thrown for a unit vector with NAN elements.
   not_unit_vector = Vector3<double>(NAN, NAN, NAN);
   expected_message =
-      "SomeFunctionName\\(\\): The unit_vector argument nan nan nan is"
+      "SomeFunctionName\\(\\): The unit_vector argument \\[nan, nan, nan\\]ᵀ is"
       " not a unit vector.\n"
       "\\|unit_vector\\| = nan\n"
       "\\|\\|unit_vector\\| - 1\\| = nan is greater than .*.";
@@ -62,7 +62,7 @@ GTEST_TEST(UnitVectorTest, ThrowIfNotUnitVector) {
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   not_unit_vector = Vector3<double>(kInfinity, kInfinity, kInfinity);
   expected_message =
-      "SomeFunctionName\\(\\): The unit_vector argument inf inf inf is"
+      "SomeFunctionName\\(\\): The unit_vector argument \\[inf, inf, inf\\]ᵀ is"
       " not a unit vector.\n"
       "\\|unit_vector\\| = inf\n"
       "\\|\\|unit_vector\\| - 1\\| = inf is greater than .*.";

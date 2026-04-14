@@ -1,3 +1,8 @@
+# -*- bazelrc -*-
+
+# This is a portion of Drake's .bazelrc defaults. This filed is used both for
+# Bazel builds and also CMake builds (and thus also Packaging, Wheel, etc.).
+
 # Enable platform-specific config groups (e.g., "build:linux", "build:macos").
 common --enable_platform_specific_config
 
@@ -41,6 +46,21 @@ build --java_runtime_version=remotejdk_11
 build --cxxopt=-std=c++23
 build --host_cxxopt=-std=c++23
 
+# Configure ${PATH} for actions.
+# N.B. Ensure this is consistent with `execute.bzl`.
+build:linux --action_env=PATH=/usr/bin:/bin
+build:macos --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Disable ccache due to incompatibility with Bazel.
+build --action_env=CCACHE_DISABLE=1
+
+# Disable python imports from ~/.local (pip -U) during build and test.
+# https://github.com/bazelbuild/bazel/issues/4939
+# https://github.com/RobotLocomotion/drake/issues/8475
+# TODO(jwnimmer-tri) Try to enable this on macOS as well.
+build:linux --action_env=PYTHONNOUSERSITE=1
+build:linux --test_env=PYTHONNOUSERSITE=1
+
 # Suppress warnings from module externals.
 build --per_file_copt=external/libx11./.*@-w
 build --per_file_copt=external/libxcb./.*@-w
@@ -53,12 +73,6 @@ build --incompatible_default_to_explicit_init_py
 # Default test options.
 build --test_output=errors
 build --test_summary=terse
-
-# By default, disable execution of tests that require proprietary software.
-# Individual targets that use proprietary software are responsible for ensuring
-# they can also build without it, typically by using a select statement.
-# config_setting rules for proprietary software are provided in //tools.
-build --test_tag_filters=-gurobi,-mosek,-snopt
 
 # Location of the Gurobi license key file, typically named "gurobi.lic".
 # Setting this --test_env for all configurations is deliberate to improve
@@ -90,42 +104,34 @@ build:openmp --linkopt=-fopenmp
 build:debug --compilation_mode=dbg
 # Provide a performance cushion for debug builds, 2x the default timeouts.
 build:debug --test_timeout=120,600,1800,7200
+# Enable split debug symbols (Linux only).
+build:linux --fission=dbg
+build:linux --features=per_object_debug_info
+
+# Options for explicitly using GCC.
+# TODO(#24359) Delete this entirely.
+common:gcc --repo_env=CC=gcc
+common:gcc --repo_env=CXX=g++
+build:gcc --action_env=CC=gcc
+build:gcc --action_env=CXX=g++
+build:gcc --host_action_env=CC=gcc
+build:gcc --host_action_env=CXX=g++
+
+# Options for explicitly using Clang.
+# Note that the drake/gen/environment.bazelrc file might override this.
+# TODO(#24359) Delete this entirely.
+common:clang --repo_env=CC=clang
+common:clang --repo_env=CXX=clang++
+build:clang --action_env=CC=clang
+build:clang --action_env=CXX=clang++
+build:clang --host_action_env=CC=clang
+build:clang --host_action_env=CXX=clang++
 
 ### A configuration that enables all optional dependencies. ###
-build:everything --test_tag_filters=-no_everything
+build:everything --@drake//tools/flags:with_gurobi=True
+build:everything --@drake//tools/workspace/gurobi:force_disable_when_not_supported=True
+build:everything --@drake//tools/flags:with_mosek=True
+build:everything --@drake//tools/flags:with_snopt=True
 # We'll also use it to test legacy AutoDiff until 2026-07-01 when this flag
 # gets removed.
 build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False
-
-### A configuration that enables Gurobi. ###
-# -- To use this config, the GRB_LICENSE_FILE environment variable must be set
-# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_HOME
-# -- environment variable must be set to the linux64 directory of the extracted
-# -- archive downloaded from gurobi.com when the installation was not at the
-# -- default location of /opt/gurobi1002/linux64.
-#
-# -- To run tests where Gurobi is used, ensure that you include
-# -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.
-# -- If Gurobi is optional, set gurobi_required=False.
-build:gurobi --@drake//tools/flags:with_gurobi=True
-build:everything --@drake//tools/flags:with_gurobi=True
-
-### A configuration that enables MOSEK™. ###
-# -- To use this config, the MOSEKLM_LICENSE_FILE environment variable must be
-# -- set to the location of the MOSEK license file.
-#
-# -- To run tests where MOSEK™ is used, ensure that you include
-# -- "mosek_test_tags()" from //tools/skylark:test_tags.bzl.
-# -- If MOSEK™ is optional, set mosek_required=False.
-build:mosek --@drake//tools/flags:with_mosek=True
-build:everything --@drake//tools/flags:with_mosek=True
-
-### A configuration that enables SNOPT. ###
-# -- To use this config, you must have access to the private repository
-# -- RobotLocomotion/snopt on GitHub, and your local git must be configured
-# -- with SSH keys as documented at https://drake.mit.edu/from_source.html.
-#
-# -- To run tests that require SNOPT, also specify a set of test_tag_filters
-# -- that does not exclude the "snopt" tag.
-build:snopt --@drake//tools/flags:with_snopt=True
-build:everything --@drake//tools/flags:with_snopt=True

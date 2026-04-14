@@ -1,42 +1,24 @@
-# Docker / Apt / S3 Release Process
+# Docker Release Process
+
+This describes the process of running the `push_docker.py` script to update
+Drake's Dockerhub repository with images from a new release, by converting the
+tags from the images pushed during the release staging jobs.
 
 ## Initial Setup
 
 This process only needs to be done once per system.
 
-Note that these scripts are tested on Ubuntu Noble;
-other platforms are not supported.
+Note that this script is only supported on our primary developer platform,
+which is currently Ubuntu Noble 24.04.
 
 ### Install required packages
 
-    apt install aptly
+Install the maintainer-required prerequisites:
+
+  setup/install_prereqs --with-maintainer-only
 
 Follow instructions to install Docker
 https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
-
-Follow instructions to install awscli
-https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-
-### Configure aptly
-
-Download `.aptly.conf` from S3 to your home directory
-
-On AWS, in IAM / Users / \<username\> / Security Credentials, select
-`Create Access Key`.
-
-Replace all (3) instances of "awsAccessKeyID" and "awsSecretAccessKey" in
-`.aptly.conf` with the created values.
-
-Set `rootDir` in `.aptly.conf` to your local home directory
-(e.g. `/Users/<username>/.aptly`)
-
-### Import the gpg key
-
-Download the public key from S3.
-
-Using the passphrase from the AWS Secrets Manager, run:
-
-    gpg --import <key.asc>
 
 ### Log into Docker
 
@@ -48,18 +30,12 @@ The Docker ID and password may be found in the AWS Secrets Manager.
 
 ## Run script for Docker
 
-Clone the drake repository:
-
-    git clone https://github.com/RobotLocomotion/drake.git
-    cd drake
-
-The next step is to push Docker images. Run the `push_docker` script as
-described below:
+Run the `push_docker` script as described below:
 
     bazel run //tools/release_engineering/dev:push_docker -- <version>
 
-The release creator will provide the version. Throughout this process, don’t
-use `v` on the version string. For example:
+The release creator will provide the version. Don't use `v` on the version
+string; for example:
 
     bazel run //tools/release_engineering/dev:push_docker -- 1.0.0
 
@@ -69,108 +45,3 @@ Verify that
 [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has a plain `<version>` tag as well as a `<version>` tag for each supported
 configuration (e.g. noble).
-
-
-## Run script for apt
-
-(Before proceeding, refer to the sections below if you need to add a new
-configuration or package.)
-
-Once your machine is set-up, run the `push_release` script as described below:
-
-    cd tools/release_engineering/dev
-    ./push_release <version>
-
-The release creator will provide the version. Again, don’t use `v` on the
-version string. For example:
-
-    ./push_release 0.32.0
-
-The script will prompt for the GPG passphrase, which may be found in the AWS
-Secrets Manager. The script may prompt for this multiple times.
-
-### Verification
-
-Verify that you can install drake via APT, see https://drake.mit.edu/apt.html for instructions.
-
-### [Optional] Add a new configuration
-
-For example, to add Jammy:
-
-1. Edit `~/.aptly.conf` to add a `jammy` section
-2. Add a `jammy` folder to
-[drake-apt](https://s3.console.aws.amazon.com/s3/buckets/drake-apt?region=us-east-1&tab=objects)
-s3 bucket
-3. Edit the `push_release` script:
-
-    1. After downloading the aptly database from S3, create the `drake-jammy`
-    repo with the command
-    ``aptly repo create -distribution=jammy drake-jammy``. For example:
-
-        # Download the current version of the aptly database from S3.
-        aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
-
-        aptly repo create -distribution=jammy drake-jammy
-
-    2. The first time a repo is published we must use
-    ``aptly publish snapshot`` instead of ``aptly publish switch``:
-
-        aptly publish snapshot -gpg-key="${gpg_key: -8}" \
-            -distribution="jammy" "drake-${platform}-${binary_version}" \
-            "s3:drake-apt.csail.mit.edu/${platform}:"
-
-Follow instructions below as normal. Don’t forget to revert the changes to
-the `push_release` script!
-
-### [Optional] Add a package
-
-First, check which packages are already included in the repo. From the command
-line:
-
-    aptly repo show -with-packages drake-<distro>
-
-For example:
-
-    aptly repo show -with-packages drake-jammy
-
-    Name: drake-jammy
-    Comment:
-    Default Distribution: jammy
-    Default Component: main
-    Number of packages: 1
-    Packages:
-      Drake-dev_1.9.0-1_amd64
-
-
-Edit the `push_release` script to add the package. Add the following line for
-each package after `.aptly` directory is cloned from AWS but before the `for()`
-loop so it’s only done once. Use the full path to the .deb file.
-
-    aptly repo add [-force-replace] drake-<distro> <package_name>
-
-For example:
-
-    # Download the current version of the aptly database from S3.
-    aws s3 sync --delete s3://drake-infrastructure/aptly/.aptly "${HOME}/.aptly"
-
-    # Add new packages
-    aptly repo add drake-jammy ~/drake_release/lcm_1.4.0-gabdd8a2_amd64.deb
-    aptly repo add drake-jammy ~/drake_release/libbot2_0.0.1.20221116-1_amd64.deb
-
-Follow instructions below as normal. Don’t forget to revert the changes to
-the `push_release` script!
-
-Verify packages have been added:
-
-    aptly repo show -with-packages drake-jammy
-
-    Name: drake-jammy
-    Comment:
-    Default Distribution: jammy
-    Default Component: main
-    Number of packages: 4
-    Packages:
-      drake-dev_1.10.0-1_amd64
-      drake-dev_1.9.0-1_amd64
-      lcm_1.4.0-gabdd8a2_amd64
-      libbot2_0.0.1.20221116-1_amd64

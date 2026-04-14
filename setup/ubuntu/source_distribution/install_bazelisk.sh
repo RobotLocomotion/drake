@@ -31,7 +31,7 @@ dpkg_install_from_wget() {
   fi
 
   # Download and verify.
-  tmpdeb="/tmp/${package}_${version}-amd64.deb"
+  tmpdeb="/tmp/${package}_${version}-$(dpkg-architecture -qDEB_HOST_ARCH).deb"
   wget -O "${tmpdeb}" "${url}"
   if echo "${checksum} ${tmpdeb}" | sha256sum -c -; then
     echo  # Blank line between checkout output and dpkg output.

@@ -12,7 +12,7 @@ local_path_override(
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 
 python.toolchain(
-    python_version = "@PYTHON_VERSION_MAJOR_MINOR@",
+    python_version = "@Python_VERSION_MAJOR@.@Python_VERSION_MINOR@",
     is_default = True,
 )
 

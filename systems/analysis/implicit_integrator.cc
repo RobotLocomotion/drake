@@ -174,7 +174,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(const System<T>&,
 
   DRAKE_LOGGER_DEBUG(
       "  ImplicitIntegrator Compute Forwarddiff {}-Jacobian t={}", n, t);
-  DRAKE_LOGGER_DEBUG("  computing from state {}", fmt_eigen(xt.transpose()));
+  DRAKE_LOGGER_DEBUG("  computing from state {}", fmt_eigen(xt));
 
   // Initialize the Jacobian.
   J->resize(n, n);

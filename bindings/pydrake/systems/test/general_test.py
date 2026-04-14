@@ -593,7 +593,7 @@ class TestGeneral(unittest.TestCase):
             Time: 0
             States:
               3 continuous states
-                0 0 0
+                [0, 0, 0]
 
             """),
         )
