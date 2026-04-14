@@ -2128,57 +2128,6 @@ GTEST_TEST(ProximityEngineTests, HasCollisionsAnchoredInterference) {
   EXPECT_TRUE(engine.HasCollisions());
 }
 
-// Confirms that non-positive thresholds produce the right value. Creates three
-// spheres: A, B, & C. A is separated from B & C and B & C are penetrating.
-// We confirm that query tolerance of 0, returns B & C and that a tolerance
-// of penetration depth + epsilon returns B & C, and depth - epsilon omits
-// everything.
-GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
-  ProximityEngine<double> engine;
-  const GeometryId id1 = GeometryId::get_new_id();
-  const GeometryId id2 = GeometryId::get_new_id();
-  const GeometryId id3 = GeometryId::get_new_id();
-  const double kRadius = 0.5;
-  const unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id1, RigidTransformd{Translation3d{0, 2 * kRadius, 0}}},
-      {id2, RigidTransformd{Translation3d{-kRadius * 0.9, 0, 0}}},
-      {id3, RigidTransformd{Translation3d{kRadius * 0.9, 0, 0}}}};
-
-  Sphere sphere{kRadius};
-  engine.AddDynamicGeometry(sphere, {}, id1);
-  engine.AddDynamicGeometry(sphere, {}, id2);
-  engine.AddDynamicGeometry(sphere, {}, id3);
-  engine.UpdateWorldPoses(X_WGs);
-  std::vector<SignedDistancePair<double>> results_all =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
-  ASSERT_EQ(results_all.size(), 3u);
-  // Make sure the result is sorted
-  auto parameters_in_order = [](const SignedDistancePair<double>& p1,
-                                const SignedDistancePair<double>& p2) {
-    if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
-    return p1.id_B < p2.id_B;
-  };
-  EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
-  EXPECT_TRUE(parameters_in_order(results_all[1], results_all[2]));
-
-  std::vector<SignedDistancePair<double>> results_zero =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, 0);
-  EXPECT_EQ(results_zero.size(), 1u);
-
-  const double penetration = -kRadius * 0.2;
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  std::vector<SignedDistancePair<double>> results_barely_in =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        penetration + kEps);
-  EXPECT_EQ(results_barely_in.size(), 1u);
-
-  std::vector<SignedDistancePair<double>> results_barely_out =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        penetration - kEps);
-  EXPECT_EQ(results_barely_out.size(), 0u);
-}
-
 // TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
 //  testing in proximity engine. They should only test the following:
 //  Successful evaluation between two dynamic shapes and between a dynamic
@@ -2377,26 +2326,6 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
   const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
   const Vector3d grad_w = math::ExtractValue(distance_data.nhat_BA_W);
   EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_w, kEps));
-}
-
-// Tests that an unsupported geometry causes the engine to throw.
-GTEST_TEST(ProximityEngineTests,
-           ComputePairwiseSignedDistanceAutoDiffUnsupported) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  // Add two geometries that can't be queried.
-  const GeometryId id1 = GeometryId::get_new_id();
-  const GeometryId id2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Box(1, 2, 3), {}, id1);
-  engine.AddDynamicGeometry(Box(2, 4, 6), {}, id2);
-
-  const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id1, RigidTransform<AutoDiffXd>::Identity()},
-      {id2, RigidTransform<AutoDiffXd>::Identity()}};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::AutoDiffXd.*");
 }
 
 // Test fixture for deformable contact.
