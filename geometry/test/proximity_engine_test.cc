@@ -8,6 +8,7 @@
 #include <limits>
 #include <memory>
 #include <ranges>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -16,6 +17,7 @@
 
 #include <fcl/fcl.h>
 #include <fmt/ranges.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -1876,6 +1878,84 @@ TEST_F(ProximityEngineQueryTest, ComputePointPairPenetration) {
   EXPECT_FALSE(derivs.isZero());
 }
 
+/* FindCollisionCandidates() responsibilities:
+  1. Report no candidates for an empty engine.
+  2. Do not report anchored-anchored pairs, even if their AABBs overlap.
+  3. Report dynamic-dynamic pairs whose AABBs overlap.
+  4. Respect collision filter (filtered pairs are not candidates).
+  5. Report dynamic-anchored pairs whose AABBs overlap.
+  6. Results are stable (ordered) across repeated calls.
+  7. It should also allow Callback exceptions to propagate through; we won't
+     test this directly -- Drake standard practices and the clear absence of a
+     catch block is sufficient evidence.
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+  We set up several spheres. The letter indicates anchored (A) or dynamic (D);
+  the subscript indicates registration order.
+
+  We set up spheres as follows:
+
+       ···           ***
+     ·     ·       *     *     - A1, A2 anchored spheres that overlap each
+    ·   A1  ·     *   D3  *      other.
+    ·       ·     *       *    - D3, D4 dynamic spheres that overlap each other.
+     · ··· ·       * *** *     - D5 a *massive* dynamic sphere (boundaries not
+       ···    D5     ***         shown) that overlaps all the other geometries.
+     ·     ·       *     *
+    ·       ·     *       *    - Prefixes A, D indicate anchored or dynamic.
+    ·   A2  ·     *   D4  *    - Suffix numbers indicate order created.
+     ·     ·       *     *
+       ···           ***
+*/
+TEST_F(ProximityEngineQueryTest, FindCollisionCandidates) {
+  auto eval_dut = [this]() {
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.FindCollisionCandidates();
+  };
+  const Sphere sphere{0.5};
+  // Distance less than two radii implies collision.
+  const double d = 2 * sphere.radius() - 0.1;
+
+  // (1) - empty engine has no candidates.
+  ASSERT_TRUE(eval_dut().empty());
+
+  // (2) - anchored-anchored pairs are never candidates.
+  const GeometryId anchored1 = AddAnchored(sphere);
+  const GeometryId anchored2 = AddAnchored(sphere, {0, -d, 0});
+  ASSERT_TRUE(eval_dut().empty());
+
+  // (3) - dynamic-dynamic pairs whose AABBs overlap ARE candidates.
+  const GeometryId dynamic3 = AddDynamic(sphere, {2, 0, 0});
+  const GeometryId dynamic4 = AddDynamic(sphere, {2, -d, 0});
+  ASSERT_THAT(eval_dut(), ::testing::UnorderedElementsAre(
+                              SortedPair<GeometryId>(dynamic3, dynamic4)));
+
+  // (4) - a filtered pair is not a candidate.
+  std::optional<FilterId> filter_id =
+      ExcludeCollisionsWithin({dynamic3, dynamic4}, /* is_temporary= */ true);
+  DRAKE_DEMAND(filter_id.has_value());
+  ASSERT_TRUE(eval_dut().empty());
+  engine_.collision_filter().RemoveDeclaration(*filter_id);
+
+  // (5) - dynamic-anchored pairs whose AABBs overlap ARE candidates.
+  const GeometryId dynamic5 = AddDynamic(Sphere(5));
+  const vector<SortedPair<GeometryId>> results = eval_dut();
+  // This is the expected *contents* but not the order of the results.
+  const std::set<SortedPair<GeometryId>> expected{
+      {dynamic3, dynamic4}, {dynamic5, anchored1}, {dynamic5, anchored2},
+      {dynamic5, dynamic3}, {dynamic5, dynamic4},
+  };
+  ASSERT_THAT(eval_dut(), ::testing::UnorderedElementsAreArray(expected));
+
+  // (6) - the five spheres we have in the engine are enough to expose FCL
+  // ordering instability. A second invocation will be sufficient to show
+  // ordering consistency despite that instability.
+  const vector<SortedPair<GeometryId>> results2 = eval_dut();
+  EXPECT_EQ(results, results2);
+}
+
 // Utility test for evaluating the following "ResultOrdering" test. It produces
 // a "ring" of spheres such that each sphere makes contact with its two
 // neighbors. So, N spheres produce N contacts. Given the input radius and
@@ -1923,34 +2003,6 @@ unordered_map<GeometryId, RigidTransformd> MakeCollidingRing(double radius,
     poses[GeometryId::get_new_id()] = RigidTransformd(p_WSo);
   }
   return poses;
-}
-
-// Confirms that the FindCollisionCandidates() computation returns the
-// same results twice in a row. This test is explicitly required because it is
-// known that updating the pose in the FCL tree can lead to erratic ordering.
-GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
-  ProximityEngine<double> engine;
-
-  const double r = 0.5;
-  // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
-  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, 4);
-
-  const Sphere sphere{r};
-  for (const auto& pair : poses) {
-    engine.AddDynamicGeometry(sphere, {}, pair.first);
-  }
-  engine.UpdateWorldPoses(poses);
-  const auto results1 = engine.FindCollisionCandidates();
-  ASSERT_EQ(results1.size(), poses.size());
-
-  engine.UpdateWorldPoses(poses);
-  const auto results2 = engine.FindCollisionCandidates();
-  ASSERT_EQ(results1.size(), poses.size());
-
-  for (size_t i = 0; i < poses.size(); ++i) {
-    EXPECT_EQ(results1[i].first(), results2[i].first());
-    EXPECT_EQ(results1[i].second(), results2[i].second());
-  }
 }
 
 // Confirms that the ComputeContactSurfaces() computation returns the
