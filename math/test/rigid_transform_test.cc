@@ -965,10 +965,7 @@ void VerifyStreamInsertionOperator(const RigidTransform<T> X_AB,
   // stream_string may be something like
   // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
   std::stringstream stream;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   stream << X_AB;
-#pragma GCC diagnostic pop
   const std::string stream_string = stream.str();
   ASSERT_EQ(stream_string.find("rpy = "), 0);
   const char* cstring = stream_string.c_str() + 6;  // Start of double value.
@@ -1022,10 +1019,7 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   RollPitchYaw<Expression> rpy_symbolic(roll, pitch, yaw);
   RigidTransform<Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
   std::stringstream stream;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   stream << X_symbolic;
-#pragma GCC diagnostic pop
   const std::string expected_string =
       "rpy = <symbolic> <symbolic> <symbolic> xyz = x y z";
   EXPECT_EQ(expected_string, stream.str());

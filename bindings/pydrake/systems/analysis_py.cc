@@ -420,8 +420,6 @@ Parameter ``interruptible``:
             doc.Simulator.get_num_unrestricted_updates.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     // delete with publish_every_time_step 2026-06-01
     cls.def("set_publish_every_time_step",
            WrapDeprecated(
@@ -436,7 +434,6 @@ Parameter ``interruptible``:
             py::arg("publish"),
             doc.Simulator.set_publish_at_initialization.doc_deprecated);
     // delete till here
-#pragma GCC diagnostic pop
     m  // BR
         .def("ApplySimulatorConfig",
             py::overload_cast<const SimulatorConfig&,

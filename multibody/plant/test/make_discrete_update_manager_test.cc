@@ -33,8 +33,6 @@ GTEST_TEST(MakeDiscreteUpdateManagerTest, Sap) {
 }
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MakeDiscreteUpdateManagerTest, Tamsi) {
   std::unique_ptr<DiscreteUpdateManager<double>> double_manager =
       MakeDiscreteUpdateManager<double>(DiscreteContactSolver::kTamsi);
@@ -53,7 +51,6 @@ GTEST_TEST(MakeDiscreteUpdateManagerTest, Tamsi) {
       is_dynamic_castable<CompliantContactManager<symbolic::Expression>>(
           symbolic_manager));
 }
-#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace internal

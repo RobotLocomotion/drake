@@ -238,8 +238,6 @@ TYPED_TEST_SUITE(TypedBasicVectorTest, DefaultScalars);
 
 // TODO(2026-07-01): delete test `StringStream` when
 // `BasicVector<T>::operator<<` is removed.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests ability to stream a BasicVector into a string.
 TYPED_TEST(TypedBasicVectorTest, StringStream) {
   using T = TypeParam;
@@ -251,7 +249,6 @@ TYPED_TEST(TypedBasicVectorTest, StringStream) {
       fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
   EXPECT_EQ(s.str(), expected);
 }
-#pragma GCC diagnostic pop
 
 // Tests string representation of a BasicVector.
 TYPED_TEST(TypedBasicVectorTest, ToStringFmtFormatter) {
@@ -265,8 +262,6 @@ TYPED_TEST(TypedBasicVectorTest, ToStringFmtFormatter) {
 
 // TODO(2026-07-01): delete test `ZeroLengthStringStream` block when
 // `BasicVector<T>::operator<<` is removed.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests ability to stream a BasicVector of size zero into a string.
 TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
   using T = TypeParam;
@@ -277,7 +272,6 @@ TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
       fmt::format("foo [{}] bar", fmt_eigen(vec.value().transpose()));
   EXPECT_EQ(s.str(), expected);
 }
-#pragma GCC diagnostic pop
 
 // Tests string representation of a BasicVector of size zero.
 TYPED_TEST(TypedBasicVectorTest, ZeroLengthVectorToStringFmtFormatter) {

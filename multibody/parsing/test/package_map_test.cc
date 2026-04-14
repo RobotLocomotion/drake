@@ -412,10 +412,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
                         {.urls = {url}, .sha256 = std::string(64u, '0')});
 
   std::stringstream string_buffer;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   string_buffer << package_map;
-#pragma GCC diagnostic pop
   const std::string resulting_string = string_buffer.str();
 
   // The following simply tests that the package names and their relative paths

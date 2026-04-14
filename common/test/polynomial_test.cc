@@ -411,10 +411,7 @@ GTEST_TEST(PolynomialTest, DeprecatedEigenMatrixPolynomialOutputOperator) {
   poly_mat << Polynomiald("x"), Polynomiald("y"), Polynomiald("z"),
       Polynomiald("w");
   std::stringstream test_stream;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   test_stream << poly_mat;
-#pragma GCC diagnostic pop
   std::string result{test_stream.str()};
   EXPECT_EQ(result, "[ x1 , y1 ]\n[ z1 , w1 ]\n");
 }

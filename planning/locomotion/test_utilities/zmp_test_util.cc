@@ -80,8 +80,6 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZmpTrajs(
   return zmp_trajs;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 const std::function<ZmpTestTraj(const ZmpPlanner&, const Eigen::Vector4d&,
                                 double, double)>
     SimulateZMPPolicy = SimulateZmpPolicy;
@@ -89,7 +87,6 @@ const std::function<ZmpTestTraj(const ZmpPlanner&, const Eigen::Vector4d&,
 const std::function<std::vector<trajectories::PiecewisePolynomial<double>>(
     const std::vector<Eigen::Vector2d>&, double, double)>
     GenerateDesiredZMPTrajs = GenerateDesiredZmpTrajs;
-#pragma GCC diagnostic pop
 
 }  // namespace planning
 }  // namespace drake

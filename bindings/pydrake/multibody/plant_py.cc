@@ -624,8 +624,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodySpatialVelocityInWorld.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const char* X_PB_parameter_name_deprecated =
         "X_PB parameter name for SetFreeBodyPose() is deprecated and will be "
         "removed 2026-06-01. Use X_JpJc instead.";
@@ -667,7 +665,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 }),
             py::arg("body"), py::arg("V_PB"), py::arg("context"),
             V_PB_parameter_name_deprecated);
-#pragma GCC diagnostic pop
 
     auto CalcJacobianSpatialVelocity =
         [](const Class* self, const systems::Context<T>& context,
@@ -1748,10 +1745,7 @@ PYBIND11_MODULE(plant, m) {
     constexpr auto& cls_doc = doc.DiscreteContactSolver;
     py::enum_<Class> cls(m, "DiscreteContactSolver", cls_doc.doc_deprecated);
     // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
-#pragma GCC diagnostic pop
     cls.value("kSap", Class::kSap, cls_doc.kSap.doc);
   }
 
@@ -1765,10 +1759,7 @@ PYBIND11_MODULE(plant, m) {
     py::enum_<Class> cls(
         m, "DiscreteContactApproximation", cls_doc.doc_deprecated);
     // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.value("kTamsi", Class::kTamsi, cls_doc.kTamsi.doc);
-#pragma GCC diagnostic pop
     cls  // BR
         .value("kSap", Class::kSap, cls_doc.kSap.doc)
         .value("kSimilar", Class::kSimilar, cls_doc.kSimilar.doc)

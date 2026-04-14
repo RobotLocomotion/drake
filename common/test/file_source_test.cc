@@ -29,20 +29,14 @@ GTEST_TEST(FileSourceTest, ToString) {
   // versions do not. We'll allow either spelling here.
   EXPECT_THAT(fmt::to_string(FileSource("a/b/c")),
               testing::AnyOf("variant(a/b/c)", "variant(\"a/b/c\")"));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_THAT(to_string(FileSource("a/b/c")),
               testing::AnyOf("variant(a/b/c)", "variant(\"a/b/c\")"));
-#pragma GCC diagnostic pop
 
   const MemoryFile file("012345789", ".ext", "hint");
   EXPECT_EQ(fmt::to_string(FileSource(file)),
             fmt::format("variant({})", file.to_string()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(to_string(FileSource(file)),
             fmt::format("variant({})", file.to_string()));
-#pragma GCC diagnostic pop
 }
 
 /* Quick and dirty struct that has a FileSource and can be serialized. */

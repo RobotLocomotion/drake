@@ -35,9 +35,7 @@ std::string to_string(const RigidTransform<T>& X) {
   return fmt::format("{} xyz = {} {} {}", rpy, p.x(), p.y(), p.z());
 }
 
-// TODO(2026-07-01): delete `operator<<` instantiation and the `#pragma`s.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// TODO(2026-07-01): delete `operator<<` instantiation.
 // clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RigidTransform<T>&)>(
@@ -46,7 +44,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
         &to_string)
 ));
 // clang-format on
-#pragma GCC diagnostic pop
 
 }  // namespace math
 }  // namespace drake

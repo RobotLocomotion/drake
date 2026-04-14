@@ -53,12 +53,9 @@ const double kElbowPosition = 0.3;
 const double kArmLength = 0.1;
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
 constexpr auto kDiscreteContactApproximationTamsi =
     DiscreteContactApproximation::kTamsi;
-#pragma GCC diagnostic push
 
 // Set up a plant with 2 trees, one tree having a single floating body, the
 // second tree a serial chain of two bodies attached to each other and world by

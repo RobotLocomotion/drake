@@ -300,15 +300,12 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   const double offset2_;
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
 };
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // delete with publish_every_time_step 2026-06-01
 // Disables non-witness based publishing for witness function testing.
 void DisableDefaultPublishing(Simulator<double>* s) {
   s->set_publish_at_initialization(false);
   s->set_publish_every_time_step(false);
 }
-#pragma GCC diagnostic pop
 // Initializes the Simulator's integrator to fixed step mode for witness
 // function related tests.
 void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double h) {
@@ -1016,8 +1013,6 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // delete this test with publish_every_time_step 2026-06-01
 // Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
@@ -1118,7 +1113,6 @@ GTEST_TEST(SimulatorTest, SpringMassUsingPublishEveryTimeStepDeprecated) {
   EXPECT_LE(spring_mass.get_publish_count(), 1030);
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
-#pragma GCC diagnostic pop
 
 // Repeat the SpringMassNoSample test but now the continuous steps are
 // interrupted by a discrete sample every 1/30 second. The step size doesn't

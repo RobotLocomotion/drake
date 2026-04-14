@@ -331,8 +331,6 @@ GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
 }
 
 // Remove on 2026-09-01 per TAMSI deprecation.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(
@@ -345,7 +343,6 @@ GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
                                                       bodyB, RigidTransformd()),
                               ".*TAMSI does not support weld constraints.*");
 }
-#pragma GCC diagnostic pop
 
 GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};

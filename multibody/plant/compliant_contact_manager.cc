@@ -32,10 +32,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 namespace {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 constexpr auto kDiscreteContactSolverTamsi = DiscreteContactSolver::kTamsi;
-#pragma GCC diagnostic pop
 }  // namespace
 
 template <typename T>
