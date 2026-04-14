@@ -24,6 +24,7 @@ while [ "${1:-}" != "" ]; do
       with_bazel=1
       with_clang=1
       with_test_only=1
+      with_doc_only=1
       ;;
     # Install prerequisites that are only needed to build documentation,
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
