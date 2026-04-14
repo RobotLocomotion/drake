@@ -31,7 +31,7 @@ race:drake_vendor::vtkNew<drake_vendor::vtkRenderWindow>::~vtkNew
 # lcm_memq_handle in the call stack anywhere, which includes the user's
 # callback handlers.  To suppress only *inside* of this one problematic
 # function, we'd need to use a tsan.blacklist file, but that's currently
-# a TODO in our dynamic_analysis/bazel.rc.  Once our toolchain supports
+# a TODO in our bazel-developer.rc.  Once our toolchain supports
 # a blacklist, we should use it instead of this.
 race:^drake_vendor_lcm_memq_handle$
 race:^drake_vendor_lcm_handle_timeout$
