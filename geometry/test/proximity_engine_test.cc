@@ -165,8 +165,6 @@ class GeometriesTester {
 
 namespace {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -1464,71 +1462,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   }
 }
 
-// ComputeSignedDistanceToPoint tests
-
-// Test the broad-phase part of ComputeSignedDistanceToPoint.
-
-// Confirms that non-positve thresholds produce the right value. Creates two
-// penetrating spheres: A & B. The query point is *inside* the intersection of
-// A and B.  We confirm that query tolerance of 0, returns two results and that
-// a tolerance of penetration depth + epsilon likewise returns two results, and
-// depth - epsilon omits everything.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
-  const double kRadius = 0.5;
-  const double kPenetration = kRadius * 0.1;
-
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  const unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id_A,
-       RigidTransformd{Translation3d{-kRadius + 0.5 * kPenetration, 0, 0}}},
-      {id_B,
-       RigidTransformd{Translation3d{kRadius - 0.5 * kPenetration, 0, 0}}}};
-
-  Sphere sphere{kRadius};
-
-  for (bool flip_order : {true, false}) {
-    ProximityEngine<double> engine;
-    // Confirm the results are sorted, regardless of the order the spheres are
-    // added to the engine.
-    const GeometryId first_id = flip_order ? id_B : id_A;
-    const GeometryId second_id = flip_order ? id_A : id_B;
-    engine.AddDynamicGeometry(sphere, {}, first_id);
-    engine.AddDynamicGeometry(sphere, {}, second_id);
-    engine.UpdateWorldPoses(X_WGs);
-
-    const Vector3d p_WQ{0, 0, 0};
-    std::vector<SignedDistanceToPoint<double>> results_all =
-        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, kInf);
-    ASSERT_EQ(results_all.size(), 2u);
-    // Make sure the result is sorted.
-    auto parameters_in_order = [](const SignedDistanceToPoint<double>& p1,
-                                  const SignedDistanceToPoint<double>& p2) {
-      return p1.id_G < p2.id_G;
-    };
-    EXPECT_TRUE(parameters_in_order(results_all[0], results_all[1]));
-
-    std::vector<SignedDistanceToPoint<double>> results_zero =
-        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, 0);
-    ASSERT_EQ(results_zero.size(), 2u);
-    EXPECT_TRUE(parameters_in_order(results_zero[0], results_zero[1]));
-
-    const double kEps = std::numeric_limits<double>::epsilon();
-
-    std::vector<SignedDistanceToPoint<double>> results_barely_in =
-        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
-                                            -kPenetration * 0.5 + kEps);
-    ASSERT_EQ(results_barely_in.size(), 2u);
-    EXPECT_TRUE(
-        parameters_in_order(results_barely_in[0], results_barely_in[1]));
-
-    std::vector<SignedDistanceToPoint<double>> results_barely_out =
-        engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs,
-                                            -kPenetration * 0.5 - kEps);
-    EXPECT_EQ(results_barely_out.size(), 0u);
-  }
-}
-
 // ProximityEngine::ComputeSignedDistanceGeometryToPoint() does no math. It is
 // simply responsible for acquiring the indicated geometry (if possible,
 // throwing if not), bundling it up with the query point, forwarding it to the
@@ -1576,77 +1509,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, {bad_id}),
       ".*does not reference a geometry.*signed distance query");
-}
-
-// We put two small spheres with radius 0.1 centered at (1,1,1) and
-// (-1,-1,-1). The query point Q will be at (3,3,3), so we can test that our
-// code does call computeAABB() of the query point (by default, its AABB is
-// [0,0]x[0,0]x[0,0]). We test several values of the distance threshold to
-// include different numbers of spheres.
-//
-//                      Q query point
-//
-//
-//        y
-//        |    o first small sphere
-//        |
-//        +----- x
-//
-//    o second small sphere
-//
-GTEST_TEST(SignedDistanceToPointBroadphaseTest, MultipleThreshold) {
-  ProximityEngine<double> engine;
-  unordered_map<GeometryId, RigidTransformd> X_WGs;
-  const double radius = 0.1;
-  const Vector3d center1(1, 1, 1);
-  const Vector3d center2(-1, -1, -1);
-  for (const Vector3d& p_WG : {center1, center2}) {
-    const RigidTransformd X_WG(Translation3d{p_WG});
-    const GeometryId id = GeometryId::get_new_id();
-    X_WGs[id] = X_WG;
-    engine.AddAnchoredGeometry(Sphere(radius), X_WG, id);
-  }
-  const Vector3d p_WQ(3, 3, 3);
-  // This small threshold allows no sphere.
-  double threshold = 0.001;
-  auto results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(0, results.size());
-
-  // This threshold touches the corner of the bounding box of the first sphere.
-  // It is still too small to yield any result.
-  threshold = (p_WQ - (center1 + Vector3d(radius, radius, radius))).norm();
-  results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(0, results.size());
-
-  // This threshold barely touches outside the first sphere, so it still gives
-  // no result.
-  threshold = (p_WQ - center1).norm() - radius - 1e-10;
-  results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(0, results.size());
-
-  // This threshold barely touches inside the first sphere, so it gives
-  // one result.
-  threshold = (p_WQ - center1).norm() - radius + 1e-10;
-  results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(1, results.size());
-
-  // This threshold touches the corner of the bounding box of the second
-  // sphere, so it is still too small to allow the second sphere.
-  threshold = (p_WQ - (center2 + Vector3d(radius, radius, radius))).norm();
-  results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(1, results.size());
-
-  // This threshold barely touches the outside the second sphere, so it still
-  // gives one result.
-  threshold = (p_WQ - center2).norm() - radius - 1e-10;
-  results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(1, results.size());
-
-  // This threshold barely touches inside the second sphere, so it starts to
-  // give two results.
-  threshold = (p_WQ - center2).norm() - radius + 1e-10;
-  results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
-  EXPECT_EQ(2, results.size());
 }
 
 // Test harness for testing the ProximityEngine's spatial query functions.
@@ -1814,6 +1676,117 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
   const auto& derivs = result.distance.derivatives();
   ASSERT_EQ(derivs.size(), 3);
   EXPECT_FALSE(derivs.isZero());
+}
+
+/* ComputeSignedDistanceToPoint() responsibilities:
+  1. Report no results for an empty engine.
+  2. The threshold parameter makes a difference (i.e., it is passed to the
+     callback).
+  3. Correct fcl formulation of query point produces expected distance
+     (specifically, calls computeAABB() on the query sphere).
+  4. Report distance to dynamic geometry.
+  5. Report distance to anchored geometry.
+  6. Results are always ordered.
+  7. Collision filter doesn't matter.
+  8. AutoDiff derivatives pass through successfully.
+  9. It should also allow Callback exceptions to propagate through; we won't
+     test this directly -- Drake standard practices and the clear absence of a
+     catch block is sufficient evidence.
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+  In this test, we create three geometries: dynamic, anchored, and dynamic to
+  show the ordering of output results is independent of a geometry's dynamic
+  state.
+      ├┄┄┄┄┄┄ threshold ┄┄┄┄┄┄┄┄┄┄┤
+                    ├┄┄┄┄┄┄ threshold ┄┄┄┄┄┄┄┄┄┄┤
+            ···           ***           ···
+          ·     ·       *     *       ·     ·
+    Q1⏺  ·   D1  ·     *   A2  *     ·   D3  ·   ⏺Q2
+         ·       ·     *       *     ·       ·
+          ·     ·       *     *       ·     ·
+            ···           ***           ···
+
+  We'll query from two points, Q1 and Q2. Not all spheres are within `threshold`
+  units of the query points, so the results will be limited to those within
+  reach. */
+TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceToPoint) {
+  // Distance between sphere centers (and query points).
+  const double kOffset = 1.0;
+  const double kThreshold = kOffset * 2.5;
+  auto eval_dut = [this, kThreshold](const Vector3d& p_WQ) {
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.ComputeSignedDistanceToPoint(p_WQ, X_WGs_, kThreshold);
+  };
+
+  // Extract the ordered ids from results.
+  auto extract_ids = [](const vector<SignedDistanceToPoint<double>>& results) {
+    auto ids =
+        results | std::views::transform(&SignedDistanceToPoint<double>::id_G);
+    return vector<GeometryId>(ids.begin(), ids.end());
+  };
+
+  // (1) - empty engine produces no results - arbitrary query point.
+  EXPECT_TRUE(eval_dut({0, 0, 0}).empty());
+
+  const Sphere sphere(0.5);
+  double x = 0.0;
+  auto next_x = [&x, kOffset]() {
+    x += kOffset;
+    return x;
+  };
+
+  const Vector3d p_WQ1(next_x(), 0, 0);
+  const GeometryId dynamic1 = AddDynamic(sphere, {next_x(), 0, 0});
+  const GeometryId anchored2 = AddAnchored(sphere, {next_x(), 0, 0});
+  const GeometryId dynamic3 = AddDynamic(sphere, {next_x(), 0, 0});
+  const Vector3d p_WQ2(next_x(), 0, 0);
+
+  // (2) - (5) - we'll get distance to anchored and dynamic (but not all the
+  // dynamic, based on the query point).
+  // Expectations for which ids and in which order, based on query point.
+  const vector<GeometryId> expected1 = {dynamic1, anchored2};
+  const vector<GeometryId> expected2 = {anchored2, dynamic3};
+  {
+    const vector<SignedDistanceToPoint<double>> results = eval_dut(p_WQ1);
+    EXPECT_EQ(extract_ids(results), expected1);
+    // (3) - Q is not at (0, 0, 0), so wrong distance will reveal a bug.
+    EXPECT_EQ(results[0].distance, kOffset - sphere.radius());
+    EXPECT_EQ(results[1].distance, 2 * kOffset - sphere.radius());
+  }
+  EXPECT_EQ(extract_ids(eval_dut(p_WQ2)), expected2);
+
+  // (6) - results are always ordered the same; repeat query with Q1.
+  EXPECT_EQ(extract_ids(eval_dut(p_WQ1)), expected1);
+
+  // (7) - Collision filters are ignored.
+  ExcludeCollisionsWithin({dynamic1, anchored2, dynamic1});
+  EXPECT_EQ(extract_ids(eval_dut(p_WQ1)), expected1);
+  EXPECT_EQ(extract_ids(eval_dut(p_WQ2)), expected2);
+
+  // (8) - AutoDiff derivatives pass through successfully.
+  const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  // Make a query point with derivatives.
+  const Vector3<AutoDiffXd> p_WQ1_ad = math::InitializeAutoDiff(p_WQ1);
+
+  ad_engine->UpdateWorldPoses(X_WGs_ad);
+  const auto ad_results =
+      ad_engine->ComputeSignedDistanceToPoint(p_WQ1_ad, X_WGs_ad, kThreshold);
+  // Still get two results.
+  ASSERT_EQ(ad_results.size(), 2);
+  for (int i = 0; i < std::ssize(ad_results); ++i) {
+    // Confirm derivatives survived -- not empty and not all zero. True for both
+    // dynamic and anchored geometries.
+    const auto& result = ad_results[i];
+    const auto& derivs = result.distance.derivatives();
+    ASSERT_EQ(derivs.size(), 3);
+    EXPECT_FALSE(derivs.isZero());
+  }
 }
 
 /* ComputePointPairPenetration() responsibilities:
@@ -2247,117 +2220,6 @@ GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
   ProximityEngine<double> engine_copy(engine);
   engine_copy.UpdateWorldPoses({{id_D, X_WD}});
   EXPECT_TRUE(engine_copy.HasCollisions());
-}
-
-// Basic smoke test for the autodiffibility of the signed distance computation.
-// Tests against the anchored geometry. Specifically, it confirms that while
-// poses are set with double, the calculation is done with AutoDiff and
-// derivatives come through.
-GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffAnchored) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  // Given a sphere with radius 0.7, centered on p_WSo, the point p_SQ = (2,3,6)
-  // is outside G at the positive distance 6.3.
-  const double expected_distance = 6.3;
-  const Vector3d p_SQ_W{2, 3, 6};
-  const Vector3d p_WS_W{0.5, 1.25, -2};
-  const Vector3d p_WQ{p_SQ_W + p_WS_W};
-  Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
-
-  // An empty world inherently produces no results.
-  {
-    const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs;
-    const auto results = engine.ComputeSignedDistanceToPoint(p_WQ_ad, X_WGs);
-    EXPECT_EQ(results.size(), 0);
-  }
-
-  // Against an anchored sphere.
-  {
-    const RigidTransformd X_WS = RigidTransformd(p_WS_W);
-    const GeometryId anchored_id = GeometryId::get_new_id();
-    engine.AddAnchoredGeometry(Sphere(0.7), X_WS, anchored_id);
-    const RigidTransform<AutoDiffXd> X_WS_ad = X_WS.cast<AutoDiffXd>();
-    const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-        {anchored_id, X_WS_ad}};
-
-    // Distance is just beyond the threshold.
-    {
-      std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-          engine.ComputeSignedDistanceToPoint(p_WQ_ad, X_WGs,
-                                              expected_distance - 1e-14);
-      EXPECT_EQ(results.size(), 0);
-    }
-
-    // Distance is just within the threshold
-    {
-      std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-          engine.ComputeSignedDistanceToPoint(p_WQ_ad, X_WGs,
-                                              expected_distance + 1e-14);
-      EXPECT_EQ(results.size(), 1);
-      const SignedDistanceToPoint<AutoDiffXd>& distance_data = results[0];
-      // The autodiff seems to lose a couple of bits relative to the known
-      // answer.
-      EXPECT_NEAR(distance_data.distance.value(), expected_distance, 4 * kEps);
-      // The analytical `grad_W` value should match the autodiff-computed
-      // gradient.
-      const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-      const Vector3d grad_W = math::ExtractValue(distance_data.grad_W);
-      EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
-    }
-  }
-}
-
-// Basic smoke test for the autodiffibility of the signed distance computation.
-// Tests against the dynamic geometry. Specifically, it confirms that while
-// poses are set with double, the calculation is done with AutoDiff and
-// derivatives come through.
-GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffDynamic) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  // Given a sphere with radius 0.7, centered on p_WSo, the point p_SQ = (2,3,6)
-  // is outside G at the positive distance 6.3.
-  const double expected_distance = 6.3;
-  const Vector3d p_SQ{2, 3, 6};
-  const Vector3d p_WS{0.5, 1.25, -2};
-  const Vector3d p_WQ{p_SQ + p_WS};
-  Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
-
-  // Against a dynamic sphere.
-  const GeometryId id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Sphere(0.7), {}, id);
-  const auto X_WS_ad = RigidTransformd(p_WS).cast<AutoDiffXd>();
-  const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id, X_WS_ad}};
-  engine.UpdateWorldPoses(X_WGs);
-
-  // Distance is just beyond the threshold.
-  {
-    std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-        engine.ComputeSignedDistanceToPoint(p_WQ_ad, X_WGs,
-                                            expected_distance - 1e-14);
-    EXPECT_EQ(results.size(), 0);
-  }
-
-  // Distance is just within the threshold
-  {
-    std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-        engine.ComputeSignedDistanceToPoint(p_WQ_ad, X_WGs,
-                                            expected_distance + 1e-14);
-    EXPECT_EQ(results.size(), 1);
-    const SignedDistanceToPoint<AutoDiffXd>& distance_data = results[0];
-    // The autodiff seems to lose a couple of bits relative to the known
-    // answer.
-    EXPECT_NEAR(distance_data.distance.value(), expected_distance, 4 * kEps);
-    // The analytical `grad_W` value should match the autodiff-computed
-    // gradient.
-    const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-    const Vector3d grad_W = math::ExtractValue(distance_data.grad_W);
-    EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
-  }
 }
 
 // Test fixture for deformable contact.
