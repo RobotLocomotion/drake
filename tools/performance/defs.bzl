@@ -16,7 +16,8 @@ def drake_cc_googlebench_binary(
         test_rule_args = None,
         test_rule_display = False,
         test_rule_tags = None,
-        test_rule_opt_in_condition = None):
+        test_rule_opt_in_condition = None,
+        test_rule_rendering = False):
     """Declares a testonly binary that uses google benchmark.  Automatically
     adds appropriate deps and ensures it either has an automated smoke test
     (via 'add_test_rule = True'), or else explicitly opts-out ('= False').
@@ -60,6 +61,7 @@ def drake_cc_googlebench_binary(
             ] + (test_rule_args or []),
             tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
             opt_in_condition = test_rule_opt_in_condition,
+            rendering = test_rule_rendering,
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):

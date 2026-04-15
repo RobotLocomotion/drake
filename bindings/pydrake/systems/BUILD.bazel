@@ -17,7 +17,6 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -609,7 +608,7 @@ drake_py_unittest(
     data = [
         "//multibody:models",
     ],
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":sensors_py",
         "//bindings/pydrake/common/test_utilities",

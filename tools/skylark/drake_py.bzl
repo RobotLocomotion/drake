@@ -4,6 +4,7 @@ load(
     "incorporate_allow_network",
     "incorporate_display",
     "incorporate_num_threads",
+    "incorporate_rendering",
 )
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 
@@ -121,6 +122,7 @@ def drake_py_binary(
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = False,
+        test_rule_rendering = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -162,6 +164,7 @@ def drake_py_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            rendering = test_rule_rendering,
             tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
             # The added test rule isn't going to `import unittest`, but test
             # dependencies such as numpy(!!) do so unconditionally.  We should
@@ -220,6 +223,7 @@ def drake_py_test(
         display = False,
         num_threads = None,
         opt_in_condition = None,
+        rendering = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -248,6 +252,9 @@ def drake_py_test(
     @param opt_in_condition (optional, default is None)
         See drake/tools/skylark/README.md for details.
 
+    @param rendering (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     By default, sets test size to "small" to indicate a unit test. Adds the tag
     "py" if not already present.
 
@@ -264,6 +271,7 @@ def drake_py_test(
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
+    kwargs = incorporate_rendering(kwargs, rendering = rendering)
     kwargs = amend(kwargs, "tags", append = ["py"])
 
     deps = deps or []

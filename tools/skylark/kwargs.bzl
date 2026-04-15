@@ -57,6 +57,24 @@ def _bump_cpu_tag(kwargs, *, new_size):
     kwargs["tags"] = tags
     return kwargs
 
+def incorporate_rendering(kwargs, *, rendering):
+    if rendering not in (True, False):
+        fail("The 'rendering = ...' attribute should be a boolean.")
+    if rendering:
+        kwargs = amend(kwargs, "tags", append = [
+            # Disable under LeakSanitizer and Valgrind Memcheck due to
+            # driver-related leaks. For more information, see #7520.
+            "no_lsan",
+            "no_memcheck",
+            # Similar to #7520, the GL vendor's libraries are not sufficiently
+            # instrumented for compatibility with TSan.
+            "no_tsan",
+            # Mitigates driver-related issues when running under `bazel test`.
+            # For more information, see #7004.
+            "no-sandbox",
+        ])
+    return kwargs
+
 def incorporate_display(kwargs, *, display):
     if display not in (True, False):
         fail("The 'display = ...' attribute should be a boolean.")

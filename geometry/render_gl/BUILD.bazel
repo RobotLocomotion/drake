@@ -12,7 +12,6 @@ load(
     "drake_cc_optional_library",
     "drake_cc_variant_library",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # This render_gl package is only implemented on Linux and when
 # //tools/flags:with_render_gl is True. When either of these conditions is unmet
@@ -259,13 +258,7 @@ drake_cc_optional_googletest(
     name = "internal_opengl_context_test",
     opt_in_condition = "//tools/skylark:linux",
     display = True,
-    tags = [
-        # GLX functions show up with bad reads, bad writes, possibly lost, and
-        # definitely lost.  We will investigate soon but for now we'll omit the
-        # memcheck tests in order to make progress on related code.
-        # TODO(#12962) Investigate, fix or suppress, then re-enable this test.
-        "no_memcheck",
-    ],
+    rendering = True,
     deps = [
         ":internal_opengl_context",
     ],
@@ -291,7 +284,7 @@ drake_cc_optional_googletest(
         "//geometry/render:test_models",
     ] + glob(["test/*.png"]),
     display = True,
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":internal_render_engine_gl",
         "//common:find_resource",
@@ -349,7 +342,7 @@ drake_cc_optional_googletest(
     name = "internal_shader_program_test",
     opt_in_condition = "//tools/skylark:linux",
     display = True,
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":internal_opengl_context",
         ":internal_shader_program",
@@ -366,7 +359,8 @@ drake_cc_optional_googletest(
         "//geometry/render:test_models",
     ],
     display = True,
-    tags = vtk_test_tags() + [
+    rendering = True,
+    tags = [
         # We launch up to 3 child tasks.
         "cpu:4",
     ],
@@ -385,7 +379,8 @@ drake_cc_optional_googletest(
         "//geometry/render:test_models",
     ],
     display = True,
-    tags = vtk_test_tags() + [
+    rendering = True,
+    tags = [
         # We launch up to 3 child tasks.
         "cpu:4",
         # TODO(#21420) This test is currently broken on at least Ubuntu 24.04.
@@ -409,7 +404,7 @@ drake_cc_optional_googletest(
     data = [
         "//geometry/render:test_models",
     ],
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":internal_texture_library",
         "//common:find_resource",

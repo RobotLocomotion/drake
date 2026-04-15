@@ -16,7 +16,6 @@ load(
     "drake_py_binary",
     "drake_py_unittest",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # This render_gltf_client package is only implemented when
 # //tools/flags:with_render_gltf_client is True. When False, only the factory
@@ -285,7 +284,7 @@ drake_cc_googletest(
         ":test_resources",
         "//geometry/render:test_models",
     ],
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":internal_render_engine_gltf_client",
         ":internal_sample_image_data",

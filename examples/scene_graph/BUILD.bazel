@@ -5,7 +5,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -55,7 +54,7 @@ drake_cc_binary(
     test_rule_args = [
         "--simulation_time=0.1",
     ],
-    test_rule_tags = vtk_test_tags(),
+    test_rule_rendering = True,
 )
 
 drake_cc_binary(
