@@ -1391,55 +1391,6 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   EXPECT_EQ(move_construct.num_dynamic(), 0);
 }
 
-// ProximityEngine::ComputeSignedDistanceGeometryToPoint() does no math. It is
-// simply responsible for acquiring the indicated geometry (if possible,
-// throwing if not), bundling it up with the query point, forwarding it to the
-// callback, and returning the measured result. We'll be testing that
-// functionality.
-GTEST_TEST(ProximityEngineTests, SignedDistanceGeometryToPoint) {
-  const double kRadius = 0.5;
-
-  const GeometryId dynamic_id = GeometryId::get_new_id();
-  const GeometryId anchored_id = GeometryId::get_new_id();
-  DRAKE_DEMAND(dynamic_id < anchored_id);
-  const GeometryId bad_id = GeometryId::get_new_id();
-  // Two different arbitrary poses: one for dynamic, one for anchored.
-  const RigidTransformd X_WD(Vector3d(-10, -11, -12));
-  const RigidTransformd X_WA(Vector3d(-9, -8, 7));
-  const unordered_map<GeometryId, RigidTransformd> X_WGs{{dynamic_id, X_WD},
-                                                         {anchored_id, X_WA}};
-
-  Sphere sphere{kRadius};
-
-  std::unordered_set<GeometryId> ids{anchored_id, dynamic_id};
-
-  ProximityEngine<double> engine;
-
-  engine.AddAnchoredGeometry(sphere, X_WA, anchored_id);
-  engine.AddDynamicGeometry(sphere, X_WD, dynamic_id);
-  engine.UpdateWorldPoses(X_WGs);
-
-  // Point in arbitrary point away from the origin.
-  const Vector3d p_WQ{1, 2, 3};
-
-  const std::vector<SignedDistanceToPoint<double>> result =
-      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, ids);
-
-  // Confirm ordering.
-  EXPECT_EQ(result.size(), 2);
-  EXPECT_EQ(result[0].id_G, dynamic_id);
-  EXPECT_EQ(result[1].id_G, anchored_id);
-  // Confirm distance.
-  EXPECT_DOUBLE_EQ(result[0].distance,
-                   (X_WD.translation() - p_WQ).norm() - kRadius);
-  EXPECT_DOUBLE_EQ(result[1].distance,
-                   (X_WA.translation() - p_WQ).norm() - kRadius);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs, {bad_id}),
-      ".*does not reference a geometry.*signed distance query");
-}
-
 // Test harness for testing the ProximityEngine's spatial query functions.
 // The tests will examine ProximityEngine's bookkeeping responsibilities for
 // each of the spatial query APIs -- the mathematics and correctness of the
@@ -1771,6 +1722,113 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceToPoint) {
   ad_engine->UpdateWorldPoses(X_WGs_ad);
   const auto ad_results =
       ad_engine->ComputeSignedDistanceToPoint(p_WQ1_ad, X_WGs_ad, kThreshold);
+  // Still get two results.
+  ASSERT_EQ(ad_results.size(), 2);
+  for (int i = 0; i < std::ssize(ad_results); ++i) {
+    // Confirm derivatives survived -- not empty and not all zero. True for both
+    // dynamic and anchored geometries.
+    const auto& result = ad_results[i];
+    const auto& derivs = result.distance.derivatives();
+    ASSERT_EQ(derivs.size(), 3);
+    EXPECT_FALSE(derivs.isZero());
+  }
+}
+
+/* ComputeSignedDistanceGeometryToPoint() responsibilities:
+   1. Report no results for an empty engine.
+   2. Reports no results for an empty geometry list.
+   3. Throws for invalid geometry ids.
+   4. Correct fcl formulation of query point produces expected distance
+      (specifically, calls computeAABB() on the query sphere).
+   5. Report distance to dynamic geometry.
+   6. Report distance to anchored geometry.
+   7. Results are always ordered.
+   8. Collision filter doesn't matter.
+   9. AutoDiff derivatives pass through successfully.
+  10. It should also allow Callback exceptions to propagate through; we won't
+      test this directly -- Drake standard practices and the clear absence of a
+      catch block is sufficient evidence.
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+  In this test, we create three geometries: dynamic, anchored, and dynamic to
+  show the ordering of output results is independent of a geometry's dynamic
+  state.
+            ···           ***           ···
+          ·     ·       *     *       ·     ·
+    Q⏺   ·   D1  ·     *   A2  *     ·   D3  ·
+         ·       ·     *       *     ·       ·
+          ·     ·       *     *       ·     ·
+            ···           ***           ···
+   */
+TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceGeometryToPoint) {
+  auto eval_dut = [this](const Vector3d& p_WQ,
+                         const std::unordered_set<GeometryId>& ids) {
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.ComputeSignedDistanceGeometryToPoint(p_WQ, X_WGs_, ids);
+  };
+
+  // Extract the ordered ids from results.
+  auto extract_ids = [](const vector<SignedDistanceToPoint<double>>& results) {
+    auto ids =
+        results | std::views::transform(&SignedDistanceToPoint<double>::id_G);
+    return vector<GeometryId>(ids.begin(), ids.end());
+  };
+
+  // (1) - empty engine produces no results - arbitrary query point.
+  EXPECT_TRUE(eval_dut({0, 0, 0}, {}).empty());
+
+  const Sphere sphere(0.5);
+  // The x-positions of all the relevant test quantities.
+  const double kQx = 1.0;
+  const double kD1x = 2.0;
+  const double kA2x = 3.0;
+  const double kD3x = 4.0;
+
+  // This must be a non-zero point to confirm the query sphere is configured
+  // properly.
+  const Vector3d p_WQ(kQx, 0.0, 0.0);
+  const GeometryId dynamic1 = AddDynamic(sphere, {kD1x, 0.0, 0.0});
+  const GeometryId anchored2 = AddAnchored(sphere, {kA2x, 0.0, 0.0});
+  const GeometryId dynamic3 = AddDynamic(sphere, {kD3x, 0.0, 0.0});
+
+  // (2) - Specify no geometries, get no results.
+  EXPECT_TRUE(eval_dut(p_WQ, {}).empty());
+
+  // (3) - Invalid id throws.
+  EXPECT_THROW(eval_dut(p_WQ, {GeometryId::get_new_id()}), std::exception);
+
+  // (4)-(6) - correct distances to dynamic and anchored.
+  {
+    const vector<SignedDistanceToPoint<double>> results =
+        eval_dut(p_WQ, {dynamic1, anchored2});
+    // Compare against expected vector capturing content and order.
+    EXPECT_EQ(extract_ids(results), vector<GeometryId>({dynamic1, anchored2}));
+    EXPECT_EQ(results[0].distance, (kD1x - kQx) - sphere.radius());
+    EXPECT_EQ(results[1].distance, (kA2x - kQx) - sphere.radius());
+  }
+
+  // (7) - Well ordered.
+  EXPECT_EQ(extract_ids(eval_dut(p_WQ, {anchored2, dynamic3})),
+            extract_ids(eval_dut(p_WQ, {dynamic3, anchored2})));
+
+  // (8) - Collision filters don't matter.
+  ExcludeCollisionsWithin({dynamic1, anchored2, dynamic3});
+  EXPECT_EQ(eval_dut(p_WQ, {anchored2, dynamic3}).size(), 2);
+
+  // (9) - AutoDiff derivatives pass through successfully.
+  const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  // Make a query point with derivatives.
+  const Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
+
+  ad_engine->UpdateWorldPoses(X_WGs_ad);
+  const auto ad_results = ad_engine->ComputeSignedDistanceGeometryToPoint(
+      p_WQ_ad, X_WGs_ad, {dynamic1, anchored2});
   // Still get two results.
   ASSERT_EQ(ad_results.size(), 2);
   for (int i = 0; i < std::ssize(ad_results); ++i) {
