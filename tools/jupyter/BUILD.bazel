@@ -26,8 +26,8 @@ py_library(
 
 drake_jupyter_py_binary(
     name = "example",
-    add_test_rule = 1,
     deps = [":example_library"],
+    add_test_rule = True,
 )
 
 drake_py_unittest(
@@ -38,24 +38,24 @@ drake_py_unittest(
 drake_jupyter_py_binary(
     name = "failing_notebook",
     testonly = 1,
+    notebook = "test/failing_notebook.ipynb",
     # Do not test this on its own because it is a negative test fixture for
     # `failing_notebook_test`.
-    add_test_rule = 0,
-    notebook = "test/failing_notebook.ipynb",
+    add_test_rule = False,
 )
 
 # Add example failing notebook due to deprecation.
 drake_jupyter_py_binary(
     name = "failing_notebook_deprecation",
     testonly = 1,
-    # Do not test this on its own because it is a negative test fixture for
-    # `failing_notebook_test`.
-    add_test_rule = 0,
     notebook = "test/failing_notebook_deprecation.ipynb",
     deps = [
         # N.B. Use granular target which does not depend on C extensions.
         "//bindings/pydrake/common:deprecation_py",
     ],
+    # Do not test this on its own because it is a negative test fixture for
+    # `failing_notebook_test`.
+    add_test_rule = False,
 )
 
 # Ensure the notebook fails as expected.

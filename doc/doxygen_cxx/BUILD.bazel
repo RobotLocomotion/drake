@@ -86,7 +86,6 @@ enumerate_filegroup(
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
-    add_test_rule = 1,
     data = [
         ":doxygen_input",
         ":doxygen_input.txt",
@@ -95,6 +94,11 @@ drake_py_binary(
         "@doxygen_internal//:doxygen",
         "@rules_python//python/runfiles",
     ],
+    visibility = ["//doc:__pkg__"],
+    deps = [
+        "//doc:defs",
+    ],
+    add_test_rule = True,
     test_rule_args = [
         "--out_dir=<test>",
         # Only generate some modules, so that the test provides quick feedback.
@@ -102,10 +106,6 @@ drake_py_binary(
         "drake/math",
     ],
     test_rule_tags = DEFAULT_TEST_TAGS,
-    visibility = ["//doc:__pkg__"],
-    deps = [
-        "//doc:defs",
-    ],
 )
 
 add_lint_tests()

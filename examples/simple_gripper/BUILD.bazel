@@ -24,16 +24,9 @@ filegroup(
 drake_cc_binary(
     name = "simple_gripper",
     srcs = ["simple_gripper.cc"],
-    add_test_rule = 1,
     data = [
         ":models",
     ],
-    test_rule_args = [
-        "--simulator_integration_scheme=runge_kutta2",
-        "--simulation_time=0.01",
-        "--simulator_target_realtime_rate=0.0",
-    ],
-    test_rule_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",
         "//math:geometric_transform",
@@ -48,6 +41,13 @@ drake_cc_binary(
         "//visualization:visualization_config_functions",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulator_integration_scheme=runge_kutta2",
+        "--simulation_time=0.01",
+        "--simulator_target_realtime_rate=0.0",
+    ],
+    test_rule_timeout = "moderate",
 )
 
 add_lint_tests()

@@ -38,13 +38,23 @@ drake_cc_googletest(
 drake_cc_binary(
     name = "cylinder_run_dynamics",
     srcs = ["cylinder_run_dynamics.cc"],
+    deps = [
+        ":populate_cylinder_plant",
+        "//common:add_text_logging_gflags",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
     # Running this example with the default parameters incurs in a case with
     # a violent collision between the cylinder and the ground. MultibodyPlant
     # must use sub-stepping in order to handle this situation. Otherwise the
     # contact solver aborts with a non-convergence error.
     # Therefore the success of this test indicates MultibodyPlant correctly
     # identified this event and used sub-stepping.
-    add_test_rule = 1,
+    add_test_rule = True,
     test_rule_args = [
         # If MultibodyPlant does not use sub-stepping, i.e attempts to handle
         # the collision with the default time step of 1.0e-3 seconds, the
@@ -56,16 +66,6 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     test_rule_timeout = "long",
-    deps = [
-        ":populate_cylinder_plant",
-        "//common:add_text_logging_gflags",
-        "//lcm",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram",
-        "//systems/lcm:lcm_pubsub_system",
-        "//visualization:visualization_config_functions",
-        "@gflags",
-    ],
 )
 
 add_lint_tests()
