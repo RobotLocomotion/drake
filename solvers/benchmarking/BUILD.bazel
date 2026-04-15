@@ -11,7 +11,7 @@ drake_cc_googlebench_binary(
     name = "benchmark_mathematical_program",
     srcs = ["benchmark_mathematical_program.cc"],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",
         "//solvers:mathematical_program",
@@ -29,7 +29,7 @@ drake_cc_googlebench_binary(
     name = "benchmark_ipopt_solver",
     srcs = ["benchmark_ipopt_solver.cc"],
     add_test_rule = True,
-    test_args = [
+    test_rule_args = [
         # When testing, only run the smallest test.
         "--benchmark_filter=.*/10$$",
     ],

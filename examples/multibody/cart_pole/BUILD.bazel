@@ -37,12 +37,7 @@ drake_cc_library(
 drake_cc_binary(
     name = "cart_pole_passive_simulation",
     srcs = ["cart_pole_passive_simulation.cc"],
-    add_test_rule = 1,
     data = ["cart_pole.sdf"],
-    test_rule_args = [
-        "--simulation_time=0.1",
-        "--target_realtime_rate=0.0",
-    ],
     deps = [
         "//common:add_text_logging_gflags",
         "//multibody/parsing",
@@ -51,6 +46,11 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//visualization:visualization_config_functions",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
     ],
 )
 

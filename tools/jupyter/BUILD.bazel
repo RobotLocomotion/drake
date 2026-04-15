@@ -26,7 +26,7 @@ py_library(
 
 drake_jupyter_py_binary(
     name = "example",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [":example_library"],
 )
 
@@ -40,7 +40,7 @@ drake_jupyter_py_binary(
     testonly = 1,
     # Do not test this on its own because it is a negative test fixture for
     # `failing_notebook_test`.
-    add_test_rule = 0,
+    add_test_rule = False,
     notebook = "test/failing_notebook.ipynb",
 )
 
@@ -50,7 +50,7 @@ drake_jupyter_py_binary(
     testonly = 1,
     # Do not test this on its own because it is a negative test fixture for
     # `failing_notebook_test`.
-    add_test_rule = 0,
+    add_test_rule = False,
     notebook = "test/failing_notebook_deprecation.ipynb",
     deps = [
         # N.B. Use granular target which does not depend on C extensions.

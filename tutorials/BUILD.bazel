@@ -17,7 +17,7 @@ filegroup(
 
 drake_jupyter_py_binary(
     name = "authoring_leaf_systems",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -25,7 +25,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "authoring_multibody_simulation",
-    add_test_rule = 1,
+    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
         "@drake_models//:wsg_50_description",
@@ -38,7 +38,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "autodiff_basics",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -46,13 +46,13 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "configuring_rendering_lighting",
-    add_test_rule = 1,
+    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
         "@drake_models//:tutorials",
         "@drake_models//:wsg_50_description",
     ],
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
@@ -60,7 +60,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "custom_gradients",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -68,7 +68,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "dynamical_systems",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -76,8 +76,8 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "hydroelastic_contact_basics",
-    add_test_rule = 1,
-    test_timeout = "moderate",
+    add_test_rule = True,
+    test_rule_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
@@ -85,14 +85,14 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "hydroelastic_contact_nonconvex_mesh",
-    add_test_rule = 1,
+    add_test_rule = True,
     data = [
         "@drake_models//:dishes",
         "@drake_models//:veggies",
     ],
     # TODO(#21380) Revisit timeout value when deferred reification is
     # implemented.
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
@@ -100,7 +100,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "index",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -108,7 +108,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "linear_program",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -116,7 +116,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "licensed_solvers_deepnote",
-    add_test_rule = 0,
+    add_test_rule = False,
     deps = [
         "//bindings/pydrake",
     ],
@@ -124,7 +124,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "debug_mathematical_program",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -132,7 +132,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "mathematical_program",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -140,7 +140,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "mathematical_program_multibody_plant",
-    add_test_rule = 1,
+    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
     ],
@@ -151,7 +151,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "multibody_plant_autodiff_mass",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -159,7 +159,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "nonlinear_program",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -167,7 +167,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "pyplot_animation_multibody_plant",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -175,7 +175,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "quadratic_program",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -183,7 +183,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "rendering_multibody_plant",
-    add_test_rule = 1,
+    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
         "@drake_models//:ycb",
@@ -195,7 +195,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "solver_parameters",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -203,7 +203,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "sum_of_squares_optimization",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -211,7 +211,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "updating_costs_and_constraints",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],
@@ -219,7 +219,7 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "working_with_diagrams",
-    add_test_rule = 1,
+    add_test_rule = True,
     deps = [
         "//bindings/pydrake",
     ],

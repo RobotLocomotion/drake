@@ -727,13 +727,13 @@ def drake_cc_binary(
         linkshared = 0,
         linkstatic = 1,
         testonly = 0,
-        add_test_rule = 0,
+        add_test_rule = False,
         test_rule_args = [],
         test_rule_data = [],
         test_rule_tags = None,
         test_rule_size = None,
         test_rule_timeout = None,
-        test_rule_flaky = 0,
+        test_rule_flaky = False,
         test_rule_opt_in_condition = None,
         **kwargs):
     """Creates a rule to declare a C++ binary.

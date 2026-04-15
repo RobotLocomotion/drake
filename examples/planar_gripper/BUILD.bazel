@@ -109,14 +109,9 @@ drake_cc_binary(
 drake_cc_binary(
     name = "planar_gripper_simulation",
     srcs = ["planar_gripper_simulation.cc"],
-    add_test_rule = 1,
     data = [
         ":models",
         "//examples/planar_gripper:postures.txt",
-    ],
-    test_rule_args = [
-        "--simulation_time=0.1",
-        "--target_realtime_rate=0",
     ],
     deps = [
         ":planar_gripper_common",
@@ -129,6 +124,11 @@ drake_cc_binary(
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0",
     ],
 )
 

@@ -72,11 +72,11 @@ install(
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
-    add_test_rule = True,
     isolate = True,
     deps = [
         "//bindings/pydrake:module_py",
     ],
+    add_test_rule = True,
 )
 
 drake_py_unittest(
