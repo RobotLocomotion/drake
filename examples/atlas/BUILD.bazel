@@ -21,8 +21,8 @@ drake_cc_binary(
         "//visualization:visualization_config_functions",
         "@gflags",
     ],
-    add_test_rule = True,
     # Smoke test.
+    add_test_rule = True,
     test_rule_args = [
         "--simulation_time=0.01",
         "--simulator_target_realtime_rate=0.0",

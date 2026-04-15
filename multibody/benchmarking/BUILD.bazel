@@ -88,8 +88,8 @@ drake_cc_googlebench_binary(
         "//tools/performance:gflags_main",
     ],
     add_test_rule = True,
-    test_size = "medium",
-    test_opt_in_condition = "//tools/workspace/gurobi:enabled",
+    test_rule_size = "medium",
+    test_rule_opt_in_condition = "//tools/workspace/gurobi:enabled",
 )
 
 drake_py_experiment_binary(

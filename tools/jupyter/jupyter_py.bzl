@@ -22,17 +22,18 @@ if __name__ == "__main__":
 
 def drake_jupyter_py_binary(
         name,
+        *,
+        add_test_rule,
         notebook = None,
         srcs = None,
         data = [],
         deps = [],
         tags = [],
-        add_test_rule = None,
-        test_timeout = None,
+        test_rule_timeout = None,
         # TODO(eric.cousineau): Reset default flaky value to False once #12536
         # is resolved.
-        test_flaky = True,
-        test_tags = [],
+        test_rule_flaky = True,
+        test_rule_tags = [],
         **kwargs):
     """Creates a target to run a Jupyter notebook.
 
@@ -43,8 +44,6 @@ def drake_jupyter_py_binary(
     """
     if srcs != None:
         fail("srcs is an invalid argument")
-    if add_test_rule == None:
-        fail("add_test_rule must be explicitly specified")
     if notebook == None:
         notebook = name + ".ipynb"
     main = "{}_jupyter_py_main.py".format(name)
@@ -84,9 +83,9 @@ def drake_jupyter_py_binary(
             main = main,
             srcs = [main],
             deps = [target],
-            tags = jupyter_tags + test_tags,
-            timeout = test_timeout,
-            flaky = test_flaky,
+            tags = jupyter_tags + test_rule_tags,
+            timeout = test_rule_timeout,
+            flaky = test_rule_flaky,
             # Permit `unittest` given that NumPy uses it.
             allow_import_unittest = True,
         )

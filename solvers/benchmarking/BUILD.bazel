@@ -17,7 +17,7 @@ drake_cc_googlebench_binary(
         "//tools/performance:gflags_main",
     ],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_py_experiment_binary(
@@ -36,7 +36,7 @@ drake_cc_googlebench_binary(
         "//tools/performance:gflags_main",
     ],
     add_test_rule = True,
-    test_args = [
+    test_rule_args = [
         # When testing, only run the smallest test.
         "--benchmark_filter=.*/10$$",
     ],

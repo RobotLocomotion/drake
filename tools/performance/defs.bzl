@@ -11,12 +11,12 @@ def drake_cc_googlebench_binary(
         deps,
         data = None,
         add_test_rule,
-        test_size = "small",
-        test_timeout = None,
-        test_args = None,
-        test_display = False,
-        test_tags = None,
-        test_opt_in_condition = None):
+        test_rule_size = "small",
+        test_rule_timeout = None,
+        test_rule_args = None,
+        test_rule_display = False,
+        test_rule_tags = None,
+        test_rule_opt_in_condition = None):
     """Declares a testonly binary that uses google benchmark.  Automatically
     adds appropriate deps and ensures it either has an automated smoke test
     (via 'add_test_rule = True'), or else explicitly opts-out ('= False').
@@ -49,17 +49,17 @@ def drake_cc_googlebench_binary(
             srcs = srcs,
             data = data,
             deps = new_deps,
-            size = test_size,
-            timeout = test_timeout,
-            display = test_display,
+            size = test_rule_size,
+            timeout = test_rule_timeout,
+            display = test_rule_display,
             args = [
                 # Google benchmark has a flag designed to do the minimal work
                 # to confirm that the tests run: dry run. For tests, that's
                 # sufficient.
                 "--benchmark_dry_run",
-            ] + (test_args or []),
-            tags = (test_tags or []) + ["nolint", "no_kcov"],
-            opt_in_condition = test_opt_in_condition,
+            ] + (test_rule_args or []),
+            tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
+            opt_in_condition = test_rule_opt_in_condition,
         )
 
 def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):

@@ -55,7 +55,7 @@ drake_jupyter_py_binary(
         "//bindings/pydrake",
     ],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_jupyter_py_binary(
@@ -80,7 +80,7 @@ drake_jupyter_py_binary(
         "//bindings/pydrake",
     ],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_jupyter_py_binary(
@@ -95,7 +95,7 @@ drake_jupyter_py_binary(
     add_test_rule = True,
     # TODO(#21380) Revisit timeout value when deferred reification is
     # implemented.
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_jupyter_py_binary(

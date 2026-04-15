@@ -32,10 +32,10 @@ drake_cc_googlebench_binary(
         "//tools/performance:gflags_main",
     ],
     add_test_rule = True,
-    test_args = [
+    test_rule_args = [
         "--test",
     ],
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_py_experiment_binary(
@@ -55,7 +55,7 @@ drake_cc_googlebench_binary(
         "//math",
     ],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_cc_googlebench_binary(
@@ -73,7 +73,7 @@ drake_cc_googlebench_binary(
         "//tools/performance:gflags_main",
     ],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_rule_timeout = "moderate",
 )
 
 drake_py_experiment_binary(
@@ -95,12 +95,12 @@ drake_cc_googlebench_binary(
         "@gflags",
     ],
     add_test_rule = True,
-    test_args = [
+    test_rule_args = [
         # To save time, only run the low-resolution tests in CI.
         "--benchmark_filter=.*/1/1/320/240",
     ],
-    test_tags = vtk_test_tags(),
-    test_display = True,
+    test_rule_tags = vtk_test_tags(),
+    test_rule_display = True,
 )
 
 drake_py_experiment_binary(
