@@ -64,10 +64,8 @@ fi
 
 . /etc/os-release
 
-if [[ "${VERSION_CODENAME}" =~ (resolute) ]]; then
-  echo 'WARNING: This script is unsupported on Ubuntu 26.04 (Resolute)' >&2
-elif ! [[ "${VERSION_CODENAME}" =~ (noble) ]]; then
-  echo 'ERROR: This script requires Ubuntu 24.04 (Noble)' >&2
+if ! [[ "${VERSION_CODENAME}" =~ (noble|resolute) ]]; then
+  echo 'ERROR: This script requires Ubuntu 24.04 (Noble) or Ubuntu 26.04 (Resolute)' >&2
   exit 2
 fi
 
