@@ -99,8 +99,7 @@ build:tsan --run_under=//tools/dynamic_analysis:tsan
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
 build:tsan --test_timeout=300,1500,4500,18000
 # Configuring TSan to interop with OpenMP is difficult, so we'll turn it off.
-build:tsan --copt=-fno-openmp
-build:tsan --linkopt=-fno-openmp
+build:tsan --config=without_openmp
 
 ### UBSan build. ###
 build:ubsan --test_tag_filters=-no_ubsan

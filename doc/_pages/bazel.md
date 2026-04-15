@@ -136,6 +136,9 @@ bazel test --config lint //...                       # Only run style checks; do
   entire command. For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 
+On Linux, OpenMP is enabled by default; to disable it, use
+`--config=without_openmp`.
+
 ## Running with Flags
 
 ### Example programs

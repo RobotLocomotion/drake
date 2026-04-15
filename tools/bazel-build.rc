@@ -99,6 +99,11 @@ build:openmp --@drake//tools/cc_toolchain:with_openmp=True
 build:openmp --copt=-DEIGEN_DONT_PARALLELIZE
 build:openmp --copt=-fopenmp
 build:openmp --linkopt=-fopenmp
+# Undo --config=openmp.
+build:without_openmp --@drake//tools/cc_toolchain:with_openmp=False
+build:without_openmp --copt=-UEIGEN_DONT_PARALLELIZE
+build:without_openmp --copt=-fno-openmp
+build:without_openmp --linkopt=-fno-openmp
 
 ### A wrapper configuration for debug builds. ###
 build:debug --compilation_mode=dbg
