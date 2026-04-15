@@ -10,13 +10,13 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_googlebench_binary(
     name = "autodiff",
     srcs = ["autodiff.cc"],
-    add_test_rule = True,
     deps = [
         "//common:add_text_logging_gflags",
         "//common/ad",
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(
@@ -27,12 +27,6 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "benchmark_polynomial",
     srcs = ["benchmark_polynomial.cc"],
-    add_test_rule = True,
-    test_args = [
-        # When testing, skip over Args() that are >= 100.
-        "--benchmark_filter=-/.00",
-    ],
-    test_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",
         "//common/symbolic:monomial_util",
@@ -41,6 +35,12 @@ drake_cc_googlebench_binary(
         "//tools/performance:gflags_main",
         "@fmt",
     ],
+    add_test_rule = True,
+    test_args = [
+        # When testing, skip over Args() that are >= 100.
+        "--benchmark_filter=-/.00",
+    ],
+    test_timeout = "moderate",
 )
 
 drake_py_experiment_binary(

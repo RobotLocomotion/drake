@@ -11,13 +11,7 @@ drake_cc_binary(
     srcs = [
         "atlas_run_dynamics.cc",
     ],
-    add_test_rule = 1,
     data = ["@drake_models//:atlas"],
-    # Smoke test.
-    test_rule_args = [
-        "--simulation_time=0.01",
-        "--simulator_target_realtime_rate=0.0",
-    ],
     deps = [
         "//common:add_text_logging_gflags",
         "//multibody/parsing",
@@ -26,6 +20,12 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//visualization:visualization_config_functions",
         "@gflags",
+    ],
+    add_test_rule = True,
+    # Smoke test.
+    test_rule_args = [
+        "--simulation_time=0.01",
+        "--simulator_target_realtime_rate=0.0",
     ],
 )
 

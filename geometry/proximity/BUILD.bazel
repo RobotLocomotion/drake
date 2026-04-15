@@ -1063,19 +1063,19 @@ drake_cc_binary(
     name = "zero_simplex_manual_test",
     testonly = 1,
     srcs = ["test/zero_simplex_manual_test.cc"],
-    add_test_rule = 1,
     data = [
         "//geometry:test_vtk_files",
-    ],
-    test_rule_args = [
-        "--expect_fail",
-        "geometry/test/one_tetrahedron.vtk",
     ],
     deps = [
         ":detect_zero_simplex",
         ":vtk_to_volume_mesh",
         "//common:add_text_logging_gflags",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--expect_fail",
+        "geometry/test/one_tetrahedron.vtk",
     ],
 )
 

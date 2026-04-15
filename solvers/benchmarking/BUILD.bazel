@@ -10,14 +10,14 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_googlebench_binary(
     name = "benchmark_mathematical_program",
     srcs = ["benchmark_mathematical_program.cc"],
-    add_test_rule = True,
-    test_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",
         "//solvers:mathematical_program",
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
+    test_timeout = "moderate",
 )
 
 drake_py_experiment_binary(
@@ -28,17 +28,17 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "benchmark_ipopt_solver",
     srcs = ["benchmark_ipopt_solver.cc"],
-    add_test_rule = True,
-    test_args = [
-        # When testing, only run the smallest test.
-        "--benchmark_filter=.*/10$$",
-    ],
     deps = [
         "//common:add_text_logging_gflags",
         "//solvers:ipopt_solver",
         "//solvers:mathematical_program",
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
+    ],
+    add_test_rule = True,
+    test_args = [
+        # When testing, only run the smallest test.
+        "--benchmark_filter=.*/10$$",
     ],
 )
 

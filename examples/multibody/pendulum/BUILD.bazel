@@ -11,8 +11,6 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
-    add_test_rule = 1,
-    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         "//geometry:drake_visualizer",
         "//lcm",
@@ -25,6 +23,8 @@ drake_cc_binary(
         "//systems/primitives:constant_vector_source",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--target_realtime_rate=0.0"],
 )
 
 add_lint_tests()

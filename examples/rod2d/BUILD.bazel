@@ -37,8 +37,6 @@ drake_cc_library(
 drake_cc_binary(
     name = "rod2d_sim",
     srcs = ["rod2d_sim.cc"],
-    add_test_rule = 1,
-    test_rule_args = [" --sim_duration=0.01"],
     deps = [
         ":rod2d",
         ":rod2d_geometry",
@@ -50,6 +48,8 @@ drake_cc_binary(
         "//systems/framework",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [" --sim_duration=0.01"],
 )
 
 drake_cc_library(

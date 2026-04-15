@@ -19,16 +19,11 @@ filegroup(
 drake_cc_googlebench_binary(
     name = "iris_np_benchmarks",
     srcs = ["iris_np_benchmarks.cc"],
-    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
         "@drake_models//:manipulation_station",
         "@drake_models//:wsg_50_description",
     ],
-    test_args = [
-        "--test",
-    ],
-    test_timeout = "moderate",
     deps = [
         "//geometry/optimization:iris",
         "//multibody/inverse_kinematics",
@@ -36,6 +31,11 @@ drake_cc_googlebench_binary(
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
+    test_args = [
+        "--test",
+    ],
+    test_timeout = "moderate",
 )
 
 drake_py_experiment_binary(
@@ -46,8 +46,6 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "mesh_intersection_benchmark",
     srcs = ["mesh_intersection_benchmark.cc"],
-    add_test_rule = True,
-    test_timeout = "moderate",
     deps = [
         "//common:essential",
         "//geometry/proximity:make_ellipsoid_field",
@@ -56,13 +54,13 @@ drake_cc_googlebench_binary(
         "//geometry/proximity:mesh_intersection",
         "//math",
     ],
+    add_test_rule = True,
+    test_timeout = "moderate",
 )
 
 drake_cc_googlebench_binary(
     name = "compliant_mesh_intersection_benchmark",
     srcs = ["compliant_mesh_intersection_benchmark.cc"],
-    add_test_rule = True,
-    test_timeout = "moderate",
     deps = [
         "//common:essential",
         "//geometry/proximity:hydroelastic_calculator",
@@ -74,6 +72,8 @@ drake_cc_googlebench_binary(
         "//math",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
+    test_timeout = "moderate",
 )
 
 drake_py_experiment_binary(
@@ -84,13 +84,6 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "render_benchmark",
     srcs = ["render_benchmark.cc"],
-    add_test_rule = True,
-    test_args = [
-        # To save time, only run the low-resolution tests in CI.
-        "--benchmark_filter=.*/1/1/320/240",
-    ],
-    test_display = True,
-    test_tags = vtk_test_tags(),
     deps = [
         "//common:add_text_logging_gflags",
         "//geometry/render",
@@ -101,6 +94,13 @@ drake_cc_googlebench_binary(
         "@fmt",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_args = [
+        # To save time, only run the low-resolution tests in CI.
+        "--benchmark_filter=.*/1/1/320/240",
+    ],
+    test_tags = vtk_test_tags(),
+    test_display = True,
 )
 
 drake_py_experiment_binary(
@@ -111,12 +111,12 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "proximity_defaults_benchmark",
     srcs = ["proximity_defaults_benchmark.cc"],
-    add_test_rule = True,
     deps = [
         "//geometry:scene_graph",
         "//tools/performance:gflags_main",
         "@fmt",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(
@@ -127,13 +127,13 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "boxes_overlap_benchmark",
     srcs = ["boxes_overlap_benchmark.cc"],
-    add_test_rule = True,
     deps = [
         "//geometry/proximity:boxes_overlap",
         "//geometry/test_utilities:boxes_overlap_transforms",
         "//tools/performance:gflags_main",
         "@fmt",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(

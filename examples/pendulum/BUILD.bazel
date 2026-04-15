@@ -73,9 +73,7 @@ drake_cc_library(
 drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
-    add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_geometry",
         ":pendulum_plant",
@@ -85,14 +83,14 @@ drake_cc_binary(
         "//systems/primitives:constant_vector_source",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--target_realtime_rate=0.0"],
 )
 
 drake_cc_binary(
     name = "energy_shaping_simulation",
     srcs = ["energy_shaping_simulation.cc"],
-    add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_geometry",
         ":pendulum_plant",
@@ -102,14 +100,14 @@ drake_cc_binary(
         "//systems/framework:leaf_system",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--target_realtime_rate=0.0"],
 )
 
 drake_cc_binary(
     name = "lqr_simulation",
     srcs = ["lqr_simulation.cc"],
-    add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_geometry",
         ":pendulum_plant",
@@ -121,24 +119,14 @@ drake_cc_binary(
         "//systems/framework:leaf_system",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--target_realtime_rate=0.0"],
 )
 
 drake_cc_binary(
     name = "trajectory_optimization_simulation",
     srcs = ["trajectory_optimization_simulation.cc"],
-    add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["--target_realtime_rate=0.0"] + select({
-        "@platforms//os:osx": [
-            # TODO(#20799) This started failing when OpenBLAS was upgraded.
-            # When we drop this nerf we should also drop the supporting
-            # `DEFINE_bool(ignore_solve_errors, ...)` in the program itself.
-            "--ignore_solve_errors",
-        ],
-        "//conditions:default": [],
-    }),
-    # Non-deterministic IPOPT-related failures on macOS, see #10276.
-    test_rule_flaky = 1,
     deps = [
         ":pendulum_geometry",
         ":pendulum_plant",
@@ -152,12 +140,23 @@ drake_cc_binary(
         "//systems/primitives:trajectory_source",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--target_realtime_rate=0.0"] + select({
+        "@platforms//os:osx": [
+            # TODO(#20799) This started failing when OpenBLAS was upgraded.
+            # When we drop this nerf we should also drop the supporting
+            # `DEFINE_bool(ignore_solve_errors, ...)` in the program itself.
+            "--ignore_solve_errors",
+        ],
+        "//conditions:default": [],
+    }),
+    # Non-deterministic IPOPT-related failures on macOS, see #10276.
+    test_rule_flaky = 1,
 )
 
 drake_cc_binary(
     name = "print_symbolic_dynamics",
     srcs = ["print_symbolic_dynamics.cc"],
-    add_test_rule = 1,
     data = [":models"],
     deps = [
         ":pendulum_plant",
@@ -165,16 +164,17 @@ drake_cc_binary(
         "//multibody/parsing",
         "//multibody/plant",
     ],
+    add_test_rule = True,
 )
 
 drake_cc_binary(
     name = "pendulum_parameters_derivatives",
     srcs = ["pendulum_parameters_derivatives.cc"],
-    add_test_rule = 1,
     deps = [
         ":pendulum_plant",
         ":pendulum_vector_types",
     ],
+    add_test_rule = True,
 )
 
 # === test/ ===

@@ -13,11 +13,6 @@ drake_cc_binary(
     srcs = [
         "inclined_plane_with_body.cc",
     ],
-    add_test_rule = 1,
-    test_rule_args = [
-        "--simulation_time=0.1",
-        "--target_realtime_rate=0.0",
-    ],
     deps = [
         "//common:add_text_logging_gflags",
         "//lcm",
@@ -27,6 +22,11 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//visualization",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
     ],
 )
 

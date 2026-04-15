@@ -375,11 +375,9 @@ drake_py_unittest(
 drake_py_binary(
     name = "drawing_graphviz_example",
     srcs = ["drawing_graphviz_example.py"],
-    add_test_rule = 1,
     data = [
         "//examples/multibody/cart_pole:models",
     ],
-    test_rule_timeout = "moderate",
     deps = [
         ":drawing_py",
         ":framework_py",
@@ -389,11 +387,12 @@ drake_py_binary(
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/visualization",
     ],
+    add_test_rule = True,
+    test_rule_timeout = "moderate",
 )
 
 drake_jupyter_py_binary(
     name = "jupyter_widgets_examples",
-    add_test_rule = 1,
     data = [
         "@drake_models//:ycb",
     ],
@@ -405,6 +404,7 @@ drake_jupyter_py_binary(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
+    add_test_rule = True,
 )
 
 drake_pybind_library(
@@ -507,11 +507,11 @@ drake_py_unittest(
 drake_jupyter_py_binary(
     name = "test/lifetime_test_notebook",
     testonly = True,
-    add_test_rule = 1,
     deps = [
         ":framework_py",
         ":primitives_py",
     ],
+    add_test_rule = True,
 )
 
 drake_py_unittest(
