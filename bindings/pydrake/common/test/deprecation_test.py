@@ -6,8 +6,8 @@ See `deprecation_utility_test.py` for a unittest on higher-level API. See
 well as an explanation why that test is separate.
 """
 
-import os
 import importlib
+import os
 import sys
 from types import ModuleType
 import unittest
@@ -15,11 +15,13 @@ import warnings
 
 import pydrake.common.deprecation as dep
 
+
 def _get_full_msg(partial_message):
     return (
         f"{partial_message} The deprecated code will be removed "
         f"from Drake on or after 2038-01-19."
     )
+
 
 class TestDeprecation(unittest.TestCase):
     """Tests module shim functionality."""
@@ -208,6 +210,7 @@ class TestDeprecation(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self._check_warning(w[0], message_expected)
 
+
 class TestDeprecationEnv(unittest.TestCase):
     DEPRECATION_IS_ERROR_KEY = "DRAKE_ENV_DEPRECATION_IS_ERROR"
     IGNORE_DEPRECATION_KEY = "DRAKE_ENV_IGNORE_DEPRECATED"
@@ -229,7 +232,6 @@ class TestDeprecationEnv(unittest.TestCase):
 
         exc_msg = str(cm.exception)
         self.assertEqual(exc_msg, message_expected)
-        
 
     def test_ignore_deprecation_warnings(self):
         os.environ[self.IGNORE_DEPRECATION_KEY] = "1"
@@ -255,12 +257,12 @@ class TestDeprecationEnv(unittest.TestCase):
         actions = [
             lambda: obj.deprecated_method(),
             lambda: obj.deprecated_prop,
-            lambda: mut.deprecated_func(50)
+            lambda: mut.deprecated_func(50),
         ]
         msgs = [
             mut.ExampleClass.message_method,
             mut.ExampleClass.message_prop,
-            mut.message_func
+            mut.message_func,
         ]
 
         for action, msg in zip(actions, msgs):

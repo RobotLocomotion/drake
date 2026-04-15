@@ -14,11 +14,9 @@ import importlib
 import os
 import unittest
 
-import pydrake.common.deprecation as dep
-
 from pydrake.common import Parallelism
+import pydrake.common.deprecation as dep
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
 
 import deprecation_example.cc_module as mut_cc  # ruff: isort: skip
 
@@ -91,13 +89,11 @@ class TestDeprecationExampleEnv(unittest.TestCase):
         os.environ.pop(self.DEPRECATION_IS_ERROR_KEY, None)
         os.environ.pop(self.IGNORE_DEPRECATION_KEY, None)
 
-
     def test_ignore_deprecation_warnings(self):
         os.environ[self.IGNORE_DEPRECATION_KEY] = "1"
         importlib.reload(dep)
 
-        with catch_drake_warnings(expected_count=0) as w:
-
+        with catch_drake_warnings(expected_count=0):
             with self.subTest("DeprecatedParamInit"):
                 obj = mut_cc.ExampleCppStruct()
 
@@ -130,7 +126,7 @@ class TestDeprecationExampleEnv(unittest.TestCase):
             lambda: obj.DeprecatedMethod(int()),
             lambda: obj.overload(0),
             lambda: obj.ParallelWork(Parallelism.Max()),
-            lambda: obj.FunctionWithArgumentName(old_name=1)
+            lambda: obj.FunctionWithArgumentName(old_name=1),
         ]
         msgs = [
             "Do not use ExampleCppStruct",
@@ -140,7 +136,7 @@ class TestDeprecationExampleEnv(unittest.TestCase):
             "Do not use DeprecatedMethod",
             "Do not use overload(int)",
             "Do not use ParallelWork",
-            "FunctionWithArgumentName(old_name)"
+            "FunctionWithArgumentName(old_name)",
         ]
 
         for action, msg in zip(actions, msgs):

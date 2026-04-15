@@ -973,29 +973,26 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_deprecated_no_spdlog_test",
-    # Remove spurious warnings from the default build output.
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":essential",
-        "//common/test_utilities:expect_throws_message",
-    ],
+    srcs = ["test/drake_deprecated_test.cc"],
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=0",
     ],
-)
-
-# 
-drake_cc_googletest(
-    name = "drake_deprecated_test",
-    # Remove spurious warnings from the default build output.
-    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
         "//common/test_utilities:expect_throws_message",
-        ":text_logging_spdlog",
     ],
+)
+
+#
+drake_cc_googletest(
+    name = "drake_deprecated_test",
     defines = [
         "TEXT_LOGGING_TEST_SPDLOG=1",
+    ],
+    deps = [
+        ":essential",
+        ":text_logging_spdlog",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

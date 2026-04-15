@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& out, const RobotModelConfig& c) {
       out << "Sap";
       break;
     }
-// Remove on 2026-09-01 per TAMSI deprecation.
+      // Remove on 2026-09-01 per TAMSI deprecation.
     case DiscreteContactApproximation::kTamsi: {
       out << "Tamsi";
       break;

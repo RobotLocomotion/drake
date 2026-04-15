@@ -63,20 +63,20 @@ Sample uses: @code
 
 #elif defined(DRAKE_COMPILE_IGNORE_DEPRECATED) && \
     defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
-# error Conflicting deprecation warnings flags
+#error Conflicting deprecation warnings flags
 #elif defined(DRAKE_COMPILE_IGNORE_DEPRECATED)
 #define DRAKE_DEPRECATED(removal_date, message)
 
 #elif defined(DRAKE_COMPILE_DEPRECATION_IS_ERROR)
 #if defined(__clang__)
-#define DRAKE_DEPRECATED(removal_date, message)                       \
-  [[clang::unavailable("\nDRAKE DEPRECATED: " message                 \
-                       "\nThe deprecated code will be removed from"   \
+#define DRAKE_DEPRECATED(removal_date, message)                     \
+  [[clang::unavailable("\nDRAKE DEPRECATED: " message               \
+                       "\nThe deprecated code will be removed from" \
                        " Drake on or after " removal_date ".")]]
 #else
-#define DRAKE_DEPRECATED(removal_date, message)                     \
-  [[gnu::unavailable("\nDRAKE DEPRECATED: " message                 \
-                     "\nThe deprecated code will be removed from"   \
+#define DRAKE_DEPRECATED(removal_date, message)                   \
+  [[gnu::unavailable("\nDRAKE DEPRECATED: " message               \
+                     "\nThe deprecated code will be removed from" \
                      " Drake on or after " removal_date ".")]]
 #endif
 

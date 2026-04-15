@@ -314,6 +314,7 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
         old.__module__ = old_name
         var_dict[symbol] = old
 
+
 # These are used for controlling the severity of
 # deprecation messages during runtime.
 # Note that the same literal string name for the environment variable is

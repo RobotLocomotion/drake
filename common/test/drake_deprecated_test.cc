@@ -8,6 +8,9 @@
 #include "drake/common/text_logging_spdlog.h"
 #endif
 
+#include <memory>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -57,31 +60,30 @@ int NewMethod(int arg) {
 
 class DrakeDeprecatedEnvTest : public ::testing::Test {
  protected:
-  static constexpr char dep_is_error_env_name[] = "DRAKE_ENV_DEPRECATION_IS_ERROR";
+  static constexpr char dep_is_error_env_name[] =
+      "DRAKE_ENV_DEPRECATION_IS_ERROR";
   static constexpr char ignore_dep_env_name[] = "DRAKE_ENV_IGNORE_DEPRECATED";
 
-  #if TEXT_LOGGING_TEST_SPDLOG
-    spdlog::sinks::dist_sink_mt* dist_sink;
-    std::vector<spdlog::sink_ptr> original_sub_sinks;
-    std::ostringstream stream;
+#if TEXT_LOGGING_TEST_SPDLOG
+  spdlog::sinks::dist_sink_mt* dist_sink;
+  std::vector<spdlog::sink_ptr> original_sub_sinks;
+  std::ostringstream stream;
 
-    void SetUp() override {
-      dist_sink = drake::logging::get_dist_sink();
-      if (dist_sink) {
-        auto custom_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
+  void SetUp() override {
+    dist_sink = drake::logging::get_dist_sink();
+    if (dist_sink) {
+      auto custom_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
           stream, true /* flush */);
-        dist_sink->set_sinks({custom_sink});
-      }
+      dist_sink->set_sinks({custom_sink});
     }
+  }
 
-    void TearDown() override {
-      if (dist_sink) {
-        dist_sink->set_sinks(original_sub_sinks);
-      }
+  void TearDown() override {
+    if (dist_sink) {
+      dist_sink->set_sinks(original_sub_sinks);
     }
-  #endif
-
-
+  }
+#endif
 };
 
 GTEST_TEST(DrakeDeprecatedTest, ClassTest) {
@@ -102,14 +104,14 @@ GTEST_TEST(DrakeDeprecatedTest, FunctionTest) {
 TEST_F(DrakeDeprecatedEnvTest, WarnOnceTest) {
   static const drake::internal::WarnDeprecated warn_once(
       "2038-01-19", "The method OldCalc() has been renamed to NewCalc().");
-  #if TEXT_LOGGING_TEST_SPDLOG
-    ASSERT_THAT(stream.str(),
+#if TEXT_LOGGING_TEST_SPDLOG
+  ASSERT_THAT(stream.str(),
               testing::EndsWith("[console] [warning] DRAKE DEPRECATED: "
                                 "The method OldCalc() has "
                                 "been renamed to NewCalc(). The deprecated "
                                 "code will be removed from Drake on or after "
                                 "2038-01-19.\n"));
-  #endif
+#endif
 }
 
 // When the DRAKE_ENV_DEPRECATION_IS_ERROR environment variable is set,
@@ -127,9 +129,9 @@ TEST_F(DrakeDeprecatedEnvTest, WarnThrowsTest) {
 TEST_F(DrakeDeprecatedEnvTest, IgnoreWarningsTest) {
   ASSERT_EQ(::setenv(ignore_dep_env_name, "1", 1), 0);
   drake::internal::WarnDeprecated("2038-01-19", "Hello");
-  #if TEXT_LOGGING_TEST_SPDLOG
-    ASSERT_THAT(stream.str(), testing::IsEmpty());
-  #endif
+#if TEXT_LOGGING_TEST_SPDLOG
+  ASSERT_THAT(stream.str(), testing::IsEmpty());
+#endif
   ASSERT_EQ(::unsetenv(dep_is_error_env_name), 0);
 }
 
@@ -142,7 +144,7 @@ TEST_F(DrakeDeprecatedEnvTest, InvalidEnvThrows) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       drake::internal::WarnDeprecated("2038-01-19", "Hello"),
       "DRAKE_ENV_DEPRECATION_IS_ERROR and DRAKE_ENV_IGNORE_DEPRECATED cannot "
-        "both be set to \"1\"");
+      "both be set to \"1\"");
   ASSERT_EQ(::unsetenv(dep_is_error_env_name), 0);
   ASSERT_EQ(::unsetenv(ignore_dep_env_name), 0);
 }

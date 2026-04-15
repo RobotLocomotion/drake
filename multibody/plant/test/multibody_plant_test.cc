@@ -5411,7 +5411,7 @@ TEST_P(MultibodyPlantConstraintTestTimeStepParam, ConstraintActiveStatus) {
   MultibodyConstraintId tendon_id = plant_.AddTendonConstraint(
       {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
-// Remove on 2026-09-01 per TAMSI deprecation.
+  // Remove on 2026-09-01 per TAMSI deprecation.
   if (plant_.is_discrete()) {
     DRAKE_EXPECT_THROWS_MESSAGE(plant_.set_discrete_contact_approximation(
                                     DiscreteContactApproximation::kTamsi),

@@ -154,7 +154,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, DiscreteContactApproximation) {
           std::pair("similar", DiscreteContactApproximation::kSimilar),
           std::pair("lagged", DiscreteContactApproximation::kLagged),
       };
-// Remove on 2026-09-01 per TAMSI deprecation.
+  // Remove on 2026-09-01 per TAMSI deprecation.
   known_values.push_back(
       std::pair("tamsi", DiscreteContactApproximation::kTamsi));
   for (const auto& [name, value] : known_values) {
