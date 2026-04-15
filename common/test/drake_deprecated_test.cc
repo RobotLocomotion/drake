@@ -4,7 +4,7 @@
 #include "drake/common/text_logging.h"
 /* clang-format on */
 
-#ifdef TEXT_LOGGING_TEST_SPDLOG
+#if TEXT_LOGGING_TEST_SPDLOG
 #include "drake/common/text_logging_spdlog.h"
 #endif
 
@@ -14,7 +14,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#ifdef TEXT_LOGGING_TEST_SPDLOG
+#if TEXT_LOGGING_TEST_SPDLOG
 #include <spdlog/sinks/ostream_sink.h>
 #endif
 
