@@ -21,9 +21,18 @@ with_asking=1
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
+      with_doc_only=1
+      with_maintainer_only=1
       with_bazel=1
       with_clang=1
       with_test_only=1
+      ;;
+    --no-developer)
+      with_doc_only=0
+      with_maintainer_only=0
+      with_bazel=0
+      with_clang=0
+      with_test_only=0
       ;;
     # Install prerequisites that are only needed to build documentation,
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.

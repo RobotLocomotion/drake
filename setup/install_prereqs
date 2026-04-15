@@ -28,5 +28,5 @@ else
     maybe_sudo=sudo
   fi
   exec ${maybe_sudo} "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" \
-    --without-test-only --without-bazel --without-clang "$@"
+    --no-developer "$@"
 fi
