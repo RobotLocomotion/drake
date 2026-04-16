@@ -206,8 +206,9 @@ Adjusting closed-source (commercial) software dependencies:
   * When enabled, you must download and install Gurobi 13.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
     download Gurobi. If Gurobi is not installed to its standard location, you
-    must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
-    in your terminal so that `find_package(Gurobi)` will be able to find it.
+    must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/{linux64|macos_universal2}`
+    (depending on your platform) in your terminal so that `find_package(Gurobi)`
+    will be able to find it.
 * `WITH_MOSEK` (default `OFF`).
   When `ON`, enables the `MosekSolver` in the build.
   * When enabled, Drake automatically downloads the MOSEK™ software from
