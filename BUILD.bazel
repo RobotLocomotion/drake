@@ -172,13 +172,13 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
-    tags = [
+    opt_out_conditions = [
         # Running acceptance tests under coverage (kcov) probably burns more CI
         # time and flakiness compared to any upside.
-        "no_kcov",
+        "//tools/kcov:enabled",
         # Running acceptance tests under Valgrind tools is extremely slow and
         # of limited value, so skip them.
-        "no_valgrind_tools",
+        "//tools/valgrind:enabled",
     ],
 )
 

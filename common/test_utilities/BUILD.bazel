@@ -213,8 +213,8 @@ drake_sh_test(
     data = [
         ":limit_malloc_test",
     ],
-    # Fails to terminate when run under Valgrind tools.
-    tags = ["no_valgrind_tools"],
+    # Fails to terminate when run under Valgrind.
+    opt_out_conditions = ["//tools/valgrind:enabled"],
 )
 
 drake_cc_googletest(

@@ -344,6 +344,8 @@ To force execution with kcov, add an empty `test_tag_filters` option:
 bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
 ```
 
+XXX update me
+
 ## docker
 
 Drake supports multiple Ubuntu versions. Developers who need to debug

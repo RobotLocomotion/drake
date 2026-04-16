@@ -11,8 +11,3 @@ class TestRunWithMotor(unittest.TestCase):
                 "--simulation_time=0.1",
             ]
         )
-
-
-class TestEmpty(unittest.TestCase):
-    def test_empty(self):
-        """Empty test case for debug build"""
