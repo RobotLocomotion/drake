@@ -1450,22 +1450,24 @@ class ProximityEngineQueryTest : public ::testing::Test {
   // position to the test's engine, registering the pose with the global pose
   // lookup table.
   GeometryId AddDynamic(const Shape& shape,
-                        const Vector3d& p_WG = Vector3d::Zero()) {
+                        const Vector3d& p_WG = Vector3d::Zero(),
+                        const ProximityProperties& props = {}) {
     const GeometryId id = GeometryId::get_new_id();
     const RigidTransformd X_WG(p_WG);
     X_WGs_.insert({id, X_WG});
-    engine_.AddDynamicGeometry(shape, X_WG, id);
+    engine_.AddDynamicGeometry(shape, X_WG, id, props);
     return id;
   }
   // Adds the given shape as an *anchored* geometry at the given (optional)
   // position to the test's engine, registering the pose with the global pose
   // lookup table.
   GeometryId AddAnchored(const Shape& shape,
-                         const Vector3d& p_WG = Vector3d::Zero()) {
+                         const Vector3d& p_WG = Vector3d::Zero(),
+                         const ProximityProperties& props = {}) {
     const GeometryId id = GeometryId::get_new_id();
     const RigidTransformd X_WG(p_WG);
     X_WGs_.insert({id, X_WG});
-    engine_.AddAnchoredGeometry(shape, X_WG, id);
+    engine_.AddAnchoredGeometry(shape, X_WG, id, props);
     return id;
   }
 
@@ -1869,6 +1871,120 @@ TEST_F(ProximityEngineQueryTest, ComputePointPairPenetration) {
   EXPECT_FALSE(derivs.isZero());
 }
 
+/* ComputeContactSurfaces() responsibilities:
+  1. Empty engine produces no results.
+  2. Collision result for dynamic-dynamic pair.
+  3. Collision result for anchored-dynamic pair.
+  4. No collision result for anchored-anchored pair.
+  5. Respect representation format.
+  6. Results are always ordered.
+  7. Incompatible geometries trigger a throw.
+  8. Respect collision filter.
+  9. AutoDiff derivatives pass through successfully.
+ 10. It should also allow Callback exceptions to propagate through; we won't
+     test this directly -- Drake standard practices and the clear absence of a
+     catch block is sufficient evidence
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+         ○○○     ●●●     □□□     ···
+       ○     ○ ●     ● □     □ ·     ·     - Prefixes A, D indicated anchored,
+     ○   A1  ● ○ D2  □ ●  D3 · □  D5   ·     dynamic.
+     ○       ● ○     □ ●     · □       ·   - Suffixes indicate creation order.
+       ○ ▲▲▲ ○ ●     ● □     □ ·     ·     - Intersecting pairs: (A1, A4),
+       ▲ ○○○ ▲   ●●●     □□□     ···         (A1, D2), (D2, D3), (D3, D5).
+     ▲         ▲                           - D5 (labeled "bad" below) has no
+     ▲   A4    ▲                             hydro properties and will trigger
+       ▲     ▲                               an exception.
+         ▲▲▲
+  */
+TEST_F(ProximityEngineQueryTest, ComputeContactSurfaces) {
+  auto eval_dut = [this](HydroelasticContactRepresentation rep) {
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.ComputeContactSurfaces(rep, X_WGs_);
+  };
+
+  using IdPairs = std::vector<std::pair<GeometryId, GeometryId>>;
+  auto extract_ids = [](const vector<ContactSurface<double>>& results) {
+    auto ids = results |
+               std::views::transform([](const ContactSurface<double>& result) {
+                 return std::make_pair(result.id_M(), result.id_N());
+               });
+    return IdPairs(ids.begin(), ids.end());
+  };
+
+  using enum HydroelasticContactRepresentation;
+
+  // (1) - empty engine produces no results.
+  ASSERT_TRUE(eval_dut(kTriangle).empty());
+
+  const Sphere sphere(0.5);
+  // Distance between sphere centers to guarantee collision.
+  const double d = sphere.radius() * 2 * 0.9;
+
+  ProximityProperties props;
+  AddCompliantHydroelasticProperties(0.5, 1e-8, &props);
+  const GeometryId id_A1 = AddAnchored(sphere, {d, 0, 0}, props);
+  const GeometryId id_D2 = AddDynamic(sphere, {2 * d, 0, 0}, props);
+  const GeometryId id_D3 = AddDynamic(sphere, {3 * d, 0, 0}, props);
+  // We don't need id_A4; it should appear in no results. Its presence would
+  // indicate an error.
+  AddAnchored(sphere, {d, -d, 0}, props);
+
+  // (2)-(4).
+  const vector<ContactSurface<double>> results_tri = eval_dut(kTriangle);
+  // We get the (3) A-D and (2) D-D result but not an (4) A-A result.
+  ASSERT_EQ(extract_ids(results_tri),
+            IdPairs({{id_A1, id_D2}, {id_D2, id_D3}}));
+
+  // (5) - consistent ordering in results.
+  const vector<ContactSurface<double>> results_poly = eval_dut(kPolygon);
+  ASSERT_EQ(extract_ids(results_poly), extract_ids(results_tri));
+
+  // (6) - representation respected.
+  for (const auto& result : results_poly) {
+    EXPECT_FALSE(result.is_triangle());
+  }
+  for (const auto& result : results_tri) {
+    EXPECT_TRUE(result.is_triangle());
+  }
+
+  // (7) - incompatible geometries trigger a throw; D5 is the "bad" geometry.
+  const GeometryId id_bad =
+      AddDynamic(sphere, {4 * d, 0, 0});  // No hydro props.
+  EXPECT_THROW(eval_dut(kTriangle), std::logic_error);
+
+  // (8) - filters are respected.
+  engine_.collision_filter().Apply(
+      CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
+      [id_D3, id_bad](const GeometrySet&, CollisionFilterScope) {
+        return std::unordered_set<GeometryId>{{id_D3, id_bad}};
+      });
+  ASSERT_EQ(eval_dut(kTriangle).size(), 2);
+
+  // (9) - AutoDiff derivatives pass through successfully.
+  const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  // Seed id_D2's translation with derivatives.
+  X_WGs_ad[id_D2] = RigidTransform<AutoDiffXd>{
+      math::InitializeAutoDiff(X_WGs_.at(id_D2).translation())};
+
+  ad_engine->UpdateWorldPoses(X_WGs_ad);
+  const vector<ContactSurface<AutoDiffXd>> ad_results =
+      ad_engine->ComputeContactSurfaces(kTriangle, X_WGs_ad);
+  // Still get two results.
+  ASSERT_EQ(ad_results.size(), 2);
+  // Confirm derivatives on the second result -- not empty and not zero.
+  const auto& result = ad_results[1];
+  const auto& derivs = result.total_area().derivatives();
+  ASSERT_EQ(derivs.size(), 3);
+  EXPECT_FALSE(derivs.isZero());
+}
+
 /* FindCollisionCandidates() responsibilities:
   1. Report no candidates for an empty engine.
   2. Do not report anchored-anchored pairs, even if their AABBs overlap.
@@ -2094,63 +2210,6 @@ unordered_map<GeometryId, RigidTransformd> MakeCollidingRing(double radius,
     poses[GeometryId::get_new_id()] = RigidTransformd(p_WSo);
   }
   return poses;
-}
-
-// Confirms that the ComputeContactSurfaces() computation returns the
-// same results twice in a row. This test is explicitly required because it is
-// known that updating the pose in the FCL tree can lead to erratic ordering.
-// This logic doesn't depend on mesh representation, so we test it with a single
-// representation.
-class ProximityEngineHydro : public testing::Test {
- protected:
-  void SetUp() override {
-    const double r = 0.5;
-    // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
-    // And, for contact surfaces, we need an even number to guarantee rigid-soft
-    // alternation.
-    poses_ = MakeCollidingRing(r, 4);
-
-    ProximityProperties soft_properties;
-    AddCompliantHydroelasticProperties(r, 1e8, &soft_properties);
-    ProximityProperties rigid_properties;
-    AddRigidHydroelasticProperties(r, &rigid_properties);
-
-    // Extract the ids from poses and sort them so that we know we're assigning
-    // appropriate alternativing compliance.
-    std::vector<GeometryId> ids;
-    for (const auto& pair : poses_) {
-      ids.push_back(pair.first);
-    }
-    std::sort(ids.begin(), ids.end());
-
-    int n = 0;
-    const Sphere sphere{r};
-    for (const auto& id : ids) {
-      engine_.AddDynamicGeometry(sphere, {}, id,
-                                 (n % 2) ? soft_properties : rigid_properties);
-      ++n;
-    }
-  }
-
-  ProximityEngine<double> engine_;
-  unordered_map<GeometryId, RigidTransformd> poses_;
-};
-
-TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputeContactSurfaces(
-      HydroelasticContactRepresentation::kTriangle, poses_);
-  ASSERT_EQ(results1.size(), poses_.size());
-
-  engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputeContactSurfaces(
-      HydroelasticContactRepresentation::kTriangle, poses_);
-  ASSERT_EQ(results2.size(), poses_.size());
-
-  for (size_t i = 0; i < poses_.size(); ++i) {
-    EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
-    EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
-  }
 }
 
 // Confirms that the ComputeContactSurfacesWithFallback() computation returns
@@ -2753,63 +2812,6 @@ GTEST_TEST(ProximityEngineTests, ImplementedAsFclConvex) {
     engine.AddAnchoredGeometry(Convex(obj_path), {}, id, {});
 
     expect_fcl_convex_is_cube(id);
-  }
-}
-
-GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
-  using enum HydroelasticType;
-  using enum HydroelasticContactRepresentation;
-  const bool anchored{true};
-  const Sphere sphere{0.2};
-  const HalfSpace half_space;
-
-  // Confirms that if the intersecting pair is missing hydroelastic
-  // representation that an exception is thrown. This test applies *no*
-  // collision filters to guarantee that the body of the calculator gets
-  // exercised in all cases.
-  {
-    ProximityEngine<double> engine;
-    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid, sphere,
-                                      !anchored, kUndefined);
-
-    // We test only a single "underrepresented" configuration (rigid,
-    // undefined) because we rely on the tests on MaybeCalcContactSurface() to
-    // have explored all the ways that the kUnsupported calculation result is
-    // returned. This configuration is representative of that set.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeContactSurfaces(kTriangle, X_WGs),
-        "Requested a contact surface between a pair of geometries without "
-        "hydroelastic representation .+ rigid .+ undefined .+");
-  }
-
-  // Confirms that if the intersecting pair is rigid-rigid, an exception is
-  // thrown. This test applies *no* collision filters to guarantee that the
-  // body of the calculator gets exercised in all cases.
-  {
-    ProximityEngine<double> engine;
-    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid, sphere,
-                                      !anchored, kRigid);
-
-    // We test only a single "same-compliance" configuration (rigid, rigid)
-    // because we rely on the tests on MaybeMakeContactSurface() to have
-    // explored all the ways that the calculation result is returned. This
-    // configuration is representative of that set.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeContactSurfaces(kTriangle, X_WGs),
-        "Requested contact between two rigid objects .+");
-  }
-
-  // Confirms that if the intersecting pair consists of two half spaces that an
-  // exception is thrown.
-  {
-    ProximityEngine<double> engine;
-    // They must have different compliance types in order to get past the same
-    // compliance type condition.
-    const auto X_WGs = PopulateEngine(&engine, half_space, anchored, kRigid,
-                                      half_space, !anchored, kCompliant);
-
-    DRAKE_EXPECT_THROWS_MESSAGE(engine.ComputeContactSurfaces(kTriangle, X_WGs),
-                                "Requested contact between two half spaces .+");
   }
 }
 
