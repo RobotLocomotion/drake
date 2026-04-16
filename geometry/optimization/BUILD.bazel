@@ -343,8 +343,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cspace_free_box_with_mosek_test",
-    timeout = "long",
     opt_in_condition = "//tools/workspace/mosek:enabled",
+    timeout = "long",
     # Some of these test cases take a very long time to run. Run each test case
     # in its own process (in parallel) to improve test latency.
     shard_count = 12,
@@ -386,8 +386,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
-    timeout = "long",
     opt_in_condition = "//tools/workspace/mosek:enabled",
+    timeout = "long",
     # Some of these test cases take a very long time to run. Run each test case
     # in its own process (in parallel) to improve test latency.
     shard_count = 12,

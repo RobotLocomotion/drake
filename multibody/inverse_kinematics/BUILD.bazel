@@ -207,11 +207,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "constraint_relaxing_ik_test",
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     srcs = ["test/constraint_relaxing_ik_test.cc"],
     data = [
         "@drake_models//:iiwa_description",
     ],
-    opt_in_condition = "//tools/workspace/snopt:enabled",
     deps = [
         ":constraint_relaxing_ik",
     ],
@@ -469,9 +469,9 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
     num_threads = 4,
-    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -481,9 +481,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
     num_threads = 4,
-    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -493,11 +493,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_feasible_posture_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "long",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
     num_threads = 4,
-    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics",
         ":global_inverse_kinematics_test_util",
@@ -507,9 +507,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "moderate",
     num_threads = 4,
-    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":global_inverse_kinematics_test_util",
         "//solvers:gurobi_solver",

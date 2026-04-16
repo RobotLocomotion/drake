@@ -61,8 +61,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cspace_free_path_with_mosek_test",
-    timeout = "long",
     opt_in_condition = "//tools/workspace/mosek:enabled",
+    timeout = "long",
     deps = [
         ":c_iris_path_test_utilities",
         "//common/test_utilities:symbolic_test_util",
