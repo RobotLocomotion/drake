@@ -2,6 +2,12 @@
 # //tools/wheel:builder for the user interface.
 
 from dataclasses import dataclass
+from enum import Enum
+
+
+class PythonManager(Enum):
+    PIP = "pip"
+    UV = "uv"
 
 
 @dataclass
@@ -14,6 +20,7 @@ class Platform:
     name: str
     version: str
     alias: str
+    python_manager: PythonManager = PythonManager.PIP
 
 
 @dataclass
