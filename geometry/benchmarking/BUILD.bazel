@@ -5,7 +5,6 @@ load(
     "drake_py_experiment_binary",
 )
 load("//tools/skylark:drake_cc.bzl", "drake_cc_binary")
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -99,8 +98,8 @@ drake_cc_googlebench_binary(
         # To save time, only run the low-resolution tests in CI.
         "--benchmark_filter=.*/1/1/320/240",
     ],
-    test_rule_tags = vtk_test_tags(),
     test_rule_display = True,
+    test_rule_rendering = True,
 )
 
 drake_py_experiment_binary(

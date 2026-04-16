@@ -14,7 +14,6 @@ load(
     "//tools/skylark:drake_optional.bzl",
     "drake_cc_optional_googletest",
 )
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -430,7 +429,7 @@ drake_cc_googletest(
     name = "camera_config_functions_test",
     allow_network = ["render_gltf_client"],
     display = True,
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":camera_config_functions",
         ":image_to_lcm_image_array_t",
@@ -528,7 +527,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "image_writer_test",
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":image_writer",
         "//common:temp_directory",
@@ -555,7 +554,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rgbd_sensor_test",
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":rgbd_sensor",
         "//common/test_utilities:eigen_matrix_compare",
@@ -577,7 +576,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rgbd_sensor_discrete_test",
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":rgbd_sensor",
         "//common/test_utilities:eigen_matrix_compare",
@@ -594,10 +593,9 @@ drake_cc_optional_googletest(
         "@drake_models//:manipulation_station",
     ],
     display = True,
-    tags = vtk_test_tags() + [
-        # TODO(#21420) This test is currently broken on at least Ubuntu 24.04.
-        "manual",
-    ],
+    rendering = True,
+    # TODO(#21420) This test is currently broken on at least Ubuntu 24.04.
+    tags = ["manual"],
     deps = [
         ":image_writer",
         ":rgbd_sensor",

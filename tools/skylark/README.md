@@ -37,6 +37,8 @@ Can either be True or False (defaults to False).
 When True, provides access to the Xorg DISPLAY environment variable so that
 the test can use the X display.  When False, unsets DISPLAY to forbid access.
 
+When True, typically `rendering = True` is also needed.
+
 Note that the X display in Jenkins CI tends to crash frequently, so any tests
 marked with `display = True` are a likely candidate for `flaky = True` so that
 X crashes don't lead to false positives in CI.
@@ -76,3 +78,11 @@ By default (or when None), the test is included in `bazel test //...`.
 
 When non-None, the test is omitted from `bazel test //...` unless the named
 condition is True.
+
+**rendering**
+
+Can either be True or False (defaults to False).
+
+When True, marks the test as needing graphics rendering capability, which
+suppresses test configurations (e.g., LSan) that are incompatible with graphics
+drivers' software stack.

@@ -12,6 +12,7 @@ load(
     "incorporate_allow_network",
     "incorporate_display",
     "incorporate_num_threads",
+    "incorporate_rendering",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
 
@@ -734,6 +735,7 @@ def drake_cc_binary(
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = False,
+        test_rule_rendering = False,
         test_rule_opt_in_condition = None,
         **kwargs):
     """Creates a rule to declare a C++ binary.
@@ -796,6 +798,7 @@ def drake_cc_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            rendering = test_rule_rendering,
             opt_in_condition = test_rule_opt_in_condition,
             linkstatic = linkstatic,
             args = test_rule_args,
@@ -817,6 +820,7 @@ def drake_cc_test(
         display = False,
         num_threads = None,
         opt_in_condition = None,
+        rendering = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -836,6 +840,9 @@ def drake_cc_test(
 
     @param opt_in_condition (optional, default is None)
         See drake/tools/skylark/README.md for details.
+
+    @param rendering (optional, default is False)
+        See drake/tools/skylark/README.md for details.
     """
     if size == None:
         size = "small"
@@ -845,6 +852,7 @@ def drake_cc_test(
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
+    kwargs = incorporate_rendering(kwargs, rendering = rendering)
     new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_linkopts = BASE_LINKOPTS + linkopts
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(

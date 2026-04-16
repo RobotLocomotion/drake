@@ -148,6 +148,7 @@ def drake_cc_optional_googletest(
         data = [],
         deps,
         display = False,
+        rendering = False,
         use_default_main = True):
     """Declares a test that is not even compiled under certain configurations.
 
@@ -176,6 +177,7 @@ def drake_cc_optional_googletest(
         data = data,
         deps = deps,
         display = display,
+        rendering = rendering,
         use_default_main = use_default_main,
         opt_in_condition = None,
         target_compatible_with = select({
