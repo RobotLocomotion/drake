@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_library")
 load(
@@ -44,14 +45,24 @@ alias(
 
 # === config_setting rules (internal use only) ===
 
-config_setting(
+selects.config_setting_group(
     name = "using_sanitizer",
-    values = {"define": "USING_SANITIZER=ON"},
+    match_any = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+        "//tools/tsan:enabled",
+        "//tools/ubsan:enabled",
+    ],
 )
 
-config_setting(
-    name = "using_memcheck",
-    values = {"define": "USING_MEMCHECK=ON"},
+selects.config_setting_group(
+    name = "unoptimized",
+    match_any = [
+        ":using_sanitizer",
+        "//tools/cc_toolchain:debug",
+        "//tools/kcov:enabled",
+        "//tools/memcheck:enabled",
+    ],
 )
 
 add_lint_tests()

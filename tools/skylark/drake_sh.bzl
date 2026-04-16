@@ -14,6 +14,7 @@ def drake_sh_test(
         allow_network = None,
         display = False,
         num_threads = None,
+        opt_out_conditions = None,  # XXX
         rendering = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.

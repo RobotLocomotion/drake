@@ -43,6 +43,8 @@ Note that the X display in Jenkins CI tends to crash frequently, so any tests
 marked with `display = True` are a likely candidate for `flaky = True` so that
 X crashes don't lead to false positives in CI.
 
+XXX implies display
+
 **num_threads**
 
 Can either be None, or else an integer.
@@ -66,18 +68,26 @@ several other environment variables using alternative spellings of the same
 concept; the overall effect should be the same.)
 
 **opt_in_condition**
+**opt_out_conditions**
 
-Can either be None (the default), or the name of a `config_setting`.
+Allows a test to be skipped during `bazel test //...` based on `config_setting`
+conditions. The condition(s) can either be None (the default), or else the names
+of `config_setting`s. The `opt_in_condition` only accepts a single setting.
+The `opt_out_conditions` accepts a list of settings.
 
-Allows a test to be skipped during `bazel test //...` based on a specific
-condition. When used with drake_cc_googletest or drake_cc_test, the test is
-still compiled. When used with drake_cc_optional_googletest, the test is not
-even compiled.
+The test is included in `bazel test //...` when either:
+- both arguments are None;
+- the `opt_in_condition` is None and none of the `opt_out_conditions` matched;
+- the `opt_in_condition` matched but none of the `opt_out_conditions` matched.
 
-By default (or when None), the test is included in `bazel test //...`.
+**build_when_skipped**
 
-When non-None, the test is omitted from `bazel test //...` unless the named
-condition is True.
+When a test is skipped based on `opt_in_condition` or `opt_out_conditions`, we
+can still check that the code can *build* without actually running it. When True
+(the default), skipped tests will still be compiled during `bazel test //...`.
+Setting to False means the code won't even be compiled when skipped, which is
+useful when skipping is due to build problems (e.g., missing headers) rather
+than runtime problems (e.g., too slow or false positives).
 
 **rendering**
 
