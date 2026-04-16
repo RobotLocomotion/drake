@@ -14,11 +14,17 @@
 
 set -eu -o pipefail
 
-if [[ -z "$1" ]]; then
-    echo "Usage: $0 <wheel>" >&2
+WHEEL="${1:-}"
+PYTHON_MANAGER="${2:-pip}"
+
+if [[ -z "${WHEEL}" ]]; then
+    echo "Usage: $0 <wheel> [{pip,uv}]" >&2
     exit 1
 fi
 
+MAYBE_UV=
+[[ "${PYTHON_MANAGER}" == "uv" ]] && MAYBE_UV=${HOME}/.local/bin/uv
+
 . /tmp/drake-wheel-test/python/bin/activate
 
-pip install "$1"
+${MAYBE_UV} pip install "$1"
