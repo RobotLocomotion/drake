@@ -14,6 +14,7 @@ class Platform:
     name: str
     version: str
     alias: str
+    uv: bool = False
 
 
 @dataclass
