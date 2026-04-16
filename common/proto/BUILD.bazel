@@ -76,6 +76,8 @@ drake_cc_googletest(
 # backend on CI only.
 drake_py_unittest(
     name = "call_python_test",
+    # Fails when run under Valgrind.
+    opt_out_conditions = ["//tools/valgrind:enabled"],
     data = [
         ":call_python_client_cli",
         ":call_python_server_test",
@@ -84,8 +86,6 @@ drake_py_unittest(
     flaky = 1,
     # We wish to access neighboring files.
     isolate = 0,
-    # Fails when run under Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(

@@ -37,7 +37,7 @@ selects.config_setting_group(
     name = "fixture_memory_no",
     match_any = [
         ":apple",
-        "//tools:using_memcheck",
+        "//tools/valgrind:enabled",
         "//tools:using_sanitizer",
     ],
 )
