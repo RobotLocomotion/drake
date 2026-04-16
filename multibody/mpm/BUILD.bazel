@@ -7,7 +7,6 @@ load(
 )
 load(
     "//tools/skylark:drake_optional.bzl",
-    "drake_cc_optional_googletest",
     "drake_cc_optional_library",
 )
 
@@ -221,9 +220,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "mpm_model_test",
     opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     deps = [
         ":mpm_model",
         "//common/test_utilities:eigen_matrix_compare",
@@ -238,9 +238,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "particle_sorter_test",
     opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     deps = [
         ":bspline_weights",
         ":grid_data",
@@ -252,9 +253,10 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "sparse_grid_test",
     opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     deps = [
         ":mock_sparse_grid",
         ":sparse_grid",
@@ -262,18 +264,20 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "spgrid_test",
     opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     deps = [
         ":spgrid",
         "//common/test_utilities:limit_malloc",
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "transfer_test",
     opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     deps = [
         ":particle_data",
         ":sparse_grid",

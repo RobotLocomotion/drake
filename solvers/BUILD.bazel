@@ -10,7 +10,6 @@ load(
 )
 load(
     "//tools/skylark:drake_optional.bzl",
-    "drake_cc_optional_googletest",
     "drake_cc_optional_library",
     "drake_cc_variant_library",
 )
@@ -1375,9 +1374,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "csdp_solver_internal_test",
     opt_in_condition = "//tools/workspace/csdp_internal:enabled",
+    build_when_skipped = False,
     deps = [
         ":csdp_solver_internal",
         ":csdp_test_examples",
@@ -1385,9 +1385,10 @@ drake_cc_optional_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "csdp_cpp_wrapper_test",
     opt_in_condition = "//tools/workspace/csdp_internal:enabled",
+    build_when_skipped = False,
     tags = [
         # The longjmp handling definitely leaks memory, and we've decided to
         # just live with that. If we see the longjmp handler triggering when
@@ -1466,9 +1467,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "gurobi_solver_internal_test",
     opt_in_condition = "//tools/workspace/gurobi:enabled",
+    build_when_skipped = False,
     use_default_main = False,
     deps = [
         ":gurobi_solver",
@@ -1482,8 +1484,8 @@ drake_cc_optional_googletest(
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
-    num_threads = 2,
     opt_in_condition = "//tools/workspace/gurobi:enabled",
+    num_threads = 2,
     use_default_main = False,
     deps = [
         ":gurobi_solver",
@@ -1515,10 +1517,10 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "gurobi_solver_license_retention_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     data = [
         ":gurobi_solver_license_retention_test_helper",
     ],
-    opt_in_condition = "//tools/workspace/gurobi:enabled",
 )
 
 drake_cc_binary(
@@ -1660,9 +1662,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "mosek_solver_internal_test",
     opt_in_condition = "//tools/workspace/mosek:enabled",
+    build_when_skipped = False,
     use_default_main = False,
     deps = [
         ":mosek_solver",
@@ -1747,8 +1750,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_test",
-    timeout = "long",
     opt_in_condition = ":gurobi_or_mosek_enabled",
+    timeout = "long",
     # This test is quite long, so split it into 4 processes for better latency.
     shard_count = 4,
     use_default_main = False,
@@ -1768,8 +1771,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_corner_test",
-    timeout = "long",
     opt_in_condition = ":gurobi_and_mosek_enabled",
+    timeout = "long",
     # This test is quite long, so split it into 4 processes for better latency.
     shard_count = 4,
     use_default_main = False,
@@ -1787,8 +1790,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rotation_constraint_test",
-    timeout = "long",
     opt_in_condition = ":gurobi_or_mosek_enabled",
+    timeout = "long",
     # This test is quite long, so split it into 4 processes for better latency.
     shard_count = 4,
     use_default_main = False,
@@ -1836,11 +1839,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_limit_test",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     timeout = "long",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
     num_threads = 4,
-    opt_in_condition = "//tools/workspace/gurobi:enabled",
     deps = [
         ":gurobi_solver",
         ":mathematical_program",

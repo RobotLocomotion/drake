@@ -10,10 +10,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load(
-    "//tools/skylark:drake_optional.bzl",
-    "drake_cc_optional_googletest",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -584,9 +580,10 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_optional_googletest(
+drake_cc_googletest(
     name = "rgbd_sensor_async_gl_test",
     opt_in_condition = "//tools/skylark:linux",
+    build_when_skipped = False,
     timeout = "moderate",
     data = [
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",

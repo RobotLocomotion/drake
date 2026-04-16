@@ -66,7 +66,10 @@
     "drake_cc_variant_library.deps_always": 4,
     "drake_cc_variant_library.deps_enabled": 4,
 
-    "drake_cc_optional_googletest.opt_in_condition": -96,
+    "drake_cc_googletest.opt_in_condition": -96,
+    "drake_cc_googletest.build_when_skipped": -95,
+
+    "drake_py_unittest.opt_in_condition": -96,
 
     "drake_cc_binary.add_test_rule": 100,
     "drake_cc_binary.test_rule_args": 101,
