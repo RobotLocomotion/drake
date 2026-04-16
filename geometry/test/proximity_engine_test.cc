@@ -947,184 +947,6 @@ GTEST_TEST(ProximityEngineTest, ProcessMeshSdfDataForObj) {
   EXPECT_TRUE(CompareMatrices(size, 2 * scale));
 }
 
-// Adds a single shape to the given engine with the indicated anchored/dynamic
-// configuration and compliant type.
-std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
-                                                const Shape& shape,
-                                                bool is_anchored,
-                                                HydroelasticType hydro_type,
-                                                const Vector3d& p_S1S2_W) {
-  RigidTransformd X_WS = RigidTransformd(p_S1S2_W);
-  const GeometryId id_S = GeometryId::get_new_id();
-  // We'll mindlessly provide edge_length; even if the shape doesn't require
-  // it.
-  const double edge_length = 0.5;
-  ProximityProperties properties;
-  using enum HydroelasticType;
-  switch (hydro_type) {
-    case kUndefined:
-      // Do nothing.
-      break;
-    case kRigid:
-      AddRigidHydroelasticProperties(edge_length, &properties);
-      break;
-    case kCompliant:
-      AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
-      properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
-      break;
-  }
-  if (is_anchored) {
-    engine->AddAnchoredGeometry(shape, X_WS, id_S, properties);
-  } else {
-    engine->AddDynamicGeometry(shape, X_WS, id_S, properties);
-  }
-  return std::make_pair(id_S, X_WS);
-}
-
-unordered_map<GeometryId, RigidTransformd> PopulateEngine(
-    ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
-    HydroelasticType type1, const Shape& shape2, bool anchored2,
-    HydroelasticType type2, const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
-  unordered_map<GeometryId, RigidTransformd> X_WGs;
-  RigidTransformd X_WG;
-  GeometryId id1, id2;
-  std::tie(id1, X_WG) =
-      AddShape(engine, shape1, anchored1, type1, Vector3d::Zero());
-  X_WGs.insert({id1, X_WG});
-  std::tie(id2, X_WG) = AddShape(engine, shape2, anchored2, type2, p_S1S2_W);
-  X_WGs.insert({id2, X_WG});
-  engine->UpdateWorldPoses(X_WGs);
-  return X_WGs;
-}
-
-// The autodiff support is independent of what the contact surface mesh
-// representation is; so we'll simply use kTriangle.
-GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
-  using enum HydroelasticType;
-  const bool anchored{true};
-  const Sphere sphere{0.2};
-  const Mesh mesh(
-      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"));
-
-  // Case: Compliant sphere and rigid mesh with AutoDiffXd -- confirm the
-  // contact surface has derivatives.
-  {
-    ProximityEngine<double> engine_d;
-    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, kCompliant,
-                                        mesh, !anchored, kRigid);
-
-    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
-    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
-    bool added_derivatives = false;
-    for (const auto& [id, X_WG_d] : X_WGs_d) {
-      if (!added_derivatives) {
-        // We'll set the derivatives on p_WGo for the first geometry; all others
-        // we'll pass through.
-        const Vector3<AutoDiffXd> p_WGo =
-            math::InitializeAutoDiff(X_WG_d.translation());
-        X_WGs_ad[id] = RigidTransform<AutoDiffXd>(
-            X_WG_d.rotation().cast<AutoDiffXd>(), p_WGo);
-        added_derivatives = true;
-      } else {
-        X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
-      }
-    }
-
-    std::vector<ContactSurface<AutoDiffXd>> surfaces;
-    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    // We assume that ComputeContactSurfacesWithFallback() exercises the same
-    // code as ComputeContactSurfaces(); they both pass through the hydroelastic
-    // calculator. So, exercising one is "sufficient". If they ever deviate in
-    // execution (i.e., there were to no longer share the same calculator), this
-    // test would have to be elaborated.
-    engine_ad->ComputeContactSurfacesWithFallback(
-        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
-        &point_pairs);
-    EXPECT_EQ(surfaces.size(), 1);
-    EXPECT_EQ(point_pairs.size(), 0);
-    // We'll poke *one* quantity of the surface mesh to confirm it has
-    // derivatives. We won't consider the *value*, just the existence as proof
-    // that it has been wired up to code that has already tested value.
-    EXPECT_EQ(surfaces[0].tri_mesh_W().vertex(0).x().derivatives().size(), 3);
-  }
-
-  // Case: Rigid sphere and hydro-undefined mesh with AutoDiffXd --
-  // rigid-undefined contact would result in a point pair.
-  {
-    ProximityEngine<double> engine_d;
-    using enum HydroelasticType;
-    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, false, kRigid,
-                                        sphere, false, kUndefined);
-    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
-    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
-    for (const auto& [id, X_WG_d] : X_WGs_d) {
-      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
-    }
-
-    std::vector<ContactSurface<AutoDiffXd>> surfaces;
-    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    engine_ad->ComputeContactSurfacesWithFallback(
-        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
-        &point_pairs);
-    EXPECT_EQ(surfaces.size(), 0);
-    EXPECT_EQ(point_pairs.size(), 1);
-  }
-
-  // Case: Rigid sphere and mesh with AutoDiffXd -- rigid-rigid contact would
-  // result in a point pair.
-  {
-    ProximityEngine<double> engine_d;
-    const auto X_WGs_d =
-        PopulateEngine(&engine_d, sphere, false, kRigid, sphere, false, kRigid);
-    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
-    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
-    for (const auto& [id, X_WG_d] : X_WGs_d) {
-      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
-    }
-
-    std::vector<ContactSurface<AutoDiffXd>> surfaces;
-    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    engine_ad->ComputeContactSurfacesWithFallback(
-        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
-        &point_pairs);
-    EXPECT_EQ(surfaces.size(), 0);
-    EXPECT_EQ(point_pairs.size(), 1);
-  }
-
-  // Case: Rigid sphere and mesh, mutually collision filtered, with AutoDiffXd
-  // -- result should be neither contact surface nor contact pair.
-  {
-    ProximityEngine<double> engine_d;
-    const auto X_WGs_d =
-        PopulateEngine(&engine_d, sphere, false, kRigid, sphere, false, kRigid);
-    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
-    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
-    GeometrySet geom_set;
-    std::vector<GeometryId> ids;
-    for (const auto& [id, X_WG_d] : X_WGs_d) {
-      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
-      geom_set.Add(id);
-      ids.push_back(id);
-    }
-    ASSERT_EQ(ids.size(), 2);
-    engine_ad->collision_filter().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(geom_set),
-        [&ids](const GeometrySet&, CollisionFilterScope) {
-          return std::unordered_set<GeometryId>(ids.begin(), ids.end());
-        },
-        false);
-    ASSERT_FALSE(engine_ad->collision_filter().CanCollideWith(ids[0], ids[1]));
-
-    std::vector<ContactSurface<AutoDiffXd>> surfaces;
-    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    engine_ad->ComputeContactSurfacesWithFallback(
-        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
-        &point_pairs);
-    EXPECT_EQ(surfaces.size(), 0);
-    EXPECT_EQ(point_pairs.size(), 0);
-  }
-}
-
 // Tests simple addition of anchored geometry.
 GTEST_TEST(ProximityEngineTests, AddAnchoredGeometry) {
   ProximityEngine<double> engine;
@@ -2043,6 +1865,154 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfaces) {
   EXPECT_FALSE(derivs.isZero());
 }
 
+/* ComputeContactSurfacesWithFallback() responsibilities:
+  1. Empty engine produces no results.
+  2. Collision result for dynamic-dynamic pair.
+  3. Collision result for anchored-dynamic pair.
+  4. No collision result for anchored-anchored pair.
+  5. Respect representation format.
+  6. Results are always ordered.
+  7. No contact surface implies point pair penetration.
+  8. Respect collision filter.
+  9. AutoDiff derivatives pass through successfully.
+ 10. It should also allow Callback exceptions to propagate through; we won't
+     test this directly -- Drake standard practices and the clear absence of a
+     catch block is sufficient evidence
+
+  Note: the sequence of this test is important -- state accumulates and each
+  assertion is reliant on the successful execution of the previous assertion.
+
+         ○○○     ●●●     □□□     ···
+       ○     ○ ●     ● □     □ ·     ·     - Prefixes A, D indicated anchored,
+     ○   A1  ● ○ D2  □ ●  D3 · □  D5   ·     dynamic.
+     ○       ● ○     □ ●     · □       ·   - Suffixes indicate creation order.
+       ○ ▲▲▲ ○ ●     ● □     □ ·     ·     - Intersecting pairs: (A1, A4),
+       ▲ ○○○ ▲   ●●●     □□□     ···         (A1, D2), (D2, D3), (D3, D5).
+     ▲         ▲                           - D5 has no hydro properties and will
+     ▲   A4    ▲                             lead to a point-pair contact.
+       ▲     ▲
+         ▲▲▲
+  */
+TEST_F(ProximityEngineQueryTest, ComputeContactSurfacesWithFallback) {
+  vector<ContactSurface<double>> surfaces;
+  vector<PenetrationAsPointPair<double>> points;
+  auto eval_dut = [this, &points,
+                   &surfaces](HydroelasticContactRepresentation rep) {
+    surfaces.clear();
+    points.clear();
+    engine_.UpdateWorldPoses(X_WGs_);
+    return engine_.ComputeContactSurfacesWithFallback(rep, X_WGs_, &surfaces,
+                                                      &points);
+  };
+
+  using IdPairs = std::vector<std::pair<GeometryId, GeometryId>>;
+  auto surface_ids = [](const vector<ContactSurface<double>>& results) {
+    auto ids = results |
+               std::views::transform([](const ContactSurface<double>& result) {
+                 return std::make_pair(result.id_M(), result.id_N());
+               });
+    return IdPairs(ids.begin(), ids.end());
+  };
+
+  auto point_ids = [](const vector<PenetrationAsPointPair<double>>& results) {
+    auto ids = results | std::views::transform(
+                             [](const PenetrationAsPointPair<double>& result) {
+                               return std::make_pair(result.id_A, result.id_B);
+                             });
+    return IdPairs(ids.begin(), ids.end());
+  };
+
+  using enum HydroelasticContactRepresentation;
+
+  // (1) - empty engine produces no results.
+  eval_dut(kTriangle);
+  ASSERT_TRUE(surfaces.empty());
+  ASSERT_TRUE(points.empty());
+
+  const Sphere sphere(0.5);
+  // Distance between sphere centers to guarantee collision.
+  const double d = sphere.radius() * 2 * 0.9;
+
+  ProximityProperties props;
+  AddCompliantHydroelasticProperties(0.5, 1e-8, &props);
+  const GeometryId id_A1 = AddAnchored(sphere, {d, 0, 0}, props);
+  const GeometryId id_D2 = AddDynamic(sphere, {2 * d, 0, 0}, props);
+  const GeometryId id_D3 = AddDynamic(sphere, {3 * d, 0, 0}, props);
+  // We don't save id_A4; it's never referenced.
+  AddAnchored(sphere, {d, -d, 0}, props);
+
+  // (2)-(4).
+  // We get the (3) A-D and (2) D-D result but not an (4) A-A result.
+  eval_dut(kTriangle);
+  const vector<ContactSurface<double>> results_tri = surfaces;
+  ASSERT_EQ(surface_ids(results_tri),
+            IdPairs({{id_A1, id_D2}, {id_D2, id_D3}}));
+  ASSERT_TRUE(points.empty());
+
+  // (5) - consistent ordering in results.
+  eval_dut(kPolygon);
+  const vector<ContactSurface<double>> results_poly = surfaces;
+  ASSERT_EQ(surface_ids(results_poly), surface_ids(results_tri));
+  ASSERT_TRUE(points.empty());
+
+  // (6) - representation respected.
+  for (const auto& result : results_poly) {
+    EXPECT_FALSE(result.is_triangle());
+  }
+  for (const auto& result : results_tri) {
+    EXPECT_TRUE(result.is_triangle());
+  }
+
+  // (7) - hydro-incompatible geometries produces point pair.
+  const GeometryId id_D5 =
+      AddDynamic(sphere, {4 * d, 0, 0});  // No hydro props.
+  eval_dut(kTriangle);
+  ASSERT_EQ(surface_ids(surfaces), IdPairs({{id_A1, id_D2}, {id_D2, id_D3}}));
+  ASSERT_EQ(point_ids(points), IdPairs({{id_D3, id_D5}}));
+
+  // (8) - filters are respected.
+  const FilterId filter_id = engine_.collision_filter().ApplyTransient(
+      CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
+      [id_D2, id_D3, id_D5](const GeometrySet&, CollisionFilterScope) {
+        return std::unordered_set<GeometryId>{{id_D2, id_D3, id_D5}};
+      });
+  eval_dut(kTriangle);
+  // The filter removed one contact surface and one point pair.
+  ASSERT_EQ(surfaces.size(), 1);
+  ASSERT_EQ(points.size(), 0);
+  engine_.collision_filter().RemoveDeclaration(filter_id);
+
+  // (9) - AutoDiff derivatives pass through successfully.
+  const auto ad_engine = engine_.ToScalarType<AutoDiffXd>();
+  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+  for (const auto& [id, X_WG] : X_WGs_) {
+    X_WGs_ad[id] = X_WG.cast<AutoDiffXd>();
+  }
+  // Seed id_D3's translation with derivatives - the second contact surface and
+  // only point pair both involve D3.
+  X_WGs_ad[id_D3] = RigidTransform<AutoDiffXd>{
+      math::InitializeAutoDiff(X_WGs_.at(id_D3).translation())};
+
+  ad_engine->UpdateWorldPoses(X_WGs_ad);
+  vector<ContactSurface<AutoDiffXd>> surfaces_ad;
+  vector<PenetrationAsPointPair<AutoDiffXd>> points_ad;
+  ad_engine->ComputeContactSurfacesWithFallback(kTriangle, X_WGs_ad,
+                                                &surfaces_ad, &points_ad);
+  // Still get two results.
+  ASSERT_EQ(surfaces_ad.size(), 2);
+  ASSERT_EQ(points_ad.size(), 1);
+  // Confirm derivatives on the surface and point result.
+  const auto& surface = surfaces_ad[1];
+  const auto& surf_deriv = surface.total_area().derivatives();
+  ASSERT_EQ(surf_deriv.size(), 3);
+  EXPECT_FALSE(surf_deriv.isZero());
+
+  const auto& point = points_ad[0];
+  const auto& point_deriv = point.depth.derivatives();
+  ASSERT_EQ(point_deriv.size(), 3);
+  EXPECT_FALSE(point_deriv.isZero());
+}
+
 /* FindCollisionCandidates() responsibilities:
   1. Report no candidates for an empty engine.
   2. Do not report anchored-anchored pairs, even if their AABBs overlap.
@@ -2219,141 +2189,6 @@ TEST_F(ProximityEngineQueryTest, HasCollisions) {
   // Remove the filter and confirm we get collisions.
   engine_.collision_filter().RemoveDeclaration(*filter_id);
   ASSERT_TRUE(eval_dut());
-}
-
-// Utility test for evaluating the following "ResultOrdering" test. It produces
-// a "ring" of spheres such that each sphere makes contact with its two
-// neighbors. So, N spheres produce N contacts. Given the input radius and
-// count (N), produces a map of geometry ids to poses for the N spheres.
-unordered_map<GeometryId, RigidTransformd> MakeCollidingRing(double radius,
-                                                             int N) {
-  /*
-              y
-              │                   Example of N = 4.
-              o
-             ╱│╲
-           ╱  │  ╲ s
-         ╱    │θ   ╲
-  ──────o───────────o───── x
-         ╲    │    ╱
-           ╲  │  ╱
-             ╲│╱
-              o
-              │
-  Put spheres centered at the dots indicated. We want the distance between two
-  "adjacent" spheres to be s = 1.9 * r (so that they collide). So, how far from
-  the center should those centers be? We can use the equilateral triangle and
-  law of sines. Each triangle has angles θ = π/2, α = π/4, α = π/4. The distance
-  from the origin d can be found by solving for:
-
-       d            s
-   --------  =  --------  --> d = s / sin(θ) * sin(α)
-    sin(α)       sin(θ)
-
-  Note: as long as we define θ = 2π / N, this will work for positioning N
-  spheres.
-
-  We play weird games with the geometry ids. If we simply enumerate the ids
-  in *order* (let's call them A, B, C, D) as we walk around the ring, then we'll
-  have contact pairs (A, B), (B, C), (C, D), (D, A)
-  */
-  DRAKE_DEMAND(radius > 0);
-  DRAKE_DEMAND(N > 0);
-  unordered_map<GeometryId, RigidTransformd> poses;
-  const double span = 2 * M_PI / N;
-  const double d = 1.9 * radius / sin(span) * sin((M_PI - span) / 2);
-  for (int i = 0; i < N; ++i) {
-    const double angle = i * span;
-    const Vector3d p_WSo = Vector3d(cos(angle), sin(angle), 0) * d;
-    poses[GeometryId::get_new_id()] = RigidTransformd(p_WSo);
-  }
-  return poses;
-}
-
-// Confirms that the ComputeContactSurfacesWithFallback() computation returns
-// the same results twice in a row. This test is explicitly required because it
-// is known that updating the pose in the FCL tree can lead to erratic ordering.
-// This logic is independent of mesh representation, so, we only test for one
-// mesh type.
-class ProximityEngineHydroWithFallback : public testing::Test {
- protected:
-  void SetUp() override {
-    const double r = 0.5;
-    // For this case we want at least four contacts *of each type*. So, we order
-    // geometries as: S S R R S S R R. This will give us four soft contacts and
-    // four rigid contacts.
-    N_ = 8;
-    poses_ = MakeCollidingRing(r, N_);
-
-    ProximityProperties soft_properties;
-    AddCompliantHydroelasticProperties(r / 2, 1e8, &soft_properties);
-    ProximityProperties rigid_properties;
-    AddRigidHydroelasticProperties(r, &rigid_properties);
-
-    // Extract the ids from poses and sort them so that we know we're assigning
-    // appropriate alternativing compliance.
-    std::vector<GeometryId> ids;
-    for (const auto& pair : poses_) {
-      ids.push_back(pair.first);
-    }
-    std::sort(ids.begin(), ids.end());
-
-    int n = 0;
-    const Sphere sphere{r};
-    for (const auto& id : ids) {
-      bool is_soft = (n % 4) < 2;
-      engine_.AddDynamicGeometry(sphere, {}, id,
-                                 is_soft ? soft_properties : rigid_properties);
-      ++n;
-    }
-  }
-
-  size_t N_;
-  ProximityEngine<double> engine_;
-  unordered_map<GeometryId, RigidTransformd> poses_;
-};
-
-TEST_F(ProximityEngineHydroWithFallback,
-       ComputeContactSurfacesWithFallbackResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces1;
-  vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputeContactSurfacesWithFallback(
-      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
-      &points1);
-  // The arrangement (see MakeCollidingRing()) looks somewhat
-  // like this (R = rigid sphere, C = compliant sphere):
-  //
-  //      R  R
-  //    C      C
-  //    C      C
-  //      R  R
-  //
-  // Only two R-R (rigid-rigid) contacts are point contacts.
-  const size_t num_point_contacts = 2;
-  // The remaining contacts are either R-C (rigid-compliant) or C-C
-  // (compliant-compliant) hydroelastic contact patches.
-  const size_t num_patch_contacts = N_ - 2;
-  ASSERT_EQ(surfaces1.size(), num_patch_contacts);
-  ASSERT_EQ(points1.size(), num_point_contacts);
-
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces2;
-  vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputeContactSurfacesWithFallback(
-      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces2,
-      &points2);
-  ASSERT_EQ(surfaces2.size(), num_patch_contacts);
-  ASSERT_EQ(points2.size(), num_point_contacts);
-
-  for (size_t i = 0; i < num_patch_contacts; ++i) {
-    EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
-    EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
-  }
-  for (size_t i = 0; i < num_point_contacts; ++i) {
-    EXPECT_EQ(points1[i].id_A, points2[i].id_A);
-    EXPECT_EQ(points1[i].id_B, points2[i].id_B);
-  }
 }
 
 // TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
