@@ -14,11 +14,32 @@
 
 set -eu -o pipefail
 
-if [[ -z "$1" ]]; then
-    echo "Usage: $0 <wheel>" >&2
+WHEEL=
+MAYBE_UV=
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    --uv)
+        MAYBE_UV=${HOME}/.local/bin/uv
+        ;;
+    --wheel)
+        shift
+        if [[ $# -eq 0 ]]; then
+            echo 'No argument specified for --wheel' >&2
+            exit 1
+        fi
+        WHEEL="$1"
+        ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 1
+  esac
+  shift
+done
+
+if [[ -z "${WHEEL}" ]]; then
+    echo "Usage: $0 --wheel <wheel> [--uv]"
     exit 1
 fi
 
 . /tmp/drake-wheel-test/python/bin/activate
-
-pip install "$1"
+${MAYBE_UV} pip install "${WHEEL}"
