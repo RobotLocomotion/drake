@@ -20,13 +20,11 @@ fi
 # https://drake.mit.edu/bazel.html and https://drake.mit.edu/from_source.html.
 
 if [[ "$(uname)" == "Darwin" ]]; then
-  exec "${BASH_SOURCE%/*}/mac/install_prereqs.sh" \
-    --without-test-only "$@"
+  exec "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "$@"
 else
   maybe_sudo=
   if [[ "${EUID}" -ne 0 ]]; then
     maybe_sudo=sudo
   fi
-  exec ${maybe_sudo} "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" \
-    --no-developer "$@"
+  exec ${maybe_sudo} "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" "$@"
 fi

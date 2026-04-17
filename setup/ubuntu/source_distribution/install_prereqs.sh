@@ -8,69 +8,13 @@
 
 set -euo pipefail
 
-with_doc_only=0
-with_maintainer_only=0
-with_bazel=1
-with_clang=1
-with_test_only=1
-with_update=1
+developer=0
 with_asking=1
-
-# TODO(jwnimmer-tri) Eventually we should default to with_clang=0.
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
-      with_doc_only=1
-      with_maintainer_only=1
-      with_bazel=1
-      with_clang=1
-      with_test_only=1
-      ;;
-    --no-developer)
-      with_doc_only=0
-      with_maintainer_only=0
-      with_bazel=0
-      with_clang=0
-      with_test_only=0
-      ;;
-    # Install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
-    --with-doc-only)
-      with_doc_only=1
-      ;;
-    # Install bazelisk from a deb package.
-    --with-bazel)
-      with_bazel=1
-      ;;
-    # Do NOT install bazelisk.
-    --without-bazel)
-      with_bazel=0
-      ;;
-    # Install prerequisites that are only needed for --config clang, i.e.,
-    # opts-in to the ability to compile Drake's C++ code using Clang.
-    --with-clang)
-      with_clang=1
-      ;;
-    # Do NOT install prerequisites that are only needed for --config clang,
-    # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
-    --without-clang)
-      with_clang=0
-      ;;
-    # Install prerequisites that are only needed to run select maintainer
-    # scripts. Most developers will not need to install these dependencies.
-    --with-maintainer-only)
-      with_maintainer_only=1
-      ;;
-    # Do NOT install prerequisites that are only needed to build and/or run
-    # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel { build, run } //:install.
-    --without-test-only)
-      with_test_only=0
-      ;;
-    # Do NOT call apt-get update during execution of this script.
-    --without-update)
-      with_update=0
+      developer=1
       ;;
     # Pass -y along to apt-get.
     -y)
@@ -92,10 +36,6 @@ if [[ "${with_asking}" -eq 0 ]]; then
   maybe_yes='-y'
 else
   maybe_yes=''
-fi
-
-if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
-  apt-get update || (sleep 30; apt-get update)
 fi
 
 apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
@@ -120,31 +60,13 @@ else
   echo "/usr/bin/python is already installed"
 fi
 
-if [[ "${with_doc_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-doc-only.txt")
+if [[ "${developer}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-developer.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
-fi
-
-if [[ "${with_bazel}" -eq 1 ]]; then
   source "${BASH_SOURCE%/*}/install_bazelisk.sh"
-fi
-
-if [[ "${with_clang}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-clang.txt")
-  apt-get install ${maybe_yes} --no-install-recommends ${packages}
-fi
-
-if [[ "${with_test_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-test-only.txt")
-  apt-get install ${maybe_yes} --no-install-recommends ${packages}
   if [[ "${VERSION_CODENAME}" == "noble" ]]; then
     "${BASH_SOURCE%/*}/install_kcov.sh"
   fi
-fi
-
-if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-maintainer-only.txt")
-  apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 # On Noble, Drake doesn't install anything related to GCC 14, but if the user
