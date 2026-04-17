@@ -41,15 +41,15 @@ APT packages (``*.deb``) are available to download as attachments from Drake's
 GitHub [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.52.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.52.0):
+[v1.52.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.52.1):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.52.0/drake-dev_1.52.0-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.52.0/drake-dev_1.52.0-1_amd64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.52.1/drake-dev_1.52.1-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.52.1/drake-dev_1.52.1-1_amd64-noble.deb)
 
 To download and install the `drake-dev` package:
 
 ```bash
-wget https://github.com/RobotLocomotion/drake/releases/download/v1.52.0/drake-dev_1.52.0-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
-sudo apt-get install --no-install-recommends ./drake-dev_1.52.0-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+wget https://github.com/RobotLocomotion/drake/releases/download/v1.52.1/drake-dev_1.52.1-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+sudo apt-get install --no-install-recommends ./drake-dev_1.52.1-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
 ```
 
 Most content installs to `/opt/drake`, so setting the following environment
