@@ -35,50 +35,9 @@ while [ "${1:-}" != "" ]; do
       source_distribution_args+=(--developer)
       prefetch_bazel=1
       ;;
-    --no-developer)
-      source_distribution_args+=(--no-developer)
-      prefetch_bazel=0
-      ;;
-    # Install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
-    --with-doc-only)
-      source_distribution_args+=(--with-doc-only)
-      ;;
-    # Install bazelisk from a deb package.
-    --with-bazel)
-      source_distribution_args+=(--with-bazel)
-      prefetch_bazel=1
-      ;;
-    # Do NOT install bazelisk.
-    --without-bazel)
-      source_distribution_args+=(--without-bazel)
-      prefetch_bazel=0
-      ;;
-    # Install prerequisites that are only needed for --config clang, i.e.,
-    # opts-in to the ability to compile Drake's C++ code using Clang.
-    --with-clang)
-      source_distribution_args+=(--with-clang)
-      ;;
-    # Do NOT install prerequisites that are only needed for --config clang,
-    # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
-    --without-clang)
-      source_distribution_args+=(--without-clang)
-      ;;
-    # Install prerequisites that are only needed to run select maintainer
-    # scripts. Most developers will not need to install these dependencies.
-    --with-maintainer-only)
-      source_distribution_args+=(--with-maintainer-only)
-      ;;
-    # Do NOT install prerequisites that are only needed to build and/or run
-    # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel { build, run } //:install.
-    --without-test-only)
-      source_distribution_args+=(--without-test-only)
-      ;;
     # Do NOT call apt-get update during execution of this script.
     --without-update)
       binary_distribution_args+=(--without-update)
-      source_distribution_args+=(--without-update)
       ;;
     -y)
       binary_distribution_args+=(-y)
