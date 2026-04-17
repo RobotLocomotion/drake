@@ -33,6 +33,7 @@ while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
       source_distribution_args+=(--developer)
+      source_distribution_args+=(--with-maintainer-only)
       prefetch_bazel=1
       ;;
     # Install prerequisites that are only needed to build documentation,
