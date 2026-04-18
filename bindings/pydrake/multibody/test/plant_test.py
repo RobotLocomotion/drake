@@ -1073,12 +1073,14 @@ class TestPlant(unittest.TestCase):
     def test_friction_api(self, T):
         CoulombFriction = CoulombFriction_[T]
         CoulombFriction()
-        CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
+        dut = CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
+        self.assertIsInstance(dut.static_friction(), T)
+        self.assertIsInstance(dut.dynamic_friction(), T)
         copy.copy(CoulombFriction())
         assert_pickle(
             self,
-            CoulombFriction,
-            lambda x: [x.static_friction, x.dynamic_friction],
+            dut,
+            lambda x: [x.static_friction(), x.dynamic_friction()],
             T=T,
         )
 
