@@ -19,7 +19,6 @@ from pydrake.common.test_utilities.algebra_test_util import (
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 import pydrake.math as drake_math
 import pydrake.symbolic as sym
-from pydrake.symbolic import Expression
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -1041,7 +1040,9 @@ class TestSymbolicExpression(unittest.TestCase):
         ]
         for expr in test_expr:
             with self.subTest(expr=expr):
-                assert_pickle(test=self, obj=expr, T=Expression)
+                assert_pickle(
+                    test=self, obj=expr, value_to_compare=lambda x: repr(x)
+                )
 
 
 class TestSymbolicFormula(unittest.TestCase):
