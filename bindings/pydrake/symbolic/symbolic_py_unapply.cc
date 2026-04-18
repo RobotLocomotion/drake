@@ -76,7 +76,7 @@ namespace {
 
 // Given the expression "e", returns an extracted list of arguments that would
 // be able to re-construct the same expression, when passed to the result of
-// MakeExpressionConstructor.
+// MakeUnapplyConstructor.
 py::list MakeArgs(const Expression& e) {
   py::list result;
   switch (e.get_kind()) {
@@ -201,7 +201,7 @@ namespace {
 
 // Given the formula "f", returns an extracted list of arguments that would
 // be able to re-construct the same formula, when passed to the result of
-// MakeConstructor.
+// MakeUnapplyConstructor.
 py::list MakeArgs(const Formula& f) {
   py::list result;
   switch (f.get_kind()) {
