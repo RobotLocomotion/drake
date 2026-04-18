@@ -5,15 +5,19 @@
 namespace drake {
 namespace pydrake {
 namespace internal {
+namespace {
 
 using drake::symbolic::Expression;
 using drake::symbolic::ExpressionKind;
 using drake::symbolic::Formula;
 using drake::symbolic::FormulaKind;
 
-py::object MakeUnapplyConstructor(py::module m, ExpressionKind kind) {
+// Given the pydrake.symbolic module as "m" and an expression "e", returns
+// the callable object (i.e., factory function or constructor) that would
+// be able to re-construct the same expression, given appropriate arguments.
+py::object MakeConstructor(py::module m, const Expression& e) {
   // This list of cases is in alphabetical order.
-  switch (kind) {
+  switch (e.get_kind()) {
     case ExpressionKind::Abs:
       return m.attr("abs");
     case ExpressionKind::Acos:
@@ -72,11 +76,9 @@ py::object MakeUnapplyConstructor(py::module m, ExpressionKind kind) {
   DRAKE_UNREACHABLE();
 }
 
-namespace {
-
 // Given the expression "e", returns an extracted list of arguments that would
 // be able to re-construct the same expression, when passed to the result of
-// MakeUnapplyConstructor.
+// MakeConstructor.
 py::list MakeArgs(const Expression& e) {
   py::list result;
   switch (e.get_kind()) {
@@ -159,10 +161,11 @@ py::list MakeArgs(const Expression& e) {
   return result;
 }
 
-}  // namespace
-
-py::object MakeUnapplyConstructor(py::module m, FormulaKind kind) {
-  switch (kind) {
+// Given the pydrake.symbolic module as "m" and a formula "f", returns
+// the callable object (i.e., factory function or constructor) that would
+// be able to re-construct the same formula, given appropriate arguments.
+py::object MakeConstructor(py::module m, const Formula& f) {
+  switch (f.get_kind()) {
     case FormulaKind::False:
       return m.attr("Formula").attr("False_");
     case FormulaKind::True:
@@ -197,11 +200,9 @@ py::object MakeUnapplyConstructor(py::module m, FormulaKind kind) {
   DRAKE_UNREACHABLE();
 }
 
-namespace {
-
 // Given the formula "f", returns an extracted list of arguments that would
 // be able to re-construct the same formula, when passed to the result of
-// MakeUnapplyConstructor.
+// MakeConstructor.
 py::list MakeArgs(const Formula& f) {
   py::list result;
   switch (f.get_kind()) {
@@ -254,11 +255,11 @@ py::list MakeArgs(const Formula& f) {
 }  // namespace
 
 py::object Unapply(py::module m, const Expression& e) {
-  return py::make_tuple(MakeUnapplyConstructor(m, e.get_kind()), MakeArgs(e));
+  return py::make_tuple(MakeConstructor(m, e), MakeArgs(e));
 }
 
-py::object Unapply(py::module m, const Formula& f) {
-  return py::make_tuple(MakeUnapplyConstructor(m, f.get_kind()), MakeArgs(f));
+py::object Unapply(py::module m, const symbolic::Formula& f) {
+  return py::make_tuple(MakeConstructor(m, f), MakeArgs(f));
 }
 
 }  // namespace internal
