@@ -522,8 +522,10 @@ class TestMath(unittest.TestCase):
         )
         if T == Expression:
             self.assertTrue((bspline == bspline).Evaluate())
+            self.assertFalse((bspline != bspline).Evaluate())
         else:
             self.assertTrue(bspline == bspline)
+            self.assertFalse(bspline != bspline)
         assert_pickle(self, bspline, BsplineBasis.knots, T=T)
 
     @numpy_compare.check_all_types
