@@ -11,11 +11,9 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_binary(
     name = "jaco_controller",
     srcs = ["jaco_controller.cc"],
-    add_test_rule = 1,
     data = [
         "@drake_models//:jaco_description",
     ],
-    test_rule_args = ["--build_only"],
     deps = [
         "//common:add_text_logging_gflags",
         "//lcm",
@@ -29,16 +27,16 @@ drake_cc_binary(
         "//systems/primitives:multiplexer",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--build_only"],
 )
 
 drake_cc_binary(
     name = "jaco_simulation",
     srcs = ["jaco_simulation.cc"],
-    add_test_rule = 1,
     data = [
         "@drake_models//:jaco_description",
     ],
-    test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         "//common:add_text_logging_gflags",
         "//geometry:drake_visualizer",
@@ -53,6 +51,8 @@ drake_cc_binary(
         "//visualization:visualization_config_functions",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--simulation_sec=0.1"],
 )
 
 drake_cc_binary(

@@ -23,9 +23,6 @@ common @BAZEL_REPO_ENV@
 # confusion for the CMake use case.
 build --symlink_prefix=/
 
-# Disable ccache due to incompatibility with Bazel.
-build --action_env=CCACHE_DISABLE=1
-
 # Transcriptions of CMake configs into their equivalent Bazel flags.
 build:Debug --config=debug --fission=no
 build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os

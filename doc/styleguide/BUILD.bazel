@@ -32,17 +32,17 @@ enumerate_filegroup(
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
-    add_test_rule = 1,
     data = [
         ":jekyll_input",
         ":jekyll_input.txt",
     ],
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_tags = DEFAULT_TEST_TAGS,
     visibility = ["//doc:__pkg__"],
     deps = [
         "//doc:defs",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_tags = DEFAULT_TEST_TAGS,
 )
 
 add_lint_tests()

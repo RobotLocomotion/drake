@@ -276,7 +276,7 @@ class VectorBase {
 };
 
 /// Returns the string representation of a VectorBase<T> as a row vector
-/// RowVectorX<T> e.g., "1, 2, 3". This is useful for debugging purposes.
+/// RowVectorX<T> e.g., "[1, 2, 3]". This is useful for debugging purposes.
 template <typename T>
 std::string to_string(const VectorBase<T>& vec) {
   return vec.to_string();

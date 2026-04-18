@@ -14,12 +14,15 @@ filegroup(
 drake_py_binary(
     name = "drop_pepper_py",
     srcs = ["drop_pepper.py"],
-    add_test_rule = 1,
     data = [
         ":models",
         "@drake_models//:dishes",
         "@drake_models//:veggies",
     ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+    add_test_rule = True,
     test_rule_args = [
         "--simulation_time=0.01",
         "--target_realtime_rate=0",
@@ -28,9 +31,6 @@ drake_py_binary(
     # The debug test takes about 90 seconds.
     # The release test takes about 3 seconds.
     test_rule_timeout = "moderate",
-    deps = [
-        "//bindings/pydrake",
-    ],
 )
 
 add_lint_tests()

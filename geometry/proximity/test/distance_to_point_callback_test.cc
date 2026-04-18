@@ -117,7 +117,7 @@ class PointShapeAutoDiffSignedDistanceTester {
       if (error) failure << "\n";
       error = true;
       failure << fmt::format("Analytical gradient contains NaN: {}",
-                             fmt_eigen(grad_W_val.transpose()));
+                             fmt_eigen(grad_W_val));
     }
     auto gradient_compare =
         CompareMatrices(ddistance_dp_WQ, grad_W_val, tolerance_);
@@ -905,10 +905,8 @@ struct SignedDistanceToPointTestData {
         "  expected_result.distance: {}\n"
         "  expected_result.grad_W: {}\n"
         "}}",
-        fmt_eigen(obj.p_WQ.transpose()),
-        fmt_eigen(obj.expected_result.p_GN.transpose()),
-        obj.expected_result.distance,
-        fmt_eigen(obj.expected_result.grad_W.transpose()));
+        fmt_eigen(obj.p_WQ), fmt_eigen(obj.expected_result.p_GN),
+        obj.expected_result.distance, fmt_eigen(obj.expected_result.grad_W));
     return os;
   }
 

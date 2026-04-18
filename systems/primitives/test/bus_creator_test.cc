@@ -54,7 +54,7 @@ GTEST_TEST(BusCreatorTest, VariousPorts) {
       std::string value_str;
       if ((name == "u0") || (name == "in1")) {
         const auto& datum = value.template get_value<BasicVector<double>>();
-        value_str = fmt::to_string(fmt_eigen(datum.get_value()));
+        value_str = fmt::format("{:#}", fmt_eigen(datum.get_value()));
       } else if (name == "u2") {
         const auto& datum = value.template get_value<int>();
         value_str = fmt::to_string(datum);

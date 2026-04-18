@@ -12,7 +12,6 @@ load(
     "drake_cc_variant_library",
 )
 load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
-load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 # This render_vtk package is only implemented when
 # //tools/flags:with_render_vtk is True. When False, only the factory is
@@ -184,7 +183,7 @@ drake_cc_googletest(
         "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ],
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":internal_render_engine_vtk",
         "//common:find_resource",
@@ -218,7 +217,7 @@ drake_sh_test(
         ":internal_render_engine_vtk_test",
     ],
     display = True,
-    tags = vtk_test_tags(),
+    rendering = True,
 )
 
 drake_cc_googletest(
@@ -229,7 +228,7 @@ drake_cc_googletest(
         ":osx": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
-    tags = vtk_test_tags(),
+    rendering = True,
     deps = [
         ":factory",
         "//common/test_utilities",

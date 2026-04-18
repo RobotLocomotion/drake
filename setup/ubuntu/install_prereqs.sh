@@ -35,6 +35,10 @@ while [ "${1:-}" != "" ]; do
       source_distribution_args+=(--developer)
       prefetch_bazel=1
       ;;
+    --no-developer)
+      source_distribution_args+=(--no-developer)
+      prefetch_bazel=0
+      ;;
     # Install prerequisites that are only needed to build documentation,
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --with-doc-only)
@@ -90,10 +94,6 @@ done
 # Dependencies that are installed by the following sourced script that are
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
-#
-# Note that the list of packages in binary_distribution/packages.txt is used to
-# generate the dependencies of the drake .deb package, so does not include
-# development dependencies such as build-essential and cmake.
 
 source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
   "${binary_distribution_args[@]}"

@@ -136,6 +136,9 @@ bazel test --config lint //...                       # Only run style checks; do
   entire command. For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 
+On Linux, OpenMP is enabled by default; to disable it, use
+`--config=without_openmp`.
+
 ## Running with Flags
 
 ### Example programs
@@ -204,54 +207,49 @@ license seats you want to use.
 
 ## Gurobi
 
-### Install on Ubuntu
+Drake supports any patch version of Gurobi 13.0. At time of writing, the most
+recent available version was 13.0.1; if using a newer patch version, the paths
+and file names below should be adjusted accordingly.
+
+The first steps are to:
 
 1. Register for an account on [https://www.gurobi.com](https://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi13.0.1_linux64.tar.gz``. You may need to manually edit the
+
+From there, follow the platform-specific instructions below.
+
+### Install on Ubuntu
+
+1. Download ``gurobi13.0.1_linux64.tar.gz``. You may need to manually edit the
    URL to get the correct version.
-5. Unzip it. We suggest that you use ``/opt/gurobi1301`` to simplify working
+2. Unzip it. We suggest that you use ``/opt/gurobi1301`` to simplify working
    with Drake installations.
-6. If you unzipped into a location other than ``/opt/gurobi1301``, then call
+3. If you unzipped into a location other than ``/opt/gurobi1301``, then call
    ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used,
    where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
-Drake supports any patch version of Gurobi 13.0. At time of writing, the most
-recent available version was 13.0.1; if using a newer patch version, the paths
-and file names above should be adjusted accordingly.
-
 ### Install on macOS
 
-1. Register for an account on [http://www.gurobi.com](http://www.gurobi.com).
-2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi13.0.1_macos2_universal.pkg``.
+Download and install ``gurobi13.0.1_macos2_universal.pkg``. It should be
+installed to `/Library/gurobi1301`.
 
-To confirm that your setup was successful, run the tests that require Gurobi:
+### Test
 
-  ```bazel test --config gurobi --test_tag_filters=gurobi //...```
+To confirm that your setup was successful, run a test that requires Gurobi:
 
-The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with Gurobi regularly, you may wish
-to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
+  ```bazel test --@drake//tools/flags:with_gurobi=True //solver:gurobi_solver_test```
 
 ## MOSEK
 
-The Drake Bazel build system downloads MOSEK™ 10.0.18 automatically. No manual
+The Drake Bazel build system downloads MOSEK™ 11.1 automatically. No manual
 installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
 
-To confirm that your setup was successful, run the tests that require MOSEK™:
+To confirm that your setup was successful, run a test that requires MOSEK™:
 
-  ```bazel test --config mosek --test_tag_filters=mosek //...```
-
-The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with MOSEK™ regularly, you may wish
-to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
+  ```bazel test --@drake//tools/flags:with_mosek=True //solvers:mosek_solver_test```
 
 ## SNOPT
 
@@ -265,22 +263,17 @@ a private RobotLocomotion git repository.
    named ``snopt7.4.tar.gz``).
 2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.4.tar.gz``
 
-Using the RobotLocomotion git repository
+### Using the RobotLocomotion git repository
 
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. [Set up SSH access to github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/).
 3. ``export SNOPT_PATH=git``
 
-Test the build (for either mechanism)
+### Test the build (for either mechanism)
 
-To confirm that your setup was successful, run the tests that require SNOPT:
+To confirm that your setup was successful, run a test that requires SNOPT:
 
-  ```bazel test --config snopt --test_tag_filters=snopt //...```
-
-The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with SNOPT regularly, you may wish
-to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
+  ```bazel test --@drake//tools/flags:with_snopt=True //solvers:snopt_solver_test```
 
 SNOPT support has some known problems on certain programs (see drake issue
 [#10422](https://github.com/RobotLocomotion/drake/issues/10422) for a summary).
@@ -293,6 +286,7 @@ The Drake Bazel build system has integration support for some optional
 development tools:
 
 * kcov -- test coverage analysis
+* docker -- debug CI failures using a virtual machine
 
 ## kcov
 
@@ -337,7 +331,7 @@ tools/dynamic_analysis/kcov_tool clean
 
 ### Drake bazel rules and kcov
 
-Some Drake-specific bazel rules (e.g. `drake_cc_google_test`) use various
+Some Drake-specific bazel rules (e.g. `drake_cc_googletest`) use various
 heuristics to skip certain tests in `kcov` builds. This may hinder developers
 trying to use `kcov` locally on specific tests. For example:
 
@@ -354,3 +348,35 @@ To force execution with kcov, add an empty `test_tag_filters` option:
 ```
 bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
 ```
+
+## docker
+
+Drake supports multiple Ubuntu versions. Developers who need to debug
+a CI failure on an Ubuntu version other than their desktop version can
+use Docker:
+
+Install docker:
+
+```
+$ sudo apt install docker.io
+$ sudo usermod -aG docker $USER
+$ newgrp docker
+```
+
+Boot a virtual machine, clone Drake, install prereqs, and develop as usual:
+
+```
+$ docker run --rm -it ubuntu:26.04
+# apt update
+# apt install -y git sudo
+# echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# su - ubuntu
+$ git clone --depth=1 https://github.com/RobotLocomotion/drake.git
+$ cd drake
+$ git fetch origin pull/NNNNN/head && git checkout FETCH_HEAD
+$ setup/install_prereqs -y --developer
+$ bazel test //common:fmt_test
+```
+
+When you exit the virtual machine it will be deleted, so be sure to
+capture what you need before exiting.

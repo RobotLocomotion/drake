@@ -62,12 +62,7 @@ drake_cc_library(
 drake_cc_binary(
     name = "run_quadrotor_dynamics",
     srcs = ["run_quadrotor_dynamics.cc"],
-    add_test_rule = 1,
     data = [":models"],
-    test_rule_args = [
-        "--duration=0.1",
-        "--initial_height=0.051",
-    ],
     deps = [
         ":quadrotor_plant",
         "//common:add_text_logging_gflags",
@@ -80,16 +75,16 @@ drake_cc_binary(
         "//visualization:visualization_config_functions",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--duration=0.1",
+        "--initial_height=0.051",
+    ],
 )
 
 drake_cc_binary(
     name = "run_quadrotor_lqr",
     srcs = ["run_quadrotor_lqr.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "-simulation_trials=2",
-        "-simulation_real_time_rate=0.0",
-    ],
     deps = [
         ":quadrotor_geometry",
         ":quadrotor_plant",
@@ -99,6 +94,11 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "-simulation_trials=2",
+        "-simulation_real_time_rate=0.0",
     ],
 )
 

@@ -23,14 +23,9 @@ filegroup(
 drake_cc_binary(
     name = "spatula_slip_control",
     srcs = ["spatula_slip_control.cc"],
-    add_test_rule = True,
     data = [
         ":models",
         "@drake_models//:wsg_50_description",
-    ],
-    test_rule_args = [
-        "--simulation_sec=0.1",
-        "--realtime_rate=0.0",
     ],
     deps = [
         "//multibody/parsing",
@@ -43,6 +38,11 @@ drake_cc_binary(
         "//systems/primitives",
         "//visualization",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_sec=0.1",
+        "--realtime_rate=0.0",
     ],
 )
 

@@ -6,7 +6,7 @@ This rule configures Python for use by Drake, in two parts:
 
 For part (a) our goal is to create a @python//:version.bzl file with the
 details of what we found, which is loaded by package.BUILD.bazel to define
-the @python//:all toolchains, which are loaded by our tools/bazel.rc.
+the @python//:all toolchains, which are loaded by our tools/bazel-build.rc.
 
 Anywhere in Drake that needs to *consume* the python toolchain information
 should use the aliases provided by //tools/workspace/python which always cite

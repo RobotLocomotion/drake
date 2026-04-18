@@ -30,12 +30,23 @@ Note that this does not affect network sandboxing (i.e., Bazel's block-network
 tag). Code outside of Drake purview can still access the network in tests (e.g.,
 license servers for commercial solvers).
 
+**build_when_skipped**
+
+When a test is skipped based on `opt_in_condition`, we can still check that the
+code can *build* without actually running it. When True (the default), skipped
+tests will still be compiled during `bazel test //...`. Setting to False means
+the code won't even be compiled when skipped, which is useful when skipping is
+due to build problems (e.g., missing headers) rather than runtime problems
+(e.g., too slow or false positives).
+
 **display**
 
 Can either be True or False (defaults to False).
 
 When True, provides access to the Xorg DISPLAY environment variable so that
 the test can use the X display.  When False, unsets DISPLAY to forbid access.
+
+When True, typically `rendering = True` is also needed.
 
 Note that the X display in Jenkins CI tends to crash frequently, so any tests
 marked with `display = True` are a likely candidate for `flaky = True` so that
@@ -62,3 +73,24 @@ work correctly in the presence of sub-processes.
 (Aside: Besides the two named environment variables, the function also sets
 several other environment variables using alternative spellings of the same
 concept; the overall effect should be the same.)
+
+**opt_in_condition**
+
+Can either be None (the default), or the name of a `config_setting`.
+
+Allows a test to be skipped during `bazel test //...` based on a specific
+condition. When used on a C++ test, the test is still compiled (but not run)
+if `build_when_skipped` is `True` (the default).
+
+By default (or when None), the test is included in `bazel test //...`.
+
+When non-None, the test is omitted from `bazel test //...` unless the named
+condition is True.
+
+**rendering**
+
+Can either be True or False (defaults to False).
+
+When True, marks the test as needing graphics rendering capability, which
+suppresses test configurations (e.g., LSan) that are incompatible with graphics
+drivers' software stack.

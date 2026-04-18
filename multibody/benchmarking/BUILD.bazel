@@ -4,17 +4,12 @@ load(
     "drake_cc_googlebench_binary",
     "drake_py_experiment_binary",
 )
-load(
-    "//tools/skylark:test_tags.bzl",
-    "gurobi_test_tags",
-)
 
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_googlebench_binary(
     name = "acrobot",
     srcs = ["acrobot.cc"],
-    add_test_rule = True,
     deps = [
         "//common:essential",
         "//common:find_resource",
@@ -25,6 +20,7 @@ drake_cc_googlebench_binary(
         "//multibody/parsing",
         "//tools/performance:fixture_common",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(
@@ -35,7 +31,6 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "cassie",
     srcs = ["cassie.cc"],
-    add_test_rule = True,
     data = ["cassie_v2.urdf"],
     deps = [
         "//common:add_text_logging_gflags",
@@ -46,6 +41,7 @@ drake_cc_googlebench_binary(
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(
@@ -56,7 +52,6 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "iiwa_relaxed_pos_ik",
     srcs = ["iiwa_relaxed_pos_ik.cc"],
-    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
     ],
@@ -68,6 +63,7 @@ drake_cc_googlebench_binary(
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(
@@ -78,14 +74,11 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "homecart_global_ik",
     srcs = ["homecart_global_ik.cc"],
-    add_test_rule = True,
     data = [
         "@drake_models//:tri_homecart",
         "@drake_models//:ur_description",
         "@drake_models//:wsg_50_description",
     ],
-    test_size = "medium",
-    test_tags = gurobi_test_tags(),
     deps = [
         "//common:find_resource",
         "//multibody/inverse_kinematics",
@@ -94,6 +87,9 @@ drake_cc_googlebench_binary(
         "//tools/performance:fixture_common",
         "//tools/performance:gflags_main",
     ],
+    add_test_rule = True,
+    test_rule_size = "medium",
+    test_rule_opt_in_condition = "//tools/workspace/gurobi:enabled",
 )
 
 drake_py_experiment_binary(
@@ -104,7 +100,6 @@ drake_py_experiment_binary(
 drake_cc_googlebench_binary(
     name = "position_constraint",
     srcs = ["position_constraint.cc"],
-    add_test_rule = True,
     data = [
         "@drake_models//:iiwa_description",
     ],
@@ -114,6 +109,7 @@ drake_cc_googlebench_binary(
         "//multibody/plant",
         "//tools/performance:fixture_common",
     ],
+    add_test_rule = True,
 )
 
 drake_py_experiment_binary(

@@ -38,8 +38,7 @@ if(ANDROID OR CYGWIN OR IOS OR NOT UNIX)
   )
 endif()
 
-set(BAZELRC_IMPORTS "tools/bazel.rc")
-set(UNIX_DISTRIBUTION_CODENAME)
+set(BAZELRC_IMPORTS "tools/bazel-build.rc")
 
 # The minimum Darwin version and codename should correspond to the minimum
 # supported macOS version listed in doc/_pages/installation.md and
@@ -56,40 +55,6 @@ if(APPLE)
       "Please use Darwin ${MINIMUM_DARWIN_VERSION}.x (macOS "
       "${MINIMUM_MACOS_CODENAME}) or newer."
     )
-  endif()
-
-  list(APPEND BAZELRC_IMPORTS "tools/macos.bazelrc")
-else()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu.bazelrc")
-
-  execute_process(
-    COMMAND "/usr/bin/arch"
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    OUTPUT_VARIABLE UBUNTU_ARCH)
-  if(UBUNTU_ARCH STREQUAL "")
-    message(FATAL_ERROR "Could NOT query linux arch")
-  endif()
-  list(APPEND BAZELRC_IMPORTS "tools/ubuntu-arch-${UBUNTU_ARCH}.bazelrc")
-
-  execute_process(
-    COMMAND "bash" "-c" ". /etc/os-release && echo \${VERSION_CODENAME}"
-    RESULT_VARIABLE OS_RELEASE_RESULT
-    OUTPUT_VARIABLE UNIX_DISTRIBUTION_CODENAME
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  if(NOT OS_RELEASE_RESULT EQUAL 0)
-    message(WARNING "Could NOT read the /etc/os-release VERSION_CODENAME.")
-  else()
-    set(MAYBE_RC "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
-    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${MAYBE_RC}")
-      message(WARNING "Could not find config file ${MAYBE_RC}. "
-        "This may indicate that you're using an OS or OS version that "
-        "is not officially supported, so the build configuration cannot be "
-        "fine-tuned. See https://drake.mit.edu/from_source.html for details "
-        "on officially supported platforms when building from source.")
-    else()
-      list(APPEND BAZELRC_IMPORTS "${MAYBE_RC}")
-    endif()
   endif()
 endif()
 
@@ -208,32 +173,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 23)
 
-# The supported Python major/minor versions.
-# When changing any of these, see drake/tools/workspace/python/README.md.
-if(APPLE)
-  set(SUPPORTED_PYTHON_VERSION 3.14)
-else()
-  if(UNIX_DISTRIBUTION_CODENAME STREQUAL resolute)
-    set(SUPPORTED_PYTHON_VERSION 3.14)
-  else()  # UNIX_DISTRIBUTION_CODENAME := noble
-    set(SUPPORTED_PYTHON_VERSION 3.12)
-  endif()
-endif()
-
-# Next we'll very carefully choose which Python interpreter to use.
-#
-# - If the user provided the legacy spelling -DPYTHON_EXECUTABLE, shift that
-#   into -DPython_EXECUTABLE instead and continue (with a warning).
-#
-# - If the user provided -DPython_EXECUTABLE, take it at face value (and
-#   therefore error out if they gave us a broken definition).
-#
-# - Otherwise, try to find SUPPORTED_PYTHON_VERSION and use it if found.
-#
-# - Otherwise, try to find any Python 3 interpreter at all.
-#
-# In all cases, we'll warn in case the found Python is not supported.
+# Next we'll find which Python interpreter to use.
 if(PYTHON_EXECUTABLE AND NOT Python_EXECUTABLE)
+  # The user has set the legacy spelling. Warn and automatically fix it.
   set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}" CACHE FILEPATH
     "Path to the python3 executable" FORCE
   )
@@ -243,35 +185,13 @@ if(PYTHON_EXECUTABLE AND NOT Python_EXECUTABLE)
     "compatibility only.")
   unset(PYTHON_EXECUTABLE CACHE)
 endif()
-if(Python_EXECUTABLE)
-  find_package(Python 3 EXACT MODULE REQUIRED
-    COMPONENTS Development Interpreter
-  )
-else()
-  find_package(Python ${SUPPORTED_PYTHON_VERSION} EXACT MODULE
-    COMPONENTS Development Interpreter
-  )
-  if(NOT Python_FOUND)
-    find_package(Python 3 EXACT MODULE REQUIRED
-      COMPONENTS Development Interpreter
-    )
-  endif()
-endif()
+find_package(Python 3.12 MODULE REQUIRED
+  COMPONENTS Development Interpreter
+)
 if(NOT Python_INTERPRETER_ID STREQUAL Python)
   message(WARNING
     "Python interpreter ${Python_INTERPRETER_ID} is NOT supported. Python "
     "code in project drake_install may fail at runtime."
-  )
-endif()
-set(PYTHON_VERSION_MAJOR_MINOR
-  "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}"
-)
-if(NOT PYTHON_VERSION_MAJOR_MINOR VERSION_EQUAL SUPPORTED_PYTHON_VERSION)
-  message(WARNING
-    "The found Python version ${PYTHON_VERSION_MAJOR_MINOR} differs from "
-    "Drake's preferred version ${SUPPORTED_PYTHON_VERSION} on this platform. "
-    "You may experience compatibility problems that are outside the scope of "
-    "Drake's continuous integration test suites."
   )
 endif()
 
@@ -629,7 +549,7 @@ endif()
 if(WITH_GUROBI)
   find_package(Gurobi 13.0 EXACT MODULE REQUIRED)
 
-  string(APPEND BAZEL_CONFIG " --config=gurobi")
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_gurobi=True")
 
   if(NOT APPLE)
     cmake_path(GET Gurobi_INCLUDE_DIRS PARENT_PATH GUROBI_HOME)
@@ -638,11 +558,11 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
-if(DRAKE_CI_ENABLE_EVERYTHING)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
   set(WITH_MOSEK ON)
 endif()
 if(WITH_MOSEK)
-  string(APPEND BAZEL_CONFIG " --config=mosek")
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_mosek=True")
 endif()
 
 option(BUILD_SHARED_LIBS "Install libdrake as a shared library" ON)
@@ -703,7 +623,7 @@ endif()
 set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE BOOL
   "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
 )
-if(DRAKE_CI_ENABLE_EVERYTHING)
+if(DRAKE_CI_ENABLE_EVERYTHING OR DRAKE_CI_ENABLE_PACKAGING)
   set(WITH_ROBOTLOCOMOTION_SNOPT ON)
 endif()
 
@@ -739,7 +659,7 @@ if(WITH_IPOPT OR WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
 endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
-  string(APPEND BAZEL_CONFIG " --config=snopt")
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_snopt=True")
   if(WITH_ROBOTLOCOMOTION_SNOPT)
     string(APPEND BAZEL_REPO_ENV " --repo_env=SNOPT_PATH=git")
   else()
@@ -765,10 +685,6 @@ if(DRAKE_USE_EIGEN_LEGACY_AUTODIFF)
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=True")
 else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
-endif()
-
-if(DRAKE_CI_ENABLE_PACKAGING)
-  string(APPEND BAZEL_CONFIG " --config=packaging")
 endif()
 
 if(BUILD_TYPE_LOWER STREQUAL debug)

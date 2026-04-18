@@ -4,6 +4,7 @@ load(
     "incorporate_allow_network",
     "incorporate_display",
     "incorporate_num_threads",
+    "incorporate_rendering",
 )
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 
@@ -114,13 +115,14 @@ def drake_py_binary(
         deps = None,
         isolate = False,
         tags = [],
-        add_test_rule = 0,
+        add_test_rule = False,
         test_rule_args = [],
         test_rule_data = [],
         test_rule_tags = None,
         test_rule_size = None,
         test_rule_timeout = None,
-        test_rule_flaky = 0,
+        test_rule_flaky = False,
+        test_rule_rendering = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -162,6 +164,7 @@ def drake_py_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            rendering = test_rule_rendering,
             tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
             # The added test rule isn't going to `import unittest`, but test
             # dependencies such as numpy(!!) do so unconditionally.  We should
@@ -219,6 +222,8 @@ def drake_py_test(
         allow_network = None,
         display = False,
         num_threads = None,
+        opt_in_condition = None,
+        rendering = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -244,6 +249,12 @@ def drake_py_test(
     @param num_threads (optional, default is 1)
         See drake/tools/skylark/README.md for details.
 
+    @param opt_in_condition (optional, default is None)
+        See drake/tools/skylark/README.md for details.
+
+    @param rendering (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     By default, sets test size to "small" to indicate a unit test. Adds the tag
     "py" if not already present.
 
@@ -260,11 +271,16 @@ def drake_py_test(
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
+    kwargs = incorporate_rendering(kwargs, rendering = rendering)
     kwargs = amend(kwargs, "tags", append = ["py"])
 
     deps = deps or []
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
+    target_compatible_with = select({
+        opt_in_condition: [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }) if opt_in_condition != None else None
     _py_target_isolated(
         name = name,
         py_target = py_test,
@@ -273,6 +289,7 @@ def drake_py_test(
         shard_count = shard_count,
         srcs = srcs,
         deps = deps,
+        target_compatible_with = target_compatible_with,
         python_version = "PY3",
         srcs_version = "PY3",
         **kwargs
