@@ -7,21 +7,10 @@ import pickle
 import numpy as np
 
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
-from pydrake.math import (
-    BsplineBasis_,
-    RigidTransform_,
-    RollPitchYaw_,
-    RotationMatrix_,
-)
-from pydrake.symbolic import (
-    Expression,
-)
-
-_PYBIND11_METACLASS = type(Expression)
 
 
 def _assert_equal(test, a, b):
-    if isinstance(a, np.ndarray):
+    if isinstance(a, np.ndarray) or isinstance(a, list):
         numpy_compare.assert_equal(a, b)
     elif isinstance(a, dict):
         test.assertEqual(a.keys(), b.keys())
@@ -44,19 +33,6 @@ def assert_pickle(test, obj, value_to_compare=lambda x: x.__dict__, T=None):
         T: (optional) When pickling template instantiations on scalar types,
             pass the scalar type T.
     """
+    # TODO(jwnimmer-tri) Remove unused T argument.
     obj_again = pickle.loads(pickle.dumps(obj))
-    if T == Expression:
-        if isinstance(obj, Expression):
-            test.assertTrue(obj.EqualTo(obj_again))
-        elif isinstance(
-            obj, (RotationMatrix_[Expression], RigidTransform_[Expression])
-        ):
-            test.assertTrue(obj.IsExactlyEqualTo(obj_again).Evaluate())
-        elif isinstance(obj, RollPitchYaw_[Expression]):
-            test.assertTrue(
-                obj.IsNearlyEqualTo(other=obj_again, tolerance=0).Evaluate()
-            )
-        elif isinstance(obj, BsplineBasis_[Expression]):
-            test.assertTrue((obj == obj_again).Evaluate())
-    else:
-        _assert_equal(test, value_to_compare(obj), value_to_compare(obj_again))
+    _assert_equal(test, value_to_compare(obj), value_to_compare(obj_again))
