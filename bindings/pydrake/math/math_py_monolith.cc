@@ -221,14 +221,18 @@ void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
             py::arg("v_B"), cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def("IsValid", overload_cast_explicit<boolean<T>>(&Class::IsValid),
             cls_doc.IsValid.doc_0args)
-        .def("IsExactlyEqualTo", &Class::IsExactlyEqualTo, py::arg("other"),
-            cls_doc.IsExactlyEqualTo.doc)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
         .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
             py::arg("tolerance") =
                 Class::get_internal_tolerance_for_orthonormality(),
             cls_doc.IsNearlyIdentity.doc)
+        .def("IsNearlyEqualTo",
+            overload_cast_explicit<boolean<T>, const RotationMatrix<T>&,
+                double>(&Class::IsNearlyEqualTo),
+            py::arg("other"), py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
+        .def("IsExactlyEqualTo", &Class::IsExactlyEqualTo, py::arg("other"),
+            cls_doc.IsExactlyEqualTo.doc)
         // Does not return the quality_factor
         .def_static(
             "ProjectToRotationMatrix",
@@ -289,11 +293,11 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
         .def("roll_angle", &Class::roll_angle, cls_doc.roll_angle.doc)
         .def("pitch_angle", &Class::pitch_angle, cls_doc.pitch_angle.doc)
         .def("yaw_angle", &Class::yaw_angle, cls_doc.yaw_angle.doc)
-        .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
-            py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("ToQuaternion", &Class::ToQuaternion, cls_doc.ToQuaternion.doc)
         .def("ToRotationMatrix", &Class::ToRotationMatrix,
             cls_doc.ToRotationMatrix.doc)
+        .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
+            py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("CalcRotationMatrixDt", &Class::CalcRotationMatrixDt,
             py::arg("rpyDt"), cls_doc.CalcRotationMatrixDt.doc)
         .def("CalcAngularVelocityInParentFromRpyDt",
