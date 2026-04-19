@@ -1,3 +1,5 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_library")
 load(
@@ -44,14 +46,52 @@ alias(
 
 # === config_setting rules (internal use only) ===
 
-config_setting(
-    name = "using_sanitizer",
-    values = {"define": "USING_SANITIZER=ON"},
+bool_setting(
+    name = "dummy_bool",
+    build_setting_default = False,
 )
 
 config_setting(
-    name = "using_memcheck",
-    values = {"define": "USING_MEMCHECK=ON"},
+    name = "dummy_bool_true",
+    flag_values = {":dummy_bool": "true"},
+)
+
+config_setting(
+    name = "dummy_bool_false",
+    flag_values = {":dummy_bool": "false"},
+)
+
+selects.config_setting_group(
+    name = "always",
+    match_any = [
+        ":dummy_bool_true",
+        ":dummy_bool_false",
+    ],
+)
+
+config_setting(
+    name = "never",
+    constraint_values = ["@platforms//:incompatible"],
+)
+
+selects.config_setting_group(
+    name = "using_sanitizer",
+    match_any = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+        "//tools/tsan:enabled",
+        "//tools/ubsan:enabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "unoptimized",
+    match_any = [
+        ":using_sanitizer",
+        "//tools/cc_toolchain:debug",
+        "//tools/kcov:enabled",
+        "//tools/valgrind:enabled",
+    ],
 )
 
 add_lint_tests()

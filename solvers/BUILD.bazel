@@ -1388,16 +1388,16 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "csdp_cpp_wrapper_test",
     opt_in_condition = "//tools/workspace/csdp_internal:enabled",
-    build_when_skipped = False,
-    tags = [
+    opt_out_conditions = [
         # The longjmp handling definitely leaks memory, and we've decided to
         # just live with that. If we see the longjmp handler triggering when
         # called by CsdpSolver, we should fix MathematicalProgram or CsdpSolver
         # to do more sanity checking before calling into CSDP. The longjmp
         # handler should only serve as a last resort.
-        "no_lsan",
-        "no_memcheck",
+        "//tools/lsan:enabled",
+        "//tools/valgrind:enabled",
     ],
+    build_when_skipped = False,
     deps = [
         ":csdp_cpp_wrapper",
         "//common/test_utilities:expect_throws_message",
@@ -1840,9 +1840,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_limit_test",
     opt_in_condition = "//tools/workspace/gurobi:enabled",
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     timeout = "long",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
     num_threads = 4,
     deps = [
         ":gurobi_solver",
@@ -1891,10 +1891,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "snopt_solver_test",
     opt_in_condition = "//tools/workspace/snopt:enabled",
-    tags = [
+    opt_out_conditions = [
         # ThreadSanitizer: lock-order-inversion (potential deadlock) with
         # snopt_fortran (#11657).
-        "no_tsan",
+        "//tools/tsan:enabled",
     ],
     deps = [
         ":linear_program_examples",

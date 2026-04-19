@@ -67,9 +67,15 @@
     "drake_cc_variant_library.deps_enabled": 4,
 
     "drake_cc_googletest.opt_in_condition": -96,
+    "drake_cc_googletest.opt_out_conditions": -96,
     "drake_cc_googletest.build_when_skipped": -95,
 
     "drake_py_unittest.opt_in_condition": -96,
+    "drake_py_unittest.opt_out_conditions": -96,
+
+    "drake_sh_test.opt_out_conditions": -96,
+
+    "install_test.opt_out_conditions": -96,
 
     "drake_cc_binary.add_test_rule": 100,
     "drake_cc_binary.test_rule_args": 101,
@@ -80,6 +86,7 @@
     "drake_cc_binary.test_rule_flaky": 106,
     "drake_cc_binary.test_rule_display": 107,
     "drake_cc_binary.test_rule_opt_in_condition": 108,
+    "drake_cc_binary.test_rule_opt_out_conditions": 108,
     "drake_cc_binary.test_rule_rendering": 109,
 
     "drake_cc_googlebench_binary.add_test_rule": 100,
@@ -91,6 +98,7 @@
     "drake_cc_googlebench_binary.test_rule_flaky": 106,
     "drake_cc_googlebench_binary.test_rule_display": 107,
     "drake_cc_googlebench_binary.test_rule_opt_in_condition": 108,
+    "drake_cc_googlebench_binary.test_rule_opt_out_conditions": 108,
     "drake_cc_googlebench_binary.test_rule_rendering": 109,
 
     "drake_py_binary.add_test_rule": 100,
@@ -102,6 +110,7 @@
     "drake_py_binary.test_rule_flaky": 106,
     "drake_py_binary.test_rule_display": 107,
     "drake_py_binary.test_rule_opt_in_condition": 108,
+    "drake_py_binary.test_rule_opt_out_conditions": 108,
     "drake_py_binary.test_rule_rendering": 109,
 
     "drake_jupyter_py_binary.add_test_rule": 100,
@@ -113,6 +122,7 @@
     "drake_jupyter_py_binary.test_rule_flaky": 106,
     "drake_jupyter_py_binary.test_rule_display": 107,
     "drake_jupyter_py_binary.test_rule_opt_in_condition": 108,
+    "drake_jupyter_py_binary.test_rule_opt_out_conditions": 108,
     "drake_jupyter_py_binary.test_rule_rendering": 109,
 
     "git_repository.remote": 300,

@@ -61,14 +61,16 @@ def incorporate_rendering(kwargs, *, rendering):
     if rendering not in (True, False):
         fail("The 'rendering = ...' attribute should be a boolean.")
     if rendering:
-        kwargs = amend(kwargs, "tags", append = [
+        kwargs = amend(kwargs, "opt_out_conditions", append = [
             # Disable under LeakSanitizer and Valgrind Memcheck due to
             # driver-related leaks. For more information, see #7520.
-            "no_lsan",
-            "no_memcheck",
+            "//tools/lsan:enabled",
+            "//tools/valgrind:enabled",
             # Similar to #7520, the GL vendor's libraries are not sufficiently
             # instrumented for compatibility with TSan.
-            "no_tsan",
+            "//tools/tsan:enabled",
+        ])
+        kwargs = amend(kwargs, "tags", append = [
             # Mitigates driver-related issues when running under `bazel test`.
             # For more information, see #7004.
             "no-sandbox",
@@ -117,3 +119,106 @@ def incorporate_allow_network(kwargs, *, allow_network):
         "DRAKE_ALLOW_NETWORK": allow_network,
     })
     return kwargs
+
+def incorporate_test_weight_heuristics(kwargs):
+    # kcov is only appropriate for small-sized unit tests. If a test needs a
+    # shard_count or a special timeout, we assume it is not small.
+    if "shard_count" in kwargs or "timeout" in kwargs:
+        kwargs = amend(kwargs, "opt_out_conditions", append = [
+            "//tools/kcov:enabled",
+        ])
+    return kwargs
+
+def _construct_compatibility_select_expressions(
+        *,
+        compatibles,
+        incompatibles):
+    incompatible = "@platforms//:incompatible"
+    positive_terms = dict()
+    positive_terms.update({x: [] for x in compatibles})
+    positive_terms.update({x: [incompatible] for x in incompatibles})
+    negative_terms = dict()
+    negative_terms.update({x: [incompatible] for x in compatibles})
+    negative_terms.update({x: [] for x in incompatibles})
+    return select(positive_terms), select(negative_terms)
+
+def combine_conditions(
+        *,
+        name,
+        opt_in_condition,
+        opt_out_conditions):
+    """Compiles opt_{in,out}_conditions into a pair of select() statements to be
+    used as a values for `target_compatible_with`. The return value is a tuple
+    of (positive, negative) compatibility; positive is compatible with the
+    conditions as given, and negative is the complement (i.e., opposite).
+    """
+
+    # Promote `None`s to default values.
+    default = "//conditions:default"
+    if opt_in_condition == None:
+        opt_in_condition = default
+    if opt_out_conditions == None:
+        opt_out_conditions = []
+
+    # Simple case with a default opt-in (i.e., only opting-out). This fits
+    # within what a single select() can denote.
+    if opt_in_condition == default:
+        return _construct_compatibility_select_expressions(
+            compatibles = [opt_in_condition],
+            incompatibles = opt_out_conditions,
+        )
+
+    # Simple case with a default opt-out (i.e., only opting-in). This fits
+    # within what a single select() can denote.
+    if len(opt_out_conditions) == 0:
+        return _construct_compatibility_select_expressions(
+            compatibles = [opt_in_condition],
+            incompatibles = [default],
+        )
+
+    # When both opt-in and opt-out are non-trivial, a single select() that mixed
+    # all conditions would be ambiguous (we could have two matching conditions
+    # with different compatibility answers). We need to express our priority that
+    # opt-in is checked first, followed by opt-out.
+    #
+    # 1. Declare string `alias()`es whose value is either "//tools:always" or
+    # "//tools:never":
+    #
+    #    a. Declare a string alias() for the opting-out filter: the value is
+    #    "never" when opted-out or else "always" as the default case.
+    #
+    #    b. Declare a string alias() for the opting-in filter: the value is
+    #    part (a) when opted-in or else "never" as the default case.
+    #
+    # 2. Use part (b) as the key in a select(), where when matched there is no
+    # incompatibility or else "incompatible" as the default case.
+    #
+    # These shenanigans are required because while Bazel in general allows
+    # nested selects statements, it doesn't allow it in target_compatible_with.
+    opted_out_alias_name = "_{}_opted_out".format(name)
+    native.alias(
+        name = opted_out_alias_name,
+        actual = select(
+            {
+                x: "//tools:never"
+                for x in opt_out_conditions
+            } | {default: "//tools:always"},
+        ),
+    )
+    opted_in_and_not_out_alias_name = "_{}_opted_in_and_not_out".format(name)
+    native.alias(
+        name = opted_in_and_not_out_alias_name,
+        actual = select({
+            opt_in_condition: ":{}".format(opted_out_alias_name),
+            default: "//tools:never",
+        }),
+    )
+    positive = select({
+        opted_in_and_not_out_alias_name: [],
+        default: ["@platforms//:incompatible"],
+    })
+    negative = select({
+        opted_in_and_not_out_alias_name: ["@platforms//:incompatible"],
+        default: [],
+    })
+    return positive, negative

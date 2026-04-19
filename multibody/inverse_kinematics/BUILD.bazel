@@ -494,9 +494,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_feasible_posture_test",
     opt_in_condition = "//tools/workspace/gurobi:enabled",
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     timeout = "long",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
     num_threads = 4,
     deps = [
         ":global_inverse_kinematics",

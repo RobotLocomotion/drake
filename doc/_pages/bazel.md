@@ -315,7 +315,7 @@ For each test program, individual coverage reports are written to per-target
 directories.  Use the ``kcov_tool`` to merge coverage data into a new directory:
 
 ```
-tools/dynamic_analysis/kcov_tool merge [OUTPUT-DIR]
+tools/kcov/kcov_tool merge [OUTPUT-DIR]
 ```
 
 To view the merged data, browse to ``index.html`` in the OUTPUT-DIR.
@@ -326,7 +326,7 @@ data would be scattered within the directory tree linked as
 ``bazel-testlogs``. To clear out old data, use ``kcov_tool clean``:
 
 ```
-tools/dynamic_analysis/kcov_tool clean
+tools/kcov/kcov_tool clean
 ```
 
 ### Drake bazel rules and kcov
@@ -339,15 +339,10 @@ trying to use `kcov` locally on specific tests. For example:
 bazel test --config=kcov //common:temp_directory_test
 ```
 
-results in:
-```
-ERROR: No test targets were found, yet testing was requested
-```
+results in "... target platform didn't satisfy constraint ...".
 
-To force execution with kcov, add an empty `test_tag_filters` option:
-```
-bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
-```
+To allow execution with kcov, in the `BUILD.bazel` file rule for that test,
+remove the `shard_count` and/or `timeout` argument(s) that are suppressing kcov.
 
 ## docker
 
