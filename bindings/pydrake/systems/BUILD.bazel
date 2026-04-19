@@ -443,7 +443,7 @@ drake_py_unittest(
     # Somehow kcov and pybind11 objects interact to spoil reference counting
     # heuristics. In any case, kcov can't really introspect mixed-language
     # programs.
-    tags = ["no_kcov"],
+    opt_out_conditions = ["//tools/kcov:enabled"],
     deps = [
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",

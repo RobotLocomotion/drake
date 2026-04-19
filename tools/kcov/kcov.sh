@@ -25,7 +25,7 @@ if [[ $(file -b --mime -L "$1") == *text/x-*python* ]]; then
     # COVERAGE_DIR are consumed by the wrapper. The wrapper will try to write
     # to COVERAGE_DIR, so it needs to be created here first.
     # [1]: https://github.com/bazelbuild/bazel/blob/6.0.0/src/main/java/com/google/devtools/build/lib/bazel/rules/python/python_stub_template.txt
-    export PYTHON_COVERAGE="${WORKSPACE}/tools/dynamic_analysis/kcoverage.py"
+    export PYTHON_COVERAGE="${WORKSPACE}/tools/kcov/kcoverage.py"
     export COVERAGE_DIR="${TEST_UNDECLARED_OUTPUTS_DIR}/kcov"
     mkdir -p ${COVERAGE_DIR}
 
