@@ -61,14 +61,16 @@ def incorporate_rendering(kwargs, *, rendering):
     if rendering not in (True, False):
         fail("The 'rendering = ...' attribute should be a boolean.")
     if rendering:
-        kwargs = amend(kwargs, "tags", append = [
+        kwargs = amend(kwargs, "opt_out_conditions", append = [
             # Disable under LeakSanitizer and Valgrind Memcheck due to
             # driver-related leaks. For more information, see #7520.
-            "no_lsan",
-            "no_memcheck",
+            "//tools/lsan:enabled",
+            "//tools/valgrind:enabled",
             # Similar to #7520, the GL vendor's libraries are not sufficiently
             # instrumented for compatibility with TSan.
-            "no_tsan",
+            "//tools/tsan:enabled",
+        ])
+        kwargs = amend(kwargs, "tags", append = [
             # Mitigates driver-related issues when running under `bazel test`.
             # For more information, see #7004.
             "no-sandbox",
@@ -117,3 +119,47 @@ def incorporate_allow_network(kwargs, *, allow_network):
         "DRAKE_ALLOW_NETWORK": allow_network,
     })
     return kwargs
+
+def incorporate_test_weight_heuristics(kwargs):
+    # kcov is only appropriate for small-sized unit tests. If a test needs a
+    # shard_count or a special timeout, we assume it is not small.
+    if "shard_count" in kwargs or "timeout" in kwargs:
+        kwargs = amend(kwargs, "opt_out_conditions", append = [
+            "//tools/kcov:enabled",
+        ])
+    return kwargs
+
+def _construct_compatibility_select_expression(
+        *,
+        compatibles,
+        incompatibles):
+    terms = dict()
+    terms.update({x: [] for x in compatibles})
+    terms.update({x: ["@platforms//:incompatible"] for x in incompatibles})
+    return select(terms)
+
+def combine_conditions(
+        *,
+        opt_in_condition,
+        opt_out_conditions):
+    # Promote `None`s to default values.
+    if opt_out_conditions == None:
+        opt_out_conditions = []
+    if opt_in_condition == None:
+        opt_in_condition = "//conditions:default"
+
+    # Choose where the vanilla case belongs.
+    if opt_in_condition != "//conditions:default":
+        opt_out_conditions.append("//conditions:default")
+
+    # Build the select() dictionaries.
+    positive = _construct_compatibility_select_expression(
+        compatibles = [opt_in_condition],
+        incompatibles = opt_out_conditions,
+    )
+    negative = _construct_compatibility_select_expression(
+        compatibles = opt_out_conditions,
+        incompatibles = [opt_in_condition],
+    )
+
+    return positive, negative
