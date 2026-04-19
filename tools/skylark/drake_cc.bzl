@@ -40,6 +40,7 @@ CXX_FLAGS = [
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
     "-Werror=c99-designator",
+    "-Werror=deprecated-copy-with-dtor",
     "-Werror=inconsistent-missing-override",
     "-Werror=final-dtor-non-final-class",
     "-Werror=literal-conversion",

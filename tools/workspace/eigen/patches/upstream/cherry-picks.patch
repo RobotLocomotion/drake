@@ -1,15 +1,15 @@
-[Eigen] Cherry-pick two commits for C++17 deprecation warnings
+[Eigen] Cherry-pick various upstream commits
 
+https://gitlab.com/libeigen/eigen/-/merge_requests/2107
 https://gitlab.com/libeigen/eigen/-/merge_requests/2299
-36ca36d0def87e3cf10fb0b3d75c6be87b3d3698
-
 https://gitlab.com/libeigen/eigen/-/merge_requests/2416
-ec28a251337eaedd3453e20b6bdbd0a46df46e74
+https://gitlab.com/libeigen/eigen/-/merge_requests/2444
 
+Co-authored-by: Antonio Sánchez <cantonios@google.com>
+Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
 Co-authored-by: Pavel Guzenfeld <67074795+PavelGuzenfeld@users.noreply.github.com>
 
-diff --git a/Eigen/src/Core/arch/Default/BFloat16.h b/Eigen/src/Core/arch/Default/BFloat16.h
-index 8f1f09208b..78d2a95928 100644
+https://gitlab.com/libeigen/eigen/-/merge_requests/2299
 --- a/Eigen/src/Core/arch/Default/BFloat16.h
 +++ b/Eigen/src/Core/arch/Default/BFloat16.h
 @@ -210,6 +210,8 @@ struct numeric_limits_bfloat16_impl {
@@ -29,8 +29,7 @@ index 8f1f09208b..78d2a95928 100644
  }  // end namespace bfloat16_impl
  }  // end namespace Eigen
 
-diff --git a/Eigen/src/Core/arch/Default/Half.h b/Eigen/src/Core/arch/Default/Half.h
-index 671a9dcc11..56aeb3fa83 100644
+https://gitlab.com/libeigen/eigen/-/merge_requests/2299
 --- a/Eigen/src/Core/arch/Default/Half.h
 +++ b/Eigen/src/Core/arch/Default/Half.h
 @@ -301,6 +301,8 @@ struct numeric_limits_half_impl {
@@ -52,8 +51,7 @@ index 671a9dcc11..56aeb3fa83 100644
 
 --
 
-diff --git a/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h b/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h
-index 97f214201..cd61f65bf 100644
+https://gitlab.com/libeigen/eigen/-/merge_requests/2416
 --- a/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h
 +++ b/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h
 @@ -274,9 +274,12 @@ struct simpl_chol_helper {
@@ -70,3 +68,87 @@ index 97f214201..cd61f65bf 100644
  
  }  // namespace internal
  
+
+https://gitlab.com/libeigen/eigen/-/merge_requests/2107
+--- a/Eigen/src/Core/StlIterators.h
++++ b/Eigen/src/Core/StlIterators.h
+@@ -335,10 +335,9 @@ class pointer_based_stl_iterator {
+   typedef std::conditional_t<bool(is_lvalue), value_type*, const value_type*> pointer;
+   typedef std::conditional_t<bool(is_lvalue), value_type&, const value_type&> reference;
+ 
+-  pointer_based_stl_iterator() noexcept : m_ptr(0) {}
+-  pointer_based_stl_iterator(XprType& xpr, Index index) noexcept : m_incr(xpr.innerStride()) {
+-    m_ptr = xpr.data() + index * m_incr.value();
+-  }
++  pointer_based_stl_iterator() noexcept : m_ptr(0), m_incr(XprType::InnerStrideAtCompileTime) {}
++  pointer_based_stl_iterator(XprType& xpr, Index index) noexcept
++      : m_ptr(xpr.data() + index * xpr.innerStride()), m_incr(xpr.innerStride()) {}
+ 
+   pointer_based_stl_iterator(const non_const_iterator& other) noexcept : m_ptr(other.m_ptr), m_incr(other.m_incr) {}
+ 
+
+https://gitlab.com/libeigen/eigen/-/merge_requests/2107
+--- a/Eigen/src/Core/util/XprHelper.h
++++ b/Eigen/src/Core/util/XprHelper.h
+@@ -153,7 +153,6 @@ struct promote_index_type {
+ template <typename T, int Value>
+ class variable_if_dynamic {
+  public:
+-  EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(variable_if_dynamic)
+   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T v) {
+     EIGEN_ONLY_USED_FOR_DEBUG(v);
+     eigen_assert(v == T(Value));
+
+https://gitlab.com/libeigen/eigen/-/merge_requests/2444
+--- a/Eigen/src/Core/SolverBase.h
++++ b/Eigen/src/Core/SolverBase.h
+@@ -102,5 +102,3 @@ class SolverBase : public EigenBase<Derived> {
+   /** Default constructor */
+-  SolverBase() {}
+-
+-  ~SolverBase() {}
++  SolverBase() = default;
+ 
+
+https://gitlab.com/libeigen/eigen/-/merge_requests/2444
+--- a/Eigen/src/SparseCore/SparseMap.h
++++ b/Eigen/src/SparseCore/SparseMap.h
+@@ -131,9 +131,6 @@ class SparseMapBase<Derived, ReadOnlyAccessors> : public SparseCompressedBase<De
+         m_values(valuePtr),
+         m_innerNonZeros(0) {}
+ 
+-  /** Empty destructor */
+-  inline ~SparseMapBase() {}
+-
+  protected:
+   inline SparseMapBase() {}
+ };
+@@ -194,9 +191,6 @@ class SparseMapBase<Derived, WriteAccessors> : public SparseMapBase<Derived, Rea
+   inline SparseMapBase(Index size, Index nnz, StorageIndex* innerIndexPtr, Scalar* valuePtr)
+       : Base(size, nnz, innerIndexPtr, valuePtr) {}
+ 
+-  /** Empty destructor */
+-  inline ~SparseMapBase() {}
+-
+  protected:
+   inline SparseMapBase() {}
+ };
+@@ -238,8 +232,6 @@ class Map<SparseMatrixType> : public SparseMapBase<Derived, WriteAccessors>
+              Scalar* valuePtr, StorageIndex* innerNonZerosPtr = 0)
+       : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr) {}
+ #ifndef EIGEN_PARSED_BY_DOXYGEN
+-  /** Empty destructor */
+-  inline ~Map() {}
+ };
+ 
+ template <typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
+@@ -260,9 +252,6 @@ class Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideTy
+   inline Map(Index rows, Index cols, Index nnz, const StorageIndex* outerIndexPtr, const StorageIndex* innerIndexPtr,
+              const Scalar* valuePtr, const StorageIndex* innerNonZerosPtr = 0)
+       : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr) {}
+-
+-  /** Empty destructor */
+-  inline ~Map() {}
+ };
+ 
+ namespace internal {
