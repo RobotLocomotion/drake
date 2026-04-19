@@ -475,7 +475,8 @@ drake_py_library(
 # API.
 drake_py_unittest(
     name = "deprecation_test",
-    tags = ["no_kcov"],  # kcov messes with module ref counts.
+    # kcov messes with module ref counts.
+    opt_out_conditions = ["//tools/kcov:enabled"],
     deps = [
         ":common",
         ":deprecation_example",

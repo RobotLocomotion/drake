@@ -199,6 +199,8 @@ drake_cc_binary(
 # tests are therefore skipped under those configurations.
 drake_sh_test(
     name = "limit_malloc_death_test",
+    # Fails to terminate when run under Valgrind.
+    opt_out_conditions = ["//tools/valgrind:enabled"],
     srcs = [":limit_malloc_test"],
     args = select({
         "//tools/cc_toolchain:apple": [
@@ -213,8 +215,6 @@ drake_sh_test(
     data = [
         ":limit_malloc_test",
     ],
-    # Fails to terminate when run under Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(

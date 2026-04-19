@@ -59,8 +59,9 @@ def drake_cc_googlebench_binary(
                 # sufficient.
                 "--benchmark_dry_run",
             ] + (test_rule_args or []),
-            tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
+            tags = (test_rule_tags or []) + ["nolint"],
             opt_in_condition = test_rule_opt_in_condition,
+            opt_out_conditions = ["//tools/kcov:enabled"],
             rendering = test_rule_rendering,
         )
 

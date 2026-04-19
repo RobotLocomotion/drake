@@ -430,7 +430,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "c_iris_collision_geometry_test",
-    tags = ["no_kcov"],
+    opt_out_conditions = ["//tools/kcov:enabled"],
     deps = [
         ":c_iris_collision_geometry",
         ":c_iris_test_utilities",
@@ -551,7 +551,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_test",
-    tags = ["no_kcov"],
+    opt_out_conditions = ["//tools/kcov:enabled"],
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
@@ -562,15 +562,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_np_test",
+    # Most of these tests take an exceptionally long time under
+    # instrumentation, resulting in timeouts, and so are excluded.
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/valgrind:enabled",
+    ],
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     shard_count = 8,
-    # Most of these tests take an exceptionally long time under
-    # instrumentation, resulting in timeouts, and so are excluded.
-    tags = [
-        "no_asan",
-        "no_memcheck",
-    ],
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",

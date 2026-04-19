@@ -168,7 +168,7 @@ drake_cc_optional_library(
         "spgrid.h",
     ],
     defines = select({
-        "//tools:using_memcheck": ["DRAKE_MPM_TESTING_LOG2_MAX_GRID_SIZE=5"],
+        "//tools/valgrind:enabled": ["DRAKE_MPM_TESTING_LOG2_MAX_GRID_SIZE=5"],
         "//conditions:default": [],
     }),
     deps = [
