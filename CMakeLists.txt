@@ -207,8 +207,8 @@ set(BAZEL_REPO_ENV)
 # Put this patch where `cmake/MODULE.bazel.in` expects it during its call to
 # `single_version_override`.
 file(CREATE_LINK
-  "${PROJECT_SOURCE_DIR}/tools/workspace/eigen/patches/upstream/constexpr-static.patch"
-  "${DRAKE_BAZEL_BUILD_DIR}/eigen-constexpr-static.patch"
+  "${PROJECT_SOURCE_DIR}/tools/workspace/eigen/patches/upstream/cherry-picks.patch"
+  "${DRAKE_BAZEL_BUILD_DIR}/eigen-cherry-picks.patch"
   SYMBOLIC
 )
 
