@@ -21,10 +21,8 @@ bazel_dep(name = "rules_java", version = "9.6.1")
 bazel_dep(name = "rules_jvm_external", version = "6.9")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "1.9.0")  # Keep this in sync with cmake/MODULE.bazel.in.  # noqa
+bazel_dep(name = "rules_rust", version = "0.69.0")
 bazel_dep(name = "rules_shell", version = "0.7.1")
-
-# TODO(#24422) Don't upgrade this until we root cause the failures.
-bazel_dep(name = "rules_rust", version = "0.68.0")
 
 # Configure the C++ toolchain.
 
