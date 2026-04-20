@@ -24,8 +24,7 @@ from .macos_types import PythonTarget
 # default, all targets are built, but the user may down-select from this set.
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
 #
-# These should be kept in sync with
-# `setup/macos/source_distribution/Brewfile-developer`.
+# These should be kept in sync with `setup/mac/Brewfile-developer`.
 python_targets = (
     # NOTE: adding or removing a python version?  Please also check the
     # following locations for updates:

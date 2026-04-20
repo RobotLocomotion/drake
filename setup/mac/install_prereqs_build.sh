@@ -31,7 +31,7 @@ if ! command -v brew &>/dev/null; then
   exit 4
 fi
 
-brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
+brew bundle --file="${BASH_SOURCE%/*}/Brewfile-build"
 
 if [[ "${with_developer}" -eq 1 ]]; then
   brew bundle --file="${BASH_SOURCE%/*}/Brewfile-developer"
