@@ -30,8 +30,7 @@ def assert_pickle(test, obj, value_to_compare=lambda x: x.__dict__, T=None):
         obj: Obj to dump and then load.
         value_to_compare: (optional) Value to extract from the object to
             compare. By default, compares dictionaries.
-        T: (optional) When pickling template instantiations on scalar types,
-            pass the scalar type T.
+        T: Vestigial and ignored.
     """
     # TODO(jwnimmer-tri) Remove unused T argument.
     obj_again = pickle.loads(pickle.dumps(obj))
