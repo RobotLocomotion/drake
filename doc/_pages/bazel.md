@@ -315,7 +315,7 @@ For each test program, individual coverage reports are written to per-target
 directories.  Use the ``kcov_tool`` to merge coverage data into a new directory:
 
 ```
-tools/dynamic_analysis/kcov_tool merge [OUTPUT-DIR]
+tools/kcov/kcov_tool merge [OUTPUT-DIR]
 ```
 
 To view the merged data, browse to ``index.html`` in the OUTPUT-DIR.
@@ -326,7 +326,7 @@ data would be scattered within the directory tree linked as
 ``bazel-testlogs``. To clear out old data, use ``kcov_tool clean``:
 
 ```
-tools/dynamic_analysis/kcov_tool clean
+tools/kcov/kcov_tool clean
 ```
 
 ### Drake bazel rules and kcov

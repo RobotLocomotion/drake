@@ -1,0 +1,17 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:sh.bzl", "sh_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files(
+    ["lsan.supp"],
+    visibility = ["//tools/asan:__pkg__"],
+)
+
+sh_binary(
+    name = "lsan",
+    srcs = ["lsan.sh"],
+    data = ["lsan.supp"],
+)
+
+add_lint_tests()

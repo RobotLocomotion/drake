@@ -13,12 +13,6 @@ while [ "${1:-}" != "" ]; do
     --developer)
       source_distribution_args+=(--developer)
       ;;
-    # Do NOT install prerequisites that are only needed to build and/or run
-    # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel { build, run } //:install.
-    --without-test-only)
-      source_distribution_args+=(--without-test-only)
-      ;;
     # Do NOT call brew update during execution of this script.
     --without-update)
       binary_distribution_args+=(--without-update)

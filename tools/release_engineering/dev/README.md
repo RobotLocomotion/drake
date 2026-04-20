@@ -15,7 +15,7 @@ which is currently Ubuntu Noble 24.04.
 
 Install the maintainer-required prerequisites:
 
-  setup/install_prereqs --with-maintainer-only
+  setup/install_prereqs --developer
 
 Follow instructions to install Docker
 https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository

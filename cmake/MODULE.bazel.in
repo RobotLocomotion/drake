@@ -36,5 +36,5 @@ register_toolchains("@python//:all")
 single_version_override(
     module_name = "eigen",
     patch_strip = 1,
-    patches = ["//:eigen-constexpr-static.patch"],
+    patches = ["//:eigen-cherry-picks.patch"],
 )

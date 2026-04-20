@@ -1,0 +1,12 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:sh.bzl", "sh_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+sh_binary(
+    name = "valgrind",
+    srcs = ["valgrind.sh"],
+    data = ["valgrind.supp"],
+)
+
+add_lint_tests()

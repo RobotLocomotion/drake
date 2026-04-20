@@ -1,0 +1,16 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:sh.bzl", "sh_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+sh_binary(
+    name = "kcov",
+    srcs = ["kcov.sh"],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "kcoverage.py",
+        "kcov_tool",
+    ],
+)

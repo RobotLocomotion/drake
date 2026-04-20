@@ -398,8 +398,12 @@ class TestMath(unittest.TestCase):
             self.assertAlmostEqual(roundtrip.pitch_angle(), 1)
             self.assertAlmostEqual(roundtrip.yaw_angle(), 0)
         if T == Expression:
+            self.assertTrue(
+                R_AB.IsNearlyEqualTo(other=R_AB, tolerance=0).Evaluate()
+            )
             self.assertTrue(R_AB.IsExactlyEqualTo(other=R_AB).Evaluate())
         else:
+            self.assertTrue(R_AB.IsNearlyEqualTo(other=R_AB, tolerance=0))
             self.assertTrue(R_AB.IsExactlyEqualTo(other=R_AB))
         # Test pickling.
         assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
@@ -521,12 +525,12 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_float_equal(
             bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.0
         )
-        dup = bspline
         if T == Expression:
-            f: Formula = bspline == dup
-            self.assertTrue(f.Evaluate())
+            self.assertTrue((bspline == bspline).Evaluate())
+            self.assertFalse((bspline != bspline).Evaluate())
         else:
-            self.assertTrue(bspline == dup)
+            self.assertTrue(bspline == bspline)
+            self.assertFalse(bspline != bspline)
         assert_pickle(self, bspline, BsplineBasis.knots, T=T)
 
     @numpy_compare.check_all_types

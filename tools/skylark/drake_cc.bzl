@@ -23,6 +23,7 @@ CXX_FLAGS = [
     "-Werror=attributes",
     "-Werror=cpp",
     "-Werror=deprecated",
+    "-Werror=deprecated-copy-dtor",
     "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
     "-Werror=missing-declarations",
