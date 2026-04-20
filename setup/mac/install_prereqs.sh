@@ -5,21 +5,21 @@
 
 set -euxo pipefail
 
-binary_distribution_args=(--without-python-dependencies)
-source_distribution_args=()
+binary_args=(--without-python-dependencies)
+build_args=()
 user_environment_only=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
-      source_distribution_args+=(--developer)
+      build_args+=(--developer)
       ;;
     --user-environment-only)
       user_environment_only=1
       ;;
     # Do NOT call brew update during execution of this script.
     --without-update)
-      binary_distribution_args+=(--without-update)
+      binary_args+=(--without-update)
       ;;
     # Ignored for compatibility with Ubuntu.
     -y)
@@ -39,17 +39,15 @@ if [[ ${user_environment_only} -eq 0 ]]; then
   # N.B. We need `${var:-}` here because mac's older version of bash does
   # not seem to be able to cope with an empty array.
 
-  source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-    "${binary_distribution_args[@]:-}"
+  source "${BASH_SOURCE%/*}/install_prereqs_binary.sh" "${binary_args[@]:-}"
 
   # The following additional dependencies are only needed when developing with
   # source distributions.
 
-  source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-    "${source_distribution_args[@]:-}"
+  source "${BASH_SOURCE%/*}/install_prereqs_build.sh" "${build_args[@]:-}"
 fi
 
 # The preceding only needs to be run once per machine. The following sourced
 # script should be run once per user who develops with source distributions.
 
-source "${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+source "${BASH_SOURCE%/*}/install_prereqs_user_environment.sh"
