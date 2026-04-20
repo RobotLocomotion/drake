@@ -100,6 +100,12 @@ drake_cc_googletest(
     name = "iris_from_clique_cover_test",
     # IPOPT is exceptionally slow with IRIS so only test with snopt.
     opt_in_condition = "//tools/workspace/snopt:enabled",
+    # Most of these tests take an exceptionally long time under instrumentation,
+    # resulting in timeouts, and so are excluded.
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/valgrind:enabled",
+    ],
     timeout = "moderate",
     data = [
         "//examples/pendulum:models",
@@ -108,13 +114,6 @@ drake_cc_googletest(
     # Running with multiple threads is an essential part of our test coverage.
     num_threads = 4,
     shard_count = 4,
-    # Most of these tests take an exceptionally long time under
-    # instrumentation, resulting in timeouts, and so are excluded.
-    # These test also can only be run with either mosek or gurobi enabled.
-    tags = [
-        "no_asan",
-        "no_memcheck",
-    ],
     deps = [
         ":iris_from_clique_cover",
         "//common/test_utilities:expect_throws_message",
@@ -130,16 +129,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_zo_test",
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+        # TODO(#22978) Re-enable this if possible.
+        "//tools/valgrind:enabled",
+    ],
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     num_threads = 2,
     shard_count = 4,
-    tags = [
-        "no_asan",
-        "no_lsan",
-        # TODO(#22978) Re-enable this if possible.
-        "no_memcheck",
-    ],
     deps = [
         ":iris_test_utilities",
         ":iris_zo",
@@ -159,15 +158,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_np2_test",
+    opt_out_conditions = [
+        "//tools/asan:enabled",
+        "//tools/lsan:enabled",
+        "//tools/valgrind:enabled",
+    ],
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
     num_threads = 2,
     shard_count = 4,
-    tags = [
-        "no_asan",
-        "no_lsan",
-        "no_memcheck",
-    ],
     deps = [
         ":iris_np2",
         ":iris_test_utilities",

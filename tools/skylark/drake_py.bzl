@@ -1,10 +1,12 @@
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
+    "combine_conditions",
     "incorporate_allow_network",
     "incorporate_display",
     "incorporate_num_threads",
     "incorporate_rendering",
+    "incorporate_test_weight_heuristics",
 )
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 
@@ -164,8 +166,12 @@ def drake_py_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            opt_out_conditions = [
+                # Smoke tests don't count as coverage.
+                "//tools/kcov:enabled",
+            ],
             rendering = test_rule_rendering,
-            tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
+            tags = (test_rule_tags or []) + ["nolint"],
             # The added test rule isn't going to `import unittest`, but test
             # dependencies such as numpy(!!) do so unconditionally.  We should
             # allow that.
@@ -194,12 +200,6 @@ def drake_py_unittest(
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
     srcs = ["test/%s.py" % name, helper]
-
-    # kcov is only appropriate for small-sized unit tests. If a test needs a
-    # shard_count or a special timeout, we assume it is not small.
-    if "shard_count" in kwargs or "timeout" in kwargs:
-        amend(kwargs, "tags", append = ["no_kcov"])
-
     drake_py_test(
         name = name,
         srcs = srcs,
@@ -223,6 +223,7 @@ def drake_py_test(
         display = False,
         num_threads = None,
         opt_in_condition = None,
+        opt_out_conditions = None,
         rendering = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
@@ -252,6 +253,9 @@ def drake_py_test(
     @param opt_in_condition (optional, default is None)
         See drake/tools/skylark/README.md for details.
 
+    @param opt_out_conditions (optional, default is None)
+        See drake/tools/skylark/README.md for details.
+
     @param rendering (optional, default is False)
         See drake/tools/skylark/README.md for details.
 
@@ -272,15 +276,18 @@ def drake_py_test(
     kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     kwargs = incorporate_rendering(kwargs, rendering = rendering)
+    kwargs = incorporate_test_weight_heuristics(kwargs)
     kwargs = amend(kwargs, "tags", append = ["py"])
+    opt_out_conditions = (opt_out_conditions or []) + kwargs.pop("opt_out_conditions", [])
 
     deps = deps or []
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    target_compatible_with = select({
-        opt_in_condition: [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }) if opt_in_condition != None else None
+    target_compatible_with, _ = combine_conditions(
+        name = name,
+        opt_in_condition = opt_in_condition,
+        opt_out_conditions = opt_out_conditions,
+    )
     _py_target_isolated(
         name = name,
         py_target = py_test,

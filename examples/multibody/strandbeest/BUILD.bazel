@@ -42,10 +42,7 @@ drake_cc_binary(
 
 drake_py_unittest(
     name = "run_with_motor_test",
-    args = select({
-        "//tools/cc_toolchain:debug": ["TestEmpty"],
-        "//conditions:default": ["TestRunWithMotor"],
-    }),
+    opt_out_conditions = ["//tools:unoptimized"],
     data = [
         ":run_with_motor",
     ],

@@ -33,8 +33,9 @@ build:lint --build_tests_only
 build:lint --test_tag_filters=lint
 
 ### Kcov coverage build. ###
-build:kcov --test_tag_filters=-lint,-no_kcov
+build:kcov --test_tag_filters=-lint  # TODO(#24381) Update the filtering here.
 build:kcov --run_under=//tools/kcov
+build:kcov --@drake//tools/kcov:active=True
 build:kcov --build_tests_only
 build:kcov --copt=-g
 build:kcov --copt=-O0
@@ -56,11 +57,11 @@ build:kcov --zip_undeclared_test_outputs=true
 build:kcov --test_timeout=1200,6000,18000,72000
 
 ### ASan build. Clang only. ###
-# LSan is run with ASan by default
-build:asan --test_tag_filters=-no_asan,-no_lsan
 build:asan --config=_sanitizer_common
 build:asan --features=asan
 build:asan --run_under=//tools/asan
+build:asan --@drake//tools/asan:active=True
+build:asan --@drake//tools/lsan:active=True  # LSan is run with ASan by default.
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan --copt=-fsanitize-address-use-after-scope
 build:asan --linkopt=-fsanitize-address-use-after-scope
@@ -72,9 +73,9 @@ build:asan --test_timeout=150,750,2250,9000  # 2.5x
 build:asan --output_filter="^(?!.*ld\.gold: warning: Cannot export local symbol '__asan_extra_spill_area)'.*$"
 
 ### LSan build. Clang only. ###
-build:lsan --test_tag_filters=-no_lsan
 build:lsan --config=_sanitizer_common
 build:lsan --run_under=//tools/lsan
+build:lsan --@drake//tools/lsan:active=True
 # We provide `-fsanitize=leak`, `-fno-common`, and `-fno-omit-frame-pointer`
 # because rules_cc doesn't support `--features=lsan`.
 # TODO(tyler-yankee): If rules_cc ever adds this feature in the future, we
@@ -90,10 +91,10 @@ build:lsan --linkopt=-fsanitize=leak
 build:lsan --test_timeout=72,360,1080,4320
 
 ### TSan build. ###
-build:tsan --test_tag_filters=-no_tsan
 build:tsan --config=_sanitizer_common
 build:tsan --features=tsan
 build:tsan --run_under=//tools/tsan
+build:tsan --@drake//tools/tsan:active=True
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x. Increase
 # timeouts to 5x.
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
@@ -102,10 +103,10 @@ build:tsan --test_timeout=300,1500,4500,18000
 build:tsan --config=without_openmp
 
 ### UBSan build. ###
-build:ubsan --test_tag_filters=-no_ubsan
 build:ubsan --config=_sanitizer_common
 build:ubsan --features=ubsan
 build:ubsan --run_under=//tools/ubsan
+build:ubsan --@drake//tools/ubsan:active=True
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
 # would require extra linkopts that cause segmentation faults on pure C code.
 build:ubsan --copt=-fno-sanitize=float-divide-by-zero,function,vptr
@@ -118,8 +119,8 @@ build:ubsan --linkopt=-Wl,--gc-sections  # Claw back some disk space for CI.
 build:ubsan --test_timeout=120,600,1800,7200
 
 ### Memcheck build. ###
-build:memcheck --test_tag_filters=-lint,-no_memcheck,-no_valgrind_tools
 build:memcheck --run_under=//tools/valgrind
+build:memcheck --@drake//tools/valgrind:active=True
 build:memcheck --build_tests_only
 build:memcheck --test_lang_filters=-sh,-py
 build:memcheck --copt=-DNDEBUG                # Disable third-party asserts.
@@ -130,7 +131,6 @@ build:memcheck --test_timeout=1500,7500,22500,90000
 # N.B. Use `-O2` despite https://docs.nersc.gov/tools/debug/valgrind/ since
 # otherwise CI builds would take an unreasonably long amount of time.
 build:memcheck --copt=-O2
-build:memcheck --define=USING_MEMCHECK=ON
 # We need not check the binary-only Gurobi and MOSEK libraries, since we are
 # unable to patch any memcheck complaints discovered in them. (These are already
 # off by default in non-everything builds, but setting them redundantly doesn't
@@ -148,10 +148,10 @@ build:memcheck --@drake//tools/flags:with_mosek=False
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools/valgrind
+build:fastmemcheck --@drake//tools/valgrind:active=True
 build:fastmemcheck --test_lang_filters=-sh,-py
 # See `--test_timeout` for memcheck.
 build:fastmemcheck --test_timeout=1500,7500,22500,90000
-build:fastmemcheck --define=USING_MEMCHECK=ON
 
 ### Sanitizer common flags (ASan, LSan, TSan, UBSan). ###
 ### NOT intended for developer use. ###
@@ -159,7 +159,6 @@ build:_sanitizer_common --copt=-O1
 build:_sanitizer_common --copt=-g
 build:_sanitizer_common --build_tests_only
 build:_sanitizer_common --test_lang_filters=-sh,-py
-build:_sanitizer_common --define=USING_SANITIZER=ON
 # We cannot reasonably use binary-only Gurobi and MOSEK libraries, since they
 # lack the sanitizer instrumentation. (These are already off by default in
 # non-everything builds, but setting them redundantly doesn't hurt anything.)

@@ -339,15 +339,10 @@ trying to use `kcov` locally on specific tests. For example:
 bazel test --config=kcov //common:temp_directory_test
 ```
 
-results in:
-```
-ERROR: No test targets were found, yet testing was requested
-```
+results in "... target platform didn't satisfy constraint ...".
 
-To force execution with kcov, add an empty `test_tag_filters` option:
-```
-bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
-```
+To allow execution with kcov, in the `BUILD.bazel` file rule for that test,
+remove the `shard_count` and/or `timeout` argument(s) that are suppressing kcov.
 
 ## docker
 

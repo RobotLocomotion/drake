@@ -64,16 +64,23 @@ cc_library(
     ],
 )
 
+# We'll skip all tests if kcov is enabled, because this is third-party code.
+# We can't improve its test coverage with changes to Drake.
+TEST_TARGET_COMPATIBLE_WITH_DICT = {
+    "@drake//tools/kcov:enabled": ["@platforms//:incompatible"],
+    "//conditions:default": [],
+}
+
+TEST_TARGET_COMPATIBLE_WITH = select(TEST_TARGET_COMPATIBLE_WITH_DICT)
+
 # N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "hausdorff_distance_test",
     srcs = ["test/hausdorff_distance_test.cpp"],
     copts = COPTS,
     env = {"OMP_NUM_THREADS": "2"},
-    tags = [
-        "cpu:2",
-        "no_kcov",
-    ],
+    tags = ["cpu:2"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -85,7 +92,7 @@ cc_test(
     name = "math_test",
     srcs = ["test/math_test.cpp"],
     copts = COPTS,
-    tags = ["no_kcov"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -97,7 +104,7 @@ cc_test(
     name = "maybe_test",
     srcs = ["test/maybe_test.cpp"],
     copts = COPTS,
-    tags = ["no_kcov"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -114,12 +121,11 @@ cc_test(
     env = {"OMP_NUM_THREADS": "2"},
     flaky = True,
     shard_count = 4,
-    tags = [
-        "cpu:2",
-        "no_kcov",
+    tags = ["cpu:2"],
+    target_compatible_with = select({
         # Some of these tests take too long under valgrind for CI.
-        "no_memcheck",
-    ],
+        "@drake//tools/valgrind:enabled": ["@platforms//:incompatible"],
+    } | TEST_TARGET_COMPATIBLE_WITH_DICT),
     deps = [
         ":common_robotics_utilities",
         "@googletest//:gtest",
@@ -132,10 +138,8 @@ cc_test(
     srcs = ["test/planning_test.cpp"],
     copts = COPTS,
     env = {"OMP_NUM_THREADS": "2"},
-    tags = [
-        "cpu:2",
-        "no_kcov",
-    ],
+    tags = ["cpu:2"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -149,7 +153,7 @@ cc_test(
     name = "task_planning_test",
     srcs = ["test/task_planning_test.cpp"],
     copts = COPTS,
-    tags = ["no_kcov"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@googletest//:gtest",
@@ -160,7 +164,7 @@ cc_test(
     name = "utility_test",
     srcs = ["test/utility_test.cpp"],
     copts = COPTS,
-    tags = ["no_kcov"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -172,7 +176,7 @@ cc_test(
     name = "voxel_grid_test",
     srcs = ["test/voxel_grid_test.cpp"],
     copts = COPTS,
-    tags = ["no_kcov"],
+    target_compatible_with = TEST_TARGET_COMPATIBLE_WITH,
     deps = [
         ":common_robotics_utilities",
         "@eigen",

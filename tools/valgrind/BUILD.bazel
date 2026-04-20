@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:sh.bzl", "sh_binary")
 
@@ -7,6 +8,18 @@ sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
     data = ["valgrind.supp"],
+)
+
+# Internal use only. This is conditionally set by tools/bazel-developer.rc.
+bool_flag(
+    name = "active",
+    build_setting_default = False,
+)
+
+# Internal use only. Matches when Valgrind is being used on tests.
+config_setting(
+    name = "enabled",
+    flag_values = {":active": "True"},
 )
 
 add_lint_tests()
