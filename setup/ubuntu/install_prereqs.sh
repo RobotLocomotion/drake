@@ -28,12 +28,16 @@ trap at_exit EXIT
 binary_distribution_args=()
 source_distribution_args=()
 prefetch_bazel=0
+user_environment_only=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
       source_distribution_args+=(--developer)
       prefetch_bazel=1
+      ;;
+    --user-environment-only)
+      user_environment_only=1
       ;;
     # Do NOT call apt-get update during execution of this script.
     --without-update)
@@ -50,17 +54,19 @@ while [ "${1:-}" != "" ]; do
   shift
 done
 
-# Dependencies that are installed by the following sourced script that are
-# needed when developing with binary distributions are also needed when
-# developing with source distributions.
+if [[ ${user_environment_only} -eq 0 ]]; then
+  # Dependencies that are installed by the following sourced script that are
+  # needed when developing with binary distributions are also needed when
+  # developing with source distributions.
 
-source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-  "${binary_distribution_args[@]}"
+  source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
+    "${binary_distribution_args[@]}"
 
-# The following additional dependencies are only needed when developing with
-# source distributions.
-source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-  "${source_distribution_args[@]}"
+  # The following additional dependencies are only needed when developing with
+  # source distributions.
+  source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
+    "${source_distribution_args[@]}"
+fi
 
 # Configure user environment, executing as user if we're under `sudo`.
 user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
