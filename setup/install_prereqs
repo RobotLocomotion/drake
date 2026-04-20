@@ -1,6 +1,11 @@
 #!/bin/bash
 #
-# Install Drake prerequisites.
+# Install Drake prerequisites. This script is a small bash trampoline which
+# first installs Python (if missing) and then uses Python for the remainder of
+# the installation.
+#
+# TODO(jwnimmer-tri) The "small bash trampoline" is currently only true on
+# Linux. For macOS, we still defer to the lecacy script, instead.
 
 set -euo pipefail
 
@@ -15,16 +20,23 @@ if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
   exit 1
 fi
 
-# We'll default to installing only the prerequisites necessary to build Drake.
-# To run tests, developers should pass the "--developer" flag. For details, see
-# https://drake.mit.edu/bazel.html and https://drake.mit.edu/from_source.html.
-
+# TODO(jwnimmer-tri) We should port the macOS code to Python, too.
 if [[ "$(uname)" == "Darwin" ]]; then
   exec "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "$@"
-else
+fi
+
+# We need a Python interpreter.
+if ! command -v python3 > /dev/null; then
+  echo "Installing python3 ..." >&2
   maybe_sudo=
   if [[ "${EUID}" -ne 0 ]]; then
     maybe_sudo=sudo
   fi
-  exec ${maybe_sudo} "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" "$@"
+  if ! ${maybe_sudo} apt-get -y install python3; then
+    ${maybe_sudo} apt-get update || (sleep 30; apt-get update)
+    ${maybe_sudo} apt-get -y install python3
+  fi
 fi
+
+# Switch over to the Python script now, passing along all arguments.
+exec python3 -B "${BASH_SOURCE%/*}/install_prereqs.py" "$@"
