@@ -16,10 +16,7 @@ import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import Value
 from pydrake.math import BarycentricMesh, wrap_to
-from pydrake.symbolic import (
-    Expression,
-    Formula,
-)
+from pydrake.symbolic import Expression
 
 
 class TestBarycentricMesh(unittest.TestCase):
