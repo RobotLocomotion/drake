@@ -16,7 +16,7 @@ def bazelisk_internal_repository(
             bazel-drake/external/+internal_repositories+bazelisk_internal/bazelisk.py
 
         Additionally, you must manually update the version number in
-          setup/ubuntu/source_distribution/install_bazelisk.sh
+          setup/ubuntu/install_bazelisk.sh
         and adjust the expected checksums accordingly.
 
         To calculate the checksums, download the deb files specifed in
