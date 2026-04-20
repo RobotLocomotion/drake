@@ -12,39 +12,50 @@ readonly VENV="/tmp/drake-wheel-test/python"
 
 . /etc/os-release
 
-if [[ "${ID}" == "ubuntu" && "${PYTHON_MANAGER}" == "pip" ]]; then
-  export DEBIAN_FRONTEND=noninteractive
-  apt-get -y update
-  # Install system prerequisites required by Drake's wheel, only on Ubuntu.
-  apt-get -y install --no-install-recommends libx11-6 libsm6 libglib2.0-0t64
+case "${ID}" in
+  ubuntu)
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get -y update
+    # Install system prerequisites required by Drake's wheel, only on Ubuntu.
+    apt-get -y install --no-install-recommends libx11-6 libsm6 libglib2.0-0t64
 
-  # Install Python and set up the virtual environment.
-  apt-get -y install --no-install-recommends \
-    lib${PYTHON}-dev ${PYTHON}-venv \
-    python3-venv \
-  ${PYTHON} -m venv ${VENV}
-  . ${VENV}/bin/activate
-  pip install --upgrade pip
-elif [[ "${ID}" == "ubuntu" && "${PYTHON_MANAGER}" == "uv" ]]; then
-  export DEBIAN_FRONTEND=noninteractive
-  apt-get -y update
-  # Install system prerequisites required by Drake's wheel, only on Ubuntu.
-  apt-get -y install --no-install-recommends libx11-6 libsm6 libglib2.0-0t64
+    # Install Python and set up the virtual environment.
+    case "${PYTHON_MANAGER}" in
+      pip)
+        apt-get -y install --no-install-recommends \
+          lib${PYTHON}-dev ${PYTHON}-venv \
+          python3-venv
+        ${PYTHON} -m venv ${VENV}
+        ;;
+      uv)
+        apt-get -y install --no-install-recommends \
+          ca-certificates gzip tar wget
+        wget -qO- https://astral.sh/uv/install.sh | sh
+        ${HOME}/.local/bin/uv venv ${VENV} --python ${PYTHON_VERSION}
+        ;;
+      *)
+        echo "Unsupported manager '${PYTHON_MANAGER}'" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  amzn)
+    dnf update -y --releasever=latest
 
-  # Install uv and set up the virtual environment.
-  apt-get -y install --no-install-recommends \
-    ca-certificates gzip tar wget
-  wget -qO- https://astral.sh/uv/install.sh | sh
-  ${HOME}/.local/bin/uv venv ${VENV} --python ${PYTHON_VERSION}
-elif [[ "${ID}" == "amzn" && "${PYTHON_MANAGER}" == "pip" ]]; then
-  dnf update -y --releasever=latest
-
-  # Install Python and set up the virtual environment.
-  dnf install -y ${PYTHON}
-  ${PYTHON} -m venv ${VENV}
-  . ${VENV}/bin/activate
-  pip install --upgrade pip
-else
-  echo "Unsupported distro '${ID}' and/or manager '${PYTHON_MANAGER}'" >&2
-  exit 1
-fi
+    # Install Python and set up the virtual environment.
+    case "${PYTHON_MANAGER}" in
+      pip)
+        dnf install -y ${PYTHON}
+        ${PYTHON} -m venv ${VENV}
+        ;;
+      *)
+        echo "Unsupported manager '${PYTHON_MANAGER}'" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "Unsupported distro '${ID}'" >&2
+    exit 1
+    ;;
+esac
