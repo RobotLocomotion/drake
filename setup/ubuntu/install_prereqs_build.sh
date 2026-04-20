@@ -45,7 +45,7 @@ EOF
 
 . /etc/os-release
 
-packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-build.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a

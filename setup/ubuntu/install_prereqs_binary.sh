@@ -63,5 +63,5 @@ if ! [[ "${VERSION_CODENAME}" =~ (noble|resolute) ]]; then
   exit 2
 fi
 
-packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-binary.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}

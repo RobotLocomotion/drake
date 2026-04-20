@@ -25,15 +25,15 @@ me='The Drake source distribution prerequisite setup script'
 
 trap at_exit EXIT
 
-binary_distribution_args=()
-source_distribution_args=()
+binary_args=()
+build_args=()
 prefetch_bazel=0
 user_environment_only=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
-      source_distribution_args+=(--developer)
+      build_args+=(--developer)
       prefetch_bazel=1
       ;;
     --user-environment-only)
@@ -41,11 +41,11 @@ while [ "${1:-}" != "" ]; do
       ;;
     # Do NOT call apt-get update during execution of this script.
     --without-update)
-      binary_distribution_args+=(--without-update)
+      binary_args+=(--without-update)
       ;;
     -y)
-      binary_distribution_args+=(-y)
-      source_distribution_args+=(-y)
+      binary_args+=(-y)
+      build_args+=(-y)
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -59,17 +59,15 @@ if [[ ${user_environment_only} -eq 0 ]]; then
   # needed when developing with binary distributions are also needed when
   # developing with source distributions.
 
-  source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-    "${binary_distribution_args[@]}"
+  source "${BASH_SOURCE%/*}/install_prereqs_binary.sh" "${binary_args[@]}"
 
   # The following additional dependencies are only needed when developing with
   # source distributions.
-  source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-    "${source_distribution_args[@]}"
+  source "${BASH_SOURCE%/*}/install_prereqs_build.sh" "${build_args[@]}"
 fi
 
 # Configure user environment, executing as user if we're under `sudo`.
-user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+user_env_script="${BASH_SOURCE%/*}/install_prereqs_user_environment.sh"
 user_env_script_args=()
 if [[ ${prefetch_bazel} -eq 1 ]]; then
   user_env_script_args+=(--prefetch-bazel)
