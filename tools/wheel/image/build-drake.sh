@@ -19,6 +19,8 @@ cat > /tmp/drake-wheel-build/drake-build/drake.bazelrc << EOF
 build --disk_cache=/var/cache/bazel/disk_cache
 build --repository_cache=/var/cache/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
+# Use mold to avoid static initialization bugs with gold and Rust; Linux only.
+build --@drake//tools/cc_toolchain:allow_mold_wheel=True
 # Enable MOSEK lazy loading. Right now this is only done for Linux builds.
 build --@drake//solvers:mosek_lazy_load=True
 EOF

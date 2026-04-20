@@ -98,31 +98,43 @@ selects.config_setting_group(
     ],
 )
 
-config_setting(
-    name = "debug",
-    values = {"compilation_mode": "dbg"},
-)
+# (Internal use only.)  Some Drake builds use ld.mold for linking instead of
+# the default ld.gold. In particular,
+# * first-party debug builds of Drake rely on it for improved handling of
+#   DWARF debug information; and
+# * Drake's wheel builds rely on it to avoid static initialization bugs with
+#   Rust.
+# It should be False (the default) when either of these conditions are unmet
+# (e.g., for non-wheel builds initiated via Drake's CMake wrappers, or for
+# downstream projects building Drake from source).
+# See issues #21836 and #24422 for more details.
 
-# (Internal use only.)  When this is set to True, some Drake builds may use the
-# mold linker, primarily for its improved handling of DWARF debug
-# information. It should be False (the default) for all builds initiated via
-# Drake's CMake wrappers. See the other "mold_linker" settings below and issue
-# #21836.
 bool_flag(
-    name = "allow_mold_linker",
+    name = "allow_mold_first_party",
     build_setting_default = False,
 )
 
 config_setting(
-    name = "mold_linker_allowed",
-    flag_values = {":allow_mold_linker": "True"},
+    name = "use_mold_first_party_debug",
+    flag_values = {":allow_mold_first_party": "True"},
+    values = {"compilation_mode": "dbg"},
+)
+
+bool_flag(
+    name = "allow_mold_wheel",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "use_mold_wheel",
+    flag_values = {":allow_mold_wheel": "True"},
 )
 
 selects.config_setting_group(
     name = "use_mold_linker",
-    match_all = [
-        ":debug",
-        ":mold_linker_allowed",
+    match_any = [
+        ":use_mold_first_party_debug",
+        ":use_mold_wheel",
     ],
 )
 
