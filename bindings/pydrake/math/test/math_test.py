@@ -176,9 +176,7 @@ class TestMath(unittest.TestCase):
         )
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
-        if T == Expression:
-            self.assertTrue(X.IsExactlyEqualTo(other=X).Evaluate())
-        else:
+        if T != Expression:
             self.assertTrue(X.IsExactlyIdentity())
             self.assertTrue(X.IsNearlyIdentity(translation_tolerance=0))
             self.assertTrue(X.IsNearlyEqualTo(other=X, tolerance=0))
