@@ -102,22 +102,14 @@ directly.
 Installation prerequisites are packages that are not pulled in Bazel, but
 instead installed on the OS itself using a package manager like ``apt``,
 Homebrew, or ``pip`` (only on Mac). They are installed via the scripts under
-``setup/``, and are split between ``binary_distribution`` (dependencies that
-are necessary for [binary installation](/installation.html)) and
-``source_distribution`` (dependencies, in addition to those in
-``binary_distribution``, necessary for
-[source installation](/from_source.html)). Since
-``source_distribution`` will also install prerequisites in
-``binary_distribution``, you do not need to duplicate binary prerequisites in
-``source_distribution``.
-
-Prerequisites of the ``source_distribution`` are further split into three
-parts: those that are needed for building and running the ``//:install`` target
-using ``bazel`` (``bazel run //:install``), those additional dependencies for
-building and running tests (``bazel test ...``), and those additional
-dependencies for running select maintainer scripts (e.g., ``mirror_to_s3.py``
-and ``new_release.py``). Again, it is expected that a given prerequisite will
-only appear in one of these lists.
+``setup/``, and are split between:
+- "binary" dependencies that are necessary for
+  [binary installation](/installation.html),
+- "build" dependencies that are necessary for
+  [source installation](/from_source.html), and
+- "developer" dependencies that are necessary for
+  [developing Drake](/bazel.html), running tests, generating documentation,
+  uploading releases, etc.
 
 When updating prerequisites with these scripts, the normal experimental CI will
 most likely fail. To test new prerequisites on Linux, you should request

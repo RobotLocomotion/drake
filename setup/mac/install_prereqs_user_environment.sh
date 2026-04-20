@@ -13,7 +13,7 @@ if [[ "${EUID}" -eq 0 ]]; then
   exit 1
 fi
 
-workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
+workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
 
 mkdir -p "$(dirname "${bazelrc}")"

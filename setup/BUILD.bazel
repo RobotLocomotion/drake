@@ -6,23 +6,18 @@ package(default_visibility = ["//visibility:public"])
 # Make our package requirements (but not manual scripts) available to
 # downstream projects.
 exports_files([
-    "mac/binary_distribution/Brewfile",
-    "mac/source_distribution/Brewfile",
+    "mac/Brewfile-binary",
+    "mac/Brewfile-build",
+    "mac/Brewfile-developer",
     "python/pdm.lock",
     "python/pyproject.toml",
     "python/requirements.txt",
-    "ubuntu/binary_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble-clang.txt",
-    "ubuntu/source_distribution/packages-noble-doc-only.txt",
-    "ubuntu/source_distribution/packages-noble-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-noble-test-only.txt",
-    "ubuntu/binary_distribution/packages-resolute.txt",
-    "ubuntu/source_distribution/packages-resolute.txt",
-    "ubuntu/source_distribution/packages-resolute-clang.txt",
-    "ubuntu/source_distribution/packages-resolute-doc-only.txt",
-    "ubuntu/source_distribution/packages-resolute-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-resolute-test-only.txt",
+    "ubuntu/packages-noble-binary.txt",
+    "ubuntu/packages-noble-build.txt",
+    "ubuntu/packages-noble-developer.txt",
+    "ubuntu/packages-resolute-binary.txt",
+    "ubuntu/packages-resolute-build.txt",
+    "ubuntu/packages-resolute-developer.txt",
 ])
 
 install_files(
@@ -30,26 +25,26 @@ install_files(
     dest = "share/drake/setup",
     files = select({
         "//tools/cc_toolchain:apple": [
-            "mac/binary_distribution/Brewfile",
-            "mac/binary_distribution/install_prereqs.sh",
+            "mac/Brewfile-binary",
+            "mac/install_prereqs_binary.sh",
             "python/pdm.lock",
             "python/pyproject.toml",
             "python/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "ubuntu/binary_distribution/install_prereqs.sh",
-            "ubuntu/binary_distribution/packages-noble.txt",
-            "ubuntu/binary_distribution/packages-resolute.txt",
+            "ubuntu/install_prereqs_binary.sh",
+            "ubuntu/packages-noble-binary.txt",
+            "ubuntu/packages-resolute-binary.txt",
         ],
         "//conditions:default": [],
     }),
     strip_prefix = [
-        "mac/binary_distribution",
-        "ubuntu/binary_distribution",
+        "mac",
+        "ubuntu",
         "python",
     ],
     rename = {
-        "share/drake/setup/install_prereqs.sh": "install_prereqs",
+        "share/drake/setup/install_prereqs_binary.sh": "install_prereqs",
     },
 )
 
