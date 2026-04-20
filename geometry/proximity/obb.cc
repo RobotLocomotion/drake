@@ -5,6 +5,7 @@
 
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/boxes_overlap.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -61,8 +62,7 @@ bool Obb::HasOverlap(const Obb& bv_H, const Plane<double>& plane_P,
                              X_PH.rotation() * R_HB);
 }
 
-bool Obb::HasOverlap(const Obb& bv_H, const HalfSpace&,
-                     const math::RigidTransformd& X_CH) {
+bool Obb::HasOverlap(const Obb& bv_H, const math::RigidTransformd& X_CH) {
   /*
                                               Hy           Hx
                                                 ╲        ╱

@@ -248,7 +248,6 @@ GTEST_TEST(AAabbTest, HalfSpaceOverlap) {
   const Vector3d p_HB_C = R_CH * X_HB.translation();
   const Vector3d p_CH = p_CB - p_HB_C;
 
-  const HalfSpace halfspace_C;
   const Aabb aabb_H(X_HB.translation(), half_width);
 
   // Initialize X_CH such that the box corner exactly touches the half space
@@ -262,17 +261,17 @@ GTEST_TEST(AAabbTest, HalfSpaceOverlap) {
   const double kUp = 1e-6;
   // Shift frame H up.
   X_CH = RigidTransformd(Cz * kUp) * X_CH;
-  EXPECT_FALSE(Aabb::HasOverlap(aabb_H, halfspace_C, X_CH));
+  EXPECT_FALSE(Aabb::HasOverlap(aabb_H, X_CH));
 
   const double kDown = -2 * kUp;
   // Shift frame H down.
   X_CH = RigidTransformd(Cz * kDown) * X_CH;
-  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, halfspace_C, X_CH));
+  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, X_CH));
 
   // Shift more than twice the clearance, further into penetration.
   const double kDeep = -clearance * 2;
   X_CH = RigidTransformd(Cz * kDeep) * X_CH;
-  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, halfspace_C, X_CH));
+  EXPECT_TRUE(Aabb::HasOverlap(aabb_H, X_CH));
 }
 
 /* Confirm that the AabbMaker successfully makes the expected bounding boxes.

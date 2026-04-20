@@ -1296,4 +1296,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "surface_velocity_test",
+    srcs = ["test/surface_velocity_test.cc"],
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 add_lint_tests()

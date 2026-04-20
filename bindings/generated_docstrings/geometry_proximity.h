@@ -212,12 +212,6 @@ volume has a height less than or equal to zero.
 Parameter ``bv_H``:
     The bounding box to test.
 
-Parameter ``hs_C``:
-    The half space to test against the ``bv``. The half space is
-    expressed in Frame C, therefore, to evaluate the signed distance
-    of a point with respect to it, that point must be measured and
-    expressed in C.
-
 Parameter ``X_CH``:
     The relative pose between the hierarchy halfspace canonical frame
     C and the box frame B.
@@ -810,23 +804,18 @@ Returns:
     ``True`` if the plane intersects the box.)""";
           // Source: drake/geometry/proximity/obb.h
           const char* doc_obb_halfspace =
-R"""(Checks whether bounding volume ``bv`` intersects the given half space.
-The bounding volume is centered on its canonical frame B, and B is
-posed in the corresponding hierarchy frame H. The half space is
-defined in its canonical frame C (such that the boundary plane of the
-half space is perpendicular to Cz and Co lies on the boundary plane).
+R"""(Checks whether bounding volume ``bv`` intersects an imaginary half
+space. The bounding volume is centered on its canonical frame B, and B
+is posed in the corresponding hierarchy frame H. The imaginary half
+space is defined in its canonical frame C (such that the boundary
+plane of the half space is perpendicular to Cz and Co lies on the
+boundary plane).
 
 The box and halfspace intersect if *any* point within the bounding
 volume has a height less than or equal to zero.
 
 Parameter ``bv_H``:
     The bounding box to test.
-
-Parameter ``hs_C``:
-    The half space to test against the ``bv``. The half space is
-    expressed in Frame C, therefore, to evaluate the signed distance
-    of a point with respect to it, that point must be measured and
-    expressed in C.
 
 Parameter ``X_CH``:
     The relative pose between the hierarchy frame H and the half space

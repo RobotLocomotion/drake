@@ -13,6 +13,7 @@ namespace geometry {
 namespace internal {
 namespace {
 
+using Eigen::Vector3d;
 using fcl::CollisionGeometryd;
 using fcl::CollisionObjectd;
 
