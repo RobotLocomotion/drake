@@ -360,6 +360,22 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     throw std::logic_error(
         "DoCalcForwardDynamicsDiscrete(): invoked but not implemented.");
   }
+
+  /* Returns the number of miscellaneous ("z") continuous state variables to
+  declare in addition to the tree's q and v states. Used only in continuous
+  mode. The default is zero; derived classes may override. */
+  virtual int NumMiscContinuousStates() const { return 0; }
+
+  /* Called from DoCalcTimeDerivatives() to compute derivatives for the misc
+  ("z") continuous states. `zdot` has size NumMiscContinuousStates(). Derived
+  classes that override NumMiscContinuousStates() must also override this to
+  fill `zdot` with the appropriate values. The default implementation zeros
+  `zdot`. */
+  virtual void DoCalcMiscDerivatives(const systems::Context<T>& context,
+                                     systems::VectorBase<T>* zdot) const {
+    unused(context);
+    zdot->SetZero();
+  }
   //@}
 
   // Override of LeafSystem::SetDefaultParameters. For all parameters declared

@@ -1,0 +1,36 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+
+drake_cc_binary(
+    name = "conveyor_belt",
+    srcs = ["conveyor_belt.cc"],
+    data = [
+        "belt_diffuse.png",
+        "belt_normal.png",
+        "checker.png",
+        "conveyor_belt.bin",
+        "conveyor_belt.gltf",
+        "conveyor_belt.sdf",
+        "//examples/scene_graph:models",
+    ],
+    deps = [
+        "//common:value",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:bus_value",
+        "//systems/framework:diagram",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:constant_value_source",
+        "//visualization",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()

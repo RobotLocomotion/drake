@@ -811,6 +811,8 @@ drake_cc_library(
         "//common:essential",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/framework:bus_value",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
@@ -820,6 +822,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
+        ":test_gltf_files",
         "//geometry/render:test_models",
         "//multibody/meshcat:models",
         "@drake_models//:iiwa_description",
@@ -827,10 +830,12 @@ drake_cc_googletest(
     deps = [
         ":meshcat_visualizer",
         "//common:timer",
+        "//common:value",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
+        "//systems/framework:bus_value",
         "//systems/primitives:constant_vector_source",
         "@msgpack_internal//:msgpack",
     ],

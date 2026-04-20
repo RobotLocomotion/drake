@@ -2282,6 +2282,8 @@ bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
       // Green group.
       {"geometry_pose", false},
       {"deformable_body_configuration", false},
+      // Surface velocity group.
+      {"surface_displacements", false},
   };
 
   // Split the manifest into (non-)feedthrough sets, while also substituting and

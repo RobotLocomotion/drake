@@ -279,6 +279,8 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   void ProjectImpulse(const SapFrictionConeConstraintData<T>& data,
                       Vector3<T>* gamma) const;
 
+  VectorX<T> DoCalcBiasVelocity() const final { return configuration_.v_b; }
+
   Parameters parameters_;
   ContactConfiguration<T> configuration_;
 };

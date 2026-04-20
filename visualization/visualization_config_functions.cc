@@ -66,9 +66,16 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     // Note that there will be a set of params for each type of geometry.
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
+    MeshcatVisualizer<double>* illustration_vis = nullptr;
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
-                                              params);
+      if (params.role == Role::kIllustration &&
+          params.prefix == "illustration") {
+        illustration_vis = &MeshcatVisualizer<double>::AddToBuilder(
+            builder, *scene_graph, meshcat, params, &plant);
+      } else {
+        MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
+                                                params);
+      }
     }
     if (config.publish_contacts) {
       ContactVisualizer<double>::AddToBuilder(
@@ -77,6 +84,23 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     }
     if (config.publish_inertia && config.enable_alpha_sliders) {
       meshcat->SetSliderValue("inertia α", 0.5);
+    }
+
+    // Connect the plant's surface_displacement output port to the illustration
+    // visualizer when any body has surface velocity. The plant integrates
+    // surface speeds internally so no separate integrator system is needed.
+    if (illustration_vis != nullptr) {
+      bool has_surface_velocity = false;
+      for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
+        if (plant.GetSurfaceVelocityAxis(plant.get_body(i)).has_value()) {
+          has_surface_velocity = true;
+          break;
+        }
+      }
+      if (has_surface_velocity) {
+        builder->Connect(plant.get_surface_displacement_output_port(),
+                         illustration_vis->surface_displacement_input_port());
+      }
     }
   }
 
