@@ -185,15 +185,83 @@ using symbolic::Expression;
 
 // Tests for manipulating the population of the proximity engine.
 
-// Test simple addition of dynamic geometry.
-GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
-  ProximityEngine<double> engine;
-  Sphere sphere{0.5};
-  const GeometryId id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(sphere, {}, id);
-  EXPECT_EQ(engine.num_geometries(), 1);
-  EXPECT_EQ(engine.num_anchored(), 0);
-  EXPECT_EQ(engine.num_dynamic(), 1);
+class ProximityEngineTests : public ::testing::Test {
+ protected:
+  using Tester = ProximityEngineTester;
+  using V3 = Vector3d;
+
+  // Adds the given shape as a *dynamic* geometry at the given (optional)
+  // position to the test's engine, registering the pose with the global pose
+  // lookup table.
+  GeometryId AddDynamic(const Shape& shape,
+                        const std::optional<Vector3d>& p_WG = std::nullopt,
+                        const ProximityProperties& props = {}) {
+    const GeometryId id = GeometryId::get_new_id();
+    const RigidTransformd X_WG(p_WG.has_value() ? *p_WG : Vector3d::Zero());
+    X_WGs_.insert({id, X_WG});
+    engine_.AddDynamicGeometry(shape, X_WG, id, props);
+    return id;
+  }
+
+  // Adds the given shape as an *anchored* geometry at the given (optional)
+  // position to the test's engine, registering the pose with the global pose
+  // lookup table.
+  GeometryId AddAnchored(const Shape& shape,
+                         const std::optional<Vector3d>& p_WG = std::nullopt,
+                         const ProximityProperties& props = {}) {
+    const GeometryId id = GeometryId::get_new_id();
+    const RigidTransformd X_WG(p_WG.has_value() ? *p_WG : Vector3d::Zero());
+    X_WGs_.insert({id, X_WG});
+    engine_.AddAnchoredGeometry(shape, X_WG, id, props);
+    return id;
+  }
+
+  // Wrapper for declaring a collision filter between all of the listed ids.
+  // If `is_temporary` is `true`, a FilterId will be returned that can
+  // subsequently be removed via the RemoveDeclaration() API.
+  std::optional<FilterId> ExcludeCollisionsWithin(
+      std::initializer_list<GeometryId> ids, bool is_temporary = false) {
+    // Note: we *pass* an empty GeometrySet to ExcludeWithin because,
+    // ultimately the extract_ids lambda function will return the actual ids.
+    // It's just a simplifying trick for the test.
+    if (is_temporary) {
+      return engine_.collision_filter().ApplyTransient(
+          CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
+          [&ids](const GeometrySet&, CollisionFilterScope) {
+            return std::unordered_set<GeometryId>{ids};
+          });
+    }
+    engine_.collision_filter().Apply(
+        CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
+        [&ids](const GeometrySet&, CollisionFilterScope) {
+          return std::unordered_set<GeometryId>{ids};
+        });
+    return std::nullopt;
+  }
+
+  ProximityEngine<double> engine_;
+  unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
+};
+
+// Test simple addition of dynamic and anchored geometry. Confirms that the
+// added geometries are reflected in the bookkeeping.
+TEST_F(ProximityEngineTests, AddGeometry) {
+  const Sphere sphere{0.5};
+  const Vector3d p_WA{1, 2, 3};
+  const GeometryId id_1 = AddAnchored(sphere, p_WA);
+  EXPECT_TRUE(
+      CompareMatrices(Tester::GetX_WG(id_1, false, engine_).GetAsMatrix34(),
+                      RigidTransformd(p_WA).GetAsMatrix34()));
+
+  const Vector3d p_WD{-1, -2, -3};
+  const GeometryId id_2 = AddDynamic(sphere, p_WD);
+  EXPECT_TRUE(
+      CompareMatrices(Tester::GetX_WG(id_2, true, engine_).GetAsMatrix34(),
+                      RigidTransformd(p_WD).GetAsMatrix34()));
+
+  EXPECT_EQ(engine_.num_geometries(), 2);
+  EXPECT_EQ(engine_.num_anchored(), 1);
+  EXPECT_EQ(engine_.num_dynamic(), 1);
 }
 
 // "Processing" hydroelastic geometry is mostly a case of invoking a method
@@ -209,8 +277,7 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
 // compliance choice is immaterial.) One exception is that the rigid Mesh and
 // the compliant Mesh use two different kinds of files, so we test both of them.
 // The test HydroelasticAabbInflation covers ProximityEngine's second task.
-GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
-  ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
   // All of the geometries will have a scale comparable to edge_length, so that
   // the mesh creation is as cheap as possible. The exception is Mesh
   // geometry since we have no re-meshing.
@@ -221,121 +288,80 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
+  using enum HydroelasticType;
+
   // Case: compliant sphere.
-  {
-    Sphere sphere{edge_length};
-    const GeometryId sphere_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(sphere, {}, sphere_id, soft_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(sphere_id, engine),
-              HydroelasticType::kCompliant);
-  }
+  const GeometryId sphere_id =
+      AddDynamic(Sphere{edge_length}, {}, soft_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(sphere_id, engine_), kCompliant);
 
   // Case: rigid cylinder.
-  {
-    Cylinder cylinder{edge_length, edge_length};
-    const GeometryId cylinder_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(cylinder, {}, cylinder_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(cylinder_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId cylinder_id =
+      AddDynamic(Cylinder{edge_length, edge_length}, {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(cylinder_id, engine_), kRigid);
 
   // Case: rigid ellipsoid.
-  {
-    Ellipsoid ellipsoid{edge_length, edge_length, edge_length};
-    const GeometryId ellipsoid_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(ellipsoid, {}, ellipsoid_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(ellipsoid_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId ellipsoid_id = AddDynamic(
+      Ellipsoid{edge_length, edge_length, edge_length}, {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(ellipsoid_id, engine_), kRigid);
 
   // Case: rigid capsule.
-  {
-    Capsule capsule{edge_length, edge_length};
-    const GeometryId capsule_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(capsule, {}, capsule_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(capsule_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId capsule_id =
+      AddDynamic(Capsule{edge_length, edge_length}, {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(capsule_id, engine_), kRigid);
 
   // Case: rigid half_space.
-  {
-    HalfSpace half_space;
-    const GeometryId half_space_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(half_space, {}, half_space_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(half_space_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId half_space_id =
+      AddDynamic(HalfSpace(), {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(half_space_id, engine_), kRigid);
 
   // Case: rigid box.
-  {
-    Box box{edge_length, edge_length, edge_length};
-    const GeometryId box_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(box, {}, box_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(box_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId box_id = AddDynamic(
+      Box{edge_length, edge_length, edge_length}, {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(box_id, engine_), kRigid);
 
   // Case: rigid mesh.
-  {
-    Mesh mesh(
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"));
-    const GeometryId mesh_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(mesh, {}, mesh_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId rigid_mesh_id =
+      AddDynamic(Mesh(drake::FindResourceOrThrow(
+                     "drake/geometry/test/non_convex_mesh.obj")),
+                 {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(rigid_mesh_id, engine_), kRigid);
 
   // Case: compliant mesh.
-  {
-    Mesh mesh(
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
-    const GeometryId mesh_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(mesh, {}, mesh_id, soft_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
-              HydroelasticType::kCompliant);
-  }
+  const GeometryId soft_mesh_id =
+      AddDynamic(Mesh(drake::FindResourceOrThrow(
+                     "drake/geometry/test/non_convex_mesh.obj")),
+                 {}, soft_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(soft_mesh_id, engine_), kCompliant);
 
   // Case: rigid mesh vtk.
-  {
-    Mesh mesh(
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
-    const GeometryId mesh_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(mesh, {}, mesh_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId rigid_vtk_id =
+      AddDynamic(Mesh(drake::FindResourceOrThrow(
+                     "drake/geometry/test/non_convex_mesh.vtk")),
+                 {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(rigid_vtk_id, engine_), kRigid);
 
   // Case: compliant convex vtk.
-  {
-    Convex convex(
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
-    const GeometryId convex_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(convex, {}, convex_id, soft_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
-              HydroelasticType::kCompliant);
-  }
+  const GeometryId soft_vtk_id =
+      AddDynamic(Convex(drake::FindResourceOrThrow(
+                     "drake/geometry/test/non_convex_mesh.vtk")),
+                 {}, soft_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(soft_vtk_id, engine_), kCompliant);
 
   // Case: rigid convex.
-  {
-    Convex convex{
-        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-        edge_length};
-    const GeometryId convex_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId rigid_convex_id = AddDynamic(
+      Convex{drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+             edge_length},
+      {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(rigid_convex_id, engine_), kRigid);
 
   // Case: rigid convex vtk.
-  {
-    Convex convex{
-        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
-        edge_length};
-    const GeometryId convex_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
-              HydroelasticType::kRigid);
-  }
+  const GeometryId rigid_convex_vtk_id = AddDynamic(
+      Convex{
+          drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+          edge_length},
+      {}, rigid_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(rigid_convex_vtk_id, engine_), kRigid);
 }
 
 // When compliant hydroelastic geometries have a positive margin value,
@@ -348,8 +374,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
 //       - Primitives get inflated by the margin amount in each direction.
 //       - Meshes get inflated an arbitrary amount in each direction at least as
 //         large as the margin value.
-GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
-  ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, HydroelasticAabbInflation) {
   // All of the geometries will have a scale comparable to edge_length, so that
   // the mesh creation is as cheap as possible. The exception is Mesh
   // geometry since we have no re-meshing.
@@ -419,9 +444,9 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
   };
 
   for (const auto& test_case : cases) {
-    const GeometryId id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(*test_case.shape, {}, id, test_case.properties);
-    const auto* fcl = ProximityEngineTester::GetCollisionObject(engine, id);
+    const GeometryId id =
+        AddDynamic(*test_case.shape, {}, test_case.properties);
+    const auto* fcl = Tester::GetCollisionObject(engine_, id);
     DRAKE_DEMAND(fcl != nullptr);
     const auto& aabb = fcl->collisionGeometry()->aabb_local;
     if (test_case.expect_exact) {
@@ -467,8 +492,7 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
 // to have an effect. However, we can *detect* the effect simply by asking for
 // the collision candidates (a cheaper operation than computing hydro contact
 // surfaces).
-GTEST_TEST(ProximityEngineTests, MarginAfterPropertyUpdate) {
-  ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, MarginAfterPropertyUpdate) {
   // All of the geometries will have a scale comparable to edge_length, so that
   // the mesh creation is as cheap as possible. The exception is Mesh
   // geometry since we have no re-meshing.
@@ -479,43 +503,38 @@ GTEST_TEST(ProximityEngineTests, MarginAfterPropertyUpdate) {
   const double kDistance = 2 * (kRadius + kMarginValue) - 0.5 * kMarginValue;
 
   const Sphere sphere(kRadius);
-  const RigidTransformd X_WA(Vector3d(kDistance, 0, 0));
 
   ProximityProperties soft_properties;
   soft_properties.AddProperty(kHydroGroup, kMargin, 0.0);
   AddCompliantHydroelasticProperties(kResHint, kE, &soft_properties);
 
   // Shape A starts with zero margin.
-  const GeometryId idA = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(sphere, {}, idA, soft_properties);
+  const Vector3d p_WA(kDistance, 0, 0);
+  const GeometryId idA = AddDynamic(sphere, p_WA, soft_properties);
 
-  // Shape B gets margin.
+  // Shape B gets margin -- we don't need to track the id.
   soft_properties.UpdateProperty(kHydroGroup, kMargin, kMarginValue);
-  const GeometryId idB = GeometryId::get_new_id();
-  engine.AddAnchoredGeometry(sphere, {}, idB, soft_properties);
+  AddAnchored(sphere, {}, soft_properties);
 
-  const std::unordered_map<GeometryId, math::RigidTransformd> poses = {
-      {idA, X_WA}, {idB, RigidTransformd()}};
-  engine.UpdateWorldPoses(poses);
+  engine_.UpdateWorldPoses(X_WGs_);
 
   // idA has no margin; there should be no collision candidates.
-  EXPECT_EQ(engine.FindCollisionCandidates().size(), 0);
+  EXPECT_EQ(engine_.FindCollisionCandidates().size(), 0);
 
   // Now update A to get the margin. (To do so, we need a dummy InternalGeometry
   // associated with the id).
   const InternalGeometry geo_A(SourceId::get_new_id(),
                                std::make_unique<Sphere>(kRadius),
-                               FrameId::get_new_id(), idA, "A", X_WA);
-  engine.UpdateRepresentationForNewProperties(geo_A, soft_properties);
+                               FrameId::get_new_id(), idA, "A", X_WGs_.at(idA));
+  engine_.UpdateRepresentationForNewProperties(geo_A, soft_properties);
 
   // Now they overlap and should be reported as a collision candidate.
-  EXPECT_EQ(engine.FindCollisionCandidates().size(), 1);
+  EXPECT_EQ(engine_.FindCollisionCandidates().size(), 1);
 }
 
 // The same test set up as MarginAfterPropertyUpdate. However, this time we
 // confirm that margins survive cloning.
-GTEST_TEST(ProximityEngineTetsts, MarginAfterEngineClone) {
-  ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, MarginAfterEngineClone) {
   // All of the geometries will have a scale comparable to edge_length, so that
   // the mesh creation is as cheap as possible. The exception is Mesh
   // geometry since we have no re-meshing.
@@ -533,58 +552,39 @@ GTEST_TEST(ProximityEngineTetsts, MarginAfterEngineClone) {
   AddCompliantHydroelasticProperties(kResHint, kE, &soft_properties);
 
   // Both shapes have margin.
-  const GeometryId idA = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(sphere, {}, idA, soft_properties);
-  const GeometryId idB = GeometryId::get_new_id();
-  engine.AddAnchoredGeometry(sphere, {}, idB, soft_properties);
+  AddDynamic(sphere, {}, soft_properties);
+  AddAnchored(sphere, {}, soft_properties);
 
-  const std::unordered_map<GeometryId, math::RigidTransformd> poses = {
-      {idA, X_WA}, {idB, RigidTransformd()}};
-  engine.UpdateWorldPoses(poses);
+  engine_.UpdateWorldPoses(X_WGs_);
 
   // The original engine reports contact.
-  EXPECT_EQ(engine.FindCollisionCandidates().size(), 1);
+  EXPECT_EQ(engine_.FindCollisionCandidates().size(), 1);
 
   // A copy reports the same.
-  ProximityEngine<double> copy(engine);
+  ProximityEngine<double> copy(engine_);
   EXPECT_EQ(copy.FindCollisionCandidates().size(), 1);
 }
 
-// Test a combination that used to throw an exception.
-GTEST_TEST(ProximityEngineTests, ProcessVtkMeshUndefHydro) {
-  ProximityEngine<double> engine;
+// Test a combination that used to throw an exception: a vtk volume mesh with
+// no hydroelastic type declared.
+TEST_F(ProximityEngineTests, ProcessVtkUndefHydro) {
+  const std::string vtk_path =
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
+  using enum HydroelasticType;
 
-  // Case: mesh vtk, no hydro type annotation.
-  {
-    Mesh mesh(
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
-    const GeometryId mesh_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(mesh, {}, mesh_id, ProximityProperties());
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
-              HydroelasticType::kUndefined);
-  }
-}
+  // Case: Mesh.
+  const GeometryId mesh_id = AddDynamic(Mesh(vtk_path));
+  EXPECT_EQ(Tester::hydroelastic_type(mesh_id, engine_), kUndefined);
 
-// Test a combination that used to throw an exception.
-GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
-  ProximityEngine<double> engine;
-
-  // Case: convex vtk, no hydro type annotation.
-  {
-    Convex convex(
-        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"));
-    const GeometryId convex_id = GeometryId::get_new_id();
-    engine.AddDynamicGeometry(convex, {}, convex_id, ProximityProperties());
-    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
-              HydroelasticType::kUndefined);
-  }
+  // Case: Convex.
+  const GeometryId convex_id = AddDynamic(Convex(vtk_path));
+  EXPECT_EQ(Tester::hydroelastic_type(convex_id, engine_), kUndefined);
 }
 
 // Tests that registering the same mesh source multiple times reuses the same
 // underlying fcl::Convex collision geometry object (i.e. the convex hull cache
 // is working).
-GTEST_TEST(ProximityEngineTests, ConvexHullCacheDuplicatesShareGeometry) {
-  ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, ConvexHullCacheDuplicatesShareGeometry) {
   const std::string path_a =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   const std::string path_b =
@@ -592,15 +592,14 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheDuplicatesShareGeometry) {
 
   // Add the shape (dynamic vs anchored as indicated). Returns a pointer to the
   // underlying collision geometry -- the cached quantity.
-  auto add_geometry = [&engine](const Shape& shape, bool is_dynamic = true) {
-    const GeometryId id = GeometryId::get_new_id();
+  auto add_geometry = [this](const Shape& shape, bool is_dynamic = true) {
+    GeometryId id;
     if (is_dynamic) {
-      engine.AddDynamicGeometry(shape, {}, id);
+      id = AddDynamic(shape);
     } else {
-      engine.AddAnchoredGeometry(shape, {}, id);
+      id = AddAnchored(shape);
     }
-    const fcl::CollisionObjectd* obj =
-        ProximityEngineTester::GetCollisionObject(engine, id);
+    const fcl::CollisionObjectd* obj = Tester::GetCollisionObject(engine_, id);
     DRAKE_DEMAND(obj != nullptr);
     return obj->collisionGeometry().get();
   };
@@ -658,35 +657,27 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheDuplicatesShareGeometry) {
 //
 // For the narrow phase, we simply confirm that the reported distances are all
 // as expected.
-GTEST_TEST(ProximityEngineTests, ConvexHullCacheScaleIsRespected) {
-  ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, ConvexHullCacheScaleIsRespected) {
   const std::string path =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  const GeometryId id_C = GeometryId::get_new_id();
 
   // Each box is placed 10m along a different axis and scaled to double only
   // that axis' half-extent, so the distance from the origin to each box's
   // nearest face is exactly 10 - 2 = 8 m.
-  const RigidTransformd X_WA(Vector3d(-10, 0, 0));
-  const RigidTransformd X_WB(Vector3d(0, -10, 0));
-  const RigidTransformd X_WC(Vector3d(0, 0, -10));
+  const Vector3d p_WA(-10, 0, 0);
+  const Vector3d p_WB(0, -10, 0);
+  const Vector3d p_WC(0, 0, -10);
 
-  engine.AddAnchoredGeometry(Convex(path, Vector3d(2.0, 1.0, 1.0)), X_WA, id_A);
-  engine.AddAnchoredGeometry(Convex(path, Vector3d(1.0, 2.0, 1.0)), X_WB, id_B);
-  engine.AddAnchoredGeometry(Convex(path, Vector3d(1.0, 1.0, 2.0)), X_WC, id_C);
-
-  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
-      {id_A, X_WA}, {id_B, X_WB}, {id_C, X_WC}};
+  const GeometryId id_A = AddAnchored(Convex(path, Vector3d(2, 1, 1)), p_WA);
+  const GeometryId id_B = AddAnchored(Convex(path, Vector3d(1, 2, 1)), p_WB);
+  const GeometryId id_C = AddAnchored(Convex(path, Vector3d(1, 1, 2)), p_WC);
 
   // Threshold chosen between the correct nearest-face distance (8.0 m) and the
   // nearest distance produced by a wrong-scale (x-doubled) hull placed at
   // y/z = -10 m (which would be 9.0 m).
   const double threshold = 8.5;
   const auto results =
-      engine.ComputeSignedDistanceToPoint(Vector3d::Zero(), X_WGs, threshold);
+      engine_.ComputeSignedDistanceToPoint(Vector3d::Zero(), X_WGs_, threshold);
 
   // All three geometries must appear in results with their correct distances.
   // If any cache entry returned the wrong scale, the corresponding geometry's
@@ -730,11 +721,7 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheScaleIsRespected) {
 //   2. Subsequent registrations don't get a new margin.
 //      In this case, the overlap between B and C would be lost (this time
 //      because B -- and C -- simply picked up the original zero-margin AABB).
-GTEST_TEST(ProximityEngineTests, ConvexHullCacheMarginIsRespected) {
-  ProximityEngine<double> engine;
-  const std::string path =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-
+TEST_F(ProximityEngineTests, ConvexHullCacheMarginIsRespected) {
   const double kResHint = 0.5;
   const double kE = 1e8;
   const double kMarginValue = 0.1;
@@ -742,9 +729,9 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheMarginIsRespected) {
 
   // Spatial order A C B; registration order A B C.
   const double kOffset = kBoxExtent + kMarginValue / 2;
-  const RigidTransformd X_WA(Vector3d(-kOffset, 0, 0));
-  const RigidTransformd X_WC(Vector3d(0, 0, 0));
-  const RigidTransformd X_WB(Vector3d(kOffset, 0, 0));
+  const Vector3d p_WA(-kOffset, 0, 0);
+  const Vector3d p_WC(0, 0, 0);
+  const Vector3d p_WB(kOffset, 0, 0);
 
   ProximityProperties props_no_margin;
   props_no_margin.AddProperty(kHydroGroup, kMargin, 0.0);
@@ -754,22 +741,20 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheMarginIsRespected) {
   props_with_margin.AddProperty(kHydroGroup, kMargin, kMarginValue);
   AddCompliantHydroelasticProperties(kResHint, kE, &props_with_margin);
 
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  const GeometryId id_C = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Convex(path), X_WA, id_A, props_no_margin);
-  engine.AddDynamicGeometry(Convex(path), X_WB, id_B, props_with_margin);
-  engine.AddDynamicGeometry(Convex(path), X_WC, id_C, props_no_margin);
+  const Convex convex(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+  const GeometryId id_A = AddDynamic(convex, p_WA, props_no_margin);
+  const GeometryId id_B = AddDynamic(convex, p_WB, props_with_margin);
+  const GeometryId id_C = AddDynamic(convex, p_WC, props_no_margin);
 
   // Call UpdateWorldPoses for the three dynamic geometries. This triggers
   // computeAABB() for B, which reads the shared geometry's aabb_local. In
   // the bug case, C's registration reset that aabb_local and B loses its
   // inflation here.
-  engine.UpdateWorldPoses({{id_A, X_WA}, {id_B, X_WB}, {id_C, X_WC}});
+  engine_.UpdateWorldPoses(X_WGs_);
 
   // B's inflated AABB must overlap C; A is far away and never a candidate.
   std::vector<SortedPair<GeometryId>> candidates =
-      engine.FindCollisionCandidates();
+      engine_.FindCollisionCandidates();
   auto formattable_view =
       candidates | std::views::transform([](const SortedPair<GeometryId>& p) {
         return fmt::format("({}, {})", p.first(), p.second());
@@ -789,12 +774,8 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheMarginIsRespected) {
 // margin, they both overlap. We'll reduce the margin of one shape and show
 // that it no longer overlaps, but the other still does; its margin has been
 // unaffected.
-GTEST_TEST(ProximityEngineTests,
-           ConvexHullCacheMarginUpdateDoesNotCorruptSiblings) {
-  ProximityEngine<double> engine;
-  const std::string path =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-
+TEST_F(ProximityEngineTests,
+       ConvexHullCacheMarginUpdateDoesNotCorruptSiblings) {
   const double kResHint = 0.5;
   const double kE = 1e8;
   const double kSmallMargin = 0.1;   // A's margin.
@@ -804,9 +785,9 @@ GTEST_TEST(ProximityEngineTests,
   const double kBoxExtent = 2;
   const double kOffset = kBoxExtent / 2 + kSphereRadius;
 
-  const RigidTransformd X_WA(Vector3d(-kOffset - kSmallMargin / 2, 0, 0));
-  const RigidTransformd X_WB(Vector3d(kOffset + kLargeMargin / 2, 0, 0));
-  const RigidTransformd X_WS;  // sphere at origin
+  const Vector3d p_WA(-kOffset - kSmallMargin / 2, 0, 0);
+  const Vector3d p_WB(kOffset + kLargeMargin / 2, 0, 0);
+  const Vector3d p_WS(0, 0, 0);
 
   ProximityProperties props_small;
   props_small.AddProperty(kHydroGroup, kMargin, kSmallMargin);
@@ -816,34 +797,32 @@ GTEST_TEST(ProximityEngineTests,
   props_large.AddProperty(kHydroGroup, kMargin, kLargeMargin);
   AddCompliantHydroelasticProperties(kResHint, kE, &props_large);
 
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  const GeometryId id_S = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Convex(path), X_WA, id_A, props_small);
-  engine.AddDynamicGeometry(Convex(path), X_WB, id_B, props_large);
-  engine.AddAnchoredGeometry(Sphere(kSphereRadius), X_WS, id_S,
-                             ProximityProperties());
-  engine.UpdateWorldPoses({{id_A, X_WA}, {id_B, X_WB}});
+  const Convex convex(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+  const GeometryId id_A = AddDynamic(convex, p_WA, props_small);
+  // Not capturing the ids for B and S; we don't need them.
+  AddDynamic(convex, p_WB, props_large);
+  AddAnchored(Sphere(kSphereRadius), p_WS);
+  engine_.UpdateWorldPoses(X_WGs_);
 
   // Both inflated AABBs must overlap the sphere => 2 candidates.
-  ASSERT_EQ(engine.FindCollisionCandidates().size(), 2);
+  ASSERT_EQ(engine_.FindCollisionCandidates().size(), 2);
 
   // Update A to zero margin. B must be unaffected.
   ProximityProperties props_zero;
   props_zero.AddProperty(kHydroGroup, kMargin, 0.0);
   AddCompliantHydroelasticProperties(kResHint, kE, &props_zero);
-  const InternalGeometry geo_A(SourceId::get_new_id(),
-                               std::make_unique<Convex>(path),
-                               FrameId::get_new_id(), id_A, "A", X_WA);
-  engine.UpdateRepresentationForNewProperties(geo_A, props_zero);
+  const InternalGeometry geo_A(
+      SourceId::get_new_id(), std::make_unique<Convex>(convex),
+      FrameId::get_new_id(), id_A, "A", X_WGs_.at(id_A));
+  engine_.UpdateRepresentationForNewProperties(geo_A, props_zero);
 
   // UpdateWorldPoses triggers computeAABB() on all dynamic objects (A and B).
   // In the bug case, B's aabb_local was reset when A's was updated (shared
   // Convexd), so B would lose its inflation here.
-  engine.UpdateWorldPoses({{id_A, X_WA}, {id_B, X_WB}});
+  engine_.UpdateWorldPoses(X_WGs_);
 
   // A-sphere overlap is gone; B-sphere overlap must persist.
-  EXPECT_EQ(engine.FindCollisionCandidates().size(), 1);
+  EXPECT_EQ(engine_.FindCollisionCandidates().size(), 1);
 }
 
 // Tests that the convex hull cache is correctly evicted when geometries are
@@ -870,41 +849,33 @@ GTEST_TEST(ProximityEngineTests,
 //   a) The removed geometry is no longer in geometry_to_hull_key.
 //   b) Every remaining entry in geometry_to_hull_key has a corresponding
 //      valid pair in convex_hull_cache.
-GTEST_TEST(ProximityEngineTests, ConvexHullCacheEviction) {
-  ProximityEngine<double> engine;
-  const std::string path =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-
+TEST_F(ProximityEngineTests, ConvexHullCacheEviction) {
   const double kResHint = 0.5;
   const double kE = 1e8;
 
   ProximityProperties props;
   AddCompliantHydroelasticProperties(kResHint, kE, &props);
 
+  const std::string path =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   const Convex convex_unit(path, 1.0);
   const Convex convex_scaled(path, Vector3d(2, 1, 1));
 
-  const GeometryId id_G1 = GeometryId::get_new_id();
-  const GeometryId id_G2 = GeometryId::get_new_id();
-  const GeometryId id_G3 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(convex_unit, {}, id_G1, props);
-  engine.AddDynamicGeometry(convex_scaled, {}, id_G2, props);
-  engine.AddDynamicGeometry(convex_scaled, {}, id_G3, props);
+  const GeometryId id_G1 = AddDynamic(convex_unit, {}, props);
+  const GeometryId id_G2 = AddDynamic(convex_scaled, {}, props);
+  const GeometryId id_G3 = AddDynamic(convex_scaled, {}, props);
 
   // Helper that checks the reverse-map invariant: every entry in
   // geometry_to_hull_key has a corresponding valid entry in convex_hull_cache,
   // and the given removed_id is absent.
-  auto validate_eviction = [&](GeometryId removed_id, int expected_files,
-                               int expected_hulls, const std::string& label) {
+  auto validate_eviction = [this](GeometryId removed_id, int expected_files,
+                                  int expected_hulls,
+                                  const std::string& label) {
     SCOPED_TRACE(label);
-    EXPECT_TRUE(
-        ProximityEngineTester::geometry_hull_key_absent(engine, removed_id));
-    EXPECT_TRUE(
-        ProximityEngineTester::geometry_hull_reverse_map_consistent(engine));
-    EXPECT_EQ(ProximityEngineTester::convex_hull_cache_file_entries(engine),
-              expected_files);
-    EXPECT_EQ(ProximityEngineTester::convex_hull_cache_hull_entries(engine),
-              expected_hulls);
+    EXPECT_TRUE(Tester::geometry_hull_key_absent(engine_, removed_id));
+    EXPECT_TRUE(Tester::geometry_hull_reverse_map_consistent(engine_));
+    EXPECT_EQ(Tester::convex_hull_cache_file_entries(engine_), expected_files);
+    EXPECT_EQ(Tester::convex_hull_cache_hull_entries(engine_), expected_hulls);
   };
 
   // Confirm initial conditions.
@@ -914,31 +885,28 @@ GTEST_TEST(ProximityEngineTests, ConvexHullCacheEviction) {
                     "Fake Geometry");
 
   // Remove G3 — G2 still holds the (2,1,1,0) hull; no eviction expected.
-  engine.RemoveGeometry(id_G3, /* is_dynamic= */ true);
+  engine_.RemoveGeometry(id_G3, /* is_dynamic= */ true);
   validate_eviction(id_G3, expected_files, expected_hulls, "G3 removed");
 
   // Remove G2 — cache is now sole owner of (2,1,1,0); sub-entry evicted.
-  engine.RemoveGeometry(id_G2, /* is_dynamic= */ true);
+  engine_.RemoveGeometry(id_G2, /* is_dynamic= */ true);
   validate_eviction(id_G2, expected_files, --expected_hulls, "G2 removed");
 
   // Remove G1 — cache is sole owner of (1,1,1,0); fully evicted.
-  engine.RemoveGeometry(id_G1, /* is_dynamic= */ true);
+  engine_.RemoveGeometry(id_G1, /* is_dynamic= */ true);
   validate_eviction(id_G1, --expected_files, --expected_hulls, "G1 removed");
 }
 
 // Tests that the signed distance field (SDF) data computed for an obj correctly
 // accounts for its scale factor.
-GTEST_TEST(ProximityEngineTest, ProcessMeshSdfDataForObj) {
-  ProximityEngine<double> engine;
-
-  const GeometryId g_id = GeometryId::get_new_id();
+TEST_F(ProximityEngineTests, ProcessMeshSdfDataForObj) {
   const Vector3d scale(2, 3, 4);
   const Mesh mesh(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
                   scale);
-  engine.AddAnchoredGeometry(mesh, {}, g_id);
+  const GeometryId g_id = AddAnchored(mesh);
 
   const TriangleSurfaceMesh<double>* boundary_mesh =
-      ProximityEngineTester::get_mesh_distance_boundary(engine, g_id);
+      Tester::get_mesh_distance_boundary(engine_, g_id);
 
   ASSERT_NE(boundary_mesh, nullptr);
   // The cube is 2x2x2. The bounding box of the boundary mesh should be that,
@@ -947,51 +915,11 @@ GTEST_TEST(ProximityEngineTest, ProcessMeshSdfDataForObj) {
   EXPECT_TRUE(CompareMatrices(size, 2 * scale));
 }
 
-// Tests simple addition of anchored geometry.
-GTEST_TEST(ProximityEngineTests, AddAnchoredGeometry) {
-  ProximityEngine<double> engine;
-  const Sphere sphere{0.5};
-  const RigidTransformd X_WG{Vector3d{1, 2, 3}};
-  const GeometryId id = GeometryId::get_new_id();
-  engine.AddAnchoredGeometry(sphere, X_WG, id);
-  EXPECT_EQ(engine.num_geometries(), 1);
-  EXPECT_EQ(engine.num_anchored(), 1);
-  EXPECT_EQ(engine.num_dynamic(), 0);
-  EXPECT_TRUE(CompareMatrices(
-      ProximityEngineTester::GetX_WG(id, false, engine).GetAsMatrix34(),
-      X_WG.GetAsMatrix34()));
-}
-
-// Tests addition of both dynamic and anchored geometry.
-GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
-  ProximityEngine<double> engine;
-  const Sphere sphere{0.5};
-  const RigidTransformd X_WA{Vector3d{1, 2, 3}};
-  const GeometryId id_1 = GeometryId::get_new_id();
-  engine.AddAnchoredGeometry(sphere, X_WA, id_1);
-  EXPECT_TRUE(CompareMatrices(
-      ProximityEngineTester::GetX_WG(id_1, false, engine).GetAsMatrix34(),
-      X_WA.GetAsMatrix34()));
-
-  const RigidTransformd X_WD{Vector3d{-1, -2, -3}};
-  const GeometryId id_2 = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(sphere, X_WD, id_2);
-  EXPECT_EQ(engine.num_geometries(), 2);
-  EXPECT_EQ(engine.num_anchored(), 1);
-  EXPECT_EQ(engine.num_dynamic(), 1);
-  EXPECT_TRUE(CompareMatrices(
-      ProximityEngineTester::GetX_WG(id_2, true, engine).GetAsMatrix34(),
-      X_WD.GetAsMatrix34()));
-}
-
 // Tests replacing the proximity properties for a given geometry.
-GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
+TEST_F(ProximityEngineTests, ReplaceProperties) {
   // Some quick aliases to make the tests more compact.
-  using PET = ProximityEngineTester;
-  const HydroelasticType kUndefined = HydroelasticType::kUndefined;
-  const HydroelasticType kRigid = HydroelasticType::kRigid;
+  using enum HydroelasticType;
 
-  ProximityEngine<double> engine;
   const double radius = 0.5;
   InternalGeometry sphere(SourceId::get_new_id(), make_unique<Sphere>(radius),
                           FrameId::get_new_id(), GeometryId::get_new_id(),
@@ -1002,7 +930,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
 
   // Case: throws when the id doesn't refer to a valid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.UpdateRepresentationForNewProperties(sphere, {}),
+      engine_.UpdateRepresentationForNewProperties(sphere, {}),
       "The proximity engine does not contain a geometry with the id \\d+; its "
       "properties cannot be updated");
 
@@ -1011,11 +939,11 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
   {
     ProximityProperties props;
     props.AddProperty("foo", "bar", 1.0);
-    engine.AddDynamicGeometry(sphere.shape(), {}, sphere.id(), props);
-    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+    engine_.AddDynamicGeometry(sphere.shape(), {}, sphere.id(), props);
+    ASSERT_EQ(Tester::hydroelastic_type(sphere.id(), engine_), kUndefined);
     DRAKE_EXPECT_NO_THROW(
-        engine.UpdateRepresentationForNewProperties(sphere, {}));
-    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+        engine_.UpdateRepresentationForNewProperties(sphere, {}));
+    EXPECT_EQ(Tester::hydroelastic_type(sphere.id(), engine_), kUndefined);
   }
 
   // Case: The new set has hydroelastic properties, the old does not; change
@@ -1024,29 +952,26 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     ProximityProperties props;
     // Pick a characteristic length sufficiently large that we create the
     // coarsest, cheapest mesh possible.
-    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
-    props.AddProperty(kHydroGroup, kElastic,
-                      std::numeric_limits<double>::infinity());
+    ASSERT_EQ(Tester::hydroelastic_type(sphere.id(), engine_), kUndefined);
     AddRigidHydroelasticProperties(3 * radius, &props);
     DRAKE_EXPECT_NO_THROW(
-        engine.UpdateRepresentationForNewProperties(sphere, props));
-    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kRigid);
+        engine_.UpdateRepresentationForNewProperties(sphere, props));
+    EXPECT_EQ(Tester::hydroelastic_type(sphere.id(), engine_), kRigid);
   }
 
   // Case: The new set does *not* have hydroelastic properties, the old does;
   // this should remove the hydroelastic representation.
   {
-    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kRigid);
-    DRAKE_EXPECT_NO_THROW(engine.UpdateRepresentationForNewProperties(
+    ASSERT_EQ(Tester::hydroelastic_type(sphere.id(), engine_), kRigid);
+    DRAKE_EXPECT_NO_THROW(engine_.UpdateRepresentationForNewProperties(
         sphere, ProximityProperties()));
-    EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
+    EXPECT_EQ(Tester::hydroelastic_type(sphere.id(), engine_), kUndefined);
   }
 
   // Create a baseline property set that requests a compliant hydroelastic
   // representation, but is not necessarily sufficient to define one.
   ProximityProperties hydro_trigger;
-  hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
-                            HydroelasticType::kCompliant);
+  hydro_trigger.AddProperty(kHydroGroup, kComplianceType, kCompliant);
 
   // Case: New properties request hydroelastic, but they are incomplete and
   // efforts to assign those properties throw.
@@ -1054,15 +979,15 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     ProximityProperties bad_props_no_elasticity(hydro_trigger);
     bad_props_no_elasticity.AddProperty(kHydroGroup, kRezHint, 1.25);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.UpdateRepresentationForNewProperties(sphere,
-                                                    bad_props_no_elasticity),
+        engine_.UpdateRepresentationForNewProperties(sphere,
+                                                     bad_props_no_elasticity),
         "Cannot create soft Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
     bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.UpdateRepresentationForNewProperties(sphere,
-                                                    bad_props_no_length),
+        engine_.UpdateRepresentationForNewProperties(sphere,
+                                                     bad_props_no_length),
         "Cannot create soft Sphere; missing the .+ property");
   }
 }
@@ -1071,56 +996,57 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
 // a _unique_ engine instance with all dynamic or all anchored geometries.
 // It is not necessary to create a mixed engine because the two geometry
 // types are segregated.
-GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
-  for (bool is_dynamic : {true, false}) {
-    ProximityEngine<double> engine;
+TEST_F(ProximityEngineTests, RemoveGeometry) {
+  // Add rigid properties so we can confirm removal of hydroelastic
+  // representation. We use rigid here to make sure things get invoked and
+  // rely on the implementation of hydroelastic::Geometries to distinguish
+  // soft and rigid.
+  ProximityProperties props;
+  AddRigidHydroelasticProperties(1.0, &props);
+  auto add_geometry = [this, &props](const Shape& shape, const Vector3d& p_WG,
+                                     bool is_dynamic) {
+    if (is_dynamic) {
+      return AddDynamic(shape, p_WG, props);
+    } else {
+      return AddAnchored(shape, p_WG, props);
+    }
+  };
 
+  for (bool is_dynamic : {true, false}) {
     // Removing a geometry that doesn't exist, throws.
-    EXPECT_THROW(engine.RemoveGeometry(GeometryId::get_new_id(), true),
+    EXPECT_THROW(engine_.RemoveGeometry(GeometryId::get_new_id(), true),
                  std::logic_error);
 
     // Populate the world with three anchored spheres located on the x-axis at
     // x = 0, 2, & 4. With radius of 0.5, they should *not* be colliding.
     Sphere sphere{0.5};
     std::vector<GeometryId> ids;
-    std::unordered_map<GeometryId, RigidTransformd> poses;
     for (int i = 0; i < 3; ++i) {
-      const GeometryId id = GeometryId::get_new_id();
+      // We're implicitly adding
+      const GeometryId id = add_geometry(sphere, V3{i * 2.0, 0, 0}, is_dynamic);
       ids.push_back(id);
-      poses.insert({id, RigidTransformd{Translation3d{i * 2.0, 0, 0}}});
-      // Add rigid properties so we can confirm removal of hydroelastic
-      // representation. We use rigid here to make sure things get invoked and
-      // rely on the implementation of hydroelastic::Geometries to distinguish
-      // soft and rigid.
-      ProximityProperties props;
-      AddRigidHydroelasticProperties(1.0, &props);
-      if (is_dynamic) {
-        engine.AddDynamicGeometry(sphere, poses[id], id, props);
-      } else {
-        engine.AddAnchoredGeometry(sphere, poses[id], id, props);
-      }
-      EXPECT_EQ(ProximityEngineTester::hydroelastic_type(id, engine),
+      EXPECT_EQ(Tester::hydroelastic_type(id, engine_),
                 HydroelasticType::kRigid);
     }
-    int expected_count = static_cast<int>(engine.num_geometries());
-    EXPECT_EQ(engine.num_geometries(), expected_count);
-    EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : expected_count);
-    EXPECT_EQ(engine.num_dynamic(), is_dynamic ? expected_count : 0);
+    int expected_count = static_cast<int>(engine_.num_geometries());
+    EXPECT_EQ(engine_.num_geometries(), expected_count);
+    EXPECT_EQ(engine_.num_anchored(), is_dynamic ? 0 : expected_count);
+    EXPECT_EQ(engine_.num_dynamic(), is_dynamic ? expected_count : 0);
 
-    engine.UpdateWorldPoses(poses);
+    engine_.UpdateWorldPoses(X_WGs_);
 
     // Remove objects out of order from how they were added. Confirms that the
     // globals are consistent and that the geometry can only be removed once.
     for (int index : {1, 2, 0}) {
       --expected_count;
       const GeometryId remove_id = ids[index];
-      engine.RemoveGeometry(remove_id, is_dynamic);
-      EXPECT_EQ(engine.num_geometries(), expected_count);
-      EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : expected_count);
-      EXPECT_EQ(engine.num_dynamic(), is_dynamic ? expected_count : 0);
-      EXPECT_THROW(engine.RemoveGeometry(remove_id, is_dynamic),
+      engine_.RemoveGeometry(remove_id, is_dynamic);
+      EXPECT_EQ(engine_.num_geometries(), expected_count);
+      EXPECT_EQ(engine_.num_anchored(), is_dynamic ? 0 : expected_count);
+      EXPECT_EQ(engine_.num_dynamic(), is_dynamic ? expected_count : 0);
+      EXPECT_THROW(engine_.RemoveGeometry(remove_id, is_dynamic),
                    std::logic_error);
-      EXPECT_EQ(ProximityEngineTester::hydroelastic_type(remove_id, engine),
+      EXPECT_EQ(Tester::hydroelastic_type(remove_id, engine_),
                 HydroelasticType::kUndefined);
     }
   }
@@ -1129,9 +1055,7 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
 // Tests for reading .obj files.------------------------------------------------
 
 // Tests exception when we fail to read an .obj file into a Convex.
-GTEST_TEST(ProximityEngineTests, FailedParsing) {
-  ProximityEngine<double> engine;
-
+TEST_F(ProximityEngineTests, FailedParsing) {
   const std::filesystem::path temp_dir = temp_directory();
   // An empty file.
   {
@@ -1140,7 +1064,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     f.close();
     Convex convex(file.string());
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
+        AddDynamic(convex),
         ".*cannot be used on a mesh with fewer than three vertices.*");
   }
 
@@ -1152,7 +1076,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     f.close();
     Convex convex(file.string());
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
+        AddDynamic(convex),
         ".*cannot be used on a mesh with fewer than three vertices.*");
   }
 }
@@ -1165,111 +1089,44 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
 // rather than deep-copied, since FCL geometry is treated as immutable after
 // construction. As cloning makes no special effort based on geometry type, we
 // can use one or two arbitrary, representative shapes for this test.
-GTEST_TEST(ProximityEngineTests, CopySemantics) {
-  ProximityEngine<double> ref_engine;
-  const RigidTransformd pose = RigidTransformd::Identity();
+TEST_F(ProximityEngineTests, CopySemantics) {
+  const Sphere sphere(0.5);
+  AddAnchored(sphere);
+  AddDynamic(sphere);
+  AddDynamic(Convex{FindResourceOrThrow("drake/geometry/test/quad_cube.obj")});
 
-  // NOTE: The GeometryId values are all lies; the values are arbitrary but
-  // do not matter in the context of this test.
-  ref_engine.AddAnchoredGeometry(Sphere{0.5}, pose, GeometryId::get_new_id());
-  ref_engine.AddDynamicGeometry(Sphere{0.5}, pose, GeometryId::get_new_id());
-
-  ref_engine.AddDynamicGeometry(
-      Convex{drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj")},
-      pose, GeometryId::get_new_id());
-
-  ProximityEngine<double> copy_construct(ref_engine);
-  ProximityEngineTester::IsDeepCopy(copy_construct, ref_engine);
+  ProximityEngine<double> copy_construct(engine_);
+  Tester::IsDeepCopy(copy_construct, engine_);
 
   ProximityEngine<double> copy_assign;
-  copy_assign = ref_engine;
-  ProximityEngineTester::IsDeepCopy(copy_assign, ref_engine);
+  copy_assign = engine_;
+  Tester::IsDeepCopy(copy_assign, engine_);
 }
 
 // Tests the move semantics of the ProximityEngine -- the source is restored to
 // default state.
-GTEST_TEST(ProximityEngineTests, MoveSemantics) {
-  ProximityEngine<double> engine;
-  Sphere sphere{0.5};
-  RigidTransformd pose = RigidTransformd::Identity();
-  engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
-  engine.AddDynamicGeometry(sphere, pose, GeometryId::get_new_id());
+TEST_F(ProximityEngineTests, MoveSemantics) {
+  const Sphere sphere(0.5);
+  AddAnchored(sphere);
+  AddDynamic(sphere);
+  AddDynamic(Convex{FindResourceOrThrow("drake/geometry/test/quad_cube.obj")});
 
-  ProximityEngine<double> move_construct(std::move(engine));
-  EXPECT_EQ(move_construct.num_geometries(), 2);
-  EXPECT_EQ(move_construct.num_anchored(), 1);
-  EXPECT_EQ(move_construct.num_dynamic(), 1);
-  EXPECT_EQ(engine.num_geometries(), 0);
-  EXPECT_EQ(engine.num_anchored(), 0);
-  EXPECT_EQ(engine.num_dynamic(), 0);
+  // We'll keep engine_ intact so we can compare moved instances against it.
+  ProximityEngine<double> copied(engine_);
+
+  ProximityEngine<double> move_construct(std::move(copied));
+  Tester::IsDeepCopy(move_construct, engine_);
+  EXPECT_EQ(copied.num_geometries(), 0);
+  EXPECT_EQ(copied.num_anchored(), 0);
+  EXPECT_EQ(copied.num_dynamic(), 0);
 
   ProximityEngine<double> move_assign;
   move_assign = std::move(move_construct);
-  EXPECT_EQ(move_assign.num_geometries(), 2);
-  EXPECT_EQ(move_assign.num_anchored(), 1);
-  EXPECT_EQ(move_assign.num_dynamic(), 1);
+  Tester::IsDeepCopy(move_construct, engine_);
   EXPECT_EQ(move_construct.num_geometries(), 0);
   EXPECT_EQ(move_construct.num_anchored(), 0);
   EXPECT_EQ(move_construct.num_dynamic(), 0);
 }
-
-// Test harness for testing the ProximityEngine's spatial query functions.
-// The tests will examine ProximityEngine's bookkeeping responsibilities for
-// each of the spatial query APIs -- the mathematics and correctness of the
-// values is deferred to callback implementation tests.
-class ProximityEngineQueryTest : public ::testing::Test {
- protected:
-  // Adds the given shape as a *dynamic* geometry at the given (optional)
-  // position to the test's engine, registering the pose with the global pose
-  // lookup table.
-  GeometryId AddDynamic(const Shape& shape,
-                        const Vector3d& p_WG = Vector3d::Zero(),
-                        const ProximityProperties& props = {}) {
-    const GeometryId id = GeometryId::get_new_id();
-    const RigidTransformd X_WG(p_WG);
-    X_WGs_.insert({id, X_WG});
-    engine_.AddDynamicGeometry(shape, X_WG, id, props);
-    return id;
-  }
-  // Adds the given shape as an *anchored* geometry at the given (optional)
-  // position to the test's engine, registering the pose with the global pose
-  // lookup table.
-  GeometryId AddAnchored(const Shape& shape,
-                         const Vector3d& p_WG = Vector3d::Zero(),
-                         const ProximityProperties& props = {}) {
-    const GeometryId id = GeometryId::get_new_id();
-    const RigidTransformd X_WG(p_WG);
-    X_WGs_.insert({id, X_WG});
-    engine_.AddAnchoredGeometry(shape, X_WG, id, props);
-    return id;
-  }
-
-  // Wrapper for declaring a collision filter between all of the listed ids.
-  // If `is_temporary` is `true`, a FilterId will be returned that can
-  // subsequently be removed via the RemoveDeclaration() API.
-  std::optional<FilterId> ExcludeCollisionsWithin(
-      std::initializer_list<GeometryId> ids, bool is_temporary = false) {
-    // Note: we *pass* an empty GeometrySet to ExcludeWithin because,
-    // ultimately the extract_ids lambda function will return the actual ids.
-    // It's just a simplifying trick for the test.
-    if (is_temporary) {
-      return engine_.collision_filter().ApplyTransient(
-          CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
-          [&ids](const GeometrySet&, CollisionFilterScope) {
-            return std::unordered_set<GeometryId>{ids};
-          });
-    }
-    engine_.collision_filter().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(GeometrySet()),
-        [&ids](const GeometrySet&, CollisionFilterScope) {
-          return std::unordered_set<GeometryId>{ids};
-        });
-    return std::nullopt;
-  }
-
-  ProximityEngine<double> engine_;
-  unordered_map<GeometryId, RigidTransform<double>> X_WGs_;
-};
 
 /* ComputeSignedDistancePairwiseClosestPoints() responsibilities:
   1. Report no results for an empty engine.
@@ -1307,7 +1164,7 @@ class ProximityEngineQueryTest : public ::testing::Test {
      ·     ·
        ···
   */
-TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
+TEST_F(ProximityEngineTests, ComputeSignedDistancePairwiseClosestPoints) {
   const Sphere sphere{0.5};
   // The separation s (between sphere surfaces).
   const double separation = 0.1;
@@ -1341,11 +1198,11 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
   //  (3) - No (A1, A2) pair.
   //  (4) - Pair (D3, D4) included.
   //  (5) - Pair (A1, D3) included.
-  const GeometryId anchored1 = AddAnchored(sphere, {0, 0, 0});
+  const GeometryId anchored1 = AddAnchored(sphere, V3{0, 0, 0});
   // We don't need anchored2's id; it never gets reported.
-  AddAnchored(sphere, {0, -d, 0});
-  const GeometryId dynamic3 = AddDynamic(sphere, {d, 0, 0});
-  const GeometryId dynamic4 = AddDynamic(sphere, {2 * d, 0, 0});
+  AddAnchored(sphere, V3{0, -d, 0});
+  const GeometryId dynamic3 = AddDynamic(sphere, V3{d, 0, 0});
+  const GeometryId dynamic4 = AddDynamic(sphere, V3{2 * d, 0, 0});
 
   // We know that geometry ids are ordered by their creation order, so we can
   // anticipate the sorted result order as well.
@@ -1394,12 +1251,12 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairwiseClosestPoints) {
 
   Note: the sequence of this test is important -- state accumulates and each
   assertion is reliant on the successful execution of the previous assertion. */
-TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairClosestPoints) {
+TEST_F(ProximityEngineTests, ComputeSignedDistancePairClosestPoints) {
   const Sphere sphere{0.5};
   // Place the spheres apart (not colliding) so the distance query is valid.
   const double d = 2 * sphere.radius() + 0.1;
   const GeometryId id_A = AddDynamic(sphere);
-  const GeometryId id_B = AddDynamic(sphere, {d, 0, 0});
+  const GeometryId id_B = AddDynamic(sphere, V3{d, 0, 0});
   const GeometryId bad_id = GeometryId::get_new_id();
   engine_.UpdateWorldPoses(X_WGs_);
 
@@ -1480,7 +1337,7 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistancePairClosestPoints) {
   We'll query from two points, Q1 and Q2. Not all spheres are within `threshold`
   units of the query points, so the results will be limited to those within
   reach. */
-TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceToPoint) {
+TEST_F(ProximityEngineTests, ComputeSignedDistanceToPoint) {
   // Distance between sphere centers (and query points).
   const double kOffset = 1.0;
   const double kThreshold = kOffset * 2.5;
@@ -1507,9 +1364,9 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceToPoint) {
   };
 
   const Vector3d p_WQ1(next_x(), 0, 0);
-  const GeometryId dynamic1 = AddDynamic(sphere, {next_x(), 0, 0});
-  const GeometryId anchored2 = AddAnchored(sphere, {next_x(), 0, 0});
-  const GeometryId dynamic3 = AddDynamic(sphere, {next_x(), 0, 0});
+  const GeometryId dynamic1 = AddDynamic(sphere, V3{next_x(), 0, 0});
+  const GeometryId anchored2 = AddAnchored(sphere, V3{next_x(), 0, 0});
+  const GeometryId dynamic3 = AddDynamic(sphere, V3{next_x(), 0, 0});
   const Vector3d p_WQ2(next_x(), 0, 0);
 
   // (2) - (5) - we'll get distance to anchored and dynamic (but not all the
@@ -1586,7 +1443,7 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceToPoint) {
           ·     ·       *     *       ·     ·
             ···           ***           ···
    */
-TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceGeometryToPoint) {
+TEST_F(ProximityEngineTests, ComputeSignedDistanceGeometryToPoint) {
   auto eval_dut = [this](const Vector3d& p_WQ,
                          const std::unordered_set<GeometryId>& ids) {
     engine_.UpdateWorldPoses(X_WGs_);
@@ -1613,9 +1470,9 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceGeometryToPoint) {
   // This must be a non-zero point to confirm the query sphere is configured
   // properly.
   const Vector3d p_WQ(kQx, 0.0, 0.0);
-  const GeometryId dynamic1 = AddDynamic(sphere, {kD1x, 0.0, 0.0});
-  const GeometryId anchored2 = AddAnchored(sphere, {kA2x, 0.0, 0.0});
-  const GeometryId dynamic3 = AddDynamic(sphere, {kD3x, 0.0, 0.0});
+  const GeometryId dynamic1 = AddDynamic(sphere, V3{kD1x, 0.0, 0.0});
+  const GeometryId anchored2 = AddAnchored(sphere, V3{kA2x, 0.0, 0.0});
+  const GeometryId dynamic3 = AddDynamic(sphere, V3{kD3x, 0.0, 0.0});
 
   // (2) - Specify no geometries, get no results.
   EXPECT_TRUE(eval_dut(p_WQ, {}).empty());
@@ -1678,7 +1535,7 @@ TEST_F(ProximityEngineQueryTest, ComputeSignedDistanceGeometryToPoint) {
 
   Note: the sequence of this test is important -- state accumulates and each
   assertion is reliant on the successful execution of the previous assertion. */
-TEST_F(ProximityEngineQueryTest, ComputePointPairPenetration) {
+TEST_F(ProximityEngineTests, ComputePointPairPenetration) {
   auto eval_dut = [this]() {
     engine_.UpdateWorldPoses(X_WGs_);
     return engine_.ComputePointPairPenetration(X_WGs_);
@@ -1694,20 +1551,20 @@ TEST_F(ProximityEngineQueryTest, ComputePointPairPenetration) {
   // Each cluster is placed far apart to prevent cross-cluster collisions.
 
   // Responsibility 1: colliding dynamic-dynamic pair IS reported.
-  const GeometryId id_A = AddDynamic(sphere, {0, 0, 0});
-  const GeometryId id_B = AddDynamic(sphere, {d, 0, 0});
+  const GeometryId id_A = AddDynamic(sphere, V3{0, 0, 0});
+  const GeometryId id_B = AddDynamic(sphere, V3{d, 0, 0});
 
   // Responsibility 2: colliding anchored-anchored pair is NOT reported.
-  AddAnchored(sphere, {0, 100, 0});
-  AddAnchored(sphere, {d, 100, 0});
+  AddAnchored(sphere, V3{0, 100, 0});
+  AddAnchored(sphere, V3{d, 100, 0});
 
   // Responsibility 3: colliding dynamic-anchored pair IS reported.
-  const GeometryId id_C = AddDynamic(sphere, {0, 200, 0});
-  const GeometryId id_D = AddAnchored(sphere, {d, 200, 0});
+  const GeometryId id_C = AddDynamic(sphere, V3{0, 200, 0});
+  const GeometryId id_D = AddAnchored(sphere, V3{d, 200, 0});
 
   // Responsibility 4: filtered dynamic-dynamic pair is NOT reported.
-  const GeometryId id_G = AddDynamic(sphere, {0, 300, 0});
-  const GeometryId id_H = AddDynamic(sphere, {d, 300, 0});
+  const GeometryId id_G = AddDynamic(sphere, V3{0, 300, 0});
+  const GeometryId id_H = AddDynamic(sphere, V3{d, 300, 0});
   ExcludeCollisionsWithin({id_G, id_H});
 
   const std::vector<PenetrationAsPointPair<double>> results = eval_dut();
@@ -1779,7 +1636,7 @@ TEST_F(ProximityEngineQueryTest, ComputePointPairPenetration) {
        ▲     ▲                               an exception.
          ▲▲▲
   */
-TEST_F(ProximityEngineQueryTest, ComputeContactSurfaces) {
+TEST_F(ProximityEngineTests, ComputeContactSurfaces) {
   auto eval_dut = [this](HydroelasticContactRepresentation rep) {
     engine_.UpdateWorldPoses(X_WGs_);
     return engine_.ComputeContactSurfaces(rep, X_WGs_);
@@ -1805,12 +1662,12 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfaces) {
 
   ProximityProperties props;
   AddCompliantHydroelasticProperties(0.5, 1e-8, &props);
-  const GeometryId id_A1 = AddAnchored(sphere, {d, 0, 0}, props);
-  const GeometryId id_D2 = AddDynamic(sphere, {2 * d, 0, 0}, props);
-  const GeometryId id_D3 = AddDynamic(sphere, {3 * d, 0, 0}, props);
+  const GeometryId id_A1 = AddAnchored(sphere, V3{d, 0, 0}, props);
+  const GeometryId id_D2 = AddDynamic(sphere, V3{2 * d, 0, 0}, props);
+  const GeometryId id_D3 = AddDynamic(sphere, V3{3 * d, 0, 0}, props);
   // We don't need id_A4; it should appear in no results. Its presence would
   // indicate an error.
-  AddAnchored(sphere, {d, -d, 0}, props);
+  AddAnchored(sphere, V3{d, -d, 0}, props);
 
   // (2)-(4).
   const vector<ContactSurface<double>> results_tri = eval_dut(kTriangle);
@@ -1832,7 +1689,7 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfaces) {
 
   // (7) - incompatible geometries trigger a throw; D5 is the "bad" geometry.
   const GeometryId id_bad =
-      AddDynamic(sphere, {4 * d, 0, 0});  // No hydro props.
+      AddDynamic(sphere, V3{4 * d, 0, 0});  // No hydro props.
   EXPECT_THROW(eval_dut(kTriangle), std::logic_error);
 
   // (8) - filters are respected.
@@ -1893,7 +1750,7 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfaces) {
        ▲     ▲
          ▲▲▲
   */
-TEST_F(ProximityEngineQueryTest, ComputeContactSurfacesWithFallback) {
+TEST_F(ProximityEngineTests, ComputeContactSurfacesWithFallback) {
   vector<ContactSurface<double>> surfaces;
   vector<PenetrationAsPointPair<double>> points;
   auto eval_dut = [this, &points,
@@ -1935,11 +1792,11 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfacesWithFallback) {
 
   ProximityProperties props;
   AddCompliantHydroelasticProperties(0.5, 1e-8, &props);
-  const GeometryId id_A1 = AddAnchored(sphere, {d, 0, 0}, props);
-  const GeometryId id_D2 = AddDynamic(sphere, {2 * d, 0, 0}, props);
-  const GeometryId id_D3 = AddDynamic(sphere, {3 * d, 0, 0}, props);
+  const GeometryId id_A1 = AddAnchored(sphere, V3{d, 0, 0}, props);
+  const GeometryId id_D2 = AddDynamic(sphere, V3{2 * d, 0, 0}, props);
+  const GeometryId id_D3 = AddDynamic(sphere, V3{3 * d, 0, 0}, props);
   // We don't save id_A4; it's never referenced.
-  AddAnchored(sphere, {d, -d, 0}, props);
+  AddAnchored(sphere, V3{d, -d, 0}, props);
 
   // (2)-(4).
   // We get the (3) A-D and (2) D-D result but not an (4) A-A result.
@@ -1965,7 +1822,7 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfacesWithFallback) {
 
   // (7) - hydro-incompatible geometries produces point pair.
   const GeometryId id_D5 =
-      AddDynamic(sphere, {4 * d, 0, 0});  // No hydro props.
+      AddDynamic(sphere, V3{4 * d, 0, 0});  // No hydro props.
   eval_dut(kTriangle);
   ASSERT_EQ(surface_ids(surfaces), IdPairs({{id_A1, id_D2}, {id_D2, id_D3}}));
   ASSERT_EQ(point_ids(points), IdPairs({{id_D3, id_D5}}));
@@ -2044,7 +1901,7 @@ TEST_F(ProximityEngineQueryTest, ComputeContactSurfacesWithFallback) {
      ·     ·       *     *
        ···           ***
 */
-TEST_F(ProximityEngineQueryTest, FindCollisionCandidates) {
+TEST_F(ProximityEngineTests, FindCollisionCandidates) {
   auto eval_dut = [this]() {
     engine_.UpdateWorldPoses(X_WGs_);
     return engine_.FindCollisionCandidates();
@@ -2058,12 +1915,12 @@ TEST_F(ProximityEngineQueryTest, FindCollisionCandidates) {
 
   // (2) - anchored-anchored pairs are never candidates.
   const GeometryId anchored1 = AddAnchored(sphere);
-  const GeometryId anchored2 = AddAnchored(sphere, {0, -d, 0});
+  const GeometryId anchored2 = AddAnchored(sphere, V3{0, -d, 0});
   ASSERT_TRUE(eval_dut().empty());
 
   // (3) - dynamic-dynamic pairs whose AABBs overlap ARE candidates.
-  const GeometryId dynamic3 = AddDynamic(sphere, {2, 0, 0});
-  const GeometryId dynamic4 = AddDynamic(sphere, {2, -d, 0});
+  const GeometryId dynamic3 = AddDynamic(sphere, V3{2, 0, 0});
+  const GeometryId dynamic4 = AddDynamic(sphere, V3{2, -d, 0});
   ASSERT_THAT(eval_dut(), ::testing::UnorderedElementsAre(
                               SortedPair<GeometryId>(dynamic3, dynamic4)));
 
@@ -2126,7 +1983,7 @@ TEST_F(ProximityEngineQueryTest, FindCollisionCandidates) {
       ▴▴▴
 
   D5 has two different poses: D5₁ and D5₂. */
-TEST_F(ProximityEngineQueryTest, HasCollisions) {
+TEST_F(ProximityEngineTests, HasCollisions) {
   auto eval_dut = [this]() {
     engine_.UpdateWorldPoses(X_WGs_);
     return engine_.HasCollisions();
@@ -2147,8 +2004,8 @@ TEST_F(ProximityEngineQueryTest, HasCollisions) {
 
   // (3) - dynamic-dynamic are reported -- note: these are separated from the
   // anchored geometries above -- not even their AABBs overlap.
-  const GeometryId dynamic3 = AddDynamic(sphere, Vector3d(0, 1.5 * d, 0));
-  const GeometryId dynamic4 = AddDynamic(sphere, Vector3d(d, 1.5 * d, 0));
+  const GeometryId dynamic3 = AddDynamic(sphere, V3{0, 1.5 * d, 0});
+  const GeometryId dynamic4 = AddDynamic(sphere, V3{d, 1.5 * d, 0});
 
   ASSERT_TRUE(eval_dut());
 
@@ -2158,14 +2015,14 @@ TEST_F(ProximityEngineQueryTest, HasCollisions) {
 
   // (5) - dynamic-anchored are reported.
   // Place D5 in pose D5₁.
-  const GeometryId dynamic5 = AddDynamic(sphere, Vector3d(0, -d, 0));
+  const GeometryId dynamic5 = AddDynamic(sphere, V3{0, -d, 0});
   ASSERT_TRUE(eval_dut());
 
   // (6) - Weird special case. There was a legacy bug (reported in issue #23406)
   // where collisions between dynamic geometries were erased if there were
   // no anchored-dynamic collisions, but there were overlapping bounding volumes
   // between anchored and dynamic geometries. So, we move D5 to position D5₂
-  X_WGs_[dynamic5] = RigidTransformd(Vector3d(d / 2, d, 0));
+  X_WGs_[dynamic5] = RigidTransformd(V3{d / 2, d, 0});
 
   // First confirm that D5₂ satisfies both requirements:
   //   1. It doesn't collide with the anchored geometry.
@@ -2191,18 +2048,6 @@ TEST_F(ProximityEngineQueryTest, HasCollisions) {
   ASSERT_TRUE(eval_dut());
 }
 
-// TODO(SeanCurtis-TRI): All of the FCL-based queries should have *limited*
-//  testing in proximity engine. They should only test the following:
-//  Successful evaluation between two dynamic shapes and between a dynamic
-//  and anchored shape. Those simple tests confirm ProximityEngine handles its
-//  responsibility correctly; it calls the appropriate broadphase methods on
-//  FCL. Unit tests on ProximityEngine for the FCL-based query methods should
-//  *not* be concerned with the correctness of the results' values -- that lies
-//  in the responsibility of the callback and underlying geometric algorithms.
-//  They were originally created here because FCL wasn't completely trusted. So,
-//  create a set of tests that can be evaluated on each of the FCL-based queries
-//  that performs those two tests.
-
 // When anchored geometry is added to the proximity engine, the broadphase
 // algorithm needs to be properly updated, otherwise it assumes all of the
 // anchored geometry has the identity transformation. This test confirms that
@@ -2213,29 +2058,23 @@ TEST_F(ProximityEngineQueryTest, HasCollisions) {
 //
 // This test uses HasCollisions() to exercise the broadphase, but it is not
 // a test on HasCollisions() logic (that is tested elsewhere).
-GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
-  ProximityEngine<double> engine;
-  GeometryId id_D = GeometryId::get_new_id();
-  GeometryId id_A = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Sphere(0.5), {}, id_D);
+TEST_F(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
+  const Sphere sphere(0.5);
 
-  RigidTransformd X_WA{Translation3d{-3, 0, 0}};
-  engine.AddAnchoredGeometry(Sphere(0.5), X_WA, id_A);
+  AddDynamic(sphere, V3{-3, 0.75, 0});
+  AddAnchored(sphere, V3{-3, 0, 0});
 
-  RigidTransformd X_WD{Translation3d{-3, 0.75, 0}};
+  engine_.UpdateWorldPoses(X_WGs_);
 
-  std::unordered_map<GeometryId, math::RigidTransform<double>> X_WGs{
-      {id_A, X_WA}, {id_D, X_WD}};
-  engine.UpdateWorldPoses(X_WGs);
-
-  EXPECT_TRUE(engine.HasCollisions());
+  EXPECT_TRUE(engine_.HasCollisions());
 
   // Confirm that it survives copying.
-  ProximityEngine<double> engine_copy(engine);
-  engine_copy.UpdateWorldPoses({{id_D, X_WD}});
+  ProximityEngine<double> engine_copy(engine_);
+  engine_copy.UpdateWorldPoses(X_WGs_);
   EXPECT_TRUE(engine_copy.HasCollisions());
 }
 
+// TODO(SeanCurtis-TRI): Roll deformable tests into the rest.
 // Test fixture for deformable contact.
 class ProximityEngineDeformableContactTest : public testing::Test {
  protected:
@@ -2401,13 +2240,12 @@ TEST_F(ProximityEngineDeformableContactTest, AddSupportedRigidGeometries) {
     TestRigidRegistrationAndRemoval(ellipsoid, empty_props, false);
   }
   {
-    Convex convex(
-        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+    Convex convex(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
     TestRigidRegistrationAndRemoval(convex, valid_props, true);
     TestRigidRegistrationAndRemoval(convex, empty_props, false);
   }
   {
-    Mesh mesh(drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
+    Mesh mesh(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
     TestRigidRegistrationAndRemoval(mesh, valid_props, true);
     TestRigidRegistrationAndRemoval(mesh, empty_props, false);
   }
@@ -2629,9 +2467,7 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
   EXPECT_EQ(contact_surface.id_B(), rigid_id);
 }
 
-GTEST_TEST(ProximityEngineTests, NeedsConvexHull) {
-  ProximityEngine<double> engine;
-
+TEST_F(ProximityEngineTests, NeedsConvexHull) {
   const SourceId s_id = SourceId::get_new_id();
   const FrameId f_id = FrameId::get_new_id();
   const GeometryId g_id = GeometryId::get_new_id();
@@ -2646,22 +2482,23 @@ GTEST_TEST(ProximityEngineTests, NeedsConvexHull) {
   unsupported_shapes.push_back(make_unique<MeshcatCone>(1));
   unsupported_shapes.push_back(make_unique<Sphere>(1));
   for (std::unique_ptr<Shape>& shape : unsupported_shapes) {
-    InternalGeometry geo(s_id, std::move(shape), f_id, g_id, "n", {});
-    EXPECT_FALSE(engine.NeedsConvexHull(geo));
+    InternalGeometry geo(s_id, std::move(shape), f_id, g_id, "name", {});
+    EXPECT_FALSE(engine_.NeedsConvexHull(geo));
   }
 
   // Rigid shapes that *do* require convex hulls.
-  EXPECT_TRUE(engine.NeedsConvexHull(InternalGeometry(
-      s_id, make_unique<Mesh>("unimportant"), f_id, g_id, "n", {})));
-  EXPECT_TRUE(engine.NeedsConvexHull(InternalGeometry(
-      s_id, make_unique<Convex>("unimportant"), f_id, g_id, "n", {})));
+  EXPECT_TRUE(engine_.NeedsConvexHull(InternalGeometry(
+      s_id, make_unique<Mesh>("unimportant"), f_id, g_id, "name", {})));
+  EXPECT_TRUE(engine_.NeedsConvexHull(InternalGeometry(
+      s_id, make_unique<Convex>("unimportant"), f_id, g_id, "name", {})));
 
-  // Being deformable would eliminate the need for a convex hull.
-  EXPECT_FALSE(engine.NeedsConvexHull(InternalGeometry(
+  // Being deformable would eliminate the need for a convex hull. Passing
+  // resolution hint declares the internal geometry as deformable.
+  EXPECT_FALSE(engine_.NeedsConvexHull(InternalGeometry(
       s_id,
       make_unique<Mesh>(
           FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk")),
-      f_id, g_id, "n", {}, 1.0)));
+      f_id, g_id, "name", {}, /* resolution_hint= */ 1.0)));
 }
 
 // ProximityEngine creates fcl::Convexd for all Mesh and Convex. For Convex,
@@ -2670,40 +2507,35 @@ GTEST_TEST(ProximityEngineTests, NeedsConvexHull) {
 //
 // This confirms that the input mesh is ignored in favor of the convex hull
 // provided to ProximityEngine.
-GTEST_TEST(ProximityEngineTests, ImplementedAsFclConvex) {
-  ProximityEngine<double> engine;
-
+TEST_F(ProximityEngineTests, ImplementedAsFclConvex) {
   // This mesh has 8 small wedges jammed into the corners of a cube 2-units on
   // the side, centered on the origin. It is decidedly non-convex.
   // In collision queries, it should respond like a solid cube.
   const std::string obj_path =
       FindResourceOrThrow("drake/geometry/test/cube_corners.obj");
 
-  auto expect_fcl_convex_is_cube = [&engine](GeometryId id) {
+  auto expect_fcl_convex_is_cube = [this](GeometryId id) {
     const fcl::CollisionObjectd* object =
-        ProximityEngineTester::GetCollisionObject(engine, id);
+        ProximityEngineTester::GetCollisionObject(engine_, id);
     DRAKE_DEMAND(object != nullptr);
     ASSERT_EQ(object->getNodeType(), fcl::GEOM_CONVEX);
     const fcl::Convexd* fcl_shape =
         dynamic_cast<const fcl::Convexd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(fcl_shape != nullptr);
-    // We get the tet's 4 vertices and 4 faces.
+    // If we have a cube's 8 vertices and six faces, we'll assume it's a cube.
     EXPECT_EQ(fcl_shape->getVertices().size(), 8);
     EXPECT_EQ(fcl_shape->getFaceCount(), 6);
   };
 
   {
     SCOPED_TRACE("Mesh as fcl::Convexd");
-    const GeometryId id = GeometryId::get_new_id();
-    engine.AddAnchoredGeometry(Mesh(obj_path), {}, id, {});
 
+    const GeometryId id = AddAnchored(Mesh(obj_path));
     expect_fcl_convex_is_cube(id);
   }
   {
     SCOPED_TRACE("Convex as fcl::Convexd");
-    const GeometryId id = GeometryId::get_new_id();
-    engine.AddAnchoredGeometry(Convex(obj_path), {}, id, {});
-
+    const GeometryId id = AddAnchored(Convex(obj_path));
     expect_fcl_convex_is_cube(id);
   }
 }
