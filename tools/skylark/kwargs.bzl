@@ -121,9 +121,20 @@ def incorporate_allow_network(kwargs, *, allow_network):
     return kwargs
 
 def incorporate_test_weight_heuristics(kwargs):
-    # kcov is only appropriate for small-sized unit tests. If a test needs a
-    # shard_count or a special timeout, we assume it is not small.
-    if "shard_count" in kwargs or "timeout" in kwargs:
+    # If a test needs a shard_count or a special timeout, we assume it is not
+    # small -- kcov is only appropriate for small-sized unit tests.
+    required = {
+        "shard_count": 1,
+        "size": "small",
+        "timeout": "short",
+    }
+    big = False
+    for arg_name, required_value in required.items():
+        value = kwargs.get(arg_name, None) or required_value
+        if value != required_value:
+            big = True
+            break
+    if big:
         kwargs = amend(kwargs, "opt_out_conditions", append = [
             "//tools/kcov:enabled",
         ])

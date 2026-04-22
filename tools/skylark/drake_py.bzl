@@ -270,7 +270,7 @@ def drake_py_test(
         srcs = ["test/%s.py" % name]
     if kwargs.get("shard_count") != None:
         fail("Only drake_py_unittest can use sharding")
-    shard_count = kwargs.pop("_drake_py_unittest_shard_count", None)
+    kwargs["shard_count"] = kwargs.pop("_drake_py_unittest_shard_count", None)
 
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     kwargs = incorporate_display(kwargs, display = display)
@@ -293,7 +293,6 @@ def drake_py_test(
         py_target = py_test,
         isolate = isolate,
         size = size,
-        shard_count = shard_count,
         srcs = srcs,
         deps = deps,
         target_compatible_with = target_compatible_with,
