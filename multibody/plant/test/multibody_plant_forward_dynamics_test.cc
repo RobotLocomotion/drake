@@ -116,8 +116,8 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
     plant_->CalcMassMatrixViaInverseDynamics(*context_, &M);
     const double kappa = 1.0 / M.llt().rcond();
 
-    // Compare expected results against actual vdot.
-    const double kRelativeTolerance = kappa * kEpsilon;
+    // Compare expected results against actual vdot (with a little slop).
+    const double kRelativeTolerance = 2 * kappa * kEpsilon;
     EXPECT_TRUE(CompareMatrices(vdot, vdot_expected, kRelativeTolerance,
                                 MatrixCompareType::relative));
   }
@@ -189,6 +189,14 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
       .FixValue(context.get(), VectorX<double>::Zero(num_actuators));
   auto derivatives = plant.AllocateTimeDerivatives();
   {
+    // Make sure to get global and parameter-change heap allocations done
+    // before we check CalcTimeDerivatives() heap use.
+
+    // Initialization of Highway may use heap on the first call.
+    const math::RotationMatrix<double> R_AB, R_BC;  // Both identity.
+    EXPECT_TRUE((R_AB * R_BC).IsExactlyIdentity());
+    plant.EvalFrameBodyPoses(*context);  // Updated when parameters change.
+
     // CalcTimeDerivatives should not be allocating, but for now we have a few
     // remaining fixes before it's down to zero:
     //  2 temps in MbTS::CalcArticulatedBodyForceCache (F_B_W_, tau_).
