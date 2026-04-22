@@ -59,7 +59,6 @@ from pydrake.multibody.plant import (
     AddMultibodyPlant,
     AddMultibodyPlantSceneGraph,
     ApplyMultibodyPlantConfig,
-    BaseBodyJointType,
     CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactModel,
@@ -81,6 +80,7 @@ from pydrake.multibody.plant import (
 )
 from pydrake.multibody.tree import (
     BallRpyJoint_,
+    BaseBodyJointType,
     Body_,  # dispreferred alias for RigidBody_
     BodyIndex,
     CalcSpatialInertia,

@@ -36,9 +36,13 @@ namespace multibody {
 template <typename T>
 class RigidBodyFrame;
 template <typename T>
+using LinkFrame = RigidBodyFrame<T>;
+template <typename T>
 class Frame;
 template <typename T>
 class RigidBody;
+template <typename T>
+using Link = RigidBody<T>;
 template <typename T>
 class Joint;
 template <typename T>
@@ -54,6 +58,16 @@ class UniformGravityFieldElement;
 enum class JacobianWrtVariable {
   kQDot,  ///< J = ∂V/∂q̇
   kV      ///< J = ∂V/∂v
+};
+
+/// The kind of joint to be used to connect base bodies to world at Finalize().
+/// See @ref mbp_working_with_free_bodies "Working with free bodies"
+/// for definitions and discussion.
+/// @see SetBaseBodyJointType() for details.
+enum class BaseBodyJointType {
+  kQuaternionFloatingJoint,  ///< 6 dofs, unrestricted orientation.
+  kRpyFloatingJoint,         ///< 6 dofs using 3 angles; has singularity.
+  kWeldJoint,                ///< 0 dofs, fixed to World.
 };
 
 /// @cond
@@ -481,11 +495,11 @@ class MultibodyTree {
   // See MultibodyPlant method.
   int num_frames() const { return frames_.num_elements(); }
 
-  // Returns the number of RigidBodies in the %MultibodyPlant including World.
-  // Therefore the minimum number of bodies is one.
-  int num_bodies() const { return rigid_bodies_.num_elements(); }
+  // Returns the number of Links (aka RigidBodies) in the MultibodyPlant
+  // including World. Therefore the minimum number of links is one.
+  int num_links() const { return links_.num_elements(); }
 
-  // Returns the number of joints added with AddJoint() to the %MultibodyTree.
+  // Returns the number of joints added with AddJoint() to the MultibodyTree.
   int num_joints() const { return joints_.num_elements(); }
 
   // Returns the number of actuators in the model.
@@ -564,31 +578,31 @@ class MultibodyTree {
   // could only be considered in the model using constraints.
   int forest_height() const { return forest().height(); }
 
-  // Returns a constant reference to the *world* body.
-  const RigidBody<T>& world_body() const {
-    // world_rigid_body_ is set in the constructor. So this assert is here only
+  // Returns a constant reference to the *world* link.
+  const Link<T>& world_link() const {
+    // world_link_ is set in the constructor. So this assert is here only
     // to verify future constructors do not mess that up.
-    DRAKE_ASSERT(world_rigid_body_ != nullptr);
-    return *world_rigid_body_;
+    DRAKE_ASSERT(world_link_ != nullptr);
+    return *world_link_;
   }
 
   // Returns a constant reference to the *world* frame.
-  const RigidBodyFrame<T>& world_frame() const {
-    return rigid_bodies_.get_element_unchecked(world_index()).body_frame();
+  const LinkFrame<T>& world_frame() const {
+    return links_.get_element_unchecked(world_index()).link_frame();
   }
 
-  // See MultibodyPlant method.
-  bool has_body(BodyIndex body_index) const {
-    return rigid_bodies_.has_element(body_index);
+  // See MultibodyPlant method has_body().
+  bool has_link(LinkIndex link_index) const {
+    return links_.has_element(link_index);
   }
 
-  // See MultibodyPlant method.
-  const RigidBody<T>& get_body(BodyIndex body_index) const {
-    return rigid_bodies_.get_element(body_index);
+  // See MultibodyPlant method get_body().
+  const Link<T>& get_link(LinkIndex link_index) const {
+    return links_.get_element(link_index);
   }
 
-  RigidBody<T>& get_mutable_body(BodyIndex body_index) {
-    return rigid_bodies_.get_mutable_element(body_index);
+  Link<T>& get_mutable_link(LinkIndex link_index) {
+    return links_.get_mutable_element(link_index);
   }
 
   // See MultibodyPlant method.
@@ -757,7 +771,7 @@ class MultibodyTree {
 
   // See MultibodyPlant method.
   const std::vector<JointIndex>& GetJointIndices() const {
-    return joints_.indices();
+    return joints_.valid_indices();
   }
 
   // Returns a list of joint indices associated with `model_instance`.
@@ -766,7 +780,7 @@ class MultibodyTree {
 
   // See MultibodyPlant method.
   const std::vector<JointActuatorIndex>& GetJointActuatorIndices() const {
-    return actuators_.indices();
+    return actuators_.valid_indices();
   }
 
   // See MultibodyPlant method.
@@ -936,6 +950,15 @@ class MultibodyTree {
     return forest().mobods(index);
   }
 
+  // See MultibodyPlant API.
+  void SetBaseBodyJointType(
+      BaseBodyJointType joint_type,
+      std::optional<ModelInstanceIndex> model_instance = {});
+
+  // See MultibodyPlant API.
+  BaseBodyJointType GetBaseBodyJointType(
+      std::optional<ModelInstanceIndex> model_instance = {}) const;
+
   // Finalize() must be called after all user-defined elements in the plant
   // (joints, bodies, force elements, constraints, etc.) have been added and
   // before any computations are performed. It compiles all the necessary
@@ -1089,15 +1112,20 @@ class MultibodyTree {
   // spatial velocities.
   // @{
 
-  // See MultibodyPlant method.
-  void CalcAllBodyPosesInWorld(
+  // Evaluates the position cache if necessary, then extracts all the link
+  // poses and returns them indexed by LinkIndex (BodyIndex). The slots that
+  // correspond to invalid indices will be filled with identity poses.
+  void CalcAllLinkPosesInWorld(
       const systems::Context<T>& context,
-      std::vector<math::RigidTransform<T>>* X_WB) const;
+      std::vector<math::RigidTransform<T>>* X_WL) const;
 
-  // See MultibodyPlant method.
-  void CalcAllBodySpatialVelocitiesInWorld(
+  // Evaluates the velocity cache if necessary, then extracts all the link
+  // spatial velocities and returns them indexed by LinkIndex (BodyIndex). The
+  // slots that correspond to invalid indices will be filled with NaN spatial
+  // velocities.
+  void CalcAllLinkSpatialVelocitiesInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialVelocity<T>>* V_WB) const;
+      std::vector<SpatialVelocity<T>>* V_WL) const;
 
   // See MultibodyPlant method.
   math::RigidTransform<T> CalcRelativeTransform(
@@ -1213,9 +1241,9 @@ class MultibodyTree {
   // For each point Bi of (fixed to) a frame B whose translational velocity
   // `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's translational
   // velocity Jacobian in A with respect to 𝑠 is defined as
-  // <pre>
+  //
   //      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
-  // </pre>
+  //
   // Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
   // `v_ABi = Js_v_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
   //
@@ -1340,9 +1368,9 @@ class MultibodyTree {
   // @param[out] M_B_W_all
   //   For each body in the model, entry RigidBody::mobod_index() in M_B_W_all
   //   contains the updated spatial inertia `M_B_W(q)` for that body. On input
-  //   it must be a valid pointer to a vector of size num_bodies().
+  //   it must be a valid pointer to a vector of size num_mobods().
   // @throws std::exception if M_B_W_all is nullptr or if its size is not
-  // num_bodies().
+  // num_mobods().
   void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* M_B_W_all) const;
@@ -1389,19 +1417,20 @@ class MultibodyTree {
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* K_BBo_W_all) const;
 
-  // Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
-  // For a body B, this is the bias term `Fb_Bo_W` in the equation
+  // Computes the bias force `Fb_Bo_W(q, v)` for each mobod in the model.
+  // For a mobod B, this is the bias term `Fb_Bo_W` in the equation
   // `F_BBo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   // about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   // `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
   // @param[in] context
   //   The context storing the state of the model.
   // @param[out] Fb_Bo_W_all
-  //   For each body in the model, entry RigidBody::mobod_index() in Fb_Bo_W_all
-  //   contains the updated bias term `Fb_Bo_W(q, v)` for that body. On input
-  //   it must be a valid pointer to a vector of size num_bodies().
+  //   For each mobod in the model, entry RigidBody::mobod_index() in
+  //   Fb_Bo_W_all contains the updated bias term `Fb_Bo_W(q, v)` for that
+  //   mobod. On input it must be a valid pointer to a vector of size
+  //   num_mobods().
   // @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
-  // num_bodies().
+  // num_mobods().
   void CalcDynamicBiasForces(const systems::Context<T>& context,
                              std::vector<SpatialForce<T>>* Fb_Bo_W_all) const;
 
@@ -1453,9 +1482,9 @@ class MultibodyTree {
   // known vector of generalized accelerations vdot, this method computes the
   // set of generalized forces tau that would need to be applied at each
   // Mobilizer in order to attain the specified generalized accelerations.
-  // Mathematically, this method computes: <pre>
+  // Mathematically, this method computes:
   //   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
-  // </pre>
+  //
   // where M(q) is the %MultibodyTree mass matrix, C(q, v)v is the bias
   // term containing Coriolis and gyroscopic effects and tau_app consists
   // of a vector applied generalized forces. The last term is a summation over
@@ -1538,9 +1567,9 @@ class MultibodyTree {
   // known vector of generalized accelerations `vdot`, this method computes the
   // set of generalized forces `tau_id` that would need to be applied at each
   // Mobilizer in order to attain the specified generalized accelerations.
-  // Mathematically, this method computes: <pre>
+  // Mathematically, this method computes:
   //   tau_id = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
-  // </pre>
+  //
   // where `M(q)` is the mass matrix, `C(q, v)v` is the bias
   // term containing Coriolis and gyroscopic effects and `tau_app` consists
   // of a vector applied generalized forces.
@@ -1627,21 +1656,21 @@ class MultibodyTree {
   computation with O(n) complexity. The algorithm is implemented in terms of
   three main passes:
   1. CalcArticulatedBodyInertiaCache(): which performs a tip-to-base pass to
-     compute the ArticulatedBodyInertia for each body along with other ABA
-     quantities that are configuration dependent only.
+     compute the ArticulatedBodyInertia for each mobilized body along with other
+     ABA quantities that are configuration dependent only.
   2. CalcArticulatedBodyForceCache(): a second tip-to-base pass which
      essentially computes the bias terms in the ABA equations. These are a
      function of the full state x = [q; v] and externally applied actuation and
      forces.
   3. CalcArticulatedBodyAccelerations(): which performs a final base-to-tip
-     recursion to compute the acceleration of each body in the model. These
-     accelerations are a function of the ArticulatedBodyForceCache
+     recursion to compute the acceleration of each mobilized body in the model.
+     These accelerations are a function of the ArticulatedBodyForceCache
      previously computed by CalcArticulatedBodyForces(). That is, accelerations
      are a function of state x and applied forces.
 
-  The Newton-Euler equations governing the motion of a rigid body are: <pre>
+  The Newton-Euler equations governing the motion of a rigid body are:
     Fapp_B = M_B * A_WB + Fb_B
-  </pre>
+
   which describe the effect of the total applied spatial forces Fapp_B on the
   spatial acceleration A_WB of a **rigid body** B with spatial inertia M_B.
   Fb_B is the spatial force bias containing gyroscopic terms.
@@ -1650,9 +1679,9 @@ class MultibodyTree {
   between the spatial acceleration and external forces for a body that belongs
   to a system of rigid bodies or **articulated body**. In particular, if this
   body is the root (or handle) of an articulated body system, the reaction force
-  needed to enforce its the motion with acceleration A_WB is given by: <pre>
+  needed to enforce its the motion with acceleration A_WB is given by:
     F_B = P_B * A_WB + Z_B                                                   (1)
-  </pre>
+
   where F_B is now the spatial force needed to induce the spatial acceleration
   A_WB of this root body B being part of a larger articulated system. Z_B is
   the articulated body spatial forces bias term and P_B the articulated body
@@ -1694,10 +1723,10 @@ class MultibodyTree {
      reference.
 
   Articulated body inertias and force biases can be computed by a recursive tip
-  to base assembly process (Eqs. 7.21-7.24 in [Featherstone, 2008]): <pre>
+  to base assembly process (Eqs. 7.21-7.24 in [Featherstone, 2008]):
     P_B_W = M_B_W + Σᵢ Pplus_BCib_W                                          (2)
     Z_B_W = Fb_B_W - Fapp_B_W + Σᵢ Zplus_Cib_W                               (3)
-  </pre>
+
   where M_B_W is the SpatialInertia of body B, P_B_W its
   ArticulatedBodyInertia, Fapp_B_W are the externally applied forces, and
   Pplus_BCib_W and Zplus_Cib_W are the effective ABI and force bias of an
@@ -1705,30 +1734,30 @@ class MultibodyTree {
   of Ci. Both Pplus_BCib_W and Zplus_Cib_W are shifted to B and expressed in W.
   The role of Pplus_BCib_W and Zplus_Cib_W is clearer when considering the
   equation to compute the reaction force at the mobilizer constraining the
-  motion of body B (Eq. 7.25 in [Featherstone, 2008]): <pre>
+  motion of body B (Eq. 7.25 in [Featherstone, 2008]):
     F_B_W = Pplus_PB_W * Aplus_WB + Zplus_B_W                                (4)
-  </pre>
+
   This equation mirrors Eq. (1) but it is written in terms of the rigidly
   shifted spatial acceleration `Aplus_WB = Φᵀ(p_PB) * A_WP`, or
   Aplus_WB.Shift(p_PB_W) in code.
 
   The articulated body inertia Pplus can be computed once P_B_W is obtained from
-  Eq. (2): <pre>
+  Eq. (2):
      Pplus_PB_W = P_B_W - P_B_W * H_PB_W * D_B⁻¹ * H_PB_Wᵀ * P_B_W
                 = P_B_W - g_B_W * U_B_W                                      (5)
-  </pre>
-  where: <pre>
+
+  where:
     D_B = H_PB_Wᵀ * P_B_W * H_PB_W ∈ ℝᵐˣᵐ                                    (6)
     U_B_W = H_PB_Wᵀ * P_B_W ∈ ℝᵐˣ⁶                                           (7)
     g_B_W = U_B_Wᵀ * D_B⁻¹ ∈ ℝ⁶ˣᵐ                                            (8)
-  </pre>
+
   with m the number of mobilities of body B. U_B_W and g_B_W are useful
   configuration dependent quantities that appear several times in the ABA. The
   force bias Zplus across the mobilizer is computed once the Z_B_W is obtained
-  from Eq. (3): <pre>
+  from Eq. (3):
     Zplus_B_W = Z_B_W + Pplus_PB_W * Ab_WB + g_B_W * e_B                     (9)
     e_B = tau_B - H_PB_Wᵀ * Z_B_W                                           (10)
-  </pre>
+
   where tau_B are the applied generalized forces on body B's mobilizer. Notice
   that, given their definition in Eqs. (3) and (9), the ABA force bias terms
   Z_B_W and Zplus_B_W are not only a function of the velocity dependent
@@ -1756,37 +1785,37 @@ class MultibodyTree {
   Zjplus_B_W, and ej_B the bias terms as defined by Jain. They have different
   numerical values than those introduced by [Featherstone, 2008] (even after
   making the conversion from Plücker to Jain's spatial algebra.)
-  A detailed analysis of the two reveals that: <pre>
+  A detailed analysis of the two reveals that:
     Zjplus_B_W = Zplus_B_W
     Zj_B_W = Z_B_W + P_B_W * Ab_WB
     ej_B = e_B - H_PB_Wᵀ * P_B_W * Ab_WB
-  </pre>
+
   which then translates into the differences we observe with [Jain, 2010,
-  Algorithm 7.2]: <pre>
+  Algorithm 7.2]:
     Zj_B_W = Fb_B_W - Fapp_B_W + Σᵢ Zplus_Cib_W + P_B_W * Ab_WB
     Z_B_W  = Fb_B_W - Fapp_B_W + Σᵢ Zplus_Cib_W,                    from Eq. (3)
-  </pre>
+
   where the term with Ab_WB does not appear in our Eq. (3).
-  <pre>
+
     Zjplus_B_W = Zj_B_W + g_B_W * ej_B
     Zplus_B_W  = Z_B_W  + g_B_W * e_B + Pplus_PB_W * Ab_WB,         from Eq. (9)
-  </pre>
+
   where notice our Eq. (9) has the additional term Pplus_PB_W * Ab_WB. However,
   as mentioned above, the numerical values of Zplus_B_W and Zjplus_B_W are
   exactly the same given the difference cancels out through the additional terms
   present in ej_B, see below. Finally:
-  <pre>
+
     ej_B = tau_B - H_PB_Wᵀ * Zj_B_W
     e_B  = tau_B - H_PB_Wᵀ * Z_B_W,                                from Eq. (10)
-  </pre>
+
   which is deceivingly the same as our Eq. (10), however the result is
   different given it has Zj_B_W in it, which numerically differs from Z_B_W.
   This different definition of the force bias leads to a different expression
   for the computation of reaction forces in terms of the articulated body
-  quantities: <pre>
+  quantities:
     F_B = P_B * A_WB + Z_B,             [Featherstone, 2008, Eq. 7.25]
     F_B = P_B * (A_WB - Ab_WB) + Zj_B,  [Jain, 2010, Eq. 7.34]
-  </pre>
+
   In Drake we prefer Featherstone's definition of the force bias terms given the
   parallelism of the joint reaction forces equation with the Newton-Euler
   equations.
@@ -1796,11 +1825,11 @@ class MultibodyTree {
   Once ABA inertias and force bias terms are computed according to Eqs.
   (2)-(10), the computation of accelerations is remarkably simple. The last base
   to tip pass of the algorithm stems from combining the following three
-  equations: <pre>
+  equations:
     A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B                              (11a)
     F_B_W = P_B_W * A_WB + Z_B_W                                           (11b)
     tau_B = H_PB_Wᵀ * F_B_W                                                (11c)
-  </pre>
+
   Equation (11a) is the motion constraint imposed by the body's mobilizer,
   where the spatial acceleration bias Ab_WB = Ac_WB + Ab_PB includes the
   centrifugal and Coriolis terms Ac_WB documented in
@@ -1808,57 +1837,57 @@ class MultibodyTree {
   term across the mobilizer Ab_PB (A_PB = H_PB * vdot_B + Ab_PB.)
   Equation (11b) is the articulated body force balance from Eq. (1) and Eq.
   (11c) projects the reaction force F_B to obtain the generalized forces tau_B.
-  We substitute Eqs. (11a) and (11b) into (11c) to obtain: <pre>
+  We substitute Eqs. (11a) and (11b) into (11c) to obtain:
     H_PB_Wᵀ*[P_B_W * (Aplus_WB + Ab_WB + H_PB_W * vdot_B) + Z_B_W] = tau_B  (12)
-  </pre>
+
   we then factor out terms grouping vdot_B, acceleration biases and forcing:
-  <pre>
+
     (H_PB_Wᵀ*P_B_W*H_PB_W) * vdot_B + (H_PB_Wᵀ*P_B_W) * (Aplus_WB + Ab_WB ) =
       tau_B - H_PB_Wᵀ * Z_B_W                                               (13)
-  </pre>
-  using the definitions in Eqs. (6)-(8), we can rewrite (13) as: <pre>
+
+  using the definitions in Eqs. (6)-(8), we can rewrite (13) as:
     D_B * vdot_B + U_B_W * (Aplus_WB + Ab_WB) = e_B                         (14)
-  </pre>
+
   Therefore the last base-to-tip pass updates generalized accelerations and
-  spatial accelerations according to: <pre>
+  spatial accelerations according to:
     vdot_B = D_B⁻¹ * e_B - g_B_Wᵀ * (Aplus_WB + Ab_WB)                      (15)
     A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B                               (16)
-  </pre>
+
   This is implemented in CalcArticulatedBodyAccelerations().
 
   @note Given the different definition of Z and Zplus used by [Featherstone,
-  2008] and [Jain, 2010], the acceleration update used by Jain is: <pre>
+  2008] and [Jain, 2010], the acceleration update used by Jain is:
     vdot_B = D_B⁻¹ * e_B  - g_B_Wᵀ * (Aplus_WB + Ab_WB),           from Eq. (15)
     vdot_B = D_B⁻¹ * ej_B - g_B_Wᵀ * Aplus_WB,            [Jain, 2010. Alg. 7.2]
-  </pre>
+
 
   <h3> Additional Diagonal Inertias </h3>
   @anchor additional_diagonal_inertias
 
   We can model additional diagonal inertias by considering external generalized
-  forces of the form: <pre>
+  forces of the form:
     tau_B <-- -d_B * vdot_B + tau_B                                         (17)
-  </pre>
+
   That is, we update tau_B to include the term -d_B * vdot_B, for the mobilities
   of each body B. Such form of the generalized forces can be used to model fluid
   virtual masses, reflected inertias and/or even effective inertias result of
   discrete time stepping schemes.
 
   When Eq. (17) is used into Eq. (14), the update for vdot_B in Eq. (15) remains
-  exactly the same but with D_B updated to: <pre>
+  exactly the same but with D_B updated to:
     D_B <-- D_B + d_B
-  </pre>
+
   With this modification to D_B, the algorithm remains the same.
 
   We remark that the modeling of this term is equivalent to adding a diagonal
   term D = diag{d_B} (the concantenation of each d_B to form the diagonal matrix
   D) to the mass matrix. This can be seen by considering the Newton-Euler
-  equations of motion: <pre>
+  equations of motion:
     M⋅v̇ + C⋅v = τ − D⋅v̇
-  </pre>
-  which can then rewritten as: <pre>
+
+  which can then rewritten as:
     (M+D)⋅v̇ + C⋅v = τ
-  </pre>
+
   resulting on the same Newton-Euler equations but with the updated mass matrix
   M+D.
 
@@ -1907,12 +1936,11 @@ class MultibodyTree {
                 algorithms. Springer Science & Business Media, pp. 123-130.
   - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics algorithms.
                         Springer.
-   @{
   */
 
   // Performs a tip-to-base pass to compute the ArticulatedBodyInertia for each
-  // body as a function of the configuration q stored in `context`. The
-  // computation is stored in `abic` along with other Articulated Body
+  // mobilized body as a function of the configuration q stored in `context`.
+  // The computation is stored in `abic` along with other Articulated Body
   // Algorithm (ABA) quantities.
   void CalcArticulatedBodyInertiaCache(
       const systems::Context<T>& context,
@@ -1936,21 +1964,21 @@ class MultibodyTree {
       const ArticulatedBodyForceCache<T>& aba_force_cache,
       AccelerationKinematicsCache<T>* ac) const;
 
-  // For a body B, computes the spatial acceleration bias term `Ab_WB` as it
-  // appears in the acceleration level motion constraint imposed by body B's
+  // For a mobilized body B, computes the spatial acceleration bias term `Ab_WB`
+  // as it appears in the acceleration level motion constraint imposed by B's
   // mobilizer `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`, with `Aplus_WB =
   // Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
-  // body P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
+  // mobod P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
   // mobilities, respectively. See @ref abi_computing_accelerations for further
-  // details. On output `Ab_WB_all[mobod_index]`
-  // contains `Ab_WB` for the body with node index `mobod_index`.
+  // details. On output `Ab_WB_all[mobod_index]` contains `Ab_WB` for each mobod
+  // with index `mobod_index`.
   void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
       std::vector<SpatialAcceleration<T>>* Ab_WB_all) const;
 
   // Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
-  // for each articulated body B. On output `Zb_Bo_W_all[mobod_index]`
-  // contains `Zb_Bo_W` for the body B with node index `mobod_index`.
+  // for each articulated mobod B. On output `Zb_Bo_W_all[mobod_index]`
+  // contains `Zb_Bo_W` for each mobod B with index `mobod_index`.
   void CalcArticulatedBodyForceBias(
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* Zb_Bo_W_all) const;
@@ -1986,12 +2014,6 @@ class MultibodyTree {
       const ArticulatedBodyInertiaCache<T>& abic,
       const ArticulatedBodyForceCache<T>& aba_force_cache,
       AccelerationKinematicsCache<T>* ac) const;
-  // @}
-
-  // @} Closes "Articulated Body Algorithm Forward Dynamics" Doxygen section.
-
-  // @}
-  // Closes "Computational methods" Doxygen section.
 
   // See MultibodyPlant method.
   MatrixX<double> MakeStateSelectorMatrix(
@@ -2100,7 +2122,7 @@ class MultibodyTree {
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
     const BodyIndex body_index = element.index();
-    return rigid_bodies_.get_element(body_index);
+    return links_.get_element(body_index);
   }
 
   // Overload for Mobilizer<T> elements.
@@ -2601,16 +2623,16 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc) const;
 
-  // For all bodies, calculate bias spatial acceleration in the world frame W.
+  // For all mobods, calculate bias spatial acceleration in the world frame W.
   // @param[in] context The state of the multibody system.
   // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   // JacobianWrtVariable::kV, indicating whether the spatial acceleration bias
   // is with respect to 𝑠 = q̇ or 𝑠 = v.
-  // @param[out] AsBias_WB_all Each body's spatial acceleration bias in world
+  // @param[out] AsBias_WB_all Each mobod's spatial acceleration bias in world
   // frame W, with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame W.
   // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
   // @throws std::exception if AsBias_WB_all is nullptr.
-  // @throws std::exception if AsBias_WB_all.size() is not num_bodies().
+  // @throws std::exception if AsBias_WB_all.size() is not num_mobods().
   void CalcAllBodyBiasSpatialAccelerationsInWorld(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       std::vector<SpatialAcceleration<T>>* AsBias_WB_all) const;
@@ -2621,8 +2643,6 @@ class MultibodyTree {
   // @param[in] body_indexes Array of selected bodies.  This method does not
   //  distinguish between welded bodies, joint-connected bodies,
   //  floating bodies, the world_body(), or repeated bodies.
-  // @throws std::exception if model_instances contains an invalid
-  // ModelInstanceIndex.
   // @throws std::exception if body_indexes contains an invalid BodyIndex.
   SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context,
@@ -2789,7 +2809,7 @@ class MultibodyTree {
   // Helper method to create a clone of `body` and add it to `this` tree.
   // Because this method is only invoked in a controlled manner from within
   // CloneToScalar(), it is guaranteed that the cloned body in this variant's
-  // `rigid_bodies_` will occupy the same position as its corresponding
+  // `links_` will occupy the same position as its corresponding
   // RigidBody in the source variant `body`.
   template <typename FromScalar>
   RigidBody<T>* CloneBodyAndAdd(const RigidBody<FromScalar>& body);
@@ -2826,10 +2846,10 @@ class MultibodyTree {
       const RigidBody<T>& body) const;
 
   // These objects are defined via MultibodyPlant and are thus user-visible.
-  const RigidBody<T>* world_rigid_body_{nullptr};
+  const Link<T>* world_link_{nullptr};  // aka RigidBody
   // When we need to look up elements by name, we'll use an ElementCollection.
   // Otherwise, we'll just use a plain vector.
-  ElementCollection<T, RigidBody, BodyIndex> rigid_bodies_;
+  ElementCollection<T, Link, LinkIndex> links_;
   ElementCollection<T, Frame, FrameIndex> frames_;
   ElementCollection<T, Joint, JointIndex> joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> force_elements_;

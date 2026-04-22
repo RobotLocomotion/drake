@@ -14,10 +14,10 @@ template <typename T>
 class RigidBody;
 
 /// This %ForceElement models a spring-damper attached between two points on
-/// two different bodies.
-/// Given a point P on a body A and a point Q on a body B with positions
+/// two different links.
+/// Given a point P on a link A and a point Q on a link B with positions
 /// p_AP and p_BQ, respectively, this spring-damper applies equal and
-/// opposite forces on bodies A and B according to: <pre>
+/// opposite forces on links A and B according to: <pre>
 ///   f_AP = (k⋅(ℓ - ℓ₀) + c⋅dℓ/dt)⋅r̂
 ///   f_BQ = -f_AP
 /// </pre>
@@ -36,7 +36,7 @@ class RigidBody;
 ///
 ///   - The applied force is always along the line connecting points P and Q.
 ///   - Damping always dissipates energy.
-///   - Forces on bodies A and B are equal and opposite according to Newton's
+///   - Forces on links A and B are equal and opposite according to Newton's
 ///     third law.
 ///
 /// @tparam_default_scalar
@@ -45,10 +45,10 @@ class LinearSpringDamper final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSpringDamper);
 
-  /// Constructor for a spring-damper between a point P on `bodyA` and a
-  /// point Q on `bodyB`. Point P is defined by its position `p_AP` as
-  /// measured and expressed in the body frame A and similarly, point Q is
-  /// defined by its position p_BQ as measured and expressed in body frame B.
+  /// Constructor for a spring-damper between a point P on link `bodyA` and a
+  /// point Q on link `bodyB`. Point P is defined by its position `p_AP` as
+  /// measured and expressed in the link frame A and similarly, point Q is
+  /// defined by its position p_BQ as measured and expressed in link frame B.
   /// The remaining parameters define:
   /// @param[in] free_length
   ///   The free length of the spring ℓ₀, in meters, at which the spring

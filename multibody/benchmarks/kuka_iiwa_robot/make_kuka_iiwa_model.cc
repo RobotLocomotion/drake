@@ -91,7 +91,7 @@ KukaIiwaModelBuilder<T>::Build() const {
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
   const Joint<T>* joint{nullptr};
-  const RigidBody<T>& linkN = model->world_body();
+  const RigidBody<T>& linkN = model->world_link();
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_1", linkN, joint_1_rpy_, joint_1_xyz_, linkA,
       Eigen::Vector3d::UnitZ(), model.get());

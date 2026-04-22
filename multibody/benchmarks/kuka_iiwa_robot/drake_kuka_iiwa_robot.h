@@ -85,7 +85,7 @@ class DrakeKukaIIwaRobot {
         MakeKukaIiwaModel<T>(false /* finalized model */,
                              gravity /* acceleration of gravity */));
 
-    linkN_ = &tree().world_body();
+    linkN_ = &tree().world_link();
 
     // Get this robot's seven links.
     linkA_ = &tree().GetRigidBodyByName("iiwa_link_1");
@@ -111,7 +111,7 @@ class DrakeKukaIIwaRobot {
 
   /// This method gets the number of rigid bodies in this robot.
   /// @returns the number of rigid bodies in this robot.
-  int get_number_of_rigid_bodies() const { return tree().num_bodies(); }
+  int get_number_of_rigid_bodies() const { return tree().num_links(); }
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -145,7 +145,7 @@ class DrakeKukaIIwaRobot {
     const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->mobod_index());
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
-    std::vector<SpatialAcceleration<T>> A_WB(tree().num_bodies());
+    std::vector<SpatialAcceleration<T>> A_WB(tree().num_links());
     // TODO(eric.cousineau): For this model, the end effector's BodyIndex
     // matches its MobodIndex, thus we're not really checking the difference
     // between MultibodyPlant and MultibodyTree's ordering.

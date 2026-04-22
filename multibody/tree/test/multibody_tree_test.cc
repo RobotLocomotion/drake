@@ -70,8 +70,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "iiwa_actuator_4", "iiwa_actuator_5", "iiwa_actuator_6",
       "iiwa_actuator_7"};
 
-  // Model Size. Counting the world body, there should be eight bodies.
-  EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
+  // Model Size. Counting the world link, there should be eight links.
+  EXPECT_EQ(model.num_links(), 8);  // It includes the "world" link.
   EXPECT_EQ(model.num_joints(), 7);
   EXPECT_EQ(model.num_actuators(), 7);
   EXPECT_EQ(model.num_actuated_dofs(), 7);
@@ -230,7 +230,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddJoint<RevoluteJoint>("iiwa_joint_4", model->world_body(),
+      model->AddJoint<RevoluteJoint>("iiwa_joint_4", model->world_link(),
                                      std::nullopt,
                                      model->GetRigidBodyByName("iiwa_link_5"),
                                      std::nullopt, Vector3<double>::UnitZ()),
@@ -436,7 +436,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   Vector3<T> CalcEndEffectorVelocity(const MultibodyTree<T>& model_on_T,
                                      const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    model_on_T.CalcAllLinkSpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->index()].translational();
   }
 
@@ -447,7 +447,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    model_on_T.CalcAllLinkSpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->index()];
   }
 
@@ -460,7 +460,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     Vector3<T> p_WE;
     model_on_T.CalcPointsPositions(context_on_T, linkG_on_T.body_frame(),
                                    Vector3<T>::Zero(),  // position in frame G
-                                   model_on_T.world_body().body_frame(), &p_WE);
+                                   model_on_T.world_link().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -667,7 +667,7 @@ TEST_F(KukaIiwaModelTests, StateAccess) {
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
 // - MultibodyTree::CalcPointsVelocities()
-// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+// - MultibodyTree::CalcAllLinkSpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -829,7 +829,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
 //    respect to v.
 // In addition, this also tests the methods:
 // - MultibodyTree::CalcPointsPositions()
-// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+// - MultibodyTree::CalcAllLinkSpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -1180,7 +1180,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityB) {
   // Therefore we do not set it.
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
-                                     tree().world_body().body_frame(), p_WoWp_W,
+                                     tree().world_link().body_frame(), p_WoWp_W,
                                      frame_W, frame_W, &Jv_WWp);
 
   // Since in this case we are querying for the world frame, the Jacobian should
@@ -1332,7 +1332,7 @@ class WeldMobilizerTest : public ::testing::Test {
     body2_ = &model->AddRigidBody("body2", M_B);
 
     model->AddJoint(std::make_unique<WeldJoint<double>>(
-        "weld0", model->world_body().body_frame(), body1_->body_frame(),
+        "weld0", model->world_link().body_frame(), body1_->body_frame(),
         X_WB1_));
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
@@ -1385,11 +1385,11 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  std::vector<math::RigidTransformd> body_poses;
-  tree().CalcAllBodyPosesInWorld(*context_, &body_poses);
+  std::vector<math::RigidTransformd> link_poses;
+  tree().CalcAllLinkPosesInWorld(*context_, &link_poses);
 
-  EXPECT_TRUE(body_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
-  EXPECT_TRUE(body_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
+  EXPECT_TRUE(link_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
+  EXPECT_TRUE(link_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
 }
 
 // Verify proper operation of the Joint internal use only method for generating

@@ -47,7 +47,7 @@ class PlanarJointTest : public ::testing::Test {
     body_ = &model->AddRigidBody("Body", M_B);
 
     // Add a planar joint between the world and body1:
-    joint_ = &model->AddJoint<PlanarJoint>("Joint", model->world_body(),
+    joint_ = &model->AddJoint<PlanarJoint>("Joint", model->world_link(),
                                            std::nullopt, *body_, std::nullopt,
                                            Vector3d::Constant(kDamping));
     mutable_joint_ = dynamic_cast<PlanarJoint<double>*>(

@@ -97,9 +97,9 @@ std::string LinkJointGraph::GenerateGraphvizString(
     if (show_as_modeled && joint.mobod_index().is_valid()) {
       const SpanningForest::Mobod& mobod = forest().mobods(joint.mobod_index());
       if (mobod.is_reversed()) {
-        revised_parent_ordinal = mobod.link_ordinal();
+        revised_parent_ordinal = mobod.active_link_ordinal();
       } else {
-        revised_child_ordinal = mobod.link_ordinal();
+        revised_child_ordinal = mobod.active_link_ordinal();
       }
     }
 

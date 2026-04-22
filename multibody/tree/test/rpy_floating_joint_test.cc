@@ -53,7 +53,7 @@ class RpyFloatingJointTest : public ::testing::Test {
 
     // Add a ball rpy joint between the world and body:
     joint_ = &model->AddJoint<RpyFloatingJoint>(
-        "Joint", model->world_body(), std::nullopt, *body_, std::nullopt,
+        "Joint", model->world_link(), std::nullopt, *body_, std::nullopt,
         kAngularDamping, kTranslationalDamping);
     mutable_joint_ = dynamic_cast<RpyFloatingJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));

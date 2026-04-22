@@ -58,7 +58,7 @@ class RevoluteJointTest : public ::testing::Test {
 
     // Add a revolute joint between the world and body1:
     joint1_ = &model->AddJoint<RevoluteJoint>(
-        "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
+        "Joint1", model->world_link(), std::nullopt, *body1_, std::nullopt,
         Vector3d::UnitZ(), kPositionLowerLimit, kPositionUpperLimit, kDamping);
     mutable_joint1_ = dynamic_cast<RevoluteJoint<double>*>(
         &model->get_mutable_joint(joint1_->index()));

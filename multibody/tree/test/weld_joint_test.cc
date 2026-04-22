@@ -37,7 +37,7 @@ class WeldJointTest : public ::testing::Test {
     rbody_ = &model->AddRigidBody("rbody", M_B);
     collide_body_ = &model->AddRigidBody("collide_body", M_B);
 
-    joint_ = &model->AddJoint<WeldJoint>("Welder", model->world_body(), X_PJp_,
+    joint_ = &model->AddJoint<WeldJoint>("Welder", model->world_link(), X_PJp_,
                                          *body_, X_CJc_, X_JpJc_);
     // This is reversed since we're using the outboard rbody as the parent.
     rjoint_ = &model->AddJoint<WeldJoint>("RWelder", *rbody_, X_PJp_, *body_,
@@ -55,7 +55,7 @@ class WeldJointTest : public ::testing::Test {
                                       *collide_body_,
                                       RigidTransformd(Vector3d(1.0, 2.0, 3.0)));
     collide_joint_ =
-        &model->AddJoint<WeldJoint>("collide", model->world_body(), X_PJp_,
+        &model->AddJoint<WeldJoint>("collide", model->world_link(), X_PJp_,
                                     *collide_body_, X_CJc_, X_JpJc_);
 
     // We are done adding modeling elements. Transfer tree to system for
