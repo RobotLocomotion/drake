@@ -37,7 +37,7 @@ class ScrewMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<ScrewJoint, ScrewMobilizer>(
         std::make_unique<ScrewJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame(),
+            "joint0", tree().world_link().body_frame(), body_->body_frame(),
             kScrewAxis, kScrewPitch, 0.0));
     mutable_mobilizer_ = const_cast<ScrewMobilizer<double>*>(mobilizer_);
   }
@@ -60,7 +60,7 @@ TEST_F(ScrewMobilizerTest, ExceptionRaisingWhenZeroPitch) {
   const double zero_screw_pitch{0};
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
   ScrewMobilizer<double> zero_pitch_screw_mobilizer(
-      dummy_mobod, tree().world_body().body_frame(), body_->body_frame(),
+      dummy_mobod, tree().world_link().body_frame(), body_->body_frame(),
       Vector3<double>::UnitZ(), zero_screw_pitch);
 
   const double translation_z{1.0};

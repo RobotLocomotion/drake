@@ -589,6 +589,32 @@ representation.)""";
           const char* doc = R"""()""";
         } type_name;
       } BallRpyJoint;
+      // Symbol: drake::multibody::BaseBodyJointType
+      struct /* BaseBodyJointType */ {
+        // Source: drake/multibody/tree/multibody_tree.h
+        const char* doc =
+R"""(The kind of joint to be used to connect base bodies to world at
+Finalize(). See mbp_working_with_free_bodies "Working with free
+bodies" for definitions and discussion.
+
+See also:
+    SetBaseBodyJointType() for details.)""";
+        // Symbol: drake::multibody::BaseBodyJointType::kQuaternionFloatingJoint
+        struct /* kQuaternionFloatingJoint */ {
+          // Source: drake/multibody/tree/multibody_tree.h
+          const char* doc = R"""(6 dofs, unrestricted orientation.)""";
+        } kQuaternionFloatingJoint;
+        // Symbol: drake::multibody::BaseBodyJointType::kRpyFloatingJoint
+        struct /* kRpyFloatingJoint */ {
+          // Source: drake/multibody/tree/multibody_tree.h
+          const char* doc = R"""(6 dofs using 3 angles; has singularity.)""";
+        } kRpyFloatingJoint;
+        // Symbol: drake::multibody::BaseBodyJointType::kWeldJoint
+        struct /* kWeldJoint */ {
+          // Source: drake/multibody/tree/multibody_tree.h
+          const char* doc = R"""(0 dofs, fixed to World.)""";
+        } kWeldJoint;
+      } BaseBodyJointType;
       // Symbol: drake::multibody::BodyIndex
       struct /* BodyIndex */ {
         // Source: drake/multibody/tree/multibody_tree_indexes.h
@@ -2136,7 +2162,15 @@ velocity of its underlying body, whereas the translational velocity of
 a FixedOffsetFrame differs from that of a RigidBodyFrame.
 
 Frame provides methods for obtaining its current orientation,
-position, motion, etc. from a Context passed to those methods.)""";
+position, motion, etc. from a Context passed to those methods.
+
+Note:
+    For historical reasons, many of the method names here use "Body"
+    to mean "Link". The distinction matters when we form composite
+    bodies, which consist of multiple links welded together. Those
+    composites form a single *rigid body* in the physics sense. Frames
+    only know about their Links, not how they may have been combined
+    into a composite body.)""";
         // Symbol: drake::multibody::Frame::CalcAngularVelocity
         struct /* CalcAngularVelocity */ {
           // Source: drake/multibody/tree/frame.h
@@ -2227,7 +2261,7 @@ Note:
         struct /* CalcRelativeSpatialAcceleration */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
-R"""(Calculates ``this`` frame C's spatial acceleration relative to another
+R"""(Calculates ``this`` frame F's spatial acceleration relative to another
 frame B, measured in a frame M, expressed in a frame E.
 
 Parameter ``context``:
@@ -2243,14 +2277,14 @@ Parameter ``expressed_in_frame``:
     which is frame E.
 
 Returns:
-    A_M_BC_E = A_MC_E - A_MB_E, frame C's spatial acceleration
+    A_M_BF_E = A_MF_E - A_MB_E, frame F's spatial acceleration
     relative to frame B, measured in frame M, expressed in frame E.
 
-In general, A_M_BC = DtW(V_M_BC), the time-derivative in frame M of
-frame C's spatial velocity relative to frame B. The rotational part of
-the returned quantity is α_MC_E - α_MB_E = DtM(ω_BC)_E. Note: For 3D
-analysis, DtM(ω_BC) ≠ α_BC. The translational part of the returned
-quantity is a_M_BoCo_E (Co's translational acceleration relative to
+In general, A_M_BF = DtW(V_M_BF), the time-derivative in frame M of
+frame F's spatial velocity relative to frame B. The rotational part of
+the returned quantity is α_MF_E - α_MB_E = DtM(ω_BF)_E. Note: For 3D
+analysis, DtM(ω_BF) ≠ α_BF. The translational part of the returned
+quantity is a_M_BoFo_E (Fo's translational acceleration relative to
 Bo, measured in frame M, expressed in frame E).
 
 
@@ -2260,20 +2294,20 @@ Bo, measured in frame M, expressed in frame E).
 
 .. code-block:: c++
 
-    α_MC_E - α_MB_E = DtM(ω_MC)_E - DtM(ω_MB)_E = DtM(ω_BC)_E
-     a_M_BoCo_E = a_MCo_E - a_MBo_E = DtM(v_MCo) - DtM(v_MBo) = Dt²M(p_BoCo)_E
+    α_MF_E - α_MB_E = DtM(ω_MF)_E - DtM(ω_MB)_E = DtM(ω_BF)_E
+     a_M_BoFo_E = a_MFo_E - a_MBo_E = DtM(v_MFo) - DtM(v_MBo) = Dt²M(p_BoFo)_E
 
 .. raw:: html
 
     </details>
 
-where Dt²M(p_BoCo)_E is the 2ⁿᵈ time-derivative in frame M of p_BoCo
-(the position vector from Bo to Co), and this result is expressed in
+where Dt²M(p_BoFo)_E is the 2ⁿᵈ time-derivative in frame M of p_BoFo
+(the position vector from Bo to Fo), and this result is expressed in
 frame E.
 
 Note:
     The calculation of the 2ⁿᵈ time-derivative of the distance between
-    Bo and Co can be done with relative translational acceleration,
+    Bo and Fo can be done with relative translational acceleration,
     but this calculation does not depend on the measured-in-frame,
     hence in this case, consider
     CalcRelativeSpatialAccelerationInWorld() since it is faster.
@@ -2286,7 +2320,7 @@ See also:
         struct /* CalcRelativeSpatialAccelerationInWorld */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
-R"""(Calculates ``this`` frame C's spatial acceleration relative to another
+R"""(Calculates ``this`` frame F's spatial acceleration relative to another
 frame B, measured and expressed in the world frame W.
 
 Parameter ``context``:
@@ -2296,14 +2330,14 @@ Parameter ``other_frame``:
     which is frame B.
 
 Returns:
-    A_W_BC_W = A_WC_W - A_WB_W, frame C's spatial acceleration
+    A_W_BF_W = A_WF_W - A_WB_W, frame F's spatial acceleration
     relative to frame B, measured and expressed in the world frame W.
 
-In general, A_W_BC = DtW(V_W_BC), the time-derivative in the world
-frame W of frame C's spatial velocity relative to frame B. The
-rotational part of the returned quantity is α_WC_W - α_WB_W =
-DtW(ω_BC)_W. For 3D analysis, DtW(ω_BC) ≠ α_BC. The translational part
-of the returned quantity is a_W_BoCo_W (Co's translational
+In general, A_W_BF = DtW(V_W_BF), the time-derivative in the world
+frame W of frame F's spatial velocity relative to frame B. The
+rotational part of the returned quantity is α_WF_W - α_WB_W =
+DtW(ω_BF)_W. For 3D analysis, DtW(ω_BF) ≠ α_BF. The translational part
+of the returned quantity is a_W_BoFo_W (Fo's translational
 acceleration relative to Bo, measured and expressed in world frame W).
 
 
@@ -2313,15 +2347,15 @@ acceleration relative to Bo, measured and expressed in world frame W).
 
 .. code-block:: c++
 
-    α_WC_W - α_WB_W = DtW(ω_WC)_W - DtW(ω_WB)_W = DtW(ω_BC)_W
-     a_W_BoCo_W = a_WCo_W - a_WBo_W = DtW(v_WCo) - DtW(v_WBo) = Dt²W(p_BoCo)_W
+    α_WF_W - α_WB_W = DtW(ω_WF)_W - DtW(ω_WB)_W = DtW(ω_BF)_W
+     a_W_BoFo_W = a_WFo_W - a_WBo_W = DtW(v_WFo) - DtW(v_WBo) = Dt²W(p_BoFo)_W
 
 .. raw:: html
 
     </details>
 
-where Dt²W(p_BoCo)_W is the 2ⁿᵈ time-derivative in frame W of p_BoCo
-(the position vector from Bo to Co), and this result is expressed in
+where Dt²W(p_BoFo)_W is the 2ⁿᵈ time-derivative in frame W of p_BoFo
+(the position vector from Bo to Fo), and this result is expressed in
 frame W.
 
 Note:
@@ -2337,7 +2371,7 @@ See also:
         struct /* CalcRelativeSpatialVelocity */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
-R"""(Calculates ``this`` frame C's spatial velocity relative to another
+R"""(Calculates ``this`` frame F's spatial velocity relative to another
 frame B, measured in a frame M, expressed in a frame E.
 
 Parameter ``context``:
@@ -2353,11 +2387,11 @@ Parameter ``expressed_in_frame``:
     which is frame E.
 
 Returns:
-    V_M_BC_E = V_MC_E - V_MB_E, frame C's spatial velocity relative to
+    V_M_BF_E = V_MF_E - V_MB_E, frame F's spatial velocity relative to
     frame B, measured in frame M, expressed in frame E. The rotational
-    part of the returned quantity is ω_BC_E (C's angular velocity
+    part of the returned quantity is ω_BF_E (F's angular velocity
     measured in B and expressed in E). The translational part is
-    v_M_BoCo_E (Co's translational velocity relative to Bo, measured
+    v_M_BoFo_E (Fo's translational velocity relative to Bo, measured
     in M, and expressed in E).
 
 
@@ -2367,25 +2401,25 @@ Returns:
 
 .. code-block:: c++
 
-    ω_BC_E = ω_MC_E - ω_MB_E
-     v_M_BoCo_E = v_MCo_E - v_MBo_E = DtM(p_BoCo)
+    ω_BF_E = ω_MF_E - ω_MB_E
+     v_M_BoFo_E = v_MFo_E - v_MBo_E = DtM(p_BoFo)
 
 .. raw:: html
 
     </details>
 
-where DtM(p_BoCo) is the time-derivative in frame M of p_BoCo
-(position vector from Bo to Co), and this vector is expressed in frame
+where DtM(p_BoFo) is the time-derivative in frame M of p_BoFo
+(position vector from Bo to Fo), and this vector is expressed in frame
 E.
 
 Note:
     The method CalcSpatialVelocity() is more efficient and coherent if
     any of ``this``, other_frame, or measured_in_frame are the same.
-    Also, the value of V_M_BoCo does not depend on the
-    measured_in_frame if Bo and Co are coincident (i.e., p_BoCo = 0),
+    Also, the value of V_M_BoFo does not depend on the
+    measured_in_frame if Bo and Fo are coincident (i.e., p_BoFo = 0),
     in which case consider the more efficient method
     CalcRelativeSpatialVelocityInWorld(). Lastly, the calculation of
-    elongation between Bo and Co can be done with relative
+    elongation between Bo and Fo can be done with relative
     translational velocity, but elongation does not depend on the
     measured-in-frame (hence consider
     CalcRelativeSpatialVelocityInWorld()).
@@ -2694,7 +2728,7 @@ are very fast.)""";
           // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Only derived classes can use this constructor. It creates a Frame
-object attached to ``body`` and puts the frame in the body's model
+object attached to ``link`` and puts the frame in the link's model
 instance.)""";
         } ctor;
         // Symbol: drake::multibody::Frame::GetFixedOffsetPoseInBody
@@ -2748,9 +2782,7 @@ Raises:
     RuntimeError if ``this`` frame F is a Frame that does not have a
     fixed offset in the body frame B (i.e., ``R_BF`` is not constant).
     Frame sub-classes that have a constant ``R_BF`` must override this
-    method. An example of a frame sub-class not implementing this
-    method would be that of a frame on a soft body, for which its pose
-    in the body frame depends on the state of deformation of the body.)""";
+    method.)""";
         } GetFixedRotationMatrixInBodyFrame;
         // Symbol: drake::multibody::Frame::ShallowClone
         struct /* ShallowClone */ {
@@ -2764,7 +2796,7 @@ any MbT (so the assigned index, if any, is discarded).)""";
         struct /* body */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
-R"""(Returns a const reference to the body associated to this Frame.)""";
+R"""((Compatibility) Dispreferred synonym for link().)""";
         } body;
         // Symbol: drake::multibody::Frame::get_X_BF
         struct /* get_X_BF */ {
@@ -2778,7 +2810,7 @@ Note:
     since the last parameter change; we can't check here.
 
 Returns ``X_BF``:
-    pose of this frame in its body's frame)""";
+    pose of this frame in its Mobod's frame)""";
         } get_X_BF;
         // Symbol: drake::multibody::Frame::get_X_FB
         struct /* get_X_FB */ {
@@ -2792,15 +2824,22 @@ Note:
     since the last parameter change; we can't check here.
 
 Returns ``X_FB``:
-    inverse of this frame's pose in its body's frame)""";
+    inverse of this frame's pose in its Mobod's frame)""";
         } get_X_FB;
-        // Symbol: drake::multibody::Frame::get_body_pose_index_in_cache
-        struct /* get_body_pose_index_in_cache */ {
+        // Symbol: drake::multibody::Frame::get_X_LF
+        struct /* get_X_LF */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
-R"""((Internal use only) Retrieve this Frame's body pose index in the
-cache.)""";
-        } get_body_pose_index_in_cache;
+R"""((Internal use only) Given an already up-to-date frame body pose cache,
+extract X_LF for this Frame from it.
+
+Note:
+    Be sure you have called MultibodyTreeSystem∷EvalFrameBodyPoses()
+    since the last parameter change; we can't check here.
+
+Returns ``X_LF``:
+    pose of this frame in its Link's frame)""";
+        } get_X_LF;
         // Symbol: drake::multibody::Frame::index
         struct /* index */ {
           // Source: drake/multibody/tree/frame.h
@@ -2819,20 +2858,32 @@ Note:
     since the last parameter change; we can't check here.
 
 See also:
-    get_X_BF())""";
+    get_X_BF(), get_X_FB())""";
         } is_X_BF_identity;
         // Symbol: drake::multibody::Frame::is_body_frame
         struct /* is_body_frame */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
-R"""(Returns true if ``this`` is the body frame.)""";
+R"""((Compatibility) Dispreferred synonym for is_link_frame().)""";
         } is_body_frame;
+        // Symbol: drake::multibody::Frame::is_link_frame
+        struct /* is_link_frame */ {
+          // Source: drake/multibody/tree/frame.h
+          const char* doc =
+R"""(Returns true if ``this`` is the link frame of the associated link.)""";
+        } is_link_frame;
         // Symbol: drake::multibody::Frame::is_world_frame
         struct /* is_world_frame */ {
           // Source: drake/multibody/tree/frame.h
           const char* doc =
 R"""(Returns true if ``this`` is the world frame.)""";
         } is_world_frame;
+        // Symbol: drake::multibody::Frame::link
+        struct /* link */ {
+          // Source: drake/multibody/tree/frame.h
+          const char* doc =
+R"""(Returns a const reference to the Link to which this Frame is attached.)""";
+        } link;
         // Symbol: drake::multibody::Frame::name
         struct /* name */ {
           // Source: drake/multibody/tree/frame.h
@@ -2850,26 +2901,6 @@ Raises:
     RuntimeError if this element is not associated with a
     MultibodyPlant.)""";
         } scoped_name;
-        // Symbol: drake::multibody::Frame::set_body_pose_index_in_cache
-        struct /* set_body_pose_index_in_cache */ {
-          // Source: drake/multibody/tree/frame.h
-          const char* doc =
-R"""((Internal use only) A Frame's pose-in-parent X_PF can be
-parameterized, the parent's pose may also be parameterized, and so on.
-Thus the calculation of this frame's pose in its body (X_BF) can be
-expensive. There is a cache entry that holds the calculated X_BF,
-evaluated whenever parameters change. This allows us to grab X_BF as a
-const reference rather than having to extract and reformat parameters,
-and compose with parent and ancestor poses at runtime.
-
-At the time parameters are allocated we assign a slot in the body pose
-cache entry to each Frame and record its index using this function.
-(The index for a RigidBodyFrame will refer to an identity transform.)
-Note that the body pose index is not necessarily the same as the Frame
-index because all RigidBodyFrames can share an entry. (Of course if
-you know you are working with a RigidBodyFrame you don't need to ask
-about its body pose!))""";
-        } set_body_pose_index_in_cache;
       } Frame;
       // Symbol: drake::multibody::FrameIndex
       struct /* FrameIndex */ {
@@ -4979,8 +5010,8 @@ to choose torque stiffness and damping constants" for more details.)""";
         // Source: drake/multibody/tree/linear_spring_damper.h
         const char* doc =
 R"""(This ForceElement models a spring-damper attached between two points
-on two different bodies. Given a point P on a body A and a point Q on
-a body B with positions p_AP and p_BQ, respectively, this
+on two different bodies (links). Given a point P on a body A and a
+point Q on a body B with positions p_AP and p_BQ, respectively, this
 spring-damper applies equal and opposite forces on bodies A and B
 according to:
 
@@ -5115,6 +5146,17 @@ body frame B.)""";
           const char* doc = R"""()""";
         } stiffness;
       } LinearSpringDamper;
+      // Symbol: drake::multibody::LinkIndex
+      struct /* LinkIndex */ {
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
+        const char* doc = R"""(This is a synonym for BodyIndex.)""";
+      } LinkIndex;
+      // Symbol: drake::multibody::LinkOrdinal
+      struct /* LinkOrdinal */ {
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
+        const char* doc =
+R"""(Type used to identify links by ordinal within a multibody plant.)""";
+      } LinkOrdinal;
       // Symbol: drake::multibody::ModelInstanceIndex
       struct /* ModelInstanceIndex */ {
         // Source: drake/multibody/tree/multibody_tree_indexes.h
@@ -7322,7 +7364,7 @@ Raises:
         struct /* body_frame */ {
           // Source: drake/multibody/tree/rigid_body.h
           const char* doc =
-R"""(Returns a const reference to the associated BodyFrame.)""";
+R"""((Compatibility) A synonym for link_frame().)""";
         } body_frame;
         // Symbol: drake::multibody::RigidBody::default_com
         struct /* default_com */ {
@@ -7660,6 +7702,13 @@ generally Joint∷is_locked() is preferable otherwise.
 Returns:
     true if the body is locked, false otherwise.)""";
         } is_locked;
+        // Symbol: drake::multibody::RigidBody::link_frame
+        struct /* link_frame */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""(Returns a const reference to the associated LinkFrame
+(RigidBodyFrame).)""";
+        } link_frame;
         // Symbol: drake::multibody::RigidBody::mobod_index
         struct /* mobod_index */ {
           // Source: drake/multibody/tree/rigid_body.h
@@ -7676,6 +7725,14 @@ the index into all associated quantities.)""";
 R"""(Gets the ``name`` associated with this rigid body. The name will never
 be empty.)""";
         } name;
+        // Symbol: drake::multibody::RigidBody::ordinal
+        struct /* ordinal */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""((Internal use only) Returns this Link's (RigidBody's) unique ordinal.
+Currently identical to the index but will differ when we permit
+removal of Links as we do for Joints.)""";
+        } ordinal;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
           // Source: drake/multibody/tree/rigid_body.h

@@ -1005,6 +1005,13 @@ Returns:
     elements of ``this`` and ``other`` are equal within
     translational_tolerance.)""";
         } IsNearlyEqualWithinAbsoluteTolerance;
+        // Symbol: drake::multibody::SpatialVector::NaN
+        struct /* NaN */ {
+          // Source: drake/multibody/math/spatial_vector.h
+          const char* doc =
+R"""(Factory to create a *NaN* spatial vector, i.e., a SpatialVector whose
+rotational and translational components are all NaN.)""";
+        } NaN;
         // Symbol: drake::multibody::SpatialVector::SetNaN
         struct /* SetNaN */ {
           // Source: drake/multibody/math/spatial_vector.h
