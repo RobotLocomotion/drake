@@ -39,7 +39,7 @@ types like FixedOffsetFrame *are* directly owned by this collection.
   - Joint
   - JointActuator
   - ModelInstance
-  - RigidBody
+  - RigidBody (Link)
   - DeformableBody
 @tparam Index The corresponding index type for the given Element type. */
 template <typename T, template <typename> class Element, typename Index>
@@ -51,6 +51,12 @@ class ElementCollection final {
 
   /* Returns the total number of (non-null) elements. */
   int num_elements() const { return ssize(indices_packed_); }
+
+  /* Returns the total number of indices ever allocated (including the ones
+  that might be invalid now). This is the size that should be used for any array
+  that is to be addressed by index. next_index() will return this value as the
+  next unused index. */
+  int num_indices() const { return ssize(elements_by_index_); }
 
   /* Returns a read-only view of the (non-null) elements. The result is only
   guaranteed to remain valid until the next call to any non-const member
@@ -96,7 +102,7 @@ class ElementCollection final {
   /* Returns a reference to the list of currently-valid indices. The result is
   only guaranteed to remain valid until the next call to any non-const member
   function. */
-  const std::vector<Index>& indices() const { return indices_packed_; }
+  const std::vector<Index>& valid_indices() const { return indices_packed_; }
 
   /* Returns a reference to the name lookup dictionary. The result is only
   guaranteed to remain valid until the next call to any non-const member
@@ -107,7 +113,7 @@ class ElementCollection final {
 
   /* Returns the index that is one beyond the current maximum, i.e., the index
   that can be used for the next element passed to Add(). */
-  Index next_index() const { return Index{ssize(elements_by_index_)}; }
+  Index next_index() const { return Index{num_indices()}; }
 
   /* Adds a new element. If the element->index() equals the next_index(), then
   the element will be appended to the end (and next_index() will increment).

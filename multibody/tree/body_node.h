@@ -120,7 +120,7 @@ class BodyNode : public MultibodyElement<T> {
   // MultibodyTree::Finalize() method call.
   void add_child_node(const BodyNode<T>* child) { children_.push_back(child); }
 
-  MobodIndex inboard_mobod_index() const { return mobod().inboard(); }
+  MobodIndex inboard_mobod_index() const { return mobod().inboard_mobod(); }
 
   // Returns a constant reference to the body B associated with this node.
   const RigidBody<T>& body() const {
@@ -135,7 +135,7 @@ class BodyNode : public MultibodyElement<T> {
   const RigidBody<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree().get_body(get_parent_body_index());
+    return this->get_parent_tree().get_link(get_parent_body_index());
   }
 
   // Returns a const pointer to the parent (inboard) body node or nullptr if
@@ -227,8 +227,10 @@ class BodyNode : public MultibodyElement<T> {
   //   An already updated position kinematics cache in sync with positions.
   // @param[out] H_PB_W_cache
   //   The cache entry being calculated; just this node's H_PB is updated.
-
-  // @note `H_PB_W` is only a function of this node's generalized positions q.
+  //
+  // @note Although `H_PB_P` would be a function of only this node's generalized
+  //   positions qₘ, the output value is expressed in World so requires more
+  //   kinematics data.
   //
   // @pre The position kinematics cache `pc` was already updated to be in sync
   // with positions by MultibodyTree::CalcPositionKinematicsCache().

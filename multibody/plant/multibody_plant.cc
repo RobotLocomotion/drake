@@ -1224,8 +1224,8 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
                       __func__, joint));
     }
   }
-  const std::set<BodyIndex> links =
-      internal_tree().GetBodiesKinematicallyAffectedBy(joint_indexes);
+  const std::set<LinkIndex> links =
+      internal_tree().GetLinksKinematicallyAffectedBy(joint_indexes);
   // TODO(sherm1) Change the return type to set to avoid this copy.
   return std::vector<BodyIndex>(links.cbegin(), links.cend());
 }
@@ -1350,7 +1350,7 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
     // Make sure there aren't any inactives for now.
     DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
     const BodyIndex active_link_index =
-        forest.links(mobod.link_ordinal()).index();
+        forest.links(mobod.active_link_ordinal()).index();
     (*A_WB_array)[active_link_index] = A_WB_array_mobod[mobod.index()];
   }
 }
@@ -1418,43 +1418,13 @@ template <typename T>
 void MultibodyPlant<T>::SetBaseBodyJointType(
     BaseBodyJointType joint_type,
     std::optional<ModelInstanceIndex> model_instance) {
-  std::optional<internal::ForestBuildingOptions> options;
-  switch (joint_type) {
-    case BaseBodyJointType::kQuaternionFloatingJoint:
-      options = internal::ForestBuildingOptions::kDefault;
-      break;
-    case BaseBodyJointType::kRpyFloatingJoint:
-      options = internal::ForestBuildingOptions::kUseRpyFloatingJoints;
-      break;
-    case BaseBodyJointType::kWeldJoint:
-      options = internal::ForestBuildingOptions::kUseFixedBase;
-      break;
-  }
-  DRAKE_DEMAND(options.has_value());
-  DRAKE_THROW_UNLESS(!is_finalized());
-  internal::LinkJointGraph& graph = mutable_tree().mutable_graph();
-  if (model_instance.has_value()) {
-    graph.SetForestBuildingOptions(*model_instance, *options);
-  } else {
-    graph.SetGlobalForestBuildingOptions(*options);
-  }
+  mutable_tree().SetBaseBodyJointType(joint_type, model_instance);
 }
 
 template <typename T>
 BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
     std::optional<ModelInstanceIndex> model_instance) const {
-  const internal::LinkJointGraph& graph = internal_tree().graph();
-  const internal::ForestBuildingOptions options =
-      model_instance.has_value()
-          ? graph.get_forest_building_options_in_use(*model_instance)
-          : graph.get_global_forest_building_options();
-  if (static_cast<bool>(options &
-                        internal::ForestBuildingOptions::kUseRpyFloatingJoints))
-    return BaseBodyJointType::kRpyFloatingJoint;
-  if (static_cast<bool>(options &
-                        internal::ForestBuildingOptions::kUseFixedBase))
-    return BaseBodyJointType::kWeldJoint;
-  return BaseBodyJointType::kQuaternionFloatingJoint;
+  return internal_tree().GetBaseBodyJointType(model_instance);
 }
 
 template <typename T>
@@ -2690,7 +2660,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
         HasNaN(spatial_force.translational())) {
       throw std::runtime_error(fmt::format(
           "Spatial force applied on body {} contains NaN.",
-          internal_tree().get_body(external_spatial_force.body_index).name()));
+          internal_tree().get_link(external_spatial_force.body_index).name()));
     }
   };
   // Loop over all forces.
@@ -4060,13 +4030,13 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
 template <typename T>
 void MultibodyPlant<T>::CalcBodyPosesOutput(
     const Context<T>& context,
-    std::vector<math::RigidTransform<T>>* outupt) const {
+    std::vector<math::RigidTransform<T>>* output) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
-  outupt->resize(num_bodies());
+  output->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const RigidBody<T>& body = get_body(body_index);
-    outupt->at(body_index) = EvalBodyPoseInWorld(context, body);
+    output->at(body_index) = EvalBodyPoseInWorld(context, body);
   }
 }
 

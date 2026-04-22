@@ -13,82 +13,145 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* This class is one of the cache entries in the Context. It holds the
-precalculated body-relative poses X_BF of every Frame F. Since FixedOffsetFrame
-body poses are parameterized, and given with respect to a parent frame P which
-may itself be a parameterized FixedOffsetFrame, we need to precalculate X_BF
-once the parameters have been set so that we don't have to do that calculation
-repeatedly at runtime. We also precalculate the inverse X_FB since that
-is often needed as well, and record whether X_BF (and of course X_FB) is the
-identity transform, for use in runtime optimizations.
+/* This class is one of the cache entries in the Context. It can be filled in
+once parameters have known values (and must be recalculated when parameters
+change). It holds the following items.
 
-Every Frame is allocated one slot here and the index of that slot (which we
-refer to as `body_pose_index` in this class) is stored in the Frame object for
-fast retrieval (the indices are assigned in Finalize()). Since RigidBodyFrames
-have identity poses by definition, they all share a single entry (the 0th) here
-to permit getting the body pose of any Frame efficiently in cases where you
-don't know what kind of Frame you have. Of course if you know you are working
-with RigidBodyFrames you don't have to use this cache.
+Frame & Link poses
+------------------
+ - the link-relative pose X_LF of every Frame F on the Link to which it is
+   fixed. FixedOffsetFrame link poses are parameterized, and given with
+   respect to a parent frame P which may itself be a parameterized
+   FixedOffsetFrame. We need to precalculate X_LF so that we don't have to do
+   that calculation repeatedly at runtime.
+ - the pose X_BL of each link's frame L on its Mobod frame B. Note that frame B
+   is always the link frame of the mobod's active (most inboard) link. X_BL is
+   necessarily identity unless B is a composite mobod and L is not the active
+   link.
+ - since a frame is fixed to its link L, and L is fixed to its mobod B, we
+   can calculate each frame's mobod-relative pose X_BF (= X_BL*X_LF). This
+   can only differ from X_LF when mobod B is composite and L is not the active
+   link of B.
+ - the inverse X_FB since that is often needed as well.
+ - whether X_BF (and of course X_FB) is the identity transform, for use in
+   runtime optimizations.
+
+Mass properties
+---------------
+ - the SpatialInertia M_LLo_L of every link L about its link origin Lo,
+   expressed in L. Since mass properties can be parameterized, we need to
+   precalculate these inertias so that we don't have to do that repeatedly at
+   runtime.
+ - the SpatialInertia M_BBo_B of every mobod B about its body origin Bo,
+   expressed in B. This differs from M_LLo_L when B is a composite mobod.
+
 @tparam_default_scalar */
 template <typename T>
 class FrameBodyPoseCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameBodyPoseCache);
 
-  explicit FrameBodyPoseCache(int num_mobods,
-                              int num_frame_body_pose_slots_needed)
-      : X_BF_pool_(num_frame_body_pose_slots_needed),
-        X_FB_pool_(num_frame_body_pose_slots_needed),
-        is_X_BF_identity_(num_frame_body_pose_slots_needed),
+  explicit FrameBodyPoseCache(int num_links, int num_frames, int num_mobods)
+      : X_LF_pool_(num_frames, math::RigidTransform<T>::Identity()),
+        X_BF_pool_(num_frames, math::RigidTransform<T>::Identity()),
+        X_FB_pool_(num_frames, math::RigidTransform<T>::Identity()),
+        is_X_BF_identity_(num_frames, true),
+        X_BL_pool_(num_links, math::RigidTransform<T>::Identity()),
+        is_X_BL_identity_(num_links, true),
+        M_LLo_L_pool_(num_links, SpatialInertia<T>::NaN()),
         M_BBo_B_pool_(num_mobods, SpatialInertia<T>::NaN()) {
-    DRAKE_DEMAND(num_frame_body_pose_slots_needed > 0);
-
-    // All RigidBodyFrames share this body pose.
-    X_BF_pool_[0] = X_FB_pool_[0] = math::RigidTransform<T>::Identity();
-    is_X_BF_identity_[0] = true;
+    // Initially all transforms are identity, mass props are NaN.
   }
 
-  const math::RigidTransform<T>& get_X_BF(int body_pose_index) const {
+  const math::RigidTransform<T>& get_X_LF(FrameIndex index) const {
+    DRAKE_ASSERT(0 <= index && index < ssize(X_LF_pool_));
+    return X_LF_pool_[index];
+  }
+
+  const math::RigidTransform<T>& get_X_BF(FrameIndex index) const {
     // This method must be very fast in Release.
-    DRAKE_ASSERT(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
-    return X_BF_pool_[body_pose_index];
+    DRAKE_ASSERT(0 <= index && index < ssize(X_BF_pool_));
+    return X_BF_pool_[index];
   }
 
-  const math::RigidTransform<T>& get_X_FB(int body_pose_index) const {
+  const math::RigidTransform<T>& get_X_FB(FrameIndex index) const {
     // This method must be very fast in Release.
-    DRAKE_ASSERT(0 <= body_pose_index && body_pose_index < ssize(X_FB_pool_));
-    return X_FB_pool_[body_pose_index];
+    DRAKE_ASSERT(0 <= index && index < ssize(X_FB_pool_));
+    return X_FB_pool_[index];
   }
 
-  // Returns true if F is a body frame or is coincident with a body frame,
-  // unless T is symbolic, in which case we always return false. This should be
-  // used only for performance optimization, so that a false negative
-  // harmlessly leads to treating X_BF as a general transform.
-  bool is_X_BF_identity(int body_pose_index) const {
+  // We're given a frame F that is fixed to some link L, and L is fixed to
+  // some mobod B. Denote B's active link as L₀. By definition, L₀'s
+  // LinkFrame is also mobilized body B's body frame.
+  //
+  // This method returns true if
+  // (1) F is B's body frame (that is, F is L's LinkFrame and L≡L₀), or
+  // (2) T is nonsymbolic and F is currently coincident B's body frame.
+  //
+  // This should be used only for performance optimization, so that a false
+  // negative harmlessly leads to treating X_BF as a general transform.
+  bool is_X_BF_identity(FrameIndex index) const {
     // This method must be very fast in Release.
-    DRAKE_ASSERT(0 <= body_pose_index &&
-                 body_pose_index < ssize(is_X_BF_identity_));
-    return static_cast<bool>(is_X_BF_identity_[body_pose_index]);
+    DRAKE_ASSERT(0 <= index && index < ssize(is_X_BF_identity_));
+    return static_cast<bool>(is_X_BF_identity_[index]);
   }
 
-  const SpatialInertia<T>& get_M_BBo_B(MobodIndex index) const {
+  const math::RigidTransform<T>& get_X_BL(LinkOrdinal ordinal) const {
     // This method must be very fast in Release.
-    DRAKE_ASSERT(0 <= index && index < ssize(M_BBo_B_pool_));
-    return M_BBo_B_pool_[index];
+    DRAKE_ASSERT(0 <= ordinal && ordinal < ssize(X_BL_pool_));
+    return X_BL_pool_[ordinal];
   }
 
-  void SetX_BF(int body_pose_index, const math::RigidTransform<T>& X_BF) {
+  bool is_X_BL_identity(LinkOrdinal ordinal) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= ordinal && ordinal < ssize(is_X_BL_identity_));
+    return static_cast<bool>(is_X_BL_identity_[ordinal]);
+  }
+
+  const SpatialInertia<T>& get_M_LLo_L(LinkOrdinal ordinal) const {
+    DRAKE_ASSERT(0 <= ordinal && ordinal < ssize(M_LLo_L_pool_));
+    return M_LLo_L_pool_[ordinal];
+  }
+
+  const SpatialInertia<T>& get_M_BBo_B(MobodIndex ordinal) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= ordinal && ordinal < ssize(M_BBo_B_pool_));
+    return M_BBo_B_pool_[ordinal];
+  }
+
+  void SetX_LF(FrameIndex index, const math::RigidTransform<T>& X_LF) {
     // This method is only called when parameters change.
-    DRAKE_DEMAND(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
-    // RigidBodyFrames use pose index 0; we already know X_BF is identity.
-    if (body_pose_index == 0) return;
-    X_BF_pool_[body_pose_index] = X_BF;
-    X_FB_pool_[body_pose_index] = X_BF.inverse();
+    DRAKE_DEMAND(0 <= index && index < ssize(X_LF_pool_));
+    X_LF_pool_[index] = X_LF;
+  }
+
+  void SetX_BF(FrameIndex index, const math::RigidTransform<T>& X_BF) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= index && index < ssize(X_BF_pool_));
+    X_BF_pool_[index] = X_BF;
+    X_FB_pool_[index] = X_BF.inverse();
     if constexpr (scalar_predicate<T>::is_bool) {
-      is_X_BF_identity_[body_pose_index] = X_BF.IsExactlyIdentity();
+      is_X_BF_identity_[index] = X_BF.IsExactlyIdentity();
     } else {
-      is_X_BF_identity_[body_pose_index] = static_cast<uint8_t>(false);
+      is_X_BF_identity_[index] = static_cast<uint8_t>(false);
     }
+  }
+
+  void SetX_BL(LinkOrdinal ordinal, const math::RigidTransform<T>& X_BL) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= ordinal && ordinal < ssize(X_BL_pool_));
+    X_BL_pool_[ordinal] = X_BL;
+    if constexpr (scalar_predicate<T>::is_bool) {
+      is_X_BL_identity_[ordinal] = X_BL.IsExactlyIdentity();
+    } else {
+      is_X_BL_identity_[ordinal] = static_cast<uint8_t>(false);
+    }
+  }
+
+  void SetM_LLo_L(LinkOrdinal ordinal, const SpatialInertia<T>& M_LLo_L) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= ordinal && ordinal < ssize(M_LLo_L_pool_));
+    M_LLo_L_pool_[ordinal] = M_LLo_L;
   }
 
   void SetM_BBo_B(MobodIndex index, const SpatialInertia<T>& M_BBo_B) {
@@ -100,13 +163,18 @@ class FrameBodyPoseCache {
  private:
   // Sizes are set on construction.
 
-  // These are indexed by Frame::get_body_pose_index_in_cache().
+  // These are indexed by FrameIndex.
+  std::vector<math::RigidTransform<T>> X_LF_pool_;
   std::vector<math::RigidTransform<T>> X_BF_pool_;
   std::vector<math::RigidTransform<T>> X_FB_pool_;
   std::vector<uint8_t> is_X_BF_identity_;  // fast vector<bool> equivalent
 
-  // Spatial inertia of mobilized body B, about its body origin Bo, expressed
-  // in B. These are indexed by MobodIndex.
+  // These are indexed by LinkOrdinal.
+  std::vector<math::RigidTransform<T>> X_BL_pool_;
+  std::vector<uint8_t> is_X_BL_identity_;
+  std::vector<SpatialInertia<T>> M_LLo_L_pool_;
+
+  // This is indexed by MobodIndex.
   std::vector<SpatialInertia<T>> M_BBo_B_pool_;
 };
 

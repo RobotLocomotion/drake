@@ -75,13 +75,13 @@ KukaIiwaModelBuilder<T>::Build() const {
                                                      I_GGcm_G_);
 
   // Add this robot's seven links.
-  const RigidBody<T>& linkA = model->AddRigidBody("iiwa_link_1", M_AAo_A);
-  const RigidBody<T>& linkB = model->AddRigidBody("iiwa_link_2", M_BBo_B);
-  const RigidBody<T>& linkC = model->AddRigidBody("iiwa_link_3", M_CCo_C);
-  const RigidBody<T>& linkD = model->AddRigidBody("iiwa_link_4", M_DDo_D);
-  const RigidBody<T>& linkE = model->AddRigidBody("iiwa_link_5", M_EEo_E);
-  const RigidBody<T>& linkF = model->AddRigidBody("iiwa_link_6", M_FFo_F);
-  const RigidBody<T>& linkG = model->AddRigidBody("iiwa_link_7", M_GGo_G);
+  const Link<T>& linkA = model->AddLink("iiwa_link_1", M_AAo_A);
+  const Link<T>& linkB = model->AddLink("iiwa_link_2", M_BBo_B);
+  const Link<T>& linkC = model->AddLink("iiwa_link_3", M_CCo_C);
+  const Link<T>& linkD = model->AddLink("iiwa_link_4", M_DDo_D);
+  const Link<T>& linkE = model->AddLink("iiwa_link_5", M_EEo_E);
+  const Link<T>& linkF = model->AddLink("iiwa_link_6", M_FFo_F);
+  const Link<T>& linkG = model->AddLink("iiwa_link_7", M_GGo_G);
 
   // Create a revolute joint between linkN (Newtonian frame/world) and linkA
   // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
@@ -91,7 +91,7 @@ KukaIiwaModelBuilder<T>::Build() const {
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
   const Joint<T>* joint{nullptr};
-  const RigidBody<T>& linkN = model->world_body();
+  const Link<T>& linkN = model->world_link();
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_1", linkN, joint_1_rpy_, joint_1_xyz_, linkA,
       Eigen::Vector3d::UnitZ(), model.get());
@@ -109,7 +109,7 @@ KukaIiwaModelBuilder<T>::Build() const {
       Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_3", *joint);
 
-  // Create a revolute joint between linkB and linkC.
+  // Create a revolute joint between linkC and linkD.
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_4", linkC, joint_4_rpy_, joint_4_xyz_, linkD,
       Eigen::Vector3d::UnitZ(), model.get());

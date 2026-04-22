@@ -36,7 +36,7 @@ class RpyFloatingMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<RpyFloatingJoint, RpyFloatingMobilizer>(
         std::make_unique<RpyFloatingJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame()));
+            "joint0", tree().world_link().body_frame(), body_->body_frame()));
     mutable_mobilizer_ = const_cast<RpyFloatingMobilizer<double>*>(mobilizer_);
   }
 
