@@ -51,11 +51,11 @@ class FrameTests : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
-    bodyB_ = &model->AddRigidBody("B", M_Bo_B);
+    bodyB_ = &model->AddLink("B", M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
     // Joint connecting bodyB to the world.
-    model->AddJoint<RevoluteJoint>("joint0", model->world_body(), {}, *bodyB_,
+    model->AddJoint<RevoluteJoint>("joint0", model->world_link(), {}, *bodyB_,
                                    {}, Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.

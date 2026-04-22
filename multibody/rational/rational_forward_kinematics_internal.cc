@@ -46,16 +46,17 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
         forest.mobods(current_link.mobod_index());
     if (current != world_index()) {
       const SpanningForest::Mobod& parent_mobod =
-          forest.mobods(current_mobod.inboard());
+          forest.mobods(current_mobod.inboard_mobod());
       const BodyIndex parent =
-          tree.forest().links(parent_mobod.link_ordinal()).index();
+          tree.forest().links(parent_mobod.active_link_ordinal()).index();
       visit_edge(current, parent);
     }
-    for (const MobodIndex& child_mobod_index : current_mobod.outboards()) {
+    for (const MobodIndex& child_mobod_index :
+         current_mobod.outboard_mobods()) {
       const SpanningForest::Mobod& child_mobod =
           forest.mobods(child_mobod_index);
       const BodyIndex child =
-          tree.forest().links(child_mobod.link_ordinal()).index();
+          tree.forest().links(child_mobod.active_link_ordinal()).index();
       visit_edge(current, child);
     }
   }
@@ -86,7 +87,8 @@ std::vector<MobodIndex> FindMobilizersOnPath(
     const LinkJointGraph::Link& link_i = forest.link_by_index(path[i]);
     const LinkJointGraph::Link& link_ip1 = forest.link_by_index(path[i + 1]);
     const SpanningForest::Mobod& mobod_i = forest.mobods(link_i.mobod_index());
-    if (!mobod_i.is_world() && mobod_i.inboard() == link_ip1.mobod_index()) {
+    if (!mobod_i.is_world() &&
+        mobod_i.inboard_mobod() == link_ip1.mobod_index()) {
       // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i]'s inboard mobilizer.
       mobilizers_on_path.push_back(link_i.mobod_index());

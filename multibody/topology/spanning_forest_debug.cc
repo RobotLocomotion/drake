@@ -53,12 +53,12 @@ void SpanningForest::SanityCheckForest() const {
   DRAKE_THROW_UNLESS(world_mobod.is_anchored());
   DRAKE_THROW_UNLESS(world_mobod.has_massful_follower_link());
   DRAKE_THROW_UNLESS(world_mobod.index() == MobodIndex(0));
-  DRAKE_THROW_UNLESS(world_mobod.link_ordinal() == LinkOrdinal(0));
-  DRAKE_THROW_UNLESS(!world_mobod.joint_ordinal().is_valid());
+  DRAKE_THROW_UNLESS(world_mobod.active_link_ordinal() == LinkOrdinal(0));
+  DRAKE_THROW_UNLESS(!world_mobod.active_joint_ordinal().is_valid());
   DRAKE_THROW_UNLESS(!world_mobod.tree().is_valid());
   DRAKE_THROW_UNLESS(world_mobod.level() == 0);
-  DRAKE_THROW_UNLESS(!world_mobod.inboard().is_valid());
-  DRAKE_THROW_UNLESS(ssize(world_mobod.outboards()) == ssize(trees()));
+  DRAKE_THROW_UNLESS(!world_mobod.inboard_mobod().is_valid());
+  DRAKE_THROW_UNLESS(ssize(world_mobod.outboard_mobods()) == ssize(trees()));
 
   /* WeldedMobods groups and WeldedLinksAssemblies are different but in either
   case there is always a World group or assembly, it must come first, and the
@@ -78,8 +78,10 @@ void SpanningForest::SanityCheckForest() const {
   for (MobodIndex index(1); index < ssize(mobods()); ++index) {
     const Mobod& mobod = mobods(index);
     DRAKE_THROW_UNLESS(mobod.index() == index);
-    DRAKE_THROW_UNLESS(links(mobod.link_ordinal()).mobod_index() == index);
-    DRAKE_THROW_UNLESS(joints(mobod.joint_ordinal()).mobod_index() == index);
+    DRAKE_THROW_UNLESS(links(mobod.active_link_ordinal()).mobod_index() ==
+                       index);
+    DRAKE_THROW_UNLESS(joints(mobod.active_joint_ordinal()).mobod_index() ==
+                       index);
 
     // The mobod's Tree must include the mobod.
     const Tree& tree = trees(mobod.tree());
@@ -174,7 +176,7 @@ void SpanningForest::SanityCheckForest() const {
     DRAKE_THROW_UNLESS(joint.ordinal() == joint_ordinal);
     DRAKE_THROW_UNLESS(&joint_by_index(joint.index()) == &joint);
     if (!joint.mobod_index().is_valid()) continue;  // Not modeled
-    DRAKE_THROW_UNLESS(mobods(joint.mobod_index()).joint_ordinal() ==
+    DRAKE_THROW_UNLESS(mobods(joint.mobod_index()).active_joint_ordinal() ==
                        joint_ordinal);
   }
 
@@ -217,7 +219,7 @@ void SpanningForest::SanityCheckForest() const {
       DRAKE_THROW_UNLESS(mobod.is_anchored() == should_be_anchored);
 
       if (is_active_mobod) {
-        const LinkOrdinal active_link_ordinal = mobod.link_ordinal();
+        const LinkOrdinal active_link_ordinal = mobod.active_link_ordinal();
         const Link& active_link = links(active_link_ordinal);
         const std::optional<WeldedLinksAssemblyIndex> link_assembly =
             active_link.welded_links_assembly();
@@ -256,10 +258,10 @@ std::string SpanningForest::GenerateGraphvizString(
       followers += fmt::format("L({}) ", ordinal);
     graphviz += fmt::format(
         "mobod{} [color={}] [label=\"mobod({}){}\n{}\"];\n", mobod.index(),
-        links(mobod.link_ordinal()).is_shadow() ? "red" : "black",
+        links(mobod.active_link_ordinal()).is_shadow() ? "red" : "black",
         mobod.index(), mobod.has_massful_follower_link() ? "" : "*", followers);
     if (mobod.is_world()) continue;
-    const Mobod& inboard = mobods(mobod.inboard());
+    const Mobod& inboard = mobods(mobod.inboard_mobod());
 
     const std::string color = mobod.is_reversed() ? "purple"
                               : mobod.is_weld()   ? "black"
@@ -267,7 +269,7 @@ std::string SpanningForest::GenerateGraphvizString(
     const std::string arrow_type = mobod.is_weld() ? "box" : "normal";
     const std::string style = mobod.is_weld() ? "bold" : "solid";
 
-    const LinkJointGraph::Joint& joint = joints(mobod.joint_ordinal());
+    const LinkJointGraph::Joint& joint = joints(mobod.active_joint_ordinal());
     graphviz += fmt::format(
         "mobod{} -> mobod{} [arrowhead={}] [fontsize=10] [style={}]"
         "[label=\"mobilizer({})\nJ({}) {}{}\nq{} v{}\"] [color={}];\n",

@@ -64,7 +64,7 @@ MultibodyConstraintId DeformableBody<T>::AddFixedConstraint(
     const RigidBody<T>& body_B, const math::RigidTransform<double>& X_BA,
     const geometry::Shape& shape_G, const math::RigidTransform<double>& X_BG) {
   DRAKE_THROW_UNLESS(this->has_parent_tree());
-  if (&this->get_parent_tree().get_body(body_B.index()) != &body_B) {
+  if (&this->get_parent_tree().get_link(body_B.index()) != &body_B) {
     throw std::logic_error(fmt::format(
         "AddFixedConstraint(): The rigid body with name {} is not registered "
         "with the MultibodyPlant owning the deformable model.",

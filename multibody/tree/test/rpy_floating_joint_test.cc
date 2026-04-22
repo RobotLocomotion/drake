@@ -49,11 +49,11 @@ class RpyFloatingJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
-    body_ = &model->AddRigidBody("Body", M_B);
+    body_ = &model->AddLink("Body", M_B);
 
     // Add a ball rpy joint between the world and body:
     joint_ = &model->AddJoint<RpyFloatingJoint>(
-        "Joint", model->world_body(), std::nullopt, *body_, std::nullopt,
+        "Joint", model->world_link(), std::nullopt, *body_, std::nullopt,
         kAngularDamping, kTranslationalDamping);
     mutable_joint_ = dynamic_cast<RpyFloatingJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));
