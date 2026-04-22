@@ -110,6 +110,27 @@ TYPED_TEST(SpatialQuantityTest, ZeroFactory) {
   EXPECT_TRUE(V.translational() == Vector3<T>::Zero());
 }
 
+// Construction of a "NaN" spatial vector.
+TYPED_TEST(SpatialQuantityTest, NaNFactory) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  SpatialQuantity V = SpatialQuantity::NaN();
+  auto is_nan = [](const T& x) -> bool {
+    if constexpr (std::is_same_v<T, Expression>) {
+      return symbolic::is_nan(x);
+    }
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return std::isnan(x.value());
+    }
+    if constexpr (std::is_same_v<T, double>) {
+      return std::isnan(x);
+    }
+  };
+  for (int i = 0; i < V.size(); ++i) {
+    EXPECT_TRUE(is_nan(V[i]));
+  }
+}
+
 // Tests:
 // - Construction from a Eigen expressions.
 // - SetZero() method.

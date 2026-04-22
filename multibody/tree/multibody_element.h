@@ -220,8 +220,11 @@ class MultibodyElement {
   // Give unit tests access to the tree.
   friend class MultibodyElementTester;
 
+  // Index and ordinal are given the same numerical value here. The ordinal
+  // can be overridden with set_ordinal().
   void set_parent_tree(const internal::MultibodyTree<T>* tree, int64_t index) {
     index_ = index;
+    ordinal_ = index;
     parent_tree_ = tree;
   }
 

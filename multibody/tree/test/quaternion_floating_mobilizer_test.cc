@@ -38,7 +38,7 @@ class QuaternionFloatingMobilizerTest : public MobilizerTester {
     mobilizer_ = &AddJointAndFinalize<QuaternionFloatingJoint,
                                       QuaternionFloatingMobilizer>(
         std::make_unique<QuaternionFloatingJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame()));
+            "joint0", tree().world_link().body_frame(), body_->body_frame()));
     mutable_mobilizer_ =
         const_cast<QuaternionFloatingMobilizer<double>*>(mobilizer_);
   }

@@ -99,10 +99,9 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
         .get_joint_actuator(joint_actuator_index)
         .SetDefaultParameters(parameters);
   }
-  // Bodies.
-  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
-       ++body_index) {
-    internal_tree().get_body(body_index).SetDefaultParameters(parameters);
+  // Links.
+  for (LinkIndex link_index(0); link_index < tree_->num_links(); ++link_index) {
+    internal_tree().get_link(link_index).SetDefaultParameters(parameters);
   }
   // Frames.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
@@ -136,8 +135,7 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() {
 }
 
 template <typename T>
-void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters(
-    int* num_frame_body_pose_slots_needed) {
+void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
   // Mobilizers.
   for (MobodIndex mobilizer_index(0); mobilizer_index < tree_->num_mobilizers();
        ++mobilizer_index) {
@@ -156,21 +154,15 @@ void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters(
         .get_mutable_joint_actuator(joint_actuator_index)
         .DeclareParameters(this);
   }
-  // Bodies.
-  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
-       ++body_index) {
-    mutable_tree().get_mutable_body(body_index).DeclareParameters(this);
+  // Links.
+  for (LinkIndex link_index(0); link_index < tree_->num_links(); ++link_index) {
+    mutable_tree().get_mutable_link(link_index).DeclareParameters(this);
   }
   // Frames.
-  *num_frame_body_pose_slots_needed = 1;  // 0th is for an identity transform.
   for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
        ++frame_index) {
     Frame<T>& frame = mutable_tree().get_mutable_frame(frame_index);
     frame.DeclareParameters(this);
-    // This is where the extracted, reformatted, and composed body pose X_BF for
-    // this Frame will be stored in the frame body poses cache entry.
-    frame.set_body_pose_index_in_cache(
-        frame.is_body_frame() ? 0 : (*num_frame_body_pose_slots_needed)++);
   }
   // Force Elements.
   for (ForceElementIndex force_element_index(0);
@@ -192,9 +184,7 @@ void MultibodyTreeSystem<T>::Finalize() {
     tree_->Finalize();
   }
 
-  int num_frame_body_poses_needed{-1};
-  DeclareMultibodyElementParameters(&num_frame_body_poses_needed);
-  DRAKE_DEMAND(num_frame_body_poses_needed > 0);  // Always at least 1.
+  DeclareMultibodyElementParameters();
 
   // Declare state.
   if (is_discrete_) {
@@ -214,23 +204,23 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   cache_indexes_.reflected_inertia =
       this->DeclareCacheEntry(std::string("reflected inertia"),
-                              VectorX<T>(internal_tree().num_velocities()),
+                              VectorX<T>(tree_->num_velocities()),
                               &MultibodyTreeSystem<T>::CalcReflectedInertia,
                               {this->all_parameters_ticket()})
           .cache_index();
 
   cache_indexes_.joint_damping =
       this->DeclareCacheEntry(std::string("joint damping"),
-                              VectorX<T>(internal_tree().num_velocities()),
+                              VectorX<T>(tree_->num_velocities()),
                               &MultibodyTreeSystem<T>::CalcJointDamping,
                               {this->all_parameters_ticket()})
           .cache_index();
 
   cache_indexes_.frame_body_poses =
       this->DeclareCacheEntry(
-              std::string("frame pose in body frame"),
-              FrameBodyPoseCache<T>(internal_tree().num_mobods(),
-                                    num_frame_body_poses_needed),
+              std::string("frame pose in link and body frames"),
+              FrameBodyPoseCache<T>(tree_->num_links(), tree_->num_frames(),
+                                    tree_->num_mobods()),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
           .cache_index();
@@ -260,11 +250,11 @@ void MultibodyTreeSystem<T>::Finalize() {
               {position_kinematics_cache_entry().ticket()})
           .cache_index();
 
-  // Allocate cache entry to store spatial inertia M_B_W(q) for each body.
+  // Allocate cache entry to store spatial inertia M_B_W(q) for each mobod.
   cache_indexes_.spatial_inertia_in_world =
       this->DeclareCacheEntry(
-              std::string("spatial inertia in world (M_B_W)"),
-              std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
+              std::string("mobod spatial inertia in world (M_B_W)"),
+              std::vector<SpatialInertia<T>>(internal_tree().num_mobods(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcSpatialInertiasInWorld,
               {position_kinematics_cache_entry().ticket()})
@@ -273,8 +263,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   // Allocate cache entry for composite-body inertias K_BBo_W(q) for each body.
   cache_indexes_.composite_body_inertia_in_world =
       this->DeclareCacheEntry(
-              std::string("composite body inertia in world (K_BBo_W)"),
-              std::vector<SpatialInertia<T>>(internal_tree().num_bodies(),
+              std::string("composite mobod inertia in world (K_BBo_W)"),
+              std::vector<SpatialInertia<T>>(internal_tree().num_mobods(),
                                              SpatialInertia<T>::NaN()),
               &MultibodyTreeSystem<T>::CalcCompositeBodyInertiasInWorld,
               {position_kinematics_cache_entry().ticket()})
@@ -294,8 +284,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
   cache_indexes_.dynamic_bias =
       this->DeclareCacheEntry(
-              std::string("dynamic bias (Fb_Bo_W)"),
-              std::vector<SpatialForce<T>>(internal_tree().num_bodies()),
+              std::string("mobod dynamic bias (Fb_Bo_W)"),
+              std::vector<SpatialForce<T>>(internal_tree().num_mobods()),
               &MultibodyTreeSystem<T>::CalcDynamicBiasForces,
               // The computation of Fb_Bo_W(q, v) requires updated values of
               // M_Bo_W(q) and V_WB(q, v). We make these prerequisites explicit.
@@ -330,7 +320,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.spatial_acceleration_bias =
       this->DeclareCacheEntry(
               std::string("spatial acceleration bias (Ab_WB)"),
-              std::vector<SpatialAcceleration<T>>(internal_tree().num_bodies()),
+              std::vector<SpatialAcceleration<T>>(internal_tree().num_mobods()),
               &MultibodyTreeSystem<T>::CalcSpatialAccelerationBias,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
@@ -338,7 +328,7 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.articulated_body_force_bias =
       this->DeclareCacheEntry(
               std::string("ABI force bias cache (Zb_Bo_W)"),
-              std::vector<SpatialForce<T>>(internal_tree().num_bodies()),
+              std::vector<SpatialForce<T>>(internal_tree().num_mobods()),
               &MultibodyTreeSystem<T>::CalcArticulatedBodyForceBias,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();

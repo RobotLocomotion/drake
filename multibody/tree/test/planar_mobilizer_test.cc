@@ -36,7 +36,7 @@ class PlanarMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<PlanarJoint, PlanarMobilizer>(
         std::make_unique<PlanarJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame(),
+            "joint0", tree().world_link().body_frame(), body_->body_frame(),
             Vector3d::Zero()));
     mutable_mobilizer_ = const_cast<PlanarMobilizer<double>*>(mobilizer_);
   }
