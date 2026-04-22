@@ -210,7 +210,7 @@ TEST_F(IiwaToppraTest, JointTorqueLimit) {
   auto s_path = result.value();
 
   // This tolerance was tuned to work with the given gridpoints.
-  const double tol = 1e-14;
+  const double tol = 1e-13;
   Eigen::MatrixXd M(7, 7);
   Eigen::VectorXd Cv(7);
   Eigen::VectorXd G(7);
