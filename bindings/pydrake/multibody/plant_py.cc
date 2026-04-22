@@ -1776,17 +1776,6 @@ PYBIND11_MODULE(plant, m) {
   }
 
   {
-    using Class = BaseBodyJointType;
-    constexpr auto& cls_doc = doc.BaseBodyJointType;
-    py::enum_<Class> cls(m, "BaseBodyJointType", cls_doc.doc);
-    cls.value("kQuaternionFloatingJoint", Class::kQuaternionFloatingJoint,
-           cls_doc.kQuaternionFloatingJoint.doc)
-        .value("kRpyFloatingJoint", Class::kRpyFloatingJoint,
-            cls_doc.kRpyFloatingJoint.doc)
-        .value("kWeldJoint", Class::kWeldJoint, cls_doc.kWeldJoint.doc);
-  }
-
-  {
     using Class = MultibodyPlantConfig;
     constexpr auto& cls_doc = doc.MultibodyPlantConfig;
     py::class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);

@@ -7,7 +7,7 @@
 namespace drake {
 namespace multibody {
 
-// RigidBodyFrame function definitions.
+// RigidBodyFrame (a.k.a. LinkFrame) function definitions.
 
 template <typename T>
 RigidBodyFrame<T>::~RigidBodyFrame() = default;
@@ -17,7 +17,7 @@ template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> RigidBodyFrame<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const RigidBody<ToScalar>& body_clone =
-      tree_clone.get_body(this->body().index());
+      tree_clone.get_link(this->body().index());
   // RigidBodyFrame's constructor cannot be called from std::make_unique since
   // it is private and therefore we use "new".
   return std::unique_ptr<RigidBodyFrame<ToScalar>>(
@@ -68,7 +68,7 @@ RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : MultibodyElement<T>(default_model_instance()),
       name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
-      body_frame_(*this),
+      link_frame_(*this),
       default_spatial_inertia_(M) {}
 
 template <typename T>
@@ -77,7 +77,7 @@ RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : MultibodyElement<T>(model_instance),
       name_(internal::DeprecateWhenEmptyName(body_name, "RigidBody")),
-      body_frame_(*this),
+      link_frame_(*this),
       default_spatial_inertia_(M) {}
 
 template <typename T>
