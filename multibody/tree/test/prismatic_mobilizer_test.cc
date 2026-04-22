@@ -37,7 +37,7 @@ class PrismaticMobilizerTest : public MobilizerTester {
     const PrismaticMobilizer<double>& const_slider =
         AddJointAndFinalize<PrismaticJoint, PrismaticMobilizer>(
             std::make_unique<PrismaticJoint<double>>(
-                "joint0", tree().world_body().body_frame(), body_->body_frame(),
+                "joint0", tree().world_link().body_frame(), body_->body_frame(),
                 axis_Jp_));
     slider_ = const_cast<PrismaticMobilizer<double>*>(&const_slider);
   }

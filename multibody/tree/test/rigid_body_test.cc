@@ -73,7 +73,7 @@ class RigidBodyTest : public ::testing::Test {
     // Create an empty model and then add a rigid body.
     auto model = std::make_unique<internal::MultibodyTree<double>>();
     const auto M_BBo_B = SpatialInertia<double>::NaN();
-    rigid_body_ = &model->AddRigidBody("rigidBody_B", M_BBo_B);
+    rigid_body_ = &model->AddLink("rigidBody_B", M_BBo_B);
 
     // Finalize the model and create a default context for this system.
     model->Finalize();

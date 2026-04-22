@@ -49,11 +49,11 @@ class QuaternionFloatingJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add a joint between world and body:
-    body_ = &model->AddRigidBody("Body", M_B);
+    body_ = &model->AddLink("Body", M_B);
 
     // Add a quaternion floating joint between the world and body:
     joint_ = &model->AddJoint<QuaternionFloatingJoint>(
-        "Joint", model->world_body(), std::nullopt, *body_, std::nullopt,
+        "Joint", model->world_link(), std::nullopt, *body_, std::nullopt,
         kAngularDamping, kTranslationalDamping);
     mutable_joint_ = dynamic_cast<QuaternionFloatingJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));

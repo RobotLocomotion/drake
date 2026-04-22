@@ -70,8 +70,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "iiwa_actuator_4", "iiwa_actuator_5", "iiwa_actuator_6",
       "iiwa_actuator_7"};
 
-  // Model Size. Counting the world body, there should be eight bodies.
-  EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
+  // Model Size. Counting the world link, there should be eight links.
+  EXPECT_EQ(model.num_links(), 8);  // It includes the "world" link.
   EXPECT_EQ(model.num_joints(), 7);
   EXPECT_EQ(model.num_actuators(), 7);
   EXPECT_EQ(model.num_actuated_dofs(), 7);
@@ -83,11 +83,11 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Query if elements exist in the model.
   for (const std::string& link_name : kLinkNames) {
-    EXPECT_TRUE(model.HasBodyNamed(link_name));
-    EXPECT_EQ(model.NumBodiesWithName(link_name), 1);
+    EXPECT_TRUE(model.HasLinkNamed(link_name));
+    EXPECT_EQ(model.NumLinksWithName(link_name), 1);
   }
-  EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
-  EXPECT_EQ(model.NumBodiesWithName(kInvalidName), 0);
+  EXPECT_FALSE(model.HasLinkNamed(kInvalidName));
+  EXPECT_EQ(model.NumLinksWithName(kInvalidName), 0);
 
   for (const std::string& frame_name : kFrameNames) {
     EXPECT_TRUE(model.HasFrameNamed(frame_name));
@@ -112,24 +112,23 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   // Get links by name.
   for (const std::string& link_name : kLinkNames) {
     drake::test::LimitMalloc guard;
-    const RigidBody<T>& link = model.GetRigidBodyByName(link_name);
+    const RigidBody<T>& link = model.GetLinkByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kInvalidName),
+      model.GetLinkByName(kInvalidName),
       ".*There is no RigidBody named .*valid names in model instance "
       "'WorldModelInstance' are: world; valid names in model instance "
       "'DefaultModelInstance' are: iiwa_link_1, iiwa_link_2.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kLinkNames[0], world_model_instance()),
+      model.GetLinkByName(kLinkNames[0], world_model_instance()),
       ".*There is no RigidBody.*but one does exist in other model instances.*");
 
-  // Test that calling GetRigidBodyByName() with an invalid ModelInstanceIndex
+  // Test that calling GetLinkByName() with an invalid ModelInstanceIndex
   // throws.
   const ModelInstanceIndex kInvalidIndex(1 << 30);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kLinkNames[0], kInvalidIndex),
-      ".*There is no model instance.*in the model.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(model.GetLinkByName(kLinkNames[0], kInvalidIndex),
+                              ".*There is no model instance.*in the model.*");
 
   // Get frames by name.
   for (const std::string& frame_name : kFrameNames) {
@@ -213,26 +212,26 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddRigidBody("iiwa_link_5", default_model_instance(),
-                          SpatialInertia<double>::NaN()),
+      model->AddLink("iiwa_link_5", default_model_instance(),
+                     SpatialInertia<double>::NaN()),
       ".* already contains a body named 'iiwa_link_5'. "
       "Body names must be unique within a given model.");
 
   // Attempt to add a frame having the same name as a frame already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddFrame<FixedOffsetFrame>(
-          "iiwa_link_5", model->GetRigidBodyByName("iiwa_link_1"),
-          RigidTransform<double>()),
+      model->AddFrame<FixedOffsetFrame>("iiwa_link_5",
+                                        model->GetLinkByName("iiwa_link_1"),
+                                        RigidTransform<double>()),
       ".* already contains a frame named 'iiwa_link_5'. "
       "Frame names must be unique within a given model.");
 
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddJoint<RevoluteJoint>("iiwa_joint_4", model->world_body(),
+      model->AddJoint<RevoluteJoint>("iiwa_joint_4", model->world_link(),
                                      std::nullopt,
-                                     model->GetRigidBodyByName("iiwa_link_5"),
+                                     model->GetLinkByName("iiwa_link_5"),
                                      std::nullopt, Vector3<double>::UnitZ()),
       ".* already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
@@ -263,7 +262,7 @@ GTEST_TEST(MultibodyTree, EmptyGetElementByName) {
   const std::string kInvalidName = "InvalidName";
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.GetRigidBodyByName(kInvalidName),
+      model.GetLinkByName(kInvalidName),
       ".*There is no RigidBody named .*valid names in model instance "
       "'WorldModelInstance' are.* world.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -292,26 +291,25 @@ GTEST_TEST(MultibodyTree, RetrievingAmbiguousNames) {
   const ModelInstanceIndex other_model_instance =
       model->AddModelInstance("other");
   const std::string link_name = "iiwa_link_5";
-  EXPECT_NO_THROW(model->AddRigidBody(link_name, other_model_instance,
-                                      SpatialInertia<double>::NaN()));
+  EXPECT_NO_THROW(model->AddLink(link_name, other_model_instance,
+                                 SpatialInertia<double>::NaN()));
   EXPECT_NO_THROW(model->Finalize());
 
   // Link name is ambiguous, there are more than one bodies that use the name.
-  EXPECT_GT(model->NumBodiesWithName(link_name), 1);
+  EXPECT_GT(model->NumLinksWithName(link_name), 1);
 
   // Checking if the name exists throws (unfortunately), unless we specify the
   // intended model instance.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->HasBodyNamed(link_name),
+      model->HasLinkNamed(link_name),
       ".*Body.*appears in multiple model instances.*disambiguate.*");
-  EXPECT_TRUE(model->HasBodyNamed(link_name, default_model_instance()));
+  EXPECT_TRUE(model->HasLinkNamed(link_name, default_model_instance()));
 
   // Accessing by name throws, unless we specify the intended model instance.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->GetRigidBodyByName(link_name),
+      model->GetLinkByName(link_name),
       ".*RigidBody.*appears in multiple model instances.*disambiguate.*");
-  EXPECT_NO_THROW(
-      model->GetRigidBodyByName(link_name, default_model_instance()));
+  EXPECT_NO_THROW(model->GetLinkByName(link_name, default_model_instance()));
 }
 
 // MBPlant provides most of the testing for MBTreeSystem. Here we just want
@@ -320,7 +318,7 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
  public:
   explicit BadDerivedMBSystem(bool double_finalize)
       : MultibodyTreeSystem<double>() {
-    mutable_tree().AddRigidBody("body", SpatialInertia<double>::NaN());
+    mutable_tree().AddLink("body", SpatialInertia<double>::NaN());
     Finalize();
     if (double_finalize) {
       Finalize();
@@ -372,7 +370,7 @@ class KukaIiwaModelTests : public ::testing::Test {
           false /* do not finalize model yet */, gravity_);
 
       // Keep pointers to the modeling elements.
-      end_effector_link_ = &tree->GetRigidBodyByName("iiwa_link_7");
+      end_effector_link_ = &tree->GetLinkByName("iiwa_link_7");
       joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
       joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
       joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
@@ -436,7 +434,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   Vector3<T> CalcEndEffectorVelocity(const MultibodyTree<T>& model_on_T,
                                      const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    model_on_T.CalcAllLinkSpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->index()].translational();
   }
 
@@ -447,7 +445,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    model_on_T.CalcAllLinkSpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->index()];
   }
 
@@ -460,7 +458,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     Vector3<T> p_WE;
     model_on_T.CalcPointsPositions(context_on_T, linkG_on_T.body_frame(),
                                    Vector3<T>::Zero(),  // position in frame G
-                                   model_on_T.world_body().body_frame(), &p_WE);
+                                   model_on_T.world_link().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -667,7 +665,7 @@ TEST_F(KukaIiwaModelTests, StateAccess) {
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
 // - MultibodyTree::CalcPointsVelocities()
-// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+// - MultibodyTree::CalcAllLinkSpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -778,7 +776,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   }
 
   // Verify CalcPointsVelocities() measured-in-frame: v_WEo_E = Jv_WEo_E * v.
-  const RigidBody<double>& link3 = tree().GetRigidBodyByName("iiwa_link_3");
+  const RigidBody<double>& link3 = tree().GetLinkByName("iiwa_link_3");
   const Frame<double>& frame_M = link3.body_frame();  // Measured-in frame.
   Matrix3X<double> v_MEi_M(3, num_position_vectors);  // Quantity to calculate.
   tree().CalcPointsVelocities(*context_, frame_E, p_EoEi_E, frame_M, frame_M,
@@ -829,7 +827,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
 //    respect to v.
 // In addition, this also tests the methods:
 // - MultibodyTree::CalcPointsPositions()
-// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+// - MultibodyTree::CalcAllLinkSpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -1027,11 +1025,11 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
   // Spatial velocity of the end effector in the world frame.
   const SpatialVelocity<double>& V_WE =
-      tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector in the world frame.
   const RigidTransform<double>& X_WE(
-      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
+      tree().EvalLinkPoseInWorld(*context_, *end_effector_link_));
 
   // Independent benchmark solution.
   const SpatialKinematicsPVA<double> MG_kinematics =
@@ -1078,11 +1076,11 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityA) {
 
   // Spatial velocity of the end effector.
   const SpatialVelocity<double>& V_WE =
-      tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector.
   const math::RigidTransformd& X_WE(
-      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
+      tree().EvalLinkPoseInWorld(*context_, *end_effector_link_));
 
   // Position of a frame F measured and expressed in frame E.
   const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
@@ -1180,7 +1178,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityB) {
   // Therefore we do not set it.
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
-                                     tree().world_body().body_frame(), p_WoWp_W,
+                                     tree().world_link().body_frame(), p_WoWp_W,
                                      frame_W, frame_W, &Jv_WWp);
 
   // Since in this case we are querying for the world frame, the Jacobian should
@@ -1217,26 +1215,26 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
   }
 
   // Three arbitrary frames on the robot.
-  const RigidBody<double>& link3 = tree().GetRigidBodyByName("iiwa_link_3");
-  const RigidBody<double>& link5 = tree().GetRigidBodyByName("iiwa_link_5");
-  const RigidBody<double>& link7 = tree().GetRigidBodyByName("iiwa_link_7");
+  const RigidBody<double>& link3 = tree().GetLinkByName("iiwa_link_3");
+  const RigidBody<double>& link5 = tree().GetLinkByName("iiwa_link_5");
+  const RigidBody<double>& link7 = tree().GetLinkByName("iiwa_link_7");
 
   // An arbitrary point Q in the end effector link 7.
   const Vector3d p_L7Q = Vector3d(0.2, -0.1, 0.5);
 
   // Link 3 kinematics.
   const RigidTransform<double>& X_WL3 =
-      tree().EvalBodyPoseInWorld(*context_, link3);
+      tree().EvalLinkPoseInWorld(*context_, link3);
   const RotationMatrix<double>& R_WL3 = X_WL3.rotation();
 
   // link 5 kinematics.
   const RigidTransform<double>& X_WL5 =
-      tree().EvalBodyPoseInWorld(*context_, link5);
+      tree().EvalLinkPoseInWorld(*context_, link5);
   const RotationMatrix<double>& R_WL5 = X_WL5.rotation();
 
   // link 7 kinematics.
   const RigidTransform<double>& X_WL7 =
-      tree().EvalBodyPoseInWorld(*context_, link7);
+      tree().EvalLinkPoseInWorld(*context_, link7);
   const RotationMatrix<double>& R_WL7 = X_WL7.rotation();
 
   // Position of Q in L3, expressed in world.
@@ -1250,11 +1248,11 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
 
   // Spatial velocity of L3 shifted to Q.
   const SpatialVelocity<double> V_WL3q =
-      tree().EvalBodySpatialVelocityInWorld(*context_, link3).Shift(p_L3Q_W);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, link3).Shift(p_L3Q_W);
 
   // Spatial velocity of L7 shifted to Q.
   const SpatialVelocity<double> V_WL7q =
-      tree().EvalBodySpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
+      tree().EvalLinkSpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
 
   // Relative spatial velocity V_L3L7q_L5 of L7q in L3, expressed in L5.
   const SpatialVelocity<double> V_L3L7q_L5 =
@@ -1328,11 +1326,11 @@ class WeldMobilizerTest : public ::testing::Test {
     // Create an empty model.
     auto model = std::make_unique<MultibodyTree<double>>();
 
-    body1_ = &model->AddRigidBody("body1", M_B);
-    body2_ = &model->AddRigidBody("body2", M_B);
+    body1_ = &model->AddLink("body1", M_B);
+    body2_ = &model->AddLink("body2", M_B);
 
     model->AddJoint(std::make_unique<WeldJoint<double>>(
-        "weld0", model->world_body().body_frame(), body1_->body_frame(),
+        "weld0", model->world_link().body_frame(), body1_->body_frame(),
         X_WB1_));
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
@@ -1385,11 +1383,11 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  std::vector<math::RigidTransformd> body_poses;
-  tree().CalcAllBodyPosesInWorld(*context_, &body_poses);
+  std::vector<math::RigidTransformd> link_poses;
+  tree().CalcAllLinkPosesInWorld(*context_, &link_poses);
 
-  EXPECT_TRUE(body_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
-  EXPECT_TRUE(body_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
+  EXPECT_TRUE(link_poses[body1_->index()].IsNearlyEqualTo(X_WB1_, kTolerance));
+  EXPECT_TRUE(link_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
 }
 
 // Verify proper operation of the Joint internal use only method for generating
@@ -1402,8 +1400,8 @@ GTEST_TEST(JointTest, UniqueFrameName) {
   // Create an empty model.
   auto model = std::make_unique<MultibodyTree<double>>();
 
-  const RigidBody<double>& body1 = model->AddRigidBody("body1", M_B);
-  const RigidBody<double>& body2 = model->AddRigidBody("body2", M_B);
+  const RigidBody<double>& body1 = model->AddLink("body1", M_B);
+  const RigidBody<double>& body2 = model->AddLink("body2", M_B);
 
   const auto& frame1 = model->AddFrame<FixedOffsetFrame>(
       "frame1", body1, RigidTransform<double>());

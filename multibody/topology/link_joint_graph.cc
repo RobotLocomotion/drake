@@ -739,10 +739,10 @@ std::vector<LinkIndex> LinkJointGraph::FindPathFromWorld(
   const SpanningForest::Mobod* mobod =
       &forest().mobods()[link_to_mobod(link_index)];
   std::vector<LinkIndex> path(mobod->level() + 1);
-  while (mobod->inboard().is_valid()) {
-    const Link& link = links(mobod->link_ordinal());
+  while (mobod->inboard_mobod().is_valid()) {
+    const Link& link = links(mobod->active_link_ordinal());
     path[mobod->level()] = link.index();  // Active Link if optimized assembly.
-    mobod = &forest().mobods(mobod->inboard());
+    mobod = &forest().mobods(mobod->inboard_mobod());
   }
   DRAKE_DEMAND(mobod->is_world());
   path[0] = LinkIndex(0);
@@ -755,7 +755,7 @@ LinkIndex LinkJointGraph::FindFirstCommonAncestor(LinkIndex link1_index,
   const MobodIndex mobod_ancestor = forest().FindFirstCommonAncestor(
       link_to_mobod(link1_index), link_to_mobod(link2_index));
   const Link& ancestor_link =
-      links(forest().mobod_to_link_ordinal(mobod_ancestor));
+      links(forest().mobod_to_active_link_ordinal(mobod_ancestor));
   return ancestor_link.index();
 }
 

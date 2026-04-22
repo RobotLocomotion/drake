@@ -139,6 +139,10 @@ class RigidBodyFrame final : public Frame<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
+/// LinkFrame is a synonym for RigidBodyFrame and should be preferred.
+template <typename T>
+using LinkFrame = RigidBodyFrame<T>;
+
 /// @cond
 // Internal implementation details. Users should not access implementations
 // in this namespace.
@@ -151,20 +155,20 @@ template <typename T>
 // to the construction and finalize stage of the multibody system.
 class RigidBodyAttorney {
  private:
-  // MultibodyTree keeps a list of mutable pointers to each of the body frames
+  // MultibodyTree keeps a list of mutable pointers to each of the link frames
   // in the system and therefore it needs mutable access.
   // Notice this method is private and therefore users do not have access to it
   // even in the rare event they'd attempt to peek into the "internal::"
   // namespace.
-  static RigidBodyFrame<T>& get_mutable_body_frame(RigidBody<T>* body) {
-    return body->get_mutable_body_frame();
+  static LinkFrame<T>& get_mutable_link_frame(Link<T>* link) {
+    return link->get_mutable_link_frame();
   }
 
   // Used by MultibodyTree _during_ Finalize(), after the call to
-  // SetTopology() has appropriately registered which bodies are floating base
+  // SetTopology() has appropriately registered which links are floating base
   // bodies, but before the MultibodyTree::is_finalized() flag has been set.
-  static bool is_floating_base_body_pre_finalize(const RigidBody<T>& body) {
-    return body.is_floating_base_body_;
+  static bool is_floating_base_body_pre_finalize(const Link<T>& link) {
+    return link.is_floating_base_body_;
   }
 
   friend class internal::MultibodyTree<T>;
@@ -232,7 +236,14 @@ class RigidBody : public MultibodyElement<T> {
   ~RigidBody() override;
 
   /// Returns this element's unique index.
-  BodyIndex index() const { return this->template index_impl<BodyIndex>(); }
+  LinkIndex index() const { return this->template index_impl<LinkIndex>(); }
+
+  /// (Internal use only) Returns this Link's (RigidBody's) unique ordinal.
+  /// Currently identical to the index but will differ when we permit removal of
+  /// Links as we do for Joints.
+  LinkOrdinal ordinal() const {
+    return this->template ordinal_impl<LinkOrdinal>();
+  }
 
   /// Gets the `name` associated with this rigid body. The name will never be
   /// empty.
@@ -244,8 +255,11 @@ class RigidBody : public MultibodyElement<T> {
   ///   MultibodyPlant.
   ScopedName scoped_name() const;
 
-  /// Returns a const reference to the associated BodyFrame.
-  const RigidBodyFrame<T>& body_frame() const { return body_frame_; }
+  /// Returns a const reference to the associated LinkFrame (RigidBodyFrame).
+  const LinkFrame<T>& link_frame() const { return link_frame_; }
+
+  /// (Compatibility) A synonym for link_frame().
+  const LinkFrame<T>& body_frame() const { return link_frame(); }
 
   /// For a floating base %RigidBody, lock its inboard joint. Its generalized
   /// velocities will be 0 until it is unlocked.
@@ -443,7 +457,7 @@ class RigidBody : public MultibodyElement<T> {
       const systems::Context<T>& context) const {
     ThrowIfNotFinalized(__func__);
     DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
+    return this->get_parent_tree().EvalLinkPoseInWorld(context, *this);
   }
 
   /// Evaluates V_WB, this body B's SpatialVelocity in the world frame W.
@@ -454,7 +468,7 @@ class RigidBody : public MultibodyElement<T> {
       const systems::Context<T>& context) const {
     ThrowIfNotFinalized(__func__);
     DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree().EvalBodySpatialVelocityInWorld(context,
+    return this->get_parent_tree().EvalLinkSpatialVelocityInWorld(context,
                                                                   *this);
   }
 
@@ -469,7 +483,7 @@ class RigidBody : public MultibodyElement<T> {
       const systems::Context<T>& context) const {
     ThrowIfNotFinalized(__func__);
     DRAKE_ASSERT(this->has_parent_tree());
-    return this->get_parent_tree().EvalBodySpatialAccelerationInWorld(context,
+    return this->get_parent_tree().EvalLinkSpatialAccelerationInWorld(context,
                                                                       *this);
   }
 
@@ -763,7 +777,8 @@ class RigidBody : public MultibodyElement<T> {
 
     // Is this RigidBody the active link on its Mobod?
     const bool is_active_link =
-        link.ordinal() == forest.mobods(link.mobod_index()).link_ordinal();
+        link.ordinal() ==
+        forest.mobods(link.mobod_index()).active_link_ordinal();
     is_floating_base_body_ =
         is_active_link && mobilizer_->is_floating_base_mobilizer();
   }
@@ -843,28 +858,27 @@ class RigidBody : public MultibodyElement<T> {
                                                  default_spatial_inertia_);
   }
 
-  // MultibodyTree has access to the mutable RigidBodyFrame through
+  // MultibodyTree has access to the mutable LinkFrame through
   // RigidBodyAttorney.
-  RigidBodyFrame<T>& get_mutable_body_frame() { return body_frame_; }
+  LinkFrame<T>& get_mutable_link_frame() { return link_frame_; }
 
   const internal::Mobilizer<T>& mobilizer() const {
     DRAKE_ASSERT(mobilizer_ != nullptr);
     return *mobilizer_;
   }
 
-  // A string identifying the body in its model.
+  // A string identifying this link in its model.
   // Within a MultibodyPlant model instance this string is guaranteed to be
   // unique by MultibodyPlant's API.
   const std::string name_;
 
-  // Body frame associated with this body.
-  RigidBodyFrame<T> body_frame_;
+  // This link's LinkFrame (a.k.a. RigidBodyFrame).
+  LinkFrame<T> link_frame_;
 
   // Spatial inertia about the body frame origin Bo, expressed in B.
   SpatialInertia<double> default_spatial_inertia_;
 
-  // System parameter index for this bodies SpatialInertia stored in a
-  // context.
+  // System parameter index for this body's SpatialInertia stored in a context.
   systems::NumericParameterIndex spatial_inertia_parameter_index_;
 
   // Below here, members are set at Finalize() via SetTopology().
@@ -872,12 +886,19 @@ class RigidBody : public MultibodyElement<T> {
   // The mobilizer of the Mobod that this body follows.
   const internal::Mobilizer<T>* mobilizer_{};
 
-  // True if the mobilizer is a floating base mobilizer and this body is the
+  // True if the mobilizer is a floating base mobilizer and this link is the
   // active link of the mobilized composite.
   bool is_floating_base_body_{false};
 };
 
-/// (Compatibility) Prefer RigidBody to Body, however this dispreferred alias
+/// Link is a synonym for the mis-named RigidBody class and should be
+/// preferred. When we combine welded-together links there will be multiple
+/// links fixed to a single rigid body (in the physics sense). Saying that
+/// there is more than one RigidBody on a rigid body is too confusing!
+template <typename T>
+using Link = RigidBody<T>;
+
+/// (Compatibility) Prefer Link to Body, however this dispreferred alias
 /// is available to permit older code to continue working.
 template <typename T>
 using Body = RigidBody<T>;
