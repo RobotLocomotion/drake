@@ -47,6 +47,12 @@ class RigidBody;
 /// %Frame provides methods for obtaining its current orientation, position,
 /// motion, etc. from a Context passed to those methods.
 ///
+/// @note For historical reasons, many of the method names here use "Body" to
+/// mean "Link". The distinction matters when we form composite bodies, which
+/// consist of multiple links welded together. Those composites form a single
+/// _rigid body_ in the physics sense. Frames only know about their Links, not
+/// how they may have been combined into a composite body.
+///
 /// @tparam_default_scalar
 template <typename T>
 class Frame : public MultibodyElement<T> {
@@ -58,15 +64,15 @@ class Frame : public MultibodyElement<T> {
   /// Returns this element's unique index.
   FrameIndex index() const { return this->template index_impl<FrameIndex>(); }
 
-  /// Returns a const reference to the body associated to this %Frame.
-  const RigidBody<T>& body() const { return body_; }
+  /// Returns a const reference to the Link to which this %Frame is attached.
+  const Link<T>& link() const { return link_; }
 
   /// Returns true if `this` is the world frame.
   bool is_world_frame() const { return this->index() == world_frame_index(); }
 
-  /// Returns true if `this` is the body frame.
-  bool is_body_frame() const {
-    return this->index() == body_.body_frame().index();
+  /// Returns true if `this` is the link frame of the associated link.
+  bool is_link_frame() const {
+    return this->index() == link().link_frame().index();
   }
 
   /// Returns the name of this frame. The name will never be empty.
@@ -88,7 +94,7 @@ class Frame : public MultibodyElement<T> {
       const systems::Context<T>& context) const {
     const internal::FrameBodyPoseCache<T>& frame_body_poses =
         this->GetParentTreeSystem().EvalFrameBodyPoses(context);
-    return get_X_BF(frame_body_poses);
+    return get_X_LF(frame_body_poses);
   }
 
   /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
@@ -118,9 +124,6 @@ class Frame : public MultibodyElement<T> {
   /// fixed offset in the body frame.
   // %Frame sub-classes that can represent the fixed pose of `this` frame F in
   // a body frame B, must override this method.
-  // An example of a frame sub-class not implementing this method would be that
-  // of a frame on a soft body, for which its pose in the body frame depends
-  // on the state of deformation of the body.
   virtual math::RigidTransform<T> GetFixedPoseInBodyFrame() const {
     throw std::logic_error(
         "Attempting to retrieve a fixed pose from a frame of type '" +
@@ -133,9 +136,6 @@ class Frame : public MultibodyElement<T> {
   /// @throws std::exception if `this` frame F is a %Frame that does not have
   /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
   /// %Frame sub-classes that have a constant `R_BF` must override this method.
-  /// An example of a frame sub-class not implementing this method would be that
-  /// of a frame on a soft body, for which its pose in the body frame depends
-  /// on the state of deformation of the body.
   virtual math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const {
     throw std::logic_error(
         "Unable to retrieve a fixed rotation matrix from a frame of type '" +
@@ -143,10 +143,11 @@ class Frame : public MultibodyElement<T> {
         "', which does not support this method.");
   }
 
-  // TODO(jwnimmer-tri) These next four functions only exist so that BodyFrame
-  // can override their NVI body to be a simple copy instead of ComposeXX or
-  // ComposeRR against an identity. It is not at all clear to me that this
-  // implementation complexity is buying us any measurable speedup at runtime.
+  // TODO(jwnimmer-tri) These next four functions only exist so that
+  //  RigidBodyFrame can override their NVI body to be a simple copy instead of
+  //  ComposeXX or ComposeRR against an identity. It is not at all clear to me
+  //  that this implementation complexity is buying us any measurable speedup at
+  //  runtime.
 
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   /// computes the pose `X_BQ` of frame Q in the body frame B to which this
@@ -340,28 +341,28 @@ class Frame : public MultibodyElement<T> {
     return V_WC_W - V_WB_W;
   }
 
-  /// Calculates `this` frame C's spatial velocity relative to another frame B,
+  /// Calculates `this` frame F's spatial velocity relative to another frame B,
   /// measured in a frame M, expressed in a frame E.
   /// @param[in] context contains the state of the multibody system.
   /// @param[in] other_frame which is frame B.
   /// @param[in] measured_in_frame which is frame M.
   /// @param[in] expressed_in_frame which is frame E.
-  /// @return V_M_BC_E = V_MC_E - V_MB_E, frame C's spatial velocity relative to
+  /// @return V_M_BF_E = V_MF_E - V_MB_E, frame F's spatial velocity relative to
   /// frame B, measured in frame M, expressed in frame E. The rotational part
-  /// of the returned quantity is ω_BC_E (C's angular velocity measured in B and
-  /// expressed in E). The translational part is v_M_BoCo_E (Co's translational
+  /// of the returned quantity is ω_BF_E (F's angular velocity measured in B and
+  /// expressed in E). The translational part is v_M_BoFo_E (Fo's translational
   /// velocity relative to Bo, measured in M, and expressed in E). <pre>
-  ///  ω_BC_E = ω_MC_E - ω_MB_E
-  ///  v_M_BoCo_E = v_MCo_E - v_MBo_E = DtM(p_BoCo)
+  ///  ω_BF_E = ω_MF_E - ω_MB_E
+  ///  v_M_BoFo_E = v_MFo_E - v_MBo_E = DtM(p_BoFo)
   /// </pre>
-  /// where DtM(p_BoCo) is the time-derivative in frame M of p_BoCo (position
-  /// vector from Bo to Co), and this vector is expressed in frame E.
+  /// where DtM(p_BoFo) is the time-derivative in frame M of p_BoFo (position
+  /// vector from Bo to Fo), and this vector is expressed in frame E.
   /// @note The method CalcSpatialVelocity() is more efficient and coherent
   /// if any of `this`, other_frame, or measured_in_frame are the same.
-  /// Also, the value of V_M_BoCo does not depend on the measured_in_frame if
-  /// Bo and Co are coincident (i.e., p_BoCo = 0), in which case consider the
+  /// Also, the value of V_M_BoFo does not depend on the measured_in_frame if
+  /// Bo and Fo are coincident (i.e., p_BoFo = 0), in which case consider the
   /// more efficient method CalcRelativeSpatialVelocityInWorld().
-  /// Lastly, the calculation of elongation between Bo and Co can be done with
+  /// Lastly, the calculation of elongation between Bo and Fo can be done with
   /// relative translational velocity, but elongation does not depend on the
   /// measured-in-frame (hence consider CalcRelativeSpatialVelocityInWorld()).
   /// @see CalcSpatialVelocityInWorld(), CalcSpatialVelocity(), and
@@ -375,9 +376,9 @@ class Frame : public MultibodyElement<T> {
     const Frame<T>& frame_E = expressed_in_frame;
     const SpatialVelocity<T> V_MB_E =
         frame_B.CalcSpatialVelocity(context, frame_M, frame_E);
-    const SpatialVelocity<T> V_MC_E =
+    const SpatialVelocity<T> V_MF_E =
         CalcSpatialVelocity(context, frame_M, frame_E);
-    return V_MC_E - V_MB_E;
+    return V_MF_E - V_MB_E;
   }
 
   /// Calculates `this` frame F's spatial acceleration measured and expressed in
@@ -420,24 +421,24 @@ class Frame : public MultibodyElement<T> {
       const systems::Context<T>& context, const Frame<T>& measured_in_frame,
       const Frame<T>& expressed_in_frame) const;
 
-  /// Calculates `this` frame C's spatial acceleration relative to another
+  /// Calculates `this` frame F's spatial acceleration relative to another
   /// frame B, measured and expressed in the world frame W.
   /// @param[in] context contains the state of the multibody system.
   /// @param[in] other_frame which is frame B.
-  /// @return A_W_BC_W = A_WC_W - A_WB_W, frame C's spatial acceleration
+  /// @return A_W_BF_W = A_WF_W - A_WB_W, frame F's spatial acceleration
   /// relative to frame B, measured and expressed in the world frame W.
   ///
-  /// In general, A_W_BC = DtW(V_W_BC), the time-derivative in the world frame W
-  /// of frame C's spatial velocity relative to frame B. The rotational part of
-  /// the returned quantity is α_WC_W - α_WB_W = DtW(ω_BC)_W. For 3D analysis,
-  /// DtW(ω_BC) ≠ α_BC. The translational part of the returned quantity is
-  /// a_W_BoCo_W (Co's translational acceleration relative to Bo, measured and
+  /// In general, A_W_BF = DtW(V_W_BF), the time-derivative in the world frame W
+  /// of frame F's spatial velocity relative to frame B. The rotational part of
+  /// the returned quantity is α_WF_W - α_WB_W = DtW(ω_BF)_W. For 3D analysis,
+  /// DtW(ω_BF) ≠ α_BF. The translational part of the returned quantity is
+  /// a_W_BoFo_W (Fo's translational acceleration relative to Bo, measured and
   /// expressed in world frame W). <pre>
-  ///  α_WC_W - α_WB_W = DtW(ω_WC)_W - DtW(ω_WB)_W = DtW(ω_BC)_W
-  ///  a_W_BoCo_W = a_WCo_W - a_WBo_W = DtW(v_WCo) - DtW(v_WBo) = Dt²W(p_BoCo)_W
+  ///  α_WF_W - α_WB_W = DtW(ω_WF)_W - DtW(ω_WB)_W = DtW(ω_BF)_W
+  ///  a_W_BoFo_W = a_WFo_W - a_WBo_W = DtW(v_WFo) - DtW(v_WBo) = Dt²W(p_BoFo)_W
   /// </pre>
-  /// where Dt²W(p_BoCo)_W is the 2ⁿᵈ time-derivative in frame W of p_BoCo (the
-  /// position vector from Bo to Co), and this result is expressed in frame W.
+  /// where Dt²W(p_BoFo)_W is the 2ⁿᵈ time-derivative in frame W of p_BoFo (the
+  /// position vector from Bo to Fo), and this result is expressed in frame W.
   /// @note The method CalcSpatialAccelerationInWorld() is more efficient and
   /// coherent if any of `this`, other_frame, or the world frame W are the same.
   /// @see CalcSpatialAccelerationInWorld(), CalcRelativeSpatialAcceleration().
@@ -446,33 +447,33 @@ class Frame : public MultibodyElement<T> {
     const Frame<T>& frame_B = other_frame;
     const SpatialAcceleration<T> A_WB_W =
         frame_B.CalcSpatialAccelerationInWorld(context);
-    const SpatialAcceleration<T> A_WC_W =
+    const SpatialAcceleration<T> A_WF_W =
         CalcSpatialAccelerationInWorld(context);
-    return A_WC_W - A_WB_W;
+    return A_WF_W - A_WB_W;
   }
 
-  /// Calculates `this` frame C's spatial acceleration relative to another
+  /// Calculates `this` frame F's spatial acceleration relative to another
   /// frame B, measured in a frame M, expressed in a frame E.
   /// @param[in] context contains the state of the multibody system.
   /// @param[in] other_frame which is frame B.
   /// @param[in] measured_in_frame which is frame M.
   /// @param[in] expressed_in_frame which is frame E.
-  /// @return A_M_BC_E = A_MC_E - A_MB_E, frame C's spatial acceleration
+  /// @return A_M_BF_E = A_MF_E - A_MB_E, frame F's spatial acceleration
   /// relative to frame B, measured in frame M, expressed in frame E.
   ///
-  /// In general, A_M_BC = DtW(V_M_BC), the time-derivative in frame M of
-  /// frame C's spatial velocity relative to frame B. The rotational part of the
-  /// returned quantity is α_MC_E - α_MB_E = DtM(ω_BC)_E. Note: For 3D analysis,
-  /// DtM(ω_BC) ≠ α_BC. The translational part of the returned quantity is
-  /// a_M_BoCo_E (Co's translational acceleration relative to Bo, measured in
+  /// In general, A_M_BF = DtW(V_M_BF), the time-derivative in frame M of
+  /// frame F's spatial velocity relative to frame B. The rotational part of the
+  /// returned quantity is α_MF_E - α_MB_E = DtM(ω_BF)_E. Note: For 3D analysis,
+  /// DtM(ω_BF) ≠ α_BF. The translational part of the returned quantity is
+  /// a_M_BoFo_E (Fo's translational acceleration relative to Bo, measured in
   /// frame M, expressed in frame E). <pre>
-  ///  α_MC_E - α_MB_E = DtM(ω_MC)_E - DtM(ω_MB)_E = DtM(ω_BC)_E
-  ///  a_M_BoCo_E = a_MCo_E - a_MBo_E = DtM(v_MCo) - DtM(v_MBo) = Dt²M(p_BoCo)_E
+  ///  α_MF_E - α_MB_E = DtM(ω_MF)_E - DtM(ω_MB)_E = DtM(ω_BF)_E
+  ///  a_M_BoFo_E = a_MFo_E - a_MBo_E = DtM(v_MFo) - DtM(v_MBo) = Dt²M(p_BoFo)_E
   /// </pre>
-  /// where Dt²M(p_BoCo)_E is the 2ⁿᵈ time-derivative in frame M of p_BoCo (the
-  /// position vector from Bo to Co), and this result is expressed in frame E.
+  /// where Dt²M(p_BoFo)_E is the 2ⁿᵈ time-derivative in frame M of p_BoFo (the
+  /// position vector from Bo to Fo), and this result is expressed in frame E.
   /// @note The calculation of the 2ⁿᵈ time-derivative of the distance between
-  /// Bo and Co can be done with relative translational acceleration, but this
+  /// Bo and Fo can be done with relative translational acceleration, but this
   /// calculation does not depend on the measured-in-frame, hence in this case,
   /// consider CalcRelativeSpatialAccelerationInWorld() since it is faster.
   /// @see CalcSpatialAccelerationInWorld(), CalcSpatialAcceleration(), and
@@ -486,9 +487,9 @@ class Frame : public MultibodyElement<T> {
     const Frame<T>& frame_E = expressed_in_frame;
     const SpatialAcceleration<T> A_MB_E =
         frame_B.CalcSpatialAcceleration(context, frame_M, frame_E);
-    const SpatialAcceleration<T> A_MC_E =
+    const SpatialAcceleration<T> A_MF_E =
         CalcSpatialAcceleration(context, frame_M, frame_E);
-    return A_MC_E - A_MB_E;
+    return A_MF_E - A_MB_E;
   }
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
@@ -503,6 +504,12 @@ class Frame : public MultibodyElement<T> {
     return DoCloneToScalar(tree_clone);
   }
 
+  /// (Compatibility) Dispreferred synonym for link().
+  const Link<T>& body() const { return link(); }
+
+  /// (Compatibility) Dispreferred synonym for is_link_frame().
+  bool is_body_frame() const { return is_link_frame(); }
+
   /// (Internal use only) Returns a shallow clone (i.e., dependent elements such
   /// as bodies are aliased, not copied) that is not associated with any MbT (so
   /// the assigned index, if any, is discarded).
@@ -511,46 +518,46 @@ class Frame : public MultibodyElement<T> {
   /// @name Internal use only
   /// These functions work directly with the frame body pose cache entry.
   //@{
-  /// (Internal use only) A %Frame's pose-in-parent X_PF can be parameterized,
-  /// the parent's pose may also be parameterized, and so on. Thus the
-  /// calculation of this frame's pose in its body (X_BF) can be expensive.
-  /// There is a cache entry that holds the calculated X_BF, evaluated
-  /// whenever parameters change. This allows us to grab X_BF as a const
-  /// reference rather than having to extract and reformat parameters, and
+  /// (Internal use only) A %Frame's pose-in-parent-frame X_PF can be
+  /// parameterized, the parent frame's pose may also be parameterized, and so
+  /// on. Thus the calculation of this frame's pose in its link frame (X_LF) can
+  /// be expensive. There is a cache entry that holds the calculated X_LF,
+  /// evaluated whenever parameters change. This allows us to grab X_LF as a
+  /// const reference rather than having to extract and reformat parameters, and
   /// compose with parent and ancestor poses at runtime.
   ///
-  /// At the time parameters are allocated we assign a slot in the body pose
-  /// cache entry to each %Frame and record its index using this function. (The
-  /// index for a RigidBodyFrame will refer to an identity transform.) Note that
-  /// the body pose index is not necessarily the same as the %Frame index
-  /// because all RigidBodyFrames can share an entry. (Of course if you know you
-  /// are working with a RigidBodyFrame you don't need to ask about its body
-  /// pose!)
-  void set_body_pose_index_in_cache(int body_pose_index) {
-    body_pose_index_in_cache_ = body_pose_index;
-  }
+  /// When we are optimizing assemblies using composite Mobods, the pose of
+  /// a frame on its Mobod (X_BF) can differ from its pose on its Link (X_LF).
+  /// Most multibody computations need X_BF, but X_LF is available also.
 
-  /// (Internal use only) Retrieve this %Frame's body pose index in the cache.
-  int get_body_pose_index_in_cache() const { return body_pose_index_in_cache_; }
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// extract X_LF for this %Frame from it.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @retval X_LF pose of this frame in its Link's frame
+  const math::RigidTransform<T>& get_X_LF(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.get_X_LF(index());
+  }
 
   /// (Internal use only) Given an already up-to-date frame body pose cache,
   /// extract X_BF for this %Frame from it.
   /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
   ///       since the last parameter change; we can't check here.
-  /// @retval X_BF pose of this frame in its body's frame
+  /// @retval X_BF pose of this frame in its Mobod's frame
   const math::RigidTransform<T>& get_X_BF(
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
-    return frame_body_poses.get_X_BF(body_pose_index_in_cache_);
+    return frame_body_poses.get_X_BF(index());
   }
 
   /// (Internal use only) Given an already up-to-date frame body pose cache,
   /// extract X_FB (=X_BF⁻¹) for this %Frame from it.
   /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
   ///       since the last parameter change; we can't check here.
-  /// @retval X_FB inverse of this frame's pose in its body's frame
+  /// @retval X_FB inverse of this frame's pose in its Mobod's frame
   const math::RigidTransform<T>& get_X_FB(
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
-    return frame_body_poses.get_X_FB(body_pose_index_in_cache_);
+    return frame_body_poses.get_X_FB(index());
   }
 
   /// (Internal use only) Given an already up-to-date frame body pose cache,
@@ -558,22 +565,22 @@ class Frame : public MultibodyElement<T> {
   /// precomputed in the cache so is very fast to check.
   /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
   ///       since the last parameter change; we can't check here.
-  /// @see get_X_BF()
+  /// @see get_X_BF(), get_X_FB()
   bool is_X_BF_identity(
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
-    return frame_body_poses.is_X_BF_identity(body_pose_index_in_cache_);
+    return frame_body_poses.is_X_BF_identity(index());
   }
   //@}
 
  protected:
   /// Only derived classes can use this constructor. It creates a %Frame
-  /// object attached to `body` and puts the frame in the body's model
+  /// object attached to `link` and puts the frame in the link's model
   /// instance.
-  explicit Frame(const std::string& name, const RigidBody<T>& body,
+  explicit Frame(const std::string& name, const Link<T>& link,
                  std::optional<ModelInstanceIndex> model_instance = {})
-      : MultibodyElement<T>(model_instance.value_or(body.model_instance())),
+      : MultibodyElement<T>(model_instance.value_or(link.model_instance())),
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
-        body_(body) {}
+        link_(link) {}
 
   /// Called by DoDeclareParameters(). Derived classes may choose to override
   /// to declare their sub-class specific parameters.
@@ -652,10 +659,8 @@ class Frame : public MultibodyElement<T> {
 
   const std::string name_;
 
-  // The body associated with this frame.
-  const RigidBody<T>& body_;
-
-  int body_pose_index_in_cache_{-1};
+  // The link to which this frame is attached.
+  const Link<T>& link_;
 };
 
 }  // namespace multibody

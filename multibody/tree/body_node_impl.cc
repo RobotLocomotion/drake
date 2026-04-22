@@ -113,6 +113,10 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
       break;
   }
 
+  // TODO(sherm1) Calculate X_WL for composites. Currently we don't make
+  //  composites so X_WL = X_WB if L is the link on B.
+  pc->SetX_WL(mobilizer_->mobod().active_link_ordinal(), X_WB);
+
   // Compute shift vector p_PoBo_W from the parent origin to the body origin.
   const Vector3<T>& p_PoBo_P = X_PB.translation();
   const math::RotationMatrix<T>& R_WP = X_WP.rotation();
@@ -122,6 +126,12 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
 // TODO(sherm1) Consider combining this with VelocityCache computation
 //  so that we don't have to make a separate pass. Or better, get rid of this
 //  computation altogether by working in better frames.
+
+// Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the number of
+// mobilities for this node. Therefore, the return is a Matrix<6,kNv> since the
+// number of columns depends on the mobilizer type. It is returned as an
+// Eigen::Map to the memory allocated in the std::vector H_PB_W_cache so that we
+// can work with H_PB_W as with any other Eigen matrix object.
 template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcAcrossNodeJacobianWrtVExpressedInWorld(
@@ -197,13 +207,6 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
   DRAKE_ASSERT(vc != nullptr);
 
-  // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the
-  // number of mobilities for this node. Therefore, the return is a
-  // Matrix<6,kNv> since the number of columns depends on the mobilizer type.
-  // It is returned as an Eigen::Map to the memory allocated in the
-  // std::vector H_PB_W_cache so that we can work with H_PB_W as with any
-  // other Eigen matrix object.
-
   // As a guideline for developers, a summary of the computations performed in
   // this method is provided:
   // Notation:
@@ -248,15 +251,15 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // Jain (2010)) where p_MoBo_F = 0 and thus V_PB_W = V_FM_W.
 
   // Generalized coordinates local to this node's mobilizer.
-  const T* q_ptr = get_q(positions);
-  const T* v_ptr = get_v(velocities);
+  const T* q_B = get_q(positions);
+  const T* v_B = get_v(velocities);
 
   // =========================================================================
   // Computation of V_PB_W in Eq. (1). See summary at the top of this method.
 
   // Update V_FM using the operator V_FM = H_FM * vm:
   SpatialVelocity<T>& V_FM = get_mutable_V_FM(vc);
-  V_FM = mobilizer_->calc_V_FM(q_ptr, v_ptr);
+  V_FM = mobilizer_->calc_V_FM(q_B, v_B);
 
   // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
   // Side note to developers: in operator form for rigid bodies this would be
@@ -269,7 +272,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵛ with nv ∈ [0; 6] the
     // number of mobilities for this node.
     const auto H_PB_W = get_H(H_PB_W_cache);  // 6 x kNv fixed-size Map.
-    const Eigen::Map<const VVector<T>> v(v_ptr);
+    const Eigen::Map<const VVector<T>> v(v_B);
     V_PB_W.get_coeffs() = H_PB_W * v;
   } else {
     V_PB_W.get_coeffs().setZero();
@@ -289,7 +292,12 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // =========================================================================
   // Update velocity V_WB of this node's body B in the world frame. Using the
   // recursive Eq. (1). See summary at the top of this method.
-  get_mutable_V_WB(vc) = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
+  SpatialVelocity<T>& V_WB = get_mutable_V_WB(vc);
+  V_WB = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
+
+  // TODO(sherm1) Calculate V_WL for composites. Currently we don't make
+  //  composites so V_WL = V_WB if L is the link on B.
+  vc->SetV_WL(mobilizer_->mobod().active_link_ordinal(), V_WB);
 }
 
 // As a guideline for developers, a summary of the computations performed in
@@ -824,7 +832,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
   // Get the spatial acceleration of the parent.
   const SpatialAcceleration<T>& A_WP =
-      ac->get_A_WB(mobilizer_->mobod().inboard());
+      ac->get_A_WB(mobilizer_->mobod().inboard_mobod());
 
   // Shift vector p_PoBo_W from the parent origin to the body origin.
   const Vector3<T>& p_PoBo_W = get_p_PoBo_W(pc);

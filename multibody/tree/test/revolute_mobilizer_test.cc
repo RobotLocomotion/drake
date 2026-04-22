@@ -38,7 +38,7 @@ class RevoluteMobilizerTest : public MobilizerTester {
     const RevoluteMobilizer<double>& const_mobilizer =
         AddJointAndFinalize<RevoluteJoint, RevoluteMobilizer>(
             std::make_unique<RevoluteJoint<double>>(
-                "joint0", tree().world_body().body_frame(), body_->body_frame(),
+                "joint0", tree().world_link().body_frame(), body_->body_frame(),
                 axis_Jp_));
     // Mobilizers are marked ephemeral only if the modeled joint is ephemeral
     // (that is, added automatically).

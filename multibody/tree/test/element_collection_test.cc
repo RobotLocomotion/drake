@@ -25,8 +25,9 @@ using Collection = ElementCollection<double, ModelInstance, Index>;
 GTEST_TEST(ElementCollectionTest, Empty) {
   const Collection empty;
   EXPECT_EQ(empty.num_elements(), 0);
+  EXPECT_EQ(empty.num_indices(), 0);
   EXPECT_EQ(empty.elements().size(), 0);
-  EXPECT_EQ(empty.indices().size(), 0);
+  EXPECT_EQ(empty.valid_indices().size(), 0);
   EXPECT_EQ(empty.names_map().size(), 0);
   EXPECT_EQ(empty.next_index(), Index{0});
 }
@@ -66,11 +67,13 @@ GTEST_TEST(ElementCollectionTest, AddDense) {
   EXPECT_EQ(dut.names_map().count(std::string{"zero"}), 1);
   EXPECT_EQ(dut.names_map().count(std::string{"one"}), 1);
 
-  EXPECT_THAT(dut.indices(), testing::ElementsAre(Index{0}, Index{1}));
+  EXPECT_THAT(dut.valid_indices(), testing::ElementsAre(Index{0}, Index{1}));
+  EXPECT_EQ(dut.num_indices(), 2);
   EXPECT_EQ(dut.next_index(), Index{2});
 
   dut.Add(std::make_unique<Element<double>>(Index{2}, "two"));
   EXPECT_EQ(dut.num_elements(), 3);
+  EXPECT_EQ(dut.num_indices(), 3);
   EXPECT_EQ(dut.next_index(), Index{3});
 }
 
@@ -129,14 +132,16 @@ GTEST_TEST(ElementCollectionTest, Removals) {
   EXPECT_EQ(dut.names_map().count(std::string{"one"}), 1);
   EXPECT_EQ(dut.names_map().count(std::string{"three"}), 1);
 
-  EXPECT_THAT(dut.indices(),
+  EXPECT_THAT(dut.valid_indices(),
               testing::ElementsAre(Index{0}, Index{1}, Index{3}));
+  EXPECT_EQ(dut.num_indices(), 4);
   EXPECT_EQ(dut.next_index(), Index{4});
 
   // Add 4.
   // Overall we have indices 0,1,3,4 now.
   dut.Add(std::make_unique<Element<double>>(Index{4}, "four"));
   EXPECT_EQ(dut.num_elements(), 4);
+  EXPECT_EQ(dut.num_indices(), 5);
   EXPECT_EQ(dut.next_index(), Index{5});
 
   // Remove 1 then 0. Add 5. Rename 3.
@@ -167,8 +172,9 @@ GTEST_TEST(ElementCollectionTest, Removals) {
   EXPECT_EQ(dut.names_map().count(std::string{"four"}), 1);
   EXPECT_EQ(dut.names_map().count(std::string{"five"}), 1);
 
-  EXPECT_THAT(dut.indices(),
+  EXPECT_THAT(dut.valid_indices(),
               testing::ElementsAre(Index{3}, Index{4}, Index{5}));
+  EXPECT_EQ(dut.num_indices(), 6);
   EXPECT_EQ(dut.next_index(), Index{6});
 }
 
@@ -182,7 +188,7 @@ GTEST_TEST(ElementCollectionTest, RemovalWithDuplicates) {
   EXPECT_EQ(dut.names_map().count(name), 2);
 
   dut.Remove(Index{0});
-  EXPECT_THAT(dut.indices(), testing::ElementsAre(Index{1}));
+  EXPECT_THAT(dut.valid_indices(), testing::ElementsAre(Index{1}));
   ASSERT_EQ(dut.names_map().count(name), 1);
   EXPECT_EQ(dut.names_map().find(name)->second, Index{1});
 }
@@ -202,6 +208,7 @@ GTEST_TEST(ElementCollectionTest, AllocateThenAdd) {
   dut.Add(std::make_unique<Element<double>>(Index{4}, "four"));
   dut.Add(std::make_unique<Element<double>>(Index{2}, "two"));
   dut.Add(std::make_unique<Element<double>>(Index{3}, "three"));
+  EXPECT_EQ(dut.num_indices(), 5);
   EXPECT_EQ(dut.next_index(), Index{5});
 
   const std::vector<std::string> expected_names{
@@ -210,7 +217,7 @@ GTEST_TEST(ElementCollectionTest, AllocateThenAdd) {
   EXPECT_EQ(dut.num_elements(), 5);
   EXPECT_EQ(dut.elements().size(), 5);
   EXPECT_EQ(dut.names_map().size(), 5);
-  EXPECT_EQ(dut.indices().size(), 5);
+  EXPECT_EQ(dut.valid_indices().size(), 5);
   for (Index i{0}; i < 5; ++i) {
     const std::string& name = expected_names.at(i);
     EXPECT_EQ(dut.elements().at(i)->name(), name);
@@ -219,7 +226,7 @@ GTEST_TEST(ElementCollectionTest, AllocateThenAdd) {
     EXPECT_EQ(dut.get_mutable_element(i).name(), name);
     EXPECT_EQ(dut.get_element_unchecked(i).name(), name);
     EXPECT_EQ(dut.names_map().count(name), 1);
-    EXPECT_EQ(dut.indices().at(i), i);
+    EXPECT_EQ(dut.valid_indices().at(i), i);
   }
 }
 

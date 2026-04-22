@@ -40,7 +40,7 @@ class RpyBallMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ = &AddJointAndFinalize<BallRpyJoint, RpyBallMobilizer>(
         std::make_unique<BallRpyJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame()));
+            "joint0", tree().world_link().body_frame(), body_->body_frame()));
   }
 
  protected:

@@ -291,6 +291,14 @@ class SpatialVector {
   /// rotational and translational components are both zero.
   static SpatialQuantity Zero() { return SpatialQuantity{}.SetZero(); }
 
+  /// Factory to create a _NaN_ spatial vector, i.e., a %SpatialVector whose
+  /// rotational and translational components are all NaN.
+  static SpatialQuantity NaN() {
+    SpatialQuantity quantity;
+    quantity.SetNaN();
+    return quantity;
+  }
+
  private:
   // Helper method to return a mutable reference to the derived spatial
   // quantity.
