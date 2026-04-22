@@ -76,8 +76,8 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     // Assign the two bodies (links) that are attached to the bushing.
     // Designate frameA as the frame of bodyA (world) connected to the bushing.
     // Designate frameC as the frame of bodyC (body)  connected to the bushing.
-    bodyA_ = &(model->world_body());
-    bodyC_ = &(model->AddRigidBody("BodyC", M_CCo_C));
+    bodyA_ = &(model->world_link());
+    bodyC_ = &(model->AddLink("BodyC", M_CCo_C));
     const Frame<double>& frameA = bodyA_->body_frame();
     const Frame<double>& frameC = bodyC_->body_frame();
 

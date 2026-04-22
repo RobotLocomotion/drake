@@ -38,7 +38,7 @@ class CurvilinearMobilizerTest : public MobilizerTester {
   void SetUp() override {
     std::unique_ptr<CurvilinearJoint<double>> joint =
         std::make_unique<CurvilinearJoint<double>>(
-            "joint1", tree().world_body().body_frame(), body_->body_frame(),
+            "joint1", tree().world_link().body_frame(), body_->body_frame(),
             trajectory_);
     mobilizer_ = &AddJointAndFinalize<CurvilinearJoint, CurvilinearMobilizer>(
         std::move(joint));

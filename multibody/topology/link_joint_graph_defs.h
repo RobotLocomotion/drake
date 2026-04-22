@@ -13,11 +13,7 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-using LinkIndex = BodyIndex;
-
 class SpanningForest;
-
-using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
 
 using JointTraitsIndex = TypeSafeIndex<class JointTraitsTag>;
 using WeldedLinksAssemblyIndex = TypeSafeIndex<class WeldedLinksAssemblyTag>;
@@ -82,6 +78,9 @@ inline ForestBuildingOptions operator&(ForestBuildingOptions left,
                                        ForestBuildingOptions right) {
   return static_cast<ForestBuildingOptions>(static_cast<unsigned>(left) &
                                             static_cast<unsigned>(right));
+}
+inline ForestBuildingOptions operator~(ForestBuildingOptions options) {
+  return static_cast<ForestBuildingOptions>(~static_cast<unsigned>(options));
 }
 
 }  // namespace internal

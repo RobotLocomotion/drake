@@ -45,7 +45,7 @@ void CheckBodyKinematics(const RationalForwardKinematics& dut,
 
   const internal::MultibodyTree<double>& tree =
       internal::GetInternalTree(dut.plant());
-  tree.CalcAllBodyPosesInWorld(*context, &X_WB_expected);
+  tree.CalcAllLinkPosesInWorld(*context, &X_WB_expected);
 
   symbolic::Environment env;
   for (int i = 0; i < s_val.rows(); ++i) {

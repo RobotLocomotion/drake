@@ -174,9 +174,12 @@ template class ElementCollection<double, ModelInstance, ModelInstanceIndex>;
 template class ElementCollection<AutoDiffXd, ModelInstance, ModelInstanceIndex>;
 template class ElementCollection<Expression, ModelInstance, ModelInstanceIndex>;
 
-template class ElementCollection<double, RigidBody, BodyIndex>;
-template class ElementCollection<AutoDiffXd, RigidBody, BodyIndex>;
-template class ElementCollection<Expression, RigidBody, BodyIndex>;
+// `links_` in MultibodyTree uses `Link` (a template alias for RigidBody).
+// GCC substitutes through aliases, but Clang preserves the alias name in
+// mangled symbols, so we must instantiate with `Link` to match both compilers.
+template class ElementCollection<double, Link, LinkIndex>;
+template class ElementCollection<AutoDiffXd, Link, LinkIndex>;
+template class ElementCollection<Expression, Link, LinkIndex>;
 
 template class ElementCollection<double, DeformableBody, DeformableBodyIndex>;
 template class ElementCollection<AutoDiffXd, DeformableBody,

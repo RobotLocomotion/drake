@@ -354,17 +354,16 @@ class SpanningForest {
     return graph().get_forest_building_options_in_use(index);
   }
 
-  /* Returns the Link that is represented by the given Mobod. This could be
-  one of the Links from the original graph or an added shadow Link. If this
-  Mobod represents a WeldedLinksAssembly, the Link returned here is the
-  "active" Link, that is, the one whose mobilizer is used to move the whole
-  Assembly. Cost is O(1) and very fast.
+  /* Returns the Link that is represented by the given Mobod, or the active
+  link if given a composite mobod. This could be one of the Links from the
+  original graph or an added shadow Link. An active link is the one whose
+  mobilizer is used to move the whole mobod. Cost is O(1) and very fast.
   @pre mobod_index is in range */
-  inline LinkOrdinal mobod_to_link_ordinal(MobodIndex mobod_index) const;
+  inline LinkOrdinal mobod_to_active_link_ordinal(MobodIndex mobod_index) const;
 
-  /* Returns all the Links mobilized by this Mobod. The "active" Link returned
-  by mobod_to_link() comes first, then any other Links in the same Assembly.
-  O(1), very fast.
+  /* Returns all the Links mobilized by this Mobod. The active link returned
+  by mobod_to_active_link() comes first, then any other links in the same
+  composite mobod. O(1), very fast.
   @pre mobod_index is in range  */
   inline const std::vector<LinkOrdinal>& mobod_to_link_ordinals(
       MobodIndex mobod_index) const;
