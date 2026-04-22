@@ -86,6 +86,10 @@ def drake_jupyter_py_binary(
             tags = jupyter_tags + test_rule_tags,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            opt_out_conditions = [
+                # Smoke tests don't count as coverage.
+                "//tools/kcov:enabled",
+            ],
             # Permit `unittest` given that NumPy uses it.
             allow_import_unittest = True,
         )

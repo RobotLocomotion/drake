@@ -101,9 +101,6 @@ drake_cc_binary(
     ],
     add_test_rule = True,
     test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
-    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
-    # causes timeouts in kcov.
-    test_rule_opt_out_conditions = ["//tools/kcov:enabled"],
 )
 
 drake_cc_binary(
