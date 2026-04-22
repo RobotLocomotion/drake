@@ -40,6 +40,8 @@ class Frame;
 template <typename T>
 class RigidBody;
 template <typename T>
+using Link = RigidBody<T>;
+template <typename T>
 class Joint;
 template <typename T>
 class JointActuator;
@@ -54,6 +56,16 @@ class UniformGravityFieldElement;
 enum class JacobianWrtVariable {
   kQDot,  ///< J = ∂V/∂q̇
   kV      ///< J = ∂V/∂v
+};
+
+/// The kind of joint to be used to connect base bodies to world at Finalize().
+/// See @ref mbp_working_with_free_bodies "Working with free bodies"
+/// for definitions and discussion.
+/// @see SetBaseBodyJointType() for details.
+enum class BaseBodyJointType {
+  kQuaternionFloatingJoint,  ///< 6 dofs, unrestricted orientation.
+  kRpyFloatingJoint,         ///< 6 dofs using 3 angles; has singularity.
+  kWeldJoint,                ///< 0 dofs, fixed to World.
 };
 
 /// @cond
@@ -481,11 +493,11 @@ class MultibodyTree {
   // See MultibodyPlant method.
   int num_frames() const { return frames_.num_elements(); }
 
-  // Returns the number of RigidBodies in the %MultibodyPlant including World.
-  // Therefore the minimum number of bodies is one.
-  int num_bodies() const { return rigid_bodies_.num_elements(); }
+  // Returns the number of Links (aka RigidBodies) in the MultibodyPlant
+  // including World. Therefore the minimum number of links is one.
+  int num_links() const { return links_.num_elements(); }
 
-  // Returns the number of joints added with AddJoint() to the %MultibodyTree.
+  // Returns the number of joints added with AddJoint() to the MultibodyTree.
   int num_joints() const { return joints_.num_elements(); }
 
   // Returns the number of actuators in the model.
@@ -564,31 +576,31 @@ class MultibodyTree {
   // could only be considered in the model using constraints.
   int forest_height() const { return forest().height(); }
 
-  // Returns a constant reference to the *world* body.
-  const RigidBody<T>& world_body() const {
-    // world_rigid_body_ is set in the constructor. So this assert is here only
+  // Returns a constant reference to the *world* link.
+  const Link<T>& world_link() const {
+    // world_link_ is set in the constructor. So this assert is here only
     // to verify future constructors do not mess that up.
-    DRAKE_ASSERT(world_rigid_body_ != nullptr);
-    return *world_rigid_body_;
+    DRAKE_ASSERT(world_link_ != nullptr);
+    return *world_link_;
   }
 
   // Returns a constant reference to the *world* frame.
   const RigidBodyFrame<T>& world_frame() const {
-    return rigid_bodies_.get_element_unchecked(world_index()).body_frame();
+    return links_.get_element_unchecked(world_index()).body_frame();
   }
 
   // See MultibodyPlant method.
   bool has_body(BodyIndex body_index) const {
-    return rigid_bodies_.has_element(body_index);
+    return links_.has_element(body_index);
   }
 
   // See MultibodyPlant method.
   const RigidBody<T>& get_body(BodyIndex body_index) const {
-    return rigid_bodies_.get_element(body_index);
+    return links_.get_element(body_index);
   }
 
   RigidBody<T>& get_mutable_body(BodyIndex body_index) {
-    return rigid_bodies_.get_mutable_element(body_index);
+    return links_.get_mutable_element(body_index);
   }
 
   // See MultibodyPlant method.
@@ -935,6 +947,15 @@ class MultibodyTree {
   [[nodiscard]] const SpanningForest::Mobod& get_mobod(MobodIndex index) const {
     return forest().mobods(index);
   }
+
+  // See MultibodyPlant API.
+  void SetBaseBodyJointType(
+      BaseBodyJointType joint_type,
+      std::optional<ModelInstanceIndex> model_instance = {});
+
+  // See MultibodyPlant API.
+  BaseBodyJointType GetBaseBodyJointType(
+      std::optional<ModelInstanceIndex> model_instance = {}) const;
 
   // Finalize() must be called after all user-defined elements in the plant
   // (joints, bodies, force elements, constraints, etc.) have been added and
@@ -1340,9 +1361,9 @@ class MultibodyTree {
   // @param[out] M_B_W_all
   //   For each body in the model, entry RigidBody::mobod_index() in M_B_W_all
   //   contains the updated spatial inertia `M_B_W(q)` for that body. On input
-  //   it must be a valid pointer to a vector of size num_bodies().
+  //   it must be a valid pointer to a vector of size num_mobods().
   // @throws std::exception if M_B_W_all is nullptr or if its size is not
-  // num_bodies().
+  // num_mobods().
   void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* M_B_W_all) const;
@@ -1389,19 +1410,20 @@ class MultibodyTree {
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* K_BBo_W_all) const;
 
-  // Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
-  // For a body B, this is the bias term `Fb_Bo_W` in the equation
+  // Computes the bias force `Fb_Bo_W(q, v)` for each mobod in the model.
+  // For a mobod B, this is the bias term `Fb_Bo_W` in the equation
   // `F_BBo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   // about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   // `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
   // @param[in] context
   //   The context storing the state of the model.
   // @param[out] Fb_Bo_W_all
-  //   For each body in the model, entry RigidBody::mobod_index() in Fb_Bo_W_all
-  //   contains the updated bias term `Fb_Bo_W(q, v)` for that body. On input
-  //   it must be a valid pointer to a vector of size num_bodies().
+  //   For each mobod in the model, entry RigidBody::mobod_index() in
+  //   Fb_Bo_W_all contains the updated bias term `Fb_Bo_W(q, v)` for that
+  //   mobod. On input it must be a valid pointer to a vector of size
+  //   num_mobods().
   // @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
-  // num_bodies().
+  // num_mobods().
   void CalcDynamicBiasForces(const systems::Context<T>& context,
                              std::vector<SpatialForce<T>>* Fb_Bo_W_all) const;
 
@@ -2100,7 +2122,7 @@ class MultibodyTree {
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
     const BodyIndex body_index = element.index();
-    return rigid_bodies_.get_element(body_index);
+    return links_.get_element(body_index);
   }
 
   // Overload for Mobilizer<T> elements.
@@ -2601,16 +2623,16 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc) const;
 
-  // For all bodies, calculate bias spatial acceleration in the world frame W.
+  // For all mobods, calculate bias spatial acceleration in the world frame W.
   // @param[in] context The state of the multibody system.
   // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   // JacobianWrtVariable::kV, indicating whether the spatial acceleration bias
   // is with respect to 𝑠 = q̇ or 𝑠 = v.
-  // @param[out] AsBias_WB_all Each body's spatial acceleration bias in world
+  // @param[out] AsBias_WB_all Each mobod's spatial acceleration bias in world
   // frame W, with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame W.
   // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
   // @throws std::exception if AsBias_WB_all is nullptr.
-  // @throws std::exception if AsBias_WB_all.size() is not num_bodies().
+  // @throws std::exception if AsBias_WB_all.size() is not num_mobods().
   void CalcAllBodyBiasSpatialAccelerationsInWorld(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       std::vector<SpatialAcceleration<T>>* AsBias_WB_all) const;
@@ -2621,8 +2643,6 @@ class MultibodyTree {
   // @param[in] body_indexes Array of selected bodies.  This method does not
   //  distinguish between welded bodies, joint-connected bodies,
   //  floating bodies, the world_body(), or repeated bodies.
-  // @throws std::exception if model_instances contains an invalid
-  // ModelInstanceIndex.
   // @throws std::exception if body_indexes contains an invalid BodyIndex.
   SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context,
@@ -2789,7 +2809,7 @@ class MultibodyTree {
   // Helper method to create a clone of `body` and add it to `this` tree.
   // Because this method is only invoked in a controlled manner from within
   // CloneToScalar(), it is guaranteed that the cloned body in this variant's
-  // `rigid_bodies_` will occupy the same position as its corresponding
+  // `links_` will occupy the same position as its corresponding
   // RigidBody in the source variant `body`.
   template <typename FromScalar>
   RigidBody<T>* CloneBodyAndAdd(const RigidBody<FromScalar>& body);
@@ -2826,10 +2846,10 @@ class MultibodyTree {
       const RigidBody<T>& body) const;
 
   // These objects are defined via MultibodyPlant and are thus user-visible.
-  const RigidBody<T>* world_rigid_body_{nullptr};
+  const Link<T>* world_link_{nullptr};  // aka RigidBody
   // When we need to look up elements by name, we'll use an ElementCollection.
   // Otherwise, we'll just use a plain vector.
-  ElementCollection<T, RigidBody, BodyIndex> rigid_bodies_;
+  ElementCollection<T, Link, LinkIndex> links_;
   ElementCollection<T, Frame, FrameIndex> frames_;
   ElementCollection<T, Joint, JointIndex> joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> force_elements_;

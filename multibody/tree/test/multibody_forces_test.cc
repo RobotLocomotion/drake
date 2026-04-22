@@ -32,7 +32,7 @@ class MultibodyForcesTests : public ::testing::Test {
     const auto M = SpatialInertia<double>::NaN();
     const RigidBody<double>& body1 = model_.AddRigidBody("Body1", M);
     const RigidBody<double>& body2 = model_.AddRigidBody("Body2", M);
-    model_.AddJoint<RevoluteJoint>("Joint1", model_.world_body(), std::nullopt,
+    model_.AddJoint<RevoluteJoint>("Joint1", model_.world_link(), std::nullopt,
                                    body1, std::nullopt, Vector3d::UnitZ());
     model_.AddJoint<RevoluteJoint>("Joint2", body1, std::nullopt, body2,
                                    std::nullopt, Vector3d::UnitZ());
@@ -57,7 +57,7 @@ TEST_F(MultibodyForcesTests, Construction) {
   EXPECT_TRUE(forces->CheckHasRightSizeForModel(model_));
 
   // Test the API to retrieve sizes.
-  EXPECT_EQ(forces->num_bodies(), model_.num_bodies());
+  EXPECT_EQ(forces->num_bodies(), model_.num_links());
   EXPECT_EQ(forces->num_velocities(), model_.num_velocities());
 
   // Assess the constructor did zero the forces.

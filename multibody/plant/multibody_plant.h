@@ -245,16 +245,6 @@ enum class DiscreteContactApproximation {
   kLagged,
 };
 
-/// The kind of joint to be used to connect base bodies to world at Finalize().
-/// See @ref mbp_working_with_free_bodies "Working with free bodies"
-/// for definitions and discussion.
-/// @see SetBaseBodyJointType() for details.
-enum class BaseBodyJointType {
-  kQuaternionFloatingJoint,  ///< 6 dofs, unrestricted orientation.
-  kRpyFloatingJoint,         ///< 6 dofs using 3 angles; has singularity.
-  kWeldJoint,                ///< 0 dofs, fixed to World.
-};
-
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1267,6 +1257,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
 
+  // TODO(sherm1) Modify the next comment to explain that unmodeled joints will
+  //  have NaN reaction force entries here. (Joints can be unmodeled because
+  //  they were removed or because they are internal to a composite body.)
+
   /// Reports joint reaction forces as an @ref AbstractValue "abstract-valued"
   /// output port containing an `std::vector<SpatialForce<T>>` of size
   /// num_joints().
@@ -1766,6 +1760,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] model_instance (optional) the index of the model instance to
   ///   which `joint_type` is to be applied.
   /// @throws std::exception if called after Finalize().
+  /// @see GetBaseBodyJointType(), Finalize()
   void SetBaseBodyJointType(
       BaseBodyJointType joint_type,
       std::optional<ModelInstanceIndex> model_instance = {});
@@ -1778,7 +1773,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// This can be called any time -- pre-finalize it returns the joint type
   /// that will be used by Finalize(); post-finalize it returns the joint type
   /// that _was_ used if there were any base bodies in need of a joint.
-  /// @see SetBaseBodyJointType()
+  /// @see SetBaseBodyJointType(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
@@ -5195,7 +5190,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
-    return internal_tree().world_body();
+    return internal_tree().world_link();
   }
 
   /// Returns a constant reference to the *world* frame.
@@ -5206,7 +5201,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns the number of RigidBody elements in the model, including the
   /// "world" RigidBody, which is always part of the model.
   /// @see AddRigidBody().
-  int num_bodies() const { return internal_tree().num_bodies(); }
+  int num_bodies() const { return internal_tree().num_links(); }
 
   /// Returns `true` if plant has a rigid body with unique index `body_index`.
   bool has_body(BodyIndex body_index) const {

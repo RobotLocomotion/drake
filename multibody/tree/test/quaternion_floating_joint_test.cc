@@ -53,7 +53,7 @@ class QuaternionFloatingJointTest : public ::testing::Test {
 
     // Add a quaternion floating joint between the world and body:
     joint_ = &model->AddJoint<QuaternionFloatingJoint>(
-        "Joint", model->world_body(), std::nullopt, *body_, std::nullopt,
+        "Joint", model->world_link(), std::nullopt, *body_, std::nullopt,
         kAngularDamping, kTranslationalDamping);
     mutable_joint_ = dynamic_cast<QuaternionFloatingJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));

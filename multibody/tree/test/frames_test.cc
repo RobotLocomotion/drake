@@ -55,7 +55,7 @@ class FrameTests : public ::testing::Test {
     frameB_ = &bodyB_->body_frame();
 
     // Joint connecting bodyB to the world.
-    model->AddJoint<RevoluteJoint>("joint0", model->world_body(), {}, *bodyB_,
+    model->AddJoint<RevoluteJoint>("joint0", model->world_link(), {}, *bodyB_,
                                    {}, Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.

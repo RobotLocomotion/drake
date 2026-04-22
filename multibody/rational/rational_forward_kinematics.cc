@@ -245,12 +245,12 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
 
   internal::MobodIndex mobilizer_index;
   bool is_order_reversed{};
-  if (parent_mobod.inboard().is_valid() &&
-      parent_mobod.inboard() == child_mobod_index) {
+  if (parent_mobod.inboard_mobod().is_valid() &&
+      parent_mobod.inboard_mobod() == child_mobod_index) {
     is_order_reversed = true;
     mobilizer_index = parent_mobod_index;
-  } else if (child_mobod.inboard().is_valid() &&
-             child_mobod.inboard() == parent_mobod_index) {
+  } else if (child_mobod.inboard_mobod().is_valid() &&
+             child_mobod.inboard_mobod() == parent_mobod_index) {
     is_order_reversed = false;
     mobilizer_index = child_mobod_index;
   } else {

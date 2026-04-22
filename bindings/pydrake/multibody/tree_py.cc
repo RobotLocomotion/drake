@@ -149,6 +149,17 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
+    using Enum = BaseBodyJointType;
+    constexpr auto& cls_doc = doc.BaseBodyJointType;
+    py::enum_<Enum> cls(m, "BaseBodyJointType", cls_doc.doc);
+    cls.value("kQuaternionFloatingJoint", Enum::kQuaternionFloatingJoint,
+           cls_doc.kQuaternionFloatingJoint.doc)
+        .value("kRpyFloatingJoint", Enum::kRpyFloatingJoint,
+            cls_doc.kRpyFloatingJoint.doc)
+        .value("kWeldJoint", Enum::kWeldJoint, cls_doc.kWeldJoint.doc);
+  }
+
+  {
     using Class = ScopedName;
     constexpr auto& cls_doc = doc.ScopedName;
     py::class_<Class> cls(m, "ScopedName", cls_doc.doc);

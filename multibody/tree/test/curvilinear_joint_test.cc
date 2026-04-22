@@ -56,7 +56,7 @@ class CurvilinearJointTest : public ::testing::Test {
 
     // Add a curvilinear joint between the world and body1.
     joint1_ = &model->AddJoint<CurvilinearJoint>(
-        "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
+        "Joint1", model->world_link(), std::nullopt, *body1_, std::nullopt,
         trajectory_, kDamping);
     Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
     mutable_joint1_ = dynamic_cast<CurvilinearJoint<double>*>(&mutable_joint);

@@ -120,7 +120,7 @@ class BodyNode : public MultibodyElement<T> {
   // MultibodyTree::Finalize() method call.
   void add_child_node(const BodyNode<T>* child) { children_.push_back(child); }
 
-  MobodIndex inboard_mobod_index() const { return mobod().inboard(); }
+  MobodIndex inboard_mobod_index() const { return mobod().inboard_mobod(); }
 
   // Returns a constant reference to the body B associated with this node.
   const RigidBody<T>& body() const {

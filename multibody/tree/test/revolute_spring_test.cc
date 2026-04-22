@@ -38,7 +38,7 @@ class SpringTester : public ::testing::Test {
     bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>::NaN());
     bodyC_ = &model->AddRigidBody("BodyC", SpatialInertia<double>::NaN());
 
-    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_body(), {},
+    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_link(), {},
                                *bodyA_, {},
                                math::RigidTransform<double>::Identity());
 

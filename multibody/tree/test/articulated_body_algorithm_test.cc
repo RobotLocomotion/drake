@@ -65,7 +65,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Add box body and gimbal (BallRpy) joint.
   const RigidBody<double>& box_link = tree.AddRigidBody("box", M_Bcm);
-  tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {}, box_link, {});
+  tree.AddJoint<BallRpyJoint>("ball", tree.world_link(), {}, box_link, {});
 
   // Add a massless body that can rotate about x.
   const RigidBody<double>& massless_link =
@@ -173,7 +173,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   // Add box body and gimbal (BallRpy) joint.
   const RigidBody<double>& box_link = tree.AddRigidBody("box", M_Bcm);
   const auto& WB_joint =
-      tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {}, box_link, {});
+      tree.AddJoint<BallRpyJoint>("ball", tree.world_link(), {}, box_link, {});
 
   // Add a massless body that can rotate about x.
   const RigidBody<double>& massless_link =

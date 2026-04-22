@@ -36,7 +36,7 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   body_ = &this->mutable_tree().AddRigidBody("B", M_Bcm);
   joint_ = &this->mutable_tree().template AddJoint<BallRpyJoint>(
-      "ball_rpy_joint", tree().world_body(), {}, *body_, {});
+      "ball_rpy_joint", tree().world_link(), {}, *body_, {});
 
   internal::MultibodyTreeSystem<T>::Finalize();
 }

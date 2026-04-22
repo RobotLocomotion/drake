@@ -537,7 +537,7 @@ class Frame : public MultibodyElement<T> {
   /// extract X_BF for this %Frame from it.
   /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
   ///       since the last parameter change; we can't check here.
-  /// @retval X_BF pose of this frame in its body's frame
+  /// @retval X_BF pose of this frame in its Mobod's frame
   const math::RigidTransform<T>& get_X_BF(
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
     return frame_body_poses.get_X_BF(body_pose_index_in_cache_);

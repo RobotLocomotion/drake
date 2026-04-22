@@ -85,7 +85,7 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_EQ(forest.height(), 1);
   EXPECT_EQ(ssize(forest.welded_mobods()), 1);
   EXPECT_EQ(forest.welded_mobods()[0][0], world_mobod_index);
-  EXPECT_EQ(forest.mobod_to_link_ordinal(world_mobod_index),
+  EXPECT_EQ(forest.mobod_to_active_link_ordinal(world_mobod_index),
             world_link_ordinal);
   EXPECT_EQ(forest.mobod_to_link_ordinals(world_mobod_index),
             std::vector{world_link_ordinal});
@@ -107,11 +107,11 @@ GTEST_TEST(SpanningForest, WorldOnlyTest) {
   EXPECT_TRUE(world.is_leaf_mobod());
   EXPECT_FALSE(world.is_reversed());  // Not meaningful though.
   EXPECT_TRUE(world.is_weld());       // Defined as having no inboard dofs.
-  EXPECT_FALSE(world.inboard().is_valid());
-  EXPECT_TRUE(world.outboards().empty());
-  EXPECT_EQ(world.link_ordinal(), world_link_ordinal);
+  EXPECT_FALSE(world.inboard_mobod().is_valid());
+  EXPECT_TRUE(world.outboard_mobods().empty());
+  EXPECT_EQ(world.active_link_ordinal(), world_link_ordinal);
   EXPECT_EQ(world.follower_link_ordinals(), std::vector{world_link_ordinal});
-  EXPECT_FALSE(world.joint_ordinal().is_valid());
+  EXPECT_FALSE(world.active_joint_ordinal().is_valid());
   EXPECT_FALSE(world.tree().is_valid());
   EXPECT_EQ(world.welded_mobods_group(), WeldedMobodsIndex(0));
   EXPECT_EQ(world.level(), 0);
@@ -360,7 +360,7 @@ GTEST_TEST(SpanningForest, MultipleBranchesDefaultOptions) {
   for (auto mobod_link : mobod_link_map) {
     EXPECT_EQ(graph.link_to_mobod(LinkIndex(mobod_link.second)),
               MobodIndex(mobod_link.first));
-    EXPECT_EQ(forest.mobod_to_link_ordinal(MobodIndex(mobod_link.first)),
+    EXPECT_EQ(forest.mobod_to_active_link_ordinal(MobodIndex(mobod_link.first)),
               LinkOrdinal(mobod_link.second));
     // Each Mobod has only a single Link that follows it.
     EXPECT_EQ(forest.mobod_to_link_ordinals(MobodIndex(mobod_link.first)),
@@ -511,16 +511,17 @@ GTEST_TEST(SpanningForest, MultipleBranchesBaseJointOptions) {
   EXPECT_TRUE(tree1.front().is_anchored());
   EXPECT_FALSE(tree2.front().is_anchored());
 
-  EXPECT_FALSE(graph.links(tree0.front().link_ordinal()).is_anchored());
-  EXPECT_TRUE(graph.links(tree1.front().link_ordinal()).is_anchored());
-  EXPECT_FALSE(graph.links(tree2.front().link_ordinal()).is_anchored());
+  EXPECT_FALSE(graph.links(tree0.front().active_link_ordinal()).is_anchored());
+  EXPECT_TRUE(graph.links(tree1.front().active_link_ordinal()).is_anchored());
+  EXPECT_FALSE(graph.links(tree2.front().active_link_ordinal()).is_anchored());
 
   // There is only the World assembly, but now tree1's base link and its
   // ephemeral weld joint are included.
   EXPECT_EQ(ssize(graph.welded_links_assemblies()), 1);  // just World
-  EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
-            (std::vector{graph.world_link().index(),
-                         graph.links(tree1.front().link_ordinal()).index()}));
+  EXPECT_EQ(
+      graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).links(),
+      (std::vector{graph.world_link().index(),
+                   graph.links(tree1.front().active_link_ordinal()).index()}));
   EXPECT_EQ(graph.welded_links_assemblies(WeldedLinksAssemblyIndex(0)).joints(),
             (std::vector{JointIndex(14)}));  // Ephemeral joints start at 13.
   EXPECT_FALSE(
@@ -795,7 +796,8 @@ GTEST_TEST(SpanningForest, SerialChainAndMore) {
   // Counts for generic middle Mobod.
   const SpanningForest::Mobod& mobod_for_link3 =
       forest.mobods(graph.link_by_index(LinkIndex(3)).mobod_index());
-  EXPECT_EQ(graph.links(mobod_for_link3.link_ordinal()).index(), LinkIndex(3));
+  EXPECT_EQ(graph.links(mobod_for_link3.active_link_ordinal()).index(),
+            LinkIndex(3));
   EXPECT_EQ(mobod_for_link3.q_start(), 2);
   EXPECT_EQ(mobod_for_link3.v_start(), 2);
   EXPECT_EQ(mobod_for_link3.nq(), 1);
@@ -1308,10 +1310,10 @@ GTEST_TEST(SpanningForest, WeldedSubgraphs) {
   const std::array mobod2joint{-1, 12, 11, 9, 8, 10, 13, 14, 3,
                                0,  7,  4,  6, 5, 2,  1,  15};
   for (const SpanningForest::Mobod& mobod : forest.mobods()) {
-    EXPECT_EQ(graph.links(mobod.link_ordinal()).index(),
+    EXPECT_EQ(graph.links(mobod.active_link_ordinal()).index(),
               LinkIndex(mobod2link[mobod.index()]));
     if (mobod.is_world()) continue;  // No joint for World mobod.
-    EXPECT_EQ(graph.joints(mobod.joint_ordinal()).index(),
+    EXPECT_EQ(graph.joints(mobod.active_joint_ordinal()).index(),
               JointIndex(mobod2joint[mobod.index()]));
   }
 
@@ -1510,8 +1512,9 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 4);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 3);
-  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(4)).link_ordinal()).index(),
-            LinkIndex(7));
+  EXPECT_EQ(
+      graph.links(forest.mobods(MobodIndex(4)).active_link_ordinal()).index(),
+      LinkIndex(7));
 
   // Changing just 3 to massless results in the same forest.
   // (Tests Case 2 in ExtendTreesOneLevel())
@@ -1530,8 +1533,9 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 4);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 3);
-  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(4)).link_ordinal()).index(),
-            LinkIndex(7));
+  EXPECT_EQ(
+      graph.links(forest.mobods(MobodIndex(4)).active_link_ordinal()).index(),
+      LinkIndex(7));
 
   // Changing both 3 and 4 to massless breaks the loop at 6 instead of 4.
   // (Tests Case 3 in ExtendTreesOneLevel())
@@ -1547,8 +1551,9 @@ GTEST_TEST(SpanningForest, MasslessLinksChangeLoopBreaking) {
   EXPECT_EQ(ssize(forest.trees()), 2);
   EXPECT_EQ(forest.trees()[0].num_mobods(), 5);
   EXPECT_EQ(forest.trees()[1].num_mobods(), 2);
-  EXPECT_EQ(graph.links(forest.mobods(MobodIndex(5)).link_ordinal()).index(),
-            LinkIndex(7));
+  EXPECT_EQ(
+      graph.links(forest.mobods(MobodIndex(5)).active_link_ordinal()).index(),
+      LinkIndex(7));
 }
 
 /* Here is a tricky case that should be handled correctly and without warnings.
@@ -1735,10 +1740,10 @@ GTEST_TEST(SpanningForest, DoubleLoop) {
   const std::array mobod2link{0, 1, 2, 5, 8, 4, 7, 9, 3, 6};
   const std::array mobod2joint{-1, 8, 0, 3, 6, 1, 4, 7, 2, 5};
   for (const SpanningForest::Mobod& mobod : forest.mobods()) {
-    EXPECT_EQ(graph.links(mobod.link_ordinal()).index(),
+    EXPECT_EQ(graph.links(mobod.active_link_ordinal()).index(),
               LinkIndex(mobod2link[mobod.index()]));
     if (mobod.is_world()) continue;  // No joint for World mobod.
-    EXPECT_EQ(graph.joints(mobod.joint_ordinal()).index(),
+    EXPECT_EQ(graph.joints(mobod.active_joint_ordinal()).index(),
               JointIndex(mobod2joint[mobod.index()]));
   }
 

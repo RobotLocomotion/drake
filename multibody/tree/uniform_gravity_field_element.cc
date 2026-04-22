@@ -64,13 +64,13 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
 
   // Temporary output vector of spatial forces for each body B at their inboard
   // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_links());
 
   // Zero vector of generalized accelerations.
   const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
 
   // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_links());
 
   // Output vector of generalized forces:
   VectorX<T> tau_g(model.num_velocities());
@@ -106,9 +106,9 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   // Skip the world.
   DRAKE_ASSERT(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
-  // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
+  const int num_links = model.num_links();
+  // Skip the "world" link.
+  for (BodyIndex body_index(1); body_index < num_links; ++body_index) {
     const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
@@ -138,10 +138,10 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   // Skip the world.
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
+  const int num_links = model.num_links();
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
+  for (BodyIndex body_index(1); body_index < num_links; ++body_index) {
     const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.
@@ -172,10 +172,10 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   // Skip the world.
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
+  const int num_links = model.num_links();
   T TotalConservativePower = 0.0;
   // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
+  for (BodyIndex body_index(1); body_index < num_links; ++body_index) {
     const RigidBody<T>& body = model.get_body(body_index);
 
     // Skip this body if gravity is disabled.

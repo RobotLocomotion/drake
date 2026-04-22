@@ -589,6 +589,32 @@ representation.)""";
           const char* doc = R"""()""";
         } type_name;
       } BallRpyJoint;
+      // Symbol: drake::multibody::BaseBodyJointType
+      struct /* BaseBodyJointType */ {
+        // Source: drake/multibody/tree/multibody_tree.h
+        const char* doc =
+R"""(The kind of joint to be used to connect base bodies to world at
+Finalize(). See mbp_working_with_free_bodies "Working with free
+bodies" for definitions and discussion.
+
+See also:
+    SetBaseBodyJointType() for details.)""";
+        // Symbol: drake::multibody::BaseBodyJointType::kQuaternionFloatingJoint
+        struct /* kQuaternionFloatingJoint */ {
+          // Source: drake/multibody/tree/multibody_tree.h
+          const char* doc = R"""(6 dofs, unrestricted orientation.)""";
+        } kQuaternionFloatingJoint;
+        // Symbol: drake::multibody::BaseBodyJointType::kRpyFloatingJoint
+        struct /* kRpyFloatingJoint */ {
+          // Source: drake/multibody/tree/multibody_tree.h
+          const char* doc = R"""(6 dofs using 3 angles; has singularity.)""";
+        } kRpyFloatingJoint;
+        // Symbol: drake::multibody::BaseBodyJointType::kWeldJoint
+        struct /* kWeldJoint */ {
+          // Source: drake/multibody/tree/multibody_tree.h
+          const char* doc = R"""(0 dofs, fixed to World.)""";
+        } kWeldJoint;
+      } BaseBodyJointType;
       // Symbol: drake::multibody::BodyIndex
       struct /* BodyIndex */ {
         // Source: drake/multibody/tree/multibody_tree_indexes.h
@@ -2778,7 +2804,7 @@ Note:
     since the last parameter change; we can't check here.
 
 Returns ``X_BF``:
-    pose of this frame in its body's frame)""";
+    pose of this frame in its Mobod's frame)""";
         } get_X_BF;
         // Symbol: drake::multibody::Frame::get_X_FB
         struct /* get_X_FB */ {
@@ -5115,6 +5141,17 @@ body frame B.)""";
           const char* doc = R"""()""";
         } stiffness;
       } LinearSpringDamper;
+      // Symbol: drake::multibody::LinkIndex
+      struct /* LinkIndex */ {
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
+        const char* doc = R"""(This is a synonym for BodyIndex.)""";
+      } LinkIndex;
+      // Symbol: drake::multibody::LinkOrdinal
+      struct /* LinkOrdinal */ {
+        // Source: drake/multibody/tree/multibody_tree_indexes.h
+        const char* doc =
+R"""(Type used to identify links by ordinal within a multibody plant.)""";
+      } LinkOrdinal;
       // Symbol: drake::multibody::ModelInstanceIndex
       struct /* ModelInstanceIndex */ {
         // Source: drake/multibody/tree/multibody_tree_indexes.h
@@ -7676,6 +7713,14 @@ the index into all associated quantities.)""";
 R"""(Gets the ``name`` associated with this rigid body. The name will never
 be empty.)""";
         } name;
+        // Symbol: drake::multibody::RigidBody::ordinal
+        struct /* ordinal */ {
+          // Source: drake/multibody/tree/rigid_body.h
+          const char* doc =
+R"""((Internal use only) Returns this Link's (RigidBody's) unique ordinal.
+Currently identical to the index but will differ when we permit
+removal of Links as we do for Joints.)""";
+        } ordinal;
         // Symbol: drake::multibody::RigidBody::scoped_name
         struct /* scoped_name */ {
           // Source: drake/multibody/tree/rigid_body.h

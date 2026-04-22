@@ -134,7 +134,7 @@ class PendulumTests : public ::testing::Test {
   // world body and world body frame.
   void SetUp() override {
     model_ = std::make_unique<MultibodyTree<double>>();
-    world_body_ = &model_->world_body();
+    world_body_ = &model_->world_link();
   }
 
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
@@ -317,14 +317,14 @@ class PendulumTests : public ::testing::Test {
 
 TEST_F(PendulumTests, CreateModelBasics) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->num_bodies(), 1);
+  EXPECT_EQ(model_->num_links(), 1);
   // And there is only one frame, the world frame.
   EXPECT_EQ(model_->num_frames(), 1);
 
   CreatePendulumModel();
 
   // Verifies the number of multibody elements is correct.
-  EXPECT_EQ(model_->num_bodies(), 3);
+  EXPECT_EQ(model_->num_links(), 3);
   EXPECT_EQ(model_->num_joints(), 2);
   EXPECT_EQ(model_->num_frames(), 5);
   // Joints have no implementations before finalize.
@@ -433,7 +433,7 @@ TEST_F(PendulumTests, Finalize) {
 // bodies in an array of references.
 TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->num_bodies(), 1);
+  EXPECT_EQ(model_->num_links(), 1);
   // And there is only one frame, the world frame.
   EXPECT_EQ(model_->num_frames(), 1);
   CreatePendulumModel();
@@ -462,7 +462,7 @@ TEST_F(PendulumTests, CreateContext) {
   // - world_
   // - upper_link_
   // - lower_link_
-  EXPECT_EQ(model_->num_bodies(), 3);
+  EXPECT_EQ(model_->num_links(), 3);
 
   // Finalize() stage.
   DRAKE_EXPECT_NO_THROW(model_->Finalize());
@@ -655,7 +655,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
-    vector<SpatialForce<double>> F_BMo_W_array(tree().num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(tree().num_links());
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
@@ -669,7 +669,7 @@ class PendulumKinematicTests : public PendulumTests {
     // then to have separate input/output arrays.
 
     const VectorXd vdot = VectorXd::Zero(tree().num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
+    vector<SpatialAcceleration<double>> A_WB_array(tree().num_links());
 
     // Aliases to external forcing arrays:
     std::vector<SpatialForce<double>>& Fapplied_Bo_W_array =
@@ -792,8 +792,8 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute inverse dynamics.
     VectorXd tau(tree().num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
-    vector<SpatialForce<double>> F_BMo_W_array(tree().num_bodies());
+    vector<SpatialAcceleration<double>> A_WB_array(tree().num_links());
+    vector<SpatialForce<double>> F_BMo_W_array(tree().num_links());
     tree().CalcInverseDynamics(*context_, vdot, {}, VectorXd(), &A_WB_array,
                                &F_BMo_W_array, &tau);
 

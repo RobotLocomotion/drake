@@ -131,7 +131,7 @@ class DoublePendulumModel {
     // Adds the upper and lower links of the pendulum:
     link1_ = &model->AddRigidBody("Link1", M1_L1);
     link2_ = &model->AddRigidBody("Link2", M2_L2);
-    world_body_ = &model->world_body();
+    world_body_ = &model->world_link();
 
     // The shoulder joint connects the world with link 1.
     // Its inboard frame, Si, is the world frame.
@@ -298,7 +298,7 @@ class PendulumTests : public ::testing::Test {
     // External forces:
     MultibodyForces<double> forces(pendulum_.tree());
     // Accelerations of the bodies:
-    std::vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
+    std::vector<SpatialAcceleration<double>> A_WB_array(tree().num_links());
     // Generalized accelerations:
     VectorX<double> vdot = VectorX<double>::Zero(nv);
 
@@ -329,7 +329,7 @@ class PendulumTests : public ::testing::Test {
     pendulum_.elbow().AddInTorque(*context_, tau2, &forces);
 
     // Arrays for output forces:
-    std::vector<SpatialForce<double>> F_BMo_W(tree().num_bodies());
+    std::vector<SpatialForce<double>> F_BMo_W(tree().num_links());
     VectorX<double> tau(tree().num_velocities());
 
     // With vdot = 0, this computes:

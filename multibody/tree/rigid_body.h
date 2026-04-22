@@ -234,6 +234,13 @@ class RigidBody : public MultibodyElement<T> {
   /// Returns this element's unique index.
   BodyIndex index() const { return this->template index_impl<BodyIndex>(); }
 
+  /// (Internal use only) Returns this Link's (RigidBody's) unique ordinal.
+  /// Currently identical to the index but will differ when we permit removal of
+  /// Links as we do for Joints.
+  LinkOrdinal ordinal() const {
+    return this->template ordinal_impl<LinkOrdinal>();
+  }
+
   /// Gets the `name` associated with this rigid body. The name will never be
   /// empty.
   const std::string& name() const { return name_; }
@@ -763,7 +770,8 @@ class RigidBody : public MultibodyElement<T> {
 
     // Is this RigidBody the active link on its Mobod?
     const bool is_active_link =
-        link.ordinal() == forest.mobods(link.mobod_index()).link_ordinal();
+        link.ordinal() ==
+        forest.mobods(link.mobod_index()).active_link_ordinal();
     is_floating_base_body_ =
         is_active_link && mobilizer_->is_floating_base_mobilizer();
   }
@@ -881,6 +889,9 @@ class RigidBody : public MultibodyElement<T> {
 /// is available to permit older code to continue working.
 template <typename T>
 using Body = RigidBody<T>;
+
+template <typename T>
+using Link = RigidBody<T>;
 
 }  // namespace multibody
 }  // namespace drake
