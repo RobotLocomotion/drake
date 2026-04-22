@@ -79,7 +79,7 @@ drake_cc_optional_library(
         ":particle_data",
         ":particle_sorter",
         ":spgrid",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 
@@ -133,7 +133,7 @@ drake_cc_optional_library(
         ":particle_data",
         ":particle_sorter",
         ":spgrid",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 
@@ -154,7 +154,7 @@ drake_cc_optional_library(
         ":sparse_grid",
         ":transfer",
         "//math:fourth_order_tensor",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 

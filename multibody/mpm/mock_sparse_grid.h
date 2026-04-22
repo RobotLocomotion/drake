@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/mpm/grid_data.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
 #include "drake/multibody/mpm/particle_data.h"
@@ -107,7 +107,7 @@ class MockSparseGrid {
 
   void IterateGrid(const std::function<void(const GridData<T>&)>& func) const;
 
-  contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
+  math::internal::VertexPartialPermutation SetNodeIndices();
 
  private:
   double dx_{};

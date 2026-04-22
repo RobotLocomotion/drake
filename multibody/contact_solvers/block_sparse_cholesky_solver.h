@@ -9,8 +9,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_after_move.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {
 namespace multibody {
@@ -258,11 +258,11 @@ class BlockSparseCholeskySolver {
   /* Permutation for block indices, same size as A.block_cols(). For a given
    block index i into A, `block_permutation_[i]` gives the permuted block index
    into L_. */
-  PartialPermutation block_permutation_;
+  math::internal::PartialPermutation block_permutation_;
   /* Permutation for scalar indices, same size as A.cols(). For a given
    scalar index i into A, `scalar_permutation_[i]` gives the permuted scalar
    index into L_. */
-  PartialPermutation scalar_permutation_;
+  math::internal::PartialPermutation scalar_permutation_;
 
   reset_after_move<SolverMode> solver_mode_{SolverMode::kEmpty};
 };

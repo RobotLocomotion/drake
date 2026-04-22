@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 
 #include <utility>
 #include <vector>
@@ -15,6 +15,9 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 namespace {
+
+using math::internal::PartialPermutation;
+using math::internal::VertexPartialPermutation;
 
 GTEST_TEST(PartialPermutation, EmptyPermutation) {
   PartialPermutation p;

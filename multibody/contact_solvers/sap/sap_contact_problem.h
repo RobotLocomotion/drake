@@ -20,9 +20,9 @@ namespace internal {
 /* Struct returned by SapContactProblem::MakeReduced() which stores the mapping
    between the original and reduced problems.*/
 struct ReducedMapping {
-  PartialPermutation velocity_permutation;
-  PartialPermutation clique_permutation;
-  PartialPermutation constraint_equation_permutation;
+  math::internal::PartialPermutation velocity_permutation;
+  math::internal::PartialPermutation clique_permutation;
+  math::internal::PartialPermutation constraint_equation_permutation;
 };
 
 /* In the SAP formulation of contact the state of a mechanical system is

@@ -11,6 +11,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
+
 template <typename T>
 SapConstraint<T>::SapConstraint(SapConstraintJacobian<T> J,
                                 std::vector<int> objects)

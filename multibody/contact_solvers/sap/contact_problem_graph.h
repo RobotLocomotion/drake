@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 
 namespace drake {
 namespace multibody {
@@ -144,7 +144,7 @@ class ContactProblemGraph {
    clique index" can differ from their original clique (node) index.
    Participating cliques are assigned an index in the order they get referenced
    by AddConstraint(). */
-  const PartialPermutation& participating_cliques() const {
+  const math::internal::PartialPermutation& participating_cliques() const {
     return participating_cliques_;
   }
 
@@ -165,7 +165,7 @@ class ContactProblemGraph {
   std::vector<ConstraintCluster> clusters_;
   // Map cliques pair to cluster index.
   std::unordered_map<SortedPair<int>, int> pair_to_cluster_index_;
-  PartialPermutation participating_cliques_;
+  math::internal::PartialPermutation participating_cliques_;
 };
 
 }  // namespace internal

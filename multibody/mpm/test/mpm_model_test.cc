@@ -51,7 +51,7 @@ TYPED_TEST(MpmModelTest, Constructor) {
   EXPECT_EQ(model.num_dofs(), 27 * 3);
   EXPECT_EQ(model.grid().dx(), dx);
   EXPECT_TRUE(CompareMatrices(state.dv(), VectorX<T>::Zero(27 * 3)));
-  const contact_solvers::internal::PartialPermutation& vertex_permutation =
+  const math::internal::PartialPermutation& vertex_permutation =
       model.index_permutation().vertex();
   EXPECT_EQ(vertex_permutation.domain_size(), 27);
   EXPECT_EQ(vertex_permutation.permuted_domain_size(), 0);

@@ -69,7 +69,7 @@ drake_cc_library(
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//common:reset_after_move",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 
@@ -160,7 +160,7 @@ drake_cc_library(
     deps = [
         ":block_sparse_lower_triangular_or_symmetric_matrix",
         "//common:essential",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 
