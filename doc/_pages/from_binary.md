@@ -132,11 +132,11 @@ Binary packages are generated nightly and are available to download at:
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded by ``0.0.``. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-aarch64.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-aarch64.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-mac-arm64.tar.gz
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-noble.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-noble-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-noble-aarch64.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-resolute.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-resolute.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-resolute-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-resolute-aarch64.tar.gz)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20260501-mac-arm64.tar.gz
 
 As with stable releases, users of macOS must download using a command-line tool
 such as ``curl`` instead of using a web browser, to avoid hassles from
