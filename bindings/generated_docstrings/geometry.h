@@ -730,11 +730,6 @@ Raises:
           const char* doc_3args_points_label_scale3 =
 R"""(Point variant that allows for specification of non-uniform scale.)""";
         } ctor;
-        // Symbol: drake::geometry::Convex::GetBVH
-        struct /* GetBVH */ {
-          // Source: drake/geometry/shape_specification.h
-          const char* doc = R"""()""";
-        } GetBVH;
         // Symbol: drake::geometry::Convex::GetConvexHull
         struct /* GetConvexHull */ {
           // Source: drake/geometry/shape_specification.h
@@ -750,16 +745,6 @@ Raises:
     vertices, etc.) All of the vertices lying on a plane is *not*
     considered degenerate.)""";
         } GetConvexHull;
-        // Symbol: drake::geometry::Convex::GetFeatureNormalSet
-        struct /* GetFeatureNormalSet */ {
-          // Source: drake/geometry/shape_specification.h
-          const char* doc = R"""()""";
-        } GetFeatureNormalSet;
-        // Symbol: drake::geometry::Convex::GetSurfaceMesh
-        struct /* GetSurfaceMesh */ {
-          // Source: drake/geometry/shape_specification.h
-          const char* doc = R"""()""";
-        } GetSurfaceMesh;
         // Symbol: drake::geometry::Convex::extension
         struct /* extension */ {
           // Source: drake/geometry/shape_specification.h
@@ -2898,11 +2883,6 @@ R"""(Returns true if ``this`` GeometryVersion has the same ``role`` version
 as the ``other`` GeometryVersion.)""";
         } IsSameAs;
       } GeometryVersion;
-      // Symbol: drake::geometry::GetNormalAtPoint
-      struct /* GetNormalAtPoint */ {
-        // Source: drake/geometry/shape_specification.h
-        const char* doc = R"""()""";
-      } GetNormalAtPoint;
       // Symbol: drake::geometry::HalfSpace
       struct /* HalfSpace */ {
         // Source: drake/geometry/shape_specification.h
@@ -3221,11 +3201,6 @@ if you introspect the details of the loaded mesh and you see such a
 change. An analogous change can affect the vertex ordering of
 tetrahedra in a volume mesh (i.e., a perturbation of the original
 vertex index list ``[0 1 2 3]`` to ``[2 1 0 3]``).)""";
-        // Symbol: drake::geometry::Mesh::GetBVH
-        struct /* GetBVH */ {
-          // Source: drake/geometry/shape_specification.h
-          const char* doc = R"""()""";
-        } GetBVH;
         // Symbol: drake::geometry::Mesh::GetConvexHull
         struct /* GetConvexHull */ {
           // Source: drake/geometry/shape_specification.h
@@ -3241,16 +3216,6 @@ Raises:
     vertices, etc.) All of the vertices lying on a plane is *not*
     considered degenerate.)""";
         } GetConvexHull;
-        // Symbol: drake::geometry::Mesh::GetFeatureNormalSet
-        struct /* GetFeatureNormalSet */ {
-          // Source: drake/geometry/shape_specification.h
-          const char* doc = R"""()""";
-        } GetFeatureNormalSet;
-        // Symbol: drake::geometry::Mesh::GetSurfaceMesh
-        struct /* GetSurfaceMesh */ {
-          // Source: drake/geometry/shape_specification.h
-          const char* doc = R"""()""";
-        } GetSurfaceMesh;
         // Symbol: drake::geometry::Mesh::Mesh
         struct /* ctor */ {
           // Source: drake/geometry/shape_specification.h

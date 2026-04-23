@@ -83,9 +83,9 @@ struct ContactConfiguration {
   // Mathematically, this is a bias term to the contact velocity: vc = Jv + v_b,
   // where vc is the contact velocity, J the contact jacobian and v the vector
   // of generalized velocities. In practice, is used to model a velocity at the
-  // contact point, such as when an imaginery conveyor belt is wrapped around
-  // any or both of the objects in contact.
-  Vector3<T> v_b{0., 0., 0.};
+  // contact point, such as when an imaginary conveyor belt is wrapped around
+  // one or both of the objects in contact.
+  Vector3<T> v_b{0, 0, 0};
 };
 
 // Extracts a ContactConfiguration from the given DiscreteContactPair.

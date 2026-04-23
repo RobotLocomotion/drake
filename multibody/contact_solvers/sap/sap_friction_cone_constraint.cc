@@ -99,8 +99,7 @@ void SapFrictionConeConstraint<T>::DoCalcData(
       abstract_data->get_mutable_value<SapFrictionConeConstraintData<T>>();
 
   data.mutable_vc() = vc + configuration_.v_b;
-  data.mutable_y() =
-      data.R_inv().asDiagonal() * (data.v_hat() - vc - configuration_.v_b);
+  data.mutable_y() = data.R_inv().asDiagonal() * (data.v_hat() - data.vc());
   const auto yt = data.y().template head<2>();
   data.mutable_yr() = SoftNorm(yt);
   data.mutable_yn() = data.y()(2);

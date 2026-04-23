@@ -727,7 +727,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
 
     // Contact velocity stored in the current context (previous time step).
     const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
-    const Vector3<T> v_AcBc_C = (R_WC.transpose() * v_AcBc_W);
+    const Vector3<T> v_AcBc_C = R_WC.transpose() * v_AcBc_W;
     const T vn0 = v_AcBc_C(2);
 
     // We have at most two blocks per contact.
@@ -1041,7 +1041,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .nhat_BA_W = nhat_BA_W,
             .phi0 = phi0,
             .vn0 = vn0,
-            .v_b = {},  // No bias velocity yet.
+            // TODO(SeanCurtis-TRI): Compute the bias velocity.
+            .v_b = Vector3<T>::Zero(),
             .fn0 = fn0,
             .stiffness = k,
             .damping = d,
@@ -1049,7 +1050,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .friction_coefficient = mu,
             .surface_index = surface_index,
             .face_index = face,
-            .point_pair_index = {} /* No point pair index. */};
+            .point_pair_index = {} /* no point pair index */};
         contact_pairs->AppendHydroData(std::move(contact_pair));
       }
     }

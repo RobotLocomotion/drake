@@ -2383,12 +2383,22 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
     const Vector3<T>& p_WCa = pair.p_WCa;
     const Vector3<T>& p_WCb = pair.p_WCb;
 
+    // TODO(SeanCurtis-TRI): In discrete mode, the position of the contact point
+    // is a weighted average of the two witness points.
     // Contact point C.
     const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
     // Get RigidBodyTransforms for bodies in contact.
     const RigidTransform<T>& X_WA = pc.get_X_WB(bodyA_mobod_index);
     const RigidTransform<T>& X_WB = pc.get_X_WB(bodyB_mobod_index);
+
+    // Note: Ga and Gb are the geometries affixed to bodies A and B,
+    // respectively. Evaluating the surface velocity requires the world pose of
+    // the *geometry* which is not generally the same as that of the body.
+    const RigidTransform<double>& X_AGa = inspector.GetPoseInFrame(pair.id_A);
+    const RigidTransform<T> X_WGa = X_WA * X_AGa.cast<T>();
+    const RigidTransform<double>& X_BGb = inspector.GetPoseInFrame(pair.id_B);
+    const RigidTransform<T> X_WGb = X_WB * X_BGb.cast<T>();
 
     // Contact point position on body A.
     const Vector3<T>& p_WAo = X_WA.translation();
@@ -2400,10 +2410,10 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
 
     // Get surface velocity at Ca relative to A in coordinates of A
     const Vector3<T> v_ACa_ss =
-        GetSurfaceVelocity(geometryA_id, inspector, X_WA, p_WCa);
+        GetSurfaceVelocity(geometryA_id, inspector, X_WGa, -pair.nhat_BA_W);
     // Get surface velocity at Cb relative to B in coordinates of B
     const Vector3<T> v_BCb_ss =
-        GetSurfaceVelocity(geometryB_id, inspector, X_WB, p_WCb);
+        GetSurfaceVelocity(geometryB_id, inspector, X_WGb, pair.nhat_BA_W);
 
     // Separation velocity, > 0  if objects separate.
     // Account for any surface velocities.
@@ -2436,8 +2446,6 @@ void MultibodyPlant<T>::CalcContactResultsPointPairContinuous(
 
       // Normal force on body A, at C, expressed in W.
       const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
-
-      // Check if surface speed properties were defined
 
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
       // plane with normal nhat_BA:

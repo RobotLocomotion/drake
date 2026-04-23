@@ -59,6 +59,12 @@ std::unique_ptr<AbstractValue> SapHuntCrossleyConstraint<T>::DoMakeData(
       data.invariant_data;
   p.dt = time_step;
   const T& fe0 = configuration_.fe;
+  // The velocity bias contact velocity is expressed in the contact frame and
+  // the velocity bias exists only in the tangential direction, the z-component
+  // of the bias should be zero. However, if the bias velocity is ever extended
+  // beyond the surface velocity case, we'll sum its z-component into the normal
+  // velocity to be forward compatible at the cost, today, of essentially adding
+  // in a zero (up to epsilon).
   const T& vn0 = configuration_.vn + configuration_.v_b.z();
   const T damping = max(0.0, 1.0 - d * vn0);
   const T ne0 = max(0.0, time_step * fe0);

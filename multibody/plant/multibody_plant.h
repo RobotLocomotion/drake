@@ -5867,6 +5867,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal_tree().graph();
   }
 
+  // TODO(SeanCurtis-TRI): Overhaul this when it is body centric. We'll need
+  // to document "surface velocity" somewhere and reference it. It'll certainly
+  // get rid of the geometry components and depend on context.
   // Compute the possible surface velocity of the geometry G indicated by id.
   // To have a non-zero surface velocity:
   //
@@ -6060,6 +6063,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
+  // TODO(SeanCurtis-TRI): Eliminate these when we move to per-body movement.
   // Helper to acquire per-geometry surface speed value from SceneGraph.
   const std::optional<double> GetSurfaceSpeed(
       geometry::GeometryId id,

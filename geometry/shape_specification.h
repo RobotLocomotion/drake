@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <memory>
-#include <optional>
 #include <string>
 #include <variant>
 
@@ -10,10 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/lazy_shared.h"
 #include "drake/geometry/mesh_source.h"
-#include "drake/geometry/proximity/bvh.h"
-#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 /** @file
@@ -24,10 +20,6 @@
 
 namespace drake {
 namespace geometry {
-
-namespace internal {
-class FeatureNormalSet;
-}  // namespace internal
 
 #ifndef DRAKE_DOXYGEN_CXX
 class Box;
@@ -364,12 +356,6 @@ class Convex final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
-  const geometry::internal::Bvh<geometry::Obb,
-                                geometry::TriangleSurfaceMesh<double>>&
-  GetBVH() const;
-  const geometry::TriangleSurfaceMesh<double>& GetSurfaceMesh() const;
-  const geometry::internal::FeatureNormalSet& GetFeatureNormalSet() const;
-
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -380,15 +366,6 @@ class Convex final : public Shape {
   std::shared_ptr<const MeshSource> source_;
   Vector3<double> scale_;
   internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
-
-  // These members contain data structures that allow for fast searching
-  // on the mesh. Are initialized only on demand and in general are nullptr
-  mutable std::shared_ptr<geometry::TriangleSurfaceMesh<double>> tri_mesh_;
-  mutable std::shared_ptr<geometry::internal::Bvh<
-      geometry::Obb, geometry::TriangleSurfaceMesh<double>>>
-      tri_bvh_{nullptr};
-  mutable std::shared_ptr<geometry::internal::FeatureNormalSet>
-      feature_normal_set_;
 };
 
 /** Definition of a cylinder. It is centered in its canonical frame with the
@@ -634,12 +611,6 @@ class Mesh final : public Shape {
            degenerate. */
   const PolygonSurfaceMesh<double>& GetConvexHull() const;
 
-  const geometry::internal::Bvh<geometry::Obb,
-                                geometry::TriangleSurfaceMesh<double>>&
-  GetBVH() const;
-  const geometry::TriangleSurfaceMesh<double>& GetSurfaceMesh() const;
-  const geometry::internal::FeatureNormalSet& GetFeatureNormalSet() const;
-
  private:
   void DoReify(ShapeReifier*, void*) const final;
   std::unique_ptr<Shape> DoClone() const final;
@@ -651,12 +622,6 @@ class Mesh final : public Shape {
   std::shared_ptr<const MeshSource> source_;
   Vector3<double> scale_;
   internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
-  mutable std::shared_ptr<geometry::TriangleSurfaceMesh<double>> tri_mesh_;
-  mutable std::shared_ptr<geometry::internal::Bvh<
-      geometry::Obb, geometry::TriangleSurfaceMesh<double>>>
-      tri_bvh_{nullptr};
-  mutable std::shared_ptr<geometry::internal::FeatureNormalSet>
-      feature_normal_set_;
 };
 
 // TODO(russt): Rename this to `Cone` if/when it is supported by more of the
@@ -817,24 +782,6 @@ class ShapeReifier {
   cannot be opened.
 */
 double CalcVolume(const Shape& shape);
-
-// Given a point in the surface of a geometry, return the normal vector
-// to the surface at that point. If the point is not on the surface,
-// returns no value.
-template <typename T>
-std::optional<Eigen::Vector3<T>> GetNormalAtPoint(const Shape& shape,
-                                                  const Eigen::Vector3<T>& p);
-
-extern template std::optional<Eigen::Vector3<double>> GetNormalAtPoint(
-    const Shape& shape, const Eigen::Vector3<double>& p);
-extern template std::optional<Eigen::Vector3<float>> GetNormalAtPoint(
-    const Shape& shape, const Eigen::Vector3<float>& p);
-extern template std::optional<Eigen::Vector3<::drake::AutoDiffXd>>
-GetNormalAtPoint(const Shape& shape,
-                 const Eigen::Vector3<::drake::AutoDiffXd>& p);
-extern template std::optional<Eigen::Vector3<::drake::symbolic::Expression>>
-GetNormalAtPoint(const Shape& shape,
-                 const Eigen::Vector3<::drake::symbolic::Expression>& p);
 
 }  // namespace geometry
 }  // namespace drake

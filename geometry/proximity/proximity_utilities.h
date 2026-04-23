@@ -11,6 +11,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
@@ -149,6 +150,13 @@ int CountFaces(const VolumeMesh<double>& mesh);
   it is topologically equivalent to a solid ball.
 */
 int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh);
+
+using Eigen::Vector3d;
+
+/* Computes the signed distance to the capsule's surface from point P. The point
+ is measured and expressed in the capsule's canonical frame C. Negative values
+ for points *inside* the capsule, positive value for points outside.  */
+double CalcDistanceToSurface(const Capsule& capsule, const Vector3d& p_CP);
 
 // clang-format off
 }  // namespace internal
