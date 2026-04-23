@@ -175,9 +175,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "gcs_trajectory_optimization_test",
-    # Even with many shards, the SimpleEnv2D suite has a couple of test cases
-    # that routinely time out under coverage tests, all by themselves.
-    opt_out_conditions = ["//tools/kcov:enabled"],
     shard_count = 12,
     deps = [
         ":gcs_trajectory_optimization",
