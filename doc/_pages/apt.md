@@ -32,7 +32,7 @@ container image, you may need to install the following packages before continuin
 
 ```bash
 sudo apt-get update
-sudo apt-get install --no-install-recommends ca-certificates wget
+sudo apt-get install --no-install-recommends ca-certificates dpkg-dev wget
 ```
 
 ## Stable Releases
@@ -106,7 +106,7 @@ Download a copy of the Drake GPG signing key and add it to an APT trusted keycha
 ```bash
 sudo apt-get update
 sudo apt-get install --no-install-recommends \
-  ca-certificates gnupg wget
+  ca-certificates dpkg-dev gnupg wget
 wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
   | sudo tee /etc/apt/trusted.gpg.d/drake.gpg >/dev/null
 ```
