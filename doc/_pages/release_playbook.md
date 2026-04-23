@@ -164,11 +164,11 @@ the main body of the document:
       them." and then choose for upload the **54** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 3: 1 source `.tar.gz` + 2 checksums
-      - 12: 4 linux binary `.tar.gz` + 8 checksums
+      - 12: 4 linux binary `.tar.gz` + 8 checksums ({noble, resolute} x {x86_64, aarch64})
       - 3: 1 macOS arm binary `.tar.gz` + 2 checksums
-      - 12: 4 `.deb` + 8 checksums
-      - 18: 6 linux `.whl` + 12 checksums
-      - 6: 2 macOS arm `.whl` + 4 checksums
+      - 12: 4 `.deb` + 8 checksums ({noble, resolute} x {amd64, arm64})
+      - 18: 6 linux `.whl` + 12 checksums ({3.12, 3.13, 3.14} x {x86_64, aarch64})
+      - 6: 2 macOS arm `.whl` + 4 checksums ({3.13, 3.14})
       * Note that with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
