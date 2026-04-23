@@ -39,7 +39,7 @@ The most recent release is
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-aarch64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-aarch64.tar.gz)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute.tar.gz)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-aarch64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-aarch64.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-mac-arm64.tar.gz (for arm64)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-mac-arm64.tar.gz
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
