@@ -28,7 +28,7 @@ Gurobi, you will need to build Drake from source following the instructions in
 
 ## Stable Releases
 
- Binary packages of Drake for Ubuntu and Mac are available to download as
+Binary packages of Drake for Ubuntu and Mac are available to download as
 attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
