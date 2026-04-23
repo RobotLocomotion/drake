@@ -60,6 +60,10 @@ maybe require extra setup. See the
 
 ⁽³⁾ Drake requires a compiler running in C++23 (or greater) mode.
 
+<div class="note" markdown="1">
+On Linux, Drake only supports the Gurobi solver when building on x86_64.
+</div>
+
 # Building with CMake
 
 Drake's build rules are defined using Bazel `BUILD` files, but we provide a
