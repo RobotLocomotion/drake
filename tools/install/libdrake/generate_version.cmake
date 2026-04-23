@@ -23,9 +23,26 @@ endif()
 if(DEFINED DRAKE_VERSION_OVERRIDE)
   set(DRAKE_VERSION "${DRAKE_VERSION_OVERRIDE}")
 else()
-  string(TIMESTAMP BUILD_TIMESTAMP "%Y%m%d.%H%M%S")
-  string(REGEX REPLACE "[.]0+([0-9])" ".\\1"
-    DRAKE_VERSION "0.0.${BUILD_TIMESTAMP}+${BUILD_IDENTIFIER}")
+  if(GIT_EXECUTABLE AND EXISTS "${GIT_DIR}")
+    # Check if we are building an existing release.
+    execute_process(COMMAND
+      "${GIT_EXECUTABLE}" "--git-dir=${GIT_DIR}" describe --tags --exact-match HEAD
+      RESULT_VARIABLE GIT_TAG_RESULT_VARIABLE
+      ERROR_VARIABLE GIT_TAG_ERROR_VARIABLE
+      OUTPUT_VARIABLE GIT_TAG_OUTPUT_VARIABLE
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(GIT_TAG_RESULT_VARIABLE EQUAL 0)
+      set(DRAKE_VERSION "${GIT_TAG_OUTPUT_VARIABLE}")
+    endif()
+  endif()
+
+  if(NOT DEFINED DRAKE_VERSION)
+    # Fall back to a combination of timestamp and git SHA.
+    string(TIMESTAMP BUILD_TIMESTAMP "%Y%m%d.%H%M%S")
+    string(REGEX REPLACE "[.]0+([0-9])" ".\\1"
+      DRAKE_VERSION "0.0.${BUILD_TIMESTAMP}+${BUILD_IDENTIFIER}")
+  endif()
 endif()
 
 configure_file(${INPUT_FILE} ${OUTPUT_FILE} @ONLY)
