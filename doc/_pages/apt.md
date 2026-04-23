@@ -44,6 +44,9 @@ The most recent release is
 [v1.53.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.53.0):
 
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-resolute.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb)
 
 To download and install the `drake-dev` package:
 
@@ -64,12 +67,12 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Nightly apt packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾ and Ubuntu 26.04
-(Resolute) are available to download at:
+Nightly apt packages are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-resolute.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-resolute.deb)
 
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded with ``0.0.``. For example,
@@ -77,6 +80,7 @@ with date YYYYMMDD preceded with ``0.0.``. For example,
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-resolute.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-resolute.deb)
 
 Nightly packages are retained for 56 days from their date of creation.
 
@@ -88,15 +92,11 @@ wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64
 sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-noble.deb
 ```
 
-⁽¹⁾ Drake's support for Ubuntu arm64 APT packages is currently experimental.
-Packages are only available on a nightly basis, not for stable releases. Follow
-[#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
-
 ## APT site (Ubuntu 24.04 only)
 
-For backwards compatibility for Ubuntu 24.04 only, Drake offers an APT site that
-you can add to your `sources.list` to automatically install the newest version
-of Drake's stable releases.
+For backwards compatibility for Ubuntu 24.04 on amd64 only, Drake offers an APT
+site that you can add to your `sources.list` to automatically install the newest
+version of Drake's stable releases.
 
 To add the Drake APT repository to your machine and install the `drake-dev` package,
 please do the following in order.

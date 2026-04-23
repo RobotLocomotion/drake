@@ -5,7 +5,7 @@ title: Installation via Direct Download
 # Binary Packages
 
 Drake publishes pre-compiled binaries as binary downloads (``*.tar.gz``)
-for all supported operating systems.  Refer to
+for supported operating systems.  Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for compatibility details.
 
@@ -28,14 +28,17 @@ Gurobi, you will need to build Drake from source following the instructions in
 
 ## Stable Releases
 
-Binary packages of Drake for Ubuntu 24.04 (Noble) and
-Mac are available to download as attachments from Drake's GitHub
+ Binary packages of Drake for Ubuntu and Mac are available to download as
+attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
 [v1.53.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.53.0):
 
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-aarch64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-aarch64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-aarch64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-aarch64.tar.gz)
 * https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
@@ -118,13 +121,12 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾
-and Ubuntu 26.04 (Resolute)
-and Mac are generated nightly and are available to download at:
+Binary packages are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-aarch64.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-aarch64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
 
 Older packages for specific dates are available by replacing ``latest``
@@ -133,6 +135,7 @@ with date YYYYMMDD preceded by ``0.0.``. For example,
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-aarch64.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-aarch64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-aarch64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-mac-arm64.tar.gz
 
 As with stable releases, users of macOS must download using a command-line tool
@@ -143,9 +146,3 @@ See the "Stable Releases" section above for a sample command line.
 Nightly archives are retained for 56 days from their date of creation.
 
 The installation instructions are identical to stable releases as shown above.
-
-⁽¹⁾ Drake's support for Ubuntu aarch64 binary packages is currently
-experimental. Packages are only available on a nightly basis, not for stable
-releases. Additionally, packages are only available for Ubuntu 24.04 (Noble);
-future versions are a work in progress. Follow
-[#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
