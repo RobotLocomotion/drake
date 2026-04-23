@@ -37,11 +37,8 @@ clang_major=$(sed -n 's/^clang-\([0-9]\+\)$/\1/p' \
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
 common:clang --repo_env=CC=clang-${clang_major}
-common:clang --repo_env=CXX=clang++-${clang_major}
 build:clang --action_env=CC=clang-${clang_major}
-build:clang --action_env=CXX=clang++-${clang_major}
 build:clang --host_action_env=CC=clang-${clang_major}
-build:clang --host_action_env=CXX=clang++-${clang_major}
 EOF
 
 # Prefetch the bazelisk download of bazel.
