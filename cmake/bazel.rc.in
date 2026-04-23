@@ -19,10 +19,6 @@ common --@drake//tools/flags:private_runtime_repo_default=internal
 # Flags that tweak repository rules (if any).
 common @BAZEL_REPO_ENV@
 
-# Disable the "convenience symlinks" intended for Bazel users; they only add
-# confusion for the CMake use case.
-build --symlink_prefix=/
-
 # Transcriptions of CMake configs into their equivalent Bazel flags.
 build:Debug --config=debug --fission=no
 build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
@@ -37,6 +33,11 @@ try-import @PROJECT_SOURCE_DIR@/user.bazelrc
 
 # Use build-specific bazel options (if present).
 try-import @PROJECT_BINARY_DIR@/drake.bazelrc
+
+# This add_custom_target(cc_toolchain_cmake_bazelrc ...) in our CMakeLists.txt
+# run Bazel to generate this file prior to building the rest of Drake. (Thus,
+# we need a try-import because it won't exist during that first target.)
+try-import bazel-bin/external/drake+/tools/cc_toolchain/cmake.bazelrc
 
 # Provide the contents of VERSION.TXT in Bazel's stable-status.txt file for use
 # by the stamping rules in tools/install/libdrake/BUILD.bazel.
