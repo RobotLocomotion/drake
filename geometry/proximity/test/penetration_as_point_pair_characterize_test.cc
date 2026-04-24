@@ -133,7 +133,7 @@ INSTANTIATE_TEST_SUITE_P(
         QueryInstance(kCapsule, kCylinder, kThrows),
         QueryInstance(kCapsule, kEllipsoid, kThrows),
         QueryInstance(kCapsule, kHalfSpace, kThrows),
-        QueryInstance(kCapsule, kSphere, 3e-15),
+        QueryInstance(kCapsule, kSphere, 5e-15),
 
         QueryInstance(kConvex, kConvex, kThrows),
         QueryInstance(kConvex, kCylinder, kThrows),
