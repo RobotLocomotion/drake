@@ -112,8 +112,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "util_test",
     opt_out_conditions = [
-        # Our custom install of kcov for Ubuntu 24.04 Noble in
-        # setup/ubuntu/install_kcov.sh trips up this test.
+        # Our custom install of kcov for Ubuntu 24.04 Noble trips up this test.
         "//tools/kcov:enabled",
     ],
     tags = [

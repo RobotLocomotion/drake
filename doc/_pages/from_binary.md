@@ -57,7 +57,7 @@ If not using the example, be sure to install the dependencies before proceeding
 by running the setup script inside the download:
 
 ```bash
-sudo drake/share/drake/setup/install_prereqs
+drake/share/drake/setup/install_prereqs
 ```
 
 ### Use as a Python library
@@ -88,7 +88,7 @@ source env/bin/activate
 Install dependencies within the environment:
 
 ```bash
-sudo env/share/drake/setup/install_prereqs
+env/share/drake/setup/install_prereqs
 ```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
