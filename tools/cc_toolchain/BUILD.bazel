@@ -155,7 +155,6 @@ genrule(
     cmd = "cat <<EOF > '$@'\n" +
           "PATH=\"$$PATH\"\n" +
           "CC=\"$${CC:-}\"\n" +
-          "CXX=\"$${CXX:-}\"\n" +
           "EOF",
     visibility = ["//visibility:private"],
 )

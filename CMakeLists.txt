@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.20...4.3)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
-  LANGUAGES C CXX
+  LANGUAGES C
 )
 
 # The primary build system for Drake is Bazel (https://bazel.build/). For CMake,
@@ -69,10 +69,7 @@ endif()
 file(REAL_PATH "${CMAKE_C_COMPILER}" C_COMPILER_REALPATH)
 cmake_path(GET C_COMPILER_REALPATH FILENAME C_COMPILER_NAME)
 
-file(REAL_PATH "${CMAKE_CXX_COMPILER}" CXX_COMPILER_REALPATH)
-cmake_path(GET CXX_COMPILER_REALPATH FILENAME CXX_COMPILER_NAME)
-
-if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
+if(C_COMPILER_NAME STREQUAL ccache)
   message(FATAL_ERROR
     "Compilation with ccache is NOT supported due to incompatibility with Bazel"
   )
@@ -109,27 +106,27 @@ else()
   )
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang)
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
+if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
+  if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
     message(WARNING
-      "Compilation with clang++ ${CMAKE_CXX_COMPILER_VERSION} is NOT supported"
+      "Compilation with AppleClang ${CMAKE_C_COMPILER_VERSION} is NOT supported"
     )
   endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${MINIMUM_CLANG_VERSION})
+elseif(CMAKE_C_COMPILER_ID STREQUAL Clang)
+  if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_CLANG_VERSION})
     message(WARNING
-      "Compilation with clang++ ${CMAKE_CXX_COMPILER_VERSION} is NOT supported"
+      "Compilation with Clang ${CMAKE_C_COMPILER_VERSION} is NOT supported"
     )
   endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
+elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+  if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
     message(WARNING
-      "Compilation with g++ ${CMAKE_CXX_COMPILER_VERSION} is NOT supported"
+      "Compilation with GCC ${CMAKE_C_COMPILER_VERSION} is NOT supported"
     )
   endif()
 else()
   message(WARNING
-    "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported. Compilation "
+    "Compilation with ${CMAKE_C_COMPILER_ID} is NOT supported. Compilation "
     "of project drake_install may fail."
   )
 endif()
@@ -167,11 +164,8 @@ if(NOT BUILD_TYPE_LOWER IN_LIST SUPPORTED_BUILD_TYPES_LOWER)
   )
 endif()
 
-# TODO(jwnimmer-tri) We don't currently pass along the user's selected C++
-# standard nor CMAKE_CXX_FLAGS to Bazel, but we should.
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 23)
+# TODO(#24455) We don't currently pass along the user's CMAKE_C_FLAGS and
+# CMAKE_CXX_FLAGS to Bazel, but we should.
 
 # Next we'll find which Python interpreter to use.
 if(PYTHON_EXECUTABLE AND NOT Python_EXECUTABLE)
@@ -217,7 +211,6 @@ if(NOT APPLE)
   # interfere with here.
   string(APPEND BAZEL_REPO_ENV
     " --repo_env=CC=${CMAKE_C_COMPILER}"
-    " --repo_env=CXX=${CMAKE_CXX_COMPILER}"
   )
 endif()
 
