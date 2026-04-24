@@ -139,7 +139,6 @@ BASE_LINKOPTS = select({
     "@drake//tools/cc_toolchain:use_mold_linker": [
         "-fuse-ld=mold",
         "-Wl,--compress-debug-sections=zlib",
-        "-Wl,--thread-count=2",
     ],
     "//conditions:default": [],
 })
