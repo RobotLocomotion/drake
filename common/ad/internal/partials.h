@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstdint>
+
 #include "drake/common/ad/internal/derivatives_xpr.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -11,33 +14,56 @@ namespace internal {
 /* Heap storage for an array of doubles, for use by the Partials class later in
 this file. The storage can be empty (null).
 
+The storage is either owned or unowned. Unowned storage points to a const array
+in the readonly data segment, so cannot be mutated. Owned storage uses `new` and
+`delete` on the heap.
+
 Note that this class is not directly unit tested; instead, it's test coverage
 comes from partial_test indirectly. */
 class StorageVec {
  public:
-  /* Allocates new storage of the given size, but does not initialize it.
-  If the size is zero, the storage will be empty (null). */
+  /* Constructs vector storage (unowned) filled with zeros.
+  @pre 1 <= size <= INT32_MAX */
+  static StorageVec MakeZero(int size);
+
+  /* Constructs unit vector storage (unowned⁽¹⁾). The element at
+  `data()[offset]` will be 1.0 and all other elements will be zero.
+  ⁽¹⁾ If the `size` is too large, then the storage will be owned, instead.
+  @pre 1 <= size <= INT32_MAX
+  @pre 0 <= offset < size */
+  static StorageVec MakeUnit(int size, int offset);
+
+  /* Allocates new storage (owned) of the given size, but doesn't initialize it.
+  @pre 2 <= size <= INT32_MAX */
   static StorageVec Allocate(int size);
 
-  /* Creates empty (null) storage. */
+  /* Constructs empty storage (unowned), i.e., size() == 0. */
   StorageVec() = default;
 
   /* Steals the storage from `other`. */
   StorageVec(StorageVec&& other) noexcept {
     size_ = other.size_;
+    is_owned_ = other.is_owned_;
     data_ = other.data_;
     other.size_ = 0;
+    other.is_owned_ = false;
     other.data_ = nullptr;
+    DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
   /* Steals the storage from `other`. */
   StorageVec& operator=(StorageVec&& other) noexcept {
     if (this != &other) {
-      delete[] data_;
+      if (is_owned_) {
+        delete[] data_;
+      }
       size_ = other.size_;
+      is_owned_ = other.is_owned_;
       data_ = other.data_;
       other.size_ = 0;
+      other.is_owned_ = false;
       other.data_ = nullptr;
+      DRAKE_ASSERT_VOID(CheckInvariants());
     }
     return *this;
   }
@@ -53,12 +79,52 @@ class StorageVec {
   /* Returns the size. */
   int size() const { return size_; }
 
-  /* Returns the double array storage (or null, when empty). */
+  /* Returns true iff the storage is owned (and therefore can be mutated). */
+  bool is_owned() const { return is_owned_; }
+
+  /* Returns the readonly double array storage (or null, when empty). */
   const double* data() const { return data_; }
-  double* mutable_data() { return data_; }
+
+  /* Returns the mutable double array storage (which is never null).
+  @pre is_owned() */
+  double* mutable_data() {
+    DRAKE_ASSERT(is_owned_);
+    return data_;
+  }
+
+  /* Copies the storage from (const) unowned to (mutable) owned, multiplying by
+  `coeff` in the process. Resets `coeff` back to 1.0.
+  @param [in,out] coeff to self-multiply by, then reset back to 1.0.
+  @pre coeff != nullptr
+  @pre coeff is finite
+  @pre !is_owned()
+  @pre size() >= 2 */
+  void ConvertToOwned(double* coeff);
+
+  /* Sets the stored elements to zero (leaving the size unchanged). Converts to
+  unowned storage when possible. */
+  void SetZero();
+
+  /* The limit (inclusive) on the size supported by unowned storage. */
+  static constexpr int kMaxUnownedSize = 255;
 
  private:
-  int size_{0};
+  void CheckInvariants() const;
+
+  // Invariants:
+  // - size >= 0
+  // - if size == 0 then:
+  //   - is_owned == false
+  //   - data == nullptr
+  // - if size == 1 then:
+  //   - is_owned == false
+  //   - data points to the (readonly) value "1.0"
+  // - if size >= 2 then:
+  //   - data != nullptr
+  // - if size > kMaxUnownedSize
+  //   - is_owned == true
+  int32_t size_{0};
+  bool is_owned_{false};
   double* data_{nullptr};
 };
 
@@ -150,7 +216,8 @@ class Partials {
   }
 
   /* Returns a mutable Eigen view of the current storage (i.e., without scaling
-  by the `coeff_`). */
+  by the `coeff_`).
+  @pre storage_.is_owned() */
   Eigen::Map<Eigen::VectorXd> mutable_storage_view() {
     return Eigen::Map<Eigen::VectorXd>(storage_.mutable_data(),
                                        storage_.size());
