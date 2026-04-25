@@ -5814,7 +5814,7 @@ throwsᵈ | throwsᵈ | ░░░░░ | ░░░░░░░ | ░░░░�
 throwsᵈ | throwsᵈ | throwsᵈ | ░░░░░░ | ░░░░░ | ░░░░░ | | HalfSpace |
 throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵈ | throwsᵃ | ░░░░░ |
 ░░░░░ | | Mesh | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ᵇ | ░░░░░ | | Sphere | 2e-15
-| 3e-15 | throwsᵈ | 2e-15 | throwsᵈ | 2e-15 | ᵇ | 5e-15 | ***Table
+| 5e-15 | throwsᵈ | 2e-15 | throwsᵈ | 2e-15 | ᵇ | 5e-15 | ***Table
 2***: Worst observed error (in m) for 2mm penetration between
 geometries approximately 20cm in size for ``T`` = drake∷AutoDiffXd
 "AutoDiffXd".
@@ -6141,7 +6141,7 @@ as a zero-radius sphere.
 Mesh | Sphere | | :--------: | :-----: | :------: | :-----: |
 :-------: | :--------: | :--------: | :-----: | :-----: | | double |
 2e-15 | 4e-15 | 6e-15 | 3e-15 | 3e-5ᵇ | 5e-15 | 6e-15ᶜ | 4e-15 | |
-AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 3e-15 | |
+AutoDiffXd | 1e-15 | 7e-15 | ᵃ | ᵃ | ᵃ | 5e-15 | ᵃ | 4e-15 | |
 Expression | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ᵃ | ***Table 8***: Worst
 observed error (in m) for 2mm penetration/separation between geometry
 approximately 20cm in size and a point.

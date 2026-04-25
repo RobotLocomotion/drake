@@ -126,8 +126,7 @@ std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
 // The optional parameter X_WM will change the vertex positions to W's frame.
 template <typename T>
 std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
-    const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity(),
-    const Vector3<T>& scale = Vector3<T>::Ones()) {
+    const math::RigidTransform<T>& X_WM = math::RigidTransform<T>::Identity()) {
   // A simple surface mesh comprises of two co-planar triangles with vertices on
   // the coordinate axes and the origin like this:
   //   y
@@ -154,8 +153,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
   std::vector<Vector3<T>> vertices_W;
-  for (int v = 0; v < 4; ++v)
-    vertices_W.emplace_back(X_WM * vertex_data_M[v].cwiseProduct(scale));
+  for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
   auto surface_mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(
       std::move(faces), std::move(vertices_W));
 
