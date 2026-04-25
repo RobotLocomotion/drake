@@ -1424,8 +1424,12 @@ class ExpressionInnerProduct
     : public Expression,
       public Eigen::Map<Eigen::Matrix<Expression, 1, 1>> {
  public:
-  ExpressionInnerProduct() : Map(this) {}
-  void resize(int rows, int cols) { DRAKE_ASSERT(rows == 1 && cols == 1); }
+  ExpressionInnerProduct()
+      // Because Map here expects an Expression* the `this` pointer to the just-
+      // constructed object converts to point to the Expression base class
+      // object so that both the Map matrix and the Expression scalar use the
+      // same memory.
+      : Map(this) {}
 };
 
 /* Helper to look up the return type we'll use for an Expression matmul. */
