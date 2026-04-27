@@ -775,12 +775,23 @@ add_custom_target(drake_version ALL
     -P "${PROJECT_SOURCE_DIR}/tools/install/libdrake/generate_version.cmake"
 )
 
+# Ask Bazel to calculate any other necessary bazelrc settings by writing out a
+# file at drake/tools/cc_toolchain/cmake.bazelrc. This file will be imported by
+# our cmake/bazelrc.in. Prior to generating it, we'll wipe it away because we
+# don't want a prior stale version of this file to confuse the regeneration.
+add_custom_target(drake_refresh_cmake_bazelrc
+  COMMAND ${CMAKE_COMMAND} -E rm -f "${DRAKE_BAZEL_BUILD_DIR}/bazel-bin/external/drake+/tools/cc_toolchain/cmake.bazelrc"
+  COMMAND "${Bazel_EXECUTABLE}" --quiet build --noannounce_rc --show_result=0
+    @drake//tools/cc_toolchain:cmake.bazelrc
+  WORKING_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}"
+)
+
 add_custom_target(drake_install ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
   WORKING_DIRECTORY "${DRAKE_BAZEL_BUILD_DIR}"
   USES_TERMINAL
 )
-add_dependencies(drake_install drake_version)
+add_dependencies(drake_install drake_refresh_cmake_bazelrc drake_version)
 
 install(CODE
   "execute_process(

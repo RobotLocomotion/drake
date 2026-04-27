@@ -19,10 +19,6 @@ common --@drake//tools/flags:private_runtime_repo_default=internal
 # Flags that tweak repository rules (if any).
 common @BAZEL_REPO_ENV@
 
-# Disable the "convenience symlinks" intended for Bazel users; they only add
-# confusion for the CMake use case.
-build --symlink_prefix=/
-
 # Transcriptions of CMake configs into their equivalent Bazel flags.
 build:Debug --config=debug --fission=no
 build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
@@ -31,6 +27,12 @@ build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-
 
 # Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations.
 build @BAZEL_CONFIG@
+
+# The drake_refresh_cmake_bazelrc custom target in our CMakeLists.txt runs Bazel
+# to generate this file prior to building the rest of Drake. However, we must
+# use "try-import" instead of "import" because we need to run Bazel to generate
+# this file but Bazel will fail if an "import"ed rcfile is missing.
+try-import bazel-bin/external/drake+/tools/cc_toolchain/cmake.bazelrc
 
 # Respect user.bazelrc (when present).
 try-import @PROJECT_SOURCE_DIR@/user.bazelrc
