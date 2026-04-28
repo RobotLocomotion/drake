@@ -1,5 +1,6 @@
 load("//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,6 +20,12 @@ exports_files([
     "ubuntu/packages-resolute-build.txt",
     "ubuntu/packages-resolute-developer.txt",
 ])
+
+drake_py_library(
+    name = "install_prereqs",
+    srcs = ["install_prereqs.py"],
+    visibility = ["//visibility:private"],
+)
 
 install_files(
     name = "install",
