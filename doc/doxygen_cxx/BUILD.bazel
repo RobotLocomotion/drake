@@ -27,6 +27,7 @@ drake_py_library(
 
 drake_py_unittest(
     name = "system_doxygen_test",
+    opt_in_condition = "@platforms//os:linux",
     deps = [":system_doxygen"],
 )
 
