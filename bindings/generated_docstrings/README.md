@@ -11,14 +11,18 @@ them under `drake/bindings/generated_docstrings`. This has two advantages:
 - End-user builds on unsupported platforms don't need to worry about providing a
   compatible libclang.so for header parsing.
 
-To re-generate these documentation files from the C++ API, run:
+To re-generate these documentation files from the C++ API, on Linux run:
 ```console
 bazel run //bindings/generated_docstrings:regenerate
 ```
+
+(Re-generation is not supported on macOS. If you are contributing a Drake pull
+request from macOS and can't regenerate the docstrings, ask your reviewer to
+run the command themselves and push the fixups to your pull request.)
 
 For details on how to use these files, refer to the "Documentation" section of
 https://drake.mit.edu/doxygen_cxx/group__python__bindings.html
 
 Note that git diffs of the generated_docstrings header files are elided by
 default (to avoid too much chaff). If you would like to see them anyway, run
-`git diff --test` to force them to show up.
+`git diff --text` to force them to show up.

@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install")
 load(
@@ -428,9 +429,19 @@ drake_py_unittest(
 generate_pybind_documentation_header(
     name = "deprecation_example_class_documentation_genrule",
     testonly = True,
-    out = "test/deprecation_example/example_class_documentation.h",
+    out = "test/deprecation_example/gen/example_class_documentation.h",
     hdr_subdir = "drake/bindings/pydrake/common/test/deprecation_example",
     targets = [":deprecation_example_class"],
+)
+
+diff_test(
+    name = "deprecation_example_class_documentation_diff_test",
+    failure_message = """
+To refresh the checked-in file, run:
+cp bazel-bin/bindings/pydrake/common/test/deprecation_example/gen/example_class_documentation.h bindings/pydrake/common/test/deprecation_example/example_class_documentation.h
+    """,
+    file1 = "test/deprecation_example/example_class_documentation.h",
+    file2 = "test/deprecation_example/gen/example_class_documentation.h",
 )
 
 drake_cc_library(

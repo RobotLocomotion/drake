@@ -21,6 +21,7 @@ drake_py_library(
 drake_py_library(
     name = "libclang_setup_py",
     srcs = ["libclang_setup.py"],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":module_py",
         "@clang_cindex_python3_internal//:clang",
