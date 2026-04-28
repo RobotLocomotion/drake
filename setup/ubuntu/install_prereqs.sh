@@ -15,16 +15,12 @@ trap at_exit EXIT
 # ============================ Command line options ============================
 
 binary_args=()
-user_environment_only=0
 developer=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
       developer=1
-      ;;
-    --user-environment-only)
-      user_environment_only=1
       ;;
     # Do NOT call apt-get update during execution of this script.
     --without-update)
@@ -83,51 +79,44 @@ dpkg_install_from_wget() {
 
 # =============================== Binary prereqs ===============================
 
-if [[ "${user_environment_only}" -eq 0 ]]; then
-  # Dependencies that are installed by the following sourced script that are
-  # needed when developing with binary distributions are also needed when
-  # developing with source distributions.
-  source "${BASH_SOURCE%/*}/install_prereqs_binary.sh" "${binary_args[@]}"
-else
-  . /etc/os-release
-  developer=0
-fi
+# Dependencies that are installed by the following sourced script that are
+# needed when developing with binary distributions are also needed when
+# developing with source distributions.
+source "${BASH_SOURCE%/*}/install_prereqs_binary.sh" "${binary_args[@]}"
 
 # ================================ Build prereqs ===============================
 
 readonly workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../.." && pwd)"
 
-if [[ "${user_environment_only}" -eq 0 ]]; then
-  ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends wget
+${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends wget
 
-  packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-build.txt")
-  ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends ${packages}
+packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-build.txt")
+${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
-  # Ensure that we have available a locale that supports UTF-8 for generating a
-  # C++ header containing Python API documentation during the build.
-  ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends locales
-  ${maybe_sudo} locale-gen en_US.UTF-8
+# Ensure that we have available a locale that supports UTF-8 for generating a
+# C++ header containing Python API documentation during the build.
+${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends locales
+${maybe_sudo} locale-gen en_US.UTF-8
 
-  # We need a working /usr/bin/python (of any version).
-  if [[ ! -e /usr/bin/python ]]; then
-    ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends python-is-python3
-  else
-    echo "/usr/bin/python is already installed"
-  fi
+# We need a working /usr/bin/python (of any version).
+if [[ ! -e /usr/bin/python ]]; then
+  ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends python-is-python3
+else
+  echo "/usr/bin/python is already installed"
+fi
 
-  # On Noble, Drake doesn't install anything related to GCC 14, but if the user
-  # has chosen to install some GCC 14 libraries but has failed to install all of
-  # them correctly as a group, Drake's documentation header file parser will fail
-  # with a libclang-related complaint. Therefore, we'll help the user clean up
-  # their mess, to avoid apparent Drake build errors.
-  if [[ "${VERSION_CODENAME}" == "noble" ]]; then
-    status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-14-dev 2>/dev/null || true)
-    if [[ "${status}" == "ii " ]]; then
-      status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-14-dev 2>/dev/null || true)
-      status_fortran=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgfortran-14-dev 2>/dev/null || true)
-      if [[ "${status_stdcxx}" != "ii " || "${status_fortran}" != "ii " ]]; then
-        ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends libgcc-14-dev libstdc++-14-dev libgfortran-14-dev
-      fi
+# On Noble, Drake doesn't install anything related to GCC 14, but if the user
+# has chosen to install some GCC 14 libraries but has failed to install all of
+# them correctly as a group, Drake's documentation header file parser will fail
+# with a libclang-related complaint. Therefore, we'll help the user clean up
+# their mess, to avoid apparent Drake build errors.
+if [[ "${VERSION_CODENAME}" == "noble" ]]; then
+  status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-14-dev 2>/dev/null || true)
+  if [[ "${status}" == "ii " ]]; then
+    status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-14-dev 2>/dev/null || true)
+    status_fortran=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgfortran-14-dev 2>/dev/null || true)
+    if [[ "${status_stdcxx}" != "ii " || "${status_fortran}" != "ii " ]]; then
+      ${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends libgcc-14-dev libstdc++-14-dev libgfortran-14-dev
     fi
   fi
 fi
@@ -165,28 +154,6 @@ if [[ "${developer}" -eq 1 ]]; then
         d192fd3cfd0d63e95f13a1b2120d0603a31b3a034b82c618d5e18205517d5cbb
     fi
   fi
-fi
-
-# ============================== User environment ==============================
-
-# Write gen/environment.bazelrc.
-bazelrc="${workspace_dir}/gen/environment.bazelrc"
-clang_major=$(sed -n 's/^clang-\([0-9]\+\)$/\1/p' \
-  "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-developer.txt")
-mkdir -p "$(dirname "${bazelrc}")"
-cat > "${bazelrc}" <<EOF
-common:clang --repo_env=CC=clang-${clang_major}
-build:clang --action_env=CC=clang-${clang_major}
-build:clang --host_action_env=CC=clang-${clang_major}
-EOF
-
-# Our MODULE.bazel uses this file to determine the default python version.
-/usr/bin/python3 -c "from sys import version_info as v; print('{}.{}'.format(v.major, v.minor))" > "${workspace_dir}/gen/python_version.txt"
-
-if [[ "${developer}" -eq 1 ]]; then
-  # Prefetch the bazelisk download of bazel.
-  # This is especially helpful for the "Provisioned" images in CI.
-  (cd "${workspace_dir}" && bazel version)
 fi
 
 # ================================== Finished ==================================
