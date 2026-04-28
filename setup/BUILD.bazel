@@ -1,24 +1,34 @@
 load("//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_unittest")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
-# Make our package requirements (but not manual scripts) available to
-# downstream projects.
-exports_files([
-    "mac/Brewfile-binary",
-    "mac/Brewfile-build",
-    "mac/Brewfile-developer",
-    "python/pdm.lock",
-    "python/pyproject.toml",
-    "python/requirements.txt",
-    "ubuntu/packages-noble-binary.txt",
-    "ubuntu/packages-noble-build.txt",
-    "ubuntu/packages-noble-developer.txt",
-    "ubuntu/packages-resolute-binary.txt",
-    "ubuntu/packages-resolute-build.txt",
-    "ubuntu/packages-resolute-developer.txt",
+# Make our prerequisites data (but not scripts) available to downstream
+# projects.
+PREREQUISITES_DATA = glob([
+    "**/Brewfile*",
+    "**/*.lock",
+    "**/*.toml",
+    "**/*.txt",
 ])
+
+exports_files(
+    PREREQUISITES_DATA,
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "prerequisites_data",
+    srcs = PREREQUISITES_DATA,
+    visibility = ["//visibility:public"],
+)
+
+drake_py_library(
+    name = "install_prereqs",
+    srcs = ["install_prereqs.py"],
+    data = [":prerequisites_data"],
+)
 
 install_files(
     name = "install",
@@ -46,6 +56,16 @@ install_files(
     rename = {
         "share/drake/setup/install_prereqs_binary.sh": "install_prereqs",
     },
+    visibility = ["//:__pkg__"],
+)
+
+drake_py_unittest(
+    name = "install_prereqs_test",
+    flaky = True,  # Might experience subprocess race conditions.
+    deps = [
+        ":install_prereqs",
+        "@rules_python//python/runfiles",
+    ],
 )
 
 add_lint_tests()
