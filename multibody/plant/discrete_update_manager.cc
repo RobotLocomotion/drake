@@ -850,9 +850,11 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
     // We always call the body associated with geometry M, A, and the body
     // associated with geometry N, B.
-    const BodyIndex body_A_index = FindBodyByGeometryId(s.id_M());
+    const GeometryId id_M = s.id_M();
+    const GeometryId id_N = s.id_N();
+    const BodyIndex body_A_index = FindBodyByGeometryId(id_M);
     const RigidBody<T>& body_A = plant().get_body(body_A_index);
-    const BodyIndex body_B_index = FindBodyByGeometryId(s.id_N());
+    const BodyIndex body_B_index = FindBodyByGeometryId(id_N);
     const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
     const TreeIndex& tree_A_index = forest.link_to_tree_index(body_A_index);
@@ -868,15 +870,15 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     // TODO(amcastro-tri): Consider making the modulus required, instead of
     // a default infinite value.
     const T hydro_modulus_M = GetHydroelasticModulus(
-        s.id_M(), std::numeric_limits<double>::infinity(), inspector);
+        id_M, std::numeric_limits<double>::infinity(), inspector);
     const T hydro_modulus_N = GetHydroelasticModulus(
-        s.id_N(), std::numeric_limits<double>::infinity(), inspector);
+        id_N, std::numeric_limits<double>::infinity(), inspector);
     // Hunt & Crossley dissipation. Used by the Tamsi, Lagged, and Similar
     // contact models. Ignored by Sap. See
     // multibody::DiscreteContactApproximation for details about these contact
     // models.
     const T d = GetCombinedHuntCrossleyDissipation(
-        s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
+        id_M, id_N, hydro_modulus_M, hydro_modulus_N,
         default_contact_dissipation(), inspector);
     // Dissipation time scale. Used by Sap contact model. Ignored by Tamsi,
     // Lagged, and Similar contact model. See
@@ -884,11 +886,23 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     // models.
     const double default_dissipation_time_constant = 0.1;
     const T tau = GetCombinedDissipationTimeConstant(
-        s.id_M(), s.id_N(), default_dissipation_time_constant, body_A.name(),
+        id_M, id_N, default_dissipation_time_constant, body_A.name(),
         body_B.name(), inspector);
     // Combine friction coefficients.
     const T mu =
-        GetCombinedDynamicCoulombFriction(s.id_M(), s.id_N(), inspector);
+        GetCombinedDynamicCoulombFriction(id_M, id_N, inspector);
+
+    // Note: if M is the geometry affixed to body A, then X_WA is equal to
+    // X_WM iff X_AM is identity. That is not generally true.
+    const RigidTransform<double>& X_AM = inspector.GetPoseInFrame(id_M);
+    const RigidTransform<T>& X_WA =
+        plant().EvalBodyPoseInWorld(context, body_A);
+    const RigidTransform<T> X_WM = X_WA * X_AM.cast<T>();
+
+    const RigidTransform<double>& X_BN = inspector.GetPoseInFrame(id_N);
+    const RigidTransform<T>& X_WB =
+        plant().EvalBodyPoseInWorld(context, body_B);
+    const RigidTransform<T> X_WN = X_WB * X_BN.cast<T>();
 
     for (int face = 0; face < s.num_faces(); ++face) {
       const T& Ae = s.area(face);  // Face element area.
@@ -961,6 +975,26 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         math::RotationMatrix<T> R_WC =
             math::RotationMatrix<T>::MakeFromOneVector(nhat_AB_W, 2);
 
+        // TODO: Calculate v_AcBc_C_ss.
+        // START
+
+        // The surface velocity is a vector expressed in Ga (or Gb, respectively).
+        // Based on the configuration of the robot, those vectors can be expressed
+        // in the common world frame so they can be combined.
+        // Finally, we'll re-express the result in the contact frame C.
+        const Vector3<T> v_A_ss =
+            plant().GetSurfaceVelocity(id_M, inspector, X_WM, nhat_AB_W);
+        const Vector3<T> v_A_ss_W = X_WM.rotation() * v_A_ss;
+
+        const Vector3<T> v_B_ss =
+            plant().GetSurfaceVelocity(id_N, inspector, X_WN, -nhat_AB_W);
+        const Vector3<T> v_B_ss_W = X_WN.rotation() * v_B_ss;
+
+        // Relative separation velocity due to surface velocity in contact frame C.
+        const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_B_ss_W - v_A_ss_W);
+
+        // END
+
         // Contact velocity stored in the current context (previous time
         // step).
         const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
@@ -1019,12 +1053,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         const T phi0 = -p0 / g;
 
         // Contact point position relative to each body.
-        const RigidTransform<T>& X_WA =
-            plant().EvalBodyPoseInWorld(context, body_A);
         const Vector3<T>& p_WA = X_WA.translation();
         const Vector3<T> p_AC_W = p_WC - p_WA;
-        const RigidTransform<T>& X_WB =
-            plant().EvalBodyPoseInWorld(context, body_B);
         const Vector3<T>& p_WB = X_WB.translation();
         const Vector3<T> p_BC_W = p_WC - p_WB;
 
@@ -1041,8 +1071,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
             .nhat_BA_W = nhat_BA_W,
             .phi0 = phi0,
             .vn0 = vn0,
-            // TODO(SeanCurtis-TRI): Compute the bias velocity.
-            .v_b = Vector3<T>::Zero(),
+            .v_b = v_AcBc_C_ss,
             .fn0 = fn0,
             .stiffness = k,
             .damping = d,

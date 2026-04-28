@@ -13,6 +13,8 @@ drake_cc_binary(
     ],
     deps = [
         "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//multibody/fem:deformable_body_config",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

@@ -2624,6 +2624,29 @@ void MultibodyPlant<T>::CalcHydroelasticContactForcesContinuous(
     // Pack everything calculator needs.
     typename internal::HydroelasticTractionCalculator<T>::Data data(
         X_WA, X_WB, V_WA, V_WB, &surface);
+    // Populate surface velocity parameters so the traction calculator can
+    // apply them on a per-triangle basis using each face's exact normal.
+    // n_ss is stored in the body frame (not the geometry frame) by pre-rotating
+    // with R_AM = inspector.GetPoseInFrame(id).rotation(), since the traction
+    // calculator only has access to X_WA (body pose), not X_WM (geometry pose).
+    data.surface_speed_A = GetSurfaceSpeed(geometryM_id, inspector);
+    if (propM->HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                           geometry::internal::kSurfaceVelocityNormal)) {
+      const Eigen::Vector3d n_ss_M =
+          propM->GetProperty<Eigen::Vector3<double>>(
+              geometry::internal::kSurfaceVelocityGroup,
+              geometry::internal::kSurfaceVelocityNormal);
+      data.n_ss_A = inspector.GetPoseInFrame(geometryM_id).rotation() * n_ss_M;
+    }
+    data.surface_speed_B = GetSurfaceSpeed(geometryN_id, inspector);
+    if (propN->HasProperty(geometry::internal::kSurfaceVelocityGroup,
+                           geometry::internal::kSurfaceVelocityNormal)) {
+      const Eigen::Vector3d n_ss_N =
+          propN->GetProperty<Eigen::Vector3<double>>(
+              geometry::internal::kSurfaceVelocityGroup,
+              geometry::internal::kSurfaceVelocityNormal);
+      data.n_ss_B = inspector.GetPoseInFrame(geometryN_id).rotation() * n_ss_N;
+    }
 
     // Combined Hunt & Crossley dissipation.
     const hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine;
