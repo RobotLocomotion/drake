@@ -48,11 +48,10 @@ revert the commits and verify that the continuous builds triggered by that merge
 pass.
 
 In the case of failures in a ``dev`` directory, the build cop should disable the
-failing test instead of reverting the entire commit. To disable the test, add a
-``tags = []`` attribute to its BUILD rule. If it only fails in certain
-configurations, you can add tags for just those, e.g., `"no_asan"`. If it fails in
-the default configuration or in too many configurations to list one by one, use
-the tag "manual" to disable the test under all configurations.
+failing test instead of reverting the entire commit. To disable the test in
+certain configurations, add ``opt_out_conditions = []`` to its BUILD rule. If it
+fails in the default configuration or in too many configurations to list one by
+one, use `tags = ["manual"]` to universally disable the test.
 
 In the case of intermittent failures of unclear origin or which cannot
 reasonably be prevented (for example, network failures of remotely hosted

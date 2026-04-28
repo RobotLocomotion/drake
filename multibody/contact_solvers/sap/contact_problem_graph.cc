@@ -7,6 +7,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
+
 ContactProblemGraph::ConstraintCluster::ConstraintCluster(
     SortedPair<int> cliques)
     : cliques_(std::move(cliques)) {

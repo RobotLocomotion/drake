@@ -11,6 +11,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
+
 template <typename BlockType>
 BlockSparseCholeskySolver<BlockType>::~BlockSparseCholeskySolver() = default;
 
@@ -268,7 +270,7 @@ void BlockSparseCholeskySolver<BlockType>::SetScalarPermutation(
    elimination ordering and then convert it to the scalar permutation (the
    inverse of the scalar elimination ordering) that induces the permutation P
    such that L⋅Lᵀ = P⋅A⋅Pᵀ.
-   More specificially, Pᵢⱼ = 1 for j = scalar_elimination_ordering[i] (or
+   More specifically, Pᵢⱼ = 1 for j = scalar_elimination_ordering[i] (or
    equivalently i = scalar_permutation_[j]) and Pᵢⱼ = 0 otherwise. See
    CalcPermutationMatrix(). */
   std::vector<int> scalar_elimination_ordering(A.cols());

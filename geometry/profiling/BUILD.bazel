@@ -7,12 +7,8 @@ load(
 drake_cc_binary(
     name = "contact_surface_rigid_bowl_soft_ball",
     srcs = ["contact_surface_rigid_bowl_soft_ball.cc"],
-    add_test_rule = 1,
     data = [
         "@drake_models//:dishes",
-    ],
-    test_rule_args = [
-        "--simulation_time=0.01",
     ],
     deps = [
         "//common",
@@ -25,6 +21,10 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.01",
     ],
 )
 

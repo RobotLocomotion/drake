@@ -1,0 +1,123 @@
+# -*- bazelrc -*-
+
+# This is a portion of Drake's .bazelrc defaults. This filed is used both for
+# Bazel builds and also CMake builds (and thus also Packaging, Wheel, etc.).
+
+# Enable platform-specific config groups (e.g., "build:linux", "build:macos").
+common --enable_platform_specific_config
+
+# When compiling Drake as the main module (i.e., not as a Bazel dependency of
+# something else) we will default to using pkg-config to locate our C++
+# library dependencies.
+common --@drake//tools/flags:public_repo_default=pkgconfig
+common --@drake//tools/flags:private_runtime_repo_default=external
+
+# Tell spdlog to build a library, not header-only. This *substantially* reduces
+# build size and improves build speed.
+common --@@spdlog+//:header_only=False
+
+# Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
+# implicit loads built-in to Bazel itself to take effect.
+common --incompatible_autoload_externally=
+
+# Use cloudflare's mirror for improved reliability of external downloads.
+common --module_mirrors=https://bcr.cloudflaremirrors.com
+
+# Default to an optimized build.
+build -c opt
+build --features=prefer_pic_for_opt_binaries
+
+# Default build options.
+build --strip=never
+build --strict_system_includes
+
+# Use the host Python interpreter by default.
+build --extra_toolchains=@python//:all
+
+# For background, see https://bazel.build/docs/bazel-and-java.
+# The java_runtime_version defaults to local_jdk, which is some uncontrolled
+# version from Ubuntu or Homebrew that can lead to build failures. Instead,
+# we'll set it (and correspondingly the java_language_version) to an arbitrary
+# value that's compatible with what `lcm.jar` needs.
+build --java_language_version=11
+build --java_runtime_version=remotejdk_11
+
+# Use C++23 by default.
+build --cxxopt=-std=c++23
+build --host_cxxopt=-std=c++23
+
+# Configure ${PATH} for actions.
+# N.B. Ensure this is consistent with `execute.bzl`.
+build:linux --action_env=PATH=/usr/bin:/bin
+build:macos --action_env=PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Disable ccache due to incompatibility with Bazel.
+build --action_env=CCACHE_DISABLE=1
+
+# Disable python imports from ~/.local (pip -U) during build and test.
+# https://github.com/bazelbuild/bazel/issues/4939
+# https://github.com/RobotLocomotion/drake/issues/8475
+# TODO(jwnimmer-tri) Try to enable this on macOS as well.
+build:linux --action_env=PYTHONNOUSERSITE=1
+build:linux --test_env=PYTHONNOUSERSITE=1
+
+# Suppress warnings from module externals.
+build --per_file_copt=external/libx11./.*@-w
+build --per_file_copt=external/libxcb./.*@-w
+
+# The legacy __init__.py causes runfiles test flakes with Bazel >= 7, and
+# in any case we don't want this feature in the first place. We should
+# create all __init__.py files ourselves by hand anywhere we need them.
+build --incompatible_default_to_explicit_init_py
+
+# Default test options.
+build --test_output=errors
+build --test_summary=terse
+
+# Location of the Gurobi license key file, typically named "gurobi.lic".
+# Setting this --test_env for all configurations is deliberate to improve
+# remote caching performance.
+build --test_env=GRB_LICENSE_FILE
+
+# Location of the MOSEK license file, typically named "mosek.lic". Setting
+# this --test_env for all configurations is deliberate to improve remote
+# caching performance.
+build --test_env=MOSEKLM_LICENSE_FILE
+
+# Prevent LCM messages from leaking outside of tests.
+# See documentation: https://lcm-proj.github.io/group__LcmC__lcm__t.html#gaf29963ef43edadf45296d5ad82c18d4b  # noqa
+# WARNING: If your LCM test depends on communication between separate LCM
+# instances (and you cannot easily mock the LCM instances), make sure that each
+# instance has a consistent, but non-default, LCM URL.
+build --test_env=LCM_DEFAULT_URL=memq://
+
+# Prevent matplotlib from showing windows (#11029).
+build --test_env=MPLBACKEND=Template
+
+# Compiler flags that will enable OpenMP (when requested).
+build:openmp --@drake//tools/cc_toolchain:with_openmp=True
+build:openmp --copt=-DEIGEN_DONT_PARALLELIZE
+build:openmp --copt=-fopenmp
+build:openmp --linkopt=-fopenmp
+# Undo --config=openmp.
+build:without_openmp --@drake//tools/cc_toolchain:with_openmp=False
+build:without_openmp --copt=-UEIGEN_DONT_PARALLELIZE
+build:without_openmp --copt=-fno-openmp
+build:without_openmp --linkopt=-fno-openmp
+
+### A wrapper configuration for debug builds. ###
+build:debug --compilation_mode=dbg
+# Provide a performance cushion for debug builds, 2x the default timeouts.
+build:debug --test_timeout=120,600,1800,7200
+# Enable split debug symbols (Linux only).
+build:linux --fission=dbg
+build:linux --features=per_object_debug_info
+
+### A configuration that enables all optional dependencies. ###
+build:everything --@drake//tools/flags:with_gurobi=True
+build:everything --@drake//tools/workspace/gurobi:force_disable_when_not_supported=True
+build:everything --@drake//tools/flags:with_mosek=True
+build:everything --@drake//tools/flags:with_snopt=True
+# We'll also use it to test legacy AutoDiff until 2026-07-01 when this flag
+# gets removed.
+build:everything --@drake//tools/flags:use_eigen_legacy_autodiff=False

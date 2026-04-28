@@ -154,13 +154,16 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "returned a point with the wrong dimension (its size was "
         "{}) when called on {}.",
         checker.plant().num_positions(), computed_ambient_dimension,
-        fmt_eigen(starting_ellipsoid.center().transpose())));
+        fmt_eigen(starting_ellipsoid.center())));
   }
 
   // Check ray search parameters.
   DRAKE_THROW_UNLESS(options.ray_sampler_options.ray_search_num_steps >= 1);
   DRAKE_THROW_UNLESS(
       options.ray_sampler_options.num_particles_to_walk_towards >= 1);
+  DRAKE_THROW_UNLESS(
+      options.ray_sampler_options.num_particles_to_walk_towards <=
+      options.sampled_iris_options.num_particles);
 
   // Check if seed point is in collision.
   const auto& context =
@@ -389,11 +392,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const auto& plant = checker.plant();
   const int nq = plant.num_positions();
 
-  // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
-  const double constraints_tol = 1e-6;
-
   const auto& context = checker.UpdatePositions(
-
       options.parameterization.get_parameterization_double()(
           starting_ellipsoid.center()));
   plant.ValidateContext(context);
@@ -457,12 +456,28 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       throw std::runtime_error(fmt::format(
           "Starting ellipsoid center {} is in collision; geometry {} is in "
           "collision with geometry {}",
-          fmt_eigen(E.center().transpose()), inspector.GetName(geomA),
+          fmt_eigen(E.center()), inspector.GetName(geomA),
           inspector.GetName(geomB)));
     }
     sorted_pairs.emplace_back(geomA, geomB, distance);
   }
   std::sort(sorted_pairs.begin(), sorted_pairs.end());
+
+  if (options.sampled_iris_options.prog_with_additional_constraints) {
+    DRAKE_THROW_UNLESS(options.sampled_iris_options
+                           .prog_with_additional_constraints->num_vars() ==
+                       parameterization_dimension);
+  }
+  // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
+  const double constraints_tol = 1e-6;
+  if (!internal::CheckProgConstraints(
+          options.sampled_iris_options.prog_with_additional_constraints,
+          E.center(), constraints_tol)) {
+    throw std::runtime_error(fmt::format(
+        "Starting ellipsoid center {} violates a constraint in "
+        "options.sampled_iris_options.prog_with_additional_constraints.",
+        fmt_eigen(E.center())));
+  }
 
   geometry::optimization::VPolytope containment_points_vpolytope =
       internal::ParseAndCheckContainmentPoints(
@@ -782,8 +797,14 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       int num_prog_successes = 0;
       constexpr double kSolverFailRateWarning = 0.1;
 
-      // TODO(cohnt): Comment on why there's two possible sets of particles to
-      // work on.
+      // If we use kRaySampler with
+      // ray_sampler_options.only_walk_toward_collisions == false, then we
+      // process the first
+      // ray_sampler_options.num_particles_to_walk_towards particles. Otherwise,
+      // we process all particles that are in-collision (or violate a
+      // user-defined constraint). If we use kGreedySampler or kRaySampler with
+      // ray_sampler_options.only_walk_toward_collisions == true, then we only
+      // process particles in collision.
       bool process_collisions_only =
           sampling_strategy == IrisNp2SamplingStrategy::kGreedySampler ||
           options.ray_sampler_options.only_walk_toward_collisions;
@@ -796,6 +817,9 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
       for (int particle_index = 0;
            particle_index < num_particles_to_walk_toward; ++particle_index) {
+        // We use DRAKE_ASSERT here, since CheckInitialConditions should already
+        // ensure particle_index < ssize(particles_to_work_on).
+        DRAKE_ASSERT(particle_index < ssize(particles_to_work_on));
         auto& particle = particles_to_work_on[particle_index];
         if (num_hyperplanes_added >=
             options.sampled_iris_options.max_separating_planes_per_iteration) {

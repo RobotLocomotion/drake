@@ -29,6 +29,7 @@ drake_cc_package_library(
         ":gray_code",
         ":linear_solve",
         ":matrix_util",
+        ":partial_permutation",
         ":quadratic_form",
         ":soft_min_max",
         ":vector3_util",
@@ -277,6 +278,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "partial_permutation",
+    srcs = ["partial_permutation.cc"],
+    hdrs = ["partial_permutation.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "quadratic_form",
     srcs = ["quadratic_form.cc"],
     hdrs = ["quadratic_form.h"],
@@ -487,6 +497,14 @@ drake_cc_googletest(
     deps = [
         ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partial_permutation_test",
+    deps = [
+        ":partial_permutation",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

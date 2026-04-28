@@ -82,8 +82,7 @@ MassAndMomentum<T> SparseGrid<T>::ComputeTotalMassAndMomentum() const {
 }
 
 template <typename T>
-contact_solvers::internal::VertexPartialPermutation
-SparseGrid<T>::SetNodeIndices() {
+math::internal::VertexPartialPermutation SparseGrid<T>::SetNodeIndices() {
   std::vector<int> participating_nodes;
   int node_index = 0;
   int participating_node_index = 0;
@@ -97,7 +96,7 @@ SparseGrid<T>::SetNodeIndices() {
       node_data->index_or_flag.set_index(node_index++);
     }
   });
-  return contact_solvers::internal::VertexPartialPermutation(
+  return math::internal::VertexPartialPermutation(
       std::move(participating_nodes));
 }
 

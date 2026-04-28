@@ -5,10 +5,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load(
-    "//tools/skylark:test_tags.bzl",
-    "mosek_test_tags",
-)
 
 drake_cc_library(
     name = "cspace_free_path",
@@ -50,6 +46,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "cspace_free_path_test",
+    opt_out_conditions = [
+        # Prohibitively slow in CI (30+ minutes).
+        "//tools/valgrind:enabled",
+    ],
     timeout = "long",
     deps = [
         ":c_iris_path_test_utilities",
@@ -61,8 +61,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cspace_free_path_with_mosek_test",
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     timeout = "long",
-    tags = mosek_test_tags(),
     deps = [
         ":c_iris_path_test_utilities",
         "//common/test_utilities:symbolic_test_util",

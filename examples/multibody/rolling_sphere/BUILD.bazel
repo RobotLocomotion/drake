@@ -29,11 +29,6 @@ drake_cc_library(
 drake_cc_binary(
     name = "rolling_sphere_run_dynamics",
     srcs = ["rolling_sphere_run_dynamics.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "--simulation_time=0.1",
-        "--simulator_target_realtime_rate=0.0",
-    ],
     deps = [
         ":populate_ball_plant",
         "//common:add_text_logging_gflags",
@@ -45,6 +40,11 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//visualization",
         "@gflags",
+    ],
+    add_test_rule = True,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--simulator_target_realtime_rate=0.0",
     ],
 )
 

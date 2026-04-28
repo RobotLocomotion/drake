@@ -30,12 +30,23 @@ Note that this does not affect network sandboxing (i.e., Bazel's block-network
 tag). Code outside of Drake purview can still access the network in tests (e.g.,
 license servers for commercial solvers).
 
+**build_when_skipped**
+
+When a test is skipped based on `opt_in_condition` or `opt_out_conditions`, we
+can still check that the code can *build* without actually running it. When True
+(the default), skipped tests will still be compiled during `bazel test //...`.
+Setting to False means the code won't even be compiled when skipped, which is
+useful when skipping is due to build problems (e.g., missing headers) rather
+than runtime problems (e.g., too slow or false positives).
+
 **display**
 
 Can either be True or False (defaults to False).
 
 When True, provides access to the Xorg DISPLAY environment variable so that
 the test can use the X display.  When False, unsets DISPLAY to forbid access.
+
+When True, typically `rendering = True` is also needed.
 
 Note that the X display in Jenkins CI tends to crash frequently, so any tests
 marked with `display = True` are a likely candidate for `flaky = True` so that
@@ -52,9 +63,8 @@ When N>1, adds `DRAKE_NUM_THREADS="N"` and `OMP_NUM_THREADS="N"` to `env` to
 allow for the desired level of parallelism, and also adds "cpu:N" to `tags` to
 reserve sufficient CPUs for the test. Those changes are a *necessary* but might
 not be *sufficient* condition to enable actual CPU parallelism while running the
-test. In addition, the overall build must also have OpenMP enabled, via
---config=omp or --config=everything, if the code uses OpenMP for parallelism
-(instead of std::async).
+test. In addition, the overall build must also have OpenMP enabled, if the code
+uses OpenMP for parallelism (instead of std::async).
 
 Note that setting N>1 will also be applied to any sub-processes that are
 launched by your test program.  Ask for help on Slack if you need this flag to
@@ -63,3 +73,24 @@ work correctly in the presence of sub-processes.
 (Aside: Besides the two named environment variables, the function also sets
 several other environment variables using alternative spellings of the same
 concept; the overall effect should be the same.)
+
+**opt_in_condition**
+**opt_out_conditions**
+
+Allows a test to be skipped during `bazel test //...` based on `config_setting`
+conditions. The condition(s) can either be None (the default), or else the names
+of `config_setting`s. The `opt_in_condition` only accepts a single setting.
+The `opt_out_conditions` accepts a list of settings.
+
+The test is included in `bazel test //...` when either:
+- both arguments are None;
+- the `opt_in_condition` is None and none of the `opt_out_conditions` matched;
+- the `opt_in_condition` matched but none of the `opt_out_conditions` matched.
+
+**rendering**
+
+Can either be True or False (defaults to False).
+
+When True, marks the test as needing graphics rendering capability, which
+suppresses test configurations (e.g., LSan) that are incompatible with graphics
+drivers' software stack.

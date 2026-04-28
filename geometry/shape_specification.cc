@@ -49,15 +49,15 @@ std::string MeshToString(std::string_view class_name, const MeshSource& source,
       return fmt::format("mesh_data={}", source.in_memory());
     }
   }();
-  return fmt::format("{}({}, scale=[{}])", class_name, mesh_parameter,
-                     fmt_eigen(scale.transpose()));
+  return fmt::format("{}({}, scale={})", class_name, mesh_parameter,
+                     fmt_eigen(scale));
 }
 
 void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
   if ((scale.array().abs() >= 1e-8).all() && scale.allFinite()) return;
   throw std::logic_error(
-      fmt::format("{} |scale| cannot be < 1e-8 on any axis, given [{}].",
-                  source, fmt_eigen(scale.transpose())));
+      fmt::format("{} |scale| cannot be < 1e-8 on any axis, given {}.", source,
+                  fmt_eigen(scale)));
 }
 
 }  // namespace
@@ -146,8 +146,8 @@ double Convex::scale() const {
   if ((scale_.array() != scale_[0]).any()) {
     throw std::runtime_error(
         fmt::format("Convex::scale() can only be called for uniform scaling. "
-                    "This mesh has scale [{}]. Use Convex::scale3() instead.",
-                    fmt_eigen(scale_.transpose())));
+                    "This mesh has scale {}. Use Convex::scale3() instead.",
+                    fmt_eigen(scale_)));
   }
   return scale_[0];
 }
@@ -250,8 +250,8 @@ double Mesh::scale() const {
   if ((scale_.array() != scale_[0]).any()) {
     throw std::runtime_error(
         fmt::format("Mesh::scale() can only be called for uniform scaling. "
-                    "This mesh has scale [{}]. Use Mesh::scale3() instead.",
-                    fmt_eigen(scale_.transpose())));
+                    "This mesh has scale {}. Use Mesh::scale3() instead.",
+                    fmt_eigen(scale_)));
   }
   return scale_[0];
 }

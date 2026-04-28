@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/mpm/particle_data.h"
 #include "drake/multibody/mpm/sparse_grid.h"
 #include "drake/multibody/mpm/transfer.h"
@@ -81,8 +81,7 @@ class MpmModel {
 
   const Grid& grid() const { return *grid_; }
 
-  const contact_solvers::internal::VertexPartialPermutation& index_permutation()
-      const {
+  const math::internal::VertexPartialPermutation& index_permutation() const {
     return index_permutation_;
   }
 
@@ -102,7 +101,7 @@ class MpmModel {
   ParticleData<T> particle_data_{};
   copyable_unique_ptr<Grid> grid_{};
   Transfer<Grid> transfer_;
-  contact_solvers::internal::VertexPartialPermutation index_permutation_;
+  math::internal::VertexPartialPermutation index_permutation_;
 };
 
 }  // namespace internal

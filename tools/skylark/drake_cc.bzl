@@ -8,9 +8,13 @@ load(
 )
 load(
     "//tools/skylark:kwargs.bzl",
+    "amend",
+    "combine_conditions",
     "incorporate_allow_network",
     "incorporate_display",
     "incorporate_num_threads",
+    "incorporate_rendering",
+    "incorporate_test_weight_heuristics",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
 
@@ -21,6 +25,7 @@ CXX_FLAGS = [
     "-Werror=attributes",
     "-Werror=cpp",
     "-Werror=deprecated",
+    "-Werror=deprecated-copy-dtor",
     "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
     "-Werror=missing-declarations",
@@ -134,7 +139,6 @@ BASE_LINKOPTS = select({
     "@drake//tools/cc_toolchain:use_mold_linker": [
         "-fuse-ld=mold",
         "-Wl,--compress-debug-sections=zlib",
-        "-Wl,--thread-count=2",
     ],
     "//conditions:default": [],
 })
@@ -726,13 +730,16 @@ def drake_cc_binary(
         linkshared = 0,
         linkstatic = 1,
         testonly = 0,
-        add_test_rule = 0,
+        add_test_rule = False,
         test_rule_args = [],
         test_rule_data = [],
         test_rule_tags = None,
         test_rule_size = None,
         test_rule_timeout = None,
-        test_rule_flaky = 0,
+        test_rule_flaky = False,
+        test_rule_rendering = False,
+        test_rule_opt_in_condition = None,
+        test_rule_opt_out_conditions = None,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -794,9 +801,15 @@ def drake_cc_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
+            rendering = test_rule_rendering,
+            opt_in_condition = test_rule_opt_in_condition,
+            opt_out_conditions = (test_rule_opt_out_conditions or []) + [
+                # Smoke tests don't count as coverage.
+                "//tools/kcov:enabled",
+            ],
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
+            tags = (test_rule_tags or []) + ["nolint"],
             **kwargs
         )
 
@@ -811,8 +824,12 @@ def drake_cc_test(
         clang_copts = [],
         linkopts = [],
         allow_network = None,
+        build_when_skipped = True,
         display = False,
         num_threads = None,
+        opt_in_condition = None,
+        opt_out_conditions = None,
+        rendering = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -824,10 +841,22 @@ def drake_cc_test(
     @param allow_network (optional, default is ["meshcat"])
         See drake/tools/skylark/README.md for details.
 
+    @param build_when_skipped (optional, default is True)
+        See drake/tools/skylark/README.md for details.
+
     @param display (optional, default is False)
         See drake/tools/skylark/README.md for details.
 
     @param num_threads (optional, default is 1)
+        See drake/tools/skylark/README.md for details.
+
+    @param opt_in_condition (optional, default is None)
+        See drake/tools/skylark/README.md for details.
+
+    @param opt_out_conditions (optional, default is None)
+        See drake/tools/skylark/README.md for details.
+
+    @param rendering (optional, default is False)
         See drake/tools/skylark/README.md for details.
     """
     if size == None:
@@ -838,6 +867,9 @@ def drake_cc_test(
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
+    kwargs = incorporate_rendering(kwargs, rendering = rendering)
+    kwargs = incorporate_test_weight_heuristics(kwargs)
+    opt_out_conditions = (opt_out_conditions or []) + kwargs.pop("opt_out_conditions", [])
     new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_linkopts = BASE_LINKOPTS + linkopts
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(
@@ -848,7 +880,7 @@ def drake_cc_test(
         linkopts = new_linkopts,
         **kwargs
     )
-    cc_test(
+    cc_test_kwargs = dict(
         name = name,
         size = size,
         srcs = new_srcs,
@@ -863,13 +895,34 @@ def drake_cc_test(
         ],
         **kwargs
     )
+    if opt_in_condition == None and opt_out_conditions == None:
+        cc_test(**cc_test_kwargs)
+    else:
+        positive, negative = combine_conditions(
+            name = name,
+            opt_in_condition = opt_in_condition,
+            opt_out_conditions = opt_out_conditions,
+        )
+        cc_test(
+            target_compatible_with = positive,
+            **cc_test_kwargs
+        )
+        if build_when_skipped:
+            # The test should always be compiled, but only conditionally
+            # run. We'll accomplish that by declaring it both as a test and a
+            # binary, but with mutually exclusive conditions for each.
+            cc_binary_kwargs = dict(cc_test_kwargs)
+            cc_binary_kwargs = amend(cc_test_kwargs, "tags", append = ["nolint"])
+            cc_binary_kwargs["name"] = "_{}_build".format(name)
+            for arg in ["env_inherit", "flaky", "shard_count", "size", "timeout"]:
+                cc_binary_kwargs.pop(arg, None)
+            cc_binary(
+                target_compatible_with = negative,
+                **cc_binary_kwargs
+            )
 
 def drake_cc_googletest(
         name,
-        args = [],
-        tags = [],
-        deps = [],
-        disable_in_compilation_mode_dbg = False,
         use_default_main = True,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.
@@ -878,47 +931,13 @@ def drake_cc_googletest(
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     By default, sets use_default_main=True to use a default main() function.
     Otherwise, it will depend on @googletest//:gtest.
-
-    If disable_in_compilation_mode_dbg is True, then in debug-mode builds all
-    test cases will be suppressed, so the test will trivially pass. This option
-    should be used only rarely, and the reason should always be documented.
     """
     if use_default_main:
-        deps = deps + [
-            "//common/test_utilities:drake_cc_googletest_main",
-        ]
+        default_main = "//common/test_utilities:drake_cc_googletest_main"
+        kwargs = amend(kwargs, "deps", append = [default_main])
     else:
-        deps = deps + ["@googletest//:gtest"]
-    new_args = args
-    new_tags = tags
-    if disable_in_compilation_mode_dbg:
-        # If we're in debug compilation mode, then skip all test cases so that
-        # the test will trivially pass.
-        new_args = args + select({
-            "//tools/cc_toolchain:debug": ["--gtest_filter=-*"],
-            "//conditions:default": [],
-        })
-
-        # Skip this test when run under various dynamic tools that use
-        # debug-like compiler flags.
-        new_tags = new_tags + [
-            "no_asan",
-            "no_kcov",
-            "no_lsan",
-            "no_memcheck",
-            "no_tsan",
-            "no_ubsan",
-        ]
-    else:
-        # kcov is only appropriate for small-sized unit tests. If a test needs
-        # a shard_count or a special timeout, we assume it is not small.
-        if "shard_count" in kwargs or "timeout" in kwargs:
-            new_tags = new_tags + ["no_kcov"]
-
+        kwargs = amend(kwargs, "deps", append = ["@googletest//:gtest"])
     drake_cc_test(
         name = name,
-        args = new_args,
-        tags = new_tags,
-        deps = deps,
         **kwargs
     )

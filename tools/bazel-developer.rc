@@ -1,0 +1,178 @@
+# -*- bazelrc -*-
+
+# This is a portion of Drake's .bazelrc defaults. This filed is used ONLY for
+# Bazel builds (not CMake, nor Packaging, nor Wheel, etc.).
+
+# For reference on test timeout settings, see
+# https://bazel.build/reference/test-encyclopedia#role-test-runner.
+
+# When compiling with Drake as the main module (i.e., if and only if this rcfile
+# is loaded), we enable -Werror by default for Drake's *own* targets, but not
+# for our externals.
+#
+# Developers may still disable errors locally by passing --copt=-w on the
+# command line, or promote *any* warnings even from externals to errors via
+# --copt=-Werror.
+#
+# When compiling Drake as an external package, this rcfile is not loaded and we
+# won't promote warnings to errors by default.
+build --@drake//tools/cc_toolchain:error_severity=error
+
+# Similarly, only allow using the mold linker when Drake is the main
+# module. Other conditions will be checked as well; see
+# //tools/cc_toolchain:use_mold_linker for more details.
+build --@drake//tools/cc_toolchain:allow_mold_linker=true
+
+# Developer builds on Linux use -fuse-ld=lld (per @rules_cc) so we need to dial
+# back its default per-process thread count of 16 down to something less likely
+# to overload the system.
+build:linux --linkopt=-Wl,--threads=2
+
+# Developer builds on Linux should have OpenMP enabled by default, to match the
+# end-user default in drake/CMakeLists.txt.
+build:linux --config=openmp
+
+### Lint. ###
+# Run the tests for code style compliance, but not any functional (unit) tests.
+build:lint --build_tests_only
+build:lint --test_tag_filters=lint
+
+### Kcov coverage build. ###
+build:kcov --test_tag_filters=-lint  # TODO(#24381) Update the filtering here.
+build:kcov --run_under=//tools/kcov
+build:kcov --@drake//tools/kcov:active=True
+build:kcov --build_tests_only
+build:kcov --copt=-g
+build:kcov --copt=-O0
+# Prevent Bazel test sandboxing from consuming our coverage data files.
+build:kcov --strategy=TestRunner=local
+# Reduce flakiness from potential race conditions when writing coverage data
+# files to the build directory.
+build:kcov --local_test_jobs=HOST_CPUS*0.5
+# Force tests to re-run so that new coverage data is generated.
+build:kcov --nocache_test_results
+# See #22325.
+build:kcov --zip_undeclared_test_outputs=true
+# These increased timeouts were set through experimentation. Because kcov runs
+# in a separate process from the main program, the OS has to context-switch
+# between the processes every time a line is hit, slowing down execution
+# significantly. In addition, kcov builds complete reports during the timeout
+# period, and is vulnerable to cloud filesystem slow-downs. Timeouts are 20x
+# default values.
+build:kcov --test_timeout=1200,6000,18000,72000
+
+### ASan build. Clang only. ###
+build:asan --config=_sanitizer_common
+build:asan --features=asan
+build:asan --run_under=//tools/asan
+build:asan --@drake//tools/asan:active=True
+build:asan --@drake//tools/lsan:active=True  # LSan is run with ASan by default.
+# https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
+build:asan --copt=-fsanitize-address-use-after-scope
+build:asan --linkopt=-fsanitize-address-use-after-scope
+# Typical slowdown introduced by AddressSanitizer is 2x. Increase timeouts to
+# 2.5x.
+# See https://clang.llvm.org/docs/AddressSanitizer.html
+build:asan --test_timeout=150,750,2250,9000  # 2.5x
+# See https://sourceware.org/bugzilla/show_bug.cgi?id=25975
+build:asan --output_filter="^(?!.*ld\.gold: warning: Cannot export local symbol '__asan_extra_spill_area)'.*$"
+
+### LSan build. Clang only. ###
+build:lsan --config=_sanitizer_common
+build:lsan --run_under=//tools/lsan
+build:lsan --@drake//tools/lsan:active=True
+# We provide `-fsanitize=leak`, `-fno-common`, and `-fno-omit-frame-pointer`
+# because rules_cc doesn't support `--features=lsan`.
+# TODO(tyler-yankee): If rules_cc ever adds this feature in the future, we
+# should replace these flags (as well as the `--linkopt=-fsanitize=leak` below)
+# with upstream, similarly to the other sanitizers in this file.
+build:lsan --copt=-fsanitize=leak
+build:lsan --copt=-fno-common
+build:lsan --copt=-fno-omit-frame-pointer
+build:lsan --linkopt=-fsanitize=leak
+# LSan doesn't introduce significant performance overhead other than a constant
+# amount at the end. Increase to 1.2 to be safe.
+# See https://clang.llvm.org/docs/LeakSanitizer.html
+build:lsan --test_timeout=72,360,1080,4320
+
+### TSan build. ###
+build:tsan --config=_sanitizer_common
+build:tsan --features=tsan
+build:tsan --run_under=//tools/tsan
+build:tsan --@drake//tools/tsan:active=True
+# Typical slowdown introduced by ThreadSanitizer is about 5x-15x. Increase
+# timeouts to 5x.
+# See https://clang.llvm.org/docs/ThreadSanitizer.html
+build:tsan --test_timeout=300,1500,4500,18000
+# Configuring TSan to interop with OpenMP is difficult, so we'll turn it off.
+build:tsan --config=without_openmp
+
+### UBSan build. ###
+build:ubsan --config=_sanitizer_common
+build:ubsan --features=ubsan
+build:ubsan --run_under=//tools/ubsan
+build:ubsan --@drake//tools/ubsan:active=True
+# Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
+# would require extra linkopts that cause segmentation faults on pure C code.
+build:ubsan --copt=-fno-sanitize=float-divide-by-zero,function,vptr
+# TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
+# autogenerated toolchain.
+# build:ubsan --copt=-fsanitize-blacklist=tools/ubsan/ubsan.blacklist
+build:ubsan --linkopt=-Wl,--gc-sections  # Claw back some disk space for CI.
+# Typical slowdown introduced by UBSan is 1.2x. Increase timeouts to 2x.
+# See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
+build:ubsan --test_timeout=120,600,1800,7200
+
+### Memcheck build. ###
+build:memcheck --run_under=//tools/valgrind
+build:memcheck --@drake//tools/valgrind:active=True
+build:memcheck --build_tests_only
+build:memcheck --test_lang_filters=-sh,-py
+build:memcheck --copt=-DNDEBUG                # Disable third-party asserts.
+build:memcheck --copt=-DDRAKE_ENABLE_ASSERTS  # ... but keep Drake's asserts.
+# Slowdown factor can range from 5-100. Increase timeouts to 25x.
+# See http://valgrind.org/info/about.html
+build:memcheck --test_timeout=1500,7500,22500,90000
+# N.B. Use `-O2` despite https://docs.nersc.gov/tools/debug/valgrind/ since
+# otherwise CI builds would take an unreasonably long amount of time.
+build:memcheck --copt=-O2
+# We need not check the binary-only Gurobi and MOSEK libraries, since we are
+# unable to patch any memcheck complaints discovered in them. (These are already
+# off by default in non-everything builds, but setting them redundantly doesn't
+# hurt anything.)
+build:memcheck --@drake//tools/flags:with_gurobi=False
+build:memcheck --@drake//tools/flags:with_mosek=False
+
+# Fast memcheck.
+#
+# This build runs tests under valgrind, but (unlike `--config memcheck`) does
+# not alter the compile flags.  Thus, the already-cached compilation results
+# from a `bazel build` or `bazel test` can be reused.  This is useful to scan a
+# local build for memory errors quickly.  For more specific error reporting
+# when errors are found, try `--config=debug --config fastmemcheck` or `--config
+# memcheck` to recompile with line numbers and lower optimization levels.
+#
+build:fastmemcheck --run_under=//tools/valgrind
+build:fastmemcheck --@drake//tools/valgrind:active=True
+build:fastmemcheck --test_lang_filters=-sh,-py
+# See `--test_timeout` for memcheck.
+build:fastmemcheck --test_timeout=1500,7500,22500,90000
+
+### Sanitizer common flags (ASan, LSan, TSan, UBSan). ###
+### NOT intended for developer use. ###
+build:_sanitizer_common --copt=-O1
+build:_sanitizer_common --copt=-g
+build:_sanitizer_common --build_tests_only
+build:_sanitizer_common --test_lang_filters=-sh,-py
+# We cannot reasonably use binary-only Gurobi and MOSEK libraries, since they
+# lack the sanitizer instrumentation. (These are already off by default in
+# non-everything builds, but setting them redundantly doesn't hurt anything.)
+build:_sanitizer_common --@drake//tools/flags:with_gurobi=False
+build:_sanitizer_common --@drake//tools/flags:with_mosek=False
+
+# Backwards compatibility groups for use by CI.
+build:asan_everything --config=everything --config=asan
+build:lsan_everything --config=everything --config=lsan
+build:memcheck_everything --config=everything --config=memcheck
+build:tsan_everything --config=everything --config=tsan
+build:ubsan_everything --config=everything --config=ubsan

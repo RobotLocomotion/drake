@@ -139,7 +139,7 @@ class PatchConstraintsPool {
                const Vector3<T>& p_BoC_W, const Vector3<T>& normal_W,
                const T& fn0, const T& stiffness);
 
-  /* Computes the sparsity pattern for the pool. That is, cliques i is connected
+  /* Computes the sparsity pattern for the pool. That is, clique i is connected
   to clique j > i iff sparsity[i] contains j. */
   void CalcSparsityPattern(std::vector<std::vector<int>>* sparsity) const;
 

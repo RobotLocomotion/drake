@@ -100,6 +100,18 @@ generate_file(
 )
 
 generate_file(
+    name = "with_openmp.cmake",
+    content = select({
+        "//tools/cc_toolchain:with_openmp_true": (
+            "set(WITH_OPENMP ON)"
+        ),
+        "//conditions:default": (
+            "set(WITH_OPENMP OFF)"
+        ),
+    }),
+)
+
+generate_file(
     name = "with_user_eigen.cmake",
     content = select({
         "//tools/workspace/eigen:is_external": (
@@ -184,6 +196,7 @@ cmake_configure_file(
         ":python_version.cmake",
         ":stamp_version.cmake",
         ":with_lcm_runtime.cmake",
+        ":with_openmp.cmake",
         ":with_user_eigen.cmake",
         ":with_user_fmt.cmake",
         ":with_user_spdlog.cmake",
@@ -412,32 +425,20 @@ drake_cc_test(
 
 drake_cc_googletest(
     name = "fast_math_test",
-    tags = ["no_kcov"],  # See #10788.
+    opt_out_conditions = ["//tools/kcov:enabled"],  # See #10788.
     deps = [
         "//:drake_shared_library",
     ],
 )
 
-# The exported_symbols_test is skipped in some build configurations.
-selects.config_setting_group(
-    name = "skip_exported_symbols_test",
-    match_any = [
-        # Debug builds have a lot more symbols (no dead code elimination) so
-        # are too much work to tidy up.
-        "//tools/cc_toolchain:debug",
-    ],
-)
-
 drake_py_unittest(
     name = "exported_symbols_test",
-    args = selects.with_or({
-        ":skip_exported_symbols_test": ["--help"],
-        "//conditions:default": [],
-    }),
+    # Debug builds have a lot more symbols (no dead code elimination) so are too
+    # much work to tidy up.
+    opt_out_conditions = ["//tools:unoptimized"],
     data = [
         ":libdrake.so",
     ],
-    tags = ["no_kcov"],
 )
 
 drake_py_unittest(

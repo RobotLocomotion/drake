@@ -15,6 +15,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
+
 template <typename T>
 SapContactProblem<T>::SapContactProblem(const T& time_step,
                                         std::vector<MatrixX<T>> A,

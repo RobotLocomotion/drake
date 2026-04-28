@@ -37,6 +37,7 @@
 // #include "drake/math/linear_solve.h"
 // #include "drake/math/matrix_util.h"
 // #include "drake/math/normalize_vector.h"
+// #include "drake/math/partial_permutation.h"
 // #include "drake/math/quadratic_form.h"
 // #include "drake/math/quaternion.h"
 // #include "drake/math/random_rotation.h"

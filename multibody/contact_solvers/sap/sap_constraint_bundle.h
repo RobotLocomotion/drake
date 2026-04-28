@@ -5,8 +5,8 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 

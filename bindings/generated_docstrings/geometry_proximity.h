@@ -1505,6 +1505,24 @@ Field u is defined by the three field values ``field_value[i]`` at the
 i-th vertex of the triangle. The gradient ∇u is expressed in the
 coordinates frame of this mesh M.)""";
         } CalcGradientVectorOfLinearField;
+        // Symbol: drake::geometry::TriangleSurfaceMesh::CreateScaledMesh
+        struct /* CreateScaledMesh */ {
+          // Source: drake/geometry/proximity/triangle_surface_mesh.h
+          const char* doc =
+R"""((Internal use only) Given a scale factor, creates a new mesh with
+scaled vertices.
+
+Negative scale factors are permitted and correspond to reflections. An
+odd number of negative components reflects the mesh, reversing the
+winding order of every triangle so that outward-facing normals remain
+outward-facing. Zero scale factors are permitted and flatten the mesh
+along that axis; triangles that collapse to zero area will have zero
+face normals.
+
+Parameter ``scale``:
+    The finite scale factors for the mesh along the Mx, My, and Mz
+    directions.)""";
+        } CreateScaledMesh;
         // Symbol: drake::geometry::TriangleSurfaceMesh::Equal
         struct /* Equal */ {
           // Source: drake/geometry/proximity/triangle_surface_mesh.h

@@ -10,6 +10,8 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
+using math::internal::PartialPermutation;
+
 /* We test ContactProblemGraph with the graph setup sketched below where each
  box corresponds to a clique (a node in the graph) an edges correspond to a
  cluster of constraints connecting one or more cliques. As documented in

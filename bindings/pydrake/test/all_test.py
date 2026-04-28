@@ -4,8 +4,8 @@ import unittest
 import warnings
 
 # When importing pydrake, confirm that it works without any matplotlib
-# customization. We don't need the MPLBACKEND=Template override (from
-# our tools/bazel.rc file) since importing doesn't open any new windows.
+# customization. We don't need the MPLBACKEND=Template override (from our
+# tools/bazel-build.rc file) since importing doesn't open any new windows.
 del os.environ["MPLBACKEND"]  # noqa
 
 

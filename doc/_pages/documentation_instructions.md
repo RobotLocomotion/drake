@@ -19,10 +19,10 @@ Documentation generation and preview as described in this document are
 supported on Ubuntu 24.04 (Noble).
 
 Before getting started, install Drake's prerequisites with the additional
-``--with-doc-only`` command line option, i.e.:
+``--developer`` command line option, i.e.:
 
 ```sh
-$ setup/install_prereqs --with-doc-only
+$ setup/install_prereqs --developer
 ```
 
 # Previewing changes
@@ -61,10 +61,9 @@ the preview command.
 
 # Testing locally
 
-The website is not part of Drake's default local build nor tests, because it
-requires heavy prerequisites to be installed (see ``--with-doc-only`` above).
-Therefore, a simple ``bazel test //...`` will not provide any feedback about
-local documentation edits.
+The website is not part of Drake's default local build nor tests, because it is
+too slow. Therefore, a simple ``bazel test //...`` will not provide any feedback
+about local documentation edits.
 
 To check locally that documentation changes pass all build and test rules, run:
 

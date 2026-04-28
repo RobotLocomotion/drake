@@ -73,7 +73,7 @@ drake_cc_library(
     deps = [
         "//geometry:geometry_ids",
         "//geometry/proximity:polygon_surface_mesh",
-        "//multibody/contact_solvers/sap:partial_permutation",
+        "//math:partial_permutation",
     ],
 )
 

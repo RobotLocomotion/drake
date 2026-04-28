@@ -9,8 +9,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_after_move.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {
 namespace multibody {
@@ -89,7 +89,7 @@ class BlockSparseCholeskySolver {
 
   /* Updates the matrix to be factored. This is useful for solving a series of
    matrices with the same sparsity pattern using the same elimination ordering.
-   For example, with matrices A and B with the same sparisty pattern. It's more
+   For example, with matrices A and B with the same sparsity pattern. It's more
    efficient to call
      solver.SetMatrix(A);
      solver.Factor();
@@ -111,7 +111,7 @@ class BlockSparseCholeskySolver {
    @post solver_mode() == SolverMode::kAnalyzed. */
   void UpdateMatrix(const SymmetricMatrix& A);
 
-  /* Computes the block sparse Cholesty factorization. Returns true if
+  /* Computes the block sparse Cholesky factorization. Returns true if
    factorization succeeds, otherwise returns false. Failure is triggered by an
    internal failure of Eigen::LLT.  This can fail if, for instance, the input
    matrix set in SetMatrix() or UpdateMatrix() is not positive definite. If
@@ -153,7 +153,7 @@ class BlockSparseCholeskySolver {
    corresponds to the blocks with indices outside of E, and B is the resulting
    off-diagonal block from the permutation.
 
-   If the fatorization of A is successful, returns the Schur complement
+   If the factorization of A is successful, returns the Schur complement
    S = C - BᵀD⁻¹B.
 
    @pre `eliminated_blocks` has all its entries in [0, A.block_cols()).
@@ -245,10 +245,10 @@ class BlockSparseCholeskySolver {
 
   /* Permutes the given matrix A with `block_permutation_` p and set L such that
    the lower triangular part of L satisfies L(p(i), p(j)) = A(i, j).
-   @pre SetMarix() has been called. */
+   @pre SetMatrix() has been called. */
   void PermuteAndCopyToL(const SymmetricMatrix& A);
 
-  /* The cholesky factorization of the permuted matrix, i.e. L⋅Lᵀ = P⋅A⋅Pᵀ,
+  /* The Cholesky factorization of the permuted matrix, i.e. L⋅Lᵀ = P⋅A⋅Pᵀ,
    where P is the permutation matrix induced by the `scalar_permutation_`. */
   copyable_unique_ptr<LowerTriangularMatrix> L_;
   std::vector<Eigen::LLT<BlockType>> L_diag_;
@@ -258,11 +258,11 @@ class BlockSparseCholeskySolver {
   /* Permutation for block indices, same size as A.block_cols(). For a given
    block index i into A, `block_permutation_[i]` gives the permuted block index
    into L_. */
-  PartialPermutation block_permutation_;
-  /* Permutation for scarlar indices, same size as A.cols(). For a given
+  math::internal::PartialPermutation block_permutation_;
+  /* Permutation for scalar indices, same size as A.cols(). For a given
    scalar index i into A, `scalar_permutation_[i]` gives the permuted scalar
    index into L_. */
-  PartialPermutation scalar_permutation_;
+  math::internal::PartialPermutation scalar_permutation_;
 
   reset_after_move<SolverMode> solver_mode_{SolverMode::kEmpty};
 };

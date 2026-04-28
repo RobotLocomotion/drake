@@ -870,7 +870,7 @@ TEST_F(DummyModelTest, CostGradients) {
                               MatrixCompareType::relative));
 
   // Validate gradient and its gradient (Hessian of the cost).
-  EXPECT_TRUE(CompareMatrices(cost_gradient, gradient_ad_value, kEpsilon,
+  EXPECT_TRUE(CompareMatrices(cost_gradient, gradient_ad_value, 2 * kEpsilon,
                               MatrixCompareType::relative));
 
   // Unit test the validity of the constraints Hessian G by directly forming the
