@@ -9,6 +9,7 @@ package(default_visibility = ["//visibility:private"])
 PREREQUISITES_DATA = glob([
     "**/Brewfile*",
     "**/*.lock",
+    "**/*.json",
     "**/*.toml",
     "**/*.txt",
 ])
@@ -42,7 +43,7 @@ install_files(
             "python/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "ubuntu/install_prereqs_binary.sh",
+            "install_prereqs",
             "ubuntu/packages-noble-binary.txt",
             "ubuntu/packages-resolute-binary.txt",
         ],
@@ -54,7 +55,9 @@ install_files(
         "python",
     ],
     rename = {
-        "share/drake/setup/install_prereqs_binary.sh": "install_prereqs",
+        # TODO(jwnimmer-tri) This is only for macOS; once we rewrite macOS to
+        # also not be a bash script, we can remove this.
+        "share/drake/setup/install_prereqs.sh": "install_prereqs",
     },
     visibility = ["//:__pkg__"],
 )
