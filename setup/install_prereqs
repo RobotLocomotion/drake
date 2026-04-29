@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# Install Drake prerequisites.
+# Install Drake prerequisites. This script is a small bash trampoline which
+# first installs Python (if missing) and then uses Python for the remainder of
+# the installation.
 
 set -euo pipefail
 
@@ -15,12 +17,55 @@ if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
   exit 1
 fi
 
-# We'll default to installing only the prerequisites necessary to build Drake.
-# To run tests, developers should pass the "--developer" flag. For details, see
-# https://drake.mit.edu/bazel.html and https://drake.mit.edu/from_source.html.
+# ============================ Command line options ============================
+
+sh_args=()
+py_args=()
+user_environment_only=0
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    --user-environment-only)
+      user_environment_only=1
+      py_args+=("$1")
+      ;;
+    --verbose)
+      py_args+=("$1")
+      ;;
+    *)
+      sh_args+=("$1")
+      py_args+=("$1")
+      ;;
+  esac
+  shift
+done
+
+# =============================== Install Python ===============================
+
+if [[ "${user_environment_only}" -eq 0 ]]; then
+  if [[ "$(uname)" == "Darwin" ]]; then
+    /bin/bash "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "${sh_args[@]:0}"
+  else
+    if ! command -v python3 > /dev/null; then
+      echo "Installing python3 ..." >&2
+      maybe_sudo=
+      if [[ "${EUID}" -ne 0 ]]; then
+        maybe_sudo=sudo
+      fi
+      # XXX Obey --without-update.
+      if ! ${maybe_sudo} apt-get -y install python3; then
+        ${maybe_sudo} apt-get update || (sleep 30; apt-get update)
+        ${maybe_sudo} apt-get -y install python3
+      fi
+    fi
+  fi
+fi
+
+# ============================= Hand over to Python ============================
 
 if [[ "$(uname)" == "Darwin" ]]; then
-  exec /bin/bash "${BASH_SOURCE%/*}/mac/install_prereqs.sh" "$@"
+  # N.B. We need `${var:0}` here because macOS's older version of bash does not
+  # seem to be able to cope with an empty array.
+  exec $(brew --prefix)/bin/python3.14 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]:0}"
 else
-  exec /bin/bash "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" "$@"
+  exec /usr/bin/python3 -B "${BASH_SOURCE%/*}/install_prereqs.py" "${py_args[@]}"
 fi
