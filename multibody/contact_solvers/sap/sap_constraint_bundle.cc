@@ -10,6 +10,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
+
 template <typename T>
 SapConstraintBundle<T>::SapConstraintBundle(
     const SapContactProblem<T>* problem, const VectorX<T>& delassus_diagonal) {

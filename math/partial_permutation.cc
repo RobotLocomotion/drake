@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 
 #include <algorithm>
 #include <utility>
@@ -8,8 +8,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace multibody {
-namespace contact_solvers {
+namespace math {
 namespace internal {
 
 PartialPermutation::PartialPermutation(std::vector<int> permutation)
@@ -116,6 +115,5 @@ VertexPartialPermutation::VertexPartialPermutation(
 }
 
 }  // namespace internal
-}  // namespace contact_solvers
-}  // namespace multibody
+}  // namespace math
 }  // namespace drake

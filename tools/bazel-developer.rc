@@ -23,6 +23,11 @@ build --@drake//tools/cc_toolchain:error_severity=error
 # //tools/cc_toolchain:use_mold_linker for more details.
 build --@drake//tools/cc_toolchain:allow_mold_linker=true
 
+# Developer builds on Linux use -fuse-ld=lld (per @rules_cc) so we need to dial
+# back its default per-process thread count of 16 down to something less likely
+# to overload the system.
+build:linux --linkopt=-Wl,--threads=2
+
 # Developer builds on Linux should have OpenMP enabled by default, to match the
 # end-user default in drake/CMakeLists.txt.
 build:linux --config=openmp

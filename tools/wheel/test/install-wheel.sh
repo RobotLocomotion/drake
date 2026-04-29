@@ -14,11 +14,25 @@
 
 set -eu -o pipefail
 
-if [[ -z "$1" ]]; then
-    echo "Usage: $0 <wheel>" >&2
+WHEEL="${1:-}"
+PYTHON_MANAGER="${2:-pip}"
+
+if [[ -z "${WHEEL}" ]]; then
+    echo "Usage: $0 <wheel> [{pip,uv}]" >&2
     exit 1
 fi
 
 . /tmp/drake-wheel-test/python/bin/activate
 
-pip install "$1"
+case "${PYTHON_MANAGER}" in
+    pip)
+        pip install "${WHEEL}"
+        ;;
+    uv)
+        ${HOME}/.local/bin/uv pip install "${WHEEL}"
+        ;;
+    *)
+        echo "Unknown virtual environment manager '${PYTHON_MANAGER}'" >&2
+        exit 1
+        ;;
+esac

@@ -1,7 +1,6 @@
 #!/bin/bash
 #
-# Install development and runtime prerequisites for binary distributions of
-# Drake on Ubuntu.
+# Install prerequisites for binary distributions of Drake on Ubuntu.
 
 set -euo pipefail
 
@@ -25,9 +24,9 @@ while [ "${1:-}" != "" ]; do
   shift
 done
 
+maybe_sudo=
 if [[ "${EUID}" -ne 0 ]]; then
-  echo 'ERROR: This script must be run as root' >&2
-  exit 1
+  maybe_sudo=sudo
 fi
 
 if [[ "${with_asking}" -eq 0 ]]; then
@@ -36,13 +35,12 @@ else
   maybe_yes=''
 fi
 
-
 if command -v conda &>/dev/null; then
   echo 'NOTE: Drake is not tested regularly with Anaconda, so you may experience compatibility hiccups; when asking for help, be sure to mention that Conda is involved.' >&2
 fi
 
 if [[ "${with_update}" -eq 1 ]]; then
-  apt-get update || (sleep 30; apt-get update) || (cat <<EOF && false)
+  ${maybe_sudo} apt-get update || (sleep 30; ${maybe_sudo} apt-get update) || (cat <<EOF && false)
 ****************************************************************************
 Drake is unable to run 'sudo apt-get update', probably because this computer
 contains incorrect entries in its sources.list files, or possibly because an
@@ -64,4 +62,4 @@ if ! [[ "${VERSION_CODENAME}" =~ (noble|resolute) ]]; then
 fi
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${VERSION_CODENAME}-binary.txt")
-apt-get install ${maybe_yes} --no-install-recommends ${packages}
+${maybe_sudo} apt-get install ${maybe_yes} --no-install-recommends ${packages}

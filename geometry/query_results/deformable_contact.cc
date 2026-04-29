@@ -6,7 +6,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-using multibody::contact_solvers::internal::VertexPartialPermutation;
+using math::internal::VertexPartialPermutation;
 
 ContactParticipation::ContactParticipation(int num_vertices)
     : participation_(num_vertices, false) {}

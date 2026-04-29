@@ -6,11 +6,8 @@
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-namespace multibody {
-namespace contact_solvers {
+namespace math {
 namespace internal {
-
-// TODO(xuchenhan-tri): Move this class to math namespace.
 
 // Given a set S with n elements, this class represents the permutation of S
 // into a new set S' containing m (m ≤ n) non-repeated elements of S.
@@ -210,6 +207,5 @@ class VertexPartialPermutation {
 };
 
 }  // namespace internal
-}  // namespace contact_solvers
-}  // namespace multibody
+}  // namespace math
 }  // namespace drake

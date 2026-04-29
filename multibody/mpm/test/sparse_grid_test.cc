@@ -410,9 +410,9 @@ TYPED_TEST(SparseGridTest, SetNodeIndices) {
     }
   };
   grid.ApplyParticleToGridKernel(particle_data, splat_flag);
-  const contact_solvers::internal::VertexPartialPermutation
-      partial_permutation = grid.SetNodeIndices();
-  contact_solvers::internal::PartialPermutation vertex_permutation =
+  const math::internal::VertexPartialPermutation partial_permutation =
+      grid.SetNodeIndices();
+  math::internal::PartialPermutation vertex_permutation =
       partial_permutation.vertex();
 
   struct Vector3iLess {

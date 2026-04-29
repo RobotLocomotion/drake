@@ -11,6 +11,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using math::internal::PartialPermutation;
+
 template <typename BlockType>
 BlockSparseCholeskySolver<BlockType>::~BlockSparseCholeskySolver() = default;
 

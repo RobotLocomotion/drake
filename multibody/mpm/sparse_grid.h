@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/mpm/grid_data.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
 #include "drake/multibody/mpm/particle_data.h"
@@ -240,7 +240,7 @@ class SparseGrid {
    A node is marked as participating whenever it is in the support of a particle
    participating in a constraint. Refer to Transfer::ParticleToGrid() for
    details. */
-  contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
+  math::internal::VertexPartialPermutation SetNodeIndices();
 
  private:
   /* Grid spacing (in meters). */

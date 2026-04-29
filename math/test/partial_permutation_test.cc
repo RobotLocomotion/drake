@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/math/partial_permutation.h"
 
 #include <utility>
 #include <vector>
@@ -11,8 +11,7 @@
 using Eigen::VectorXd;
 
 namespace drake {
-namespace multibody {
-namespace contact_solvers {
+namespace math {
 namespace internal {
 namespace {
 
@@ -175,6 +174,5 @@ GTEST_TEST(VertexPartialPermutation, Constructor) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace contact_solvers
-}  // namespace multibody
+}  // namespace math
 }  // namespace drake

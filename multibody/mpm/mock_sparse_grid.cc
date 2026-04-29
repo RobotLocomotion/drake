@@ -144,8 +144,7 @@ void MockSparseGrid<T>::IterateGrid(
 }
 
 template <typename T>
-contact_solvers::internal::VertexPartialPermutation
-MockSparseGrid<T>::SetNodeIndices() {
+math::internal::VertexPartialPermutation MockSparseGrid<T>::SetNodeIndices() {
   std::vector<int> participating_nodes;
   int node_index = 0;
   int participating_node_index = 0;
@@ -160,7 +159,7 @@ MockSparseGrid<T>::SetNodeIndices() {
     }
   };
   IterateGrid(index_grid);
-  return contact_solvers::internal::VertexPartialPermutation(
+  return math::internal::VertexPartialPermutation(
       std::move(participating_nodes));
 }
 
