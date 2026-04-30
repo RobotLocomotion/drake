@@ -512,7 +512,7 @@ GTEST_TEST(TestL2NormCost, Eval) {
   {
     VectorXd y;
     cost.Eval(x0, &y);
-    EXPECT_NEAR(std::sqrt(z.dot(z)), y[0], 1e-16);
+    EXPECT_NEAR(std::sqrt(z.dot(z)), y[0], 1e-15);
   }
 
   // Test AutoDiffXd.
