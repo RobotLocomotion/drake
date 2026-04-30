@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -26,6 +27,18 @@ MatrixXd MakeMatrixWithLinSpacedValues(int rows, int cols) {
 GTEST_TEST(SlicingAndIndexing, SelectRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
   const MatrixXd S = SelectRows(M, indices);
+  const VectorXd S_expected = Vector3d(2, 4, 5);
+  EXPECT_EQ(S, S_expected);
+}
+
+GTEST_TEST(SlicingAndIndexing, SelectRowsInto) {
+  const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
+  // Output vector is (over) allocated.
+  VectorXd S(M.size());
+  {
+    drake::test::LimitMalloc guard({.ignore_realloc_noops = true});
+    SelectRowsInto(M, indices, &S);
+  }
   const VectorXd S_expected = Vector3d(2, 4, 5);
   EXPECT_EQ(S, S_expected);
 }
@@ -97,6 +110,23 @@ GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
 GTEST_TEST(SlicingAndIndexing, SelectRowsCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 6);
   const MatrixXd S = SelectRowsCols(M, indices);
+  // clang-format off
+  const MatrixXd S_expected = (MatrixXd(3, 3) <<
+     8, 20, 26,
+    10, 22, 28,
+    11, 23, 29).finished();
+  // clang-format on
+  EXPECT_EQ(S, S_expected);
+}
+
+GTEST_TEST(SlicingAndIndexing, SelectRowsColsInto) {
+  const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 6);
+  // Output matrix is (over) allocated.
+  MatrixXd S(M.rows(), M.cols());
+  {
+    drake::test::LimitMalloc guard({.ignore_realloc_noops = true});
+    SelectRowsColsInto(M, indices, &S);
+  }
   // clang-format off
   const MatrixXd S_expected = (MatrixXd(3, 3) <<
      8, 20, 26,

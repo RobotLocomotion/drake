@@ -624,6 +624,7 @@ drake_cc_googletest(
     deps = [
         ":slicing_and_indexing",
         "//common:essential",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
