@@ -39,7 +39,7 @@ class InstallPrereqsActor:
         self._path.mkdir()
 
         # Create a listening socket used for subprocess callbacks.
-        self._listener = multiprocessing.connection.Listener()
+        self._listener = multiprocessing.connection.Listener(family="AF_INET")
         address = self._listener.address
 
         # Create a stub program that calls back into this unit test anytime
