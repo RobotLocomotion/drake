@@ -23,57 +23,40 @@ class MeshSdfCacheTester {
  public:
   using Memoizer = MemoizerCache<MeshSdfCache::Key, MeshDistanceBoundary>;
 
-  static std::shared_ptr<const Memoizer> get_memoizer(
-      const MeshSdfCache& cache) {
-    return cache.memoizer_;
+  static const Memoizer& get_memoizer(const MeshSdfCache& cache) {
+    DRAKE_DEMAND(cache.memoizer_ != nullptr);
+    return *cache.memoizer_;
   }
 
-  // Returns the number of distinct source-file entries in the shared table.
-  static int file_entry_count(const MeshSdfCache& cache) {
-    if (cache.memoizer_ == nullptr) {
-      return 0;
-    }
-    std::set<std::string> file_keys;
-    for (const auto& [key, _] : cache.memoizer_->Dump()) {
-      file_keys.insert(key.mesh_key);
-    }
-    return static_cast<int>(file_keys.size());
+  // Returns the number of distinct (mesh, scale) entries in the cache. This is
+  // not the same as total number of geometries.
+  static int num_entries(const MeshSdfCache& cache) {
+    DRAKE_DEMAND(cache.memoizer_ != nullptr);
+    return cache.memoizer_->num_entries();
   }
 
-  // Returns the number of (file, scale) entries in the table that share the
-  // same source file as geometry `id`.
-  static int scale_entry_count(const MeshSdfCache& cache, GeometryId id) {
-    if (!cache.contains(id)) {
-      return 0;
-    }
-    const std::string& file_key = cache.geometry_entries_.at(id).key.mesh_key;
-    int count = 0;
-    for (const auto& [key, _] : cache.memoizer_->Dump()) {
-      if (key.mesh_key == file_key) ++count;
-    }
-    return count;
+  static int num_geometries(const MeshSdfCache& cache) {
+    return std::ssize(cache.geometry_entries_);
   }
 
   // Returns the number of geometry registrations (across all MeshSdfCache
-  // instances sharing the same table) for the (file, scale) used by `id`.
-  // Equivalent to shared_ptr use_count minus the table's own reference.
-  // All copies of the cache share the table, so however many copies of the
-  // cache exist, the shared table will only ever contribute one reference.
+  // instances sharing the same memoization cache) for the (file, scale) used by
+  // `id`. Note: the MemoizerCache doesn't hold any reference.
   static int ref_count(const MeshSdfCache& cache, GeometryId id) {
     if (!cache.contains(id)) {
       return 0;
     }
+    // With load(), we're stuck creating a temporary copy. We'll subtract it off
+    // of the reported count.
     const auto boundary = cache.geometry_entries_.at(id).boundary.load();
     EXPECT_TRUE(boundary != nullptr);
-    if (boundary == nullptr) {
-      return 0;
-    }
     return static_cast<int>(boundary.use_count()) - 1;
   }
 
-  // Returns true if `a` and `b` share the same underlying shared table.
-  static bool shares_table(const MeshSdfCache& a, const MeshSdfCache& b) {
-    return get_memoizer(a) == get_memoizer(b);
+  // Returns true if `a` and `b` share the same underlying shared memoization
+  // cache.
+  static bool shares_memoizer(const MeshSdfCache& a, const MeshSdfCache& b) {
+    return &get_memoizer(a) == &get_memoizer(b);
   }
 };
 
@@ -162,7 +145,8 @@ GeometryId RegisterShape(const MeshLike& mesh, MeshSdfCache* cache) {
 // Convenience alias.
 using Tester = MeshSdfCacheTester;
 
-// Confirm that copies share the tables but record independent populations.
+// Confirm that copies share the memoization cache but record independent
+// populations.
 GTEST_TEST(MeshSdfCacheTest, CopyAssignment) {
   MeshSdfCache cache;
 
@@ -173,9 +157,9 @@ GTEST_TEST(MeshSdfCacheTest, CopyAssignment) {
   MeshSdfCache copy;
   copy = cache;
 
-  // Confirm that the two caches share the same table and that the copy starts
-  // with the same population (id).
-  EXPECT_TRUE(Tester::shares_table(cache, copy));
+  // Confirm that the two caches share the same memoization cache and that the
+  // copy starts with the same population (id).
+  EXPECT_TRUE(Tester::shares_memoizer(cache, copy));
   EXPECT_EQ(Tester::ref_count(cache, id), 2);
   EXPECT_EQ(Tester::ref_count(copy, id), 2);
   EXPECT_TRUE(copy.contains(id));
@@ -183,7 +167,7 @@ GTEST_TEST(MeshSdfCacheTest, CopyAssignment) {
 
   // Adding a new geometry to copy, but referencing the same (file, scale) as
   // what was registered in cache, should produce the same boundary, drawn from
-  // the same table.
+  // the same memoized entry.
   const GeometryId copy_id = RegisterShape(MakeObjMesh(), &copy);
   const MeshDistanceBoundary& copy_boundary = copy.GetOrCompute(copy_id);
   EXPECT_EQ(&copy_boundary, &boundary);
@@ -202,8 +186,8 @@ GTEST_TEST(MeshSdfCacheTest, CopyAssignment) {
   EXPECT_EQ(Tester::ref_count(copy, id), 2);
 }
 
-// Confirm that the copy constructor shares the table but records an independent
-// population.
+// Confirm that the copy constructor shares the memoization cache but records an
+// independent population.
 GTEST_TEST(MeshSdfCacheTest, CopyConstructor) {
   MeshSdfCache cache;
 
@@ -213,9 +197,9 @@ GTEST_TEST(MeshSdfCacheTest, CopyConstructor) {
 
   MeshSdfCache copy{cache};
 
-  // Confirm that the two caches share the same table and that the copy starts
-  // with the same population (id).
-  EXPECT_TRUE(Tester::shares_table(cache, copy));
+  // Confirm that the two caches share the same memoization cache and that the
+  // copy starts with the same population (id).
+  EXPECT_TRUE(Tester::shares_memoizer(cache, copy));
   EXPECT_EQ(Tester::ref_count(cache, id), 2);
   EXPECT_EQ(Tester::ref_count(copy, id), 2);
   EXPECT_TRUE(copy.contains(id));
@@ -223,7 +207,7 @@ GTEST_TEST(MeshSdfCacheTest, CopyConstructor) {
 
   // Adding a new geometry to copy, but referencing the same (file, scale) as
   // what was registered in cache, should produce the same boundary, drawn from
-  // the same table.
+  // the same memoized entry.
   const GeometryId copy_id = RegisterShape(MakeObjMesh(), &copy);
   const MeshDistanceBoundary& copy_boundary = copy.GetOrCompute(copy_id);
   EXPECT_EQ(&copy_boundary, &boundary);
@@ -247,21 +231,22 @@ GTEST_TEST(MeshSdfCacheTest, CopyAssignmentIntoNonEmpty) {
   MeshSdfCache dest;
   const GeometryId dest_id = RegisterShape(MakeObjMesh(1, kTet), &dest);
   unused(dest.GetOrCompute(dest_id));
-  ASSERT_EQ(Tester::file_entry_count(dest), 1);
+  ASSERT_EQ(Tester::num_entries(dest), 1);
 
   MeshSdfCache source;
-  const GeometryId src_id = RegisterShape(MakeObjMesh(), &source);
-  unused(source.GetOrCompute(src_id));
+  const GeometryId source_id = RegisterShape(MakeObjMesh(), &source);
+  unused(source.GetOrCompute(source_id));
 
   dest = source;
 
   // Old content flushed: dest_id gone and its file entry evicted.
   EXPECT_FALSE(dest.contains(dest_id));
   // New content adopted.
-  EXPECT_TRUE(dest.contains(src_id));
-  EXPECT_TRUE(Tester::shares_table(dest, source));
-  EXPECT_EQ(Tester::ref_count(dest, src_id), 2);
-  EXPECT_EQ(Tester::file_entry_count(dest), 1);  // only the source file
+  EXPECT_TRUE(dest.contains(source_id));
+  EXPECT_TRUE(Tester::shares_memoizer(dest, source));
+  EXPECT_EQ(Tester::ref_count(dest, source_id), 2);
+  EXPECT_EQ(Tester::ref_count(source, source_id), 2);
+  EXPECT_EQ(Tester::num_entries(dest), 1);  // only the source file
 }
 
 // Move constructor transfers ownership without changing ref counts.
@@ -279,10 +264,10 @@ GTEST_TEST(MeshSdfCacheTest, MoveConstructor) {
   // Ownership transferred — ref count unchanged.
   EXPECT_EQ(Tester::ref_count(moved, id), 1);
 
-  // Moved-from is empty and has a fresh independent table.
+  // Moved-from is empty and has a fresh independent memoization cache.
   EXPECT_FALSE(original.contains(id));
-  EXPECT_EQ(Tester::file_entry_count(original), 0);
-  EXPECT_FALSE(Tester::shares_table(original, moved));
+  EXPECT_EQ(Tester::num_entries(original), 0);
+  EXPECT_FALSE(Tester::shares_memoizer(original, moved));
 }
 
 // Move assignment flushes dest's old content and transfers ownership.
@@ -290,30 +275,31 @@ GTEST_TEST(MeshSdfCacheTest, MoveAssignment) {
   MeshSdfCache dest;
   const GeometryId dest_id = RegisterShape(MakeObjMesh(1, kTet), &dest);
   unused(dest.GetOrCompute(dest_id));
-  ASSERT_EQ(Tester::file_entry_count(dest), 1);
+  ASSERT_EQ(Tester::num_entries(dest), 1);
 
   MeshSdfCache source;
-  const GeometryId src_id = RegisterShape(MakeObjMesh(), &source);
-  const MeshDistanceBoundary& boundary = source.GetOrCompute(src_id);
-  ASSERT_EQ(Tester::ref_count(source, src_id), 1);
+  const GeometryId source_id = RegisterShape(MakeObjMesh(), &source);
+  const MeshDistanceBoundary& boundary = source.GetOrCompute(source_id);
+  ASSERT_EQ(Tester::ref_count(source, source_id), 1);
 
   dest = std::move(source);
 
   // Old dest content flushed and evicted.
   EXPECT_FALSE(dest.contains(dest_id));
   // New content transferred.
-  EXPECT_TRUE(dest.contains(src_id));
-  EXPECT_EQ(&dest.GetOrCompute(src_id), &boundary);
-  EXPECT_EQ(Tester::ref_count(dest, src_id), 1);  // ownership moved, not shared
+  EXPECT_TRUE(dest.contains(source_id));
+  EXPECT_EQ(&dest.GetOrCompute(source_id), &boundary);
+  EXPECT_EQ(Tester::ref_count(dest, source_id),
+            1);  // ownership moved, not shared
 
-  // Source is empty and has a fresh independent table.
-  EXPECT_FALSE(source.contains(src_id));
-  EXPECT_EQ(Tester::file_entry_count(source), 0);
-  EXPECT_FALSE(Tester::shares_table(source, dest));
+  // Source is empty and has a fresh independent memoization cache.
+  EXPECT_FALSE(source.contains(source_id));
+  EXPECT_EQ(Tester::num_entries(source), 0);
+  EXPECT_FALSE(Tester::shares_memoizer(source, dest));
 }
 
 // Destroying a cache decrements ref counts for all its entries, but does not
-// corrupt other instances..
+// corrupt other instances.
 GTEST_TEST(MeshSdfCacheTest, Destructor) {
   MeshSdfCache cache;
 
@@ -324,7 +310,7 @@ GTEST_TEST(MeshSdfCacheTest, Destructor) {
   // State of cache.
   EXPECT_TRUE(cache.contains(id1));
   EXPECT_EQ(Tester::ref_count(cache, id1), 2);
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
+  EXPECT_EQ(Tester::num_entries(cache), 1);
 
   {
     MeshSdfCache copy;
@@ -337,7 +323,7 @@ GTEST_TEST(MeshSdfCacheTest, Destructor) {
   // Counts restored.
   EXPECT_TRUE(cache.contains(id1));
   EXPECT_EQ(Tester::ref_count(cache, id1), 2);
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
+  EXPECT_EQ(Tester::num_entries(cache), 1);
 }
 
 // Confirm that "contains" reports as expected.
@@ -359,39 +345,43 @@ GTEST_TEST(MeshSdfCacheTest, Contains) {
 
 GTEST_TEST(MeshSdfCacheTest, Register) {
   MeshSdfCache cache;
-  EXPECT_EQ(Tester::file_entry_count(cache), 0);
+  EXPECT_EQ(Tester::num_entries(cache), 0);
+  EXPECT_EQ(Tester::num_geometries(cache), 0);
 
   // Unsupported extensions are silently ignored.
   const GeometryId id1 = GeometryId::get_new_id();
   const Mesh glb(InMemoryMesh{MemoryFile("", ".fake", "dummy")});
   cache.Register(id1, glb);
   EXPECT_FALSE(cache.contains(id1));
-  EXPECT_EQ(Tester::file_entry_count(cache), 0);
+  EXPECT_EQ(Tester::num_entries(cache), 0);
+  EXPECT_EQ(Tester::num_geometries(cache), 0);
 
-  // Supported file creates an entry.
+  // Supported file creates an entry and a geometry.
   cache.Register(id1, MakeObjMesh());
   unused(cache.GetOrCompute(id1));
   EXPECT_TRUE(cache.contains(id1));
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id1), 1);
+  EXPECT_EQ(Tester::num_entries(cache), 1);
+  EXPECT_EQ(Tester::num_geometries(cache), 1);
   EXPECT_EQ(Tester::ref_count(cache, id1), 1);
 
-  // Second instance of the same file and scale *only* increases the ref count.
+  // Second instance of the same file and scale increases the ref count, and
+  // geometry count; no new entry.
   const GeometryId id2 = GeometryId::get_new_id();
   cache.Register(id2, MakeObjMesh());
   unused(cache.GetOrCompute(id2));
   EXPECT_TRUE(cache.contains(id2));
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id2), 1);
+  EXPECT_EQ(Tester::num_entries(cache), 1);
+  EXPECT_EQ(Tester::num_geometries(cache), 2);
   EXPECT_EQ(Tester::ref_count(cache, id2), 2);
 
-  // Same file, different scale *only* increases scale count.
+  // Same file, different scale increases entry count and geometry count. The
+  // new entry has a ref count of 1; other ref counts remain unchanged.
   const GeometryId id3 = GeometryId::get_new_id();
   cache.Register(id3, MakeObjMesh(2));
   unused(cache.GetOrCompute(id3));
   EXPECT_TRUE(cache.contains(id3));
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id3), 2);
+  EXPECT_EQ(Tester::num_entries(cache), 2);
+  EXPECT_EQ(Tester::num_geometries(cache), 3);
   EXPECT_EQ(Tester::ref_count(cache, id2), 2);
   EXPECT_EQ(Tester::ref_count(cache, id3), 1);
 }
@@ -408,7 +398,7 @@ GTEST_TEST(MeshSdfCacheTest, RegisterMeshVsConvex) {
   unused(cache.GetOrCompute(convex_id));
 
   // Distinct file entries.
-  EXPECT_EQ(Tester::file_entry_count(cache), 2);
+  EXPECT_EQ(Tester::num_entries(cache), 2);
 
   const MeshDistanceBoundary& mesh_b = cache.GetOrCompute(mesh_id);
   const MeshDistanceBoundary& convex_b = cache.GetOrCompute(convex_id);
@@ -425,7 +415,7 @@ GTEST_TEST(MeshSdfCacheTest, RegisterVtk) {
   MeshSdfCache cache;
   const GeometryId id = RegisterShape(MakeVtkMesh(), &cache);
   unused(cache.GetOrCompute(id));
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
+  EXPECT_EQ(Tester::num_entries(cache), 1);
   const MeshDistanceBoundary& boundary = cache.GetOrCompute(id);
   EXPECT_EQ(boundary.tri_mesh().num_triangles(), 6);
 }
@@ -434,7 +424,7 @@ GTEST_TEST(MeshSdfCacheTest, Remove) {
   MeshSdfCache cache;
 
   // ids a* have the same mesh and scale. b shares the mesh with a, but has a
-  // diferent scale. c is different mesh and scale.
+  // different scale. c is different mesh and scale.
   const GeometryId id_a1 = RegisterShape(MakeObjMesh(), &cache);
   const GeometryId id_a2 = RegisterShape(MakeObjMesh(), &cache);
   const GeometryId id_b = RegisterShape(MakeObjMesh(2), &cache);
@@ -443,35 +433,36 @@ GTEST_TEST(MeshSdfCacheTest, Remove) {
   unused(cache.GetOrCompute(id_a2));
   unused(cache.GetOrCompute(id_b));
   unused(cache.GetOrCompute(id_c));
-  ASSERT_EQ(Tester::file_entry_count(cache), 2);
-  ASSERT_EQ(Tester::scale_entry_count(cache, id_a1), 2);
+  ASSERT_EQ(Tester::num_entries(cache), 3);
+  EXPECT_EQ(Tester::num_geometries(cache), 4);
   ASSERT_EQ(Tester::ref_count(cache, id_a1), 2);
 
-  // Removing id_a2 evicts nothing both files at alls scales still used.
+  // Removing id_a2 reduces geometry count, but all entries stay in the cache.
   cache.Remove(id_a2);
   EXPECT_FALSE(cache.contains(id_a2));
-  EXPECT_EQ(Tester::file_entry_count(cache), 2);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id_a1), 2);
+  ASSERT_EQ(Tester::num_entries(cache), 3);
+  EXPECT_EQ(Tester::num_geometries(cache), 3);
   EXPECT_EQ(Tester::ref_count(cache, id_a1), 1);  // The only change.
 
-  // Removing the last geometry for a scale, evicts the scale, keeps the file.
+  // Removing the last geometry for a (file, scale), removes an entry. Other
+  // geometries that reference the same mesh at different scale are untouched.
   cache.Remove(id_b);
   EXPECT_FALSE(cache.contains(id_b));
-  EXPECT_EQ(Tester::file_entry_count(cache), 2);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id_a1), 1);  // The change.
+  ASSERT_EQ(Tester::num_entries(cache), 2);
+  EXPECT_EQ(Tester::num_geometries(cache), 2);
   EXPECT_EQ(Tester::ref_count(cache, id_a1), 1);
 
   // Removing last geometry for a file, evicts the file, other files remain.
   cache.Remove(id_c);
   EXPECT_FALSE(cache.contains(id_c));
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id_a1), 1);  // The change.
+  ASSERT_EQ(Tester::num_entries(cache), 1);
+  EXPECT_EQ(Tester::num_geometries(cache), 1);
   EXPECT_EQ(Tester::ref_count(cache, id_a1), 1);
 
   // Remove() on an unregistered id is a no-op.
   EXPECT_NO_THROW(cache.Remove(GeometryId::get_new_id()));
-  EXPECT_EQ(Tester::file_entry_count(cache), 1);
-  EXPECT_EQ(Tester::scale_entry_count(cache, id_a1), 1);
+  ASSERT_EQ(Tester::num_entries(cache), 1);
+  EXPECT_EQ(Tester::num_geometries(cache), 1);
   EXPECT_EQ(Tester::ref_count(cache, id_a1), 1);
 }
 
@@ -479,7 +470,7 @@ GTEST_TEST(MeshSdfCacheTest, GetOrCompute) {
   MeshSdfCache cache;
 
   // ids a* have the same mesh and scale. b shares the mesh with a, but has a
-  // diferent scale. c is different mesh and scale.
+  // different scale. c is different mesh and scale.
   const GeometryId id_a1 = RegisterShape(MakeObjMesh(1, kDentedTet), &cache);
   const GeometryId id_a2 = RegisterShape(MakeObjMesh(1, kDentedTet), &cache);
   const GeometryId id_b = RegisterShape(MakeObjMesh(2, kDentedTet), &cache);
@@ -488,7 +479,8 @@ GTEST_TEST(MeshSdfCacheTest, GetOrCompute) {
   const MeshDistanceBoundary& bound_a2 = cache.GetOrCompute(id_a2);
   const MeshDistanceBoundary& bound_b = cache.GetOrCompute(id_b);
   const MeshDistanceBoundary& bound_c = cache.GetOrCompute(id_c);
-  EXPECT_EQ(Tester::file_entry_count(cache), 2);
+  ASSERT_EQ(Tester::num_entries(cache), 3);
+  EXPECT_EQ(Tester::num_geometries(cache), 4);
 
   // The a* boundaries should *literally* be the same object.
   EXPECT_EQ(&bound_a1, &bound_a2);

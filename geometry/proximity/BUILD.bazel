@@ -1623,6 +1623,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "memoizer_cache_test",
+    deps = [
+        ":distance_to_point_callback",
+    ],
+)
+
+drake_cc_googletest(
     name = "mesh_deformer_test",
     deps = [
         ":make_box_mesh",

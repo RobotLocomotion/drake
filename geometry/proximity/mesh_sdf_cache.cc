@@ -45,6 +45,11 @@ void MeshSdfCache::Register(GeometryId id, const Mesh& mesh) {
   const std::string& ext = mesh.extension();
   if (ext != ".vtk" && ext != ".obj") return;
 
+  // TODO(Seancurtis-TRI) The lambda captures mesh *by value* here. For
+  // in-memory-mesh, this can be very expensive. We need to make this *fast*
+  // and *cheap* (in a memory sense). Simplest is to change Mesh and Convex
+  // to use a std::shared_ptr<MeshSource> instead of simply a MeshSource. This
+  // also reduces the cost of keeping these mesh factories around.
   RegisterImpl(
       id, Key{mesh.source().GetCacheKey(/* is_convex= */ false), mesh.scale3()},
       [mesh_copy = mesh]() -> TriangleSurfaceMesh<double> {
@@ -92,8 +97,10 @@ const MeshDistanceBoundary& MeshSdfCache::GetOrCompute(GeometryId id) const {
   const MeshDistanceBoundary* memoized_raw = memoized.get();
   DRAKE_ASSERT(memoized_raw != nullptr);
 
-  // TODO(SeanCurtis-TRI) We could reset entry.make_boundary here, but doing so
-  // would require taking a mutex somehow.
+  // NOTE: once we've used entry.make_boundary to compute the boundary, we no
+  // longer need it. Clearing it would seem a good idea, but would require
+  // locking to do so safely. As long as make_boundary has a small memory
+  // footprint, it's probably harmless enough to just let it be.
 
   // Update our GeometryEntry to point to the memoized boundary and return it.
   const bool stored =
@@ -114,6 +121,28 @@ void MeshSdfCache::RegisterImpl(
   geometry_entries_.emplace(id, GeometryEntry(key, [make_tri_mesh]() {
                               return MeshDistanceBoundary(make_tri_mesh());
                             }));
+}
+
+MeshSdfCache::ResettingMemoizer::ResettingMemoizer()
+    : memoizer_(std::make_shared<const MyMemoizer>()) {}
+
+MeshSdfCache::ResettingMemoizer::ResettingMemoizer(
+    const ResettingMemoizer& other) = default;
+
+MeshSdfCache::ResettingMemoizer& MeshSdfCache::ResettingMemoizer::operator=(
+    const ResettingMemoizer& other) = default;
+
+MeshSdfCache::ResettingMemoizer::ResettingMemoizer(
+    ResettingMemoizer&& other) noexcept
+    : memoizer_(std::move(other.memoizer_)) {
+  other.memoizer_ = std::make_shared<const MyMemoizer>();
+}
+
+MeshSdfCache::ResettingMemoizer& MeshSdfCache::ResettingMemoizer::operator=(
+    ResettingMemoizer&& other) noexcept {
+  memoizer_ = std::move(other.memoizer_);
+  other.memoizer_ = std::make_shared<const MyMemoizer>();
+  return *this;
 }
 
 }  // namespace internal

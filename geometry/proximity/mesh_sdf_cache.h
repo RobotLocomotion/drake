@@ -1,16 +1,11 @@
 #pragma once
 
 #include <functional>
-#include <map>
 #include <memory>
-#include <mutex>
-#include <optional>
-#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/hash.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/memoizer_cache.h"
@@ -58,7 +53,11 @@ namespace internal {
  the shared table and so are safe with respect to concurrent GetOrCompute()
  calls on *other* instances. However, they must not be called concurrently
  with any other method on the *same* instance, since the per-cache entry map
- (geometry_entries_) is not protected by any lock. */
+ (geometry_entries_) is not protected by any lock.
+
+ Note: When moving *from* a MeshSdfCache instance, the source instance will
+ still be a valid cache, but no longer share any data with the target (or any of
+ its related instances); it creates a new line. */
 class MeshSdfCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshSdfCache)
@@ -100,8 +99,8 @@ class MeshSdfCache {
  private:
   friend class MeshSdfCacheTester;
 
-  /* Identifies a specific (mesh source, scale) entry in the shared table.
-   Used as the value type of the per-instance geometry index. */
+  /* Identifies a specific (mesh source, scale) entry in the shared table. Each
+   geometry is associated with a specific key. */
   struct Key {
     bool operator==(const Key& other) const = default;
 
@@ -131,33 +130,43 @@ class MeshSdfCache {
     // The handle to the shared cached boundary data (possibly null).
     mutable std::atomic<std::shared_ptr<const MeshDistanceBoundary>> boundary;
 
-    // The (mesh_key, scale_key) for a registered geometry id.
+    // The (mesh_key, scale_key) for the registered geometry id associated with
+    // this entry.
     Key key;
 
     // A threadsafe factory to construct boundary when it's null.
     std::function<MeshDistanceBoundary()> make_boundary;
   };
 
-  /* Introduces a cache-local entry for `id` and optionally updates the shared
-   table as necessary.
-
-   For the shared cache table to be robust against arbitrary changes to
-   individual cache instances, a cache entry mesh factory needs to contain a
-   full copy of the mesh source so it can reliably produce the boundary mesh.
-   However, we don't want to create the copy of the mesh source unless we need
-   to. To that end, make_factor is a factory for a mesh factory. Only if a new
-   cache table entry is necessary, will make_factory() be called and the
-   resultant mesh_factory will be stored in the table. That mesh_factory must
-   be able to produce a TriangleSurfaceMesh when called, regardless of whether
-   the original mesh source is still available. The mesh_factory() only gets
-   evaluated in GetOrCompute().
-
-   This work is done with the acquisition of an exclusive lock. */
+  /* Store the key and mesh factor in *this* instance's geometry table.*/
   void RegisterImpl(GeometryId id, const Key& key,
                     std::function<TriangleSurfaceMesh<double>()> make_tri_mesh);
 
-  std::shared_ptr<const MemoizerCache<Key, MeshDistanceBoundary>> memoizer_{
-      std::make_shared<const MemoizerCache<Key, MeshDistanceBoundary>>()};
+  // A wrapper around the shared memoizer that promises to recreate a valid
+  // memoizer after it has been moved from.
+  class ResettingMemoizer {
+   public:
+    using MyMemoizer = MemoizerCache<Key, MeshDistanceBoundary>;
+
+    ResettingMemoizer();
+    ResettingMemoizer(const ResettingMemoizer& other);
+    ResettingMemoizer& operator=(const ResettingMemoizer& other);
+    ResettingMemoizer(ResettingMemoizer&& other) noexcept;
+    ResettingMemoizer& operator=(ResettingMemoizer&& other) noexcept;
+
+    // Facilitate pointer-comparisons.
+    operator const MyMemoizer*() const { return memoizer_.get(); }
+    // Allow it to be referenced as if it were simply the shared_ptr.
+    const MyMemoizer* operator->() const { return memoizer_.get(); }
+    const MyMemoizer& operator*() const { return *memoizer_; }
+
+    std::shared_ptr<const MyMemoizer> memoizer_{};
+  };
+
+  /* Shared table mapping (mesh_key, scale_key) → MeshDistanceBoundary. This is
+   shared across all copies of MeshSdfCache that were ultimately copied from the
+   same source cache instance. */
+  ResettingMemoizer memoizer_{};
 
   /* Mapping of geometry_id → GeometryEntry. Each instance of MeshSdfCache
    maintains a unique mapping (not shared). */
