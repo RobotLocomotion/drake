@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 
 using Eigen::VectorXd;
 
@@ -31,6 +32,7 @@ GTEST_TEST(PartialPermutation, EmptyPermutationFromStdVector) {
 // Creates a permutation of size 6 where none of the indexes participates and
 // adds permuted indexes one at a time with push().
 GTEST_TEST(PartialPermutation, PushElements) {
+
   PartialPermutation p(6);
   EXPECT_EQ(p.domain_size(), 6);
   EXPECT_EQ(p.permuted_domain_size(), 0);
@@ -38,19 +40,35 @@ GTEST_TEST(PartialPermutation, PushElements) {
     EXPECT_FALSE(p.participates(i));
   }
 
-  EXPECT_EQ(p.push(1), 0);
-  EXPECT_EQ(p.permuted_domain_size(), 1);  // permuted domain increases.
-  EXPECT_EQ(p.push(3), 1);
-  EXPECT_EQ(p.permuted_domain_size(), 2);  // permuted domain increases.
-  EXPECT_EQ(p.push(2), 2);
-  EXPECT_EQ(p.permuted_domain_size(), 3);  // permuted domain increases.
-  EXPECT_EQ(p.push(3), 1);                 // already added.
-  EXPECT_EQ(p.permuted_domain_size(), 3);  // No change.
-  EXPECT_EQ(p.push(5), 3);
-  EXPECT_EQ(p.permuted_domain_size(), 4);  // permuted domain increases.
+  auto evaluate = [&](std::string_view context_message) {
+    SCOPED_TRACE(context_message);
+    EXPECT_EQ(p.push(1), 0);
+    EXPECT_EQ(p.permuted_domain_size(), 1);  // permuted domain increases.
+    EXPECT_EQ(p.push(3), 1);
+    EXPECT_EQ(p.permuted_domain_size(), 2);  // permuted domain increases.
+    EXPECT_EQ(p.push(2), 2);
+    EXPECT_EQ(p.permuted_domain_size(), 3);  // permuted domain increases.
+    EXPECT_EQ(p.push(3), 1);                 // already added.
+    EXPECT_EQ(p.permuted_domain_size(), 3);  // No change.
+    EXPECT_EQ(p.push(5), 3);
+    EXPECT_EQ(p.permuted_domain_size(), 4);  // permuted domain increases.
 
-  const std::vector<int> expected_permutation = {-1, 0, 2, 1, -1, 3};
-  EXPECT_EQ(p.permutation(), expected_permutation);
+    const std::vector<int> expected_permutation = {-1, 0, 2, 1, -1, 3};
+    EXPECT_EQ(p.permutation(), expected_permutation);
+  };
+
+  evaluate("from constructor");
+
+  {
+    drake::test::LimitMalloc({.ignore_realloc_noops = true});
+    p.ResetToSize(6);
+    EXPECT_EQ(p.domain_size(), 6);
+    EXPECT_EQ(p.permuted_domain_size(), 0);
+    for (int i = 0; i < 6; ++i) {
+      EXPECT_FALSE(p.participates(i));
+    }
+    evaluate("from reset");
+  }
 }
 
 GTEST_TEST(PartialPermutation, Construction) {

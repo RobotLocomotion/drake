@@ -63,6 +63,16 @@ PartialPermutation::PartialPermutation(int domain_size) {
   permutation_.resize(domain_size, -1);
 }
 
+void PartialPermutation::ResetToSize(int domain_size) {
+  permutation_.reserve(domain_size);
+  permutation_.clear();
+  permutation_.resize(domain_size, -1);
+  // Potentially over-allocate the inverse permutation now, so that subsequent
+  // push() calls don't allocate.
+  inverse_permutation_.reserve(domain_size);
+  inverse_permutation_.clear();
+}
+
 int PartialPermutation::push(int i) {
   DRAKE_THROW_UNLESS(0 <= i && i < domain_size());
   if (!participates(i)) {
