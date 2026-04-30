@@ -3,6 +3,7 @@ import copy
 import itertools
 import pickle
 import unittest
+import warnings
 import weakref
 
 import numpy as np
@@ -10,7 +11,10 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow, Parallelism
 from pydrake.common.cpp_param import List
-from pydrake.common.deprecation import install_numpy_warning_filters
+from pydrake.common.deprecation import (
+    DrakeDeprecationWarning,
+    install_numpy_warning_filters,
+)
 from pydrake.common.eigen_geometry import Quaternion_
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -3518,6 +3522,19 @@ class TestPlant(unittest.TestCase):
             self.assertEqual(
                 plant.GetBaseBodyJointType(model_instance=None), joint_type
             )
+
+    def test_base_body_joint_type_deprecated_import(self):
+        """Importing BaseBodyJointType from plant still works but warns."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", DrakeDeprecationWarning)
+            from pydrake.multibody.plant import BaseBodyJointType as Deprecated
+
+            self.assertGreaterEqual(len(w), 1)
+            self.assertIn(
+                "pydrake.multibody.tree.BaseBodyJointType", str(w[0].message)
+            )
+        # The re-exported symbol is the same object.
+        self.assertIs(Deprecated, BaseBodyJointType)
 
     def test_discrete_contact_approximation(self):
         plant = MultibodyPlant_[float](0.1)
