@@ -60,7 +60,18 @@ PartialPermutation::PartialPermutation(std::vector<int> permutation)
 }
 
 PartialPermutation::PartialPermutation(int domain_size) {
+  DRAKE_THROW_UNLESS(domain_size >= 0);
   permutation_.resize(domain_size, -1);
+}
+
+void PartialPermutation::ResetToSize(int domain_size) {
+  DRAKE_THROW_UNLESS(domain_size >= 0);
+  permutation_.clear();
+  permutation_.resize(domain_size, -1);
+  // Potentially over-allocate the inverse permutation now, so that subsequent
+  // push() calls don't allocate.
+  inverse_permutation_.clear();
+  inverse_permutation_.reserve(domain_size);
 }
 
 int PartialPermutation::push(int i) {
