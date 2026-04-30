@@ -48,7 +48,7 @@ class InstallPrereqsActor:
         self._stubby.write_text(
             encoding="utf-8",
             data=textwrap.dedent(f"""\
-            #!{sys.executable}
+            #!/usr/bin/python3
             import sys
             from multiprocessing.connection import Client
             with Client({address!r}) as conn:
