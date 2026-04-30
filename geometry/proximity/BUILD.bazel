@@ -304,6 +304,7 @@ drake_cc_library(
     hdrs = [
         "calc_signed_distance_to_surface_mesh.h",
         "distance_to_point_callback.h",
+        "memoizer_cache.h",
         "mesh_distance_boundary.h",
         "mesh_sdf_cache.h",
     ],

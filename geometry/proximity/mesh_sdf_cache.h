@@ -1,16 +1,19 @@
 #pragma once
 
-#include <array>
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "drake/common/drake_export.h"
+#include "drake/common/hash.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/memoizer_cache.h"
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -58,14 +61,7 @@ namespace internal {
  (geometry_entries_) is not protected by any lock. */
 class MeshSdfCache {
  public:
-  // Copying requires thread coordination (it changes the reference counts), so
-  // we require custom implementations. Moving transfers ownership without
-  // touching reference counts, but the moved-from must be left with a fresh
-  // empty table so its destructor is safe to call.
-  MeshSdfCache(const MeshSdfCache&);
-  MeshSdfCache(MeshSdfCache&&);
-  MeshSdfCache& operator=(const MeshSdfCache& other);
-  MeshSdfCache& operator=(MeshSdfCache&&);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshSdfCache)
 
   MeshSdfCache();
   ~MeshSdfCache();
@@ -104,67 +100,42 @@ class MeshSdfCache {
  private:
   friend class MeshSdfCacheTester;
 
-  using ScaleKey = std::array<double, 3>;
-
   /* Identifies a specific (mesh source, scale) entry in the shared table.
    Used as the value type of the per-instance geometry index. */
   struct Key {
+    bool operator==(const Key& other) const = default;
+
+    /* Implements the @ref hash_append concept. */
+    template <class HashAlgorithm>
+    friend void hash_append(HashAlgorithm& hasher, const Key& key) noexcept {
+      using drake::hash_append;
+      hash_append(hasher, key.mesh_key);
+      hash_append(hasher, key.scale_key[0]);
+      hash_append(hasher, key.scale_key[1]);
+      hash_append(hasher, key.scale_key[2]);
+    }
+
     std::string mesh_key;  // Value of {Mesh|Convex}::GetCacheKey()
-    ScaleKey scale_key;
+    Eigen::Vector3d scale_key;
   };
 
-  /* Stores, for one (mesh source, scale) combination, either the deferred
-   factory for building the boundary mesh or the computed boundary itself.
-   Exactly one of the two is live at any time: the factory is set (and the
-   boundary is absent) before the first GetOrCompute() call; afterward the
-   boundary holds the result and the factory has been cleared to release any
-   captured resources (e.g. mesh source data). */
-  class CacheEntry {
-   public:
-    explicit CacheEntry(std::function<TriangleSurfaceMesh<double>()> make_mesh);
-
-    /* Returns true once ComputeBoundary() has been called. */
-    bool has_boundary() const;
-
-    /* Returns the computed boundary.
-     @pre has_boundary(). */
-    const MeshDistanceBoundary& boundary() const;
-
-    /* Invokes the stored factory, builds the MeshDistanceBoundary, stores the
-     result, and clears the factory.
-     @pre !has_boundary(). */
-    void ComputeBoundary();
-
-   private:
-    std::function<TriangleSurfaceMesh<double>()> make_mesh_;
-    std::optional<MeshDistanceBoundary> boundary_;
-  };
-
-  /* Per-geometry entry: the (mesh, scale) key used for eviction, plus a
-   shared handle to the entry data. */
+  /* Per-geometry entry ... */
   struct GeometryEntry {
-    // The (mesh_key, scale_key) for a registered geometry id; used to
-    // efficiently update the shared table upon geometry removal.
+    GeometryEntry(Key key_in,
+                  std::function<MeshDistanceBoundary()> make_boundary_in)
+        : key(key_in), make_boundary(std::move(make_boundary_in)) {}
+    GeometryEntry(const GeometryEntry& other);
+    GeometryEntry& operator=(const GeometryEntry& other);
+    ~GeometryEntry();
+
+    // The handle to the shared cached boundary data (possibly null).
+    mutable std::atomic<std::shared_ptr<const MeshDistanceBoundary>> boundary;
+
+    // The (mesh_key, scale_key) for a registered geometry id.
     Key key;
 
-    // The handle to the shared cache entry containing the boundary data (or
-    // the means to make one).
-    std::shared_ptr<CacheEntry> entry_handle;
-  };
-
-  /* Shared table owned via shared_ptr. All MeshSdfCache instances derived
-   from the same original (via copy assignment) share the same instance.
-
-   std::map is used (not unordered_map) because ScaleKey
-   (std::array<double,3>) has no standard hash, making a composite
-   unordered_map key awkward. */
-  struct SharedTable {
-    /* Guards all access to entries during lazy computation and during
-     mutation (Register, Remove, copy assignment, destruction). */
-    mutable std::shared_mutex mutex;
-
-    std::map<std::pair<std::string, ScaleKey>, std::shared_ptr<CacheEntry>>
-        entries;
+    // A threadsafe factory to construct boundary when it's null.
+    std::function<MeshDistanceBoundary()> make_boundary;
   };
 
   /* Introduces a cache-local entry for `id` and optionally updates the shared
@@ -182,24 +153,23 @@ class MeshSdfCache {
    evaluated in GetOrCompute().
 
    This work is done with the acquisition of an exclusive lock. */
-  void RegisterImpl(
-      GeometryId id, const std::string& mesh_key, const ScaleKey& scale_key,
-      std::function<std::function<TriangleSurfaceMesh<double>()>()>
-          make_factory);
+  void RegisterImpl(GeometryId id, const Key& key,
+                    std::function<TriangleSurfaceMesh<double>()> make_tri_mesh);
 
-  /* Flushes this cache, removing all entries and decrementing all reference
-   counts. */
-  void Flush();
-
-  /* The table of cached meshes and boundaries. This table is shared across all
-   MeshSdfCache instances derived from the same original. Never null. */
-  std::shared_ptr<SharedTable> table_;
+  std::shared_ptr<const MemoizerCache<Key, MeshDistanceBoundary>> memoizer_{
+      std::make_shared<const MemoizerCache<Key, MeshDistanceBoundary>>()};
 
   /* Mapping of geometry_id → GeometryEntry. Each instance of MeshSdfCache
-   maintains a unique index. */
+   maintains a unique mapping (not shared). */
   std::unordered_map<GeometryId, GeometryEntry> geometry_entries_;
 };
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+
+namespace std {
+template <>
+struct hash<drake::geometry::internal::MeshSdfCache::Key>
+    : public drake::DefaultHash {};
+}  // namespace std
