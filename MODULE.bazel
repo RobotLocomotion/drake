@@ -198,7 +198,7 @@ use_repo(maven, "drake_maven_internal")
 
 bazel_dep(
     name = "buildifier_prebuilt",
-    version = "8.5.1",
+    version = "8.5.1.2",
     dev_dependency = True,
 )
 bazel_dep(
