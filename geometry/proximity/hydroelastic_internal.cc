@@ -91,7 +91,7 @@ bool is_primitive(const Shape& shape) {
 
 using std::make_unique;
 
-SoftMesh::SoftMesh(
+CompliantMesh::CompliantMesh(
     std::unique_ptr<VolumeMesh<double>> mesh,
     std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure)
     : mesh_(std::move(mesh)),
@@ -107,7 +107,7 @@ SoftMesh::SoftMesh(
   mesh_topology_ = std::make_unique<VolumeMeshTopology>(*mesh_);
 }
 
-SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
+CompliantMesh& CompliantMesh::operator=(const CompliantMesh& s) {
   if (this == &s) return *this;
 
   mesh_ = make_unique<VolumeMesh<double>>(s.mesh());
@@ -138,7 +138,7 @@ bool Geometries::is_vanished(GeometryId id) const {
 
 void Geometries::RemoveGeometry(GeometryId id) {
   supported_geometries_.erase(id);
-  soft_geometries_.erase(id);
+  compliant_geometries_.erase(id);
   rigid_geometries_.erase(id);
 }
 
@@ -193,8 +193,8 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
       auto hydro_geometry = MakeRigidRepresentation(shape, data.properties);
       if (hydro_geometry) AddGeometry(data.id, std::move(*hydro_geometry));
     } break;
-    case HydroelasticType::kSoft: {
-      auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
+    case HydroelasticType::kCompliant: {
+      auto hydro_geometry = MakeCompliantRepresentation(shape, data.properties);
       if (hydro_geometry) {
         if (is_primitive(shape) &&
             hydro_geometry->pressure_field().is_gradient_field_degenerate()) {
@@ -210,10 +210,10 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
   }
 }
 
-void Geometries::AddGeometry(GeometryId id, SoftGeometry geometry) {
+void Geometries::AddGeometry(GeometryId id, CompliantGeometry geometry) {
   DRAKE_DEMAND(hydroelastic_type(id) == HydroelasticType::kUndefined);
-  supported_geometries_[id] = HydroelasticType::kSoft;
-  soft_geometries_.insert({id, std::move(geometry)});
+  supported_geometries_[id] = HydroelasticType::kCompliant;
+  compliant_geometries_.insert({id, std::move(geometry)});
 }
 
 void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
@@ -226,9 +226,9 @@ namespace {
 
 // Validator interface for use with extracting valid properties. It is
 // instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
-// "rigid" or "soft") strings (to help give intelligible error messages) and
-// then attempts to extract a typed value from a set of proximity properties --
-// spewing meaningful error messages based on absence, type mismatch, and
+// "rigid" or "compliant") strings (to help give intelligible error messages)
+// and then attempts to extract a typed value from a set of proximity properties
+// -- spewing meaningful error messages based on absence, type mismatch, and
 // invalid values.
 template <typename ValueType>
 class Validator {
@@ -401,20 +401,21 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
       MakeTriangleFromPolygonMesh(convex_spec.GetConvexHull()))));
 }
 
-void WarnNoSoftRepresentation(std::string_view shape_type_name) {
+void WarnNoCompliantRepresentation(std::string_view shape_type_name) {
   static const logging::Warn log_once(
-      "Soft {} shapes are not currently supported for hydroelastic contact; "
+      "Compliant {} shapes are not currently supported for hydroelastic "
+      "contact; "
       "registration is allowed, but an error will be thrown during contact.",
       shape_type_name);
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Sphere", "soft")
+  const double margin = NonNegativeDouble("Sphere", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
   const Sphere inflated_sphere(sphere.radius() + margin);
 
-  PositiveDouble positive_validator("Sphere", "soft");
+  PositiveDouble positive_validator("Sphere", "compliant");
   // First, create the mesh.
   const double edge_length =
       positive_validator.Extract(props, kHydroGroup, kRezHint);
@@ -432,12 +433,13 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeSpherePressureField(inflated_sphere, inflated_mesh.get(),
                               hydroelastic_modulus, margin));
 
-  return SoftGeometry(SoftMesh(std::move(inflated_mesh), std::move(pressure)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Box& box, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Box", "soft")
+  const double margin = NonNegativeDouble("Box", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
 
   // Define the shape of the "inflated" hydroelastic geometry to include the
@@ -450,23 +452,24 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(inflated_box));
 
   const double hydroelastic_modulus =
-      PositiveDouble("Box", "soft").Extract(props, kHydroGroup, kElastic);
+      PositiveDouble("Box", "compliant").Extract(props, kHydroGroup, kElastic);
 
   auto pressure =
       make_unique<VolumeMeshFieldLinear<double, double>>(MakeBoxPressureField(
           inflated_box, inflated_mesh.get(), hydroelastic_modulus, margin));
 
-  return SoftGeometry(SoftMesh(std::move(inflated_mesh), std::move(pressure)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Cylinder", "soft")
+  const double margin = NonNegativeDouble("Cylinder", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
   const Cylinder inflated_cylinder(cylinder.radius() + margin,
                                    cylinder.length() + 2.0 * margin);
 
-  PositiveDouble positive_validator("Cylinder", "soft");
+  PositiveDouble positive_validator("Cylinder", "compliant");
   const double edge_length =
       positive_validator.Extract(props, kHydroGroup, kRezHint);
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
@@ -478,16 +481,17 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeCylinderPressureField(inflated_cylinder, inflated_mesh.get(),
                                 hydroelastic_modulus, margin));
 
-  return SoftGeometry(SoftMesh(std::move(inflated_mesh), std::move(pressure)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Capsule& capsule, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Capsule", "soft")
+  const double margin = NonNegativeDouble("Capsule", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
   const Capsule inflated_capsule(capsule.radius() + margin, capsule.length());
 
-  PositiveDouble positive_validator("Capsule", "soft");
+  PositiveDouble positive_validator("Capsule", "compliant");
   const double edge_length =
       positive_validator.Extract(props, kHydroGroup, kRezHint);
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
@@ -499,19 +503,20 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeCapsulePressureField(inflated_capsule, inflated_mesh.get(),
                                hydroelastic_modulus, margin));
 
-  return SoftGeometry(SoftMesh(std::move(inflated_mesh), std::move(pressure)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
       props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kSingleInteriorVertex);
 
-  const double margin = NonNegativeDouble("Ellipsoid", "soft")
+  const double margin = NonNegativeDouble("Ellipsoid", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
-  PositiveDouble positive_validator("Ellipsoid", "soft");
+  PositiveDouble positive_validator("Ellipsoid", "compliant");
   const double edge_length =
       positive_validator.Extract(props, kHydroGroup, kRezHint);
   const Ellipsoid inflated_ellipsoid(
@@ -526,12 +531,13 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeEllipsoidPressureField(inflated_ellipsoid, inflated_mesh.get(),
                                  hydroelastic_modulus, margin));
 
-  return SoftGeometry(SoftMesh(std::move(inflated_mesh), std::move(pressure)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const HalfSpace&, const ProximityProperties& props) {
-  PositiveDouble positive_validator("HalfSpace", "soft");
+  PositiveDouble positive_validator("HalfSpace", "compliant");
 
   const double thickness =
       positive_validator.Extract(props, kHydroGroup, kSlabThickness);
@@ -539,15 +545,16 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double hydroelastic_modulus =
       positive_validator.Extract(props, kHydroGroup, kElastic);
 
-  const double margin = NonNegativeDouble("HalfSpace", "soft")
+  const double margin = NonNegativeDouble("HalfSpace", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
 
-  return SoftGeometry(SoftHalfSpace{hydroelastic_modulus / thickness, margin});
+  return CompliantGeometry(
+      CompliantHalfSpace{hydroelastic_modulus / thickness, margin});
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
-  const double margin = NonNegativeDouble("Convex", "soft")
+  const double margin = NonNegativeDouble("Convex", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
   // For zero margin, use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> inflated_surface_mesh =
@@ -559,26 +566,28 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MakeConvexVolumeMesh<double>(inflated_surface_mesh));
 
   const double hydroelastic_modulus =
-      PositiveDouble("Convex", "soft").Extract(props, kHydroGroup, kElastic);
+      PositiveDouble("Convex", "compliant")
+          .Extract(props, kHydroGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeVolumeMeshPressureField(inflated_mesh.get(), hydroelastic_modulus,
                                   margin));
 
-  return SoftGeometry(SoftMesh(std::move(inflated_mesh), std::move(pressure)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(pressure)));
 }
 
-std::optional<SoftGeometry> MakeSoftRepresentation(
+std::optional<CompliantGeometry> MakeCompliantRepresentation(
     const Mesh& mesh_spec, const ProximityProperties& props) {
   const double hydroelastic_modulus =
-      PositiveDouble("Mesh", "soft").Extract(props, kHydroGroup, kElastic);
+      PositiveDouble("Mesh", "compliant").Extract(props, kHydroGroup, kElastic);
 
   std::unique_ptr<VolumeMesh<double>> mesh;
   std::unique_ptr<VolumeMesh<double>> inflated_mesh;
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> inflated_field;
   std::map<int, int> split_vertices_map;
 
-  const double margin = NonNegativeDouble("Mesh", "soft")
+  const double margin = NonNegativeDouble("Mesh", "compliant")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
 
   if (mesh_spec.extension() == ".vtk") {
@@ -632,8 +641,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       MeshGradientMode::
           kOkOrThrow /* what MakeVolumeMeshPressureField() uses. */);
 
-  return SoftGeometry(
-      SoftMesh(std::move(inflated_mesh), std::move(inflated_field)));
+  return CompliantGeometry(
+      CompliantMesh(std::move(inflated_mesh), std::move(inflated_field)));
 }
 
 }  // namespace hydroelastic

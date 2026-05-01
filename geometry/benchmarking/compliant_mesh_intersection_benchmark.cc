@@ -167,10 +167,10 @@ BENCHMARK_DEFINE_F(CompliantMeshIntersectionBenchmark, CompliantCompliantMesh)
   SetupMeshes(state);
   GeometryId id_S = GeometryId::get_new_id();
   GeometryId id_R = GeometryId::get_new_id();
-  hydroelastic::SoftGeometry geo_S(
-      hydroelastic::SoftMesh(std::move(mesh_S_), std::move(field_S_)));
-  hydroelastic::SoftGeometry geo_R(
-      hydroelastic::SoftMesh(std::move(mesh_R_), std::move(field_R_)));
+  hydroelastic::CompliantGeometry geo_S(
+      hydroelastic::CompliantMesh(std::move(mesh_S_), std::move(field_S_)));
+  hydroelastic::CompliantGeometry geo_R(
+      hydroelastic::CompliantMesh(std::move(mesh_R_), std::move(field_R_)));
 
   std::unique_ptr<ContactSurface<double>> surface_SR;
   for (auto _ : state) {

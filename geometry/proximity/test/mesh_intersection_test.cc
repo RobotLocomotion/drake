@@ -21,8 +21,8 @@
 #include "drake/math/rotation_matrix.h"
 
 /* @file Tests the the main function
- ComputeContactSurfaceFromSoftVolumeRigidSurface and it's supporting code. The
- main function can produce ContactSurfaces with either triangle or polygon
+ ComputeContactSurfaceFromCompliantVolumeRigidSurface and it's supporting code.
+ The main function can produce ContactSurfaces with either triangle or polygon
  representations. However, not all tests need to be exercised against both
  possible representations. Each test is documented as to whether it needs to
  consider the two possible representations or if the code under test is
@@ -796,15 +796,15 @@ int GetTetForFace(const MeshType& surface_S, int f,
 }
 
 // This fixture will test SampleVolumeFieldOnSurface() and
-// ComputeContactSurfaceFromSoftVolumeRigidSurface(). The latter is the main API
-// of this module and calls the former. They share many parameters. This
-// fixture uses `double` for checking the algorithm. There is another fixture
-// that uses `AutoDiffXd` for checking derivatives.
+// ComputeContactSurfaceFromCompliantVolumeRigidSurface(). The latter is the
+// main API of this module and calls the former. They share many parameters.
+// This fixture uses `double` for checking the algorithm. There is another
+// fixture that uses `AutoDiffXd` for checking derivatives.
 template <typename MeshBuilder>
 class MeshIntersectionFixture : public testing::Test {
  protected:
   void SetUp() override {
-    // The soft volume mesh is expressed in frame S.
+    // The compliant volume mesh is expressed in frame S.
     mesh_S_ = TrivialVolumeMesh<double>();
     bvh_mesh_S_ = make_unique<Bvh<Obb, VolumeMesh<double>>>(*mesh_S_);
     field_S_ = TrivialVolumeMeshField<double>(mesh_S_.get());
@@ -877,7 +877,7 @@ class MeshIntersectionFixture : public testing::Test {
                                   4 * kEps));
     }
 
-    // Only the soft volume mesh provides gradients.
+    // Only the compliant volume mesh provides gradients.
     ASSERT_EQ(surface_S.num_elements(), static_cast<int>(grad_eS_S.size()));
     for (int f = 0; f < surface_S.num_elements(); ++f) {
       const int t = GetTetForFace(surface_S, f, *mesh_S_, {});
@@ -894,9 +894,9 @@ class MeshIntersectionFixture : public testing::Test {
   }
 
   // This helper function verifies consistency between two output from calling
-  // ComputeContactSurfaceFromSoftVolumeRigidSurface() twice with different
+  // ComputeContactSurfaceFromCompliantVolumeRigidSurface() twice with different
   // orders of GeometryIds.
-  void VerifyComputeContactSurfaceFromSoftRigid(
+  void VerifyComputeContactSurfaceFromCompliantRigid(
       const ContactSurface<double>& contact_SR,
       const ContactSurface<double>& contact_RS, const RigidTransformd& X_WS) {
     using FieldType = typename MeshBuilder::FieldType;
@@ -944,11 +944,11 @@ class MeshIntersectionFixture : public testing::Test {
     EXPECT_EQ(field_SR_W.EvaluateCartesian(f_index, p_WV),
               field_RS_W.EvaluateCartesian(f_index, p_WV));
 
-    // The gradients for the pressure field of the soft mesh are expressed in
-    // the world frame. To determine the world transformation has taken place,
-    // we'll find which tetrahedron produced the first triangle in the contact
-    // surface. We'll confirm that its gradient has been transformed to the
-    // world frame.
+    // The gradients for the pressure field of the compliant mesh are expressed
+    // in the world frame. To determine the world transformation has taken
+    // place, we'll find which tetrahedron produced the first triangle in the
+    // contact surface. We'll confirm that its gradient has been transformed to
+    // the world frame.
     const int f0 = 0;
     const int t = GetTetForFace(mesh_SR_W, f0, *mesh_S_, X_WS.inverse());
     EXPECT_TRUE(CompareMatrices(contact_SR.EvaluateGradE_M_W(f0),
@@ -956,7 +956,7 @@ class MeshIntersectionFixture : public testing::Test {
                                 4. * kEps));
   }
 
-  // Soft volume mesh with pressure field.
+  // Compliant volume mesh with pressure field.
   unique_ptr<VolumeMesh<double>> mesh_S_;
   unique_ptr<Bvh<Obb, VolumeMesh<double>>> bvh_mesh_S_;
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
@@ -1002,19 +1002,19 @@ TYPED_TEST(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
                                          intersector.mutable_grad_eM_M());
 }
 
-// Tests the generation of the ContactSurface between a soft volume and rigid
-// surface. This highest-level function's primary responsibility is to make
-// sure that the resulting ContactSurface satisfies the invariant id_M < id_N.
-// To that end, it computes the contact surface twice, with the ids reversed
-// and confirms the results reflect that: (i.e., vertex positions are different,
-// gradients are mirrored.) The difference test is coarsely sampled and assumes
-// that some good results are correlated with all good results based on the
-// unit tests for ContactSurface.
-TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
+// Tests the generation of the ContactSurface between a compliant volume and
+// rigid surface. This highest-level function's primary responsibility is to
+// make sure that the resulting ContactSurface satisfies the invariant id_M <
+// id_N. To that end, it computes the contact surface twice, with the ids
+// reversed and confirms the results reflect that: (i.e., vertex positions are
+// different, gradients are mirrored.) The difference test is coarsely sampled
+// and assumes that some good results are correlated with all good results based
+// on the unit tests for ContactSurface.
+TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceCompliantRigid) {
   const auto id_A = GeometryId::get_new_id();
   const auto id_B = GeometryId::get_new_id();
   EXPECT_LT(id_A, id_B);
-  // The relationship between the frames for the soft body and the
+  // The relationship between the frames for the compliant body and the
   // world frame is irrelevant for this test.
   const RigidTransformd X_WS = RigidTransformd::Identity();
   const RigidTransformd X_WR = X_WS * this->X_SR_;
@@ -1031,9 +1031,9 @@ TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
   // contact surfaces will always have id_M = id_A and id_N = id_B (because
   // of the ordering).
 
-  // In this case, we assign id_A to soft and we already know that
+  // In this case, we assign id_A to compliant and we already know that
   // id_A < id_B. Confirm order
-  auto contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+  auto contact_SR = ComputeContactSurfaceFromCompliantVolumeRigidSurface(
       id_A, *this->field_S_, *this->bvh_mesh_S_, X_WS, id_B, *this->surface_R_,
       *this->bvh_surface_R_, X_WR, representation);
   EXPECT_EQ(contact_SR->id_M(), id_A);
@@ -1043,8 +1043,8 @@ TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
 
   // Now reverse the ids. It should *still* be the case that the reported id_A
   // is less than id_B, but we should further satisfy various invariants
-  // in VerifyComputeContactSurfaceFromSoftRigid().
-  auto contact_RS = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+  // in VerifyComputeContactSurfaceFromCompliantRigid().
+  auto contact_RS = ComputeContactSurfaceFromCompliantVolumeRigidSurface(
       id_B, *this->field_S_, *this->bvh_mesh_S_, X_WS, id_A, *this->surface_R_,
       *this->bvh_surface_R_, X_WR, representation);
   EXPECT_EQ(contact_RS->id_M(), id_A);
@@ -1052,8 +1052,8 @@ TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
   EXPECT_FALSE(contact_RS->HasGradE_M());
   EXPECT_TRUE(contact_RS->HasGradE_N());
 
-  this->VerifyComputeContactSurfaceFromSoftRigid(*contact_SR, *contact_RS,
-                                                 X_WS);
+  this->VerifyComputeContactSurfaceFromCompliantRigid(*contact_SR, *contact_RS,
+                                                      X_WS);
 }
 
 /* This test fixture enables some limited testing of the autodiff-valued contact
@@ -1066,7 +1066,7 @@ TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
  Rz direction (just like the canonical definition of a plane).
 
  The volume mesh is a single tetrahedron with vertices at (0, 0, 0),
- (1, 0, 0), (0, 1, 0), and (0, 0, 1) in the soft mesh frame S.
+ (1, 0, 0), (0, 1, 0), and (0, 0, 1) in the compliant mesh frame S.
 
               Sz
               ┆   ╱
@@ -1100,7 +1100,7 @@ TYPED_TEST(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
  Otherwise, it's line for line and comment for comment identical. We might want
  to consider refactoring it but for the fact that it only appears two places. If
  we end up supporting other customized implementations between planar rigid
- objects and soft mesh, it would make sense to refactor.
+ objects and compliant mesh, it would make sense to refactor.
 
  We do all the tests with TriangleSurfaceMesh; the difference between
  TriangleSurfaceMesh and PolygonalSurfaceMesh is inconsequential to this test.
@@ -1257,7 +1257,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
       const Vector3<AutoDiffXd> p_WS = math::InitializeAutoDiff(p_WS_d);
       const RigidTransform<AutoDiffXd> X_WS(R_WS_d.cast<AutoDiffXd>(), p_WS);
 
-      auto surface = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+      auto surface = ComputeContactSurfaceFromCompliantVolumeRigidSurface(
           id_S_, *field_S_, *bvh_S_, X_WS, id_R_, *tri_mesh_R_, *bvh_R_, X_WR_,
           HydroelasticContactRepresentation::kTriangle);
 
@@ -1295,7 +1295,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
         "Querying for point E that isn't actually on a tet edge");
   }
 
-  /* Soft volume mesh. */
+  /* Compliant volume mesh. */
   GeometryId id_S_;
   unique_ptr<VolumeMesh<double>> tet_mesh_S_;
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
@@ -1569,7 +1569,7 @@ TEST_F(MeshMeshDerivativesTest, FaceNormalsWrtPosition) {
 }
 
 TEST_F(MeshMeshDerivativesTest, FaceNormalsWrtOrientation) {
-  /* Even if the soft frame is rotated w.r.t. the rigid frame, the contact
+  /* Even if the compliant frame is rotated w.r.t. the rigid frame, the contact
    surface normals should always be parallel with the triangle's normal and,
    therefore, should have zero derivatives.
 
@@ -1598,7 +1598,7 @@ TEST_F(MeshMeshDerivativesTest, FaceNormalsWrtOrientation) {
     RigidTransform<AutoDiffXd> X_WS{
         RotationMatrix<AutoDiffXd>(AngleAxis<AutoDiffXd>(theta_ad, v_W)), p_WS};
 
-    auto surface = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+    auto surface = ComputeContactSurfaceFromCompliantVolumeRigidSurface(
         this->id_S_, *this->field_S_, *this->bvh_S_, X_WS, this->id_R_,
         *this->tri_mesh_R_, *this->bvh_R_, this->X_WR_,
         HydroelasticContactRepresentation::kTriangle);

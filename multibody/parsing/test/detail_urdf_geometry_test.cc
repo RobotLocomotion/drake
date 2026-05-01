@@ -1056,7 +1056,7 @@ TEST_F(UrdfGeometryTest, CompliantHydroelastic) {
   EXPECT_EQ(
       properties.GetProperty<geometry::internal::HydroelasticType>(
           geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
-      geometry::internal::HydroelasticType::kSoft);
+      geometry::internal::HydroelasticType::kCompliant);
 }
 
 TEST_F(UrdfGeometryTest, LegacySoftHydroelastic) {

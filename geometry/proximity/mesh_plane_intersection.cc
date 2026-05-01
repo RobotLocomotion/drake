@@ -274,12 +274,12 @@ ComputeContactSurface(
         tet_index, mesh_field_M, plane_M, X_WM, &builder_W, &cut_edges);
     // ContactSurface requires us to store the gradient of the *constituent*
     // fields sampled on each face in the contact surface. The only constiutent
-    // field we have is of the soft mesh M. So, we'll store the gradient of the
-    // intersecting tet, once per newly added face. In this case, it just
-    // so happens that grad_e_MN equals grad_e_M, but MeshBuilder cannot
-    // know that, so we appear to redundantly store this gradient. But the
-    // consumer of the ContactSurface also cannot know about any particular
-    // relationship between grad_eN, grad_eM, and grad_eMN.
+    // field we have is of the compliant mesh M. So, we'll store the gradient of
+    // the intersecting tet, once per newly added face. In this case, it just so
+    // happens that grad_e_MN equals grad_e_M, but MeshBuilder cannot know that,
+    // so we appear to redundantly store this gradient. But the consumer of the
+    // ContactSurface also cannot know about any particular relationship between
+    // grad_eN, grad_eM, and grad_eMN.
     const Vector3<T>& grad_eMi_W =
         X_WM.rotation() * mesh_field_M.EvaluateGradient(tet_index).cast<T>();
     for (int i = 0; i < num_new_faces; ++i) {
@@ -301,7 +301,7 @@ ComputeContactSurface(
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
@@ -380,7 +380,7 @@ ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
     const math::RigidTransform<AutoDiffXd>&);
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>,
+    (&ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace<T>,
      &SliceTetrahedronWithPlane<T>));
 
 }  // namespace internal

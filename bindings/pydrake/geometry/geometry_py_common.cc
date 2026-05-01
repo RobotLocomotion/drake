@@ -713,7 +713,7 @@ bool PropertiesIndicateCompliantHydro(
   if (hydro_type == HydroelasticType::kUndefined) {
     throw std::runtime_error("No specification of rigid or compliant");
   }
-  return hydro_type == HydroelasticType::kSoft;
+  return hydro_type == HydroelasticType::kCompliant;
 }
 
 void def_testing_module(py::module m) {
