@@ -1070,7 +1070,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // Meshes can have their vertices move an arbitrary amount, we simply need
       // to recompute the bounding box based on the *moved* vertex positions
       // defined in the hydro mesh.
-      const auto& mesh = hydroelastic_geometries_.soft_geometry(id).mesh();
+      const auto& mesh = hydroelastic_geometries_.compliant_geometry(id).mesh();
       g->aabb_local.min_ =
           Vector3d::Constant(std::numeric_limits<double>::infinity());
       g->aabb_local.max_ = -g->aabb_local.min_;

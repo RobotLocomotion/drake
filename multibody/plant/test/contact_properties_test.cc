@@ -60,7 +60,7 @@ class ContactPropertiesTest : public ::testing::Test {
         geometry::internal::HydroelasticType::kRigid);
     unique_ptr<GeometryInstance> geometry_C = MakeGeometryInstance(
         "C", kMuC, kKC, std::nullopt, std::nullopt, kHydroModulusC,
-        geometry::internal::HydroelasticType::kSoft);
+        geometry::internal::HydroelasticType::kCompliant);
     unique_ptr<GeometryInstance> geometry_D = MakeGeometryInstance(
         "D", kMuD, std::nullopt, kNegativeTauD, std::nullopt);
 

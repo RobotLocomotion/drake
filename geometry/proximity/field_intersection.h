@@ -299,10 +299,10 @@ class HydroelasticVolumeIntersector {
    helper of ComputeContactSurfaceFromCompliantVolumes().
 
   @param[in] id_M            Id of geometry M.
-  @param[in] compliant_M     SoftMesh of geometry M, expressed in frame M.
+  @param[in] compliant_M     CompliantMesh of geometry M, expressed in frame M.
   @param[in] X_WM            The pose of the first geometry in World.
   @param[in] id_N            Id of geometry N.
-  @param[in] compliant_N     SoftMesh of geometry N, expressed in frame N.
+  @param[in] compliant_N     CompliantMesh of geometry N, expressed in frame N.
   @param[in] X_WN            The pose of the second geometry in World.
   @param[in] use_surfaces    If true, uses the version of
                              VolumeIntersector::IntersectFields() that makes use
@@ -312,9 +312,9 @@ class HydroelasticVolumeIntersector {
                          MeshBuilder. It is expressed in World frame.
                          If there is no contact, nullptr is returned.  */
   void IntersectCompliantVolumes(
-      GeometryId id_M, const hydroelastic::SoftMesh& compliant_M,
+      GeometryId id_M, const hydroelastic::CompliantMesh& compliant_M,
       const math::RigidTransform<T>& X_WM, GeometryId id_N,
-      const hydroelastic::SoftMesh& compliant_N,
+      const hydroelastic::CompliantMesh& compliant_N,
       const math::RigidTransform<T>& X_WN,
       std::unique_ptr<ContactSurface<T>>* contact_surface_W,
       const bool use_surfaces = true);
@@ -325,10 +325,10 @@ class HydroelasticVolumeIntersector {
  in World frame.
 
  @param[in] id_M            Id of geometry M.
- @param[in] compliant_M     SoftMesh of geometry M, expressed in frame M.
+ @param[in] compliant_M     CompliantMesh of geometry M, expressed in frame M.
  @param[in] X_WM            The pose of the first geometry in World.
  @param[in] id_N            Id of geometry N.
- @param[in] compliant_N     SoftMesh of geometry N, expressed in frame N.
+ @param[in] compliant_N     CompliantMesh of geometry N, expressed in frame N.
  @param[in] X_WN            The pose of the second geometry in World.
  @param[in] representation  The preferred representation of each contact
                             polygon.
@@ -346,9 +346,9 @@ class HydroelasticVolumeIntersector {
 */
 template <typename T>
 std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
-    GeometryId id_M, const hydroelastic::SoftMesh& compliant_M,
+    GeometryId id_M, const hydroelastic::CompliantMesh& compliant_M,
     const math::RigidTransform<T>& X_WM, GeometryId id_N,
-    const hydroelastic::SoftMesh& compliant_N,
+    const hydroelastic::CompliantMesh& compliant_N,
     const math::RigidTransform<T>& X_WN,
     HydroelasticContactRepresentation representation);
 

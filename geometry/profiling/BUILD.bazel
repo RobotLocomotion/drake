@@ -5,8 +5,8 @@ load(
 )
 
 drake_cc_binary(
-    name = "contact_surface_rigid_bowl_soft_ball",
-    srcs = ["contact_surface_rigid_bowl_soft_ball.cc"],
+    name = "contact_surface_rigid_bowl_compliant_ball",
+    srcs = ["contact_surface_rigid_bowl_compliant_ball.cc"],
     data = [
         "@drake_models//:dishes",
     ],

@@ -41,7 +41,7 @@ namespace bouncing_ball {
 ///   The acceleration of gravity vector, expressed in the world frame W.
 /// @param[in] rigid_sphere
 ///   If `true`, the sphere will have a _rigid_ hydroelastic representation
-///   (soft otherwise).
+///   (compliant otherwise).
 /// @param[in] compliant_ground
 ///   If 'true', the ground will have a _soft_ hydroelastic representation
 ///   (rigid otherwise).

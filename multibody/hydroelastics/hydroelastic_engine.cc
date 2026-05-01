@@ -96,7 +96,7 @@ double HydroelasticEngine<T>::CalcCombinedDissipation(
   // Both bodies are rigid. We simply return the arithmetic average.
   if (Estar == kInf) return 0.5 * (d_A + d_B);
 
-  // At least one body is soft.
+  // At least one body is compliant.
   double d_star = 0;
   if (E_A != kInf) d_star += Estar / E_A * d_A;
   if (E_B != kInf) d_star += Estar / E_B * d_B;

@@ -85,9 +85,6 @@ enum class HydroelasticType {
   kUndefined,
   kRigid,
   kCompliant,
-
-  // Legacy alias. TODO(#17147) Remove this alias.
-  kSoft = kCompliant,
 };
 
 /* Conversion functions between hydroelastic type and string. */

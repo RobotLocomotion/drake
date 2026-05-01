@@ -283,8 +283,8 @@ TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
   // geometry since we have no re-meshing.
   const double edge_length = 0.5;
   const double E = 1e8;  // Elastic modulus.
-  ProximityProperties soft_properties;
-  AddCompliantHydroelasticProperties(edge_length, E, &soft_properties);
+  ProximityProperties compliant_properties;
+  AddCompliantHydroelasticProperties(edge_length, E, &compliant_properties);
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
@@ -292,7 +292,7 @@ TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
 
   // Case: compliant sphere.
   const GeometryId sphere_id =
-      AddDynamic(Sphere{edge_length}, {}, soft_properties);
+      AddDynamic(Sphere{edge_length}, {}, compliant_properties);
   EXPECT_EQ(Tester::hydroelastic_type(sphere_id, engine_), kCompliant);
 
   // Case: rigid cylinder.
@@ -328,11 +328,11 @@ TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
   EXPECT_EQ(Tester::hydroelastic_type(rigid_mesh_id, engine_), kRigid);
 
   // Case: compliant mesh.
-  const GeometryId soft_mesh_id =
+  const GeometryId compliant_mesh_id =
       AddDynamic(Mesh(drake::FindResourceOrThrow(
                      "drake/geometry/test/non_convex_mesh.obj")),
-                 {}, soft_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(soft_mesh_id, engine_), kCompliant);
+                 {}, compliant_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(compliant_mesh_id, engine_), kCompliant);
 
   // Case: rigid mesh vtk.
   const GeometryId rigid_vtk_id =
@@ -342,11 +342,11 @@ TEST_F(ProximityEngineTests, ProcessHydroelasticProperties) {
   EXPECT_EQ(Tester::hydroelastic_type(rigid_vtk_id, engine_), kRigid);
 
   // Case: compliant convex vtk.
-  const GeometryId soft_vtk_id =
+  const GeometryId compliant_vtk_id =
       AddDynamic(Convex(drake::FindResourceOrThrow(
                      "drake/geometry/test/non_convex_mesh.vtk")),
-                 {}, soft_properties);
-  EXPECT_EQ(Tester::hydroelastic_type(soft_vtk_id, engine_), kCompliant);
+                 {}, compliant_properties);
+  EXPECT_EQ(Tester::hydroelastic_type(compliant_vtk_id, engine_), kCompliant);
 
   // Case: rigid convex.
   const GeometryId rigid_convex_id = AddDynamic(
@@ -387,8 +387,8 @@ TEST_F(ProximityEngineTests, HydroelasticAabbInflation) {
   ProximityProperties no_hydro_properties;
   no_hydro_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
 
-  ProximityProperties soft_properties(no_hydro_properties);
-  AddCompliantHydroelasticProperties(edge_length, E, &soft_properties);
+  ProximityProperties compliant_properties(no_hydro_properties);
+  AddCompliantHydroelasticProperties(edge_length, E, &compliant_properties);
 
   ProximityProperties rigid_properties(no_hydro_properties);
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
@@ -429,18 +429,20 @@ TEST_F(ProximityEngineTests, HydroelasticAabbInflation) {
        "No hydro volume mesh -> no inflation"},
       {&box, rigid_properties, Vector3d::Constant(-0.5),
        Vector3d::Constant(0.5), true, "Rigid-> no inflation"},
-      {&box, soft_properties, Vector3d::Constant(-0.5 - kMarginValue),
+      {&box, compliant_properties, Vector3d::Constant(-0.5 - kMarginValue),
        Vector3d::Constant(0.5 + kMarginValue), true,
-       "Soft primitive-> exact inflation"},
-      {&mesh, soft_properties, mesh_min - Vector3d::Constant(kMarginValue),
+       "Compliant primitive-> exact inflation"},
+      {&mesh, compliant_properties, mesh_min - Vector3d::Constant(kMarginValue),
        mesh_max + Vector3d::Constant(kMarginValue), false,
-       "Soft mesh -> inflation exceeds minimum"},
-      {&convex, soft_properties, mesh_min - Vector3d::Constant(kMarginValue),
+       "Compliant mesh -> inflation exceeds minimum"},
+      {&convex, compliant_properties,
+       mesh_min - Vector3d::Constant(kMarginValue),
        mesh_max + Vector3d::Constant(kMarginValue), false,
-       "Soft convex -> inflation exceeds minimum"},
-      {&vol_mesh, soft_properties, vol_min - Vector3d::Constant(kMarginValue),
+       "Compliant convex -> inflation exceeds minimum"},
+      {&vol_mesh, compliant_properties,
+       vol_min - Vector3d::Constant(kMarginValue),
        vol_max + Vector3d::Constant(kMarginValue), false,
-       "Soft vol mesh -> inflation exceeds minimum"},
+       "Compliant vol mesh -> inflation exceeds minimum"},
   };
 
   for (const auto& test_case : cases) {
@@ -504,17 +506,17 @@ TEST_F(ProximityEngineTests, MarginAfterPropertyUpdate) {
 
   const Sphere sphere(kRadius);
 
-  ProximityProperties soft_properties;
-  soft_properties.AddProperty(kHydroGroup, kMargin, 0.0);
-  AddCompliantHydroelasticProperties(kResHint, kE, &soft_properties);
+  ProximityProperties compliant_properties;
+  compliant_properties.AddProperty(kHydroGroup, kMargin, 0.0);
+  AddCompliantHydroelasticProperties(kResHint, kE, &compliant_properties);
 
   // Shape A starts with zero margin.
   const Vector3d p_WA(kDistance, 0, 0);
-  const GeometryId idA = AddDynamic(sphere, p_WA, soft_properties);
+  const GeometryId idA = AddDynamic(sphere, p_WA, compliant_properties);
 
   // Shape B gets margin -- we don't need to track the id.
-  soft_properties.UpdateProperty(kHydroGroup, kMargin, kMarginValue);
-  AddAnchored(sphere, {}, soft_properties);
+  compliant_properties.UpdateProperty(kHydroGroup, kMargin, kMarginValue);
+  AddAnchored(sphere, {}, compliant_properties);
 
   engine_.UpdateWorldPoses(X_WGs_);
 
@@ -526,7 +528,7 @@ TEST_F(ProximityEngineTests, MarginAfterPropertyUpdate) {
   const InternalGeometry geo_A(SourceId::get_new_id(),
                                std::make_unique<Sphere>(kRadius),
                                FrameId::get_new_id(), idA, "A", X_WGs_.at(idA));
-  engine_.UpdateRepresentationForNewProperties(geo_A, soft_properties);
+  engine_.UpdateRepresentationForNewProperties(geo_A, compliant_properties);
 
   // Now they overlap and should be reported as a collision candidate.
   EXPECT_EQ(engine_.FindCollisionCandidates().size(), 1);
@@ -547,13 +549,13 @@ TEST_F(ProximityEngineTests, MarginAfterEngineClone) {
   const Sphere sphere(kRadius);
   const RigidTransformd X_WA(Vector3d(kDistance, 0, 0));
 
-  ProximityProperties soft_properties;
-  soft_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
-  AddCompliantHydroelasticProperties(kResHint, kE, &soft_properties);
+  ProximityProperties compliant_properties;
+  compliant_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
+  AddCompliantHydroelasticProperties(kResHint, kE, &compliant_properties);
 
   // Both shapes have margin.
-  AddDynamic(sphere, {}, soft_properties);
-  AddAnchored(sphere, {}, soft_properties);
+  AddDynamic(sphere, {}, compliant_properties);
+  AddAnchored(sphere, {}, compliant_properties);
 
   engine_.UpdateWorldPoses(X_WGs_);
 
@@ -981,14 +983,14 @@ TEST_F(ProximityEngineTests, ReplaceProperties) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine_.UpdateRepresentationForNewProperties(sphere,
                                                      bad_props_no_elasticity),
-        "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create compliant Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
     bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine_.UpdateRepresentationForNewProperties(sphere,
                                                      bad_props_no_length),
-        "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create compliant Sphere; missing the .+ property");
   }
 }
 
@@ -1000,7 +1002,7 @@ TEST_F(ProximityEngineTests, RemoveGeometry) {
   // Add rigid properties so we can confirm removal of hydroelastic
   // representation. We use rigid here to make sure things get invoked and
   // rely on the implementation of hydroelastic::Geometries to distinguish
-  // soft and rigid.
+  // compliant and rigid.
   ProximityProperties props;
   AddRigidHydroelasticProperties(1.0, &props);
   auto add_geometry = [this, &props](const Shape& shape, const Vector3d& p_WG,
