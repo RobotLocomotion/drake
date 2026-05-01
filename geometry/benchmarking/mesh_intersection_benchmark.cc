@@ -73,33 +73,33 @@ Load Average: 21.52, 41.04, 26.99
 ----------------------------------------------------------------------------------------------------                // NOLINT(*)
 Benchmark                                                          Time             CPU   Iterations   Line Number  // NOLINT(*)
 ----------------------------------------------------------------------------------------------------                // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/0/4/0/min_time:2.000      0.629 ms        0.629 ms         4408   [14]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/1/4/0/min_time:2.000       2.15 ms         2.15 ms         1328   [15]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/4/0/min_time:2.000       3.14 ms         3.14 ms          893   [16]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/3/4/0/min_time:2.000       14.3 ms         14.3 ms          192   [17]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/0/0/min_time:2.000      0.000 ms        0.000 ms     54932081   [18]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/1/0/min_time:2.000      0.023 ms        0.023 ms       119450   [19]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/2/0/min_time:2.000      0.119 ms        0.119 ms        23142   [20]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/3/0/min_time:2.000       1.87 ms         1.87 ms         1486   [21]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/4/1/min_time:2.000       2.95 ms         2.95 ms          944   [22]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/4/2/min_time:2.000       3.15 ms         3.15 ms          894   [23]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/4/3/min_time:2.000       3.21 ms         3.21 ms          871   [24]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/3/1/min_time:2.000       1.94 ms         1.94 ms         1448   [25]         // NOLINT(*)
-MeshIntersectionBenchmark/RigidSoftMesh/2/2/2/min_time:2.000      0.127 ms        0.127 ms        22007   [26]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/0/4/0/min_time:2.000      0.629 ms        0.629 ms         4408   [14]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/1/4/0/min_time:2.000       2.15 ms         2.15 ms         1328   [15]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/4/0/min_time:2.000       3.14 ms         3.14 ms          893   [16]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/3/4/0/min_time:2.000       14.3 ms         14.3 ms          192   [17]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/0/0/min_time:2.000      0.000 ms        0.000 ms     54932081   [18]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/1/0/min_time:2.000      0.023 ms        0.023 ms       119450   [19]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/2/0/min_time:2.000      0.119 ms        0.119 ms        23142   [20]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/3/0/min_time:2.000       1.87 ms         1.87 ms         1486   [21]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/4/1/min_time:2.000       2.95 ms         2.95 ms          944   [22]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/4/2/min_time:2.000       3.15 ms         3.15 ms          894   [23]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/4/3/min_time:2.000       3.21 ms         3.21 ms          871   [24]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/3/1/min_time:2.000       1.94 ms         1.94 ms         1448   [25]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidCompliantMesh/2/2/2/min_time:2.000      0.127 ms        0.127 ms        22007   [26]         // NOLINT(*)
 Resulting contact surface sizes:
- - RigidSoftMesh/0/4/0: 93.76 m^2, 448 triangles
- - RigidSoftMesh/1/4/0: 93.76 m^2, 1592 triangles
- - RigidSoftMesh/2/4/0: 107.59 m^2, 2848 triangles
- - RigidSoftMesh/3/4/0: 111.67 m^2, 14336 triangles
- - RigidSoftMesh/2/0/0: 0.00 m^2, 0 triangles
- - RigidSoftMesh/2/1/0: 0.00 m^2, 0 triangles
- - RigidSoftMesh/2/2/0: 1.50 m^2, 58 triangles
- - RigidSoftMesh/2/3/0: 48.21 m^2, 2226 triangles
- - RigidSoftMesh/2/4/1: 106.41 m^2, 3804 triangles
- - RigidSoftMesh/2/4/2: 106.89 m^2, 3848 triangles
- - RigidSoftMesh/2/4/3: 107.44 m^2, 3808 triangles
- - RigidSoftMesh/2/3/1: 48.26 m^2, 2190 triangles
- - RigidSoftMesh/2/2/2: 1.52 m^2, 62 triangles
+ - RigidCompliantMesh/0/4/0: 93.76 m^2, 448 triangles
+ - RigidCompliantMesh/1/4/0: 93.76 m^2, 1592 triangles
+ - RigidCompliantMesh/2/4/0: 107.59 m^2, 2848 triangles
+ - RigidCompliantMesh/3/4/0: 111.67 m^2, 14336 triangles
+ - RigidCompliantMesh/2/0/0: 0.00 m^2, 0 triangles
+ - RigidCompliantMesh/2/1/0: 0.00 m^2, 0 triangles
+ - RigidCompliantMesh/2/2/0: 1.50 m^2, 58 triangles
+ - RigidCompliantMesh/2/3/0: 48.21 m^2, 2226 triangles
+ - RigidCompliantMesh/2/4/1: 106.41 m^2, 3804 triangles
+ - RigidCompliantMesh/2/4/2: 106.89 m^2, 3848 triangles
+ - RigidCompliantMesh/2/4/3: 107.44 m^2, 3808 triangles
+ - RigidCompliantMesh/2/3/1: 48.26 m^2, 2190 triangles
+ - RigidCompliantMesh/2/2/2: 1.52 m^2, 62 triangles
 
  ```
 
@@ -112,7 +112,7 @@ Resulting contact surface sizes:
  MeshIntersectionBenchmark/TestName/resolution/contact_overlap/rotation_factor/min_time
  ```
 
-   - __TestName__: RigidSoftMesh
+   - __TestName__: RigidCompliantMesh
    - __resolution__: Affects the resolution of the ellipsoid and sphere
      meshes. Valid values must be one of [0, 1, 2, 3], where 0 produces the
      coarsest meshes and 3 produces the finest meshes. This is converted behind
@@ -236,7 +236,7 @@ std::set<std::string> MeshIntersectionBenchmark::contact_surface_result_keys;
 std::vector<std::string>
     MeshIntersectionBenchmark::contact_surface_result_output;
 
-BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
+BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidCompliantMesh)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
   SetupMeshes(state);
@@ -251,9 +251,9 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
     surface_SR = intersector.release_mesh();
     e_SR = intersector.release_field();
   }
-  RecordContactSurfaceResult(surface_SR.get(), "RigidSoftMesh", state);
+  RecordContactSurfaceResult(surface_SR.get(), "RigidCompliantMesh", state);
 }
-BENCHMARK_REGISTER_F(MeshIntersectionBenchmark, RigidSoftMesh)
+BENCHMARK_REGISTER_F(MeshIntersectionBenchmark, RigidCompliantMesh)
     ->Unit(benchmark::kMillisecond)
     ->MinTime(2)
     ->Args({0, 4, 0})   // 0 resolution, 4 contact overlap, 0 rotation factor.

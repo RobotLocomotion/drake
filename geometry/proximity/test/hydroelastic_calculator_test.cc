@@ -46,9 +46,9 @@ ProximityProperties rigid_properties() {
   return props;
 }
 
-// Creates proximity properties sufficient to create a soft representation
+// Creates proximity properties sufficient to create a compliant representation
 // for supported geometries.
-ProximityProperties soft_properties() {
+ProximityProperties compliant_properties() {
   ProximityProperties props;
   const double resolution_hint = 0.25;
   AddCompliantHydroelasticProperties(resolution_hint, 1e8, &props);
@@ -105,9 +105,9 @@ class TestScene {
   void MakeHydroelastic(GeometryId id, const HydroelasticType type,
                         const Shape& shape) {
     switch (type) {
-      case HydroelasticType::kSoft:
+      case HydroelasticType::kCompliant:
         this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
-                                                        soft_properties());
+                                                        compliant_properties());
         break;
       case HydroelasticType::kRigid:
         this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
@@ -309,15 +309,15 @@ class TestScene {
   return ::testing::AssertionSuccess();
 }
 
-TYPED_TEST_SUITE(DispatchRigidSoftCalculationTests, ScalarTypes);
+TYPED_TEST_SUITE(DispatchRigidCompliantCalculationTests, ScalarTypes);
 
-// Test suite for exercising DispatchRigidSoftCalculation with different scalar
-// types.
+// Test suite for exercising DispatchRigidCompliantCalculation with different
+// scalar types.
 template <typename T>
-class DispatchRigidSoftCalculationTests : public ::testing::Test {};
+class DispatchRigidCompliantCalculationTests : public ::testing::Test {};
 
-// Tests that a pair of meshes (soft and rigid) gets properly dispatched.
-TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
+// Tests that a pair of meshes (compliant and rigid) gets properly dispatched.
+TYPED_TEST(DispatchRigidCompliantCalculationTests, CompliantMeshRigidMesh) {
   using T = TypeParam;
   const bool colliding{true};
 
@@ -327,7 +327,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
   const GeometryId id_B = scene.id_B();
   // Sphere A has a fixed position.
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
-  scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
+  scene.AddGeometry(HydroelasticType::kCompliant, HydroelasticType::kRigid);
 
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
@@ -340,7 +340,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
       const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
       unique_ptr<ContactSurface<T>> surface = CalcRigidCompliant(
-          geometries.soft_geometry(id_A), X_WA, id_A,
+          geometries.compliant_geometry(id_A), X_WA, id_A,
           geometries.rigid_geometry(id_B), X_WB, id_B, representation);
       EXPECT_NE(surface, nullptr);
       EXPECT_TRUE(ValidateDerivatives(*surface));
@@ -363,15 +363,16 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
     // When they are not in contact, mesh representation is irrelevant; so,
     // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface =
-        CalcRigidCompliant(geometries.soft_geometry(id_A), X_WA, id_A,
+        CalcRigidCompliant(geometries.compliant_geometry(id_A), X_WA, id_A,
                            geometries.rigid_geometry(id_B), X_WB, id_B,
                            HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
   }
 }
 
-// Tests that a rigid half space and soft mesh gets properly dispatched.
-TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
+// Tests that a rigid half space and compliant mesh gets properly dispatched.
+TYPED_TEST(DispatchRigidCompliantCalculationTests,
+           CompliantMeshRigidHalfSpace) {
   using T = TypeParam;
   const bool colliding{true};
 
@@ -381,7 +382,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   const GeometryId id_B = scene.id_B();
   // Sphere A has a fixed position.
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
-  scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
+  scene.AddGeometry(HydroelasticType::kCompliant, HydroelasticType::kRigid);
 
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
@@ -393,7 +394,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
     unique_ptr<ContactSurface<T>> surface = CalcRigidCompliant(
-        geometries.soft_geometry(id_A), X_WA, id_A,
+        geometries.compliant_geometry(id_A), X_WA, id_A,
         geometries.rigid_geometry(id_B), X_WB, id_B, representation);
     EXPECT_NE(surface, nullptr);
     EXPECT_TRUE(ValidateDerivatives(*surface));
@@ -407,14 +408,15 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
     // When they are not in contact, mesh representation is irrelevant; so,
     // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface =
-        CalcRigidCompliant(geometries.soft_geometry(id_A), X_WA, id_A,
+        CalcRigidCompliant(geometries.compliant_geometry(id_A), X_WA, id_A,
                            geometries.rigid_geometry(id_B), X_WB, id_B,
                            HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
   }
 }
 
-TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
+TYPED_TEST(DispatchRigidCompliantCalculationTests,
+           CompliantHalfSpaceRigidMesh) {
   using T = TypeParam;
   const bool colliding{true};
 
@@ -424,7 +426,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
   const GeometryId id_B = scene.id_B();
   // Sphere A has a fixed position.
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
-  scene.AddGeometry(HydroelasticType::kRigid, HydroelasticType::kSoft);
+  scene.AddGeometry(HydroelasticType::kRigid, HydroelasticType::kCompliant);
 
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
@@ -436,7 +438,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
     unique_ptr<ContactSurface<T>> surface = CalcRigidCompliant(
-        geometries.soft_geometry(id_B), X_WB, id_A,
+        geometries.compliant_geometry(id_B), X_WB, id_A,
         geometries.rigid_geometry(id_A), X_WA, id_B, representation);
     EXPECT_NE(surface, nullptr);
     EXPECT_TRUE(ValidateDerivatives(*surface));
@@ -450,7 +452,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
     // When they are not in contact, mesh representation is irrelevant; so,
     // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface =
-        CalcRigidCompliant(geometries.soft_geometry(id_B), X_WB, id_A,
+        CalcRigidCompliant(geometries.compliant_geometry(id_B), X_WB, id_A,
                            geometries.rigid_geometry(id_A), X_WA, id_B,
                            HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
@@ -474,7 +476,7 @@ TYPED_TEST(DispatchCompliantCompliantCalculationTests,
   const GeometryId id_B = scene.id_B();
   // Sphere A has a fixed position.
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
-  scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kSoft);
+  scene.AddGeometry(HydroelasticType::kCompliant, HydroelasticType::kCompliant);
 
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
@@ -487,8 +489,8 @@ TYPED_TEST(DispatchCompliantCompliantCalculationTests,
       const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
       unique_ptr<ContactSurface<T>> surface = CalcCompliantCompliant(
-          geometries.soft_geometry(id_A), X_WA, id_A,
-          geometries.soft_geometry(id_B), X_WB, id_B, representation);
+          geometries.compliant_geometry(id_A), X_WA, id_A,
+          geometries.compliant_geometry(id_B), X_WB, id_B, representation);
       EXPECT_NE(surface, nullptr);
       EXPECT_TRUE(ValidateDerivatives(*surface));
       switch (representation) {
@@ -510,8 +512,8 @@ TYPED_TEST(DispatchCompliantCompliantCalculationTests,
     // When they are not in contact, mesh representation is irrelevant; so,
     // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface =
-        CalcCompliantCompliant(geometries.soft_geometry(id_A), X_WA, id_A,
-                               geometries.soft_geometry(id_B), X_WB, id_B,
+        CalcCompliantCompliant(geometries.compliant_geometry(id_A), X_WA, id_A,
+                               geometries.compliant_geometry(id_B), X_WB, id_B,
                                HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
   }
@@ -575,7 +577,8 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, BothCompliantOneHalfSpace) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kHalfSpace};
-  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
+  scene.ConfigureScene(HydroelasticType::kCompliant,
+                       HydroelasticType::kCompliant);
 
   auto [result, surface] =
       scene.calculator().MaybeMakeContactSurface(scene.id_A(), scene.id_B());
@@ -587,7 +590,8 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, BothCompliantNonHalfSpace) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
-  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
+  scene.ConfigureScene(HydroelasticType::kCompliant,
+                       HydroelasticType::kCompliant);
 
   auto [result, surface] =
       scene.calculator().MaybeMakeContactSurface(scene.id_A(), scene.id_B());
@@ -607,9 +611,9 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, BothHalfSpace) {
   using T = TypeParam;
 
   for (const HydroelasticType first_type :
-       {HydroelasticType::kRigid, HydroelasticType::kSoft}) {
+       {HydroelasticType::kRigid, HydroelasticType::kCompliant}) {
     for (const HydroelasticType second_type :
-         {HydroelasticType::kRigid, HydroelasticType::kSoft}) {
+         {HydroelasticType::kRigid, HydroelasticType::kCompliant}) {
       SCOPED_TRACE(fmt::format("Use first_type = {}, second_type = {}.",
                                static_cast<int>(first_type),
                                static_cast<int>(second_type)));
@@ -637,7 +641,7 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, NonColliding) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
-  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid,
+  scene.ConfigureScene(HydroelasticType::kCompliant, HydroelasticType::kRigid,
                        false /* are_colliding */);
 
   auto [result, surface] =
@@ -646,12 +650,12 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, NonColliding) {
   EXPECT_EQ(surface, nullptr);
 }
 
-// Confirms that soft tiny-spheres vanish from contact queries.
-TYPED_TEST(MaybeMakeContactSurfaceTests, SoftTinysVanish) {
+// Confirms that compliant tiny-spheres vanish from contact queries.
+TYPED_TEST(MaybeMakeContactSurfaceTests, CompliantTinysVanish) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kTinySphere};
-  scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
+  scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kCompliant);
 
   auto [result, surface] =
       scene.calculator().MaybeMakeContactSurface(scene.id_A(), scene.id_B());
@@ -662,11 +666,11 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, SoftTinysVanish) {
 // Confirms that a valid pair of hydroelastic representations report as such
 // and produce a result. (The details of the result are not explicitly
 // evaluated as they have been tested by the underlying method's unit tests.)
-TYPED_TEST(MaybeMakeContactSurfaceTests, HandleSoftMeshRigidMesh) {
+TYPED_TEST(MaybeMakeContactSurfaceTests, HandleCompliantMeshRigidMesh) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
-  scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft,
+  scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kCompliant,
                        true /* are_colliding */);
 
   auto [result, surface] =
@@ -676,14 +680,14 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, HandleSoftMeshRigidMesh) {
   EXPECT_TRUE(ValidateDerivatives(*surface));
 }
 
-// Confirms that MaybeMakeContactSurface relies on DispatchRigidSoftCalculation
-// as indicated (but not proven) by its ability to handle mesh-half space
-// contact.
-TYPED_TEST(MaybeMakeContactSurfaceTests, HandleSoftMeshRigidHalfspace) {
+// Confirms that MaybeMakeContactSurface relies on
+// DispatchRigidCompliantCalculation as indicated (but not proven) by its
+// ability to handle mesh-half space contact.
+TYPED_TEST(MaybeMakeContactSurfaceTests, HandleCompliantMeshRigidHalfspace) {
   using T = TypeParam;
 
   TestScene<T> scene(ShapeType::kSphere, ShapeType::kHalfSpace);
-  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid);
+  scene.ConfigureScene(HydroelasticType::kCompliant, HydroelasticType::kRigid);
   auto [result, surface] =
       scene.calculator().MaybeMakeContactSurface(scene.id_A(), scene.id_B());
   EXPECT_EQ(result, ContactSurfaceResult::kCalculated);

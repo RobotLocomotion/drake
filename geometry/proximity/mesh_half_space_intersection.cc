@@ -352,7 +352,8 @@ ComputeContactSurface(
       mesh_W->num_elements(), grad_p_W);
 
   // ConstructTriangleHalfspaceIntersectionPolygon() promises to make the
-  // face normals point out of the rigid surface and into the soft half space.
+  // face normals point out of the rigid surface and into the compliant half
+  // space.
   return std::make_unique<ContactSurface<T>>(
       half_space_id, mesh_id, std::move(mesh_W), std::move(field_W),
       std::move(grad_eS_W), nullptr);
@@ -360,7 +361,7 @@ ComputeContactSurface(
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
@@ -497,7 +498,7 @@ ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
     const math::RigidTransform<AutoDiffXd>&);
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ComputeContactSurfaceFromSoftHalfSpaceRigidMesh<T>));
+    (&ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh<T>));
 
 }  // namespace internal
 }  // namespace geometry

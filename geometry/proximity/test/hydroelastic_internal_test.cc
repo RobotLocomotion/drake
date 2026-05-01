@@ -35,7 +35,7 @@ using std::function;
 using std::make_unique;
 using std::pow;
 
-GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
+GTEST_TEST(CompliantMeshTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
@@ -44,11 +44,11 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
-  const SoftMesh original(std::move(mesh), std::move(pressure));
+  const CompliantMesh original(std::move(mesh), std::move(pressure));
 
   // Test copy-assignment operator.
   {
-    SoftMesh copy;
+    CompliantMesh copy;
     copy = original;
 
     // Test for uniqueness.
@@ -80,7 +80,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
 
   // Test copy constructor.
   {
-    SoftMesh copy(original);
+    CompliantMesh copy(original);
 
     // Test for uniqueness.
     EXPECT_NE(&original.mesh(), &copy.mesh());
@@ -114,7 +114,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   // `move_assigned`, each time confirming that the target of the move has taken
   // ownership.
   {
-    SoftMesh start(original);  // Assume the copy constructor is correct.
+    CompliantMesh start(original);  // Assume the copy constructor is correct.
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
@@ -130,7 +130,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     const VolumeMeshTopology* const mesh_topology_ptr = &start.mesh_topology();
 
     // Test move constructor.
-    SoftMesh move_constructed(std::move(start));
+    CompliantMesh move_constructed(std::move(start));
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
     EXPECT_EQ(&move_constructed.pressure(), pressure_ptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
@@ -140,7 +140,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(&move_constructed.mesh_topology(), mesh_topology_ptr);
 
     // Test move-assignment operator.
-    SoftMesh move_assigned;
+    CompliantMesh move_assigned;
     move_assigned = std::move(move_constructed);
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
     EXPECT_EQ(&move_assigned.pressure(), pressure_ptr);
@@ -152,17 +152,17 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   }
 }
 
-// SoftGeometry can represent either a mesh or a half space (and in the future,
-// possibly more types). Therefore, in construction, the source can be one of
-// any of the types and in assignment, the target can likewise be any
+// CompliantGeometry can represent either a mesh or a half space (and in the
+// future, possibly more types). Therefore, in construction, the source can be
+// one of any of the types and in assignment, the target can likewise be any
 // supported type. We do not explicitly test all combinations. We rely on the
-// fact that SoftGeometry's management of these exclusive types is handled by
-// std::variant and the move/copy semantics of the underlying data types
-// (already tested). If SoftGeometry changes its implementation details, this
-// logic would need to be revisited.
+// fact that CompliantGeometry's management of these exclusive types is handled
+// by std::variant and the move/copy semantics of the underlying data types
+// (already tested). If CompliantGeometry changes its implementation details,
+// this logic would need to be revisited.
 // TODO(SeanCurtis-TRI): Clean up these tests to remove usage of legacy API
-// wrappers in SoftGeometry.
-GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
+// wrappers in CompliantGeometry.
+GTEST_TEST(CompliantGeometryTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
@@ -171,18 +171,20 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
-  const SoftGeometry original(SoftMesh(std::move(mesh), std::move(pressure)));
+  const CompliantGeometry original(
+      CompliantMesh(std::move(mesh), std::move(pressure)));
 
   // In all of the following tests we are only looking for evidence of
-  // copying/moving. Since SoftGeometry relies on the copy/move semantics of the
-  // underlying data types, we therefore do not check exhaustively for a deep
-  // copy.
+  // copying/moving. Since CompliantGeometry relies on the copy/move semantics
+  // of the underlying data types, we therefore do not check exhaustively for a
+  // deep copy.
 
   // Test copy-assignment operator.
   {
-    // Initialize `dut` as a SoftGeometry representing a half space.
-    // Then, change it to a SoftGeometry representing a mesh by copy-assignment.
-    SoftGeometry dut(SoftHalfSpace{1e+7});
+    // Initialize `dut` as a CompliantGeometry representing a half space.
+    // Then, change it to a CompliantGeometry representing a mesh by
+    // copy-assignment.
+    CompliantGeometry dut(CompliantHalfSpace{1e+7});
     dut = original;
 
     // Test for uniqueness. The contents have different memory addresses.
@@ -203,7 +205,7 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
 
   // Test copy constructor.
   {
-    SoftGeometry copy(original);
+    CompliantGeometry copy(original);
 
     // Test for uniqueness. The contents have different memory addresses.
     EXPECT_NE(&original.mesh(), &copy.mesh());
@@ -226,7 +228,8 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
   // `move_assigned`, each time confirming that the target of the move has taken
   // ownership.
   {
-    SoftGeometry start(original);  // Assume the copy constructor is correct.
+    CompliantGeometry start(
+        original);  // Assume the copy constructor is correct.
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
@@ -236,16 +239,16 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     const Bvh<Obb, VolumeMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
-    SoftGeometry move_constructed(std::move(start));
+    CompliantGeometry move_constructed(std::move(start));
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
     EXPECT_EQ(&move_constructed.pressure_field(), pressure_ptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
 
     // Test move-assignment operator.
-    // Initialize `move_assigned` as a SoftGeometry representing a half spce.
-    // Then, change it to a SoftGeometry of a soft mesh by move-assignment
-    // from `move_constructed`.
-    SoftGeometry move_assigned(SoftHalfSpace{1e+7});
+    // Initialize `move_assigned` as a CompliantGeometry representing a half
+    // spce. Then, change it to a CompliantGeometry of a compliant mesh by
+    // move-assignment from `move_constructed`.
+    CompliantGeometry move_assigned(CompliantHalfSpace{1e+7});
     move_assigned = std::move(move_constructed);
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
     EXPECT_EQ(&move_assigned.pressure_field(), pressure_ptr);
@@ -388,26 +391,27 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(1.0, &rigid_properties);
 
-  GeometryId soft_id = GeometryId::get_new_id();
-  ProximityProperties soft_properties;
-  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
+  GeometryId compliant_id = GeometryId::get_new_id();
+  ProximityProperties compliant_properties;
+  AddCompliantHydroelasticProperties(1.0, 1e8, &compliant_properties);
 
   GeometryId bad_id = GeometryId::get_new_id();
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id),
             HydroelasticType::kUndefined);
-  EXPECT_EQ(geometries.hydroelastic_type(soft_id),
+  EXPECT_EQ(geometries.hydroelastic_type(compliant_id),
             HydroelasticType::kUndefined);
   EXPECT_EQ(geometries.hydroelastic_type(bad_id), HydroelasticType::kUndefined);
 
   // Once added, they report the appropriate type.
-  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
-  EXPECT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
+  geometries.MaybeAddGeometry(Sphere(0.5), compliant_id, compliant_properties);
+  EXPECT_EQ(geometries.hydroelastic_type(compliant_id),
+            HydroelasticType::kCompliant);
   geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
   // Ids that report the correct type, successfully access the appropriate
   // representation.
-  DRAKE_EXPECT_NO_THROW(geometries.soft_geometry(soft_id));
+  DRAKE_EXPECT_NO_THROW(geometries.compliant_geometry(compliant_id));
   DRAKE_EXPECT_NO_THROW(geometries.rigid_geometry(rigid_id));
 }
 
@@ -416,14 +420,14 @@ void DoTestVanished(const Shape& shape, bool expect_vanished) {
                            shape.to_string(), expect_vanished));
   Geometries geometries;
 
-  GeometryId soft_id = GeometryId::get_new_id();
-  ProximityProperties soft_properties;
-  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
+  GeometryId compliant_id = GeometryId::get_new_id();
+  ProximityProperties compliant_properties;
+  AddCompliantHydroelasticProperties(1.0, 1e8, &compliant_properties);
   const double thickness = 1.3;
-  soft_properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
+  compliant_properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
 
-  geometries.MaybeAddGeometry(shape, soft_id, soft_properties);
-  EXPECT_EQ(geometries.is_vanished(soft_id), expect_vanished);
+  geometries.MaybeAddGeometry(shape, compliant_id, compliant_properties);
+  EXPECT_EQ(geometries.is_vanished(compliant_id), expect_vanished);
 }
 
 // Primitives may vanish if they are too small and cause numerical problems.
@@ -492,12 +496,13 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
   ASSERT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
-  // Add a soft geometry.
-  const GeometryId soft_id = GeometryId::get_new_id();
-  ProximityProperties soft_properties;
-  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
-  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
-  ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
+  // Add a compliant geometry.
+  const GeometryId compliant_id = GeometryId::get_new_id();
+  ProximityProperties compliant_properties;
+  AddCompliantHydroelasticProperties(1.0, 1e8, &compliant_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), compliant_id, compliant_properties);
+  ASSERT_EQ(geometries.hydroelastic_type(compliant_id),
+            HydroelasticType::kCompliant);
 
   // Case 1: Remove a geometry that has no representation is a no-op.
   const GeometryId bad_id = GeometryId::get_new_id();
@@ -505,7 +510,8 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   DRAKE_EXPECT_NO_THROW(geometries.RemoveGeometry(bad_id));
   ASSERT_EQ(geometries.hydroelastic_type(bad_id), HydroelasticType::kUndefined);
   ASSERT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
-  ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
+  ASSERT_EQ(geometries.hydroelastic_type(compliant_id),
+            HydroelasticType::kCompliant);
 
   // Case 2: Removing a rigid geometry has no effect on anything else. We copy
   // the geometries to make sure that there is always something else to remain
@@ -514,16 +520,18 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
     Geometries copy{geometries};
     DRAKE_EXPECT_NO_THROW(copy.RemoveGeometry(rigid_id));
     ASSERT_EQ(copy.hydroelastic_type(rigid_id), HydroelasticType::kUndefined);
-    ASSERT_EQ(copy.hydroelastic_type(soft_id), HydroelasticType::kSoft);
+    ASSERT_EQ(copy.hydroelastic_type(compliant_id),
+              HydroelasticType::kCompliant);
   }
 
-  // Case 3: Removing a soft geometry has no effect on anything else. We copy
-  // the geometries to make sure that there is always something else to remain
-  // untouched.
+  // Case 3: Removing a compliant geometry has no effect on anything else. We
+  // copy the geometries to make sure that there is always something else to
+  // remain untouched.
   {
     Geometries copy{geometries};
-    DRAKE_EXPECT_NO_THROW(copy.RemoveGeometry(soft_id));
-    ASSERT_EQ(copy.hydroelastic_type(soft_id), HydroelasticType::kUndefined);
+    DRAKE_EXPECT_NO_THROW(copy.RemoveGeometry(compliant_id));
+    ASSERT_EQ(copy.hydroelastic_type(compliant_id),
+              HydroelasticType::kUndefined);
     ASSERT_EQ(copy.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
   }
 }
@@ -540,7 +548,7 @@ class HydroelasticRigidGeometryTest : public ::testing::Test {
 
 // TODO(SeanCurtis-TRI): As new shape specifications are added, they are
 //  implicitly unsupported and should be added here (and in
-//  UnsupportedSofthapes).
+//  UnsupportedComplianthapes).
 // Smoke test for shapes that are *known* to be unsupported as rigid objects.
 // NOTE: This will spew warnings to the log.
 TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {}
@@ -877,7 +885,7 @@ Convex make_default_shape<Convex>() {
 }
 
 // Boilerplate for testing error conditions relating to properties. Its purpose
-// is to test that the `Make*Representation` (either "Rigid" or "Soft")
+// is to test that the `Make*Representation` (either "Rigid" or "Compliant")
 // family of functions correctly validate all required properties. A property
 // value can be wrong for one of three reasons:
 //
@@ -885,9 +893,9 @@ Convex make_default_shape<Convex>() {
 //   - Wrong type for property
 //   - Invalid value (maybe)
 //
-// This is sufficiently generic to test both kinds of geometry (rigid and soft)
-// based on any shape, for a property of any type. It confirms that properly
-// formatted errors are emitted in all cases.
+// This is sufficiently generic to test both kinds of geometry (rigid and
+// compliant) based on any shape, for a property of any type. It confirms that
+// properly formatted errors are emitted in all cases.
 //
 // Not all properties validate invalid values. It might simply be treated as a
 // black box. The third error condition is only handled if an example "bad"
@@ -900,7 +908,7 @@ Convex make_default_shape<Convex>() {
 // @param property_name  The name of the property (in the `group_name` group)
 //                       to be tested.
 // @param compliance     A string representing the compliance being requested
-//                       ("rigid" or "soft").
+//                       ("rigid" or "compliant").
 // @param maker          The function that processes the shape and properties.
 //                       Note: this is declared to return void; the
 //                       Make*Representation() methods will need to be wrapped.
@@ -953,7 +961,7 @@ void TestPropertyErrors(
 }
 
 // TODO(SeanCurtis-TRI): Add Cylinder, Mesh, Capsule, Ellipsoid and Convex as
-//  they become supported by either rigid or soft geometries.
+//  they become supported by either rigid or compliant geometries.
 
 // Test suite for testing the common failure conditions for generating rigid
 // geometry. Specifically, they just need to be tessellated into a triangle mesh
@@ -986,77 +994,80 @@ typedef ::testing::Types<Sphere, Capsule, Cylinder, Ellipsoid>
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                                RigidErrorShapeTypes);
 
-class HydroelasticSoftGeometryTest : public ::testing::Test {
+class HydroelasticCompliantGeometryTest : public ::testing::Test {
  protected:
-  /* Creates a simple set of properties for generating soft geometry. */
-  ProximityProperties soft_properties(double edge_length = 0.1) const {
-    ProximityProperties soft_properties;
-    AddCompliantHydroelasticProperties(edge_length, 1e8, &soft_properties);
-    return soft_properties;
+  /* Creates a simple set of properties for generating compliant geometry. */
+  ProximityProperties compliant_properties(double edge_length = 0.1) const {
+    ProximityProperties compliant_properties;
+    AddCompliantHydroelasticProperties(edge_length, 1e8, &compliant_properties);
+    return compliant_properties;
   }
 };
 
 // TODO(SeanCurtis-TRI): As new shape specifications are added, they are
 //  implicitly unsupported and should be added here (and in
 //  UnsupportedRigidShapes).
-// Smoke test for shapes that are *known* to be unsupported as soft objects.
-// NOTE: This will spew warnings to the log.
-TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
-  ProximityProperties props = soft_properties();
+// Smoke test for shapes that are *known* to be unsupported as compliant
+// objects. NOTE: This will spew warnings to the log.
+TEST_F(HydroelasticCompliantGeometryTest, UnsupportedCompliantShapes) {
+  ProximityProperties props = compliant_properties();
 
-  EXPECT_EQ(MakeSoftRepresentation(MeshcatCone(2, 1, 1), props), std::nullopt);
+  EXPECT_EQ(MakeCompliantRepresentation(MeshcatCone(2, 1, 1), props),
+            std::nullopt);
 }
 
-TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
-  ProximityProperties properties = soft_properties();
+TEST_F(HydroelasticCompliantGeometryTest, HalfSpace) {
+  ProximityProperties properties = compliant_properties();
 
   // Case: A half space without (hydroelastic, slab_thickness) throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeSoftRepresentation(HalfSpace(), properties),
-      "Cannot create soft HalfSpace; missing the .*slab_thickness.* property");
+      MakeCompliantRepresentation(HalfSpace(), properties),
+      "Cannot create compliant HalfSpace; missing the .*slab_thickness.* "
+      "property");
 
   // Case: fully specified half space.
   const double thickness = 1.3;
   properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
-  std::optional<SoftGeometry> half_space =
-      MakeSoftRepresentation(HalfSpace(), properties);
+  std::optional<CompliantGeometry> half_space =
+      MakeCompliantRepresentation(HalfSpace(), properties);
   ASSERT_NE(half_space, std::nullopt);
   EXPECT_TRUE(half_space->is_half_space());
   EXPECT_EQ(half_space->pressure_scale(),
             properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
-  DRAKE_EXPECT_NO_THROW(half_space->soft_half_space());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->soft_mesh(),
-      "SoftGeometry::soft_mesh.* cannot be invoked for soft half space.*");
+  DRAKE_EXPECT_NO_THROW(half_space->compliant_half_space());
+  DRAKE_EXPECT_THROWS_MESSAGE(half_space->compliant_mesh(),
+                              "CompliantGeometry::compliant_mesh.* cannot be "
+                              "invoked for compliant half space.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(),
-      "SoftGeometry::mesh.* cannot be invoked .* half space");
+      "CompliantGeometry::mesh.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->pressure_field(),
-      "SoftGeometry::pressure.* cannot be invoked .* half space");
+      "CompliantGeometry::pressure.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->bvh(), "SoftGeometry::bvh.* cannot be invoked .* half space");
+      half_space->bvh(),
+      "CompliantGeometry::bvh.* cannot be invoked .* half space");
 }
 
-// Test construction of a soft sphere. Confirms that the edge length has
+// Test construction of a compliant sphere. Confirms that the edge length has
 // an effect (i.e., that shrinking the edge_length by at least half causes
 // a change in mesh resolution. It relies on unit tests for the unit sphere
 // generation to confirm that it's the *right* number of tetrahedron. This
 // merely confirms that the characteristic_length is being fed in.
-TEST_F(HydroelasticSoftGeometryTest, Sphere) {
+TEST_F(HydroelasticCompliantGeometryTest, Sphere) {
   const double kRadius = 0.5;
   Sphere sphere_spec(kRadius);
 
   // Confirm that characteristic length is being fed in properly -- i.e.,
   // if characteristic length cuts in half, It should have more tetrahedra.
-  ProximityProperties properties1 = soft_properties(kRadius);
-  ProximityProperties properties2 = soft_properties(kRadius / 2);
-  std::optional<SoftGeometry> sphere1 =
-      MakeSoftRepresentation(sphere_spec, properties1);
-  std::optional<SoftGeometry> sphere2 =
-      MakeSoftRepresentation(sphere_spec, properties2);
+  ProximityProperties properties1 = compliant_properties(kRadius);
+  ProximityProperties properties2 = compliant_properties(kRadius / 2);
+  std::optional<CompliantGeometry> sphere1 =
+      MakeCompliantRepresentation(sphere_spec, properties1);
+  std::optional<CompliantGeometry> sphere2 =
+      MakeCompliantRepresentation(sphere_spec, properties2);
   EXPECT_FALSE(sphere1->is_half_space());
   EXPECT_FALSE(sphere2->is_half_space());
   EXPECT_LT(sphere1->mesh().num_elements(), sphere2->mesh().num_elements());
@@ -1064,20 +1075,20 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   // meshes and slab_thickness() does.
   EXPECT_NO_THROW(sphere1->bvh());
 
-  DRAKE_EXPECT_NO_THROW(sphere1->soft_mesh());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      sphere1->soft_half_space(),
-      "SoftGeometry::soft_half_space.* cannot be invoked for soft mesh.*");
+  DRAKE_EXPECT_NO_THROW(sphere1->compliant_mesh());
+  DRAKE_EXPECT_THROWS_MESSAGE(sphere1->compliant_half_space(),
+                              "CompliantGeometry::compliant_half_space.* "
+                              "cannot be invoked for compliant mesh.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      sphere1->pressure_scale(),
-      "SoftGeometry::pressure_scale.* cannot be invoked .* soft mesh");
+  DRAKE_EXPECT_THROWS_MESSAGE(sphere1->pressure_scale(),
+                              "CompliantGeometry::pressure_scale.* cannot be "
+                              "invoked .* compliant mesh");
 
   // Confirm that all vertices lie inside the sphere and that at least one lies
   // on the boundary.
   double max_distance = -1.0;
-  for (const auto& soft_geometry : {*sphere1, *sphere2}) {
-    const VolumeMesh<double>& mesh = soft_geometry.mesh();
+  for (const auto& compliant_geometry : {*sphere1, *sphere2}) {
+    const VolumeMesh<double>& mesh = compliant_geometry.mesh();
     for (int v = 0; v < mesh.num_vertices(); ++v) {
       const double dist = mesh.vertex(v).norm();
       max_distance = std::max(max_distance, dist);
@@ -1126,8 +1137,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     ProximityProperties dense_properties(properties1);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kDenseInteriorVertices);
-    std::optional<SoftGeometry> dense_sphere =
-        MakeSoftRepresentation(sphere_spec, dense_properties);
+    std::optional<CompliantGeometry> dense_sphere =
+        MakeCompliantRepresentation(sphere_spec, dense_properties);
     EXPECT_LT(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
   }
@@ -1140,8 +1151,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     ProximityProperties dense_properties(properties1);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                  TessellationStrategy::kSingleInteriorVertex);
-    std::optional<SoftGeometry> dense_sphere =
-        MakeSoftRepresentation(sphere_spec, dense_properties);
+    std::optional<CompliantGeometry> dense_sphere =
+        MakeCompliantRepresentation(sphere_spec, dense_properties);
     EXPECT_EQ(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
   }
@@ -1152,18 +1163,18 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // string. Should throw.
     ProximityProperties dense_properties(properties1);
     dense_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
-    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
+    EXPECT_THROW(MakeCompliantRepresentation(sphere_spec, dense_properties),
                  std::logic_error);
   }
 }
 
-// Test construction of a soft box.
-TEST_F(HydroelasticSoftGeometryTest, Box) {
+// Test construction of a compliant box.
+TEST_F(HydroelasticCompliantGeometryTest, Box) {
   const Box box_spec(0.2, 0.4, 0.8);
 
-  ProximityProperties properties = soft_properties();
-  std::optional<SoftGeometry> box =
-      MakeSoftRepresentation(box_spec, properties);
+  ProximityProperties properties = compliant_properties();
+  std::optional<CompliantGeometry> box =
+      MakeCompliantRepresentation(box_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
@@ -1177,8 +1188,8 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   }
 }
 
-// Test construction of a soft cylinder.
-TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
+// Test construction of a compliant cylinder.
+TEST_F(HydroelasticCompliantGeometryTest, Cylinder) {
   const double radius = 1.0;
   const double length = 2.0;
   const Cylinder cylinder_spec(radius, length);
@@ -1186,9 +1197,9 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   // Confirm that characteristic length is being fed in properly. Pick a
   // characteristic length *larger* than the cylinder dimensions to get the
   // coarsest mesh with 15 vertices.
-  ProximityProperties properties = soft_properties(1.5 * length);
-  std::optional<SoftGeometry> cylinder =
-      MakeSoftRepresentation(cylinder_spec, properties);
+  ProximityProperties properties = compliant_properties(1.5 * length);
+  std::optional<CompliantGeometry> cylinder =
+      MakeCompliantRepresentation(cylinder_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
@@ -1202,8 +1213,8 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   }
 }
 
-// Test construction of a soft capsule.
-TEST_F(HydroelasticSoftGeometryTest, Capsule) {
+// Test construction of a compliant capsule.
+TEST_F(HydroelasticCompliantGeometryTest, Capsule) {
   const double radius = 1.0;
   const double length = 2.0;
   const Capsule capsule_spec(radius, length);
@@ -1211,9 +1222,9 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   // Confirm that characteristic length is being fed in properly. Pick a
   // characteristic length *larger* than the capsule dimensions to get the
   // coarsest mesh with 10 vertices.
-  ProximityProperties properties = soft_properties(1.5 * length);
-  std::optional<SoftGeometry> capsule =
-      MakeSoftRepresentation(capsule_spec, properties);
+  ProximityProperties properties = compliant_properties(1.5 * length);
+  std::optional<CompliantGeometry> capsule =
+      MakeCompliantRepresentation(capsule_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
@@ -1229,8 +1240,8 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   }
 }
 
-// Test construction of a soft ellipsoid.
-TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
+// Test construction of a compliant ellipsoid.
+TEST_F(HydroelasticCompliantGeometryTest, Ellipsoid) {
   // Lengths of the three semi-principal axes of the ellipsoid:
   //     (x/a)^2 + (y/b)^2 + (z/c)^2 = 1
   const double a = 0.05;
@@ -1241,9 +1252,9 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   // Confirm that characteristic length is being fed in properly. Pick a
   // characteristic length *larger* than the ellipsoid dimensions to get the
   // coarsest mesh with 7 vertices.
-  ProximityProperties properties = soft_properties(0.16);
-  std::optional<SoftGeometry> ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, properties);
+  ProximityProperties properties = compliant_properties(0.16);
+  std::optional<CompliantGeometry> ellipsoid =
+      MakeCompliantRepresentation(ellipsoid_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
@@ -1259,7 +1270,7 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   // The remaining tests confirm that it respects the
   // ("hydroelastic", "tessellation_strategy") property.
 
-  ProximityProperties basic_properties = soft_properties(0.08);
+  ProximityProperties basic_properties = compliant_properties(0.08);
   ProximityProperties sparse_properties(basic_properties);
   sparse_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                 TessellationStrategy::kSingleInteriorVertex);
@@ -1267,12 +1278,12 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
                                TessellationStrategy::kDenseInteriorVertices);
 
-  std::optional<SoftGeometry> implicit_sparse_ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, basic_properties);
-  std::optional<SoftGeometry> sparse_ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, sparse_properties);
-  std::optional<SoftGeometry> dense_ellipsoid =
-      MakeSoftRepresentation(ellipsoid_spec, dense_properties);
+  std::optional<CompliantGeometry> implicit_sparse_ellipsoid =
+      MakeCompliantRepresentation(ellipsoid_spec, basic_properties);
+  std::optional<CompliantGeometry> sparse_ellipsoid =
+      MakeCompliantRepresentation(ellipsoid_spec, sparse_properties);
+  std::optional<CompliantGeometry> dense_ellipsoid =
+      MakeCompliantRepresentation(ellipsoid_spec, dense_properties);
 
   {
     // It defaults to kSingleInteriorVertex if nothing is defined.
@@ -1300,25 +1311,25 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
     // string. Should throw.
     ProximityProperties bad_properties(basic_properties);
     bad_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
-    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
+    EXPECT_THROW(MakeCompliantRepresentation(ellipsoid_spec, bad_properties),
                  std::logic_error);
   }
 }
 
-// Test construction of a soft convex mesh.
-TEST_F(HydroelasticSoftGeometryTest, Convex) {
+// Test construction of a compliant convex mesh.
+TEST_F(HydroelasticCompliantGeometryTest, Convex) {
   // Construct off of a known convex mesh.
   std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   const Vector3d kScale3(2, 3, 4);
   const Convex convex_spec(file, kScale3);
 
-  ProximityProperties properties = soft_properties(0.16);
+  ProximityProperties properties = compliant_properties(0.16);
   // We need a non-zero margin value to trigger the recomputation of the convex
   // hull -- confirm it passes margin and scale.
   const double margin_value = 0.0001;
   properties.AddProperty(kHydroGroup, kMargin, margin_value);
-  std::optional<SoftGeometry> convex =
-      MakeSoftRepresentation(convex_spec, properties);
+  std::optional<CompliantGeometry> convex =
+      MakeCompliantRepresentation(convex_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
@@ -1348,7 +1359,7 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
 // Test against both on-disk and in-memory vtk file. All other mesh types simply
 // default to computation of its convex hull which has been tested as part
 // of the Mesh API against in-memory and on-disk data.
-TEST_F(HydroelasticSoftGeometryTest, Mesh) {
+TEST_F(HydroelasticCompliantGeometryTest, Mesh) {
   const std::string path =
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
   // Non-unit, non-uniform scale.
@@ -1356,9 +1367,9 @@ TEST_F(HydroelasticSoftGeometryTest, Mesh) {
   const std::vector<Mesh> meshes{
       Mesh(path, kScale3), Mesh(InMemoryMesh{MemoryFile::Make(path)}, kScale3)};
   for (const Mesh& mesh_specification : meshes) {
-    ProximityProperties properties = soft_properties();
-    std::optional<SoftGeometry> compliant_geometry =
-        MakeSoftRepresentation(mesh_specification, properties);
+    ProximityProperties properties = compliant_properties();
+    std::optional<CompliantGeometry> compliant_geometry =
+        MakeCompliantRepresentation(mesh_specification, properties);
 
     // Smoke test the mesh and the pressure field. It relies on unit tests for
     // the generators of the mesh and the pressure field.
@@ -1382,73 +1393,73 @@ TEST_F(HydroelasticSoftGeometryTest, Mesh) {
   }
 }
 
-// Test suite for testing the common failure conditions for generating soft
+// Test suite for testing the common failure conditions for generating compliant
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes Mesh because soft Mesh
-// is not currently supported for hydroelastic contact.
-// (See the `SoftErrorShapeTypes` declaration below.)
-// It should include every *other* supported soft shape type. For HalfSpace,
-// Box, and Convex they are included in the test suite but exempt from
-// BadResolutionHint because they do not depend on the resolution hint
-// parameter. Only HalfSpace is tested in BadSlabThickness.
+// and define a pressure field. This actively excludes Mesh because compliant
+// Mesh is not currently supported for hydroelastic contact. (See the
+// `CompliantErrorShapeTypes` declaration below.) It should include every
+// *other* supported compliant shape type. For HalfSpace, Box, and Convex they
+// are included in the test suite but exempt from BadResolutionHint because they
+// do not depend on the resolution hint parameter. Only HalfSpace is tested in
+// BadSlabThickness.
 template <typename ShapeType>
-class HydroelasticSoftGeometryErrorTests : public ::testing::Test {};
+class HydroelasticCompliantGeometryErrorTests : public ::testing::Test {};
 
-TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests);
+TYPED_TEST_SUITE_P(HydroelasticCompliantGeometryErrorTests);
 
-TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
+TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   if (shape_spec.type_name() != "HalfSpace" &&
       shape_spec.type_name() != "Box" && shape_spec.type_name() != "Convex") {
     TestPropertyErrors<ShapeType, double>(
-        shape_spec, kHydroGroup, kRezHint, "soft",
+        shape_spec, kHydroGroup, kRezHint, "compliant",
         [](const ShapeType& s, const ProximityProperties& p) {
-          MakeSoftRepresentation(s, p);
+          MakeCompliantRepresentation(s, p);
         },
         -0.2, {});
   }
 }
 
-TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
+TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadElasticModulus) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
 
-  ProximityProperties soft_properties;
+  ProximityProperties compliant_properties;
   // Add the resolution hint and slab thickness, so that creation of the
   // hydroelastic representation can choke on elastic modulus value.
-  soft_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
-  soft_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
+  compliant_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
+  compliant_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, kHydroGroup, kElastic, "soft",
+      shape_spec, kHydroGroup, kElastic, "compliant",
       [](const ShapeType& s, const ProximityProperties& p) {
-        MakeSoftRepresentation(s, p);
+        MakeCompliantRepresentation(s, p);
       },
-      -0.2, soft_properties);
+      -0.2, compliant_properties);
 }
 
-TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
+TYPED_TEST_P(HydroelasticCompliantGeometryErrorTests, BadSlabThickness) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   // Half space only!
   if (shape_spec.type_name() == "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
-        shape_spec, kHydroGroup, kSlabThickness, "soft",
+        shape_spec, kHydroGroup, kSlabThickness, "compliant",
         [](const ShapeType& s, const ProximityProperties& p) {
-          MakeSoftRepresentation(s, p);
+          MakeCompliantRepresentation(s, p);
         },
         -0.2, {});
   }
 }
 
-REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
+REGISTER_TYPED_TEST_SUITE_P(HydroelasticCompliantGeometryErrorTests,
                             BadResolutionHint, BadElasticModulus,
                             BadSlabThickness);
 typedef ::testing::Types<Sphere, Box, Capsule, Cylinder, Ellipsoid, HalfSpace,
                          Convex>
-    SoftErrorShapeTypes;
-INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
-                               SoftErrorShapeTypes);
+    CompliantErrorShapeTypes;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticCompliantGeometryErrorTests,
+                               CompliantErrorShapeTypes);
 
 }  // namespace
 }  // namespace hydroelastic
