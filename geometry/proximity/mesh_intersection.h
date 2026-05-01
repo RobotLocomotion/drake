@@ -281,17 +281,17 @@ class SurfaceVolumeIntersector {
       const math::RigidTransform<T>& X_MN);
 
   /* Determines whether a triangle of a rigid surface N and a tetrahedron of a
-   soft volume M are suitable for building contact surface based on the face
-   normal vector f_N of the triangle and the pressure gradient vector ∇p_M
+   compliant volume M are suitable for building contact surface based on the
+   face normal vector f_N of the triangle and the pressure gradient vector ∇p_M
    of the tetrahedron. This is an attempt to address Issue #12441 "Hydroelastic
    contact surface broken for thin rigid object -- needs to use normals".
-       For example, when a thin rigid plate N penetrates deeply into a soft
+       For example, when a thin rigid plate N penetrates deeply into a compliant
    ball M, both sides of surface N intersect the volume of M as shown in this
    picture:
 
        thin rigid plate N
              ┌┄┐
-             ┊ ┊    soft ball M
+             ┊ ┊    compliant ball M
              ┊ ┊     ● ● ● ●
              ┊ ║●               ●
             ⇦┃↘║⇨                 ●
@@ -314,13 +314,13 @@ class SurfaceVolumeIntersector {
    In this case, we can use π/2 as the angle threshold to distinguish the two
    kinds of triangles in N.
        However, there is no single angle threshold that works for all cases.
-   For example, a rigid box N penetrates into a soft ball M (see the
+   For example, a rigid box N penetrates into a compliant ball M (see the
    following picture) and has triangles on its left side and right side with
    face normals that make obtuse angles with the pressure gradient. Using
    π/2 as the threshold, we would prohibit these triangles from the contact
    surface.
 
-                   soft ball M
+                   compliant ball M
                      ● ● ● ●
                 ●               ●
              ●                     ●
@@ -392,16 +392,15 @@ class SurfaceVolumeIntersector {
   friend class SurfaceVolumeIntersectorTester<MeshBuilder>;
 };
 
-/* Computes the contact surface between a soft geometry S and a rigid
+/* Computes the contact surface between a compliant geometry S and a rigid
  geometry R.
  @param[in] id_S
-     Id of the soft geometry S.
+     Id of the compliant geometry S.
  @param[in] field_S
-     A scalar field defined on the soft volume mesh S. Mesh S's vertices are
-     defined in S's frame. The scalar field is likewise defined in frame S
-     (that is, it can only be evaluated on points which have been measured and
-     expressed in frame S). For hydroelastic contact, the scalar field is a
-     "pressure" field.
+     A scalar field defined on the compliant volume mesh S. Mesh S's vertices
+ are defined in S's frame. The scalar field is likewise defined in frame S (that
+ is, it can only be evaluated on points which have been measured and expressed
+ in frame S). For hydroelastic contact, the scalar field is a "pressure" field.
  @param[in] bvh_S
      A bounding volume hierarchy built on the geometry contained in `field_S`.
  @param[in] X_WS
@@ -423,9 +422,9 @@ class SurfaceVolumeIntersector {
      with a consistent mapping (as documented in ContactSurface) but without any
      guarantee as to what that mapping is. Positions of vertex coordinates are
      expressed in the world frame. The pressure distribution comes from the
-     soft geometry S.
+     compliant geometry S.
 
-                     ooo   soft S
+                     ooo   compliant S
                   o       o
                  o         o         = Contact surface (M(S, R), N(S, R)).
                  o ↑↑↑↑↑↑↑ o         ↑ Vector field from R to S is upwards.
@@ -444,7 +443,7 @@ class SurfaceVolumeIntersector {
  the definition of the relative position of the two meshes. */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
+ComputeContactSurfaceFromCompliantVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,

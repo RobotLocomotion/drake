@@ -22,7 +22,7 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
-using hydroelastic::SoftMesh;
+using hydroelastic::CompliantMesh;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
@@ -310,11 +310,11 @@ GTEST_TEST(VolumeIntersectionTest, FullyPenetrated) {
             ball, radius, TessellationStrategy::kSingleInteriorVertex));
     auto field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
         MakeSpherePressureField<double>(ball, mesh.get(), 1e5));
-    return SoftMesh(std::move(mesh), std::move(field));
+    return CompliantMesh(std::move(mesh), std::move(field));
   };
 
-  SoftMesh big_sphere_M = make_ball(1.0);
-  SoftMesh small_sphere_N = make_ball(1.0 / 8.0);
+  CompliantMesh big_sphere_M = make_ball(1.0);
+  CompliantMesh small_sphere_N = make_ball(1.0 / 8.0);
 
   // Place the small sphere well within the big sphere, without surfaces
   // touching.
@@ -364,9 +364,9 @@ class VolumeIntersectorTest : public ::testing::Test {
             MakeSpherePressureField<double>(sphere_, octahedron_mesh.get(),
                                             kOctahedronElasticModulus_));
 
-    box_M_ = SoftMesh(std::move(mesh), std::move(field));
+    box_M_ = CompliantMesh(std::move(mesh), std::move(field));
     octahedron_N_ =
-        SoftMesh(std::move(octahedron_mesh), std::move(octahedron_field));
+        CompliantMesh(std::move(octahedron_mesh), std::move(octahedron_field));
   }
 
  protected:
@@ -377,12 +377,12 @@ class VolumeIntersectorTest : public ::testing::Test {
   // Geometry 0 and its field.
   const Box box_{0.06, 0.10, 0.14};  // 6cm-thick compliant pad.
   const double kBoxElasitcModulus_{1.0e5};
-  SoftMesh box_M_;
+  CompliantMesh box_M_;
 
   // Geometry 1 and its field.
   const Sphere sphere_{0.03};  // 3cm-radius (6cm-diameter) finger tip.
   const double kOctahedronElasticModulus_{1.0e5};
-  SoftMesh octahedron_N_;
+  CompliantMesh octahedron_N_;
 };
 
 // The two algorithms provided by VolumeIntersector only differ in the manner in

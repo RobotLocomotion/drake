@@ -867,8 +867,8 @@ INSTANTIATE_TEST_SUITE_P(
      does as well.
   4. Confirm that the surface mesh field references the surface mesh in the
      resultant ContactSurface.
-  5. Mesh normals point out of plane and into soft mesh.
-  6. Report the pressure gradient of the soft mesh on the contact surface.
+  5. Mesh normals point out of plane and into compliant mesh.
+  6. Report the pressure gradient of the compliant mesh on the contact surface.
   7. The mesh representation of the contact surface is consistent with the
      type of MeshBuilder passed.
 
@@ -900,7 +900,7 @@ class ComputeContactSurfaceTest : public ::testing::Test {
     plane_id_ = GeometryId::get_new_id();
   }
 
-  // The soft mesh and the pressure field on that mesh.
+  // The compliant mesh and the pressure field on that mesh.
   unique_ptr<VolumeMesh<double>> mesh_F_;
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_F_;
   GeometryId mesh_id_;
@@ -1209,12 +1209,12 @@ TEST_F(ComputeContactSurfaceTest, MeshRepresentation) {
             HydroelasticContactRepresentation::kPolygon);
 }
 
-/* Test of ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(). This function
- has the following unique responsibilities:
+/* Test of ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(). This
+ function has the following unique responsibilities:
 
   1. Simply that all of the values contribute to the output (poses, ids, etc.)
   2. Representation request is respected. */
-GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
+GTEST_TEST(MeshPlaneIntersectionTest, CompliantVolumeRigidHalfSpace) {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
   // Create mesh and volume mesh.
@@ -1223,7 +1223,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
       vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
   const Bvh<Obb, VolumeMesh<double>> bvh_F(mesh_F);
 
-  // We'll pose the plane in the soft mesh's frame S and then transform the
+  // We'll pose the plane in the compliant mesh's frame S and then transform the
   // whole system.
   const RigidTransformd X_WS{
       RotationMatrixd{AngleAxisd{M_PI / 3, Vector3d{-1, 1, 1}.normalized()}},
@@ -1245,9 +1245,10 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     // appropriate contact info. We won't exhaustively test the data, relying
     // on previous tests to prove correctness. We're just looking for positive
     // indicators.
-    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WR,
-        HydroelasticContactRepresentation::kTriangle);
+    auto contact_surface =
+        ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
+            id_A, field_F, bvh_F, X_WS, id_B, X_WR,
+            HydroelasticContactRepresentation::kTriangle);
     EXPECT_TRUE(contact_surface->HasGradE_M());
     EXPECT_FALSE(contact_surface->HasGradE_N());
     ASSERT_NE(contact_surface, nullptr);
@@ -1272,26 +1273,29 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
   {
     // Case 2: Move the mesh out of intersection.
     const RigidTransformd X_SM{Vector3d{-0.51, 0, 0}};
-    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR,
-        HydroelasticContactRepresentation::kTriangle);
+    auto contact_surface =
+        ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
+            id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR,
+            HydroelasticContactRepresentation::kTriangle);
     ASSERT_EQ(contact_surface, nullptr);
   }
 
   {
     // Case 3: Move the plane out of intersection.
     const RigidTransformd X_SR2{X_SR.rotation(), Vector3d{1.01, 0, 0}};
-    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2,
-        HydroelasticContactRepresentation::kTriangle);
+    auto contact_surface =
+        ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
+            id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2,
+            HydroelasticContactRepresentation::kTriangle);
     ASSERT_EQ(contact_surface, nullptr);
   }
 
   {
     // Case 4: Reverse GeometryIds.
-    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_B, field_F, bvh_F, X_WS, id_A, X_WR,
-        HydroelasticContactRepresentation::kTriangle);
+    auto contact_surface =
+        ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
+            id_B, field_F, bvh_F, X_WS, id_A, X_WR,
+            HydroelasticContactRepresentation::kTriangle);
     ASSERT_NE(contact_surface, nullptr);
     EXPECT_EQ(contact_surface->id_M(), id_A);
     EXPECT_EQ(contact_surface->id_N(), id_B);
@@ -1304,9 +1308,10 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
 
   {
     // Case 5: Request polygon mesh.
-    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WR,
-        HydroelasticContactRepresentation::kPolygon);
+    auto contact_surface =
+        ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
+            id_A, field_F, bvh_F, X_WS, id_B, X_WR,
+            HydroelasticContactRepresentation::kPolygon);
     EXPECT_EQ(contact_surface->representation(),
               HydroelasticContactRepresentation::kPolygon);
   }
@@ -1320,7 +1325,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
  frame.
 
  The volume mesh is a single tetrahedron with vertices at (0, 0, 0),
- (1, 0, 0), (0, 1, 0), and (0, 0, 1) in the soft mesh frame S.
+ (1, 0, 0), (0, 1, 0), and (0, 0, 1) in the compliant mesh frame S.
 
               Sz
               ┆   ╱
@@ -1493,7 +1498,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       const Vector3<AutoDiffXd> p_WS = math::InitializeAutoDiff(p_WS_d);
       const RigidTransform<AutoDiffXd> X_WS(R_WS_d.cast<AutoDiffXd>(), p_WS);
 
-      auto surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+      auto surface = ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
           id_S_, *field_S_, *bvh_S_, X_WS, id_R_, X_WR_,
           HydroelasticContactRepresentation::kTriangle);
 
@@ -1531,7 +1536,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
         "Querying for point E that isn't actually on a tet edge");
   }
 
-  /* Soft volume mesh. */
+  /* Compliant volume mesh. */
   GeometryId id_S_;
   unique_ptr<VolumeMesh<double>> mesh_S_;
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
@@ -1802,7 +1807,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtPosition) {
 }
 
 TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
-  /* Even if the soft frame is rotated w.r.t. the rigid frame, the contact
+  /* Even if the compliant frame is rotated w.r.t. the rigid frame, the contact
    surface normals should always be parallel with the plane's normal and,
    therefore, should have zero derivatives.
 
@@ -1831,7 +1836,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
     RigidTransform<AutoDiffXd> X_WS{
         RotationMatrix<AutoDiffXd>(AngleAxis<AutoDiffXd>(theta_ad, v_W)), p_WS};
 
-    auto surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+    auto surface = ComputeContactSurfaceFromCompliantVolumeRigidHalfSpace(
         this->id_S_, *this->field_S_, *this->bvh_S_, X_WS, this->id_R_,
         this->X_WR_, HydroelasticContactRepresentation::kTriangle);
 

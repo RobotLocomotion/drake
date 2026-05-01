@@ -715,10 +715,10 @@ GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
       }
       break;
     }
-    case HydroelasticType::kSoft: {
-      const auto& soft = hydro_geometries.soft_geometry(geometry_id);
-      if (!soft.is_half_space()) {
-        return &soft.mesh();
+    case HydroelasticType::kCompliant: {
+      const auto& compliant = hydro_geometries.compliant_geometry(geometry_id);
+      if (!compliant.is_half_space()) {
+        return &compliant.mesh();
       }
       break;
     }
