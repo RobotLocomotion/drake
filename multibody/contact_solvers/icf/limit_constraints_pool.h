@@ -10,6 +10,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -122,6 +123,9 @@ class LimitConstraintsPool {
   void CalcCostAlongLine(const LimitConstraintsDataPool<T>& limit_data,
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
+
+  void Reduce(const ReducedMapping& mapping,
+              LimitConstraintsPool<T>* reduced) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }

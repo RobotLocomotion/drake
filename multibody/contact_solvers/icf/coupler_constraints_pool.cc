@@ -173,6 +173,49 @@ void CouplerConstraintsPool<T>::CalcCostAlongLine(
   }
 }
 
+template <typename T>
+void CouplerConstraintsPool<T>::Reduce(
+    const ReducedMapping& mapping,
+    CouplerConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(num_constraints());
+  int reduced_size{0};
+  for (int k = 0; k < num_constraints(); ++k) {
+    const int c = constraint_to_clique_[k];
+    const int i = dofs_[k].first;
+    const int j = dofs_[k].second;
+    const auto& dof_permutation = mapping.clique_dof_permutations[c];
+    if (!mapping.clique_permutation.participates(c)) {
+      continue;
+    }
+    // ??? XXX are these opt-outs correct?
+    if (!dof_permutation.participates(i)) {
+      DRAKE_DEMAND(false);
+      continue;
+    }
+    if (!dof_permutation.participates(j)) {
+      DRAKE_DEMAND(false);
+      continue;
+    }
+    const int r_n = reduced_size;
+    const int r_c = mapping.clique_permutation.permuted_index(c);
+    const int r_i = dof_permutation.permuted_index(i);
+    const int r_j = dof_permutation.permuted_index(j);
+
+    // Fill in the reduced constraint.
+    reduced_pool->constraint_to_clique_[r_n] = r_c;
+    reduced_pool->dofs_[r_n] = std::make_pair(r_i, r_j);
+    reduced_pool->g_hat_[r_n] = g_hat_[k];
+    reduced_pool->R_[r_n] = R_[k];
+
+    // Track the reduced pool size.
+    ++reduced_size;
+  }
+  // Adjust pool size.
+  // XXX is this adequately non-destructive?
+  reduced_pool->Resize(reduced_size);
+}
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

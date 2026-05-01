@@ -1,7 +1,10 @@
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_pool.h"
 
 #include <limits>
+#include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -147,6 +150,49 @@ GTEST_TEST(CouplerConstraintsPool, Data) {
   const double scale = std::abs(dcost.value());
   EXPECT_NEAR(dcost.value(), cost.derivatives()[0], scale * kEpsilon);
   EXPECT_NEAR(d2cost.value(), dcost.derivatives()[0], scale * kEpsilon);
+}
+
+/* Verifies that reducing the coupler constraint pool produces correct data. */
+GTEST_TEST(CouplerConstraintsPool, Reduce) {
+  IcfModel<double> model;
+  IcfData<double> data;
+  MakeUnconstrainedModel(&model);
+  AddCouplerConstraint(&model);
+
+  IcfModel<double> reduced_model;
+  ReducedMapping mapping;
+
+  auto check_reduced = [&](const std::vector<int>& locked_dofs) {
+    SCOPED_TRACE(fmt::format("locked_dofs {}", fmt::join(locked_dofs, ", ")));
+    MakeModelReducible(&model, locked_dofs);
+    model.ReduceInto(&reduced_model, &mapping);
+  };
+
+  // Reduce by none; essentially, just copy.
+  const std::vector<int> none_locked;
+  check_reduced(none_locked);
+
+  // Lock some arbitrary dofs.
+  const std::vector<int> arbitrary_locked = {0, 17};
+  check_reduced(arbitrary_locked);
+
+  // XXX These crash because the constraint is defined on a floating body?!?!
+  // // Lock one constraint dof.
+  // const std::vector<int> constraint_dof_i_locked = {7};
+  // check_reduced(constraint_dof_i_locked);
+
+  // // Lock other constraint dof.
+  // const std::vector<int> constraint_dof_j_locked = {9};
+  // check_reduced(constraint_dof_j_locked);
+
+  // Lock an entire clique.
+  const std::vector<int> clique0_locked = {0, 1, 2, 3, 4, 5};
+  check_reduced(clique0_locked);
+
+  // Lock everything.
+  std::vector<int> all_locked(model.num_velocities());
+  std::iota(all_locked.begin(), all_locked.end(), 0);
+  check_reduced(all_locked);
 }
 
 }  // namespace

@@ -16,6 +16,7 @@
 #include "drake/multibody/contact_solvers/icf/icf_search_direction_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_pool.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_pool.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 #include "drake/multibody/contact_solvers/icf/weld_constraints_pool.h"
 
 namespace drake {
@@ -64,6 +65,20 @@ struct IcfParameters {
 
   // Starting index in the velocity vector for each clique, size nc + 1.
   std::vector<int> clique_start;
+
+  // Parameters that are only used by ReduceInto().
+  struct ReducingOnlyParameters {
+    // XXX naming review please.
+    // Specifies known DOFs that can be eliminated.
+    std::vector<int> known_free_motion_dofs;
+    // Specifies DOFs that cannot be eliminated.
+    std::vector<int> unlocked_dofs;
+    // Specifies known DOFs that can be eliminated, per clique.
+    std::vector<std::vector<int>> per_clique_known_free_motion_dofs;
+    // Specifies known DOFs that cannot be eliminated, per clique.
+    std::vector<std::vector<int>> per_clique_unlocked_dofs;
+  };
+  ReducingOnlyParameters r;
 };
 
 /* This class defines a convex ICF problem,
@@ -148,9 +163,20 @@ class IcfModel {
            num_weld_constraints();
   }
 
+  /* Provides const access to the pool of all coupler constraints. */
+  const CouplerConstraintsPool<T>& coupler_constraints_pool() const {
+    return coupler_constraints_pool_;
+  }
+
   /* Provides mutable access to the pool of all coupler constraints. */
   CouplerConstraintsPool<T>& coupler_constraints_pool() {
     return coupler_constraints_pool_;
+  }
+
+  /* Provides const  access to the pool of all gain (e.g., actuation)
+  constraints. */
+  const GainConstraintsPool<T>& gain_constraints_pool() const {
+    return gain_constraints_pool_;
   }
 
   /* Provides mutable access to the pool of all gain (e.g., actuation)
@@ -159,14 +185,29 @@ class IcfModel {
     return gain_constraints_pool_;
   }
 
+  /* Provides const access to the pool of all joint limit constraints. */
+  const LimitConstraintsPool<T>& limit_constraints_pool() const {
+    return limit_constraints_pool_;
+  }
+
   /* Provides mutable access to the pool of all joint limit constraints. */
   LimitConstraintsPool<T>& limit_constraints_pool() {
     return limit_constraints_pool_;
   }
 
+  /* Provides const access to the pool of all patch (contact) constraints. */
+  const PatchConstraintsPool<T>& patch_constraints_pool() const {
+    return patch_constraints_pool_;
+  }
+
   /* Provides mutable access to the pool of all patch (contact) constraints. */
   PatchConstraintsPool<T>& patch_constraints_pool() {
     return patch_constraints_pool_;
+  }
+
+  /* Provides const access to the pool of all weld constraints. */
+  const WeldConstraintsPool<T>& weld_constraints_pool() const {
+    return weld_constraints_pool_;
   }
 
   /* Provides mutable access to the pool of all weld constraints. */
@@ -208,6 +249,11 @@ class IcfModel {
 
   /* Returns the initial coriolis, centrifugal, and gravitational terms, k₀. */
   const VectorX<T>& k0() const { return params().k0; }
+
+  /* Returns true if the model can be reduced. */
+  bool is_reducible() const {
+    return !params().r.known_free_motion_dofs.empty();
+  }
 
   /* Returns a reference to the spatial velocity Jacobian for the given body. */
   ConstJacobianView J_WB(int body) const {
@@ -368,6 +414,11 @@ class IcfModel {
   allows us to reuse pre-computed quantities, like geometry queries, between
   ICF solves that share a common initial state (q₀,v₀). */
   void UpdateTimeStep(const T& time_step);
+
+  /* Makes a "reduced" ICF model in `reduced_model` given the DOFs specified in
+  `params().known_free_motion_dofs` are known to equal the free-motion
+  velocities. XXX blab more. */
+  void ReduceInto(IcfModel<T>* reduced_model, ReducedMapping* mapping) const;
 
  private:
   /* Checks that this model's parameters define a valid ICF problem. */

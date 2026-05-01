@@ -425,6 +425,64 @@ void WeldConstraintsPool<T>::CalcCostAlongLine(
   }
 }
 
+template <typename T>
+void WeldConstraintsPool<T>::Reduce(
+    const ReducedMapping& mapping, WeldConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(num_constraints());
+  int reduced_size{0};
+  for (int k = 0; k < num_constraints(); ++k) {
+    DRAKE_DEMAND(false);
+    const int body_a = body_pairs_[k].first;
+    const int body_b = body_pairs_[k].second;
+    const int c_b = model().body_to_clique(body_b);
+    const int c_a = model().body_to_clique(body_a);  // negative if anchored.
+    if (!mapping.clique_permutation.participates(c_b)) {
+      continue;
+    }
+    if (c_a >= 0 && !mapping.clique_permutation.participates(c_a)) {
+      continue;
+    }
+    // XXX TODO: more reductions at the dof level?
+    const int r_n = reduced_size;
+
+    // Fill in the reduced constraint.
+    reduced_pool->body_pairs_[r_n] = body_pairs_[k];
+    reduced_pool->p_AP_W_[r_n] = p_AP_W_[k];
+    reduced_pool->p_BQ_W_[r_n] = p_BQ_W_[k];
+    reduced_pool->p_PoQo_W_[r_n] = p_PoQo_W_[k];
+    reduced_pool->g0_[r_n] = g0_[k];
+    reduced_pool->R_[r_n] = R_[k];
+
+    // Translate the hessian block data.
+    HessianBlock& to = reduced_pool->hessian_blocks_[r_n];
+    const HessianBlock& from = hessian_blocks_[k];
+    to.c_b = mapping.clique_permutation.permuted_index(from.c_b);
+    to.c_a = mapping.clique_permutation.permuted_index(from.c_a);
+    const auto& b_dof_indices =
+        mapping.clique_dof_permutations[c_b].inverse_permutation();
+    to.H_BB = from.H_BB(b_dof_indices, b_dof_indices);
+    const auto& a_dof_indices =
+        mapping.clique_dof_permutations[c_a].inverse_permutation();
+    to.H_AA = from.H_AA(a_dof_indices, a_dof_indices);
+    // ??? XXX which indices?
+    if (c_b > c_a) {
+      to.H_cross = from.H_cross(b_dof_indices, a_dof_indices);
+    } else {
+      to.H_cross = from.H_cross(a_dof_indices, b_dof_indices);
+    }
+    to.cross_row = mapping.velocity_permutation.permuted_index(from.cross_row);
+    to.cross_col = mapping.velocity_permutation.permuted_index(from.cross_col);
+    to.a_is_dynamic = from.a_is_dynamic;
+
+    // Track the reduced pool size.
+    ++reduced_size;
+  }
+  // Adjust pool size.
+  // XXX is this adequately non-destructive?
+  reduced_pool->Resize(reduced_size);
+}
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

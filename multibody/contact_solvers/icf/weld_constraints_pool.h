@@ -7,6 +7,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 #include "drake/multibody/contact_solvers/icf/weld_constraints_data_pool.h"
 
 namespace drake {
@@ -125,6 +126,9 @@ class WeldConstraintsPool {
   void CalcCostAlongLine(const WeldConstraintsDataPool<T>& weld_data,
                          const EigenPool<Vector6<T>>& U_WB, T* dcost,
                          T* d2cost) const;
+
+  void Reduce(const ReducedMapping& mapping,
+              WeldConstraintsPool<T>* reduced) const;
 
   /* Testing only access. */
   const std::vector<std::pair<int, int>>& body_pairs() const {

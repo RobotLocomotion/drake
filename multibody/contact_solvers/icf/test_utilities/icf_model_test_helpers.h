@@ -17,6 +17,12 @@ template <typename T>
 void MakeUnconstrainedModel(IcfModel<T>* model, bool single_clique = false,
                             double time_step = 0.01);
 
+/* Makes a model reducible by setting the ReducingOnlyParameters such that
+`dofs_to_remove` would be removed in the reduced model. */
+template <typename T>
+void MakeModelReducible(IcfModel<T>* model,
+                        const std::vector<int>& dofs_to_remove);
+
 /* Adds a coupler constraint to the given model. */
 template <typename T>
 void AddCouplerConstraint(IcfModel<T>* model);

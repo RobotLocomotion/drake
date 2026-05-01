@@ -250,6 +250,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
   /* Data for PrintSimulatorStatistics(). */
   Stats stats_;
+
+  /* Reduced-problem data for joint locking. */
+  contact_solvers::icf::internal::IcfModel<T> reduced_model_;
+  contact_solvers::icf::internal::ReducedMapping mapping_;
 };
 
 }  // namespace multibody

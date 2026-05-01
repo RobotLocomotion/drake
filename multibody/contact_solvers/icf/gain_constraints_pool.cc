@@ -182,6 +182,40 @@ T GainConstraintsPool<T>::Clamp(int k, const Eigen::Ref<const VectorX<T>>& v,
   return cost;
 }
 
+template <typename T>
+void GainConstraintsPool<T>::Reduce(
+    const ReducedMapping& mapping, GainConstraintsPool<T>* reduced_pool) const {
+  // Make sure the pool is (over) allocated.
+  reduced_pool->Resize(constraint_sizes());
+  int reduced_size{0};
+  for (int k = 0; k < num_constraints(); ++k) {
+    DRAKE_DEMAND(false);
+    const int c = clique_[k];
+    if (!mapping.clique_permutation.participates(c)) {
+      continue;
+    }
+    const auto& dof_permutation = mapping.clique_dof_permutations[c];
+    const auto& indices = dof_permutation.inverse_permutation();
+    const int r_n = reduced_size;
+    const int r_c = mapping.clique_permutation.permuted_index(c);
+
+    // Fill in the reduced constraint.
+    reduced_pool->clique_[r_n] = r_c;
+    reduced_pool->constraint_size_[r_n] =
+        dof_permutation.permuted_domain_size();
+    reduced_pool->K_[r_n] = K_[k](indices);
+    reduced_pool->b_[r_n] = b_[k](indices);
+    reduced_pool->le_[r_n] = le_[k](indices);
+    reduced_pool->ue_[r_n] = ue_[k](indices);
+
+    // Track the reduced pool size.
+    ++reduced_size;
+  }
+  // Adjust pool size.
+  // XXX is this adequately non-destructive?
+  reduced_pool->Resize(reduced_pool->constraint_sizes());
+}
+
 }  // namespace internal
 }  // namespace icf
 }  // namespace contact_solvers

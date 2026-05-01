@@ -17,6 +17,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -27,6 +28,7 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using systems::Context;
 using systems::Simulator;
+using systems::SimulatorConfig;
 
 namespace multibody {
 
@@ -51,6 +53,7 @@ namespace {
 const double kTimestep = 0.01;
 const double kElbowPosition = 0.3;
 const double kArmLength = 0.1;
+const SimulatorConfig kCenicConfig{"cenic", 0.1, 1e-3, true, 0.0, 0.0, false};
 
 // Remove on 2026-09-01 per TAMSI deprecation.
 #pragma GCC diagnostic push
@@ -307,7 +310,7 @@ INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
                          ::testing::Values(0, 1));
 
 struct TrajectoryTestConfig {
-  DiscreteContactSolver solver{kDiscreteContactSolverTamsi};
+  std::optional<DiscreteContactSolver> solver{kDiscreteContactSolverTamsi};
 };
 
 std::ostream& operator<<(std::ostream& out, DiscreteContactSolver solver) {
@@ -325,7 +328,10 @@ std::ostream& operator<<(std::ostream& out, DiscreteContactSolver solver) {
 }
 
 std::ostream& operator<<(std::ostream& out, const TrajectoryTestConfig& c) {
-  return out << c.solver;
+  if (c.solver.has_value()) {
+    return out << *c.solver;
+  }
+  return out << "continuous";
 }
 
 // Fixture to construct two plants. Each containing a single double pendulum.
@@ -349,20 +355,23 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
   // corresponding to the configuration (0, kElbowPosition) in the model with
   // two joints.
   std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
-      bool weld_elbow, DiscreteContactSolver solver) {
+      bool weld_elbow, std::optional<DiscreteContactSolver> solver) {
     std::unique_ptr<MultibodyPlant<double>> plant;
-    plant = std::make_unique<MultibodyPlant<double>>(kTimestep);
-    // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
-    // arbitrarily choose two model approximations to accomplish this.
-    switch (solver) {
-      case kDiscreteContactSolverTamsi:
-        plant->set_discrete_contact_approximation(
-            kDiscreteContactApproximationTamsi);
-        break;
-      case DiscreteContactSolver::kSap:
-        plant->set_discrete_contact_approximation(
-            DiscreteContactApproximation::kSap);
-        break;
+    const double plant_timestep = solver.has_value() ? kTimestep : 0.0;
+    plant = std::make_unique<MultibodyPlant<double>>(plant_timestep);
+    if (plant->is_discrete()) {
+      // N.B. We want to exercise the TAMSI and SAP code paths. Therefore we
+      // arbitrarily choose two model approximations to accomplish this.
+      switch (*solver) {
+        case kDiscreteContactSolverTamsi:
+          plant->set_discrete_contact_approximation(
+              kDiscreteContactApproximationTamsi);
+          break;
+        case DiscreteContactSolver::kSap:
+          plant->set_discrete_contact_approximation(
+              DiscreteContactApproximation::kSap);
+          break;
+      }
     }
 
     const RigidBody<double>& body1 =
@@ -402,9 +411,9 @@ class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
 // accelerations, velocities and positions match to a given accuracy at each
 // time step.
 TEST_P(TrajectoryTest, CompareWeldAndLocked) {
-  // Allow 2 digits of precision loss to account for roundoff differences
-  // between the two code paths. This value was determined empircally by
-  // observing the maximum error between the two trajectories.
+  // Allow 2 digits of precision loss to account for roundoff differences among
+  // the various code paths. This value was determined empircally by observing
+  // the maximum error between the two trajectories.
   const double kEps = 1e2 * std::numeric_limits<double>::epsilon();
   const int kNumTimesteps = 10;
 
@@ -425,8 +434,14 @@ TEST_P(TrajectoryTest, CompareWeldAndLocked) {
 
   auto simulator_welded = std::make_unique<Simulator<double>>(
       *plant_welded_, std::move(context_welded));
+  if (!plant_welded_->is_discrete()) {
+    ApplySimulatorConfig(kCenicConfig, simulator_welded.get());
+  }
   auto simulator_locked = std::make_unique<Simulator<double>>(
       *plant_locked_, std::move(context_locked));
+  if (!plant_locked_->is_discrete()) {
+    ApplySimulatorConfig(kCenicConfig, simulator_locked.get());
+  }
   simulator_welded->Initialize();
   simulator_locked->Initialize();
 
@@ -490,6 +505,7 @@ TEST_P(TrajectoryTest, CompareWeldAndLocked) {
 // Test joint locking with TAMSI and SAP.
 std::vector<TrajectoryTestConfig> MakeTrajectoryTestCases() {
   return std::vector<TrajectoryTestConfig>{
+      {.solver = std::nullopt},
       {.solver = kDiscreteContactSolverTamsi},
       {.solver = DiscreteContactSolver::kSap},
   };

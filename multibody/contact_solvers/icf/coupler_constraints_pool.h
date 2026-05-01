@@ -10,6 +10,7 @@
 #include "drake/multibody/contact_solvers/icf/coupler_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -100,6 +101,9 @@ class CouplerConstraintsPool {
   TODO(vincekurtz): factor out common documentation among constraints. */
   void CalcCostAlongLine(const CouplerConstraintsDataPool<T>& coupler_data,
                          const VectorX<T>& w, T* dcost, T* d2cost) const;
+
+  void Reduce(const ReducedMapping& mapping,
+              CouplerConstraintsPool<T>* reduced_pool) const;
 
   /* Testing only access. */
   const std::vector<int>& constraint_to_clique() const {

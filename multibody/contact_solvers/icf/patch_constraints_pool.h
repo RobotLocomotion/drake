@@ -11,6 +11,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/patch_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -172,6 +173,9 @@ class PatchConstraintsPool {
                          const EigenPool<Vector6<T>>& U_WB_pool,
                          EigenPool<Vector6<T>>* U_AbB_W_pool, T* dcost,
                          T* d2cost) const;
+
+  void Reduce(const ReducedMapping& mapping,
+              PatchConstraintsPool<T>* reduced) const;
 
   /* Testing only access. */
   const std::vector<std::pair<int, int>>& bodies() { return bodies_; }

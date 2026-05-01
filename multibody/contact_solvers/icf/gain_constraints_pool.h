@@ -10,6 +10,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/gain_constraints_data_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -111,6 +112,9 @@ class GainConstraintsPool {
   void CalcCostAlongLine(const GainConstraintsDataPool<T>& gain_data,
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
+
+  void Reduce(const ReducedMapping& mapping,
+              GainConstraintsPool<T>* reduced) const;
 
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }
