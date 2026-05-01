@@ -257,9 +257,9 @@ GTEST_TEST(RigidGeometryTest, Pose) {
   auto mesh_field = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField<double>(sphere, mesh.get(),
                                       hydroelastic_modulus));
-  auto soft_hydro_mesh = make_unique<hydroelastic::SoftMesh>(
+  auto compliant_hydro_mesh = make_unique<hydroelastic::CompliantMesh>(
       std::move(mesh), std::move(mesh_field));
-  RigidGeometry rigid_geometry(std::move(soft_hydro_mesh));
+  RigidGeometry rigid_geometry(std::move(compliant_hydro_mesh));
   const math::RigidTransform<double> X_WG(
       math::RollPitchYaw<double>(-1.57, 0, 3), Vector3d(-0.3, -0.55, 0.36));
   rigid_geometry.set_pose_in_world(X_WG);

@@ -383,7 +383,7 @@ void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
+ComputeContactSurfaceFromCompliantVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
@@ -424,7 +424,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     return nullptr;
   };
 
-  // Compute the transformation from the rigid frame to the soft frame.
+  // Compute the transformation from the rigid frame to the compliant frame.
   const math::RigidTransform<T> X_SR = X_WS.InvertAndCompose(X_WR);
 
   if (representation == HydroelasticContactRepresentation::kTriangle) {
@@ -454,7 +454,7 @@ template class SurfaceVolumeIntersector<PolyMeshBuilder<double>, Obb, Aabb>;
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&CalcIntersection<T>, &ClipPolygonByHalfSpace<T>,
      &RemoveNearlyDuplicateVertices<T>,
-     &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>));
+     &ComputeContactSurfaceFromCompliantVolumeRigidSurface<T>));
 
 }  // namespace internal
 }  // namespace geometry

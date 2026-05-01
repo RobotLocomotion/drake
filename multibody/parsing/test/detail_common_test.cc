@@ -158,7 +158,7 @@ TEST_F(ParseProximityPropertiesTest, HydroelasticProperties) {
       if (is_rigid && compliance != HydroelasticType::kRigid) {
         return failure << fmt::format("Expected rigid compliance; found {}",
                                       compliance);
-      } else if (is_compliant && compliance != HydroelasticType::kSoft) {
+      } else if (is_compliant && compliance != HydroelasticType::kCompliant) {
         return failure << fmt::format("Expected compliant; found {}",
                                       compliance);
       }

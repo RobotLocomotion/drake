@@ -133,7 +133,7 @@ ComputeContactSurface(
     const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF);
 
 /*
- Computes the ContactSurface formed by a soft half space and the given rigid
+ Computes the ContactSurface formed by a compliant half space and the given rigid
  mesh. Pressure is defined as p = −(ϕ + δ)⋅g, where ϕ is the signed distance to
  the half space, δ is a margin value and g is a pressure scale (see below).
  Therefore the zero pressure level set is located at ϕ = -δ and the surface has
@@ -143,8 +143,8 @@ ComputeContactSurface(
  defined by the HalfSpace class, thus, only its id, its pose in a common frame
  (the world frame), and the `pressure_scale` is necessary.
 
- @param[in] id_S            The id of the soft half space.
- @param[in] X_WS            The relative pose of Frame S (the soft half space's
+ @param[in] id_S            The id of the compliant half space.
+ @param[in] X_WS            The relative pose of Frame S (the compliant half space's
                             canonical frame) and the world frame W.
  @param[in] pressure_scale  A linear scale factor that transforms penetration
                             depth into pressure values. Generally,
@@ -169,7 +169,7 @@ ComputeContactSurface(
  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
