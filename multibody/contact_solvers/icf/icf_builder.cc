@@ -21,7 +21,9 @@ using drake::multibody::internal::GetCombinedPointContactStiffness;
 using drake::multibody::internal::GetCoulombFriction;
 using drake::multibody::internal::GetHuntCrossleyDissipation;
 using drake::multibody::internal::GetPointContactStiffness;
+using drake::multibody::internal::JointLockingCacheData;
 using drake::multibody::internal::LinkJointGraph;
+using drake::multibody::internal::MultibodyPlantIcfAttorney;
 using drake::multibody::internal::SpanningForest;
 using drake::multibody::internal::TreeIndex;
 using drake::multibody::internal::WeldConstraintSpec;
@@ -91,6 +93,8 @@ void IcfBuilder<T>::UpdateModel(
     DRAKE_DEMAND(params->body_is_floating.empty());
     DRAKE_DEMAND(params->clique_sizes.empty());
     DRAKE_DEMAND(params->clique_start.empty());
+    DRAKE_DEMAND(params->r.unlocked_dofs.empty());
+    DRAKE_DEMAND(params->r.per_clique_unlocked_dofs.empty());
 
     // Yes, Virginia, this is the first time we are setting the params.
 
@@ -102,6 +106,8 @@ void IcfBuilder<T>::UpdateModel(
     params->body_mass.resize(plant_.num_bodies());
     params->J_WB.Resize(plant_.num_bodies(), 6,
                         plant_facts_.body_jacobian_cols);
+    params->r.unlocked_dofs.resize(nv);
+    params->r.per_clique_unlocked_dofs.resize(plant_facts_.clique_sizes.size());
 
     // Clique membership, and body floating status are defined at builder
     // construction time, since they depend only on the plant and not on the
@@ -128,6 +134,9 @@ void IcfBuilder<T>::UpdateModel(
                  plant_facts_.clique_sizes.size());
     DRAKE_DEMAND(params->clique_start.size() ==
                  plant_facts_.clique_sizes.size() + 1);
+    DRAKE_DEMAND(ssize(params->r.unlocked_dofs) == nv);
+    DRAKE_DEMAND(params->r.per_clique_unlocked_dofs.size() ==
+                 plant_facts_.clique_sizes.size());
   }
 
   // Set the time step δt and initial velocities v₀
@@ -140,6 +149,22 @@ void IcfBuilder<T>::UpdateModel(
 
   // Set joint damping D₀.
   params->D0 = plant_.EvalJointDampingCache(context);
+
+  // Set joint locking params.
+  const JointLockingCacheData<T>& locking =
+      MultibodyPlantIcfAttorney<T>::EvalJointLocking(plant_, context);
+  params->r.is_valid = true;
+  params->r.is_smaller = !locking.locked_velocity_indices.empty();
+  params->r.unlocked_dofs = locking.unlocked_velocity_indices;
+  for (int t = 0; t < forest.num_trees(); ++t) {
+    const int clique = tree_to_clique(t);
+    if (clique < 0) {
+      // Skip the data for trees with no velocities; see tree_to_clique().
+      continue;
+    }
+    params->r.per_clique_unlocked_dofs[clique] =
+        locking.unlocked_velocity_indices_per_tree[t];
+  }
 
   // Compute nonlinear bias terms k₀.
   MultibodyForces<T>& forces = scratch_.forces;
@@ -300,17 +325,8 @@ void IcfBuilder<T>::ValidatePlant() {
 }
 
 template <typename T>
-void IcfBuilder<T>::ValidateContext(const systems::Context<T>& context) {
-  // Revisit this condition when joint locking support is implemented. See
-  // #23764.
-  for (const JointIndex& j : plant_.GetJointIndices()) {
-    if (plant_.get_joint(j).is_locked(context)) {
-      throw std::runtime_error(
-          fmt::format("The CENIC integrator does not yet support joint "
-                      "locking, but at least joint {} is locked",
-                      j));
-    }
-  }
+void IcfBuilder<T>::ValidateContext(const systems::Context<T>&) {
+  // Nothing to complain about.
 }
 
 template <typename T>
@@ -842,8 +858,7 @@ void IcfBuilder<T>::RefreshGeometryDetails(
 
   // Retrieve constant model parameters.
   const multibody::internal::ContactByPenaltyMethodParameters& contact_params =
-      multibody::internal::MultibodyPlantIcfAttorney<
-          T>::GetContactByPenaltyMethodParameters(plant_);
+      MultibodyPlantIcfAttorney<T>::GetContactByPenaltyMethodParameters(plant_);
   const double default_dissipation = contact_params.dissipation;
   const double default_stiffness = contact_params.geometry_stiffness;
 

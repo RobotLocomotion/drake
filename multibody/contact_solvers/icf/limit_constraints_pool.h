@@ -10,6 +10,7 @@
 #include "drake/multibody/contact_solvers/icf/eigen_pool.h"
 #include "drake/multibody/contact_solvers/icf/icf_data.h"
 #include "drake/multibody/contact_solvers/icf/limit_constraints_data_pool.h"
+#include "drake/multibody/contact_solvers/icf/reduced_mapping.h"
 
 namespace drake {
 namespace multibody {
@@ -123,6 +124,9 @@ class LimitConstraintsPool {
                          const VectorX<T>& w, EigenPool<VectorX<T>>* Gw_scratch,
                          T* dcost, T* d2cost) const;
 
+  void ReduceInto(const ReducedMapping& mapping,
+                  LimitConstraintsPool<T>* reduced) const;
+
   /* Testing only access. */
   const std::vector<int>& clique() const { return clique_; }
   const std::vector<int>& constraint_size() const { return constraint_size_; }
@@ -148,6 +152,7 @@ class LimitConstraintsPool {
   // We always add limit constraints per-clique. Each of the following has size
   // num_constraints().
   std::vector<int> clique_;           // Clique the k-th limit belongs to.
+  std::vector<int> dof_;              // Clique-local dof for the k-th limit.
   std::vector<int> constraint_size_;  // Clique size for the k-th constraint.
   EigenPool<VectorX<T>> ql_;          // Lower limit.
   EigenPool<VectorX<T>> qu_;          // Upper limit.

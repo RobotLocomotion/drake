@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "drake/multibody/plant/slicing_and_indexing.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -11,6 +13,9 @@ namespace internal {
 using contact_solvers::internal::BlockSparseSymmetricMatrix;
 using contact_solvers::internal::BlockSparsityPattern;
 using Eigen::VectorBlock;
+using math::internal::PartialPermutation;
+using multibody::internal::SelectRows;
+using multibody::internal::SelectRowsCols;
 
 template <typename T>
 IcfModel<T>::IcfModel()
@@ -288,17 +293,22 @@ T IcfModel<T>::CalcCostAlongLine(
   return cost;
 }
 
+// XXX TODO try removing allocations since this will now be used in the hot
+// path for joint locking.
 template <typename T>
 void IcfModel<T>::SetSparsityPattern() {
   DRAKE_DEMAND(params_ != nullptr);
 
   // N.B. we make a copy here because block_sizes will be moved into the
   // BlockSparsityPattern at the end of this function.
+  // XXX allocates.
   std::vector<int> block_sizes = params().clique_sizes;
 
   // Build diagonal entries in the sparsity pattern.
+  // XXX allocates.
   std::vector<std::vector<int>> sparsity(num_cliques_);
   for (int i = 0; i < num_cliques_; ++i) {
+    // XXX allocates.
     sparsity[i].emplace_back(i);
   }
 
@@ -310,6 +320,7 @@ void IcfModel<T>::SetSparsityPattern() {
   // constraint data and model parameters are finalized.
   weld_constraints_pool_.PrecomputeHessianBlocks();
 
+  // XXX allocates.
   sparsity_pattern_ = std::make_unique<BlockSparsityPattern>(
       std::move(block_sizes), std::move(sparsity));
 }
@@ -339,6 +350,123 @@ void IcfModel<T>::UpdateTimeStep(const T& time_step) {
   // Recompute Hessian blocks whenever dt changes so
   // AccumulateHessian() uses up-to-date values.
   weld_constraints_pool_.PrecomputeHessianBlocks();
+}
+
+template <typename T>
+void IcfModel<T>::ReduceInto(IcfModel<T>* reduced_model,
+                             ReducedMapping* mapping) const {
+  DRAKE_DEMAND(reduced_model != nullptr);
+  DRAKE_DEMAND(mapping != nullptr);
+  DRAKE_DEMAND(params().r.is_valid == true);
+  const auto& full_params = params();
+  const auto& unlocked_dofs = full_params.r.unlocked_dofs;
+
+  mapping->velocity_permutation.ResetToSize(num_velocities());
+  mapping->clique_permutation.ResetToSize(num_cliques());
+  mapping->clique_dof_permutations.resize(num_cliques());
+
+  for (const int& unlocked : unlocked_dofs) {
+    mapping->velocity_permutation.push(unlocked);
+  }
+
+  auto reduced_params = reduced_model->ReleaseParameters();
+
+  // Reduce a bunch of easy params.
+  reduced_params->time_step = full_params.time_step;
+  reduced_params->v0 = SelectRows(full_params.v0, unlocked_dofs);
+  reduced_params->M0 = SelectRowsCols(full_params.M0, unlocked_dofs);
+  reduced_params->D0 = SelectRows(full_params.D0, unlocked_dofs);
+  reduced_params->k0 = SelectRows(full_params.k0, unlocked_dofs);
+  reduced_params->body_mass = full_params.body_mass;
+  reduced_params->body_is_floating = full_params.body_is_floating;
+
+  // Map all cliques possibly having unlocked DoFs.
+  const auto& per_clique_unlocked_dofs = full_params.r.per_clique_unlocked_dofs;
+  reduced_params->clique_sizes.clear();
+  DRAKE_DEMAND(num_cliques() == ssize(per_clique_unlocked_dofs));
+  for (int i = 0; i < num_cliques(); ++i) {
+    // Clique participates if at least one of its dofs is not locked.
+    int clique_unlocked_count = ssize(per_clique_unlocked_dofs[i]);
+    if (clique_unlocked_count > 0) {
+      reduced_params->clique_sizes.push_back(clique_unlocked_count);
+      mapping->clique_permutation.push(i);
+    }
+    mapping->clique_dof_permutations[i].ResetToSize(
+        full_params.clique_sizes[i]);
+    for (const int& per_clique_unlocked : per_clique_unlocked_dofs[i]) {
+      mapping->clique_dof_permutations[i].push(per_clique_unlocked);
+    }
+  }
+
+  // Reduce the clique size/start params.
+  reduced_params->clique_start.resize(reduced_params->clique_sizes.size() + 1);
+  reduced_params->clique_start[0] = 0;
+  std::partial_sum(reduced_params->clique_sizes.begin(),
+                   reduced_params->clique_sizes.end(),
+                   reduced_params->clique_start.begin() + 1);
+
+  // Reduce per-body params.
+  reduced_params->body_to_clique.resize(num_bodies());
+  for (int k = 0; k < num_bodies(); ++k) {
+    const int full_clique = full_params.body_to_clique[k];
+    if (is_anchored(k) ||
+        !mapping->clique_permutation.participates(full_clique)) {
+      // XXX magic number fact?
+      reduced_params->body_to_clique[k] = -1;
+    } else {
+      const int reduced_clique =
+          mapping->clique_permutation.permuted_index(full_clique);
+      reduced_params->body_to_clique[k] = reduced_clique;
+    }
+  }
+  reduced_params->J_WB.Clear();
+  for (int k = 0; k < num_bodies(); ++k) {
+    const auto& from = full_params.J_WB[k];
+    const int full_clique = full_params.body_to_clique[k];
+
+    if (is_anchored(k) ||
+        !mapping->clique_permutation.participates(full_clique)) {
+      reduced_params->J_WB.Add(from.rows(), from.cols());
+      reduced_params->J_WB[k] = from;
+    } else {
+      const int reduced_cols = ssize(per_clique_unlocked_dofs[full_clique]);
+      if (is_floating(k)) {
+        // XXX floating/free body should be either all locked or all unlocked.
+        DRAKE_DEMAND(reduced_cols == 6 || reduced_cols == 0);
+      }
+      reduced_params->J_WB.Add(6, reduced_cols);
+      // TODO(rpoyner-tri): maybe distill this into a function with
+      // eigen-map-compatible parameter types?
+      for (int q = 0; q < reduced_cols; ++q) {
+        reduced_params->J_WB[k].col(q) =
+            from.col(per_clique_unlocked_dofs[full_clique][q]);
+      }
+    }
+  }
+
+  // Initialize the reduction params of the reduced model for no further
+  // reduction.
+  reduced_params->r.is_valid = false;
+
+  // Bring the reduced model to basic sanity.
+  reduced_model->ResetParameters(std::move(reduced_params));
+  // XXX allocates.
+  reduced_model->SetSparsityPattern();
+
+  // Reduce the constraints.
+  coupler_constraints_pool().ReduceInto(
+      *mapping, &reduced_model->coupler_constraints_pool());
+  gain_constraints_pool().ReduceInto(*mapping,
+                                     &reduced_model->gain_constraints_pool());
+  limit_constraints_pool().ReduceInto(*mapping,
+                                      &reduced_model->limit_constraints_pool());
+  patch_constraints_pool().ReduceInto(*mapping,
+                                      &reduced_model->patch_constraints_pool());
+  weld_constraints_pool().ReduceInto(*mapping,
+                                     &reduced_model->weld_constraints_pool());
+
+  // Refuse multiple levels of reduction.
+  DRAKE_DEMAND(!reduced_model->is_reducible());
 }
 
 template <typename T>
@@ -388,6 +516,20 @@ void IcfModel<T>::VerifyInvariants() const {
     nv += clique_nv;
   }
   DRAKE_DEMAND(nv == num_velocities_);
+
+  if (params().r.is_valid) {
+    const auto& r = params().r;
+    DRAKE_DEMAND(r.is_smaller == (ssize(r.unlocked_dofs) < num_velocities_));
+    DRAKE_DEMAND(ssize(r.unlocked_dofs) <= num_velocities_);
+    DRAKE_DEMAND(ssize(r.per_clique_unlocked_dofs) == num_cliques_);
+    nv = 0;
+    for (int c = 0; c < num_cliques_; ++c) {
+      const auto& unlocked = r.per_clique_unlocked_dofs[c];
+      DRAKE_DEMAND(ssize(unlocked) <= clique_size(c));
+      nv += ssize(unlocked);
+    }
+    DRAKE_DEMAND(nv == ssize(r.unlocked_dofs));
+  }
 }
 
 template <typename T>
