@@ -41,6 +41,10 @@ void EigenPoolFixedSizeStorage<EigenType>::SetZero() {
 }
 
 template <typename EigenType>
+void EigenPoolFixedSizeStorage<EigenType>::Add(int /* rows */, int /* cols */) {
+  data_.resize(1 + data_.size());
+}
+template <typename EigenType>
 EigenPoolDynamicSizeStorage<EigenType>::EigenPoolDynamicSizeStorage() = default;
 
 template <typename EigenType>

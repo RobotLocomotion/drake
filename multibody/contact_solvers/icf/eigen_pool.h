@@ -41,6 +41,7 @@ class EigenPoolFixedSizeStorage {
   void Resize(int num_matrices, int rows, int cols);
   void Clear();
   void SetZero();
+  void Add(int rows, int cols);
 
  private:
   // Contiguous storage for all Eigen matrices.
@@ -85,6 +86,7 @@ class EigenPoolDynamicSizeStorage {
               std::span<const int> cols);
   void SetZero();
   void Clear();
+  void Add(int rows, int cols);
 
  private:
   struct MatrixData {
@@ -92,9 +94,6 @@ class EigenPoolDynamicSizeStorage {
     int rows{0};   // Number of rows.
     int cols{0};   // Number of columns.
   };
-
-  /* Appends a new matrix of the specified size to the end of the pool. */
-  void Add(int rows, int cols);
 
   // Contiguous storage for all Eigen scalars.
   std::vector<Scalar> data_;
@@ -229,6 +228,9 @@ class EigenPool {
 
   /* Zeroes out all matrices in this pool. */
   void SetZero() { storage_.SetZero(); }
+
+  /* Appends a new matrix of the specified size to the end of the pool. */
+  void Add(int rows, int cols) { storage_.Add(rows, cols); }
 
  private:
   /* The underlying data, one of EigenPool{Fixed,Dynamic}SizeStorage. */
