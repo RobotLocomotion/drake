@@ -52,8 +52,7 @@ targets = {
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
-                # TODO(tyler-yankee) Add testing for Ubuntu 26.04 (with uv)
-                # once it's been released.
+                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
             python_version_tuple=(3, 12, 8),
             python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
@@ -63,8 +62,7 @@ targets = {
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                # TODO(tyler-yankee) Add testing for Ubuntu 26.04 (with uv)
-                # once it's been released.
+                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
             python_version_tuple=(3, 13, 0),
             python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
@@ -74,8 +72,7 @@ targets = {
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                # TODO(tyler-yankee) Add testing for Ubuntu 26.04 once it's
-                # been released.
+                Platform("ubuntu", "26.04", "resolute"),
             ),
             python_version_tuple=(3, 14, 0),
             python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa
@@ -87,8 +84,7 @@ targets = {
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble"),
-                # TODO(tyler-yankee) Add testing for Ubuntu 26.04 (with uv)
-                # once it's been released.
+                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
             python_version_tuple=(3, 12, 8),
             python_sha="c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",  # noqa
@@ -98,8 +94,7 @@ targets = {
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                # TODO(tyler-yankee) Add testing for Ubuntu 26.04 (with uv)
-                # once it's been released.
+                Platform("ubuntu", "26.04", "resolute", PythonManager.UV),
             ),
             python_version_tuple=(3, 13, 0),
             python_sha="086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d",  # noqa
@@ -109,8 +104,7 @@ targets = {
             test_platforms=(
                 Platform("amazonlinux", "2023", "AL2023"),
                 Platform("ubuntu", "24.04", "noble", PythonManager.UV),
-                # TODO(tyler-yankee) Add testing for Ubuntu 26.04 once it's
-                # been released.
+                Platform("ubuntu", "26.04", "resolute"),
             ),
             python_version_tuple=(3, 14, 0),
             python_sha="2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9",  # noqa

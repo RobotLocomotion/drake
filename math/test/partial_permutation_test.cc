@@ -105,6 +105,11 @@ GTEST_TEST(PartialPermutation, PermuteEigenVectorAndBack) {
   p.ApplyInverse(xp, &x_back);
   const VectorXd x_back_expected = (VectorXd(4) << 0., -1., 2., 3.).finished();
   EXPECT_EQ(x_back, x_back_expected);
+
+  // The inverse permutation is the same form accepted by Eigen slicing
+  // operators.
+  VectorXd slice = x(p.inverse_permutation());
+  EXPECT_EQ(slice, xp_expected);
 }
 
 // Perform the permutation of a std::vector<int>.
@@ -153,6 +158,15 @@ GTEST_TEST(PartialPermutation, ExtendToFullPermutation) {
   EXPECT_EQ(p.domain_size(), 4);
   EXPECT_EQ(p.permuted_domain_size(), 4);
   EXPECT_EQ(p.permutation(), (PartialPermutation({0, 3, 2, 1})).permutation());
+}
+
+// Verifies the inverse permutation exposed as a vector.
+GTEST_TEST(PartialPermutation, InversePermutation) {
+  const std::vector<int> permutation = {0, -1, 2, 1};
+  PartialPermutation p(permutation);
+  std::vector<int> indices(p.inverse_permutation());
+  const std::vector<int> expected_indices = {0, 3, 2};
+  EXPECT_EQ(indices, expected_indices);
 }
 
 GTEST_TEST(VertexPartialPermutation, Constructor) {

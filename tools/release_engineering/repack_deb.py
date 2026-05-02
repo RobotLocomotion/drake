@@ -45,7 +45,6 @@ def _rlocation(relative_path):
 def _run(args):
     """Implements all steps for repacking tgz => deb."""
     # Find our runfiles.
-    deb_compat = _rlocation("debian/compat")
     deb_control_in = _rlocation("debian/control.in")
     deb_copyright = _rlocation("debian/copyright")
     deb_changelog_in = _rlocation("debian/changelog.in")
@@ -138,7 +137,6 @@ def _run(args):
     os.rename(f"{package_dir}/drake", f"{package_dir}/opt/drake")
 
     # Overwrite some metadata.
-    shutil.copy(deb_compat, f"{package_dir}/debian/")
     with open(f"{package_dir}/debian/control", "w", encoding="utf-8") as f:
         f.write(deb_control_contents)
     shutil.copy(deb_copyright, f"{package_dir}/debian/")

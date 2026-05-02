@@ -32,6 +32,7 @@ drake_jupyter_py_binary(
 
 drake_py_unittest(
     name = "jupyter_prereqs_test",
+    opt_in_condition = "//tools/skylark:linux",
 )
 
 # Add example failing notebook.

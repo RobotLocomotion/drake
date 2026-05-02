@@ -16,6 +16,7 @@ namespace internal {
 // corresponds to a distinct element of S. The mapping is defined by the
 // permutation of indexes in S into indexes in S' as ip = P(i), with i ∈ [0,n)
 // and ip ∈ [0,m).
+//
 // In general we say that we have a "partial permutation" when m < n and
 // otherwise we say we have a "full permutation" when m = n.
 // We refer to S as the "domain", and to the number of elements contained in S
@@ -24,6 +25,10 @@ namespace internal {
 // We define the "inverse permutation" as the mapping from elements s'ᵢₚ in S'
 // to elements sᵢ in S whenever there exist i ∈ [0,n) such that ip = P(i).
 // Elements sᵢ for which no ip is defined are left unchanged.
+//
+// Note: The inverse permutation can be used as the "array of indices" accepted
+// by Eigen slicing operators. The same is true for forward permutations *only*
+// when the permutation is full, not partial.
 class PartialPermutation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PartialPermutation);
@@ -152,6 +157,11 @@ class PartialPermutation {
 
   // Returns permutation as a std::vector, see constructor for details.
   const std::vector<int>& permutation() const { return permutation_; }
+
+  // Returns inverse permutation as a std::vector, see constructor for details.
+  const std::vector<int>& inverse_permutation() const {
+    return inverse_permutation_;
+  }
 
   // Extends this partial permutation to a full permutation. No-op if this
   // partial permutation is already a full permutation. This is equivalent to

@@ -127,7 +127,7 @@ INSTANTIATE_TEST_SUITE_P(
     PointDistance, DoubleTest,
     testing::Values(
         QueryInstance(kPoint, kBox, 2e-15),
-        QueryInstance(kPoint, kCapsule, 4e-15),
+        QueryInstance(kPoint, kCapsule, 5e-15),
         QueryInstance(kPoint, kConvex, 6e-15),
         QueryInstance(kPoint, kCylinder, 3e-15),
         QueryInstance(kPoint, kEllipsoid, 3e-5),

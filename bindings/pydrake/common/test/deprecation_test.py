@@ -7,15 +7,33 @@ well as an explanation why that test is separate.
 """
 
 import pydrake.common.deprecation as mut  # ruff: isort: skip
+import deprecation_example.cc_module as cc_example  # ruff: isort: skip
 
+import importlib
+import os
 import sys
 from types import ModuleType
 import unittest
 import warnings
 
+from pydrake.common import Parallelism
+
+
+def _get_full_message(partial_message):
+    return (
+        f"{partial_message} The deprecated code will be removed "
+        f"from Drake on or after 2038-01-19."
+    )
+
 
 class TestDeprecation(unittest.TestCase):
     """Tests module shim functionality."""
+
+    SEVERITY_KEY = "DRAKE_DEPRECATION_RUNTIME_SEVERITY"
+
+    def _set_severity_env(self, value: str):
+        os.environ[self.SEVERITY_KEY] = value
+        importlib.reload(mut)
 
     def tearDown(self):
         # Remove the module.
@@ -26,6 +44,10 @@ class TestDeprecation(unittest.TestCase):
         tare = sys.getrefcount(example)
         del sys.modules[example.__name__]
         self.assertEqual(sys.getrefcount(example), tare - 1)
+
+        # Undo the _set_severity_env
+        os.environ.pop(self.SEVERITY_KEY, None)
+        importlib.reload(mut)
 
     def test_module_nominal(self):
         # Test reading and writing as one would do with a normal module.
@@ -83,10 +105,7 @@ class TestDeprecation(unittest.TestCase):
     def _check_warning(self, item, message_expected, check_full=True):
         self.assertEqual(item.category, mut.DrakeDeprecationWarning)
         if check_full:
-            full_message_expected = (
-                f"{message_expected} The deprecated code will be removed "
-                f"from Drake on or after 2038-01-19."
-            )
+            full_message_expected = _get_full_message(message_expected)
             self.assertEqual(full_message_expected, str(item.message))
         else:
             self.assertIn(message_expected, str(item.message))
@@ -205,3 +224,118 @@ class TestDeprecation(unittest.TestCase):
             )
             self.assertEqual(len(w), 1)
             self._check_warning(w[0], message_expected)
+
+    def test_invalid_deprecation_env(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self._set_severity_env("bad_value")
+
+        self.assertEqual(len(w), 1)
+        self.assertEqual(
+            str(w[0].message),
+            "DRAKE_DEPRECATION_RUNTIME_SEVERITY is set to an unrecognized"
+            " value 'bad_value'. Deprecation messages will be emitted"
+            " as warnings.",
+        )
+
+    def test_ignore_deprecation_warnings(self):
+        self._set_severity_env("ignore")
+        import deprecation_example as example
+
+        with warnings.catch_warnings(record=True) as w:
+            obj = example.ExampleClass()
+            obj.deprecated_method()
+            obj.deprecated_prop
+            example.deprecated_func(50)
+
+            self.assertEqual(len(w), 0, "\n".join(map(str, w)))
+
+    def test_deprecation_as_errors(self):
+        self._set_severity_env("error")
+        import deprecation_example as example
+
+        obj = example.ExampleClass()
+
+        cases = {
+            example.ExampleClass.message_method: lambda: (
+                obj.deprecated_method()
+            ),
+            example.ExampleClass.message_prop: lambda: obj.deprecated_prop,
+            example.message_func: lambda: example.deprecated_func(50),
+        }
+
+        for message, action in cases.items():
+            with self.assertRaises(
+                mut.DrakeDeprecationWarning
+            ) as exception_context:
+                action()
+
+            expected_message = _get_full_message(message)
+            actual_message = str(exception_context.exception)
+            self.assertEqual(actual_message, expected_message)
+
+    def test_ignore_deprecation_warnings_bindings(self):
+        self._set_severity_env("ignore")
+
+        with warnings.catch_warnings(record=True) as w:
+            with self.subTest("DeprecatedParamInit"):
+                obj = cc_example.ExampleCppStruct()
+
+            with self.subTest("py_init_deprecated"):
+                cc_example.ExampleCppClass(0)
+                cc_example.ExampleCppClass(0.0)
+
+            obj = cc_example.ExampleCppClass()
+
+            with self.subTest("DeprecateAttribute"):
+                obj.DeprecatedMethod()
+                obj.DeprecatedMethod(int())
+
+            with self.subTest("WrapDeprecated"):
+                obj.overload(0)
+                obj.ParallelWork(Parallelism.Max())
+                obj.FunctionWithArgumentName(old_name=1)
+
+            self.assertEqual(len(w), 0, "\n".join(map(str, w)))
+
+    def test_deprecation_as_errors_bindings(self):
+        self._set_severity_env("error")
+
+        obj = cc_example.ExampleCppClass()
+
+        cases = [
+            (
+                lambda: cc_example.ExampleCppStruct(),
+                "Do not use ExampleCppStruct",
+            ),
+            (
+                lambda: cc_example.ExampleCppClass(0),
+                "Do not use ExampleCppClass(int)",
+            ),
+            (
+                lambda: cc_example.ExampleCppClass(0.0),
+                "Do not use ExampleCppClass(double)",
+            ),
+            (lambda: obj.DeprecatedMethod(), "Do not use DeprecatedMethod"),
+            (
+                lambda: obj.DeprecatedMethod(int()),
+                "Do not use DeprecatedMethod",
+            ),
+            (lambda: obj.overload(0), "Do not use overload(int)"),
+            (
+                lambda: obj.ParallelWork(Parallelism.Max()),
+                "Do not use ParallelWork",
+            ),
+            (
+                lambda: obj.FunctionWithArgumentName(old_name=1),
+                "FunctionWithArgumentName(old_name)",
+            ),
+        ]
+
+        for action, expected_message in cases:
+            with self.assertRaises(
+                mut.DrakeDeprecationWarning
+            ) as exception_context:
+                action()
+
+            self.assertIn(expected_message, str(exception_context.exception))
