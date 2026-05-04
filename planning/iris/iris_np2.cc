@@ -165,7 +165,11 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
       options.ray_sampler_options.num_particles_to_walk_towards <=
       options.sampled_iris_options.num_particles);
 
-  // Check if seed point is in collision.
+  // Check if seed point is in collision. The following code block is
+  // functionally identical to
+  // checker.CheckConfigCollisionFree(starting_ellipsoid_center_ambient), but
+  // must be duplicated in order to send a descriptive error message with
+  // information about which geometries are colliding.
   const auto& context =
       checker.UpdatePositions(starting_ellipsoid_center_ambient);
   auto query_object = checker.plant()
@@ -185,6 +189,12 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
           fmt_eigen(starting_ellipsoid.center().transpose()),
           inspector.GetName(geomA), inspector.GetName(geomB)));
     }
+    // Note: this check is necessary but not sufficient. If there is a point
+    // in configuration space within
+    // options.sampled_iris_options.configuration_space_margin distance of the
+    // seed point (and options.sampled_iris_options.relax_margin is false), the
+    // algorithm still can fail. (But this condition cannot be checked
+    // directly.)
   }
 
   // Check if seed point satisfies user-specified constraints.
@@ -194,6 +204,9 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
                        parameterization_dimension);
 
     // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
+    // The current value matches
+    // CounterexampleConstraint::kSolverConstraintTolerance, which @russt
+    // observed to be a reasonable value.
     const double constraints_tol = 1e-6;
     if (!internal::CheckProgConstraints(
             options.sampled_iris_options.prog_with_additional_constraints,

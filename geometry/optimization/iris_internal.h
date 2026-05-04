@@ -270,7 +270,7 @@ class CounterexampleConstraint : public solvers::Constraint {
                binding_with_constraint_to_be_falsified,
            int index, bool falsify_lower_bound);
 
-  // To find a counterexample for a constraints,
+  // To find a counterexample for a constraint,
   //  g(x) ≤ ub,
   // we need to ask the solver to find
   //  g(x) + kSolverConstraintTolerance > ub,
