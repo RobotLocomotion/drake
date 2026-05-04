@@ -1,0 +1,35 @@
+[
+    {
+	"type": "download_deb",
+        "name": "bazelisk",
+        "version": "1.28.1",
+        "arches": ["amd64"],
+	"codenames": ["noble", "resolute"],
+        "sha256": "16c2d58a2e78171cf8db21bb4ae7908d91d9cf54ba62efb140d2a42731a3ed60",
+        "urls": [
+            "https://github.com/bazelbuild/bazelisk/releases/download/v1.28.1/bazelisk-amd64.deb"
+        ]
+    },
+    {
+	"type": "download_deb",
+        "name": "bazelisk",
+        "version": "1.28.1",
+        "arches": ["arm64"],
+	"codenames": ["noble", "resolute"],
+        "sha256": "47f787fe814c1bbc3b414ec5a876de706fd12fd0fa62f51549f3487575a827f3",
+        "urls": [
+            "https://github.com/bazelbuild/bazelisk/releases/download/v1.28.1/bazelisk-arm64.deb"
+        ]
+    },
+    {
+	"type": "download_deb",
+        "name": "kcov",
+        "version": "43+dfsg-1",
+        "arches": ["amd64"],
+	"codenames": ["noble"],
+        "sha256": "d192fd3cfd0d63e95f13a1b2120d0603a31b3a034b82c618d5e18205517d5cbb",
+        "urls": [
+            "https://drake-mirror.csail.mit.edu/ubuntu/pool/universe/k/kcov/kcov_43%2Bdfsg-1_amd64.deb"
+        ]
+    }
+]
