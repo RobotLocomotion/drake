@@ -51,13 +51,13 @@ class LimitMalloc final {
   /// All allocations will fail.
   /// For now, only *one* instance of this class may be created at a time.
   /// (In the future, we may allow updating the limits by nesting these guards.)
-  LimitMalloc();
+  [[nodiscard]] LimitMalloc();
 
   /// Applies malloc limits until this object's destructor is run.
   /// A allocations will succeed except for any limits designated in args.
   /// For now, only *one* instance of this class may be created at a time.
   /// (In the future, we may allow updating the limits by nesting these guards.)
-  explicit LimitMalloc(LimitMallocParams args);
+  [[nodiscard]] explicit LimitMalloc(LimitMallocParams args);
 
   /// Undoes this object's malloc limits.
   ~LimitMalloc();
