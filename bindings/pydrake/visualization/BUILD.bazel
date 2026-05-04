@@ -157,6 +157,8 @@ drake_py_unittest(
         "//multibody/parsing:test_models",
         "//planning/test_utilities:collision_ground_plane.sdf",
     ],
+    # Experiences spurious crashes in CI.
+    flaky = True,
     deps = [
         ":model_visualizer",
     ],
