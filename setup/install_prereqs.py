@@ -38,6 +38,14 @@ def _workspace_dir() -> Path:
     return _MY_DIR.parent
 
 
+@functools.cache
+def _is_ubuntu() -> bool:
+    if platform.system() == "Linux":
+        os_release = platform.freedesktop_os_release()["ID"]
+        return os_release == "ubuntu"
+    return False
+
+
 def _run(
     *,
     args: list,
@@ -130,6 +138,34 @@ def _prefetch_bazel():
     _run(args=["bazel", "version"], cwd=_workspace_dir(), quiet=True)
 
 
+def _fix_rules_cc_local_config():
+    """Force Bazel to respect the new linker from #24442 in developer builds.
+    TODO(2026-08-01) Remove this shim, assuming all developers have upgraded.
+    """
+    local_config_cc = (
+        _workspace_dir()
+        / "bazel-drake"
+        / "external"
+        / "rules_cc++cc_configure_extension+local_config_cc"
+        / "BUILD"
+    )
+    if not local_config_cc.exists():
+        logging.debug("No rules_cc exists to reset.")
+        return
+
+    if "-fuse-ld=gold" not in local_config_cc.read_text(encoding="utf-8"):
+        logging.debug("No sign of ld.gold in rules_cc.")
+        return
+
+    logging.info("Resetting bazel rules_cc ...")
+    _run(
+        args=["bazel", "fetch", "//:install", "--repo_env=CC=/bin/false"],
+        cwd=_workspace_dir(),
+        quiet=True,
+    )
+    _run(args=["bazel", "shutdown"], cwd=_workspace_dir(), quiet=True)
+
+
 def main():
     # Log at INFO, not just WARNING.
     logging.basicConfig(
@@ -176,6 +212,8 @@ def main():
         _setup_user_environment()
     if args.developer:
         _prefetch_bazel()
+    if args.developer and _is_ubuntu():
+        _fix_rules_cc_local_config()
 
 
 if __name__ == "__main__":
