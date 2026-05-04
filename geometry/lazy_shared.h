@@ -4,17 +4,12 @@
 #include <type_traits>
 #include <utility>
 
+#include "drake/common/atomic_shared_ptr.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
-
-// LLVM libc++ doesn't support std::atomic<std::shared_ptr<T>>, so will need a
-// different implementation; https://github.com/llvm/llvm-project/issues/99980.
-#ifdef __cpp_lib_atomic_shared_ptr
-
-// This is the implementation targeted at libstdc++ (GCC).
 
 /* Wrapper that stores a T, with the ability to initalize it on first use ("lazy
 evaluation") in a thread-safe way.
@@ -92,57 +87,8 @@ class LazyShared {
   }
 
  private:
-  mutable std::atomic<std::shared_ptr<const T>> data_;
+  mutable drake::internal::atomic_shared_ptr<const T> data_;
 };
-
-#else  // __cpp_lib_atomic_shared_ptr
-
-// This is the implementation targeted at libc++ (LLVM). It is exactly the same
-// logic as the other implementation above, but uses the deprecated atomic
-// operation functions, instead of the std::atomic template class. Refer to the
-// other implementation above for comments and explanation.
-
-template <typename T>
-class LazyShared {
- public:
-  LazyShared() = default;
-  LazyShared(const LazyShared& other) : data_(std::atomic_load(&other.data_)) {}
-  LazyShared(LazyShared&& other) noexcept
-      : data_(std::atomic_exchange(&other.data_, std::shared_ptr<const T>())) {}
-  LazyShared& operator=(const LazyShared& other) {
-    if (this != &other) {
-      std::atomic_store(&data_, std::atomic_load(&other.data_));
-    }
-    return *this;
-  }
-  LazyShared& operator=(LazyShared&& other) noexcept {
-    if (this != &other) {
-      std::atomic_store(&data_, std::atomic_exchange(
-                                    &other.data_, std::shared_ptr<const T>()));
-    }
-    return *this;
-  }
-  ~LazyShared() = default;
-  template <typename Factory>
-  const T& GetOrMake(Factory&& factory) const
-    requires(std::is_invocable_r_v<std::shared_ptr<const T>, Factory>)
-  {
-    std::shared_ptr<const T> result = std::atomic_load(&data_);
-    if (result == nullptr) {
-      std::shared_ptr<const T> candidate = factory();
-      DRAKE_DEMAND(candidate != nullptr);
-      if (std::atomic_compare_exchange_strong(&data_, &result, candidate)) {
-        result = std::move(candidate);
-      }
-    }
-    return *result;
-  }
-
- private:
-  mutable std::shared_ptr<const T> data_;
-};
-
-#endif  // __cpp_lib_atomic_shared_ptr
 
 }  // namespace internal
 }  // namespace geometry
