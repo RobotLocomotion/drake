@@ -1389,6 +1389,7 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
   std::optional<LinkInfo> link_info;
 
   const std::set<std::string> supported_link_elements{
+      "drake:surface_velocity_normal",
       "drake:visual", "collision", "gravity", "inertial",
       "kinematic",    "pose",      "visual"};
 
@@ -1493,6 +1494,14 @@ std::optional<LinkInfo> AddRigidLinkFromSpecification(
       }
     }
   }
+
+  // Parse link-level surface velocity normal (if present) and register.
+  if (link_element->HasElement("drake:surface_velocity_normal")) {
+    const Vector3d n = ToVector3(
+        link_element->Get<gz::math::Vector3d>("drake:surface_velocity_normal"));
+    plant->RegisterSurfaceVelocity(body, n);
+  }
+
   return link_info;
 }
 

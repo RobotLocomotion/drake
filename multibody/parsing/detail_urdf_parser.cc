@@ -257,6 +257,23 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
           std::move(*geometry_instance->mutable_proximity_properties()));
     }
   }
+
+  // Parse link-level surface velocity normal (if present) and register.
+  // World body is excluded since it cannot have surface velocity.
+  if (body_pointer != &w_.plant->world_body()) {
+    const XMLElement* sv_node =
+        node->FirstChildElement("drake:surface_velocity_normal");
+    if (sv_node != nullptr) {
+      Eigen::Vector3d n;
+      if (!ParseVectorAttribute(sv_node, "normal", &n)) {
+        Error(*sv_node,
+              "Failed to parse 'normal' attribute of "
+              "<drake:surface_velocity_normal>; ignoring.");
+      } else {
+        w_.plant->RegisterSurfaceVelocity(*body_pointer, n);
+      }
+    }
+  }
 }
 
 void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {

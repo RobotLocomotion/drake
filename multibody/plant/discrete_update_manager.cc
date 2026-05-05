@@ -57,6 +57,8 @@ template <typename T>
 void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   const auto& query_object_input_ticket =
       plant().get_geometry_query_input_port().ticket();
+  const auto& surface_speeds_input_ticket =
+      plant().get_surface_speeds_input_port().ticket();
   const auto& contact_solver_results_cache_entry = DeclareCacheEntry(
       "Contact solver results",
       systems::ValueProducer(
@@ -109,7 +111,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcDiscreteContactPairs),
       {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket(), query_object_input_ticket});
+       systems::System<T>::all_parameters_ticket(), query_object_input_ticket,
+       surface_speeds_input_ticket});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
 
@@ -698,29 +701,18 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     math::RotationMatrix<T> R_WC =
         math::RotationMatrix<T>::MakeFromOneVector(nhat_AB_W, 2);
 
-    // Note: if Ga is the geometry affixed to body A, then X_WA is equal to
-    // X_WGa iff X_AGa is identity. That is not generally true.
-    const RigidTransform<double>& X_AGa = inspector.GetPoseInFrame(pair.id_A);
     const RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
-    const RigidTransform<T> X_WGa = X_WA * X_AGa.cast<T>();
-
-    const RigidTransform<double>& X_BGb = inspector.GetPoseInFrame(pair.id_B);
     const RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const RigidTransform<T> X_WGb = X_WB * X_BGb.cast<T>();
 
-    // The surface velocity is a vector expressed in Ga (or Gb, respectively).
-    // Based on the configuration of the robot, those vectors can be expressed
-    // in the common world frame so they can be combined.
-    // Finally, we'll re-express the result in the contact frame C.
-    const Vector3<T> v_A_ss = plant().GetSurfaceVelocity(
-        pair.id_A, inspector, X_WGa, -pair.nhat_BA_W);
-    const Vector3<T> v_A_ss_W = X_WGa.rotation() * v_A_ss;
-
-    const Vector3<T> v_B_ss =
-        plant().GetSurfaceVelocity(pair.id_B, inspector, X_WGb, pair.nhat_BA_W);
-    const Vector3<T> v_B_ss_W = X_WGb.rotation() * v_B_ss;
+    // Surface velocity contributions expressed in the world frame.
+    const Vector3<T> v_A_ss_W =
+        X_WA.rotation() * plant().ComputeSurfaceVelocity(
+                              body_A.index(), context, -pair.nhat_BA_W);
+    const Vector3<T> v_B_ss_W =
+        X_WB.rotation() *
+        plant().ComputeSurfaceVelocity(body_B.index(), context, pair.nhat_BA_W);
 
     // Relative separation velocity due to surface velocity in contact frame C.
     const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_B_ss_W - v_A_ss_W);
@@ -889,20 +881,12 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         id_M, id_N, default_dissipation_time_constant, body_A.name(),
         body_B.name(), inspector);
     // Combine friction coefficients.
-    const T mu =
-        GetCombinedDynamicCoulombFriction(id_M, id_N, inspector);
+    const T mu = GetCombinedDynamicCoulombFriction(id_M, id_N, inspector);
 
-    // Note: if M is the geometry affixed to body A, then X_WA is equal to
-    // X_WM iff X_AM is identity. That is not generally true.
-    const RigidTransform<double>& X_AM = inspector.GetPoseInFrame(id_M);
     const RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
-    const RigidTransform<T> X_WM = X_WA * X_AM.cast<T>();
-
-    const RigidTransform<double>& X_BN = inspector.GetPoseInFrame(id_N);
     const RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const RigidTransform<T> X_WN = X_WB * X_BN.cast<T>();
 
     for (int face = 0; face < s.num_faces(); ++face) {
       const T& Ae = s.area(face);  // Face element area.
@@ -975,25 +959,17 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
         math::RotationMatrix<T> R_WC =
             math::RotationMatrix<T>::MakeFromOneVector(nhat_AB_W, 2);
 
-        // TODO: Calculate v_AcBc_C_ss.
-        // START
+        // Surface velocity contributions expressed in the world frame.
+        const Vector3<T> v_A_ss_W =
+            X_WA.rotation() *
+            plant().ComputeSurfaceVelocity(body_A_index, context, nhat_AB_W);
+        const Vector3<T> v_B_ss_W =
+            X_WB.rotation() *
+            plant().ComputeSurfaceVelocity(body_B_index, context, -nhat_AB_W);
 
-        // The surface velocity is a vector expressed in Ga (or Gb, respectively).
-        // Based on the configuration of the robot, those vectors can be expressed
-        // in the common world frame so they can be combined.
-        // Finally, we'll re-express the result in the contact frame C.
-        const Vector3<T> v_A_ss =
-            plant().GetSurfaceVelocity(id_M, inspector, X_WM, nhat_AB_W);
-        const Vector3<T> v_A_ss_W = X_WM.rotation() * v_A_ss;
-
-        const Vector3<T> v_B_ss =
-            plant().GetSurfaceVelocity(id_N, inspector, X_WN, -nhat_AB_W);
-        const Vector3<T> v_B_ss_W = X_WN.rotation() * v_B_ss;
-
-        // Relative separation velocity due to surface velocity in contact frame C.
+        // Relative separation velocity due to surface velocity in contact frame
+        // C.
         const Vector3<T> v_AcBc_C_ss = R_WC.transpose() * (v_B_ss_W - v_A_ss_W);
-
-        // END
 
         // Contact velocity stored in the current context (previous time
         // step).

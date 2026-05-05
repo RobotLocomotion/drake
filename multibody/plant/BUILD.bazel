@@ -1300,8 +1300,17 @@ drake_cc_googletest(
     name = "surface_velocity_test",
     srcs = ["test/surface_velocity_test.cc"],
     deps = [
-        ":multibody_plant_core",
+        ":multibody_plant_config_functions",
+        ":plant",
+        "//common:value",
         "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:proximity_properties",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//multibody/parsing:parser",
+        "//systems/analysis:simulator",
+        "//systems/framework:bus_value",
+        "//systems/framework:diagram_builder",
     ],
 )
 

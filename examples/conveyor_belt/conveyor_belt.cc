@@ -4,6 +4,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/value.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
@@ -13,7 +14,9 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_value_source.h"
 #include "drake/visualization/visualization_config.h"
 #include "drake/visualization/visualization_config_functions.h"
 
@@ -74,6 +77,33 @@ int do_main_continous_plant() {
   }
 
   plant.Finalize();
+
+  // Wire surface speeds to the "surface_speeds" bus input port. Each signal
+  // name is the fully qualified body name (model_instance::body_name).
+  {
+    const auto mi = plant.GetModelInstanceByName("two_objects_model");
+    systems::BusValue bus;
+    auto set = [&](const std::string& body_name, double speed) {
+      const std::string signal_name =
+          plant.GetBodyByName(body_name, mi).scoped_name().to_string();
+      bus.Set(signal_name, Value<double>(speed));
+    };
+    set("conveyor_belt", 0.25);
+    set("box", -0.125);
+    set("capsule", 0.25);
+    set("Cylinder", 0.25);
+    set("Sphere", 0.25);
+    set("Ellipsoid", 0.25);
+    set("Mesh", 0.25);
+    set("hydro_pad", 0.5);
+    set("hydro_sphere", 0.5);
+
+    auto* speed_source =
+        builder.AddSystem<systems::ConstantValueSource<double>>(
+            Value<systems::BusValue>(bus));
+    builder.Connect(speed_source->get_output_port(0),
+                    plant.get_surface_speeds_input_port());
+  }
 
   // Set up visualization
   auto meshcat = std::make_shared<geometry::Meshcat>();

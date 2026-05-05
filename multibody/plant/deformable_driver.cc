@@ -580,15 +580,14 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        for body B. */
       Vector3<T> v_b = Vector3<T>::Zero();
       if (!is_deformable_vs_deformable) {
+        const BodyIndex rigid_body_B_index(body_index_B);
         const RigidBody<T>& rigid_body_B =
-            manager_->plant().get_body(BodyIndex(body_index_B));
+            manager_->plant().get_body(rigid_body_B_index);
         const math::RigidTransform<T>& X_WB =
             manager_->plant().EvalBodyPoseInWorld(context, rigid_body_B);
-        const math::RigidTransform<T> X_WGb =
-            X_WB * inspector.GetPoseInFrame(id_B).template cast<T>();
-        const Vector3<T> v_B_ss = manager_->plant().GetSurfaceVelocity(
-            id_B, inspector, X_WGb, surface.nhats_W()[i]);
-        v_b = R_WC.transpose() * (X_WGb.rotation() * v_B_ss);
+        const Vector3<T> v_B_ss = manager_->plant().ComputeSurfaceVelocity(
+            rigid_body_B_index, context, surface.nhats_W()[i]);
+        v_b = R_WC.transpose() * (X_WB.rotation() * v_B_ss);
       }
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),

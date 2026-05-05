@@ -221,21 +221,22 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
   // velocity, including any surface velocity contributions.
   const SpatialVelocity<T> V_BqAq_W = V_WAq - V_WBq;
   Vector3<T> v_BqAq_W = V_BqAq_W.translational();
-  // Add per-face surface velocity for geometry M (body A). The face normal
-  // nhat_W is expressed in body A's frame to match n_ss_A (which is stored
-  // in body A's frame after being pre-rotated by R_AM in the caller).
+  // Add/subtract per-face surface velocities. The face normal nhat_W points
+  // *out of* N and *into* M, so it is the outward contact normal for body B
+  // (N) but the inward normal for body A (M). We negate for body A to recover
+  // its outward contact normal, matching the convention used by
+  // ComputeSurfaceVelocity and the point-contact paths.
   if (data.surface_speed_A.has_value() && data.n_ss_A.has_value()) {
-    const Vector3<T> n_A = data.X_WA.rotation().inverse() * nhat_W;
-    v_BqAq_W += data.X_WA.rotation() *
-        (data.surface_speed_A.value() *
-         data.n_ss_A->template cast<T>().cross(n_A));
+    const Vector3<T> n_A = data.X_WA.rotation().inverse() * (-nhat_W);
+    v_BqAq_W +=
+        data.X_WA.rotation() * (data.surface_speed_A.value() *
+                                data.n_ss_A->template cast<T>().cross(n_A));
   }
-  // Subtract per-face surface velocity for geometry N (body B).
   if (data.surface_speed_B.has_value() && data.n_ss_B.has_value()) {
     const Vector3<T> n_B = data.X_WB.rotation().inverse() * nhat_W;
-    v_BqAq_W -= data.X_WB.rotation() *
-        (data.surface_speed_B.value() *
-         data.n_ss_B->template cast<T>().cross(n_B));
+    v_BqAq_W -=
+        data.X_WB.rotation() * (data.surface_speed_B.value() *
+                                data.n_ss_B->template cast<T>().cross(n_B));
   }
 
   // Get the velocity along the normal to the contact surface. Note that a

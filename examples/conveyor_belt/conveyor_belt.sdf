@@ -48,6 +48,7 @@
     <!-- Conveyor belt -->
     <link name="conveyor_belt">
       <pose> 0 0 1 0 0.0 0.78</pose>
+      <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
       <visual name="conveyor_belt_visual">
         <geometry>
           <box>
@@ -68,8 +69,6 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.25</drake:surface_speed>
-          <drake:surface_velocity_normal>0.0 1.0 0</drake:surface_velocity_normal>
           <drake:mesh_resolution_hint>0.2</drake:mesh_resolution_hint>
         </drake:proximity_properties>
       </collision>
@@ -82,6 +81,7 @@
     <!-- Blue cube on top of the conveyor belt -->
     <link name="box">
       <pose> -2 -2 1.27 0 0.0 0.0</pose> <!-- Position sightly above the belt -->
+      <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
       <visual name="box_visual">
         <geometry>
           <box>
@@ -102,14 +102,13 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.7</drake:mu_dynamic>
           <drake:mu_static>0.7</drake:mu_static>
-          <drake:surface_speed>-0.125</drake:surface_speed>
-          <drake:surface_velocity_normal>0 1 0</drake:surface_velocity_normal>
         </drake:proximity_properties>
       </collision>
     </link>
 
     <link name="capsule">
       <pose> 0.5 0.5 0.3 1.57 0.0 0.0</pose>
+      <drake:surface_velocity_normal>0.0 0.0 1.0</drake:surface_velocity_normal>
       <visual name="capsule_visual">
         <geometry>
           <capsule>
@@ -132,14 +131,13 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.25</drake:surface_speed>
-          <drake:surface_velocity_normal>0.0 0.0 0.1</drake:surface_velocity_normal>
         </drake:proximity_properties>
-      </collision>    
+      </collision>
     </link>
 
     <link name="Cylinder">
       <pose> -0.5 -0.5 0.3 1.57 0.77 0.0</pose>
+      <drake:surface_velocity_normal>0.0 0.0 1.0</drake:surface_velocity_normal>
       <visual name="cylinder_visual">
         <geometry>
           <cylinder>
@@ -162,14 +160,13 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.25</drake:surface_speed>
-          <drake:surface_velocity_normal>0.0 0.0 0.1</drake:surface_velocity_normal>
         </drake:proximity_properties>
-      </collision>    
+      </collision>
     </link>
 
     <link name="Sphere">
       <pose> 0.5 -0.5 0.3 0 0 0.0</pose>
+      <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
       <visual name="sphere_visual">
         <geometry>
           <sphere>
@@ -190,14 +187,13 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.25</drake:surface_speed>
-          <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
         </drake:proximity_properties>
-      </collision>    
+      </collision>
     </link>
 
     <link name="Ellipsoid">
       <pose> -1.0 0.5 0.7 0 0 0.0</pose>
+      <drake:surface_velocity_normal>-1.0 0.0 0.0</drake:surface_velocity_normal>
       <visual name="ellipsoid_visual">
         <geometry>
           <ellipsoid>
@@ -218,14 +214,13 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.25</drake:surface_speed>
-          <drake:surface_velocity_normal>-1.0 0.0 0.0</drake:surface_velocity_normal>
         </drake:proximity_properties>
-      </collision>    
+      </collision>
     </link>
 
     <link name="Mesh">
       <pose> 3.0 -3.5 1.3 0.5 0.8 0.0</pose>
+      <drake:surface_velocity_normal>0.0 -1.0 0.0</drake:surface_velocity_normal>
       <visual name="mesh_visual">
         <geometry>
           <mesh>
@@ -242,10 +237,8 @@
         <drake:proximity_properties>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.25</drake:surface_speed>
-          <drake:surface_velocity_normal>0.0 -1.0 0.0</drake:surface_velocity_normal>
         </drake:proximity_properties>
-      </collision>    
+      </collision>
     </link>
 
     <!-- ---- Hydroelastic demo ----
@@ -260,6 +253,7 @@
      ground like a tank tread. -->
     <link name="hydro_pad">
       <pose>3 0 0.1 0 0 0</pose>
+      <drake:surface_velocity_normal>0.0 -1.0 0.0</drake:surface_velocity_normal>
       <inertial>
         <mass>1.0</mass>
         <inertia>
@@ -289,8 +283,6 @@
           <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
           <drake:mu_dynamic>0.8</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>
-          <drake:surface_speed>0.5</drake:surface_speed>
-          <drake:surface_velocity_normal>0.0 -1.0 0.0</drake:surface_velocity_normal>
         </drake:proximity_properties>
       </collision>
     </link>
@@ -299,6 +291,7 @@
      velocity that is perpendicular to the hydro pad's surface velocity.-->
     <link name="hydro_sphere">
       <pose>3 0 1.3 0 0 0</pose>
+      <drake:surface_velocity_normal>1.0 0.0 0.0</drake:surface_velocity_normal>
       <inertial>
         <mass>0.5</mass>
         <inertia>
@@ -326,8 +319,6 @@
           <drake:mesh_resolution_hint>0.05</drake:mesh_resolution_hint>
           <drake:mu_dynamic>0.7</drake:mu_dynamic>
           <drake:mu_static>0.9</drake:mu_static>
-          <drake:surface_speed>0.5</drake:surface_speed>
-          <drake:surface_velocity_normal>1.0 0.0 0.0</drake:surface_velocity_normal>
         </drake:proximity_properties>
       </collision>
     </link>
