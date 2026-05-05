@@ -19,30 +19,30 @@ std::string DeprecateWhenEmptyName(std::string name, std::string_view type);
 }  // namespace internal
 
 // Forward declarations.
-// template <typename T>
-// class RigidBody;
+template <typename T>
+class RigidBody;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
-/// _physical frame_) of the Link (RigidBody) to which it is attached. The
-/// %Frame's origin is a material point of its link, and its axes have fixed
-/// directions in that link. A %Frame's pose (position and orientation) with
-/// respect to its LinkFrame may be parameterized, but is fixed (not time or
-/// state dependent) once parameters have been set.
+/// _physical frame_) of its underlying RigidBody. The %Frame's origin is a
+/// material point of its RigidBody, and its axes have fixed directions
+/// in that body. A %Frame's pose (position and orientation) with respect to its
+/// RigidBodyFrame may be parameterized, but is fixed (not time or state
+/// dependent) once parameters have been set.
 ///
 /// An important characteristic of a %Frame is that forces or torques applied to
-/// a %Frame are applied to the %Frame's underlying link. Force-producing
+/// a %Frame are applied to the %Frame's underlying RigidBody. Force-producing
 /// elements like joints, actuators, and constraints usually employ two %Frames,
-/// with one %Frame connected to one link and the other connected to a different
-/// link. Every %Frame F can report the link L to which it is attached and
-/// its pose X_LF with respect to L's LinkFrame.
+/// with one %Frame connected to one body and the other connected to a different
+/// body. Every %Frame F can report the RigidBody B to which it is attached and
+/// its pose X_BF with respect to B's RigidBodyFrame.
 ///
 /// A %Frame's pose in World (or relative to other frames) is always calculated
-/// starting with its pose relative to its underlying LinkFrame. Subclasses
-/// derived from %Frame differ in how kinematic calculations are performed. For
-/// example, the angular velocity of a FixedOffsetFrame or LinkFrame is
-/// identical to the angular velocity of its underlying link, whereas the
-/// translational velocity of a FixedOffsetFrame differs from that of a
-/// LinkFrame.
+/// starting with its pose relative to its underlying RigidBodyFrame.
+/// Subclasses derived from %Frame differ in how kinematic calculations are
+/// performed. For example, the angular velocity of a FixedOffsetFrame or
+/// RigidBodyFrame is identical to the angular velocity of its underlying body,
+/// whereas the translational velocity of a FixedOffsetFrame differs from that
+/// of a RigidBodyFrame.
 ///
 /// %Frame provides methods for obtaining its current orientation, position,
 /// motion, etc. from a Context passed to those methods.
@@ -84,11 +84,12 @@ class Frame : public MultibodyElement<T> {
   /// MultibodyPlant.
   ScopedName scoped_name() const;
 
-  /// Returns a reference to the link-relative pose X_LF giving the pose of this
-  /// Frame with respect to its link's LinkFrame. This may depend on parameters
-  /// in the Context but not on time or state. The first time this is called
-  /// after a parameter change will precalculate offset poses for all %Frames
-  /// into the Context's cache; subsequent calls on any %Frame are very fast.
+  /// Returns a reference to the body-relative pose X_BF giving the pose of this
+  /// Frame with respect to its body's RigidBodyFrame. This may depend on
+  /// parameters in the Context but not on time or state. The first time this is
+  /// called after a parameter change will precalculate offset poses for all
+  /// %Frames into the Context's cache; subsequent calls on any %Frame are very
+  /// fast.
   const math::RigidTransform<T>& EvalPoseInBodyFrame(
       const systems::Context<T>& context) const {
     const internal::FrameBodyPoseCache<T>& frame_body_poses =
@@ -96,19 +97,20 @@ class Frame : public MultibodyElement<T> {
     return get_X_LF(frame_body_poses);
   }
 
-  /// Returns the pose `X_LF` of `this` frame F in the link frame L associated
-  /// with this frame. In particular, if `this` **is** the link frame L, this
-  /// method directly returns the identity transformation. Note that this ONLY
-  /// depends on the Parameters in the context; it does not depend on time,
-  /// input, state, etc.
+  /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
+  /// with this frame.
+  /// In particular, if `this` **is** the body frame B, this method directly
+  /// returns the identity transformation.
+  /// Note that this ONLY depends on the Parameters in the context; it does
+  /// not depend on time, input, state, etc.
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const {
     return DoCalcPoseInBodyFrame(context.get_parameters());
   }
 
-  /// Returns the rotation matrix `R_LF` that relates link frame L to `this`
-  /// frame F (L is the link frame to which `this` frame F is attached).
-  /// @note If `this` is L, this method returns the identity RotationMatrix.
+  /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /// frame F (B is the body frame to which `this` frame F is attached).
+  /// @note If `this` is B, this method returns the identity RotationMatrix.
   /// Note that this ONLY depends on the Parameters in the context; it does
   /// not depend on time, input, state, etc.
   math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
@@ -116,12 +118,12 @@ class Frame : public MultibodyElement<T> {
     return DoCalcRotationMatrixInBodyFrame(context.get_parameters());
   }
 
-  /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_LF` of
-  /// `this` frame F in the link frame L associated with this frame.
+  /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
+  /// `this` frame F in the body frame B associated with this frame.
   /// @throws std::exception if called on a %Frame that does not have a
-  /// fixed offset in the link frame.
+  /// fixed offset in the body frame.
   // %Frame sub-classes that can represent the fixed pose of `this` frame F in
-  // a link frame L, must override this method.
+  // a body frame B, must override this method.
   virtual math::RigidTransform<T> GetFixedPoseInBodyFrame() const {
     throw std::logic_error(
         "Attempting to retrieve a fixed pose from a frame of type '" +
@@ -129,12 +131,11 @@ class Frame : public MultibodyElement<T> {
         "', which does not support this operation.");
   }
 
-  /// Returns the rotation matrix `R_LF` that relates link frame L to `this`
-  /// frame F (L is the link frame of the link to which `this` frame F is
-  /// attached). @throws std::exception if `this` frame F is a %Frame that does
-  /// not have a fixed offset in the link frame L (i.e., `R_LF` is not
-  /// constant). %Frame sub-classes that have a constant `R_LF` must override
-  /// this method.
+  /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /// frame F (B is the body frame to which `this` frame F is attached).
+  /// @throws std::exception if `this` frame F is a %Frame that does not have
+  /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
+  /// %Frame sub-classes that have a constant `R_BF` must override this method.
   virtual math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const {
     throw std::logic_error(
         "Unable to retrieve a fixed rotation matrix from a frame of type '" +
@@ -149,13 +150,15 @@ class Frame : public MultibodyElement<T> {
   //  runtime.
 
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
-  /// computes the pose `X_LQ` of frame Q in the link frame L to which this
-  /// frame is attached. In other words, if the pose of `this` frame F in the
-  /// link frame L is `X_LF`, this method computes the pose `X_LQ` of frame Q in
-  /// the link frame L as `X_LQ = X_LF * X_FQ`. In particular, if `this` **is**
-  /// the link frame L, i.e. `X_LF` is the identity transformation, this method
-  /// directly returns `X_FQ`. Specific frame subclasses can override this
-  /// method to provide faster implementations if needed.
+  /// computes the pose `X_BQ` of frame Q in the body frame B to which this
+  /// frame is attached.
+  /// In other words, if the pose of `this` frame F in the body frame B is
+  /// `X_BF`, this method computes the pose `X_BQ` of frame Q in the body frame
+  /// B as `X_BQ = X_BF * X_FQ`.
+  /// In particular, if `this` **is** the body frame B, i.e. `X_BF` is the
+  /// identity transformation, this method directly returns `X_FQ`.
+  /// Specific frame subclasses can override this method to provide faster
+  /// implementations if needed.
   math::RigidTransform<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const math::RigidTransform<T>& X_FQ) const {
@@ -171,9 +174,9 @@ class Frame : public MultibodyElement<T> {
   }
 #endif
 
-  /// Calculates and returns the rotation matrix `R_LQ` that relates link frame
-  /// L to frame Q via `this` intermediate frame F, i.e., `R_LQ = R_LF * R_FQ`
-  /// (L is the link frame to which `this` frame F is attached).
+  /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
+  /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
+  /// (B is the body frame to which `this` frame F is attached).
   /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
   math::RotationMatrix<T> CalcOffsetRotationMatrixInBody(
       const systems::Context<T>& context,
@@ -191,21 +194,21 @@ class Frame : public MultibodyElement<T> {
 #endif
 
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
-  /// frame Q in `this` frame F, returns the pose `X_LQ` of frame Q in the link
-  /// frame L to which this frame is attached.
+  /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
+  /// frame B to which this frame is attached.
   /// @throws std::exception if called on a %Frame that does not have a
-  /// fixed offset in the link frame.
+  /// fixed offset in the body frame.
   virtual math::RigidTransform<T> GetFixedOffsetPoseInBody(
       const math::RigidTransform<T>& X_FQ) const {
     return GetFixedPoseInBodyFrame() * X_FQ;
   }
 
-  /// Calculates and returns the rotation matrix `R_LQ` that relates link frame
-  /// L to frame Q via `this` intermediate frame F, i.e., `R_LQ = R_LF * R_FQ`
-  /// (L is the link frame to which `this` frame F is attached).
+  /// Calculates and returns the rotation matrix `R_BQ` that relates body frame
+  /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
+  /// (B is the body frame to which `this` frame F is attached).
   /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
   /// @throws std::exception if `this` frame F is a %Frame that does not have
-  /// a fixed offset in the link frame L (i.e., `R_LF` is not constant).
+  /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
   virtual math::RotationMatrix<T> GetFixedRotationMatrixInBody(
       const math::RotationMatrix<T>& R_FQ) const {
     return GetFixedRotationMatrixInBodyFrame() * R_FQ;
