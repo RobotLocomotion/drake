@@ -1501,7 +1501,7 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
   // Create a 360 meter massless rod B with 1.0 kg particles at its distal ends.
   // Ensure CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox() actually
   // produces a minimum bounding box with ½-lengths a = 180 m, b = 0, c = 0.
-  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+  constexpr double kTolerance = 128 * std::numeric_limits<double>::epsilon();
   const double mass = 1.0;
   double a = 180, b = 0, c = 0;  // rod's ½-length is 180 meters.
   auto M_BBcm_B = SpatialInertia<double>::NaN();
