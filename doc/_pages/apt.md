@@ -69,14 +69,14 @@ Nightly apt packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾ and Ubuntu 26.04
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-resolute.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64v3-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64v3-resolute.deb)
 
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded with ``0.0.``. For example,
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-resolute.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64v3-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64v3-resolute.deb)
 
 Nightly packages are retained for 56 days from their date of creation.
 
