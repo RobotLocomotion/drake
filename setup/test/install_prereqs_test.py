@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 import pickle
+import re
 import subprocess
 import sys
 import tempfile
@@ -10,6 +11,9 @@ import time
 import unittest
 
 from python import runfiles
+
+EXPECTED_BAZELISK = "1.28.1"
+EXPECTED_KCOV = "43+dfsg-1"
 
 
 class InstallPrereqsActor:
@@ -81,6 +85,9 @@ class InstallPrereqsActor:
         # Tests can use add_to_path() and remove_from_path() to fine-tune this.
         allowed = [
             "bazel",
+            "dpkg",
+            "dpkg-query",
+            "sudo",
         ]
         for program in allowed:
             self.add_to_path(program)
@@ -89,6 +96,13 @@ class InstallPrereqsActor:
         self._process = None
         self.returncode = None
         self.stdout = None
+
+        # Track whether the setup program has performed these actions yet.
+        self._did_sudo_check = False
+
+        # The list of currently-installed packages to report to install_prereqs;
+        # a mapping of name => version number.
+        self.installed_packages = {}
 
     def _set_up_source(self) -> Path:
         """Prepares a source-tree-like writable temporary directory that
@@ -169,15 +183,21 @@ class InstallPrereqsActor:
             logging.info(f" [stdout] {line}")
         self.returncode = self._process.returncode
 
-    def expect_call(self, *, exact=None, stdout="", returncode=0):
+    def expect_call(
+        self, *, exact=None, prefix=None, stdout="", returncode=0
+    ) -> list[str]:
+        assert sum([exact is not None, prefix is not None]) == 1
         """Between `start()` and `finish()`, wait for install_prereqs to call
         out to a subprocess and mock up the effects of that call. The mocked
         call will return the given `returncode` and `stdout` content. The mocked
         command line is specified as an `exact` list of arguments (where the
-        first argument is the command name).
+        first argument is the command name). Returns the mocked call's argv.
         """
         # Print now in case we get stuck.
-        command = exact[0]
+        exact_or_prefix = exact or prefix
+        command = exact_or_prefix[0]
+        if command == "sudo" and exact_or_prefix[1][0] != "-":
+            command = " ".join(exact_or_prefix[:2])
         logging.info(f"Waiting for subprocess call to {command} ...")
 
         # Wait for the "stubby" subprocess to dump its argv.
@@ -206,7 +226,32 @@ class InstallPrereqsActor:
         argv[0] = argv[0].split("/")[-1]
 
         # Validate the called program and its arguments.
-        self._test_case.assertEqual(argv, exact)
+        if exact is not None:
+            self._test_case.assertEqual(argv, exact)
+        if prefix is not None:
+            some_argv = argv[: len(prefix)]
+            self._test_case.assertEqual(some_argv, prefix)
+            self._test_case.assertGreaterEqual(len(argv), len(prefix))
+
+        return argv
+
+    def expect_sudo_check_if_not_yet_checked(self):
+        if self._did_sudo_check:
+            return
+        self.expect_call(exact=["sudo", "-v"])
+        self._did_sudo_check = True
+
+    def expect_dpkg_query(self):
+        stdout = ""
+        for name, version in self.installed_packages.items():
+            stdout += f"{name} ii {version}\n"
+        self.expect_call(prefix=["dpkg-query"], stdout=stdout)
+
+    def expect_apt_install(self):
+        self.expect_sudo_check_if_not_yet_checked()
+        argv = self.expect_call(prefix=["sudo", "apt-get", "install"])
+        package_names = [arg for arg in argv[3:] if not arg.startswith("-")]
+        return package_names
 
 
 class InstallPrereqsTest(unittest.TestCase):
@@ -229,10 +274,82 @@ class InstallPrereqsTest(unittest.TestCase):
         self.assertTrue((dut.source() / "gen/environment.bazelrc").exists())
         self.assertEqual(dut.returncode, 0)
 
-    def test_developer(self):
+    def test_developer_bootstrap(self):
+        """Check --developer with nothing installed yet."""
         dut = InstallPrereqsActor(test_case=self)
-        dut.start(args=["--developer"])
+        dut.start(args=["--developer", "-y"])
+
+        if sys.platform != "darwin":
+            # The DUT should install bazelisk and maybe kcov (after confirming
+            # that they are missing).
+            dut.expect_dpkg_query()
+            paths = dut.expect_apt_install()
+            filenames = sorted([x.split("/")[-1] for x in paths])
+            names = set([re.split("[-_]", x)[0] for x in filenames])
+            self.assertIn(names, ({"bazelisk"}, {"bazelisk", "kcov"}))
+
+        # The DUT prefetches bazel.
         dut.expect_call(exact=["bazel", "version"])
+
+        dut.finish()
+        self.assertRegex(dut.stdout, "Writing.*gen/python_version.txt")
+        self.assertRegex(dut.stdout, "Writing.*gen/environment.bazelrc")
+        self.assertRegex(dut.stdout, "Pre-fetching bazel")
+        self.assertTrue((dut.source() / "gen/python_version.txt").exists())
+        self.assertTrue((dut.source() / "gen/environment.bazelrc").exists())
+        self.assertEqual(dut.returncode, 0)
+
+    def test_developer_bump(self):
+        """Check --developer with some things already installed, but at too-old
+        versions."""
+        dut = InstallPrereqsActor(test_case=self)
+        dut.installed_packages = {
+            "bazelisk": "0.0.0",
+            "kcov": EXPECTED_KCOV,
+        }
+        dut.start(args=["--developer", "-y"])
+
+        if sys.platform != "darwin":
+            # The DUT should install bazelisk (after confirming the current
+            # version is too old).
+            dut.expect_dpkg_query()
+            dut.expect_call(
+                prefix=["dpkg", "--compare-versions"],
+                returncode=1,
+            )
+            paths = dut.expect_apt_install()
+            self.assertEqual(len(paths), 1)
+            name = paths[0].split("/")[-1].split("-")[0]
+            self.assertEqual(name, "bazelisk")
+
+        # The DUT prefetches bazel.
+        dut.expect_call(exact=["bazel", "version"])
+
+        dut.finish()
+        self.assertRegex(dut.stdout, "Writing.*gen/python_version.txt")
+        self.assertRegex(dut.stdout, "Writing.*gen/environment.bazelrc")
+        self.assertRegex(dut.stdout, "Pre-fetching bazel")
+        self.assertTrue((dut.source() / "gen/python_version.txt").exists())
+        self.assertTrue((dut.source() / "gen/environment.bazelrc").exists())
+        self.assertEqual(dut.returncode, 0)
+
+    def test_developer_completed(self):
+        """Check --developer when everything is already installed (as if a
+        prior run had already succeeded)."""
+        dut = InstallPrereqsActor(test_case=self)
+        dut.installed_packages = {
+            "bazelisk": EXPECTED_BAZELISK,
+            "kcov": EXPECTED_KCOV,
+        }
+        dut.start(args=["--developer", "-y"])
+
+        if sys.platform != "darwin":
+            # The DUT confirms that bazelisk (etc) is already installed.
+            dut.expect_dpkg_query()
+
+        # The DUT prefetches bazel.
+        dut.expect_call(exact=["bazel", "version"])
+
         dut.finish()
         self.assertRegex(dut.stdout, "Writing.*gen/python_version.txt")
         self.assertRegex(dut.stdout, "Writing.*gen/environment.bazelrc")
