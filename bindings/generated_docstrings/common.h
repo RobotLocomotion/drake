@@ -12,6 +12,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
+// #include "drake/common/atomic_shared_ptr.h"
 // #include "drake/common/autodiff.h"
 // #include "drake/common/autodiff_config.h"
 // #include "drake/common/cond.h"
