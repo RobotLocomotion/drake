@@ -15,12 +15,11 @@ def bazelisk_internal_repository(
             bazel-drake/external/+internal_repositories+bazelisk_internal/LICENSE \\
             bazel-drake/external/+internal_repositories+bazelisk_internal/bazelisk.py
 
-        Additionally, you must manually update the bazelisk version number in
-          setup/ubuntu/install_prereqs.sh
-        and adjust the expected checksums accordingly.
-
-        To calculate the checksums, download the deb files specifed in
-        install_prereqs.sh and use:
+        Additionally, you must manually update the version number(s) in
+          setup/ubuntu/packages.json
+        and adjust the expected checksum(s) accordingly.
+        To calculate a new checksum, download the deb file specifed in the json
+        and use:
           shasum -a 256 'xxx.deb'
 
         To fully test, a Linux uprovisioned job must be launched from the
