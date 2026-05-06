@@ -51,9 +51,9 @@ that Conda is involved.
 ⁽³⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
 
-⁽⁴⁾ Nightly binaries for Ubuntu 24.04 (Noble) on aarch64 are available for all
+⁽⁴⁾ Nightly binaries for Ubuntu 24.04 (Noble) on arm64 are available for all
 [binary installation methods](#choose-an-installation-method). Drake's support
-for Ubuntu on aarch64 is currently experimental, and binaries are not available
+for Ubuntu on arm64 is currently experimental, and binaries are not available
 for stable releases. Follow
 [#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
 If you encounter installation issues with the experimental nightly binaries,
