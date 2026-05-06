@@ -165,11 +165,10 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
       options.ray_sampler_options.num_particles_to_walk_towards <=
       options.sampled_iris_options.num_particles);
 
-  // Check if seed point is in collision. The following code block is
-  // functionally identical to
-  // checker.CheckConfigCollisionFree(starting_ellipsoid_center_ambient), but
-  // must be duplicated in order to send a descriptive error message with
-  // information about which geometries are colliding.
+  // Check if seed point is in collision. The following code block is similar to
+  // checker.CheckConfigCollisionFree(starting_ellipsoid_center_ambient). The
+  // difference is checker would merely report a bool, but this provides a
+  // descriptive error message detailing which geometries are colliding.
   const auto& context =
       checker.UpdatePositions(starting_ellipsoid_center_ambient);
   auto query_object = checker.plant()
@@ -186,8 +185,8 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
       throw std::runtime_error(fmt::format(
           "IrisNp2: Starting ellipsoid center {} is in collision; geometry {} "
           "is in collision with geometry {}.",
-          fmt_eigen(starting_ellipsoid.center().transpose()),
-          inspector.GetName(geomA), inspector.GetName(geomB)));
+          fmt_eigen(starting_ellipsoid.center()), inspector.GetName(geomA),
+          inspector.GetName(geomB)));
     }
     // Note: this check is necessary but not sufficient. If there is a point
     // in configuration space within
@@ -214,7 +213,7 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
       throw std::runtime_error(fmt::format(
           "IrisNp2: Starting ellipsoid center {} violates a constraint in "
           "options.sampled_iris_options.prog_with_additional_constraints.",
-          fmt_eigen(starting_ellipsoid.center().transpose())));
+          fmt_eigen(starting_ellipsoid.center())));
     }
 
     // Check if the center point is numerically "vulnerable" to stalling in the
@@ -237,8 +236,7 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
           "consider loosening your constraint limits or setting the solver "
           "tolerance to be tighter, in order to provide a larger numerical "
           "buffer.",
-          fmt_eigen(starting_ellipsoid.center().transpose()),
-          vulnerability_margin);
+          fmt_eigen(starting_ellipsoid.center()), vulnerability_margin);
     }
   }
 }

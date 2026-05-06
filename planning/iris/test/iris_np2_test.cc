@@ -15,6 +15,7 @@
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace planning {
@@ -144,6 +145,31 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*invalid IrisNp2 sampling strategy.*another sampling strategy.*");
   options.sampling_strategy = "greedy";
+}
+
+TEST_F(JointLimits1D, SeedNearlyInfeasible) {
+  IrisNp2Options options;
+  auto* scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  // Impose a numerically-unstable constraint (the seed point is on the boundary
+  // of the feasible set).
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  prog.AddConstraint(pow(x(0), 4) <= 0);
+  options.sampled_iris_options.prog_with_additional_constraints = &prog;
+
+  // Hamstring the solver by loosening its feasibility tolerances.
+  options.sampled_iris_options.relax_margin = true;
+  options.solver_options.SetOption(solvers::SnoptSolver::id(),
+                                   "Major feasibility tolerance", 1e-4);
+  options.solver_options.SetOption(solvers::SnoptSolver::id(),
+                                   "Minor feasibility tolerance", 1e-4);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*center point is numerically too close to a constraint boundary.*");
 }
 
 // Check padding as an unsupported feature. (We have to use a test environment
