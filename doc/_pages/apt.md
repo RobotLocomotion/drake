@@ -45,7 +45,7 @@ The most recent release is
 
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-resolute.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64v3-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64v3-resolute.deb)
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb)
 
 To download and install the `drake-dev` package:

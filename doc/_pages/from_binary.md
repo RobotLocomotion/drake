@@ -36,9 +36,9 @@ The most recent release is
 [v1.53.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.53.0):
 
 * [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-aarch64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-aarch64.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-aarch64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-aarch64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-noble-arm64.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-amd64v3.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-amd64v3.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-resolute-arm64.tar.gz)
 * https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-mac-arm64.tar.gz
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
