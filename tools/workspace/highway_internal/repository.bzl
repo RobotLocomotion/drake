@@ -9,7 +9,6 @@ def highway_internal_repository(
         commit = "1.4.0",
         sha256 = "e72241ac9524bb653ae52ced768b508045d4438726a303f10181a38f764a453c",  # noqa
         patches = [
-            ":patches/upstream/build.patch",
             ":patches/disabled_targets.patch",
             ":patches/linkstatic.patch",
             ":patches/target_get_index_inline_always.patch",
