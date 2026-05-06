@@ -158,7 +158,7 @@ TEST_F(ParseProximityPropertiesTest, HydroelasticProperties) {
       if (is_rigid && compliance != HydroelasticType::kRigid) {
         return failure << fmt::format("Expected rigid compliance; found {}",
                                       compliance);
-      } else if (is_compliant && compliance != HydroelasticType::kSoft) {
+      } else if (is_compliant && compliance != HydroelasticType::kCompliant) {
         return failure << fmt::format("Expected compliant; found {}",
                                       compliance);
       }
@@ -355,9 +355,9 @@ TEST_F(ParseProximityPropertiesTest, Friction) {
     if (friction.dynamic_friction() != mu_d ||
         friction.static_friction() != mu_s) {
       return failure << "Wrong value for (" << kMaterialGroup << ", "
-                     << kFriction << "):"
-                     << "\n  Expected mu_d: " << mu_d << ", mu_s: " << mu_s
-                     << "\n  Found mu_d " << friction.dynamic_friction()
+                     << kFriction << "):" << "\n  Expected mu_d: " << mu_d
+                     << ", mu_s: " << mu_s << "\n  Found mu_d "
+                     << friction.dynamic_friction()
                      << ", mu_s: " << friction.static_friction();
     }
     return ::testing::AssertionSuccess();

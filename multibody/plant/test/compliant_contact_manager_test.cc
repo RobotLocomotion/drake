@@ -397,48 +397,48 @@ TEST_F(SpheresStackTest, CalcDiscreteContactPairs) {
 // Unit test to verify discrete contact pairs computed by the manager for
 // different combinations of compliance.
 TEST_F(SpheresStackTest, VerifyDiscreteContactPairs) {
-  ContactParameters soft_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
+  ContactParameters compliant_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
-  // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+  // Hard sphere 1/compliant sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, compliant_point_contact);
 
-  // Equally soft spheres.
-  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+  // Equally compliant spheres.
+  VerifyDiscreteContactPairs(compliant_point_contact, compliant_point_contact);
 
-  // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+  // Compliant sphere 1/hard sphere 2.
+  VerifyDiscreteContactPairs(compliant_point_contact, hard_point_contact);
 }
 
 TEST_F(SpheresStackTest, RelaxationTimeIsNotRequired) {
-  ContactParameters soft_point_contact{
+  ContactParameters compliant_point_contact{
       1.0e3, std::nullopt,
       std::nullopt /* Dissipation not included in ProximityProperties */, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
-  // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+  // Hard sphere 1/compliant sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, compliant_point_contact);
 
-  // Equally soft spheres.
-  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+  // Equally compliant spheres.
+  VerifyDiscreteContactPairs(compliant_point_contact, compliant_point_contact);
 
   // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+  VerifyDiscreteContactPairs(compliant_point_contact, hard_point_contact);
 }
 
 TEST_F(SpheresStackTest, RelaxationTimeMustBePositive) {
-  ContactParameters soft_point_contact{
+  ContactParameters compliant_point_contact{
       1.0e3, std::nullopt, -1.0 /* Negative dissipation timescale */, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
-  // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
+  // Hard sphere 1/compliant sphere 2.
+  VerifyDiscreteContactPairs(hard_point_contact, compliant_point_contact);
 
-  // Equally soft spheres.
-  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
+  // Equally compliant spheres.
+  VerifyDiscreteContactPairs(compliant_point_contact, compliant_point_contact);
 
   // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
+  VerifyDiscreteContactPairs(compliant_point_contact, hard_point_contact);
 }
 
 // Unit test to verify discrete contact pairs computed by the manager for

@@ -466,7 +466,7 @@ TEST_F(HydroelasticModelTests,
 
 // This tests consistency across the ContactModel modes: point pair,
 // hydroelastic only, and hydroelastic with fallback. We create a scenario with
-// three objects: two rigid spheres and a soft box. One rigid sphere is in
+// three objects: two rigid spheres and a compliant box. One rigid sphere is in
 // contact with the other two shapes. In this scenario:
 //   - Evaluating with point pair produces two contact forces on the common
 //     rigid sphere.

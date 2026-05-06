@@ -134,10 +134,11 @@ class RigidGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry);
 
-  explicit RigidGeometry(std::unique_ptr<internal::hydroelastic::SoftMesh> mesh)
+  explicit RigidGeometry(
+      std::unique_ptr<internal::hydroelastic::CompliantMesh> mesh)
       : mesh_(std::move(mesh)) {}
 
-  const internal::hydroelastic::SoftMesh& mesh() const {
+  const internal::hydroelastic::CompliantMesh& mesh() const {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
   }
@@ -151,7 +152,7 @@ class RigidGeometry {
   const math::RigidTransform<double>& pose_in_world() const { return X_WG_; }
 
  private:
-  copyable_unique_ptr<internal::hydroelastic::SoftMesh> mesh_;
+  copyable_unique_ptr<internal::hydroelastic::CompliantMesh> mesh_;
   math::RigidTransform<double> X_WG_;
 };
 
@@ -164,21 +165,22 @@ class RigidGeometry {
 template <typename Shape>
 std::optional<RigidGeometry> MakeMeshRepresentation(
     const Shape& shape, const ProximityProperties& props) {
-  std::optional<internal::hydroelastic::SoftGeometry> compliant_hydro_geometry =
-      internal::hydroelastic::MakeSoftRepresentation(shape, props);
+  std::optional<internal::hydroelastic::CompliantGeometry>
+      compliant_hydro_geometry =
+          internal::hydroelastic::MakeCompliantRepresentation(shape, props);
   // TODO(xuchenhan-tri): Support half space.
   if (!compliant_hydro_geometry || compliant_hydro_geometry->is_half_space()) {
     return {};
   }
-  /* hydroelastic::SoftGeometry is documented as having a mesh or having a half
-   space. We've excluded the latter, so we know we have a mesh. */
-  // TODO(xuchenhan-tri): consider allowing SoftMesh to release its mesh to
+  /* hydroelastic::CompliantGeometry is documented as having a mesh or having a
+   half space. We've excluded the latter, so we know we have a mesh. */
+  // TODO(xuchenhan-tri): consider allowing CompliantMesh to release its mesh to
   // prevent copying here.
   auto mesh =
       std::make_unique<VolumeMesh<double>>(compliant_hydro_geometry->mesh());
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> field =
       compliant_hydro_geometry->pressure_field().CloneAndSetMesh(mesh.get());
-  return RigidGeometry(std::make_unique<internal::hydroelastic::SoftMesh>(
+  return RigidGeometry(std::make_unique<internal::hydroelastic::CompliantMesh>(
       std::move(mesh), std::move(field)));
 }
 

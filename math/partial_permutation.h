@@ -62,10 +62,24 @@ class PartialPermutation {
 
   // Constructs a partial permutation of `domain_size` and
   // permuted_domain_size() equal to zero. In other words, participates(i) =
-  // false for in [0, domain_size). The permutation can be updated with further
-  // calls to push().
+  // false for i in [0, domain_size). The permutation can be updated with
+  // further calls to push().
   // @throws exception if domain_size is negative.
   explicit PartialPermutation(int domain_size);
+
+  // Resets a partial permutation to a new `domain_size` and clears the
+  // permutation, such that permuted_domain_size() is equal to zero. In other
+  // words, participates(i) = false for i in [0, domain_size). The permutation
+  // can be updated with further calls to push().
+  //
+  // Allows reusing this object's storage with a minimum of heap allocation
+  // activity, and anticipates the heap effects of subsequent push()
+  // calls.
+  //
+  // @post permutation().capacity() >= domain_size()
+  // @post inverse_permutation().capacity() >= domain_size()
+  // @throws exception if domain_size is negative.
+  void ResetToSize(int domain_size);
 
   // If participates(i) = false, defines P(i) = permuted_domain_size() and
   // further increases the permuted domain size. If participates(i) = true, the

@@ -1013,7 +1013,7 @@ REGISTER_TYPED_TEST_SUITE_P(MeshHalfSpaceValueTest, NoIntersection,
                             OutsideInsideOn, OneInsideTwoOutside,
                             ComputeContactSurfaceInvocation);
 
-// The ComputeContactSurfaceFromSoftHalfSpaceRigidMesh() method has the
+// The ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh() method has the
 // following responsibilities:
 //
 //    - Dispatch BVH culling
@@ -1027,7 +1027,8 @@ REGISTER_TYPED_TEST_SUITE_P(MeshHalfSpaceValueTest, NoIntersection,
 // configurations and make sure the data reported is as expected. This function
 // does its work independent of scalar type, so we'll only check the
 // double-valued instantiation.
-GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
+GTEST_TEST(ComputeContactSurfaceFromCompliantHalfSpaceRigidMeshTest,
+           DoubleValued) {
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
   const RigidTransform<double> X_WF(
@@ -1052,11 +1053,11 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
 
     // Put the half space well below the box.
     const RigidTransform<double> X_WH{Vector3<double>{0, 0, -5}};
-    EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    EXPECT_EQ(ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
                   hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
                   HydroelasticContactRepresentation::kTriangle),
               nullptr);
-    EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    EXPECT_EQ(ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
                   hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
                   HydroelasticContactRepresentation::kPolygon),
               nullptr);
@@ -1082,7 +1083,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   // Case: Request triangle surface mesh.
   {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
-        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+        ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
             hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
             HydroelasticContactRepresentation::kTriangle);
     ASSERT_NE(contact_surface, nullptr);
@@ -1093,7 +1094,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   // Case: Request polygon surface mesh.
   {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
-        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+        ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
             hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
             HydroelasticContactRepresentation::kPolygon);
     ASSERT_NE(contact_surface, nullptr);
@@ -1103,7 +1104,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
 }
 
 // double-valued instantiation.
-GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, Margin) {
+GTEST_TEST(ComputeContactSurfaceFromCompliantHalfSpaceRigidMeshTest, Margin) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
 
   // An arbitrary relationship between the box's frame F and the world's frame W
@@ -1158,7 +1159,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, Margin) {
   // Case: Request triangle surface mesh.
   {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
-        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+        ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
             hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
             HydroelasticContactRepresentation::kTriangle, margin);
     ASSERT_NE(contact_surface, nullptr);
@@ -1171,7 +1172,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, Margin) {
   // Case: Request polygon surface mesh.
   {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
-        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+        ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
             hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
             HydroelasticContactRepresentation::kPolygon, margin);
     ASSERT_NE(contact_surface, nullptr);
@@ -1183,12 +1184,13 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, Margin) {
   }
 }
 
-// Confirm that the rigid-soft intersection correctly culls backface geometry.
-// Culling is independent of ultimate contact surface mesh representation, so
-// we'll simply test it against one mesh and scalar type and call it good. We
-// choose the TriangleSurfaceMesh so we can invoke
+// Confirm that the rigid-compliant intersection correctly culls backface
+// geometry. Culling is independent of ultimate contact surface mesh
+// representation, so we'll simply test it against one mesh and scalar type and
+// call it good. We choose the TriangleSurfaceMesh so we can invoke
 // IsFaceNormalInNormalDirection() as part of the test.
-GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
+GTEST_TEST(ComputeContactSurfaceFromCompliantHalfSpaceRigidMeshTest,
+           BackfaceCull) {
   // For this test, we're just testing for culling. We presume that for a given
   // configuration of mesh and half space, the right calculations will be done
   // to compute the intersection mesh based on previous tests. So, accordingly:
@@ -1217,7 +1219,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
   const double pressure_scale{1.5};
 
   const std::unique_ptr<ContactSurface<double>> contact_surface =
-      ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+      ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
           hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
           HydroelasticContactRepresentation::kTriangle);
   // It definitely produces a contact surface.
@@ -1291,8 +1293,8 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfSpaceValueTest, MyTypes);
            ╱ ┆
           ╱  ● v2
 
-  The soft half space, defined in the frame S, has its planar boundary at Sz = 0
-  with the normal in the +Sz direction.
+  The compliant half space, defined in the frame S, has its planar boundary at
+ Sz = 0 with the normal in the +Sz direction.
 
   We will create a number of fixed poses of the triangle w.r.t. the half space:
 
@@ -1319,10 +1321,10 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfSpaceValueTest, MyTypes);
 class MeshHalfSpaceDerivativesTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    /* Set up the *soft* half space. */
+    /* Set up the *compliant* half space. */
     id_S_ = GeometryId::get_new_id();
     pressure_scale_ = 1.5e5;
-    /* Orient and position the soft half space arbitrarily. */
+    /* Orient and position the compliant half space arbitrarily. */
     X_WS_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
                                 Vector3d{0.25, 0.1, -0.2})
                 .cast<AutoDiffXd>();
@@ -1358,11 +1360,12 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
       const std::function<void(const ContactSurface<AutoDiffXd>&,
                                const RigidTransform<AutoDiffXd>&, TriPose)>&
           evaluate_quantity) {
-    /* Definition of a test configuration: a name, a relative pose between soft
-     and rigid frames, encoded as a double-valued (_d suffix) relative position
-     between frame origins and relative orientation, the expected number of
-     faces in the resultant contact surface, and the pose enumeration that the
-     `evaluate_quantity` method will use to define the expected results. */
+    /* Definition of a test configuration: a name, a relative pose between
+     compliant and rigid frames, encoded as a double-valued (_d suffix) relative
+     position between frame origins and relative orientation, the expected
+     number of faces in the resultant contact surface, and the pose enumeration
+     that the `evaluate_quantity` method will use to define the expected
+     results. */
     struct Configuration {
       std::string name;
       Vector3d p_SR_d;
@@ -1387,9 +1390,9 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     }
 
     {
-      /* We'll pose the triangle in the soft half space's frame S. If we start
-       with bases S and R aligned, we'll rotate the triangle around Sy so that
-       edge 01 is no longer parallel with the Sz = 0 plane, and then rotate
+      /* We'll pose the triangle in the compliant half space's frame S. If we
+       start with bases S and R aligned, we'll rotate the triangle around Sy so
+       that edge 01 is no longer parallel with the Sz = 0 plane, and then rotate
        around Sx so that the edge 02 isn't parallel with Sz. Finally, we'll
        position vertex 2 displaced from N and inset into the half space kDepth
        distance.
@@ -1407,11 +1410,11 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     }
 
     {
-      /* We'll pose the triangle in the soft half space's frame S. If we start
-       with bases S and R aligned, we'll rotate the triangle around Sy so that
-       vertices 1 & 2 lie inside the half space. We'll rotate it between zero
-       and 45 degrees for two reasons: keep V2 as the deepest vertex and prevent
-       the edge connecting V1 and V2 from lying parallel with the plane.
+      /* We'll pose the triangle in the compliant half space's frame S. If we
+       start with bases S and R aligned, we'll rotate the triangle around Sy so
+       that vertices 1 & 2 lie inside the half space. We'll rotate it between
+       zero and 45 degrees for two reasons: keep V2 as the deepest vertex and
+       prevent the edge connecting V1 and V2 from lying parallel with the plane.
        Finally, we'll tilt the triangle around the Sx axis to break alignment.
        */
       const RotationMatrixd R_SR_d = RotationMatrixd::MakeXRotation(-M_PI / 7) *
@@ -1429,7 +1432,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
       const Vector3<AutoDiffXd> p_WR = math::InitializeAutoDiff(p_WR_d);
       const RigidTransform<AutoDiffXd> X_WR{R_WR_d.cast<AutoDiffXd>(), p_WR};
 
-      auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+      auto surface = ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
           id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR,
           HydroelasticContactRepresentation::kTriangle);
 
@@ -1463,7 +1466,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
         "Querying for point I that isn't actually on a triangle edge");
   }
 
-  /* The soft half space. */
+  /* The compliant half space. */
   RigidTransform<AutoDiffXd> X_WS_;
   GeometryId id_S_;
   double pressure_scale_{};
@@ -1625,7 +1628,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
                    | 0  0       0     |
 
      However, the derivatives reported in the test are ∂p_WV/∂p_WRo, so we have
-     to transform the expected result from the soft frame S to world.
+     to transform the expected result from the compliant frame S to world.
 
           ∂p_WV    ∂(R_WS⋅p_SV + p_WSo)
          ------- = --------------------          // Expand p_WV = X_WS * p_SV.
@@ -1799,7 +1802,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
     RigidTransform<AutoDiffXd> X_WR{this->X_WS_.rotation() * R_SR, p_WR};
     const Vector3d v_W = convert_to_double(this->X_WS_).rotation() * v_S;
 
-    auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+    auto surface = ComputeContactSurfaceFromCompliantHalfSpaceRigidMesh(
         id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR,
         HydroelasticContactRepresentation::kTriangle);
 

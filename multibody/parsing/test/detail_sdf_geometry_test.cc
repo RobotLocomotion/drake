@@ -1530,7 +1530,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     EXPECT_EQ(properties->GetProperty<geometry::internal::HydroelasticType>(
                   geometry::internal::kHydroGroup,
                   geometry::internal::kComplianceType),
-              geometry::internal::HydroelasticType::kSoft);
+              geometry::internal::HydroelasticType::kCompliant);
   }
 
   // TODO(16229): Remove this ad-hoc input sanitization when we resolve

@@ -60,6 +60,18 @@ GTEST_TEST(EigenPoolTest, EigenFixedSize) {
   // Check clearing.
   pool.Clear();
   EXPECT_EQ(pool.size(), 0);
+
+  // Check repopulating with Add().
+  for (int k = 0; k < 4; ++k) {
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.Add(3, 3);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), 3);
+    EXPECT_EQ(pool[k].cols(), 3);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, EigenVectorX) {
@@ -117,6 +129,18 @@ GTEST_TEST(EigenPoolTest, EigenVectorX) {
   // Check clearing.
   pool.Clear();
   EXPECT_EQ(pool.size(), 0);
+
+  // Check repopulating with Add().
+  for (int k = 0; k < 3; ++k) {
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.Add(sizes[k], 1);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), sizes[k]);
+    EXPECT_EQ(pool[k].cols(), 1);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, EigenMatrixX) {
@@ -156,6 +180,18 @@ GTEST_TEST(EigenPoolTest, EigenMatrixX) {
   // Check clearing.
   pool.Clear();
   EXPECT_EQ(pool.size(), 0);
+
+  // Check repopulating with Add().
+  for (int k = 0; k < 3; ++k) {
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.Add(rows[k], cols[k]);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), rows[k]);
+    EXPECT_EQ(pool[k].cols(), cols[k]);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, EigenMatrix3X) {
@@ -195,6 +231,18 @@ GTEST_TEST(EigenPoolTest, EigenMatrix3X) {
   // Check clearing.
   pool.Clear();
   EXPECT_EQ(pool.size(), 0);
+
+  // Check repopulating with Add().
+  for (int k = 0; k < 4; ++k) {
+    // No new allocations. Everything stayed the same size.
+    {
+      drake::test::LimitMalloc guard;
+      pool.Add(3, cols[k]);
+    }
+    EXPECT_EQ(pool.size(), 1 + k);
+    EXPECT_EQ(pool[k].rows(), 3);
+    EXPECT_EQ(pool[k].cols(), cols[k]);
+  }
 }
 
 GTEST_TEST(EigenPoolTest, AllInstantiationsExist) {

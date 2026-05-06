@@ -61,7 +61,6 @@ install_files(
 
 drake_py_unittest(
     name = "install_prereqs_test",
-    flaky = True,  # Might experience subprocess race conditions.
     deps = [
         ":install_prereqs",
         "@rules_python//python/runfiles",

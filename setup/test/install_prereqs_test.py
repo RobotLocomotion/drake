@@ -1,7 +1,7 @@
 import logging
-import multiprocessing.connection
 import os
 from pathlib import Path
+import pickle
 import subprocess
 import sys
 import tempfile
@@ -38,22 +38,38 @@ class InstallPrereqsActor:
         self._path = base / "path"
         self._path.mkdir()
 
-        # Create a listening socket used for subprocess callbacks.
-        self._listener = multiprocessing.connection.Listener()
-        address = self._listener.address
+        # Create `io` which will be used by stubby to communicate with us.
+        self._io = base / "io"
+        self._io.mkdir()
 
-        # Create a stub program that calls back into this unit test anytime
-        # it's run.
+        # Create a stub program that inter-operates with expect_call() to mock
+        # up subprocess calls made by install_prereqs. The protocol is that
+        # stubby writes its argv.pkl and then waits for a result.pkl response,
+        # and expect_call() waits for argv.pkl and then writes the result.pkl.
+        # Each one deletes the file after reading it (in case there's more than
+        # one subprocess call in a row).
+        #
+        # N.B. We are using the host OS interpreter (/usr/bin/python3), even on
+        # macOS where that's a very old version Python. Still, it's sufficient
+        # for this small stub. Using `sys.executable` encountered inexplicable
+        # problems in CI.
         self._stubby = self._path / ".stubby"
         self._stubby.write_text(
             encoding="utf-8",
             data=textwrap.dedent(f"""\
             #!/usr/bin/python3
-            import sys
-            from multiprocessing.connection import Client
-            with Client({address!r}) as conn:
-                conn.send(sys.argv)
-                result = conn.recv()
+            import pathlib, pickle, sys, time
+            io = pathlib.Path("{self._io}")
+            (io / "argv.pkl").write_bytes(pickle.dumps(sys.argv))
+            for _ in range(100):
+              try:
+                result = pickle.loads((io / "result.pkl").read_bytes())
+                break
+              except Exception:
+                time.sleep(0.1)
+            else:
+              raise TimeoutError()
+            (io / "result.pkl").unlink()
             sys.stdout.write(result["stdout"])
             sys.stdout.flush()
             sys.exit(result["returncode"])
@@ -142,7 +158,6 @@ class InstallPrereqsActor:
         the saved returncode explicitly.
         """
         assert self._process is not None
-        self._listener.close()
         try:
             self._process.wait(timeout=5)
         except subprocess.TimeoutExpired:
@@ -161,25 +176,31 @@ class InstallPrereqsActor:
         command line is specified as an `exact` list of arguments (where the
         first argument is the command name).
         """
-        # Fail-fast in case the process has crashed; otherwise, our attempt to
-        # accept() will block indefinitely.
-        time.sleep(0.1)
-        self._process.poll()
-        self._test_case.assertIsNone(self._process.returncode)
-
         # Print now in case we get stuck.
         command = exact[0]
         logging.info(f"Waiting for subprocess call to {command} ...")
 
-        # Wait for the subprocess callback and then tell it what to do.
-        with self._listener.accept() as conn:
-            argv = conn.recv()
-            conn.send(
-                dict(
-                    stdout=stdout,
-                    returncode=returncode,
-                )
-            )
+        # Wait for the "stubby" subprocess to dump its argv.
+        for _ in range(100):
+            self._process.poll()
+            if self._process.returncode is not None:
+                self.finish()
+                self._test_case.fail("install_prereqs terminated unexpectedly")
+            try:
+                argv = pickle.loads((self._io / "argv.pkl").read_bytes())
+                break
+            except Exception:
+                time.sleep(0.1)
+        else:
+            raise TimeoutError()
+        (self._io / "argv.pkl").unlink()
+
+        # Tell it what to do.
+        result = dict(
+            stdout=stdout,
+            returncode=returncode,
+        )
+        (self._io / "result.pkl").write_bytes(pickle.dumps(result))
 
         # Strip the useless directory name off of the actual command.
         argv[0] = argv[0].split("/")[-1]
@@ -191,6 +212,7 @@ class InstallPrereqsActor:
 class InstallPrereqsTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
+        logging.info(f"\n\n=== Running {self.id()} === ")
 
     def test_help(self):
         dut = InstallPrereqsActor(test_case=self)
