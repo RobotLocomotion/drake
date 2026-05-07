@@ -23,8 +23,8 @@ officially supports:
 |-------------------------------------|--------------|------------|---------------------|-----------------|
 | Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | Pip, Binary, APT    | March 2028      |
 |                                     | x86_64 ⁽⁴⁾   | 3.13-3.14  | Pip                 | March 2028      |
-| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.12-3.14  | Pip                 | March 2030      |
-|                                     | x86_64       | 3.14       | Binary ⁽⁵⁾, APT ⁽⁵⁾ | March 2030      |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64 ⁽⁴⁾   | 3.12-3.14  | Pip                 | March 2030      |
+|                                     | x86_64 ⁽⁴⁾   | 3.14       | Binary ⁽⁵⁾, APT ⁽⁵⁾ | March 2030      |
 | macOS Sequoia (15)                  | arm64        | 3.13       | Pip                 | October 2026    |
 |                                     | arm64        | 3.14       | Pip, Binary         | October 2026    |
 | macOS Tahoe (26)                    | arm64        | 3.13       | Pip                 | October 2026    |
@@ -51,7 +51,7 @@ that Conda is involved.
 ⁽³⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
 
-⁽⁴⁾ Nightly binaries for Ubuntu 24.04 (Noble) on arm64 are available for all
+⁽⁴⁾ Nightly binaries for Ubuntu arm64 are available for all
 [binary installation methods](#choose-an-installation-method). Drake's support
 for Ubuntu on arm64 is currently experimental, and binaries are not available
 for stable releases. Follow

@@ -125,6 +125,7 @@ download at:
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble-arm64.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-amd64v3.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-resolute-arm64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
 
 Older packages for specific dates are available by replacing ``latest``
@@ -133,6 +134,7 @@ with date YYYYMMDD preceded by ``0.0.``. For example,
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble-arm64.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-amd64v3.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-amd64v3.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-arm64.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-resolute-arm64.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-mac-arm64.tar.gz
 
 As with stable releases, users of macOS must download using a command-line tool
@@ -146,6 +148,5 @@ The installation instructions are identical to stable releases as shown above.
 
 ⁽¹⁾ Drake's support for Ubuntu arm64 binary packages is currently
 experimental. Packages are only available on a nightly basis, not for stable
-releases. Additionally, packages are only available for Ubuntu 24.04 (Noble);
-future versions are a work in progress. Follow
+releases. Follow
 [#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.

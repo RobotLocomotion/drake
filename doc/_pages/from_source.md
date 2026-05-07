@@ -36,7 +36,7 @@ officially supports when building from source:
 | Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
 |-------------------------------------|--------------|------------|-------|-------|------------------------------|
 | Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | 9.1   | 3.28  | GCC 13 (default) or Clang 20 |
-| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.14       | 9.1   | 4.2   | GCC 15 (default) or Clang 21 |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64 ⁽⁴⁾   | 3.14       | 9.1   | 4.2   | GCC 15 (default) or Clang 21 |
 | macOS Sequoia (15)                  | arm64        | 3.14       | 9.1   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
 | macOS Tahoe (26)                    | arm64        | 3.14       | 9.1   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
 
@@ -58,8 +58,8 @@ maybe require extra setup. See the
 
 ⁽³⁾ Drake requires a compiler running in C++23 (or greater) mode.
 
-⁽⁴⁾ On an experimental basis, Drake also supports arm64 on Ubuntu 24.04
-(Noble). Follow [#13514](https://github.com/RobotLocomotion/drake/issues/13514)
+⁽⁴⁾ On an experimental basis, Drake also supports arm64 on Ubuntu.
+Follow [#13514](https://github.com/RobotLocomotion/drake/issues/13514)
 for updates.
 
 # Building with CMake
