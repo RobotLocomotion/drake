@@ -25,6 +25,7 @@ drake_pybind_library(
     name = "planning",
     cc_deps = [
         "//bindings/generated_docstrings:planning",
+        "//bindings/generated_docstrings:planning_experimental",
         "//bindings/generated_docstrings:planning_graph_algorithms",
         "//bindings/generated_docstrings:planning_iris",
         "//bindings/generated_docstrings:planning_locomotion",
@@ -43,6 +44,7 @@ drake_pybind_library(
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
         "planning_py_dof_mask.cc",
+        "planning_py_experimental_placeholder.cc",
         "planning_py_graph_algorithms.cc",
         "planning_py_iris_common.cc",
         "planning_py_iris_from_clique_cover.cc",
@@ -164,6 +166,13 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "joint_limits_test",
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "placeholder_test",
     deps = [
         ":planning",
     ],
