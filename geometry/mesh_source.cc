@@ -19,6 +19,8 @@ std::string GetExtensionLower(const std::filesystem::path& file_path) {
 
 }  // namespace
 
+MeshSource::MeshSource() = default;
+
 MeshSource::MeshSource(std::filesystem::path path)
     : source_(std::move(path)), extension_(GetExtensionLower(this->path())) {}
 
@@ -83,6 +85,8 @@ std::string MeshSource::GetCacheKey(bool is_convex) const {
   // so using it guarantees we won't collide with potential file names.
   return prefix + (is_convex ? "?convex" : "");
 }
+
+const MeshSource MeshSource::kEmpty;
 
 }  // namespace geometry
 }  // namespace drake

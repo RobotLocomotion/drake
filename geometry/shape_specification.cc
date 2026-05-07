@@ -126,7 +126,7 @@ Convex::Convex(MeshSource source, double scale)
     : Convex(std::move(source), Vector3<double>::Constant(scale)) {}
 
 Convex::Convex(MeshSource source, const Vector3<double>& scale3)
-    : source_(std::move(source)), scale_(scale3) {
+    : source_(std::make_shared<MeshSource>(std::move(source))), scale_(scale3) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
   ThrowForBadScale(scale_, "Convex");
@@ -155,7 +155,7 @@ double Convex::scale() const {
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
   return hull_.GetOrMake([this]() {
     return std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(source_, scale_));
+        internal::MakeConvexHull(source(), scale_));
   });
 }
 
@@ -240,7 +240,7 @@ Mesh::Mesh(MeshSource source, double scale)
     : Mesh(std::move(source), Vector3<double>::Constant(scale)) {}
 
 Mesh::Mesh(MeshSource source, const Vector3<double>& scale3)
-    : source_(std::move(source)), scale_(scale3) {
+    : source_(std::make_shared<MeshSource>(std::move(source))), scale_(scale3) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
   ThrowForBadScale(scale_, "Mesh");
@@ -259,7 +259,7 @@ double Mesh::scale() const {
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
   return hull_.GetOrMake([this]() {
     return std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(source_, scale_));
+        internal::MakeConvexHull(source(), scale_));
   });
 }
 

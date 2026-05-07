@@ -3347,6 +3347,10 @@ Raises:
         // Symbol: drake::geometry::MeshSource::MeshSource
         struct /* ctor */ {
           // Source: drake/geometry/mesh_source.h
+          const char* doc_0args =
+R"""(The default constructor produces an empty in-memory mesh; the same
+state as a moved-from MeshSource.)""";
+          // Source: drake/geometry/mesh_source.h
           const char* doc_1args_path =
 R"""(Constructs from a file path. Note: the path will not be validated in
 any way (existence, availability, naming an actual mesh file, etc.).
