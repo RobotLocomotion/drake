@@ -20,6 +20,31 @@
 
 namespace drake {
 namespace geometry {
+namespace internal {
+
+// Wrapper for a shared mesh source. It allows limited shared_ptr-like
+// behavior but overrides the move semantics so that the shared_ptr always
+// holds a MeshSource (albeit a default-constructed one after a move).
+class ResettingMeshSource {
+ public:
+  ResettingMeshSource();
+  explicit ResettingMeshSource(MeshSource&& source);
+  ResettingMeshSource(const ResettingMeshSource& other);
+  ResettingMeshSource& operator=(const ResettingMeshSource& other);
+  ResettingMeshSource(ResettingMeshSource&& other) noexcept;
+  ResettingMeshSource& operator=(ResettingMeshSource&& other) noexcept;
+
+  // Facilitate pointer-comparisons.
+  operator const MeshSource*() const { return source_.get(); }
+  // Allow it to be referenced as if it were simply the shared_ptr.
+  const MeshSource* operator->() const { return source_.get(); }
+  const MeshSource& operator*() const { return *source_; }
+
+ private:
+  std::shared_ptr<MeshSource> source_{};
+};
+
+}  // namespace internal
 
 #ifndef DRAKE_DOXYGEN_CXX
 class Box;
@@ -324,7 +349,7 @@ class Convex final : public Shape {
    %Convex is that the convex hull is always used in place of whatever
    underlying mesh declaration is provided. For all functional geometric
    usage, exclusively use the convex hull returned by GetConvexHull(). */
-  const MeshSource& source() const { return source_; }
+  const MeshSource& source() const { return *source_; }
 
   /** Returns the extension of the underlying input mesh -- all lower case and
    including the dot. If `this` is constructed from a file path, the extension
@@ -334,7 +359,7 @@ class Convex final : public Shape {
 
    If `this` is constructed using in-memory file contents, it is the extension
    of the MemoryFile passed to the constructor. */
-  const std::string& extension() const { return source_.extension(); }
+  const std::string& extension() const { return source_->extension(); }
 
   /** Returns a single scale representing the _uniform_ scale factor.
    @throws if the scale is not uniform in all directions. */
@@ -361,7 +386,7 @@ class Convex final : public Shape {
   std::string do_to_string() const final;
   VariantShapeConstPtr get_variant_this() const final;
 
-  MeshSource source_;
+  internal::ResettingMeshSource source_;
   Vector3<double> scale_;
   internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };
@@ -577,7 +602,7 @@ class Mesh final : public Shape {
   ~Mesh() final;
 
   /** Returns the source for this specification's mesh data. */
-  const MeshSource& source() const { return source_; }
+  const MeshSource& source() const { return *source_; }
 
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If `this` is constructed from a file path, the extension is
@@ -587,7 +612,7 @@ class Mesh final : public Shape {
 
    If `this` is constructed using in-memory file contents, it is the extension
    of the MemoryFile passed to the constructor. */
-  const std::string& extension() const { return source_.extension(); }
+  const std::string& extension() const { return source_->extension(); }
 
   /** Returns a single scale representing the _uniform_ scale factor.
    @throws if the scale is not uniform in all directions. */
@@ -615,7 +640,7 @@ class Mesh final : public Shape {
   VariantShapeConstPtr get_variant_this() const final;
 
   // NOTE: Cannot be const to support default copy/move semantics.
-  MeshSource source_;
+  internal::ResettingMeshSource source_;
   Vector3<double> scale_;
   internal::LazyShared<PolygonSurfaceMesh<double>> hull_;
 };

@@ -62,6 +62,33 @@ void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
 
 }  // namespace
 
+namespace internal {
+ResettingMeshSource::ResettingMeshSource()
+    : source_(std::make_shared<MeshSource>()) {}
+
+ResettingMeshSource::ResettingMeshSource(MeshSource&& source)
+    : source_(std::make_shared<MeshSource>(std::move(source))) {}
+
+ResettingMeshSource::ResettingMeshSource(const ResettingMeshSource& other) =
+    default;
+
+ResettingMeshSource& ResettingMeshSource::operator=(
+    const ResettingMeshSource& other) = default;
+
+ResettingMeshSource::ResettingMeshSource(ResettingMeshSource&& other) noexcept
+    : source_(std::move(other.source_)) {
+  other.source_ = std::make_shared<MeshSource>();
+}
+
+ResettingMeshSource& ResettingMeshSource::operator=(
+    ResettingMeshSource&& other) noexcept {
+  source_ = std::move(other.source_);
+  other.source_ = std::make_shared<MeshSource>();
+  return *this;
+}
+
+}  // namespace internal
+
 using math::RigidTransform;
 
 Shape::Shape() = default;
@@ -155,12 +182,12 @@ double Convex::scale() const {
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
   return hull_.GetOrMake([this]() {
     return std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(source_, scale_));
+        internal::MakeConvexHull(*source_, scale_));
   });
 }
 
 std::string Convex::do_to_string() const {
-  return MeshToString(type_name(), source(), scale_);
+  return MeshToString(type_name(), *source_, scale_);
 }
 
 Cylinder::Cylinder(double radius, double length)
@@ -259,12 +286,12 @@ double Mesh::scale() const {
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
   return hull_.GetOrMake([this]() {
     return std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(source_, scale_));
+        internal::MakeConvexHull(*source_, scale_));
   });
 }
 
 std::string Mesh::do_to_string() const {
-  return MeshToString(type_name(), source(), scale_);
+  return MeshToString(type_name(), *source_, scale_);
 }
 
 MeshcatCone::MeshcatCone(double height, double a, double b)

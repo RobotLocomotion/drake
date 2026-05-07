@@ -19,6 +19,8 @@ std::string GetExtensionLower(const std::filesystem::path& file_path) {
 
 }  // namespace
 
+MeshSource::MeshSource() = default;
+
 MeshSource::MeshSource(std::filesystem::path path)
     : source_(std::move(path)), extension_(GetExtensionLower(this->path())) {}
 

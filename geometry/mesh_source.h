@@ -19,6 +19,10 @@ class MeshSource final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshSource);
 
+  /** The default constructor produces an empty in-memory mesh; the same state
+   as a moved-from MeshSource. */
+  MeshSource();
+
   /** Constructs from a file path.
    Note: the path will not be validated in any way (existence, availability,
    naming an actual mesh file, etc.). Validation occurs where the %MeshSource's
