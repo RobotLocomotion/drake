@@ -143,13 +143,13 @@ def _download_binaries(*, version):
             # Deb filenames.
             f"drake-dev_{version[1:]}-1_amd64-noble.deb",
             f"drake-dev_{version[1:]}-1_arm64-noble.deb",
-            f"drake-dev_{version[1:]}-1_amd64-resolute.deb",
+            f"drake-dev_{version[1:]}-1_amd64v3-resolute.deb",
             f"drake-dev_{version[1:]}-1_arm64-resolute.deb",
             # Tarball filenames.
             f"drake-{version[1:]}-noble.tar.gz",
-            f"drake-{version[1:]}-noble-aarch64.tar.gz",
-            f"drake-{version[1:]}-resolute.tar.gz",
-            f"drake-{version[1:]}-resolute-aarch64.tar.gz",
+            f"drake-{version[1:]}-noble-arm64.tar.gz",
+            f"drake-{version[1:]}-resolute-amd64v3.tar.gz",
+            f"drake-{version[1:]}-resolute-arm64.tar.gz",
             f"drake-{version[1:]}-mac-arm64.tar.gz",
         ],
     }
