@@ -76,8 +76,12 @@ void IcfBuilder<T>::UpdateModel(
 
   std::unique_ptr<IcfParameters<T>> params = model->ReleaseParameters();
   DRAKE_DEMAND(params != nullptr);
-  // Detect if this is the first time we are setting up params.
-  if (params->v0.size() == 0) {
+  // Detect if this is the first time we are setting up params. Use a
+  // std::vector type, since pure Eigen types don't have the persistent memory
+  // state necessary.
+  if (params->body_mass.capacity() == 0) {
+    // These checks will trip if the block was partially allocated.
+    DRAKE_DEMAND(params->v0.size() == 0);
     DRAKE_DEMAND(params->M0.size() == 0);
     DRAKE_DEMAND(params->D0.size() == 0);
     DRAKE_DEMAND(params->k0.size() == 0);
