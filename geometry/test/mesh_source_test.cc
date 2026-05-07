@@ -16,6 +16,19 @@ namespace drake {
 namespace geometry {
 namespace {
 
+GTEST_TEST(MeshSourceTest, EmptySource) {
+  const MeshSource s;
+  EXPECT_FALSE(s.is_path());
+  EXPECT_TRUE(s.is_in_memory());
+  EXPECT_TRUE(s.in_memory().mesh_file.contents().empty());
+  EXPECT_EQ(s.extension(), "");
+
+  EXPECT_FALSE(MeshSource::Empty().is_path());
+  EXPECT_TRUE(MeshSource::Empty().is_in_memory());
+  EXPECT_TRUE(MeshSource::Empty().in_memory().mesh_file.contents().empty());
+  EXPECT_EQ(MeshSource::Empty().extension(), "");
+}
+
 GTEST_TEST(MeshSourceTest, PathConstructor) {
   const MeshSource s(std::filesystem::path("path"));
   EXPECT_EQ(s.description(), "path");
