@@ -6,8 +6,8 @@ def stable_baselines3_internal_repository(
     github_archive(
         name = name,
         repository = "DLR-RM/stable-baselines3",
-        commit = "v2.7.1",
-        sha256 = "57b3b92785428d8dc3551041c8b02527941f2cee7848c22cf641c2f8fca771f5",  # noqa
+        commit = "v2.8.0",
+        sha256 = "9d8cbcf140d725d337ce1af06cd497ddfe2ae91fe175e9d97c2a08edfb4f7a2a",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/no_torch.patch",

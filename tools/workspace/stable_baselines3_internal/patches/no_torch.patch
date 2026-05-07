@@ -86,11 +86,11 @@ Reasoning for not upstreaming this patch: Drake-specific build option.
  
  
  def preprocess_obs(
--    obs: Union[th.Tensor, dict[str, th.Tensor]],
+-    obs: th.Tensor | dict[str, th.Tensor],
 +    obs,
      observation_space: spaces.Space,
      normalize_images: bool = True,
--) -> Union[th.Tensor, dict[str, th.Tensor]]:
+-) -> th.Tensor | dict[str, th.Tensor]:
 +):
      """
      Preprocess observation to be to a neural network.

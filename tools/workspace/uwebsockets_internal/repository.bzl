@@ -9,8 +9,8 @@ def uwebsockets_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "uNetworking/uWebSockets",
-        commit = "v20.76.0",
-        sha256 = "2a97c2dff34d15d6f6771e35c8016483d3871201ad5921167f31e7d6e2fd72e6",  # noqa
+        commit = "v20.77.0",
+        sha256 = "9884f7bce0d34c776d450f1a1f31858aaced74c4454f2758543ed557df07d1e0",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/max_fallback_size.patch",

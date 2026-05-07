@@ -333,7 +333,7 @@ template <typename T>
 void DeformableModel<T>::SetParallelism(Parallelism parallelism) {
   parallelism_ = parallelism;
   const std::vector<DeformableBodyIndex>& body_indices =
-      deformable_bodies_.indices();
+      deformable_bodies_.valid_indices();
   for (const DeformableBodyIndex& index : body_indices) {
     deformable_bodies_.get_mutable_element(index).set_parallelism(parallelism);
   }
@@ -346,7 +346,8 @@ void DeformableModel<T>::SetDefaultState(const systems::Context<T>& context,
     DRAKE_DEMAND(is_empty());
     return;
   } else {
-    for (const DeformableBodyIndex& index : deformable_bodies_.indices()) {
+    for (const DeformableBodyIndex& index :
+         deformable_bodies_.valid_indices()) {
       const DeformableBody<T>& body = deformable_bodies_.get_element(index);
       body.SetDefaultState(context, state);
     }
@@ -372,7 +373,8 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 
     /* Copy over deformable_bodies_. */
     result->deformable_bodies_.ResizeToMatch(deformable_bodies_);
-    for (const DeformableBodyIndex& index : deformable_bodies_.indices()) {
+    for (const DeformableBodyIndex& index :
+         deformable_bodies_.valid_indices()) {
       const DeformableBody<T>& body = deformable_bodies_.get_element(index);
       result->deformable_bodies_.Add(body.CloneToDouble());
     }
@@ -430,7 +432,7 @@ void DeformableModel<T>::DoDeclareSystemResources() {
 
     /* Declare discrete states and parameters. */
     const std::vector<DeformableBodyIndex>& body_indices =
-        deformable_bodies_.indices();
+        deformable_bodies_.valid_indices();
     for (const DeformableBodyIndex& index : body_indices) {
       DeformableBody<T>& body = deformable_bodies_.get_mutable_element(index);
       body.DeclareDiscreteState(static_cast<internal::MultibodyTreeSystem<T>*>(
@@ -482,7 +484,7 @@ void DeformableModel<T>::CopyVertexPositions(const systems::Context<T>& context,
       output->get_mutable_value<geometry::GeometryConfigurationVector<T>>();
   output_value.clear();
   const std::vector<DeformableBodyIndex>& body_indices =
-      deformable_bodies_.indices();
+      deformable_bodies_.valid_indices();
   for (const DeformableBodyIndex& index : body_indices) {
     const DeformableBody<T>& body = deformable_bodies_.get_element(index);
     const GeometryId geometry_id = body.geometry_id();

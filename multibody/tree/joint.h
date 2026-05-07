@@ -1005,8 +1005,9 @@ class Joint : public MultibodyElement<T> {
 
   In the case of revolute, prismatic, and screw joints we have an axis â whose
   components are the same in Jp and Jc. However, for maximum speed, the
-  available mobilizers are specialized to rotate only about a coordinate axis.
-  TODO(sherm1) Make that happen.
+  available mobilizers for revolute and prismatic are specialized to rotate
+  about or translate along a coordinate axis.
+
   As an example, if the mobilizer rotates around z, we want new frames F and M
   with Fz=Mz=â, Fo=Jpo, Mo=Jco. We also want F==M when Jp==Jc, i.e. at the joint
   zero position so that the coordinate q will mean the same thing using F and M
