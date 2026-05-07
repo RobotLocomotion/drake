@@ -1305,9 +1305,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // `dynamic_objects_` and `dynamic_tree_`.
   deformable::Geometries geometries_for_deformable_contact_;
 
-  // Deferred, shared cache of per-geometry data for
-  // point_distance::Callback on meshes (Mesh and Convex).
-  MeshSdfCache mesh_sdf_cache_{};
+  // Deferred repository for of per-geometry data for
+  // point_distance::Callback on meshes (Mesh and Convex). It converts
+  // declarations to definitions within queries that require it.
+  mutable MeshSdfCache mesh_sdf_cache_{};
 
   // Two-level cache used by ImplementFromConvexHull().
   //   Level 1: mesh-source cache key  →  ConvexHullCacheEntry
