@@ -32,7 +32,7 @@ container image, you may need to install the following packages before continuin
 
 ```bash
 sudo apt-get update
-sudo apt-get install --no-install-recommends ca-certificates dpkg-dev wget
+sudo apt-get install --no-install-recommends ca-certificates wget
 ```
 
 ## Stable Releases
@@ -51,8 +51,8 @@ The most recent release is
 To download and install the `drake-dev` package:
 
 ```bash
-wget https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
-sudo apt-get install --no-install-recommends ./drake-dev_1.53.0-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+wget -O drake-dev.deb https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+sudo apt-get install --no-install-recommends ./drake-dev.deb
 ```
 
 Most content installs to `/opt/drake`, so setting the following environment
@@ -84,12 +84,11 @@ with date YYYYMMDD preceded with ``0.0.``. For example,
 
 Nightly packages are retained for 56 days from their date of creation.
 
-To install a nightly apt package, download the archive and install it directly.
-For example, when using Ubuntu 24.04 (Noble) on amd64:
+To download and install the `drake-dev` package from a nightly build:
 
 ```bash
-wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb
-sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-noble.deb
+wget -O drake-dev.deb https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+sudo apt-get install --no-install-recommends ./drake-dev.deb
 ```
 
 ## APT site (Ubuntu 24.04 only)
@@ -106,7 +105,7 @@ Download a copy of the Drake GPG signing key and add it to an APT trusted keycha
 ```bash
 sudo apt-get update
 sudo apt-get install --no-install-recommends \
-  ca-certificates dpkg-dev gnupg wget
+  ca-certificates gnupg wget
 wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
   | sudo tee /etc/apt/trusted.gpg.d/drake.gpg >/dev/null
 ```
@@ -114,7 +113,7 @@ wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
 Add the Drake repository to your APT sources list:
 
 ```bash
-echo "deb [arch=$(dpkg-architecture -qDEB_HOST_ARCH)] https://drake-apt.csail.mit.edu/noble noble main" \
+echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/noble noble main" \
   | sudo tee /etc/apt/sources.list.d/drake.list >/dev/null
 ```
 

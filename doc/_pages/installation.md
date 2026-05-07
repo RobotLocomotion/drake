@@ -19,17 +19,17 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾                | Architecture  | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
-|-------------------------------------|---------------|------------|---------------------|-----------------|
-| Ubuntu 24.04 LTS (Noble Numbat)     | x86_64, arm64 | 3.12       | Pip, Binary, APT    | March 2028      |
-|                                     | x86_64, arm64 | 3.13-3.14  | Pip                 | March 2028      |
-| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64, arm64 | 3.12-3.13  | Pip                 | March 2028      |
-|                                     | x86_64, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
-| macOS Sequoia (15)                  | arm64         | 3.13       | Pip                 | October 2026    |
-|                                     | arm64         | 3.14       | Pip, Binary         | October 2026    |
-| macOS Tahoe (26)                    | arm64         | 3.13       | Pip                 | October 2026    |
-|                                     | arm64         | 3.14       | Pip, Binary         | October 2027    |
-| Amazon Linux 2023                   | x86_64, arm64 | 3.12-3.14  | Pip                 | March 2028      |
+| Operating System ⁽¹⁾                | Architecture     | Python ⁽²⁾ | Installation method | End of life ⁽³⁾ |
+|-------------------------------------|------------------|------------|---------------------|-----------------|
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86-64, arm64    | 3.12       | Pip, Binary, APT    | March 2028      |
+|                                     | x86-64, arm64    | 3.13-3.14  | Pip                 | March 2028      |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3, arm64 | 3.12-3.13  | Pip                 | March 2028      |
+|                                     | x86-66-v3, arm64 | 3.14       | Pip, Binary, APT    | March 2030      |
+| macOS Sequoia (15)                  | arm64            | 3.13       | Pip                 | October 2026    |
+|                                     | arm64            | 3.14       | Pip, Binary         | October 2026    |
+| macOS Tahoe (26)                    | arm64            | 3.13       | Pip                 | October 2026    |
+|                                     | arm64            | 3.14       | Pip, Binary         | October 2027    |
+| Amazon Linux 2023                   | x86_64, arm64    | 3.12-3.14  | Pip                 | March 2028      |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
