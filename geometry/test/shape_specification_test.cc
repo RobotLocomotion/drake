@@ -649,6 +649,23 @@ GTEST_TEST(ShapeTest, MeshConstructor) {
   }
 }
 
+// Mesh and Convex share their sources across copies (making cloning cheap for
+// in-memory meshes).
+GTEST_TEST(ShapeTest, MeshAndConvexSharedSource) {
+  auto validate_shared_source = []<typename MeshType>(MeshType mesh_orig) {
+    SCOPED_TRACE(mesh_orig.type_name());
+    const MeshType mesh_copy(mesh_orig);
+    EXPECT_EQ(&mesh_orig.source(), &mesh_copy.source());
+    const MeshType mesh_move(std::move(mesh_orig));
+    EXPECT_EQ(&mesh_copy.source(), &mesh_move.source());
+    EXPECT_NE(&mesh_orig.source(), &mesh_move.source());
+    // The lint issue was fixed in https://github.com/cpplint/cpplint/pull/288,
+    // but there is no release that includes it.
+  };  // NOLINT(readability/braces) -- templated lambda confuses cpplint.
+  validate_shared_source(Mesh("/fictitious_name.obj", 1.0));
+  validate_shared_source(Convex("/fictitious_name.obj", 1.0));
+}
+
 // Confirms the scale factors are tested in Mesh and Convex constructors.
 GTEST_TEST(ShapeTest, MeshAndConvexValidateScale) {
   const std::string kFilename = "/fictitious_name.obj";

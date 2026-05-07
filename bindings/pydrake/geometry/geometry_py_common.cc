@@ -368,6 +368,7 @@ void DefineMeshSource(py::module m) {
     py::class_<Class> cls(m, "MeshSource", cls_doc.doc);
     py::object ctor = m.attr("MeshSource");
     cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<std::filesystem::path>(), py::arg("path"),
             cls_doc.ctor.doc_1args_path)
         .def(py::init<InMemoryMesh>(), py::arg("mesh"),
