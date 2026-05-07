@@ -9,7 +9,6 @@
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/memoizer_cache.h"
 #include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"

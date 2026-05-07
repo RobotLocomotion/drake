@@ -304,7 +304,6 @@ drake_cc_library(
     hdrs = [
         "calc_signed_distance_to_surface_mesh.h",
         "distance_to_point_callback.h",
-        "memoizer_cache.h",
         "mesh_distance_boundary.h",
         "mesh_sdf_cache.h",
     ],
@@ -1619,13 +1618,6 @@ drake_cc_googletest(
         ":make_sphere_mesh",
         "//common:sorted_pair",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "memoizer_cache_test",
-    deps = [
-        ":distance_to_point_callback",
     ],
 )
 
