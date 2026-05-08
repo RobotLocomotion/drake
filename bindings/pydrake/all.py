@@ -16,6 +16,7 @@ Things to note:
   otherwise, `all` would emit noisy deprecation warnings, or if they are
   suppressed, subseqeuent imports of those deprecated modules will not trigger
   warnings.
+* Experimental modules are excluded from `all`.
 
 To see example usages, please see `doc/python_bindings.rst`.
 

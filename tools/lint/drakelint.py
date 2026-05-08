@@ -268,6 +268,36 @@ def _check_clang_format_toggles(filename):
     return num_errors
 
 
+def _check_experimental_isolation(filename):
+    """Checks that experimental code is not included by non-experimental
+    code."""
+    if "/experimental/" in filename or "/dev/" in filename:
+        # The current file is experimental.
+        return 0
+
+    with open(filename, mode="r", encoding="utf-8") as file:
+        lines = file.readlines()
+
+    num_errors = 0
+    for i, line in enumerate(lines):
+        if not line.startswith("#include"):
+            continue
+        if "/experimental/" not in line and "/dev/" not in line:
+            continue
+        if (
+            filename.startswith("bindings/pydrake")
+            and "_py_experimental_" in filename
+        ):
+            continue
+        print(
+            f"ERROR:{filename}:{i + 1}: "
+            "Do not include experimental code from non-experimental code."
+        )
+        num_errors += 1
+
+    return num_errors
+
+
 def main():
     """Run Drake lint checks on each path specified as a command-line argument.
     Exit 1 if any of the paths are invalid or any lint checks fail.
@@ -294,6 +324,7 @@ def main():
             total_errors += _check_clang_format_toggles(filename)
             total_errors += _check_header_disallowed_includes(filename)
             total_errors += _check_header_doxygen_file_spelling(filename)
+            total_errors += _check_experimental_isolation(filename)
 
     if total_errors == 0:
         sys.exit(0)
