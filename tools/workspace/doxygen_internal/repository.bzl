@@ -28,7 +28,7 @@ def _impl(repo_ctx):
         mirror_to_s3 = False,
     )
 
-    if repo_ctx.os.name == "linux" and repo_ctx.os.arch == "x86_64":
+    if repo_ctx.os.name == "linux" and repo_ctx.os.arch == "amd64":
         # Parse the version string from the commit.
         version = commit.removeprefix("Release_").replace("_", ".")
 
