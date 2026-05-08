@@ -128,7 +128,7 @@ def _download_binaries(*, version):
     The `version` is a string like "vM.m.p", or None.
     """
     # This is a partial inventory of our binary releases (tgz and wheel only).
-    # The apt and Docker releases are handled separately.
+    # The apt release is handled separately.
     binaries = {
         "https://drake-packages.csail.mit.edu/drake/staging": [
             # Wheel filenames.
