@@ -26,6 +26,11 @@ The drake APT site `https://drake-apt.csail.mit.edu` supports up to Ubuntu 24.04
 (amd64 only) but not any newer versions. Note that ``*.deb`` packages remain
 supported and are available as release attachments.
 
+The drake Docker Hub page `https://hub.docker.com/r/robotlocomotion/drake`
+supports up to
+[noble-1.53.0](https://hub.docker.com/layers/robotlocomotion/drake/noble-1.53.0/images/sha256-d7774d48af11de61619dcb0d725a4c68245cf33fbc969785532c79567722916d),
+but not any newer versions.
+
 # macOS packages
 
 * macOS 14 (Sonoma)
