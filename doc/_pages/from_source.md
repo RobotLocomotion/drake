@@ -106,11 +106,19 @@ Bazel build.
 
 * [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
 * [`CMAKE_(C|Fortran)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_(C|CXX)_FLAGS`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
 * [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
 
 The `CMAKE_C_COMPILER` is used to compile both C and C++ code, so must be a
 compiler *driver* than can handle both languages, based on the filename. All
 of the supported compilers (GCC, Clang, Xcode) work fine.
+
+`CMAKE_C_FLAGS` and `CMAKE_CXX_FLAGS` (and the build-type-specific
+`CMAKE_(C|CXX)_FLAGS_<CONFIG>` variants matching `CMAKE_BUILD_TYPE`) are
+forwarded to Bazel as `--conlyopt` and `--cxxopt` respectively. They appear
+after Drake's other `.bazelrc`-level compile options on the compiler command
+line, but target-level `copts` set in Drake's `BUILD.bazel` files still take
+precedence over them.
 
 Building and installing Drake also requires a working installation of Python.
 When `Python_EXECUTABLE` is specified, it uses the given path to the Python
