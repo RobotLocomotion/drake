@@ -45,4 +45,11 @@ try-import @PROJECT_BINARY_DIR@/drake.bazelrc
 build --stamp
 build --workspace_status_command="sed 's/^/STABLE_VERSION /' '@PROJECT_BINARY_DIR@/VERSION.TXT'"
 
-# TODO(#24455) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also.
+# Forward CMAKE_C_FLAGS and CMAKE_CXX_FLAGS, plus the build-type-specific
+# variants matching CMAKE_BUILD_TYPE (like CMAKE_C_FLAGS_RELEASE or
+# CMAKE_CXX_FLAGS_DEBUG). The C and CXX flags are forwarded as --conlyopt and
+# --cxxopt respectively. These are placed in their own bazelrc line below
+# BAZEL_CONFIG so user-supplied flags appear near the end of the compiler
+# command line. Target-level `copts = [...]` in Drake's BUILD files still
+# appear after these and will win conflicts.
+build @BAZEL_USER_COMPILE_FLAGS@
