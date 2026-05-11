@@ -45,4 +45,7 @@ try-import @PROJECT_BINARY_DIR@/drake.bazelrc
 build --stamp
 build --workspace_status_command="sed 's/^/STABLE_VERSION /' '@PROJECT_BINARY_DIR@/VERSION.TXT'"
 
-# TODO(#24455) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also.
+# Forward user-supplied CMAKE_C_FLAGS / CMAKE_CXX_FLAGS (and build-type
+# variants) to Bazel. Placed last so these flags come after Drake's other
+# bazelrc copts; target-level copts in BUILD files still override them.
+build @BAZEL_USER_COMPILE_FLAGS@

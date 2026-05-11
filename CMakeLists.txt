@@ -164,8 +164,37 @@ if(NOT BUILD_TYPE_LOWER IN_LIST SUPPORTED_BUILD_TYPES_LOWER)
   )
 endif()
 
-# TODO(#24455) We don't currently pass along the user's CMAKE_C_FLAGS and
-# CMAKE_CXX_FLAGS to Bazel, but we should.
+# Forward CMAKE_C_FLAGS and CMAKE_CXX_FLAGS (plus the build-type-specific
+# variants matching CMAKE_BUILD_TYPE) to Bazel as --conlyopt and --cxxopt
+# respectively. These are placed in their own bazelrc line below BAZEL_CONFIG
+# so user-supplied flags appear near the end of the compiler command line.
+# Target-level `copts = [...]` in Drake's BUILD files still appear after
+# these and will win conflicts.
+set(BAZEL_USER_COMPILE_FLAGS)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+# Wrap flag values containing whitespace in double quotes so they survive
+# bazelrc tokenization as a single argument. Flags containing literal quote
+# characters are not handled.
+separate_arguments(_user_c_flags UNIX_COMMAND
+  "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}}"
+)
+foreach(_flag IN LISTS _user_c_flags)
+  if(_flag MATCHES "[ \t]")
+    string(APPEND BAZEL_USER_COMPILE_FLAGS " --conlyopt=\"${_flag}\"")
+  else()
+    string(APPEND BAZEL_USER_COMPILE_FLAGS " --conlyopt=${_flag}")
+  endif()
+endforeach()
+separate_arguments(_user_cxx_flags UNIX_COMMAND
+  "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}}"
+)
+foreach(_flag IN LISTS _user_cxx_flags)
+  if(_flag MATCHES "[ \t]")
+    string(APPEND BAZEL_USER_COMPILE_FLAGS " --cxxopt=\"${_flag}\"")
+  else()
+    string(APPEND BAZEL_USER_COMPILE_FLAGS " --cxxopt=${_flag}")
+  endif()
+endforeach()
 
 # Next we'll find which Python interpreter to use.
 if(PYTHON_EXECUTABLE AND NOT Python_EXECUTABLE)
