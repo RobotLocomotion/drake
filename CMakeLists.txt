@@ -131,7 +131,7 @@ else()
   )
 endif()
 
-# Determine the CMAKE_BUILD_TYPE. We'll store it as BUILD_TYPE_LOWER so that
+# Determine the CMAKE_BUILD_TYPE. We'll store it as BUILD_TYPE_UPPER so that
 # we can treat it as case-insensitive in our string comparisons.
 get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTI_CONFIG)
@@ -150,22 +150,47 @@ if(NOT CMAKE_BUILD_TYPE)
     FORCE
   )
 endif()
-string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_LOWER)
-string(TOLOWER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_LOWER)
-if(NOT BUILD_TYPE_LOWER IN_LIST SUPPORTED_BUILD_TYPES_LOWER)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+string(TOUPPER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_UPPER)
+if(NOT BUILD_TYPE_UPPER IN_LIST SUPPORTED_BUILD_TYPES_UPPER)
   message(WARNING
     "Configuration CMAKE_BUILD_TYPE='${CMAKE_BUILD_TYPE}' is NOT supported. "
     "Defaulting to Release, options are: ${SUPPORTED_BUILD_TYPES_STRING}"
   )
-  set(BUILD_TYPE_LOWER release)
+  set(BUILD_TYPE_UPPER RELEASE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING
     "Choose the type of build, options are: ${SUPPORTED_BUILD_TYPES_STRING}"
     FORCE
   )
 endif()
 
-# TODO(#24455) We don't currently pass along the user's CMAKE_C_FLAGS and
-# CMAKE_CXX_FLAGS to Bazel, but we should.
+# See the corresponding comment in bazel.rc.in above the
+# `build @BAZEL_USER_COMPILE_FLAGS@` line for more details.
+set(BAZEL_USER_COMPILE_FLAGS)
+separate_arguments(_user_c_flags UNIX_COMMAND
+  "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE_UPPER}}"
+)
+separate_arguments(_user_cxx_flags UNIX_COMMAND
+  "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE_UPPER}}"
+)
+# Entries in the .bazelrc file are tokenized according to the same rules as the
+# Bourne shell. See https://bazel.build/run/bazelrc#bazelrc-syntax-semantics
+# for more info. We must escape backslashes and quotes so that they survive
+# the bazelrc tokenization.
+function(_append_bazel_compile_flag _option _flag)
+  string(REPLACE [[\]] [[\\]] _escaped "${_flag}")
+  string(REPLACE [["]] [[\"]] _escaped "${_escaped}")
+  set(BAZEL_USER_COMPILE_FLAGS
+    "${BAZEL_USER_COMPILE_FLAGS} ${_option}=\"${_escaped}\""
+    PARENT_SCOPE
+  )
+endfunction()
+foreach(_flag IN LISTS _user_c_flags)
+  _append_bazel_compile_flag(--conlyopt "${_flag}")
+endforeach()
+foreach(_flag IN LISTS _user_cxx_flags)
+  _append_bazel_compile_flag(--cxxopt "${_flag}")
+endforeach()
 
 # Next we'll find which Python interpreter to use.
 if(PYTHON_EXECUTABLE AND NOT Python_EXECUTABLE)
@@ -680,13 +705,13 @@ else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
 endif()
 
-if(BUILD_TYPE_LOWER STREQUAL debug)
+if(BUILD_TYPE_UPPER STREQUAL DEBUG)
   string(APPEND BAZEL_CONFIG " --config=Debug")
-elseif(BUILD_TYPE_LOWER STREQUAL minsizerel)
+elseif(BUILD_TYPE_UPPER STREQUAL MINSIZEREL)
   string(APPEND BAZEL_CONFIG " --config=MinSizeRel")
-elseif(BUILD_TYPE_LOWER STREQUAL release)
+elseif(BUILD_TYPE_UPPER STREQUAL RELEASE)
   string(APPEND BAZEL_CONFIG " --config=Release")
-elseif(BUILD_TYPE_LOWER STREQUAL relwithdebinfo)
+elseif(BUILD_TYPE_UPPER STREQUAL RELWITHDEBINFO)
   string(APPEND BAZEL_CONFIG " --config=RelWithDebInfo")
 endif()
 
@@ -727,7 +752,7 @@ endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
 # install.
-if(BUILD_TYPE_LOWER MATCHES "^(debug|relwithdebinfo)$")
+if(BUILD_TYPE_UPPER MATCHES "^(DEBUG|RELWITHDEBINFO)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
