@@ -1,9 +1,10 @@
-#include "drake/planning/dev/voxel_signed_distance_field_internal.h"
+#include "drake/planning/experimental/voxel_signed_distance_field_internal.h"
 
 #include <common_robotics_utilities/parallelism.hpp>
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
@@ -25,5 +26,6 @@ SignedDistanceFieldGenerationParameters<float> ToVGT(
 }
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

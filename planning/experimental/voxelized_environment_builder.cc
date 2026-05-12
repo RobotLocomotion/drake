@@ -1,4 +1,4 @@
-#include "drake/planning/dev/voxelized_environment_builder.h"
+#include "drake/planning/experimental/voxelized_environment_builder.h"
 
 #include <functional>
 #include <limits>
@@ -13,12 +13,13 @@
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/dev/voxel_occupancy_map_internal.h"
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map_internal.h"
-#include "drake/planning/dev/voxelized_environment_builder_internal.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxelized_environment_builder_internal.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 using geometry::GeometryId;
 using multibody::BodyIndex;
@@ -128,5 +129,6 @@ void FillTaggedObjectOccupancyMap(
       parent_body_index, parallelism, &internal_occupancy_map);
 }
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

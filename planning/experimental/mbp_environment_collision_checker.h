@@ -17,11 +17,12 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Sphere-model robot collision checker using MbP/SG to model environment
 /// geometry.
@@ -86,5 +87,6 @@ class MbpEnvironmentCollisionChecker final
         .MinimumDistance();
   }
 };
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

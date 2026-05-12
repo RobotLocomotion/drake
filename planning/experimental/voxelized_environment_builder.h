@@ -14,11 +14,12 @@
 #include "drake/common/parallelism.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/dev/voxel_occupancy_map.h"
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
+#include "drake/planning/experimental/voxel_occupancy_map.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Builds a VoxelOccupancyMap using the parameters specified.
 /// VoxelOccupancyMaps are a dense voxel grid where each cell is a
@@ -134,5 +135,6 @@ void FillTaggedObjectOccupancyMap(
     const std::optional<multibody::BodyIndex>& override_parent_body_index = {},
     Parallelism parallelism = Parallelism::Max());
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

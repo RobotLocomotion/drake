@@ -1,7 +1,8 @@
-#include "drake/planning/dev/voxel_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
@@ -20,5 +21,6 @@ OccupancyMap& GetMutableInternalOccupancyMap(VoxelOccupancyMap& occupancy_map) {
 }
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

@@ -1,4 +1,4 @@
-#include "drake/planning/dev/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "drake/planning/experimental/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
 
 #include <unordered_map>
 #include <vector>
@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace test {
 
 std::ostream& operator<<(std::ostream& out,
@@ -41,5 +42,6 @@ TEST_P(SphereRobotModelCollisionCheckerAbstractTestSuite, SphereChecker) {
 }
 
 }  // namespace test
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake
