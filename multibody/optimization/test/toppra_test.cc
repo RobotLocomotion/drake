@@ -778,6 +778,39 @@ GTEST_TEST(ToppraTest, ZeroVelocityTest) {
   ASSERT_TRUE(result);
 }
 
+TEST_F(IiwaToppraTest, MinTimeStepError) {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0);
+  const double mass{1};
+  const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
+  const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
+  const SpatialInertia<double> M_AAo_A =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A, I_AAcm_A);
+  auto& body = plant->AddRigidBody("body", M_AAo_A);
+  plant->AddJoint<PrismaticJoint>("joint", plant->world_body(), std::nullopt,
+                                  body, std::nullopt, Eigen::Vector3d::UnitX());
+  plant->Finalize();
+
+  auto path = PiecewisePolynomial<double>::FirstOrderHold(
+      Eigen::Vector3d(0, 0.9, 2), Eigen::RowVector3d(0, 0, 1));
+
+  // If the retimed trajectory is too fast (and the gridpoints are too close
+  // together), then knot points will be less than kEpsilonTime apart, leading
+  // to an error. This test ensures TOPPRA reports the failure by returning
+  // std::nullopt, rather than throwing an error.
+  Eigen::VectorXd gridpts(3);
+  gridpts << 0, 1e-12, 2;
+  auto toppra = std::make_unique<Toppra>(path, *plant, gridpts);
+
+  auto velocity_constraint =
+      toppra->AddJointVelocityLimit(Vector1d(-1e6), Vector1d(1e6));
+  auto acceleration_constraint =
+      toppra->AddJointAccelerationLimit(Vector1d(-1e6), Vector1d(1e6));
+
+  ASSERT_NO_THROW(toppra->SolvePathParameterization());
+  auto result = toppra->SolvePathParameterization();
+  EXPECT_FALSE(result);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

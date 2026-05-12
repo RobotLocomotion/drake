@@ -637,6 +637,13 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization(
     const double delta = gridpoints_(knot + 1) - gridpoints_(knot);
     const double sd_avg = (sd_knots(knot + 1) + sd_knots(knot)) / 2.;
     const double delta_t = delta / sd_avg;
+    if (delta_t < trajectories::PiecewiseTrajectory<double>::kEpsilonTime) {
+      drake::log()->error(fmt::format(
+          "Toppra hit numerical issues. Found delta_t {}, which is less than "
+          "PiecewiseTrajectory<double>::kEpsilonTime {}.",
+          delta_t, trajectories::PiecewiseTrajectory<double>::kEpsilonTime));
+      return std::nullopt;
+    }
     t_knots[knot + 1] = t_knots[knot] + delta_t;
 
     const Eigen::Vector3d coeffs(gridpoints_(knot), sd_knots(knot),
