@@ -131,7 +131,7 @@ else()
   )
 endif()
 
-# Determine the CMAKE_BUILD_TYPE. We'll store it as BUILD_TYPE_LOWER so that
+# Determine the CMAKE_BUILD_TYPE. We'll store it as BUILD_TYPE_UPPER so that
 # we can treat it as case-insensitive in our string comparisons.
 get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTI_CONFIG)
@@ -150,14 +150,14 @@ if(NOT CMAKE_BUILD_TYPE)
     FORCE
   )
 endif()
-string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_LOWER)
-string(TOLOWER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_LOWER)
-if(NOT BUILD_TYPE_LOWER IN_LIST SUPPORTED_BUILD_TYPES_LOWER)
+string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+string(TOUPPER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_UPPER)
+if(NOT BUILD_TYPE_UPPER IN_LIST SUPPORTED_BUILD_TYPES_UPPER)
   message(WARNING
     "Configuration CMAKE_BUILD_TYPE='${CMAKE_BUILD_TYPE}' is NOT supported. "
     "Defaulting to Release, options are: ${SUPPORTED_BUILD_TYPES_STRING}"
   )
-  set(BUILD_TYPE_LOWER release)
+  set(BUILD_TYPE_UPPER RELEASE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING
     "Choose the type of build, options are: ${SUPPORTED_BUILD_TYPES_STRING}"
     FORCE
@@ -171,7 +171,6 @@ endif()
 # Target-level `copts = [...]` in Drake's BUILD files still appear after
 # these and will win conflicts.
 set(BAZEL_USER_COMPILE_FLAGS)
-string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
 # Wrap flag values containing whitespace in double quotes so they survive
 # bazelrc tokenization as a single argument. Flags containing literal quote
 # characters are not handled.
@@ -709,13 +708,13 @@ else()
   string(APPEND BAZEL_CONFIG " --@drake//tools/flags:use_eigen_legacy_autodiff=False")
 endif()
 
-if(BUILD_TYPE_LOWER STREQUAL debug)
+if(BUILD_TYPE_UPPER STREQUAL DEBUG)
   string(APPEND BAZEL_CONFIG " --config=Debug")
-elseif(BUILD_TYPE_LOWER STREQUAL minsizerel)
+elseif(BUILD_TYPE_UPPER STREQUAL MINSIZEREL)
   string(APPEND BAZEL_CONFIG " --config=MinSizeRel")
-elseif(BUILD_TYPE_LOWER STREQUAL release)
+elseif(BUILD_TYPE_UPPER STREQUAL RELEASE)
   string(APPEND BAZEL_CONFIG " --config=Release")
-elseif(BUILD_TYPE_LOWER STREQUAL relwithdebinfo)
+elseif(BUILD_TYPE_UPPER STREQUAL RELWITHDEBINFO)
   string(APPEND BAZEL_CONFIG " --config=RelWithDebInfo")
 endif()
 
@@ -756,7 +755,7 @@ endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
 # install.
-if(BUILD_TYPE_LOWER MATCHES "^(debug|relwithdebinfo)$")
+if(BUILD_TYPE_UPPER MATCHES "^(DEBUG|RELWITHDEBINFO)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
