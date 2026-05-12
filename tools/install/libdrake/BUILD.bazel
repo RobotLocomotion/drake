@@ -433,11 +433,16 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "exported_symbols_test",
+    opt_in_condition = "//tools/skylark:linux",
     # Debug builds have a lot more symbols (no dead code elimination) so are too
     # much work to tidy up.
     opt_out_conditions = ["//tools:unoptimized"],
     data = [
         ":libdrake.so",
+        "@llvm//:bin/llvm-objdump",
+    ],
+    deps = [
+        "@rules_python//python/runfiles",
     ],
 )
 
