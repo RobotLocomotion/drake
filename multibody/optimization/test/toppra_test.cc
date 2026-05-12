@@ -789,6 +789,7 @@ TEST_F(PrismaticToppraTest, MinTimeStepError) {
   gridpts << 0, 1e-12, 2;
   auto toppra = MakeToppra(path, gridpts);
 
+  // Huge limits (and small gridpoints) lead to tiny time steps.
   auto velocity_constraint =
       toppra->AddJointVelocityLimit(Vector1d(-1e6), Vector1d(1e6));
   auto acceleration_constraint =
@@ -796,6 +797,21 @@ TEST_F(PrismaticToppraTest, MinTimeStepError) {
 
   ASSERT_NO_THROW(toppra->SolvePathParameterization());
   auto result = toppra->SolvePathParameterization();
+  EXPECT_FALSE(result);
+}
+
+TEST_F(PrismaticToppraTest, InfiniteTimeStepError) {
+  auto path = PiecewisePolynomial<double>::FirstOrderHold(
+      Eigen::Vector2d(0, 1), Eigen::RowVector2d(0, 1));
+
+  auto toppra = MakeToppra(path);
+
+  // Tight limits that force zero velocity.
+  toppra->AddJointVelocityLimit(Vector1d(0), Vector1d(0));
+  toppra->AddJointAccelerationLimit(Vector1d(0), Vector1d(0));
+
+  ASSERT_NO_THROW(toppra->SolvePathParameterization());
+  auto result = toppra->SolvePathParameterization(0, 0);
   EXPECT_FALSE(result);
 }
 

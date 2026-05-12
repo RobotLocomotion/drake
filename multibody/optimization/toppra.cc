@@ -638,11 +638,12 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization(
     const double sd_avg = (sd_knots(knot + 1) + sd_knots(knot)) / 2.;
     const double delta_t = delta / sd_avg;
     const double next_t = t_knots[knot] + delta_t;
-    if (next_t - t_knots[knot] <
-        trajectories::PiecewiseTrajectory<double>::kEpsilonTime) {
+    if (!std::isfinite(next_t) ||
+        next_t - t_knots[knot] <
+            trajectories::PiecewiseTrajectory<double>::kEpsilonTime) {
       drake::log()->error(
-          "Toppra hit numerical issues. Found delta_t less than "
-          "PiecewiseTrajectory<double>::kEpsilonTime.");
+          "Toppra hit numerical issues. Found sub-epsilon or non-finite time "
+          "step.");
       return std::nullopt;
     }
     t_knots[knot + 1] = next_t;
