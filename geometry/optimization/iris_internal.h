@@ -276,6 +276,9 @@ class CounterexampleConstraint : public solvers::Constraint {
   //  g(x) + kSolverConstraintTolerance > ub,
   // which we implement as
   //  g(x) + kSolverConstraintTolerance ≥ ub + eps.
+  // Note that this constant is made public in order to conveniently check if a
+  // configuration will be feasible for this constraint. For example, this
+  // is used downstream in planning/iris/iris_np2.cc by the function `IrisNp2`.
   // TODO(russt): We need a more robust way to get this from the solver. This
   // value works for SNOPT and is reasonable for most solvers.
   static constexpr double kSolverConstraintTolerance{1e-6};
