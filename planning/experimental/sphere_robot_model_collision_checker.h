@@ -23,6 +23,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Class modelling collision spheres used for collision checking.
 /// This code uses Vector4d because Vector4d allows for SIMD vector operations
@@ -537,5 +538,6 @@ class SphereRobotModelCollisionChecker : public CollisionChecker {
   /// Internal storage of the robot's sphere model geometry.
   std::vector<BodySpheres> robot_sphere_model_;
 };
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

@@ -7,10 +7,11 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/planning/dev/voxel_signed_distance_field.h"
+#include "drake/planning/experimental/voxel_signed_distance_field.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 class VoxelOccupancyMap {
  public:
@@ -81,5 +82,6 @@ class VoxelOccupancyMap {
   std::shared_ptr<void> internal_representation_;
 };
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

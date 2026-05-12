@@ -1,4 +1,4 @@
-#include "drake/planning/dev/mbp_environment_collision_checker.h"
+#include "drake/planning/experimental/mbp_environment_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -21,6 +21,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 using geometry::CollisionFilterDeclaration;
 using geometry::FrameId;
@@ -150,5 +151,6 @@ void MbpEnvironmentCollisionChecker::RemoveAllAddedEnvironment(
   PerformOperationAgainstAllModelContexts(operation);
 }
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

@@ -6,12 +6,13 @@
 
 #include "drake/common/parallelism.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
-#include "drake/planning/dev/voxel_occupancy_map.h"
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/voxel_occupancy_map.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Self-filter implementation for VoxelOccupancyMap environments.
 /// Self-filter marks voxels belonging to the robot as empty so that they do not
@@ -50,5 +51,6 @@ void SelfFilter(const SphereRobotModelCollisionChecker& collision_checker,
                 Parallelism parallelism,
                 std::optional<int> context_number = std::nullopt);
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

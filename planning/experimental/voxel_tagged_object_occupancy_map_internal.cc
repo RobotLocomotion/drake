@@ -1,9 +1,10 @@
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map_internal.h"
 
 #include <common_robotics_utilities/parallelism.hpp>
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 
 using voxelized_geometry_tools::TaggedObjectOccupancyMap;
@@ -22,5 +23,6 @@ TaggedObjectOccupancyMap& GetMutableInternalTaggedObjectOccupancyMap(
 }
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

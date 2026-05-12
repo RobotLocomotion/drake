@@ -9,7 +9,7 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
-    name = "dev",
+    name = "experimental",
     visibility = ["//visibility:public"],
     deps = [
         ":mbp_environment_collision_checker",

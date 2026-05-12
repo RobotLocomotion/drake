@@ -1,4 +1,4 @@
-#include "drake/planning/dev/voxelized_environment_builder.h"
+#include "drake/planning/experimental/voxelized_environment_builder.h"
 
 #include <map>
 #include <memory>
@@ -11,11 +11,14 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/planning/dev/voxel_grid_internal.h"
+#include "drake/planning/experimental/voxel_grid_internal.h"
 #include "drake/planning/test/planning_test_helpers.h"
+
+using drake::planning::test::MakePlanningTestModel;
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace test {
 namespace {
 
@@ -25,13 +28,15 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   // Assemble model directives.
   drake::multibody::parsing::ModelDirective add_model_1;
   add_model_1.add_model = drake::multibody::parsing::AddModel{
-      "package://drake/planning/dev/test/voxel_test1.sdf", "voxel_test1"};
+      "package://drake/planning/experimental/test/voxel_test1.sdf",
+      "voxel_test1"};
   drake::multibody::parsing::ModelDirective add_weld_1;
   add_weld_1.add_weld =
       drake::multibody::parsing::AddWeld{"world", "voxel_test1::voxel_test1"};
   drake::multibody::parsing::ModelDirective add_model_2;
   add_model_2.add_model = drake::multibody::parsing::AddModel{
-      "package://drake/planning/dev/test/voxel_test2.sdf", "voxel_test2"};
+      "package://drake/planning/experimental/test/voxel_test2.sdf",
+      "voxel_test2"};
   drake::multibody::parsing::ModelDirective add_weld_2;
   add_weld_2.add_weld =
       drake::multibody::parsing::AddWeld{"world", "voxel_test2::voxel_test2"};
@@ -158,5 +163,6 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
 
 }  // namespace
 }  // namespace test
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

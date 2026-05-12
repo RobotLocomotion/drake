@@ -2,10 +2,11 @@
 
 #include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 // Retrieve a const reference to the internal TaggedObjectOccupancyMap of a
 // VoxelTaggedObjectOccupancyMap instance.
@@ -22,5 +23,6 @@ GetMutableInternalTaggedObjectOccupancyMap(
     VoxelTaggedObjectOccupancyMap& occupancy_map);
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

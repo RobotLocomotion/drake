@@ -12,14 +12,15 @@
 
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
-#include "drake/planning/dev/voxel_occupancy_map.h"
-#include "drake/planning/dev/voxel_signed_distance_field.h"
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/voxel_occupancy_map.h"
+#include "drake/planning/experimental/voxel_signed_distance_field.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Collision checker using a voxelized environment model.
 class VoxelizedEnvironmentCollisionChecker final
@@ -162,5 +163,6 @@ class VoxelizedEnvironmentCollisionChecker final
   std::map<std::string, multibody::BodyIndex> environment_sdf_bodies_;
 };
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

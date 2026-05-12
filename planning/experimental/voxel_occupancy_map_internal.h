@@ -2,10 +2,11 @@
 
 #include <voxelized_geometry_tools/occupancy_map.hpp>
 
-#include "drake/planning/dev/voxel_occupancy_map.h"
+#include "drake/planning/experimental/voxel_occupancy_map.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 // Retrieve a const reference to the internal OccupancyMap of a
 // VoxelOccupancyMap instance.
@@ -20,5 +21,6 @@ voxelized_geometry_tools::OccupancyMap& GetMutableInternalOccupancyMap(
     VoxelOccupancyMap& occupancy_map);
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

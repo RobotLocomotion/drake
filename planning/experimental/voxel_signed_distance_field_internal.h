@@ -2,10 +2,11 @@
 
 #include <voxelized_geometry_tools/signed_distance_field.hpp>
 
-#include "drake/planning/dev/voxel_signed_distance_field.h"
+#include "drake/planning/experimental/voxel_signed_distance_field.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 // Retrieve the internal SignedDistanceField<float> from a
 // VoxelSignedDistanceField instance.
@@ -18,5 +19,6 @@ voxelized_geometry_tools::SignedDistanceFieldGenerationParameters<float> ToVGT(
     const VoxelSignedDistanceField::GenerationParameters& parameters);
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake
