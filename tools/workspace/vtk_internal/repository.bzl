@@ -181,8 +181,8 @@ def vtk_internal_repository(
         name,
         local_repository_override = None,
         repository = "Kitware/VTK",
-        commit = "2b1867611fc3f6136bfb8ddf7264acd6d9e0e2ad",
-        sha256 = "a7dcff667fc7b53121bbe1ac7539afb42583eb85368c52f7c91f234fa71445aa",  # noqa
+        commit = "816c28b3c1cea97d4697d548a790715097ee625d",
+        sha256 = "b000d525553d46a9fba2d38a9e90b17031d868b13d9a47ff196bab2fe9c921a3",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             # Drake's conventions for VTK patches are:
@@ -194,7 +194,6 @@ def vtk_internal_repository(
             # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/gltf_export_with_object_names.patch",
             ":patches/upstream/ignore_unsupported_image_types.patch",
-            ":patches/upstream/utilities_x11_more_functions.patch",
             ":patches/common_core_fmt9.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
