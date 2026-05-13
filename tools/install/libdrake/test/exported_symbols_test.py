@@ -116,9 +116,6 @@ def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     if filename == "CoinParamUtils.cpp":
         # TODO(#24446) Patch libsdformat to fix this.
         return True
-    if filename == "RoadError.cpp":
-        # TODO(#24446) Patch qhull to remove its global log.
-        return True
     if filename == "meshcat.cc":
         # TODO(#24446) Fix this somehow.
         return True
