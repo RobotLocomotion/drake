@@ -12,8 +12,8 @@ drake_cc_package_library(
     name = "experimental",
     visibility = ["//visibility:public"],
     deps = [
-        ":placeholder",
         ":mbp_environment_collision_checker",
+        ":placeholder",
         ":sphere_robot_model_collision_checker",
         ":voxel_occupancy_map",
         ":voxel_self_filter",
@@ -64,9 +64,7 @@ drake_cc_library(
     name = "voxel_occupancy_map",
     srcs = [
         "voxel_occupancy_map.cc",
-        "voxel_occupancy_map_internal.cc",
         "voxel_occupancy_map_internal.h",
-        "voxel_signed_distance_field_internal.cc",
         "voxel_signed_distance_field_internal.h",
     ],
     hdrs = ["voxel_occupancy_map.h"],
@@ -83,11 +81,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "voxel_grid_internal",
-    srcs = [
-        "voxel_occupancy_map_internal.cc",
-        "voxel_signed_distance_field_internal.cc",
-        "voxel_tagged_object_occupancy_map_internal.cc",
-    ],
     hdrs = [
         "voxel_grid_internal.h",
         "voxel_occupancy_map_internal.h",
@@ -109,7 +102,6 @@ drake_cc_library(
     name = "voxel_signed_distance_field",
     srcs = [
         "voxel_signed_distance_field.cc",
-        "voxel_signed_distance_field_internal.cc",
         "voxel_signed_distance_field_internal.h",
     ],
     hdrs = ["voxel_signed_distance_field.h"],
@@ -126,10 +118,8 @@ drake_cc_library(
 drake_cc_library(
     name = "voxel_tagged_object_occupancy_map",
     srcs = [
-        "voxel_signed_distance_field_internal.cc",
         "voxel_signed_distance_field_internal.h",
         "voxel_tagged_object_occupancy_map.cc",
-        "voxel_tagged_object_occupancy_map_internal.cc",
         "voxel_tagged_object_occupancy_map_internal.h",
     ],
     hdrs = ["voxel_tagged_object_occupancy_map.h"],
