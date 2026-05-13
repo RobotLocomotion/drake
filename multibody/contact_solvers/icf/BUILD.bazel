@@ -256,6 +256,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 
@@ -284,13 +285,67 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "coupler_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gain_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "limit_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "patch_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
     name = "weld_constraints_pool_test",
     deps = [
         ":icf_data",
         ":icf_model",
         ":icf_search_direction_data",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 
