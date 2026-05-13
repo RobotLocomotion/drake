@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "drake/common/text_logging.h"
-#include "drake/planning/experimental/voxel_grid_internal.h"
+#include "drake/planning/experimental/voxel_signed_distance_field_internal.h"
 
 namespace drake {
 namespace planning {

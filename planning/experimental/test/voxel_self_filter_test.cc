@@ -14,7 +14,7 @@
 #include "drake/common/random.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/planning/experimental/voxel_grid_internal.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
 #include "drake/planning/experimental/voxelized_environment_collision_checker.h"
 #include "drake/planning/test/planning_test_helpers.h"
 

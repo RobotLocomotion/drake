@@ -7,7 +7,7 @@
 
 #include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
 #include "drake/planning/experimental/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
-#include "drake/planning/experimental/voxel_grid_internal.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
 #include "drake/planning/experimental/voxelized_environment_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"

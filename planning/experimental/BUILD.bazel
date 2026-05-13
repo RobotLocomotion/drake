@@ -62,12 +62,16 @@ drake_cc_library(
 
 drake_cc_library(
     name = "voxel_occupancy_map",
-    srcs = [
-        "voxel_occupancy_map.cc",
+    srcs = ["voxel_occupancy_map.cc"],
+    hdrs = [
+        "voxel_occupancy_map.h",
         "voxel_occupancy_map_internal.h",
         "voxel_signed_distance_field_internal.h",
     ],
-    hdrs = ["voxel_occupancy_map.h"],
+    install_hdrs_exclude = [
+        "voxel_occupancy_map_internal.h",
+        "voxel_signed_distance_field_internal.h",
+    ],
     deps = [
         ":voxel_signed_distance_field",
         "//common:essential",
@@ -79,32 +83,41 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "voxel_grid_internal",
-    hdrs = [
-        "voxel_grid_internal.h",
-        "voxel_occupancy_map_internal.h",
-        "voxel_signed_distance_field_internal.h",
-        "voxel_tagged_object_occupancy_map_internal.h",
-    ],
-    tags = ["exclude_from_package"],
-    deps = [
-        ":voxel_occupancy_map",
-        ":voxel_signed_distance_field",
-        ":voxel_tagged_object_occupancy_map",
-        "//common:essential",
-        "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
-    ],
-)
+# drake_cc_library(
+#     name = "voxel_grid_internal",
+#     hdrs = [
+#         "voxel_grid_internal.h",
+#         "voxel_occupancy_map_internal.h",
+#         "voxel_signed_distance_field_internal.h",
+#         "voxel_tagged_object_occupancy_map_internal.h",
+#     ],
+#     install_hdrs_exclude = [
+#         "voxel_grid_internal.h",
+#         "voxel_occupancy_map_internal.h",
+#         "voxel_signed_distance_field_internal.h",
+#         "voxel_tagged_object_occupancy_map_internal.h",
+#     ],
+#     # internal = True,
+#     tags = ["exclude_from_package"],
+#     visibility = ["//visibility:private"],
+#     deps = [
+#         ":voxel_occupancy_map",
+#         ":voxel_signed_distance_field",
+#         ":voxel_tagged_object_occupancy_map",
+#         "//common:essential",
+#         "@common_robotics_utilities_internal//:common_robotics_utilities",
+#         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
+#     ],
+# )
 
 drake_cc_library(
     name = "voxel_signed_distance_field",
-    srcs = [
-        "voxel_signed_distance_field.cc",
+    srcs = ["voxel_signed_distance_field.cc"],
+    hdrs = [
+        "voxel_signed_distance_field.h",
         "voxel_signed_distance_field_internal.h",
     ],
-    hdrs = ["voxel_signed_distance_field.h"],
+    install_hdrs_exclude = ["voxel_signed_distance_field_internal.h"],
     deps = [
         "//common:essential",
         "//common:parallelism",
@@ -117,12 +130,16 @@ drake_cc_library(
 
 drake_cc_library(
     name = "voxel_tagged_object_occupancy_map",
-    srcs = [
+    srcs = ["voxel_tagged_object_occupancy_map.cc"],
+    hdrs = [
         "voxel_signed_distance_field_internal.h",
-        "voxel_tagged_object_occupancy_map.cc",
+        "voxel_tagged_object_occupancy_map.h",
         "voxel_tagged_object_occupancy_map_internal.h",
     ],
-    hdrs = ["voxel_tagged_object_occupancy_map.h"],
+    install_hdrs_exclude = [
+        "voxel_signed_distance_field_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
+    ],
     deps = [
         ":voxel_signed_distance_field",
         "//common:essential",
@@ -137,7 +154,11 @@ drake_cc_library(
 drake_cc_library(
     name = "voxelized_environment_collision_checker",
     srcs = ["voxelized_environment_collision_checker.cc"],
-    hdrs = ["voxelized_environment_collision_checker.h"],
+    hdrs = [
+        "voxelized_environment_collision_checker.h",
+        "voxel_signed_distance_field_internal.h",
+    ],
+    install_hdrs_exclude = ["voxel_signed_distance_field_internal.h"],
     deps = [
         ":sphere_robot_model_collision_checker",
         ":voxel_occupancy_map",
@@ -147,7 +168,6 @@ drake_cc_library(
         "//planning:collision_checker",
     ],
     implementation_deps = [
-        ":voxel_grid_internal",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
@@ -155,11 +175,18 @@ drake_cc_library(
 
 drake_cc_library(
     name = "voxelized_environment_builder",
-    srcs = [
-        "voxelized_environment_builder.cc",
+    srcs = ["voxelized_environment_builder.cc"],
+    hdrs = [
+        "voxelized_environment_builder.h",
         "voxelized_environment_builder_internal.h",
+        "voxel_occupancy_map_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
     ],
-    hdrs = ["voxelized_environment_builder.h"],
+    install_hdrs_exclude = [
+        "voxelized_environment_builder_internal.h",
+        "voxel_occupancy_map_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
+    ],
     deps = [
         ":voxel_occupancy_map",
         ":voxel_tagged_object_occupancy_map",
@@ -169,7 +196,6 @@ drake_cc_library(
         "//multibody/plant",
     ],
     implementation_deps = [
-        ":voxel_grid_internal",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
@@ -177,11 +203,18 @@ drake_cc_library(
 
 drake_cc_library(
     name = "voxel_self_filter",
-    srcs = [
-        "voxel_self_filter.cc",
+    srcs = ["voxel_self_filter.cc"],
+    hdrs = [
+        "voxel_self_filter.h",
         "voxel_self_filter_internal.h",
+        "voxel_occupancy_map_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
     ],
-    hdrs = ["voxel_self_filter.h"],
+    install_hdrs_exclude = [
+        "voxel_self_filter_internal.h",
+        "voxel_occupancy_map_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
+    ],
     deps = [
         ":sphere_robot_model_collision_checker",
         ":voxel_occupancy_map",
@@ -190,7 +223,6 @@ drake_cc_library(
         "//planning:collision_checker",
     ],
     implementation_deps = [
-        ":voxel_grid_internal",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
@@ -234,11 +266,12 @@ drake_cc_googletest(
     num_threads = 2,
     deps = [
         ":sphere_robot_model_collision_checker_abstract_test_suite",
-        ":voxel_grid_internal",
         ":voxelized_environment_builder",
         ":voxelized_environment_collision_checker",
         "//planning:planning_test_helpers",
         "//planning/test_utilities:collision_checker_abstract_test_suite",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -251,7 +284,6 @@ drake_cc_googletest(
     # Be sure to exercise OpenMP-related features.
     num_threads = 2,
     deps = [
-        ":voxel_grid_internal",
         ":voxelized_environment_builder",
         "//planning:planning_test_helpers",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
@@ -272,7 +304,6 @@ drake_cc_googletest(
     # Be sure to exercise OpenMP-related features.
     num_threads = 2,
     deps = [
-        ":voxel_grid_internal",
         ":voxel_self_filter",
         ":voxelized_environment_collision_checker",
         "//planning:planning_test_helpers",

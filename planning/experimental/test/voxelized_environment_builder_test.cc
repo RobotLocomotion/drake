@@ -11,7 +11,9 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/planning/experimental/voxel_grid_internal.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxel_signed_distance_field_internal.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map_internal.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
 using drake::planning::test::MakePlanningTestModel;
