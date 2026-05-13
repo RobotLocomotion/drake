@@ -273,9 +273,7 @@ def _check_experimental_namespace(filename):
     if "/experimental/" in filename:
         with open(filename, mode="r", encoding="utf-8") as file:
             lines = file.readlines()
-        # If the file contains any code in a namespace, the experimental
-        # namespace must be used.
-        if "namespace" in lines and "namespace experimental {\n" not in lines:
+        if "namespace experimental {\n" not in lines:
             print(
                 f"ERROR:{filename}:1: "
                 "Experimental code must live inside `namespace experimental {`."
