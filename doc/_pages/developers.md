@@ -104,7 +104,7 @@ green ``+###`` number as reported by github), and *must not* include more than
   * Data files do not count towards the line limit.
   * Machine-generated changes do not count towards the line limit.
   * Files in
-    [Dev Directories](/directory_structure.html#dev-directories)
+    [Dev Directories](/directory_structure.html#experimental-and-dev-directories)
     do not count towards the line limit.
   * This rule may be overridden by agreement of at least two platform reviewers
     (listed below).
