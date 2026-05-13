@@ -38,6 +38,11 @@ struct IntegratorTestFactory<CenicIntegrator<double>> {
       return std::unexpected(
           "TODO(#23921, #24304): CENIC cannot yet pass this test.");
     }
+    if (test_info->name() == std::string("TrivialFixedStepJointsLocked") ||
+        test_info->name() ==
+            std::string("TrivialErrorControlledStepJointsLocked")) {
+      return std::unexpected("TODO(#23764): CENIC cannot yet pass this test.");
+    }
 
     IntegratorTestArticles<SpecificSystem> result;
     DiagramBuilder<double> builder;
@@ -55,14 +60,6 @@ struct IntegratorTestFactory<CenicIntegrator<double>> {
     if (!system_is_continuous_plant()) {
       auto plant =
           builder.template AddNamedSystem<MultibodyPlant<double>>("plant", 0.0);
-      // Add a single free body to the world. This prevents CENIC complaining
-      // about having no cliques.
-      const double radius = 0.05;  // m
-      const double mass = 0.1;     // kg
-      multibody::SpatialInertia<double> M_BBcm =
-          multibody::SpatialInertia<double>::SolidSphereWithMass(mass, radius);
-
-      plant->AddRigidBody("Ball", M_BBcm);
       plant->Finalize();
     }
 

@@ -135,10 +135,12 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
 
   // The input domain must be bounded.
   DRAKE_THROW_UNLESS(domain.IsBounded());
-  DRAKE_THROW_UNLESS(
-      starting_ellipsoid.center().size() ==
+
+  const int parameterization_dimension =
       options.parameterization.get_parameterization_dimension().value_or(
-          checker.plant().num_positions()));
+          checker.plant().num_positions());
+  DRAKE_THROW_UNLESS(starting_ellipsoid.center().size() ==
+                     parameterization_dimension);
 
   // Do a basic check of the parameterization dimension.
   const Eigen::VectorXd starting_ellipsoid_center_ambient =
@@ -162,6 +164,86 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
   DRAKE_THROW_UNLESS(
       options.ray_sampler_options.num_particles_to_walk_towards <=
       options.sampled_iris_options.num_particles);
+
+  // Check if seed point is in collision. The following code block is similar to
+  // checker.CheckConfigCollisionFree(starting_ellipsoid_center_ambient). The
+  // difference is checker would merely report a bool, but this provides a
+  // descriptive error message detailing which geometries are colliding.
+  const auto& context =
+      checker.UpdatePositions(starting_ellipsoid_center_ambient);
+  auto query_object = checker.plant()
+                          .get_geometry_query_input_port()
+                          .Eval<geometry::QueryObject<double>>(context);
+  const auto& inspector = query_object.inspector();
+  for (const auto& [geomA, geomB] : inspector.GetCollisionCandidates()) {
+    const double distance =
+        query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
+            .distance;
+    const double padding =
+        GetPaddingBetweenGeometries(checker, inspector, geomA, geomB);
+    if (distance < padding) {
+      throw std::runtime_error(fmt::format(
+          "IrisNp2: Starting ellipsoid center {} is in collision; geometry {} "
+          "is in collision with geometry {}.",
+          fmt_eigen(starting_ellipsoid.center()), inspector.GetName(geomA),
+          inspector.GetName(geomB)));
+    }
+    // Note: this check is necessary but not sufficient. If there is a point
+    // in configuration space within
+    // options.sampled_iris_options.configuration_space_margin distance of the
+    // seed point (and options.sampled_iris_options.relax_margin is false), the
+    // algorithm still can fail. (But this condition cannot be checked
+    // directly.)
+  }
+
+  // Check if seed point satisfies user-specified constraints.
+  if (options.sampled_iris_options.prog_with_additional_constraints) {
+    DRAKE_THROW_UNLESS(options.sampled_iris_options
+                           .prog_with_additional_constraints->num_vars() ==
+                       parameterization_dimension);
+    // Later in the algorithm, we use CounterexampleConstraint to find
+    // configurations near the seed point which violate constraints. That class
+    // adds the numerical buffer kSolverConstraintTolerance, so we must check
+    // that the seed point is not just feasible, but strictly feasible according
+    // to this tolerance.
+    if (!internal::CheckProgConstraints(
+            options.sampled_iris_options.prog_with_additional_constraints,
+            starting_ellipsoid.center(),
+            geometry::optimization::internal::CounterexampleConstraint::
+                kSolverConstraintTolerance)) {
+      throw std::runtime_error(fmt::format(
+          "IrisNp2: Starting ellipsoid center {} violates a constraint in "
+          "options.sampled_iris_options.prog_with_additional_constraints.",
+          fmt_eigen(starting_ellipsoid.center())));
+    }
+
+    // Even if the center point is feasible with a numerical buffer of
+    // kSolverConstraintTolerance, competing tolerances (solver feasibility
+    // tolerance vs. constraint violation threshold) can lead to degraded
+    // performance. The solver can even return the center point as the "optimal
+    // violator", which is an irrecoverable error.
+    const double vulnerability_margin =
+        100.0 * geometry::optimization::internal::CounterexampleConstraint::
+                    kSolverConstraintTolerance;
+    if (!internal::CheckProgConstraints(
+            options.sampled_iris_options.prog_with_additional_constraints,
+            starting_ellipsoid.center(), -vulnerability_margin)) {
+      drake::log()->warn(
+          "IrisNp2: The starting ellipsoid center {} is numerically very close "
+          "to a constraint boundary (within {}). This can lead to a runtime "
+          "error. And even if the algorithm doesn't fail altogether, it can "
+          "still lead to degraded performance. Consider providing a larger "
+          "numerical buffer by loosening your constraint limits, setting a "
+          "tighter solver tolerance, or selecting a more robust seed point.",
+          fmt_eigen(starting_ellipsoid.center()), vulnerability_margin);
+    }
+
+    // Check if the center point is numerically "vulnerable" to stalling in the
+    // counterexample search. If the center point is too close to a constraint
+    // boundary, competing tolerances (solver feasibility tolerance vs.
+    // constraint violation threshold) can lead to the solver returning the
+    // center point as the "optimal violator".
+  }
 }
 
 /* Check for certain conditions at the end of the separating hyperplanes step,
@@ -386,32 +468,12 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     const double distance =
         query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
             .distance;
-    if (distance < 0.0) {
-      throw std::runtime_error(fmt::format(
-          "Starting ellipsoid center {} is in collision; geometry {} is in "
-          "collision with geometry {}",
-          fmt_eigen(E.center()), inspector.GetName(geomA),
-          inspector.GetName(geomB)));
-    }
+    DRAKE_ASSERT(distance >=
+                 0.0);  // Already verified by CheckInitialConditions.
     sorted_pairs.emplace_back(geomA, geomB, distance);
   }
   std::sort(sorted_pairs.begin(), sorted_pairs.end());
 
-  if (options.sampled_iris_options.prog_with_additional_constraints) {
-    DRAKE_THROW_UNLESS(options.sampled_iris_options
-                           .prog_with_additional_constraints->num_vars() ==
-                       parameterization_dimension);
-  }
-  // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
-  const double constraints_tol = 1e-6;
-  if (!internal::CheckProgConstraints(
-          options.sampled_iris_options.prog_with_additional_constraints,
-          E.center(), constraints_tol)) {
-    throw std::runtime_error(fmt::format(
-        "Starting ellipsoid center {} violates a constraint in "
-        "options.sampled_iris_options.prog_with_additional_constraints.",
-        fmt_eigen(E.center())));
-  }
   geometry::optimization::VPolytope containment_points_vpolytope =
       internal::ParseAndCheckContainmentPoints(
           checker, options.sampled_iris_options, options.parameterization,
@@ -641,6 +703,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           checker.CheckConfigsCollisionFree(
               ambient_particles, options.sampled_iris_options.parallelism);
 
+      // For a particle to be feasible for the CounterexampleConstraint that we
+      // will construct, it must violate the corresponding user-specified
+      // Constraint by at least
+      // CounterexampleConstraint::kSolverConstraintTolerance.
       std::vector<uint8_t> particle_satisfies_additional_constraints =
           internal::CheckProgConstraintsParallel(
               options.sampled_iris_options.prog_with_additional_constraints,
@@ -648,7 +714,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               additional_constraints_threadsafe
                   ? options.sampled_iris_options.parallelism
                   : Parallelism::None(),
-              constraints_tol, this_iteration_num_samples);
+              CounterexampleConstraint::kSolverConstraintTolerance,
+              this_iteration_num_samples);
 
       // This counter is specifically for the probabilistic test, so we only
       // count for the first this_test_num_samples particles.
@@ -763,9 +830,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         }
 
         if (sampling_strategy == IrisNp2SamplingStrategy::kRaySampler) {
-          bool ray_sampler_found_collision =
-              RaySamplerProcess(checker, E.center(), P_candidate, options,
-                                constraints_tol, &particle);
+          // For a particle to be feasible for the CounterexampleConstraint that
+          // we will construct, it must violate the corresponding user-specified
+          // Constraint by at least
+          // CounterexampleConstraint::kSolverConstraintTolerance.
+          bool ray_sampler_found_collision = RaySamplerProcess(
+              checker, E.center(), P_candidate, options,
+              CounterexampleConstraint::kSolverConstraintTolerance, &particle);
           if (!ray_sampler_found_collision) {
             continue;
           }
@@ -835,9 +906,13 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               nullptr);
 
           // Find a constraint in prog_with_additional_constraints that is
-          // violated. If more than one constraint is violated, we still only
-          // pick one to find counterexamples for. (If we required the
-          // counterexample to violate multiple constraints, it might be further
+          // violated by at least
+          // CounterexampleConstraint::kSolverConstraintTolerance (therefore
+          // ensuring it is a feasible initial guess for the corresponding
+          // CounterexampleSearchProgram). If more than one constraint is
+          // violated, we still only pick one for which to find counterexamples.
+          // (We do not simultaneously enforce multiple
+          // CounterexampleConstraints, as this would return a point further
           // from the center, requiring us to solve more programs.)
 
           // TODO(cohnt): Consider allowing other strategies for picking which
@@ -848,17 +923,22 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           for (const auto& binding : additional_constraint_bindings) {
             VectorXd value;
             binding.evaluator()->Eval(particle, &value);
+            // Note: CounterexampleConstraint only considers a single index of
+            // the constraint, and either the upper or lower bound of that
+            // index. Here, we identify which (if any) was violated.
             for (int index = 0; index < binding.evaluator()->num_constraints();
                  ++index) {
               if (value[index] >
-                  binding.evaluator()->upper_bound()[index] + constraints_tol) {
+                  binding.evaluator()->upper_bound()[index] +
+                      CounterexampleConstraint::kSolverConstraintTolerance) {
                 found_violated_constraint = true;
                 counter_example_constraint->set(
                     &binding, index,
                     /* falsify_lower_bound */ false);
               } else if (value[index] <
                          binding.evaluator()->lower_bound()[index] -
-                             constraints_tol) {
+                             CounterexampleConstraint::
+                                 kSolverConstraintTolerance) {
                 found_violated_constraint = true;
                 counter_example_constraint->set(&binding, index,
                                                 /* falsify_lower_bound */ true);
@@ -924,6 +1004,21 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints, &max_relaxation);
           } else {
+            const Eigen::VectorXd difference =
+                *point_to_add_hyperplane - E.center();
+            if (difference.norm() < 1e-9) {
+              throw std::runtime_error(fmt::format(
+                  "IrisNp2: The solver returned the center of the ellipsoid as "
+                  "the optimal violator (difference norm: {}). This indicates "
+                  "that the center point is numerically too close to a "
+                  "constraint boundary, causing the solver to stall due to "
+                  "competing tolerances (solver feasibility tolerance vs. "
+                  "constraint violation threshold). Please loosen your "
+                  "constraint limits or set the solver tolerance to be "
+                  "tighter, in order to provide a larger numerical buffer.",
+                  difference.norm()));
+            }
+
             internal::AddTangentToPolytope(
                 E, *point_to_add_hyperplane,
                 options.sampled_iris_options.configuration_space_margin,

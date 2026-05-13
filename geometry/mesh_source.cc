@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt.h"
+#include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace geometry {
@@ -18,6 +19,8 @@ std::string GetExtensionLower(const std::filesystem::path& file_path) {
 }
 
 }  // namespace
+
+MeshSource::MeshSource() = default;
 
 MeshSource::MeshSource(std::filesystem::path path)
     : source_(std::move(path)), extension_(GetExtensionLower(this->path())) {}
@@ -82,6 +85,11 @@ std::string MeshSource::GetCacheKey(bool is_convex) const {
   // Note: We're using "?" as a separator. It isn't valid for filenames,
   // so using it guarantees we won't collide with potential file names.
   return prefix + (is_convex ? "?convex" : "");
+}
+
+const MeshSource& MeshSource::Empty() {
+  static const never_destroyed<MeshSource> kEmpty;
+  return kEmpty.access();
 }
 
 }  // namespace geometry

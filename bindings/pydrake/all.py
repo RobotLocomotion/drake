@@ -16,6 +16,7 @@ Things to note:
   otherwise, `all` would emit noisy deprecation warnings, or if they are
   suppressed, subseqeuent imports of those deprecated modules will not trigger
   warnings.
+* Experimental modules are excluded from `all`.
 
 To see example usages, please see `doc/python_bindings.rst`.
 
@@ -69,3 +70,6 @@ from .symbolic import Polynomial
 # Ensure that the command-line modules appear in the pydrake API reference.
 import pydrake.visualization.meldis
 import pydrake.visualization.model_visualizer
+
+# Don't export submodule(s) named "experimental" (e.g., planning.experimental).
+del experimental  # noqa: F821 (undefined-name)
