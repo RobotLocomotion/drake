@@ -30,8 +30,9 @@ void IcfModel<T>::ResetParameters(std::unique_ptr<IcfParameters<T>> params) {
   num_velocities_ = v0().size();
   num_bodies_ = ssize(this->params().body_to_clique);
   num_cliques_ = ssize(this->params().clique_sizes);
-  max_clique_size_ =
-      num_cliques_ > 0 ? std::ranges::max(this->params().clique_sizes) : 0;
+  DRAKE_DEMAND(num_cliques_ > 0);
+  max_clique_size_ = *std::max_element(this->params().clique_sizes.begin(),
+                                       this->params().clique_sizes.end());
 
   // Compute the initial spatial velocity V_WB0 = J_WB⋅v0 for each body.
   V_WB0_.Resize(num_bodies_, 6, 1);
@@ -347,9 +348,9 @@ void IcfModel<T>::VerifyInvariants() const {
   DRAKE_DEMAND(time_step() > 0);
 
   DRAKE_DEMAND(num_bodies_ > 0);
-  DRAKE_DEMAND(num_velocities_ >= 0);
-  DRAKE_DEMAND(num_cliques_ >= 0);
-  DRAKE_DEMAND(max_clique_size_ >= 0);
+  DRAKE_DEMAND(num_velocities_ > 0);
+  DRAKE_DEMAND(num_cliques_ > 0);
+  DRAKE_DEMAND(max_clique_size_ > 0);
 
   DRAKE_DEMAND(v0().size() == num_velocities_);
   DRAKE_DEMAND(M0().rows() == num_velocities_);
