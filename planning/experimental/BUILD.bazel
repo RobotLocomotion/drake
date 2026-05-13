@@ -83,32 +83,24 @@ drake_cc_library(
     ],
 )
 
-# drake_cc_library(
-#     name = "voxel_grid_internal",
-#     hdrs = [
-#         "voxel_grid_internal.h",
-#         "voxel_occupancy_map_internal.h",
-#         "voxel_signed_distance_field_internal.h",
-#         "voxel_tagged_object_occupancy_map_internal.h",
-#     ],
-#     install_hdrs_exclude = [
-#         "voxel_grid_internal.h",
-#         "voxel_occupancy_map_internal.h",
-#         "voxel_signed_distance_field_internal.h",
-#         "voxel_tagged_object_occupancy_map_internal.h",
-#     ],
-#     # internal = True,
-#     tags = ["exclude_from_package"],
-#     visibility = ["//visibility:private"],
-#     deps = [
-#         ":voxel_occupancy_map",
-#         ":voxel_signed_distance_field",
-#         ":voxel_tagged_object_occupancy_map",
-#         "//common:essential",
-#         "@common_robotics_utilities_internal//:common_robotics_utilities",
-#         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
-#     ],
-# )
+drake_cc_library(
+    name = "voxel_grid_internal",
+    hdrs = [
+        "voxel_occupancy_map_internal.h",
+        "voxel_signed_distance_field_internal.h",
+        "voxel_tagged_object_occupancy_map_internal.h",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":voxel_occupancy_map",
+        ":voxel_signed_distance_field",
+        ":voxel_tagged_object_occupancy_map",
+        "//common:essential",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
+    ],
+)
 
 drake_cc_library(
     name = "voxel_signed_distance_field",
@@ -154,11 +146,7 @@ drake_cc_library(
 drake_cc_library(
     name = "voxelized_environment_collision_checker",
     srcs = ["voxelized_environment_collision_checker.cc"],
-    hdrs = [
-        "voxelized_environment_collision_checker.h",
-        "voxel_signed_distance_field_internal.h",
-    ],
-    install_hdrs_exclude = ["voxel_signed_distance_field_internal.h"],
+    hdrs = ["voxelized_environment_collision_checker.h"],
     deps = [
         ":sphere_robot_model_collision_checker",
         ":voxel_occupancy_map",
@@ -168,6 +156,7 @@ drake_cc_library(
         "//planning:collision_checker",
     ],
     implementation_deps = [
+        ":voxel_grid_internal",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
@@ -179,14 +168,8 @@ drake_cc_library(
     hdrs = [
         "voxelized_environment_builder.h",
         "voxelized_environment_builder_internal.h",
-        "voxel_occupancy_map_internal.h",
-        "voxel_tagged_object_occupancy_map_internal.h",
     ],
-    install_hdrs_exclude = [
-        "voxelized_environment_builder_internal.h",
-        "voxel_occupancy_map_internal.h",
-        "voxel_tagged_object_occupancy_map_internal.h",
-    ],
+    install_hdrs_exclude = ["voxelized_environment_builder_internal.h"],
     deps = [
         ":voxel_occupancy_map",
         ":voxel_tagged_object_occupancy_map",
@@ -196,6 +179,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     implementation_deps = [
+        ":voxel_grid_internal",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
@@ -207,14 +191,8 @@ drake_cc_library(
     hdrs = [
         "voxel_self_filter.h",
         "voxel_self_filter_internal.h",
-        "voxel_occupancy_map_internal.h",
-        "voxel_tagged_object_occupancy_map_internal.h",
     ],
-    install_hdrs_exclude = [
-        "voxel_self_filter_internal.h",
-        "voxel_occupancy_map_internal.h",
-        "voxel_tagged_object_occupancy_map_internal.h",
-    ],
+    install_hdrs_exclude = ["voxel_self_filter_internal.h"],
     deps = [
         ":sphere_robot_model_collision_checker",
         ":voxel_occupancy_map",
@@ -223,6 +201,7 @@ drake_cc_library(
         "//planning:collision_checker",
     ],
     implementation_deps = [
+        ":voxel_grid_internal",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
