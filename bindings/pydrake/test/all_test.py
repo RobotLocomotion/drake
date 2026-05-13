@@ -1,3 +1,4 @@
+import inspect
 import os
 import sys
 import unittest
@@ -191,6 +192,18 @@ class TestAll(unittest.TestCase):
             self.assertTrue(
                 expected_symbol in pydrake.all.__dict__, expected_symbol
             )
+
+    def test_no_experimental_symbols(self):
+        """Experimental modules must not be part of pydrake.all."""
+        import pydrake.all  # noqa: F401 (unused-import)
+
+        for name, value in pydrake.all.__dict__.items():
+            # Disallow exports named "experimental".
+            self.assertNotIn("experimental", name, repr(value))
+            # Disallow exports defined in an experimental module.
+            module = inspect.getmodule(value)
+            if module is not None:
+                self.assertNotIn("experimental", module.__name__, repr(value))
 
     def test_function_only_imports(self):
         """Check for disallowed imports.
