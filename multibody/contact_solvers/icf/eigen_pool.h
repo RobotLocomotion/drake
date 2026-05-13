@@ -71,11 +71,11 @@ class EigenPoolDynamicSizeStorage {
 
   int size() const { return blocks_.size(); }
   ConstMatrixView operator[](int i) const {
-    return ConstMatrixView(&data_[blocks_[i].index], blocks_[i].rows,
+    return ConstMatrixView(data_.data() + blocks_[i].index, blocks_[i].rows,
                            blocks_[i].cols);
   }
   MatrixView operator[](int i) {
-    return MatrixView(&data_[blocks_[i].index], blocks_[i].rows,
+    return MatrixView(data_.data() + blocks_[i].index, blocks_[i].rows,
                       blocks_[i].cols);
   }
   void Resize(int num_matrices, int rows, int cols);
