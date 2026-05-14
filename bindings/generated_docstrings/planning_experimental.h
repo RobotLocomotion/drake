@@ -112,7 +112,7 @@ Parameter ``parent_body_name``:
 Parameter ``X_PG``:
     Pose of occupancy map frame G in frame of parent body P.
 
-Parameter ``grid_size``:
+Parameter ``grid_dimensions``:
     Size of occupancy map in meters. If you specify a grid_size that
     is not evenly divisible by grid_resolution, you will get a larger
     grid with num_cells = ceil(size/resolution).
@@ -309,11 +309,8 @@ Parameter ``X_WB_inverse_set``:
 
 Returns:
     pair<signed distance, gradient> where signed distance is positive
-    if
-
-Parameter ``p_WQ``:
-    is outside of objects, and negative if it is inside. The gradient
-    is ∂d/∂p.)""";
+    if ``p_WQ`` is outside of objects, and negative if it is inside.
+    The gradient is ∂d/∂p.)""";
           } ComputePointToEnvironmentSignedDistanceAndGradient;
           // Symbol: drake::planning::experimental::MbpEnvironmentCollisionChecker::MbpEnvironmentCollisionChecker
           struct /* ctor */ {
@@ -487,18 +484,14 @@ Parameter ``X_WB_inverse_set``:
     frame.
 
 Returns:
-    signed distances where signed distance is positive if
-
-Parameter ``p_WQ``:
-    is outside of objects, and negative if it is inside. The default
+    signed distances where signed distance is positive if ``p_WQ`` is
+    outside of objects, and negative if it is inside. The default
     implementation here is always sufficient, but in some cases, it
     may be faster for an implementation to only compute the distance,
     rather than the distance gradient. Since the binary collision
     checking methods only need distance, we want them to be as fast as
-    possible. Note that queries farther than
-
-Parameter ``query_radius``:
-    from collision need not return exact distance.)""";
+    possible. Note that queries farther than ``query_radius`` from
+    collision need not return exact distance.)""";
           } ComputePointToEnvironmentSignedDistance;
           // Symbol: drake::planning::experimental::SphereRobotModelCollisionChecker::ComputePointToEnvironmentSignedDistanceAndGradient
           struct /* ComputePointToEnvironmentSignedDistanceAndGradient */ {
@@ -532,14 +525,9 @@ Parameter ``X_WB_inverse_set``:
 
 Returns:
     signed distances and gradients where signed distance is positive
-    if
-
-Parameter ``p_WQ``:
-    is outside of objects, and negative if it is inside. The gradient
-    is ∂d/∂p. Note that queries farther than
-
-Parameter ``query_radius``:
-    from collision need not return exact distance.)""";
+    if ``p_WQ`` is outside of objects, and negative if it is inside.
+    The gradient is ∂d/∂p. Note that queries farther than
+    ``query_radius`` from collision need not return exact distance.)""";
           } ComputePointToEnvironmentSignedDistanceAndGradient;
           // Symbol: drake::planning::experimental::SphereRobotModelCollisionChecker::ComputeSelfCollisionSignedDistanceAndGradient
           struct /* ComputeSelfCollisionSignedDistanceAndGradient */ {
@@ -609,7 +597,7 @@ Returns:
             const char* doc =
 R"""(Get pose of all bodies.
 
-Parameter ``context``:
+Parameter ``plant_context``:
     MbP context, already updated, to use.
 
 Returns:
@@ -642,33 +630,7 @@ R"""(Get a reference to the internal collision model of the robot.)""";
           struct /* ctor */ {
             // Source: drake/planning/experimental/sphere_robot_model_collision_checker.h
             const char* doc =
-R"""(Construct a base collision checker for sphere-geometry robot models.
-
-Parameter ``model``:
-    a Diagram+MbP+SG model of the robot and environment.
-
-Parameter ``robot_model_instances``:
-    is a vector of model instance indices that identify which model
-    instances belong to the robot.
-
-Parameter ``distance_fn``:
-    Configuration (probably weighted) distance function.
-
-Parameter ``edge_step_size``:
-    Step size for collision checking, in radians. Collision checking
-    of edges q1->q2 is performed by interpolating from q1 to q2 at
-    edge_step_size steps and checking the interpolated configuration
-    for collision.
-
-Parameter ``env_collision_padding``:
-    Additional padding to apply to all robot-environment collision
-    queries. If distance between robot and environment is less than
-    padding, the checker reports a collision.
-
-Parameter ``self_collision_padding``:
-    Additional padding to apply to all robot-robot self collision
-    queries. If distance between robot and itself is less than
-    padding, the checker reports a collision.)""";
+R"""(Construct a base collision checker for sphere-geometry robot models.)""";
             // Source: drake/planning/experimental/sphere_robot_model_collision_checker.h
             const char* doc_copy =
 R"""(To support Clone(), allow copying (but not move nor assign).)""";
@@ -937,8 +899,11 @@ R"""(Collision checker using a voxelized environment model.)""";
             const char* doc =
 R"""(Query the distance of the provided point from obstacles.
 
-Parameter ``context``:
+Parameter ``plant_context``:
     Context of the MbP model. Unused.
+
+Parameter ``query_object``:
+    Query object retrieved from ``plant_context``.
 
 Parameter ``p_WQ``:
     Query position in world frame W.
@@ -958,10 +923,8 @@ Parameter ``X_WB_inverse_set``:
     provided p_WQ into the frame of signed distance fields.
 
 Returns:
-    signed distances where signed distance is positive if
-
-Parameter ``p_WQ``:
-    is outside of objects, and negative if it is inside.)""";
+    signed distances where signed distance is positive if ``p_WQ`` is
+    outside of objects, and negative if it is inside.)""";
           } ComputePointToEnvironmentSignedDistance;
           // Symbol: drake::planning::experimental::VoxelizedEnvironmentCollisionChecker::ComputePointToEnvironmentSignedDistanceAndGradient
           struct /* ComputePointToEnvironmentSignedDistanceAndGradient */ {
@@ -969,8 +932,11 @@ Parameter ``p_WQ``:
             const char* doc =
 R"""(Query the (distance, gradient) of the provided point from obstacles.
 
-Parameter ``context``:
+Parameter ``plant_context``:
     Context of the MbP model. Unused.
+
+Parameter ``query_object``:
+    Query object retrieved from ``plant_context``.
 
 Parameter ``p_WQ``:
     Query position in world frame W.
@@ -991,11 +957,8 @@ Parameter ``X_WB_inverse_set``:
 
 Returns:
     signed distances and gradients, where signed distance is positive
-    if
-
-Parameter ``p_WQ``:
-    is outside of objects, and negative if it is inside. The gradient
-    is ∂d/∂p.)""";
+    if ``p_WQ`` is outside of objects, and negative if it is inside.
+    The gradient is ∂d/∂p.)""";
           } ComputePointToEnvironmentSignedDistanceAndGradient;
           // Symbol: drake::planning::experimental::VoxelizedEnvironmentCollisionChecker::EnvironmentSDFBodies
           struct /* EnvironmentSDFBodies */ {

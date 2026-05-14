@@ -49,7 +49,7 @@ class MbpEnvironmentCollisionChecker final
   /// @param X_WB_set Poses X_WB for all bodies in the model. Unused.
   /// @param X_WB_inverse_set Poses X_BW for all bodies in the model. Unused.
   /// @return pair<signed distance, gradient> where signed distance is positive
-  /// if @param p_WQ is outside of objects, and negative if it is inside. The
+  /// if `p_WQ` is outside of objects, and negative if it is inside. The
   /// gradient is ∂d/∂p.
   PointSignedDistanceAndGradientResult
   ComputePointToEnvironmentSignedDistanceAndGradient(

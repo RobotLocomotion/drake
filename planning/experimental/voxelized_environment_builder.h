@@ -35,7 +35,7 @@ namespace experimental {
 /// does not correspond to an existing MbP body, use override_parent_body_index
 /// to specfiy the parent body directly.
 /// @param X_PG Pose of occupancy map frame G in frame of parent body P.
-/// @param grid_size Size of occupancy map in meters. If you specify a
+/// @param grid_dimensions Size of occupancy map in meters. If you specify a
 /// grid_size that is not evenly divisible by grid_resolution, you will get a
 /// larger grid with num_cells = ceil(size/resolution).
 /// @param grid_resolution Cell size (in meters) for all Voxel grids used by
