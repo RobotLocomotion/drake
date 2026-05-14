@@ -113,14 +113,11 @@ def _is_known_bad_ctor_or_dtor(*, filename, function_name):
     if filename == "Console.cc":
         # TODO(#24446) Patch libsdformat to fix this.
         return True
-    if filename == "CoinParamUtils.cpp":
-        # TODO(#24446) Patch libsdformat to fix this.
-        return True
     if filename == "meshcat.cc":
         # TODO(#24446) Fix this somehow.
         return True
     if filename == "impl.cpp":
-        # TODO(#24446) Find and fix this somehow.
+        # TODO(#24447) Fix VTK to remove globals.
         return True
     return False
 
