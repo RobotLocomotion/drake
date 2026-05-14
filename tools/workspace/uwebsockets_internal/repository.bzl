@@ -13,6 +13,7 @@ def uwebsockets_internal_repository(
         sha256 = "9884f7bce0d34c776d450f1a1f31858aaced74c4454f2758543ed557df07d1e0",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/upstream/no_globals.patch",
             ":patches/max_fallback_size.patch",
         ],
         mirrors = mirrors,
