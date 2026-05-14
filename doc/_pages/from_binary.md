@@ -49,6 +49,13 @@ software. For example:
 curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-mac-arm64.tar.gz
 ```
 
+Ubuntu users may choose to download an archive matched to their operating system
+and architecture via this command:
+
+```
+wget -O drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-1.53.0-$(. /etc/os-release && echo $VERSION_CODENAME)-$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .).tar.gz
+```
+
 ### Use as a C++ library
 
 For an example of using a Drake ``*.tar.gz`` image from a CMake project, refer
