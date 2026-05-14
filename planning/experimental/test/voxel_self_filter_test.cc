@@ -1,4 +1,4 @@
-#include "drake/planning/dev/voxel_self_filter.h"
+#include "drake/planning/experimental/voxel_self_filter.h"
 
 #include <functional>
 #include <limits>
@@ -14,16 +14,19 @@
 #include "drake/common/random.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/planning/dev/voxel_grid_internal.h"
-#include "drake/planning/dev/voxelized_environment_collision_checker.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxelized_environment_collision_checker.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
 using common_robotics_utilities::math::Interpolate;
 
 using drake::multibody::ModelInstanceIndex;
+using drake::planning::test::MakePlanningTestModel;
+using drake::planning::test::MakeWeightedIiwaConfigurationDistanceFunction;
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace test {
 namespace {
 
@@ -135,5 +138,6 @@ GTEST_TEST(VoxelSelfFilterTest, Test) {
 
 }  // namespace
 }  // namespace test
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

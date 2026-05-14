@@ -1,13 +1,14 @@
-#include "drake/planning/dev/voxel_signed_distance_field.h"
+#include "drake/planning/experimental/voxel_signed_distance_field.h"
 
 #include <utility>
 
 #include <voxelized_geometry_tools/signed_distance_field.hpp>
 
-#include "drake/planning/dev/voxel_signed_distance_field_internal.h"
+#include "drake/planning/experimental/voxel_signed_distance_field_internal.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 using voxelized_geometry_tools::SignedDistanceField;
 
@@ -58,5 +59,6 @@ VoxelSignedDistanceField::VoxelSignedDistanceField(
   internal_representation_ = std::move(internal_representation);
 }
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

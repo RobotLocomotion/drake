@@ -23,6 +23,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Class modelling collision spheres used for collision checking.
 /// This code uses Vector4d because Vector4d allows for SIMD vector operations
@@ -320,7 +321,7 @@ class SphereRobotModelCollisionChecker : public CollisionChecker {
       std::optional<int> context_number = std::nullopt) const;
 
   /// Get pose of all bodies.
-  /// @param context MbP context, already updated, to use.
+  /// @param plant_context MbP context, already updated, to use.
   /// @return Vector of X_WB, pose of body B in world W, for all bodies.
   std::vector<Eigen::Isometry3d> GetBodyPoses(
       const systems::Context<double>& plant_context) const;
@@ -360,9 +361,9 @@ class SphereRobotModelCollisionChecker : public CollisionChecker {
   /// useful for some implementations to move the provided p_WQ into a different
   /// body frame.
   /// @return signed distances and gradients where signed distance is positive
-  /// if @param p_WQ is outside of objects, and negative if it is inside. The
-  /// gradient is ∂d/∂p. Note that queries farther than @param
-  /// query_radius from collision need not return exact distance.
+  /// if `p_WQ` is outside of objects, and negative if it is inside. The
+  /// gradient is ∂d/∂p. Note that queries farther than `query_radius` from
+  /// collision need not return exact distance.
   virtual PointSignedDistanceAndGradientResult
   ComputePointToEnvironmentSignedDistanceAndGradient(
       const systems::Context<double>& context,
@@ -384,13 +385,13 @@ class SphereRobotModelCollisionChecker : public CollisionChecker {
   /// @param X_WB_inverse_set Poses X_BW for all bodies in the model. This is
   /// useful for some implementations to move the provided p_WQ into a different
   /// body frame.
-  /// @return signed distances where signed distance is positive
-  /// if @param p_WQ is outside of objects, and negative if it is inside.
+  /// @return signed distances where signed distance is positive if `p_WQ` is
+  /// outside of objects, and negative if it is inside.
   /// The default implementation here is always sufficient, but in some cases,
   /// it may be faster for an implementation to only compute the distance,
   /// rather than the distance gradient. Since the binary collision checking
   /// methods only need distance, we want them to be as fast as possible.
-  /// Note that queries farther than @param query_radius from collision need not
+  /// Note that queries farther than `query_radius` from collision need not
   /// return exact distance.
   virtual PointSignedDistanceAndGradientResult
   ComputePointToEnvironmentSignedDistance(
@@ -411,20 +412,6 @@ class SphereRobotModelCollisionChecker : public CollisionChecker {
 
  protected:
   /// Construct a base collision checker for sphere-geometry robot models.
-  /// @param model a Diagram+MbP+SG model of the robot and environment.
-  /// @param robot_model_instances is a vector of model instance indices that
-  /// identify which model instances belong to the robot.
-  /// @param distance_fn Configuration (probably weighted) distance function.
-  /// @param edge_step_size Step size for collision checking, in radians.
-  /// Collision checking of edges q1->q2 is performed by interpolating from q1
-  /// to q2 at edge_step_size steps and checking the interpolated
-  /// configuration for collision.
-  /// @param env_collision_padding Additional padding to apply to all
-  /// robot-environment collision queries. If distance between robot and
-  /// environment is less than padding, the checker reports a collision.
-  /// @param self_collision_padding Additional padding to apply to all
-  /// robot-robot self collision queries. If distance between robot and
-  /// itself is less than padding, the checker reports a collision.
   explicit SphereRobotModelCollisionChecker(CollisionCheckerParams params);
 
   /// To support Clone(), allow copying (but not move nor assign).
@@ -537,5 +524,6 @@ class SphereRobotModelCollisionChecker : public CollisionChecker {
   /// Internal storage of the robot's sphere model geometry.
   std::vector<BodySpheres> robot_sphere_model_;
 };
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

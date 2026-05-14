@@ -12,14 +12,15 @@
 
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
-#include "drake/planning/dev/voxel_occupancy_map.h"
-#include "drake/planning/dev/voxel_signed_distance_field.h"
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/voxel_occupancy_map.h"
+#include "drake/planning/experimental/voxel_signed_distance_field.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 /// Collision checker using a voxelized environment model.
 class VoxelizedEnvironmentCollisionChecker final
@@ -91,7 +92,8 @@ class VoxelizedEnvironmentCollisionChecker final
   }
 
   /// Query the (distance, gradient) of the provided point from obstacles.
-  /// @param context Context of the MbP model. Unused.
+  /// @param plant_context Context of the MbP model. Unused.
+  /// @param query_object Query object retrieved from `plant_context`.
   /// @param p_WQ Query position in world frame W.
   /// @param query_radius Gradients do not need to be computed for queries
   /// with distance > query_radius. This parameter is needed because the
@@ -102,7 +104,7 @@ class VoxelizedEnvironmentCollisionChecker final
   /// @param X_WB_inverse_set Poses X_BW for all bodies in the model. This is
   /// used to move the provided p_WQ into the frame of signed distance fields.
   /// @return signed distances and gradients, where signed distance is positive
-  /// if @param p_WQ is outside of objects, and negative if it is inside. The
+  /// if `p_WQ` is outside of objects, and negative if it is inside. The
   /// gradient is ∂d/∂p.
   PointSignedDistanceAndGradientResult
   ComputePointToEnvironmentSignedDistanceAndGradient(
@@ -113,7 +115,8 @@ class VoxelizedEnvironmentCollisionChecker final
       const std::vector<Eigen::Isometry3d>& X_WB_inverse_set) const override;
 
   /// Query the distance of the provided point from obstacles.
-  /// @param context Context of the MbP model. Unused.
+  /// @param plant_context Context of the MbP model. Unused.
+  /// @param query_object Query object retrieved from `plant_context`.
   /// @param p_WQ Query position in world frame W.
   /// @param query_radius Gradients do not need to be computed for queries
   /// with distance > query_radius. This parameter is needed because the
@@ -124,7 +127,7 @@ class VoxelizedEnvironmentCollisionChecker final
   /// @param X_WB_inverse_set Poses X_BW for all bodies in the model. This is
   /// used to move the provided p_WQ into the frame of signed distance fields.
   /// @return signed distances where signed distance is positive
-  /// if @param p_WQ is outside of objects, and negative if it is inside.
+  /// if `p_WQ` is outside of objects, and negative if it is inside.
   PointSignedDistanceAndGradientResult ComputePointToEnvironmentSignedDistance(
       const systems::Context<double>& plant_context,
       const geometry::QueryObject<double>& query_object,
@@ -162,5 +165,6 @@ class VoxelizedEnvironmentCollisionChecker final
   std::map<std::string, multibody::BodyIndex> environment_sdf_bodies_;
 };
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

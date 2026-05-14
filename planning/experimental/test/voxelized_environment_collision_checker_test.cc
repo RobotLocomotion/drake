@@ -1,19 +1,27 @@
-#include "drake/planning/dev/voxelized_environment_collision_checker.h"
+#include "drake/planning/experimental/voxelized_environment_collision_checker.h"
 
 #include <string>
 #include <utility>
 
 #include <gtest/gtest.h>
 
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
-#include "drake/planning/dev/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
-#include "drake/planning/dev/voxel_grid_internal.h"
-#include "drake/planning/dev/voxelized_environment_builder.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "drake/planning/experimental/voxel_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxelized_environment_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
 
+using drake::planning::test::CollisionCheckerAbstractTestSuite;
+using drake::planning::test::CollisionCheckerConstructionParams;
+using drake::planning::test::CollisionCheckerTestParams;
+using drake::planning::test::MakeCollisionCheckerTestScene;
+using drake::planning::test::MakePlanningTestModel;
+using drake::planning::test::MakeWeightedIiwaConfigurationDistanceFunction;
+
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace test {
 namespace {
 
@@ -95,5 +103,6 @@ INSTANTIATE_TEST_SUITE_P(
         MakeVoxelizedEnvironmentCollisionCheckerParams().checker}));
 
 }  // namespace test
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

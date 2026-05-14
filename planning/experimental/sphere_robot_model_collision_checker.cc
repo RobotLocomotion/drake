@@ -1,4 +1,4 @@
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -21,6 +21,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 using geometry::Box;
 using geometry::Capsule;
@@ -1040,5 +1041,6 @@ std::string SphereRobotModelCollisionChecker ::
   }
   return urdf_collision_elements;
 }
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

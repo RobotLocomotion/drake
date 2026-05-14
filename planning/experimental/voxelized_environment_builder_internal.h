@@ -27,6 +27,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace internal {
 /// The return value from a SignedDistanceToPoint collision query.
 using DistanceQueryResult =
@@ -152,5 +153,6 @@ void FillVoxelGrid(
 }
 
 }  // namespace internal
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

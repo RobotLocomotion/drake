@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace planning {
+namespace experimental {
 // Forward declarations.
 class VoxelOccupancyMap;
 class VoxelTaggedObjectOccupancyMap;
@@ -71,5 +72,6 @@ class VoxelSignedDistanceField {
   std::shared_ptr<void> internal_representation_;
 };
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

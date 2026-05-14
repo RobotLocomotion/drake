@@ -1,4 +1,4 @@
-#include "drake/planning/dev/voxelized_environment_collision_checker.h"
+#include "drake/planning/experimental/voxelized_environment_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -9,10 +9,11 @@
 #include <vector>
 
 #include "drake/common/text_logging.h"
-#include "drake/planning/dev/voxel_grid_internal.h"
+#include "drake/planning/experimental/voxel_signed_distance_field_internal.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 using geometry::GeometryId;
 using geometry::QueryObject;
@@ -237,5 +238,6 @@ std::optional<double> VoxelizedEnvironmentCollisionChecker ::
   return minimum_distance;
 }
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake

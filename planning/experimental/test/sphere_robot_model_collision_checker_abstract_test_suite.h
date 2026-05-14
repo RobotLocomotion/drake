@@ -5,10 +5,11 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/planning/dev/sphere_robot_model_collision_checker.h"
+#include "drake/planning/experimental/sphere_robot_model_collision_checker.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 namespace test {
 
 /* These parameters are passed to the abstract test cases to make them concrete,
@@ -28,6 +29,7 @@ class SphereRobotModelCollisionCheckerAbstractTestSuite
           SphereRobotModelCollisionCheckerTestParams> {};
 
 }  // namespace test
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake
 

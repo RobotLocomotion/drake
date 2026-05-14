@@ -1,15 +1,16 @@
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map.h"
 
 #include <utility>
 
 #include <voxelized_geometry_tools/signed_distance_field.hpp>
 #include <voxelized_geometry_tools/tagged_object_occupancy_map.hpp>
 
-#include "drake/planning/dev/voxel_signed_distance_field_internal.h"
-#include "drake/planning/dev/voxel_tagged_object_occupancy_map_internal.h"
+#include "drake/planning/experimental/voxel_signed_distance_field_internal.h"
+#include "drake/planning/experimental/voxel_tagged_object_occupancy_map_internal.h"
 
 namespace drake {
 namespace planning {
+namespace experimental {
 
 using common_robotics_utilities::voxel_grid::VoxelGridSizes;
 using voxelized_geometry_tools::SignedDistanceField;
@@ -125,5 +126,6 @@ void VoxelTaggedObjectOccupancyMap::InitializeEmpty() {
       internal_occupancy_map, internal_occupancy_map.get());
 }
 
+}  // namespace experimental
 }  // namespace planning
 }  // namespace drake
