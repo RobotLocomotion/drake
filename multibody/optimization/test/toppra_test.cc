@@ -786,7 +786,8 @@ TEST_F(PrismaticToppraTest, MinTimeStepError) {
       Eigen::Vector3d(0, 0.9, 2), Eigen::RowVector3d(0, 0, 1));
 
   Eigen::VectorXd gridpts(3);
-  gridpts << 0, 1e-12, 2;
+  gridpts << 0, trajectories::PiecewiseTrajectory<double>::kEpsilonTime / 2.0,
+      2;
   auto toppra = MakeToppra(path, gridpts);
 
   // Huge limits (and small gridpoints) lead to tiny time steps.
