@@ -699,6 +699,11 @@ MODULE_SETTINGS = {
             "ThirdParty/scn/vtkscn/include",
             "ThirdParty/scn/vtkscn/src",
         ],
+        "defines_extra": [
+            # Disable locales; enabling it would bring in `#include <locale>`
+            # which uses static intialization, contrary to our style guide.
+            "SCN_DISABLE_LOCALE=1",
+        ],
         "srcs_glob_extra": [
             "ThirdParty/scn/vtkscn/src/vtkscn/*.cpp",
         ],
