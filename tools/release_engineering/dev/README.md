@@ -44,4 +44,8 @@ string; for example:
 Verify that
 [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has a plain `<version>` tag as well as a `<version>` tag for each supported
-configuration (e.g. noble).
+configuration.
+
+Since Docker images are deprecated and will no longer be updated on or after
+2026-06-01, there should only be tags for OS/ARCH `linux/amd64` (not `arm64`
+or the like), and only for Noble (not Resolute).

@@ -23,8 +23,8 @@ If you need to use these, you can use an old release of Drake.
     [v0.11.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0).
 
 The drake APT site `https://drake-apt.csail.mit.edu` supports up to Ubuntu 24.04
-but not any newer versions. Note that ``*.deb`` packages remain supported and
-are available as release attachments.
+(amd64 only) but not any newer versions. Note that ``*.deb`` packages remain
+supported and are available as release attachments.
 
 # macOS packages
 

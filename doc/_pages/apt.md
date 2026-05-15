@@ -41,15 +41,18 @@ APT packages (``*.deb``) are available to download as attachments from Drake's
 GitHub [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.52.1](https://github.com/RobotLocomotion/drake/releases/tag/v1.52.1):
+[v1.53.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.53.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.52.1/drake-dev_1.52.1-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.52.1/drake-dev_1.52.1-1_amd64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-noble.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64v3-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_amd64v3-resolute.deb)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb](https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_arm64-resolute.deb)
 
 To download and install the `drake-dev` package:
 
 ```bash
-wget https://github.com/RobotLocomotion/drake/releases/download/v1.52.1/drake-dev_1.52.1-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
-sudo apt-get install --no-install-recommends ./drake-dev_1.52.1-1_$(dpkg-architecture -qDEB_HOST_ARCH)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+wget -O drake-dev.deb https://github.com/RobotLocomotion/drake/releases/download/v1.53.0/drake-dev_1.53.0-1_$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+sudo apt-get install --no-install-recommends ./drake-dev.deb
 ```
 
 Most content installs to `/opt/drake`, so setting the following environment
@@ -64,8 +67,7 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Nightly apt packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾ and Ubuntu 26.04
-(Resolute) are available to download at:
+Nightly apt packages are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_arm64-noble.deb)
@@ -75,30 +77,25 @@ Nightly apt packages of Drake for Ubuntu 24.04 (Noble) ⁽¹⁾ and Ubuntu 26.04
 Older packages for specific dates are available by replacing ``latest``
 with date YYYYMMDD preceded with ``0.0.``. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-noble.deb)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64v3-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64v3-resolute.deb)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_arm64-resolute.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64v3-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_amd64v3-resolute.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-resolute.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20260510-1_arm64-resolute.deb)
 
 Nightly packages are retained for 56 days from their date of creation.
 
-To install a nightly apt package, download the archive and install it directly.
-For example, when using Ubuntu 24.04 (Noble) on amd64:
+To download and install the `drake-dev` package from a nightly build:
 
 ```bash
-wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb
-sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-noble.deb
+wget -O drake-dev.deb https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_$(dpkg-query --show '--showformat=${Architecture-Variant}\n${Architecture}\n' libc6 | grep -m 1 .)-$(. /etc/os-release && echo $VERSION_CODENAME).deb
+sudo apt-get install --no-install-recommends ./drake-dev.deb
 ```
-
-⁽¹⁾ Drake's support for Ubuntu arm64 APT packages is currently experimental.
-Packages are only available on a nightly basis, not for stable releases. Follow
-[#13514](https://github.com/RobotLocomotion/drake/issues/13514) for updates.
 
 ## APT site (Ubuntu 24.04 only)
 
-For backwards compatibility for Ubuntu 24.04 only, Drake offers an APT site that
-you can add to your `sources.list` to automatically install the newest version
-of Drake's stable releases.
+For backwards compatibility for Ubuntu 24.04 on amd64 only, Drake offers an APT
+site that you can add to your `sources.list` to automatically install the newest
+version of Drake's stable releases.
 
 To add the Drake APT repository to your machine and install the `drake-dev` package,
 please do the following in order.
@@ -116,7 +113,7 @@ wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
 Add the Drake repository to your APT sources list:
 
 ```bash
-echo "deb [arch=$(dpkg-architecture -qDEB_HOST_ARCH)] https://drake-apt.csail.mit.edu/noble noble main" \
+echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/noble noble main" \
   | sudo tee /etc/apt/sources.list.d/drake.list >/dev/null
 ```
 
