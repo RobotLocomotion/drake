@@ -13,7 +13,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/name_value.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -543,58 +542,6 @@ class Simulator {
   /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /// Prefer using per-step publish events instead.
-  ///
-  /// Sets whether the simulation should trigger a forced-Publish event on the
-  /// System under simulation at the end of every trajectory-advancing step.
-  /// Specifically, that means the System::Publish() event dispatcher will be
-  /// invoked on each subsystem of the System and passed the current Context
-  /// and a forced-publish Event. If a subsystem has declared a forced-publish
-  /// event handler, that will be called. Otherwise, nothing will happen.
-  ///
-  /// Enabling this option does not cause a forced-publish to be triggered at
-  /// initialization; if you want that you should also call
-  /// `set_publish_at_initialization(true)`. If you want a forced-publish at the
-  /// end of every step, you will usually also want one at the end of
-  /// initialization, requiring both options to be enabled.
-  ///
-  /// @see LeafSystem::DeclarePerStepPublishEvent()
-  /// @see LeafSystem::DeclareForcedPublishEvent()
-  DRAKE_DEPRECATED("2026-06-01",
-                   "This is no longer controlled by the Simulator. It must be "
-                   "defined in the LeafSystem instead. See "
-                   "https://drake.mit.edu/troubleshooting.html#force-publishing"
-                   " for help.")
-  void set_publish_every_time_step(bool publish) {
-    publish_every_time_step_ = publish;
-  }
-
-  /// Prefer using initialization or per-step publish
-  /// events instead.
-  ///
-  /// Sets whether the simulation should trigger a forced-Publish at the end
-  /// of Initialize(). See set_publish_every_time_step() documentation for
-  /// more information.
-  ///
-  /// @see LeafSystem::DeclareInitializationPublishEvent()
-  /// @see LeafSystem::DeclarePerStepPublishEvent()
-  /// @see LeafSystem::DeclareForcedPublishEvent()
-  DRAKE_DEPRECATED("2026-06-01",
-                   "This is no longer controlled by the Simulator. It must be "
-                   "be defined in the LeafSystem instead. See "
-                   "https://drake.mit.edu/troubleshooting.html#force-publishing"
-                   " for help.")
-  void set_publish_at_initialization(bool publish) {
-    publish_at_initialization_ = publish;
-  }
-
-  /// Returns true if the set_publish_every_time_step() option has been
-  /// enabled. By default, returns false.
-  DRAKE_DEPRECATED("2026-06-01",
-                   "See https://drake.mit.edu/troubleshooting.html"
-                   "#force-publishing for help.")
-  bool get_publish_every_time_step() const { return publish_every_time_step_; }
-
   /// Returns a const reference to the internally-maintained Context holding the
   /// most recent step in the trajectory. This is suitable for publishing or
   /// extracting information about this trajectory step. Do not call this method
@@ -884,12 +831,6 @@ class Simulator {
 
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
-
-  // delete with publish_every_time_step 2026-06-01
-  bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
-
-  // delete with publish_every_time_step 2026-06-01
-  bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.

@@ -176,24 +176,21 @@ The solution is to use either `GetMyContextFromRoot()`
 
 See the notes on [System Compatibility][m_system_compat] for further discussion.
 
-<!-- Remove Simulator section (and publish every time step) on 2026-06-01 when
-deprecation is removed. -->
-
 # Simulator
 
 ## Force publishing
 
-`Simulator` had APIs to exercise its diagram's [force][force_trigger] events.
-This includes
+`Simulator` previously had APIs to exercise its diagram's [force][force_trigger]
+events. This included
 
   - [`Simulator::set_publish_every_time_step()`][sim_every_step]
   - [`SimulatorConfig::publish_every_time_step`][sim_config_every_step]
   - The optional command-line parameter `simulator_publish_every_time_step`
   - [`Simulator::set_publish_at_initialization()`][sim_init]
 
-These have all been deprecated (for removal on 2026-06-01). We don't expect this
-will generally impact users. This guide will help those who may rely on this
-functionality transition into the recommended mechanisms.
+These have all been removed. We don't expect this will generally impact users.
+This guide will help those who may rely on this functionality transition into
+the recommended mechanisms.
 
 Rather than configuring an *entire* diagram to publish at initialization or
 at each time step, each `LeafSystem` articulates independently whether it has
@@ -242,7 +239,6 @@ in the system's constructor.
 Note: if your leaf system already includes a per-step publish event, you won't
 also need an initialization publish event. Initialization is included in
 per-step events.
-<!-- 2026-06-01 End of block to delete. -->
 
 # PyPI (pip)
 
@@ -418,10 +414,9 @@ sudo route -nv add -net 224.0.0.0/4 -interface lo0
 [c_LeafSystem_per_step_publish]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_leaf_system.html#a49a07c6bbccc4464d5d6192889c3d2e6
 [c_LeafSystem_init_publish]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_leaf_system.html#aab3136bba7eb6480a84309d019b28d83
 
-<!-- Links to be removed upon 2026-06-01 deprecation removal. -->
+<!-- drake/systems/analysis -->
 [force_trigger]: https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1systems.html#a59b7f49353f2a99b6c22d2eaae0fe9e9af8ece195be5dd5e820bdeee7ad21a4bf
 [sim_every_step]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#aef1dc6aeb821503379ab1dd8c6044562
 [get_publish_every_step]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#ae66775683e61fc461dec4f76bb8e5c7a
 [sim_init]: https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html#ac210a235b5e0865efb51fdd27c4b58ae
 [sim_config_every_step]: https://drake.mit.edu/doxygen_cxx/structdrake_1_1systems_1_1_simulator_config.html#af1d9089360c8cd472de8f923ba7df99a
-<!-- End of links to be removed.  -->

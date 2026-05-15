@@ -414,8 +414,7 @@ Start Meldis by:
 Run a simulation with hydroelastic contact model; for example,
 
     $ bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics -- \
-       --mbp_dt=0.001 --x0=0.10 --z0=0.15 --vz=-7.0 \
-       --simulation_time=0.015 --simulator_publish_every_time_step
+       --mbp_dt=0.001 --x0=0.10 --z0=0.15 --vz=-7.0 --simulation_time=0.015
 
 At the time of this writing, the Meldis view of this example looks like this:
 
