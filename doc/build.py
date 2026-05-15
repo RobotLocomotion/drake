@@ -28,22 +28,32 @@ def _build(*, out_dir, temp_dir, quick, modules):
     pages_build = manifest.Rlocation("drake/doc/pages")
     styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
     pydrake_build = manifest.Rlocation("drake/doc/pydrake/build")
+    tutorials_build = manifest.Rlocation("drake/doc/tutorials/build")
     doxygen_build = manifest.Rlocation("drake/doc/doxygen_cxx/build")
-    for item in [pages_build, styleguide_build, pydrake_build, doxygen_build]:
+    for item in [
+        pages_build,
+        styleguide_build,
+        pydrake_build,
+        tutorials_build,
+        doxygen_build,
+    ]:
         assert item and os.path.exists(item), item
 
     # Figure out which modules to ask for from each helper tool.
     do_pages = True
     do_styleguide = True
     do_pydrake = True
+    do_tutorials = True
     do_doxygen = True
     do_sitemap = True
     pydrake_modules = []
     doxygen_modules = []
+    tutorials_modules = []
     if modules:
         do_pages = False
         do_styleguide = False
         do_pydrake = False
+        do_tutorials = False
         do_doxygen = False
         do_sitemap = False
     for module in modules:
@@ -60,6 +70,9 @@ def _build(*, out_dir, temp_dir, quick, modules):
         elif module.startswith("pydrake."):
             do_pydrake = True
             pydrake_modules.append(module)
+        elif module.startswith("tutorials."):
+            do_tutorials = True
+            tutorials_modules.append(module)
         elif module.startswith("drake."):
             do_doxygen = True
             doxygen_modules.append(module)
@@ -75,6 +88,11 @@ def _build(*, out_dir, temp_dir, quick, modules):
     if do_pydrake:
         check_call(
             [pydrake_build, f"--out_dir={out_dir}/pydrake"] + pydrake_modules
+        )
+    if do_tutorials:
+        check_call(
+            [tutorials_build, f"--out_dir={out_dir}/tutorials"]
+            + tutorials_modules
         )
     if do_doxygen:
         maybe_quick = ["--quick"] if quick else []
@@ -92,6 +110,7 @@ def _build(*, out_dir, temp_dir, quick, modules):
     result.append("styleguide/cppguide.html") if do_styleguide else None
     result.append("styleguide/pyguide.html") if do_styleguide else None
     result.append("pydrake/") if do_pydrake else None
+    result.append("tutorials/") if do_tutorials else None
     result.append("doxygen_cxx/") if do_doxygen else None
     return result
 
