@@ -164,11 +164,11 @@ index c0f4c4ed..a2f82f5d 100644
  
  using namespace sdf;
  
++#if 0
  /// Static pointer to the console.
  static std::shared_ptr<Console> myself;
  static std::mutex g_instance_mutex;
  
-+#if 0
  static bool g_quiet = false;
  
  static Console::ConsoleStream g_NullStream(nullptr);
@@ -182,8 +182,19 @@ index c0f4c4ed..a2f82f5d 100644
  {
  #ifndef SDFORMAT_DISABLE_CONSOLE_LOGFILE
    // Set up the file that we'll log to.
-@@ -94,6 +100,7 @@ ConsolePtr Console::Instance()
-   return myself;
+@@ -86,14 +92,11 @@ ConsolePtr Console::Instance()
+ ConsolePtr Console::Instance()
+ {
+-  std::lock_guard<std::mutex> lock(g_instance_mutex);
+-  if (!myself)
+-  {
+-    myself.reset(new Console());
+-  }
+-
+-  return myself;
++  // Purposefully leaked to avoid global destructors (ala never_destroyed).
++  static ConsolePtr* instance = new std::shared_ptr<Console>(new Console());
++  return *instance;
  }
  
 +#if 0
