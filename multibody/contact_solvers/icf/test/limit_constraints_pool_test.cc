@@ -25,7 +25,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with limit constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnLimitConstrainedCalcData) {
+GTEST_TEST(LimitConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddLimitConstraints(&model);
@@ -50,7 +50,7 @@ GTEST_TEST(IcfModel, LimitMallocOnLimitConstrainedCalcData) {
 }
 
 /* Verifies that limit constraints produce correct data. */
-GTEST_TEST(IcfModel, LimitConstraint) {
+GTEST_TEST(LimitConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();

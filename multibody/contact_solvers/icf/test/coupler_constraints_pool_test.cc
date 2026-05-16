@@ -26,7 +26,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with coupler constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnCouplerConstrainedCalcData) {
+GTEST_TEST(CouplerConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddCouplerConstraint(&model);
@@ -50,7 +50,7 @@ GTEST_TEST(IcfModel, LimitMallocOnCouplerConstrainedCalcData) {
 }
 
 /* Verifies that the coupler constraint produces correct data. */
-GTEST_TEST(IcfModel, CouplerConstraint) {
+GTEST_TEST(CouplerConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();
