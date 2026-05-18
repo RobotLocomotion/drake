@@ -230,10 +230,16 @@ _NOTEBOOKS = glob(
     allow_empty = False,
 )
 
+filegroup(
+    name = "notebooks",
+    srcs = _NOTEBOOKS,
+    visibility = ["//doc/tutorials:__pkg__"],
+)
+
 drake_py_test(
     name = "notebook_lint_test",
     args = _NOTEBOOKS,
-    data = _NOTEBOOKS,
+    data = [":notebooks"],
     tags = ["lint"],
     deps = [
         "@rules_python//python/runfiles",
@@ -243,7 +249,7 @@ drake_py_test(
 install_files(
     name = "install_notebooks",
     dest = "share/drake/tutorials",
-    files = _NOTEBOOKS,
+    files = [":notebooks"],
 )
 
 install(
