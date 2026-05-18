@@ -108,6 +108,11 @@ struct MaterialData {
   // other materials.
   std::optional<bool> flatShading;
 
+  // UUID of the TextureData to use as a diffuse color map. Note: the name
+  // matches the three.js name for diffuse or albedo (depending on the shader).
+  // For simple serializaiton, we're stuck with the same name here.
+  std::optional<std::string> map;
+
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(Packer& o) const {
@@ -121,6 +126,7 @@ struct MaterialData {
     if (wireframe) ++n;
     if (wireframeLineWidth) ++n;
     if (flatShading) ++n;
+    if (map) ++n;
     o.pack_map(n);
     PACK_MAP_VAR(o, uuid);
     PACK_MAP_VAR(o, type);
@@ -161,6 +167,10 @@ struct MaterialData {
     if (flatShading) {
       o.pack("flatShading");
       o.pack(*flatShading);
+    }
+    if (map) {
+      o.pack("map");
+      o.pack(*map);
     }
   }
 
@@ -347,11 +357,69 @@ struct MeshfileObjectData {
   MSGPACK_DEFINE_MAP(uuid, type, format, data, mtl_library, resources, matrix);
 };
 
+// There is no actual three.js Image class, but this is known to be a sufficient
+// subset of the three.js json object to trigger an image load from the `url`.
+struct ImageData {
+  std::string uuid;
+  std::string url;
+
+  template <typename Packer>
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(Packer& o) const {
+    o.pack_map(2);
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, url);
+  }
+  void msgpack_unpack(msgpack::object const&) {
+    throw std::runtime_error("unpack is not implemented for ImageData.");
+  }
+};
+
+// Corresponds to the three.js Texture class, but only includes the fields that
+// we actually use.
+// https://threejs.org/docs/?q=Texture#Texture
+struct TextureData {
+  std::string uuid;
+  std::string image;  // uuid of the associated ImageData
+  std::optional<std::array<int, 2>> wrap;
+
+  // The collection of enumerated values we need to send to three js to
+  // configure the texture correctly. Three.js puts them all in a single name
+  // space. We'll parallel that by putting them all in this single enum.
+  enum ThreeJsEnum {
+    // Wrapping modes for use with `wrap`.
+    RepeatWrapping = 1000,
+    ClampToEdgeWrapping = 1001,
+    MirroredRepeatWrapping = 1002
+  };
+
+  template <typename Packer>
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(Packer& o) const {
+    int n = 2;
+    if (wrap) ++n;
+    o.pack_map(n);
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, image);
+    if (wrap) {
+      o.pack("wrap");
+      o.pack_array(2);
+      o.pack((*wrap)[0]);
+      o.pack((*wrap)[1]);
+    }
+  }
+  void msgpack_unpack(msgpack::object const&) {
+    throw std::runtime_error("unpack is not implemented for TextureData.");
+  }
+};
+
 struct LumpedObjectData {
   ObjectData metadata{};
-  // We deviate from the msgpack names (geometries, materials) here since we
-  // currently only support zero or one geometry/material.
+  // We deviate from the msgpack names (geometries, images, textures, materials)
+  // here since we currently only support zero or one of each.
   std::unique_ptr<GeometryData> geometry;
+  std::unique_ptr<ImageData> image;
+  std::unique_ptr<TextureData> texture;
   std::unique_ptr<MaterialData> material;
   std::variant<std::monostate, MeshData, MeshfileObjectData> object;
 
@@ -360,6 +428,8 @@ struct LumpedObjectData {
   void msgpack_pack(Packer& o) const {
     int size = 2;
     if (geometry) ++size;
+    if (image) ++size;
+    if (texture) ++size;
     if (material) ++size;
     o.pack_map(size);
     PACK_MAP_VAR(o, metadata);
@@ -367,6 +437,16 @@ struct LumpedObjectData {
       o.pack("geometries");
       o.pack_array(1);
       o.pack(*geometry);
+    }
+    if (image) {
+      o.pack("images");
+      o.pack_array(1);
+      o.pack(*image);
+    }
+    if (texture) {
+      o.pack("textures");
+      o.pack_array(1);
+      o.pack(*texture);
     }
     if (material) {
       o.pack("materials");
@@ -576,7 +656,7 @@ namespace adaptor {
 template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
           int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
 struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
-                          MaxRowsAtCompileTime, MaxColsAtCompileTime> > {
+                          MaxRowsAtCompileTime, MaxColsAtCompileTime>> {
   template <typename Stream>
   packer<Stream>& operator()(
       // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
