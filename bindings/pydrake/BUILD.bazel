@@ -473,7 +473,7 @@ drake_py_unittest(
     ],
     deps = [
         "@rules_python//python/runfiles",
-        uv_requirement("mypy"),
+        mypy_requirement("mypy"),
     ],
 )
 
