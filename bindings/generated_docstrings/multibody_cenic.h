@@ -68,8 +68,9 @@ optimization problem [Castro et al., 2023] to advance the system state
 at each time step. A simple half-stepping strategy provides a
 second-order error estimate for automatic step-size selection.
 
-Because CENIC is specific to multibody systems, this integrator
-requires a system diagram with a ``MultibodyPlant`` subsystem.
+Because CENIC is specific to multibody systems, the system it's asked
+to integrate must either be a MultibodyPlant system or a Diagram that
+contains a MultibodyPlant subsystem, at any level of Diagram nesting.
 
 Running CENIC in fixed-step mode (with error-control disabled)
 recovers the "Lagged" variant of discrete-time ICF simulation from
@@ -109,10 +110,11 @@ https://arxiv.org/abs/2511.08771.)""";
 R"""(Constructs the integrator.
 
 Parameter ``system``:
-    The overall system diagram to simulate. Must include exactly one
-    continuous-time MultibodyPlant. Other (discrete-time) plants are
-    allowed in the diagram. This ``system`` is aliased by this object
-    so must remain alive longer than the integrator.
+    The overall system to simulate. Must either be a MultibodyPlant or
+    a Diagram that contains exactly one continuous-time
+    MultibodyPlant. Other (discrete-time) plants are allowed in a
+    diagram. This ``system`` is aliased by this object so must remain
+    alive longer than the integrator.
 
 Parameter ``context``:
     context for the overall system.)""";

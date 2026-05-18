@@ -99,6 +99,11 @@ build:openmp --@drake//tools/cc_toolchain:with_openmp=True
 build:openmp --copt=-DEIGEN_DONT_PARALLELIZE
 build:openmp --copt=-fopenmp
 build:openmp --linkopt=-fopenmp
+# Undo --config=openmp.
+build:without_openmp --@drake//tools/cc_toolchain:with_openmp=False
+build:without_openmp --copt=-UEIGEN_DONT_PARALLELIZE
+build:without_openmp --copt=-fno-openmp
+build:without_openmp --linkopt=-fno-openmp
 
 ### A wrapper configuration for debug builds. ###
 build:debug --compilation_mode=dbg
@@ -107,25 +112,6 @@ build:debug --test_timeout=120,600,1800,7200
 # Enable split debug symbols (Linux only).
 build:linux --fission=dbg
 build:linux --features=per_object_debug_info
-
-# Options for explicitly using GCC.
-# TODO(#24359) Delete this entirely.
-common:gcc --repo_env=CC=gcc
-common:gcc --repo_env=CXX=g++
-build:gcc --action_env=CC=gcc
-build:gcc --action_env=CXX=g++
-build:gcc --host_action_env=CC=gcc
-build:gcc --host_action_env=CXX=g++
-
-# Options for explicitly using Clang.
-# Note that the drake/gen/environment.bazelrc file might override this.
-# TODO(#24359) Delete this entirely.
-common:clang --repo_env=CC=clang
-common:clang --repo_env=CXX=clang++
-build:clang --action_env=CC=clang
-build:clang --action_env=CXX=clang++
-build:clang --host_action_env=CC=clang
-build:clang --host_action_env=CXX=clang++
 
 ### A configuration that enables all optional dependencies. ###
 build:everything --@drake//tools/flags:with_gurobi=True

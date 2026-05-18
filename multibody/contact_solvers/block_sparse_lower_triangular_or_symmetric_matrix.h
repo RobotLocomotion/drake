@@ -19,8 +19,8 @@ namespace internal {
  non-zero. They can be viewed as nodes in the graph. The number of rows (and
  columns) of these diagonal blocks can be queried with `block_sizes()`.
 
- An edge exist between block i and block j if the ij-th block is non-zero in the
- block sparse matrix. The connectivity information can be queried with
+ An edge exists between block i and block j if the ij-th block is non-zero in
+ the block sparse matrix. The connectivity information can be queried with
  `neighbors()`. */
 class BlockSparsityPattern {
  public:

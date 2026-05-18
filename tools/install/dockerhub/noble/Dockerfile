@@ -6,7 +6,7 @@ ADD drake-latest-noble.tar.gz /opt
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update -qq \
   && apt-get install --no-install-recommends -o Dpkg::Use-Pty=0 -qy \
-    $(cat /opt/drake/share/drake/setup/packages-noble.txt) \
+    $(cat /opt/drake/share/drake/setup/packages-noble-binary.txt) \
 # Make 'python' (not just 'python3') and pip available.
     python3-pip python-is-python3 \
   && rm -rf /var/lib/apt/lists/* \

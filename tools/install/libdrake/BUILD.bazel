@@ -425,32 +425,30 @@ drake_cc_test(
 
 drake_cc_googletest(
     name = "fast_math_test",
-    tags = ["no_kcov"],  # See #10788.
+    opt_out_conditions = ["//tools/kcov:enabled"],  # See #10788.
     deps = [
         "//:drake_shared_library",
     ],
 )
 
-# The exported_symbols_test is skipped in some build configurations.
-selects.config_setting_group(
-    name = "skip_exported_symbols_test",
-    match_any = [
-        # Debug builds have a lot more symbols (no dead code elimination) so
-        # are too much work to tidy up.
-        "//tools/cc_toolchain:debug",
-    ],
-)
-
 drake_py_unittest(
     name = "exported_symbols_test",
-    args = selects.with_or({
-        ":skip_exported_symbols_test": ["--help"],
-        "//conditions:default": [],
-    }),
+    # For simplicity, we only test on Ubuntu. Hopefully, macOS is similar.
+    opt_in_condition = "//tools/skylark:linux",
+    opt_out_conditions = [
+        # Debug builds have a lot more symbols (no dead code elimination) so are
+        # too much work to tidy up.
+        "//tools:unoptimized",
+        # The objdump disassembly is hard-coded for x86_64.
+        "@platforms//cpu:aarch64",
+    ],
     data = [
         ":libdrake.so",
+        "@llvm//:bin/llvm-objdump",
     ],
-    tags = ["no_kcov"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
 )
 
 drake_py_unittest(

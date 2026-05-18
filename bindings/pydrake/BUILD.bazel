@@ -255,8 +255,8 @@ drake_py_binary(
     name = "print_symbol_collisions",
     testonly = 1,
     srcs = ["test/print_symbol_collisions.py"],
-    add_test_rule = 1,
     deps = [":all_py"],
+    add_test_rule = True,
 )
 
 drake_py_unittest(
@@ -424,7 +424,8 @@ PYI_FILES = [
     "pydrake/multibody/rational.pyi",
     "pydrake/multibody/tree.pyi",
     "pydrake/perception.pyi",
-    "pydrake/planning.pyi",
+    "pydrake/planning/__init__.pyi",
+    "pydrake/planning/experimental.pyi",
     "pydrake/polynomial.pyi",
     "pydrake/solvers.pyi",
     "pydrake/symbolic.pyi",

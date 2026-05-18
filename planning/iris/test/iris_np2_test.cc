@@ -15,6 +15,7 @@
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace planning {
@@ -131,11 +132,49 @@ TEST_F(JointLimits1D, UnsupportedOptions) {
       ".*num_particles_to_walk_towards.*");
   options.ray_sampler_options.num_particles_to_walk_towards = 1;
 
+  options.ray_sampler_options.num_particles_to_walk_towards = 1e4;
+  options.sampled_iris_options.num_particles = 1e2;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+      ".*num_particles_to_walk_towards.*num_particles.*");
+  options.ray_sampler_options.num_particles_to_walk_towards = 1;
+  options.sampled_iris_options.num_particles = 1e3;
+
   options.sampling_strategy = "another sampling strategy";
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
       ".*invalid IrisNp2 sampling strategy.*another sampling strategy.*");
   options.sampling_strategy = "greedy";
+}
+
+TEST_F(JointLimits1D, SeedNearlyInfeasible) {
+  IrisNp2Options options;
+  auto* scene_graph_checker =
+      dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(scene_graph_checker != nullptr);
+
+  // Impose a numerically-unstable constraint (the seed point is on the boundary
+  // of the feasible set).
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  prog.AddConstraint(pow(x(0), 4) <= 0);
+  options.sampled_iris_options.prog_with_additional_constraints = &prog;
+
+  // Hamstring the solver by loosening its feasibility tolerances.
+  options.sampled_iris_options.relax_margin = true;
+  options.solver_options.SetOption(solvers::SnoptSolver::id(),
+                                   "Major feasibility tolerance", 1e-4);
+  options.solver_options.SetOption(solvers::SnoptSolver::id(),
+                                   "Minor feasibility tolerance", 1e-4);
+
+  // We have only ever observed these sorts of numerical issues when using SNOPT
+  // as a solver. (IPOPT is more numerically-stable, but for speed reasons, we
+  // use SNOPT by default.)
+  if (solvers::SnoptSolver::is_available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        IrisNp2(*scene_graph_checker, starting_ellipsoid_, domain_, options),
+        ".*center point is numerically too close to a constraint boundary.*");
+  }
 }
 
 // Check padding as an unsupported feature. (We have to use a test environment
@@ -562,12 +601,17 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
       Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-1.0, 1.0));
   Hyperellipsoid ellipsoid_violates_constraint =
       Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-0.1, 0.0));
+  // Note the more complex regular expression, since there's no guarantee on the
+  // order the geometries will be printed.
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*sgcc_ptr, ellipsoid_in_collision, domain_, options),
-      ".*Starting ellipsoid center.*");
+      // clang-format off
+      // NOLINTNEXTLINE
+      ".*Starting ellipsoid center.*(?:geometry.*ball.*geometry.*ground|geometry.*ground.*geometry.*ball).*");
+  // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisNp2(*sgcc_ptr, ellipsoid_violates_constraint, domain_, options),
-      ".*Starting ellipsoid center.*");
+      ".*Starting ellipsoid center.*constraint.*");
 }
 
 TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisNp2Test) {

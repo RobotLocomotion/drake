@@ -3,7 +3,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -539,15 +538,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // This method is called during Finalize(). It tells each MultibodyElement
   // owned by `this` system to declare their system parameters on `this`.
-  // Returns the number of frame body pose slots we need to allocate in the
-  // frame body pose cache entry.
   // TODO(sherm1) This should return information needed for allocating
   //  parameter cache entries, such as which parameters affect which
   //  objects. For now we assume dependence on all parameters.
   //  Alternatively, consider restructuring this so that the parameter
   //  allocation and matching cache resources can be obtained at the
   //  same time by the element that needs them.
-  void DeclareMultibodyElementParameters(int* num_frame_body_pose_slots_needed);
+  void DeclareMultibodyElementParameters();
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.

@@ -342,6 +342,11 @@ void MakeFclShape::ImplementGeometry(const HalfSpace&, void*) {
 void MakeFclShape::ImplementGeometry(const Mesh&, void*) {
   // For these tests, we use the same box mesh for Mesh and Convex. Therefore,
   // the fcl representation of the Mesh type is simply that of the Convex type.
+  // NOTE: PointDistanceCallback::Invoke() in
+  // distance_to_point_characterize_test.cc builds a MeshDistanceBoundaryCache
+  // entry that must match the geometry. It does so by turning the fcl::Convexd
+  // back into a Mesh. If this ever introduces a Mesh that is not its own convex
+  // hull, that logic will need to change.
   ImplementGeometry(Convex("ignored for this test", 1.0), nullptr);
 }
 

@@ -12,8 +12,8 @@ namespace geometry {
 namespace internal {
 namespace {
 
-using multibody::contact_solvers::internal::PartialPermutation;
-using multibody::contact_solvers::internal::VertexPartialPermutation;
+using math::internal::PartialPermutation;
+using math::internal::VertexPartialPermutation;
 
 const GeometryId kIdA = GeometryId::get_new_id();
 const GeometryId kIdB = GeometryId::get_new_id();

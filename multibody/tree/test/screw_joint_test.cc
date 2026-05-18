@@ -36,10 +36,10 @@ class ScrewJointTest : public ::testing::Test {
   // screw joint.
   void SetUp() override {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
-    body_ = &model->AddRigidBody("Body", SpatialInertia<double>::NaN());
+    body_ = &model->AddLink("Body", SpatialInertia<double>::NaN());
 
     // Add a screw joint between the world and body1:
-    joint_ = &model->AddJoint<ScrewJoint>("Joint", model->world_body(),
+    joint_ = &model->AddJoint<ScrewJoint>("Joint", model->world_link(),
                                           std::nullopt, *body_, std::nullopt,
                                           kScrewPitch, kDamping);
     mutable_joint_ = dynamic_cast<ScrewJoint<double>*>(

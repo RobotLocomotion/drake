@@ -121,8 +121,7 @@ class IcfSolver {
                        To begin, stores the initial guess for velocities v.
 
   @return true if and only if the optimizer converged to tolerance ε.
-  @pre The model and data must compatible, e.g., via model.ResizeData(&data).
-  @pre The model must be non-empty, e.g., model.num_velocities() > 0. */
+  @pre The model and data must compatible, e.g., via model.ResizeData(&data). */
   bool SolveWithGuess(const IcfModel<double>& model, const double tolerance,
                       IcfData<double>* data);
 

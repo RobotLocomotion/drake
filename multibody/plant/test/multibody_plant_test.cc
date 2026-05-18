@@ -3080,7 +3080,7 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   struct MyMBSystem : public internal::MultibodyTreeSystem<double> {
     MyMBSystem() {
       rigid_body =
-          &mutable_tree().AddRigidBody("Body", SpatialInertia<double>::NaN());
+          &mutable_tree().AddLink("Body", SpatialInertia<double>::NaN());
       Finalize();
     }
     const RigidBody<double>* rigid_body{};

@@ -959,6 +959,91 @@ class TestSymbolicExpression(unittest.TestCase):
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
 
+    def test_pickle_expression_with_evaluation(self):
+        test_expr = [
+            e_x,
+            sym.Expression(5.5),
+            sym.Expression(np.nan),
+            x + y,
+            x + 5,
+            5 * x,
+            x * x,
+            sym.pow(a * (x + y), w + z),
+            x / y,
+            x - y / z,
+            sym.min(y, x + z),
+            sym.max(y, x),
+            sym.atan2(x, y),
+            sym.abs(x),
+            sym.acos(x),
+            sym.asin(x),
+            sym.atan(x / z),
+            sym.ceil(x),
+            sym.cos(x),
+            sym.cosh(x),
+            sym.exp(x + y),
+            sym.floor(x),
+            sym.log(x),
+            sym.sin(x),
+            sym.sinh(x),
+            sym.sqrt(x + y),
+            sym.tan((x + y) * a),
+            sym.tanh(x + y),
+            sym.if_then_else(
+                sym.Formula.True_(), x + sym.pow(y, 3), sym.exp(z)
+            ),  # evaluates to Expression
+            sym.if_then_else(
+                sym.Formula.False_(), x + sym.pow(y, 3), sym.exp(z)
+            ),  # evaluates to Expression
+            sym.if_then_else(x == y, x + sym.pow(y, 3), sym.sqrt(z)),
+            sym.if_then_else(x != y, x + sym.pow(y, 3), sym.exp(z)),
+            sym.if_then_else(x > y, x + sym.pow(y, 3), sym.sin(z)),
+            sym.if_then_else(y > x, x + sym.pow(y, 3), sym.exp(z)),
+            sym.if_then_else(x >= y, x + sym.pow(y, 3), sym.cos(z)),
+            sym.if_then_else(x < y, x + sym.pow(y, 3), sym.exp(z)),
+            sym.if_then_else(x <= y, x + sym.pow(y, 3), sym.tan(z)),
+            sym.if_then_else(
+                sym.Formula(boolean), x + sym.pow(y, 3), sym.exp(z)
+            ),
+            sym.if_then_else(
+                sym.logical_and(y > x, z > x, z > y), x + y * 3, sym.exp(z)
+            ),
+            sym.if_then_else(
+                sym.logical_or(y > x, z > x, y > z), sym.pow(y, 3), x + y * 3
+            ),
+            sym.if_then_else(sym.logical_not(boolean), x, y),
+            sym.if_then_else(
+                sym.logical_not(x < y), x + sym.pow(y, 3), sym.exp(z)
+            ),
+            sym.if_then_else(sym.isnan(e_x), x, y),
+            sym.if_then_else(sym.isnan(e_x), x + sym.pow(y, 3), sym.exp(z)),
+            sym.if_then_else(
+                sym.forall(
+                    sym.Variables(np.array([x, z], dtype=object)), x < z
+                ),
+                x,
+                y,
+            ),
+            sym.if_then_else(
+                sym.forall(
+                    sym.Variables(np.array([x, z], dtype=object)), x < z
+                ),
+                x + sym.pow(y, 3),
+                sym.exp(z),
+            ),
+            sym.if_then_else(
+                sym.positive_semidefinite(np.array([[x, y], [y, z]])), x, y
+            ),
+            sym.uninterpreted_function(
+                name="func_name", arguments=[x + sym.pow(y, 3), sym.exp(z)]
+            ),
+        ]
+        for expr in test_expr:
+            with self.subTest(expr=expr):
+                assert_pickle(
+                    test=self, obj=expr, value_to_compare=lambda x: repr(x)
+                )
+
 
 class TestSymbolicFormula(unittest.TestCase):
     def test_constructor(self):

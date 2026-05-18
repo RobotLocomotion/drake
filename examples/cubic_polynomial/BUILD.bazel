@@ -6,25 +6,25 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_binary(
     name = "region_of_attraction",
     srcs = ["region_of_attraction.cc"],
-    add_test_rule = 1,
     deps = [
         "//common:add_text_logging_gflags",
         "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/framework:vector_system",
     ],
+    add_test_rule = True,
 )
 
 drake_cc_binary(
     name = "backward_reachability",
     srcs = ["backward_reachability.cc"],
-    add_test_rule = 1,
     deps = [
         "//common/proto:call_python",
         "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/framework:vector_system",
     ],
+    add_test_rule = True,
 )
 
 add_lint_tests()

@@ -34,7 +34,7 @@ class WeldMobilizerTest : public MobilizerTester {
   void SetUp() override {
     weld_body_to_world_ = &AddJointAndFinalize<WeldJoint, WeldMobilizer>(
         std::make_unique<WeldJoint<double>>("joint0",
-                                            tree().world_body().body_frame(),
+                                            tree().world_link().body_frame(),
                                             body_->body_frame(), X_WB_));
   }
 

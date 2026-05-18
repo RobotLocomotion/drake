@@ -7,6 +7,7 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:sh.bzl", "sh_binary")
+load(":defs.bzl", "generate_cmake_bazelrc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -138,6 +139,14 @@ config_setting(
     flag_values = {":with_openmp": "True"},
 )
 
+# (Internal use only.) Generates a (possibly-empty) bazelrc fragment that
+# contains recommended flags when building Drake with our CMakeLists.txt
+# wrapper. We could mark this `tags = ["manual"]` but it's convenient to
+# exercise the logic even in Bazel builds to make sure it doesn't bitrot.
+generate_cmake_bazelrc(
+    name = "cmake.bazelrc",
+)
+
 # *****************************************************************************
 # The following sh_binary (and its prerequisite genrule) are used by drake-ci's
 # CMake setup logic to sniff out Drake's selected compiler. They are not used
@@ -155,7 +164,6 @@ genrule(
     cmd = "cat <<EOF > '$@'\n" +
           "PATH=\"$$PATH\"\n" +
           "CC=\"$${CC:-}\"\n" +
-          "CXX=\"$${CXX:-}\"\n" +
           "EOF",
     visibility = ["//visibility:private"],
 )

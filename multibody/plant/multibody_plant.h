@@ -245,16 +245,6 @@ enum class DiscreteContactApproximation {
   kLagged,
 };
 
-/// The kind of joint to be used to connect base bodies to world at Finalize().
-/// See @ref mbp_working_with_free_bodies "Working with free bodies"
-/// for definitions and discussion.
-/// @see SetBaseBodyJointType() for details.
-enum class BaseBodyJointType {
-  kQuaternionFloatingJoint,  ///< 6 dofs, unrestricted orientation.
-  kRpyFloatingJoint,         ///< 6 dofs using 3 angles; has singularity.
-  kWeldJoint,                ///< 0 dofs, fixed to World.
-};
-
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1267,6 +1257,10 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
 
+  // TODO(sherm1) Modify the next comment to explain that unmodeled joints will
+  //  have NaN reaction force entries here. (Joints can be unmodeled because
+  //  they were removed or because they are internal to a composite body.)
+
   /// Reports joint reaction forces as an @ref AbstractValue "abstract-valued"
   /// output port containing an `std::vector<SpatialForce<T>>` of size
   /// num_joints().
@@ -1424,9 +1418,9 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B = SpatialInertia<double>::Zero()) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    // Add the actual rigid body to the model.
+    // Add the actual RigidBody (Link) to the model.
     const RigidBody<T>& body =
-        this->mutable_tree().AddRigidBody(name, model_instance, M_BBo_B);
+        this->mutable_tree().AddLink(name, model_instance, M_BBo_B);
     // Each entry of visual_geometries_, ordered by body index, contains a
     // std::vector of geometry ids for that body. The emplace_back() below
     // resizes visual_geometries_ to store the geometry ids for the body we
@@ -1766,6 +1760,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @param[in] model_instance (optional) the index of the model instance to
   ///   which `joint_type` is to be applied.
   /// @throws std::exception if called after Finalize().
+  /// @see GetBaseBodyJointType(), Finalize()
   void SetBaseBodyJointType(
       BaseBodyJointType joint_type,
       std::optional<ModelInstanceIndex> model_instance = {});
@@ -1778,7 +1773,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// This can be called any time -- pre-finalize it returns the joint type
   /// that will be used by Finalize(); post-finalize it returns the joint type
   /// that _was_ used if there were any base bodies in need of a joint.
-  /// @see SetBaseBodyJointType()
+  /// @see SetBaseBodyJointType(), Finalize()
   BaseBodyJointType GetBaseBodyJointType(
       std::optional<ModelInstanceIndex> model_instance = {}) const;
 
@@ -2476,7 +2471,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const RigidBody<T>* GetBodyFromFrameId(geometry::FrameId frame_id) const {
     const auto it = frame_id_to_body_index_.find(frame_id);
     if (it == frame_id_to_body_index_.end()) return nullptr;
-    return &internal_tree().get_body(it->second);
+    return &internal_tree().get_link(it->second);
   }
 
   /// If the body with `body_index` belongs to the called plant, it returns
@@ -2499,7 +2494,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
       throw std::logic_error("Body '" +
-                             internal_tree().get_body(body_index).name() +
+                             internal_tree().get_link(body_index).name() +
                              "' does not have geometry registered with it.");
     }
     return it->second;
@@ -3764,7 +3759,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context, const RigidBody<T>& body_B) const {
     this->ValidateContext(context);
-    return internal_tree().EvalBodyPoseInWorld(context, body_B);
+    return internal_tree().EvalLinkPoseInWorld(context, body_B);
   }
 
   /// Evaluates V_WB, body B's spatial velocity in the world frame W.
@@ -3777,7 +3772,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context, const RigidBody<T>& body_B) const {
     this->ValidateContext(context);
-    return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
+    return internal_tree().EvalLinkSpatialVelocityInWorld(context, body_B);
   }
 
   /// Evaluates A_WB, body B's spatial acceleration in the world frame W.
@@ -5195,7 +5190,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
-    return internal_tree().world_body();
+    return internal_tree().world_link();
   }
 
   /// Returns a constant reference to the *world* frame.
@@ -5206,18 +5201,18 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Returns the number of RigidBody elements in the model, including the
   /// "world" RigidBody, which is always part of the model.
   /// @see AddRigidBody().
-  int num_bodies() const { return internal_tree().num_bodies(); }
+  int num_bodies() const { return internal_tree().num_links(); }
 
   /// Returns `true` if plant has a rigid body with unique index `body_index`.
   bool has_body(BodyIndex body_index) const {
-    return internal_tree().has_body(body_index);
+    return internal_tree().has_link(body_index);
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
   /// @throws std::exception if `body_index` does not correspond to a body in
   /// this model.
   const RigidBody<T>& get_body(BodyIndex body_index) const {
-    return internal_tree().get_body(body_index);
+    return internal_tree().get_link(body_index);
   }
 
   /// Returns `true` if @p body is anchored (i.e. the kinematic path between
@@ -5234,13 +5229,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the body name occurs in multiple model
   /// instances.
   bool HasBodyNamed(std::string_view name) const {
-    return internal_tree().HasBodyNamed(name);
+    return internal_tree().HasLinkNamed(name);
   }
 
   /// @returns The total number of bodies (across all model instances) with the
   /// given name.
   int NumBodiesWithName(std::string_view name) const {
-    return internal_tree().NumBodiesWithName(name);
+    return internal_tree().NumLinksWithName(name);
   }
 
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant
@@ -5250,7 +5245,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasBodyNamed(std::string_view name,
                     ModelInstanceIndex model_instance) const {
-    return internal_tree().HasBodyNamed(name, model_instance);
+    return internal_tree().HasLinkNamed(name, model_instance);
   }
 
   /// Returns a constant reference to a body that is identified
@@ -5261,7 +5256,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
   const RigidBody<T>& GetBodyByName(std::string_view name) const {
-    return internal_tree().GetRigidBodyByName(name);
+    return internal_tree().GetLinkByName(name);
   }
 
   /// Returns a constant reference to the body that is uniquely identified
@@ -5271,13 +5266,13 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// %MultibodyPlant with a given specified name.
   const RigidBody<T>& GetBodyByName(std::string_view name,
                                     ModelInstanceIndex model_instance) const {
-    return internal_tree().GetRigidBodyByName(name, model_instance);
+    return internal_tree().GetLinkByName(name, model_instance);
   }
 
   /// Returns a list of body indices associated with `model_instance`.
   std::vector<BodyIndex> GetBodyIndices(
       ModelInstanceIndex model_instance) const {
-    return internal_tree().GetBodyIndices(model_instance);
+    return internal_tree().GetLinkIndices(model_instance);
   }
 
   /// Returns a constant reference to a rigid body that is identified
@@ -5289,7 +5284,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const RigidBody<T>& GetRigidBodyByName(std::string_view name) const {
-    return internal_tree().GetRigidBodyByName(name);
+    return internal_tree().GetLinkByName(name);
   }
 
   /// Returns a constant reference to the rigid body that is uniquely identified
@@ -5302,7 +5297,7 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// given specified name.
   const RigidBody<T>& GetRigidBodyByName(
       std::string_view name, ModelInstanceIndex model_instance) const {
-    return internal_tree().GetRigidBodyByName(name, model_instance);
+    return internal_tree().GetLinkByName(name, model_instance);
   }
 
   /// Returns all bodies that are transitively welded, or rigidly affixed, to

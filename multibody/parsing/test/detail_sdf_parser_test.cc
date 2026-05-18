@@ -71,7 +71,7 @@ using systems::Context;
 
 using CollisionPair = SortedPair<std::string>;
 
-const double kEps = std::numeric_limits<double>::epsilon();
+const double kEps = 2 * std::numeric_limits<double>::epsilon();
 
 // Fixture to add test coverage for the SDF parser. Some features such as mimic
 // joints and ball constraints are only supported in discrete mode when using

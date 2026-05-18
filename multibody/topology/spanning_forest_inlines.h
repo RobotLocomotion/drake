@@ -23,9 +23,9 @@ inline int SpanningForest::num_mobods() const {
   return std::ssize(mobods());
 }
 
-inline LinkOrdinal SpanningForest::mobod_to_link_ordinal(
+inline LinkOrdinal SpanningForest::mobod_to_active_link_ordinal(
     MobodIndex mobod_index) const {
-  return mobods(mobod_index).link_ordinal();
+  return mobods(mobod_index).active_link_ordinal();
 }
 
 inline const std::vector<LinkOrdinal>& SpanningForest::mobod_to_link_ordinals(

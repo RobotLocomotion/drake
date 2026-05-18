@@ -27,6 +27,25 @@ def _reduce_mul(*args):
     return functools.reduce(operator.mul, args)
 
 
+def _getstate_via_unapply(self: Expression | Formula) -> tuple:
+    ctor, args = self.Unapply()
+    # We pickle the kind, not the ctor.
+    state = tuple([self.get_kind()] + args)
+    return state
+
+
+def _setstate_via_unapply(self: Expression | Formula, state: tuple) -> None:
+    kind = state[0]
+    ctor = self._MakeUnapplyConstructor(kind)
+    args = state[1:]
+    self._assign(ctor(*args))
+
+
+Expression.__getstate__ = _getstate_via_unapply
+Expression.__setstate__ = _setstate_via_unapply
+Formula.__getstate__ = _getstate_via_unapply
+Formula.__setstate__ = _setstate_via_unapply
+
 # Drake's SymPy support is loaded lazily (on demand), so that Drake does not
 # directly depend on SymPy. The implementation lives in `_symbolic_sympy.py`.
 _symbolic_sympy_defer = None

@@ -34,14 +34,14 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   internal::MultibodyTree<double>& tree = *tree_pointer;
 
   // Add bodies so we can add joints to them.
-  const auto body1 = &tree.AddRigidBody("body1", M_NaN());
-  const auto body2 = &tree.AddRigidBody("body2", M_NaN());
-  const auto body3 = &tree.AddRigidBody("body3", M_NaN());
+  const auto body1 = &tree.AddLink("body1", M_NaN());
+  const auto body2 = &tree.AddLink("body2", M_NaN());
+  const auto body3 = &tree.AddLink("body3", M_NaN());
 
   // Add a prismatic joint between the world and body1:
   const Joint<double>& body1_world =
       tree.AddJoint(std::make_unique<PrismaticJoint<double>>(
-          "prism1", tree.world_body().body_frame(), body1->body_frame(),
+          "prism1", tree.world_link().body_frame(), body1->body_frame(),
           Eigen::Vector3d(0, 0, 1)));
 
   tree.AddJointActuator("act1", body1_world, kPositiveEffortLimit);
@@ -70,10 +70,10 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   EXPECT_EQ(actuator1.input_start(), 0);  // First & only actuated dof.
   EXPECT_EQ(actuator1.num_inputs(), 1);   // Prismatic is 1 dof.
 
-  const auto body4 = &tree.AddRigidBody("body4", M_NaN());
+  const auto body4 = &tree.AddLink("body4", M_NaN());
   const Joint<double>& body4_world =
       tree.AddJoint(std::make_unique<PlanarJoint<double>>(
-          "planar4", tree.world_body().body_frame(), body4->body_frame(),
+          "planar4", tree.world_link().body_frame(), body4->body_frame(),
           Eigen::Vector3d{0, 0, 0.1}));
 
   const auto& actuator4 =
@@ -102,10 +102,10 @@ namespace {
 // Adds an actuated 1-dof joint between the world and a body.
 JointActuator<double>& AddBodyJointAndActuator(
     internal::MultibodyTree<double>* tree) {
-  const auto& body = tree->AddRigidBody("body1", M_NaN());
+  const auto& body = tree->AddLink("body1", M_NaN());
   const Joint<double>& joint =
       tree->AddJoint(std::make_unique<PrismaticJoint<double>>(
-          "joint1", tree->world_body().body_frame(), body.body_frame(),
+          "joint1", tree->world_link().body_frame(), body.body_frame(),
           Eigen::Vector3d(0, 0, 1)));
   tree->AddJointActuator("actuator1", joint, kPositiveEffortLimit);
   return tree->get_mutable_joint_actuator(
@@ -166,15 +166,15 @@ GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
   const auto model_instance2 = tree.AddModelInstance("instance2");
 
   // Add bodies so we can add joints to them.
-  const auto body1 = &tree.AddRigidBody("body1", model_instance1, M_NaN());
-  const auto body2 = &tree.AddRigidBody("body2", model_instance1, M_NaN());
-  const auto body3 = &tree.AddRigidBody("body3", model_instance1, M_NaN());
-  const auto body4 = &tree.AddRigidBody("body4", model_instance2, M_NaN());
+  const auto body1 = &tree.AddLink("body1", model_instance1, M_NaN());
+  const auto body2 = &tree.AddLink("body2", model_instance1, M_NaN());
+  const auto body3 = &tree.AddLink("body3", model_instance1, M_NaN());
+  const auto body4 = &tree.AddLink("body4", model_instance2, M_NaN());
 
   // Add a prismatic joint between the world and body1:
   const Joint<double>& body1_world =
       tree.AddJoint(std::make_unique<PrismaticJoint<double>>(
-          "prism1", tree.world_body().body_frame(), body1->body_frame(),
+          "prism1", tree.world_link().body_frame(), body1->body_frame(),
           Eigen::Vector3d(0, 0, 1)));
   const JointActuator<double>& actuator1 =
       tree.AddJointActuator("act1", body1_world, kPositiveEffortLimit);
@@ -195,7 +195,7 @@ GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
 
   const Joint<double>& body4_world =
       tree.AddJoint(std::make_unique<PrismaticJoint<double>>(
-          "prism4", tree.world_body().body_frame(), body4->body_frame(),
+          "prism4", tree.world_link().body_frame(), body4->body_frame(),
           Eigen::Vector3d(0, 0, 1)));
   const JointActuator<double>& actuator4 =
       tree.AddJointActuator("act4", body4_world, kPositiveEffortLimit);

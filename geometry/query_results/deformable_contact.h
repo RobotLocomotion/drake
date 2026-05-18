@@ -8,8 +8,8 @@
 
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {
 namespace geometry {
@@ -76,8 +76,7 @@ class ContactParticipation {
    |        4         |       N/A        |       no          |
    |        5         |        2         |       yes         |
   */
-  multibody::contact_solvers::internal::VertexPartialPermutation
-  CalcPartialPermutation() const;
+  math::internal::VertexPartialPermutation CalcPartialPermutation() const;
 
   /* Returns the number of vertices of the deformable body that participate in
    contact. */

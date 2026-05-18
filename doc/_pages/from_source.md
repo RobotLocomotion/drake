@@ -35,16 +35,18 @@ officially supports when building from source:
 
 | Operating System ⁽¹⁾                | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           |
 |-------------------------------------|--------------|------------|-------|-------|------------------------------|
-| Ubuntu 24.04 LTS (Noble Numbat)     | x86_64 ⁽⁴⁾   | 3.12       | 9.0   | 3.28  | GCC 13 (default) or Clang 20 |
-| Ubuntu 26.04 LTS (Resolute Raccoon) | x86_64       | 3.14       | 9.0   | 4.2   | GCC 15 (default) or Clang 21 |
-| macOS Sequoia (15)                  | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
-| macOS Tahoe (26)                    | arm64        | 3.14       | 9.0   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
+| Ubuntu 24.04 LTS (Noble Numbat)     | x86-64       | 3.12       | 9.1   | 3.28  | GCC 13 (default) or Clang 20 |
+|                                     | arm64 ⁽⁴⁾    | 3.12       | 9.1   | 3.28  | GCC 13                       |
+| Ubuntu 26.04 LTS (Resolute Raccoon) | x86-64-v3    | 3.14       | 9.1   | 4.2   | GCC 15 (default) or Clang 21 |
+|                                     | arm64 ⁽⁴⁾    | 3.14       | 9.1   | 4.2   | GCC 15                       |
+| macOS Sequoia (15)                  | arm64        | 3.14       | 9.1   | 4.3   | Apple LLVM 17 (Xcode 26.3)   |
+| macOS Tahoe (26)                    | arm64        | 3.14       | 9.1   | 4.3   | Apple LLVM 21 (Xcode 26.4)   |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
 
 Unofficially, Drake is also likely to be compatible with newer versions of
-Ubuntu or macOS than what are listed, or with other versions of Python or Java.
+operating systems or tools than what are listed.
 However, these are not supported so if it doesn't work for you then please file
 a pull request with the fix, not a bug report.
 
@@ -58,9 +60,7 @@ maybe require extra setup. See the
 
 ⁽³⁾ Drake requires a compiler running in C++23 (or greater) mode.
 
-⁽⁴⁾ On an experimental basis, Drake also supports aarch64 on Ubuntu 24.04
-(Noble). Follow [#13514](https://github.com/RobotLocomotion/drake/issues/13514)
-for updates.
+⁽⁴⁾ This configuration does not support Gurobi.
 
 # Building with CMake
 
@@ -105,8 +105,12 @@ can be specified by the user to be parsed by Drake's CMake and passed to the
 Bazel build.
 
 * [`CMAKE_BUILD_TYPE`](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
-* [`CMAKE_(C|CXX|Fortran)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* [`CMAKE_(C|Fortran)_COMPILER`](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
 * [`CMAKE_INSTALL_PREFIX`](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
+
+The `CMAKE_C_COMPILER` is used to compile both C and C++ code, so must be a
+compiler *driver* than can handle both languages, based on the filename. All
+of the supported compilers (GCC, Clang, Xcode) work fine.
 
 Building and installing Drake also requires a working installation of Python.
 When `Python_EXECUTABLE` is specified, it uses the given path to the Python
@@ -205,9 +209,10 @@ Adjusting closed-source (commercial) software dependencies:
   When `ON`, enables the `GurobiSolver` in the build.
   * When enabled, you must download and install Gurobi 13.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
-    download Gurobi. If Gurobi is not installed to its standard location, you
-    must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
-    in your terminal so that `find_package(Gurobi)` will be able to find it.
+    download Gurobi. On Ubuntu, if Gurobi is not installed to its standard
+    location, you must also
+    `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64` in your terminal
+    so that `find_package(Gurobi)` will be able to find it.
 * `WITH_MOSEK` (default `OFF`).
   When `ON`, enables the `MosekSolver` in the build.
   * When enabled, Drake automatically downloads the MOSEK™ software from

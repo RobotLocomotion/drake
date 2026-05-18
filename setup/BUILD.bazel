@@ -1,56 +1,70 @@
 load("//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_unittest")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
-# Make our package requirements (but not manual scripts) available to
-# downstream projects.
-exports_files([
-    "mac/binary_distribution/Brewfile",
-    "mac/source_distribution/Brewfile",
-    "python/pdm.lock",
-    "python/pyproject.toml",
-    "python/requirements.txt",
-    "ubuntu/binary_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble-clang.txt",
-    "ubuntu/source_distribution/packages-noble-doc-only.txt",
-    "ubuntu/source_distribution/packages-noble-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-noble-test-only.txt",
-    "ubuntu/binary_distribution/packages-resolute.txt",
-    "ubuntu/source_distribution/packages-resolute.txt",
-    "ubuntu/source_distribution/packages-resolute-clang.txt",
-    "ubuntu/source_distribution/packages-resolute-doc-only.txt",
-    "ubuntu/source_distribution/packages-resolute-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-resolute-test-only.txt",
+# Make our prerequisites data (but not scripts) available to downstream
+# projects.
+PREREQUISITES_DATA = glob([
+    "**/Brewfile*",
+    "**/*.lock",
+    "**/*.toml",
+    "**/*.txt",
 ])
+
+exports_files(
+    PREREQUISITES_DATA,
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "prerequisites_data",
+    srcs = PREREQUISITES_DATA,
+    visibility = ["//visibility:public"],
+)
+
+drake_py_library(
+    name = "install_prereqs",
+    srcs = ["install_prereqs.py"],
+    data = [":prerequisites_data"],
+)
 
 install_files(
     name = "install",
     dest = "share/drake/setup",
     files = select({
         "//tools/cc_toolchain:apple": [
-            "mac/binary_distribution/Brewfile",
-            "mac/binary_distribution/install_prereqs.sh",
+            "mac/Brewfile-binary",
+            "mac/install_prereqs_binary.sh",
             "python/pdm.lock",
             "python/pyproject.toml",
             "python/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "ubuntu/binary_distribution/install_prereqs.sh",
-            "ubuntu/binary_distribution/packages-noble.txt",
-            "ubuntu/binary_distribution/packages-resolute.txt",
+            "ubuntu/install_prereqs_binary.sh",
+            "ubuntu/packages-noble-binary.txt",
+            "ubuntu/packages-resolute-binary.txt",
         ],
         "//conditions:default": [],
     }),
     strip_prefix = [
-        "mac/binary_distribution",
-        "ubuntu/binary_distribution",
+        "mac",
+        "ubuntu",
         "python",
     ],
     rename = {
-        "share/drake/setup/install_prereqs.sh": "install_prereqs",
+        "share/drake/setup/install_prereqs_binary.sh": "install_prereqs",
     },
+    visibility = ["//:__pkg__"],
+)
+
+drake_py_unittest(
+    name = "install_prereqs_test",
+    deps = [
+        ":install_prereqs",
+        "@rules_python//python/runfiles",
+    ],
 )
 
 add_lint_tests()

@@ -8,8 +8,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
 #include "drake/multibody/contact_solvers/schur_complement.h"
 #include "drake/multibody/fem/fem_solver.h"
@@ -330,21 +330,21 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Evaluates the partial permutation that maps dof indices of the
    deformable geometry with the given `id` to their corresponding values in the
    constraint problem. */
-  const contact_solvers::internal::PartialPermutation& EvalDofPermutation(
+  const math::internal::PartialPermutation& EvalDofPermutation(
       const systems::Context<T>& context, DeformableBodyIndex index) const;
 
   /* Computes the partial permutation that maps vertex/dof indices of the
    deformable geometry with the given `id` to their corresponding values in the
    constraint problem.
    @pre result != nullptr. */
-  void CalcPermutation(
-      const systems::Context<T>& context, geometry::GeometryId id,
-      contact_solvers::internal::VertexPartialPermutation* result) const;
+  void CalcPermutation(const systems::Context<T>& context,
+                       geometry::GeometryId id,
+                       math::internal::VertexPartialPermutation* result) const;
 
   /* Evaluates the partial permutation that maps vertex indices of the
    deformable geometry with the given `id` to their corresponding values in the
    constraint problem. */
-  const contact_solvers::internal::PartialPermutation& EvalVertexPermutation(
+  const math::internal::PartialPermutation& EvalVertexPermutation(
       const systems::Context<T>& context, geometry::GeometryId id) const;
 
   /* Calc version of EvalParticipatingVelocityMultiplexer(). */

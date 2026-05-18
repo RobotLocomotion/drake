@@ -29,6 +29,10 @@ _SRCS = glob(
         "CoinUtils/src/*.cpp",
     ],
     allow_empty = False,
+    exclude = [
+        "CoinUtils/src/CoinParam.cpp",
+        "CoinUtils/src/CoinParamUtils.cpp",
+    ],
 )
 
 _AUTOCONF_DEFINES = [

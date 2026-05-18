@@ -1554,7 +1554,8 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
   M_BBcm_B += SpatialInertia<double>::PointMass(mass, Vector3d(-a, -b, -c));
   std::tie(abc, X_BA) =
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance,
+                              MatrixCompareType::relative));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(
       CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));

@@ -284,16 +284,23 @@ be used. Refer to the
 [hardware_sim](https://github.com/RobotLocomotion/drake/tree/master/examples/hardware_sim)
 example for details.
 
-If you are using either `RenderEngineGl`, or `RenderEngineVtk` under the
-(non-default) setting `backend = "GLX"`, then you must ensure that prior to
-using Drake the `$DISPLAY` environment variable is set to an available X11
-display server (e.g., `":1"`). If you are running as desktop user (not over
-ssh), then `$DISPLAY` will probably already be set correctly.
+On Linux, if you are using `RenderEngineVtk` under the default setting
+`backend = "EGL"`, then `libEGL.so.1` must be installed. This will typically
+already exist on full desktop installs, but might be missing from cloud images.
+To install on Ubuntu run `sudo apt-get install libegl1`. To install on Amazon
+Linux run `sudo dnf install libglvnd-egl`.
 
-For remote rendering (e.g., in the cloud) we recommend avoiding needing any
-`$DISPLAY` by using only `RenderEngineVtk` and only with its default `backend`.
-If you do need a display in the cloud, you'll need to run a program such as
-`PyVirtualDisplay`, `Xvfb`, or a full `Xorg` server to provide it.
+On Linux, if you are using either (1) `RenderEngineVtk` under the non-default
+setting `backend = "GLX"`, or (2) `RenderEngineGl`, then you must ensure that
+the `$DISPLAY` environment variable is set to an available X11 display server
+(e.g., `":1"`) prior to using Drake. If you are running as a desktop user (not
+over ssh), then `$DISPLAY` will probably already be set correctly.
+
+For remote rendering (e.g., in the cloud), we recommend avoiding needing any
+`$DISPLAY` by using only `RenderEngineVtk` and only with its default `backend`
+instead of `GLX`.  If you do need a `GLX` display in the cloud, you'll need to
+run a program such as `PyVirtualDisplay`, `Xvfb`, or a full `Xorg` server to
+provide it.
 
 # Build problems
 

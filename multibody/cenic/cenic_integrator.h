@@ -10,7 +10,6 @@
 #include "drake/multibody/contact_solvers/icf/icf_solver_parameters.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
-#include "drake/systems/framework/diagram_continuous_state.h"
 
 namespace drake {
 namespace multibody {
@@ -24,7 +23,8 @@ template <typename T>
 struct CenicDiagramStructure {
   /* The plant used as the basis of the convex optimization problem. */
   const MultibodyPlant<T>* plant{};
-  /* The path to the plant from the root diagram. */
+  /* The path to the plant from the root system. An empty path means the root
+  system *is* the plant. */
   SubsystemPath plant_path;
   /* Paths to subsystems, other than the targeted plant, that have continuous
   state. */
@@ -74,8 +74,9 @@ problem [Castro et al., 2023] to advance the system state at each time step. A
 simple half-stepping strategy provides a second-order error estimate for
 automatic step-size selection.
 
-Because CENIC is specific to multibody systems, this integrator requires a
-system diagram with a `MultibodyPlant` subsystem.
+Because CENIC is specific to multibody systems, the system it's asked to
+integrate must either be a MultibodyPlant system or a Diagram that contains a
+MultibodyPlant subsystem, at any level of Diagram nesting.
 
 Running CENIC in fixed-step mode (with error-control disabled) recovers the
 "Lagged" variant of discrete-time ICF simulation from [Castro et al., 2023].
@@ -117,10 +118,11 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   static constexpr double kDefaultAccuracy = 1e-3;
 
   /** Constructs the integrator.
-  @param system The overall system diagram to simulate. Must include exactly one
-                continuous-time MultibodyPlant. Other (discrete-time) plants are
-                allowed in the diagram. This `system` is aliased by this object
-                so must remain alive longer than the integrator.
+  @param system The overall system to simulate. Must either be a MultibodyPlant
+                or a Diagram that contains exactly one continuous-time
+                MultibodyPlant. Other (discrete-time) plants are allowed in a
+                diagram. This `system` is aliased by this object so must remain
+                alive longer than the integrator.
   @param context context for the overall system.  */
   explicit CenicIntegrator(const systems::System<T>& system,
                            systems::Context<T>* context = nullptr);
@@ -148,12 +150,13 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
  private:
   /* Preallocated scratch space. */
   struct Scratch {
-    /* Resizes the scratch space to accommodate the given plant and enclosing
-    diagram. */
+    /* Resizes scratch space to accommodate the given plant and root system. */
     void Resize(const MultibodyPlant<T>& plant,
-                const systems::System<T>& diagram);
+                const systems::System<T>& system);
 
-    /* State-sized variables, x = [q; v] for the plant (not the diagram). */
+    /* State-sized variables, x = [q; v] for the plant only. When the root
+    system is a Diagram, any non-plant continuous state will not be stored
+    here. */
     VectorX<T> v_guess;
     VectorX<T> q;
 
@@ -167,13 +170,13 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
 
     /* Intermediate states for error control, which compares a single large
     step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
-    Note that these states include continuous state for the entire diagram. */
+    These states include continuous state for the entire root system. */
     /* x_{t+h}. */
-    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_full;
+    std::unique_ptr<systems::ContinuousState<T>> x_next_full;
     /* x_{t+h/2}. */
-    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_1;
+    std::unique_ptr<systems::ContinuousState<T>> x_next_half_1;
     /* x_{t+h/2+h/2}. */
-    std::unique_ptr<systems::DiagramContinuousState<T>> x_next_half_2;
+    std::unique_ptr<systems::ContinuousState<T>> x_next_half_2;
   };
 
   /* Data for PrintSimulatorStatistics(). */
@@ -193,10 +196,10 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
   void DoInitialize() final;
 
   /* @warning For `h` == 0, CENIC DoStep() executes a special case that does no
-     integration or state updates, but does reset the error estimate to all 0,
-     and always succeeds.
+  integration or state updates, but does reset the error estimate to all 0,
+  and always succeeds.
 
-    See IntegratorBase::DoStep() for full implementation requirements. */
+  See IntegratorBase::DoStep() for full implementation requirements. */
   bool DoStep(const T& h) final;
 
   /* Solves the ICF problem to compute x_{t+h}.
@@ -207,7 +210,7 @@ class CenicIntegrator final : public systems::IntegratorBase<T> {
                      plant and any external systems. */
   void ComputeNextContinuousState(
       const contact_solvers::icf::internal::IcfModel<T>& model,
-      const VectorX<T>& v_guess, systems::DiagramContinuousState<T>* x_next);
+      const VectorX<T>& v_guess, systems::ContinuousState<T>* x_next);
 
   /* Advances the plant's generalized positions, q = q₀ + h N(q₀) v, taking care
   to handle quaternion DoFs properly.

@@ -173,10 +173,7 @@ class TriangleSurfaceMesh {
    */
   TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& triangles,
                       std::vector<Vector3<T>>&& vertices)
-      : triangles_(std::move(triangles)),
-        vertices_M_(std::move(vertices)),
-        area_(triangles_.size()),  // Pre-allocate here, not yet calculated.
-        face_normals_(triangles_.size()) {  // Pre-allocate, not yet calculated.
+      : triangles_(std::move(triangles)), vertices_M_(std::move(vertices)) {
     if (triangles_.empty()) {
       throw std::logic_error("A mesh must contain at least one triangle");
     }
@@ -199,6 +196,19 @@ class TriangleSurfaceMesh {
     }
     p_MSc_ = X_NM * p_MSc_;
   }
+
+  /** (Internal use only) Given a scale factor, creates a new mesh with scaled
+   vertices.
+
+   Negative scale factors are permitted and correspond to reflections. An odd
+   number of negative components reflects the mesh, reversing the winding order
+   of every triangle so that outward-facing normals remain outward-facing. Zero
+   scale factors are permitted and flatten the mesh along that axis; triangles
+   that collapse to zero area will have zero face normals.
+
+   @param scale  The finite scale factors for the mesh along the Mx, My, and
+                 Mz directions. */
+  TriangleSurfaceMesh<T> CreateScaledMesh(const Vector3<double>& scale) const;
 
   /** (Internal use only) Reverses the ordering of all the triangles' indices
    -- see SurfaceTriangle::ReverseWinding().
@@ -441,6 +451,8 @@ class TriangleSurfaceMesh {
 
 template <class T>
 void TriangleSurfaceMesh<T>::ComputePositionDependentQuantities() {
+  area_.resize(triangles_.size());
+  face_normals_.resize(triangles_.size());
   total_area_ = 0;
   p_MSc_.setZero();
 

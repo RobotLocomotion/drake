@@ -265,7 +265,7 @@ class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
 
     if (config.hydro_geometry) {
       properties.AddProperty(kHydroGroup, kComplianceType,
-                             HydroelasticType::kSoft);
+                             HydroelasticType::kCompliant);
       properties.AddProperty(kHydroGroup, kRezHint, kPointContactRadius);
       properties.AddProperty(kHydroGroup, kElastic, kElasticModulus);
       properties.AddProperty(kMaterialGroup, kHcDissipation, kDissipation);

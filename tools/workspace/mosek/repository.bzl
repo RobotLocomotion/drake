@@ -10,7 +10,6 @@ def mosek_repository(
         #     git grep -l 'https://docs.mosek.com/' | xargs -n1 sed -i \
         #     '/https:\/\/docs\.mosek\.com/s,/11\.0/capi,/11.1/capi,
         # - tools/wheel/image/setup.py must also be updated
-        # - tools/dynamic_analysis/tsan.supp may also need updating
         # - LICENSE.third_party may also need updating to match
         #   https://docs.mosek.com/latest/licensing/license-agreement-info.html
         version = "11.1.2",

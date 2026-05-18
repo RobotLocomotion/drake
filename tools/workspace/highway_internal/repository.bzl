@@ -6,10 +6,9 @@ def highway_internal_repository(
     github_archive(
         name = name,
         repository = "google/highway",
-        commit = "1.3.0",
-        sha256 = "07b3c1ba2c1096878a85a31a5b9b3757427af963b1141ca904db2f9f4afe0bc2",  # noqa
+        commit = "1.4.0",
+        sha256 = "e72241ac9524bb653ae52ced768b508045d4438726a303f10181a38f764a453c",  # noqa
         patches = [
-            ":patches/upstream/build.patch",
             ":patches/disabled_targets.patch",
             ":patches/linkstatic.patch",
             ":patches/target_get_index_inline_always.patch",

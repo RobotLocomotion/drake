@@ -7,11 +7,10 @@ drake-latest-noble.tar.gz must be re-packaged on a noble machine.
 Command line arguments should specify absolute paths, e.g.,
 
     bazel run //tools/release_engineering:repack_deb -- \
-        --tgz "$PWD/drake-latest-noble.tar.gz" \
-        --output-dir "$PWD/drake_deb"
+        --tgz "$PWD/drake-0.0.YYYYMMDD-noble.tar.gz" \
+        --deb "$PWD/drake-dev_0.0.YYYYMMDD-1_amd64-noble.deb"
 
-will repackage the file drake-latest-noble.tar.gz in the current directory,
-and copy the final re-packaged debian archive to the directory $PWD/drake_deb.
+will repackage the --tgz input file, writing to the --deb output file.
 """
 
 import argparse
@@ -45,7 +44,6 @@ def _rlocation(relative_path):
 def _run(args):
     """Implements all steps for repacking tgz => deb."""
     # Find our runfiles.
-    deb_compat = _rlocation("debian/compat")
     deb_control_in = _rlocation("debian/control.in")
     deb_copyright = _rlocation("debian/copyright")
     deb_changelog_in = _rlocation("debian/changelog.in")
@@ -61,7 +59,7 @@ def _run(args):
 
     # Discern the version badging to use, get the dependencies for drake.
     codename = _get_os_release()["VERSION_CODENAME"]
-    assert codename in args.tgz, (
+    assert codename in str(args.tgz), (
         "Debian re-packaging must be performed on the same distribution, but "
         f"'{codename}' was not found in '{args.tgz}'."
     )
@@ -71,7 +69,7 @@ def _run(args):
         version_mtime = version.mtime
 
         packages = archive.getmember(
-            f"drake/share/drake/setup/packages-{codename}.txt"
+            f"drake/share/drake/setup/packages-{codename}-binary.txt"
         )
         packages_txt = archive.extractfile(packages).read().decode("utf-8")
 
@@ -138,7 +136,6 @@ def _run(args):
     os.rename(f"{package_dir}/drake", f"{package_dir}/opt/drake")
 
     # Overwrite some metadata.
-    shutil.copy(deb_compat, f"{package_dir}/debian/")
     with open(f"{package_dir}/debian/control", "w", encoding="utf-8") as f:
         f.write(deb_control_contents)
     shutil.copy(deb_copyright, f"{package_dir}/debian/")
@@ -149,9 +146,7 @@ def _run(args):
     subprocess.check_call(
         ["fakeroot", "debian/rules", "binary"], cwd=package_dir
     )
-    shutil.move(
-        f"{cwd}/drake-dev_{drake_version}-1_{arch}.deb", f"{args.output_dir}/"
-    )
+    shutil.move(f"{cwd}/drake-dev_{drake_version}-1_{arch}.deb", args.deb)
 
 
 def main():
@@ -165,31 +160,20 @@ def main():
         required=True,
         help="the foo.tar.gz filename to be re-packaged",
     )
-    # By default, place the final .deb in the working directory the user
-    # ran the bazel command from in their terminal.
-    output_default = os.path.realpath(os.environ["BUILD_WORKING_DIRECTORY"])
     parser.add_argument(
-        "--output-dir",
-        metavar="DIR",
-        default=output_default,
-        help=f"directory to place *.deb output (default: {output_default})",
+        "--deb",
+        type=str,
+        required=True,
+        help="the foo.deb filename to create",
     )
     args = parser.parse_args()
-    args.tgz = os.path.realpath(args.tgz)
-    args.output_dir = os.path.realpath(args.output_dir)
+    args.tgz = Path(args.tgz).resolve()
+    args.deb = Path(args.deb).resolve()
 
     # Fail early if we cannot find the input / output locations rather than
     # failing on trying to open the file or move it at the end.
-    if not os.path.isfile(args.tgz):
-        parser.error(
-            f"{args.tgz} is not a file, please use absolute paths for command "
-            "line arguments."
-        )
-    if not os.path.isdir(args.output_dir):
-        parser.error(
-            f"{args.output_dir} is not a directory, please use absolute paths "
-            "for command line arguments."
-        )
+    assert args.tgz.exists(), args.tgz
+    assert args.deb.parent.exists(), args.deb.parent
 
     with tempfile.TemporaryDirectory(prefix="drake-repack-") as tempdir:
         args.tempdir = tempdir

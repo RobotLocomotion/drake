@@ -13,6 +13,11 @@ class DrakePythonDirInstallTest(unittest.TestCase):
 
         cmake_prefix_path = install_test_helper.get_install_dir()
 
+        venv_pythonpath = ""
+        for item in sys.path:
+            if "/venv.drake/" in item:
+                venv_pythonpath = item
+
         cmake_content = """
             cmake_minimum_required(VERSION 3.20...4.3)
             project(drake_python_dir_install_test)
@@ -30,7 +35,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
 
             # PYTHON_DIR Sanity check
             execute_process(
-              COMMAND ${{CMAKE_COMMAND}} -E env PYTHONPATH=""
+              COMMAND ${{CMAKE_COMMAND}} -E env PYTHONPATH="{venv_pythonpath}"
                 {python_exe} -c "import pydrake.all"
               ERROR_QUIET
               RESULT_VARIABLE _IMPORT_RESULT)
@@ -41,7 +46,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
             # PYTHON_DIR Actual test
             execute_process(
               COMMAND ${{CMAKE_COMMAND}} -E env
-                PYTHONPATH=${{drake_PYTHON_DIR}}
+                PYTHONPATH={venv_pythonpath}:${{drake_PYTHON_DIR}}
                 {python_exe} -c "import pydrake.all"
               RESULT_VARIABLE _IMPORT_RESULT)
             if(NOT 0 EQUAL _IMPORT_RESULT)
@@ -52,6 +57,7 @@ class DrakePythonDirInstallTest(unittest.TestCase):
         """.format(
             cmake_prefix_path=cmake_prefix_path,
             python_exe=sys.executable,
+            venv_pythonpath=venv_pythonpath,
             py_major=sys.version_info.major,
             py_minor=sys.version_info.minor,
         )

@@ -1,27 +1,24 @@
-#!/bin/bash
-#
-# Install development and runtime prerequisites for both binary and source
-# distributions of Drake on macOS.
+# Install build prerequisites (and optionally developer prerequisites) for Drake
+# on macOS.
 
 set -euxo pipefail
 
-binary_distribution_args=(--without-python-dependencies)
-source_distribution_args=()
+# ============================ Command line options ============================
+
+binary_args=(--without-python-dependencies)
+developer=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
-      source_distribution_args+=(--developer)
-      ;;
-    # Do NOT install prerequisites that are only needed to build and/or run
-    # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel { build, run } //:install.
-    --without-test-only)
-      source_distribution_args+=(--without-test-only)
+      developer=1
       ;;
     # Do NOT call brew update during execution of this script.
     --without-update)
-      binary_distribution_args+=(--without-update)
+      binary_args+=(--without-update)
+      ;;
+    # Ignored for compatibility with Ubuntu.
+    -y)
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -30,23 +27,24 @@ while [ "${1:-}" != "" ]; do
   shift
 done
 
+# =============================== Binary prereqs ===============================
+
 # Dependencies that are installed by the following sourced script that are
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
-
-# N.B. We need `${var:-}` here because mac's older version of bash does
+#
+# N.B. We need `${var:0}` here because macOS's older version of bash does
 # not seem to be able to cope with an empty array.
+source "${BASH_SOURCE%/*}/install_prereqs_binary.sh" "${binary_args[@]:0}"
 
-source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-  "${binary_distribution_args[@]:-}"
+# ================================ Build prereqs ===============================
 
-# The following additional dependencies are only needed when developing with
-# source distributions.
+brew bundle --file="${BASH_SOURCE%/*}/Brewfile-build"
 
-source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-  "${source_distribution_args[@]:-}"
+# ============================== Developer prereqs =============================
 
-# The preceding only needs to be run once per machine. The following sourced
-# script should be run once per user who develops with source distributions.
+if [[ "${developer}" -eq 1 ]]; then
+  brew bundle --file="${BASH_SOURCE%/*}/Brewfile-developer"
+fi
 
-source "${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+# ================================== Finished ==================================

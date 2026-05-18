@@ -8,8 +8,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
+#include "drake/math/partial_permutation.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
@@ -288,7 +288,7 @@ class SapConstraint {
       second_clique() < clique_permutation.domain_size().
   */
   std::unique_ptr<SapConstraint<T>> MakeReduced(
-      const PartialPermutation& clique_permutation,
+      const math::internal::PartialPermutation& clique_permutation,
       const std::vector<std::vector<int>>& per_clique_known_dofs) const;
 
  protected:

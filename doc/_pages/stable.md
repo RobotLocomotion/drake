@@ -25,7 +25,10 @@ highlight the change when possible (`[[deprecated]]` for C++; `warnings.warn`
 for Python). However, those mechanisms will not always trigger in every case,
 and some deprecations will reach beyond what those tools can denote.
 Therefore, we still recommend that you monitor the release notes as the final
-arbiter of deprecation announcements.
+arbiter of deprecation announcements. The severity of deprecation warnings can
+be controlled; see the
+[Deprecation Severity Controls](/doxygen_cxx/group__deprecation__severity.html)
+documentation for details.
 
 Due to our 3-month announcement window, we recommend upgrading your pinned
 version of Drake at least that frequently. If you wish to upgrade less
@@ -64,6 +67,7 @@ header files are distributed in a
 * Excluding the `drake/examples/...` directory tree.
 * Excluding code within `namespace internal`.
 * Excluding code documented as "internal use only".
+* Excluding code within `namespace experimental`.
 * Excluding code documented with an "experimental" warning.
 
 In particular, note that any
@@ -81,6 +85,7 @@ The Python Stable API covers all Python library code under `import drake` or
   use only" by convention of
   [PEP-8](https://www.python.org/dev/peps/pep-0008/#descriptive-naming-styles).
 * Excluding code documented as "internal use only".
+* Excluding code within an `experimental` module.
 * Excluding code documented with an "experimental" warning.
 * Excluding the "all" modules such as `pydrake.all`, `pydrake.systems.all`,
   etc. These are intended to be shortcuts for temporary hacking only, and so

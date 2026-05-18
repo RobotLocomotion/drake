@@ -136,6 +136,9 @@ bazel test --config lint //...                       # Only run style checks; do
   entire command. For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 
+On Linux, OpenMP is enabled by default; to disable it, use
+`--config=without_openmp`.
+
 ## Running with Flags
 
 ### Example programs
@@ -204,29 +207,34 @@ license seats you want to use.
 
 ## Gurobi
 
-### Install on Ubuntu
+Drake supports any patch version of Gurobi 13.0. At time of writing, the most
+recent available version was 13.0.1; if using a newer patch version, the paths
+and file names below should be adjusted accordingly.
+
+The first steps are to:
 
 1. Register for an account on [https://www.gurobi.com](https://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi13.0.1_linux64.tar.gz``. You may need to manually edit the
+
+From there, follow the platform-specific instructions below.
+
+### Install on Ubuntu
+
+1. Download ``gurobi13.0.1_linux64.tar.gz``. You may need to manually edit the
    URL to get the correct version.
-5. Unzip it. We suggest that you use ``/opt/gurobi1301`` to simplify working
+2. Unzip it. We suggest that you use ``/opt/gurobi1301`` to simplify working
    with Drake installations.
-6. If you unzipped into a location other than ``/opt/gurobi1301``, then call
+3. If you unzipped into a location other than ``/opt/gurobi1301``, then call
    ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used,
    where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
-Drake supports any patch version of Gurobi 13.0. At time of writing, the most
-recent available version was 13.0.1; if using a newer patch version, the paths
-and file names above should be adjusted accordingly.
-
 ### Install on macOS
 
-1. Register for an account on [http://www.gurobi.com](http://www.gurobi.com).
-2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi13.0.1_macos2_universal.pkg``.
+Download and install ``gurobi13.0.1_macos2_universal.pkg``. It should be
+installed to `/Library/gurobi1301`.
+
+### Test
 
 To confirm that your setup was successful, run a test that requires Gurobi:
 
@@ -234,7 +242,7 @@ To confirm that your setup was successful, run a test that requires Gurobi:
 
 ## MOSEK
 
-The Drake Bazel build system downloads MOSEK™ 10.0.18 automatically. No manual
+The Drake Bazel build system downloads MOSEK™ 11.1 automatically. No manual
 installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
@@ -255,13 +263,13 @@ a private RobotLocomotion git repository.
    named ``snopt7.4.tar.gz``).
 2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.4.tar.gz``
 
-Using the RobotLocomotion git repository
+### Using the RobotLocomotion git repository
 
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. [Set up SSH access to github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/).
 3. ``export SNOPT_PATH=git``
 
-Test the build (for either mechanism)
+### Test the build (for either mechanism)
 
 To confirm that your setup was successful, run a test that requires SNOPT:
 
@@ -307,7 +315,7 @@ For each test program, individual coverage reports are written to per-target
 directories.  Use the ``kcov_tool`` to merge coverage data into a new directory:
 
 ```
-tools/dynamic_analysis/kcov_tool merge [OUTPUT-DIR]
+tools/kcov/kcov_tool merge [OUTPUT-DIR]
 ```
 
 To view the merged data, browse to ``index.html`` in the OUTPUT-DIR.
@@ -318,7 +326,7 @@ data would be scattered within the directory tree linked as
 ``bazel-testlogs``. To clear out old data, use ``kcov_tool clean``:
 
 ```
-tools/dynamic_analysis/kcov_tool clean
+tools/kcov/kcov_tool clean
 ```
 
 ### Drake bazel rules and kcov
@@ -331,15 +339,10 @@ trying to use `kcov` locally on specific tests. For example:
 bazel test --config=kcov //common:temp_directory_test
 ```
 
-results in:
-```
-ERROR: No test targets were found, yet testing was requested
-```
+results in "... target platform didn't satisfy constraint ...".
 
-To force execution with kcov, add an empty `test_tag_filters` option:
-```
-bazel test --config=kcov --test_tag_filters= //common:temp_directory_test
-```
+To allow execution with kcov, in the `BUILD.bazel` file rule for that test,
+remove the `shard_count` and/or `timeout` argument(s) that are suppressing kcov.
 
 ## docker
 

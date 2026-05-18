@@ -1,5 +1,7 @@
 [ipopt_internal] Fix thread-safety of global variable
 
+https://github.com/coin-or/Ipopt/pull/857
+
 --- src/Algorithm/IpIpoptAlg.cpp
 +++ src/Algorithm/IpIpoptAlg.cpp
 @@ -4,6 +4,8 @@

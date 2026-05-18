@@ -210,11 +210,36 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "coupler_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
     name = "eigen_pool_test",
     deps = [
         ":eigen_pool",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gain_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 
@@ -256,6 +281,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 
@@ -266,6 +292,28 @@ drake_cc_googletest(
         ":icf_model",
         ":icf_solver",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "limit_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "patch_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        "//common/test_utilities:limit_malloc",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 
@@ -284,17 +332,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "weld_constraints_pool_test",
-    deps = [
-        ":icf_data",
-        ":icf_model",
-        ":icf_search_direction_data",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
     name = "weld_constraint_init_and_sim_test",
     deps = [
         "//multibody/cenic:cenic_integrator",
@@ -303,6 +340,19 @@ drake_cc_googletest(
         "//multibody/plant:multibody_plant_config_functions",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "weld_constraints_pool_test",
+    deps = [
+        ":icf_data",
+        ":icf_model",
+        ":icf_search_direction_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:gradient",
+        "//multibody/contact_solvers/icf/test_utilities:icf_model_test_helpers",
     ],
 )
 

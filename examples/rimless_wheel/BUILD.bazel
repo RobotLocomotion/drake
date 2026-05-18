@@ -61,8 +61,6 @@ drake_cc_library(
 drake_cc_binary(
     name = "simulate",
     srcs = ["simulate.cc"],
-    add_test_rule = 1,
-    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":rimless_wheel",
         ":rimless_wheel_geometry",
@@ -71,6 +69,8 @@ drake_cc_binary(
         "//systems/framework:diagram_builder",
         "@gflags",
     ],
+    add_test_rule = True,
+    test_rule_args = ["--target_realtime_rate=0.0"],
 )
 
 drake_cc_googletest(

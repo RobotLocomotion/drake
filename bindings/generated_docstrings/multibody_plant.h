@@ -186,32 +186,6 @@ This method must be called pre-Finalize.
 Raises:
     RuntimeError if ``plant`` is finalized or if time_step is changed.)""";
       } ApplyMultibodyPlantConfig;
-      // Symbol: drake::multibody::BaseBodyJointType
-      struct /* BaseBodyJointType */ {
-        // Source: drake/multibody/plant/multibody_plant.h
-        const char* doc =
-R"""(The kind of joint to be used to connect base bodies to world at
-Finalize(). See mbp_working_with_free_bodies "Working with free
-bodies" for definitions and discussion.
-
-See also:
-    SetBaseBodyJointType() for details.)""";
-        // Symbol: drake::multibody::BaseBodyJointType::kQuaternionFloatingJoint
-        struct /* kQuaternionFloatingJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc = R"""(6 dofs, unrestricted orientation.)""";
-        } kQuaternionFloatingJoint;
-        // Symbol: drake::multibody::BaseBodyJointType::kRpyFloatingJoint
-        struct /* kRpyFloatingJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc = R"""(6 dofs using 3 angles; has singularity.)""";
-        } kRpyFloatingJoint;
-        // Symbol: drake::multibody::BaseBodyJointType::kWeldJoint
-        struct /* kWeldJoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h
-          const char* doc = R"""(0 dofs, fixed to World.)""";
-        } kWeldJoint;
-      } BaseBodyJointType;
       // Symbol: drake::multibody::CalcContactFrictionFromSurfaceProperties
       struct /* CalcContactFrictionFromSurfaceProperties */ {
         // Source: drake/multibody/plant/coulomb_friction.h
@@ -4968,7 +4942,7 @@ be used by Finalize(); post-finalize it returns the joint type that
 *was* used if there were any base bodies in need of a joint.
 
 See also:
-    SetBaseBodyJointType())""";
+    SetBaseBodyJointType(), Finalize())""";
         } GetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesKinematicallyAffectedBy
         struct /* GetBodiesKinematicallyAffectedBy */ {
@@ -6625,7 +6599,10 @@ Parameter ``model_instance``:
     is to be applied.
 
 Raises:
-    RuntimeError if called after Finalize().)""";
+    RuntimeError if called after Finalize().
+
+See also:
+    GetBaseBodyJointType(), Finalize())""";
         } SetBaseBodyJointType;
         // Symbol: drake::multibody::MultibodyPlant::SetConstraintActiveStatus
         struct /* SetConstraintActiveStatus */ {

@@ -113,9 +113,13 @@ the main body of the document:
 2. Launch the staging builds for that git commit sha:
    1. Open the following Jenkins jobs (e.g., each in its own
       new window, so you can copy-and-paste sha1 and version easily):
-      - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
+      - [Linux x86_64 Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-wheel-staging-release/)
+      - [Linux arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm-noble-unprovisioned-gcc-wheel-staging-release/)
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-wheel-staging-release/)
-      - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Noble x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Noble arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm-noble-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Resolute x86_64 Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-resolute-unprovisioned-gcc-cmake-staging-packaging/)
+      - [Resolute arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-arm-resolute-unprovisioned-gcc-cmake-staging-packaging/)
       - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sequoia-clang-cmake-staging-packaging/)
    2. In the upper right, click "sign in" (unless you're already signed in). This
       will use your GitHub credentials.
@@ -157,13 +161,14 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **27** release files from
+      them." and then choose for upload the **54** release files from
       ``/tmp/drake-release/v1.N.0/...``:
-      - 6: 2 binary `.tar.gz` + 4 checksums
       - 3: 1 source `.tar.gz` + 2 checksums
-      - 3: 1 `.deb` + 2 checksums
-      - 9: 3 linux `.whl` + 6 checksums
-      - 6: 2 macOS arm `.whl` + 4 checksums
+      - 12: 4 linux binary `.tar.gz` + 8 checksums ({noble, resolute} x {amd64, arm64})
+      - 3: 1 macOS arm binary `.tar.gz` + 2 checksums
+      - 12: 4 `.deb` + 8 checksums ({noble, resolute} x {amd64, arm64})
+      - 18: 6 linux `.whl` + 12 checksums ({3.12, 3.13, 3.14} x {x86_64, aarch64})
+      - 6: 2 macOS arm `.whl` + 4 checksums ({3.13, 3.14})
       * Note that with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on

@@ -57,6 +57,7 @@ if [[ -z "${repository}" ]]; then
     echo "error: --repository is required"
     exit 1
 fi
+readonly major_minor=$(${python} -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
 # Place the venv(s) in a sibling directory to the output base. That should be a
 # suitable disk location for build artifacts, but without polluting the actual
@@ -101,6 +102,14 @@ readonly install_args=( $(cat "${repository}/@pdm-install-args") )
     --clean-unselected \
     "${install_args[@]}"
 
+# Create a trampoline that sets PYTHONPATH before running.
+cat > "${venv_drake}/bin/run-python3" <<EOF
+#!/bin/sh
+export PYTHONPATH="${venv_drake}/lib/python${major_minor}/site-packages"
+exec "${python}" "\$@"
+EOF
+chmod +x "${venv_drake}/bin/run-python3"
+
 # Compute the checksum of our requirements file.
 readonly checksum=$(cd "${project}" && "${python}" <<EOF
 import hashlib
@@ -121,7 +130,7 @@ fi
 ln -nsf "${venv_drake}" "${repository}/${checksum}"
 
 # Tell repository.bzl which path to use.
-echo -n "${checksum}/bin/python3" > "${repository}/venv_python3.txt"
+echo -n "${checksum}/bin/run-python3" > "${repository}/venv_python3.txt"
 
 # Symlink our venv path for wheel builds to use (if requested; see
 # documentation of --symlink, above).

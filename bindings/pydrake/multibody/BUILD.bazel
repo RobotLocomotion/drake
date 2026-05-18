@@ -156,6 +156,7 @@ drake_pybind_library(
     name = "plant_py",
     cc_deps = [
         "//bindings/generated_docstrings:multibody_plant",
+        "//bindings/generated_docstrings:multibody_tree",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -326,11 +327,11 @@ drake_py_binary(
 
 drake_jupyter_py_binary(
     name = "examples/door_hinge_inspector",
-    add_test_rule = 1,
     deps = [
         ":plant_py",
         ":tree_py",
     ],
+    add_test_rule = True,
 )
 
 install_files(
@@ -401,7 +402,6 @@ filegroup(
 
 drake_jupyter_py_binary(
     name = "examples/jupyter_widgets_examples",
-    add_test_rule = 1,
     data = [
         "@drake_models//:iiwa_description",
     ],
@@ -414,6 +414,7 @@ drake_jupyter_py_binary(
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:rendering_py",
     ],
+    add_test_rule = True,
 )
 
 drake_py_unittest(

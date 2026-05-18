@@ -80,7 +80,7 @@ geometry::ProximityProperties ParseProximityProperties(
   if (is_rigid) {
     properties.AddProperty(kHydroGroup, kComplianceType, HT::kRigid);
   } else if (is_compliant) {
-    properties.AddProperty(kHydroGroup, kComplianceType, HT::kSoft);
+    properties.AddProperty(kHydroGroup, kComplianceType, HT::kCompliant);
   }
 
   {

@@ -34,8 +34,7 @@ WITH_MOSEK=ON
 # MOSEK is not currently supported for Linux aarch64 wheels.
 [ "$(arch)" == "aarch64" ] && WITH_MOSEK=OFF
 
-# Install Drake using our wheel-build-specific Python interpreter and
-# C/CXX/Fortran compilers.
+# Install Drake using our wheel-build-specific Python interpreter and compilers.
 # N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
 cmake ../drake-src \
     -DWITH_MOSEK="${WITH_MOSEK}" \
@@ -53,6 +52,5 @@ cmake ../drake-src \
     -DCMAKE_INSTALL_PREFIX=/tmp/drake-wheel-build/drake-dist \
     -DPython_EXECUTABLE=/usr/local/bin/python \
     -DCMAKE_C_COMPILER=/opt/rh/gcc-toolset-14/root/usr/bin/gcc \
-    -DCMAKE_CXX_COMPILER=/opt/rh/gcc-toolset-14/root/usr/bin/g++ \
     -DCMAKE_Fortran_COMPILER=/opt/rh/gcc-toolset-14/root/usr/bin/gfortran
 make install

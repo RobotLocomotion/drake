@@ -548,7 +548,7 @@ drake_cc_googletest(
     name = "simulator_denorm_test",
     # Valgrind core does not support the floating point register
     # instructions that this test uses.
-    tags = ["no_valgrind_tools"],
+    opt_out_conditions = ["//tools/valgrind:enabled"],
     deps = [
         ":simulator",
     ],
@@ -651,13 +651,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
-    timeout = "moderate",
-    shard_count = 2,
     # Adding cache invalidation made this take too long with Valgrind.
     # See Drake issue #9261.
-    tags = [
-        "no_memcheck",
-    ],
+    opt_out_conditions = ["//tools/valgrind:enabled"],
+    timeout = "moderate",
+    shard_count = 2,
     deps = [
         ":implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",
@@ -758,10 +756,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",
@@ -773,10 +769,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta5_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
-    # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
+    # This test is prohibitively slow in debug builds.
+    opt_out_conditions = ["//tools:unoptimized"],
     deps = [
         ":runge_kutta5_integrator",
         "//common/test_utilities:eigen_matrix_compare",

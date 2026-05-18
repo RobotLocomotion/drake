@@ -54,6 +54,18 @@ GTEST_TEST(MakeCenicIntegratorTest, SuccessNested) {
   EXPECT_EQ(&dut_plant, &diagram_plant);
 }
 
+GTEST_TEST(MakeCenicIntegratorTest, SuccessUnnested) {
+  MultibodyPlant<double> plant(0.0);
+  plant.Finalize();
+
+  std::unique_ptr<IntegratorBase<double>> dut = MakeCenicIntegrator(plant);
+  auto& cenic = dynamic_cast<CenicIntegrator<double>&>(*dut);
+
+  // The CENIC plant is the same object as the offered plant.
+  const auto& dut_plant = cenic.plant();
+  EXPECT_EQ(&dut_plant, &plant);
+}
+
 GTEST_TEST(MakeCenicIntegratorTest, FailureDiscrete) {
   RobotDiagramBuilder<double> builder;
   std::unique_ptr<RobotDiagram<double>> robot_diagram = builder.Build();
@@ -62,13 +74,13 @@ GTEST_TEST(MakeCenicIntegratorTest, FailureDiscrete) {
       ".*requires.*continuous.*found.*time_step=0.001.*");
 }
 
-GTEST_TEST(MakeCenicIntegratorTest, FailureNonDiagram) {
+GTEST_TEST(MakeCenicIntegratorTest, FailureNoDiagramNoPlant) {
   ConstantVectorSource<double> system(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(MakeCenicIntegrator(system),
-                              ".*must be given a Diagram.*");
+                              ".*zero.*continuous.*");
 }
 
-GTEST_TEST(MakeCenicIntegratorTest, FailureNoPlant) {
+GTEST_TEST(MakeCenicIntegratorTest, FailureDiagramNoPlant) {
   DiagramBuilder<double> builder;
   builder.AddSystem<ConstantVectorSource>(0.0);
   std::unique_ptr<Diagram<double>> diagram = builder.Build();

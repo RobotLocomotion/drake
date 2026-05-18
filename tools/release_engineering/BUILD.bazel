@@ -37,7 +37,6 @@ drake_py_binary(
     srcs = ["repack_deb.py"],
     data = [
         "debian/changelog.in",
-        "debian/compat",
         "debian/control.in",
         "debian/copyright",
     ],
