@@ -118,10 +118,10 @@ files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
 # Upgrade the uv-managed lockfiles.
 readonly uv_hubs=("lief" "mypy")
-for hub in "${hubs[@]}"; do
-    requirements="./setup/python/${hub}/requirements.txt"
+for hub in "${uv_hubs[@]}"; do
+    hub_requirements="./setup/python/${hub}/requirements.txt"
     bazel run //setup/python/${hub}:lock.update
-    files_to_commit+=( "$(git diff --name-only HEAD -- "${requirements}")" )
+    files_to_commit+=( "$(git diff --name-only HEAD -- "${hub_requirements}")" )
 done
 
 # If committing, do the commit.
