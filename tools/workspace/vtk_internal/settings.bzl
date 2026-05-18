@@ -313,7 +313,6 @@ MODULE_SETTINGS = {
             "Filters/General/vtkRectilinearGridToPointSet.cxx",
             "Filters/General/vtkSphericalHarmonics.cxx",
             "Filters/General/vtkTransformFilter.cxx",
-            "Filters/General/vtkTransformPolyDataFilter.cxx",
             "Filters/General/vtkVertexGlyphFilter.cxx",
         ],
         "module_deps_ignore": [

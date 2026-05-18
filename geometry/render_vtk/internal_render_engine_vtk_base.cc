@@ -354,8 +354,8 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
   // Scale sphere by each axis extent to generate the ellipsoid.
   vtkNew<vtkTransform> transform;
   transform->Scale(ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-  vtkSmartPointer<vtkTransformPolyDataFilter> transform_filter =
-      vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+  vtkSmartPointer<vtkTransformFilter> transform_filter =
+      vtkSmartPointer<vtkTransformFilter>::New();
   transform_filter->SetInputConnection(vtk_ellipsoid->GetOutputPort());
   transform_filter->SetTransform(transform);
   transform_filter->Update();
@@ -397,7 +397,7 @@ vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
   rotate_around_Z->RotateY(90);
   rotate->Concatenate(rotate_around_Z);
 
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  vtkNew<vtkTransformFilter> transform_filter;
   transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
   transform_filter->SetTransform(rotate);
   transform_filter->Update();

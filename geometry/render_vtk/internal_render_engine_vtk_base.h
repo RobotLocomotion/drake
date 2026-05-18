@@ -5,7 +5,7 @@
 #include <vtkSmartPointer.h>             // vtkCommonCore
 #include <vtkTexturedSphereSource.h>     // vtkFiltersSources
 #include <vtkTransform.h>                // vtkCommonTransforms
-#include <vtkTransformPolyDataFilter.h>  // vtkFiltersGeneral
+#include <vtkTransformFilter.h>          // vtkFiltersGeneral
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_mesh.h"

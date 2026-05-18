@@ -40,7 +40,7 @@
 #include <vtkTexturedSphereSource.h>     // vtkFiltersSources
 #include <vtkToneMappingPass.h>          // vtkRenderingCore
 #include <vtkTransform.h>                // vtkCommonTransforms
-#include <vtkTransformPolyDataFilter.h>  // vtkFiltersGeneral
+#include <vtkTransformFilter.h>  // vtkFiltersGeneral
 #include <vtkTranslucentPass.h>          // vtkRenderingCore
 
 #include "drake/common/diagnostic_policy.h"
@@ -728,7 +728,7 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
 
   vtkNew<vtkTransform> transform;
   transform->Scale(scale.x(), scale.y(), scale.z());
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  vtkNew<vtkTransformFilter> transform_filter;
   transform_filter->SetInputConnection(mesh_source->GetOutputPort());
   transform_filter->SetTransform(transform.GetPointer());
   transform_filter->Update();
@@ -1469,7 +1469,7 @@ void RenderEngineVtk::ImplementCachedMesh(const std::string& cache_key,
     } else {
       vtkNew<vtkTransform> transform;
       transform->Scale(scale.x(), scale.y(), scale.z());
-      vtkNew<vtkTransformPolyDataFilter> transform_filter;
+      vtkNew<vtkTransformFilter> transform_filter;
       transform_filter->SetInputConnection(part.vtk_source->GetOutputPort());
       transform_filter->SetTransform(transform.GetPointer());
       transform_filter->Update();
