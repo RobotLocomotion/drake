@@ -29,7 +29,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with weld constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnWeldConstrainedCalcData) {
+GTEST_TEST(WeldConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddWeldConstraints(&model);
@@ -54,7 +54,7 @@ GTEST_TEST(IcfModel, LimitMallocOnWeldConstrainedCalcData) {
 }
 
 /* Verifies that weld constraints produce correct data. */
-GTEST_TEST(IcfModel, WeldConstraint) {
+GTEST_TEST(WeldConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();

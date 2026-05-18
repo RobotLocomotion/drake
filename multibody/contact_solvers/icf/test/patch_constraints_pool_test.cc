@@ -18,7 +18,7 @@ namespace {
 
 /* Checks that model.CalcData does not incur any heap allocations for a model
 with contact constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnPatchConstrainedCalcData) {
+GTEST_TEST(PatchConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddPatchConstraints(&model);

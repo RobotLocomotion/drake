@@ -25,7 +25,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 /* Checks that model.CalcData does not incur any heap allocations on a problem
 with gain constraints. */
-GTEST_TEST(IcfModel, LimitMallocOnGainConstrainedCalcData) {
+GTEST_TEST(GainConstraintsPool, LimitMallocOnCalcData) {
   IcfModel<double> model;
   MakeUnconstrainedModel(&model);
   AddGainConstraints(&model);
@@ -47,7 +47,7 @@ GTEST_TEST(IcfModel, LimitMallocOnGainConstrainedCalcData) {
 }
 
 /* Verifies that gain constraints produce correct data. */
-GTEST_TEST(IcfModel, GainConstraint) {
+GTEST_TEST(GainConstraintsPool, Data) {
   IcfModel<AutoDiffXd> model;
   MakeUnconstrainedModel(&model);
   model.SetSparsityPattern();
