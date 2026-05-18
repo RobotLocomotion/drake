@@ -14,6 +14,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/value.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
@@ -643,6 +644,17 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
         return MakeHydroMesh(g_id, inspector, inspector.GetPoseInFrame(g_id),
                              color);
       }
+    }
+    if (params.role == Role::kIllustration &&
+        props->HasProperty("phong", "diffuse_map")) {
+      static logging::Warn log_once(
+          "DrakeVisualizer does not currently support the ('phong', "
+          "'diffuse_map') property (see issue #19077). This warning is only "
+          "shown on the first encounter, which occurred with the geometry "
+          "named '{}' on frame '{}'; further encounters will be silently "
+          "ignored.",
+          inspector.GetName(g_id),
+          inspector.GetName(inspector.GetFrameId(g_id)));
     }
     return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), params,
                                 color);
