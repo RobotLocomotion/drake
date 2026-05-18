@@ -2,6 +2,7 @@
 Provides general visualization utilities. This is NOT related to `rendering`.
 """
 
+import os
 from tempfile import NamedTemporaryFile
 
 from pydrake.common import temp_directory
@@ -16,7 +17,7 @@ try:
     # IPython module may not be available; in which case, we're definitely
     # *not* running as a notebook.
     from IPython import get_ipython
-    from IPython.display import SVG, display
+    from IPython.display import SVG, Image, display
 
     running_as_notebook = get_ipython() and hasattr(get_ipython(), "kernel")
 except ModuleNotFoundError:
@@ -71,7 +72,9 @@ def plot_graphviz(dot_text):
         # Handle this case for now.
         assert len(g) == 1
         g = g[0]
-    if running_as_notebook:
+    if "DRAKE_IS_BUILDING_DOCUMENTATION" in os.environ:
+        return display(Image(g.create_png()))
+    elif running_as_notebook:
         return display(SVG(g.create_svg()))
     else:
         f = NamedTemporaryFile(suffix=".png", dir=temp_directory())
