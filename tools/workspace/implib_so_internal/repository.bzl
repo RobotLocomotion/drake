@@ -6,8 +6,8 @@ def implib_so_internal_repository(
     github_archive(
         name = name,
         repository = "TaylorSasser/Implib.so",
-        commit = "5c3633d582ec923cdc1a032d48ef7053d4c34e18",
-        sha256 = "96f9dd4075993015932e68e9c6b610ef96469533a82ded2e39544ca6a6642fa0",  # noqa
+        commit = "3a94ebf1b26e021cfa8c2202e4f4c7b31eab8eec",
+        sha256 = "32aba7aed862d34b8b1e5353c2a69479a61b4e88b7e9388c634161827cb16a40",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
