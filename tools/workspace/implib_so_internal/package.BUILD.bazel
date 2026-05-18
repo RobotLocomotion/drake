@@ -1,7 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:py.bzl", "py_binary")
-load("@drake_uv//:requirements.bzl", uv_requirement = "requirement")
+load("@drake_lief//:requirements.bzl", lief_requirement = "requirement")
 
 py_binary(
     name = "gen",
@@ -15,7 +15,7 @@ py_binary(
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
-        uv_requirement("lief"),
+        lief_requirement("lief"),
     ],
 )
 

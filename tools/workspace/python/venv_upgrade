@@ -5,8 +5,8 @@
 # - Users can make edits to drake/setup/python/pyproject.toml, and then
 #   run this script to compile it to drake/setup/python/pdm.lock.
 #
-# - Users can make edits to drake/setup/python/uv/requirements.in, and then
-#   run this script to compile it to drake/setup/python/uv/requirements.txt.
+# - Users can make edits to drake/setup/python/{hub}/requirements.in, and then
+#   run this script to compile it to drake/setup/python/{hub}/requirements.txt.
 #
 # The --reuse option may be given to apply changes to pyproject.toml while
 # attempting to preserve existing version pins.
@@ -116,10 +116,13 @@ done
 # Check for changes to the pdm lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
-# Upgrade the uv-managed lockfile.
-readonly uv_requirements="./setup/python/uv/requirements.txt"
-bazel run //setup/python/uv:lock.update
-files_to_commit+=( "$(git diff --name-only HEAD -- "${uv_requirements}")" )
+# Upgrade the uv-managed lockfiles.
+readonly uv_hubs=("lief" "mypy")
+for hub in "${hubs[@]}"; do
+    requirements="./setup/python/${hub}/requirements.txt"
+    bazel run //setup/python/${hub}:lock.update
+    files_to_commit+=( "$(git diff --name-only HEAD -- "${requirements}")" )
+done
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
