@@ -1421,12 +1421,11 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   // We don't warn until after all the error checking has already happened.
   if (properties.HasProperty("phong", "diffuse_map")) {
     static logging::Warn log_once(
-        "Explicitly defined values for the ('phong', 'diffuse_map') property "
-        "are not currently used in illustration roles -- only perception "
-        "roles. This warning is only shown during SceneGraph's first encounter "
-        "with an ignored 'diffuse_map', which occurred with the geometry named "
-        "'{}' on a geometry frame named '{}'; "
-        "further encounters will be silently ignored.",
+        "The ('phong', 'diffuse_map') property is not supported by all "
+        "visualizers that consume illustration roles (e.g. DrakeVisualizer). "
+        "This warning is only shown on the first encounter, which occurred "
+        "with the geometry named '{}' on frame '{}'; further encounters will "
+        "be silently ignored.",
         GetName(geometry_id), GetName(GetFrameId(geometry_id)));
   }
   // TODO(SeanCurtis-TRI): We want to remove this warning. For that to happen,

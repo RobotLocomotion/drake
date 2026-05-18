@@ -182,15 +182,17 @@ class Meshcat {
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
+  @param diffuse_map an optional path to an image file to use as a diffuse
+              texture map. The image must be in a format supported by the
+              browser's three.js renderer (e.g. PNG, JPEG, WebP).
   @note If `shape` is a mesh, the file referred to can be either an .obj file
   or an _embedded_ .gltf file (it has all geometry data and texture data
   contained within the single .gltf file).
   @pydrake_mkdoc_identifier{shape}
   */
   void SetObject(std::string_view path, const Shape& shape,
-                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
-
-  // TODO(russt): SetObject with texture map.
+                 const Rgba& rgba = Rgba(.9, .9, .9, 1.),
+                 std::string_view diffuse_map = "");
 
   /** Sets the "object" at a given `path` in the scene tree to be
   `point_cloud`.  Note that `path`="/foo" will always set an object in the tree

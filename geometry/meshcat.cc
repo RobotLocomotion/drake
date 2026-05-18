@@ -1003,7 +1003,8 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
+  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba,
+                 std::string_view diffuse_map = "") {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetObjectData data;
@@ -1050,6 +1051,31 @@ class Meshcat::Impl {
         material->linewidth = 1.0;
         material->wireframe = false;
         material->wireframeLineWidth = 1.0;
+
+        if (!diffuse_map.empty()) {
+          std::optional<std::string> content = ReadFile(fs::path(diffuse_map));
+          if (content.has_value()) {
+            auto asset = file_storage_.Insert(std::move(*content),
+                                              std::string(diffuse_map));
+            auto image = std::make_unique<internal::ImageData>();
+            image->uuid = uuid_generator_.GenerateRandom();
+            image->url = FileStorage::GetCasUrl(*asset);
+            auto texture = std::make_unique<internal::TextureData>();
+            texture->uuid = uuid_generator_.GenerateRandom();
+            texture->image = image->uuid;
+            texture->wrap = {internal::TextureData::RepeatWrapping,
+                             internal::TextureData::RepeatWrapping};
+            material->map = texture->uuid;
+            data.object.image = std::move(image);
+            data.object.texture = std::move(texture);
+            assets.push_back(std::move(asset));
+          } else {
+            drake::log()->warn(
+                "Meshcat: Failed to load diffuse_map texture \"{}\"; the "
+                "texture will be ignored.",
+                diffuse_map);
+          }
+        }
 
         meshfile_object.uuid = uuid_generator_.GenerateRandom();
         meshfile_object.material = material->uuid;
@@ -2642,8 +2668,8 @@ void Meshcat::Flush() const {
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
-                        const Rgba& rgba) {
-  impl().SetObject(path, shape, rgba);
+                        const Rgba& rgba, std::string_view diffuse_map) {
+  impl().SetObject(path, shape, rgba, diffuse_map);
 }
 
 void Meshcat::SetObject(std::string_view path,

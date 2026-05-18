@@ -491,6 +491,31 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
 }
 
+GTEST_TEST(MeshcatTest, SetObjectWithDiffuseMap) {
+  const std::string texture_path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/rainbow_stripes.png");
+  Meshcat meshcat;
+  meshcat.SetObject("box", Box(0.5, 0.5, 0.5), Rgba(0.9, 0.9, 0.9),
+                    texture_path);
+  const std::string packed = meshcat.GetPackedObject("box");
+  ASSERT_FALSE(packed.empty());
+  // Image should be served from CAS, not inlined as a data URI.
+  EXPECT_THAT(packed, HasSubstr("cas-v1/"));
+  // Material should reference the texture and carry a wrap mode.
+  EXPECT_THAT(packed, HasSubstr("map"));
+  EXPECT_THAT(packed, HasSubstr("wrap"));
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithDiffuseMap_MissingFile) {
+  Meshcat meshcat;
+  meshcat.SetObject("box", Box(0.5, 0.5, 0.5), Rgba(0.9, 0.9, 0.9),
+                    "/no/such/texture.png");
+  // Object is still created; the bad texture is silently skipped after warning.
+  const std::string packed = meshcat.GetPackedObject("box");
+  ASSERT_FALSE(packed.empty());
+  EXPECT_EQ(packed.find("cas-v1/"), std::string::npos);
+}
+
 // Confirms that an OBJ with a missing material becomes a MeshData instead of a
 // MeshfileObjectData.
 GTEST_TEST(MeshcatTest, ObjWithMissingMtl) {

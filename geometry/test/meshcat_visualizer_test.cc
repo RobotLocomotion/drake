@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -702,6 +703,59 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Graphviz) {
   SetUpDiagram();
   EXPECT_THAT(visualizer_->GetGraphvizString(),
               testing::HasSubstr("-> meshcat_in"));
+}
+
+GTEST_TEST(MeshcatVisualizerTest, DiffuseMapIllustrationProperty) {
+  auto meshcat = std::make_shared<Meshcat>();
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+  const std::string sdf_content = R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="box">
+    <link name="box">
+      <visual name="visual">
+        <geometry>
+          <box><size>0.2 0.2 0.02</size></box>
+        </geometry>
+        <material>
+          <drake:diffuse_map>package://drake/geometry/render/test/meshes/rainbow_stripes.png</drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
+)""";
+  multibody::Parser(&plant).AddModelsFromString(sdf_content, "sdf");
+  plant.Finalize();
+
+  // Confirm there's a single geometry with illustration properties and it has
+  // the expected diffuse map.
+  const auto& inspector = scene_graph.model_inspector();
+  std::vector<GeometryId> g_ids =
+      inspector.GetAllGeometryIds(Role::kIllustration);
+  ASSERT_EQ(g_ids.size(), 1);
+  const GeometryId geom_id = g_ids.front();
+  const IllustrationProperties* props =
+      inspector.GetIllustrationProperties(geom_id);
+  ASSERT_NE(props, nullptr);
+  ASSERT_TRUE(props->HasProperty("phong", "diffuse_map"));
+
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->ForcedPublish(*context);
+
+  const std::string geom_path = fmt::format(
+      "visualizer/box/box/{}", TransformGeometryName(geom_id, inspector));
+  ASSERT_TRUE(meshcat->HasPath(geom_path));
+  // A mere indicator that the texture information was provided to Meshcat. See
+  // the SetObjectWithDiffuseMap test in meshcat_test.cc or
+  // meshcat_manual_test. for the more definitive tests. This merely serves as
+  // regression protection.
+  EXPECT_THAT(meshcat->GetPackedObject(geom_path),
+              testing::HasSubstr("cas-v1/"));
 }
 
 }  // namespace
