@@ -209,6 +209,7 @@ class TestGeometryVisualizers(unittest.TestCase):
             path="/test/box",
             shape=mut.Box(1, 1, 1),
             rgba=mut.Rgba(0.5, 0.5, 0.5),
+            diffuse_map="",
         )
         meshcat.SetTransform(
             path="/test/box",

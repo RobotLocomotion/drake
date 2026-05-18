@@ -200,6 +200,8 @@ void MeshcatVisualizer<T>::SetObjects(
       const std::string path = fmt::format("{}/{}", frame_path, geometry_name);
       const Rgba rgba = properties.GetPropertyOrDefault("phong", "diffuse",
                                                         params_.default_color);
+      const std::string diffuse_map = properties.GetPropertyOrDefault(
+          "phong", "diffuse_map", std::string{});
 
       // The "object" will typically be the geometry's shape. But, for the
       // proximity role, we prefer, first, the hydroelastic surface if
@@ -239,7 +241,8 @@ void MeshcatVisualizer<T>::SetObjects(
       }
 
       if (!geometry_already_set) {
-        meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba);
+        meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba,
+                            diffuse_map);
       }
 
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));

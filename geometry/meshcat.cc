@@ -265,6 +265,59 @@ int ToMeshcatColor(const Rgba& rgba) {
          static_cast<int>(255 * rgba.b());
 }
 
+// Creates the common material data for all cases. Assigns it into object and
+// returns a raw pointer to the material for further, local modification. The
+// material is actually owned by `object` upon return.
+internal::MaterialData* CreateCommonMaterialData(
+    const Rgba& rgba, std::string_view diffuse_map,
+    internal::UuidGenerator* uuid_generator, internal::LumpedObjectData* object,
+    FileStorage* file_storage = nullptr,
+    std::vector<std::shared_ptr<const MemoryFile>>* assets = nullptr) {
+  DRAKE_DEMAND(uuid_generator != nullptr);
+  DRAKE_DEMAND(object != nullptr);
+  DRAKE_DEMAND(diffuse_map.empty() || file_storage != nullptr);
+  DRAKE_DEMAND(diffuse_map.empty() || assets != nullptr);
+
+  auto material = std::make_unique<internal::MaterialData>();
+  material->uuid = uuid_generator->GenerateRandom();
+  material->type = "MeshPhongMaterial";
+  material->color = ToMeshcatColor(rgba);
+  // From meshcat-python: Three.js allows a material to have an opacity which is
+  // != 1, but to still be *non-transparent*, in which case the opacity only
+  // serves to desaturate the material's color. That's a pretty odd combination
+  // of things to want, so by default we just use the opacity value to decide
+  // whether to set transparent to True or False.
+  material->transparent = (rgba.a() != 1.0);
+  material->opacity = rgba.a();
+
+  if (!diffuse_map.empty()) {
+    std::optional<std::string> content = ReadFile(fs::path(diffuse_map));
+    if (content.has_value()) {
+      auto asset =
+          file_storage->Insert(std::move(*content), std::string(diffuse_map));
+      auto image = std::make_unique<internal::ImageData>();
+      image->uuid = uuid_generator->GenerateRandom();
+      image->url = FileStorage::GetCasUrl(*asset);
+      auto texture = std::make_unique<internal::TextureData>();
+      texture->uuid = uuid_generator->GenerateRandom();
+      texture->image = image->uuid;
+      texture->wrap = {internal::TextureData::RepeatWrapping,
+                       internal::TextureData::RepeatWrapping};
+      material->map = texture->uuid;
+      object->image = std::move(image);
+      object->texture = std::move(texture);
+      assets->push_back(std::move(asset));
+    } else {
+      drake::log()->warn(
+          "Meshcat: Failed to load diffuse_map texture \"{}\"; the "
+          "texture will be ignored.",
+          diffuse_map);
+    }
+  }
+  object->material = std::move(material);
+  return object->material.get();
+}
+
 // Sets the lumped object's geometry, material, and object type based on the
 // mesh data and its material properties.
 void SetLumpedObjectFromTriangleMesh(
@@ -282,18 +335,14 @@ void SetLumpedObjectFromTriangleMesh(
   geometry->faces = faces.cast<uint32_t>();
   object->geometry = std::move(geometry);
 
-  auto material = std::make_unique<internal::MaterialData>();
-  material->uuid = uuid_generator->GenerateRandom();
-  material->type = "MeshPhongMaterial";
-  material->color = ToMeshcatColor(rgba);
-  material->transparent = (rgba.a() != 1.0);
-  material->opacity = rgba.a();
+  // We don't currently assign any textures to meshes.
+  internal::MaterialData* material = CreateCommonMaterialData(
+      rgba, /* diffuse_map= */ "", uuid_generator, object);
   material->wireframe = wireframe;
   material->wireframeLineWidth = wireframe_line_width;
   material->vertexColors = false;
   material->side = side;
   material->flatShading = true;
-  object->material = std::move(material);
 
   internal::MeshData mesh;
   mesh.uuid = uuid_generator->GenerateRandom();
@@ -308,10 +357,12 @@ class MeshcatShapeReifier : public ShapeReifier {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
   MeshcatShapeReifier(internal::UuidGenerator* uuid_generator,
-                      FileStorage* file_storage, Rgba rgba)
+                      FileStorage* file_storage, Rgba rgba,
+                      std::string_view diffuse_map)
       : uuid_generator_(*uuid_generator),
         file_storage_(*file_storage),
-        rgba_(rgba) {
+        rgba_(rgba),
+        diffuse_map_(diffuse_map) {
     DRAKE_DEMAND(uuid_generator != nullptr);
     DRAKE_DEMAND(file_storage != nullptr);
   }
@@ -333,6 +384,14 @@ class MeshcatShapeReifier : public ShapeReifier {
     DRAKE_DEMAND(data != nullptr);
     auto& output = *static_cast<Output*>(data);
     auto& lumped = output.lumped;
+
+    if (!diffuse_map_.empty()) {
+      static logging::Warn one_time(
+          "Meshcat: diffuse_map is not currently supported for assignment on "
+          "Mesh shapes: '{}'",
+          diffuse_map_);
+      diffuse_map_ = "";
+    }
     // TODO(russt): Use file contents to generate the uuid, and avoid resending
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
@@ -602,6 +661,13 @@ class MeshcatShapeReifier : public ShapeReifier {
   void ImplementGeometry(const Convex& mesh, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& output = *static_cast<Output*>(data);
+    if (!diffuse_map_.empty()) {
+      static logging::Warn one_time(
+          "Meshcat: diffuse_map cannot be assigned to Convex; convex hulls "
+          "have no texture coordinates. diffuse_map will be ignored: '{}'.",
+          diffuse_map_);
+      diffuse_map_ = "";
+    }
 
     const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
     const TriangleSurfaceMesh<double> tri_hull =
@@ -706,6 +772,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   internal::UuidGenerator& uuid_generator_;
   FileStorage& file_storage_;
   Rgba rgba_;
+  std::string_view diffuse_map_;
 };
 
 // Meshcat inherits three.js's y-up world and it is applied to camera and
@@ -1003,7 +1070,8 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
+  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba,
+                 std::string_view diffuse_map = "") {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetObjectData data;
@@ -1014,7 +1082,8 @@ class Meshcat::Impl {
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
-    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba);
+    MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba,
+                                diffuse_map);
     std::vector<std::shared_ptr<const MemoryFile>> assets;
     MeshcatShapeReifier::Output reifier_output{.lumped = data.object,
                                                .assets = assets};
@@ -1032,28 +1101,18 @@ class Meshcat::Impl {
 
       // Add a material if not already defined.
       if (data.object.material == nullptr) {
-        auto material = std::make_unique<internal::MaterialData>();
-        material->uuid = uuid_generator_.GenerateRandom();
-        material->type = "MeshPhongMaterial";
-        material->color = ToMeshcatColor(rgba);
+        internal::MaterialData* material =
+            CreateCommonMaterialData(rgba, diffuse_map, &uuid_generator_,
+                                     &data.object, &file_storage_, &assets);
         // TODO(russt): Most values are taken verbatim from meshcat-python.
         material->reflectivity = 0.5;
         material->side = SideOfFaceToRender::kDoubleSide;
-        // From meshcat-python: Three.js allows a material to have an opacity
-        // which is != 1, but to still be non - transparent, in which case the
-        // opacity only serves to desaturate the material's color. That's a
-        // pretty odd combination of things to want, so by default we just use
-        // the opacity value to decide whether to set transparent to True or
-        // False.
-        material->transparent = (rgba.a() != 1.0);
-        material->opacity = rgba.a();
         material->linewidth = 1.0;
         material->wireframe = false;
         material->wireframeLineWidth = 1.0;
 
         meshfile_object.uuid = uuid_generator_.GenerateRandom();
         meshfile_object.material = material->uuid;
-        data.object.material = std::move(material);
       }
     }
 
@@ -2642,8 +2701,8 @@ void Meshcat::Flush() const {
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
-                        const Rgba& rgba) {
-  impl().SetObject(path, shape, rgba);
+                        const Rgba& rgba, std::string_view diffuse_map) {
+  impl().SetObject(path, shape, rgba, diffuse_map);
 }
 
 void Meshcat::SetObject(std::string_view path,
