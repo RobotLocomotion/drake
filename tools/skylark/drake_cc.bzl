@@ -82,6 +82,8 @@ GCC_FLAGS = CXX_FLAGS + [
     # Eigen uses 16-byte alignment, which these flags don't account for.
     "-Wno-array-bounds",
     "-Wno-stringop-overread",
+    # Disable warning spam on ARM64 builds.
+    "-Wno-psabi",
 ]
 
 # The CC_TEST_FLAGS will be enabled for all cc_test rules in the project.
