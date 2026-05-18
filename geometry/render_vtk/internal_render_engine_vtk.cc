@@ -248,14 +248,14 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
 
 void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(CreateVtkBox(box, data.properties).GetPointer(),
+  ImplementPolyData(CreateVtkBox(box, data.properties)->GetOutput(),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(CreateVtkCapsule(capsule).GetPointer(),
+  ImplementPolyData(CreateVtkCapsule(capsule)->GetPolyDataOutput(),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
@@ -296,22 +296,20 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
   vtkNew<vtkCylinderSource> vtk_cylinder;
   SetCylinderOptions(vtk_cylinder, cylinder.length(), cylinder.radius());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(TransformToDrakeCylinder(vtk_cylinder),
+  ImplementPolyData(TransformToDrakeCylinder(vtk_cylinder)->GetPolyDataOutput(),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
                                         void* user_data) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(CreateVtkEllipsoid(ellipsoid).GetPointer(),
+  ImplementPolyData(CreateVtkEllipsoid(ellipsoid)->GetPolyDataOutput(),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const HalfSpace&, void* user_data) {
-  vtkSmartPointer<vtkPlaneSource> vtk_plane = CreateSquarePlane(kTerrainSize);
-
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(vtk_plane.GetPointer(),
+  ImplementPolyData(CreateSquarePlane(kTerrainSize)->GetOutput(),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
@@ -335,8 +333,9 @@ void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
+  vtk_sphere->Update();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(vtk_sphere.GetPointer(),
+  ImplementPolyData(vtk_sphere->GetOutput(),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
@@ -722,7 +721,7 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
       CreateVtkMesh(std::move(mesh));
 
   if ((scale.array() == 1).all()) {
-    ImplementPolyData(mesh_source.GetPointer(), material, data);
+    ImplementPolyData(mesh_source->GetOutput(), material, data);
     return;
   }
 
@@ -733,7 +732,7 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
   transform_filter->SetTransform(transform.GetPointer());
   transform_filter->Update();
 
-  ImplementPolyData(transform_filter.GetPointer(), material, data);
+  ImplementPolyData(transform_filter->GetPolyDataOutput(), material, data);
 }
 
 bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
@@ -1158,7 +1157,7 @@ void RenderEngineVtk::InitializePipelines() {
   renderer->SetPass(fxaa_pass);
 }
 
-void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
+void RenderEngineVtk::ImplementPolyData(vtkPolyData* source,
                                         const RenderMaterial& material,
                                         const RegistrationData& data) {
   std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
@@ -1169,7 +1168,7 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, kNumPipelines> mappers;
 
   for (auto& mapper : mappers) {
-    mapper->SetInputConnection(source->GetOutputPort());
+    mapper->SetInputData(source);
   }
 
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
@@ -1465,7 +1464,7 @@ void RenderEngineVtk::ImplementCachedMesh(const std::string& cache_key,
             ? *part.material
             : DefineMaterial(data.properties, default_diffuse_);
     if (unit_scale) {
-      ImplementPolyData(part.vtk_source.GetPointer(), material, data);
+      ImplementPolyData(part.vtk_source->GetOutput(), material, data);
     } else {
       vtkNew<vtkTransform> transform;
       transform->Scale(scale.x(), scale.y(), scale.z());
@@ -1473,7 +1472,7 @@ void RenderEngineVtk::ImplementCachedMesh(const std::string& cache_key,
       transform_filter->SetInputConnection(part.vtk_source->GetOutputPort());
       transform_filter->SetTransform(transform.GetPointer());
       transform_filter->Update();
-      ImplementPolyData(transform_filter.GetPointer(), material, data);
+      ImplementPolyData(transform_filter->GetPolyDataOutput(), material, data);
     }
   }
 }

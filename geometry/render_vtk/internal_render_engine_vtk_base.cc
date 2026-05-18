@@ -322,7 +322,7 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
 
 }  // namespace
 
-vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule) {
+vtkSmartPointer<vtkTransformFilter> CreateVtkCapsule(const Capsule& capsule) {
   // Note: VTK uses cylinder sources as capsules by turning on the caps and
   // making them spherical.
   vtkNew<vtkCylinderSource> vtk_capsule;
@@ -340,10 +340,11 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
   const Vector2d& uv_scale =
       properties.GetPropertyOrDefault("phong", "diffuse_scale", Vector2d{1, 1});
   vtk_box->set_uv_scale(uv_scale);
+  vtk_box->Update();
   return vtk_box;
 }
 
-vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
+vtkSmartPointer<vtkTransformFilter> CreateVtkEllipsoid(
     const Ellipsoid& ellipsoid) {
   vtkNew<vtkTexturedSphereSource> vtk_ellipsoid;
   vtk_ellipsoid->SetRadius(1.0);
@@ -385,7 +386,7 @@ void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
   vtk_cylinder->SetResolution(50);
 }
 
-vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
+vtkSmartPointer<vtkTransformFilter> TransformToDrakeCylinder(
     vtkCylinderSource* vtk_cylinder) {
   // We rotate around the x-axis to get the cylinder to be vertical along the
   // z-axis.

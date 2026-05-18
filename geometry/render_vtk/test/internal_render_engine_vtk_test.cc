@@ -97,15 +97,13 @@ class RenderEngineVtkTester {
     return renderer.props_;
   }
 
-  // Returns the upstream vtkAlgorithm feeding the color-pipeline mapper for
-  // the first part of the given geometry. For unit-scale registrations this
-  // is the DrakeObjSource directly; for scaled registrations it is the
-  // vtkTransformPolyDataFilter that wraps the source.
-  static vtkAlgorithm* GetColorMapperSource(const RenderEngineVtk& renderer,
-                                            GeometryId id) {
+  // Returns the vtkDataSet feeding the color-pipeline mapper for the first part
+  // of the given geometry.
+  static vtkDataSet* GetColorMapperInput(const RenderEngineVtk& renderer,
+                                         GeometryId id) {
     vtkActor* actor = renderer.props_.at(id).at(0).parts.at(0).actor.Get();
     DRAKE_DEMAND(actor != nullptr);
-    return actor->GetMapper()->GetInputAlgorithm(0, 0);
+    return actor->GetMapper()->GetInput();
   }
 
   // Returns the number of entries currently in the mesh cache.
@@ -3395,13 +3393,13 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
 //
 // These tests verify that registering the same OBJ file multiple times results
 // in exactly one cache entry and that all registrations share the same
-// underlying vtkPolyDataAlgorithm source (i.e. vertex data is not duplicated).
+// underlying vtkPolyData (i.e. vertex data is not duplicated).
 // ---------------------------------------------------------------------------
 //
 // Registers the same no-MTL OBJ three times and confirms that:
 //   (a) the mesh cache has exactly one entry, and
-//   (b) every registration's color-pipeline mapper feeds from the same upstream
-//       vtkAlgorithm pointer.
+//   (b) every registration's color-pipeline mapper feeds from the same
+//       vtkPolyData pointer.
 //
 // Note: registering as Mesh and Convex will produce different cache entries.
 TEST_F(RenderEngineVtkTest, ObjMeshSourceSharing) {
@@ -3446,23 +3444,23 @@ TEST_F(RenderEngineVtkTest, ObjMeshSourceSharing) {
   EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 2);
 
   // All three Mesh mappers feed from the same upstream source.
-  vtkAlgorithm* mesh_src1 =
-      RenderEngineVtkTester::GetColorMapperSource(engine, mesh_id1);
-  vtkAlgorithm* mesh_src2 =
-      RenderEngineVtkTester::GetColorMapperSource(engine, mesh_id2);
-  vtkAlgorithm* mesh_src3 =
-      RenderEngineVtkTester::GetColorMapperSource(engine, mesh_id3);
+  vtkDataSet* mesh_src1 =
+      RenderEngineVtkTester::GetColorMapperInput(engine, mesh_id1);
+  vtkDataSet* mesh_src2 =
+      RenderEngineVtkTester::GetColorMapperInput(engine, mesh_id2);
+  vtkDataSet* mesh_src3 =
+      RenderEngineVtkTester::GetColorMapperInput(engine, mesh_id3);
   ASSERT_NE(mesh_src1, nullptr);
   EXPECT_EQ(mesh_src1, mesh_src2);
   EXPECT_EQ(mesh_src2, mesh_src3);
 
   // All three Convex mappers feed from the same upstream source.
-  vtkAlgorithm* convex_src1 =
-      RenderEngineVtkTester::GetColorMapperSource(engine, convex_id1);
-  vtkAlgorithm* convex_src2 =
-      RenderEngineVtkTester::GetColorMapperSource(engine, convex_id2);
-  vtkAlgorithm* convex_src3 =
-      RenderEngineVtkTester::GetColorMapperSource(engine, convex_id3);
+  vtkDataSet* convex_src1 =
+      RenderEngineVtkTester::GetColorMapperInput(engine, convex_id1);
+  vtkDataSet* convex_src2 =
+      RenderEngineVtkTester::GetColorMapperInput(engine, convex_id2);
+  vtkDataSet* convex_src3 =
+      RenderEngineVtkTester::GetColorMapperInput(engine, convex_id3);
   ASSERT_NE(convex_src1, nullptr);
   EXPECT_EQ(convex_src1, convex_src2);
   EXPECT_EQ(convex_src2, convex_src3);
@@ -3496,9 +3494,9 @@ TEST_F(RenderEngineVtkTest, ObjWithMtlSourceSharing) {
 
   EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 1);
 
-  vtkAlgorithm* src1 = RenderEngineVtkTester::GetColorMapperSource(engine, id1);
-  vtkAlgorithm* src2 = RenderEngineVtkTester::GetColorMapperSource(engine, id2);
-  vtkAlgorithm* src3 = RenderEngineVtkTester::GetColorMapperSource(engine, id3);
+  vtkDataSet* src1 = RenderEngineVtkTester::GetColorMapperInput(engine, id1);
+  vtkDataSet* src2 = RenderEngineVtkTester::GetColorMapperInput(engine, id2);
+  vtkDataSet* src3 = RenderEngineVtkTester::GetColorMapperInput(engine, id3);
   ASSERT_NE(src1, nullptr);
   EXPECT_EQ(src1, src2);
   EXPECT_EQ(src2, src3);
@@ -3529,11 +3527,11 @@ TEST_F(RenderEngineVtkTest, DifferentObjsDontShare) {
   EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 2);
 
   // The two sources must be different objects.
-  vtkAlgorithm* src_a =
-      RenderEngineVtkTester::GetColorMapperSource(engine, id_a);
+  vtkDataSet* src_a =
+      RenderEngineVtkTester::GetColorMapperInput(engine, id_a);
   // rainbow_box.obj has multiple parts; grab the first one.
-  vtkAlgorithm* src_b =
-      RenderEngineVtkTester::GetColorMapperSource(engine, id_b);
+  vtkDataSet* src_b =
+      RenderEngineVtkTester::GetColorMapperInput(engine, id_b);
   ASSERT_NE(src_a, nullptr);
   ASSERT_NE(src_b, nullptr);
   EXPECT_NE(src_a, src_b);

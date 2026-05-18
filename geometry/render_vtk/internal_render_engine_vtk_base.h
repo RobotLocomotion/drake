@@ -16,20 +16,23 @@ namespace geometry {
 namespace render_vtk {
 namespace internal {
 
-// Creates a z-axis aligned VTK capsule.
-vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule);
+// Creates a z-axis aligned VTK capsule. The returned filter is already updated.
+vtkSmartPointer<vtkTransformFilter> CreateVtkCapsule(const Capsule& capsule);
 
 // Creates a box with texture coordinates such that the image is stretched
 // over each face. The texture can be optionally scaled/tiled via texture
-// scale properties in the given properties.
+// scale properties in the given properties. The returned algorithm is already
+// updated.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
     const Box& box, const PerceptionProperties& properties);
 
-// Creates a VTK ellipsoid scaled from a sphere.
-vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
+// Creates a VTK ellipsoid scaled from a sphere. The returned filter is already
+// updated.
+vtkSmartPointer<vtkTransformFilter> CreateVtkEllipsoid(
     const Ellipsoid& ellipsoid);
 
-// Creates a VTK mesh from the given mesh data.
+// Creates a VTK mesh from the given mesh data. The returned algorithm is
+// already updated.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkMesh(
     geometry::internal::RenderMesh mesh_data);
 
@@ -42,8 +45,9 @@ void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
 
 // Transforms a vtk cylinder that is y-axis aligned to be z-axis aligned, which
 // is what Drake uses. It does a further orientation so that the longitudinal
-// texture seam aligns with the seam on the sphere.
-vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
+// texture seam aligns with the seam on the sphere. The returned filter is
+// already updated.
+vtkSmartPointer<vtkTransformFilter> TransformToDrakeCylinder(
     vtkCylinderSource* vtk_cylinder);
 
 }  // namespace internal
