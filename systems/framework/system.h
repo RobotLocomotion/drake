@@ -1497,18 +1497,6 @@ class System : public SystemBase {
 
   // Don't promote output_port_ticket() since it is for internal use only.
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // For unfortunate historical reasons the Drake Simulator needs access to
-  // forced publish events to implement its optional publish_every_time_step
-  // feature. Now we have PerStep events that serve the same purpose.
-  // TODO(2026-06-01): Move this to protected with the other forced events when
-  // the Simulator feature is removed.
-  const EventCollection<PublishEvent<T>>& get_forced_publish_events() const {
-    DRAKE_DEMAND(forced_publish_events_ != nullptr);
-    return *forced_publish_events_;
-  }
-#endif
-
  protected:
   // Promote these frequently-used methods so users (and tutorial examples)
   // don't need "this->" everywhere when in templated derived classes.
@@ -1890,6 +1878,11 @@ class System : public SystemBase {
 
   bool forced_unrestricted_update_events_exist() const {
     return forced_unrestricted_update_events_ != nullptr;
+  }
+
+  const EventCollection<PublishEvent<T>>& get_forced_publish_events() const {
+    DRAKE_DEMAND(forced_publish_events_ != nullptr);
+    return *forced_publish_events_;
   }
 
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {

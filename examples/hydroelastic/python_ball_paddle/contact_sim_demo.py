@@ -87,7 +87,7 @@ def simulate_diagram(
     qv_init_val = np.concatenate((q_init_val, v_init_val))
 
     simulator_config = SimulatorConfig(
-        target_realtime_rate=target_realtime_rate, publish_every_time_step=True
+        target_realtime_rate=target_realtime_rate,
     )
     simulator = Simulator(diagram)
     ApplySimulatorConfig(simulator_config, simulator)
