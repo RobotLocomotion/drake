@@ -268,10 +268,12 @@ void DefineMeshcat(py::module m) {
             // sleeps; for both reasons, we must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.Flush.doc)
         .def("SetObject",
-            py::overload_cast<std::string_view, const Shape&, const Rgba&>(
-                &Class::SetObject),
+            py::overload_cast<std::string_view, const Shape&, const Rgba&,
+                std::string_view>(&Class::SetObject),
             py::arg("path"), py::arg("shape"),
-            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_shape)
+            py::arg("rgba") = Rgba(.9, .9, .9, 1.),
+            py::arg("diffuse_map") = std::string_view(),
+            cls_doc.SetObject.doc_shape)
         .def("SetObject",
             py::overload_cast<std::string_view, const perception::PointCloud&,
                 double, const Rgba&>(&Class::SetObject),

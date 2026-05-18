@@ -4227,6 +4227,11 @@ R"""(Sets the 3D object at a given ``path`` in the scene tree. Note that
 "/foo/<object>". See meshcat_path. Any objects previously set at this
 `path`` will be replaced.
 
+The ``rgba`` and ``diffuse_map`` values work together. The color
+modulates the textures appearance (by doing a channel-wise
+multiplication). For example, specifying a red color will "tint" the
+texture red.
+
 Parameter ``path``:
     a "/"-delimited string indicating the path in the scene tree. See
     meshcat_path "Meshcat paths" for the semantics.
@@ -4236,6 +4241,14 @@ Parameter ``shape``:
 
 Parameter ``rgba``:
     an Rgba that specifies the (solid) color of the object.
+
+Parameter ``diffuse_map``:
+    an optional path to an image file to use as a diffuse texture map.
+    The image must be in a format supported by the browser's three.js
+    renderer (e.g., PNG, JPEG, WebP). It will *not* be applied to
+    either Convex or Mesh shapes. Convex has no texture coordinates
+    and Mesh is specified by geometry specifications that support
+    their own material specifications.
 
 Note:
     If ``shape`` is a mesh, the file referred to can be either an .obj

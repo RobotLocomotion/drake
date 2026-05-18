@@ -13,6 +13,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/meshcat.h"
@@ -101,6 +102,21 @@ Mesh GetPyramidInMemory(double scale = 1.0) {
       scale);
 }
 
+struct Property {
+  std::string name;
+  std::variant<double, bool> value{};
+};
+
+void ApplyProperties(Meshcat* meshcat, const std::string& path,
+                     const std::vector<Property>& properties) {
+  for (const auto& [name, value] : properties) {
+    std::visit(overloaded{[meshcat, &path, &name](auto&& arg) {
+                 meshcat->SetProperty(path, name, arg);
+               }},
+               value);
+  }
+}
+
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
@@ -110,62 +126,88 @@ int do_main() {
   const double start_x = -8.5;
   double x = start_x;
 
-  Vector3d sphere_home{++x, 0, 0};
-  // The weird name for the sphere is to confirm that meshcat collapses
-  // redundant slashes. We'll subsequently refer to it without the slash to
-  // make sure they're equivalent.
-  meshcat->SetObject("sphere//scoped_name", Sphere(0.25), Rgba(1.0, 0, 0, 1));
-  meshcat->SetTransform("sphere/scoped_name", RigidTransformd(sphere_home));
-  // Note: this isn't the preferred means for setting opacity, but it is the
-  // simplest way to exercise chained property names.
-  meshcat->SetProperty("sphere/scoped_name/<object>", "material.opacity", 0.5);
-  meshcat->SetProperty("sphere/scoped_name/<object>", "material.transparent",
-                       true);
+  const std::string checker_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/checker.png");
+  // Creates an instance of the given shape and another instance of the same
+  // shape with a texture map applied to it.
+  auto make_shape_and_textured =
+      [&meshcat, &x, &checker_path](
+          const std::string& path, const Shape& shape, const Rgba& rgba,
+          const std::vector<Property>& properties = {}) {
+        const Vector3d shape_home{++x, 0, 0};
+        meshcat->SetObject(path, shape, rgba);
+        meshcat->SetTransform(path, RigidTransformd(shape_home));
+        ApplyProperties(meshcat.get(), path + "/<object>", properties);
 
-  // The weird name for the cylinder is to confirm that meshcat elides terminal
-  // slashes. We'll subsequently refer to it without the slash to make sure
-  // they're equivalent.
-  meshcat->SetObject("cylinder/", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
-  meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{++x, 0, 0}));
+        // One test includes a terminal slash -- for the textured version, we'll
+        // strip it out.
+        const std::string textured_path =
+            path.ends_with('/') ? path.substr(0, path.size() - 1) + "_textured"
+                                : path + "_textured";
+        meshcat->SetObject(textured_path, shape, rgba, checker_path);
+        meshcat->SetTransform(textured_path,
+                              RigidTransformd(shape_home + Vector3d{0, 1, 0}));
+        ApplyProperties(meshcat.get(), textured_path + "/<object>", properties);
+
+        return shape_home;
+      };
+
+  // The sphere is going to serve triple-duty as a test of:
+  // - the sphere shape generally (and its texture coordiantes),
+  // - setting an object with a path that has redundant slashes (we'll
+  //   subsequently refer to it as simply "sphere/scoped_name"),
+  // - setting properties with chained names (e.g., "material.opacity").
+  const Vector3d sphere_home = make_shape_and_textured(
+      "sphere//scoped_name", Sphere(0.25), Rgba(1.0, 0, 0, 1),
+      {{"material.opacity", 0.5}, {"material.transparent", true}});
+
+  // The cylinder is going to serve double-duty as a test of:
+  // - the cylinder shape generally (and its texture coordinates),
+  // - elision of path with trailing slashes (we'll subsequently refer to it as
+  //   simply "cylinder").
+  make_shape_and_textured("cylinder/", Cylinder(0.25, 0.5),
+                          Rgba(0.0, 1.0, 0, 1));
 
   // For animation, we'll aim the camera between the cylinder and ellipsoid.
   const Vector3d animation_target{x + 0.5, 0, 0};
 
-  meshcat->SetObject("ellipsoid", Ellipsoid(0.25, 0.25, 0.5),
-                     Rgba(1.0, 0, 1, 0.5));
-  meshcat->SetTransform("ellipsoid", RigidTransformd(Vector3d{++x, 0, 0}));
+  make_shape_and_textured("ellipsoid", Ellipsoid(0.25, 0.25, 0.5),
+                          Rgba(1.0, 0, 1, 0.5));
 
-  Vector3d box_home{++x, 0, 0};
-  meshcat->SetObject("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
-  meshcat->SetTransform("box", RigidTransformd(box_home));
+  const Vector3d box_home =
+      make_shape_and_textured("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
 
+  // Note: We're explicitly passing a diffuse_map to SetObject() to show that
+  // the diffuse_map is *not* used for Mesh or Convex.
   const std::string polytope_with_hole = FindResourceOrThrow(
       "drake/examples/scene_graph/cuboctahedron_with_hole.obj");
   meshcat->SetObject("obj_as_convex", Convex(polytope_with_hole, 0.25),
-                     Rgba(0.8, 0.4, 0.1, 1.0));
+                     Rgba(0.8, 0.4, 0.1, 1.0), checker_path);
   meshcat->SetTransform("obj_as_convex", RigidTransformd(Vector3d{++x, 0, 0}));
 
   meshcat->SetObject("obj_as_mesh", Mesh(polytope_with_hole, 0.25),
-                     Rgba(0.8, 0.4, 0.1, 1.0));
+                     Rgba(0.8, 0.4, 0.1, 1.0), checker_path);
   meshcat->SetTransform("obj_as_mesh", RigidTransformd(Vector3d{x, 1, 0}));
 
-  meshcat->SetObject("capsule", Capsule(0.25, 0.5), Rgba(0, 1, 1, 1));
-  meshcat->SetTransform("capsule", RigidTransformd(Vector3d{++x, 0, 0}));
+  make_shape_and_textured("capsule", Capsule(0.25, 0.5), Rgba(0, 1, 1, 1));
 
   // Note that height (in z) is the first argument.
-  meshcat->SetObject("cone", MeshcatCone(0.5, 0.25, 0.5), Rgba(1, 0, 0, 1));
-  meshcat->SetTransform("cone", RigidTransformd(Vector3d{++x, 0, 0}));
+  make_shape_and_textured("cone", MeshcatCone(0.5, 0.25, 0.5),
+                          Rgba(1, 0, 0, 1));
 
-  // The color and shininess properties come from PBR materials.
+  // Note: We're explicitly passing a diffuse_map to SetObject() to show that
+  // the diffuse_map is *not* used for Mesh or Convex, even for glTF.
   meshcat->SetObject(
       "gltf",
       Mesh(FindResourceOrThrow(
                "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf"),
-           0.5));
+           0.5),
+      Rgba(1, 0, 1, 1), checker_path);
   const Vector3d gltf_pose{++x, 0, 0};
   meshcat->SetTransform("gltf", RigidTransformd(gltf_pose));
 
-  meshcat->SetObject("gltf_in_memory", GetPyramidInMemory(0.5));
+  meshcat->SetObject("gltf_in_memory", GetPyramidInMemory(0.5),
+                     Rgba(1, 0, 1, 1), checker_path);
   meshcat->SetTransform("gltf_in_memory",
                         RigidTransformd(gltf_pose + Vector3d(0, 1.5, 0)));
 
@@ -316,15 +358,19 @@ Ignore those for now; we'll need to circle back and fix them later.
   std::cout << ltrim(R"""(
 - The background should be grey.
 - From left to right along the x axis, you should see:
-  - a slightly transparent red sphere
-  - a green cylinder (with the long axis in z)
-  - a pink semi-transparent ellipsoid (long axis in z)
-  - a blue box (long axis in z)
+  - a slightly transparent red sphere (with a checker-textured version behind
+    it).
+  - a green cylinder (with the long axis in z) (with a checker-textured version
+    behind it).
+  - a pink semi-transparent ellipsoid (long axis in z) (with a checker-textured
+    version behind it).
+  - a blue box (long axis in z)  (with a checker-textured version behind it).
   - an orange polytope (with a similary shaped textured polytope behind it).
     The textured shape has a hole through. The orange polytope is its convex
     hull.
-  - a teal capsule (long axis in z)
-  - a red cone (expanding in +z, twice as wide in y than in x)
+  - a teal capsule (long axis in z) (with a checker-textured version behind it).
+  - a red cone (expanding in +z, twice as wide in y than in x) (with a checker-
+    textured version behind it).
   - two shiny, textured pyramids (created with PBR materials); one read from
     disk, the other loaded from memory.
   - a yellow mustard bottle w/ label
@@ -593,6 +639,7 @@ Ignore those for now; we'll need to circle back and fix them later.
                "  - reposition the camera\n"
                "  - add an in-memory glTF file (textured pyramid)\n"
                "  - add an in-memory obj file (textured cuboctahedron)\n"
+               "  - textured primitive\n"
                "\n";
 
   meshcat->SetEnvironmentMap(
@@ -606,6 +653,9 @@ Ignore those for now; we'll need to circle back and fix them later.
   meshcat->SetObject("obj_in_memory", GetCuboctahedronInMemory(0.1));
   meshcat->SetTransform("obj_in_memory",
                         RigidTransformd(Vector3d(-0.25, 0.3, 0.1)));
+  meshcat->SetObject("box", Box(0.1, 0.1, 0.1), Rgba(0.4, 0.4, 1, 1),
+                     checker_path);
+  meshcat->SetTransform("box", RigidTransformd(Vector3d(0.25, -0.3, 0.05)));
 
   std::cout
       << "Now we'll check the standalone HTML file capturing this scene.\n"
