@@ -10,6 +10,8 @@ lock(
     args = [
         "--upgrade",
         "--universal",
+        "--exclude-newer",
+        "1 week",
         # This is our minimum supported version.
         # When changing this, see drake/tools/workspace/python/README.md.
         "--python-version=3.12",
