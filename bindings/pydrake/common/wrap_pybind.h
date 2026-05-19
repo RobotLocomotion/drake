@@ -91,8 +91,7 @@ struct type_caster_wrapped {
   template <typename TType>
   static py::handle cast(
       TType&& src, py::return_value_policy policy, py::handle parent) {
-    if (policy == py::return_value_policy::reference ||
-        policy == py::return_value_policy::reference_internal) {
+    if (policy == py_rvp::reference || policy == py_rvp::reference_internal) {
       // N.B. We must declare a local `static constexpr` here to prevent
       // linking errors. This does not appear achievable with
       // `constexpr char[]`, so we use `py::detail::descr`.

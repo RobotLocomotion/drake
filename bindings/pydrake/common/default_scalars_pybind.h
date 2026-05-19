@@ -50,9 +50,9 @@ switches to copying for custom dtypes (T ∈ {AutoDiffXd, Expression}). */
 template <typename T>
 py::return_value_policy return_value_policy_for_scalar_type() {
   if (std::is_same_v<T, double>) {
-    return py::return_value_policy::reference_internal;
+    return py_rvp::reference_internal;
   } else {
-    return py::return_value_policy::copy;
+    return py_rvp::copy;
   }
 }
 

@@ -1,3 +1,5 @@
+#include <functional>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {

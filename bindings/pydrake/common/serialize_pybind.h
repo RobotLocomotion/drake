@@ -90,7 +90,7 @@ class DefAttributesArchive {
 
     // Add the binding.
     ppy_class_->def_property(
-        name, getter, setter, doc, py::return_value_policy::reference_internal);
+        name, getter, setter, doc, py_rvp::reference_internal);
 
     // Remember the field's name and type for later use by Finished().
     auto field = py::module::import("types").attr("SimpleNamespace")();
