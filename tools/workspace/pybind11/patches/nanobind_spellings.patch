@@ -1,7 +1,33 @@
-[pybind11] Add synonym(s) that are forward-compatible with nanobind
+[pybind11] Add synonyms that are forward-compatible with nanobind
 
 These help ease Drake's transition to nanobind.
 See https://github.com/RobotLocomotion/drake/issues/21572.
+
+--- include/pybind11/attr.h
++++ include/pybind11/attr.h
+@@ -118,6 +118,9 @@
+ /// Annotation to mark enums as an arithmetic type
+ struct arithmetic {};
+ 
++// Drake-specific forward-compatible synonym for nanobind.
++using is_arithmetic = arithmetic;
++
+ /// Mark a function for addition at the beginning of the existing overload chain instead of the end
+ struct prepend {};
+ 
+
+--- include/pybind11/detail/common.h
++++ include/pybind11/detail/common.h
+@@ -566,6 +566,9 @@
+     reference_internal
+ };
+ 
++// Drake-specific forward-compatible synonym for nanobind.
++using rv_policy = return_value_policy;
++
+ PYBIND11_NAMESPACE_BEGIN(detail)
+ 
+ inline static constexpr int log2(size_t n, int k = 0) {
 
 --- include/pybind11/pybind11.h
 +++ include/pybind11/pybind11.h
@@ -15,3 +41,44 @@ See https://github.com/RobotLocomotion/drake/issues/21572.
  
      /// Reload the module or throws `error_already_set`.
      void reload() {
+@@ -1901,6 +1901,40 @@
+         return *this;
+     }
+ 
++    // Drake-specific forward-compatible synonyms for nanobind.
++    template <typename... Args>
++    auto def_ro(Args&&... args) -> decltype(def_readonly(std::forward<Args>(args)...)) {
++        return def_readonly(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_ro_static(Args&&... args) -> decltype(def_readonly_static(std::forward<Args>(args)...)) {
++        return def_readonly_static(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_rw(Args&&... args) -> decltype(def_readwrite(std::forward<Args>(args)...)) {
++        return def_readwrite(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_rw_static(Args&&... args) -> decltype(def_readwrite_static(std::forward<Args>(args)...)) {
++        return def_readwrite_static(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_prop_ro(Args&&... args) -> decltype(def_property_readonly(std::forward<Args>(args)...)) {
++        return def_property_readonly(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_prop_ro_static(Args&&... args) -> decltype(def_property_readonly_static(std::forward<Args>(args)...)) {
++        return def_property_readonly_static(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_prop_rw(Args&&... args) -> decltype(def_property(std::forward<Args>(args)...)) {
++        return def_property(std::forward<Args>(args)...);
++    }
++    template <typename... Args>
++    auto def_prop_rw_static(Args&&... args) -> decltype(def_property_static(std::forward<Args>(args)...)) {
++        return def_property_static(std::forward<Args>(args)...);
++    }
++
+ private:
+     /// Initialize holder object, variant 1: object derives from enable_shared_from_this
+     template <typename T>

@@ -20,11 +20,11 @@ void DefineSolversClarabel(py::module_ m) {
 
   py::class_<ClarabelSolverDetails>(
       m, "ClarabelSolverDetails", doc.ClarabelSolverDetails.doc)
-      .def_readonly("solve_time", &ClarabelSolverDetails::solve_time,
+      .def_ro("solve_time", &ClarabelSolverDetails::solve_time,
           doc.ClarabelSolverDetails.solve_time.doc)
-      .def_readonly("iterations", &ClarabelSolverDetails::iterations,
+      .def_ro("iterations", &ClarabelSolverDetails::iterations,
           doc.ClarabelSolverDetails.iterations.doc)
-      .def_readonly("status", &ClarabelSolverDetails::status,
+      .def_ro("status", &ClarabelSolverDetails::status,
           doc.ClarabelSolverDetails.status.doc);
   AddValueInstantiation<ClarabelSolverDetails>(m);
 }

@@ -43,7 +43,7 @@ class DefAttributesArchive {
     DRAKE_DEMAND((std::is_same_v<Docs, void>) == (cls_docs == nullptr));
   }
 
-  // Creates a class property for one instance field, akin to def_readwrite
+  // Creates a class property for one instance field, akin to def_rw
   // but using `nvp` created by the CxxClass's Serialize function to specify
   // the field to be bound.
   template <typename NameValuePair>
@@ -89,7 +89,7 @@ class DefAttributesArchive {
     }
 
     // Add the binding.
-    ppy_class_->def_property(
+    ppy_class_->def_prop_rw(
         name, getter, setter, doc, py_rvp::reference_internal);
 
     // Remember the field's name and type for later use by Finished().
@@ -102,7 +102,7 @@ class DefAttributesArchive {
   // To be called after Serialize() is complete; binds any members that are
   // scoped to the entire struct (rather than one field at a time).
   void Finished() {
-    ppy_class_->def_property_readonly_static("__fields__",
+    ppy_class_->def_prop_ro_static("__fields__",
         [fields_tuple = py::tuple(fields_)](py::object /* self */) {  // BR
           return fields_tuple;
         });

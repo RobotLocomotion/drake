@@ -30,7 +30,7 @@ struct type_caster<drake::SortedPair<T>> {
     return true;
   }
 
-  static handle cast(Type src, return_value_policy policy, handle parent) {
+  static handle cast(Type src, rv_policy policy, handle parent) {
     object out = make_tuple(InnerCaster::cast(src.first(), policy, parent),
         InnerCaster::cast(src.second(), policy, parent));
     return out.release();

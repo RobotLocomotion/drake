@@ -1222,23 +1222,21 @@ void DoScalarIndependentDefinitions(py::module_ m) {
       using Nested = SystemBase::GraphvizFragment;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
       py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
-          .def_readwrite(
+          .def_rw(
               "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
-          .def_readwrite("output_ports", &Nested::output_ports,
+          .def_rw("output_ports", &Nested::output_ports,
               nested_doc.output_ports.doc)
-          .def_readwrite(
-              "fragments", &Nested::fragments, nested_doc.fragments.doc);
+          .def_rw("fragments", &Nested::fragments, nested_doc.fragments.doc);
     }
     {
       // GraphvizFragmentParams
       using Nested = SystemBasePublic::GraphvizFragmentParams;
       constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
       py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
-          .def_readwrite(
-              "max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
-          .def_readwrite("options", &Nested::options, nested_doc.options.doc)
-          .def_readwrite("node_id", &Nested::node_id, nested_doc.node_id.doc)
-          .def_readwrite("header_lines", &Nested::header_lines,
+          .def_rw("max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
+          .def_rw("options", &Nested::options, nested_doc.options.doc)
+          .def_rw("node_id", &Nested::node_id, nested_doc.node_id.doc)
+          .def_rw("header_lines", &Nested::header_lines,
               nested_doc.header_lines.doc);
     }
     cls  // BR

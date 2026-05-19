@@ -20,14 +20,14 @@ void DefineSolversSnopt(py::module_ m) {
 
   py::class_<SnoptSolverDetails>(
       m, "SnoptSolverDetails", doc.SnoptSolverDetails.doc)
-      .def_readonly(
+      .def_ro(
           "info", &SnoptSolverDetails::info, doc.SnoptSolverDetails.info.doc)
-      .def_readonly(
+      .def_ro(
           "xmul", &SnoptSolverDetails::xmul, doc.SnoptSolverDetails.xmul.doc)
-      .def_readonly("F", &SnoptSolverDetails::F, doc.SnoptSolverDetails.F.doc)
-      .def_readonly(
+      .def_ro("F", &SnoptSolverDetails::F, doc.SnoptSolverDetails.F.doc)
+      .def_ro(
           "Fmul", &SnoptSolverDetails::Fmul, doc.SnoptSolverDetails.Fmul.doc)
-      .def_readonly("solve_time", &SnoptSolverDetails::solve_time,
+      .def_ro("solve_time", &SnoptSolverDetails::solve_time,
           doc.SnoptSolverDetails.solve_time.doc);
   AddValueInstantiation<SnoptSolverDetails>(m);
 }

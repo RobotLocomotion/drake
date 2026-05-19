@@ -39,9 +39,9 @@ namespace pydrake {
 // you put Doxygen comments here they will apply instead to py_rvp.
 namespace py = pybind11;
 
-/// Shortened alias for py::return_value_policy. For more information, see
+/// Shortened alias for py::rv_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
-using py_rvp = py::return_value_policy;
+using py_rvp = py::rv_policy;
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
@@ -110,7 +110,7 @@ void DefClone(PyClass* ppy_class) {
 }
 
 /// Returns a constructor for creating an instance of Class and initializing
-/// parameters (bound using `def_readwrite`).
+/// parameters (bound using `def_rw`).
 /// This provides an alternative to manually enumerating each
 /// parameter as an argument using `py::init<...>` and `py::arg(...)`, and is
 /// useful when the C++ class only has a default constructor. Example:

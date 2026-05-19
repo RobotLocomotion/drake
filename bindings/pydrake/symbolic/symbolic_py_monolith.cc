@@ -572,9 +572,9 @@ void DefineSymbolicMonolith(py::module_ m) {
       .def(py::init<Variable, Variable, SinCosSubstitutionType>(), py::arg("s"),
           py::arg("c"), py::arg("type") = SinCosSubstitutionType::kAngle,
           doc.SinCos.ctor.doc)
-      .def_readwrite("s", &SinCos::s, doc.SinCos.s.doc)
-      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc)
-      .def_readwrite("type", &SinCos::type, doc.SinCos.type.doc);
+      .def_rw("s", &SinCos::s, doc.SinCos.s.doc)
+      .def_rw("c", &SinCos::c, doc.SinCos.c.doc)
+      .def_rw("type", &SinCos::type, doc.SinCos.type.doc);
 
   m.def(
       "Substitute",
