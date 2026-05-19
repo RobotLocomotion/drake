@@ -781,12 +781,9 @@ std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
 }
 
 template <typename T>
-std::map<PeriodicEventData, std::vector<const Event<T>*>,
-         PeriodicEventDataComparator>
+std::map<PeriodicEventData, std::vector<const Event<T>*>>
 LeafSystem<T>::DoMapPeriodicEventsByTiming(const Context<T>&) const {
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
-      periodic_events_map;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>> periodic_events_map;
 
   // Build a mapping from (offset,period) to the periodic events sharing
   // that trigger. There are three lists of different types in a

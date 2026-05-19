@@ -7582,6 +7582,11 @@ period_sec, where i is a non-negative integer.)""";
           const char* doc =
 R"""(Gets the time after zero when this event should first occur.)""";
         } offset_sec;
+        // Symbol: drake::systems::PeriodicEventData::operator<=>
+        struct /* operator_le_ */ {
+          // Source: drake/systems/framework/event.h
+          const char* doc = R"""()""";
+        } operator_le_;
         // Symbol: drake::systems::PeriodicEventData::period_sec
         struct /* period_sec */ {
           // Source: drake/systems/framework/event.h
@@ -7604,9 +7609,12 @@ R"""(Sets the period with which this event should recur.)""";
       // Symbol: drake::systems::PeriodicEventDataComparator
       struct /* PeriodicEventDataComparator */ {
         // Source: drake/systems/framework/event.h
-        const char* doc =
-R"""(Structure for comparing two PeriodicEventData objects for use in a map
-container, using an arbitrary comparison method.)""";
+        const char* doc_deprecated =
+R"""((Deprecated.)
+
+Deprecated:
+    Use the built-in spaceship operator instead. This will be removed
+    from Drake on or after 2026-09-01.)""";
         // Symbol: drake::systems::PeriodicEventDataComparator::operator()
         struct /* operator_call */ {
           // Source: drake/systems/framework/event.h

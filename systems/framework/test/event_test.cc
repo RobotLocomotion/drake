@@ -6,6 +6,26 @@ namespace drake {
 namespace systems {
 namespace {
 
+GTEST_TEST(EventsTest, PeriodicEventDataSpaceship) {
+  // Create two periodic event data objects.
+  PeriodicEventData foo, bar;
+  foo.set_period_sec(0);
+  foo.set_offset_sec(0);
+  bar.set_period_sec(0);
+  bar.set_offset_sec(1);
+
+  EXPECT_FALSE(foo == bar);
+  EXPECT_TRUE(foo < bar);
+  EXPECT_FALSE(bar < foo);
+
+  bar = foo;
+  EXPECT_TRUE(foo == bar);
+  EXPECT_FALSE(foo < bar);
+  EXPECT_FALSE(bar < foo);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // PeriodicEventData has an operator==() member function, and a Comparator
 // struct whose operator() defines a "less than" ordering.
 GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
@@ -38,6 +58,7 @@ GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
   EXPECT_FALSE(comparator(d2, d1));
   EXPECT_TRUE(d1 == d2);
 }
+#pragma GCC diagnostic push
 
 // Check trigger data accessors:
 //   set/get_trigger_type()
