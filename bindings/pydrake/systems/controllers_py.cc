@@ -19,7 +19,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(controllers, m) {
+PYDRAKE_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
   using drake::multibody::MultibodyPlant;

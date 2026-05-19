@@ -10,7 +10,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(rendering, m) {
+PYDRAKE_MODULE(rendering, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

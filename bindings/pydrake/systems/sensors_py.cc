@@ -3,7 +3,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(sensors, m) {
+PYDRAKE_MODULE(sensors, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
   m.doc() = "Bindings for the sensors portion of the Systems framework.";

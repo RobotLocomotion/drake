@@ -67,7 +67,7 @@ class Worker {
 
 }  // namespace
 
-NB_MODULE(text_logging_test_helpers, m) {
+PYDRAKE_MODULE(text_logging_test_helpers, m) {
   m.doc() = "Test text logging";
 
   m.def("do_log_test", &do_log_test);

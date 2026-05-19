@@ -3,7 +3,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(manipulation, m) {
+PYDRAKE_MODULE(manipulation, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
   py::module_::import_("pydrake.multibody.parsing");

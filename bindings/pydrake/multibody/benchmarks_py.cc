@@ -45,7 +45,7 @@ void init_all(py::module_ m) {
 
 }  // namespace
 
-NB_MODULE(benchmarks, m) {
+PYDRAKE_MODULE(benchmarks, m) {
   init_acrobot(m.def_submodule("acrobot"));
   init_all(m.def_submodule("all"));
 

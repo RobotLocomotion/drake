@@ -3,7 +3,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(planning, m) {
+PYDRAKE_MODULE(planning, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
   m.doc() = R"""(

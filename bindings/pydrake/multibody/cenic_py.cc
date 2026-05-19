@@ -11,7 +11,7 @@ using systems::Context;
 using systems::IntegratorBase;
 using systems::System;
 
-NB_MODULE(cenic, m) {
+PYDRAKE_MODULE(cenic, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_cenic.drake.multibody;

@@ -1639,7 +1639,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
 }
 }  // namespace
 
-NB_MODULE(plant, m) {
+PYDRAKE_MODULE(plant, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;

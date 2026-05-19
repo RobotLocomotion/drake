@@ -19,7 +19,7 @@ using std::string;
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(parsing, m) {
+PYDRAKE_MODULE(parsing, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "SDF and URDF parsing for MultibodyPlant and SceneGraph.";
 

@@ -8,7 +8,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(type_safe_index_test_util, m) {
+PYDRAKE_MODULE(type_safe_index_test_util, m) {
   struct Tag {};
   using Index = TypeSafeIndex<Tag>;
   BindTypeSafeIndex<Index>(m, "Index");

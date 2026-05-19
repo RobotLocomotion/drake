@@ -18,7 +18,7 @@ namespace drake {
 namespace pydrake {
 
 namespace {
-NB_MODULE(optimization, m) {
+PYDRAKE_MODULE(optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_optimization.drake.multibody;

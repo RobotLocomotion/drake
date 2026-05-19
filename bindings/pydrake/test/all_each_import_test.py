@@ -80,6 +80,6 @@ class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
                 " the module does not contain native code, then add it to"
                 " list of expected_non_native_modules. If the module does"
                 " contain native code, then add this line near the start of"
-                " the NB_MODULE stanza in its cc file: "
+                " the PYDRAKE_MODULE stanza in its cc file: "
                 ' py::module_::import_("pydrake.common");',
             )

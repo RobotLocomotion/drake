@@ -1436,7 +1436,7 @@ void DefineDeformableBody(py::module_ m) {
 
 }  // namespace
 
-NB_MODULE(tree, m) {
+PYDRAKE_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 

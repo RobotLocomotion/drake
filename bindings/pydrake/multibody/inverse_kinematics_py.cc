@@ -56,7 +56,7 @@ CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
 
 using solvers::Constraint;
 
-NB_MODULE(inverse_kinematics, m) {
+PYDRAKE_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =

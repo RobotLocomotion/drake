@@ -109,7 +109,7 @@ void DefineForceDensityFieldBase(py::module_ m, T) {
 
 }  // namespace
 
-NB_MODULE(fem, m) {
+PYDRAKE_MODULE(fem, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for multibody fem.";
 

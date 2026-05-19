@@ -54,7 +54,7 @@ using symbolic::Variable;
 
 namespace pydrake {
 
-NB_MODULE(primitives, m) {
+PYDRAKE_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 

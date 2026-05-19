@@ -9,7 +9,7 @@ using symbolic::Variable;
 
 namespace pydrake {
 
-NB_MODULE(odr_test_module, m) {
+PYDRAKE_MODULE(odr_test_module, m) {
   m.doc() = "Test ODR using Variable.";
 
   m.def("new_variable",

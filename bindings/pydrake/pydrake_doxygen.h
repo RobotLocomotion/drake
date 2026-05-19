@@ -189,7 +189,7 @@ components being built.
   - foo_py.h: provides function signatures for the various "Define..." helper
     functions that comprise the module. In general, splitting into more
     (smaller) helper functions is better than fewer (larger) helper functions.
-  - foo_py.cc: uses NB_MODULE to define the package or module, by
+  - foo_py.cc: uses PYDRAKE_MODULE to define the package or module, by
     importing other dependent modules, calling the "Define..." helper functions,
     and possibly defining submodules.  Must not itself add bindings; it must
     always call helpers that add them.
@@ -262,7 +262,7 @@ An example of incorporating docstrings:
 @code{.cc}
     #include "drake/bindings/generated_docstrings/math.h"
 
-    NB_MODULE(math, m) {
+    PYDRAKE_MODULE(math, m) {
       using namespace drake::math;
       constexpr auto& doc = pydrake_doc_math.drake.math;
       using T = double;
@@ -289,7 +289,7 @@ An example of supplying custom strings:
     And has multiple lines.
     )""";
 
-    NB_MODULE(example, m) {
+    PYDRAKE_MODULE(example, m) {
       m.def("helper", []() { return 42; }, "My helper method");
       m.def("another_helper", []() { return 10; }, another_helper_doc);
     }

@@ -213,7 +213,7 @@ class CountingContextSystem final : public LeafSystem<T> {
 
 }  // namespace
 
-NB_MODULE(test_util, m) {
+PYDRAKE_MODULE(test_util, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace systems;
 

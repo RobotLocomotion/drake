@@ -6,7 +6,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(framework, m) {
+PYDRAKE_MODULE(framework, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for the core Systems framework.";
 

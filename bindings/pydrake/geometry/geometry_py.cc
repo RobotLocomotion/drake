@@ -17,7 +17,7 @@ void def_geometry_all(py::module_ m) {
 }
 }  // namespace
 
-NB_MODULE(geometry, m) {
+PYDRAKE_MODULE(geometry, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   py::module_::import_("pydrake.math");
 

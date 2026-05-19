@@ -94,7 +94,7 @@ void def_testing(py::module_ m) {
 }  // namespace testing
 
 namespace {
-// We put the work of NB_MODULE into a function so that we can easily
+// We put the work of PYDRAKE_MODULE into a function so that we can easily
 // catch exceptions.
 void InitLowLevelModules(py::module_ m) {
   m.doc() = "Bindings for //common:common";
@@ -445,7 +445,7 @@ discussion), use e.g.
 }
 }  // namespace
 
-NB_MODULE(common, m) {
+PYDRAKE_MODULE(common, m) {
   try {
     InitLowLevelModules(m);
   } catch (const std::exception& e) {

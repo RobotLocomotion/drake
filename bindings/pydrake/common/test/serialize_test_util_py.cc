@@ -82,7 +82,7 @@ struct MyData3 {
 
 }  // namespace
 
-NB_MODULE(serialize_test_util, m) {
+PYDRAKE_MODULE(serialize_test_util, m) {
   // Bind MyData1 with no documentation.
   py::class_<MyData1> cls1(m, "MyData1");
   cls1  // BR

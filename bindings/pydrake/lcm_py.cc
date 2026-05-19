@@ -11,7 +11,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(lcm, m) {
+PYDRAKE_MODULE(lcm, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::lcm;
   constexpr auto& doc = pydrake_doc_lcm.drake.lcm;

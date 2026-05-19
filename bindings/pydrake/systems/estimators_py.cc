@@ -7,7 +7,7 @@
 namespace drake {
 namespace pydrake {
 
-NB_MODULE(estimators, m) {
+PYDRAKE_MODULE(estimators, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::estimators;
   constexpr auto& doc = pydrake_doc_systems_estimators.drake.systems.estimators;

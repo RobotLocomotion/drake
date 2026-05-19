@@ -168,7 +168,7 @@ void init_perception(py::module_ m) {
   }
 }
 
-NB_MODULE(perception, m) {
+PYDRAKE_MODULE(perception, m) {
   m.doc() = "Python bindings for //perception";
 
   py::module_::import_("pydrake.common");

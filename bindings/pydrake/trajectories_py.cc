@@ -1010,7 +1010,7 @@ struct Impl {
 };
 }  // namespace
 
-NB_MODULE(trajectories, m) {
+PYDRAKE_MODULE(trajectories, m) {
   py::module_::import_("pydrake.autodiffutils");
   py::module_::import_("pydrake.common");
   py::module_::import_("pydrake.polynomial");

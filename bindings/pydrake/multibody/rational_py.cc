@@ -20,7 +20,7 @@ void DoPoseDeclaration(py::module_ m, T) {
   DefCopyAndDeepCopy(&cls);
 }
 
-NB_MODULE(rational, m) {
+PYDRAKE_MODULE(rational, m) {
   using drake::multibody::MultibodyPlant;
   constexpr auto& doc = pydrake_doc_multibody_rational.drake.multibody;
 

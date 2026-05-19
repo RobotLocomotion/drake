@@ -98,7 +98,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
 }
 }  // namespace
 
-NB_MODULE(polynomial, m) {
+PYDRAKE_MODULE(polynomial, m) {
   py::module_::import_("pydrake.autodiffutils");
   py::module_::import_("pydrake.common");
   py::module_::import_("pydrake.symbolic");

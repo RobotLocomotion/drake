@@ -201,7 +201,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
 }
 }  // namespace
 
-NB_MODULE(meshcat, m) {
+PYDRAKE_MODULE(meshcat, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Interface code for Meshcat-based visualization";
 

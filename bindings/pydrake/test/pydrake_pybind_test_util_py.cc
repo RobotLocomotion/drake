@@ -70,7 +70,7 @@ struct ExampleParamInit {
 
 }  // namespace
 
-NB_MODULE(pydrake_pybind_test_util, m) {
+PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
   {
     using Class = Item;
     py::class_<Class>(m, "Item").def_ro("value", &Class::value);

@@ -40,7 +40,7 @@ void ThrowIfPythonHasPendingSignals() {
 }
 }  // namespace
 
-NB_MODULE(analysis, m) {
+PYDRAKE_MODULE(analysis, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

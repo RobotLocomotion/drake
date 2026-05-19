@@ -304,3 +304,6 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
     static constexpr auto name = const_name(#Type);             \
   };                                                            \
   }  // namespace nanobind::detail
+
+// This alias helps ease Drake's transition to nanobind.
+#define PYDRAKE_MODULE NB_MODULE

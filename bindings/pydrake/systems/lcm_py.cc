@@ -108,7 +108,7 @@ Warning:
 
 }  // namespace
 
-NB_MODULE(lcm, m) {
+PYDRAKE_MODULE(lcm, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;

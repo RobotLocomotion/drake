@@ -27,7 +27,7 @@ void DefineIcf(py::module_ m) {
   }
 }
 
-NB_MODULE(contact_solvers, m) {
+PYDRAKE_MODULE(contact_solvers, m) {
   DefineIcf(m);
 }
 

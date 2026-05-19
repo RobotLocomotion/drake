@@ -93,7 +93,7 @@ struct type_caster<drake::pydrake::TypeConversionExample>
 
 namespace drake {
 namespace pydrake {
-NB_MODULE(wrap_test_util, m) {
+PYDRAKE_MODULE(wrap_test_util, m) {
   py::class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
       .def_rw("value", &MyValue::value, py_rvp::reference_internal);

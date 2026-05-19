@@ -36,7 +36,7 @@ struct UnregisteredType {
 
 }  // namespace
 
-NB_MODULE(value_test_util, m) {
+PYDRAKE_MODULE(value_test_util, m) {
   py::module_::import_("pydrake.common");
 
   py::class_<MoveOnlyType>(m, "MoveOnlyType")

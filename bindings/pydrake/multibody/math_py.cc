@@ -208,7 +208,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
 }
 }  // namespace
 
-NB_MODULE(math, m) {
+PYDRAKE_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 

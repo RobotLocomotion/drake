@@ -77,7 +77,7 @@ struct SimpleType {
 
 }  // namespace
 
-NB_MODULE(cpp_template_test_util, m) {
+PYDRAKE_MODULE(cpp_template_test_util, m) {
   auto cls_1 = BindSimpleTemplate<int>(m);
   m.attr("DefaultInst") = cls_1;
   auto cls_2 = BindSimpleTemplate<int, double>(m);

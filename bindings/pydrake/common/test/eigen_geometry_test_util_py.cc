@@ -16,7 +16,7 @@ const double kTolerance = 1e-8;
 
 }  // namespace
 
-NB_MODULE(eigen_geometry_test_util, m) {
+PYDRAKE_MODULE(eigen_geometry_test_util, m) {
   m.doc() = "Bindings for Eigen geometric types.";
 
   using T = double;
