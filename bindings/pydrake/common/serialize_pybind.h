@@ -97,7 +97,7 @@ class DefAttributesArchive {
           py::for_setter(py::arg("arg").none()));
     } else {
       ppy_class_->def_prop_rw(
-          name, getter, setter, doc, py::rv_policy::reference_internal);
+          name, getter, setter, doc, py_rvp::reference_internal);
     }
 
     // Remember the field's name and type for later use by Finished().

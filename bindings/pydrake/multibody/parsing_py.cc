@@ -297,8 +297,7 @@ NB_MODULE(parsing, m) {
         m.def("GetScopedFrameByName",
             overload_cast_explicit<const Frame<T>&, const MultibodyPlant<T>&,
                 std::string_view>(&parsing::GetScopedFrameByName),
-            py::arg("plant"), py::arg("full_name"),
-            py_rvp::reference,
+            py::arg("plant"), py::arg("full_name"), py_rvp::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
             doc.parsing.GetScopedFrameByName.doc);
       },
@@ -309,8 +308,7 @@ NB_MODULE(parsing, m) {
         m.def("GetScopedFrameByNameMaybe",
             overload_cast_explicit<const Frame<T>*, const MultibodyPlant<T>&,
                 std::string_view>(&parsing::GetScopedFrameByNameMaybe),
-            py::arg("plant"), py::arg("full_name"),
-            py_rvp::reference,
+            py::arg("plant"), py::arg("full_name"), py_rvp::reference,
             py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
             doc.parsing.GetScopedFrameByNameMaybe.doc);
       },

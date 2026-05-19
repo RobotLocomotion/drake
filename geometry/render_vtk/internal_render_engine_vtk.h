@@ -13,6 +13,7 @@
 #include <vtkCommand.h>              // vtkCommonCore
 #include <vtkImageExport.h>          // vtkIOImage
 #include <vtkNew.h>                  // vtkCommonCore
+#include <vtkPolyData.h>             // vtkCommonDataModel
 #include <vtkPolyDataAlgorithm.h>    // vtkCommonExecutionModel
 #include <vtkRenderWindow.h>         // vtkRenderingCore
 #include <vtkRenderer.h>             // vtkRenderingCore
@@ -250,7 +251,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Performs the common setup for all shape types. Note, this can be called
   // multiple times for a single value of data.id. It will simply accumulate
   // multiple parts in the Prop associated with the geometry id.
-  void ImplementPolyData(vtkPolyDataAlgorithm* source,
+  void ImplementPolyData(vtkPolyData* source,
                          const geometry::internal::RenderMaterial& material,
                          const RegistrationData& data);
 
