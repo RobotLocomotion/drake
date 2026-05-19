@@ -19,6 +19,10 @@ class MeshSource final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshSource);
 
+  /** The default constructor produces an empty in-memory mesh; the same state
+   as a moved-from MeshSource. */
+  MeshSource();
+
   /** Constructs from a file path.
    Note: the path will not be validated in any way (existence, availability,
    naming an actual mesh file, etc.). Validation occurs where the %MeshSource's
@@ -84,6 +88,10 @@ class MeshSource final {
   const InMemoryMesh& in_memory() const {
     return std::get<InMemoryMesh>(source_.value());
   }
+
+  /** Returns an empty MeshSource -- equivalent to a default-constructed
+   MeshSource. */
+  static const MeshSource& Empty();
 
  private:
   reset_after_move<std::variant<InMemoryMesh, std::filesystem::path>> source_;

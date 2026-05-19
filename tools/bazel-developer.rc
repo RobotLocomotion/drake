@@ -38,10 +38,10 @@ build:lint --build_tests_only
 build:lint --test_tag_filters=lint
 
 ### Kcov coverage build. ###
-build:kcov --test_tag_filters=-lint  # TODO(#24381) Update the filtering here.
 build:kcov --run_under=//tools/kcov
 build:kcov --@drake//tools/kcov:active=True
 build:kcov --build_tests_only
+build:kcov --test_lang_filters=-sh
 build:kcov --copt=-g
 build:kcov --copt=-O0
 # Prevent Bazel test sandboxing from consuming our coverage data files.

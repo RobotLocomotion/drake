@@ -299,11 +299,13 @@ drake_cc_library(
         "calc_signed_distance_to_surface_mesh.cc",
         "distance_to_point_callback.cc",
         "mesh_distance_boundary.cc",
+        "mesh_distance_boundary_cache.cc",
     ],
     hdrs = [
         "calc_signed_distance_to_surface_mesh.h",
         "distance_to_point_callback.h",
         "mesh_distance_boundary.h",
+        "mesh_distance_boundary_cache.h",
     ],
     internal = True,
     visibility = [
@@ -320,9 +322,15 @@ drake_cc_library(
         "//common:drake_export",
         "//common:essential",
         "//geometry:geometry_ids",
+        "//geometry:shape_specification",
         "//geometry/query_results:signed_distance_to_point",
         "//math:geometric_transform",
         "@fcl_internal//:fcl",
+    ],
+    implementation_deps = [
+        ":obj_to_surface_mesh",
+        ":polygon_to_triangle_mesh",
+        ":vtk_to_volume_mesh",
     ],
 )
 
@@ -1297,6 +1305,16 @@ drake_cc_googletest(
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_distance_boundary_cache_test",
+    deps = [
+        ":distance_to_point_callback",
+        ":obj_to_surface_mesh",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
     ],
 )
 

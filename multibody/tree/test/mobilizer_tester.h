@@ -34,7 +34,7 @@ class MobilizerTester : public ::testing::Test {
     tree_ = owned_tree_.get();
 
     // Add a body so we can add a mobilizer to it.
-    body_ = &owned_tree_->AddRigidBody("body", M_B);
+    body_ = &owned_tree_->AddLink("body", M_B);
   }
 
   // Adds a Joint, then finalizes to get a model using a Mobilizer and

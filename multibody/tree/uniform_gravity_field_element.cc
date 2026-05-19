@@ -6,6 +6,9 @@
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/rigid_body.h"
 
+// TODO(sherm1) Everything here needs to be reworked in terms of mobilized
+//  bodies rather than individual links. Also, use the available caches
+//  rather than recalculating them.
 namespace drake {
 namespace multibody {
 
@@ -64,13 +67,13 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
 
   // Temporary output vector of spatial forces for each body B at their inboard
   // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_links());
 
   // Zero vector of generalized accelerations.
   const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
 
   // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_links());
 
   // Output vector of generalized forces:
   VectorX<T> tau_g(model.num_velocities());
@@ -106,20 +109,20 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   // Skip the world.
   DRAKE_ASSERT(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
-  // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const RigidBody<T>& body = model.get_body(body_index);
+  const int num_links = model.num_links();
+  // Skip the "world" link.
+  for (LinkIndex link_index(1); link_index < num_links; ++link_index) {
+    const RigidBody<T>& link = model.get_link(link_index);
 
-    // Skip this body if gravity is disabled.
-    if (!is_enabled(body.model_instance())) continue;
+    // Skip this link if gravity is disabled.
+    if (!is_enabled(link.model_instance())) continue;
 
-    internal::MobodIndex mobod_index = body.mobod_index();
+    internal::MobodIndex mobod_index = link.mobod_index();
 
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
-    // caching is in place.
-    const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    //  caching is in place.
+    const T mass = link.get_mass(context);
+    const Vector3<T> p_BoBcm_B = link.CalcCenterOfMassInBodyFrame(context);
     const math::RotationMatrix<T> R_WB = pc.get_R_WB(mobod_index);
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
@@ -138,20 +141,20 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   // Skip the world.
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
+  const int num_links = model.num_links();
   T TotalPotentialEnergy = 0.0;
-  // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const RigidBody<T>& body = model.get_body(body_index);
+  // Skip the "world" link.
+  for (LinkIndex link_index(1); link_index < num_links; ++link_index) {
+    const RigidBody<T>& link = model.get_link(link_index);
 
-    // Skip this body if gravity is disabled.
-    if (!is_enabled(body.model_instance())) continue;
+    // Skip this link if gravity is disabled.
+    if (!is_enabled(link.model_instance())) continue;
 
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
-    const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
+    const T mass = link.get_mass(context);
+    const Vector3<T> p_BoBcm_B = link.CalcCenterOfMassInBodyFrame(context);
+    const math::RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
     const math::RotationMatrix<T> R_WB = X_WB.rotation();
     const Vector3<T> p_WBo = X_WB.translation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
@@ -172,25 +175,25 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   // Skip the world.
   DRAKE_THROW_UNLESS(this->has_parent_tree());
   const internal::MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
+  const int num_links = model.num_links();
   T TotalConservativePower = 0.0;
-  // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const RigidBody<T>& body = model.get_body(body_index);
+  // Skip the "world" link.
+  for (LinkIndex link_index(1); link_index < num_links; ++link_index) {
+    const RigidBody<T>& link = model.get_link(link_index);
 
-    // Skip this body if gravity is disabled.
-    if (!is_enabled(body.model_instance())) continue;
+    // Skip this link if gravity is disabled.
+    if (!is_enabled(link.model_instance())) continue;
 
     // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
-    // caching is in place.
-    const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const math::RigidTransform<T>& X_WB = pc.get_X_WB(body.mobod_index());
+    //  caching is in place.
+    const T mass = link.get_mass(context);
+    const Vector3<T> p_BoBcm_B = link.CalcCenterOfMassInBodyFrame(context);
+    const math::RigidTransform<T>& X_WB = pc.get_X_WB(link.mobod_index());
     const math::RotationMatrix<T> R_WB = X_WB.rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.mobod_index());
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(link.mobod_index());
     const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
     const Vector3<T>& v_WBcm = V_WBcm.translational();
 

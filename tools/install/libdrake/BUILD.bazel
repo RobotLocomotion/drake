@@ -433,11 +433,21 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "exported_symbols_test",
-    # Debug builds have a lot more symbols (no dead code elimination) so are too
-    # much work to tidy up.
-    opt_out_conditions = ["//tools:unoptimized"],
+    # For simplicity, we only test on Ubuntu. Hopefully, macOS is similar.
+    opt_in_condition = "//tools/skylark:linux",
+    opt_out_conditions = [
+        # Debug builds have a lot more symbols (no dead code elimination) so are
+        # too much work to tidy up.
+        "//tools:unoptimized",
+        # The objdump disassembly is hard-coded for x86_64.
+        "@platforms//cpu:aarch64",
+    ],
     data = [
         ":libdrake.so",
+        "@llvm//:bin/llvm-objdump",
+    ],
+    deps = [
+        "@rules_python//python/runfiles",
     ],
 )
 

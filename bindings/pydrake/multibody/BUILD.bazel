@@ -156,6 +156,7 @@ drake_pybind_library(
     name = "plant_py",
     cc_deps = [
         "//bindings/generated_docstrings:multibody_plant",
+        "//bindings/generated_docstrings:multibody_tree",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",

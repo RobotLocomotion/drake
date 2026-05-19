@@ -13,18 +13,16 @@ namespace multibody {
 // TODO(sherm1) Promote from internal once API has stabilized: issue #11307.
 namespace internal {
 
-using LinkIndex = BodyIndex;
-
 class SpanningForest;
-
-using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
 
 using JointTraitsIndex = TypeSafeIndex<class JointTraitsTag>;
 using WeldedLinksAssemblyIndex = TypeSafeIndex<class WeldedLinksAssemblyTag>;
 using LoopConstraintIndex = TypeSafeIndex<class LoopConstraintTag>;
 
-/* Link properties that can affect how the forest model gets built. Or-ing
-these also produces a LinkFlags object. */
+/* Link properties that can affect how the forest model gets built. This enum
+is emulating a bit mask; "and" and "or" operators are provided which return
+a LinkFlags object. Be careful with ordinary equality and assignment
+operators. */
 enum class LinkFlags : uint32_t {
   kDefault = 0,
   kStatic = 1 << 0,          ///< Implicitly welded to World.
@@ -33,16 +31,20 @@ enum class LinkFlags : uint32_t {
   kShadow = 1 << 3           ///< Link is a shadow (internal use only).
 };
 
-/* Joint properties that can affect how the SpanningForest gets built. Or-ing
-these also produces a JointFlags object. */
+/* Joint properties that can affect how the SpanningForest gets built. This enum
+is emulating a bit mask; "and" and "or" operators are provided which return
+a JointFlags object. Be careful with ordinary equality and assignment
+operators. */
 enum class JointFlags : uint32_t {
   kDefault = 0,
   kMustBeModeled = 1 << 0  ///< Model explicitly even if ignorable weld.
 };
 
-/* Options for how to build the SpanningForest. Or-ing these also produces a
-ForestBuildingOptions object. These can be provided as per-model instance
-options to locally override global options. */
+/* Options for how to build the SpanningForest. These can be provided as
+per-model instance options to locally override global options. This enum
+is emulating a bit mask; "and", "or", and "not" operators are provided which
+return a ForestBuildingOptions object. Be careful with ordinary equality and
+assignment operators. */
 enum class ForestBuildingOptions : uint32_t {
   kDefault = 0,
   kStatic = 1 << 0,                ///< Weld all links to World.
@@ -82,6 +84,9 @@ inline ForestBuildingOptions operator&(ForestBuildingOptions left,
                                        ForestBuildingOptions right) {
   return static_cast<ForestBuildingOptions>(static_cast<unsigned>(left) &
                                             static_cast<unsigned>(right));
+}
+inline ForestBuildingOptions operator~(ForestBuildingOptions options) {
+  return static_cast<ForestBuildingOptions>(~static_cast<unsigned>(options));
 }
 
 }  // namespace internal

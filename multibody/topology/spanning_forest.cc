@@ -318,13 +318,13 @@ void SpanningForest::AssignCoordinates() {
   for (auto& mobod : data_.mobods) {
     mobod.q_start_ = next_q;
     mobod.v_start_ = next_v;
-    if (!mobod.joint_ordinal().is_valid()) {
+    if (!mobod.active_joint_ordinal().is_valid()) {
       mobod.nq_ = mobod.nv_ = 0;  // Treat World as though welded.
       mobod.nq_inboard_ = mobod.nv_inboard_ = 0;
       continue;
     }
     const JointTraitsIndex joint_traits_index =
-        joints(mobod.joint_ordinal()).traits_index();
+        joints(mobod.active_joint_ordinal()).traits_index();
     const LinkJointGraph::JointTraits& joint_traits =
         graph().joint_traits()[joint_traits_index];
 
@@ -337,8 +337,9 @@ void SpanningForest::AssignCoordinates() {
     }
 
     /* Keep a running count of inboard coordinates. */
-    DRAKE_DEMAND(mobod.inboard().is_valid());  // Non-World must have inboard.
-    const Mobod& parent = mobods(mobod.inboard());
+    DRAKE_DEMAND(
+        mobod.inboard_mobod().is_valid());  // Non-World must have inboard.
+    const Mobod& parent = mobods(mobod.inboard_mobod());
     /* Parent should have been processed before child. */
     DRAKE_DEMAND(parent.nq_inboard_ >= 0 && parent.nv_inboard_ >= 0);
     mobod.nq_inboard_ = parent.nq_inboard_ + mobod.nq_;
@@ -789,7 +790,8 @@ const SpanningForest::Mobod& SpanningForest::AddNewMobod(
         new_mobod_index);
 
     mutable_graph().AddToWeldedLinksAssembly(
-        inboard_mobod.link_ordinal(), outboard_link_ordinal, joint_ordinal);
+        inboard_mobod.active_link_ordinal(), outboard_link_ordinal,
+        joint_ordinal);
   }
 
   return new_mobod;
@@ -950,9 +952,9 @@ const SpanningForest::Mobod& SpanningForest::JoinExistingMobod(
   DRAKE_DEMAND(weld_joint.traits_index() ==
                LinkJointGraph::weld_joint_traits_index());
   const WeldedLinksAssemblyIndex assembly_index =
-      mutable_graph().AddToWeldedLinksAssembly(inboard_mobod->link_ordinal(),
-                                               follower_link_ordinal,
-                                               weld_joint_ordinal);
+      mutable_graph().AddToWeldedLinksAssembly(
+          inboard_mobod->active_link_ordinal(), follower_link_ordinal,
+          weld_joint_ordinal);
   mutable_graph().set_primary_mobod_for_link(
       follower_link_ordinal, inboard_mobod->index(), weld_joint.index());
   inboard_mobod->follower_link_ordinals_.push_back(follower_link_ordinal);
@@ -978,7 +980,7 @@ void SpanningForest::GrowAssemblyMobod(
       graph().index_to_ordinal(outboard_link_index);
   const Link& outboard_link = links(outboard_link_ordinal);
   if (link_is_already_in_forest(outboard_link_ordinal)) {
-    const Link& inboard_link = links(mobod->link_ordinal());
+    const Link& inboard_link = links(mobod->active_link_ordinal());
     DRAKE_DEMAND(outboard_link.welded_links_assembly() ==
                  inboard_link.welded_links_assembly());
     mutable_graph().AddUnmodeledJointToWeldedLinksAssembly(
@@ -1023,9 +1025,9 @@ std::vector<MobodIndex> SpanningForest::FindPathFromWorld(
     MobodIndex index) const {
   const Mobod* mobod = &mobods(index);
   std::vector<MobodIndex> path(mobod->level() + 1);
-  while (mobod->inboard().is_valid()) {
+  while (mobod->inboard_mobod().is_valid()) {
     path[mobod->level()] = mobod->index();
-    mobod = &mobods(mobod->inboard());
+    mobod = &mobods(mobod->inboard_mobod());
   }
   DRAKE_DEMAND(mobod->is_world());
   path[0] = MobodIndex(0);
@@ -1051,14 +1053,14 @@ MobodIndex SpanningForest::FindFirstCommonAncestor(
 
   // Get down to a common level, then go down both branches.
   while (branch1->level() > branch2->level())
-    branch1 = &mobods(branch1->inboard());
+    branch1 = &mobods(branch1->inboard_mobod());
   while (branch2->level() > branch1->level())
-    branch2 = &mobods(branch2->inboard());
+    branch2 = &mobods(branch2->inboard_mobod());
 
   // Both branches are at the same level now.
   while (branch1->index() != branch2->index()) {
-    branch1 = &mobods(branch1->inboard());
-    branch2 = &mobods(branch2->inboard());
+    branch1 = &mobods(branch1->inboard_mobod());
+    branch2 = &mobods(branch2->inboard_mobod());
   }
 
   return branch1->index();  // Same as branch2->index().
@@ -1079,19 +1081,19 @@ MobodIndex SpanningForest::FindPathsToFirstCommonAncestor(
   // Get down to a common level, then go down both branches.
   while (branch1->level() > branch2->level()) {
     path1->push_back(branch1->index());
-    branch1 = &mobods(branch1->inboard());
+    branch1 = &mobods(branch1->inboard_mobod());
   }
   while (branch2->level() > branch1->level()) {
     path2->push_back(branch2->index());
-    branch2 = &mobods(branch2->inboard());
+    branch2 = &mobods(branch2->inboard_mobod());
   }
 
   // Both branches are at the same level now.
   while (branch1->index() != branch2->index()) {
     path1->push_back(branch1->index());
     path2->push_back(branch2->index());
-    branch1 = &mobods(branch1->inboard());
-    branch2 = &mobods(branch2->inboard());
+    branch1 = &mobods(branch1->inboard_mobod());
+    branch2 = &mobods(branch2->inboard_mobod());
   }
 
   return branch1->index();  // Same as branch2->index().

@@ -103,7 +103,8 @@ def _check_urls(*, urls):
     """Check all urls exist.  Fail if any do not exist with an error message
     indicating which URL(s) cannot be downloaded."""
     assert len(urls) > 0
-    missing_urls = []  # list[tuple[str, str]] (url, error message)
+    # Build a list of (url, error message) pairs.
+    missing_urls: list[tuple[str, str]] = []
     for u in urls:
         print(f"+ Verify URL: {u}", file=sys.stderr)
         proc = subprocess.run(["wget", "--spider", u], capture_output=True)
@@ -132,21 +133,30 @@ def _download_binaries(*, version):
         "https://drake-packages.csail.mit.edu/drake/staging": [
             # Wheel filenames.
             f"drake-{version[1:]}-cp312-cp312-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp312-cp312-manylinux_2_34_aarch64.whl",
             f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp313-cp313-manylinux_2_34_aarch64.whl",
             f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_x86_64.whl",
+            f"drake-{version[1:]}-cp314-cp314-manylinux_2_34_aarch64.whl",
             f"drake-{version[1:]}-cp313-cp313-macosx_15_0_arm64.whl",
             f"drake-{version[1:]}-cp314-cp314-macosx_15_0_arm64.whl",
             # Deb filenames.
             f"drake-dev_{version[1:]}-1_amd64-noble.deb",
+            f"drake-dev_{version[1:]}-1_arm64-noble.deb",
+            f"drake-dev_{version[1:]}-1_amd64v3-resolute.deb",
+            f"drake-dev_{version[1:]}-1_arm64-resolute.deb",
             # Tarball filenames.
             f"drake-{version[1:]}-noble.tar.gz",
+            f"drake-{version[1:]}-noble-arm64.tar.gz",
+            f"drake-{version[1:]}-resolute-amd64v3.tar.gz",
+            f"drake-{version[1:]}-resolute-arm64.tar.gz",
             f"drake-{version[1:]}-mac-arm64.tar.gz",
         ],
     }
 
     # Build a list of flat URLs and a list of (base_url, filename) pairs.
-    download_urls = []  # list[str]
-    base_url_filename_pairs = []  # list[tuple[str, str]]: (base_url, filename)
+    download_urls: list[str] = []
+    base_url_filename_pairs: list[tuple[str, str]] = []
     for base_url, flavor_filenames in binaries.items():
         for one_filename in flavor_filenames:
             download_urls.append(f"{base_url}/{one_filename}")
@@ -184,7 +194,8 @@ def _check_deb_versions(*, filenames, version):
     """Check every `.deb` in filenames has the correct version, fail if not."""
     deb_filenames = [f for f in filenames if f.endswith(".deb")]
     assert len(deb_filenames) > 0, filenames
-    deb_versions = []  # list[tuple[str, str]]: (filename, extracted version)
+    # Build a list of (filename, extracted version) pairs.
+    deb_versions: list[tuple[str, str]] = []
     for deb in deb_filenames:
         proc = subprocess.run(
             ["dpkg-deb", "-f", deb, "Version"], capture_output=True, check=True

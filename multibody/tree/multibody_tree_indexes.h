@@ -6,25 +6,6 @@
 namespace drake {
 namespace multibody {
 
-namespace internal {
-
-// Type used to identify any quantity associated with a "mobilized body"
-// (abbreviated "mobod"), which is a depth-first numbered node of the spanning
-// forest used to model a multibody system. This includes BodyNodes, Mobilizers,
-// and associated computed quantities such as their accelerations.
-using MobodIndex = TypeSafeIndex<class MobodTag>;
-
-// Type used to identify a topological tree within the "forest" of a multibody
-// system.
-using TreeIndex = TypeSafeIndex<class TreeTag>;
-
-// World is always modeled as the 0th mobilized body.
-inline MobodIndex world_mobod_index() {
-  return MobodIndex(0);
-}
-
-}  // namespace internal
-
 // N.B. To simplify checking binding coverage, please ensure these symbols
 // are defined in `tree_py.cc` in the same order.
 
@@ -34,6 +15,12 @@ using FrameIndex = TypeSafeIndex<class FrameTag>;
 /// Type used to identify RigidBodies (a.k.a. Links) by index in a multibody
 /// plant. Interchangeable with LinkIndex.
 using BodyIndex = TypeSafeIndex<class RigidBodyTag>;
+
+/// This is a synonym for BodyIndex.
+using LinkIndex = BodyIndex;
+
+/// Type used to identify links by ordinal within a multibody plant.
+using LinkOrdinal = TypeSafeIndex<class LinkOrdinalTag>;
 
 /// Type used to identify force elements by index within a multibody plant.
 using ForceElementIndex = TypeSafeIndex<class ForceElementTag>;
@@ -95,6 +82,29 @@ inline ModelInstanceIndex world_model_instance() {
 inline ModelInstanceIndex default_model_instance() {
   return ModelInstanceIndex(1);
 }
+
+namespace internal {
+
+// Type used to identify any quantity associated with a "mobilized body"
+// (abbreviated "mobod"), which is a depth-first numbered node of the spanning
+// forest used to model a multibody system. This includes BodyNodes, Mobilizers,
+// and associated computed quantities such as their accelerations.
+using MobodIndex = TypeSafeIndex<class MobodTag>;
+
+// Type used to identify a topological tree within the "forest" of a multibody
+// system.
+using TreeIndex = TypeSafeIndex<class TreeTag>;
+
+// World is always modeled as the 0th mobilized body and link.
+inline MobodIndex world_mobod_index() {
+  return MobodIndex(0);
+}
+
+inline LinkOrdinal world_link_ordinal() {
+  return LinkOrdinal(0);
+}
+
+}  // namespace internal
 
 }  // namespace multibody
 }  // namespace drake

@@ -47,11 +47,14 @@ fix the failure within 60 minutes, the build cop will merge the pull request to
 revert the commits and verify that the continuous builds triggered by that merge
 pass.
 
-In the case of failures in a ``dev`` directory, the build cop should disable the
-failing test instead of reverting the entire commit. To disable the test in
-certain configurations, add ``opt_out_conditions = []`` to its BUILD rule. If it
-fails in the default configuration or in too many configurations to list one by
-one, use `tags = ["manual"]` to universally disable the test.
+In the case of failures in an ``experimental`` or ``dev`` directory, the build
+cop should disable the failing test instead of reverting the entire commit. To
+disable the test in certain configurations, add ``opt_out_conditions = []`` to
+its BUILD rule. If it fails in the default configuration or in too many
+configurations to list one by one, use `tags = ["manual"]` to universally
+disable the test. If the failure is during build instead of test, disable
+part(s) of the build until everything is working again. If possible, ping the
+code's author / maintainer in your pull request that disables it.
 
 In the case of intermittent failures of unclear origin or which cannot
 reasonably be prevented (for example, network failures of remotely hosted

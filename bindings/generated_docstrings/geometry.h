@@ -3323,6 +3323,13 @@ R"""(Provides a general abstraction to the definition of a mesh. A mesh
 definition can come from disk or memory. APIs that support both can
 take as specification an instance of MeshSource to communicate that
 ability.)""";
+        // Symbol: drake::geometry::MeshSource::Empty
+        struct /* Empty */ {
+          // Source: drake/geometry/mesh_source.h
+          const char* doc =
+R"""(Returns an empty MeshSource -- equivalent to a default-constructed
+MeshSource.)""";
+        } Empty;
         // Symbol: drake::geometry::MeshSource::GetCacheKey
         struct /* GetCacheKey */ {
           // Source: drake/geometry/mesh_source.h
@@ -3346,6 +3353,10 @@ Raises:
         } GetCacheKey;
         // Symbol: drake::geometry::MeshSource::MeshSource
         struct /* ctor */ {
+          // Source: drake/geometry/mesh_source.h
+          const char* doc_0args =
+R"""(The default constructor produces an empty in-memory mesh; the same
+state as a moved-from MeshSource.)""";
           // Source: drake/geometry/mesh_source.h
           const char* doc_1args_path =
 R"""(Constructs from a file path. Note: the path will not be validated in

@@ -52,11 +52,11 @@ class CurvilinearJointTest : public ::testing::Test {
     auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add joint to it.
-    body1_ = &model->AddRigidBody("Body", M_B);
+    body1_ = &model->AddLink("Body", M_B);
 
     // Add a curvilinear joint between the world and body1.
     joint1_ = &model->AddJoint<CurvilinearJoint>(
-        "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
+        "Joint1", model->world_link(), std::nullopt, *body1_, std::nullopt,
         trajectory_, kDamping);
     Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
     mutable_joint1_ = dynamic_cast<CurvilinearJoint<double>*>(&mutable_joint);

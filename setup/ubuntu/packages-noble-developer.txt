@@ -8,6 +8,7 @@ fonts-dejavu-extra
 gnupg
 graphviz
 jekyll
+jupyter-nbconvert
 libclang-20-dev
 libclang-rt-20-dev
 libomp-20-dev

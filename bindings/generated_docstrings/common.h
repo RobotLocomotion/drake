@@ -1976,11 +1976,7 @@ invoked during stack unwinding.)""";
       // Source: drake/common/sha256.h
       const char* doc =
 R"""(Represents a SHA-256 cryptographic checksum. See also
-https://en.wikipedia.org/wiki/SHA-2.
-
-XXX porting -- this paragraph contains lies. This class is not bound
-in pydrake, because Python programmers should prefer using
-https://docs.python.org/3/library/hashlib.html instead.)""";
+https://en.wikipedia.org/wiki/SHA-2.)""";
       // Symbol: drake::Sha256::Checksum
       struct /* Checksum */ {
         // Source: drake/common/sha256.h

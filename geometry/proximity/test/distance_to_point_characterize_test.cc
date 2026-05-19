@@ -1,14 +1,15 @@
 #include <limits>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
-#include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/math/rigid_transform.h"
@@ -26,6 +27,31 @@ namespace {
 
 using std::vector;
 
+// Creates a string containing the OBJ representation of the given convex shape.
+std::string MakeConvexObj(const fcl::Convexd& convex) {
+  namespace sv = std::views;
+
+  std::string obj;
+  for (const auto& p_MV : convex.getVertices()) {
+    obj += fmt::format("v {:#:}\n", fmt_eigen(p_MV.transpose()));
+  }
+
+  int cursor = 0;
+  const std::vector<int>& face_data = convex.getFaces();
+  while (cursor + 1 < std::ssize(face_data)) {
+    const int num_vertices = face_data.at(cursor++);
+    DRAKE_DEMAND(num_vertices > 0);
+    auto slice = face_data | sv::drop(cursor) | sv::take(num_vertices) |
+                 sv::transform([](int i) {
+                   return i + 1;
+                 });
+    obj += fmt::format("f {}\n", fmt::join(slice, " "));
+    cursor += num_vertices;
+  }
+
+  return obj;
+}
+
 /* Implementation of DistanceCallback for signed distance. */
 template <typename T>
 class PointDistanceCallback : public DistanceCallback<T> {
@@ -38,15 +64,23 @@ class PointDistanceCallback : public DistanceCallback<T> {
     DRAKE_DEMAND(obj_A->collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE);
     const GeometryId point_id = EncodedData(*obj_A).id();
     const Vector3<T> p_WQ = X_WGs->at(point_id).translation();
-    std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data;
+    MeshDistanceBoundaryCache mesh_distance_boundary_cache;
     // Both drake::Convex and drake::Mesh are represented as fcl::GEOM_CONVEX.
     if (obj_B->collisionGeometry().get()->getNodeType() == fcl::GEOM_CONVEX) {
-      mesh_data.emplace(EncodedData(*obj_B).id(),
-                        MeshDistanceBoundary(MakeBoxVolumeMeshWithMa<double>(
-                            CharacterizeResultTest<T>::box())));
+      // We're making a single assumption: both Mesh and Convex are being tested
+      // with a mesh that *is* its own convex hull. If
+      // MakeFclShape::ImplementGeometry(Mesh) (characterization_utilities.cc)
+      // ever changes, we'll have to adapt this.
+      const fcl::Convexd& convex =
+          *static_cast<const fcl::Convexd*>(obj_B->collisionGeometry().get());
+      const std::string obj_contents = MakeConvexObj(convex);
+      Mesh mesh(InMemoryMesh{
+          .mesh_file = MemoryFile(obj_contents, ".obj", "test_box.obj")});
+      mesh_distance_boundary_cache.Register(EncodedData(*obj_B).id(), mesh);
     }
+    mesh_distance_boundary_cache.ComputeAll();
     CallbackData<T> data(obj_A, std::numeric_limits<double>::infinity(), p_WQ,
-                         X_WGs, &mesh_data, &results_);
+                         X_WGs, &mesh_distance_boundary_cache, &results_);
     double max_distance = std::numeric_limits<double>::infinity();
     return Callback<T>(obj_A, obj_B, &data, max_distance);
   }

@@ -714,26 +714,43 @@ GTEST_TEST(ToppraTest, GridpointsTest) {
   EXPECT_EQ(gridpts.size(), 9);
 }
 
-GTEST_TEST(ToppraTest, TimeOptimalTest) {
-  auto plant = std::make_unique<MultibodyPlant<double>>(0);
-  const double mass{1};
-  const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
-  const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
-  const SpatialInertia<double> M_AAo_A =
-      SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A, I_AAcm_A);
-  auto& body = plant->AddRigidBody("body", M_AAo_A);
-  plant->AddJoint<PrismaticJoint>("joint", plant->world_body(), std::nullopt,
-                                  body, std::nullopt, Eigen::Vector3d::UnitX());
-  plant->Finalize();
+class PrismaticToppraTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    plant_ = std::make_unique<MultibodyPlant<double>>(0);
+    const double mass{1};
+    const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
+    const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
+    const SpatialInertia<double> M_AAo_A =
+        SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A,
+                                                       I_AAcm_A);
+    auto& body = plant_->AddRigidBody("body", M_AAo_A);
+    plant_->AddJoint<PrismaticJoint>("joint", plant_->world_body(),
+                                     std::nullopt, body, std::nullopt,
+                                     Eigen::Vector3d::UnitX());
+    plant_->Finalize();
+  }
 
+  std::unique_ptr<Toppra> MakeToppra(
+      const PiecewisePolynomial<double>& path,
+      std::optional<Eigen::VectorXd> gridpts = std::nullopt) {
+    if (!gridpts) {
+      auto options = CalcGridPointsOptions();
+      options.max_err = 1e-5;
+      gridpts = Toppra::CalcGridPoints(path, options);
+    }
+    return std::make_unique<Toppra>(path, *plant_, *gridpts);
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+};
+
+TEST_F(PrismaticToppraTest, TimeOptimalTest) {
   auto path = PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
       Eigen::Vector2d(0, 1), Eigen::RowVector2d(0, 1), Vector1d(0),
       Vector1d(0));
 
-  auto options = CalcGridPointsOptions();
-  options.max_err = 1e-5;
-  auto gridpts = Toppra::CalcGridPoints(path, options);
-  auto toppra = std::make_unique<Toppra>(path, *plant, gridpts);
+  auto toppra = MakeToppra(path);
 
   auto acceleration_constraint =
       toppra->AddJointAccelerationLimit(Vector1d(-1), Vector1d(1));
@@ -749,25 +766,11 @@ GTEST_TEST(ToppraTest, TimeOptimalTest) {
   EXPECT_LT(trajectory.end_time(), 2 + tol);
 }
 
-GTEST_TEST(ToppraTest, ZeroVelocityTest) {
-  auto plant = std::make_unique<MultibodyPlant<double>>(0);
-  const double mass{1};
-  const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
-  const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
-  const SpatialInertia<double> M_AAo_A =
-      SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A, I_AAcm_A);
-  auto& body = plant->AddRigidBody("body", M_AAo_A);
-  plant->AddJoint<PrismaticJoint>("joint", plant->world_body(), std::nullopt,
-                                  body, std::nullopt, Eigen::Vector3d::UnitX());
-  plant->Finalize();
-
+TEST_F(PrismaticToppraTest, ZeroVelocityTest) {
   auto path = PiecewisePolynomial<double>::FirstOrderHold(
       Eigen::Vector3d(0, 0.9, 2), Eigen::RowVector3d(0, 0, 1));
 
-  auto options = CalcGridPointsOptions();
-  options.max_err = 1e-5;
-  auto gridpts = Toppra::CalcGridPoints(path, options);
-  auto toppra = std::make_unique<Toppra>(path, *plant, gridpts);
+  auto toppra = MakeToppra(path);
 
   auto velocity_constraint =
       toppra->AddJointVelocityLimit(Vector1d(-1), Vector1d(1));
@@ -776,6 +779,41 @@ GTEST_TEST(ToppraTest, ZeroVelocityTest) {
 
   auto result = toppra->SolvePathParameterization();
   ASSERT_TRUE(result);
+}
+
+TEST_F(PrismaticToppraTest, MinTimeStepError) {
+  auto path = PiecewisePolynomial<double>::FirstOrderHold(
+      Eigen::Vector3d(0, 0.9, 2), Eigen::RowVector3d(0, 0, 1));
+
+  Eigen::VectorXd gridpts(3);
+  gridpts << 0, trajectories::PiecewiseTrajectory<double>::kEpsilonTime / 2.0,
+      2;
+  auto toppra = MakeToppra(path, gridpts);
+
+  // Huge limits (and small gridpoints) lead to tiny time steps.
+  auto velocity_constraint =
+      toppra->AddJointVelocityLimit(Vector1d(-1e6), Vector1d(1e6));
+  auto acceleration_constraint =
+      toppra->AddJointAccelerationLimit(Vector1d(-1e6), Vector1d(1e6));
+
+  ASSERT_NO_THROW(toppra->SolvePathParameterization());
+  auto result = toppra->SolvePathParameterization();
+  EXPECT_FALSE(result);
+}
+
+TEST_F(PrismaticToppraTest, InfiniteTimeStepError) {
+  auto path = PiecewisePolynomial<double>::FirstOrderHold(
+      Eigen::Vector2d(0, 1), Eigen::RowVector2d(0, 1));
+
+  auto toppra = MakeToppra(path);
+
+  // Tight limits that force zero velocity.
+  toppra->AddJointVelocityLimit(Vector1d(0), Vector1d(0));
+  toppra->AddJointAccelerationLimit(Vector1d(0), Vector1d(0));
+
+  ASSERT_NO_THROW(toppra->SolvePathParameterization());
+  auto result = toppra->SolvePathParameterization(0, 0);
+  EXPECT_FALSE(result);
 }
 
 }  // namespace

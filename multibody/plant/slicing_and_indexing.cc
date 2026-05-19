@@ -6,10 +6,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 
-// TODO(rpoyner-tri): the Select*() and Expand*() functions below can be
-// removed and replaced with arbitrary indexing once Eigen 3.4 is our minimum
-// required version.
-
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -20,12 +16,12 @@ void DemandIndicesValid(const std::vector<int>& indices, int max_size) {
     return;
   }
 
-  // Only do the expensive check in debug builds.
-  DRAKE_ASSERT(std::is_sorted(indices.begin(), indices.end()));
-  DRAKE_ASSERT(std::set<int>(indices.begin(), indices.end()).size() ==
-               indices.size());  // Checks there are no duplicates.
-  DRAKE_DEMAND(indices[0] >= 0);
-  DRAKE_DEMAND(indices[indices.size() - 1] < max_size);
+  // Only do the expensive checks in debug builds.
+  DRAKE_ASSERT(std::ranges::is_sorted(indices));
+  // Checks there are no duplicates.
+  DRAKE_ASSERT(std::ranges::adjacent_find(indices) == indices.end());
+  DRAKE_DEMAND(indices.front() >= 0);
+  DRAKE_DEMAND(indices.back() < max_size);
 }
 
 template <typename T>

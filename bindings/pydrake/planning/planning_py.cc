@@ -35,6 +35,13 @@ and/or trajectories of dynamical systems.
   internal::DefinePlanningIrisZo(m);
   internal::DefinePlanningIrisFromCliqueCover(m);
   internal::DefinePlanningZmpPlanner(m);
+
+  // Experimental modules.
+  auto experimental = m.def_submodule("experimental");
+  experimental.doc() =
+      ".. warning:: This module is **experimental** and may change or be "
+      "removed at any time, without any deprecation notice ahead of time.\n";
+  internal::DefinePlanningPlaceholder(experimental);
 }
 
 }  // namespace pydrake

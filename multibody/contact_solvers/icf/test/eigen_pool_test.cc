@@ -78,6 +78,15 @@ GTEST_TEST(EigenPoolTest, EigenVectorX) {
   EigenPool<VectorXd> pool;
   EXPECT_EQ(pool.size(), 0);
 
+  // Examine an empty entry added to an empty pool. In prior implementations,
+  // this sequence could trigger undefined behavior.
+  {
+    pool.Add(0, 1);
+    EXPECT_EQ(pool.size(), 1);
+    EXPECT_EQ(pool[0].size(), 0);
+    pool.Clear();
+  }
+
   // This Resize uses the heterogeneous-size overload.
   std::vector<int> sizes = {3, 5, 7};
   {
@@ -146,6 +155,15 @@ GTEST_TEST(EigenPoolTest, EigenVectorX) {
 GTEST_TEST(EigenPoolTest, EigenMatrixX) {
   EigenPool<MatrixXd> pool;
   EXPECT_EQ(pool.size(), 0);
+
+  // Examine an empty entry added to an empty pool. In prior implementations,
+  // this sequence could trigger undefined behavior.
+  {
+    pool.Add(0, 1);
+    EXPECT_EQ(pool.size(), 1);
+    EXPECT_EQ(pool[0].size(), 0);
+    pool.Clear();
+  }
 
   std::vector<int> rows = {3, 5, 7};
   std::vector<int> cols = {1, 2, 3};

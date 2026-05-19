@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/bindings/generated_docstrings/multibody_plant.h"
+#include "drake/bindings/generated_docstrings/multibody_tree.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
@@ -1785,8 +1786,11 @@ NB_MODULE(plant, m) {
   }
 
   {
+    // This enum comes from a MultibodyTree header but for historical
+    // reasons we've bound it in plant.
     using Class = BaseBodyJointType;
-    constexpr auto& cls_doc = doc.BaseBodyJointType;
+    constexpr auto& tree_doc = pydrake_doc_multibody_tree.drake.multibody;
+    constexpr auto& cls_doc = tree_doc.BaseBodyJointType;
     py::enum_<Class> cls(m, "BaseBodyJointType", cls_doc.doc);
     cls.value("kQuaternionFloatingJoint", Class::kQuaternionFloatingJoint,
            cls_doc.kQuaternionFloatingJoint.doc)

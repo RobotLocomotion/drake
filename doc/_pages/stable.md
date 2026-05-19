@@ -67,6 +67,7 @@ header files are distributed in a
 * Excluding the `drake/examples/...` directory tree.
 * Excluding code within `namespace internal`.
 * Excluding code documented as "internal use only".
+* Excluding code within `namespace experimental`.
 * Excluding code documented with an "experimental" warning.
 
 In particular, note that any
@@ -84,6 +85,7 @@ The Python Stable API covers all Python library code under `import drake` or
   use only" by convention of
   [PEP-8](https://www.python.org/dev/peps/pep-0008/#descriptive-naming-styles).
 * Excluding code documented as "internal use only".
+* Excluding code within an `experimental` module.
 * Excluding code documented with an "experimental" warning.
 * Excluding the "all" modules such as `pydrake.all`, `pydrake.systems.all`,
   etc. These are intended to be shortcuts for temporary hacking only, and so

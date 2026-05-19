@@ -4,8 +4,8 @@ This avoids linker errors for undefined schemes.
 
 Reasoning for not upstreaming this patch: Drake-specific build flavor.
 
---- lib/url.c
-+++ lib/url.c
+--- lib/protocol.c
++++ lib/protocol.c
 @@ -1461,6 +1461,12 @@
     present. */
  const struct Curl_scheme *Curl_getn_scheme(const char *scheme, size_t len)
@@ -26,4 +26,4 @@ Reasoning for not upstreaming this patch: Drake-specific build flavor.
 +#endif
  }
  
- static CURLcode findprotocol(struct Curl_easy *data,
+ const struct Curl_scheme *Curl_get_scheme(const char *scheme)

@@ -697,6 +697,28 @@ fcl::CollisionObjectd MakeQueryPoint(const Vector3<T>& p_WQ) {
   return query_point;
 }
 
+// Creates a MeshDistanceBoundaryCache with a single mesh registered for the
+// given id. The contents of the cache are ignored unless we perform a query
+// against a mesh or convex shape (with the indicated id).
+MeshDistanceBoundaryCache MakeSdfCacheWithMesh(const GeometryId id) {
+  Mesh mesh(InMemoryMesh{.mesh_file = MemoryFile(
+                             R"""(
+      v 0 0 0
+      v 1 0 0
+      v 0 1 0
+      v 0 0 1
+      f 1 3 2
+      f 1 2 4
+      f 1 4 3
+      f 2 3 4
+      )""",
+                             ".obj", "test.obj")});
+  MeshDistanceBoundaryCache cache;
+  cache.Register(id, mesh);
+  cache.ComputeAll();
+  return cache;
+}
+
 template <typename T>
 void TestScalarShapeSupport() {
   // Configure the basic query.
@@ -709,15 +731,13 @@ void TestScalarShapeSupport() {
   std::vector<SignedDistanceToPoint<T>> distances;
   double threshold = std::numeric_limits<double>::max();
   const GeometryId other_id = GeometryId::get_new_id();
+  MeshDistanceBoundaryCache mesh_distance_boundary_cache =
+      MakeSdfCacheWithMesh(other_id);
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {point_id, X_WQ}, {other_id, RigidTransform<T>::Identity()}};
-  std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data{
-      {other_id, MeshDistanceBoundary(VolumeMesh<double>(
-                     std::vector<VolumeElement>{{0, 1, 2, 3}},
-                     std::vector<Vector3d>{
-                         {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}}))}};
-  CallbackData<T> data{&query_point, threshold,  p_WQ,
-                       &X_WGs,       &mesh_data, &distances};
+  CallbackData<T> data{
+      &query_point, threshold, p_WQ, &X_WGs, &mesh_distance_boundary_cache,
+      &distances};
 
   auto run_callback = [&query_point, &threshold, &distances, &data,
                        other_id](auto geometry_shared_ptr) {
@@ -743,12 +763,11 @@ void TestScalarShapeSupport() {
     EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Capsuled>()));
   }
 
-  // Convex and Mesh. Both drake::geometry::Mesh and Convex use fcl::Convexd.
+  // Convex and Mesh. Both Mesh and Convex use fcl::Convexd in the broadphase.
+  // The callback maps the fcl::Convexd to the corresponding
+  // MeshDistanceBoundary in the cache. So, we just need a minimally viable
+  // fcl::Convexd to trigger the callback logic: a single vertex with no faces.
   {
-    // This test is independent of the content of the fcl::Convexd because
-    // the mesh data is in the point_distance::CallbackData<T>, not the
-    // fcl::CollisionObjectd's. For simplicity, we use a minimally valid
-    // convex shape: a single vertex.
     run_callback(make_shared<fcl::Convexd>(
         make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
         make_shared<const std::vector<int>>()));
@@ -827,17 +846,14 @@ GTEST_TEST(Callback, MeshAndConvex) {
   const double kThreshold100Meters = 100;
   const std::unordered_map<GeometryId, RigidTransformd> X_WGs{{mesh_id, X_WM}};
 
-  // There is MeshDistanceBoundary.
+  // There is a registered mesh.
   {
-    const std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_boundaries{
-        {mesh_id, MeshDistanceBoundary(VolumeMesh<double>(
-                      {VolumeElement{0, 1, 2, 3}},
-                      {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
-                       Vector3d::UnitZ()}))}};
+    MeshDistanceBoundaryCache mesh_distance_boundary_cache =
+        MakeSdfCacheWithMesh(mesh_id);
     std::vector<SignedDistanceToPoint<double>> distances;
     CallbackData<double> callback_data{
-        &query_point, kThreshold100Meters, p_WQ,
-        &X_WGs,       &mesh_boundaries,    &distances};
+        &query_point, kThreshold100Meters,           p_WQ,
+        &X_WGs,       &mesh_distance_boundary_cache, &distances};
 
     double threshold_out = 0;
     // Expect Callback() to return false, so the broad-phase fcl will continue
@@ -848,14 +864,16 @@ GTEST_TEST(Callback, MeshAndConvex) {
     EXPECT_EQ(threshold_out, kThreshold100Meters);
   }
 
-  // No MeshDistanceBoundary.
+  // No registered mesh.
   {
-    const std::unordered_map<GeometryId, MeshDistanceBoundary>
-        no_mesh_boundaries;
+    MeshDistanceBoundaryCache no_mesh_distance_boundary_cache;
     std::vector<SignedDistanceToPoint<double>> distances;
-    CallbackData<double> callback_data{
-        &query_point, kThreshold100Meters, p_WQ,
-        &X_WGs,       &no_mesh_boundaries, &distances};
+    CallbackData<double> callback_data{&query_point,
+                                       kThreshold100Meters,
+                                       p_WQ,
+                                       &X_WGs,
+                                       &no_mesh_distance_boundary_cache,
+                                       &distances};
 
     double threshold_out = 0;
     // Expect Callback() to return false, so the broad-phase fcl will continue
@@ -1531,7 +1549,7 @@ struct SignedDistanceToPointTest
         MakeFclObject(*data.geometry, id, /* is_dynamic= */ true);
 
     vector<SignedDistanceToPoint<double>> distances;
-    unordered_map<GeometryId, MeshDistanceBoundary> no_meshes;
+    MeshDistanceBoundaryCache no_meshes;
     CallbackData<double> callback_data{&query_point, threshold,  data.p_WQ,
                                        &X_WGs,       &no_meshes, &distances};
     Callback<double>(&query_point, geometry_object.get(), &callback_data,
@@ -1583,7 +1601,7 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointSymbolic) {
   vector<SignedDistanceToPoint<Expression>> sym_distances;
   unordered_map<GeometryId, RigidTransform<Expression>> X_WGs_sym{
       {id, data.X_WG.cast<Expression>()}};
-  unordered_map<GeometryId, MeshDistanceBoundary> no_meshes;
+  MeshDistanceBoundaryCache no_meshes;
   CallbackData<Expression> callback_data{
       &query_point, threshold,  data.p_WQ.cast<Expression>(),
       &X_WGs_sym,   &no_meshes, &sym_distances};

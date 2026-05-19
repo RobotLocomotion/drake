@@ -128,13 +128,18 @@ def incorporate_test_weight_heuristics(kwargs):
         "size": "small",
         "timeout": "short",
     }
-    big = False
+    is_big = False
     for arg_name, required_value in required.items():
         value = kwargs.get(arg_name, None) or required_value
         if value != required_value:
-            big = True
+            is_big = True
             break
-    if big:
+
+    # Lint tests don't need kcov reports.
+    is_lint = "lint" in (kwargs.get("tags") or [])
+
+    # Disable kcov when necessary.
+    if is_big or is_lint:
         kwargs = amend(kwargs, "opt_out_conditions", append = [
             "//tools/kcov:enabled",
         ])

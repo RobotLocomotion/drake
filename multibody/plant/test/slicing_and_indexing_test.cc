@@ -15,31 +15,34 @@ namespace multibody {
 namespace internal {
 namespace {
 
-const std::vector<int> indices = {1, 3, 4};
+class SlicingAndIndexingTest : public ::testing::Test {
+ protected:
+  static MatrixXd MakeMatrixWithLinSpacedValues(int rows, int cols) {
+    const int size = rows * cols;
+    const VectorXd values = VectorXd::LinSpaced(size, 1, size);
+    return Eigen::Map<const MatrixXd>(values.data(), rows, cols);
+  }
 
-MatrixXd MakeMatrixWithLinSpacedValues(int rows, int cols) {
-  const int size = rows * cols;
-  const VectorXd values = VectorXd::LinSpaced(size, 1, size);
-  return Eigen::Map<const MatrixXd>(values.data(), rows, cols);
-}
+  const std::vector<int> kIndices = {1, 3, 4};
+};
 
-GTEST_TEST(SlicingAndIndexing, SelectRows) {
+TEST_F(SlicingAndIndexingTest, SelectRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
-  const MatrixXd S = SelectRows(M, indices);
+  const MatrixXd S = SelectRows(M, kIndices);
   const VectorXd S_expected = Vector3d(2, 4, 5);
   EXPECT_EQ(S, S_expected);
 }
 
-GTEST_TEST(SlicingAndIndexing, ExcludeRows) {
+TEST_F(SlicingAndIndexingTest, ExcludeRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
-  const MatrixXd S = ExcludeRows(M, indices);
+  const MatrixXd S = ExcludeRows(M, kIndices);
   const VectorXd S_expected = Vector3d(1, 3, 6);
   EXPECT_EQ(S, S_expected);
 }
 
-GTEST_TEST(SlicingAndIndexing, SelectCols) {
+TEST_F(SlicingAndIndexingTest, SelectCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 5);
-  const MatrixXd S = SelectCols(M, indices);
+  const MatrixXd S = SelectCols(M, kIndices);
   // clang-format off
   const MatrixXd S_expected = (MatrixXd(6, 3) <<
      7, 19, 25,
@@ -52,11 +55,11 @@ GTEST_TEST(SlicingAndIndexing, SelectCols) {
   EXPECT_EQ(S, S_expected);
 }
 
-GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
+TEST_F(SlicingAndIndexingTest, ExcludeCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 5);
   // Test MatrixX variant.
   {
-    const MatrixXd S = ExcludeCols(M, indices);
+    const MatrixXd S = ExcludeCols(M, kIndices);
     // clang-format off
     const MatrixXd S_expected = (MatrixXd(6, 2) <<
       1, 13,
@@ -73,7 +76,7 @@ GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
   {
     const contact_solvers::internal::MatrixBlock<double> M_block(M);
     const contact_solvers::internal::MatrixBlock<double> S =
-        ExcludeCols(M_block, indices);
+        ExcludeCols(M_block, kIndices);
     // clang-format off
     const MatrixXd S_expected = (MatrixXd(6, 2) <<
       1, 13,
@@ -90,13 +93,13 @@ GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
   {
     const contact_solvers::internal::MatrixBlock<double> M_block(
         contact_solvers::internal::Block3x3SparseMatrix<double>(0, 0));
-    EXPECT_THROW(ExcludeCols(M_block, indices), std::runtime_error);
+    EXPECT_THROW(ExcludeCols(M_block, kIndices), std::runtime_error);
   }
 }
 
-GTEST_TEST(SlicingAndIndexing, SelectRowsCols) {
+TEST_F(SlicingAndIndexingTest, SelectRowsCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 6);
-  const MatrixXd S = SelectRowsCols(M, indices);
+  const MatrixXd S = SelectRowsCols(M, kIndices);
   // clang-format off
   const MatrixXd S_expected = (MatrixXd(3, 3) <<
      8, 20, 26,
@@ -106,9 +109,9 @@ GTEST_TEST(SlicingAndIndexing, SelectRowsCols) {
   EXPECT_EQ(S, S_expected);
 }
 
-GTEST_TEST(SlicingAndIndexing, ExcludeRowsCols) {
+TEST_F(SlicingAndIndexingTest, ExcludeRowsCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 6);
-  const MatrixXd S = ExcludeRowsCols(M, indices);
+  const MatrixXd S = ExcludeRowsCols(M, kIndices);
   // clang-format off
   const MatrixXd S_expected = (MatrixXd(3, 3) <<
      1, 13, 31,
@@ -118,10 +121,10 @@ GTEST_TEST(SlicingAndIndexing, ExcludeRowsCols) {
   EXPECT_EQ(S, S_expected);
 }
 
-GTEST_TEST(SlicingAndIndexing, ExpandRows) {
+TEST_F(SlicingAndIndexingTest, ExpandRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(3, 1);
   const int expanded_size = 8;
-  const VectorXd S = ExpandRows(M, expanded_size, indices);
+  const VectorXd S = ExpandRows(M, expanded_size, kIndices);
   const VectorXd S_expected =
       (VectorXd(expanded_size) << 0, 1, 0, 2, 3, 0, 0, 0).finished();
   EXPECT_EQ(S, S_expected);

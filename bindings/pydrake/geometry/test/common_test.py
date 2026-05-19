@@ -381,6 +381,11 @@ class TestGeometryCore(unittest.TestCase):
         self.assertIn("file", obj.supporting_files)
 
     def test_mesh_source(self):
+        # Default constructor produces "empty" in-memory mesh source.
+        source = mut.MeshSource()
+        self.assertTrue(source.is_in_memory())
+        self.assertEqual(source.in_memory().mesh_file.contents(), b"")
+
         source = mut.MeshSource(path="/a/path.obj")
         self.assertTrue(source.is_path())
         self.assertFalse(source.is_in_memory())

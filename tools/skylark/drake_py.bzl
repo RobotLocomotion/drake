@@ -307,9 +307,19 @@ def py_test_isolated(
     """Provides a directory-isolated Python test, robust against shadowing
     (#8041).
     """
+    if "lint" in (kwargs.get("tags") or []):
+        # Skip lint tests in coverage builds.
+        target_compatible_with = select({
+            "@drake//tools/kcov:enabled": ["@platforms//:incompatible"],
+            "//conditions:default": [],
+        })
+    else:
+        target_compatible_with = None
+
     _py_target_isolated(
         name = name,
         py_target = py_test,
         isolate = True,
+        target_compatible_with = target_compatible_with,
         **kwargs
     )

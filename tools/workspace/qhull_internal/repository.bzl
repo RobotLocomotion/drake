@@ -15,6 +15,7 @@ def qhull_internal_repository(
             # contain that information in their opening commentary.
             ":patches/upstream/cxx20.patch",
             ":patches/disable_dead_code.patch",
+            ":patches/disable_static_global_log.patch",
             ":patches/vendor.patch",
         ],
         mirrors = mirrors,
