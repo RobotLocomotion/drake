@@ -3527,11 +3527,9 @@ TEST_F(RenderEngineVtkTest, DifferentObjsDontShare) {
   EXPECT_EQ(RenderEngineVtkTester::GetMeshCacheSize(engine), 2);
 
   // The two sources must be different objects.
-  vtkDataSet* src_a =
-      RenderEngineVtkTester::GetColorMapperInput(engine, id_a);
+  vtkDataSet* src_a = RenderEngineVtkTester::GetColorMapperInput(engine, id_a);
   // rainbow_box.obj has multiple parts; grab the first one.
-  vtkDataSet* src_b =
-      RenderEngineVtkTester::GetColorMapperInput(engine, id_b);
+  vtkDataSet* src_b = RenderEngineVtkTester::GetColorMapperInput(engine, id_b);
   ASSERT_NE(src_a, nullptr);
   ASSERT_NE(src_b, nullptr);
   EXPECT_NE(src_a, src_b);

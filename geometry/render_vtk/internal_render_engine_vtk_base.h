@@ -1,11 +1,11 @@
 #pragma once
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkCylinderSource.h>           // vtkFiltersSources
-#include <vtkSmartPointer.h>             // vtkCommonCore
-#include <vtkTexturedSphereSource.h>     // vtkFiltersSources
-#include <vtkTransform.h>                // vtkCommonTransforms
-#include <vtkTransformFilter.h>          // vtkFiltersGeneral
+#include <vtkCylinderSource.h>        // vtkFiltersSources
+#include <vtkSmartPointer.h>          // vtkCommonCore
+#include <vtkTexturedSphereSource.h>  // vtkFiltersSources
+#include <vtkTransform.h>             // vtkCommonTransforms
+#include <vtkTransformFilter.h>       // vtkFiltersGeneral
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_mesh.h"
