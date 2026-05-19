@@ -28,7 +28,7 @@ def _impl(repo_ctx):
         mirror_to_s3 = False,
     )
 
-    if repo_ctx.os.name == "linux":
+    if repo_ctx.os.name == "linux" and repo_ctx.os.arch == "amd64":
         # Parse the version string from the commit.
         version = commit.removeprefix("Release_").replace("_", ".")
 
@@ -78,8 +78,8 @@ def doxygen_internal_repository(
     _doxygen_internal_repository_impl(
         name = name,
         repository = "doxygen/doxygen",
-        commit = "Release_1_15_0",
+        commit = "Release_1_17_0",
         platform = "noble",
-        sha256 = "127f10a70aa3bf526f07f27d4c2f72c105ef72a32ba48a136320af09935d06f6",  # noqa
+        sha256 = "59d61aa931ac87689e66279e3567ca9114ccabf500d92d449f5ecc834320843e",  # noqa
         mirrors = mirrors,
     )
