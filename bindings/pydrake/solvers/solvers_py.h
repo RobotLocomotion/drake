@@ -13,82 +13,82 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per solvers_py_augmented_lagrangian.cc. */
-void DefineSolversAugmentedLagrangian(py::module m);
+void DefineSolversAugmentedLagrangian(py::module_ m);
 
 /* Defines bindings per solvers_py_branch_and_bound.cc. */
-void DefineSolversBranchAndBound(py::module m);
+void DefineSolversBranchAndBound(py::module_ m);
 
 /* Defines the Clarabel bindings. See solvers_py_clarabel.cc. */
-void DefineSolversClarabel(py::module m);
+void DefineSolversClarabel(py::module_ m);
 
 /* Defines the CLP bindings. See solvers_py_clp.cc. */
-void DefineSolversClp(py::module m);
+void DefineSolversClp(py::module_ m);
 
 /* Defines the CSDP bindings. See solvers_py_csdp.cc. */
-void DefineSolversCsdp(py::module m);
+void DefineSolversCsdp(py::module_ m);
 
 /* Defines the evaluators. See solvers_py_evaluator.cc. */
-void DefineSolversEvaluators(py::module m);
+void DefineSolversEvaluators(py::module_ m);
 
 /* Defines the GUROBI bindings. See solvers_py_gurobi.cc. */
-void DefineSolversGurobi(py::module m);
+void DefineSolversGurobi(py::module_ m);
 
 /* Defines bindings per solvers_py_ids.cc */
-void DefineSolversIds(py::module m);
+void DefineSolversIds(py::module_ m);
 
 /* Defines the IPOPT bindings. See solvers_py_ipopt.cc. */
-void DefineSolversIpopt(py::module m);
+void DefineSolversIpopt(py::module_ m);
 
 /* Defines the ProgramAttributes bindings. See solvers_py_program_attributes.cc.
  */
-void DefineProgramAttribute(py::module m);
+void DefineProgramAttribute(py::module_ m);
 
 /* Defines the cost, constraint, mathematical program, etc. bindings.
 See solvers_py_mathematicalprogram.cc.
 TODO(jwnimmer-tri) Split this into smaller pieces.
 */
-void DefineSolversMathematicalProgram(py::module m);
+void DefineSolversMathematicalProgram(py::module_ m);
 
 /* Defines bindings per solvers_py_mixed_integer_optimization_util.cc */
-void DefineSolversMixedIntegerOptimizationUtil(py::module m);
+void DefineSolversMixedIntegerOptimizationUtil(py::module_ m);
 
 /* Defines bindings per solvers_py_mixed_integer_rotation_constraint.cc */
-void DefineSolversMixedIntegerRotationConstraint(py::module m);
+void DefineSolversMixedIntegerRotationConstraint(py::module_ m);
 
 /* Defines the MobyLCP bindings. See solvers_py_mobylcp.cc. */
-void DefineSolversMobyLCP(py::module m);
+void DefineSolversMobyLCP(py::module_ m);
 
 /* Defines the MOSEK™ bindings. See solvers_py_mosek.cc. */
-void DefineSolversMosek(py::module m);
+void DefineSolversMosek(py::module_ m);
 
 /* Defines the NLOPT bindings. See solvers_py_nlopt.cc. */
-void DefineSolversNlopt(py::module m);
+void DefineSolversNlopt(py::module_ m);
 
 /* Defines the SolverOptions bindings. See solvers_py_options.cc. */
-void DefineSolversOptions(py::module m);
+void DefineSolversOptions(py::module_ m);
 
 /* Defines the OSQP bindings. See solvers_py_osqp.cc. */
-void DefineSolversOsqp(py::module m);
+void DefineSolversOsqp(py::module_ m);
 
 /* Defines the ProjectedGradientDescentSolver bindings. See
  * solvers_py_projected_gradient_descent.cc. */
-void DefineSolversProjectedGradientDescent(py::module m);
+void DefineSolversProjectedGradientDescent(py::module_ m);
 
 /* Defines the SCS bindings. See solvers_py_scs.cc. */
-void DefineSolversScs(py::module m);
+void DefineSolversScs(py::module_ m);
 
 /* Defines bindings per solvers_py_sdpa_free_format.cc. */
-void DefineSolversSdpaFreeFormat(py::module m);
+void DefineSolversSdpaFreeFormat(py::module_ m);
 
 /* Defines bindings per solvers_py_semidefinite_relaxation.cc. */
-void DefineSolversSemidefiniteRelaxation(py::module m);
+void DefineSolversSemidefiniteRelaxation(py::module_ m);
 
 /* Defines the SNOPT bindings. See solvers_py_snopt.cc. */
-void DefineSolversSnopt(py::module m);
+void DefineSolversSnopt(py::module_ m);
 
 /* Defines the UnrevisedLemkeSolver bindings. See solvers_py_unrevised_lemke.cc.
  */
-void DefineSolversUnrevisedLemke(py::module m);
+void DefineSolversUnrevisedLemke(py::module_ m);
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

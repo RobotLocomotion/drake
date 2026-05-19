@@ -75,7 +75,7 @@ class UnregisteredType {};
 // Unregistered type, but with a registered base.
 class UnregisteredDerivedType : public RegisteredType {};
 
-void def_testing(py::module m) {
+void def_testing(py::module_ m) {
   py::class_<RegisteredType>(m, "RegisteredType").def(py::init());
   // See comments in `module_test.py`.
   m.def("get_nice_type_name_cc_registered_instance",
@@ -93,9 +93,9 @@ void def_testing(py::module m) {
 }  // namespace testing
 
 namespace {
-// We put the work of PYBIND11_MODULE into a function so that we can easily
+// We put the work of PYDRAKE_MODULE into a function so that we can easily
 // catch exceptions.
-void InitLowLevelModules(py::module m) {
+void InitLowLevelModules(py::module_ m) {
   m.doc() = "Bindings for //common:common";
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   constexpr auto& doc = pydrake_doc_common.drake;
@@ -200,7 +200,8 @@ void InitLowLevelModules(py::module m) {
     cls.def_property_readonly_static("__fields__", [](py::object /* cls */) {
       auto str_ctor = py::eval("str");
       auto bytes_ctor = py::eval("bytes");
-      auto make_namespace = py::module::import("types").attr("SimpleNamespace");
+      auto make_namespace =
+          py::module_::import_("types").attr("SimpleNamespace");
       auto contents = make_namespace();
       py::setattr(contents, "name", py::str("contents"));
       py::setattr(contents, "type", bytes_ctor);
@@ -355,24 +356,24 @@ discussion), use e.g.
   // =========================================================================
 
   // Define `_testing` submodule.
-  py::module pydrake_top = py::eval("sys.modules['pydrake']");
-  py::module pydrake_common = py::eval("sys.modules['pydrake.common']");
+  py::module_ pydrake_top = py::eval("sys.modules['pydrake']");
+  py::module_ pydrake_common = py::eval("sys.modules['pydrake.common']");
 
-  py::module testing = pydrake_common.def_submodule("_testing");
+  py::module_ testing = pydrake_common.def_submodule("_testing");
   testing::def_testing(testing);
 
   // Install NumPy warning filters.
   // N.B. This may interfere with other code, but until that is a confirmed
   // issue, we should aggressively try to avoid these warnings.
-  py::module::import("pydrake.common.deprecation")
+  py::module_::import_("pydrake.common.deprecation")
       .attr("install_numpy_warning_filters")();
 
   // Install NumPy formatters patch.
-  py::module::import("pydrake.common.compatibility")
+  py::module_::import_("pydrake.common.compatibility")
       .attr("maybe_patch_numpy_formatters")();
 
   // Define `autodiffutils` top-level module.
-  py::module autodiffutils = pydrake_top.def_submodule("autodiffutils");
+  py::module_ autodiffutils = pydrake_top.def_submodule("autodiffutils");
   autodiffutils.doc() = "Bindings for Eigen AutoDiff Scalars";
   internal::DefineAutodiffutils(autodiffutils);
   ExecuteExtraPythonCode(autodiffutils, true);
@@ -382,7 +383,7 @@ discussion), use e.g.
       py::arg("distribution"), py::arg("x"), doc.CalcProbabilityDensity.doc);
 
   // Define `symbolic` top-level module.
-  py::module symbolic = pydrake_top.def_submodule("symbolic");
+  py::module_ symbolic = pydrake_top.def_submodule("symbolic");
   symbolic.doc() =
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";
@@ -390,18 +391,18 @@ discussion), use e.g.
   ExecuteExtraPythonCode(symbolic, true);
 
   // Define `value` submodule.
-  py::module value = pydrake_common.def_submodule("value");
+  py::module_ value = pydrake_common.def_submodule("value");
   value.doc() = "Bindings for //common:value";
   internal::DefineModuleValue(value);
 
   // Define `eigen_geometry` submodule.
-  py::module eigen_geometry = pydrake_common.def_submodule("eigen_geometry");
+  py::module_ eigen_geometry = pydrake_common.def_submodule("eigen_geometry");
   eigen_geometry.doc() = "Bindings for Eigen geometric types.";
   internal::DefineModuleEigenGeometry(eigen_geometry);
   ExecuteExtraPythonCode(eigen_geometry, false);
 
   // Define `math` top-level module.
-  py::module math = pydrake_top.def_submodule("math");
+  py::module_ math = pydrake_top.def_submodule("math");
   // N.B. Docstring contained in `_math_extra.py`.
   internal::DefineMathOperators(math);
   internal::DefineMathMatmul(math);
@@ -409,13 +410,13 @@ discussion), use e.g.
   ExecuteExtraPythonCode(math, true);
 
   // Define `schema` submodule.
-  py::module schema = pydrake_common.def_submodule("schema");
+  py::module_ schema = pydrake_common.def_submodule("schema");
   schema.doc() = "Bindings for the common.schema package.";
   internal::DefineModuleSchema(schema);
 }
 }  // namespace
 
-PYBIND11_MODULE(common, m) {
+PYDRAKE_MODULE(common, m) {
   try {
     InitLowLevelModules(m);
   } catch (const std::exception& e) {

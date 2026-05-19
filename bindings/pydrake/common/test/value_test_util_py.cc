@@ -36,8 +36,8 @@ struct UnregisteredType {
 
 }  // namespace
 
-PYBIND11_MODULE(value_test_util, m) {
-  py::module::import("pydrake.common");
+PYDRAKE_MODULE(value_test_util, m) {
+  py::module_::import_("pydrake.common");
 
   py::class_<MoveOnlyType>(m, "MoveOnlyType")
       .def(py::init<int>())

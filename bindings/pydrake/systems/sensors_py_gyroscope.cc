@@ -11,7 +11,7 @@ namespace internal {
 namespace {
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -41,7 +41,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
 }  // namespace
 
-void DefineSensorsGyroscope(py::module m) {
+void DefineSensorsGyroscope(py::module_ m) {
   auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
     DoScalarDependentDefinitions<T>(m, dummy);

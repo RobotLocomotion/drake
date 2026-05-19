@@ -7,7 +7,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void DefineIcf(py::module m) {
+void DefineIcf(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::contact_solvers::icf;
   constexpr auto& doc = pydrake_doc_multibody_contact_solvers_icf.drake
@@ -27,7 +27,7 @@ void DefineIcf(py::module m) {
   }
 }
 
-PYBIND11_MODULE(contact_solvers, m) {
+PYDRAKE_MODULE(contact_solvers, m) {
   DefineIcf(m);
 }
 

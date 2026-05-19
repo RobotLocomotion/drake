@@ -23,14 +23,14 @@ using planning::JointLimits;
 using Recipe = DifferentialInverseKinematicsSystem::Recipe;
 using systems::LeafSystem;
 
-void DefineDifferentialIkLegacy(py::module m) {
+void DefineDifferentialIkLegacy(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   constexpr auto& doc =
       pydrake_doc_multibody_inverse_kinematics.drake.multibody;
 
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.framework");
 
   py::enum_<DifferentialInverseKinematicsStatus>(m,
       "DifferentialInverseKinematicsStatus",
@@ -291,7 +291,7 @@ PyClassIngredient<Derived> BindIngredient(const char* class_name,
   return cls;
 }
 
-void DefineDifferentialIkSystem(py::module m) {
+void DefineDifferentialIkSystem(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =
@@ -424,7 +424,7 @@ void DefineDifferentialIkSystem(py::module m) {
   }
 }
 
-void DefineDifferentialIkController(py::module m) {
+void DefineDifferentialIkController(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =
@@ -457,7 +457,7 @@ void DefineDifferentialIkController(py::module m) {
 
 }  // namespace
 
-void DefineIkDifferential(py::module m) {
+void DefineIkDifferential(py::module_ m) {
   DefineDifferentialIkLegacy(m);
   DefineDifferentialIkSystem(m);
   DefineDifferentialIkController(m);

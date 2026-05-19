@@ -10,7 +10,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningIrisFromCliqueCover(py::module m) {
+void DefinePlanningIrisFromCliqueCover(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;

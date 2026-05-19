@@ -17,14 +17,14 @@ using T = double;
 
 namespace {
 
-void init_acrobot(py::module m) {
+void init_acrobot(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::benchmarks::acrobot;
   constexpr auto& doc = pydrake_doc_multibody_benchmarks_acrobot.drake.multibody
                             .benchmarks.acrobot;
 
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.plant");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.multibody.plant");
 
   py::class_<AcrobotParameters>(
       m, "AcrobotParameters", doc.AcrobotParameters.doc)
@@ -37,7 +37,7 @@ void init_acrobot(py::module m) {
       py::arg("scene_graph") = nullptr, doc.MakeAcrobotPlant.doc);
 }
 
-void init_all(py::module m) {
+void init_all(py::module_ m) {
   py::dict vars = m.attr("__dict__");
   py::exec("from pydrake.multibody.benchmarks.acrobot import *", py::globals(),
       vars);
@@ -45,7 +45,7 @@ void init_all(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(benchmarks, m) {
+PYDRAKE_MODULE(benchmarks, m) {
   init_acrobot(m.def_submodule("acrobot"));
   init_all(m.def_submodule("all"));
 

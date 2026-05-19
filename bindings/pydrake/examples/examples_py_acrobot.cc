@@ -17,7 +17,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesAcrobot(py::module m) {
+void DefineExamplesAcrobot(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

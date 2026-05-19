@@ -15,28 +15,28 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per sensors_py_accelerometer.cc. */
-void DefineSensorsAccelerometer(py::module m);
+void DefineSensorsAccelerometer(py::module_ m);
 
 /* Defines bindings per sensors_py_camera_config.cc. */
-void DefineSensorsCameraConfig(py::module m);
+void DefineSensorsCameraConfig(py::module_ m);
 
 /* Defines bindings per sensors_py_gyroscope.cc. */
-void DefineSensorsGyroscope(py::module m);
+void DefineSensorsGyroscope(py::module_ m);
 
 /* Defines bindings per sensors_py_image.cc. */
-void DefineSensorsImage(py::module m);
+void DefineSensorsImage(py::module_ m);
 
 /* Defines bindings per sensors_py_image_io.cc. */
-void DefineSensorsImageIo(py::module m);
+void DefineSensorsImageIo(py::module_ m);
 
 /* Defines bindings per sensors_py_lcm.cc. */
-void DefineSensorsLcm(py::module m);
+void DefineSensorsLcm(py::module_ m);
 
 /* Defines bindings per sensors_py_rgbd.cc. */
-void DefineSensorsRgbd(py::module m);
+void DefineSensorsRgbd(py::module_ m);
 
 /* Defines bindings per sensors_py_rotary_encoders.cc. */
-void DefineSensorsRotaryEncoders(py::module m);
+void DefineSensorsRotaryEncoders(py::module_ m);
 
 /* PixelTypeList provides all of the enumerated PixelType values. */
 template <typename T, T kPixelType>

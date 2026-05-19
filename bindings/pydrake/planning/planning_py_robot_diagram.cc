@@ -12,7 +12,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningRobotDiagram(py::module m) {
+void DefinePlanningRobotDiagram(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning.drake.planning;

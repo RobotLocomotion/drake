@@ -93,7 +93,7 @@ class PyRenderEngine : public RenderEngine {
     // so that we can post-process the return value in case it does return.
     auto make_python_deepcopy = [&]() -> py::object {
       PYBIND11_OVERLOAD_INT(py::object, Base, "DoClone");
-      auto deepcopy = py::module_::import("copy").attr("deepcopy");
+      auto deepcopy = py::module_::import_("copy").attr("deepcopy");
       py::object copied = deepcopy(this);
       if (copied.is_none()) {
         throw pybind11::type_error(fmt::format(
@@ -144,7 +144,7 @@ class PyRenderEngine : public RenderEngine {
   }
 };
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -537,7 +537,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 }  // namespace
 
-void DefineGeometryRender(py::module m) {
+void DefineGeometryRender(py::module_ m) {
   m.doc() =
       "Local bindings for render artifacts found in `drake::geometry` and "
       "`drake::geometry::render`";

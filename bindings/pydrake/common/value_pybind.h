@@ -26,9 +26,9 @@ namespace pydrake {
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
-    py::module scope) {
+    py::module_ scope) {
   static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
-  py::module py_common = py::module::import("pydrake.common.value");
+  py::module_ py_common = py::module_::import_("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.

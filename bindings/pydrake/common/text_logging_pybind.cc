@@ -30,7 +30,7 @@ class pylogging_sink final
  public:
   pylogging_sink() {
     // Add a Python logging.Logger to be used by Drake.
-    py::object logging = py::module::import("logging");
+    py::object logging = py::module_::import_("logging");
     py::object logger = logging.attr("getLogger")(name_);
 
     // Annotate that the logger is alive (fed by spdlog).
@@ -58,7 +58,7 @@ class pylogging_sink final
     // Ensure that basicConfig happens at least once prior to posting and log
     // message. It's safe to call basicConfig more than once.
     if (!is_configured_.load()) {
-      py::module::import("logging").attr("basicConfig")();
+      py::module_::import_("logging").attr("basicConfig")();
       is_configured_.store(true);
     }
 

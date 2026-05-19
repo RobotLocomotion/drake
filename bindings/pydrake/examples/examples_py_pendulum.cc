@@ -15,7 +15,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesPendulum(py::module m) {
+void DefineExamplesPendulum(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

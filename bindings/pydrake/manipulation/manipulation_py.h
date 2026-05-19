@@ -13,16 +13,16 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per manipulation_py_kuka_iiwa.cc. */
-void DefineManipulationKukaIiwa(py::module m);
+void DefineManipulationKukaIiwa(py::module_ m);
 
 /* Defines bindings per manipulation_py_franka_panda.cc. */
-void DefineManipulationFrankaPanda(py::module m);
+void DefineManipulationFrankaPanda(py::module_ m);
 
 /* Defines bindings per manipulation_py_schunk_wsg.cc. */
-void DefineManipulationSchunkWsg(py::module m);
+void DefineManipulationSchunkWsg(py::module_ m);
 
 /* Defines bindings per manipulation_py_util.cc. */
-void DefineManipulationUtil(py::module m);
+void DefineManipulationUtil(py::module_ m);
 
 }  // namespace internal
 }  // namespace pydrake

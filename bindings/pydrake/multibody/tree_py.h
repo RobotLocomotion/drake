@@ -13,7 +13,7 @@ namespace pydrake {
 namespace internal {
 
 /* Defines bindings per tree_py_inertia.cc. */
-void DefineTreeInertia(py::module m);
+void DefineTreeInertia(py::module_ m);
 
 // TODO(jwnimmer-tri) Add more functions here as we continue to split up the
 // tree_py.cc file into difference pieces.

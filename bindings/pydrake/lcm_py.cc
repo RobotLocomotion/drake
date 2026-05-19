@@ -11,12 +11,12 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(lcm, m) {
+PYDRAKE_MODULE(lcm, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::lcm;
   constexpr auto& doc = pydrake_doc_lcm.drake.lcm;
 
-  py::module::import("pydrake.common");
+  py::module_::import_("pydrake.common");
 
   // Use `py::bytes` as a mid-point between C++ LCM (`void* + int` /
   // `vector<uint8_t>`) and Python LCM (`str`).

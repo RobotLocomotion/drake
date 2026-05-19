@@ -1,0 +1,17 @@
+[pybind11] Add synonym(s) that are forward-compatible with nanobind
+
+These help ease Drake's transition to nanobind.
+See https://github.com/RobotLocomotion/drake/issues/21572.
+
+--- include/pybind11/pybind11.h
++++ include/pybind11/pybind11.h
+@@ -1281,6 +1281,9 @@
+         }
+         return reinterpret_steal<module_>(obj);
+     }
++    static module_ import_(const char *name) {
++        return module_::import(name);
++    }
+ 
+     /// Reload the module or throws `error_already_set`.
+     void reload() {

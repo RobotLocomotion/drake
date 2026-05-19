@@ -80,7 +80,7 @@ void BindSpatialVectorMixin(PyClass* pcls) {
 
 namespace {
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
@@ -205,13 +205,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(math, m) {
+PYDRAKE_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.symbolic");
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.symbolic");
 
   m.doc() = "Bindings for multibody math.";
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

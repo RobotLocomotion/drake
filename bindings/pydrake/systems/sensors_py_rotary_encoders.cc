@@ -11,7 +11,7 @@ namespace internal {
 namespace {
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -42,7 +42,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
 }  // namespace
 
-void DefineSensorsRotaryEncoders(py::module m) {
+void DefineSensorsRotaryEncoders(py::module_ m) {
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
 }

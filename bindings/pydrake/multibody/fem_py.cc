@@ -13,7 +13,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::fem;
   constexpr auto& doc_multibody = pydrake_doc_multibody_fem.drake.multibody;
@@ -42,7 +42,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -90,7 +90,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 
 template <typename T>
-void DefineForceDensityFieldBase(py::module m, T) {
+void DefineForceDensityFieldBase(py::module_ m, T) {
   constexpr auto& doc_multibody = pydrake_doc_multibody_fem.drake.multibody;
   py::tuple param = GetPyParam<T>();
   {
@@ -108,12 +108,12 @@ void DefineForceDensityFieldBase(py::module m, T) {
 
 }  // namespace
 
-PYBIND11_MODULE(fem, m) {
+PYDRAKE_MODULE(fem, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for multibody fem.";
 
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.systems.framework");
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

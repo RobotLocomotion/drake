@@ -14,7 +14,7 @@
 namespace drake {
 namespace pydrake {
 
-void DefineGeometryBoundingBox(py::module m) {
+void DefineGeometryBoundingBox(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;

@@ -131,7 +131,7 @@ auto ParamInit() {
     // constructed. Would be alleviated using old-style pybind11 init :(
     Class obj{};
     py::object py_obj = py::cast(&obj, py_rvp::reference);
-    py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    py::module_::import_("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
     return obj;
   });
 }
@@ -140,8 +140,8 @@ auto ParamInit() {
 /// For a module with local name `{name}` and use_subdir=False, the code
 /// executed will be `_{name}_extra.py`; with use_subdir=True, it will be
 /// `{name}/_{name}_extra.py`. See #9599 for relevant background.
-inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
-  py::module::import("pydrake").attr("_execute_extra_python_code")(
+inline void ExecuteExtraPythonCode(py::module_ m, bool use_subdir = false) {
+  py::module_::import_("pydrake").attr("_execute_extra_python_code")(
       m, use_subdir);
 }
 
@@ -151,16 +151,16 @@ inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
 // the module, within the module itself).
 // TODO(eric.cousineau): Unfold cyclic references, and remove the need for this
 // macro (see #11868 for rationale).
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)                 \
-  {                                                                       \
-    static py::handle variable##_original;                                \
-    if (variable##_original) {                                            \
-      variable##_original.inc_ref();                                      \
-      variable = py::reinterpret_borrow<py::module>(variable##_original); \
-      return;                                                             \
-    } else {                                                              \
-      variable##_original = variable;                                     \
-    }                                                                     \
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)                  \
+  {                                                                        \
+    static py::handle variable##_original;                                 \
+    if (variable##_original) {                                             \
+      variable##_original.inc_ref();                                       \
+      variable = py::reinterpret_borrow<py::module_>(variable##_original); \
+      return;                                                              \
+    } else {                                                               \
+      variable##_original = variable;                                      \
+    }                                                                      \
   }
 
 /// Given a raw pointer, returns a shared_ptr wrapper around it that doesn't own
@@ -196,3 +196,6 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 
 #define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
   PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+
+// This alias helps ease Drake's transition to nanobind.
+#define PYDRAKE_MODULE PYBIND11_MODULE
