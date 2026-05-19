@@ -1781,8 +1781,7 @@ class LeafSystem : public System<T> {
   std::unique_ptr<CompositeEventCollection<T>>
   DoAllocateCompositeEventCollection() const final;
 
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
+  std::map<PeriodicEventData, std::vector<const Event<T>*>>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
 
   void DoFindUniquePeriodicDiscreteUpdatesOrThrow(

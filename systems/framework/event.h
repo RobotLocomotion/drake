@@ -7,6 +7,7 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -255,10 +256,7 @@ class PeriodicEventData {
   /// Sets the time after zero when this event should first occur.
   void set_offset_sec(double offset_sec) { offset_sec_ = offset_sec; }
 
-  bool operator==(const PeriodicEventData& other) const {
-    return other.period_sec() == period_sec() &&
-           other.offset_sec() == offset_sec();
-  }
+  auto operator<=>(const PeriodicEventData& other) const = default;
 
  private:
   double period_sec_{0.0};
@@ -551,11 +549,9 @@ class Event {
       event_data_;
 };
 
-/**
- * Structure for comparing two PeriodicEventData objects for use in a map
- * container, using an arbitrary comparison method.
- */
-struct PeriodicEventDataComparator {
+struct DRAKE_DEPRECATED("2026-09-01",
+                        "Use the built-in spaceship operator instead.")
+    PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
                   const PeriodicEventData& b) const {
     if (a.period_sec() == b.period_sec())

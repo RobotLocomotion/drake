@@ -496,8 +496,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::unique_ptr<typename Diagram<NewType>::Blueprint> ConvertScalarType()
       const;
 
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
+  std::map<PeriodicEventData, std::vector<const Event<T>*>>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const final;
 
   void DoFindUniquePeriodicDiscreteUpdatesOrThrow(
