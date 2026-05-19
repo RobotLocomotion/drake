@@ -1,11 +1,3 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# This alias provides a single point of control for defining which robin_map
-# library our tools/skylark/pybind.bzl macro should use.
-alias(
-    name = "robin_map",
-    actual = "@robin_map",
-    visibility = ["//visibility:public"],
-)
-
 add_lint_tests()
