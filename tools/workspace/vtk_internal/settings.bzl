@@ -291,6 +291,7 @@ MODULE_SETTINGS = {
         "srcs_extra": [
             "Filters/Core/vtkAppendPolyData.cxx",
             "Filters/Core/vtkDecimatePro.cxx",
+            "Filters/Core/vtkFeatureEdges.cxx",
             "Filters/Core/vtkGlyph3D.cxx",
             "Filters/Core/vtkOrientPolyData.cxx",
             "Filters/Core/vtkPolyDataNormals.cxx",
@@ -305,13 +306,17 @@ MODULE_SETTINGS = {
         # default srcs glob, and instead just specify what Drake needs.
         "srcs_glob_exclude": ["**"],
         "srcs_extra": [
+            "Filters/General/vtkApproximatingSubdivisionFilter.cxx",
             "Filters/General/vtkExtractSelectedFrustum.cxx",
             "Filters/General/vtkExtractSelectionBase.cxx",
             "Filters/General/vtkGraphToPoints.cxx",
             "Filters/General/vtkIconGlyphFilter.cxx",
             "Filters/General/vtkImageDataToPointSet.cxx",
+            "Filters/General/vtkInterpolatingSubdivisionFilter.cxx",
+            "Filters/General/vtkOBBTree.cxx",
             "Filters/General/vtkRectilinearGridToPointSet.cxx",
             "Filters/General/vtkSphericalHarmonics.cxx",
+            "Filters/General/vtkSubdivisionFilter.cxx",
             "Filters/General/vtkTransformFilter.cxx",
             "Filters/General/vtkVertexGlyphFilter.cxx",
         ],
