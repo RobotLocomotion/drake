@@ -32,6 +32,7 @@ command line.
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import getpass
 import hashlib
@@ -63,6 +64,13 @@ _IGNORED_REPOSITORIES = [
     "clang_cindex_python3_internal",  # Uses a non-default branch.
     "mosek",  # Requires special, non-automated care during upgrades.
     "pybind11",  # Uses a non-default branch.
+]
+
+# These repositories should be excluded from our "too-recent release" check,
+# because we depend on arbitrary commits from the mainline branch, and it's not
+# practical to assume no activity in that period of time.
+_IGNORE_RECENT_RELEASE = [
+    "vtk_internal",
 ]
 
 # These repositories cannot be automatically upgraded, but can be automatically
@@ -160,9 +168,26 @@ def _get_default_username() -> str:
     return git_user or http_user
 
 
-def _is_ignored_tag(commit: str, exclude_pattern: str | None = None) -> bool:
-    """Returns true iff commit matches the `exclude_pattern` or seems to be a
-    pre-release.
+def _get_commit_date(gh_repo, commit: str) -> datetime:
+    """Returns the date of the given commit, or the start of the epoch if the
+    date is not available."""
+    committer_obj = gh_repo.commit(commit).commit.get("committer", {})
+    commit_date = datetime.fromisoformat(
+        committer_obj.get("date", "1970-01-01T00:00:00Z")
+    )
+    return commit_date
+
+
+def _is_ignored_tag(
+    commit: str,
+    workspace: str,
+    date: datetime,
+    exclude_pattern: str | None = None,
+) -> bool:
+    """Returns true iff any of the following are true of the input tag/release:
+    * it matches the given `exclude_pattern`
+    * it seems to be a pre-release (ignored for lack of stability)
+    * it is newer than one week (ignored for security reasons)
     """
     if exclude_pattern and re.match(exclude_pattern, commit):
         # Matches the regex of tag names to definitely ignore; do so quietly so
@@ -173,6 +198,13 @@ def _is_ignored_tag(commit: str, exclude_pattern: str | None = None) -> bool:
     if any(stage in commit for stage in development_stages):
         # Heuristically looks like a pre-release; ignore it quietly so we
         # don't spam the user.
+        return True
+
+    too_recent = date > datetime.now(timezone.utc) - timedelta(days=7)
+    if workspace not in _IGNORE_RECENT_RELEASE and too_recent:
+        # This is a bleeding-edge release; ignore it (as potential for
+        # malware), but log it for the user to check.
+        warn(f"Skipping too-recent {commit} for {workspace}")
         return True
 
     return False
@@ -186,7 +218,8 @@ def _latest_tag(
     """Returns the latest tag for the given `workspace` that doesn't match an
     ignore rule."""
     for tag in gh_repo.tags():
-        if _is_ignored_tag(tag.name, exclude_pattern):
+        tag_date = _get_commit_date(gh_repo, tag.name)
+        if _is_ignored_tag(tag.name, workspace, tag_date, exclude_pattern):
             continue
         return tag.name
     warn(f"Could not find any matching tags for {workspace}")
@@ -208,7 +241,16 @@ def _handle_github(
     gh_repo = gh.repository(owner, repo_name)
 
     if upgrade_type == UpgradeType.COMMIT:
-        new_commit = gh_repo.commit("HEAD").sha
+        for commit in gh_repo.commits("HEAD"):
+            sha = commit.sha
+            commit_date = _get_commit_date(gh_repo, sha)
+            if not _is_ignored_tag(
+                commit.sha,
+                workspace_name,
+                commit_date,
+            ):
+                new_commit = sha
+                break
         return old_commit, new_commit
     elif upgrade_type == UpgradeType.TAG:
         # Search for the latest tag by default. If a "tags_pattern" regex was
@@ -232,7 +274,10 @@ def _handle_github(
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
-                    if _is_ignored_tag(tag.name, exclude_tags_pattern):
+                    tag_date = _get_commit_date(gh_repo, tag.name)
+                    if _is_ignored_tag(
+                        tag.name, workspace_name, tag_date, exclude_tags_pattern
+                    ):
                         continue
                     new_commit = tag.name
                     break
@@ -241,7 +286,12 @@ def _handle_github(
         assert upgrade_type == UpgradeType.RELEASE
         exclude_tags_pattern = data["exclude_tags_pattern"]
         for release in gh_repo.releases():
-            if not _is_ignored_tag(release.tag_name, exclude_tags_pattern):
+            if not _is_ignored_tag(
+                release.tag_name,
+                workspace_name,
+                release.published_at,
+                exclude_tags_pattern,
+            ):
                 new_commit = release.tag_name
                 break
         return old_commit, new_commit
