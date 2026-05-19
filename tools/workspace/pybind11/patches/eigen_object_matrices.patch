@@ -415,7 +415,7 @@ Co-Author: Mmanu Chaturvedi <mmanu.chaturvedi@kitware.com>
 -        object sparse_module = module_::import("scipy.sparse");
 +        object sparse_module;
 +        try {
-+            sparse_module = module_::import("scipy.sparse");
++            sparse_module = module_::import_("scipy.sparse");
 +        } catch (const error_already_set &) {
 +            // As a Drake-specific amendment, we skip Eigen::Sparse overloads
 +            // when scipy is not available, instead of raising an import error.

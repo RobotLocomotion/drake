@@ -100,7 +100,7 @@ void CheckTyping() {
 
 }  // namespace
 
-PYBIND11_MODULE(cpp_param_test_util, m) {
+PYDRAKE_MODULE(cpp_param_test_util, m) {
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
 

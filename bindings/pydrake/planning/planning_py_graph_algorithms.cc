@@ -14,7 +14,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningGraphAlgorithms(py::module m) {
+void DefinePlanningGraphAlgorithms(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::graph_algorithms;
   constexpr auto& doc =

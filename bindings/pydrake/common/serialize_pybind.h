@@ -93,7 +93,7 @@ class DefAttributesArchive {
         name, getter, setter, doc, py::return_value_policy::reference_internal);
 
     // Remember the field's name and type for later use by Finished().
-    auto field = py::module::import("types").attr("SimpleNamespace")();
+    auto field = py::module_::import_("types").attr("SimpleNamespace")();
     py::setattr(field, "name", py::str(name));
     py::setattr(field, "type", CalcSchemaType(prototype_value));
     fields_.append(field);
@@ -154,7 +154,7 @@ class DefAttributesArchive {
       return py::type::of(py::str());
     } else if constexpr (is_eigen_type<T>::value) {
       // TODO(jwnimmer-tri) Perhaps we can use numpy.typing here some day?
-      return py::module::import("numpy").attr("ndarray");
+      return py::module_::import_("numpy").attr("ndarray");
     } else {
       // Anything that remains should be a registered C++ type.
       constexpr bool is_registered_type =
@@ -211,7 +211,7 @@ class DefAttributesArchive {
   // Returns the cpp_param template class for the given name (e.g., "List",
   // "Dict", etc.).
   static py::object GetTemplateClass(const char* name) {
-    return py::module::import("pydrake.common.cpp_param").attr(name);
+    return py::module_::import_("pydrake.common.cpp_param").attr(name);
   }
 
   // When there is no match found for the schema type, this function will

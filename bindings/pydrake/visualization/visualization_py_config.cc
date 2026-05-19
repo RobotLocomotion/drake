@@ -9,7 +9,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineVisualizationConfig(py::module m) {
+void DefineVisualizationConfig(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::visualization;
   constexpr auto& doc = pydrake_doc_visualization.drake.visualization;

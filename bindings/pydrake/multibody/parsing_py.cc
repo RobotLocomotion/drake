@@ -19,7 +19,7 @@ using std::string;
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(parsing, m) {
+PYDRAKE_MODULE(parsing, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "SDF and URDF parsing for MultibodyPlant and SceneGraph.";
 
@@ -27,9 +27,9 @@ PYBIND11_MODULE(parsing, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_parsing.drake.multibody;
 
-  py::module::import("pydrake.common.schema");
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.tree");
+  py::module_::import_("pydrake.common.schema");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.multibody.tree");
 
   // CollisionFilterGroups
   {

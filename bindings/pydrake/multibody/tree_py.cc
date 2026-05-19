@@ -103,7 +103,7 @@ void BindMultibodyElementMixin(PyClass* pcls) {
       });
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
   BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
@@ -198,7 +198,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 // TODO(jwnimmer-tri) This function is just a grab-bag of several classes. We
 // should split it up into smaller pieces.
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // Frames.
@@ -1161,7 +1161,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 
 template <typename T>
-void DefineMultibodyForces(py::module m, T) {
+void DefineMultibodyForces(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = MultibodyForces<T>;
@@ -1320,7 +1320,7 @@ class PyForceDensityField : public ForceDensityFieldPublic<T> {
 };
 
 template <typename T>
-void DefineForceDensityField(py::module m, T) {
+void DefineForceDensityField(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     constexpr auto& cls_doc = doc.ForceDensityField;
@@ -1363,7 +1363,7 @@ void DefineForceDensityField(py::module m, T) {
   }
 }
 
-void DefineDeformableBody(py::module m) {
+void DefineDeformableBody(py::module_ m) {
   using Class = DeformableBody<double>;
   constexpr auto& cls_doc = doc.DeformableBody;
   py::class_<Class> cls(m, "DeformableBody", cls_doc.doc);
@@ -1426,17 +1426,17 @@ void DefineDeformableBody(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(tree, m) {
+PYDRAKE_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
   m.doc() = "Bindings for MultibodyTree and related components.";
 
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.multibody.fem");
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.geometry");
+  py::module_::import_("pydrake.common.eigen_geometry");
+  py::module_::import_("pydrake.multibody.math");
+  py::module_::import_("pydrake.multibody.fem");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.geometry");
 
   internal::DefineTreeInertia(m);
   DoScalarIndependentDefinitions(m);

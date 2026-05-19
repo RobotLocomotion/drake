@@ -3,7 +3,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(examples, m) {
+PYDRAKE_MODULE(examples, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
   m.doc() = R"""(
@@ -11,11 +11,11 @@ Provides bindings of existing C++ example library code as well as a few pure
 Python examples.
 )""";
 
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.systems.sensors");
+  py::module_::import_("pydrake.geometry");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
+  py::module_::import_("pydrake.systems.sensors");
 
   // These are in alphabetical order; the modules do not depend on each other.
   internal::DefineExamplesAcrobot(m);

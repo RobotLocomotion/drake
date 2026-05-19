@@ -15,7 +15,7 @@ namespace internal {
 
 using systems::LeafSystem;
 
-void DefineManipulationFrankaPanda(py::module m) {
+void DefineManipulationFrankaPanda(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation::franka_panda;
   constexpr auto& doc =
@@ -29,7 +29,7 @@ void DefineManipulationFrankaPanda(py::module m) {
   // &) work with these integers, and pybind11 automatically converts them to
   // uint64_t when calling C++ functions.
   py::object control_mode_class =
-      py::module_::import("types").attr("SimpleNamespace")();
+      py::module_::import_("types").attr("SimpleNamespace")();
   control_mode_class.attr("__doc__") =
       "Control modes for the Panda robot. These can be bitwise OR'd together.";
   control_mode_class.attr("kNone") = py::int_(PandaControlModes::kNone);

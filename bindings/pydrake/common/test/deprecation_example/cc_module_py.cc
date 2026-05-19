@@ -16,7 +16,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-PYBIND11_MODULE(cc_module, m) {
+PYDRAKE_MODULE(cc_module, m) {
   constexpr auto& doc = pydrake_doc.drake.example_class;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::example_class;

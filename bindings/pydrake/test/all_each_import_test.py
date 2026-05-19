@@ -81,5 +81,5 @@ class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
                 " list of expected_non_native_modules. If the module does"
                 " contain native code, then add this line near the start of"
                 " the PYBIND11_MODULE stanza in its cc file: "
-                ' py::module::import("pydrake.common");',
+                ' py::module_::import_("pydrake.common");',
             )

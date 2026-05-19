@@ -21,7 +21,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::meshcat;
   constexpr auto& doc = pydrake_doc_multibody_meshcat.drake.multibody.meshcat;
@@ -103,7 +103,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -201,11 +201,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(meshcat, m) {
+PYDRAKE_MODULE(meshcat, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Interface code for Meshcat-based visualization";
 
-  py::module::import("pydrake.multibody.plant");
+  py::module_::import_("pydrake.multibody.plant");
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

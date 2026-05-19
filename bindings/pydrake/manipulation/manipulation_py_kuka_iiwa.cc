@@ -21,7 +21,7 @@ namespace internal {
 using systems::Diagram;
 using systems::LeafSystem;
 
-void DefineManipulationKukaIiwa(py::module m) {
+void DefineManipulationKukaIiwa(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation::kuka_iiwa;
   constexpr auto& doc =

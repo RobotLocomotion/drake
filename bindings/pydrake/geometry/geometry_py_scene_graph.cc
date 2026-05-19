@@ -37,7 +37,7 @@ constexpr auto& doc_query_results =
 // TODO(jwnimmer-tri) Reformat this entire file to remove the unnecessary
 // indentation.
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // HydroelasticContactRepresentation enumeration
   {
     using Class = HydroelasticContactRepresentation;
@@ -72,7 +72,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DefineSceneGraphInspector(py::module m, T) {
+void DefineSceneGraphInspector(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   //  SceneGraphInspector
   {
@@ -208,7 +208,7 @@ void DefineSceneGraphInspector(py::module m, T) {
 }
 
 template <typename T>
-void DefineSceneGraph(py::module m, T) {
+void DefineSceneGraph(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   //  SceneGraph
   {
@@ -505,7 +505,7 @@ void DefineSceneGraph(py::module m, T) {
 }
 
 template <typename T>
-void DefineFramePoseVector(py::module m, T) {
+void DefineFramePoseVector(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = FramePoseVector<T>;
@@ -534,7 +534,7 @@ void DefineFramePoseVector(py::module m, T) {
 }
 
 template <typename T>
-void DefineGeometryConfigurationVector(py::module m, T) {
+void DefineGeometryConfigurationVector(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = GeometryConfigurationVector<T>;
@@ -565,7 +565,7 @@ void DefineGeometryConfigurationVector(py::module m, T) {
 }
 
 template <typename T>
-void DefineQueryObject(py::module m, T) {
+void DefineQueryObject(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = QueryObject<T>;
@@ -679,7 +679,7 @@ void DefineQueryObject(py::module m, T) {
 }
 
 template <typename T>
-void DefineSignedDistancePair(py::module m, T) {
+void DefineSignedDistancePair(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistancePair<T>;
@@ -702,7 +702,7 @@ void DefineSignedDistancePair(py::module m, T) {
 }
 
 template <typename T>
-void DefineSignedDistanceToPoint(py::module m, T) {
+void DefineSignedDistanceToPoint(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = SignedDistanceToPoint<T>;
@@ -723,7 +723,7 @@ void DefineSignedDistanceToPoint(py::module m, T) {
 }
 
 template <typename T>
-void DefinePenetrationAsPointPair(py::module m, T) {
+void DefinePenetrationAsPointPair(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = PenetrationAsPointPair<T>;
@@ -748,7 +748,7 @@ void DefinePenetrationAsPointPair(py::module m, T) {
 }
 
 template <typename T>
-void DefineContactSurface(py::module m, T) {
+void DefineContactSurface(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   // Currently we do not bind the constructor because users do not need to
   // construct it directly yet. We can get it from ComputeContactSurface*().
@@ -796,8 +796,8 @@ void DefineContactSurface(py::module m, T) {
 }
 }  // namespace
 
-void DefineGeometrySceneGraph(py::module m) {
-  py::module::import("pydrake.systems.framework");
+void DefineGeometrySceneGraph(py::module_ m) {
+  py::module_::import_("pydrake.systems.framework");
   DoScalarIndependentDefinitions(m);
   type_visit(
       [m](auto dummy) {

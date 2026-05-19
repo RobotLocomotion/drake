@@ -7,7 +7,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningZmpPlanner(py::module m) {
+void DefinePlanningZmpPlanner(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_locomotion.drake.planning;

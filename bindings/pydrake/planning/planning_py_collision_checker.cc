@@ -21,7 +21,7 @@ using multibody::BodyIndex;
 using multibody::Frame;
 using multibody::RigidBody;
 
-void DefinePlanningCollisionChecker(py::module m) {
+void DefinePlanningCollisionChecker(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning.drake.planning;

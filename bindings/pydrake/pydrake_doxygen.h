@@ -82,7 +82,7 @@ definitions themselves are split into
 ### Python Types
 
 Throughout the Drake code, Python types provided by `pybind11` are used, such
-as `py::handle`, `py::object`, `py::module`, `py::str`, `py::list`, etc.
+as `py::handle`, `py::object`, `py::module_`, `py::str`, `py::list`, etc.
 For an overview, see the
 [pybind11 reference](http://pybind11.readthedocs.io/en/stable/reference.html).
 
@@ -189,7 +189,7 @@ components being built.
   - foo_py.h: provides function signatures for the various "Define..." helper
     functions that comprise the module. In general, splitting into more
     (smaller) helper functions is better than fewer (larger) helper functions.
-  - foo_py.cc: uses PYBIND11_MODULE to define the package or module, by
+  - foo_py.cc: uses PYDRAKE_MODULE to define the package or module, by
     importing other dependent modules, calling the "Define..." helper functions,
     and possibly defining submodules.  Must not itself add bindings; it must
     always call helpers that add them.
@@ -208,7 +208,7 @@ anonymous namespaces. Avoid `using namespace` directives otherwise.
 - Any symbol referenced in a module binding (even as function/method parameters)
 must either be *bound* in that compilation unit (with the binding evaluated
 before to the reference), or the module must import the pydrake module in which
-it is bound (e.g., `py::module::import("pydrake.foo"))`). Failure to do so can
+it is bound (e.g., `py::module_::import_("pydrake.foo"))`). Failure to do so can
 cause errors (unable to cast unregistered types from Python to C++) and can
 cause the generated docstring from pybind11 to render these types by their C++
 `typeid` rather than the Python type name.
@@ -241,7 +241,7 @@ the following:
 
         # bindings/.../my_method_py.cc
         PYBIND_MODULE(my_method, m) {
-          py::module::import("pydrake.geometry");
+          py::module_::import_("pydrake.geometry");
           m.def("MyMethod", &MyMethod, ...);
         }
 
@@ -262,7 +262,7 @@ An example of incorporating docstrings:
 @code{.cc}
     #include "drake/bindings/generated_docstrings/math.h"
 
-    PYBIND11_MODULE(math, m) {
+    PYDRAKE_MODULE(math, m) {
       using namespace drake::math;
       constexpr auto& doc = pydrake_doc_math.drake.math;
       using T = double;
@@ -289,7 +289,7 @@ An example of supplying custom strings:
     And has multiple lines.
     )""";
 
-    PYBIND11_MODULE(example, m) {
+    PYDRAKE_MODULE(example, m) {
       m.def("helper", []() { return 42; }, "My helper method");
       m.def("another_helper", []() { return 10; }, another_helper_doc);
     }
@@ -603,7 +603,7 @@ API for `AddProperty` ([code permalink](https://git.io/JfqiT)):
 ```
 using Class = GeometryProperties;
 py::handle abstract_value_cls =
-    py::module::import("pydrake.systems.framework").attr("AbstractValue");
+    py::module_::import_("pydrake.systems.framework").attr("AbstractValue");
 ...
     .def("AddProperty",
         [abstract_value_cls](Class* self, const std::string& group_name,

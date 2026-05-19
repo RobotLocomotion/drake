@@ -100,7 +100,7 @@ Warning:
 
 }  // namespace
 
-PYBIND11_MODULE(lcm, m) {
+PYDRAKE_MODULE(lcm, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
@@ -108,8 +108,8 @@ PYBIND11_MODULE(lcm, m) {
   using namespace drake::systems::lcm;
   constexpr auto& doc = pydrake_doc_systems_lcm.drake.systems.lcm;
 
-  py::module::import("pydrake.lcm");
-  py::module::import("pydrake.systems.framework");
+  py::module_::import_("pydrake.lcm");
+  py::module_::import_("pydrake.systems.framework");
 
   {
     using Class = LcmInterfaceSystem;

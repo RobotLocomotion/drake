@@ -18,7 +18,7 @@ using geometry::render::DepthRenderCamera;
 using systems::Diagram;
 using systems::LeafSystem;
 
-void DefineSensorsRgbd(py::module m) {
+void DefineSensorsRgbd(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
   constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;

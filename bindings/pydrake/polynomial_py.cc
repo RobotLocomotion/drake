@@ -12,7 +12,7 @@ namespace pydrake {
 
 namespace {
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   using Class = Polynomial<T>;
@@ -97,10 +97,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
 }
 }  // namespace
 
-PYBIND11_MODULE(polynomial, m) {
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.symbolic");
+PYDRAKE_MODULE(polynomial, m) {
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.common");
+  py::module_::import_("pydrake.symbolic");
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});

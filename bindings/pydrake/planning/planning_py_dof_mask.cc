@@ -13,7 +13,7 @@ namespace internal {
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 
-void DefinePlanningDofMask(py::module m) {
+void DefinePlanningDofMask(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning.drake.planning;

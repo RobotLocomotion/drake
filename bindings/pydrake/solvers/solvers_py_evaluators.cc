@@ -131,7 +131,7 @@ class StubEvaluatorBase : public EvaluatorBase {
   }
 };
 
-void DefTesting(py::module m) {
+void DefTesting(py::module_ m) {
   // Test helpers for binding casting.
   py::class_<StubEvaluatorBase, EvaluatorBase,
       std::shared_ptr<StubEvaluatorBase>>(m, "StubEvaluatorBase");
@@ -153,7 +153,7 @@ void DefTesting(py::module m) {
           [](const Binding<Constraint>& arg) { return arg; });
 }
 
-void BindEvaluatorsAndBindings(py::module m) {
+void BindEvaluatorsAndBindings(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   {
     using Class = EvaluatorBase;
@@ -826,7 +826,7 @@ void BindEvaluatorsAndBindings(py::module m) {
 }  // namespace
 
 namespace internal {
-void DefineSolversEvaluators(py::module m) {
+void DefineSolversEvaluators(py::module_ m) {
   BindEvaluatorsAndBindings(m);
   DefTesting(m.def_submodule("_testing"));
 }

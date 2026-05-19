@@ -17,7 +17,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineAutodiffutils(py::module m) {
+void DefineAutodiffutils(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc_math.drake.math;

@@ -13,7 +13,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void DefinePlanningCommonSampledIrisOptions(py::module m) {
+void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
@@ -134,7 +134,7 @@ void CheckArrayShape(
 // Checks array type, provides user-friendly message if it fails.
 template <typename T>
 void CheckReturnedArrayType(py::str cls_name, py::array y) {
-  py::module m = py::module::import("pydrake.solvers._extra");
+  py::module_ m = py::module_::import_("pydrake.solvers._extra");
   m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
 }
 
@@ -158,7 +158,7 @@ Func WrapParameterizationFunc(
   return wrapped.cast<Func>();
 }
 
-void DefinePlanningIrisParameterizationFunction(py::module m) {
+void DefinePlanningIrisParameterizationFunction(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning_iris.drake.planning;
@@ -225,7 +225,7 @@ is the input dimension.
 
 namespace internal {
 
-void DefinePlanningIrisCommon(py::module m) {
+void DefinePlanningIrisCommon(py::module_ m) {
   DefinePlanningCommonSampledIrisOptions(m);
   DefinePlanningIrisParameterizationFunction(m);
 }

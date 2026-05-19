@@ -12,7 +12,7 @@ namespace internal {
 using solvers::SolverId;
 using solvers::SolverType;
 
-void DefineSolversIds(py::module m) {
+void DefineSolversIds(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
       .def(py::init<std::string>(), py::arg("name"), doc.SolverId.ctor.doc)

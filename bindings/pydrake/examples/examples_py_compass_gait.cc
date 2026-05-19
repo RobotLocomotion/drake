@@ -10,7 +10,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesCompassGait(py::module m) {
+void DefineExamplesCompassGait(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

@@ -56,7 +56,7 @@ constexpr auto& doc =
     pydrake_doc_geometry_optimization.drake.geometry.optimization;
 
 // Definitions for cspace_separating_plane.h.
-void DefineCspaceSeparatingPlane(py::module m) {
+void DefineCspaceSeparatingPlane(py::module_ m) {
   py::enum_<SeparatingPlaneOrder>(
       m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
       .value("kAffine", SeparatingPlaneOrder::kAffine,
@@ -96,7 +96,7 @@ void DefineCspaceSeparatingPlane(py::module m) {
       type_pack<double, symbolic::Variable>());
 }
 
-void DefineConvexSetBaseClassAndSubclasses(py::module m) {
+void DefineConvexSetBaseClassAndSubclasses(py::module_ m) {
   // SampledVolume. This struct must be declared before ConvexSet as methods in
   // ConvexSet depend on this struct.
   {
@@ -555,7 +555,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
   }
 }
 
-void DefineIris(py::module m) {
+void DefineIris(py::module_ m) {
   {
     const auto& cls_doc = doc.IrisOptions;
     py::class_<IrisOptions> iris_options(m, "IrisOptions", cls_doc.doc);
@@ -694,7 +694,7 @@ void DefineIris(py::module m) {
       "Calls LoadYamlFile() to deserialize an IrisRegions object.");
 }
 
-void DefineGraphOfConvexSetsAndRelated(py::module m) {
+void DefineGraphOfConvexSetsAndRelated(py::module_ m) {
   // GraphOfConvexSetsOptions
   {
     const auto& cls_doc = doc.GraphOfConvexSetsOptions;
@@ -1175,7 +1175,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
 }
 
 // Definitions for c_iris_collision_geometry.h.
-void DefineCIrisCollisionGeometry(py::module m) {
+void DefineCIrisCollisionGeometry(py::module_ m) {
   {
     py::enum_<PlaneSide>(m, "PlaneSide", doc.PlaneSide.doc)
         .value("kPositive", PlaneSide::kPositive)
@@ -1210,7 +1210,7 @@ void DefineCIrisCollisionGeometry(py::module m) {
 }
 
 // Definitions for cpsace_free_structs.h.
-void DefineCspaceFreeStructs(py::module m) {
+void DefineCspaceFreeStructs(py::module_ m) {
   {
     constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
     auto prog_cls = py::class_<SeparationCertificateProgramBase>(
@@ -1252,7 +1252,7 @@ void DefineCspaceFreeStructs(py::module m) {
   }
 }
 
-void DefineCspaceFreePolytopeAndRelated(py::module m) {
+void DefineCspaceFreePolytopeAndRelated(py::module_ m) {
   {
     using BaseClass = CspaceFreePolytopeBase;
     const auto& base_cls_doc = doc.CspaceFreePolytopeBase;
@@ -1474,7 +1474,7 @@ void DefineCspaceFreePolytopeAndRelated(py::module m) {
   }
 }
 
-void DefineGeodesicConvexity(py::module m) {
+void DefineGeodesicConvexity(py::module_ m) {
   m.def("CheckIfSatisfiesConvexityRadius", &CheckIfSatisfiesConvexityRadius,
       py::arg("convex_set"), py::arg("continuous_revolute_joints"),
       doc.CheckIfSatisfiesConvexityRadius.doc);
@@ -1577,10 +1577,10 @@ void DefineGeodesicConvexity(py::module m) {
 
 }  // namespace
 
-void DefineGeometryOptimization(py::module m) {
+void DefineGeometryOptimization(py::module_ m) {
   m.doc() = "Local bindings for `drake::geometry::optimization`";
 
-  py::module::import("pydrake.solvers");
+  py::module_::import_("pydrake.solvers");
 
   // This list must remain in topological dependency order.
   DefineConvexSetBaseClassAndSubclasses(m);

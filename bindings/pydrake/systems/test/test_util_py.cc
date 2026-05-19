@@ -46,7 +46,7 @@ class Arbitrary {
   ~Arbitrary() = default;
 };
 
-void DeclareBuilderLifeSupportTestHelpers(py::module m) {
+void DeclareBuilderLifeSupportTestHelpers(py::module_ m) {
   // the Arbitrary type exists to test annotations pointing to a wrong-typed
   // argument.
   py::class_<Arbitrary>(m, "Arbitrary").def(py::init<>());
@@ -212,13 +212,13 @@ class CountingContextSystem final : public LeafSystem<T> {
 
 }  // namespace
 
-PYBIND11_MODULE(test_util, m) {
+PYDRAKE_MODULE(test_util, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace systems;
 
   // Import dependencies.
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
 
   py::class_<DeleteListenerSystem, LeafSystem<T>>(m, "DeleteListenerSystem")
       .def(py::init<std::function<void()>>());

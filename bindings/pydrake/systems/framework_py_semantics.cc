@@ -73,7 +73,7 @@ py::object DoEval(const SomeObject* self, const systems::Context<T>& context) {
   DRAKE_UNREACHABLE();
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = UseDefaultName;
     py::class_<Class>(m, "UseDefaultName", doc.UseDefaultName.doc)
@@ -351,7 +351,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-py::class_<Context<T>, ContextBase> DefineContext(py::module m) {
+py::class_<Context<T>, ContextBase> DefineContext(py::module_ m) {
   auto context_cls = DefineTemplateClassWithDefault<Context<T>, ContextBase>(
       m, "Context", GetPyParam<T>(), doc.Context.doc);
   context_cls
@@ -542,13 +542,13 @@ void DefineContextMethodsTemplatedOnASecondaryScalar(PyClass* context_cls) {
 }
 
 template <typename T>
-void DefineLeafContext(py::module m) {
+void DefineLeafContext(py::module_ m) {
   DefineTemplateClassWithDefault<LeafContext<T>, Context<T>>(
       m, "LeafContext", GetPyParam<T>(), doc.LeafContext.doc);
 }
 
 template <typename T>
-void DefineEventAndEventSubclasses(py::module m) {
+void DefineEventAndEventSubclasses(py::module_ m) {
   // Event mechanisms.
   DefineTemplateClassWithDefault<Event<T>>(
       m, "Event", GetPyParam<T>(), doc.Event.doc)
@@ -659,7 +659,7 @@ void DefineEventAndEventSubclasses(py::module m) {
 }
 
 template <typename T>
-void DoDefineFrameworkDiagramBuilder(py::module m) {
+void DoDefineFrameworkDiagramBuilder(py::module_ m) {
   using internal::BuilderLifeSupport;
   DefineTemplateClassWithDefault<DiagramBuilder<T>>(m, "DiagramBuilder",
       GetPyParam<T>(), doc.DiagramBuilder.doc, std::nullopt, py::dynamic_attr())
@@ -808,7 +808,7 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
 // TODO(jwnimmer-tri) This function is just a grab-bag of several classes. We
 // should split it up into smaller pieces.
 template <typename T>
-void DefineRemainingScalarDependentDefinitions(py::module m) {
+void DefineRemainingScalarDependentDefinitions(py::module_ m) {
   DefineTemplateClassWithDefault<OutputPort<T>>(m, "OutputPort",
       GetPyParam<T>(), doc.OutputPort.doc, std::nullopt, py::dynamic_attr())
       .def("size", &OutputPort<T>::size, doc.PortBase.size.doc)
@@ -969,7 +969,7 @@ void DefineRemainingScalarDependentDefinitions(py::module m) {
 }  // NOLINT(readability/fn_size)
 
 template <typename T>
-void DefineParameters(py::module m) {
+void DefineParameters(py::module_ m) {
   auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(
       m, "Parameters", GetPyParam<T>(), doc.Parameters.doc);
   DefClone(&parameters);
@@ -1058,7 +1058,7 @@ void DefineParameters(py::module m) {
 }
 
 template <typename T>
-void DefineState(py::module m) {
+void DefineState(py::module_ m) {
   DefineTemplateClassWithDefault<State<T>>(
       m, "State", GetPyParam<T>(), doc.State.doc)
       .def(py::init<>(), doc.State.ctor.doc)
@@ -1108,7 +1108,7 @@ void DefineState(py::module m) {
 }
 
 template <typename T>
-void DefineContinuousState(py::module m) {
+void DefineContinuousState(py::module_ m) {
   auto continuous_state = DefineTemplateClassWithDefault<ContinuousState<T>>(
       m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc);
   DefClone(&continuous_state);
@@ -1199,7 +1199,7 @@ void DefineContinuousState(py::module m) {
 }
 
 template <typename T>
-void DefineDiscreteValues(py::module m) {
+void DefineDiscreteValues(py::module_ m) {
   auto discrete_values = DefineTemplateClassWithDefault<DiscreteValues<T>>(
       m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);
   DefClone(&discrete_values);
@@ -1278,7 +1278,7 @@ void DefineDiscreteValues(py::module m) {
 }
 }  // namespace
 
-void DefineFrameworkDiagramBuilder(py::module m) {
+void DefineFrameworkDiagramBuilder(py::module_ m) {
   type_visit(
       [m](auto dummy) {
         using T = decltype(dummy);
@@ -1287,7 +1287,7 @@ void DefineFrameworkDiagramBuilder(py::module m) {
       CommonScalarPack{});
 }
 
-void DefineFrameworkPySemantics(py::module m) {
+void DefineFrameworkPySemantics(py::module_ m) {
   // This list of calls to helpers must remain in topological dependency order.
   DoScalarIndependentDefinitions(m);
   type_visit(

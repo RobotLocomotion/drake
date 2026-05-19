@@ -19,7 +19,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(controllers, m) {
+PYDRAKE_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
   using drake::multibody::MultibodyPlant;
@@ -29,13 +29,13 @@ PYBIND11_MODULE(controllers, m) {
   constexpr auto& doc =
       pydrake_doc_systems_controllers.drake.systems.controllers;
 
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.symbolic");
-  py::module::import("pydrake.systems.analysis");
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.symbolic");
+  py::module_::import_("pydrake.systems.analysis");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = DynamicProgrammingOptions;

@@ -71,7 +71,7 @@ struct ExampleParamInit {
 
 }  // namespace
 
-PYBIND11_MODULE(pydrake_pybind_test_util, m) {
+PYDRAKE_MODULE(pydrake_pybind_test_util, m) {
   {
     using Class = Item;
     py::class_<Class>(m, "Item").def_readonly("value", &Class::value);

@@ -57,7 +57,7 @@ CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
 
 using solvers::Constraint;
 
-PYBIND11_MODULE(inverse_kinematics, m) {
+PYDRAKE_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc =
@@ -66,10 +66,10 @@ PYBIND11_MODULE(inverse_kinematics, m) {
 
   m.doc() = "InverseKinematics module";
 
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.planning");
-  py::module::import("pydrake.solvers");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.planning");
+  py::module_::import_("pydrake.solvers");
 
   {
     using Class = InverseKinematics;
