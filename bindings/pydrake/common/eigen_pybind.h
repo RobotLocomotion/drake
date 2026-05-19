@@ -67,7 +67,7 @@ cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
 */
 inline py::object WrapToMatchInputShape(py::handle func) {
   py::handle wrap =
-      py::module::import("pydrake.common").attr("_wrap_to_match_input_shape");
+      py::module_::import_("pydrake.common").attr("_wrap_to_match_input_shape");
   return wrap(func);
 }
 

@@ -68,8 +68,8 @@ void BindPiecewisePolynomialSerialize(PyClass* cls) {
   };
   // Add the same __fields__ that DefAttributesUsingSerialize would have added.
   cls->def_property_readonly_static("__fields__", [](py::object /* cls */) {
-    auto ndarray = py::module::import("numpy").attr("ndarray");
-    auto make_namespace = py::module::import("types").attr("SimpleNamespace");
+    auto ndarray = py::module_::import_("numpy").attr("ndarray");
+    auto make_namespace = py::module_::import_("types").attr("SimpleNamespace");
     auto breaks = make_namespace();
     py::setattr(breaks, "name", py::str("breaks"));
     py::setattr(breaks, "type", ndarray);
@@ -256,7 +256,7 @@ struct Impl {
       py::gil_scoped_acquire guard;
       // Trajectory subclasses in Python must implement cloning by defining
       // a __deepcopy__ method.
-      auto deepcopy = py::module_::import("copy").attr("deepcopy");
+      auto deepcopy = py::module_::import_("copy").attr("deepcopy");
       return WrapPyTrajectory(deepcopy(this));
     }
 
@@ -303,7 +303,7 @@ struct Impl {
     }
   };
 
-  static void DoScalarDependentDefinitions(py::module m) {
+  static void DoScalarDependentDefinitions(py::module_ m) {
     py::tuple param = GetPyParam<T>();
 
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -995,11 +995,11 @@ struct Impl {
 };
 }  // namespace
 
-PYBIND11_MODULE(trajectories, m) {
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.polynomial");
-  py::module::import("pydrake.symbolic");
+PYDRAKE_MODULE(trajectories, m) {
+  py::module_::import_("pydrake.autodiffutils");
+  py::module_::import_("pydrake.common");
+  py::module_::import_("pydrake.polynomial");
+  py::module_::import_("pydrake.symbolic");
 
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {

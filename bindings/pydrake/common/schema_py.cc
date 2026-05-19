@@ -18,7 +18,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineModuleSchema(py::module m) {
+void DefineModuleSchema(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::schema;
   constexpr auto& doc = pydrake_doc_common_schema.drake.schema;

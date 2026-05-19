@@ -36,7 +36,7 @@ constexpr auto& doc = pydrake_doc_geometry.drake.geometry;
 // indentation.
 
 template <typename T>
-void DefineDrakeVisualizer(py::module m, T) {
+void DefineDrakeVisualizer(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = DrakeVisualizer<T>;
@@ -92,7 +92,7 @@ void DefineDrakeVisualizer(py::module m, T) {
 }
 
 template <typename T>
-void DefineMeshcatPointCloudVisualizer(py::module m, T) {
+void DefineMeshcatPointCloudVisualizer(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = MeshcatPointCloudVisualizer<T>;
@@ -118,7 +118,7 @@ void DefineMeshcatPointCloudVisualizer(py::module m, T) {
 }
 
 template <typename T>
-void DefineMeshcatVisualizer(py::module m, T) {
+void DefineMeshcatVisualizer(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   {
     using Class = MeshcatVisualizer<T>;
@@ -169,7 +169,7 @@ void DefineMeshcatVisualizer(py::module m, T) {
   }
 }
 
-void DefineDrakeVisualizerParams(py::module m) {
+void DefineDrakeVisualizerParams(py::module_ m) {
   {
     using Class = DrakeVisualizerParams;
     constexpr auto& cls_doc = doc.DrakeVisualizerParams;
@@ -183,7 +183,7 @@ void DefineDrakeVisualizerParams(py::module m) {
   }
 }
 
-void DefineMeshcatParams(py::module m) {
+void DefineMeshcatParams(py::module_ m) {
   {
     using Class = MeshcatParams;
     constexpr auto& cls_doc = doc.MeshcatParams;
@@ -206,7 +206,7 @@ void DefineMeshcatParams(py::module m) {
   }
 }
 
-void DefineMeshcat(py::module m) {
+void DefineMeshcat(py::module_ m) {
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
@@ -467,7 +467,7 @@ void DefineMeshcat(py::module m) {
   }
 }
 
-void DefineMeshcatAnimation(py::module m) {
+void DefineMeshcatAnimation(py::module_ m) {
   {
     using Class = MeshcatAnimation;
     constexpr auto& cls_doc = doc.MeshcatAnimation;
@@ -529,7 +529,7 @@ void DefineMeshcatAnimation(py::module m) {
   }
 }
 
-void DefineMeshcatVisualizerParams(py::module m) {
+void DefineMeshcatVisualizerParams(py::module_ m) {
   {
     using Class = MeshcatVisualizerParams;
     constexpr auto& cls_doc = doc.MeshcatVisualizerParams;
@@ -545,9 +545,9 @@ void DefineMeshcatVisualizerParams(py::module m) {
 
 }  // namespace
 
-void DefineGeometryVisualizers(py::module m) {
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.lcm");
+void DefineGeometryVisualizers(py::module_ m) {
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.lcm");
 
   // This list must remain in topological dependency order.
   DefineMeshcatParams(m);

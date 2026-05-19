@@ -39,7 +39,7 @@ void RegisterAddConstraintToAllKnotPoints(
       doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
 }
 
-void DefinePlanningTrajectoryOptimization(py::module m) {
+void DefinePlanningTrajectoryOptimization(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::trajectory_optimization;
   constexpr auto& doc = pydrake_doc_planning_trajectory_optimization.drake

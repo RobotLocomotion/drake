@@ -11,7 +11,7 @@ namespace internal {
 
 using systems::DiagramBuilder;
 
-void DefineSensorsCameraConfig(py::module m) {
+void DefineSensorsCameraConfig(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
   constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;

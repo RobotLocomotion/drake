@@ -97,7 +97,7 @@ void CheckArrayShape(
 // Checks array type, provides user-friendly message if it fails.
 template <typename T>
 void CheckReturnedArrayType(py::str cls_name, py::array y) {
-  py::module m = py::module::import("pydrake.solvers._extra");
+  py::module_ m = py::module_::import_("pydrake.solvers._extra");
   m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
 }
 
@@ -275,7 +275,7 @@ class PySolverInterface : public solvers::SolverInterface {
   }
 };
 
-void BindSolverInterface(py::module m) {
+void BindSolverInterface(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
@@ -338,7 +338,7 @@ void BindSolverInterface(py::module m) {
           [](const SolverInterface& self) { return self.solver_id().name(); });
 }
 
-void BindMathematicalProgramResult(py::module m) {
+void BindMathematicalProgramResult(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
@@ -470,7 +470,7 @@ void BindMathematicalProgramResult(py::module m) {
           doc.MathematicalProgramResult.GetInfeasibleConstraintNames.doc);
 }
 
-void BindMathematicalProgram(py::module m) {
+void BindMathematicalProgram(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
       py::dynamic_attr(), doc.MathematicalProgram.doc);
@@ -1550,7 +1550,7 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.RemoveVisualizationCallback.doc);
 }  // NOLINT(readability/fn_size)
 
-void BindSolutionResult(py::module m) {
+void BindSolutionResult(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   py::enum_<SolutionResult> solution_result_enum(
       m, "SolutionResult", doc.SolutionResult.doc);
@@ -1575,7 +1575,7 @@ void BindSolutionResult(py::module m) {
           doc.SolutionResult.kSolutionResultNotSet.doc);
 }
 
-void BindPyFunctionCost(py::module m) {
+void BindPyFunctionCost(py::module_ m) {
   py::class_<PyFunctionCost, Cost, std::shared_ptr<PyFunctionCost>>(
       m, "PyFunctionCost", "Cost with its evaluator as a Python function")
       .def(py::init<int, const py::function&, const std::string&>(),
@@ -1584,7 +1584,7 @@ void BindPyFunctionCost(py::module m) {
           "`num_vars` variables.");
 }
 
-void BindPyFunctionConstraint(py::module m) {
+void BindPyFunctionConstraint(py::module_ m) {
   py::class_<PyFunctionConstraint, Constraint,
       std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
       "Constraint with its evaluator as a Python function")
@@ -1604,7 +1604,7 @@ void BindPyFunctionConstraint(py::module m) {
           "Set both the lower and upper bounds of the constraint.");
 }
 
-void BindFreeFunctions(py::module m) {
+void BindFreeFunctions(py::module_ m) {
   constexpr auto& doc = pydrake_doc_solvers.drake.solvers;
   // Bind the free functions in choose_best_solver.h and solve.h.
   m  // BR
@@ -1699,7 +1699,7 @@ void BindFreeFunctions(py::module m) {
 }  // namespace
 
 namespace internal {
-void DefineSolversMathematicalProgram(py::module m) {
+void DefineSolversMathematicalProgram(py::module_ m) {
   // This list must remain in topological dependency order.
   BindPyFunctionCost(m);
   BindPyFunctionConstraint(m);

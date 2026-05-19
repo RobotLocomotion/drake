@@ -33,7 +33,7 @@ Object& Object::operator=(Object&& other) {
 }
 
 Object Object::Clone() const {
-  py::object py_copy = py::module::import("copy").attr("deepcopy");
+  py::object py_copy = py::module_::import_("copy").attr("deepcopy");
   py::object copied = py_copy(to_pyobject<py::object>());
   return from_pyobject(copied);
 }
@@ -57,7 +57,7 @@ py::object GetPyHash(const std::type_info& tinfo) {
 // Registers C++ type.
 template <typename T>
 void RegisterType(
-    py::module m, py::object param_aliases, const std::string& canonical_str) {
+    py::module_ m, py::object param_aliases, const std::string& canonical_str) {
   // Create an object that is a unique hash.
   py::object canonical = py::eval(canonical_str, m.attr("__dict__"));
   py::list aliases(1);
@@ -66,7 +66,7 @@ void RegisterType(
 }
 
 // Registers common C++ types.
-void RegisterCommon(py::module m, py::object param_aliases) {
+void RegisterCommon(py::module_ m, py::object param_aliases) {
   // Make mappings for C++ RTTI to Python types.
   // Unfortunately, this is hard to obtain from `pybind11`.
   RegisterType<bool>(m, param_aliases, "bool");
@@ -87,7 +87,7 @@ void RegisterCommon(py::module m, py::object param_aliases) {
 }  // namespace
 
 py::object GetParamAliases() {
-  py::module m = py::module::import("pydrake.common.cpp_param");
+  py::module_ m = py::module_::import_("pydrake.common.cpp_param");
   py::object param_aliases = m.attr("_param_aliases");
   const char registered_check[] = "_register_common_cpp";
   if (!py::hasattr(m, registered_check)) {

@@ -8,7 +8,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-void def_geometry_all(py::module m) {
+void def_geometry_all(py::module_ m) {
   py::dict vars = m.attr("__dict__");
   py::exec(
       "from pydrake.geometry import *\n"
@@ -17,9 +17,9 @@ void def_geometry_all(py::module m) {
 }
 }  // namespace
 
-PYBIND11_MODULE(geometry, m) {
+PYDRAKE_MODULE(geometry, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  py::module::import("pydrake.math");
+  py::module_::import_("pydrake.math");
 
   /* The order of execution matters -- a module may rely on the definition
    of bindings executed prior to it. */

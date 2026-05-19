@@ -16,7 +16,7 @@ namespace {
 // features (e.g. no descriptors exposed, skipping performance-based args
 // (like `skip_initialization`)). Bind these if they are useful.
 
-void init_pc_flags(py::module m) {
+void init_pc_flags(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception::pc_flags;
   constexpr auto& doc = pydrake_doc_perception.drake.perception.pc_flags;
@@ -49,7 +49,7 @@ void init_pc_flags(py::module m) {
   }
 }
 
-void init_perception(py::module m) {
+void init_perception(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::perception;
   constexpr auto& doc = pydrake_doc_perception.drake.perception;
@@ -58,8 +58,8 @@ void init_perception(py::module m) {
   using systems::sensors::CameraInfo;
   using systems::sensors::PixelType;
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.sensors");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.sensors");
 
   {
     using Class = PointCloud;
@@ -168,10 +168,10 @@ void init_perception(py::module m) {
   }
 }
 
-PYBIND11_MODULE(perception, m) {
+PYDRAKE_MODULE(perception, m) {
   m.doc() = "Python bindings for //perception";
 
-  py::module::import("pydrake.common");
+  py::module_::import_("pydrake.common");
 
   // N.B. To stick to directory structure, we do not define this in a
   // `pc_flags` submodule.

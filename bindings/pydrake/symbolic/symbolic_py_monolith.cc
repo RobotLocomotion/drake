@@ -41,7 +41,7 @@ using std::map;
 using std::string;
 
 // TODO(eric.cousineau): Use py::self for operator overloads?
-void DefineSymbolicMonolith(py::module m) {
+void DefineSymbolicMonolith(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
   constexpr auto& doc = pydrake_doc_common_symbolic.drake.symbolic;

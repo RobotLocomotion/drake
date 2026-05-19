@@ -16,7 +16,7 @@ namespace internal {
 
 using systems::LeafSystem;
 
-void DefineSensorsImageIo(py::module m) {
+void DefineSensorsImageIo(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
   constexpr auto& doc = pydrake_doc_systems_sensors.drake.systems.sensors;

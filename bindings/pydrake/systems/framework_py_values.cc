@@ -21,7 +21,7 @@ namespace pydrake {
 
 namespace {
 template <typename T>
-void DoScalarDependentDefinitions(py::module m) {
+void DoScalarDependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   constexpr auto& doc = pydrake_doc_systems_framework.drake.systems;
@@ -134,7 +134,7 @@ void DoScalarDependentDefinitions(py::module m) {
           py::arg("value"));
 }
 
-void DefineBusValue(py::module m) {
+void DefineBusValue(py::module_ m) {
   using Class = systems::BusValue;
   constexpr auto& cls_doc =
       pydrake_doc_systems_framework.drake.systems.BusValue;
@@ -185,7 +185,7 @@ void DefineBusValue(py::module m) {
 
 }  // namespace
 
-void DefineFrameworkPyValues(py::module m) {
+void DefineFrameworkPyValues(py::module_ m) {
   DefineBusValue(m);
   // Do templated instantiations.
   auto bind_common_scalar_types = [m](auto dummy) {

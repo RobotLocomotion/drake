@@ -9,7 +9,7 @@
 namespace drake {
 namespace pydrake {
 
-void DefineGeometryRefine(py::module m) {
+void DefineGeometryRefine(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;

@@ -9,7 +9,7 @@
 namespace drake {
 namespace pydrake {
 
-void DefineFrameworkPySystems(py::module m);
+void DefineFrameworkPySystems(py::module_ m);
 
 }  // namespace pydrake
 }  // namespace drake

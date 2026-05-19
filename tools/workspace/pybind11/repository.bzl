@@ -23,6 +23,7 @@ def pybind11_repository(
         patches = [
             ":patches/check_signature_infection.patch",
             ":patches/eigen_object_matrices.patch",
+            ":patches/nanobind_spellings.patch",
             ":patches/shared_ptr_lifetime.patch",
         ],
         mirrors = mirrors,

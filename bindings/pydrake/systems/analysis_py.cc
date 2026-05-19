@@ -40,7 +40,7 @@ void ThrowIfPythonHasPendingSignals() {
 }
 }  // namespace
 
-PYBIND11_MODULE(analysis, m) {
+PYDRAKE_MODULE(analysis, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -49,10 +49,10 @@ PYBIND11_MODULE(analysis, m) {
 
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.solvers");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
+  py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = SimulatorConfig;

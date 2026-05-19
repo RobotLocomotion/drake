@@ -18,17 +18,17 @@ namespace drake {
 namespace pydrake {
 
 namespace {
-PYBIND11_MODULE(optimization, m) {
+PYDRAKE_MODULE(optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc_multibody_optimization.drake.multibody;
 
   m.doc() = "Optimization module for MultibodyPlant motion planning";
 
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.multibody.plant");
-  py::module::import("pydrake.solvers");
-  py::module::import("pydrake.trajectories");
+  py::module_::import_("pydrake.math");
+  py::module_::import_("pydrake.multibody.plant");
+  py::module_::import_("pydrake.solvers");
+  py::module_::import_("pydrake.trajectories");
 
   {
     using Class = CalcGridPointsOptions;

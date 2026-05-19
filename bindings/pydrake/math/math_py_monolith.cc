@@ -44,7 +44,7 @@ using symbolic::Variable;
 namespace {
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
+void DefineRigidTransform(py::module_ m, py::class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -164,7 +164,7 @@ void DefineRigidTransform(py::module m, py::class_<PyClass<T>>& cls) {
 
 template <template <typename> typename PyClass, typename T>
 // NOLINTNEXTLINE(runtime/references)
-void DefineRotationMatrix(py::module m, py::class_<PyClass<T>>& cls) {
+void DefineRotationMatrix(py::module_ m, py::class_<PyClass<T>>& cls) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -327,7 +327,7 @@ void DefineRollPitchYaw(py::class_<PyClass<T>>& cls) {
   }
 }
 
-void DefineRigidTransformRotationMatrixRollPitchYaw(py::module m) {
+void DefineRigidTransformRotationMatrixRollPitchYaw(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc_math.drake.math;
@@ -378,7 +378,7 @@ void DefineRigidTransformRotationMatrixRollPitchYaw(py::module m) {
 }
 
 template <typename T>
-void DoMiscScalarDependentDefinitions(py::module m, T) {
+void DoMiscScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -495,7 +495,7 @@ void DoMiscScalarDependentDefinitions(py::module m, T) {
   // Formula, Formula)) or an exclusion.
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc_math.drake.math;
@@ -686,7 +686,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
-void DoNonsymbolicScalarDefinitions(py::module m, T) {
+void DoNonsymbolicScalarDefinitions(py::module_ m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc_math.drake.math;
@@ -703,7 +703,7 @@ void DoNonsymbolicScalarDefinitions(py::module m, T) {
 }
 
 // Bindings for math/random_rotation.h.
-void DefineRandomRotation(py::module m) {
+void DefineRandomRotation(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc_math.drake.math;
@@ -731,7 +731,7 @@ void DefineRandomRotation(py::module m) {
 
 }  // namespace
 
-void DefineMathMonolith(py::module m) {
+void DefineMathMonolith(py::module_ m) {
   DefineRigidTransformRotationMatrixRollPitchYaw(m);
   DefineRandomRotation(m);
 

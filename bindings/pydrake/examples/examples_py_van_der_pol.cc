@@ -7,7 +7,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefineExamplesVanDerPol(py::module m) {
+void DefineExamplesVanDerPol(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

@@ -14,7 +14,7 @@ namespace pydrake {
 /// type-erasure wrapper.
 template <typename Class>
 auto BindTypeSafeIndex(
-    py::module m, const std::string& name, const std::string& class_doc = "") {
+    py::module_ m, const std::string& name, const std::string& class_doc = "") {
   constexpr auto& cls_doc = pydrake_doc_common.drake.TypeSafeIndex;
   py::class_<Class> cls(m, name.c_str(), class_doc.c_str());
   cls  // BR

@@ -19,7 +19,7 @@ namespace pydrake {
 namespace {
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   py::tuple param = GetPyParam<T>();
   constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
 
@@ -143,7 +143,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
       py::arg("volume"), doc.ConvertVolumeToSurfaceMesh.doc);
 }
 
-void DoScalarIndependentDefinitions(py::module m) {
+void DoScalarIndependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
@@ -187,7 +187,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 }
 
-void DoMeshDependentDefinitions(py::module m) {
+void DoMeshDependentDefinitions(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc_geometry_proximity.drake.geometry;
@@ -213,7 +213,7 @@ void DoMeshDependentDefinitions(py::module m) {
 
 }  // namespace
 
-void DefineGeometryMeshes(py::module m) {
+void DefineGeometryMeshes(py::module_ m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});

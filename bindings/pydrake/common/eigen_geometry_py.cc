@@ -87,7 +87,7 @@ void CheckQuaternion(const Eigen::Quaternion<Expression>&) {}
 void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
 
 template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module_ m, T) {
   // Do not return references to matrices (e.g. `Eigen::Ref<>`) so that we have
   // tighter control over validation.
 
@@ -411,7 +411,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
 }  // namespace
 
-void DefineModuleEigenGeometry(py::module m) {
+void DefineModuleEigenGeometry(py::module_ m) {
   m.doc() = "Bindings for Eigen geometric types.";
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

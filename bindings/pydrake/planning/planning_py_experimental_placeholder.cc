@@ -7,7 +7,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningPlaceholder(py::module m) {
+void DefinePlanningPlaceholder(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning::experimental;
   constexpr auto& doc =

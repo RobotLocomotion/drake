@@ -7,7 +7,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-void DefinePlanningJointLimits(py::module m) {
+void DefinePlanningJointLimits(py::module_ m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc_planning.drake.planning;

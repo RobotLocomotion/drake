@@ -7,7 +7,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(estimators, m) {
+PYDRAKE_MODULE(estimators, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::estimators;
   constexpr auto& doc = pydrake_doc_systems_estimators.drake.systems.estimators;
@@ -16,8 +16,8 @@ PYBIND11_MODULE(estimators, m) {
   using drake::systems::LeafSystem;
   using drake::systems::System;
 
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.primitives");
+  py::module_::import_("pydrake.systems.framework");
+  py::module_::import_("pydrake.systems.primitives");
 
   auto bind_common_scalar_types = [&m, &doc](auto dummy) {
     using T = decltype(dummy);

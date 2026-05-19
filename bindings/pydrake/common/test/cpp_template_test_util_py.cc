@@ -25,7 +25,7 @@ struct SimpleTemplate {
 };
 
 template <typename... Ts>
-auto BindSimpleTemplate(py::module m) {
+auto BindSimpleTemplate(py::module_ m) {
   using Class = SimpleTemplate<Ts...>;
   py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
   py_class  // BR
@@ -46,7 +46,7 @@ struct TemplateWithDefault {
 };
 
 template <typename T>
-void BindTemplateWithDefault(py::module m) {
+void BindTemplateWithDefault(py::module_ m) {
   using Class = TemplateWithDefault<T>;
   auto py_class =
       DefineTemplateClassWithDefault<Class>(m, "TemplateWithDefault",
@@ -77,7 +77,7 @@ struct SimpleType {
 
 }  // namespace
 
-PYBIND11_MODULE(cpp_template_test_util, m) {
+PYDRAKE_MODULE(cpp_template_test_util, m) {
   auto cls_1 = BindSimpleTemplate<int>(m);
   m.attr("DefaultInst") = cls_1;
   auto cls_2 = BindSimpleTemplate<int, double>(m);
