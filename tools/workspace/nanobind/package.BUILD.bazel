@@ -1,6 +1,6 @@
 # -*- bazel -*-
 
-load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["notice"])  # BSD-3-Clause
@@ -33,3 +33,11 @@ cc_library(
         "@robin_map",
     ],
 )
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["drake_repository_metadata.json"])

@@ -194,11 +194,13 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat",
     "metis_internal",
     "msgpack_internal",
+    "nanobind",
     "nanoflann_internal",
     "nlohmann_internal",
     "nlopt_internal",
     "picosha2_internal",
     "poisson_disk_sampling_internal",
+    # XXX porting
     # N.B. The @pybind11//:install is handled by //bindings/pydrake:install.
     "qhull_internal",
     "robin_map",
