@@ -1102,7 +1102,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                 const GraphOfConvexSetsOptions&>(
                 &GraphOfConvexSets::SamplePaths),
             py::arg("source"), py::arg("target"), py::arg("flows"),
-            py::arg("options"), py::return_value_policy::reference_internal,
+            py::arg("options"), py_rvp::reference_internal,
             cls_doc.SamplePaths.doc_flows)
         .def("SamplePaths",
             overload_cast_explicit<
@@ -1113,7 +1113,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                 const GraphOfConvexSetsOptions&>(
                 &GraphOfConvexSets::SamplePaths),
             py::arg("source"), py::arg("target"), py::arg("result"),
-            py::arg("options"), py::return_value_policy::reference_internal,
+            py::arg("options"), py_rvp::reference_internal,
             cls_doc.SamplePaths.doc_result)
         .def("SolveConvexRestriction",
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),

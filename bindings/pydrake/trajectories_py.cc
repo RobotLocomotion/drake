@@ -476,11 +476,9 @@ struct Impl {
                 // abstract Trajectory class. We tie the reference to 'self' to
                 // ensure validity during the pickle operation.
                 return py::make_tuple(
-                    py::cast(self.path(),
-                        py::return_value_policy::reference_internal,
+                    py::cast(self.path(), py_rvp::reference_internal,
                         py::cast(&self)),
-                    py::cast(self.time_scaling(),
-                        py::return_value_policy::reference_internal,
+                    py::cast(self.time_scaling(), py_rvp::reference_internal,
                         py::cast(&self)));
               },
               [](py::tuple t) {

@@ -64,7 +64,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     if (std::is_same_v<T, Object>) {
       // N.B. This implies that `Object` will be copied by value; however, it
       // is only a shallow copy of the pointer, not a deep copy of the object.
-      return_policy = py::return_value_policy::copy;
+      return_policy = py_rvp::copy;
     }
     std::string set_value_docstring = "Replaces stored value with a new one.";
     if (!std::is_copy_constructible_v<T>) {
