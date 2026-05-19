@@ -42,7 +42,7 @@ void DefinePlanningIrisZo(py::module_ m);
 void DefinePlanningJointLimits(py::module_ m);
 
 /* Defines bindings per planning_py_experimental_placeholder.cc. */
-void DefinePlanningPlaceholder(py::module m);
+void DefinePlanningPlaceholder(py::module_ m);
 
 /* Defines bindings per planning_py_robot_diagram.cc. */
 void DefinePlanningRobotDiagram(py::module_ m);
