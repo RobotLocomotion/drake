@@ -32,7 +32,6 @@ void DefineSolversAugmentedLagrangian(py::module_ m) {
             },
             py::arg("x"), py::arg("lambda_val"), py::arg("mu"),
             cls_doc.Eval.doc)
-
         .def(
             "Eval",
             [](const Class* self,

@@ -76,8 +76,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             [](const Class* self, int e, const Vector3<T>& p_MQ) {
               return self->EvaluateCartesian(e, p_MQ);
             },
-            py::arg("e"), py::arg("p_MQ"), cls_doc.EvaluateCartesian.doc)
-        ;
+            py::arg("e"), py::arg("p_MQ"), cls_doc.EvaluateCartesian.doc);
   }
 
   // TriangleSurfaceMeshFieldLinear
@@ -105,8 +104,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
             [](const Class* self, int e, const Vector3<T>& p_MQ) {
               return self->EvaluateCartesian(e, p_MQ);
             },
-            py::arg("e"), py::arg("p_MQ"), cls_doc.EvaluateCartesian.doc)
-        ;
+            py::arg("e"), py::arg("p_MQ"), cls_doc.EvaluateCartesian.doc);
   }
 }
 

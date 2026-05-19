@@ -57,7 +57,6 @@ void DefineSolversMixedIntegerOptimizationUtil(py::module_ m) {
       py::arg("prog"), py::arg("x"), py::arg("y"), py::arg("w"),
       py::arg("phi_x"), py::arg("phi_y"), py::arg("Bx"), py::arg("By"),
       py::arg("binning"), doc.AddBilinearProductMcCormickEnvelopeSos2.doc);
-
 }
 
 }  // namespace internal
