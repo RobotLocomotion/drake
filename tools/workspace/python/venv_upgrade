@@ -55,7 +55,7 @@ check_working_tree() {
 
 update_requirements() {
     # Use PDM to generate a lock file for itself.
-    "${venv_pdm}/bin/pdm" lock -p "${project_pdm}"
+    "${venv_pdm}/bin/pdm" lock -p "${project_pdm}" --exclude-newer=1w
     sed $'/will be generated/{s/will be/is/\nq\n}' < "$1.in" > "$1"
     "${venv_pdm}/bin/pdm" export -p "${project_pdm}" | grep -vE '^#' >> "$1"
 }
@@ -108,7 +108,8 @@ readonly lockfile="./setup/python/pdm.lock"
 if [ -n "${purge}" ]; then
     rm "$lockfile"
 fi
-lock_args+=( -d -p "${project_drake}" -L "${lockfile}" --append )
+lock_args+=( -d -p "${project_drake}" -L "${lockfile}" )
+lock_args+=( --append --exclude-newer=1w )
 for py in "${python_versions[@]}"; do
     "${venv_pdm}/bin/pdm" lock "${lock_args[@]}" --python ${py}
 done
