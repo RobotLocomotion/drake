@@ -21,8 +21,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = RotaryEncoders<T>;
     constexpr auto& cls_doc = doc.RotaryEncoders;
-    DefineTemplateClassWithDefault<RotaryEncoders<T>, systems::VectorSystem<T>>(
-        m, "RotaryEncoders", param, doc.RotaryEncoders.doc)
+    DefineTemplateClassWithDefault<Class, systems::VectorSystem<T>>(
+        m, "RotaryEncoders", param, cls_doc.doc)
         .def(py::init<const std::vector<int>&>(),
             py::arg("ticks_per_revolution"), cls_doc.ctor.doc_1args)
         .def(py::init<int, const std::vector<int>&>(),

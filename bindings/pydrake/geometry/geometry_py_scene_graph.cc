@@ -736,10 +736,10 @@ void DefinePenetrationAsPointPair(py::module m, T) {
             "id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
         .def_readwrite(
             "id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
-        .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa,
-            py::return_value_policy::copy, cls_doc.p_WCa.doc)
-        .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb,
-            py::return_value_policy::copy, cls_doc.p_WCb.doc)
+        .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa, py_rvp::copy,
+            cls_doc.p_WCa.doc)
+        .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb, py_rvp::copy,
+            cls_doc.p_WCb.doc)
         .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
             cls_doc.nhat_BA_W.doc)
         .def_readwrite(
