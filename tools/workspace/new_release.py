@@ -32,6 +32,8 @@ command line.
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+import functools
 import getpass
 import hashlib
 import json
@@ -84,6 +86,7 @@ _OTHER_REPOSITORIES = [
 
 # For these repositories, ignore any tags that match the specified regex.
 _IGNORED_TAGS = {
+    "dm_control_internal": r"[^0-9]",
     "gymnasium_py_internal": r"v[0-9.]+a[0-9]+",
     "libpng_internal": r"v[0-9.]+(alpha|beta)[0-9]+",
     "msgpack_internal": r"c-[0-9.]+",
@@ -167,9 +170,23 @@ def _smells_like_a_git_commit(revision):
     return len(revision) == 40
 
 
-def _is_ignored_tag(commit, workspace):
-    """Returns true iff commit matches an ignore rule or seems to be a
-    pre-release.
+@functools.cache
+def _get_commit_date(gh_repo, commit):
+    """Returns the date of the given commit, or the start of the epoch if the
+    date is not available."""
+    committer_obj = gh_repo.commit(commit).commit.get("committer", {})
+    commit_date = datetime.fromisoformat(
+        committer_obj.get("date", "1970-01-01T00:00:00Z")
+    )
+    return commit_date
+
+
+@functools.cache
+def _is_ignored_tag(commit, date, workspace):
+    """Returns true iff any of the following are true of the input tag/release:
+    * it matches an ignore rule (see _IGNORED_TAGS)
+    * it seems to be a pre-release (ignored for lack of stability)
+    * it is newer than one week (ignored for security reasons)
     """
     ignore_re = _IGNORED_TAGS.get(workspace)
     if ignore_re and re.match(ignore_re, commit):
@@ -178,17 +195,26 @@ def _is_ignored_tag(commit, workspace):
         return True
 
     development_stages = ["alpha", "beta", "pre", "rc", "unstable"]
-    prerelease = any(stage in commit for stage in development_stages)
-    if prerelease:
+    if any(stage in commit for stage in development_stages):
         # Heuristically looks like a pre-release; ignore it, but log it for the
         # user to check.
         warn(f"Skipping prerelease {commit} for {workspace}")
-    return prerelease
+        return True
+
+    if date > datetime.now(timezone.utc) - timedelta(days=7):
+        # Avoid hot-off-the-press releases as potential for malware, but log it
+        # for the user to check.
+        warn(f"Skipping too-recent release {commit} for {workspace}")
+        return True
+
+    return False
 
 
+@functools.cache
 def _latest_tag(gh_repo, workspace):
     for tag in gh_repo.tags():
-        if _is_ignored_tag(tag.name, workspace):
+        tag_date = _get_commit_date(gh_repo, tag.name)
+        if _is_ignored_tag(tag.name, tag_date, workspace):
             continue
         return tag.name
     warn(f"Could not find any matching tags for {workspace}")
@@ -223,7 +249,8 @@ def _handle_github(workspace_name, gh, data):
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
-                    if _is_ignored_tag(tag.name, workspace_name):
+                    tag_date = _get_commit_date(gh_repo, tag.name)
+                    if _is_ignored_tag(tag.name, tag_date, workspace_name):
                         continue
                     new_commit = tag.name
                     break
@@ -232,8 +259,13 @@ def _handle_github(workspace_name, gh, data):
     # By default, use the latest release if there is one.  Otherwise, use the
     # latest tag.
     try:
-        new_commit = gh_repo.latest_release().tag_name
-        if _is_ignored_tag(new_commit, workspace_name):
+        release = gh_repo.latest_release()
+        new_commit = release.tag_name
+        # Use the time at which the release was published, rather than the time
+        # of the commit tagged to the release. In practice, these may not
+        # substantially differ often, but it is semantically closer to what
+        # we're trying to capture.
+        if _is_ignored_tag(new_commit, release.published_at, workspace_name):
             new_commit = _latest_tag(gh_repo, workspace_name)
     except github3.exceptions.NotFoundError:
         new_commit = _latest_tag(gh_repo, workspace_name)
