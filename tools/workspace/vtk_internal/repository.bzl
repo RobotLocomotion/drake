@@ -154,6 +154,12 @@ _vtk_internal_repository_impl = repository_rule(
         # These are the attributes for setup_github_repository.
         "repository": attr.string(),
         "upgrade_type": attr.string(),
+        "tags_pattern": attr.string(),
+        "exclude_tags_pattern": attr.string(),
+        # VTK's master branch will pretty much never have no commits in any
+        # default cooldown number of days, so we'll skip that rule here and
+        # always take the HEAD.
+        "upgrade_cooldown_days": attr.int(default = 0),
         "commit": attr.string(),
         "sha256": attr.string(),
         "build_file": attr.label(),

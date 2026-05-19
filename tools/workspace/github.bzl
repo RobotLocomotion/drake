@@ -14,6 +14,7 @@ def github_archive(
         commit_pin = None,
         tags_pattern = None,
         exclude_tags_pattern = None,
+        upgrade_cooldown_days = 7,
         sha256 = "0" * 64,
         build_file = None,
         patches = None,
@@ -50,6 +51,8 @@ def github_archive(
             1.2.1 would be considered.
         exclude_tags_pattern: optional string specifies a regex describing the
             set of tags to ignore when upgrading.
+        upgrade_cooldown_days: optional integer is the required number of days
+            after the latest upstream release/commit before upgrading.
         sha256: required sha256 is the expected SHA-256 checksum of the
             downloaded archive. When unsure, you can omit this argument (or
             comment it out) and then the checksum-mismatch error message will
@@ -121,6 +124,7 @@ def github_archive(
         commit_pin = commit_pin,
         tags_pattern = tags_pattern,
         exclude_tags_pattern = exclude_tags_pattern,
+        upgrade_cooldown_days = upgrade_cooldown_days,
         sha256 = sha256,
         build_file = build_file,
         patches = patches,
@@ -167,6 +171,10 @@ _github_archive_real = repository_rule(
         "commit_pin": attr.bool(),
         "tags_pattern": attr.string(),
         "exclude_tags_pattern": attr.string(),
+        "upgrade_cooldown_days": attr.int(
+            mandatory = False,
+            default = 7,
+        ),
         "sha256": attr.string(
             mandatory = False,
             default = "0" * 64,
@@ -220,6 +228,7 @@ def setup_github_repository(repository_ctx):
         commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
         tags_pattern = getattr(repository_ctx.attr, "tags_pattern", None),
         exclude_tags_pattern = getattr(repository_ctx.attr, "exclude_tags_pattern", None),
+        upgrade_cooldown_days = repository_ctx.attr.upgrade_cooldown_days,
         mirrors = repository_ctx.attr.mirrors,
         sha256 = repository_ctx.attr.sha256,
         extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
@@ -263,6 +272,7 @@ def github_download_and_extract(
         commit,
         tags_pattern,
         exclude_tags_pattern,
+        upgrade_cooldown_days,
         mirrors,
         output = "",
         sha256 = "0" * 64,
@@ -284,6 +294,9 @@ def github_download_and_extract(
             Used by //tools/workspace:new_release.
         exclude_tags_pattern: regex describing tags to ignore when performing
             upgrades.
+            Used by //tools/workspace:new_release.
+        upgrade_cooldown_days: integer describing the required number of days
+            after the latest upstream release/commit before upgrading.
             Used by //tools/workspace:new_release.
         mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
             an example.
@@ -341,6 +354,7 @@ def github_download_and_extract(
         repository_rule_type = "github",
         repository = repository,
         upgrade_type = upgrade_type,
+        upgrade_cooldown_days = upgrade_cooldown_days,
         commit = commit,
         tags_pattern = tags_pattern,
         exclude_tags_pattern = exclude_tags_pattern,

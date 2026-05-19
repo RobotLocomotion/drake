@@ -41,6 +41,7 @@ libjpeg_turbo_internal_repository = repository_rule(
         "sha256": attr.string(
             default = "a78b05c0d8427a90eb5b4eb08af25309770c8379592bb0b8a863373128e6143f",  # noqa
         ),
+        "upgrade_cooldown_days": attr.int(default = 7),
         "build_file": attr.label(),
         "patches": attr.label_list(),
         "extra_strip_prefix": attr.string(),

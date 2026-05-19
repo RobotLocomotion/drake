@@ -25,6 +25,7 @@ def _impl(repo_ctx):
         upgrade_type = upgrade_type,
         tags_pattern = None,
         exclude_tags_pattern = None,
+        upgrade_cooldown_days = 7,
         commit = commit,
         # Opt out of mirroring the Doxygen source to S3. mirror_to_s3 globs all
         # repository metadata when looking for sources to mirror, but that
