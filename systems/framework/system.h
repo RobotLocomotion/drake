@@ -921,8 +921,13 @@ class System : public SystemBase {
 
   @param context Optional Context to pass on to Event selection functions;
       not commonly needed. */
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
+  std::map<PeriodicEventData, std::vector<const Event<T>*>
+// The verbosity of the return type significantly harms our Doxygen layout.
+#ifndef DRAKE_DOXYGEN_CXX
+           ,
+           PeriodicEventDataComparator
+#endif
+           >
   MapPeriodicEventsByTiming(const Context<T>* context = nullptr) const;
 
   /** Utility method that computes for _every_ output port i the value y(i) that
@@ -1734,8 +1739,13 @@ class System : public SystemBase {
   by timing.
   @see MapPeriodicEventsByTiming() for a detailed description of the returned
        variable. */
-  virtual std::map<PeriodicEventData, std::vector<const Event<T>*>,
-                   PeriodicEventDataComparator>
+  virtual std::map<PeriodicEventData, std::vector<const Event<T>*>
+// The verbosity of the return type significantly harms our Doxygen layout.
+#ifndef DRAKE_DOXYGEN_CXX
+                   ,
+                   PeriodicEventDataComparator
+#endif
+                   >
   DoMapPeriodicEventsByTiming(const Context<T>& context) const = 0;
 
   // TODO(sherm1) Move these three functions adjacent to the event
