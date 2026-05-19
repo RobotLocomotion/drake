@@ -32,6 +32,7 @@ command line.
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import getpass
 import hashlib
@@ -54,9 +55,13 @@ from tools.workspace.metadata import read_repository_metadata
 logger = logging.getLogger("new_release")
 logger.setLevel(logging.INFO)
 
-debug = logging.debug
+debug = logger.debug
 info = logger.info
 warn = logger.warning
+
+# Unless a particular repository specifies otherwise, this is the number of
+# days after the latest upstream release/commit before which we will upgrade.
+_DEFAULT_COOLDOWN_DAYS = 7
 
 # We'll skip these repositories when making suggestions.
 _IGNORED_REPOSITORIES = [
@@ -160,6 +165,38 @@ def _get_default_username() -> str:
     return git_user or http_user
 
 
+def _get_commit_date(
+    gh_repo: github3.repos.repo.Repository,
+    commit: str,
+) -> datetime:
+    """Returns the date of the given commit, or the start of the epoch if the
+    date is not available."""
+    committer_obj = gh_repo.commit(commit).commit.get("committer", {})
+    commit_date = datetime.fromisoformat(
+        committer_obj.get("date", "1970-01-01T00:00:00Z")
+    )
+    return commit_date
+
+
+def _is_commit_too_recent(
+    commit: str,
+    workspace: str,
+    date: datetime,
+    cooldown_days: int | None,
+) -> bool:
+    """Returns true iff the commit is too recent according to given date and
+    `cooldown_days`."""
+    cooldown_days = (
+        _DEFAULT_COOLDOWN_DAYS if cooldown_days is None else cooldown_days
+    )
+    if date > datetime.now(timezone.utc) - timedelta(days=cooldown_days):
+        # This is a bleeding-edge release; ignore it (as potential for
+        # malware), but log it for the user to check.
+        warn(f"Skipping too-recent {commit} for {workspace}")
+        return True
+    return False
+
+
 def _is_ignored_tag(commit: str, exclude_pattern: str | None = None) -> bool:
     """Returns true iff commit matches the `exclude_pattern` or seems to be a
     pre-release.
@@ -182,15 +219,30 @@ def _latest_tag(
     gh_repo: github3.repos.repo.Repository,
     workspace: str,
     exclude_pattern: str | None = None,
-) -> str | None:
-    """Returns the latest tag for the given `workspace` that doesn't match an
-    ignore rule."""
+) -> tuple[str | None, datetime | None]:
+    """Returns (sha, date) for the latest tag of the given `workspace` that
+    doesn't match an ignore rule."""
     for tag in gh_repo.tags():
         if _is_ignored_tag(tag.name, exclude_pattern):
             continue
-        return tag.name
+        return tag.name, _get_commit_date(gh_repo, tag.name)
     warn(f"Could not find any matching tags for {workspace}")
-    return None
+    return None, None
+
+
+def _latest_release(
+    gh_repo: github3.repos.repo.Repository,
+    workspace: str,
+    exclude_pattern: str | None = None,
+) -> tuple[str | None, datetime | None]:
+    """Returns (sha, date) for the latest release of the given `workspace`
+    that doesn't match an ignore rule."""
+    for release in gh_repo.releases():
+        if _is_ignored_tag(release.tag_name, exclude_pattern):
+            continue
+        return release.tag_name, release.published_at
+    warn(f"Could not find any matching releases for {workspace}")
+    return None, None
 
 
 def _handle_github(
@@ -209,7 +261,7 @@ def _handle_github(
 
     if upgrade_type == UpgradeType.COMMIT:
         new_commit = gh_repo.commit("HEAD").sha
-        return old_commit, new_commit
+        commit_date = _get_commit_date(gh_repo, new_commit)
     elif upgrade_type == UpgradeType.TAG:
         # Search for the latest tag by default. If a "tags_pattern" regex was
         # provided, we'll limit to tags matching those. If an
@@ -219,32 +271,41 @@ def _handle_github(
         exclude_tags_pattern = data["exclude_tags_pattern"]
 
         if not tags_pattern:
-            new_commit = _latest_tag(
-                gh_repo, workspace_name, exclude_tags_pattern
+            new_commit, commit_date = _latest_tag(
+                gh_repo,
+                workspace_name,
+                exclude_tags_pattern,
             )
-            return old_commit, new_commit
-
-        match = re.search(tags_pattern, old_commit)
-        assert match, f"No {tags_pattern} in {old_commit}"
-        (old_hit,) = match.groups()
-        for tag in gh_repo.tags():
-            match = re.search(tags_pattern, tag.name)
-            if match:
-                (new_hit,) = match.groups()
-                if old_hit == new_hit:
-                    if _is_ignored_tag(tag.name, exclude_tags_pattern):
-                        continue
-                    new_commit = tag.name
-                    break
-        return old_commit, new_commit
+        else:
+            match = re.search(tags_pattern, old_commit)
+            assert match, f"No {tags_pattern} in {old_commit}"
+            (old_hit,) = match.groups()
+            for tag in gh_repo.tags():
+                match = re.search(tags_pattern, tag.name)
+                if match:
+                    (new_hit,) = match.groups()
+                    if old_hit == new_hit:
+                        if _is_ignored_tag(tag.name, exclude_tags_pattern):
+                            continue
+                        new_commit = tag.name
+                        commit_date = _get_commit_date(gh_repo, new_commit)
+                        break
     else:
         assert upgrade_type == UpgradeType.RELEASE
         exclude_tags_pattern = data["exclude_tags_pattern"]
-        for release in gh_repo.releases():
-            if not _is_ignored_tag(release.tag_name, exclude_tags_pattern):
-                new_commit = release.tag_name
-                break
-        return old_commit, new_commit
+        new_commit, commit_date = _latest_release(
+            gh_repo, workspace_name, exclude_tags_pattern
+        )
+
+    upgrade_cooldown_days = data.get("upgrade_cooldown_days")
+    if _is_commit_too_recent(
+        new_commit,
+        workspace_name,
+        commit_date,
+        upgrade_cooldown_days,
+    ):
+        new_commit = old_commit
+    return old_commit, new_commit
 
 
 def _check_for_upgrades(
