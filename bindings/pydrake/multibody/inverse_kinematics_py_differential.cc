@@ -53,9 +53,9 @@ void DefineDifferentialIkLegacy(py::module_ m) {
     // TODO(m-chaturvedi) Add Pybind11 documentation.
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite("joint_velocities", &Class::joint_velocities,
+        .def_rw("joint_velocities", &Class::joint_velocities,
             cls_doc.joint_velocities.doc)
-        .def_readwrite("status", &Class::status, cls_doc.status.doc);
+        .def_rw("status", &Class::status, cls_doc.status.doc);
   }
   {
     using Class = DifferentialInverseKinematicsParameters;

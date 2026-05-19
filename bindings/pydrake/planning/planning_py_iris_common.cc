@@ -23,50 +23,49 @@ void DefinePlanningCommonSampledIrisOptions(py::module_ m) {
   py::class_<CommonSampledIrisOptions> common_sampled_iris_options(
       m, "CommonSampledIrisOptions", cls_doc.doc);
   common_sampled_iris_options.def(py::init<>())
-      .def_readwrite("num_particles", &CommonSampledIrisOptions::num_particles,
+      .def_rw("num_particles", &CommonSampledIrisOptions::num_particles,
           cls_doc.num_particles.doc)
-      .def_readwrite("tau", &CommonSampledIrisOptions::tau, cls_doc.tau.doc)
-      .def_readwrite(
-          "delta", &CommonSampledIrisOptions::delta, cls_doc.delta.doc)
-      .def_readwrite(
+      .def_rw("tau", &CommonSampledIrisOptions::tau, cls_doc.tau.doc)
+      .def_rw("delta", &CommonSampledIrisOptions::delta, cls_doc.delta.doc)
+      .def_rw(
           "epsilon", &CommonSampledIrisOptions::epsilon, cls_doc.epsilon.doc)
-      .def_readwrite("containment_points",
+      .def_rw("containment_points",
           &CommonSampledIrisOptions::containment_points,
           cls_doc.containment_points.doc)
-      .def_readwrite("max_iterations",
-          &CommonSampledIrisOptions::max_iterations, cls_doc.max_iterations.doc)
-      .def_readwrite("max_iterations_separating_planes",
+      .def_rw("max_iterations", &CommonSampledIrisOptions::max_iterations,
+          cls_doc.max_iterations.doc)
+      .def_rw("max_iterations_separating_planes",
           &CommonSampledIrisOptions::max_iterations_separating_planes,
           cls_doc.max_iterations_separating_planes.doc)
-      .def_readwrite("max_separating_planes_per_iteration",
+      .def_rw("max_separating_planes_per_iteration",
           &CommonSampledIrisOptions::max_separating_planes_per_iteration,
           cls_doc.max_separating_planes_per_iteration.doc)
-      .def_readwrite("parallelism", &CommonSampledIrisOptions::parallelism,
+      .def_rw("parallelism", &CommonSampledIrisOptions::parallelism,
           cls_doc.parallelism.doc)
-      .def_readwrite(
+      .def_rw(
           "verbose", &CommonSampledIrisOptions::verbose, cls_doc.verbose.doc)
-      .def_readwrite("require_sample_point_is_contained",
+      .def_rw("require_sample_point_is_contained",
           &CommonSampledIrisOptions::require_sample_point_is_contained,
           cls_doc.require_sample_point_is_contained.doc)
-      .def_readwrite("configuration_space_margin",
+      .def_rw("configuration_space_margin",
           &CommonSampledIrisOptions::configuration_space_margin,
           cls_doc.configuration_space_margin.doc)
-      .def_readwrite("relax_margin", &CommonSampledIrisOptions::relax_margin,
+      .def_rw("relax_margin", &CommonSampledIrisOptions::relax_margin,
           cls_doc.relax_margin.doc)
-      .def_readwrite("termination_threshold",
+      .def_rw("termination_threshold",
           &CommonSampledIrisOptions::termination_threshold,
           cls_doc.termination_threshold.doc)
-      .def_readwrite("relative_termination_threshold",
+      .def_rw("relative_termination_threshold",
           &CommonSampledIrisOptions::relative_termination_threshold,
           cls_doc.relative_termination_threshold.doc)
-      .def_readwrite("remove_all_collisions_possible",
+      .def_rw("remove_all_collisions_possible",
           &CommonSampledIrisOptions::remove_all_collisions_possible,
           cls_doc.remove_all_collisions_possible.doc)
-      .def_readwrite("random_seed", &CommonSampledIrisOptions::random_seed,
+      .def_rw("random_seed", &CommonSampledIrisOptions::random_seed,
           cls_doc.random_seed.doc)
-      .def_readwrite("mixing_steps", &CommonSampledIrisOptions::mixing_steps,
+      .def_rw("mixing_steps", &CommonSampledIrisOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
-      .def_readwrite("sample_particles_in_parallel",
+      .def_rw("sample_particles_in_parallel",
           &CommonSampledIrisOptions::sample_particles_in_parallel,
           cls_doc.sample_particles_in_parallel.doc)
       .def("__repr__", [](const CommonSampledIrisOptions& self) {

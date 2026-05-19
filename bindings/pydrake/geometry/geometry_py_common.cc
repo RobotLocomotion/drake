@@ -315,8 +315,8 @@ void DefineInMemoryMesh(py::module_ m) {
     py::object ctor = m.attr("InMemoryMesh");
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
-        .def_readwrite("supporting_files", &Class::supporting_files,
+        .def_rw("mesh_file", &Class::mesh_file, cls_doc.mesh_file.doc)
+        .def_rw("supporting_files", &Class::supporting_files,
             cls_doc.supporting_files.doc)
         .def(py::pickle(
             [](const InMemoryMesh& self) {
@@ -435,7 +435,7 @@ void DefineRgba(py::module_ m) {
               .format(self.r(), self.g(), self.b(), self.a());
         });
     DefAttributesUsingSerialize(&cls);
-    cls.def_property("rgba",
+    cls.def_prop_rw("rgba",
         // The Serialize-based binding skips the validity checking; we'll
         // add it back here by re-binding the property getter and setter.
         &Class::rgba,
@@ -450,7 +450,7 @@ void DefineRgba(py::module_ m) {
 void DefineRole(py::module_ m) {
   {
     constexpr auto& cls_doc = doc.Role;
-    py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
+    py::enum_<Role>(m, "Role", py::is_arithmetic(), cls_doc.doc)
         .value("kUnassigned", Role::kUnassigned, cls_doc.kUnassigned.doc)
         .value("kProximity", Role::kProximity, cls_doc.kProximity.doc)
         .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)

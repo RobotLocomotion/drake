@@ -371,7 +371,7 @@ void DefineModuleSchema(py::module_ m) {
     static_assert(
         std::variant_size_v<RotationOrNestedValue> ==
         1 /* for Rotation */ + std::variant_size_v<Rotation::Variant>);
-    cls.def_property(
+    cls.def_prop_rw(
         "rotation", [](const Class& self) { return &self.rotation; },
         // The setter accepts a more generous allowed set of argument types.
         [](Class& self, RotationOrNestedValue value_variant) {
@@ -395,7 +395,7 @@ void DefineModuleSchema(py::module_ m) {
           }
           return name;
         });
-    cls.def_property_readonly(
+    cls.def_prop_ro(
         "_rotation_value",
         [](const Class& self) { return &self.rotation.value; },
         py_rvp::reference_internal);

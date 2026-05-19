@@ -78,14 +78,13 @@ PYDRAKE_MODULE(optimization, m) {
 
   {
     py::class_<ContactWrench>(m, "ContactWrench", doc.ContactWrench.doc)
-        .def_readonly("bodyA_index", &ContactWrench::bodyA_index,
+        .def_ro("bodyA_index", &ContactWrench::bodyA_index,
             doc.ContactWrench.bodyA_index.doc)
-        .def_readonly("bodyB_index", &ContactWrench::bodyB_index,
+        .def_ro("bodyB_index", &ContactWrench::bodyB_index,
             doc.ContactWrench.bodyB_index.doc)
-        .def_readonly(
+        .def_ro(
             "p_WCb_W", &ContactWrench::p_WCb_W, doc.ContactWrench.p_WCb_W.doc)
-        .def_readonly(
-            "F_Cb_W", &ContactWrench::F_Cb_W, doc.ContactWrench.F_Cb_W.doc);
+        .def_ro("F_Cb_W", &ContactWrench::F_Cb_W, doc.ContactWrench.F_Cb_W.doc);
     AddValueInstantiation<ContactWrench>(m);
   }
 
@@ -143,14 +142,13 @@ PYDRAKE_MODULE(optimization, m) {
     py::class_<SpatialVelocityConstraint::AngularVelocityBounds>(
         cls, "AngularVelocityBounds", avb_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_readwrite("magnitude_lower", &Avb::magnitude_lower,
+        .def_rw("magnitude_lower", &Avb::magnitude_lower,
             avb_doc.magnitude_lower.doc)
-        .def_readwrite("magnitude_upper", &Avb::magnitude_upper,
+        .def_rw("magnitude_upper", &Avb::magnitude_upper,
             avb_doc.magnitude_upper.doc)
-        .def_readwrite("reference_direction", &Avb::reference_direction,
+        .def_rw("reference_direction", &Avb::reference_direction,
             avb_doc.reference_direction.doc)
-        .def_readwrite(
-            "theta_bound", &Avb::theta_bound, avb_doc.theta_bound.doc);
+        .def_rw("theta_bound", &Avb::theta_bound, avb_doc.theta_bound.doc);
   }
 
   {

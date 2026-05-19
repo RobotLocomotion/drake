@@ -532,9 +532,9 @@ Parameter ``interruptible``:
 
     py::class_<RandomSimulationResult>(
         m, "RandomSimulationResult", doc.analysis.RandomSimulationResult.doc)
-        .def_readwrite("output", &RandomSimulationResult::output,
+        .def_rw("output", &RandomSimulationResult::output,
             doc.analysis.RandomSimulationResult.output.doc)
-        .def_readwrite("generator_snapshot",
+        .def_rw("generator_snapshot",
             &RandomSimulationResult::generator_snapshot,
             doc.analysis.RandomSimulationResult.generator_snapshot.doc);
 
@@ -564,24 +564,22 @@ Parameter ``interruptible``:
     py::class_<Class, std::shared_ptr<Class>> cls(
         m, "RegionOfAttractionOptions", cls_doc.doc);
     cls.def(py::init<>(), cls_doc.ctor.doc)
-        // TODO(jeremy.nimmer): replace the def_readwrite with
+        // TODO(jeremy.nimmer): replace the def_rw with
         // DefAttributesUsingSerialize when we fix binding a
         // VectorX<symbolic::Variable> state_variables to a numpy array of
         // objects.
-        .def_readwrite("lyapunov_candidate",
+        .def_rw("lyapunov_candidate",
             &RegionOfAttractionOptions::lyapunov_candidate,
             cls_doc.lyapunov_candidate.doc)
-        .def_readwrite("state_variables",
-            &RegionOfAttractionOptions::state_variables,
+        .def_rw("state_variables", &RegionOfAttractionOptions::state_variables,
             // dtype = object arrays must be copied, and cannot be referenced.
             py_rvp::copy, cls_doc.state_variables.doc)
-        .def_readwrite("use_implicit_dynamics",
+        .def_rw("use_implicit_dynamics",
             &RegionOfAttractionOptions::use_implicit_dynamics,
             cls_doc.use_implicit_dynamics.doc)
-        .def_readwrite("solver_id", &RegionOfAttractionOptions::solver_id,
+        .def_rw("solver_id", &RegionOfAttractionOptions::solver_id,
             cls_doc.solver_id.doc)
-        .def_readwrite("solver_options",
-            &RegionOfAttractionOptions::solver_options,
+        .def_rw("solver_options", &RegionOfAttractionOptions::solver_options,
             cls_doc.solver_options.doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);

@@ -36,8 +36,8 @@ PYDRAKE_MODULE(cc_module, m) {
     py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc_deprecated);
     cls  // BR
         .def(DeprecatedParamInit<Class>(cls_doc.doc_deprecated))
-        .def_readwrite("i", &Class::i)
-        .def_readwrite("j", &Class::j);
+        .def_rw("i", &Class::i)
+        .def_rw("j", &Class::j);
 #pragma GCC diagnostic pop
   }
 
@@ -47,7 +47,7 @@ PYDRAKE_MODULE(cc_module, m) {
     py::class_<Class> cls(m, "ExampleCppClass", cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
-        .def_readwrite("prop", &Class::prop, cls_doc.prop.doc);
+        .def_rw("prop", &Class::prop, cls_doc.prop.doc);
 
     // Example: Deprecation of constructor previously bound with `py::init<>`.
     // Can be used to deprecate a class (if all constructor overloads are

@@ -50,27 +50,27 @@ PYDRAKE_MODULE(controllers, m) {
       nested  // BR
           .def(py::init<int, double, double>(), py::arg("state_index"),
               py::arg("low"), py::arg("high"), nested_doc.ctor.doc)
-          .def_readwrite(
+          .def_rw(
               "state_index", &Nested::state_index, nested_doc.state_index.doc)
-          .def_readwrite("low", &Nested::low, nested_doc.low.doc)
-          .def_readwrite("high", &Nested::high, nested_doc.high.doc);
+          .def_rw("low", &Nested::low, nested_doc.low.doc)
+          .def_rw("high", &Nested::high, nested_doc.high.doc);
       // TODO(eric.cousineau): Deprecate module-scope alias.
       m.attr("PeriodicBoundaryCondition") = nested;
     }
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_readwrite("discount_factor", &Class::discount_factor,
+        .def_rw("discount_factor", &Class::discount_factor,
             cls_doc.discount_factor.doc)
-        .def_readwrite("periodic_boundary_conditions",
+        .def_rw("periodic_boundary_conditions",
             &Class::periodic_boundary_conditions,
             cls_doc.periodic_boundary_conditions.doc)
-        .def_readwrite("convergence_tol", &Class::convergence_tol,
+        .def_rw("convergence_tol", &Class::convergence_tol,
             cls_doc.convergence_tol.doc)
-        .def_readwrite("visualization_callback", &Class::visualization_callback,
+        .def_rw("visualization_callback", &Class::visualization_callback,
             cls_doc.visualization_callback.doc)
-        .def_readwrite("input_port_index", &Class::input_port_index,
+        .def_rw("input_port_index", &Class::input_port_index,
             cls_doc.input_port_index.doc)
-        .def_readwrite("assume_non_continuous_states_are_fixed",
+        .def_rw("assume_non_continuous_states_are_fixed",
             &Class::assume_non_continuous_states_are_fixed,
             cls_doc.assume_non_continuous_states_are_fixed.doc);
   }
@@ -346,13 +346,13 @@ PYDRAKE_MODULE(controllers, m) {
         m, "FiniteHorizonLinearQuadraticRegulatorOptions", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def_readwrite("Qf", &Class::Qf, cls_doc.Qf.doc)
-        .def_readwrite("N", &Class::N, cls_doc.N.doc)
-        .def_readwrite("input_port_index", &Class::input_port_index,
+        .def_rw("Qf", &Class::Qf, cls_doc.Qf.doc)
+        .def_rw("N", &Class::N, cls_doc.N.doc)
+        .def_rw("input_port_index", &Class::input_port_index,
             cls_doc.input_port_index.doc)
-        .def_readwrite("use_square_root_method", &Class::use_square_root_method,
+        .def_rw("use_square_root_method", &Class::use_square_root_method,
             cls_doc.use_square_root_method.doc)
-        .def_readwrite("simulator_config", &Class::simulator_config,
+        .def_rw("simulator_config", &Class::simulator_config,
             cls_doc.simulator_config.doc)
         .def("__repr__", [](const Class& self) {
           return py::str(

@@ -1537,10 +1537,10 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
         m, "ExternallyAppliedSpatialForce", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>())
-        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("p_BoBq_B", &Class::p_BoBq_B,
+        .def_rw("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_rw("p_BoBq_B", &Class::p_BoBq_B,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_BoBq_B.doc)
-        .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+        .def_rw("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -1694,12 +1694,10 @@ PYDRAKE_MODULE(plant, m) {
             py::arg("body_index"),
             py::arg("X_BP") = math::RigidTransform<double>::Identity(),
             py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
-        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
-        .def_readwrite("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
-        .def_readwrite(
-            "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
-        .def_readwrite(
-            "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+        .def_rw("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_rw("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
+        .def_rw("thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
+        .def_rw("moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
     DefCopyAndDeepCopy(&cls);
   }
 

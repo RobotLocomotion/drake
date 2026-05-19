@@ -250,14 +250,14 @@ PYDRAKE_MODULE(parsing, m) {
     using Class = parsing::ModelInstanceInfo;
     constexpr auto& cls_doc = doc.parsing.ModelInstanceInfo;
     py::class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
-        .def_readonly("model_name", &Class::model_name, cls_doc.model_name.doc)
-        .def_readonly("model_path", &Class::model_path, cls_doc.model_path.doc)
-        .def_readonly("parent_frame_name", &Class::parent_frame_name,
+        .def_ro("model_name", &Class::model_name, cls_doc.model_name.doc)
+        .def_ro("model_path", &Class::model_path, cls_doc.model_path.doc)
+        .def_ro("parent_frame_name", &Class::parent_frame_name,
             cls_doc.parent_frame_name.doc)
-        .def_readonly("child_frame_name", &Class::child_frame_name,
+        .def_ro("child_frame_name", &Class::child_frame_name,
             cls_doc.child_frame_name.doc)
-        .def_readonly("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
-        .def_readonly("model_instance", &Class::model_instance,
+        .def_ro("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
+        .def_ro("model_instance", &Class::model_instance,
             cls_doc.model_instance.doc);
   }
 

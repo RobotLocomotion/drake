@@ -21,13 +21,12 @@ void DefinePlanningIrisNp2(py::module_ m) {
   py::class_<RaySamplerOptions> ray_sampler_options(
       m, "RaySamplerOptions", ray_sampler_options_doc.doc);
   ray_sampler_options.def(py::init<>())
-      .def_readwrite("only_walk_toward_collisions",
+      .def_rw("only_walk_toward_collisions",
           &RaySamplerOptions::only_walk_toward_collisions,
           ray_sampler_options_doc.only_walk_toward_collisions.doc)
-      .def_readwrite("ray_search_num_steps",
-          &RaySamplerOptions::ray_search_num_steps,
+      .def_rw("ray_search_num_steps", &RaySamplerOptions::ray_search_num_steps,
           ray_sampler_options_doc.ray_search_num_steps.doc)
-      .def_readwrite("num_particles_to_walk_towards",
+      .def_rw("num_particles_to_walk_towards",
           &RaySamplerOptions::num_particles_to_walk_towards,
           ray_sampler_options_doc.num_particles_to_walk_towards.doc)
       .def("__repr__", [](const RaySamplerOptions& self) {
@@ -45,7 +44,7 @@ void DefinePlanningIrisNp2(py::module_ m) {
   const auto& cls_doc = doc.IrisNp2Options;
   py::class_<IrisNp2Options> iris_np2_options(m, "IrisNp2Options", cls_doc.doc);
   iris_np2_options.def(py::init<>())
-      .def_property("solver_options",
+      .def_prop_rw("solver_options",
           py::cpp_function(
               [](IrisNp2Options& self) { return &(self.solver_options); },
               py_rvp::reference_internal),
@@ -54,16 +53,15 @@ void DefinePlanningIrisNp2(py::module_ m) {
                 self.solver_options = std::move(solver_options);
               }),
           cls_doc.solver_options.doc)
-      .def_readwrite("sampled_iris_options",
-          &IrisNp2Options::sampled_iris_options,
+      .def_rw("sampled_iris_options", &IrisNp2Options::sampled_iris_options,
           cls_doc.sampled_iris_options.doc)
-      .def_readwrite("parameterization", &IrisNp2Options::parameterization,
+      .def_rw("parameterization", &IrisNp2Options::parameterization,
           cls_doc.parameterization.doc)
-      .def_readwrite("sampling_strategy", &IrisNp2Options::sampling_strategy,
+      .def_rw("sampling_strategy", &IrisNp2Options::sampling_strategy,
           cls_doc.sampling_strategy.doc)
-      .def_readwrite("ray_sampler_options",
-          &IrisNp2Options::ray_sampler_options, cls_doc.ray_sampler_options.doc)
-      .def_readwrite("add_hyperplane_if_solve_fails",
+      .def_rw("ray_sampler_options", &IrisNp2Options::ray_sampler_options,
+          cls_doc.ray_sampler_options.doc)
+      .def_rw("add_hyperplane_if_solve_fails",
           &IrisNp2Options::add_hyperplane_if_solve_fails,
           cls_doc.add_hyperplane_if_solve_fails.doc)
       .def("__repr__", [](const IrisNp2Options& self) {

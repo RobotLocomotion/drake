@@ -18,33 +18,29 @@ void DefineSolversScs(py::module_ m) {
       .def_static("id", &ScsSolver::id, doc.ScsSolver.id.doc);
 
   py::class_<ScsSolverDetails>(m, "ScsSolverDetails", doc.ScsSolverDetails.doc)
-      .def_readonly("scs_status", &ScsSolverDetails::scs_status,
+      .def_ro("scs_status", &ScsSolverDetails::scs_status,
           doc.ScsSolverDetails.scs_status.doc)
-      .def_readonly(
-          "iter", &ScsSolverDetails::iter, doc.ScsSolverDetails.iter.doc)
-      .def_readonly("primal_objective", &ScsSolverDetails::primal_objective,
+      .def_ro("iter", &ScsSolverDetails::iter, doc.ScsSolverDetails.iter.doc)
+      .def_ro("primal_objective", &ScsSolverDetails::primal_objective,
           doc.ScsSolverDetails.primal_objective.doc)
-      .def_readonly("dual_objective", &ScsSolverDetails::dual_objective,
+      .def_ro("dual_objective", &ScsSolverDetails::dual_objective,
           doc.ScsSolverDetails.dual_objective.doc)
-      .def_readonly("primal_residue", &ScsSolverDetails::primal_residue,
+      .def_ro("primal_residue", &ScsSolverDetails::primal_residue,
           doc.ScsSolverDetails.primal_residue.doc)
-      .def_readonly("residue_infeasibility",
-          &ScsSolverDetails::residue_infeasibility,
+      .def_ro("residue_infeasibility", &ScsSolverDetails::residue_infeasibility,
           doc.ScsSolverDetails.residue_infeasibility.doc)
-      .def_readonly("residue_unbounded_a",
-          &ScsSolverDetails::residue_unbounded_a,
+      .def_ro("residue_unbounded_a", &ScsSolverDetails::residue_unbounded_a,
           doc.ScsSolverDetails.residue_unbounded_a.doc)
-      .def_readonly("residue_unbounded_p",
-          &ScsSolverDetails::residue_unbounded_p,
+      .def_ro("residue_unbounded_p", &ScsSolverDetails::residue_unbounded_p,
           doc.ScsSolverDetails.residue_unbounded_p.doc)
-      .def_readonly("duality_gap", &ScsSolverDetails::duality_gap,
+      .def_ro("duality_gap", &ScsSolverDetails::duality_gap,
           doc.ScsSolverDetails.duality_gap.doc)
-      .def_readonly("scs_setup_time", &ScsSolverDetails::scs_setup_time,
+      .def_ro("scs_setup_time", &ScsSolverDetails::scs_setup_time,
           doc.ScsSolverDetails.scs_setup_time.doc)
-      .def_readonly("scs_solve_time", &ScsSolverDetails::scs_solve_time,
+      .def_ro("scs_solve_time", &ScsSolverDetails::scs_solve_time,
           doc.ScsSolverDetails.scs_solve_time.doc)
-      .def_readonly("y", &ScsSolverDetails::y, doc.ScsSolverDetails.y.doc)
-      .def_readonly("s", &ScsSolverDetails::s, doc.ScsSolverDetails.s.doc);
+      .def_ro("y", &ScsSolverDetails::y, doc.ScsSolverDetails.y.doc)
+      .def_ro("s", &ScsSolverDetails::s, doc.ScsSolverDetails.s.doc);
   AddValueInstantiation<ScsSolverDetails>(m);
 }
 

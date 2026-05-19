@@ -542,7 +542,7 @@ void DoScalarIndependentDefinitions(py::module_ m) {
   {
     using Class = KnotVectorType;
     constexpr auto& cls_doc = doc.KnotVectorType;
-    py::enum_<Class>(m, "KnotVectorType", py::arithmetic(), cls_doc.doc)
+    py::enum_<Class>(m, "KnotVectorType", py::is_arithmetic(), cls_doc.doc)
         .value("kUniform", Class::kUniform, cls_doc.kUniform.doc)
         .value("kClampedUniform", Class::kClampedUniform,
             cls_doc.kClampedUniform.doc);

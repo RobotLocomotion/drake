@@ -110,7 +110,7 @@ void DefClone(PyClass* ppy_class) {
 }
 
 /// Returns a constructor for creating an instance of Class and initializing
-/// parameters (bound using `def_readwrite`).
+/// parameters (bound using `def_rw`).
 /// This provides an alternative to manually enumerating each
 /// parameter as an argument using `py::init<...>` and `py::arg(...)`, and is
 /// useful when the C++ class only has a default constructor. Example:

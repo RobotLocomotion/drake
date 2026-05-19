@@ -35,7 +35,7 @@ void DefineSolversNlopt(py::module_ m) {
 
   py::class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)
-      .def_readonly("status", &NloptSolverDetails::status,
+      .def_ro("status", &NloptSolverDetails::status,
           doc.NloptSolverDetails.status.doc);
   AddValueInstantiation<NloptSolverDetails>(m);
 }

@@ -197,7 +197,7 @@ void InitLowLevelModules(py::module_ m) {
     // Note: __repr__ is defined in _common_extra.py.
     DefCopyAndDeepCopy(&cls);
     // Add the same __fields__ that DefAttributesUsingSerialize would have.
-    cls.def_property_readonly_static("__fields__", [](py::object /* cls */) {
+    cls.def_prop_ro_static("__fields__", [](py::object /* cls */) {
       auto str_ctor = py::eval("str");
       auto bytes_ctor = py::eval("bytes");
       auto make_namespace =
@@ -231,19 +231,19 @@ void InitLowLevelModules(py::module_ m) {
       py::eval("object.__setattr__")(self, name, value);
     });
     // Provide properties for use by yaml_{dump,load}_typed.
-    cls.def_property(
+    cls.def_prop_rw(
         "_contents",
         [](const Class& self) -> py::bytes { return self.contents(); },
         [](Class& self, const py::bytes& contents) {
           self = MemoryFile{
               std::string{contents}, self.extension(), self.filename_hint()};
         });
-    cls.def_property(
+    cls.def_prop_rw(
         "_extension", [](const Class& self) { return self.extension(); },
         [](Class& self, const std::string& extension) {
           self = MemoryFile{self.contents(), extension, self.filename_hint()};
         });
-    cls.def_property(
+    cls.def_prop_rw(
         "_filename_hint",
         [](const Class& self) { return self.filename_hint(); },
         [](Class& self, const std::string& filename_hint) {

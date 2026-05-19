@@ -257,7 +257,7 @@ void DefinePlanningTrajectoryOptimization(py::module_ m) {
     // things a bit more pythonic -- better would be kwonly named arg.
     py::class_<TimeStep>(cls, "TimeStep", doc.TimeStep.doc)
         .def(py::init<double>(), py::arg("value"))
-        .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
+        .def_rw("value", &TimeStep::value, doc.TimeStep.value.doc);
 
     cls  // BR
         .def(py::init<const systems::System<double>*,
