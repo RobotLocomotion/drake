@@ -25,7 +25,7 @@
           </box>
         </geometry>
         <material>
-          <ambient>0.05 0.05 0.05 1.0</ambient> <!-- Red color -->
+          <ambient>0.05 0.05 0.05 1.0</ambient>
           <diffuse>0.05 0.05 0.05 1.0</diffuse>
         </material>
       </visual>
@@ -51,12 +51,12 @@
       <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
       <visual name="conveyor_belt_visual">
         <geometry>
-          <box>
-            <size>10.0 1.0 0.1</size>
-          </box>
+          <mesh>
+            <uri>/home/seancurtis/code/drake/examples/conveyor_belt/conveyor_belt.gltf</uri>
+          </mesh>
         </geometry>
         <material>
-          <ambient>1.0 0.0 0.0 1.0</ambient> <!-- Red color -->
+          <ambient>1.0 0.0 0.0 1.0</ambient>
           <diffuse>1.0 0.0 0.0 1.0</diffuse>
         </material>
       </visual>
@@ -80,7 +80,7 @@
 
     <!-- Blue cube on top of the conveyor belt -->
     <link name="box">
-      <pose> -2 -2 1.27 0 0.0 0.0</pose> <!-- Position sightly above the belt -->
+      <pose> -2 -2 1.27 0 0.0 0.0</pose>
       <drake:surface_velocity_normal>0.0 1.0 0.0</drake:surface_velocity_normal>
       <visual name="box_visual">
         <geometry>
@@ -89,8 +89,8 @@
           </box>
         </geometry>
         <material>
-          <ambient>0.0 0.0 1.0 1.0</ambient> <!-- Blue color -->
-          <diffuse>0.0 0.0 1.0 1.0</diffuse>
+          <diffuse>1.0 0.0 0.0 1.0</diffuse>
+          <drake:diffuse_map>/home/seancurtis/code/drake/examples/conveyor_belt/checker.png</drake:diffuse_map>
         </material>
       </visual>
       <collision name="box_collision">
@@ -117,7 +117,7 @@
           </capsule>
         </geometry>
         <material>
-          <ambient>0.8 0.1 0.4 1.0</ambient> <!-- Red color -->
+          <ambient>0.8 0.1 0.4 1.0</ambient>
           <diffuse>0.8 0.1 0.4 1.0</diffuse>
         </material>
       </visual>
@@ -146,7 +146,7 @@
           </cylinder>
         </geometry>
         <material>
-          <ambient>0.6 0.9 0.1 1.0</ambient> <!-- Red color -->
+          <ambient>0.6 0.9 0.1 1.0</ambient>
           <diffuse>0.6 0.9 0.1 1.0</diffuse>
         </material>
       </visual>
@@ -174,7 +174,7 @@
           </sphere>
         </geometry>
         <material>
-          <ambient>0.3 0.0 0.5 1.0</ambient> <!-- Red color -->
+          <ambient>0.3 0.0 0.5 1.0</ambient>
           <diffuse>0.3 0.0 0.5 1.0</diffuse>
         </material>
       </visual>
@@ -201,7 +201,7 @@
           </ellipsoid>
         </geometry>
         <material>
-          <ambient>1.0 0.5 0.15 1.0</ambient> <!-- Red color -->
+          <ambient>1.0 0.5 0.15 1.0</ambient>
           <diffuse>1.0 0.5 0.15 1.0</diffuse>
         </material>
       </visual>
@@ -268,8 +268,8 @@
           <box><size>2.0 1.5 0.1</size></box>
         </geometry>
         <material>
-          <ambient>0.0 0.6 0.6 1.0</ambient>
           <diffuse>0.0 0.6 0.6 1.0</diffuse>
+          <drake:diffuse_map>/home/seancurtis/code/drake/examples/conveyor_belt/checker.png</drake:diffuse_map>
         </material>
       </visual>
       <collision name="hydro_pad_collision">

@@ -10,6 +10,7 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
 #include "drake/visualization/inertia_visualizer.h"
+#include "drake/visualization/surface_velocity_integrator.h"
 
 namespace drake {
 namespace visualization {
@@ -66,9 +67,13 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     // Note that there will be a set of params for each type of geometry.
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
+    MeshcatVisualizer<double>* illustration_vis = nullptr;
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
-                                              params);
+      auto& vis = MeshcatVisualizer<double>::AddToBuilder(
+          builder, *scene_graph, meshcat, params);
+      if (params.role == Role::kIllustration && params.prefix == "illustration") {
+        illustration_vis = &vis;
+      }
     }
     if (config.publish_contacts) {
       ContactVisualizer<double>::AddToBuilder(
@@ -77,6 +82,32 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     }
     if (config.publish_inertia && config.enable_alpha_sliders) {
       meshcat->SetSliderValue("inertia α", 0.5);
+    }
+
+    // Add a SurfaceVelocityIntegrator if: (a) we have an illustration
+    // visualizer, (b) at least one body has surface velocity, and (c) the
+    // plant's surface_speeds input port is already wired in the diagram.
+    if (illustration_vis != nullptr) {
+      bool has_surface_velocity = false;
+      for (multibody::BodyIndex i(0); i < plant.num_bodies(); ++i) {
+        if (plant.HasSurfaceVelocity(plant.get_body(i))) {
+          has_surface_velocity = true;
+          break;
+        }
+      }
+      if (has_surface_velocity) {
+        const auto& conn_map = builder->connection_map();
+        const auto key = std::make_pair(
+            static_cast<const System<double>*>(&plant),
+            plant.get_surface_speeds_input_port().get_index());
+        auto it = conn_map.find(key);
+        if (it != conn_map.end()) {
+          SurfaceVelocityIntegrator::AddToBuilder(
+              builder, plant,
+              it->second.first->get_output_port(it->second.second),
+              *illustration_vis, config.publish_period);
+        }
+      }
     }
   }
 

@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/meshcat_graphviz.h"
 #include "drake/geometry/meshcat_internal.h"
@@ -46,6 +47,16 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
 
   query_object_input_port_ =
       this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
+          .get_index();
+
+  surface_displacement_input_port_ =
+      this->DeclareAbstractInputPort("surface_displacement",
+                                     Value<systems::BusValue>())
+          .get_index();
+
+  surface_velocity_normals_input_port_ =
+      this->DeclareAbstractInputPort("surface_velocity_normals",
+                                     Value<systems::BusValue>())
           .get_index();
 
   if (params_.enable_alpha_slider) {
@@ -141,6 +152,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
+  SetSurfaceDisplacements(context);
   if (params_.enable_alpha_slider) {
     double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
     if (new_alpha_value != alpha_value_) {
@@ -164,6 +176,8 @@ void MeshcatVisualizer<T>::SetObjects(
   // deleted.
   std::map<GeometryId, std::string> geometries_to_delete{};
   geometries_.swap(geometries_to_delete);
+
+  surface_velocity_geometries_.clear();
 
   // TODO(SeanCurtis-TRI): Mimic the full tree structure in SceneGraph.
   // SceneGraph supports arbitrary hierarchies of frames just like Meshcat.
@@ -249,6 +263,10 @@ void MeshcatVisualizer<T>::SetObjects(
       geometries_[geom_id] = path;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
       frame_has_any_geometry = true;
+
+      if (properties.HasProperty("meshcat", "has_surface_velocity")) {
+        surface_velocity_geometries_[geom_id] = inspector.GetName(frame_id);
+      }
     }
 
     if (frame_has_any_geometry && (frame_id != inspector.world_frame_id())) {
@@ -293,6 +311,41 @@ void MeshcatVisualizer<T>::SetAlphas(bool initializing) const {
     // requires that all object instantiations are complete in the visualizer
     // instance.
     meshcat_->SetProperty(params_.prefix, "modulated_opacity", alpha_value_);
+  }
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::SetSurfaceDisplacements(
+    const systems::Context<T>& context) const {
+  if (surface_velocity_geometries_.empty()) return;
+  const double time = ExtractDoubleOrThrow(context.get_time());
+
+  // Push the live crawl_axis from the normals port each tick so that runtime
+  // changes via SetSurfaceVelocityNormal() are reflected in meshcat.
+  const auto& normals_port =
+      this->get_input_port(surface_velocity_normals_input_port_);
+  if (normals_port.HasValue(context)) {
+    const auto& normals_bus =
+        normals_port.template Eval<systems::BusValue>(context);
+    for (const auto& [geom_id, frame_name] : surface_velocity_geometries_) {
+      const AbstractValue* v = normals_bus.Find(frame_name);
+      if (v == nullptr) continue;
+      const Eigen::Vector3d& n = v->get_value<Eigen::Vector3d>();
+      meshcat_->SetProperty(geometries_.at(geom_id), "crawl_axis",
+                            std::vector<double>{n.x(), n.y(), n.z()}, time);
+    }
+  }
+
+  // Push the cumulative crawl_displacement.
+  const auto& disp_port =
+      this->get_input_port(surface_displacement_input_port_);
+  if (!disp_port.HasValue(context)) return;
+  const auto& disp_bus = disp_port.template Eval<systems::BusValue>(context);
+  for (const auto& [geom_id, frame_name] : surface_velocity_geometries_) {
+    const AbstractValue* v = disp_bus.Find(frame_name);
+    if (v == nullptr) continue;
+    meshcat_->SetProperty(geometries_.at(geom_id), "crawl_displacement",
+                          v->get_value<double>(), time);
   }
 }
 

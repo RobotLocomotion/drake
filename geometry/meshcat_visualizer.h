@@ -108,6 +108,33 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(query_object_input_port_);
   }
 
+  /** Returns the surface-displacement input port. When connected, this port
+   accepts a `BusValue` whose signals are keyed by body scoped name (e.g.
+   `"model::belt"`) and whose values are `double` scalars representing the
+   cumulative surface displacement for that body. The visualizer will update the
+   `"crawl_displacement"` meshcat property each publish cycle for every geometry
+   that carries the `"meshcat"."has_surface_velocity"` illustration property.
+   Geometries without a matching bus signal are left unchanged.
+
+   This port is always declared. It does not need to be connected; if
+   unconnected, no surface-displacement updates are sent to meshcat. */
+  const systems::InputPort<T>& surface_displacement_input_port() const {
+    return this->get_input_port(surface_displacement_input_port_);
+  }
+
+  /** Returns the surface-velocity-normals input port. When connected, this port
+   accepts a `BusValue` whose signals are keyed by body scoped name and whose
+   values are `Eigen::Vector3d` unit normals in the body frame. The visualizer
+   will update the `"crawl_axis"` meshcat property each publish cycle, so that
+   runtime changes via `MultibodyPlant::SetSurfaceVelocityNormal()` are
+   immediately reflected in meshcat.
+
+   This port is always declared. It does not need to be connected; if
+   unconnected, no axis updates are sent to meshcat. */
+  const systems::InputPort<T>& surface_velocity_normals_input_port() const {
+    return this->get_input_port(surface_velocity_normals_input_port_);
+  }
+
   /** Adds a MeshcatVisualizer and connects it to the given SceneGraph's
    QueryObject-valued output port. See
    MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
@@ -154,6 +181,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    configuring it. Once the geometry is loaded, they can be updated en masse. */
   void SetAlphas(bool initializing) const;
 
+  /* Makes calls to Meshcat::SetProperty to update crawl_displacement for each
+   geometry registered with surface velocity. Does nothing if the
+   surface_displacement port is unconnected. */
+  void SetSurfaceDisplacements(const systems::Context<T>& context) const;
+
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
@@ -163,6 +195,12 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   /* The index of this System's QueryObject-valued input port. */
   int query_object_input_port_{};
+
+  /* The index of the surface-displacement input port. */
+  int surface_displacement_input_port_{};
+
+  /* The index of the surface-velocity-normals input port. */
+  int surface_velocity_normals_input_port_{};
 
   /* Meshcat is mutable because we must send messages (a non-const operation)
    from a const System (e.g. during simulation).  We use shared_ptr instead of
@@ -188,6 +226,12 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* A store of the geometries sent to Meshcat, so that they can be removed if a
    new geometry version appears that does not contain them. */
   mutable std::map<GeometryId, std::string> geometries_{};
+
+  /* Subset of geometries_ that carry the "meshcat"."surface_velocity_axis"
+   illustration property. Maps GeometryId to the frame's scoped name (e.g.
+   "model::belt"), which is the key used to look up displacements in the
+   surface-displacement bus. Rebuilt whenever SetObjects() runs. */
+  mutable std::map<GeometryId, std::string> surface_velocity_geometries_{};
 
   /* The last alpha value applied to the objects in geometries_; used to avoid
    unnecessary updates to geometry opacities. */
