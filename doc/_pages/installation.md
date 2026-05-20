@@ -2,11 +2,6 @@
 title: Installation and Quickstart
 ---
 
-# Previewing
-
-Before installing, you can preview Drake online using our interactive Python
-notebooks. See the [Tutorials](/index.html#tutorials) page for details.
-
 # Installation
 
 ## Supported Configurations
