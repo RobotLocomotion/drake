@@ -112,7 +112,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
-        .def_property(
+        .def_prop_rw(
             "model",
             [](const Class& self) -> const RobotDiagram<double>* {
               return self.model.get();
@@ -124,21 +124,21 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module_ m) {
                   make_shared_ptr_from_py_object<RobotDiagram<double>>(model);
             },
             cls_doc.model.doc)
-        .def_readwrite("distance_and_interpolation_provider",
+        .def_rw("distance_and_interpolation_provider",
             &Class::distance_and_interpolation_provider,
             cls_doc.distance_and_interpolation_provider.doc)
-        .def_readwrite("robot_model_instances", &Class::robot_model_instances,
+        .def_rw("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
-        .def_readwrite("configuration_distance_function",
+        .def_rw("configuration_distance_function",
             &Class::configuration_distance_function,
             cls_doc.configuration_distance_function.doc)
-        .def_readwrite("edge_step_size", &Class::edge_step_size,
+        .def_rw("edge_step_size", &Class::edge_step_size,
             cls_doc.edge_step_size.doc)
-        .def_readwrite("env_collision_padding", &Class::env_collision_padding,
+        .def_rw("env_collision_padding", &Class::env_collision_padding,
             cls_doc.env_collision_padding.doc)
-        .def_readwrite("self_collision_padding", &Class::self_collision_padding,
+        .def_rw("self_collision_padding", &Class::self_collision_padding,
             cls_doc.self_collision_padding.doc)
-        .def_readwrite("implicit_context_parallelism",
+        .def_rw("implicit_context_parallelism",
             &Class::implicit_context_parallelism,
             cls_doc.implicit_context_parallelism.doc);
     // N.B. Any time we bind new CollisionCheckerParams fields that have pointer

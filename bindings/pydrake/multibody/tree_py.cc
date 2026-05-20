@@ -189,8 +189,8 @@ void DoScalarIndependentDefinitions(py::module_ m) {
     cls  // BR
         .def(ParamInit<Class>());
     cls  // BR
-        .def_readwrite("p", &Class::p, cls_doc.p.doc)
-        .def_readwrite("d", &Class::d, cls_doc.d.doc);
+        .def_rw("p", &Class::p, cls_doc.p.doc)
+        .def_rw("d", &Class::d, cls_doc.d.doc);
     DefCopyAndDeepCopy(&cls);
   }
 }
@@ -515,7 +515,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "BallRpyJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
@@ -548,7 +548,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PlanarJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  Vector3<double>>(),
@@ -599,7 +599,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "PrismaticJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double, double, double>(),
@@ -657,7 +657,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "QuaternionFloatingJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -719,7 +719,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RevoluteJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double>(),
@@ -777,7 +777,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "RpyFloatingJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -836,7 +836,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "ScrewJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
                  double>(),
@@ -891,7 +891,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "UniversalJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(
             py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
@@ -923,7 +923,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "WeldJoint", param, cls_doc.doc);
     cls  // BR
-        .def_property_readonly_static(
+        .def_prop_ro_static(
             "kTypeName", [](py::object /* self */) { return Class::kTypeName; })
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
@@ -1064,7 +1064,7 @@ void DoScalarDependentDefinitions(py::module_ m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", param, cls_doc.doc);
     cls  // BR
-        .def_readonly_static("kDefaultStrength", &Class::kDefaultStrength)
+        .def_ro_static("kDefaultStrength", &Class::kDefaultStrength)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             py::init<Vector3<double>>(), py::arg("g_W"), cls_doc.ctor.doc_1args)

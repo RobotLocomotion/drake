@@ -22,11 +22,11 @@ void DefineSolversMosek(py::module_ m) {
 
   py::class_<MosekSolverDetails>(
       m, "MosekSolverDetails", doc.MosekSolverDetails.doc)
-      .def_readonly("optimizer_time", &MosekSolverDetails::optimizer_time,
+      .def_ro("optimizer_time", &MosekSolverDetails::optimizer_time,
           doc.MosekSolverDetails.optimizer_time.doc)
-      .def_readonly("rescode", &MosekSolverDetails::rescode,
+      .def_ro("rescode", &MosekSolverDetails::rescode,
           doc.MosekSolverDetails.rescode.doc)
-      .def_readonly("solution_status", &MosekSolverDetails::solution_status,
+      .def_ro("solution_status", &MosekSolverDetails::solution_status,
           doc.MosekSolverDetails.solution_status.doc);
   AddValueInstantiation<MosekSolverDetails>(m);
 }

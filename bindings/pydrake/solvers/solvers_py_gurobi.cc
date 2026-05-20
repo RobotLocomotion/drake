@@ -23,34 +23,32 @@ void DefineSolversGurobi(py::module_ m) {
 
   py::class_<GurobiSolverDetails>(
       m, "GurobiSolverDetails", doc.GurobiSolverDetails.doc)
-      .def_readonly("optimizer_time", &GurobiSolverDetails::optimizer_time,
+      .def_ro("optimizer_time", &GurobiSolverDetails::optimizer_time,
           doc.GurobiSolverDetails.optimizer_time.doc)
-      .def_readonly("error_code", &GurobiSolverDetails::error_code,
+      .def_ro("error_code", &GurobiSolverDetails::error_code,
           doc.GurobiSolverDetails.error_code.doc)
-      .def_readonly("optimization_status",
-          &GurobiSolverDetails::optimization_status,
+      .def_ro("optimization_status", &GurobiSolverDetails::optimization_status,
           doc.GurobiSolverDetails.optimization_status.doc)
-      .def_readonly("objective_bound", &GurobiSolverDetails::objective_bound,
+      .def_ro("objective_bound", &GurobiSolverDetails::objective_bound,
           doc.GurobiSolverDetails.objective_bound.doc);
   AddValueInstantiation<GurobiSolverDetails>(m);
 
   py::class_<GurobiSolver::SolveStatusInfo>(
       cls, "SolveStatusInfo", doc.GurobiSolver.SolveStatusInfo.doc)
-      .def_readonly("reported_runtime",
+      .def_ro("reported_runtime",
           &GurobiSolver::SolveStatusInfo::reported_runtime,
           doc.GurobiSolver.SolveStatusInfo.reported_runtime.doc)
-      .def_readonly("current_objective",
+      .def_ro("current_objective",
           &GurobiSolver::SolveStatusInfo::current_objective,
           doc.GurobiSolver.SolveStatusInfo.current_objective.doc)
-      .def_readonly("best_objective",
-          &GurobiSolver::SolveStatusInfo::best_objective,
+      .def_ro("best_objective", &GurobiSolver::SolveStatusInfo::best_objective,
           doc.GurobiSolver.SolveStatusInfo.best_objective.doc)
-      .def_readonly("best_bound", &GurobiSolver::SolveStatusInfo::best_bound,
+      .def_ro("best_bound", &GurobiSolver::SolveStatusInfo::best_bound,
           doc.GurobiSolver.SolveStatusInfo.best_bound.doc)
-      .def_readonly("explored_node_count",
+      .def_ro("explored_node_count",
           &GurobiSolver::SolveStatusInfo::explored_node_count,
           doc.GurobiSolver.SolveStatusInfo.explored_node_count.doc)
-      .def_readonly("feasible_solutions_count",
+      .def_ro("feasible_solutions_count",
           &GurobiSolver::SolveStatusInfo::feasible_solutions_count,
           doc.GurobiSolver.SolveStatusInfo.feasible_solutions_count.doc);
 

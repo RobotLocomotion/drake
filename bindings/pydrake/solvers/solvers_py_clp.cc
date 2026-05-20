@@ -18,7 +18,7 @@ void DefineSolversClp(py::module_ m) {
       .def_static("id", &ClpSolver::id, doc.ClpSolver.id.doc);
 
   py::class_<ClpSolverDetails>(m, "ClpSolverDetails", doc.ClpSolverDetails.doc)
-      .def_readonly(
+      .def_ro(
           "status", &ClpSolverDetails::status, doc.ClpSolverDetails.status.doc);
   AddValueInstantiation<ClpSolverDetails>(m);
 }

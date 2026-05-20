@@ -959,15 +959,15 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
     py::class_<GlobalInverseKinematics::Options>(
         global_ik, "Options", cls_doc.Options.doc)
         .def(py::init<>(), cls_doc.Options.ctor.doc)
-        .def_readwrite("num_intervals_per_half_axis",
+        .def_rw("num_intervals_per_half_axis",
             &GlobalInverseKinematics::Options::num_intervals_per_half_axis,
             cls_doc.Options.num_intervals_per_half_axis.doc)
-        .def_readwrite("approach", &GlobalInverseKinematics::Options::approach,
+        .def_rw("approach", &GlobalInverseKinematics::Options::approach,
             cls_doc.Options.approach.doc)
-        .def_readwrite("interval_binning",
+        .def_rw("interval_binning",
             &GlobalInverseKinematics::Options::interval_binning,
             cls_doc.Options.interval_binning.doc)
-        .def_readwrite("linear_constraint_only",
+        .def_rw("linear_constraint_only",
             &GlobalInverseKinematics::Options::linear_constraint_only,
             cls_doc.Options.linear_constraint_only.doc)
         .def("__repr__", [](const GlobalInverseKinematics::Options& self) {
@@ -986,9 +986,9 @@ PYDRAKE_MODULE(inverse_kinematics, m) {
         .def(py::init<const Eigen::Ref<const Eigen::MatrixX3d>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("A"), py::arg("b"), cls_doc.Polytope3D.ctor.doc)
-        .def_readwrite("A", &GlobalInverseKinematics::Polytope3D::A,
+        .def_rw("A", &GlobalInverseKinematics::Polytope3D::A,
             cls_doc.Polytope3D.A.doc)
-        .def_readwrite("b", &GlobalInverseKinematics::Polytope3D::b,
+        .def_rw("b", &GlobalInverseKinematics::Polytope3D::b,
             cls_doc.Polytope3D.b.doc)
         .def("__repr__", [](const GlobalInverseKinematics::Polytope3D& self) {
           return py::str("GlobalInverseKinematics.Polytope(A={}, b={})")

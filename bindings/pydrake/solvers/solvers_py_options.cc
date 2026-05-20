@@ -52,7 +52,7 @@ void DefineSolversOptions(py::module_ m) {
                 &SolverOptions::SetOption),
             py::arg("key"), py::arg("value"),
             doc.SolverOptions.SetOption.doc_2args)
-        .def_readwrite("options", &SolverOptions::options)
+        .def_rw("options", &SolverOptions::options)
         .def(py::self == py::self)
         .def(py::self != py::self);
     DefAttributesUsingSerialize(&cls);

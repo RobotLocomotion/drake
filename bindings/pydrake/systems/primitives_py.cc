@@ -582,7 +582,7 @@ PYDRAKE_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<VectorLog<T>>(
         m, "VectorLog", GetPyParam<T>(), doc.VectorLog.doc)
-        .def_property_readonly_static("kDefaultCapacity",
+        .def_prop_ro_static("kDefaultCapacity",
             [](py::object) { return VectorLog<T>::kDefaultCapacity; })
         .def(py::init<int>(), py::arg("input_size"), doc.VectorLog.ctor.doc)
         .def("num_samples", &VectorLog<T>::num_samples,

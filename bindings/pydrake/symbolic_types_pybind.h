@@ -77,8 +77,8 @@ struct type_caster<drake::symbolic::Variable::Id> {
     return true;
   }
 
-  static handle cast(drake::symbolic::Variable::Id src,
-      return_value_policy /* policy */, handle /* parent */) {
+  static handle cast(drake::symbolic::Variable::Id src, rv_policy /* policy */,
+      handle /* parent */) {
     const pybind11::int_ hi_py{Attorney::hi(src)};
     const pybind11::int_ lo_py{Attorney::lo(src)};
     pybind11::object concat = (hi_py << pybind11::int_(64)) + lo_py;

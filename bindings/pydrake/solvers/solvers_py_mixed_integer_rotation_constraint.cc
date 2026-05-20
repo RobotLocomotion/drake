@@ -41,8 +41,8 @@ void DefineSolversMixedIntegerRotationConstraint(py::module_ m) {
     constexpr auto& struct_doc = cls_doc.ReturnType;
     py::class_<Struct>(cls, "ReturnType", struct_doc.doc)
         // Massage these return types to return copies, not references (#8116).
-        .def_readonly("B_", &Struct::B_, py_rvp::copy, struct_doc.B_.doc)
-        .def_readonly(
+        .def_ro("B_", &Struct::B_, py_rvp::copy, struct_doc.B_.doc)
+        .def_ro(
             "lambda_", &Struct::lambda_, py_rvp::copy, struct_doc.lambda_.doc);
 
     cls.def(py::init<Class::Approach, int, IntervalBinning>(),

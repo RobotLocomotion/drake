@@ -173,7 +173,7 @@ PYDRAKE_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.LcmBuses;
     py::class_<Class> cls(m, "LcmBuses");
     cls  // BR
-        .def_readonly_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
+        .def_ro_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
             // TODO(jwnimmer-tri) The `cls_doc.kLcmUrlMemqNull.doc` docstring
             // constant is absent for some unknown reason, but it wouldn't help
             // anyway because pybind11 throws away docs on static constants:

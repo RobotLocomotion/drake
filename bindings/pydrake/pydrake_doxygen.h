@@ -422,7 +422,7 @@ documentation](
 https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
 
 `pydrake` offers the `drake::pydrake::py_rvp` alias to help with
-shortened usage of `py::return_value_policy`. The most used (non-default)
+shortened usage of `py::rv_policy`. The most used (non-default)
 policies in `pydrake` are `reference` and `reference_internal` due to the usage
 of raw pointers / references in the public C++ API (rather than
 `std::shared_ptr<>`).

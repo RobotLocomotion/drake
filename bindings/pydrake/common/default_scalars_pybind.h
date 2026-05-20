@@ -48,7 +48,7 @@ The simple policy these functions help enforce:
 /** Permits referencing for builtin dtypes (e.g., T == double), but then
 switches to copying for custom dtypes (T ∈ {AutoDiffXd, Expression}). */
 template <typename T>
-py::return_value_policy return_value_policy_for_scalar_type() {
+py::rv_policy return_value_policy_for_scalar_type() {
   if (std::is_same_v<T, double>) {
     return py_rvp::reference_internal;
   } else {

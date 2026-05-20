@@ -688,15 +688,15 @@ void DefineSignedDistancePair(py::module_ m, T) {
         m, "SignedDistancePair", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>(), cls_doc.ctor.doc)
-        .def_readwrite("id_A", &SignedDistancePair<T>::id_A, cls_doc.id_A.doc)
-        .def_readwrite("id_B", &SignedDistancePair<T>::id_B, cls_doc.id_B.doc)
-        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
+        .def_rw("id_A", &SignedDistancePair<T>::id_A, cls_doc.id_A.doc)
+        .def_rw("id_B", &SignedDistancePair<T>::id_B, cls_doc.id_B.doc)
+        .def_rw("p_ACa", &SignedDistancePair<T>::p_ACa,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_ACa.doc)
-        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
+        .def_rw("p_BCb", &SignedDistancePair<T>::p_BCb,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_BCb.doc)
-        .def_readwrite(
+        .def_rw(
             "distance", &SignedDistancePair<T>::distance, cls_doc.distance.doc)
-        .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
+        .def_rw("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
             return_value_policy_for_scalar_type<T>(), cls_doc.nhat_BA_W.doc);
   }
 }
@@ -711,13 +711,12 @@ void DefineSignedDistanceToPoint(py::module_ m, T) {
         m, "SignedDistanceToPoint", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>(), cls_doc.ctor.doc)
-        .def_readwrite(
-            "id_G", &SignedDistanceToPoint<T>::id_G, cls_doc.id_G.doc)
-        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
+        .def_rw("id_G", &SignedDistanceToPoint<T>::id_G, cls_doc.id_G.doc)
+        .def_rw("p_GN", &SignedDistanceToPoint<T>::p_GN,
             return_value_policy_for_scalar_type<T>(), cls_doc.p_GN.doc)
-        .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
+        .def_rw("distance", &SignedDistanceToPoint<T>::distance,
             cls_doc.distance.doc)
-        .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
+        .def_rw("grad_W", &SignedDistanceToPoint<T>::grad_W,
             return_value_policy_for_scalar_type<T>(), cls_doc.grad_W.doc);
   }
 }
@@ -732,18 +731,15 @@ void DefinePenetrationAsPointPair(py::module_ m, T) {
         m, "PenetrationAsPointPair", param, cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>())
-        .def_readwrite(
-            "id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
-        .def_readwrite(
-            "id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
-        .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa, py_rvp::copy,
+        .def_rw("id_A", &PenetrationAsPointPair<T>::id_A, cls_doc.id_A.doc)
+        .def_rw("id_B", &PenetrationAsPointPair<T>::id_B, cls_doc.id_B.doc)
+        .def_rw("p_WCa", &PenetrationAsPointPair<T>::p_WCa, py_rvp::copy,
             cls_doc.p_WCa.doc)
-        .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb, py_rvp::copy,
+        .def_rw("p_WCb", &PenetrationAsPointPair<T>::p_WCb, py_rvp::copy,
             cls_doc.p_WCb.doc)
-        .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
+        .def_rw("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
             cls_doc.nhat_BA_W.doc)
-        .def_readwrite(
-            "depth", &PenetrationAsPointPair<T>::depth, cls_doc.depth.doc);
+        .def_rw("depth", &PenetrationAsPointPair<T>::depth, cls_doc.depth.doc);
   }
 }
 

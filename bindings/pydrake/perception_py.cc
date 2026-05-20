@@ -24,7 +24,7 @@ void init_pc_flags(py::module_ m) {
   {
     using Class = BaseField;
     constexpr auto& cls_doc = doc.BaseField;
-    py::enum_<Class>(m, "BaseField", py::arithmetic(), cls_doc.doc)
+    py::enum_<Class>(m, "BaseField", py::is_arithmetic(), cls_doc.doc)
         .value("kNone", Class::kNone, cls_doc.kNone.doc)
         .value("kXYZs", Class::kXYZs, cls_doc.kXYZs.doc)
         .value("kNormals", Class::kNormals, cls_doc.kNormals.doc)
