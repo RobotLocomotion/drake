@@ -47,6 +47,7 @@ filegroup(
         "@mpmath_py_internal//:drake_repository_metadata.json",
         "@msgpack_internal//:drake_repository_metadata.json",
         "@mujoco_menagerie_internal//:drake_repository_metadata.json",
+        "@nanobind//:drake_repository_metadata.json",
         "@nanoflann_internal//:drake_repository_metadata.json",
         "@nlohmann_internal//:drake_repository_metadata.json",
         "@nlopt_internal//:drake_repository_metadata.json",
@@ -194,16 +195,15 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat",
     "metis_internal",
     "msgpack_internal",
-    "nanobind",
+    # N.B. The @nanobind//:install is handled by //bindings/pydrake:install.
     "nanoflann_internal",
     "nlohmann_internal",
     "nlopt_internal",
     "picosha2_internal",
     "poisson_disk_sampling_internal",
-    # XXX porting
     # N.B. The @pybind11//:install is handled by //bindings/pydrake:install.
     "qhull_internal",
-    "robin_map",
+    # N.B. The @robin_map//:install is handled by @nanobind//:install.
     "sdformat_internal",
     "spral_internal",
     "stduuid_internal",

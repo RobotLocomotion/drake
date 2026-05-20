@@ -38,6 +38,9 @@ install(
     name = "install",
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@robin_map//:install",
+    ],
 )
 
 exports_files(["drake_repository_metadata.json"])

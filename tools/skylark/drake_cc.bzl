@@ -788,8 +788,9 @@ def drake_cc_binary(
         **kwargs
     )
 
-    if "@googletest//:gtest_main" in deps:
-        fail("Use drake_cc_googletest to declare %s as a test" % name)
+    if type(deps) in (type([]), type(())):
+        if "@googletest//:gtest_main" in deps:
+            fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
         drake_cc_test(

@@ -48,10 +48,6 @@ drake_cc_library(
         "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:eigen_pybind",
-        # "@pybind11",
-        "@nanobind",
-        "@drake//tools/workspace/python:cc_headers",
-        "@drake//tools/workspace/python:cc_libs",
     ],
 )
 

@@ -40,10 +40,6 @@ drake_cc_library(
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:pydrake_pybind",
-        # "@pybind11",
-        "@nanobind",
-        "@drake//tools/workspace/python:cc_headers",
-        "@drake//tools/workspace/python:cc_libs",
     ],
 )
 

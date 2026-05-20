@@ -2,11 +2,15 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 # This alias provides a single point of control for defining which nanobind
 # library our tools/skylark/pybind.bzl macro should use.
-# XXX Fix call sites to *actually* use this as a SPOC.
 alias(
     name = "nanobind",
     actual = "@nanobind",
     visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:python_binder": "nanobind"},
 )
 
 add_lint_tests()

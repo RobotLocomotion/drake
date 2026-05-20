@@ -140,10 +140,6 @@ drake_cc_library(
         ":type_pack",
         ":wrap_pybind",
         "//bindings/pydrake:pydrake_pybind",
-        "@nanobind",
-        # "@pybind11",
-        "@drake//tools/workspace/python:cc_headers",
-        "@drake//tools/workspace/python:cc_libs",
     ],
 )
 
@@ -155,8 +151,6 @@ drake_cc_library(
     deps = [
         ":cpp_param_pybind",
         "//bindings/pydrake:pydrake_pybind",
-        # "@pybind11",
-        "@nanobind",
     ],
 )
 
@@ -257,10 +251,6 @@ drake_cc_library(
         "//bindings/pydrake:pydrake_pybind",
         "//common:essential",
         "@fmt",
-        # "@pybind11",
-        "@nanobind",
-        "@drake//tools/workspace/python:cc_headers",
-        "@drake//tools/workspace/python:cc_libs",
     ],
 )
 
