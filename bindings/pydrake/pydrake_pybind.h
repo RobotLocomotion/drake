@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef PYDRAKE_USE_PYBIND11
 // Here we include a lot of the pybind11 API, to ensure that all code in pydrake
 // sees the same definitions ("One Definition Rule") for template types intended
 // for specialization. Any pybind11 headers with `type_caster<>` specializations
@@ -11,15 +12,17 @@
 // as ADL headers (e.g., operators.h). Headers that are unused by pydrake
 // (e.g., complex.h) are omitted, as are headers that do not specialize anything
 // (e.g., eval.h).
-// #include "pybind11/eigen.h"
-// #include "pybind11/functional.h"
-// #include "pybind11/numpy.h"
-// #include "pybind11/operators.h"
-// #include "pybind11/pybind11.h"
-// #include "pybind11/stl.h"
-// #include "pybind11/stl/filesystem.h"
-// #include "pybind11/typing.h"
+#include "pybind11/eigen.h"
+#include "pybind11/functional.h"
+#include "pybind11/numpy.h"
+#include "pybind11/operators.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
+#include "pybind11/stl/filesystem.h"
+#include "pybind11/typing.h"
+#endif  // PYDRAKE_USE_PYBIND11
 
+#ifdef PYDRAKE_USE_NANOBIND
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wattributes"
@@ -108,6 +111,7 @@ NB_INLINE ndarray_handle* ndarray_extra_import(PyObject* o,
 
 }  // namespace detail
 }  // namespace nanobind
+#endif  // PYDRAKE_USE_NANOBIND
 
 namespace drake {
 
@@ -127,7 +131,11 @@ namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
 // you put Doxygen comments here they will apply instead to py_rvp.
+#ifdef PYDRAKE_USE_PYBIND11
+namespace py = pybind11;
+#else  // PYDRAKE_USE_NANOBIND
 namespace py = nanobind;
+#endif
 
 /// Shortened alias for py::return_value_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
@@ -162,7 +170,11 @@ constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 /// copy.
 template <typename PyClass>
 void DefCopyAndDeepCopy(PyClass* ppy_class) {
+#ifdef PYDRAKE_USE_PYBIND11
+  using Class = typename PyClass::type;
+#else  // PYDRAKE_USE_NANOBIND
   using Class = typename PyClass::Type;
+#endif
   PyClass& py_class = *ppy_class;
   py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
       .def("__deepcopy__",
@@ -182,7 +194,11 @@ void DefClone(PyClass* ppy_class) {
   // take_ownership return value policy. The take_ownership
   // policy would be the default policy in this case, but it
   // seems safer and more clear to apply it explicitly.
+#ifdef PYDRAKE_USE_PYBIND11
+  using Class = typename PyClass::type;
+#else  // PYDRAKE_USE_NANOBIND
   using Class = typename PyClass::Type;
+#endif
   PyClass& py_class = *ppy_class;
   py_class  // BR
       .def(
@@ -287,10 +303,12 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace pydrake
 }  // namespace drake
 
+#ifdef PYDRAKE_USE_PYBIND11
+#define DRAKE_NB_OBJECT_DTYPE(Type) \
+  PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#else  // PYDRAKE_USE_NANOBIND
 // XXX porting needed
 /*
-#define DRAKE_NB_NUMPY_OBJECT_DTYPE(Type)       \
-   NB_NUMPY_OBJECT_DTYPE(Type)
 */
 #define DRAKE_NB_NUMPY_OBJECT_DTYPE(Type)                       \
   namespace nanobind::detail {                                  \
@@ -304,6 +322,11 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
     static constexpr auto name = const_name(#Type);             \
   };                                                            \
   }  // namespace nanobind::detail
+#endif
 
 // This alias helps ease Drake's transition to nanobind.
+#ifdef PYDRAKE_USE_PYBIND11
+#define PYDRAKE_MODULE PYBIND11_MODULE
+#else  // PYDRAKE_USE_NANOBIND
 #define PYDRAKE_MODULE NB_MODULE
+#endif
