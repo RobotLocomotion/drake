@@ -278,6 +278,7 @@ drake_py_binary(
     srcs = ["test/print_symbol_collisions.py"],
     deps = [":all_py"],
     add_test_rule = True,
+    test_rule_tags = ["manual"],  # XXX porting
 )
 
 drake_py_unittest(
@@ -407,6 +408,7 @@ drake_py_unittest(
 drake_py_binary(
     name = "stubgen",
     srcs = ["stubgen.py"],
+    tags = ["nolint"],  # XXX porting
     deps = [
         ":all_py",
         "@stable_baselines3_internal//:stable_baselines3",

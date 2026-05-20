@@ -5,9 +5,6 @@ Prints all symbol collisions that may happen due to pydrake.all.
 from collections import defaultdict
 import sys
 
-# XXX porting
-return
-
 # Populate `sys.modules`.
 import pydrake.all  # noqa: F401 (unused-import)
 
